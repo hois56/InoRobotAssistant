@@ -1,6 +1,5 @@
 /**
- * Inovance Robot 3D Viewer — Simulation Edition
- * ▶ JOG 제어 및 고속 FBX 로딩 지원
+ * Inovance Robot 3D Viewer — Simulation Edition (Fixed)
  */
 
 import * as THREE from 'https://esm.sh/three@0.156.1';
@@ -20,8 +19,8 @@ const state = {
     isOcctLoading: false,
     
     // 시뮬레이션 관련
-    joints: [],       // 로봇 관절 노드 저장
-    jointAngles: [0, 0, 0, 0, 0, 0] // 현재 각도 저장
+    joints: [],       
+    jointAngles: [0, 0, 0, 0, 0, 0] 
 };
 
 // ── DOM Elements ────────────────────────────────────
@@ -36,8 +35,6 @@ const el = {
     canvasContainer: document.getElementById('canvas-container'),
     btnResetView:    document.getElementById('btn-reset-view'),
     btnToggleGrid:   document.getElementById('btn-toggle-grid'),
-    
-    // JOG 패널
     jogPanel:        document.getElementById('jog-panel'),
     btnHome:         document.getElementById('btn-home-pos')
 };
@@ -59,7 +56,6 @@ async function init() {
 async function initEngine() {
     state.isOcctLoading = true;
     setStatus('Engine Init', '#94a3b8');
-    
     try {
         if (typeof window.occtimportjs === 'undefined') return;
         state.occt = await window.occtimportjs({
@@ -67,15 +63,12 @@ async function initEngine() {
         });
         state.isOcctLoading = false;
         setStatus('Ready', '#22c55e');
-    } catch (e) {
-        console.error('[Engine Init Error]', e);
-    }
+    } catch (e) { console.error(e); }
 }
 
 function setupScene() {
     state.scene = new THREE.Scene();
     state.scene.background = new THREE.Color(0x0b0e14);
-
     state.camera = new THREE.PerspectiveCamera(45, el.canvasContainer.clientWidth / el.canvasContainer.clientHeight, 0.1, 1e7);
     state.camera.position.set(1200, 900, 1200);
 
@@ -113,19 +106,16 @@ function setupEventListeners() {
         const name = e.target.options[e.target.selectedIndex].text;
         await loadModelFromServer(file, name);
     });
-    
     el.btnResetView.addEventListener('click', fitCamera);
     el.btnToggleGrid.addEventListener('click', toggleGrid);
     
-    // JOG 버튼 이벤트
     document.querySelectorAll('.jog-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('click', () => {
             const axis = parseInt(btn.dataset.axis);
             const dir = parseInt(btn.dataset.dir);
             jogJoint(axis, dir);
         });
     });
-    
     el.btnHome.addEventListener('click', resetJoints);
 }
 
@@ -143,7 +133,6 @@ function onResize() {
     state.renderer.setSize(w, h);
 }
 
-// ── Model Management ───────────────────────────────
 async function populateModelList() {
     try {
         const res = await fetch(`./models/models.json?v=${Date.now()}`);
@@ -166,22 +155,12 @@ async function loadModelFromServer(file, name) {
     try {
         const url = `./models/${file}`;
         if (ext === 'fbx') {
-            const loader = new FBXLoader();
-            loader.load(url, (fbx) => {
-                renderFBXModel(fbx, name);
-            }, (xhr) => {
-                if (xhr.total > 0) {
-                    const percent = Math.round((xhr.loaded / xhr.total) * 100);
-                    showLoading(true, `Downloading: ${percent}%`);
-                }
-            }, (err) => { throw err; });
+            new FBXLoader().load(url, (fbx) => renderFBXModel(fbx, name), null, (err) => { throw err; });
             return;
         }
-
         const res = await fetch(url);
         const buffer = await res.arrayBuffer();
         await parseAndRenderSTEP(buffer, name);
-
     } catch (err) {
         setStatus('Error', '#ef4444');
         showLoading(false);
@@ -191,55 +170,45 @@ async function loadModelFromServer(file, name) {
 // ── Rendering & Simulation ────────────────────────────
 
 function renderFBXModel(fbx, name) {
-    console.log(`[FBX Load Success] Model: ${name}`); // 디버깅 로그
+    console.log(`[FBX Load Success] Model: ${name}`);
     cleanupScene();
     fbx.rotateX(-Math.PI / 2); 
 
     state.joints = [];
     state.jointAngles = [0, 0, 0, 0, 0, 0];
 
-    // 축 탐색 및 계층 구조 출력
     fbx.traverse(c => {
-        if (c.isMesh) {
-            c.castShadow = c.receiveShadow = true;
-        }
-        // 로봇 축(Joint)으로 추정되는 노드 탐색
+        if (c.isMesh) c.castShadow = c.receiveShadow = true;
         const lowerName = c.name.toLowerCase();
-        if (lowerName.includes('axis') || lowerName.includes('link') || lowerName.includes('joint')) {
-            if (!state.joints.find(j => j.name === c.name)) {
-                state.joints.push(c);
-            }
+        const keywords = ['axis', 'link', 'joint', 'arm', 'base', 'j1', 'j2', 'j3', 'j4', 'j5', 'j6'];
+        if (keywords.some(k => lowerName.includes(k))) {
+            if (!state.joints.find(j => j.name === c.name)) state.joints.push(c);
         }
     });
 
-    // 축 이름 정렬 (J1, J2... 순서)
+    if (state.joints.length === 0) {
+        fbx.children.forEach(child => state.joints.push(child));
+        console.warn('[Joint Discovery] Fallback to children.');
+    }
+
     state.joints.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true}));
-    console.log(`[Joints Found] Count: ${state.joints.length}`, state.joints.map(j => j.name));
+    console.log(`[Joints Found]`, state.joints.map(j => j.name));
 
     state.model = fbx;
     state.scene.add(state.model);
     updateUIStatus(name);
     
-    // IR-R4 계열 모델일 경우 JOG 패널 활성화 (대소문자 무시)
     const isR4 = name.toUpperCase().replace(/\s/g, '').includes('IR-R4');
-    console.log(`[Panel Detection] Model: ${name}, isR4: ${isR4}`);
-    
-    if (isR4) {
-        el.jogPanel.classList.remove('hidden');
-    } else {
-        el.jogPanel.classList.add('hidden');
-    }
+    el.jogPanel.classList.toggle('hidden', !isR4);
     
     showLoading(false);
     fitCamera();
 }
 
-
 async function parseAndRenderSTEP(buffer, name) {
     if (!state.occt) return;
     cleanupScene();
-    el.jogPanel.classList.add('hidden'); // STEP 파일은 시뮬레이션 지원 안 함
-
+    el.jogPanel.classList.add('hidden'); 
     try {
         const result = state.occt.ReadStepFile(new Uint8Array(buffer));
         const group = new THREE.Group();
@@ -263,20 +232,17 @@ async function parseAndRenderSTEP(buffer, name) {
     showLoading(false);
 }
 
-// ── Simulation Logic ───────────────────────────────
 function jogJoint(axisIdx, direction) {
-    if (!state.joints[axisIdx]) return;
-    
-    const step = 0.087; // 약 5도
+    console.log(`[JOG Action] J${axisIdx+1} | Dir: ${direction}`);
     const targetJoint = state.joints[axisIdx];
-    
-    // 축별 회전 방향 설정 (모델 구조에 따라 다를 수 있음)
-    // 보통 J1, J4, J6는 Y축(Up), J2, J3, J5는 X/Z축 회전인 경우가 많음
-    if (axisIdx === 0 || axisIdx === 3 || axisIdx === 5) {
-        targetJoint.rotation.y += step * direction;
-    } else {
-        targetJoint.rotation.z += step * direction;
+    if (!targetJoint) {
+        console.error(`[JOG Error] No joint at index ${axisIdx}`);
+        return;
     }
+    
+    const step = 0.087; 
+    if (axisIdx === 0 || axisIdx === 3 || axisIdx === 5) targetJoint.rotation.y += step * direction;
+    else targetJoint.rotation.z += step * direction;
     
     state.jointAngles[axisIdx] += (direction * 5);
     setStatus(`J${axisIdx+1}: ${state.jointAngles[axisIdx]}°`, '#38bdf8');
@@ -290,7 +256,6 @@ function resetJoints() {
     setStatus('Home Position', '#22c55e');
 }
 
-// ── Helpers ──────────────────────────────────────────
 function cleanupScene() {
     if (state.model) {
         state.scene.remove(state.model);
