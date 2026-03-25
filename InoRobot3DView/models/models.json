@@ -1,7 +1,8 @@
 [
-    { "name": "IR-R4-56S", "file": "IR-R4-56S.stp" },
-    { "name": "IR-R4H-54S", "file": "IR-R4H-54S.stp" },
-    { "name": "IR-R7H-90S5", "file": "IR-R7H-90S5.stp" },
+    { "name": "IR-R4-56S", "file": "IR-R4-56S.step" },
+    { "name": "IR-R4H-54S", "file": "IR-R4H-54S.step" },
+    { "name": "IR-R7H-70S", "file": "IR-R7H-70S.step" },
+    { "name": "IR-R7H-90S", "file": "IR-R7H-90S.step" },
     { "name": "IR-R10-110S", "file": "IR-R10-110S.stp" },
     { "name": "IR-R10-140S", "file": "IR-R10-140S.stp" },
     { "name": "IR-R10-200S", "file": "IR-R10-200S.stp" },
