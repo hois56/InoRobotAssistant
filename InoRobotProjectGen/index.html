@@ -153,6 +153,7 @@
                 </div>
                 <!-- The contenteditable logic or textarea -->
                 <div class="bg-slate-950/80 rounded-xl p-4 flex-grow overflow-hidden relative">
+                    <div id="tableContainer" class="absolute inset-0 w-full h-full overflow-auto scroll-custom p-4 transition-opacity duration-200 opacity-0 pointer-events-none"></div>
                     <div id="prismContainer"
                         class="w-full h-full overflow-auto scroll-custom transition-opacity duration-200">
                         <pre><code id="codeOutput" class="language-robot text-sm leading-relaxed"></code></pre>
