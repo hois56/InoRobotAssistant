@@ -141,7 +141,8 @@ function onResize() {
 // ── Model Management ───────────────────────────────
 async function populateModelList() {
     try {
-        const res = await fetch('./models/models.json');
+        // 캐시 방지를 위해 타임스탬프 파라미터를 추가하여 항상 최신 목록을 가져옵니다.
+        const res = await fetch(`./models/models.json?v=${Date.now()}`);
         const list = await res.json();
         el.modelSelect.innerHTML = '<option value="" disabled selected>-- 로봇 모델을 선택하세요 --</option>';
         list.forEach(m => {
@@ -150,6 +151,7 @@ async function populateModelList() {
             opt.textContent = m.name;
             el.modelSelect.appendChild(opt);
         });
+        console.log('[InoRobot] Final Database Loaded:', list.length, 'models');
     } catch (e) {
         console.error('[Load List Error]', e);
     }
@@ -157,8 +159,12 @@ async function populateModelList() {
 
 async function loadModelFromServer(file, name) {
     const ext = file.split('.').pop().toLowerCase();
-    showLoading(true, `모델 파일을 온라인에서 가져오는 중: ${name}`);
+    
+    // 로딩 방식을 명확히 표시
+    const modeText = ext === 'fbx' ? 'FBX 초고속 모드' : 'STEP 변환 모드';
+    showLoading(true, `${modeText}: ${name} 파일을 읽는 중...`);
     setStatus('Loading', '#f59e0b');
+
 
     try {
         const url = `./models/${file}`;
