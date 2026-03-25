@@ -95,51 +95,6 @@ for sheet in ['SCARA Robot', '6-Axis Robot']:
                 'cables': cables
             })
 
-# Manual injection for missing models requested by user
-missing_models = [
-    {
-        'id': 'IR-R15H-145S-INT',
-        'name': 'IR-R15H-145S-INT',
-        'image': 'robot.png',
-        'specs': {
-            'Type': '6-Axis',
-            'Payload(kg)': '15',
-            'Manipulator Length(mm)': '1455',
-            'Hollow Wrist': 'Yes',
-            'Clean Type': 'No'
-        },
-        'cables': [
-            {'code': '01741239*M00001', 'cable': '3m'},
-            {'code': '1741201', 'cable': '5m'},
-            {'code': '01741239*M00002', 'cable': '10m'},
-            {'code': '01741239*M00003', 'cable': '15m'}
-        ]
-    },
-    {
-        'id': 'IR-R20H-120S-INT',
-        'name': 'IR-R20H-120S-INT',
-        'image': 'robot.png',
-        'specs': {
-            'Type': '6-Axis',
-            'Payload(kg)': '20',
-            'Manipulator Length(mm)': '1218',
-            'Hollow Wrist': 'Yes',
-            'Clean Type': 'No'
-        },
-        'cables': [
-            {'code': '01741239*M00001', 'cable': '3m'},
-            {'code': '1741201', 'cable': '5m'},
-            {'code': '01741239*M00002', 'cable': '10m'},
-            {'code': '01741239*M00003', 'cable': '15m'}
-        ]
-    }
-]
-
-# Avoid duplicates if they already exist
-for mm in missing_models:
-    if not any(p['id'] == mm['id'] for p in products):
-        products.append(mm)
-
 for p in products:
     for k, v in p['specs'].items():
         if k not in filters_dict:

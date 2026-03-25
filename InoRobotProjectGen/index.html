@@ -30,16 +30,29 @@
         }
 
         .scroll-custom::-webkit-scrollbar {
-            width: 6px;
+            width: 8px;
+            height: 8px;
         }
 
         .scroll-custom::-webkit-scrollbar-track {
-            background: transparent;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 10px;
         }
 
         .scroll-custom::-webkit-scrollbar-thumb {
             background: rgba(59, 130, 246, 0.5);
             border-radius: 10px;
+            border: 2px solid rgba(15, 23, 42, 0.5);
+        }
+
+        .scroll-custom::-webkit-scrollbar-thumb:hover {
+            background: rgba(59, 130, 246, 0.8);
+        }
+
+        /* Ensure horizontal scrollbar is visible for process steps */
+        #stepsListParent {
+            overflow-x: auto;
+            scrollbar-width: thin;
         }
 
         pre[class*="language-"] {
@@ -81,8 +94,8 @@
             </div>
         </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-auto lg:h-[760px]">
-            <div class="lg:col-span-6 flex flex-col space-y-4 h-auto lg:h-full">
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 h-auto xl:h-[760px]">
+            <div class="xl:col-span-6 flex flex-col space-y-4 h-auto xl:h-full">
                 <!-- Project Settings -->
                 <div class="glass p-5 rounded-2xl flex-shrink-0 space-y-3">
                     <div class="flex items-center gap-2 text-blue-400"><i data-lucide="folder" class="w-5 h-5"></i>
@@ -107,14 +120,14 @@
                                 data-lucide="plus" class="w-6 h-6"></i></button>
                     </div>
                     <!-- Horizontal scroll wrapper for mobile -->
-                    <div class="flex-1 overflow-x-auto flex flex-col min-h-0">
+                    <div id="stepsListParent" class="flex-1 overflow-x-auto flex flex-col min-h-0 scroll-custom">
                         <div class="min-w-[650px] flex-1 flex flex-col min-h-0 pb-2">
                             <!-- Headers -->
                             <div
                                 class="flex gap-2 px-3 mb-2 text-sm font-semibold text-slate-500 uppercase flex-shrink-0">
                                 <span class="w-6 text-center">No</span><span class="w-10 text-center">Name</span><span
-                                    class="flex-1">Type</span><span class="flex-1">Method</span><span
-                                    class="flex-1">Tool</span><span class="flex-1 text-center">Vision Offset</span><span
+                                    class="flex-1 text-center">Type</span><span class="flex-1 text-center">Method</span><span
+                                    class="flex-1 text-center">Tool</span><span class="flex-1 text-center">Vision Offset</span><span
                                     class="w-6"></span>
                             </div>
                             <div id="stepsList" class="flex-1 overflow-y-auto scroll-custom space-y-3 pr-2"></div>
@@ -124,7 +137,7 @@
             </div>
 
             <!-- Preview -->
-            <div class="lg:col-span-6 glass rounded-2xl p-5 flex flex-col h-full min-h-[500px]">
+            <div class="xl:col-span-6 glass rounded-2xl p-5 flex flex-col h-full min-h-[600px]">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                     <div class="flex items-center gap-2 text-emerald-400"><i data-lucide="code" class="w-5 h-5"></i>
                         <h2 class="font-semibold">Live Source Preview</h2>
@@ -155,7 +168,7 @@
     <!-- Options Modal -->
     <div id="optionsModal"
         class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center z-50">
-        <div class="glass w-full max-w-3xl p-6 rounded-3xl shadow-2xl space-y-6">
+        <div class="glass w-full max-w-md p-6 rounded-3xl shadow-2xl space-y-6">
             <h2 class="text-xl font-bold flex items-center gap-2"><i data-lucide="settings"
                     class="w-6 h-6 text-blue-400"></i> Project Options</h2>
 
@@ -171,14 +184,17 @@
                     <label class="flex items-center gap-3 cursor-pointer">
                         <input type="checkbox" id="chkMultiRecipe"
                             class="w-5 h-5 rounded text-blue-500 bg-slate-900 border-slate-600 focus:ring-0">
-                        <span class="text-base font-medium">Enable Multi Recipe</span>
+                        <span class="text-base font-medium">Multi Recipe</span>
                     </label>
-                    <input type="number" id="numRecipeCount" disabled min="2" max="127" value="2"
-                        oninput="if(this.value>127)this.value=127;if(this.value<0)this.value=0;"
-                        class="w-20 bg-slate-900 border border-slate-600 rounded px-3 py-2 disabled:opacity-50 text-center text-lg">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-slate-500">Count:</span>
+                        <input type="number" id="numRecipeCount" disabled min="2" max="127" value="2"
+                            oninput="if(this.value>127)this.value=127;if(this.value<0)this.value=0;"
+                            class="w-16 bg-slate-900 border border-slate-600 rounded px-2 py-1.5 disabled:opacity-50 text-center text-sm font-semibold">
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 gap-4">
                     <label
                         class="flex items-center justify-between bg-slate-800/40 p-4 rounded-xl border border-slate-700 cursor-pointer text-sm relative group">
                         <div class="flex items-center gap-3">
