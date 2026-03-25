@@ -191,43 +191,49 @@ async function loadModelFromServer(file, name) {
 // ── Rendering & Simulation ────────────────────────────
 
 function renderFBXModel(fbx, name) {
+    console.log(`[FBX Load Success] Model: ${name}`); // 디버깅 로그
     cleanupScene();
     fbx.rotateX(-Math.PI / 2); 
 
     state.joints = [];
     state.jointAngles = [0, 0, 0, 0, 0, 0];
 
-    /** 
-     * [축 탐색 로직]
-     * FBX 내부에서 Axis, Link, Joint 등의 키워드를 포함한 노드를 찾습니다.
-     * IR-R4 모델의 내부 구조에 따라 최적화가 필요할 수 있습니다.
-     */
+    // 축 탐색 및 계층 구조 출력
     fbx.traverse(c => {
         if (c.isMesh) {
             c.castShadow = c.receiveShadow = true;
         }
-        // 계층 구조에서 관절 후보군을 수집 (이름 기반)
-        if (c.name.toLowerCase().includes('axis') || c.name.toLowerCase().includes('link') || c.name.toLowerCase().includes('joint')) {
-            // 중복 방지 및 정렬을 위해 리스트업
+        // 로봇 축(Joint)으로 추정되는 노드 탐색
+        const lowerName = c.name.toLowerCase();
+        if (lowerName.includes('axis') || lowerName.includes('link') || lowerName.includes('joint')) {
             if (!state.joints.find(j => j.name === c.name)) {
                 state.joints.push(c);
             }
         }
     });
 
-    // 축 이름을 기준으로 정렬 (J1, J2... 순서가 보장되도록)
+    // 축 이름 정렬 (J1, J2... 순서)
     state.joints.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true}));
+    console.log(`[Joints Found] Count: ${state.joints.length}`, state.joints.map(j => j.name));
 
     state.model = fbx;
     state.scene.add(state.model);
     updateUIStatus(name);
     
-    // IR-R4 모델일 경우에만 JOG 패널 표시
-    el.jogPanel.classList.toggle('hidden', !name.includes('IR-R4'));
+    // IR-R4 계열 모델일 경우 JOG 패널 활성화 (대소문자 무시)
+    const isR4 = name.toUpperCase().replace(/\s/g, '').includes('IR-R4');
+    console.log(`[Panel Detection] Model: ${name}, isR4: ${isR4}`);
+    
+    if (isR4) {
+        el.jogPanel.classList.remove('hidden');
+    } else {
+        el.jogPanel.classList.add('hidden');
+    }
     
     showLoading(false);
     fitCamera();
 }
+
 
 async function parseAndRenderSTEP(buffer, name) {
     if (!state.occt) return;
