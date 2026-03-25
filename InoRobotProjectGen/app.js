@@ -322,10 +322,10 @@ function renderSteps() {
         el.innerHTML = `
             <div class="w-6 h-6 rounded bg-blue-600 flex-shrink-0 flex items-center justify-center font-bold text-xs">${s.No}</div>
             <button onclick="window.openNameModal(${idx})" class="w-10 h-8 rounded bg-slate-800 border border-slate-600 flex items-center justify-center hover:bg-slate-700 flex-shrink-0"><i data-lucide="more-horizontal" class="w-4 h-4 text-slate-400"></i></button>
-            <select onchange="window.uStep(${idx}, 'WorkType', this.value)" class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-center">${WorkTypes.map(t=>`<option ${s.WorkType===t?'selected':''}>${t}</option>`).join('')}</select>
+            <select onchange="window.uStep(${idx}, 'WorkType', this.value)" class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${WorkTypes.map(t=>`<option ${s.WorkType===t?'selected':''}>${t}</option>`).join('')}</select>
             <select onchange="window.uStep(${idx}, 'WorkMethod', this.value)" ${disM} class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-center">${mOpts.map(m=>`<option ${s.WorkMethod===m?'selected':''}>${m}</option>`).join('')}</select>
-            <select onchange="window.uStep(${idx}, 'ToolType', this.value)" ${disT} class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-center">${tOpts.map(t=>`<option ${s.ToolType===t?'selected':''}>${t}</option>`).join('')}</select>
-            <select onchange="window.uStep(${idx}, 'VisionUse', this.value)" ${disV} class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-center">${vOpts.map(v=>`<option ${s.VisionUse===v?'selected':''}>${v}</option>`).join('')}</select>
+            <select onchange="window.uStep(${idx}, 'ToolType', this.value)" ${disT} class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${tOpts.map(t=>`<option ${s.ToolType===t?'selected':''}>${t}</option>`).join('')}</select>
+            <select onchange="window.uStep(${idx}, 'VisionUse', this.value)" ${disV} class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${vOpts.map(v=>`<option ${s.VisionUse===v?'selected':''}>${v}</option>`).join('')}</select>
             <button onclick="window.rStep(${idx})" class="text-slate-500 hover:text-red-400 font-bold ml-1 w-6 h-6 flex items-center justify-center flex-shrink-0">X</button>
         `;
         list.appendChild(el);
@@ -382,7 +382,7 @@ function uSelector() {
 
 // ── 표 렌더링 헬퍼 ──────────────────────────────────
 function buildTable(headers, rows) {
-    const th = headers.map(h => `<th style="padding:8px 12px;text-align:left;color:#94a3b8;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.08);white-space:nowrap">${h}</th>`).join('');
+    const th = headers.map(h => `<th style="padding:8px 12px;text-align:left;color:#94a3b8;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.08);white-space:nowrap">${h}</th>`).join('');
     const tr = rows.map(row =>
         `<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">${row.map(cell => `<td style="padding:7px 12px;font-size:12px;color:#e2e8f0;font-family:'Inter',monospace">${cell ?? '-'}</td>`).join('')}</tr>`
     ).join('');
@@ -453,7 +453,7 @@ function updatePreview() {
                         <td style="padding:7px 12px;font-size:12px;color:#e2e8f0;font-family:monospace">${desc}</td>
                     </tr>`;
                 }).join('');
-                const th = ['ID','Label','Description'].map(h => `<th style="padding:8px 12px;text-align:left;color:#94a3b8;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.08)">${h}</th>`).join('');
+                const th = ['ID','Label','Description'].map(h => `<th style="padding:8px 12px;text-align:left;color:#94a3b8;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.08)">${h}</th>`).join('');
                 tableHtml = `<div style="overflow:auto;max-height:100%"><table style="width:100%;border-collapse:collapse"><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>`;
 
                 window.updateLabelCell = function(input) {
@@ -464,6 +464,19 @@ function updatePreview() {
                     } else if (origLabel && newLabel === origLabel) {
                         delete state.labelOverrides[origLabel];
                     }
+                    try {
+                        const obj = JSON.parse(stripHeader(handleGeneratedContent('Labels.jsn')));
+                        Object.values(obj).forEach(section => {
+                            if (section && Array.isArray(section.LabelsArray)) {
+                                section.LabelsArray.forEach(item => {
+                                    if (item.sOriginalName && item.sLabel && state.labelOverrides[item.sLabel]) {
+                                        item.sLabel = state.labelOverrides[item.sLabel];
+                                    }
+                                });
+                            }
+                        });
+                        state.userEdits['Labels.jsn'] = JSON.stringify(obj, null, 2);
+                    } catch(e) {}
                 };
             } catch(e) { /* fallback */ }
         }
@@ -491,7 +504,7 @@ function updatePreview() {
 
         // ── P.pts / Pxx.pts (상태에 따라 편집 가능) ──────────────
         else if (file === 'P.pts' || (file && file.match(/^P\d+\.pts$/))) {
-            const isScara = /S|TS/i.test(state.options.RobotName);
+            const isScara = /^IR-(S|TS)/i.test(state.options.RobotName);
             const canEditName = (file === 'P.pts');
             const lines = rawCode.split(/\r?\n/).filter(l => l.trim().startsWith('P['));
             const rows = lines.map((l, rowIdx) => {
@@ -532,7 +545,7 @@ function updatePreview() {
             
             let thArr = ['ID','Name','X','Y','Z','A'];
             if (!isScara) thArr.push('B', 'C');
-            const th = thArr.map(h => `<th style="padding:6px;text-align:left;color:#94a3b8;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.08)">${h}</th>`).join('');
+            const th = thArr.map(h => `<th style="padding:6px;text-align:left;color:#94a3b8;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.08)">${h}</th>`).join('');
             
             let colgroup = `<colgroup><col style="width:50px"><col style="width:90px"><col style="width:70px"><col style="width:70px"><col style="width:70px">${isScara ? '<col style="width:70px">' : '<col style="width:70px"><col style="width:70px"><col style="width:70px">'}</colgroup>`;
             
@@ -584,7 +597,7 @@ function updatePreview() {
                             <td style="padding:5px 8px"><input type="text" data-idx="${item.idx}" value="${item.text}" style="background:transparent;border:1px solid rgba(255,255,255,0.1);color:#e2e8f0;font-family:monospace;font-size:12px;width:100%;box-sizing:border-box;outline:none;padding:3px 6px;border-radius:4px" onfocus="this.style.borderColor='#38bdf8'" onblur="this.style.borderColor='rgba(255,255,255,0.1)';updateWarningCell(this)" onkeydown="if(event.key==='Enter'){this.blur();}" /></td>
                         </tr>`;
                     }).join('');
-                    const th = ['ID','설명 (Description)'].map(h => `<th style="padding:8px 12px;text-align:left;color:#94a3b8;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.08)">${h}</th>`).join('');
+                    const th = ['ID','Description'].map(h => `<th style="padding:8px 12px;text-align:left;color:#94a3b8;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.08)">${h}</th>`).join('');
                     tableHtml = `<div style="overflow:auto;max-height:100%"><table style="width:100%;border-collapse:collapse"><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>`;
 
                     window._warningArr = [];
@@ -597,7 +610,7 @@ function updatePreview() {
                     };
                 } else {
                     const rows = items.map(item => [item.id, item.text]);
-                    tableHtml = buildTable(['ID', '설명 (Description)'], rows);
+                    tableHtml = buildTable(['ID', 'Description'], rows);
                 }
             } catch(e) { /* fallback */ }
         }

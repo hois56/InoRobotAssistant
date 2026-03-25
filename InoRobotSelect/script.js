@@ -240,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
             repeatability: '±0.01 mm',
             signals: '12 Signal lines 30V 0.5A',
             air: 'Φ4mm x 4, 0.59 MPa',
-            ip: 'IP40',
+            ip: 'IP20',
             weight: '24 kg',
             axes: [
                 { axis: 'J1', speed: '450°/s', range: '±170°' },
@@ -255,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
             repeatability: '±0.02 mm',
             signals: '12 Signal lines 30V 0.5A; 8 signal lines 30V 0.2A',
             air: 'Φ4mm x 4, 0.59 MPa',
-            ip: 'IP40',
+            ip: 'IP20',
             weight: '24.5 kg',
             axes: [
                 { axis: 'J1', speed: '450°/s', range: '±170°' },
@@ -270,7 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
             repeatability: '±0.015 mm',
             signals: '17 Signal lines 30V 0.5A; 8 Signal lines 30V 0.2A',
             air: 'Φ4mm x 4, 0.59 MPa',
-            ip: 'IP40',
+            ip: 'IP20',
             weight: '31 kg',
             axes: [
                 { axis: 'J1', speed: '420°/s', range: '±170°' },
@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
             repeatability: '±0.02 mm',
             signals: '17 Signal lines 30V 0.5A; 8 Signal lines 30V 0.2A',
             air: 'Φ4mm x 4, 0.59 MPa',
-            ip: 'IP40',
+            ip: 'IP20',
             weight: '33 kg',
             axes: [
                 { axis: 'J1', speed: '336°/s', range: '±170°' },
@@ -300,7 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
             repeatability: '±0.02 mm',
             signals: '12 Signal lines 30V 0.5A',
             air: 'Φ4mm x 4, 0.59 MPa',
-            ip: 'IP40',
+            ip: 'IP20',
             weight: '48 kg',
             axes: [
                 { axis: 'J1', speed: '300°/s', range: '±170°' },
@@ -315,7 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
             repeatability: '±0.02 mm',
             signals: '12 Signal lines 30V 0.5A',
             air: 'Φ4mm x 4, 0.59 MPa',
-            ip: 'IP40',
+            ip: 'IP20',
             weight: '45 kg',
             axes: [
                 { axis: 'J1', speed: '300°/s', range: '±170°' },
@@ -330,7 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
             repeatability: '±0.025 mm',
             signals: '17 Signal lines, 30V 0.5A; 8 Signal lines, 30V 0.2A',
             air: 'Φ4mm x 4, 0.59 MPa',
-            ip: 'IP40',
+            ip: 'IP20',
             weight: '50 kg',
             axes: [
                 { axis: 'J1', speed: '240°/s', range: '±170°' },
@@ -390,7 +390,7 @@ document.addEventListener('DOMContentLoaded', () => {
             repeatability: 'J1+J2: ±0.01mm, J3: ±0.01mm',
             signals: '15 Signal lines',
             air: 'Φ4mm x 1, Φ6mm x 2',
-            ip: 'IP40',
+            ip: 'IP20',
             weight: '12 kg',
             axes: [
                 { axis: 'J1+J2', speed: '7200 mm/s', range: 'J1: ±132°, J2: ±141°' },
@@ -402,7 +402,7 @@ document.addEventListener('DOMContentLoaded', () => {
             repeatability: 'J1+J2: ±0.01mm, J3: ±0.01mm',
             signals: '15 Signal lines',
             air: 'Φ4mm x 1, Φ6mm x 2',
-            ip: 'IP40',
+            ip: 'IP20',
             weight: '14.5 kg',
             axes: [
                 { axis: 'J1+J2', speed: '7200 mm/s', range: 'J1: ±132°, J2: ±141°' },
@@ -414,7 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
             repeatability: 'J1+J2: ±0.015mm, J3: ±0.01mm',
             signals: '15 Signal lines',
             air: 'Φ4mm x 1, Φ6mm x 2',
-            ip: 'IP40',
+            ip: 'IP20',
             weight: '24.5 kg',
             axes: [
                 { axis: 'J1+J2', speed: '8500 mm/s', range: 'J1: ±132°, J2: ±141°' },
@@ -426,7 +426,7 @@ document.addEventListener('DOMContentLoaded', () => {
             repeatability: '±0.02 mm',
             signals: '15 Signal lines',
             air: 'Φ4mm x 1, Φ6mm x 2',
-            ip: 'IP40',
+            ip: 'IP20',
             weight: '17 kg',
             axes: [
                 { axis: 'J1+J2', speed: '7120 mm/s', range: 'J1: ±132°, J2: ±150°' },
@@ -438,7 +438,7 @@ document.addEventListener('DOMContentLoaded', () => {
             repeatability: '±0.02 mm',
             signals: '15 Signal lines',
             air: 'Φ4mm x 1, Φ6mm x 2',
-            ip: 'IP40',
+            ip: 'IP20',
             weight: '17.5 kg',
             axes: [
                 { axis: 'J1+J2', speed: '7850 mm/s', range: 'J1: ±132°, J2: ±150°' },
@@ -450,7 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
             repeatability: '±0.02 mm',
             signals: '15 Signal lines',
             air: 'Φ4mm x 1, Φ6mm x 2',
-            ip: 'IP40',
+            ip: 'IP20',
             weight: '19 kg',
             axes: [
                 { axis: 'J1+J2', speed: '8590 mm/s', range: 'J1: ±132°, J2: ±150°' },
@@ -462,7 +462,7 @@ document.addEventListener('DOMContentLoaded', () => {
             repeatability: '±0.02 mm',
             signals: '15 Signal lines',
             air: 'Φ4mm x 1, Φ6mm x 2',
-            ip: 'IP40',
+            ip: 'IP20',
             weight: '18.5 kg',
             axes: [
                 { axis: 'J1+J2', speed: '9100 mm/s', range: 'J1: ±132°, J2: ±150°' },
@@ -474,7 +474,7 @@ document.addEventListener('DOMContentLoaded', () => {
             repeatability: '±0.02 mm',
             signals: '15 Signal lines',
             air: 'Φ4mm x 1, Φ6mm x 2',
-            ip: 'IP40',
+            ip: 'IP20',
             weight: '19 kg',
             axes: [
                 { axis: 'J1+J2', speed: '9800 mm/s', range: 'J1: ±132°, J2: ±150°' },
@@ -486,7 +486,7 @@ document.addEventListener('DOMContentLoaded', () => {
             repeatability: '±0.025 mm',
             signals: '15 Signal lines',
             air: 'Φ4mm x 1, Φ6mm x 2',
-            ip: 'IP40',
+            ip: 'IP20',
             weight: '20.5 kg',
             axes: [
                 { axis: 'J1+J2', speed: '10500 mm/s', range: 'J1: ±132°, J2: ±150°' },
@@ -498,7 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
             repeatability: 'J1+J2: ±0.04mm, J3: ±0.01mm',
             signals: '24 Signal lines (9+15)',
             air: 'Φ6mm x 2, Φ4mm x 2',
-            ip: 'IP40',
+            ip: 'IP20',
             weight: '53 kg',
             axes: [
                 { axis: 'J1+J2', speed: '9550 mm/s', range: 'J1: ±132°, J2: ±152°' },
@@ -510,7 +510,7 @@ document.addEventListener('DOMContentLoaded', () => {
             repeatability: 'J1+J2: ±0.04mm, J3: ±0.01mm',
             signals: '24 Signal lines (9+15)',
             air: 'Φ6mm x 2, Φ4mm x 2',
-            ip: 'IP40',
+            ip: 'IP20',
             weight: '56 kg',
             axes: [
                 { axis: 'J1+J2', speed: '10800 mm/s', range: 'J1: ±132°, J2: ±152°' },
@@ -522,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
             repeatability: 'J1+J2: ±0.04mm, J3: ±0.01mm',
             signals: '18 Signal lines',
             air: 'Φ6mm x 2, 0.59 MPa',
-            ip: 'IP40',
+            ip: 'IP20',
             weight: '54 kg',
             axes: [
                 { axis: 'J1+J2', speed: '9550 mm/s', range: 'J1: ±132°, J2: ±152°' },
@@ -534,7 +534,7 @@ document.addEventListener('DOMContentLoaded', () => {
             repeatability: 'J1+J2: ±0.04mm, J3: ±0.01mm',
             signals: '18 Signal lines',
             air: 'Φ6mm x 2, 0.59 MPa',
-            ip: 'IP40',
+            ip: 'IP20',
             weight: '57 kg',
             axes: [
                 { axis: 'J1+J2', speed: '10800 mm/s', range: 'J1: ±132°, J2: ±152°' },
@@ -546,7 +546,7 @@ document.addEventListener('DOMContentLoaded', () => {
             repeatability: 'J1+J2: ±0.05mm, J3: ±0.01mm',
             signals: '25 Signal lines',
             air: 'Φ6mm x 2, Φ8mm x 2',
-            ip: 'IP40',
+            ip: 'IP20',
             weight: '70.5 kg',
             axes: [
                 { axis: 'J1+J2', speed: '8100 mm/s', range: 'J1: ±139°, J2: ±151°' },
@@ -558,7 +558,7 @@ document.addEventListener('DOMContentLoaded', () => {
             repeatability: 'J1+J2: ±0.05mm, J3: ±0.01mm',
             signals: '25 Signal lines',
             air: 'Φ6mm x 2, Φ8mm x 2',
-            ip: 'IP40',
+            ip: 'IP20',
             weight: '74.5 kg',
             axes: [
                 { axis: 'J1+J2', speed: '9400 mm/s', range: 'J1: ±139°, J2: ±151°' },
@@ -570,7 +570,7 @@ document.addEventListener('DOMContentLoaded', () => {
             repeatability: 'J1+J2: ±0.07mm, J3: ±0.02mm',
             signals: '25 Signal lines',
             air: 'Φ6mm x 2, Φ8mm x 2',
-            ip: 'IP40',
+            ip: 'IP20',
             weight: '136 kg',
             axes: [
                 { axis: 'J1+J2', speed: '7400 mm/s', range: 'J1: ±135°, J2: ±150°' },
@@ -633,7 +633,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tech = getTechSpecs(product.name);
         const repeatability = tech ? tech.repeatability : (product.specs.Type === 'SCARA' ? "±0.01mm" : "±0.02mm");
         const ioPins = tech ? (tech.signals || tech.io) : (product.specs.Type === 'SCARA' ? "24 입력 / 16 출력" : "20 Signal lines");
-        const ipRating = tech ? tech.ip : (product.specs.Type === 'SCARA' ? "IP40" : "IP65 (Wrist IP67)");
+        const ipRating = tech ? tech.ip : (product.specs.Type === 'SCARA' ? "IP20" : "IP65 (Wrist IP67)");
         const weight = tech ? tech.weight : (product.specs.Type === '6-Axis' ? "~130kg" : "12~56kg");
         const cleanType = product.specs['Clean Type'] || '-';
 
@@ -1223,7 +1223,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tech = getTechSpecs(currentActiveProduct.name);
         const repeatability = tech ? tech.repeatability : (currentActiveProduct.specs.Type === 'SCARA' ? "±0.01mm" : "±0.02mm");
         const ioPins = tech ? (tech.signals || tech.io) : (currentActiveProduct.specs.Type === 'SCARA' ? "24 입력 / 16 출력" : "20 Signal lines");
-        const ipRating = tech ? tech.ip : (currentActiveProduct.specs.Type === 'SCARA' ? "IP40" : "IP65 (Wrist IP67)");
+        const ipRating = tech ? tech.ip : (currentActiveProduct.specs.Type === 'SCARA' ? "IP20" : "IP65 (Wrist IP67)");
         const weight = tech ? tech.weight : (currentActiveProduct.specs.Type === '6-Axis' ? "~130kg" : "12~56kg");
         const cleanType = currentActiveProduct.specs['Clean Type'] || '-';
 
@@ -1268,6 +1268,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>사용자 공압</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${tech ? tech.air : '-'}</td></tr>
                 </tbody>
             </table>
+
+            <div class="html2pdf__page-break" style="page-break-before: always;"></div>
 
             <h3 style="color: #333; margin-top: 30px; margin-bottom: 10px; background: #eee; padding: 10px; border-radius: 4px;">옵션 및 악세서리 구성</h3>
             <div style="margin-left: 10px; margin-bottom: 15px;">
