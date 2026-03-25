@@ -227,7 +227,11 @@ async function parseAndRender(buffer, name) {
     }
 
     try {
-        const result = state.occt.ReadStepFile(new Uint8Array(buffer));
+        // linearDeflection: 1.0 (세밀도를 낮춰 속도 중심 설정)
+        const result = state.occt.ReadStepFile(new Uint8Array(buffer), {
+            linearDeflection: 1.0,
+            angularDeflection: 0.5
+        });
         const group = new THREE.Group();
         let triCount = 0;
 
