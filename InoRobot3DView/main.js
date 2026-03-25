@@ -318,15 +318,30 @@ function updateUIStatus(name, tris) {
 
 function fitCamera() {
     if (!state.model) return;
+    
+    // 로봇의 전체 영역(Bounding Box)을 계산합니다.
     const box = new THREE.Box3().setFromObject(state.model);
+    const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3()).length();
-    state.model.position.sub(center);
-    const dist = size * 1.8;
-    state.camera.position.set(dist, dist * 0.6, dist);
-    state.camera.lookAt(0, 0, 0);
-    state.controls.target.set(0, 0, 0);
+
+    /** 
+     * [바닥 정렬 핵심 로직]
+     * 1. X, Z축은 중앙에 오도록 맞춥니다.
+     * 2. Y축(높이)은 로봇의 가장 낮은 바닥면(min.y)이 그리드(0)에 닿도록 올립니다.
+     */
+    state.model.position.x -= center.x;
+    state.model.position.z -= center.z;
+    state.model.position.y -= box.min.y; // 바닥면을 0으로 고정
+
+    const sphereSize = size.length();
+    const dist = sphereSize * 1.5;
+    
+    state.camera.position.set(dist * 0.8, dist * 0.5, dist * 0.8);
+    state.camera.lookAt(0, size.y / 2, 0); // 모델의 중심부를 바라봅니다.
+    state.controls.target.set(0, size.y / 2, 0);
+    state.camera.updateProjectionMatrix();
 }
+
 
 function toggleWireframe() {
     state.isWireframe = !state.isWireframe;
