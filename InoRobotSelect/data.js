@@ -38,6 +38,10 @@ const filtersData = [
                 "label": "11"
             },
             {
+                "id": "15",
+                "label": "15"
+            },
+            {
                 "id": "16",
                 "label": "16"
             },
@@ -128,8 +132,16 @@ const filtersData = [
                 "label": "1201.0"
             },
             {
+                "id": "1218",
+                "label": "1218"
+            },
+            {
                 "id": "1422.0",
                 "label": "1422.0"
+            },
+            {
+                "id": "1455",
+                "label": "1455"
             },
             {
                 "id": "1783.0",
@@ -547,6 +559,36 @@ const productsData = [
         ]
     },
     {
+        "id": "IR-R15H-145S-INT",
+        "name": "IR-R15H-145S-INT",
+        "image": "robot.png",
+        "specs": {
+            "Type": "6-Axis",
+            "Payload(kg)": "15",
+            "Manipulator Length(mm)": "1455",
+            "Hollow Wrist": "Yes",
+            "Clean Type": "No"
+        },
+        "cables": [
+            {
+                "code": "01741239*M00001",
+                "cable": "3m"
+            },
+            {
+                "code": "1741201",
+                "cable": "5m"
+            },
+            {
+                "code": "01741239*M00002",
+                "cable": "10m"
+            },
+            {
+                "code": "01741239*M00003",
+                "cable": "15m"
+            }
+        ]
+    },
+    {
         "id": "IR-R16-210S-INT",
         "name": "IR-R16-210S-INT",
         "image": "robot.png",
@@ -561,6 +603,36 @@ const productsData = [
             {
                 "code": "01741090",
                 "cable": "5m"
+            }
+        ]
+    },
+    {
+        "id": "IR-R20H-120S-INT",
+        "name": "IR-R20H-120S-INT",
+        "image": "robot.png",
+        "specs": {
+            "Type": "6-Axis",
+            "Payload(kg)": "20",
+            "Manipulator Length(mm)": "1218",
+            "Hollow Wrist": "Yes",
+            "Clean Type": "No"
+        },
+        "cables": [
+            {
+                "code": "01741239*M00001",
+                "cable": "3m"
+            },
+            {
+                "code": "1741201",
+                "cable": "5m"
+            },
+            {
+                "code": "01741239*M00002",
+                "cable": "10m"
+            },
+            {
+                "code": "01741239*M00003",
+                "cable": "15m"
             }
         ]
     },
@@ -2060,7 +2132,11 @@ const accessoriesList = [
         "type": "Encoder Battery",
         "description": "Encoder Battery for Scara and 6Axis robots"
     },
-
+    {
+        "code": "72100937",
+        "type": "NT100-RE-CC/CTT",
+        "description": "CC-LINK Gateway"
+    },
     {
         "code": "72100539",
         "type": "Robot Simulation Software Dongle (USB Flash Drive)",
