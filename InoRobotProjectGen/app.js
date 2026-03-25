@@ -394,6 +394,7 @@ function updatePreview() {
     const editor = document.getElementById('codeEditor');
     const prismCon = document.getElementById('prismContainer');
     const codeOut  = document.getElementById('codeOutput');
+    const tableCon = document.getElementById('tableContainer');
 
     const isReadOnly = file === 'RemoteIO_mapping.dat';
     const editBtn = document.getElementById('btnToggleEdit');
@@ -403,6 +404,8 @@ function updatePreview() {
     if (isReadOnly && state.editMode) { state.editMode = false; }
 
     // 기본 상태 초기화
+    tableCon.classList.add('opacity-0', 'pointer-events-none');
+    tableCon.innerHTML = '';
     prismCon.classList.remove('opacity-0', 'pointer-events-none');
     editor.classList.add('opacity-0', 'pointer-events-none');
 
@@ -473,19 +476,23 @@ function updatePreview() {
                 const jsonStr = gen.substring(jsonStart);
                 const obj = JSON.parse(jsonStr);
                 const arr = obj.BusIoFuncMap || [];
-                const rows = arr.map(item => {
-                    const dir = item.IoType === 0 ? 'Input' : 'Output';
-                    const bitWord = item.Length === 1 ? 'Bit' : item.Length === 16 ? 'Word' : String(item.Length);
-                    return [dir, bitWord, item.MemAddr, item.Name];
-                });
+                const rows = arr
+                    .filter(item => item.MemAddr !== -1 && item.MemAddr !== "-1")
+                    .map(item => {
+                        const dir = item.IoType === 0 ? 'Input' : 'Output';
+                        const bitWord = item.Length === 1 ? 'Bit' : item.Length === 16 ? 'Word' : String(item.Length);
+                        return [dir, bitWord, item.MemAddr, item.Name];
+                    });
                 tableHtml = buildTable(['In / Out', 'Bit / Word', 'MemAddr', 'Name'], rows);
             } catch(e) {
                 tableHtml = `<div style="padding:20px;color:#ef4444">RemoteIO 파싱 오류: ${e.message}</div>`;
             }
         }
 
-        // ── P.pts / Pxx.pts (항상 편집 가능) ──────────────
+        // ── P.pts / Pxx.pts (상태에 따라 편집 가능) ──────────────
         else if (file === 'P.pts' || (file && file.match(/^P\d+\.pts$/))) {
+            const isScara = /S|TS/i.test(state.options.RobotName);
+            const canEditName = (file === 'P.pts');
             const lines = rawCode.split(/\r?\n/).filter(l => l.trim().startsWith('P['));
             const rows = lines.map((l, rowIdx) => {
                 const idMatch = l.match(/^P\[(\d+)\]/);
@@ -495,19 +502,41 @@ function updatePreview() {
                 const coordPart = l.replace(/^P\[\d+\]\s*=\s*/, '').split(';')[0];
                 const coords = coordPart.split(',').map(v => { const n = parseFloat(v); return isNaN(n) ? v.trim() : n.toFixed(3); });
                 const [x='',y='',z='',a='',b='',c=''] = coords;
+                
                 function ec(ri, ci, val) {
-                    return `<td style="padding:4px 6px"><input type="text" data-row="${ri}" data-col="${ci}" value="${val}" style="background:transparent;border:1px solid transparent;color:#e2e8f0;font-family:monospace;font-size:12px;width:100%;box-sizing:border-box;outline:none;padding:2px 4px;border-radius:4px" onfocus="this.style.borderColor='#38bdf8'" onblur="this.style.borderColor='transparent';updatePtsCell(this)" onkeydown="if(event.key==='Enter'){this.blur();}" /></td>`;
+                    if (state.editMode) {
+                        return `<td style="padding:4px 6px"><input type="text" data-row="${ri}" data-col="${ci}" value="${val}" style="background:transparent;border:1px solid rgba(255,255,255,0.1);color:#e2e8f0;font-family:monospace;font-size:12px;width:100%;box-sizing:border-box;outline:none;padding:2px 4px;border-radius:4px" onfocus="this.style.borderColor='#38bdf8'" onblur="this.style.borderColor='rgba(255,255,255,0.1)';updatePtsCell(this)" onkeydown="if(event.key==='Enter'){this.blur();}" /></td>`;
+                    } else {
+                        return `<td style="padding:4px 6px;color:#e2e8f0;font-family:monospace;font-size:12px">${val}</td>`;
+                    }
                 }
-                return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+                
+                let nameCell = '';
+                if (state.editMode && canEditName) {
+                    nameCell = `<td style="padding:4px 6px"><input type="text" data-row="${rowIdx}" data-col="name" value="${name}" data-orig="${name}" style="background:transparent;border:1px solid rgba(56,189,248,0.3);color:#38bdf8;font-family:monospace;font-size:12px;width:100%;box-sizing:border-box;outline:none;padding:2px 4px;border-radius:4px" onfocus="this.style.borderColor='#38bdf8'" onblur="this.style.borderColor='rgba(56,189,248,0.3)';updatePtsCell(this)" onkeydown="if(event.key==='Enter'){this.blur();}" /></td>`;
+                } else {
+                    nameCell = `<td style="padding:4px 6px;color:#38bdf8;font-family:monospace;font-size:12px">${name}</td>`;
+                }
+                
+                let rowCode = `<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
                     <td style="padding:4px 6px;color:#94a3b8;font-family:monospace;font-size:12px">${id}</td>
-                    <td style="padding:4px 6px"><input type="text" data-row="${rowIdx}" data-col="name" value="${name}" style="background:transparent;border:1px solid transparent;color:#38bdf8;font-family:monospace;font-size:12px;width:100%;box-sizing:border-box;outline:none;padding:2px 4px;border-radius:4px" onfocus="this.style.borderColor='#38bdf8'" onblur="this.style.borderColor='transparent';updatePtsCell(this)" onkeydown="if(event.key==='Enter'){this.blur();}" /></td>
-                    ${ec(rowIdx,'x',x)}${ec(rowIdx,'y',y)}${ec(rowIdx,'z',z)}${ec(rowIdx,'a',a)}${ec(rowIdx,'b',b)}${ec(rowIdx,'c',c)}
-                </tr>`;
+                    ${nameCell}
+                    ${ec(rowIdx,'x',x)}${ec(rowIdx,'y',y)}${ec(rowIdx,'z',z)}${ec(rowIdx,'a',a)}`;
+                
+                if (!isScara) {
+                    rowCode += `${ec(rowIdx,'b',b)}${ec(rowIdx,'c',c)}`;
+                }
+                rowCode += `</tr>`;
+                return rowCode;
             }).join('');
-            const th = ['ID','Name','X','Y','Z','A','B','C'].map(h =>
-                `<th style="padding:6px;text-align:left;color:#94a3b8;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.08)">${h}</th>`
-            ).join('');
-            tableHtml = `<div style="overflow:auto;max-height:100%"><table style="width:100%;border-collapse:collapse"><colgroup><col style="width:50px"><col style="width:90px"><col style="width:70px"><col style="width:70px"><col style="width:70px"><col style="width:70px"><col style="width:70px"><col style="width:70px"></colgroup><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>`;
+            
+            let thArr = ['ID','Name','X','Y','Z','A'];
+            if (!isScara) thArr.push('B', 'C');
+            const th = thArr.map(h => `<th style="padding:6px;text-align:left;color:#94a3b8;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.08)">${h}</th>`).join('');
+            
+            let colgroup = `<colgroup><col style="width:50px"><col style="width:90px"><col style="width:70px"><col style="width:70px"><col style="width:70px">${isScara ? '<col style="width:70px">' : '<col style="width:70px"><col style="width:70px"><col style="width:70px">'}</colgroup>`;
+            
+            tableHtml = `<div style="overflow:auto;max-height:100%"><table style="width:100%;border-collapse:collapse">${colgroup}<thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>`;
 
             window._ptsLines = lines.slice();
             window._ptsFile = file;
@@ -518,6 +547,11 @@ function updatePreview() {
                 let line = window._ptsLines[ri];
                 const val = input.value.trim();
                 if (ck === 'name') {
+                    const origVal = input.dataset.orig;
+                    if (origVal && val && origVal !== val) {
+                        state.labelOverrides[origVal] = val; // Apply to global rename!
+                        input.dataset.orig = val;
+                    }
                     line = line.replace(/(Name\s*=\s*)([^;]+)/, `$1${val}`);
                 } else {
                     const cm = {x:0,y:1,z:2,a:3,b:4,c:5};
@@ -538,8 +572,10 @@ function updatePreview() {
             try {
                 const obj = JSON.parse(gen);
                 const arr = obj.Warings || obj.Warnings || [];
-                let id = 1;
-                const items = arr.map((w, i) => (!w || !w.trim()) ? null : { id: id++, text: w, idx: i }).filter(r => r !== null);
+                const items = [];
+                for(let i=0; i<16; i++) {
+                    items.push({ id: i+1, text: arr[i] || '', idx: i });
+                }
 
                 if (state.editMode) {
                     const rows = items.map(item => {
@@ -551,7 +587,9 @@ function updatePreview() {
                     const th = ['ID','설명 (Description)'].map(h => `<th style="padding:8px 12px;text-align:left;color:#94a3b8;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.08)">${h}</th>`).join('');
                     tableHtml = `<div style="overflow:auto;max-height:100%"><table style="width:100%;border-collapse:collapse"><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>`;
 
-                    window._warningArr = arr.slice();
+                    window._warningArr = [];
+                    for(let i=0; i<16; i++) window._warningArr.push(arr[i] || "");
+                    
                     window.updateWarningCell = function(input) {
                         const idx = parseInt(input.dataset.idx);
                         window._warningArr[idx] = input.value.trim();
@@ -566,11 +604,11 @@ function updatePreview() {
 
     } catch(e) { rawCode = 'Error rendering preview: ' + e; }
 
-    // 표가 있으면 표로 표시 (prismContainer는 숨기지 않음 - codeOutput이 그 안에 있음)
+    // 표가 있으면 표로 표시 (tableContainer 사용)
     if (tableHtml) {
-        codeOut.innerHTML = tableHtml;
-        codeOut.className = '';
-        prismCon.classList.remove('opacity-0', 'pointer-events-none');
+        tableCon.innerHTML = tableHtml;
+        tableCon.classList.remove('opacity-0', 'pointer-events-none');
+        prismCon.classList.add('opacity-0', 'pointer-events-none');
         editor.classList.add('opacity-0', 'pointer-events-none');
         return;
     }
@@ -578,9 +616,11 @@ function updatePreview() {
     // 일반 코드 파일: editMode 따라 전환
     if (state.editMode) {
         editor.value = rawCode;
+        tableCon.classList.add('opacity-0', 'pointer-events-none');
         prismCon.classList.add('opacity-0', 'pointer-events-none');
         editor.classList.remove('opacity-0', 'pointer-events-none');
     } else {
+        tableCon.classList.add('opacity-0', 'pointer-events-none');
         prismCon.classList.remove('opacity-0', 'pointer-events-none');
         editor.classList.add('opacity-0', 'pointer-events-none');
         codeOut.className = 'language-robot text-sm leading-relaxed';
