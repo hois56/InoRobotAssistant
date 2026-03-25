@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InoRobot 3D Model Viewer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- OCCT-import-js UMD version (for browser compatibility) -->
+    <script src="https://cdn.jsdelivr.net/npm/occt-import-js@0.0.12/dist/occt-import-js.js"></script>
+</head>
+<body>
+    <header id="topbar">
+        <div class="topbar-left">
+            <a href="https://www.inovancerobot.com" target="_blank">
+                <img src="https://www.inovance.com/content/dam/inovance/global/logos/inovance-logo-white.svg" alt="INOVANCE" class="logo">
+            </a>
+            <span class="app-title">3D Intelligent Viewer</span>
+        </div>
+
+        <div class="topbar-center">
+            <div class="select-wrapper">
+                <i class="fas fa-robot select-icon"></i>
+                <select id="model-select">
+                    <option value="" disabled selected>-- 로봇 모델을 선택하세요 --</option>
+                </select>
+                <i class="fas fa-chevron-down arrow-icon"></i>
+            </div>
+        </div>
+
+        <div class="topbar-right">
+            <button class="ui-btn" id="btn-reset-view" title="뷰 초기화"><i class="fas fa-expand-arrows-alt"></i></button>
+            <button class="ui-btn" id="btn-toggle-wireframe" title="와이어프레임"><i class="fas fa-border-all"></i></button>
+            <button class="ui-btn" id="btn-toggle-grid" title="그리드 토글"><i class="fas fa-th"></i></button>
+            <button class="ui-btn" id="import-btn" title="파일 직접 열기"><i class="fas fa-folder-open"></i></button>
+        </div>
+    </header>
+
+    <main id="main-content">
+        <div id="canvas-container">
+            <div id="loading-overlay" class="hidden">
+                <div class="loader-content">
+                    <div class="spinner"></div>
+                    <p id="loading-text">3D 모델을 불러오는 중...</p>
+                </div>
+            </div>
+
+            <div id="empty-state">
+                <div class="hero-icon-wrap"><i class="fas fa-cube"></i></div>
+                <h2>InoRobot 3D Intelligence</h2>
+                <p>상단 목록에서 로봇을 선택하세요.<br>파일을 직접 업로드하지 않아도 됩니다.</p>
+            </div>
+        </div>
+
+        <div id="stats-bar">
+            <div class="stat-item"><i class="fas fa-cube"></i> <label>Model</label> <span id="stat-name">—</span></div>
+            <div class="stat-divider"></div>
+            <div class="stat-item"><i class="fas fa-shapes"></i> <label>Triangles</label> <span id="stat-triangles">—</span></div>
+            <div class="stat-divider"></div>
+            <div class="stat-item"><i class="fas fa-circle" id="status-dot"></i> <label>Status</label> <span id="stat-status">Idle</span></div>
+        </div>
+    </main>
+
+    <input type="file" id="file-input" accept=".step,.stp" style="display:none;">
+
+    <!-- main.js (ESM 로드) -->
+    <script type="module" src="main.js"></script>
+</body>
+</html>

@@ -1,0 +1,317 @@
+/* InoRobot3DView — Premium Stylesheet */
+:root {
+    --bg:         #0b0e14;
+    --bar-bg:     rgba(15, 19, 28, 0.95);
+    --accent:     #007aff;
+    --accent-glow:rgba(0,122,255,0.3);
+    --accent-dim: rgba(0,122,255,0.1);
+    --text-1:     #ffffff;
+    --text-2:     #94a3b8;
+    --border:     rgba(255,255,255,0.09);
+    --topbar-h:   62px;
+    --stats-h:    46px;
+    --ease:       cubic-bezier(0.4,0,0.2,1);
+}
+
+* { box-sizing:border-box; margin:0; padding:0; }
+
+body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg);
+    color: var(--text-1);
+    overflow: hidden;
+    height: 100vh;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ── TOP BAR ───────────────────────────────── */
+#topbar {
+    position: fixed;
+    top:0; left:0; right:0;
+    height: var(--topbar-h);
+    background: var(--bar-bg);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+    gap: 1rem;
+    z-index: 200;
+}
+
+.topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-shrink: 0;
+    min-width: 0;
+}
+
+.logo {
+    height: 22px;
+    width: auto;
+    object-fit: contain;
+    display: block;
+}
+
+.app-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-2);
+    padding-left: 1rem;
+    border-left: 1px solid var(--border);
+    white-space: nowrap;
+}
+
+/* ── Select Combobox ───────────────────────── */
+.topbar-center {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.select-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 460px;
+}
+
+.select-icon {
+    position: absolute;
+    left: 14px;
+    color: var(--accent);
+    font-size: 0.9rem;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.arrow-icon {
+    position: absolute;
+    right: 14px;
+    color: var(--text-2);
+    font-size: 0.75rem;
+    pointer-events: none;
+    z-index: 1;
+}
+
+#model-select {
+    width: 100%;
+    padding: 0.65rem 2.5rem 0.65rem 2.6rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.05);
+    color: var(--text-1);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.95rem;
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    transition: border-color 0.2s var(--ease), background 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+#model-select:hover {
+    border-color: rgba(0,122,255,0.5);
+    background: var(--accent-dim);
+}
+
+#model-select:focus {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+    box-shadow: 0 0 0 3px rgba(0,122,255,0.15);
+}
+
+#model-select option {
+    background: #1a2035;
+    color: var(--text-1);
+    padding: 0.5rem;
+}
+
+/* ── TopBar Right Buttons ──────────────────── */
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
+}
+
+.ui-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.04);
+    color: var(--text-2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    transition: all 0.2s var(--ease);
+}
+
+.ui-btn:hover {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+    box-shadow: 0 4px 12px var(--accent-glow);
+}
+
+.ui-btn.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
+/* ── MAIN VIEWPORT ─────────────────────────── */
+#main-content {
+    position: fixed;
+    top: var(--topbar-h);
+    left:0; right:0;
+    bottom: var(--stats-h);
+}
+
+#canvas-container {
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(ellipse at center, #1b2232 0%, #0b0e14 100%);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    position: absolute;
+    top:0; left:0;
+}
+
+/* ── Hero / Empty State ────────────────────── */
+#empty-state {
+    text-align: center;
+    padding: 2rem;
+    pointer-events: none;
+    z-index: 1;
+    position: relative;
+}
+
+.hero-icon-wrap {
+    margin-bottom: 1.5rem;
+}
+
+.hero-icon-wrap i {
+    font-size: 5rem;
+    color: var(--accent);
+    opacity: 0.15;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%,100% { transform: translateY(0); }
+    50%      { transform: translateY(-18px); }
+}
+
+#empty-state h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg,#fff 30%,#007aff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 0.75rem;
+}
+
+#empty-state p {
+    color: var(--text-2);
+    line-height: 1.7;
+    font-size: 0.95rem;
+}
+
+.hint {
+    display: inline-block;
+    margin-top: 1.2rem;
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    background: var(--accent-dim);
+    border: 1px solid rgba(0,122,255,0.25);
+    color: var(--accent);
+    font-size: 0.8rem;
+    gap: 0.4rem;
+}
+
+.hint i { margin-right: 0.4rem; }
+
+/* ── Loading Overlay ───────────────────────── */
+#loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(11,14,20,0.85);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+}
+
+.loader-content { text-align: center; }
+
+.spinner {
+    width: 44px;
+    height: 44px;
+    border: 3px solid rgba(255,255,255,0.07);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.85s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+@keyframes spin { to { transform:rotate(360deg); } }
+
+#loading-text {
+    color: var(--text-2);
+    font-size: 0.9rem;
+}
+
+/* ── Stats Bar ─────────────────────────────── */
+#stats-bar {
+    position: fixed;
+    bottom:0; left:0; right:0;
+    height: var(--stats-h);
+    background: var(--bar-bg);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 1.5rem;
+    z-index: 200;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 1.2rem;
+}
+
+.stat-item i { font-size:0.75rem; color:var(--accent); opacity:0.7; }
+.stat-item label { font-size:0.65rem; text-transform:uppercase; color:var(--text-2); letter-spacing:0.5px; }
+.stat-item span { font-family:'JetBrains Mono',monospace; font-size:0.85rem; font-weight:600; }
+
+.stat-divider { width:1px; height:20px; background:var(--border); }
+
+.hidden {
+    display: none !important;
+}
+
