@@ -4,21 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inovance Robot 3D Viewer</title>
-    
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
-    <!-- Font Awesome (v6) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    
     <link rel="stylesheet" href="style.css">
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
-    
-    <!-- OCCT 엔진 & Import-JS (WASM) -->
     <script src="https://cdn.jsdelivr.net/npm/occt-import-js@0.0.12/dist/occt-import-js.js"></script>
 </head>
 <body>
 
-    <!-- ── TOP NAVIGATION ── -->
     <header id="topbar">
         <div class="topbar-left">
             <a href="/" class="logo-link" title="메인 페이지로 이동">
@@ -26,7 +19,6 @@
             </a>
             <h1 class="app-title">Inovance Robot 3D Viewer</h1>
         </div>
-
         <div class="topbar-center">
             <div class="select-wrapper">
                 <i class="fa-solid fa-cube select-icon"></i>
@@ -36,7 +28,6 @@
                 <i class="fa-solid fa-chevron-down arrow-icon"></i>
             </div>
         </div>
-
         <div class="topbar-right">
             <button id="btn-reset-view" class="ui-btn" title="Reset Camera">
                 <i class="fa-solid fa-arrows-rotate"></i>
@@ -44,59 +35,11 @@
             <button id="btn-toggle-grid" class="ui-btn" title="Toggle Grid">
                 <i class="fa-solid fa-border-all"></i>
             </button>
-            <input type="file" id="file-input" style="display:none" accept=".step,.stp,.fbx">
         </div>
     </header>
 
-    <!-- ── MAIN VIEWPORT ── -->
     <main id="main-content">
         <div id="canvas-container">
-            <!-- 3D Canvas -->
-            
-            <!-- JOG Panel (Hidden by default, shown for IR-R4) -->
-            <div id="jog-panel" class="hidden">
-                <div class="jog-header">
-                    <i class="fa-solid fa-gamepad"></i>
-                    <span>JOG Simulation</span>
-                </div>
-                <div class="jog-controls">
-                    <!-- J1-J6 조그 버튼들이 JS에서 생성되거나 정적으로 배치됩니다. -->
-                    <div class="jog-row">
-                        <label>J1</label>
-                        <button class="jog-btn" data-axis="0" data-dir="-1">-</button>
-                        <button class="jog-btn" data-axis="0" data-dir="1">+</button>
-                    </div>
-                    <div class="jog-row">
-                        <label>J2</label>
-                        <button class="jog-btn" data-axis="1" data-dir="-1">-</button>
-                        <button class="jog-btn" data-axis="1" data-dir="1">+</button>
-                    </div>
-                    <div class="jog-row">
-                        <label>J3</label>
-                        <button class="jog-btn" data-axis="2" data-dir="-1">-</button>
-                        <button class="jog-btn" data-axis="2" data-dir="1">+</button>
-                    </div>
-                    <div class="jog-row">
-                        <label>J4</label>
-                        <button class="jog-btn" data-axis="3" data-dir="-1">-</button>
-                        <button class="jog-btn" data-axis="3" data-dir="1">+</button>
-                    </div>
-                    <div class="jog-row">
-                        <label>J5</label>
-                        <button class="jog-btn" data-axis="4" data-dir="-1">-</button>
-                        <button class="jog-btn" data-axis="4" data-dir="1">+</button>
-                    </div>
-                    <div class="jog-row">
-                        <label>J6</label>
-                        <button class="jog-btn" data-axis="5" data-dir="-1">-</button>
-                        <button class="jog-btn" data-axis="5" data-dir="1">+</button>
-                    </div>
-                    <div class="jog-footer">
-                        <button id="btn-home-pos" class="home-btn">🏠 Home Position</button>
-                    </div>
-                </div>
-            </div>
-
             <div id="empty-state">
                 <div class="hero-icon-wrap">
                     <i class="fa-solid fa-robot"></i>
@@ -107,8 +50,6 @@
                     <i class="fa-solid fa-lightbulb"></i> 마우스로 로봇을 회전하고 확대할 수 있습니다.
                 </div>
             </div>
-
-            <!-- Loading Overlay -->
             <div id="loading-overlay" class="hidden">
                 <div class="loader-content">
                     <div class="spinner"></div>
@@ -118,7 +59,6 @@
         </div>
     </main>
 
-    <!-- ── STATS BAR ── -->
     <footer id="stats-bar">
         <div class="stat-item">
             <i class="fa-solid fa-circle-nodes"></i>
@@ -133,7 +73,6 @@
         </div>
     </footer>
 
-    <!-- Three.js Module -->
     <script type="module" src="main.js"></script>
 </body>
 </html>
