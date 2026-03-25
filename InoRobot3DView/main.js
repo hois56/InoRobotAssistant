@@ -179,20 +179,34 @@ function renderFBXModel(fbx, name) {
 
     fbx.traverse(c => {
         if (c.isMesh) c.castShadow = c.receiveShadow = true;
-        const lowerName = c.name.toLowerCase();
-        const keywords = ['axis', 'link', 'joint', 'arm', 'base', 'j1', 'j2', 'j3', 'j4', 'j5', 'j6'];
-        if (keywords.some(k => lowerName.includes(k))) {
-            if (!state.joints.find(j => j.name === c.name)) state.joints.push(c);
+    });
+
+    /**
+     * [핵심 수정]
+     * - Mesh(껍데기)가 아닌 Group/Object3D (실제 회전축 역할을 하는 부모 노드)를 탐색
+     * - 이름이 J+숫자 패턴에 정확히 맞는 것만 수집 (J1, J2 ... j10, J11 등 중복 제거)
+     * - 정렬 후 앞 6개만 사용
+     */
+    const jointPattern = /j[1-6]$/i; // 이름이 J1~J6로 끝나는 노드만
+    fbx.traverse(c => {
+        if (!c.isMesh && jointPattern.test(c.name.trim())) {
+            if (!state.joints.find(j => j.name === c.name)) {
+                state.joints.push(c);
+                console.log(`[Joint Captured] Name: ${c.name}, Type: ${c.type}`);
+            }
         }
     });
 
+    // 만약 정규식 매칭이 실패했다면 폴백: 직계 자식 노드 사용
     if (state.joints.length === 0) {
         fbx.children.forEach(child => state.joints.push(child));
-        console.warn('[Joint Discovery] Fallback to children.');
+        console.warn('[Joint Fallback] Using direct children.');
     }
 
+    // J1~J6 순서로 정렬 후 6개 확보
     state.joints.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true}));
-    console.log(`[Joints Found]`, state.joints.map(j => j.name));
+    state.joints = state.joints.slice(0, 6);
+    console.log(`[Joints Final 6]`, state.joints.map(j => `${j.name} (${j.type})`));
 
     state.model = fbx;
     state.scene.add(state.model);
@@ -204,6 +218,7 @@ function renderFBXModel(fbx, name) {
     showLoading(false);
     fitCamera();
 }
+
 
 async function parseAndRenderSTEP(buffer, name) {
     if (!state.occt) return;
