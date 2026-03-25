@@ -185,11 +185,30 @@
         </header>
 
         <!-- Tool Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-10 w-full">
 
-            <!-- Robot Selector Card -->
-            <a href="./InoRobotSelect/" class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8"
+            <!-- 1. Robot 3D Viewer Card (가장 먼저 배치) -->
+            <a href="./InoRobot3DView/"
+                class="glass-card p-8 flex flex-col h-full group opacity-0 translate-y-8 border-cyan-500/40 shadow-[0_0_30px_rgba(6,182,212,0.2)]"
                 style="animation: fadeInUp 0.8s ease 0.2s forwards; text-decoration: none;">
+                <div
+                    class="w-20 h-20 mb-6 rounded-3xl overflow-hidden border border-cyan-400/30 shadow-2xl flex items-center justify-center bg-cyan-950/40 group-hover:scale-110 group-hover:bg-cyan-900/50 transition-all duration-500 ease-out shrink-0">
+                    <i data-lucide="box" class="w-10 h-10 text-cyan-400 group-hover:text-cyan-300 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]"></i>
+                </div>
+                <h2 class="font-outfit text-3xl font-bold mb-4 text-white group-hover:text-cyan-400 transition-colors">
+                    Robot 3D Viewer
+                </h2>
+                <p class="text-slate-300 flex-grow mb-8 leading-relaxed text-base">
+                    로봇 모델의 상세 3D 형상을 웹브라우저에서 즉시 확인하세요. (고속 3D 변환 엔진 탑재)
+                </p>
+                <div class="mt-auto flex items-center justify-between border-t border-slate-700/50 pt-6">
+                    <span class="text-sm font-bold text-cyan-400 px-4 py-2 rounded-xl border border-cyan-500/40 bg-cyan-500/10 shadow-[0_0_15px_rgba(6,182,212,0.1)]">NEW / BETA</span>
+                </div>
+            </a>
+
+            <!-- 2. Robot Selector Card -->
+            <a href="./InoRobotSelect/" class="glass-card p-8 flex flex-col h-full group opacity-0 translate-y-8"
+                style="animation: fadeInUp 0.8s ease 0.4s forwards; text-decoration: none;">
                 <div
                     class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
                     <img src="./robot_select_icon_simple_1774428251953.png" alt="Robot Model Select"
@@ -200,36 +219,16 @@
                     Robot Model Select
                 </h2>
                 <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
-                    INOVANCE Korea에서 판매하는 로봇 모델을 선택하고 사양을 비교합니다.
+                    로봇 모델 사양 비교 및 빠른 검색 도구.
                 </p>
                 <div class="mt-auto flex items-center justify-end border-t border-slate-700/50 pt-5">
-                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg">Ver
-                        26.03.25</span>
+                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg">Ver 26.03.25</span>
                 </div>
             </a>
 
-            <!-- 3D Model Viewer Card -->
-            <a href="./InoRobot3DView/"
-                class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8 border-cyan-500/20 shadow-[0_0_20px_rgba(6,182,212,0.1)]"
-                style="animation: fadeInUp 0.8s ease 0.4s forwards; text-decoration: none;">
-                <div
-                    class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-cyan-500/30 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 group-hover:bg-cyan-900/30 transition-all duration-500 ease-out shrink-0">
-                    <i data-lucide="box" class="w-8 h-8 text-cyan-400 group-hover:text-cyan-300"></i>
-                </div>
-                <h2 class="font-outfit text-2xl font-bold mb-3 text-white group-hover:text-cyan-400 transition-colors">
-                    Robot 3D Viewer
-                </h2>
-                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
-                    로봇 모델의 상세 3D 형상을 확인합니다. STEP 파일을 브라우저에서 즉시 파싱하여 시각화합니다.
-                </p>
-                <div class="mt-auto flex items-center justify-end border-t border-slate-700/50 pt-5">
-                    <span class="text-xs font-mono text-cyan-500/70 bg-cyan-950/30 px-3 py-1.5 rounded-lg border border-cyan-500/20">Beta</span>
-                </div>
-            </a>
-
-            <!-- Project Generator Card -->
+            <!-- 3. Project Generator Card -->
             <a href="./InoRobotProjectGen/"
-                class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8"
+                class="glass-card p-8 flex flex-col h-full group opacity-0 translate-y-8"
                 style="animation: fadeInUp 0.8s ease 0.6s forwards; text-decoration: none;">
                 <div
                     class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
@@ -240,15 +239,15 @@
                     Project Generator
                 </h2>
                 <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
-                    로봇 프로젝트를 손쉽게 생성하고 설정하여 다운로드할 수 있습니다.
+                    로봇 프로젝트 레이아웃 생성 및 설정 압축 다운로드.
                 </p>
                 <div class="mt-auto flex items-center justify-end border-t border-slate-700/50 pt-5">
-                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg">Ver
-                        R24.C4.1</span>
+                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg">Ver R24.C4.1</span>
                 </div>
             </a>
 
         </div>
+
 
 
         <!-- Footer -->
