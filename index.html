@@ -10,7 +10,9 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap"
+        rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -41,8 +43,15 @@
         }
 
         @keyframes pulse-glow {
-            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
-            100% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.8; }
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(1.1);
+                opacity: 0.8;
+            }
         }
 
         /* Premium Glass Card Effect */
@@ -106,7 +115,7 @@
             box-shadow: 0 0 25px rgba(56, 189, 248, 0.4);
             border-color: rgba(56, 189, 248, 0.4);
         }
-        
+
         .glass-card:hover .generator-icon i {
             color: #38bdf8;
         }
@@ -116,7 +125,7 @@
             box-shadow: 0 0 25px rgba(52, 211, 153, 0.4);
             border-color: rgba(52, 211, 153, 0.4);
         }
-        
+
         .glass-card:hover .selector-icon i {
             color: #34d399;
         }
@@ -151,7 +160,6 @@
             color: transparent;
             display: inline-block;
         }
-
     </style>
 </head>
 
@@ -161,24 +169,26 @@
 
     <main class="w-full max-w-5xl mx-auto z-10 flex flex-col items-center">
         <!-- Header -->
-        <header class="text-center mb-16 opacity-0 translate-y-8 animate-fade-in-up" style="animation: fadeInUp 0.8s ease forwards;">
-            <div class="inline-flex items-center justify-center p-3 mb-6 bg-slate-800/50 rounded-2xl border border-white/5 shadow-2xl backdrop-blur-sm">
-                <i data-lucide="cpu" class="w-8 h-8 text-blue-400 mr-3"></i>
-                <span class="font-outfit font-bold text-xl tracking-wider text-slate-200 uppercase">Inovance Korea</span>
+        <header class="text-center mb-16 opacity-0 translate-y-8 animate-fade-in-up"
+            style="animation: fadeInUp 0.8s ease forwards;">
+            <div
+                class="inline-flex items-center justify-center p-2 mb-6 bg-slate-800/50 rounded-2xl border border-white/5 shadow-2xl backdrop-blur-sm">
+                <img src="./InoRobotSelect/INOVANCE_Logo.png" alt="INOVANCE Logo" class="h-10 w-auto object-contain px-2 drop-shadow-md brightness-0 invert opacity-90">
             </div>
             <h1 class="font-outfit text-5xl md:text-7xl font-extrabold mb-4 tracking-tight drop-shadow-xl">
                 <span class="title-gradient pt-2 pb-2">InoRobot Assistant</span>
             </h1>
             <p class="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-                통합 자동화 솔루션 허브. 필요한 도구를 선택하여 작업을 시작하세요.
+                INOVANCE Robot 협업 도구로 필요한 도구를 선택하여 작업을 시작하세요.
             </p>
         </header>
 
         <!-- Tool Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
-            
+
             <!-- Project Generator Card -->
-            <a href="./InoRobotProjectGen/" class="glass-card p-8 flex flex-col h-full group opacity-0 translate-y-8" style="animation: fadeInUp 0.8s ease 0.2s forwards; text-decoration: none;">
+            <a href="./InoRobotProjectGen/" class="glass-card p-8 flex flex-col h-full group opacity-0 translate-y-8"
+                style="animation: fadeInUp 0.8s ease 0.2s forwards; text-decoration: none;">
                 <div class="card-icon-container generator-icon">
                     <i data-lucide="blocks" class="w-8 h-8 text-slate-300 transition-colors duration-300"></i>
                 </div>
@@ -186,11 +196,13 @@
                     Project Generator
                 </h2>
                 <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
-                    로봇 제어 프로젝트를 손쉽게 생성하고 설정합니다. Multi Recipe, Vision Offset 등 다양한 속성을 웹 환경에서 바로 구성할 수 있습니다.
+                    로봇 제어 프로젝트를 손쉽게 생성하고 설정합니다. 웹에서 바로 사용자가 직접 원하는 작업을 설정하고 생성한 프로젝트를 다운로드할 수 있습니다.
                 </p>
                 <div class="mt-auto flex items-center justify-between border-t border-slate-700/50 pt-5">
-                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-2 py-1 rounded">Ver R24.C4.1.0</span>
-                    <div class="btn-launch flex items-center gap-2 bg-sky-500/10 text-sky-400 px-4 py-2 rounded-lg font-medium border border-sky-500/20 group-hover:bg-sky-500 group-hover:text-white transition-all">
+                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-2 py-1 rounded">Ver
+                        R24.C4.1.0</span>
+                    <div
+                        class="btn-launch flex items-center gap-2 bg-sky-500/10 text-sky-400 px-4 py-2 rounded-lg font-medium border border-sky-500/20 group-hover:bg-sky-500 group-hover:text-white transition-all">
                         <span>Launch App</span>
                         <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
                     </div>
@@ -198,19 +210,23 @@
             </a>
 
             <!-- Robot Selector Card -->
-            <a href="./InoRobotSelect/" class="glass-card p-8 flex flex-col h-full group opacity-0 translate-y-8" style="animation: fadeInUp 0.8s ease 0.4s forwards; text-decoration: none;">
+            <a href="./InoRobotSelect/" class="glass-card p-8 flex flex-col h-full group opacity-0 translate-y-8"
+                style="animation: fadeInUp 0.8s ease 0.4s forwards; text-decoration: none;">
                 <div class="card-icon-container selector-icon">
                     <i data-lucide="bot" class="w-8 h-8 text-slate-300 transition-colors duration-300"></i>
                 </div>
-                <h2 class="font-outfit text-2xl font-bold mb-3 text-white group-hover:text-emerald-400 transition-colors">
+                <h2
+                    class="font-outfit text-2xl font-bold mb-3 text-white group-hover:text-emerald-400 transition-colors">
                     InoRobotSelect
                 </h2>
                 <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
-                    현장에 가장 적합한 이노밴스 로봇 모델을 선택하고 사양을 비교합니다. 조건에 맞는 사양의 로봇을 빠르게 검색해보세요.
+                    INOVANCE Korea에서 판매하는 로봇 모델을 선택하고 사양을 비교합니다. 조건에 맞는 사양의 로봇을 빠르게 검색해보세요.
                 </p>
                 <div class="mt-auto flex items-center justify-between border-t border-slate-700/50 pt-5">
-                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-2 py-1 rounded">InoRobotSelect</span>
-                    <div class="btn-launch flex items-center gap-2 bg-emerald-500/10 text-emerald-400 px-4 py-2 rounded-lg font-medium border border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                    <span
+                        class="text-xs font-mono text-slate-500 bg-slate-800/50 px-2 py-1 rounded">InoRobotSelect</span>
+                    <div
+                        class="btn-launch flex items-center gap-2 bg-emerald-500/10 text-emerald-400 px-4 py-2 rounded-lg font-medium border border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white transition-all">
                         <span>Launch App</span>
                         <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
                     </div>
@@ -233,14 +249,21 @@
                 opacity: 0;
                 transform: translateY(2rem);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
+
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
     </style>
 
@@ -263,4 +286,5 @@
         });
     </script>
 </body>
+
 </html>
