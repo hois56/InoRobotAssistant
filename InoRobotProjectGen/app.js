@@ -414,6 +414,15 @@ function updatePreview() {
         const existingEdit = state.userEdits[file];
         rawCode = (existingEdit !== undefined) ? existingEdit : stripHeader(gen);
 
+        // .pro 파일 프리뷰에도 labelOverrides 실시간 반영
+        if (file.endsWith('.pro') && Object.keys(state.labelOverrides).length > 0) {
+            for (const [oldLabel, newLabel] of Object.entries(state.labelOverrides)) {
+                if (oldLabel && newLabel && oldLabel !== newLabel) {
+                    rawCode = rawCode.replaceAll(oldLabel, newLabel);
+                }
+            }
+        }
+
         // ── Labels.jsn (편집 모드: 인라인 input) ──────────
         if (file === 'Labels.jsn') {
             try {
