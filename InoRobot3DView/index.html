@@ -6,7 +6,7 @@
     <title>Inovance Robot 3D Viewer</title>
     
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <!-- Font Awesome (v6) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     
@@ -21,7 +21,7 @@
     <!-- ── TOP NAVIGATION ── -->
     <header id="topbar">
         <div class="topbar-left">
-            <a href="../index.html" class="logo-link">
+            <a href="../" class="logo-link" title="메인 페이지로 이동">
                 <img src="../InoRobotSelect/INOVANCE_Logo.png" alt="Inovance" class="logo">
             </a>
             <h1 class="app-title">Inovance Robot 3D Viewer</h1>
@@ -44,7 +44,6 @@
             <button id="btn-toggle-grid" class="ui-btn" title="Toggle Grid">
                 <i class="fa-solid fa-border-all"></i>
             </button>
-            <!-- 와이어프레임 & 가져오기 버튼 삭제됨 -->
             <input type="file" id="file-input" style="display:none" accept=".step,.stp,.fbx">
         </div>
     </header>
@@ -52,9 +51,7 @@
     <!-- ── MAIN VIEWPORT ── -->
     <main id="main-content">
         <div id="canvas-container">
-            <!-- 3D Canvas injected here -->
-
-            <!-- Empty State Overlay -->
+            <!-- 3D Canvas -->
             <div id="empty-state">
                 <div class="hero-icon-wrap">
                     <i class="fa-solid fa-robot"></i>
@@ -89,7 +86,6 @@
             <label>Status</label>
             <span id="stat-status">Initializing...</span>
         </div>
-        <!-- TRIANGLES 항목 삭제됨 -->
     </footer>
 
     <!-- Three.js Module -->

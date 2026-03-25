@@ -1,4 +1,4 @@
-/* InoRobot3DView — Premium Stylesheet */
+/* InoRobot3DView — Premium Stylesheet — Ultra Final Optimized */
 :root {
     --bg:         #0b0e14;
     --bar-bg:     rgba(15, 19, 28, 0.95);
@@ -8,15 +8,15 @@
     --text-1:     #ffffff;
     --text-2:     #94a3b8;
     --border:     rgba(255,255,255,0.09);
-    --topbar-h:   62px;
-    --stats-h:    46px;
+    --topbar-h:   72px; /* 상단 바 높이를 조금 더 넓게 확보 */
+    --stats-h:    48px;
     --ease:       cubic-bezier(0.4,0,0.2,1);
 }
 
 * { box-sizing:border-box; margin:0; padding:0; }
 
 body {
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Inter', sans-serif;
     background: var(--bg);
     color: var(--text-1);
     overflow: hidden;
@@ -30,289 +30,263 @@ body {
     top:0; left:0; right:0;
     height: var(--topbar-h);
     background: var(--bar-bg);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 1.5rem;
-    gap: 1rem;
+    padding: 0 2rem;
+    gap: 1.5rem;
     z-index: 200;
 }
 
 .topbar-left {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 1.5rem;
     flex-shrink: 0;
-    min-width: 0;
+}
+
+.logo-link {
+    display: flex;
+    align-items: center;
+    background: rgba(255,255,255,0.05); /* 프로젝트 제너레이터 느낌 */
+    padding: 8px 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+    transition: all 0.3s var(--ease);
+}
+
+.logo-link:hover {
+    background: rgba(255,255,255,0.12);
+    transform: scale(1.02);
 }
 
 .logo {
-    height: 28px;
+    height: 38px; /* 로고를 훨씬 더 눈에 띄게 키움 (Project Gen과 동일 수준) */
     width: auto;
     object-fit: contain;
     display: block;
 }
 
 .app-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-1);
-    padding-left: 1.25rem;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.4rem; /* 타이틀을 더 크고 굵게 */
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    padding-left: 1.5rem;
     border-left: 1px solid var(--border);
     white-space: nowrap;
-    text-transform: none; /* 대소문자 자유롭게 */
-    letter-spacing: 0.2px;
+    text-transform: none;
+    
+    /* [Gradient Style Matching] */
+    background: linear-gradient(to right, #60a5fa, #34d399); /* Blue-400 to Emerald-400 */
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
-
 
 /* ── Select Combobox ───────────────────────── */
 .topbar-center {
     flex: 1;
     display: flex;
     justify-content: center;
-    align-items: center;
+    max-width: 600px;
 }
 
 .select-wrapper {
     position: relative;
-    display: flex;
-    align-items: center;
     width: 100%;
-    max-width: 460px;
 }
 
 .select-icon {
     position: absolute;
-    left: 14px;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
     color: var(--accent);
-    font-size: 0.9rem;
+    font-size: 1rem;
     pointer-events: none;
     z-index: 1;
 }
 
 .arrow-icon {
     position: absolute;
-    right: 14px;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
     color: var(--text-2);
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     pointer-events: none;
-    z-index: 1;
 }
 
 #model-select {
     width: 100%;
-    padding: 0.65rem 2.5rem 0.65rem 2.6rem;
-    border-radius: 10px;
+    padding: 0.8rem 2.8rem;
+    border-radius: 14px;
     border: 1px solid var(--border);
-    background: rgba(255,255,255,0.05);
-    color: var(--text-1);
+    background: rgba(255,255,255,0.04);
+    color: #fff;
     font-family: 'Outfit', sans-serif;
-    font-size: 0.95rem;
+    font-size: 1rem;
+    font-weight: 600;
     cursor: pointer;
     outline: none;
     appearance: none;
-    -webkit-appearance: none;
-    transition: border-color 0.2s var(--ease), background 0.2s var(--ease), box-shadow 0.2s var(--ease);
+    transition: all 0.2s var(--ease);
 }
 
 #model-select:hover {
-    border-color: rgba(0,122,255,0.5);
-    background: var(--accent-dim);
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(59, 130, 246, 0.4);
 }
 
-#model-select:focus {
-    border-color: var(--accent);
-    background: var(--accent-dim);
-    box-shadow: 0 0 0 3px rgba(0,122,255,0.15);
-}
-
-#model-select option {
-    background: #1a2035;
-    color: var(--text-1);
-    padding: 0.5rem;
-}
-
-/* ── TopBar Right Buttons ──────────────────── */
+/* ── UI Buttons ───────────────────────────── */
 .topbar-right {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
-    flex-shrink: 0;
+    gap: 0.75rem;
 }
 
 .ui-btn {
-    width: 38px;
-    height: 38px;
-    border-radius: 8px;
+    width: 44px;
+    height: 44px;
+    background: rgba(255,255,255,0.05);
     border: 1px solid var(--border);
-    background: rgba(255,255,255,0.04);
     color: var(--text-2);
-    cursor: pointer;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.85rem;
-    transition: all 0.2s var(--ease);
+    cursor: pointer;
+    transition: all 0.3s var(--ease);
 }
 
 .ui-btn:hover {
     background: var(--accent);
-    color: white;
-    border-color: var(--accent);
+    color: #fff;
+    transform: translateY(-2px);
     box-shadow: 0 4px 12px var(--accent-glow);
 }
 
-.ui-btn.active {
-    background: var(--accent);
-    color: white;
-    border-color: var(--accent);
-}
-
-/* ── MAIN VIEWPORT ─────────────────────────── */
+/* ── Viewport & Overlays ─────────────── */
 #main-content {
-    position: fixed;
+    position: absolute;
     top: var(--topbar-h);
-    left:0; right:0;
+    left: 0; right: 0;
     bottom: var(--stats-h);
 }
 
 #canvas-container {
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(ellipse at center, #1b2232 0%, #0b0e14 100%);
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-}
-
-canvas {
-    display: block;
-    width: 100% !important;
-    height: 100% !important;
-    position: absolute;
-    top:0; left:0;
-}
-
-/* ── Hero / Empty State ────────────────────── */
-#empty-state {
-    text-align: center;
-    padding: 2rem;
-    pointer-events: none;
-    z-index: 1;
+    width: 100%; height: 100%;
     position: relative;
 }
 
-.hero-icon-wrap {
-    margin-bottom: 1.5rem;
-}
-
-.hero-icon-wrap i {
-    font-size: 5rem;
-    color: var(--accent);
-    opacity: 0.15;
-    animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float {
-    0%,100% { transform: translateY(0); }
-    50%      { transform: translateY(-18px); }
-}
-
-#empty-state h2 {
-    font-size: 2rem;
-    font-weight: 700;
-    background: linear-gradient(135deg,#fff 30%,#007aff 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-bottom: 0.75rem;
-}
-
-#empty-state p {
-    color: var(--text-2);
-    line-height: 1.7;
-    font-size: 0.95rem;
-}
-
-.hint {
-    display: inline-block;
-    margin-top: 1.2rem;
-    padding: 0.5rem 1rem;
-    border-radius: 999px;
-    background: var(--accent-dim);
-    border: 1px solid rgba(0,122,255,0.25);
-    color: var(--accent);
-    font-size: 0.8rem;
-    gap: 0.4rem;
-}
-
-.hint i { margin-right: 0.4rem; }
-
-/* ── Loading Overlay ───────────────────────── */
-#loading-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(11,14,20,0.85);
-    backdrop-filter: blur(6px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 50;
-}
-
-.loader-content { text-align: center; }
-
-.spinner {
-    width: 44px;
-    height: 44px;
-    border: 3px solid rgba(255,255,255,0.07);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.85s linear infinite;
-    margin: 0 auto 1rem;
-}
-
-@keyframes spin { to { transform:rotate(360deg); } }
-
-#loading-text {
-    color: var(--text-2);
-    font-size: 0.9rem;
-}
-
-/* ── Stats Bar ─────────────────────────────── */
+/* ── HUD / Stats Bar ── */
 #stats-bar {
     position: fixed;
-    bottom:0; left:0; right:0;
+    bottom: 0; left: 0; right: 0;
     height: var(--stats-h);
     background: var(--bar-bg);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
     border-top: 1px solid var(--border);
     display: flex;
     align-items: center;
     padding: 0 1.5rem;
-    z-index: 200;
+    gap: 1rem;
+    font-size: 0.85rem;
+    z-index: 100;
 }
 
 .stat-item {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0 1.2rem;
+    gap: 0.6rem;
 }
 
-.stat-item i { font-size:0.75rem; color:var(--accent); opacity:0.7; }
-.stat-item label { font-size:0.65rem; text-transform:uppercase; color:var(--text-2); letter-spacing:0.5px; }
-.stat-item span { font-family:'JetBrains Mono',monospace; font-size:0.85rem; font-weight:600; }
-
-.stat-divider { width:1px; height:20px; background:var(--border); }
-
-.hidden {
-    display: none !important;
+.stat-item label {
+    font-weight: 600;
+    color: var(--text-2);
+    text-transform: none; /* 대소문자 고정 해제 */
 }
 
+.stat-item span {
+    color: var(--text-1);
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+}
+
+.stat-divider {
+    width: 1px;
+    height: 14px;
+    background: var(--border);
+}
+
+#status-dot {
+    font-size: 0.5rem;
+    color: var(--accent);
+}
+
+/* Loading & Empty state */
+#loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(11,14,20,0.8);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+    transition: opacity 0.4s var(--ease);
+}
+
+.loader-content {
+    text-align: center;
+}
+
+.spinner {
+    width: 44px; height: 44px;
+    border: 3px solid rgba(0,122,255,0.1);
+    border-top: 3px solid var(--accent);
+    border-radius: 50%;
+    margin: 0 auto 1.5rem;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#empty-state {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    padding: 3rem;
+    max-width: 440px;
+    pointer-events: none;
+}
+
+#empty-state h2 {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+    font-weight: 700;
+}
+
+#empty-state p {
+    color: var(--text-2);
+    line-height: 1.6;
+}
+
+.hero-icon-wrap {
+    font-size: 4rem;
+    color: var(--accent-dim);
+    margin-bottom: 2rem;
+}
+
+.hint {
+    margin-top: 2rem;
+    font-size: 0.85rem;
+    color: #4ade80;
+    opacity: 0.8;
+}
+
+.hidden { display: none !important; opacity: 0; }
