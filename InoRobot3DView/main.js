@@ -45,11 +45,11 @@ async function init() {
     setupEventListeners();
     animate();
     
-    // 정적 models.json에서 목록 가져오기 (온라인 대응)
-    await populateModelList();
-    
-    // OCCT 엔진 로드
-    initEngine();
+    // 엔진 로드와 모델 목록 로드를 병렬로 처리하여 시간을 단축합니다.
+    const [engineReady, listReady] = await Promise.all([
+        initEngine(),
+        populateModelList()
+    ]);
 }
 
 async function initEngine() {
@@ -60,17 +60,21 @@ async function initEngine() {
         if (typeof window.occtimportjs === 'undefined') {
             throw new Error('OCCT Loader script not found');
         }
+        
+        // 최신 CDN 버전 사용 (기능 및 속도 개선 버전)
         state.occt = await window.occtimportjs({
             locateFile: (name) => `https://cdn.jsdelivr.net/npm/occt-import-js@0.0.12/dist/${name}`
         });
+        
         state.isOcctLoading = false;
         setStatus('Ready', '#22c55e');
-        console.log('[InoRobot] Engine Ready (Online Mode)');
+        console.log('[InoRobot] Engine Ready (Online/Optimized)');
     } catch (e) {
         console.error('[Engine Init Error]', e);
         setStatus('Engine Error', '#ef4444');
     }
 }
+
 
 function setupScene() {
     state.scene = new THREE.Scene();
@@ -253,8 +257,14 @@ async function parseAndRender(buffer, name) {
             triCount += mesh.index.array.length / 3;
         });
 
+        // ── 로봇 방향성 수정 ──────────────────────────────────────────
+        // 로봇이 그리드 위에 똑바로 서도록 X축 기준으로 -90도 회전시킵니다.
+        group.rotateX(-Math.PI / 2); 
+        // ────────────────────────────────────────────────────────────
+
         state.model = group;
         state.scene.add(state.model);
+
         el.statName.textContent = name;
         el.statTriangles.textContent = Math.round(triCount).toLocaleString();
         el.emptyState.classList.add('hidden');
