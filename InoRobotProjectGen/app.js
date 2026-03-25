@@ -383,7 +383,6 @@ function updatePreview() {
     const prismCon = document.getElementById('prismContainer');
     const codeOut  = document.getElementById('codeOutput');
 
-    // Edit 버튼 상태 갱신 (RemoteIO 선택 시 비활성)
     const editBtn = document.getElementById('btnToggleEdit');
     const isReadOnly = file === 'RemoteIO_mapping.dat';
     editBtn.disabled = isReadOnly;
@@ -403,61 +402,185 @@ function updatePreview() {
         const existingEdit = state.userEdits[file];
         rawCode = (existingEdit !== undefined) ? existingEdit : stripHeader(gen);
 
-        // ── Labels.jsn → 표 렌더링 ──────────────────
+        // ── Labels.jsn → 표 렌더링 ──────────────────────────────────
+        // 구조: { "InputBitLabels": { "LabelsArray": [{sOriginalName, sLabel, sDescription}] }, ... }
         if (file === 'Labels.jsn' && !state.editMode) {
             try {
-                const arr = JSON.parse(gen);
-                const rows = arr.map(item => [item.sOriginalName, item.sLabel, item.sDescription]);
+                const obj = JSON.parse(gen);
+                const rows = [];
+                Object.values(obj).forEach(section => {
+                    if (section && Array.isArray(section.LabelsArray)) {
+                        section.LabelsArray.forEach(item => {
+                            rows.push([item.sOriginalName ?? '', item.sLabel ?? '', item.sDescription ?? '']);
+                        });
+                    }
+                });
                 tableHtml = buildTable(['sOriginalName', 'sLabel', 'sDescription'], rows);
-            } catch(e) { /* fallback to code */ }
+            } catch(e) { /* fallback */ }
         }
 
-        // ── RemoteIO_mapping.dat → 표 렌더링 ─────────
+        // ── RemoteIO_mapping.dat → 표 렌더링 ────────────────────────
+        // 구조: JSON 내 BusIoFuncMap 배열, Input 여부는 parentKey로 판별
+        // Length: 1 = Bit, 16 = Word
         else if (file === 'RemoteIO_mapping.dat') {
-            const lines = gen.split(/\r?\n/).filter(l => l.trim() && !l.startsWith('#') && !l.startsWith('//'));
-            const rows = lines.map(l => {
-                const p = l.split(/\s+/);
-                // 형식 예: INPUT BIT %IX0.0 Signal_Name
-                return [p[0], p[1], p[2], p.slice(3).join(' ')];
-            }).filter(r => r[0]);
-            tableHtml = buildTable(['In / Out', 'Bit / Word', 'MemAddr', 'Name'], rows);
+            try {
+                const obj = JSON.parse(gen);
+                const rows = [];
+                // BusIoFuncMap 배열이 있는 섹션 탐색 (InputBusIoFuncMap, OutputBusIoFuncMap 등)
+                function extractIoRows(node, direction) {
+                    if (!node) return;
+                    if (Array.isArray(node)) {
+                        node.forEach(item => {
+                            if (item.MemAddr !== undefined && item.Name !== undefined) {
+                                const bitWord = item.Length === 1 ? 'Bit' : item.Length === 16 ? 'Word' : `${item.Length}`;
+                                rows.push([direction, bitWord, item.MemAddr, item.Name]);
+                            }
+                        });
+                    } else if (typeof node === 'object') {
+                        Object.entries(node).forEach(([key, val]) => {
+                            if (key.toLowerCase().includes('busio') || key.toLowerCase().includes('funcmap')) {
+                                const dir = key.toLowerCase().includes('output') ? 'Output' : 'Input';
+                                extractIoRows(val, dir);
+                            } else {
+                                extractIoRows(val, direction);
+                            }
+                        });
+                    }
+                }
+                extractIoRows(obj, 'Input');
+                tableHtml = buildTable(['In / Out', 'Bit / Word', 'MemAddr', 'Name'], rows);
+            } catch(e) {
+                // JSON 파싱 실패 시 텍스트 줄 기반 파싱
+                const lines = gen.split(/\r?\n/).filter(l => l.trim() && !l.startsWith('#') && !l.startsWith('//'));
+                const rows = lines.map(l => {
+                    const p = l.split(/\s+/);
+                    return [p[0], p[1], p[2], p.slice(3).join(' ')];
+                }).filter(r => r[0]);
+                tableHtml = buildTable(['In / Out', 'Bit / Word', 'MemAddr', 'Name'], rows);
+            }
         }
 
-        // ── P.pts / Pxx.pts → 표 렌더링 ──────────────
-        else if ((file === 'P.pts' || file.match(/^P\d+\.pts$/)) && !state.editMode) {
-            const lines = rawCode.split(/\r?\n/).filter(l => l.trim() && !l.startsWith('ProgramInfo') && !l.startsWith('EndProgramInfo') && !l.startsWith('Version') && !l.startsWith('VRC') && !l.startsWith('Time') && !l.startsWith('RobotName'));
-            const rows = lines.map(l => {
-                const p = l.trim().split(/\s+/);
-                return [p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]];
-            }).filter(r => r[0]);
-            tableHtml = buildTable(['ID', 'Label', 'X', 'Y', 'Z', 'A', 'B', 'C'], rows);
+        // ── P.pts / Pxx.pts → 편집 가능한 표 렌더링 ────────────────
+        // 형식: P[100] = 0.000000, 0.000000, ...; 0,0,0,0;...;Name = P1_App;Notes = "T1_W0";
+        else if (file === 'P.pts' || file.match(/^P\d+\.pts$/)) {
+            const lines = rawCode.split(/\r?\n/).filter(l => l.trim().startsWith('P['));
+            if (!state.editMode) {
+                const rows = lines.map((l, rowIdx) => {
+                    // ID: P[100] → 100
+                    const idMatch = l.match(/^P\[(\d+)\]/);
+                    const id = idMatch ? idMatch[1] : '-';
+                    // Name: Name = P1_App
+                    const nameMatch = l.match(/Name\s*=\s*([^;]+)/);
+                    const name = nameMatch ? nameMatch[1].trim() : '-';
+                    // Coords: P[100] = X, Y, Z, A, B, C; ...
+                    const coordPart = l.replace(/^P\[\d+\]\s*=\s*/, '').split(';')[0];
+                    const coords = coordPart.split(',').map(v => {
+                        const n = parseFloat(v);
+                        return isNaN(n) ? v.trim() : n.toFixed(3);
+                    });
+                    const [x='', y='', z='', a='', b='', c=''] = coords;
+                    // 셀 클릭 시 편집(인라인 input)
+                    function editCell(rowIdx, colIdx, value, title) {
+                        return `<td style="padding:5px 10px;font-size:12px;color:#e2e8f0;font-family:monospace" title="${title}">
+                            <input type="text" data-row="${rowIdx}" data-col="${colIdx}"
+                                value="${value}"
+                                style="background:transparent;border:none;color:#e2e8f0;font-family:monospace;font-size:12px;width:${Math.max(value.length+1,5)}ch;outline:none"
+                                onfocus="this.style.outline='1px solid #38bdf8'"
+                                onblur="this.style.outline='none';updatePtsCell(this)"
+                                onkeydown="if(event.key==='Enter'){this.blur();}"
+                            />
+                        </td>`;
+                    }
+                    return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+                        <td style="padding:5px 10px;font-size:12px;color:#94a3b8;font-family:monospace">${id}</td>
+                        <td style="padding:5px 10px;font-size:12px;color:#e2e8f0;font-family:monospace">
+                            <input type="text" data-row="${rowIdx}" data-col="name"
+                                value="${name}"
+                                style="background:transparent;border:none;color:#38bdf8;font-family:monospace;font-size:12px;width:${Math.max(name.length+1,8)}ch;outline:none"
+                                onfocus="this.style.outline='1px solid #38bdf8'"
+                                onblur="this.style.outline='none';updatePtsCell(this)"
+                                onkeydown="if(event.key==='Enter'){this.blur();}"
+                            />
+                        </td>
+                        ${editCell(rowIdx, 'x', x, 'X')}
+                        ${editCell(rowIdx, 'y', y, 'Y')}
+                        ${editCell(rowIdx, 'z', z, 'Z')}
+                        ${editCell(rowIdx, 'a', a, 'A')}
+                        ${editCell(rowIdx, 'b', b, 'B')}
+                        ${editCell(rowIdx, 'c', c, 'C')}
+                    </tr>`;
+                }).join('');
+                const th = ['ID','Name','X','Y','Z','A','B','C'].map(h =>
+                    `<th style="padding:8px 10px;text-align:left;color:#94a3b8;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.08)">${h}</th>`
+                ).join('');
+                tableHtml = `<div style="overflow:auto;max-height:100%"><table style="width:100%;border-collapse:collapse"><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>`;
+
+                // 편집 함수 등록 (전역)
+                window._ptsLines = lines.slice();
+                window.updatePtsCell = function(input) {
+                    const rowIdx = parseInt(input.dataset.row);
+                    const colKey = input.dataset.col;
+                    let line = window._ptsLines[rowIdx];
+                    const val = input.value.trim();
+                    if (colKey === 'name') {
+                        line = line.replace(/(Name\s*=\s*)([^;]+)/, `$1${val}`);
+                    } else {
+                        // x=0, y=1, z=2, a=3, b=4, c=5
+                        const colMap = {x:0,y:1,z:2,a:3,b:4,c:5};
+                        const ci = colMap[colKey];
+                        const coordPart = line.replace(/^P\[\d+\]\s*=\s*/, '').split(';')[0];
+                        const parts = coordPart.split(',');
+                        parts[ci] = ` ${parseFloat(val).toFixed(6)}`;
+                        const newCoord = parts.join(',');
+                        line = line.replace(/(P\[\d+\]\s*=\s*)([^;]+)/, `$1${newCoord}`);
+                    }
+                    window._ptsLines[rowIdx] = line;
+                    // 수정된 라인을 userEdits에 반영
+                    const header = rawCode.split(/\r?\n/).filter(l => !l.trim().startsWith('P[')).join('\n');
+                    state.userEdits[file] = header + '\n' + window._ptsLines.join('\n');
+                };
+            }
         }
 
-        // ── UserDefineWarning.jsn → 표 렌더링 ─────────
+        // ── UserDefineWarning.jsn → 표 렌더링 ───────────────────────
+        // 구조: { "Warings": ["ERR : ...", "", "", ...] }  (0부터 인덱스)
         else if (file === 'UserDefineWarning.jsn' && !state.editMode) {
             try {
-                const arr = JSON.parse(gen);
-                const rows = arr.map(item => [item.ID ?? item.id, item.Description ?? item.description ?? item.sDescription ?? JSON.stringify(item)]);
+                const obj = JSON.parse(gen);
+                const arr = obj.Warings || obj.Warnings || [];
+                let id = 1;
+                const rows = arr
+                    .map((w, i) => {
+                        if (!w || !w.trim()) return null;
+                        return [id++, w];
+                    })
+                    .filter(r => r !== null);
                 tableHtml = buildTable(['ID', '설명 (Description)'], rows);
             } catch(e) { /* fallback */ }
         }
 
     } catch(e) { rawCode = 'Error rendering preview: ' + e; }
 
-    // 표 렌더링 모드
     if (tableHtml && !state.editMode) {
         codeOut.innerHTML = tableHtml;
-        codeOut.className = ''; // prism 클래스 제거
+        codeOut.className = '';
+        editor.value = rawCode;
+        return;
+    }
+    // P.pts 표는 editMode와 무관하게 표로만 표시
+    if (tableHtml && (file === 'P.pts' || file.match(/^P\d+\.pts$/))) {
+        codeOut.innerHTML = tableHtml;
+        codeOut.className = '';
         editor.value = rawCode;
         return;
     }
 
-    // 기본 코드 렌더링 모드
     codeOut.className = 'language-robot text-sm leading-relaxed';
     codeOut.textContent = rawCode;
     Prism.highlightElement(codeOut);
     editor.value = rawCode;
 }
+
 
 async function exportProj() {
     const zip = new JSZip();
