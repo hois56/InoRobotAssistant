@@ -468,7 +468,7 @@ function updatePreview() {
             const th = ['ID','Name','X','Y','Z','A','B','C'].map(h =>
                 `<th style="padding:6px;text-align:left;color:#94a3b8;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.08)">${h}</th>`
             ).join('');
-            tableHtml = `<div style="overflow:auto;max-height:100%"><table style="width:100%;border-collapse:collapse;table-layout:fixed"><colgroup><col style="width:60px"><col style="width:120px"><col><col><col><col><col><col></colgroup><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>`;
+            tableHtml = `<div style="overflow:auto;max-height:100%"><table style="width:100%;border-collapse:collapse"><colgroup><col style="width:50px"><col style="width:90px"><col style="width:70px"><col style="width:70px"><col style="width:70px"><col style="width:70px"><col style="width:70px"><col style="width:70px"></colgroup><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>`;
 
             window._ptsLines = lines.slice();
             window._ptsFile = file;
