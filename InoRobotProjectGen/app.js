@@ -222,8 +222,15 @@ function handleGeneratedContent(file) {
     else if (file === "Labels.jsn") code = Generator.LabelsJson(state.steps, state.options);
     else if (file === "UserDefineWarning.jsn") code = Generator.DataWarning(state.steps, state.options);
     else if (file === "BreakPoints.jsn") code = '{\n  "ProgramsCount": 0,\n  "ProgramsBreaks": []\n}';
-    else if (file === "MonitorGlobalVars.jsn") code = '["ywCur_process_sel","xwSet_speed","B_T_num","B_W_num","yRobot_homing","R_Cur_pos","xProcess_start","xProcess_exit","xProcess_restart","xwSet_offset_X.Int","xwSet_offset_Y.Int","xwSet_offset_Z.Int","xwP_file_switch"]';
-    else if (file === "MonitorVars.jsn") code = "";
+    else if (file === "MonitorGlobalVars.jsn") {
+        let vars = ["ywCur_process_sel","xwSet_speed","B_T_num","B_W_num","yRobot_homing","R_Cur_pos","xProcess_start","xProcess_exit","xProcess_restart","xwSet_offset_X.Int","xwSet_offset_Y.Int","xwSet_offset_Z.Int","xwP_file_switch"];
+        if (state.options.EnableTcpSpeed) vars.push("D_TCP_speed");
+        if (state.options.EnableTorque) {
+            for(let i=1; i<=6; i++) { vars.push(`D_J${i}_cur_torque`); vars.push(`D_J${i}_max_torque`); }
+        }
+        code = JSON.stringify(vars);
+    }
+    else if (file === "MonitorVars.jsn") code = "[]";
     else if (file === "JP.pts") code = `ProgramInfo\n    Version = "S4.24"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getNow()}"\n    RobotName = "${state.options.RobotName}"\nEndProgramInfo\n`;
     else if (file.endsWith(".pts")) { // DataPoints
         code = Generator.DataPoints(state.steps, state.options);
@@ -238,9 +245,37 @@ function handleGeneratedContent(file) {
     return code;
 }
 
+function applyDynamicOverrides(file, code) {
+    if (file === 'UserDefineWarning.jsn' && state.warningOverrides) {
+        try {
+            const obj = JSON.parse(code);
+            const arr = obj.Warings || obj.Warnings || [];
+            for (let i = 0; i < 16; i++) {
+                if (state.warningOverrides[i] !== undefined) arr[i] = state.warningOverrides[i];
+            }
+            return JSON.stringify({ Warings: arr }, null, 2);
+        } catch(e) {}
+    }
+    if (file.endsWith('.pts') && state.ptsOverrides && state.ptsOverrides[file]) {
+        let lines = code.split(/\r?\n/);
+        return lines.map(line => {
+            const idMatch = line.match(/^P\[(\d+)\]/);
+            if (idMatch && state.ptsOverrides[file][idMatch[1]]) {
+                return state.ptsOverrides[file][idMatch[1]];
+            }
+            return line;
+        }).join('\n');
+    }
+    return code;
+}
+
 function getFinalFileContent(file) {
-    let generated = handleGeneratedContent(file);
+    let generated = applyDynamicOverrides(file, handleGeneratedContent(file));
     let edited = state.userEdits[file];
+    
+    if (file === 'UserDefineWarning.jsn' || file.endsWith('.pts') || file === 'Labels.jsn') {
+        edited = undefined;
+    }
     
     let result;
     if (edited !== undefined) {
@@ -413,8 +448,14 @@ function updatePreview() {
     let tableHtml = null;
 
     try {
-        const gen = handleGeneratedContent(file);
-        const existingEdit = state.userEdits[file];
+        let rawGen = handleGeneratedContent(file);
+        const gen = applyDynamicOverrides(file, rawGen);
+        
+        let existingEdit = state.userEdits[file];
+        if (file === 'UserDefineWarning.jsn' || file.endsWith('.pts') || file === 'Labels.jsn') {
+            existingEdit = undefined; 
+        }
+        
         rawCode = (existingEdit !== undefined) ? existingEdit : stripHeader(gen);
 
         // .pro 파일 프리뷰에도 labelOverrides 실시간 반영
@@ -575,8 +616,14 @@ function updatePreview() {
                     line = line.replace(/(P\[\d+\]\s*=\s*)([^;]+)/, `$1${parts.join(',')}`);
                 }
                 window._ptsLines[ri] = line;
-                const hdr = window._ptsRawCode.split(/\r?\n/).filter(l => !l.trim().startsWith('P[')).join('\n');
-                state.userEdits[window._ptsFile] = hdr + '\n' + window._ptsLines.join('\n');
+                
+                if (!state.ptsOverrides) state.ptsOverrides = {};
+                if (!state.ptsOverrides[window._ptsFile]) state.ptsOverrides[window._ptsFile] = {};
+                const idMatch = line.match(/^P\[(\d+)\]/);
+                if (idMatch) {
+                    state.ptsOverrides[window._ptsFile][idMatch[1]] = line;
+                }
+                delete state.userEdits[window._ptsFile];
             };
         }
 
@@ -606,7 +653,9 @@ function updatePreview() {
                     window.updateWarningCell = function(input) {
                         const idx = parseInt(input.dataset.idx);
                         window._warningArr[idx] = input.value.trim();
-                        state.userEdits['UserDefineWarning.jsn'] = '{\n  "Warings": [\n' + window._warningArr.map(w => `    "${w}"`).join(',\n') + '\n  ]\n}';
+                        if (!state.warningOverrides) state.warningOverrides = {};
+                        state.warningOverrides[idx] = window._warningArr[idx];
+                        delete state.userEdits['UserDefineWarning.jsn'];
                     };
                 } else {
                     const rows = items.map(item => [item.id, item.text]);
