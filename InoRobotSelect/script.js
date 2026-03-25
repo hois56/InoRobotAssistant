@@ -122,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     product.image = 'scara_std.png';
                 }
             } else {
-                if (name.includes('R10-140') || name.includes('R16') || name.includes('R25') || name.includes('R15H') || name.includes('R20H')) {
+                if (name.includes('R10-140') || name.includes('R16') || name.includes('R25')) {
                     product.image = 'axis6_heavy.png';
                 } else if (name.includes('R4-56S-INT')) {
                     product.image = 'axis6_med.png';
@@ -384,36 +384,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 { axis: 'J4', speed: '400°/s', range: '±180°' },
                 { axis: 'J5', speed: '360°/s', range: '±140°' },
                 { axis: 'J6', speed: '610°/s', range: '±360°' }
-            ]
-        },
-        'R15H-145': {
-            repeatability: '±0.04 mm',
-            signals: '24 Signal lines 30V 0.5A',
-            air: 'Φ6mm x 4, 0.59 MPa',
-            ip: 'IP40 (Option: IP67)',
-            weight: '155 kg',
-            axes: [
-                { axis: 'J1', speed: '260°/s', range: '±170°' },
-                { axis: 'J2', speed: '240°/s', range: '-160°/+90°' },
-                { axis: 'J3', speed: '260°/s', range: '-76°/+210°' },
-                { axis: 'J4', speed: '470°/s', range: '±190°' },
-                { axis: 'J5', speed: '450°/s', range: '±140°' },
-                { axis: 'J6', speed: '705°/s', range: '±360°' }
-            ]
-        },
-        'R20H-120': {
-            repeatability: '±0.04 mm',
-            signals: '24 Signal lines 30V 0.5A',
-            air: 'Φ6mm x 4, 0.59 MPa',
-            ip: 'IP40 (Option: IP67)',
-            weight: '150 kg',
-            axes: [
-                { axis: 'J1', speed: '260°/s', range: '±170°' },
-                { axis: 'J2', speed: '240°/s', range: '-160°/+90°' },
-                { axis: 'J3', speed: '260°/s', range: '-76°/+210°' },
-                { axis: 'J4', speed: '470°/s', range: '±190°' },
-                { axis: 'J5', speed: '450°/s', range: '±140°' },
-                { axis: 'J6', speed: '705°/s', range: '±360°' }
             ]
         },
         'S4-40': {
