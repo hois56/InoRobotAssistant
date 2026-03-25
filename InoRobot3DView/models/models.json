@@ -1,0 +1,22 @@
+[
+    { "name": "IR-R4-56S", "file": "IR-R4-56S.stp" },
+    { "name": "IR-R4H-54S", "file": "IR-R4H-54S.stp" },
+    { "name": "IR-R7H-90S5", "file": "IR-R7H-90S5.stp" },
+    { "name": "IR-R10-110S", "file": "IR-R10-110S.stp" },
+    { "name": "IR-R10-140S", "file": "IR-R10-140S.stp" },
+    { "name": "IR-R10-200S", "file": "IR-R10-200S.stp" },
+    { "name": "IR-R11-90S", "file": "IR-R11-90S.stp" },
+    { "name": "IR-R15H-145S5", "file": "IR-R15H-145S5.stp" },
+    { "name": "IR-R16-210S5", "file": "IR-R16-210S5.stp" },
+    { "name": "IR-R20H-120S5", "file": "IR-R20H-120S5.stp" },
+    { "name": "IR-R25-178S5", "file": "IR-R25-178S5.stp" },
+    { "name": "IR-S4-40Z15S", "file": "IR-S4-40Z15S.stp" },
+    { "name": "IR-S7-50Z20S", "file": "IR-S7-50Z20S.stp" },
+    { "name": "IR-S7-60Z20S", "file": "IR-S7-60Z20S.stp" },
+    { "name": "IR-S7-70Z20S", "file": "IR-S7-70Z20S.stp" },
+    { "name": "IR-S10-60Z20S", "file": "IR-S10-60Z20S.stp" },
+    { "name": "IR-S10-70Z20S", "file": "IR-S10-70Z20S.stp" },
+    { "name": "IR-S10-80Z20S", "file": "IR-S10-80Z20S.stp" },
+    { "name": "IR-TS4-35Z15S", "file": "IR-TS4-35Z15S.stp" },
+    { "name": "IR-TS5-55Z15", "file": "IR-TS5-55Z15.stp" }
+]
