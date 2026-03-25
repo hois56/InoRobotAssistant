@@ -29,6 +29,7 @@ const state = {
         VisionConfigs: {} // idx -> { IsClient, IpAddress, Port }
     },
     userEdits: {}, // { filename: "edited code without ProgramInfo" }
+    labelOverrides: {}, // { oldLabel: newLabel } - label renames to propagate
     editMode: false
 };
 
@@ -241,43 +242,54 @@ function getFinalFileContent(file) {
     let generated = handleGeneratedContent(file);
     let edited = state.userEdits[file];
     
+    let result;
     if (edited !== undefined) {
-        // If it was edited, it doesn't have a header. Append it back if it's a program file that originally had a header.
         if (generated.includes("ProgramInfo")) {
-            // Restore header using current options
             let header = `ProgramInfo\n    Version = "S4.24"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getNowAmPm()}"\n    RobotName = "${state.options.RobotName}"\nEndProgramInfo\n`;
             if (file.endsWith(".pts")) {
                 header = `ProgramInfo\n    Version = "S4.24"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getNow()}"\n    RobotName = "${state.options.RobotName}"\nEndProgramInfo\n`;
             }
-            return header + edited;
+            result = header + edited;
+        } else {
+            result = edited;
         }
-        return edited;
+    } else {
+        result = generated;
     }
-    return generated;
+
+    // Apply label overrides to program files (.pro)
+    if (file.endsWith('.pro') && Object.keys(state.labelOverrides).length > 0) {
+        for (const [oldLabel, newLabel] of Object.entries(state.labelOverrides)) {
+            if (oldLabel && newLabel && oldLabel !== newLabel) {
+                result = result.replaceAll(oldLabel, newLabel);
+            }
+        }
+    }
+
+    return result;
 }
 
 function toggleEditMode() {
+    const file = document.getElementById('fileSelector').value;
+    // RemoteIO는 편집 불가
+    if (file === 'RemoteIO_mapping.dat') return;
+
     state.editMode = !state.editMode;
     const btn = document.getElementById('btnToggleEdit');
-    const prismCon = document.getElementById('prismContainer');
-    const editor = document.getElementById('codeEditor');
-    
+
     if (state.editMode) {
         btn.classList.replace('bg-slate-700', 'bg-blue-600');
         btn.classList.add('shadow-lg', 'shadow-blue-600/20');
-        prismCon.classList.add('opacity-0', 'pointer-events-none');
-        editor.classList.remove('opacity-0', 'pointer-events-none');
     } else {
         btn.classList.replace('bg-blue-600', 'bg-slate-700');
         btn.classList.remove('shadow-lg', 'shadow-blue-600/20');
-        prismCon.classList.remove('opacity-0', 'pointer-events-none');
-        editor.classList.add('opacity-0', 'pointer-events-none');
-        updatePreview();
     }
+    updatePreview();
 }
 
 function renderSteps() {
     const list = document.getElementById('stepsList');
+
     list.innerHTML = '';
     document.getElementById('processCount').innerText = `${state.steps.length} / 15`;
     state.steps.forEach((s, idx) => {
@@ -383,22 +395,16 @@ function updatePreview() {
     const prismCon = document.getElementById('prismContainer');
     const codeOut  = document.getElementById('codeOutput');
 
-    // 표로 보여주는 파일들은 항상 editMode를 표 내에서 처리
-    const isTableFile = file === 'Labels.jsn' || file === 'RemoteIO_mapping.dat' || file === 'UserDefineWarning.jsn' || file === 'P.pts' || (file && file.match(/^P\d+\.pts$/));
     const isReadOnly = file === 'RemoteIO_mapping.dat';
-
     const editBtn = document.getElementById('btnToggleEdit');
-    // 표 파일이거나 ReadOnly면 편집 버튼 숨김
-    editBtn.disabled = isReadOnly || isTableFile;
-    editBtn.style.opacity = (isReadOnly || isTableFile) ? '0.3' : '1';
-    editBtn.style.cursor = (isReadOnly || isTableFile) ? 'not-allowed' : 'pointer';
-    if (isTableFile && state.editMode) {
-        state.editMode = false;
-        editBtn.classList.replace('bg-blue-600', 'bg-slate-700');
-        editBtn.classList.remove('shadow-lg', 'shadow-blue-600/20');
-        prismCon.classList.remove('opacity-0', 'pointer-events-none');
-        editor.classList.add('opacity-0', 'pointer-events-none');
-    }
+    editBtn.disabled = isReadOnly;
+    editBtn.style.opacity = isReadOnly ? '0.3' : '1';
+    editBtn.style.cursor = isReadOnly ? 'not-allowed' : 'pointer';
+    if (isReadOnly && state.editMode) { state.editMode = false; }
+
+    // 기본 상태 초기화
+    prismCon.classList.remove('opacity-0', 'pointer-events-none');
+    editor.classList.add('opacity-0', 'pointer-events-none');
 
     let rawCode = '';
     let tableHtml = null;
@@ -408,25 +414,49 @@ function updatePreview() {
         const existingEdit = state.userEdits[file];
         rawCode = (existingEdit !== undefined) ? existingEdit : stripHeader(gen);
 
-        // ── Labels.jsn ──────────────────────────────────
+        // ── Labels.jsn (편집 모드: 인라인 input) ──────────
         if (file === 'Labels.jsn') {
             try {
                 const obj = JSON.parse(gen);
-                const rows = [];
+                const allItems = [];
                 Object.values(obj).forEach(section => {
                     if (section && Array.isArray(section.LabelsArray)) {
-                        section.LabelsArray.forEach(item => {
-                            rows.push([item.sOriginalName ?? '', item.sLabel ?? '', item.sDescription ?? '']);
-                        });
+                        section.LabelsArray.forEach(item => allItems.push(item));
                     }
                 });
-                tableHtml = buildTable(['ID', 'Label', 'Description'], rows);
+                const rows = allItems.map((item, ri) => {
+                    const orig = item.sOriginalName || '';
+                    const label = state.labelOverrides[item.sLabel] || item.sLabel || '';
+                    const desc = item.sDescription || '';
+                    if (state.editMode) {
+                        return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+                            <td style="padding:5px 8px;font-size:12px;color:#94a3b8;font-family:monospace">${orig}</td>
+                            <td style="padding:5px 8px"><input type="text" data-orig-label="${item.sLabel||''}" value="${label}" style="background:transparent;border:1px solid rgba(56,189,248,0.3);color:#38bdf8;font-family:monospace;font-size:12px;width:100%;box-sizing:border-box;outline:none;padding:3px 6px;border-radius:4px" onfocus="this.style.borderColor='#38bdf8'" onblur="this.style.borderColor='rgba(56,189,248,0.3)';updateLabelCell(this)" onkeydown="if(event.key==='Enter'){this.blur();}" /></td>
+                            <td style="padding:5px 8px;font-size:12px;color:#e2e8f0;font-family:monospace">${desc}</td>
+                        </tr>`;
+                    }
+                    return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+                        <td style="padding:7px 12px;font-size:12px;color:#e2e8f0;font-family:monospace">${orig}</td>
+                        <td style="padding:7px 12px;font-size:12px;color:#38bdf8;font-family:monospace">${label}</td>
+                        <td style="padding:7px 12px;font-size:12px;color:#e2e8f0;font-family:monospace">${desc}</td>
+                    </tr>`;
+                }).join('');
+                const th = ['ID','Label','Description'].map(h => `<th style="padding:8px 12px;text-align:left;color:#94a3b8;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.08)">${h}</th>`).join('');
+                tableHtml = `<div style="overflow:auto;max-height:100%"><table style="width:100%;border-collapse:collapse"><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>`;
+
+                window.updateLabelCell = function(input) {
+                    const origLabel = input.dataset.origLabel;
+                    const newLabel = input.value.trim();
+                    if (origLabel && newLabel && origLabel !== newLabel) {
+                        state.labelOverrides[origLabel] = newLabel;
+                    } else if (origLabel && newLabel === origLabel) {
+                        delete state.labelOverrides[origLabel];
+                    }
+                };
             } catch(e) { /* fallback */ }
         }
 
-        // ── RemoteIO_mapping.dat ─────────────────────────
-        // 구조: FileInfo...EndFileInfo\n{ "BusIoFuncMap": [...] }
-        // IoType: 0=Input, 1=Output | Length: 1=Bit, 16=Word
+        // ── RemoteIO_mapping.dat (읽기 전용) ─────────────
         else if (file === 'RemoteIO_mapping.dat') {
             try {
                 // FileInfo 헤더를 잘라내고 JSON 부분만 추출
@@ -445,7 +475,7 @@ function updatePreview() {
             }
         }
 
-        // ── P.pts / Pxx.pts → 항상 편집 가능한 표 ─────────
+        // ── P.pts / Pxx.pts (항상 편집 가능) ──────────────
         else if (file === 'P.pts' || (file && file.match(/^P\d+\.pts$/))) {
             const lines = rawCode.split(/\r?\n/).filter(l => l.trim().startsWith('P['));
             const rows = lines.map((l, rowIdx) => {
@@ -494,14 +524,34 @@ function updatePreview() {
             };
         }
 
-        // ── UserDefineWarning.jsn ────────────────────────
+        // ── UserDefineWarning.jsn (편집 모드: 인라인 input) ──
         else if (file === 'UserDefineWarning.jsn') {
             try {
                 const obj = JSON.parse(gen);
                 const arr = obj.Warings || obj.Warnings || [];
                 let id = 1;
-                const rows = arr.map(w => (!w || !w.trim()) ? null : [id++, w]).filter(r => r !== null);
-                tableHtml = buildTable(['ID', '설명 (Description)'], rows);
+                const items = arr.map((w, i) => (!w || !w.trim()) ? null : { id: id++, text: w, idx: i }).filter(r => r !== null);
+
+                if (state.editMode) {
+                    const rows = items.map(item => {
+                        return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+                            <td style="padding:5px 8px;font-size:12px;color:#94a3b8;font-family:monospace">${item.id}</td>
+                            <td style="padding:5px 8px"><input type="text" data-idx="${item.idx}" value="${item.text}" style="background:transparent;border:1px solid rgba(255,255,255,0.1);color:#e2e8f0;font-family:monospace;font-size:12px;width:100%;box-sizing:border-box;outline:none;padding:3px 6px;border-radius:4px" onfocus="this.style.borderColor='#38bdf8'" onblur="this.style.borderColor='rgba(255,255,255,0.1)';updateWarningCell(this)" onkeydown="if(event.key==='Enter'){this.blur();}" /></td>
+                        </tr>`;
+                    }).join('');
+                    const th = ['ID','설명 (Description)'].map(h => `<th style="padding:8px 12px;text-align:left;color:#94a3b8;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.08)">${h}</th>`).join('');
+                    tableHtml = `<div style="overflow:auto;max-height:100%"><table style="width:100%;border-collapse:collapse"><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>`;
+
+                    window._warningArr = arr.slice();
+                    window.updateWarningCell = function(input) {
+                        const idx = parseInt(input.dataset.idx);
+                        window._warningArr[idx] = input.value.trim();
+                        state.userEdits['UserDefineWarning.jsn'] = '{\n  "Warings": [\n' + window._warningArr.map(w => `    "${w}"`).join(',\n') + '\n  ]\n}';
+                    };
+                } else {
+                    const rows = items.map(item => [item.id, item.text]);
+                    tableHtml = buildTable(['ID', '설명 (Description)'], rows);
+                }
             } catch(e) { /* fallback */ }
         }
 
@@ -511,15 +561,22 @@ function updatePreview() {
     if (tableHtml) {
         codeOut.innerHTML = tableHtml;
         codeOut.className = '';
-        editor.value = rawCode;
+        prismCon.classList.add('opacity-0', 'pointer-events-none');
+        editor.classList.add('opacity-0', 'pointer-events-none');
         return;
     }
 
-    // 기본 코드 렌더링
-    codeOut.className = 'language-robot text-sm leading-relaxed';
-    codeOut.textContent = rawCode;
-    Prism.highlightElement(codeOut);
-    editor.value = rawCode;
+    // 일반 코드 파일: editMode 따라 전환
+    if (state.editMode) {
+        editor.value = rawCode;
+        prismCon.classList.add('opacity-0', 'pointer-events-none');
+        editor.classList.remove('opacity-0', 'pointer-events-none');
+    } else {
+        codeOut.className = 'language-robot text-sm leading-relaxed';
+        codeOut.textContent = rawCode;
+        Prism.highlightElement(codeOut);
+        editor.value = rawCode;
+    }
 }
 
 
