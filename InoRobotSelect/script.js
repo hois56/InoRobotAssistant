@@ -640,13 +640,13 @@ document.addEventListener('DOMContentLoaded', () => {
         let axesRows = '';
         if (tech && tech.axes) {
             axesRows = `
-                <tr style="border-bottom: 1px solid #eee; font-size: 11px; color: #666;">
+                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.1); font-size: 11px; color: var(--text-muted);">
                     <td></td>
                     <td style="text-align:right; padding: 4px 5px 4px 0;">속도</td>
                     <td style="text-align:right; padding: 4px 0;">가동범위</td>
                 </tr>
             ` + tech.axes.map(ax => `
-                <tr style="border-bottom: 1px solid #eee;">
+                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
                     <td style="padding:6px 0;"><strong>${ax.axis} 사양</strong></td>
                     <td style="text-align:right; padding-right:10px;">${ax.speed}</td>
                     <td style="text-align:right;">${ax.range}</td>
@@ -655,20 +655,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const specHtml = `
-            <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                <h4 style="margin-bottom: 12px; color: var(--primary-blue); border-bottom: 1px solid #ccc; padding-bottom: 8px;">로봇 스펙 정보</h4>
-                <table style="width:100%; font-size:13px; border-collapse: collapse;">
-                    <tr style="border-bottom: 1px solid #eee;"><td style="padding:6px 0;"><strong>가반 하중(Payload)</strong></td><td colspan="2" style="text-align:right;">${product.specs['Payload(kg)'] || '-'} kg</td></tr>
-                    <tr style="border-bottom: 1px solid #eee;"><td style="padding:6px 0;"><strong>리치(Reach)</strong></td><td colspan="2" style="text-align:right;">${product.specs['Manipulator Length(mm)'] || '-'} mm</td></tr>
-                    ${product.specs.Type === 'SCARA' ? `<tr style="border-bottom: 1px solid #eee;"><td style="padding:6px 0;"><strong>로봇 타입</strong></td><td colspan="2" style="text-align:right;">${scaraSubtype}</td></tr>` : ''}
-                    ${product.specs.Type === 'SCARA' ? `<tr style="border-bottom: 1px solid #eee;"><td style="padding:6px 0;"><strong>Z축 길이</strong></td><td colspan="2" style="text-align:right;">${product.specs['Z axis Length(mm)'] || '-'} mm</td></tr>` : ''}
-                    ${product.specs.Type === '6-Axis' ? `<tr style="border-bottom: 1px solid #eee;"><td style="padding:6px 0;"><strong>중공형(Hollow Wrist)</strong></td><td colspan="2" style="text-align:right;">${product.specs['Hollow Wrist'] || '-'}</td></tr>` : ''}
-                    <tr style="border-bottom: 1px solid #eee;"><td style="padding:6px 0;"><strong>클린 타입</strong></td><td colspan="2" style="text-align:right;">${cleanType}</td></tr>
-                    <tr style="border-bottom: 1px solid #eee;"><td style="padding:6px 0;"><strong>반복 정밀도</strong></td><td colspan="2" style="text-align:right;">${repeatability}</td></tr>
-                    <tr style="border-bottom: 1px solid #eee;"><td style="padding:6px 0;"><strong>방수 방진 등급</strong></td><td colspan="2" style="text-align:right;">${ipRating}</td></tr>
-                    <tr style="border-bottom: 1px solid #eee;"><td style="padding:6px 0;"><strong>중량</strong></td><td colspan="2" style="text-align:right;">${weight}</td></tr>
+            <div style="margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px;">
+                <h4 style="margin-bottom: 12px; color: var(--primary-blue); border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 8px;">로봇 스펙 정보</h4>
+                <table style="width:100%; font-size:13px; border-collapse: collapse; color: var(--text-main);">
+                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>가반 하중(Payload)</strong></td><td colspan="2" style="text-align:right;">${product.specs['Payload(kg)'] || '-'} kg</td></tr>
+                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>리치(Reach)</strong></td><td colspan="2" style="text-align:right;">${product.specs['Manipulator Length(mm)'] || '-'} mm</td></tr>
+                    ${product.specs.Type === 'SCARA' ? `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>로봇 타입</strong></td><td colspan="2" style="text-align:right;">${scaraSubtype}</td></tr>` : ''}
+                    ${product.specs.Type === 'SCARA' ? `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>Z축 길이</strong></td><td colspan="2" style="text-align:right;">${product.specs['Z axis Length(mm)'] || '-'} mm</td></tr>` : ''}
+                    ${product.specs.Type === '6-Axis' ? `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>중공형(Hollow Wrist)</strong></td><td colspan="2" style="text-align:right;">${product.specs['Hollow Wrist'] || '-'}</td></tr>` : ''}
+                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>클린 타입</strong></td><td colspan="2" style="text-align:right;">${cleanType}</td></tr>
+                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>반복 정밀도</strong></td><td colspan="2" style="text-align:right;">${repeatability}</td></tr>
+                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>방수 방진 등급</strong></td><td colspan="2" style="text-align:right;">${ipRating}</td></tr>
+                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>중량</strong></td><td colspan="2" style="text-align:right;">${weight}</td></tr>
                     ${axesRows}
-                    <tr style="border-bottom: 1px solid #eee;"><td style="padding:6px 0;"><strong>사용자 배선</strong></td><td colspan="2" style="text-align:right;">${ioPins}</td></tr>
+                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>사용자 배선</strong></td><td colspan="2" style="text-align:right;">${ioPins}</td></tr>
                     <tr><td style="padding:6px 0;"><strong>사용자 공압</strong></td><td colspan="2" style="text-align:right;">${tech ? tech.air : '-'}</td></tr>
                 </table>
             </div>
@@ -685,46 +685,46 @@ document.addEventListener('DOMContentLoaded', () => {
         const baseCode = (product.cables && product.cables.length > 0) ? product.cables[0].code : 'N/A';
 
         const infoHtml = `
-            <div id="dynamic-purchase-code" style="font-size:14px;color:#666;margin-bottom:8px;font-weight:bold;color:var(--primary-blue);">현재 구매 코드: ${baseCode}</div>
-            <h2 style="color:#333;margin-bottom:12px;">${displayName}</h2>
-            <p style="font-size:14px;color:#555;margin-bottom:24px;line-height:1.6;">
+            <div id="dynamic-purchase-code" style="font-size:14px;margin-bottom:8px;font-weight:bold;color:var(--primary-blue);">현재 구매 코드: ${baseCode}</div>
+            <h2 style="color:var(--text-main);margin-bottom:12px;">${displayName}</h2>
+            <p style="font-size:14px;color:var(--text-muted);margin-bottom:24px;line-height:1.6;">
                 Inovance 산업용 로봇 (${product.specs.Type}). 제조 과정의 높은 정밀도와 효율성을 위해 설계되었습니다.
             </p>
             
             <h4 style="margin-bottom: 12px; color: var(--text-main);">로봇 구성 선택</h4>
             
             <div style="margin-bottom:16px;">
-                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px;">파워/엔코더 케이블 길이 <span style="color:red">*</span></label>
-                <div id="cable-len-container" style="display:flex; gap:10px;"></div>
+                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">파워/엔코더 케이블 길이 <span style="color:#ef4444">*</span></label>
+                <div id="cable-len-container" style="display:flex; gap:10px; flex-wrap:wrap;"></div>
             </div>
             <div style="margin-bottom:20px;">
-                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px;">파워/엔코더 케이블 타입 <span style="color:red">*</span></label>
-                <div id="cable-type-container" style="display:flex; gap:10px;"></div>
+                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">파워/엔코더 케이블 타입 <span style="color:#ef4444">*</span></label>
+                <div id="cable-type-container" style="display:flex; gap:10px; flex-wrap:wrap;"></div>
             </div>
 
-            <div style="margin-bottom:20px; border-top:1px dashed #ccc; padding-top:16px;">
-                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px;">티칭 펜던트 길이 선택</label>
+            <div style="margin-bottom:20px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
+                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">티칭 펜던트 길이 선택</label>
                 <div id="pendant-container" style="display:flex; flex-direction:column; gap:8px;"></div>
             </div>
 
             ${product.specs.Type === '6-Axis' ? `
-            <div style="margin-bottom:12px; border-top:1px dashed #ccc; padding-top:16px;">
-                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px;">Arm I/O 케이블 구성</label>
+            <div style="margin-bottom:12px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
+                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">Arm I/O 케이블 구성</label>
                 <div id="arm-container" style="display:flex; flex-direction:column; gap:8px;"></div>
             </div>
-            <div style="margin-bottom:20px; border-top:1px dashed #ccc; padding-top:16px;">
-                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px;">Body I/O 케이블 구성</label>
+            <div style="margin-bottom:20px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
+                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">Body I/O 케이블 구성</label>
                 <div id="body-container" style="display:flex; flex-direction:column; gap:8px;"></div>
             </div>` : ''}
 
-            <div style="margin-bottom:20px; border-top:1px dashed #ccc; padding-top:16px;">
-                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px;">기타 악세서리</label>
+            <div style="margin-bottom:20px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
+                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">기타 악세서리</label>
                 <div id="other-accessories-container" style="display:flex; flex-direction:column; gap:8px;"></div>
             </div>
 
-            <div style="margin-bottom:20px; border-top:1px dashed #ccc; padding-top:16px;">
-                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px;">통신 프로토콜 옵션</label>
-                <p style="font-size:11px; color:#666; margin-bottom:8px;">Modbus-RTU, Modbus-TCP, EtherNet/IP, EtherCAT, MC 통신은 기본 제공됩니다.</p>
+            <div style="margin-bottom:20px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
+                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">통신 프로토콜 옵션</label>
+                <p style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Modbus-RTU, Modbus-TCP, EtherNet/IP, EtherCAT, MC 통신은 기본 제공됩니다.</p>
                 <div id="comm-radios" style="display:flex; flex-wrap:wrap; gap:10px;">
                     <label class="cable-option" style="margin:0;">
                         <input type="radio" name="commSelection" value="none" checked>
