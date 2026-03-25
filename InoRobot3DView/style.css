@@ -64,7 +64,7 @@ body {
 }
 
 .logo {
-    height: 38px; /* 로고를 훨씬 더 눈에 띄게 키움 (Project Gen과 동일 수준) */
+    height: 42px; /* 로고를 더 크게 키워 박스에 꽉 채움 */
     width: auto;
     object-fit: contain;
     display: block;
@@ -72,16 +72,15 @@ body {
 
 .app-title {
     font-family: 'Outfit', sans-serif;
-    font-size: 1.4rem; /* 타이틀을 더 크고 굵게 */
+    font-size: 1.45rem; 
     font-weight: 700;
-    letter-spacing: -0.2px;
+    letter-spacing: -0.3px;
     padding-left: 1.5rem;
     border-left: 1px solid var(--border);
     white-space: nowrap;
     text-transform: none;
     
-    /* [Gradient Style Matching] */
-    background: linear-gradient(to right, #60a5fa, #34d399); /* Blue-400 to Emerald-400 */
+    background: linear-gradient(to right, #60a5fa, #34d399);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -126,7 +125,7 @@ body {
     padding: 0.8rem 2.8rem;
     border-radius: 14px;
     border: 1px solid var(--border);
-    background: rgba(255,255,255,0.04);
+    background: rgba(255,255,255,0.06);
     color: #fff;
     font-family: 'Outfit', sans-serif;
     font-size: 1rem;
@@ -138,8 +137,15 @@ body {
 }
 
 #model-select:hover {
-    background: rgba(255,255,255,0.08);
-    border-color: rgba(59, 130, 246, 0.4);
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(59, 130, 246, 0.5);
+}
+
+/* 드롭다운 옵션 가독성 해결 (브라우저 기본 배경색 강제 지정) */
+#model-select option {
+    background-color: #0f172a; /* 어두운 배경 */
+    color: #ffffff;
+    padding: 10px;
 }
 
 /* ── UI Buttons ───────────────────────────── */
