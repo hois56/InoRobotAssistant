@@ -1,0 +1,41 @@
+Fork lift tool for robots - Used by the fork lift for handling IR-R10 and IR-R20 series 6-axis robots
+I/O Arm  cable (90° ) - Used for wiring of the aviation connector on the upper end of the forearm in IR-R4/R4H/R7H/R10H/10/11 series 6-axis robots,8 pin, with 2m cable
+I/O Arm  cable (90° ) - Used for wiring of the aviation connector on the upper end of the forearm inIR-R4/R4H/R10/11 series 6-axis robots,12 pin, with 1m cable
+I/O Arm  cable (90° ) - Used for wiring of the aviation connector on the upper end of the forearm in IR-R4/R4H/R10/11 series 6-axis robots,12 pin, with 2m cable
+I/O Arm  cable (90° ) - Used for wiring of the aviation connector on the upper end of the forearm in IR-R7H, IR-R10H series 6-axis robots,17 pin, with 1m cable
+I/O Arm  cable (90° ) - Used for wiring of the aviation connector on the upper end of the forearm in IR-R7H, IR-R10H series 6-axis robots,17 pin, with 2m cable
+I/O Arm  cable (90° ) - Used for wiring of the aviation connector on the upper end of the forearm in IR-R10(1422)/IR-R16/ IR-R25 series 6-axis robots, 19pin, without cable
+I/O Arm  cable (90° ) - Used for wiring of the aviation connector on the upper end of the forearm inIR-R10(1422)/IR-R16/ IR-R25 series 6-axis robots,with1.5m high flexible cable
+I/O Arm  cable (90° ) - Used for wiring of the aviation connector on the upper end of the forearm inIR-R10(1422)/IR-R16/ IR-R25 series 6-axis robots,19 Pin with 3m high flexible cable
+I/O Arm  cable (90° ) - Used for wiring of the aviation connector on the upper end of the forearm in  IR-R10(1422)/IR-R16/ IR-R25 series 6-axis robots,19 Pin with 5m high flexible cable
+I/O body cable ：Flexible（8pin) , 5m - Used for wiring between,IR-R4/4H/7H/10H/10/11/16/25 series 6-axis robots and the controller(180°).
+I/O body cable ：Flexible（8pin) , 10m - Used for wiring between,IR-R4/4H/7H/10H/10/11/16/25 series 6-axis robots and the controller(180°).
+I/O body cable ：Non-Flexible（8pin) , 10m - Used for wiring between,IR-R4/4H/7H/10H/10/11/16/25 series 6-axis robots and the controller(180°).
+I/O cable  Non-Flexible（19pin）,5 m - Used for wiring between,IR-R4/4H/7H/10H/10/11/16/25 series 6-axis robots and the controller(180°).
+I/O cable 5 m - Flexible (19pin)，5m - Used for wiring between,IR-R4/4H/7H/10H/10/11/16/25 series 6-axis robots and the controller(180°).
+I/O body cable : Flexible（19pin）,10 m - Used for wiring between,IR-R4/4H/7H/10H/10/11/16/25 series 6-axis robots and the controller(180°).
+I/O body  cable : Flexible（19pin）,15 m - Used for wiring between,IR-R4/4H/7H/10H/10/11/16/25 series 6-axis robots and the controller(180°).
+Network cable accessory - Connects a cable to the network port of the IR‑R7H series 6‑axis robot
+Handheld break release box - Used to manually release the break of the robot in emergencies, applicable to all series of 6-axis robots.
+Homing tool - Homing column 1 - Used for homing calibration of IR-S4/7/10 and IR-TS-4/5 series SCARA robots
+Homing tool - Homing column 2 - Used for homing calibration of IR-S4/7/10 and IR-TS-4/5 series SCARA robots
+Homing tool - Positioning block - Used for homing calibration of IR-S4/7/10 and IR-TS-4/5 series SCARA robots
+Homing tool - Used for homing calibration of IR-R4/4H/7H/11/R10（1100mm）/R10H series 6-axis robots
+Homing tool - Used for homing calibration of IR-R10（1422mm）/R16/25 series 6-axis robots
+IR-TP200-L5-INT - Robot teach pendant (5 m)
+IR-TP200-L10-INT - Robot teach pendant (10 m)
+IR-TP200-L20-INT - Robot teach pendant (20 m)
+IR-TP200-L30-INT - Robot teach pendant (30 m)
+IR-TP200-L5-INT Teach Pendant Extension Cable-5m - nan
+IR-TP200-L5-INT Teach Pendant Extension Cable-15m - nan
+IR-TP200-L5-INT Teach Pendant Extension Cable-25m - nan
+Robot teach pendant adapter - TP2.0 adapter to IRCB501controller
+Encoder Battery - Encoder Battery for Scara and 6Axis robots
+NT100-RE-CC/CTT - CC-LINK Gateway
+Robot Simulation Software Dongle (USB Flash Drive) - Robot simulation software dongle
+Lower Telescopic Cover - IR-S7/10-Z17C-Lower Cover Series 7kg 10kg Clean Type
+Upper Telescopic Cover - IR-S7/10-Z17C-Upper Cover Series 7kg 10kg Clean Type
+Upper Telescopic Cover - IR-S4-Z12C-Upper Cover Series 4kg Clean Type
+Lower Telescopic Cover - IR-S4-Z12C-Lower Cover Series 4kg Clean Type
+Teach Pendant Plug for 1.0 TP Connector - nan
+Teach Pendant Plug for 2.0 TP Connector - nan

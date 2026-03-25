@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InoRobot Assistant Portal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top right, #0f172a, #020617);
+            color: #e2e8f0;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        .font-outfit {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Ambient Background Glow */
+        .ambient-glow {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80vw;
+            height: 80vh;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.1) 0%, rgba(15, 23, 42, 0) 70%);
+            z-index: -1;
+            pointer-events: none;
+            filter: blur(100px);
+            animation: pulse-glow 8s infinite alternate;
+        }
+
+        @keyframes pulse-glow {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+            100% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.8; }
+        }
+
+        /* Premium Glass Card Effect */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            border-radius: 1.5rem;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+            transform: skewX(-20deg);
+            transition: left 0.7s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            border-color: rgba(56, 189, 248, 0.3);
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 189, 248, 0.2);
+            background: rgba(30, 41, 59, 0.6);
+        }
+
+        .glass-card:hover::before {
+            left: 200%;
+        }
+
+        .card-icon-container {
+            position: relative;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 4rem;
+            height: 4rem;
+            border-radius: 1rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .glass-card:hover .card-icon-container {
+            transform: scale(1.1) rotate(5deg);
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        /* Generator specific colors */
+        .glass-card:hover .generator-icon {
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.4);
+            border-color: rgba(56, 189, 248, 0.4);
+        }
+        
+        .glass-card:hover .generator-icon i {
+            color: #38bdf8;
+        }
+
+        /* Selector specific colors */
+        .glass-card:hover .selector-icon {
+            box-shadow: 0 0 25px rgba(52, 211, 153, 0.4);
+            border-color: rgba(52, 211, 153, 0.4);
+        }
+        
+        .glass-card:hover .selector-icon i {
+            color: #34d399;
+        }
+
+        .btn-launch {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .btn-launch::after {
+            content: '';
+            position: absolute;
+            background: white;
+            opacity: 0.1;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .btn-launch:hover::after {
+            left: 0;
+        }
+
+        /* Title Gradients */
+        .title-gradient {
+            background: linear-gradient(135deg, #e0e7ff 0%, #38bdf8 50%, #34d399 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: inline-block;
+        }
+
+    </style>
+</head>
+
+<body class="relative flex flex-col items-center justify-center min-h-screen p-6">
+    <!-- Ambient background glow -->
+    <div class="ambient-glow"></div>
+
+    <main class="w-full max-w-5xl mx-auto z-10 flex flex-col items-center">
+        <!-- Header -->
+        <header class="text-center mb-16 opacity-0 translate-y-8 animate-fade-in-up" style="animation: fadeInUp 0.8s ease forwards;">
+            <div class="inline-flex items-center justify-center p-3 mb-6 bg-slate-800/50 rounded-2xl border border-white/5 shadow-2xl backdrop-blur-sm">
+                <i data-lucide="cpu" class="w-8 h-8 text-blue-400 mr-3"></i>
+                <span class="font-outfit font-bold text-xl tracking-wider text-slate-200 uppercase">Inovance Korea</span>
+            </div>
+            <h1 class="font-outfit text-5xl md:text-7xl font-extrabold mb-4 tracking-tight drop-shadow-xl">
+                <span class="title-gradient pt-2 pb-2">InoRobot Assistant</span>
+            </h1>
+            <p class="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
+                통합 자동화 솔루션 허브. 필요한 도구를 선택하여 작업을 시작하세요.
+            </p>
+        </header>
+
+        <!-- Tool Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
+            
+            <!-- Project Generator Card -->
+            <a href="./InoRobotProjectGen/index.html" class="glass-card p-8 flex flex-col h-full group opacity-0 translate-y-8" style="animation: fadeInUp 0.8s ease 0.2s forwards; text-decoration: none;">
+                <div class="card-icon-container generator-icon">
+                    <i data-lucide="blocks" class="w-8 h-8 text-slate-300 transition-colors duration-300"></i>
+                </div>
+                <h2 class="font-outfit text-2xl font-bold mb-3 text-white group-hover:text-sky-400 transition-colors">
+                    Project Generator
+                </h2>
+                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
+                    로봇 제어 프로젝트를 손쉽게 생성하고 설정합니다. Multi Recipe, Vision Offset 등 다양한 속성을 웹 환경에서 바로 구성할 수 있습니다.
+                </p>
+                <div class="mt-auto flex items-center justify-between border-t border-slate-700/50 pt-5">
+                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-2 py-1 rounded">Ver R24.C4.1.0</span>
+                    <div class="btn-launch flex items-center gap-2 bg-sky-500/10 text-sky-400 px-4 py-2 rounded-lg font-medium border border-sky-500/20 group-hover:bg-sky-500 group-hover:text-white transition-all">
+                        <span>Launch App</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Robot Selector Card -->
+            <a href="./InoRobotSelect/index.html" class="glass-card p-8 flex flex-col h-full group opacity-0 translate-y-8" style="animation: fadeInUp 0.8s ease 0.4s forwards; text-decoration: none;">
+                <div class="card-icon-container selector-icon">
+                    <i data-lucide="bot" class="w-8 h-8 text-slate-300 transition-colors duration-300"></i>
+                </div>
+                <h2 class="font-outfit text-2xl font-bold mb-3 text-white group-hover:text-emerald-400 transition-colors">
+                    InoRobotSelect
+                </h2>
+                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
+                    현장에 가장 적합한 이노밴스 로봇 모델을 선택하고 사양을 비교합니다. 조건에 맞는 사양의 로봇을 빠르게 검색해보세요.
+                </p>
+                <div class="mt-auto flex items-center justify-between border-t border-slate-700/50 pt-5">
+                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-2 py-1 rounded">InoRobotSelect</span>
+                    <div class="btn-launch flex items-center gap-2 bg-emerald-500/10 text-emerald-400 px-4 py-2 rounded-lg font-medium border border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                        <span>Launch App</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+                    </div>
+                </div>
+            </a>
+
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-20 text-center opacity-0" style="animation: fadeIn 1s ease 0.8s forwards;">
+            <p class="text-sm text-slate-500 font-mono tracking-wide">
+                &copy; 2026 INOVANCE Korea. Designed by Jeongchan Lee.
+            </p>
+        </footer>
+    </main>
+
+    <style>
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(2rem);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+
+        // Optional: Add subtle mouse movement effect to cards
+        document.addEventListener('mousemove', (e) => {
+            const cards = document.querySelectorAll('.glass-card');
+            cards.forEach(card => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                // Simple glow follow effect on hover inner
+                card.style.setProperty('--mouse-x', `${x}px`);
+                card.style.setProperty('--mouse-y', `${y}px`);
+            });
+        });
+    </script>
+</body>
+</html>
