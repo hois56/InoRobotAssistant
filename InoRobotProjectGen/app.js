@@ -566,11 +566,11 @@ function updatePreview() {
 
     } catch(e) { rawCode = 'Error rendering preview: ' + e; }
 
-    // 표가 있으면 표로 표시
+    // 표가 있으면 표로 표시 (prismContainer는 숨기지 않음 - codeOutput이 그 안에 있음)
     if (tableHtml) {
         codeOut.innerHTML = tableHtml;
         codeOut.className = '';
-        prismCon.classList.add('opacity-0', 'pointer-events-none');
+        prismCon.classList.remove('opacity-0', 'pointer-events-none');
         editor.classList.add('opacity-0', 'pointer-events-none');
         return;
     }
@@ -581,6 +581,8 @@ function updatePreview() {
         prismCon.classList.add('opacity-0', 'pointer-events-none');
         editor.classList.remove('opacity-0', 'pointer-events-none');
     } else {
+        prismCon.classList.remove('opacity-0', 'pointer-events-none');
+        editor.classList.add('opacity-0', 'pointer-events-none');
         codeOut.className = 'language-robot text-sm leading-relaxed';
         codeOut.textContent = rawCode;
         Prism.highlightElement(codeOut);
