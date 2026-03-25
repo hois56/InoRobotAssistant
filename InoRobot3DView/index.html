@@ -3,71 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InoRobot 3D Model Viewer</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Inovance Robot 3D Viewer</title>
     
-    <!-- OCCT-import-js UMD version (for browser compatibility) -->
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Font Awesome (v6) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <link rel="stylesheet" href="style.css">
+    <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+    
+    <!-- OCCT 엔진 & Import-JS (WASM) -->
     <script src="https://cdn.jsdelivr.net/npm/occt-import-js@0.0.12/dist/occt-import-js.js"></script>
 </head>
 <body>
+
+    <!-- ── TOP NAVIGATION ── -->
     <header id="topbar">
         <div class="topbar-left">
-            <a href="https://www.inovancerobot.com" target="_blank">
-                <img src="https://www.inovance.com/content/dam/inovance/global/logos/inovance-logo-white.svg" alt="INOVANCE" class="logo">
+            <a href="../index.html" class="logo-link">
+                <img src="../InoRobotSelect/INOVANCE_Logo.png" alt="Inovance" class="logo">
             </a>
-            <span class="app-title">3D Intelligent Viewer</span>
+            <h1 class="app-title">Inovance Robot 3D Viewer</h1>
         </div>
 
         <div class="topbar-center">
             <div class="select-wrapper">
-                <i class="fas fa-robot select-icon"></i>
+                <i class="fa-solid fa-cube select-icon"></i>
                 <select id="model-select">
-                    <option value="" disabled selected>-- 로봇 모델을 선택하세요 --</option>
+                    <option value="" disabled selected>로딩 중...</option>
                 </select>
-                <i class="fas fa-chevron-down arrow-icon"></i>
+                <i class="fa-solid fa-chevron-down arrow-icon"></i>
             </div>
         </div>
 
         <div class="topbar-right">
-            <button class="ui-btn" id="btn-reset-view" title="뷰 초기화"><i class="fas fa-expand-arrows-alt"></i></button>
-            <button class="ui-btn" id="btn-toggle-wireframe" title="와이어프레임"><i class="fas fa-border-all"></i></button>
-            <button class="ui-btn" id="btn-toggle-grid" title="그리드 토글"><i class="fas fa-th"></i></button>
-            <button class="ui-btn" id="import-btn" title="파일 직접 열기"><i class="fas fa-folder-open"></i></button>
+            <button id="btn-reset-view" class="ui-btn" title="Reset Camera">
+                <i class="fa-solid fa-arrows-rotate"></i>
+            </button>
+            <button id="btn-toggle-grid" class="ui-btn" title="Toggle Grid">
+                <i class="fa-solid fa-border-all"></i>
+            </button>
+            <!-- 와이어프레임 & 가져오기 버튼 삭제됨 -->
+            <input type="file" id="file-input" style="display:none" accept=".step,.stp,.fbx">
         </div>
     </header>
 
+    <!-- ── MAIN VIEWPORT ── -->
     <main id="main-content">
         <div id="canvas-container">
-            <div id="loading-overlay" class="hidden">
-                <div class="loader-content">
-                    <div class="spinner"></div>
-                    <p id="loading-text">3D 모델을 불러오는 중...</p>
+            <!-- 3D Canvas injected here -->
+
+            <!-- Empty State Overlay -->
+            <div id="empty-state">
+                <div class="hero-icon-wrap">
+                    <i class="fa-solid fa-robot"></i>
+                </div>
+                <h2>Model Visualization</h2>
+                <p>상단의 드롭다운 메뉴에서 로봇 모델을 선택해주세요.</p>
+                <div class="hint">
+                    <i class="fa-solid fa-lightbulb"></i> 마우스로 로봇을 회전하고 확대할 수 있습니다.
                 </div>
             </div>
 
-            <div id="empty-state">
-                <div class="hero-icon-wrap"><i class="fas fa-cube"></i></div>
-                <h2>InoRobot 3D Intelligence</h2>
-                <p>상단 목록에서 로봇을 선택하세요.<br>파일을 직접 업로드하지 않아도 됩니다.</p>
+            <!-- Loading Overlay -->
+            <div id="loading-overlay" class="hidden">
+                <div class="loader-content">
+                    <div class="spinner"></div>
+                    <p id="loading-text">Loading model...</p>
+                </div>
             </div>
-        </div>
-
-        <div id="stats-bar">
-            <div class="stat-item"><i class="fas fa-cube"></i> <label>Model</label> <span id="stat-name">—</span></div>
-            <div class="stat-divider"></div>
-            <div class="stat-item"><i class="fas fa-shapes"></i> <label>Triangles</label> <span id="stat-triangles">—</span></div>
-            <div class="stat-divider"></div>
-            <div class="stat-item"><i class="fas fa-circle" id="status-dot"></i> <label>Status</label> <span id="stat-status">Idle</span></div>
         </div>
     </main>
 
-    <input type="file" id="file-input" accept=".step,.stp" style="display:none;">
+    <!-- ── STATS BAR ── -->
+    <footer id="stats-bar">
+        <div class="stat-item">
+            <i class="fa-solid fa-circle-nodes"></i>
+            <label>Model</label>
+            <span id="stat-name">-</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+            <i id="status-dot" class="fa-solid fa-circle"></i>
+            <label>Status</label>
+            <span id="stat-status">Initializing...</span>
+        </div>
+        <!-- TRIANGLES 항목 삭제됨 -->
+    </footer>
 
-    <!-- main.js (ESM 로드) -->
+    <!-- Three.js Module -->
     <script type="module" src="main.js"></script>
 </body>
 </html>
