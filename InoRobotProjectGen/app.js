@@ -327,48 +327,136 @@ function uSelector() {
     const sel = document.getElementById('fileSelector');
     const cur = sel.value;
     
-    let mainOpts = `<option>main.pro</option><option>s01_initial.pro</option>`;
-    if (state.options.EnableToolControl) mainOpts += `<option>s02_Tool_Control.pro</option>`;
-    if (state.options.EnableTcpSpeed) mainOpts += `<option>PLC_TCP_Speed.pro</option>`;
-    if (state.options.EnableTorque) mainOpts += `<option>PLC_Current_Torque.pro</option>`;
+    // [1] Main Task: main.pro 하나만
+    const mainOpts = `<option>main.pro</option>`;
     
-    let pOpts = state.steps.map(s => `<option>${s.ProcessName}.pro</option>`).join('');
-    
-    let dOpts = `<option>Labels.jsn</option><option>RemoteIO_mapping.dat</option><option>UserDefineWarning.jsn</option><option>BreakPoints.jsn</option><option>MonitorGlobalVars.jsn</option><option>MonitorVars.jsn</option><option>JP.pts</option><option>P.pts</option>`;
+    // [2] Static Task: PLC_ 프로그램들 (옵션 활성화 시에만)
+    let staticOpts = '';
+    if (state.options.EnableTcpSpeed) staticOpts += `<option>PLC_TCP_Speed.pro</option>`;
+    if (state.options.EnableTorque)   staticOpts += `<option>PLC_Current_Torque.pro</option>`;
+
+    // [3] Basic Sub: s01, s02_Tool 등
+    let subOpts = `<option>s01_initial.pro</option>`;
+    if (state.options.EnableToolControl) subOpts += `<option>s02_Tool_Control.pro</option>`;
+
+    // [4] Process Programs
+    const pOpts = state.steps.map(s => `<option>${s.ProcessName}.pro</option>`).join('');
+
+    // [5] Data Files (Project, MonitorVars, JP.pts, MonitorGlobalVars 제외)
+    let dOpts = `<option>Labels.jsn</option><option>RemoteIO_mapping.dat</option><option>UserDefineWarning.jsn</option><option>BreakPoints.jsn</option><option>P.pts</option>`;
     if (state.options.EnableMultiRecipe) {
-        for(let i=1; i<state.options.RecipeCount; i++) {
+        for (let i = 1; i < state.options.RecipeCount; i++) {
             dOpts += `<option>P${i.toString().padStart(2, '0')}.pts</option>`;
         }
     }
-    
-    let rootOpts = `<option>${state.projectName}.prj</option>`;
 
-    sel.innerHTML = `<optgroup label="Main">${mainOpts}</optgroup>
-                     <optgroup label="Process">${pOpts}</optgroup>
-                     <optgroup label="Data">${dOpts}</optgroup>
-                     <optgroup label="Project">${rootOpts}</optgroup>`;
-                     
+    let html = `<optgroup label="Main Task">${mainOpts}</optgroup>`;
+    if (staticOpts) html += `<optgroup label="Static Task">${staticOpts}</optgroup>`;
+    html += `<optgroup label="Basic Sub">${subOpts}</optgroup>`;
+    if (pOpts)      html += `<optgroup label="Process">${pOpts}</optgroup>`;
+    html += `<optgroup label="Data">${dOpts}</optgroup>`;
+
+    sel.innerHTML = html;
     if (Array.from(sel.options).some(o => o.value === cur)) sel.value = cur;
+
+    // Edit 버튼 제어: RemoteIO는 편집 불가
+    const editBtn = document.getElementById('btnToggleEdit');
+    const isReadOnly = sel.value === 'RemoteIO_mapping.dat';
+    editBtn.disabled = isReadOnly;
+    editBtn.style.opacity = isReadOnly ? '0.3' : '1';
+    editBtn.style.cursor = isReadOnly ? 'not-allowed' : 'pointer';
+    editBtn.title = isReadOnly ? 'This file is read-only' : 'Toggle Edit Mode';
+}
+
+// ── 표 렌더링 헬퍼 ──────────────────────────────────
+function buildTable(headers, rows) {
+    const th = headers.map(h => `<th style="padding:8px 12px;text-align:left;color:#94a3b8;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.08);white-space:nowrap">${h}</th>`).join('');
+    const tr = rows.map(row =>
+        `<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">${row.map(cell => `<td style="padding:7px 12px;font-size:12px;color:#e2e8f0;font-family:'Inter',monospace">${cell ?? '-'}</td>`).join('')}</tr>`
+    ).join('');
+    return `<div style="overflow:auto;max-height:100%"><table style="width:100%;border-collapse:collapse"><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table></div>`;
 }
 
 function updatePreview() {
     const file = document.getElementById('fileSelector').value;
     const editor = document.getElementById('codeEditor');
-    
-    // We get either user edited version or newly generated version
-    let rawCode = "";
-    try {
-         // Get the string representing the code (strip header if it exists and hasn't been edited, or return the user edited stripped version)
-         let gen = handleGeneratedContent(file);
-         let existingEdit = state.userEdits[file];
-         
-         if (existingEdit !== undefined) rawCode = existingEdit;
-         else rawCode = stripHeader(gen); // Auto-hide header for preview
-    } catch(e) { rawCode = "Error rendering preview: " + e; }
+    const prismCon = document.getElementById('prismContainer');
+    const codeOut  = document.getElementById('codeOutput');
 
+    // Edit 버튼 상태 갱신 (RemoteIO 선택 시 비활성)
+    const editBtn = document.getElementById('btnToggleEdit');
+    const isReadOnly = file === 'RemoteIO_mapping.dat';
+    editBtn.disabled = isReadOnly;
+    editBtn.style.opacity = isReadOnly ? '0.3' : '1';
+    editBtn.style.cursor  = isReadOnly ? 'not-allowed' : 'pointer';
+    if (isReadOnly && state.editMode) {
+        state.editMode = false;
+        prismCon.classList.remove('opacity-0', 'pointer-events-none');
+        editor.classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    let rawCode = '';
+    let tableHtml = null;
+
+    try {
+        const gen = handleGeneratedContent(file);
+        const existingEdit = state.userEdits[file];
+        rawCode = (existingEdit !== undefined) ? existingEdit : stripHeader(gen);
+
+        // ── Labels.jsn → 표 렌더링 ──────────────────
+        if (file === 'Labels.jsn' && !state.editMode) {
+            try {
+                const arr = JSON.parse(gen);
+                const rows = arr.map(item => [item.sOriginalName, item.sLabel, item.sDescription]);
+                tableHtml = buildTable(['sOriginalName', 'sLabel', 'sDescription'], rows);
+            } catch(e) { /* fallback to code */ }
+        }
+
+        // ── RemoteIO_mapping.dat → 표 렌더링 ─────────
+        else if (file === 'RemoteIO_mapping.dat') {
+            const lines = gen.split(/\r?\n/).filter(l => l.trim() && !l.startsWith('#') && !l.startsWith('//'));
+            const rows = lines.map(l => {
+                const p = l.split(/\s+/);
+                // 형식 예: INPUT BIT %IX0.0 Signal_Name
+                return [p[0], p[1], p[2], p.slice(3).join(' ')];
+            }).filter(r => r[0]);
+            tableHtml = buildTable(['In / Out', 'Bit / Word', 'MemAddr', 'Name'], rows);
+        }
+
+        // ── P.pts / Pxx.pts → 표 렌더링 ──────────────
+        else if ((file === 'P.pts' || file.match(/^P\d+\.pts$/)) && !state.editMode) {
+            const lines = rawCode.split(/\r?\n/).filter(l => l.trim() && !l.startsWith('ProgramInfo') && !l.startsWith('EndProgramInfo') && !l.startsWith('Version') && !l.startsWith('VRC') && !l.startsWith('Time') && !l.startsWith('RobotName'));
+            const rows = lines.map(l => {
+                const p = l.trim().split(/\s+/);
+                return [p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]];
+            }).filter(r => r[0]);
+            tableHtml = buildTable(['ID', 'Label', 'X', 'Y', 'Z', 'A', 'B', 'C'], rows);
+        }
+
+        // ── UserDefineWarning.jsn → 표 렌더링 ─────────
+        else if (file === 'UserDefineWarning.jsn' && !state.editMode) {
+            try {
+                const arr = JSON.parse(gen);
+                const rows = arr.map(item => [item.ID ?? item.id, item.Description ?? item.description ?? item.sDescription ?? JSON.stringify(item)]);
+                tableHtml = buildTable(['ID', '설명 (Description)'], rows);
+            } catch(e) { /* fallback */ }
+        }
+
+    } catch(e) { rawCode = 'Error rendering preview: ' + e; }
+
+    // 표 렌더링 모드
+    if (tableHtml && !state.editMode) {
+        codeOut.innerHTML = tableHtml;
+        codeOut.className = ''; // prism 클래스 제거
+        editor.value = rawCode;
+        return;
+    }
+
+    // 기본 코드 렌더링 모드
+    codeOut.className = 'language-robot text-sm leading-relaxed';
+    codeOut.textContent = rawCode;
+    Prism.highlightElement(codeOut);
     editor.value = rawCode;
-    document.getElementById('codeOutput').textContent = rawCode;
-    Prism.highlightElement(document.getElementById('codeOutput'));
 }
 
 async function exportProj() {
