@@ -342,8 +342,8 @@ function uSelector() {
     // [4] Process Programs
     const pOpts = state.steps.map(s => `<option>${s.ProcessName}.pro</option>`).join('');
 
-    // [5] Data Files (Project, MonitorVars, JP.pts, MonitorGlobalVars 제외)
-    let dOpts = `<option>Labels.jsn</option><option>RemoteIO_mapping.dat</option><option>UserDefineWarning.jsn</option><option>BreakPoints.jsn</option><option>P.pts</option>`;
+    // [5] Data Files (Project, MonitorVars, JP.pts, MonitorGlobalVars, BreakPoints 제외)
+    let dOpts = `<option>Labels.jsn</option><option>RemoteIO_mapping.dat</option><option>UserDefineWarning.jsn</option><option>P.pts</option>`;
     if (state.options.EnableMultiRecipe) {
         for (let i = 1; i < state.options.RecipeCount; i++) {
             dOpts += `<option>P${i.toString().padStart(2, '0')}.pts</option>`;
@@ -383,13 +383,19 @@ function updatePreview() {
     const prismCon = document.getElementById('prismContainer');
     const codeOut  = document.getElementById('codeOutput');
 
-    const editBtn = document.getElementById('btnToggleEdit');
+    // 표로 보여주는 파일들은 항상 editMode를 표 내에서 처리
+    const isTableFile = file === 'Labels.jsn' || file === 'RemoteIO_mapping.dat' || file === 'UserDefineWarning.jsn' || file === 'P.pts' || (file && file.match(/^P\d+\.pts$/));
     const isReadOnly = file === 'RemoteIO_mapping.dat';
-    editBtn.disabled = isReadOnly;
-    editBtn.style.opacity = isReadOnly ? '0.3' : '1';
-    editBtn.style.cursor  = isReadOnly ? 'not-allowed' : 'pointer';
-    if (isReadOnly && state.editMode) {
+
+    const editBtn = document.getElementById('btnToggleEdit');
+    // 표 파일이거나 ReadOnly면 편집 버튼 숨김
+    editBtn.disabled = isReadOnly || isTableFile;
+    editBtn.style.opacity = (isReadOnly || isTableFile) ? '0.3' : '1';
+    editBtn.style.cursor = (isReadOnly || isTableFile) ? 'not-allowed' : 'pointer';
+    if (isTableFile && state.editMode) {
         state.editMode = false;
+        editBtn.classList.replace('bg-blue-600', 'bg-slate-700');
+        editBtn.classList.remove('shadow-lg', 'shadow-blue-600/20');
         prismCon.classList.remove('opacity-0', 'pointer-events-none');
         editor.classList.add('opacity-0', 'pointer-events-none');
     }
@@ -402,9 +408,8 @@ function updatePreview() {
         const existingEdit = state.userEdits[file];
         rawCode = (existingEdit !== undefined) ? existingEdit : stripHeader(gen);
 
-        // ── Labels.jsn → 표 렌더링 ──────────────────────────────────
-        // 구조: { "InputBitLabels": { "LabelsArray": [{sOriginalName, sLabel, sDescription}] }, ... }
-        if (file === 'Labels.jsn' && !state.editMode) {
+        // ── Labels.jsn ──────────────────────────────────
+        if (file === 'Labels.jsn') {
             try {
                 const obj = JSON.parse(gen);
                 const rows = [];
@@ -415,166 +420,102 @@ function updatePreview() {
                         });
                     }
                 });
-                tableHtml = buildTable(['sOriginalName', 'sLabel', 'sDescription'], rows);
+                tableHtml = buildTable(['ID', 'Label', 'Description'], rows);
             } catch(e) { /* fallback */ }
         }
 
-        // ── RemoteIO_mapping.dat → 표 렌더링 ────────────────────────
-        // 구조: JSON 내 BusIoFuncMap 배열, Input 여부는 parentKey로 판별
-        // Length: 1 = Bit, 16 = Word
+        // ── RemoteIO_mapping.dat ─────────────────────────
+        // 구조: FileInfo...EndFileInfo\n{ "BusIoFuncMap": [...] }
+        // IoType: 0=Input, 1=Output | Length: 1=Bit, 16=Word
         else if (file === 'RemoteIO_mapping.dat') {
             try {
-                const obj = JSON.parse(gen);
-                const rows = [];
-                // BusIoFuncMap 배열이 있는 섹션 탐색 (InputBusIoFuncMap, OutputBusIoFuncMap 등)
-                function extractIoRows(node, direction) {
-                    if (!node) return;
-                    if (Array.isArray(node)) {
-                        node.forEach(item => {
-                            if (item.MemAddr !== undefined && item.Name !== undefined) {
-                                const bitWord = item.Length === 1 ? 'Bit' : item.Length === 16 ? 'Word' : `${item.Length}`;
-                                rows.push([direction, bitWord, item.MemAddr, item.Name]);
-                            }
-                        });
-                    } else if (typeof node === 'object') {
-                        Object.entries(node).forEach(([key, val]) => {
-                            if (key.toLowerCase().includes('busio') || key.toLowerCase().includes('funcmap')) {
-                                const dir = key.toLowerCase().includes('output') ? 'Output' : 'Input';
-                                extractIoRows(val, dir);
-                            } else {
-                                extractIoRows(val, direction);
-                            }
-                        });
-                    }
-                }
-                extractIoRows(obj, 'Input');
+                // FileInfo 헤더를 잘라내고 JSON 부분만 추출
+                const jsonStart = gen.indexOf('{');
+                const jsonStr = gen.substring(jsonStart);
+                const obj = JSON.parse(jsonStr);
+                const arr = obj.BusIoFuncMap || [];
+                const rows = arr.map(item => {
+                    const dir = item.IoType === 0 ? 'Input' : 'Output';
+                    const bitWord = item.Length === 1 ? 'Bit' : item.Length === 16 ? 'Word' : String(item.Length);
+                    return [dir, bitWord, item.MemAddr, item.Name];
+                });
                 tableHtml = buildTable(['In / Out', 'Bit / Word', 'MemAddr', 'Name'], rows);
             } catch(e) {
-                // JSON 파싱 실패 시 텍스트 줄 기반 파싱
-                const lines = gen.split(/\r?\n/).filter(l => l.trim() && !l.startsWith('#') && !l.startsWith('//'));
-                const rows = lines.map(l => {
-                    const p = l.split(/\s+/);
-                    return [p[0], p[1], p[2], p.slice(3).join(' ')];
-                }).filter(r => r[0]);
-                tableHtml = buildTable(['In / Out', 'Bit / Word', 'MemAddr', 'Name'], rows);
+                tableHtml = `<div style="padding:20px;color:#ef4444">RemoteIO 파싱 오류: ${e.message}</div>`;
             }
         }
 
-        // ── P.pts / Pxx.pts → 편집 가능한 표 렌더링 ────────────────
-        // 형식: P[100] = 0.000000, 0.000000, ...; 0,0,0,0;...;Name = P1_App;Notes = "T1_W0";
-        else if (file === 'P.pts' || file.match(/^P\d+\.pts$/)) {
+        // ── P.pts / Pxx.pts → 항상 편집 가능한 표 ─────────
+        else if (file === 'P.pts' || (file && file.match(/^P\d+\.pts$/))) {
             const lines = rawCode.split(/\r?\n/).filter(l => l.trim().startsWith('P['));
-            if (!state.editMode) {
-                const rows = lines.map((l, rowIdx) => {
-                    // ID: P[100] → 100
-                    const idMatch = l.match(/^P\[(\d+)\]/);
-                    const id = idMatch ? idMatch[1] : '-';
-                    // Name: Name = P1_App
-                    const nameMatch = l.match(/Name\s*=\s*([^;]+)/);
-                    const name = nameMatch ? nameMatch[1].trim() : '-';
-                    // Coords: P[100] = X, Y, Z, A, B, C; ...
-                    const coordPart = l.replace(/^P\[\d+\]\s*=\s*/, '').split(';')[0];
-                    const coords = coordPart.split(',').map(v => {
-                        const n = parseFloat(v);
-                        return isNaN(n) ? v.trim() : n.toFixed(3);
-                    });
-                    const [x='', y='', z='', a='', b='', c=''] = coords;
-                    // 셀 클릭 시 편집(인라인 input)
-                    function editCell(rowIdx, colIdx, value, title) {
-                        return `<td style="padding:5px 10px;font-size:12px;color:#e2e8f0;font-family:monospace" title="${title}">
-                            <input type="text" data-row="${rowIdx}" data-col="${colIdx}"
-                                value="${value}"
-                                style="background:transparent;border:none;color:#e2e8f0;font-family:monospace;font-size:12px;width:${Math.max(value.length+1,5)}ch;outline:none"
-                                onfocus="this.style.outline='1px solid #38bdf8'"
-                                onblur="this.style.outline='none';updatePtsCell(this)"
-                                onkeydown="if(event.key==='Enter'){this.blur();}"
-                            />
-                        </td>`;
-                    }
-                    return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
-                        <td style="padding:5px 10px;font-size:12px;color:#94a3b8;font-family:monospace">${id}</td>
-                        <td style="padding:5px 10px;font-size:12px;color:#e2e8f0;font-family:monospace">
-                            <input type="text" data-row="${rowIdx}" data-col="name"
-                                value="${name}"
-                                style="background:transparent;border:none;color:#38bdf8;font-family:monospace;font-size:12px;width:${Math.max(name.length+1,8)}ch;outline:none"
-                                onfocus="this.style.outline='1px solid #38bdf8'"
-                                onblur="this.style.outline='none';updatePtsCell(this)"
-                                onkeydown="if(event.key==='Enter'){this.blur();}"
-                            />
-                        </td>
-                        ${editCell(rowIdx, 'x', x, 'X')}
-                        ${editCell(rowIdx, 'y', y, 'Y')}
-                        ${editCell(rowIdx, 'z', z, 'Z')}
-                        ${editCell(rowIdx, 'a', a, 'A')}
-                        ${editCell(rowIdx, 'b', b, 'B')}
-                        ${editCell(rowIdx, 'c', c, 'C')}
-                    </tr>`;
-                }).join('');
-                const th = ['ID','Name','X','Y','Z','A','B','C'].map(h =>
-                    `<th style="padding:8px 10px;text-align:left;color:#94a3b8;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.08)">${h}</th>`
-                ).join('');
-                tableHtml = `<div style="overflow:auto;max-height:100%"><table style="width:100%;border-collapse:collapse"><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>`;
+            const rows = lines.map((l, rowIdx) => {
+                const idMatch = l.match(/^P\[(\d+)\]/);
+                const id = idMatch ? idMatch[1] : '-';
+                const nameMatch = l.match(/Name\s*=\s*([^;]+)/);
+                const name = nameMatch ? nameMatch[1].trim() : '-';
+                const coordPart = l.replace(/^P\[\d+\]\s*=\s*/, '').split(';')[0];
+                const coords = coordPart.split(',').map(v => { const n = parseFloat(v); return isNaN(n) ? v.trim() : n.toFixed(3); });
+                const [x='',y='',z='',a='',b='',c=''] = coords;
+                function ec(ri, ci, val) {
+                    return `<td style="padding:4px 6px"><input type="text" data-row="${ri}" data-col="${ci}" value="${val}" style="background:transparent;border:1px solid transparent;color:#e2e8f0;font-family:monospace;font-size:12px;width:100%;box-sizing:border-box;outline:none;padding:2px 4px;border-radius:4px" onfocus="this.style.borderColor='#38bdf8'" onblur="this.style.borderColor='transparent';updatePtsCell(this)" onkeydown="if(event.key==='Enter'){this.blur();}" /></td>`;
+                }
+                return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+                    <td style="padding:4px 6px;color:#94a3b8;font-family:monospace;font-size:12px">${id}</td>
+                    <td style="padding:4px 6px"><input type="text" data-row="${rowIdx}" data-col="name" value="${name}" style="background:transparent;border:1px solid transparent;color:#38bdf8;font-family:monospace;font-size:12px;width:100%;box-sizing:border-box;outline:none;padding:2px 4px;border-radius:4px" onfocus="this.style.borderColor='#38bdf8'" onblur="this.style.borderColor='transparent';updatePtsCell(this)" onkeydown="if(event.key==='Enter'){this.blur();}" /></td>
+                    ${ec(rowIdx,'x',x)}${ec(rowIdx,'y',y)}${ec(rowIdx,'z',z)}${ec(rowIdx,'a',a)}${ec(rowIdx,'b',b)}${ec(rowIdx,'c',c)}
+                </tr>`;
+            }).join('');
+            const th = ['ID','Name','X','Y','Z','A','B','C'].map(h =>
+                `<th style="padding:6px;text-align:left;color:#94a3b8;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.08)">${h}</th>`
+            ).join('');
+            tableHtml = `<div style="overflow:auto;max-height:100%"><table style="width:100%;border-collapse:collapse;table-layout:fixed"><colgroup><col style="width:60px"><col style="width:120px"><col><col><col><col><col><col></colgroup><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>`;
 
-                // 편집 함수 등록 (전역)
-                window._ptsLines = lines.slice();
-                window.updatePtsCell = function(input) {
-                    const rowIdx = parseInt(input.dataset.row);
-                    const colKey = input.dataset.col;
-                    let line = window._ptsLines[rowIdx];
-                    const val = input.value.trim();
-                    if (colKey === 'name') {
-                        line = line.replace(/(Name\s*=\s*)([^;]+)/, `$1${val}`);
-                    } else {
-                        // x=0, y=1, z=2, a=3, b=4, c=5
-                        const colMap = {x:0,y:1,z:2,a:3,b:4,c:5};
-                        const ci = colMap[colKey];
-                        const coordPart = line.replace(/^P\[\d+\]\s*=\s*/, '').split(';')[0];
-                        const parts = coordPart.split(',');
-                        parts[ci] = ` ${parseFloat(val).toFixed(6)}`;
-                        const newCoord = parts.join(',');
-                        line = line.replace(/(P\[\d+\]\s*=\s*)([^;]+)/, `$1${newCoord}`);
-                    }
-                    window._ptsLines[rowIdx] = line;
-                    // 수정된 라인을 userEdits에 반영
-                    const header = rawCode.split(/\r?\n/).filter(l => !l.trim().startsWith('P[')).join('\n');
-                    state.userEdits[file] = header + '\n' + window._ptsLines.join('\n');
-                };
-            }
+            window._ptsLines = lines.slice();
+            window._ptsFile = file;
+            window._ptsRawCode = rawCode;
+            window.updatePtsCell = function(input) {
+                const ri = parseInt(input.dataset.row);
+                const ck = input.dataset.col;
+                let line = window._ptsLines[ri];
+                const val = input.value.trim();
+                if (ck === 'name') {
+                    line = line.replace(/(Name\s*=\s*)([^;]+)/, `$1${val}`);
+                } else {
+                    const cm = {x:0,y:1,z:2,a:3,b:4,c:5};
+                    const ci = cm[ck];
+                    const cp = line.replace(/^P\[\d+\]\s*=\s*/, '').split(';')[0];
+                    const parts = cp.split(',');
+                    parts[ci] = ` ${parseFloat(val).toFixed(6)}`;
+                    line = line.replace(/(P\[\d+\]\s*=\s*)([^;]+)/, `$1${parts.join(',')}`);
+                }
+                window._ptsLines[ri] = line;
+                const hdr = window._ptsRawCode.split(/\r?\n/).filter(l => !l.trim().startsWith('P[')).join('\n');
+                state.userEdits[window._ptsFile] = hdr + '\n' + window._ptsLines.join('\n');
+            };
         }
 
-        // ── UserDefineWarning.jsn → 표 렌더링 ───────────────────────
-        // 구조: { "Warings": ["ERR : ...", "", "", ...] }  (0부터 인덱스)
-        else if (file === 'UserDefineWarning.jsn' && !state.editMode) {
+        // ── UserDefineWarning.jsn ────────────────────────
+        else if (file === 'UserDefineWarning.jsn') {
             try {
                 const obj = JSON.parse(gen);
                 const arr = obj.Warings || obj.Warnings || [];
                 let id = 1;
-                const rows = arr
-                    .map((w, i) => {
-                        if (!w || !w.trim()) return null;
-                        return [id++, w];
-                    })
-                    .filter(r => r !== null);
+                const rows = arr.map(w => (!w || !w.trim()) ? null : [id++, w]).filter(r => r !== null);
                 tableHtml = buildTable(['ID', '설명 (Description)'], rows);
             } catch(e) { /* fallback */ }
         }
 
     } catch(e) { rawCode = 'Error rendering preview: ' + e; }
 
-    if (tableHtml && !state.editMode) {
-        codeOut.innerHTML = tableHtml;
-        codeOut.className = '';
-        editor.value = rawCode;
-        return;
-    }
-    // P.pts 표는 editMode와 무관하게 표로만 표시
-    if (tableHtml && (file === 'P.pts' || file.match(/^P\d+\.pts$/))) {
+    // 표가 있으면 표로 표시
+    if (tableHtml) {
         codeOut.innerHTML = tableHtml;
         codeOut.className = '';
         editor.value = rawCode;
         return;
     }
 
+    // 기본 코드 렌더링
     codeOut.className = 'language-robot text-sm leading-relaxed';
     codeOut.textContent = rawCode;
     Prism.highlightElement(codeOut);
