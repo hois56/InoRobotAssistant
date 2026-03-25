@@ -45,6 +45,13 @@ function initApp() {
         uSelector();
     });
 
+    // Logo Click Behavior
+    document.getElementById('appLogo').parentElement.onclick = (e) => {
+        // Parent is <a> tag, but we can also add dynamic behavior if needed
+        // Since it's an <a> tag with href, it will work naturally, 
+        // but we ensure it doesn't conflict with any SPA logic if added later.
+    };
+
     document.getElementById('chkMultiRecipe').onchange = (e) => {
         state.options.EnableMultiRecipe = e.target.checked;
         document.getElementById('numRecipeCount').disabled = !e.target.checked;
