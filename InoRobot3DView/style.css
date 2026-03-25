@@ -50,22 +50,23 @@ body {
 }
 
 .logo {
-    height: 22px;
+    height: 28px;
     width: auto;
     object-fit: contain;
     display: block;
 }
 
 .app-title {
-    font-size: 0.75rem;
+    font-size: 1.1rem;
     font-weight: 600;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--text-2);
-    padding-left: 1rem;
+    color: var(--text-1);
+    padding-left: 1.25rem;
     border-left: 1px solid var(--border);
     white-space: nowrap;
+    text-transform: none; /* 대소문자 자유롭게 */
+    letter-spacing: 0.2px;
 }
+
 
 /* ── Select Combobox ───────────────────────── */
 .topbar-center {

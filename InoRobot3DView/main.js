@@ -1,6 +1,6 @@
 /**
- * InoRobot 3D Viewer — Hybrid Optimization (STEP + FBX)
- * ▶ FBX 파일이 감지되면 초고속(1초 이내) 로딩을 수행합니다.
+ * Inovance Robot 3D Viewer — Minimalist Version
+ * ▶ 깔끔한 UI와 고속 로딩 기능을 제공합니다.
  */
 
 import * as THREE from 'https://esm.sh/three@0.156.1';
@@ -23,18 +23,14 @@ const state = {
 // ── DOM Elements ────────────────────────────────────
 const el = {
     modelSelect:     document.getElementById('model-select'),
-    fileInput:       document.getElementById('file-input'),
     loadingOverlay:  document.getElementById('loading-overlay'),
     loadingText:     document.getElementById('loading-text'),
     emptyState:      document.getElementById('empty-state'),
     statName:        document.getElementById('stat-name'),
-    statTriangles:   document.getElementById('stat-triangles'),
     statStatus:      document.getElementById('stat-status'),
     statusDot:       document.getElementById('status-dot'),
     canvasContainer: document.getElementById('canvas-container'),
-    importBtn:       document.getElementById('import-btn'),
     btnResetView:    document.getElementById('btn-reset-view'),
-    btnToggleWireframe: document.getElementById('btn-toggle-wireframe'),
     btnToggleGrid:   document.getElementById('btn-toggle-grid')
 };
 
@@ -55,7 +51,7 @@ async function init() {
 
 async function initEngine() {
     state.isOcctLoading = true;
-    setStatus('Engine Ready', '#94a3b8');
+    setStatus('Engine Init', '#94a3b8');
     
     try {
         if (typeof window.occtimportjs === 'undefined') {
@@ -114,13 +110,7 @@ function setupEventListeners() {
         const name = e.target.options[e.target.selectedIndex].text;
         await loadModelFromServer(file, name);
     });
-    el.importBtn.addEventListener('click', () => el.fileInput.click());
-    el.fileInput.addEventListener('change', (e) => {
-        const f = e.target.files[0];
-        if (f) readLocalFile(f);
-    });
     el.btnResetView.addEventListener('click', fitCamera);
-    el.btnToggleWireframe.addEventListener('click', toggleWireframe);
     el.btnToggleGrid.addEventListener('click', toggleGrid);
 }
 
@@ -141,7 +131,6 @@ function onResize() {
 // ── Model Management ───────────────────────────────
 async function populateModelList() {
     try {
-        // 캐시 방지를 위해 타임스탬프 파라미터를 추가하여 항상 최신 목록을 가져옵니다.
         const res = await fetch(`./models/models.json?v=${Date.now()}`);
         const list = await res.json();
         el.modelSelect.innerHTML = '<option value="" disabled selected>-- 로봇 모델을 선택하세요 --</option>';
@@ -151,7 +140,6 @@ async function populateModelList() {
             opt.textContent = m.name;
             el.modelSelect.appendChild(opt);
         });
-        console.log('[InoRobot] Final Database Loaded:', list.length, 'models');
     } catch (e) {
         console.error('[Load List Error]', e);
     }
@@ -159,33 +147,28 @@ async function populateModelList() {
 
 async function loadModelFromServer(file, name) {
     const ext = file.split('.').pop().toLowerCase();
-    
-    // 로딩 방식을 명확히 표시
-    const modeText = ext === 'fbx' ? 'FBX 초고속 모드' : 'STEP 변환 모드';
-    showLoading(true, `${modeText}: ${name} 파일을 읽는 중...`);
+    const modeText = ext === 'fbx' ? 'FBX' : 'STEP';
+    showLoading(true, `${modeText} 데이터 로드 중: ${name}`);
     setStatus('Loading', '#f59e0b');
-
 
     try {
         const url = `./models/${file}`;
         
-        // FBX 고속 로딩 로직
         if (ext === 'fbx') {
             const loader = new FBXLoader();
             loader.load(url, (fbx) => {
                 renderFBXModel(fbx, name);
             }, (xhr) => {
-                const percent = Math.round((xhr.loaded / xhr.total) * 100);
-                showLoading(true, `다운로드 중: ${percent}%`);
-            }, (err) => {
-                throw err;
-            });
+                if (xhr.total > 0) {
+                    const percent = Math.round((xhr.loaded / xhr.total) * 100);
+                    showLoading(true, `다운로드 중: ${percent}%`);
+                }
+            }, (err) => { throw err; });
             return;
         }
 
-        // 기존 STEP 로딩 로직
         const res = await fetch(url);
-        if (!res.ok) throw new Error('파일을 서버에서 찾을 수 없습니다.');
+        if (!res.ok) throw new Error('File not found');
         const buffer = await res.arrayBuffer();
         await parseAndRenderSTEP(buffer, name);
 
@@ -197,72 +180,33 @@ async function loadModelFromServer(file, name) {
     }
 }
 
-function readLocalFile(file) {
-    const ext = file.name.split('.').pop().toLowerCase();
-    if (ext === 'fbx') {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const loader = new FBXLoader();
-            const fbx = loader.parse(e.target.result);
-            renderFBXModel(fbx, file.name);
-        };
-        reader.readAsArrayBuffer(file);
-    } else {
-        const reader = new FileReader();
-        reader.onload = (e) => parseAndRenderSTEP(e.target.result, file.name);
-        reader.readAsArrayBuffer(file);
-    }
-}
-
 // ── Rendering Functions ────────────────────────────
 
-/** 1. FBX 고속 렌더러 (즉시 출력) */
 function renderFBXModel(fbx, name) {
-    showLoading(true, 'FBX 처리 중...');
     cleanupScene();
+    fbx.rotateX(-Math.PI / 2); // 바닥 안착 방향
 
-    // FBX 방향성 수정 (Fusion FBX는 종종 Y-up이므로 필요 시 조정)
-    fbx.rotateX(-Math.PI / 2); // STEP과 동일한 방향 규칙 적용
-
-    let tris = 0;
     fbx.traverse(c => {
         if (c.isMesh) {
             c.castShadow = c.receiveShadow = true;
-            if (c.geometry.index) tris += c.geometry.index.count / 3;
-            else tris += c.geometry.attributes.position.count / 3;
-            
-            // 와이어프레임 상태 적용
             if (state.isWireframe) c.material.wireframe = true;
         }
     });
 
     state.model = fbx;
     state.scene.add(state.model);
-    updateUIStatus(name, tris);
+    updateUIStatus(name);
     showLoading(false);
     fitCamera();
 }
 
-/** 2. STEP 원본 렌더러 (OCCT 엔진 필요) */
 async function parseAndRenderSTEP(buffer, name) {
-    if (!state.occt) {
-        showLoading(true, '엔진 초기화 대기 중...');
-        const wait = setInterval(() => {
-            if (state.occt) { clearInterval(wait); parseAndRenderSTEP(buffer, name); }
-        }, 300);
-        return;
-    }
-
-    showLoading(true, `3D 데이터 변환 중 (STEP): ${name}`);
-    setStatus('Processing', '#f59e0b');
-    await new Promise(r => setTimeout(r, 50));
-
+    if (!state.occt) return;
     cleanupScene();
 
     try {
         const result = state.occt.ReadStepFile(new Uint8Array(buffer));
         const group = new THREE.Group();
-        let triCount = 0;
 
         result.meshes.forEach(mesh => {
             const geo = new THREE.BufferGeometry();
@@ -273,24 +217,21 @@ async function parseAndRenderSTEP(buffer, name) {
 
             const mat = new THREE.MeshStandardMaterial({
                 color: mesh.color ? new THREE.Color(mesh.color[0], mesh.color[1], mesh.color[2]) : 0xcccccc,
-                metalness: 0.6, roughness: 0.35, wireframe: state.isWireframe
+                metalness: 0.6, roughness: 0.35
             });
 
             const m = new THREE.Mesh(geo, mat);
             m.castShadow = m.receiveShadow = true;
             group.add(m);
-            triCount += mesh.index.array.length / 3;
         });
 
-        group.rotateX(-Math.PI / 2); // 바르게 세우기
+        group.rotateX(-Math.PI / 2); 
         state.model = group;
         state.scene.add(state.model);
-        updateUIStatus(name, triCount);
+        updateUIStatus(name);
         fitCamera();
     } catch (err) {
         console.error('[STEP Error]', err);
-        alert(`변환 오류: ${err.message}`);
-        setStatus('Error', '#ef4444');
     }
     showLoading(false);
 }
@@ -309,44 +250,28 @@ function cleanupScene() {
     }
 }
 
-function updateUIStatus(name, tris) {
+function updateUIStatus(name) {
     el.statName.textContent = name;
-    el.statTriangles.textContent = Math.round(tris).toLocaleString();
     el.emptyState.classList.add('hidden');
     setStatus('Ready', '#22c55e');
 }
 
 function fitCamera() {
     if (!state.model) return;
-    
-    // 로봇의 전체 영역(Bounding Box)을 계산합니다.
     const box = new THREE.Box3().setFromObject(state.model);
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
 
-    /** 
-     * [바닥 정렬 핵심 로직]
-     * 1. X, Z축은 중앙에 오도록 맞춥니다.
-     * 2. Y축(높이)은 로봇의 가장 낮은 바닥면(min.y)이 그리드(0)에 닿도록 올립니다.
-     */
     state.model.position.x -= center.x;
     state.model.position.z -= center.z;
-    state.model.position.y -= box.min.y; // 바닥면을 0으로 고정
+    state.model.position.y -= box.min.y;
 
     const sphereSize = size.length();
     const dist = sphereSize * 1.5;
-    
     state.camera.position.set(dist * 0.8, dist * 0.5, dist * 0.8);
-    state.camera.lookAt(0, size.y / 2, 0); // 모델의 중심부를 바라봅니다.
+    state.camera.lookAt(0, size.y / 2, 0);
     state.controls.target.set(0, size.y / 2, 0);
     state.camera.updateProjectionMatrix();
-}
-
-
-function toggleWireframe() {
-    state.isWireframe = !state.isWireframe;
-    if (state.model) state.model.traverse(c => { if (c.isMesh) c.material.wireframe = state.isWireframe; });
-    el.btnToggleWireframe.classList.toggle('active', state.isWireframe);
 }
 
 function toggleGrid() {
