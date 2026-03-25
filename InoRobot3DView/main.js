@@ -98,9 +98,9 @@ function setupLights() {
 
 function setupControls() {
     state.controls = new OrbitControls(state.camera, state.renderer.domElement);
-    state.controls.enableDamping = true;
-    state.controls.dampingFactor = 0.08;
+    state.controls.enableDamping = false; // 즉각적인 반응을 위해 가감속(Damping) 제거
 }
+
 
 function setupEventListeners() {
     window.addEventListener('resize', onResize);
