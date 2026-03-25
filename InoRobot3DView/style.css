@@ -1,4 +1,4 @@
-/* InoRobot3DView — Premium Stylesheet — Ultra Final Optimized */
+/* InoRobot3DView — Simulation Edition — Premium Stylesheet */
 :root {
     --bg:         #0b0e14;
     --bar-bg:     rgba(15, 19, 28, 0.95);
@@ -8,7 +8,7 @@
     --text-1:     #ffffff;
     --text-2:     #94a3b8;
     --border:     rgba(255,255,255,0.09);
-    --topbar-h:   72px; /* 상단 바 높이를 조금 더 넓게 확보 */
+    --topbar-h:   72px;
     --stats-h:    48px;
     --ease:       cubic-bezier(0.4,0,0.2,1);
 }
@@ -51,7 +51,7 @@ body {
 .logo-link {
     display: flex;
     align-items: center;
-    background: rgba(255,255,255,0.05); /* 프로젝트 제너레이터 느낌 */
+    background: rgba(255,255,255,0.05);
     padding: 8px 14px;
     border-radius: 16px;
     border: 1px solid rgba(255,255,255,0.08);
@@ -64,7 +64,7 @@ body {
 }
 
 .logo {
-    height: 42px; /* 로고를 더 크게 키워 박스에 꽉 채움 */
+    height: 48px; /* 로고를 더 크게 확대 (기존 42px -> 48px) */
     width: auto;
     object-fit: contain;
     display: block;
@@ -79,7 +79,6 @@ body {
     border-left: 1px solid var(--border);
     white-space: nowrap;
     text-transform: none;
-    
     background: linear-gradient(to right, #60a5fa, #34d399);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -141,9 +140,8 @@ body {
     border-color: rgba(59, 130, 246, 0.5);
 }
 
-/* 드롭다운 옵션 가독성 해결 (브라우저 기본 배경색 강제 지정) */
 #model-select option {
-    background-color: #0f172a; /* 어두운 배경 */
+    background-color: #0f172a; 
     color: #ffffff;
     padding: 10px;
 }
@@ -174,6 +172,87 @@ body {
     color: #fff;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px var(--accent-glow);
+}
+
+/* ── JOG Control Panel ─────────────────────── */
+#jog-panel {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 180px;
+    background: rgba(15, 23, 42, 0.88);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 1rem;
+    z-index: 150;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+.jog-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    font-family: 'Outfit', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: #38bdf8;
+}
+
+.jog-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 0.75rem;
+}
+
+.jog-row label {
+    flex: 1;
+    font-family: 'Outfit', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.jog-btn {
+    width: 32px;
+    height: 32px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #fff;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s var(--ease);
+}
+
+.jog-btn:hover {
+    background: #38bdf8;
+    color: #0b0e14;
+    border-color: #38bdf8;
+}
+
+.jog-btn:active { transform: scale(0.9); }
+
+.home-btn {
+    width: 100%;
+    margin-top: 0.65rem;
+    padding: 8px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-2);
+    font-family: 'Outfit', sans-serif;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.home-btn:hover {
+    background: #ef4444;
+    color: #fff;
+    border-color: #ef4444;
 }
 
 /* ── Viewport & Overlays ─────────────── */
@@ -207,19 +286,21 @@ body {
 .stat-item {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
+    gap: 0.8rem;
 }
 
 .stat-item label {
+    font-family: 'Outfit', sans-serif;
     font-weight: 600;
     color: var(--text-2);
-    text-transform: none; /* 대소문자 고정 해제 */
+    text-transform: none;
 }
 
 .stat-item span {
+    font-family: 'Outfit', sans-serif; /* 모델명과 상태 글꼴도 Outfit으로 통일 */
     color: var(--text-1);
-    font-weight: 500;
-    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.3px;
 }
 
 .stat-divider {
