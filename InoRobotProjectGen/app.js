@@ -74,12 +74,12 @@ function initApp() {
         document.getElementById('chkTorque').checked = state.options.EnableTorque;
         document.getElementById('chkToolControl').checked = state.options.EnableToolControl;
         document.getElementById('cmbToolControlType').value = state.options.ToolControlType || "PLC_IO";
-        document.getElementById('toolControlSub').style.display = state.options.EnableToolControl ? 'block' : 'none';
+        document.getElementById('toolControlSub').style.display = state.options.EnableToolControl ? 'flex' : 'none';
         document.getElementById('optionsModal').classList.remove('hidden');
     };
 
     document.getElementById('chkToolControl').onchange = (e) => {
-        document.getElementById('toolControlSub').style.display = e.target.checked ? 'block' : 'none';
+        document.getElementById('toolControlSub').style.display = e.target.checked ? 'flex' : 'none';
     };
 
     document.getElementById('btnApplyOptions').onclick = () => {
