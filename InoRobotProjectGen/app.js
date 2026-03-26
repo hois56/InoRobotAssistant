@@ -18,7 +18,12 @@ class ProcessStep {
 }
 
 const state = {
-    projectName: "InoRobot_Pro_New",
+    projectName: (function() {
+        const d = new Date();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return "InoProject_" + mm + dd;
+    })(),
     steps: [],
     options: {
         RobotName: "IR-R10-140S5-D1NH-INT_01741041",
@@ -27,6 +32,7 @@ const state = {
         EnableTcpSpeed: false,
         EnableTorque: false,
         EnableToolControl: false,
+        ToolControlType: "PLC_IO", // "PLC_IO" or "DIO"
         VisionConfigs: {} // idx -> { IsClient, IpAddress, Port }
     },
     userEdits: {}, // { filename: "edited code without ProgramInfo" }
@@ -60,18 +66,34 @@ function initApp() {
         uSelector();
     };
 
+    document.getElementById('btnOption').onclick = () => {
+        document.getElementById('chkMultiRecipe').checked = state.options.EnableMultiRecipe;
+        document.getElementById('numRecipeCount').value = state.options.RecipeCount;
+        document.getElementById('numRecipeCount').disabled = !state.options.EnableMultiRecipe;
+        document.getElementById('chkTcpSpeed').checked = state.options.EnableTcpSpeed;
+        document.getElementById('chkTorque').checked = state.options.EnableTorque;
+        document.getElementById('chkToolControl').checked = state.options.EnableToolControl;
+        document.getElementById('cmbToolControlType').value = state.options.ToolControlType || "PLC_IO";
+        document.getElementById('toolControlSub').style.display = state.options.EnableToolControl ? 'block' : 'none';
+        document.getElementById('optionsModal').classList.remove('hidden');
+    };
+
+    document.getElementById('chkToolControl').onchange = (e) => {
+        document.getElementById('toolControlSub').style.display = e.target.checked ? 'block' : 'none';
+    };
+
     document.getElementById('btnApplyOptions').onclick = () => {
         state.options.EnableTcpSpeed = document.getElementById('chkTcpSpeed').checked;
         state.options.EnableTorque = document.getElementById('chkTorque').checked;
         state.options.EnableToolControl = document.getElementById('chkToolControl').checked;
+        state.options.ToolControlType = document.getElementById('cmbToolControlType').value;
         let pCount = parseInt(document.getElementById('numRecipeCount').value) || 2;
         state.options.RecipeCount = Math.min(127, Math.max(2, pCount));
         state.options.RobotName = document.getElementById('cmbRobotModel').value;
         document.getElementById('optionsModal').classList.add('hidden');
         renderSteps(); 
+        updatePreview();
     };
-
-    document.getElementById('btnOption').onclick = () => document.getElementById('optionsModal').classList.remove('hidden');
     
     // Edit mode toggle
     document.getElementById('btnToggleEdit').onclick = toggleEditMode;
@@ -379,7 +401,7 @@ function renderSteps() {
             <div class="w-6 h-6 rounded bg-blue-600 flex-shrink-0 flex items-center justify-center font-bold text-xs">${s.No}</div>
             <button onclick="window.openNameModal(${idx})" class="w-10 h-8 rounded bg-slate-800 border border-slate-600 flex items-center justify-center hover:bg-slate-700 flex-shrink-0"><i data-lucide="more-horizontal" class="w-4 h-4 text-slate-400"></i></button>
             <select onchange="window.uStep(${idx}, 'WorkType', this.value)" class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${WorkTypes.map(t=>`<option ${s.WorkType===t?'selected':''}>${t}</option>`).join('')}</select>
-            <select onchange="window.uStep(${idx}, 'WorkMethod', this.value)" ${disM} class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-center">${mOpts.map(m=>`<option ${s.WorkMethod===m?'selected':''}>${m}</option>`).join('')}</select>
+            <select onchange="window.uStep(${idx}, 'WorkMethod', this.value)" ${disM} class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${mOpts.map(m=>`<option ${s.WorkMethod===m?'selected':''}>${m}</option>`).join('')}</select>
             <select onchange="window.uStep(${idx}, 'ToolType', this.value)" ${disT} class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${tOpts.map(t=>`<option ${s.ToolType===t?'selected':''}>${t}</option>`).join('')}</select>
             <select onchange="window.uStep(${idx}, 'VisionUse', this.value)" ${disV} class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${vOpts.map(v=>`<option ${s.VisionUse===v?'selected':''}>${v}</option>`).join('')}</select>
             <button onclick="window.rStep(${idx})" class="text-slate-500 hover:text-red-400 font-bold ml-1 w-6 h-6 flex items-center justify-center flex-shrink-0">X</button>
