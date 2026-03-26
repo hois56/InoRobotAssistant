@@ -230,28 +230,19 @@
                         </div>
                     </label>
                     <div
-                        class="bg-slate-800/40 p-4 rounded-xl border border-slate-700 text-sm space-y-3">
-                        <label class="flex items-center justify-between cursor-pointer group relative">
-                            <div class="flex items-center gap-3">
-                                <input type="checkbox" id="chkToolControl"
-                                    class="w-5 h-5 rounded text-blue-500 bg-slate-900 border-slate-600">
-                                <span class="font-medium whitespace-nowrap">Tool Control</span>
-                            </div>
-                            <div class="text-slate-400"><i data-lucide="info" class="w-4 h-4"></i></div>
-                            <div
-                                class="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-56 p-3 bg-slate-900 border border-slate-600 rounded-xl text-xs shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 text-slate-300 pointer-events-none text-center">
-                                에어(진공) 및 그리퍼 같은 매니퓰레이터 툴의 제어 모듈을 프로그램 내부에 활성화시켜 제어 로직을 생성합니다.
-                            </div>
+                        class="flex items-center justify-between bg-slate-800/40 p-4 rounded-xl border border-slate-700 text-sm">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" id="chkToolControl"
+                                class="w-5 h-5 rounded text-blue-500 bg-slate-900 border-slate-600 focus:ring-0">
+                            <span class="font-medium whitespace-nowrap">Tool Control</span>
                         </label>
-                        <div id="toolControlSub" class="pl-8 space-y-2" style="display:none">
-                            <label class="block">
-                                <span class="text-[11px] text-slate-500 uppercase tracking-wider">Control Type</span>
-                                <select id="cmbToolControlType"
-                                    class="w-full mt-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300">
-                                    <option value="PLC_IO">PLC IO (Communication)</option>
-                                    <option value="DIO">DIO (Direct IO)</option>
-                                </select>
-                            </label>
+                        <div id="toolControlSub" class="flex items-center gap-2" style="display:none">
+                            <span class="text-xs text-slate-500">Type:</span>
+                            <select id="cmbToolControlType"
+                                class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-300">
+                                <option value="PLC_IO">PLC IO</option>
+                                <option value="DIO">DIO</option>
+                            </select>
                         </div>
                     </div>
                 </div>
