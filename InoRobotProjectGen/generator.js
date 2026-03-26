@@ -341,15 +341,47 @@ EndFunc;
         steps.forEach(s => { inBits.push({nIndex: baseInIdx, sLabel: `xP${s.No}_start`, sDescription: "", sOriginalName: `IN[${baseInIdx}]`}); baseInIdx++; });
         if (hasCalibPlc) { inBits.push({nIndex: 576, sLabel: "xVision_move_next", sDescription: "", sOriginalName: "IN[576]"}, {nIndex: 577, sLabel: "xVision_cali_comp", sDescription: "", sOriginalName: "IN[577]"}); }
         if (hasPeeling) { inBits.push({nIndex: 568, sLabel: "xPeel_start", sDescription: "", sOriginalName: "IN[568]"}); }
+        
         if (options.EnableToolControl) {
-            if (hasVacuum) { inBits.push({nIndex: 600, sLabel: "xTool_vac_on", sDescription: "", sOriginalName: "IN[600]"}, {nIndex: 601, sLabel: "xTool_vac_off", sDescription: "", sOriginalName: "IN[601]"}); }
-            if (hasGripper) { inBits.push({nIndex: 602, sLabel: "xTool_grip", sDescription: "", sOriginalName: "IN[602]"}, {nIndex: 603, sLabel: "xTool_ungrip", sDescription: "", sOriginalName: "IN[603]"}); }
-            if (hasTrash) { inBits.push({nIndex: 604, sLabel: "xTrash_grip", sDescription: "", sOriginalName: "IN[604]"}, {nIndex: 605, sLabel: "xTrash_ungrip", sDescription: "", sOriginalName: "IN[605]"}); }
+            const isDIO = options.ToolControlType === "DIO";
+            if (hasVacuum) {
+                if (isDIO) {
+                    inBits.push({nIndex: 0, sLabel: "xTool_vac_on_chk", sDescription: "DIO Tool", sOriginalName: "IN[0]"}, {nIndex: 1, sLabel: "xTool_vac_off_chk", sDescription: "DIO Tool", sOriginalName: "IN[1]"});
+                    inBits.push({nIndex: 600, sLabel: "xTool_vac_on_REQ", sDescription: "COMM Tool", sOriginalName: "IN[600]"}, {nIndex: 601, sLabel: "xTool_vac_off_REQ", sDescription: "COMM Tool", sOriginalName: "IN[601]"});
+                } else {
+                    inBits.push({nIndex: 600, sLabel: "xTool_vac_on", sDescription: "", sOriginalName: "IN[600]"}, {nIndex: 601, sLabel: "xTool_vac_off", sDescription: "", sOriginalName: "IN[601]"});
+                }
+            }
+            if (hasGripper) {
+                if (isDIO) {
+                    inBits.push({nIndex: 2, sLabel: "xTool_grip_chk", sDescription: "DIO Tool", sOriginalName: "IN[2]"}, {nIndex: 3, sLabel: "xTool_ungrip_chk", sDescription: "DIO Tool", sOriginalName: "IN[3]"});
+                    inBits.push({nIndex: 602, sLabel: "xTool_grip_REQ", sDescription: "COMM Tool", sOriginalName: "IN[602]"}, {nIndex: 603, sLabel: "xTool_ungrip_REQ", sDescription: "COMM Tool", sOriginalName: "IN[603]"});
+                } else {
+                    inBits.push({nIndex: 602, sLabel: "xTool_grip", sDescription: "", sOriginalName: "IN[602]"}, {nIndex: 603, sLabel: "xTool_ungrip", sDescription: "", sOriginalName: "IN[603]"});
+                }
+            }
+            if (hasTrash) {
+                if (isDIO) {
+                    inBits.push({nIndex: 4, sLabel: "xTrash_grip_chk", sDescription: "DIO Tool", sOriginalName: "IN[4]"}, {nIndex: 5, sLabel: "xTrash_ungrip_chk", sDescription: "DIO Tool", sOriginalName: "IN[5]"});
+                    inBits.push({nIndex: 604, sLabel: "xTrash_grip_REQ", sDescription: "COMM Tool", sOriginalName: "IN[604]"}, {nIndex: 605, sLabel: "xTrash_ungrip_REQ", sDescription: "COMM Tool", sOriginalName: "IN[605]"});
+                } else {
+                    inBits.push({nIndex: 604, sLabel: "xTrash_grip", sDescription: "", sOriginalName: "IN[604]"}, {nIndex: 605, sLabel: "xTrash_ungrip", sDescription: "", sOriginalName: "IN[605]"});
+                }
+            }
             let curStageInIdx = 606;
+            let curDioInIdx = 6;
             for (let i = 1; i <= stageCount; i++) {
-                let prefix = i === 1 ? "xStage" : `xStage${i}`;
-                inBits.push({nIndex: curStageInIdx, sLabel: `${prefix}_vac_on`, sDescription: "", sOriginalName: `IN[${curStageInIdx}]`});
-                inBits.push({nIndex: curStageInIdx+1, sLabel: `${prefix}_vac_off`, sDescription: "", sOriginalName: `IN[${curStageInIdx+1}]`});
+                let prefix = i === 1 ? "Stage" : `Stage${i}`;
+                if (isDIO) {
+                    inBits.push({nIndex: curDioInIdx, sLabel: `x${prefix}_vac_on_chk`, sDescription: "DIO Tool", sOriginalName: `IN[${curDioInIdx}]`});
+                    inBits.push({nIndex: curDioInIdx+1, sLabel: `x${prefix}_vac_off_chk`, sDescription: "DIO Tool", sOriginalName: `IN[${curDioInIdx+1}]`});
+                    inBits.push({nIndex: curStageInIdx, sLabel: `x${prefix}_vac_on_REQ`, sDescription: "COMM Tool", sOriginalName: `IN[${curStageInIdx}]`});
+                    inBits.push({nIndex: curStageInIdx+1, sLabel: `x${prefix}_vac_off_REQ`, sDescription: "COMM Tool", sOriginalName: `IN[${curStageInIdx+1}]`});
+                    curDioInIdx += 2;
+                } else {
+                    inBits.push({nIndex: curStageInIdx, sLabel: `x${prefix}_vac_on`, sDescription: "", sOriginalName: `IN[${curStageInIdx}]`});
+                    inBits.push({nIndex: curStageInIdx+1, sLabel: `x${prefix}_vac_off`, sDescription: "", sOriginalName: `IN[${curStageInIdx+1}]`});
+                }
                 curStageInIdx += 2;
             }
         }
@@ -397,15 +429,48 @@ EndFunc;
         if (hasCalibPlc) outBits.push({nIndex: 576, sLabel: "yVision_move_comp", sDescription: "", sOriginalName: "OUT[576]"});
         if (hasPeeling) outBits.push({nIndex: 568, sLabel: "yPeel_pos_comp", sDescription: "", sOriginalName: "OUT[568]"});
 
-        if (hasVacuum) { outBits.push({nIndex: 600, sLabel: "yTool_vac_on_REQ", sDescription: "", sOriginalName: "OUT[600]"}, {nIndex: 601, sLabel: "yTool_vac_off_REQ", sDescription: "", sOriginalName: "OUT[601]"}); }
-        if (hasGripper) { outBits.push({nIndex: 602, sLabel: "yTool_grip_REQ", sDescription: "", sOriginalName: "OUT[602]"}, {nIndex: 603, sLabel: "yTool_ungrip_REQ", sDescription: "", sOriginalName: "OUT[603]"}); }
-        if (hasTrash) { outBits.push({nIndex: 604, sLabel: "yTrash_grip_REQ", sDescription: "", sOriginalName: "OUT[604]"}, {nIndex: 605, sLabel: "yTrash_ungrip_REQ", sDescription: "", sOriginalName: "OUT[605]"}); }
-        let curStageOutIdx = 606;
-        for (let i = 1; i <= stageCount; i++) {
-            let prefix = i === 1 ? "yStage" : `yStage${i}`;
-            outBits.push({nIndex: curStageOutIdx, sLabel: `${prefix}_vac_on_REQ", sDescription: "", sOriginalName: "OUT[${curStageOutIdx}]`});
-            outBits.push({nIndex: curStageOutIdx+1, sLabel: `${prefix}_vac_off_REQ", sDescription: "", sOriginalName: "OUT[${curStageOutIdx+1}]`});
-            curStageOutIdx += 2;
+        if (options.EnableToolControl) {
+            const isDIO = options.ToolControlType === "DIO";
+            if (hasVacuum) {
+                if (isDIO) {
+                    outBits.push({nIndex: 0, sLabel: "yTool_vac_on", sDescription: "DIO Tool", sOriginalName: "OUT[0]"}, {nIndex: 1, sLabel: "yTool_vac_off", sDescription: "DIO Tool", sOriginalName: "OUT[1]"});
+                    outBits.push({nIndex: 600, sLabel: "yTool_vac_on_sts", sDescription: "COMM Tool", sOriginalName: "OUT[600]"}, {nIndex: 601, sLabel: "yTool_vac_off_sts", sDescription: "COMM Tool", sOriginalName: "OUT[601]"});
+                } else {
+                    outBits.push({nIndex: 600, sLabel: "yTool_vac_on_REQ", sDescription: "", sOriginalName: "OUT[600]"}, {nIndex: 601, sLabel: "yTool_vac_off_REQ", sDescription: "", sOriginalName: "OUT[601]"});
+                }
+            }
+            if (hasGripper) {
+                if (isDIO) {
+                    outBits.push({nIndex: 2, sLabel: "yTool_grip", sDescription: "DIO Tool", sOriginalName: "OUT[2]"}, {nIndex: 3, sLabel: "yTool_ungrip", sDescription: "DIO Tool", sOriginalName: "OUT[3]"});
+                    outBits.push({nIndex: 602, sLabel: "yTool_grip_sts", sDescription: "COMM Tool", sOriginalName: "OUT[602]"}, {nIndex: 603, sLabel: "yTool_ungrip_sts", sDescription: "COMM Tool", sOriginalName: "OUT[603]"});
+                } else {
+                    outBits.push({nIndex: 602, sLabel: "yTool_grip_REQ", sDescription: "", sOriginalName: "OUT[602]"}, {nIndex: 603, sLabel: "yTool_ungrip_REQ", sDescription: "", sOriginalName: "OUT[603]"});
+                }
+            }
+            if (hasTrash) {
+                if (isDIO) {
+                    outBits.push({nIndex: 4, sLabel: "yTrash_grip", sDescription: "DIO Tool", sOriginalName: "OUT[4]"}, {nIndex: 5, sLabel: "yTrash_ungrip", sDescription: "DIO Tool", sOriginalName: "OUT[5]"});
+                    outBits.push({nIndex: 604, sLabel: "yTrash_grip_sts", sDescription: "COMM Tool", sOriginalName: "OUT[604]"}, {nIndex: 605, sLabel: "yTrash_ungrip_sts", sDescription: "COMM Tool", sOriginalName: "OUT[605]"});
+                } else {
+                    outBits.push({nIndex: 604, sLabel: "yTrash_grip_REQ", sDescription: "", sOriginalName: "OUT[604]"}, {nIndex: 605, sLabel: "yTrash_ungrip_REQ", sDescription: "", sOriginalName: "OUT[605]"});
+                }
+            }
+            let curStageOutIdx = 606;
+            let curDioOutIdx = 6;
+            for (let i = 1; i <= stageCount; i++) {
+                let prefix = i === 1 ? "Stage" : `Stage${i}`;
+                if (isDIO) {
+                    outBits.push({nIndex: curDioOutIdx, sLabel: `y${prefix}_vac_on`, sDescription: "DIO Tool", sOriginalName: `OUT[${curDioOutIdx}]`});
+                    outBits.push({nIndex: curDioOutIdx+1, sLabel: `y${prefix}_vac_off`, sDescription: "DIO Tool", sOriginalName: `OUT[${curDioOutIdx+1}]`});
+                    outBits.push({nIndex: curStageOutIdx, sLabel: `y${prefix}_vac_on_sts`, sDescription: "COMM Tool", sOriginalName: `OUT[${curStageOutIdx}]`});
+                    outBits.push({nIndex: curStageOutIdx+1, sLabel: `y${prefix}_vac_off_sts`, sDescription: "COMM Tool", sOriginalName: `OUT[${curStageOutIdx+1}]`});
+                    curDioOutIdx += 2;
+                } else {
+                    outBits.push({nIndex: curStageOutIdx, sLabel: `y${prefix}_vac_on_REQ`, sDescription: "", sOriginalName: `OUT[${curStageOutIdx}]`});
+                    outBits.push({nIndex: curStageOutIdx+1, sLabel: `y${prefix}_vac_off_REQ`, sDescription: "", sOriginalName: `OUT[${curStageOutIdx+1}]`});
+                }
+                curStageOutIdx += 2;
+            }
         }
 
         // 5. OutputWordLabels
