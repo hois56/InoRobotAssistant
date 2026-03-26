@@ -11,6 +11,7 @@ class ProcessStep {
         this.ToolType = "Vacuum";
         this.VisionUse = "No use";
         this._customName = null;
+        this.ExtraWaitCount = 0;
     }
     get ProcessName() { return this._customName || `sP${String(this.No).padStart(2, '0')}_${this.WorkType}_${this.WorkMethod}`; }
     set ProcessName(val) { this._customName = val; }
@@ -178,6 +179,26 @@ window.uStep = function(idx, field, val) {
     }
     renderSteps();
 }
+
+window.addExtraWait = function(stepIdx) {
+    if (!state.steps[stepIdx]) return;
+    state.steps[stepIdx].ExtraWaitCount = (state.steps[stepIdx].ExtraWaitCount || 0) + 1;
+    updatePreview();
+};
+
+window.removeExtraWait = function(stepIdx) {
+    if (!state.steps[stepIdx]) return;
+    state.steps[stepIdx].ExtraWaitCount = Math.max(0, (state.steps[stepIdx].ExtraWaitCount || 0) - 1);
+    let removedId = (state.steps[stepIdx].No * 100) + state.steps[stepIdx].ExtraWaitCount + 2; 
+    if (state.ptsOverrides) {
+        for (let key in state.ptsOverrides) {
+            if (state.ptsOverrides[key][removedId.toString()]) {
+                delete state.ptsOverrides[key][removedId.toString()];
+            }
+        }
+    }
+    updatePreview();
+};
 
 // Modal hook for editing Name
 window.openNameModal = function(idx) {
@@ -551,6 +572,29 @@ function updatePreview() {
             const rows = lines.map((l, rowIdx) => {
                 const idMatch = l.match(/^P\[(\d+)\]/);
                 const id = idMatch ? idMatch[1] : '-';
+                
+                let idCell = `<span style="color:#94a3b8;font-family:monospace;font-size:12px">${id}</span>`;
+                if (state.editMode && id !== '-') {
+                    const numericId = parseInt(id, 10);
+                    const stepNo = Math.floor(numericId / 100);
+                    const posType = numericId % 100;
+                    
+                    const stepIdx = state.steps.findIndex(s => s.No === stepNo);
+                    if (stepIdx !== -1) {
+                        const step = state.steps[stepIdx];
+                        const exCount = step.ExtraWaitCount || 0;
+                        if (posType === 1) { 
+                            if (exCount < 8) {
+                                idCell = `<div style="display:flex;align-items:center;gap:4px"><button onclick="window.addExtraWait(${stepIdx})" style="background:#1e293b;border:1px solid rgba(34,197,94,0.3);color:#4ade80;cursor:pointer;padding:0 4px;border-radius:3px;font-size:11px;font-weight:bold">+</button>${idCell}</div>`;
+                            }
+                        } else if (posType >= 2 && posType <= 9) {
+                            if (posType === 1 + exCount) {
+                                idCell = `<div style="display:flex;align-items:center;gap:4px"><button onclick="window.removeExtraWait(${stepIdx})" style="background:#1e293b;border:1px solid rgba(239,68,68,0.3);color:#f87171;cursor:pointer;padding:0 4px;border-radius:3px;font-size:11px;font-weight:bold">-</button>${idCell}</div>`;
+                            }
+                        }
+                    }
+                }
+                
                 const nameMatch = l.match(/Name\s*=\s*([^;]+)/);
                 const name = nameMatch ? nameMatch[1].trim() : '-';
                 const coordPart = l.replace(/^P\[\d+\]\s*=\s*/, '').split(';')[0];
@@ -573,7 +617,7 @@ function updatePreview() {
                 }
                 
                 let rowCode = `<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
-                    <td style="padding:4px 6px;color:#94a3b8;font-family:monospace;font-size:12px">${id}</td>
+                    <td style="padding:4px 6px">${idCell}</td>
                     ${nameCell}
                     ${ec(rowIdx,'x',x)}${ec(rowIdx,'y',y)}${ec(rowIdx,'z',z)}${ec(rowIdx,'a',a)}`;
                 
