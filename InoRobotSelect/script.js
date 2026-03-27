@@ -723,28 +723,26 @@ document.addEventListener('DOMContentLoaded', () => {
         if (dks.length > 0 && dks.some(k => k.toLowerCase().includes('j1'))) {
             axesRows = `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.1); font-size: 11px; color: var(--text-muted);"><td></td><td style="text-align:right; padding: 4px 10px 4px 0;">속도</td><td style="text-align:right; padding: 4px 0;">가동범위</td></tr>`;
 
-            // Requirement 1: Combined Speed for SCARA J1+J2
+            // Requirement 1: Combined Speed for SCARA J1+J2 (Standard color)
             const isScara = product.specs.Type === 'SCARA';
             if (isScara) {
                 const combinedSpeedKey = dks.find(k => k.toLowerCase().includes('speed') && k.toLowerCase().includes('j1+j2'));
                 if (combinedSpeedKey) {
-                    axesRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); color: var(--primary-blue); font-weight:bold;"><td style="padding:6px 0;"><strong>J1+J2 합산 속도</strong></td><td style="text-align:right; padding-right:10px;">${ds[combinedSpeedKey]}</td><td style="text-align:right;">-</td></tr>`;
+                    axesRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>J1+J2 합산 속도</strong></td><td style="text-align:right; padding-right:10px;">${ds[combinedSpeedKey]}</td><td style="text-align:right;">-</td></tr>`;
                 }
             }
 
-            const checkNums = is6Axis ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4];
             checkNums.forEach(num => {
-                let label = 'J' + num;
+                let label = 'J' + num + ' 사양';
                 let q = 'j' + num;
                 const sk = dks.find(k => k.toLowerCase().includes('speed') && k.toLowerCase().includes(q));
                 const rk = dks.find(k => k.toLowerCase().includes('range') && k.toLowerCase().includes(q));
                 
                 let speedVal = ds[sk] || '-';
-                // Hide individual J1, J2 speed for SCARA
                 if (isScara && (num === 1 || num === 2)) speedVal = '-';
 
                 if (sk || rk) {
-                    axesRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>${label} 사양</strong></td><td style="text-align:right; padding-right:10px;">${speedVal}</td><td style="text-align:right;">${ds[rk] || '-'}</td></tr>`;
+                    axesRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>${label}</strong></td><td style="text-align:right; padding-right:10px;">${speedVal}</td><td style="text-align:right;">${ds[rk] || '-'}</td></tr>`;
                 }
             });
         } else if (tech && tech.axes) {
@@ -763,6 +761,39 @@ document.addEventListener('DOMContentLoaded', () => {
             `).join('');
         }
 
+        // Additional Specs (Requirements 4, 5, 6)
+        let extraRows = '';
+        if (ds) {
+            const isScara = product.specs.Type === 'SCARA';
+            // Repeatability
+            if (isScara) {
+                const r12 = ds[dks.find(k => k.toLowerCase().includes('repeatability') && k.toLowerCase().includes('j1+j2'))];
+                const r3 = ds[dks.find(k => k.toLowerCase().includes('repeatability') && k.toLowerCase().includes('j3'))];
+                const r4 = ds[dks.find(k => k.toLowerCase().includes('repeatability') && k.toLowerCase().includes('j4'))];
+                if (r12) extraRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>반복 정밀도 (J1+J2)</strong></td><td colspan="2" style="text-align:right;">${r12}</td></tr>`;
+                if (r3) extraRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>반복 정밀도 (J3)</strong></td><td colspan="2" style="text-align:right;">${r3}</td></tr>`;
+                if (r4) extraRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>반복 정밀도 (J4)</strong></td><td colspan="2" style="text-align:right;">${r4}</td></tr>`;
+            } else {
+                extraRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>반복 정밀도</strong></td><td colspan="2" style="text-align:right;">${repeatability}</td></tr>`;
+            }
+
+            // Inertia
+            const i4 = ds[dks.find(k => k.toLowerCase().includes('inertia') && k.toLowerCase().includes('j4'))];
+            if (i4) extraRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>허용 관성 모멘트 (J4)</strong></td><td colspan="2" style="text-align:right;">${i4} kg·m²</td></tr>`;
+            if (is6Axis) {
+                const i5 = ds[dks.find(k => k.toLowerCase().includes('inertia') && k.toLowerCase().includes('j5'))];
+                const i6 = ds[dks.find(k => k.toLowerCase().includes('inertia') && k.toLowerCase().includes('j6'))];
+                if (i5) extraRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>허용 관성 모멘트 (J5)</strong></td><td colspan="2" style="text-align:right;">${i5} kg·m²</td></tr>`;
+                if (i6) extraRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>허용 관성 모멘트 (J6)</strong></td><td colspan="2" style="text-align:right;">${i6} kg·m²</td></tr>`;
+            }
+
+            // Certification
+            const cert = ds[dks.find(k => k.toLowerCase().includes('cert'))];
+            if (cert) {
+                extraRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.1);"><td style="padding:6px 0;"><strong>인증 정보</strong></td><td colspan="2" style="text-align:right; font-size:11px;">${cert}</td></tr>`;
+            }
+        }
+
         const specHtml = `
             <div style="margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px;">
                 <h4 style="margin-bottom: 12px; color: var(--primary-blue); border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 8px;">로봇 스펙 정보</h4>
@@ -773,9 +804,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${isScara ? `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>Z축 길이</strong></td><td colspan="2" style="text-align:right;">${product.specs['Z axis Length(mm)'] || '-'} mm</td></tr>` : ''}
                     ${is6Axis ? `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>중공형(Hollow Wrist)</strong></td><td colspan="2" style="text-align:right;">${product.specs['Hollow Wrist'] || '-'}</td></tr>` : ''}
                     <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>클린 타입</strong></td><td colspan="2" style="text-align:right;">${product.specs['Clean Type'] || '-'}</td></tr>
-                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>반복 정밀도</strong></td><td colspan="2" style="text-align:right;">${repeatability}</td></tr>
                     <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>방수 방진 등급</strong></td><td colspan="2" style="text-align:right;">${ipRating}</td></tr>
                     <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>중량</strong></td><td colspan="2" style="text-align:right;">${weight}</td></tr>
+                    ${extraRows}
                     ${axesRows}
                     <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>사용자 배선</strong></td><td colspan="2" style="text-align:right;">${ioPins}</td></tr>
                     <tr><td style="padding:6px 0;"><strong>사용자 공압</strong></td><td colspan="2" style="text-align:right;">${air}</td></tr>
@@ -827,7 +858,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>` : ''}
 
             <div style="margin-bottom:20px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
-                <label id="header-other" style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">기타 악세서리</label>
+                <label id="header-other" style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">기타 악세서리 (유로 옵션)</label>
                 <div id="other-accessories-container" style="display:flex; flex-direction:column; gap:8px;"></div>
             </div>
 
@@ -1174,13 +1205,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (otherOptions.length > 0) {
             otherOptions.forEach(acc => {
                 const lbl = document.createElement('label');
-                lbl.style.display = "flex"; lbl.style.alignItems = "start"; lbl.style.gap = "8px"; lbl.style.fontSize = "13px"; lbl.style.cursor = "pointer";
+                lbl.style.display = "flex"; lbl.style.alignItems = "start"; lbl.style.gap = "8px"; lbl.style.fontSize = "14px"; lbl.style.cursor = "pointer";
                 lbl.innerHTML = `
                     <input type="checkbox" name="accSelection" value="${acc.code}" data-desc="${acc.name} - ${acc.description}" style="margin-top:3px;">
                     <div style="flex:1;">
                         <strong>${acc.name || 'Accessory'}</strong> 
                         <span class="item-code-inline" style="display:none; color:var(--primary-blue); font-weight:bold; margin-left:8px;">(${acc.code})</span>
-                        <br><span style="color:#666;">${acc.description}</span>
+                        <br><span style="color:#888; font-size:13px;">${acc.description}</span>
                     </div>
                 `;
                 otherAccContainer.appendChild(lbl);
@@ -1197,13 +1228,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (expOptions.length > 0) {
             expOptions.forEach(acc => {
                 const lbl = document.createElement('label');
-                lbl.style.display = "flex"; lbl.style.alignItems = "start"; lbl.style.gap = "8px"; lbl.style.fontSize = "13px"; lbl.style.cursor = "pointer";
+                lbl.style.display = "flex"; lbl.style.alignItems = "start"; lbl.style.gap = "8px"; lbl.style.fontSize = "14px"; lbl.style.cursor = "pointer";
                 lbl.innerHTML = `
                     <input type="checkbox" name="expSelection" value="${acc.code}" data-desc="${acc.name} - ${acc.description}" style="margin-top:3px;">
                     <div style="flex:1;">
                         <strong>${acc.name}</strong> 
                         <span class="exp-code-inline" style="display:none; color:var(--primary-blue); font-weight:bold; margin-left:8px;">(${acc.code})</span>
-                        <br><span style="color:#666;">${acc.description}</span>
+                        <br><span style="color:#888; font-size:13px;">${acc.description}</span>
                     </div>
                 `;
                 expContainer.appendChild(lbl);
