@@ -977,7 +977,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const checkedItems = Array.from(rightCol.querySelectorAll('input[name="accSelection"]:checked'));
                 const selectedCodes = checkedItems.map(cb => cb.value);
                 const code = selectedCodes.length > 0 ? ` (${selectedCodes.join(', ')})` : '';
-                otherHeader.textContent = `기타 악세서리${code}`;
+                otherHeader.textContent = `기타 악세서리 (유로 옵션)${code}`;
 
                 // Requirement 2: Show code on the right of each item
                 rightCol.querySelectorAll('input[name="accSelection"]').forEach(cb => {
@@ -1535,4 +1535,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     renderFilters();
     renderProducts();
+
+    function parseLen(l) {
+        if (l === 'N/A') return 0;
+        return parseInt(l.replace('m', '')) || 0;
+    }
 });
