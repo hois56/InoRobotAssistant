@@ -1497,7 +1497,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </table>
 
             <div class="html2pdf__page-break"></div>
-            <div style="height: 40px; width: 100%;"></div>
+            <div style="height: 50px; width: 100%;"></div>
             <h3 style="color: #333; margin-top: 10px; margin-bottom: 10px; background: #eee; padding: 10px; border-radius: 4px;">옵션 및 악세서리 구성</h3>
             <div style="margin-left: 10px; margin-bottom: 15px;">
                 <p style="margin: 0; font-size: 13px;"><strong>기본 케이블 구성:</strong> 파워/엔코더 케이블 ${cableLen} (${cableType})</p>
@@ -1567,17 +1567,32 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const zip = new JSZip();
             const product = currentActiveProduct;
-            const modelId = product.id;
+            const modelId = product.id; // e.g. IR-R4H-54S-INT
             const type = product.specs.Type;
             const name = product.name;
 
-            // Robot folder mapping
-            let folderBase = modelId.split('Z')[0]; // For SCARA
+            // Improved Robot folder mapping
+            let folderBase = modelId.split('Z')[0]; // For SCARA: IR-S4-40
             if (type === '6-Axis') {
                 const parts = modelId.split('-');
-                folderBase = parts.slice(0, 3).join('-');
+                if (parts[2].endsWith('S') && !modelId.includes('R11-90S')) {
+                    folderBase = parts.slice(0, 2).join('-') + '-' + parts[2].slice(0, -1);
+                } else if (parts[2].endsWith('S5')) {
+                    folderBase = parts.slice(0, 2).join('-') + '-' + parts[2].slice(0, -2);
+                } else {
+                    folderBase = parts.slice(0, 3).join('-');
+                }
             }
             
+            // Hardcoded Exception map for 6-axis folder names
+            const cadFolderMap = {
+                "IR-R15H-145S5-INT": "IR-R15H-145",
+                "IR-R16-210S5-INT": "IR-R16-210",
+                "IR-R20H-120S5-INT": "IR-R20H-120",
+                "IR-R25-178S5-INT": "IR-R25-178"
+            };
+            if(cadFolderMap[modelId]) folderBase = cadFolderMap[modelId];
+
             const typeDir = type === 'SCARA' ? 'SCARA' : '6-axis';
             const robotFiles = [
                 { path: `Robot_CAD/${typeDir}/${folderBase}/${modelId}_2D.dwg`, name: `${modelId}_2D.dwg` },
@@ -1622,8 +1637,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (resp.ok) {
                         const blob = await resp.blob();
                         zip.file(f.name, blob);
+                    } else {
+                        console.warn("File not found on server:", f.path);
                     }
-                } catch (e) { console.error("File skip:", f.path); }
+                } catch (e) { console.error("File fetch error:", f.path, e); }
             }
 
             const content = await zip.generateAsync({ type: "blob" });

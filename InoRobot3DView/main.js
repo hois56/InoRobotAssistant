@@ -84,6 +84,66 @@ function setupEventListeners() {
     });
     el.btnResetView.addEventListener('click', fitCamera);
     el.btnToggleGrid.addEventListener('click', toggleGrid);
+    
+    const btnDown = document.getElementById('btn-download-cad');
+    if (btnDown) {
+        btnDown.addEventListener('click', async () => {
+            const name = el.statName.textContent;
+            if (!name || name === '-') {
+                alert("모델이 선택되지 않았습니다.");
+                return;
+            }
+
+            const modelId = name.includes('-INT') ? name : name + '-INT';
+            const isScara = name.includes('-S') || name.includes('-TS') || name.includes('-GS');
+            const typeDir = isScara ? 'SCARA' : '6-axis';
+            
+            let folderBase = name.split('Z')[0];
+            if (!isScara) {
+                const parts = name.split('-');
+                if (parts[2].endsWith('S') && !name.includes('R11-90S')) {
+                    folderBase = parts.slice(0, 2).join('-') + '-' + parts[2].slice(0, -1);
+                } else if (parts[2].endsWith('S5')) {
+                    folderBase = parts.slice(0, 2).join('-') + '-' + parts[2].slice(0, -2);
+                } else {
+                    folderBase = parts.slice(0, 3).join('-');
+                }
+            }
+            
+            const overrides = {
+                "IR-R11-90S": "IR-R11-90S",
+                "IR-R15H-145S5": "IR-R15H-145",
+                "IR-R16-210S5": "IR-R16-210",
+                "IR-R20H-120S5": "IR-R20H-120",
+                "IR-R25-178S5": "IR-R25-178"
+            };
+            if (overrides[name]) folderBase = overrides[name];
+
+            const zip = new JSZip();
+            const files = [
+                { path: `../InoRobotSelect/Robot_CAD/${typeDir}/${folderBase}/${modelId}_2D.dwg`, name: `${modelId}_2D.dwg` },
+                { path: `../InoRobotSelect/Robot_CAD/${typeDir}/${folderBase}/${modelId}_3D.stp`, name: `${modelId}_3D.stp` }
+            ];
+
+            btnDown.disabled = true;
+            const oldHtml = btnDown.innerHTML;
+            btnDown.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+            try {
+                for (const f of files) {
+                    const r = await fetch(f.path);
+                    if (r.ok) {
+                        zip.file(f.name, await r.blob());
+                    }
+                }
+                const content = await zip.generateAsync({ type: "blob" });
+                saveAs(content, `Inovance_CAD_${modelId}.zip`);
+            } catch (e) { console.error(e); }
+            
+            btnDown.disabled = false;
+            btnDown.innerHTML = oldHtml;
+        });
+    }
 }
 
 function animate() {
