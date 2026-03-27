@@ -126,26 +126,54 @@ document.addEventListener('DOMContentLoaded', () => {
             card.className = 'product-card';
 
             const name = product.name.toUpperCase();
-            let scaraSubtype = '';
+            const isClean = product.specs['Clean Type'] === 'Yes';
+            let scaraSubtype = '일반형';
+            let img = 'robot.png';
+
             if (product.specs.Type === 'SCARA') {
-                if (name.includes('TS4') || name.includes('TS5')) {
+                if (name.includes('IR-CS')) {
+                    scaraSubtype = '경제형';
+                } else if (isClean) {
+                    scaraSubtype = '클린형';
+                } else if (name.includes('TS4') || name.includes('TS5')) {
                     scaraSubtype = '천장형';
-                    product.image = 'scara_ceiling.png';
-                } else {
-                    scaraSubtype = '일반형';
-                    product.image = 'scara_std.png';
                 }
+
+                // 이미지 선택 로직 (SCARA)
+                if (name.includes('TS4')) img = 'IR-TS4.png';
+                else if (name.includes('TS5')) img = 'IR-TS5.png';
+                else if (name.includes('S4')) img = 'IR-S4.png';
+                else if (name.includes('S7')) img = 'IR-S7.png';
+                else if (name.includes('S10')) img = 'IR-S10.png';
+                else if (name.includes('S25')) {
+                    img = isClean ? 'IR-S25-Clean.png' : 'IR-S25.png';
+                } else if (name.includes('S35')) {
+                    // 암 길이 매칭 로직
+                    if (name.includes('-80')) {
+                        img = isClean ? 'IR-S35-80_Clean.png' : 'IR-S35-80.png';
+                    } else if (name.includes('-100') || name.includes('-120')) {
+                        // 120은 100의 이미지 공유
+                        img = isClean ? 'IR-S35-100_Clean.png' : 'IR-S35-100.png';
+                    } else {
+                        img = isClean ? 'IR-S35-100_Clean.png' : 'IR-S35-100.png';
+                    }
+                } else if (name.includes('S60')) img = 'IR-S60.png';
+                else img = 'scara_std.png';
             } else {
-                if (name.includes('R10-140') || name.includes('R16') || name.includes('R25')) {
-                    product.image = 'axis6_heavy.png';
-                } else if (name.includes('R4-56S-INT')) {
-                    product.image = 'axis6_med.png';
-                } else if (name.includes('R4') || name.includes('R7') || name.includes('R10H')) {
-                    product.image = 'axis6_std.png';
-                } else {
-                    product.image = 'axis6_med.png';
-                }
+                // 6축 로봇 이미지 선택
+                if (name.includes('IR-R4H')) img = 'IR-R4H.png';
+                else if (name.includes('IR-R4')) img = 'IR-R4.png';
+                else if (name.includes('IR-R7H')) img = 'IR-R7H.png';
+                else if (name.includes('IR-R10-110')) img = 'IR-R10-110.png';
+                else if (name.includes('IR-R11')) img = 'IR-R11.png';
+                else if (name.includes('IR-R15H')) img = 'IR-R15H.png';
+                else if (name.includes('IR-R16')) img = 'IR-R16.png';
+                else if (name.includes('IR-R20H')) img = 'IR-R20H.png';
+                else if (name.includes('IR-R25')) img = 'IR-R25.png';
+                else img = 'axis6_std.png';
             }
+
+            product.image = 'Model_image/' + img;
 
             // Rename SCARA clean types
             let displayName = product.name;
@@ -609,10 +637,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Rename SCARA clean types for modal title
         let displayName = product.name;
-        let scaraSubtype = '';
+        let scaraSubtype = '일반형';
+        const isClean = product.specs['Clean Type'] === 'Yes';
+
         if (product.specs.Type === 'SCARA') {
             const upperName = product.name.toUpperCase();
-            scaraSubtype = (upperName.includes('TS4') || upperName.includes('TS5')) ? '천장형' : '일반형';
+            
+            if (upperName.includes('IR-CS')) {
+                scaraSubtype = '경제형';
+            } else if (isClean) {
+                scaraSubtype = '클린형';
+            } else if (upperName.includes('TS4') || upperName.includes('TS5')) {
+                scaraSubtype = '천장형';
+            } else {
+                scaraSubtype = '일반형';
+            }
 
             if (product.specs['Clean Type'] === 'Yes') {
                 displayName = displayName.replace(/\s*\(Clean Type\)\s*/gi, '');
