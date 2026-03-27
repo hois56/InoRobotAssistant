@@ -731,6 +731,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
+            const checkNums = is6Axis ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4];
             checkNums.forEach(num => {
                 let label = 'J' + num + ' 사양';
                 let q = 'j' + num;
