@@ -261,12 +261,24 @@ for _, row in df_acc.iterrows():
     acc_code = str(row.get('Code', '')).strip()
     if pd.isna(acc_code) or acc_code == 'nan' or acc_code == '-':
         continue
+    
     desc = str(row.get('Description', '')).replace('\n', ' ').replace('\ufffd', '').strip()
     type_name = str(row.get('Type', '')).replace('\n', ' ').strip()
+    name = str(row.get('Name', '')).strip()
+    
+    spec = str(row.get('Cable length', '')).strip() if 'Cable length' in df_acc.columns else ''
+    if spec == 'nan': spec = ''
+    
+    target_models = str(row.get('Robot model', '')).strip() if 'Robot model' in df_acc.columns else ''
+    if target_models == 'nan': target_models = ''
+
     accessories.append({
         'code': acc_code,
         'type': type_name,
-        'description': desc
+        'name': name,
+        'description': desc,
+        'spec': spec,
+        'target_models': target_models
     })
 
 # ============================================================

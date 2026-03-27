@@ -3870,201 +3870,321 @@ const accessoriesList = [
     {
         "code": "15051627",
         "type": "Cable & Connector",
-        "description": "8 pin, 90° connector, Flexible cable"
+        "name": "Robot arm I/O cable",
+        "description": "8 pin, 90° connector, Flexible cable",
+        "spec": "2m",
+        "target_models": "R4H, R7H, R10H"
     },
     {
         "code": "15050817",
         "type": "Cable & Connector",
-        "description": "12 pin, 90° connector, Flexible cable"
+        "name": "Robot arm I/O cable",
+        "description": "12 pin, 90° connector, Flexible cable",
+        "spec": "1m",
+        "target_models": "R4, R4H, R10-110, R11"
     },
     {
         "code": "1504WU81",
         "type": "Cable & Connector",
-        "description": "12 pin, 90° connector, Flexible cable"
+        "name": "Robot arm I/O cable",
+        "description": "12 pin, 90° connector, Flexible cable",
+        "spec": "2m",
+        "target_models": "R4, R4H, R10-110, R11"
     },
     {
         "code": "15051387",
         "type": "Cable & Connector",
-        "description": "17 pin, 90° connector, Flexible cable"
+        "name": "Robot arm I/O cable",
+        "description": "17 pin, 90° connector, Flexible cable",
+        "spec": "1m",
+        "target_models": "R7H, R10H"
     },
     {
         "code": "15310429",
         "type": "Cable & Connector",
-        "description": "17 pin, 90° connector, Flexible cable"
+        "name": "Robot arm I/O cable",
+        "description": "17 pin, 90° connector, Flexible cable",
+        "spec": "2m",
+        "target_models": "R7H, R10H"
     },
     {
         "code": "15050930",
         "type": "Connector",
-        "description": "19pin, 90° connector only"
+        "name": "Robot arm I/O cable",
+        "description": "19pin, 90° connector only",
+        "spec": "-",
+        "target_models": "R10-140, R16, R25"
     },
     {
         "code": "15051215",
         "type": "Cable & Connector",
-        "description": "19pin, 90° connector, Flexible cable"
+        "name": "Robot arm I/O cable",
+        "description": "19pin, 90° connector, Flexible cable",
+        "spec": "1.5m",
+        "target_models": "R10-140, R16, R25"
     },
     {
         "code": "1504WU82",
         "type": "Cable & Connector",
-        "description": "19pin, 90° connector, Flexible cable"
+        "name": "Robot arm I/O cable",
+        "description": "19pin, 90° connector, Flexible cable",
+        "spec": "3m",
+        "target_models": "R10-140, R16, R25"
     },
     {
         "code": "1504WW97",
         "type": "Cable & Connector",
-        "description": "19pin, 90° connector, Flexible cable"
+        "name": "Robot arm I/O cable",
+        "description": "19pin, 90° connector, Flexible cable",
+        "spec": "5m",
+        "target_models": "R10-140, R16, R25"
     },
     {
         "code": "15310427",
         "type": "Cable & Connector",
-        "description": "8 pin, 180° connector, Flexible cable"
+        "name": "Robot Body I/O cable",
+        "description": "8 pin, 180° connector, Flexible cable",
+        "spec": "5m",
+        "target_models": "R4H, R7H, R10H"
     },
     {
         "code": "15310428",
         "type": "Cable & Connector",
-        "description": "8 pin, 180° connector, Flexible cable"
+        "name": "Robot Body I/O cable",
+        "description": "8 pin, 180° connector, Flexible cable",
+        "spec": "10m",
+        "target_models": "R4H, R7H, R10H"
     },
     {
         "code": "1504WN06",
         "type": "Cable & Connector",
-        "description": "8 pin, 180° connector, Non-Flexible cable"
+        "name": "Robot Body I/O cable",
+        "description": "8 pin, 180° connector, Non-Flexible cable",
+        "spec": "10m",
+        "target_models": "R4H, R7H, R10H"
     },
     {
         "code": "1504B978",
         "type": "Cable & Connector",
-        "description": "19 pin, 180° connector, Non-Flexible cable"
+        "name": "Robot Body I/O cable",
+        "description": "19 pin, 180° connector, Non-Flexible cable",
+        "spec": "5m",
+        "target_models": "R4, R4H, R7H, R10(All), R11, R16, R25"
     },
     {
         "code": "1504RP67",
         "type": "Cable & Connector",
-        "description": "19 pin, 180° connector, Flexible cable"
+        "name": "Robot Body I/O cable",
+        "description": "19 pin, 180° connector, Flexible cable",
+        "spec": "5m",
+        "target_models": "R4, R4H, R7H, R10(All), R11, R16, R25"
     },
     {
         "code": "1504RP68",
         "type": "Cable & Connector",
-        "description": "19 pin, 180° connector, Flexible cable"
+        "name": "Robot Body I/O cable",
+        "description": "19 pin, 180° connector, Flexible cable",
+        "spec": "10m",
+        "target_models": "R4, R4H, R7H, R10(All), R11, R16, R25"
     },
     {
         "code": "1504RP69",
         "type": "Cable & Connector",
-        "description": "19 pin, 180° connector, Flexible cable"
+        "name": "Robot Body I/O cable",
+        "description": "19 pin, 180° connector, Flexible cable",
+        "spec": "15m",
+        "target_models": "R4, R4H, R7H, R10(All), R11, R16, R25"
     },
     {
         "code": "1504NN47",
         "type": "Connector",
-        "description": "8pin connector to RJ45 adapter"
+        "name": "Robot body RJ45 port",
+        "description": "8pin connector to RJ45 adapter",
+        "spec": "-",
+        "target_models": "R4H, R7H, R10H"
     },
     {
         "code": "01660004",
         "type": "break box",
-        "description": "Used to manually release the break of the robot in emergencies"
+        "name": "Handheld motor break release box",
+        "description": "Used to manually release the break of the robot in emergencies",
+        "spec": "-",
+        "target_models": "R10-140, R16, R25"
     },
     {
         "code": "32020626",
         "type": "Zeroing tool",
-        "description": "Zero position calibration (pin 1, pin 2, block Set)"
+        "name": "Homing J4 pin 1",
+        "description": "Zero position calibration (pin 1, pin 2, block Set)",
+        "spec": "-",
+        "target_models": "S4, S7, S10, TS4, TS5"
     },
     {
         "code": "32020627",
         "type": "Zeroing tool",
-        "description": "Zero position calibration (pin 1, pin 2, block Set)"
+        "name": "Homing J4 pin 2",
+        "description": "Zero position calibration (pin 1, pin 2, block Set)",
+        "spec": "-",
+        "target_models": "S4, S7, S10, TS4, TS5"
     },
     {
         "code": "32040084",
         "type": "Zeroing tool",
-        "description": "Zero position calibration (pin 1, pin 2, block Set)"
+        "name": "Homing J3 block",
+        "description": "Zero position calibration (pin 1, pin 2, block Set)",
+        "spec": "-",
+        "target_models": "S4, S7, S10, TS4, TS5"
     },
     {
         "code": "01660018",
         "type": "Zeroing tool",
-        "description": "Zero position calibration"
+        "name": "Homing tool",
+        "description": "Zero position calibration",
+        "spec": "-",
+        "target_models": "R4, R4H, R7H, R10H, R10-110, R11"
     },
     {
         "code": "01660015",
         "type": "Zeroing tool",
-        "description": "Zero position calibration"
+        "name": "Homing tool",
+        "description": "Zero position calibration",
+        "spec": "-",
+        "target_models": "R10-140, R16, R25"
     },
     {
         "code": "01640055",
         "type": "Pendant",
-        "description": "Robot teach pendant"
+        "name": "IR-TP200-L5-INT",
+        "description": "Robot teach pendant",
+        "spec": "5m",
+        "target_models": "All"
     },
     {
         "code": "01640056",
         "type": "Pendant",
-        "description": "Robot teach pendant"
+        "name": "IR-TP200-L10-INT",
+        "description": "Robot teach pendant",
+        "spec": "10m",
+        "target_models": "All"
     },
     {
         "code": "01640057",
         "type": "Pendant",
-        "description": "Robot teach pendant"
+        "name": "IR-TP200-L20-INT",
+        "description": "Robot teach pendant",
+        "spec": "20m",
+        "target_models": "All"
     },
     {
         "code": "01640058",
         "type": "Pendant",
-        "description": "Robot teach pendant"
+        "name": "IR-TP200-L30-INT",
+        "description": "Robot teach pendant",
+        "spec": "30m",
+        "target_models": "All"
     },
     {
         "code": "1504R444",
         "type": "Cable & Connector",
-        "description": "Robot teach pendant Extension Cable"
+        "name": "IR-TP200 Teach Pendant Extension Cable",
+        "description": "Robot teach pendant Extension Cable",
+        "spec": "5m",
+        "target_models": "All"
     },
     {
         "code": "1504R445",
         "type": "Cable & Connector",
-        "description": "Robot teach pendant Extension Cable"
+        "name": "IR-TP200 Teach Pendant Extension Cable",
+        "description": "Robot teach pendant Extension Cable",
+        "spec": "15m",
+        "target_models": "All"
     },
     {
         "code": "1504R446",
         "type": "Cable & Connector",
-        "description": "Robot teach pendant Extension Cable"
+        "name": "IR-TP200 Teach Pendant Extension Cable",
+        "description": "Robot teach pendant Extension Cable",
+        "spec": "25m",
+        "target_models": "All"
     },
     {
         "code": "1504R443",
         "type": "connector",
-        "description": "TP2.0 adapter to old version IRCB501controller"
+        "name": "Pendant connector adapter",
+        "description": "TP2.0 adapter to old version IRCB501controller",
+        "spec": "-",
+        "target_models": "All"
     },
     {
         "code": "98051002",
         "type": "Encoder Battery",
-        "description": "Encoder Battery"
+        "name": "Encoder Battery",
+        "description": "Encoder Battery",
+        "spec": "-",
+        "target_models": "All"
     },
     {
         "code": "72100539",
         "type": "Software",
-        "description": "Robot simulation software USB Flash Drive (InoRobotStudio)"
+        "name": "Robot Simulation Software Dongle",
+        "description": "Robot simulation software USB Flash Drive (InoRobotStudio)",
+        "spec": "-",
+        "target_models": "All"
     },
     {
         "code": "98070385",
         "type": "Telescopic Cover",
-        "description": "J3 Upper Cover (IR-S4-Z12C)"
+        "name": "Upper Telescopic Cover",
+        "description": "J3 Upper Cover (IR-S4-Z12C)",
+        "spec": "-",
+        "target_models": "S4C"
     },
     {
         "code": "98070386",
         "type": "Telescopic Cover",
-        "description": "J3 Lower Cover (IR-S4-Z12C)"
+        "name": "Lower Telescopic Cover",
+        "description": "J3 Lower Cover (IR-S4-Z12C)",
+        "spec": "-",
+        "target_models": "S4C"
     },
     {
         "code": "98070355",
         "type": "Telescopic Cover",
-        "description": "J3 Upper Cover (IR-S7/10-Z17C)"
+        "name": "Upper Telescopic Cover",
+        "description": "J3 Upper Cover (IR-S7/10-Z17C)",
+        "spec": "-",
+        "target_models": "S7C, S10C"
     },
     {
         "code": "98070354",
         "type": "Telescopic Cover",
-        "description": "J3 Lower Cover (IR-S7/10-Z17C)"
+        "name": "Lower Telescopic Cover",
+        "description": "J3 Lower Cover (IR-S7/10-Z17C)",
+        "spec": "-",
+        "target_models": "S7C, S10C"
     },
     {
         "code": "98051249",
         "type": "Pendant dummy Plug",
-        "description": "Teach Pendant dummy Plug for 1.0 TP Connector"
+        "name": "TP E-stop dummy Plug for 1.0 TP Connector",
+        "description": "Teach Pendant dummy Plug for 1.0 TP Connector",
+        "spec": "-",
+        "target_models": "All"
     },
     {
         "code": "98051250",
         "type": "Pendant dummy Plug",
-        "description": "Teach Pendant dummy Plug for 2.0 TP Connector"
+        "name": "TP E-stop dummy Plug for 2.0 TP Connector",
+        "description": "Teach Pendant dummy Plug for 2.0 TP Connector",
+        "spec": "-",
+        "target_models": "All"
     },
     {
         "code": "01660006",
         "type": "Fork lift tool",
-        "description": "Used by the fork lift for handling"
+        "name": "Fork lift tool for robots",
+        "description": "Used by the fork lift for handling",
+        "spec": "-",
+        "target_models": "R10-140, R16, R25"
     }
 ];

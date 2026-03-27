@@ -17,6 +17,20 @@ document.addEventListener('DOMContentLoaded', () => {
         accessories: (typeof accessoriesList !== 'undefined') ? JSON.parse(JSON.stringify(accessoriesList)) : []
     };
 
+    function isModelMatch(targetStr, robotName) {
+        if (!targetStr || targetStr.toLowerCase() === 'all') return true;
+        const targets = targetStr.split(',').map(t => t.trim().toUpperCase());
+        const name = robotName.toUpperCase();
+        return targets.some(t => {
+            if (t === 'ALL') return true;
+            if (t.includes('(ALL)')) {
+                const prefix = t.replace('(ALL)', '').trim();
+                return name.includes(prefix);
+            }
+            return name.includes(t);
+        });
+    }
+
     function renderFilters() {
         filterContainer.innerHTML = '';
 
@@ -722,7 +736,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
 
             <div style="margin-bottom:20px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
-                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">티칭 펜던트 길이 선택</label>
+                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">티칭 펜던트 길이 선택 (유로 옵션)</label>
                 <div id="pendant-container" style="display:flex; flex-direction:column; gap:8px;"></div>
             </div>
 
@@ -742,7 +756,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
 
             <div style="margin-bottom:20px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
-                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">통신 프로토콜 옵션</label>
+                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">통신 프로토콜 옵션 (확장카드 옵션)</label>
                 <p style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Modbus-RTU, Modbus-TCP, EtherNet/IP, EtherCAT, MC 통신은 기본 제공됩니다.</p>
                 <div id="comm-radios" style="display:flex; flex-wrap:wrap; gap:10px;">
                     <label class="cable-option" style="margin:0;">
@@ -829,14 +843,14 @@ document.addEventListener('DOMContentLoaded', () => {
         typeContainer.addEventListener('change', updateDynamicCode);
         updateDynamicCode();
 
-        // Pendant Logic
+        // Accessory Filtering Logic
+        const accs = state.accessories;
+        const prodName = product.name;
+
+        // 1. Pendant Logic
         const pendantContainer = rightCol.querySelector('#pendant-container');
-        let mainPendants = state.accessories.filter(a => ['01640055', '01640056', '01640057', '01640058'].includes(a.code));
-
-        if (mainPendants.length === 0) {
-            mainPendants = state.accessories.filter(a => a.description.toLowerCase().includes('teach pendant') && a.description.match(/\d+ m\)/));
-        }
-
+        const pendantOptions = accs.filter(a => a.type === 'Pendant' && isModelMatch(a.target_models, prodName));
+        
         pendantContainer.innerHTML = `
             <div style="display:flex; flex-wrap:wrap; gap:10px;" id="pendant-radios">
                 <label class="cable-option" style="margin:0;">
@@ -845,271 +859,62 @@ document.addEventListener('DOMContentLoaded', () => {
                 </label>
             </div>
         `;
-
         const pRadios = pendantContainer.querySelector('#pendant-radios');
-
-        mainPendants.sort((a, b) => {
-            let nA = (a.description.match(/\d+/) || [0])[0];
-            let nB = (b.description.match(/\d+/) || [0])[0];
-            return Number(nA) - Number(nB);
-        }).forEach((opt) => {
-            const l = opt.description.match(/\d+ ?m/) ? opt.description.match(/\d+ ?m/)[0] : opt.type;
+        pendantOptions.forEach(opt => {
+            const label = opt.spec || opt.name;
             pRadios.innerHTML += `
                 <label class="cable-option" style="margin:0;">
                     <input type="radio" name="pendantLength" value="${opt.code}" data-desc="${opt.description}">
-                    <span>${l}</span>
+                    <span>${label}</span>
                 </label>
             `;
         });
 
-        // Arm / Body Cable Logic parsing
-        let armBodyCodesUsed = [];
+        // 2. Arm / Body Cable Logic
         if (product.specs.Type === '6-Axis') {
-            const baseModel = product.name.split('-')[1]; // e.g. R4H, R10
-            let altBase = baseModel.replace(/^R/, ''); // e.g. 4H, 10
-
-            // ALL compatible Arm Cables for this exact robot
-            const armOptionsAll = state.accessories.filter(a => {
-                if (!a.type.toLowerCase().includes('arm') && !a.description.toLowerCase().includes('arm')) return false;
-                if (!a.type.toLowerCase().includes('cable')) return false;
-
-                // check model compatibility strings
-                let desc = a.description.toUpperCase();
-                return desc.includes(baseModel.toUpperCase()) || desc.includes('/' + altBase.toUpperCase() + '/');
-            });
-
-            // Extract lengths out from arm cords
-            let armLenOptions = [];
-            let seenArmLabels = new Set();
-            armOptionsAll.forEach(a => {
-                let m = a.description.toLowerCase().match(/(\d+\.?\d*)\s*m/);
-                let label = m ? m[0] : (a.description.toLowerCase().includes('without') ? 'None' : '');
-
-                if (label && label !== 'None' && !seenArmLabels.has(label)) {
-                    seenArmLabels.add(label);
-                    armLenOptions.push({ code: a.code, label: label, desc: a.description });
-                }
-            });
-
             const armContainer = rightCol.querySelector('#arm-container');
-            if (armLenOptions.length > 0) {
-                armContainer.innerHTML = `
-                    <div style="display:flex; flex-wrap:wrap; gap:10px;" id="arm-radios">
-                        <label class="cable-option" style="margin:0;">
-                            <input type="radio" name="armSelectionCode" value="none" checked>
-                            <span>사용안함</span>
-                        </label>
-                    </div>
-                `;
+            const armOptions = accs.filter(a => a.name === 'Robot arm I/O cable' && isModelMatch(a.target_models, prodName));
+            
+            if (armOptions.length > 0) {
+                armContainer.innerHTML = `<div style="display:flex; flex-wrap:wrap; gap:10px;" id="arm-radios"><label class="cable-option" style="margin:0;"><input type="radio" name="armSelectionCode" value="none" checked><span>사용안함</span></label></div>`;
                 const armRadios = armContainer.querySelector('#arm-radios');
-
-                armLenOptions.sort((a, b) => parseLen(a.label) - parseLen(b.label)).forEach((opt) => {
-                    armRadios.innerHTML += `
-                        <label class="cable-option" style="margin:0;">
-                            <input type="radio" name="armSelectionCode" value="${opt.code}" data-desc="${opt.desc}">
-                            <span>${opt.label}</span>
-                        </label>
-                    `;
+                armOptions.forEach(opt => {
+                    armRadios.innerHTML += `<label class="cable-option" style="margin:0;"><input type="radio" name="armSelectionCode" value="${opt.code}" data-desc="${opt.description}"><span>${opt.spec}</span></label>`;
                 });
             } else {
                 armContainer.innerHTML = `<span style="font-size:13px; color:#999;">해당 모델에 호환되는 Arm 케이블 옵션이 없습니다.</span>`;
             }
 
-            // Body Cables logic
-            const bodyOptionsAll = state.accessories.filter(a => {
-                if (!a.type.toLowerCase().includes('body') && !a.description.toLowerCase().includes('body')) return false;
-                if (!a.type.toLowerCase().includes('cable')) return false;
-
-                let desc = a.description.toUpperCase();
-                return desc.includes(baseModel.toUpperCase()) || desc.includes('/' + altBase.toUpperCase() + '/');
-            });
-
-            // They have "Flexible", "Non-Flexible", and "5m", "10m", "15m" combinations
-            let bodyOptionsParsed = bodyOptionsAll.map(a => {
-                let flexMatch = a.type.toLowerCase().includes('non-flex') ? 'Non-Flexible' : 'Flexible';
-                let m = a.type.toLowerCase().match(/(\d+\.?\d*)\s*m/);
-                let length = m ? m[0] : '10m';
-                return { code: a.code, flex: flexMatch, length: length, desc: a.description };
-            });
-
             const bodyContainer = rightCol.querySelector('#body-container');
-            if (bodyOptionsParsed.length > 0) {
-                let uniqueFlex = [...new Set(bodyOptionsParsed.map(x => x.flex))];
-                let uniqueLen = [...new Set(bodyOptionsParsed.map(x => x.length))];
-
-                bodyContainer.innerHTML = `
-                    <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;" id="body-flex-radios">
-                        <label class="cable-option" style="margin:0;">
-                            <input type="radio" name="bodyFlexTemp" value="none" checked>
-                            <span>사용안함</span>
-                        </label>
-                    </div>
-
-                    <div id="body-options-block" style="display:none; margin-top:10px;">
-                        <label style="display:block; font-size:13px; margin-bottom:6px;">케이블 길이:</label>
-                        <div style="display:flex; flex-wrap:wrap; gap:10px;" id="body-len-radios"></div>
-                        <input type="hidden" id="bodySelectionCode" name="bodySelection" value="">
-                        <input type="hidden" id="bodySelectionDesc" name="bodySelectionDesc" value="">
-                        <div id="body-warning" style="color:red; font-size:12px; margin-top:8px; display:none;">해당 타입과 길이의 조합은 제공되지 않습니다.</div>
-                    </div>
-                `;
-
-                const bodyBlock = bodyContainer.querySelector('#body-options-block');
-                const flexRadios = bodyContainer.querySelector('#body-flex-radios');
-                const lenRadios = bodyContainer.querySelector('#body-len-radios');
-
-                uniqueFlex.forEach((f, idx) => {
-                    flexRadios.innerHTML += `
-                        <label class="cable-option" style="margin:0;">
-                            <input type="radio" name="bodyFlexTemp" value="${f}">
-                            <span>${f}</span>
-                        </label>
-                    `;
+            const bodyOptions = accs.filter(a => a.name === 'Robot Body I/O cable' && isModelMatch(a.target_models, prodName));
+            
+            if (bodyOptions.length > 0) {
+                bodyContainer.innerHTML = `<div style="display:flex; flex-wrap:wrap; gap:10px;" id="body-radios"><label class="cable-option" style="margin:0;"><input type="radio" name="bodySelectionCode" value="none" checked><span>사용안함</span></label></div>`;
+                const bodyRadios = bodyContainer.querySelector('#body-radios');
+                bodyOptions.forEach(opt => {
+                    bodyRadios.innerHTML += `<label class="cable-option" style="margin:0;"><input type="radio" name="bodySelectionCode" value="${opt.code}" data-desc="${opt.description}"><span>${opt.spec}</span></label>`;
                 });
-
-                uniqueLen.sort((a, b) => parseLen(a) - parseLen(b)).forEach((l, idx) => {
-                    lenRadios.innerHTML += `
-                        <label class="cable-option" style="margin:0;">
-                            <input type="radio" name="bodyLenTemp" value="${l}" ${idx === 0 ? 'checked' : ''}>
-                            <span>${l}</span>
-                        </label>
-                    `;
-                });
-
-                // function to update hidden field
-                function updateBodySelection() {
-                    const selFlexNode = document.querySelector('input[name="bodyFlexTemp"]:checked');
-                    if (!selFlexNode || selFlexNode.value === 'none') {
-                        bodyBlock.style.display = 'none';
-                        document.getElementById('bodySelectionCode').value = "none";
-                        document.getElementById('body-warning').style.display = 'none';
-                        return;
-                    }
-
-                    bodyBlock.style.display = 'block';
-                    const selFlex = selFlexNode.value;
-                    const selLenNode = document.querySelector('input[name="bodyLenTemp"]:checked');
-                    const selLen = selLenNode ? selLenNode.value : '';
-
-                    const matched = bodyOptionsParsed.find(x => x.flex === selFlex && x.length === selLen);
-
-                    if (matched) {
-                        document.getElementById('bodySelectionCode').value = matched.code;
-                        document.getElementById('bodySelectionDesc').value = matched.desc;
-                        document.getElementById('body-warning').style.display = 'none';
-                    } else {
-                        document.getElementById('bodySelectionCode').value = "";
-                        document.getElementById('bodySelectionDesc').value = "";
-                        document.getElementById('body-warning').style.display = 'block';
-                    }
-                }
-
-                flexRadios.addEventListener('change', updateBodySelection);
-                lenRadios.addEventListener('change', updateBodySelection);
-
-                setTimeout(updateBodySelection, 50);
             } else {
                 bodyContainer.innerHTML = `<span style="font-size:13px; color:#999;">해당 모델에 호환되는 Body 케이블 옵션이 없습니다.</span>`;
             }
         }
 
-        let allArmBodyCodes = state.accessories.filter(a => {
-            if (!a.type.toLowerCase().includes('cable')) return false;
-            if (a.type.toLowerCase().includes('arm') || a.description.toLowerCase().includes('arm') ||
-                a.type.toLowerCase().includes('body') || a.description.toLowerCase().includes('body')) {
-                return true;
-            }
-            return false;
-        }).map(x => x.code);
-
-        // Other Accessories Logic
+        // 3. Other Accessories Logic
         const otherAccContainer = rightCol.querySelector('#other-accessories-container');
-        let otherOptions = state.accessories.filter(a => {
-            let typStr = a.type.toLowerCase();
-            let descStr = a.description.toLowerCase();
-
-            // 1. I/O cable 삭제 (already arm/body checked but force exclusion)
-            if (typStr.includes('i/o') || descStr.includes('i/o')) return false;
-
-            // 2. 로봇 시뮬레이션 프로그램 삭제
-            if (typStr.includes('simulation') || descStr.includes('simulation')) return false;
-
-            // 3. 호밍 툴 SCARA/6-Axis 매칭 및 세부 필터링
-            let isHoming = typStr.includes('homing') || descStr.includes('homing');
-            if (isHoming) {
-                let forScara = descStr.includes('scara');
-                if (product.specs.Type === 'SCARA' && !forScara) return false;
-                if (product.specs.Type === '6-Axis') {
-                    if (forScara) return false;
-                    // Distinguish between R4/7/10/11 and R10(1422)/16/25
-                    let isR10Large = descStr.includes('r10\uff081422mm\uff09') || descStr.includes('r16') || descStr.includes('r25');
-                    let isR4Small = descStr.includes('r4') || descStr.includes('r7') || descStr.includes('r11') || descStr.includes('r10\uff081100mm\uff09');
-
-                    const prodName = product.name.toUpperCase();
-                    if (isR10Large) {
-                        if (!prodName.includes('R10-140') && !prodName.includes('R16') && !prodName.includes('R25')) return false;
-                    }
-                    if (isR4Small) {
-                        if (prodName.includes('R10-140') || prodName.includes('R16') || prodName.includes('R25')) return false;
-                    }
-                }
-            }
-
-            // 4. 브레이크 릴리즈 박스는 다관절 용 (SCARA 배제)
-            let isBrake = typStr.includes('brake') || descStr.includes('brake') || typStr.includes('release') || descStr.includes('release');
-            if (isBrake && product.specs.Type === 'SCARA') return false;
-
-            // 5. 포크 리프트 툴은 다관절 R10-140, R16, R25만
-            let isForklift = typStr.includes('forklift') || descStr.includes('forklift') || typStr.includes('fork lift') || descStr.includes('fork lift');
-            if (isForklift) {
-                if (product.specs.Type !== '6-Axis') return false;
-                if (!product.name.includes('R10-140') && !product.name.includes('R16') && !product.name.includes('R25')) return false;
-            }
-
-            // 6. Telescopic cover는 스카라 전용, 페이로드 매칭
-            let isTelescopic = typStr.includes('telescopic') || descStr.includes('telescopic');
-            if (isTelescopic) {
-                if (product.specs.Type !== 'SCARA') return false;
-                let payload = product.specs['Payload(kg)'];
-                if (!descStr.includes(payload + 'kg')) return false;
-            }
-
-            // 7. Network cable accessory 필터링
-            if (typStr.includes('network cable') || descStr.includes('network port')) {
-                if (product.specs.Type === 'SCARA') return false;
-                const prodName = product.name.toUpperCase();
-                if (prodName.includes('R10-140') || prodName.includes('R16') || prodName.includes('R25')) return false;
-            }
-
-            // 8. Base exclusions (Pendant and Arm/Body)
-            let isPendant = descStr.includes('pendant') || typStr.includes('pendant');
-            let isArmBody = allArmBodyCodes.includes(a.code);
-            return !isPendant && !isArmBody;
-        });
-
-        // 8. 엔코더 배터리 이름 수정 (여분 구매)
-        otherOptions = otherOptions.map(a => {
-            let descStr = a.description.toLowerCase();
-            if (descStr.includes('battery')) {
-                return { ...a, type: a.type, description: a.description + ' (여분 구매)' };
-            }
-            return a;
+        const otherOptions = accs.filter(a => {
+            if (a.type === 'Pendant') return false;
+            if (a.name === 'Robot arm I/O cable' || a.name === 'Robot Body I/O cable') return false;
+            if (a.type === 'Software' && a.name.includes('Simulation')) return false;
+            return isModelMatch(a.target_models, prodName);
         });
 
         if (otherOptions.length > 0) {
             otherOptions.forEach(acc => {
                 const lbl = document.createElement('label');
-                lbl.style.display = "flex";
-                lbl.style.alignItems = "start";
-                lbl.style.gap = "8px";
-                lbl.style.fontSize = "13px";
-                lbl.style.cursor = "pointer";
+                lbl.style.display = "flex"; lbl.style.alignItems = "start"; lbl.style.gap = "8px"; lbl.style.fontSize = "13px"; lbl.style.cursor = "pointer";
                 lbl.innerHTML = `
                     <input type="checkbox" name="accSelection" value="${acc.code}" data-desc="${acc.type} - ${acc.description}" style="margin-top:3px;">
-                    <div>
-                        <strong>${acc.type || 'Accessory'}</strong><br>
-                        <span style="color:#666;">${acc.description}</span>
-                    </div>
+                    <div><strong>${acc.type || 'Accessory'}</strong><br><span style="color:#666;">${acc.description}</span></div>
                 `;
                 otherAccContainer.appendChild(lbl);
             });
