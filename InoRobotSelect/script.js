@@ -1319,9 +1319,10 @@ document.addEventListener('DOMContentLoaded', () => {
         let pSelected = document.querySelector('input[name="pendantLength"]:checked');
         if (pSelected && pSelected.value !== 'none') {
             const pLen = pSelected.getAttribute('data-spec') || '';
+            const showLen = pLen && pLen !== '-';
             selectedAccs.push({ 
                 name: '티칭 펜던트', 
-                details: `${pSelected.getAttribute('data-desc')}${pLen ? ' (길이: ' + pLen + ')' : ''}`, 
+                details: `${pSelected.getAttribute('data-desc')}${showLen ? ' (길이: ' + pLen + ')' : ''}`, 
                 code: pSelected.value 
             });
         }
@@ -1332,9 +1333,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const pinLabel = sel.name.split('_')[1];
                 const armDesc = sel.getAttribute('data-desc') || (sel.nextElementSibling ? sel.nextElementSibling.textContent : '해당 호환 모델');
                 const armLen = sel.getAttribute('data-spec') || '';
+                const showLen = armLen && armLen !== '-';
                 selectedAccs.push({ 
                     name: `Arm I/O 케이블 (${pinLabel})`, 
-                    details: `${armDesc}${armLen ? ' (길이: ' + armLen + ')' : ''}`, 
+                    details: `${armDesc}${showLen ? ' (길이: ' + armLen + ')' : ''}`, 
                     code: sel.value 
                 });
             }
@@ -1344,9 +1346,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const pinLabel = sel.name.split('_')[1];
                 const bodyDesc = sel.getAttribute('data-desc') || (sel.nextElementSibling ? sel.nextElementSibling.textContent : '해당 호환 모델');
                 const bodyLen = sel.getAttribute('data-spec') || '';
+                const showLen = bodyLen && bodyLen !== '-';
                 selectedAccs.push({ 
                     name: `Body I/O 케이블 (${pinLabel})`, 
-                    details: `${bodyDesc}${bodyLen ? ' (길이: ' + bodyLen + ')' : ''}`, 
+                    details: `${bodyDesc}${showLen ? ' (길이: ' + bodyLen + ')' : ''}`, 
                     code: sel.value 
                 });
             }
@@ -1356,6 +1359,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('input[name="accSelection"]:checked').forEach(cb => {
             const fullDesc = cb.getAttribute('data-desc') || "";
             const itemLen = cb.getAttribute('data-spec') || "";
+            const showLen = itemLen && itemLen !== '-';
             let namePart = "기타 악세서리";
             let detailPart = fullDesc;
 
@@ -1367,7 +1371,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             selectedAccs.push({
                 name: namePart,
-                details: `${detailPart}${itemLen ? ' (길이: ' + itemLen + ')' : ''}`,
+                details: `${detailPart}${showLen ? ' (길이: ' + itemLen + ')' : ''}`,
                 code: cb.value
             });
         });
@@ -1491,8 +1495,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </tbody>
             </table>
 
-            <!-- Requirement 4: Removed page-break to lift the table -->
-            <h3 style="color: #333; margin-top: 20px; margin-bottom: 10px; background: #eee; padding: 10px; border-radius: 4px;">옵션 및 악세서리 구성</h3>
+            <!-- Requirement 4: Force Option table to start on a new page -->
+            <h3 style="color: #333; margin-top: 20px; page-break-before: always; margin-bottom: 10px; background: #eee; padding: 10px; border-radius: 4px;">옵션 및 악세서리 구성</h3>
             <div style="margin-left: 10px; margin-bottom: 15px;">
                 <p style="margin: 0; font-size: 13px;"><strong>기본 케이블 구성:</strong> 파워/엔코더 케이블 ${cableLen} (${cableType})</p>
             </div>
