@@ -1288,6 +1288,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Prepare a hidden container to render PDF content nicely to HTML2PDF
         const pdfContainer = document.createElement('div');
         pdfContainer.style.padding = '40px';
+        pdfContainer.style.paddingBottom = '80px';
         pdfContainer.style.fontFamily = 'Inter, sans-serif, "Malgun Gothic"';
         pdfContainer.style.width = '720px';
         pdfContainer.style.color = '#222';
@@ -1495,8 +1496,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 </tbody>
             </table>
 
-            <!-- Requirement 4: Force Option table to start on a new page -->
-            <h3 style="color: #333; margin-top: 20px; page-break-before: always; margin-bottom: 10px; background: #eee; padding: 10px; border-radius: 4px;">옵션 및 악세서리 구성</h3>
+            <!-- Force clean page break for the next section -->
+            <div class="html2pdf__page-break"></div>
+            <h3 style="color: #333; margin-top: 10px; margin-bottom: 10px; background: #eee; padding: 10px; border-radius: 4px;">옵션 및 악세서리 구성</h3>
             <div style="margin-left: 10px; margin-bottom: 15px;">
                 <p style="margin: 0; font-size: 13px;"><strong>기본 케이블 구성:</strong> 파워/엔코더 케이블 ${cableLen} (${cableType})</p>
             </div>
