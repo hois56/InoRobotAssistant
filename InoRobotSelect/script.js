@@ -870,8 +870,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span>기본 프로토콜 사용</span>
                     </label>
                     <label class="cable-option" style="margin:0;">
-                        <input type="radio" name="commSelection" value="IRCB501-2PN-BD" data-code="01650028" data-label="PROFIBUS (PROFINET)">
-                        <span>PROFIBUS (PROFINET)</span>
+                        <input type="radio" name="commSelection" value="IRCB501-2PN-BD" data-code="01650028" data-label="PROFINET">
+                        <span>PROFINET</span>
                     </label>
                     <label class="cable-option" style="margin:0;">
                         <input type="radio" name="commSelection" value="IR-CE-CCLINK" data-code="01650040" data-label="CC-Link">
@@ -1106,7 +1106,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const label = opt.spec || opt.name;
             pRadios.innerHTML += `
                 <label class="cable-option" style="margin:0;">
-                    <input type="radio" name="pendantLength" value="${opt.code}" data-desc="${opt.description}">
+                    <input type="radio" name="pendantLength" value="${opt.code}" data-desc="${opt.description}" data-spec="${opt.spec || ''}">
                     <span>${label}</span>
                 </label>
             `;
@@ -1150,7 +1150,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (opt.spec === '-') displaySpec = '커넥터만';
                         else displaySpec = `${opt.spec} (${isFlex ? '플렉시블' : '논플렉시블'})`;
 
-                        radios.innerHTML += `<label class="cable-option" style="margin:0;"><input type="radio" name="armSelection_${pin}" value="${opt.code}" data-desc="${opt.description}"><span>${displaySpec}</span></label>`;
+                        radios.innerHTML += `<label class="cable-option" style="margin:0;"><input type="radio" name="armSelection_${pin}" value="${opt.code}" data-desc="${opt.description}" data-spec="${opt.spec || ''}"><span>${displaySpec}</span></label>`;
                     });
                     radios.addEventListener('change', updateHeaderCodes);
                 });
@@ -1187,7 +1187,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (opt.spec === '-') displaySpec = '커넥터만';
                         else displaySpec = `${opt.spec} (${isFlex ? '플렉시블' : '논플렉시블'})`;
 
-                        radios.innerHTML += `<label class="cable-option" style="margin:0;"><input type="radio" name="bodySelection_${pin}" value="${opt.code}" data-desc="${opt.description}"><span>${displaySpec}</span></label>`;
+                        radios.innerHTML += `<label class="cable-option" style="margin:0;"><input type="radio" name="bodySelection_${pin}" value="${opt.code}" data-desc="${opt.description}" data-spec="${opt.spec || ''}"><span>${displaySpec}</span></label>`;
                     });
                     radios.addEventListener('change', updateHeaderCodes);
                 });
@@ -1213,7 +1213,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const lbl = document.createElement('label');
                 lbl.style.display = "flex"; lbl.style.alignItems = "start"; lbl.style.gap = "8px"; lbl.style.fontSize = "14px"; lbl.style.cursor = "pointer";
                 lbl.innerHTML = `
-                    <input type="checkbox" name="accSelection" value="${acc.code}" data-desc="${acc.name} - ${acc.description}" style="margin-top:3px;">
+                    <input type="checkbox" name="accSelection" value="${acc.code}" data-desc="${acc.name} - ${acc.description}" data-spec="${acc.spec || ''}" style="margin-top:3px;">
                     <div style="flex:1;">
                         <strong>${acc.name || 'Accessory'}</strong> 
                         <span class="item-code-inline" style="display:none; color:var(--primary-blue); font-weight:bold; margin-left:8px;">(${acc.code})</span>
@@ -1236,7 +1236,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const lbl = document.createElement('label');
                 lbl.style.display = "flex"; lbl.style.alignItems = "start"; lbl.style.gap = "8px"; lbl.style.fontSize = "14px"; lbl.style.cursor = "pointer";
                 lbl.innerHTML = `
-                    <input type="checkbox" name="expSelection" value="${acc.code}" data-desc="${acc.name} - ${acc.description}" style="margin-top:3px;">
+                    <input type="checkbox" name="expSelection" value="${acc.code}" data-desc="${acc.name} - ${acc.description}" data-spec="${acc.spec || ''}" style="margin-top:3px;">
                     <div style="flex:1;">
                         <strong>${acc.name}</strong> 
                         <span class="exp-code-inline" style="display:none; color:var(--primary-blue); font-weight:bold; margin-left:8px;">(${acc.code})</span>
@@ -1318,7 +1318,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // Pendant
         let pSelected = document.querySelector('input[name="pendantLength"]:checked');
         if (pSelected && pSelected.value !== 'none') {
-            selectedAccs.push({ name: '티칭 펜던트', details: pSelected.getAttribute('data-desc'), code: pSelected.value });
+            const pLen = pSelected.getAttribute('data-spec') || '';
+            selectedAccs.push({ 
+                name: '티칭 펜던트', 
+                details: `${pSelected.getAttribute('data-desc')}${pLen ? ' (길이: ' + pLen + ')' : ''}`, 
+                code: pSelected.value 
+            });
         }
 
         // Arm / Body I/O (Multi-pin)
@@ -1326,20 +1331,31 @@ document.addEventListener('DOMContentLoaded', () => {
             if (sel.value !== 'none') {
                 const pinLabel = sel.name.split('_')[1];
                 const armDesc = sel.getAttribute('data-desc') || (sel.nextElementSibling ? sel.nextElementSibling.textContent : '해당 호환 모델');
-                selectedAccs.push({ name: `Arm I/O 케이블 (${pinLabel})`, details: armDesc, code: sel.value });
+                const armLen = sel.getAttribute('data-spec') || '';
+                selectedAccs.push({ 
+                    name: `Arm I/O 케이블 (${pinLabel})`, 
+                    details: `${armDesc}${armLen ? ' (길이: ' + armLen + ')' : ''}`, 
+                    code: sel.value 
+                });
             }
         });
         document.querySelectorAll('input[name^="bodySelection_"]:checked').forEach(sel => {
             if (sel.value !== 'none') {
                 const pinLabel = sel.name.split('_')[1];
                 const bodyDesc = sel.getAttribute('data-desc') || (sel.nextElementSibling ? sel.nextElementSibling.textContent : '해당 호환 모델');
-                selectedAccs.push({ name: `Body I/O 케이블 (${pinLabel})`, details: bodyDesc, code: sel.value });
+                const bodyLen = sel.getAttribute('data-spec') || '';
+                selectedAccs.push({ 
+                    name: `Body I/O 케이블 (${pinLabel})`, 
+                    details: `${bodyDesc}${bodyLen ? ' (길이: ' + bodyLen + ')' : ''}`, 
+                    code: sel.value 
+                });
             }
         });
 
         // Other Accs
         document.querySelectorAll('input[name="accSelection"]:checked').forEach(cb => {
             const fullDesc = cb.getAttribute('data-desc') || "";
+            const itemLen = cb.getAttribute('data-spec') || "";
             let namePart = "기타 악세서리";
             let detailPart = fullDesc;
 
@@ -1351,7 +1367,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             selectedAccs.push({
                 name: namePart,
-                details: detailPart,
+                details: `${detailPart}${itemLen ? ' (길이: ' + itemLen + ')' : ''}`,
                 code: cb.value
             });
         });
@@ -1436,13 +1452,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             axesRowsHtml = `
-                <tr style="border-bottom: 1px solid #eee; font-size: 11px; background: #f2f2f2;">
+                <tr style="border-bottom: 1px solid #eee; font-size: 11px; background: #f2f2f2; page-break-inside: avoid;">
                     <td style="padding: 8px; border: 1px solid #ddd;"></td>
                     <td style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">속도</td>
                     <td style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">가동범위</td>
                 </tr>
             ` + displayAxes.map(ax => `
-                <tr style="border-bottom: 1px solid #eee;">
+                <tr style="border-bottom: 1px solid #eee; page-break-inside: avoid;">
                     <td style="padding: 8px; border: 1px solid #ddd;"><strong>${ax.axis} 사양</strong></td>
                     <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${ax.speed}</td>
                     <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${ax.range}</td>
@@ -1458,7 +1474,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <h3 style="color: #333; margin-bottom: 10px; background: #eee; padding: 10px; border-radius: 4px;">제품 기본 정보</h3>
             <p style="margin: 0 0 15px 10px;"><strong>모델 명:</strong> ${pdfDisplayName} / <strong>주문 코드:</strong> ${foundCode}</p>
 
-            <table style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #ddd; margin-bottom: 30px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #ddd; margin-bottom: 30px; page-break-inside: avoid;">
                 <tbody>
                     <tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>가반 하중(Payload)</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${currentActiveProduct.specs['Payload(kg)'] || '-'} kg</td></tr>
                     <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>리치(Reach)</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${currentActiveProduct.specs['Manipulator Length(mm)'] || '-'} mm</td></tr>
@@ -1481,7 +1497,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p style="margin: 0; font-size: 13px;"><strong>기본 케이블 구성:</strong> 파워/엔코더 케이블 ${cableLen} (${cableType})</p>
             </div>
             
-            <table style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #ddd; margin-top: 10px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #ddd; margin-top: 10px; page-break-inside: avoid;">
                 <thead>
                     <tr style="background: #eee;">
                         <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">항목</th>
@@ -1496,11 +1512,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             <td style="border: 1px solid #ddd; padding: 8px; font-family: monospace;">${acc.code}</td>
                             <td style="border: 1px solid #ddd; padding: 8px;">${acc.details}</td>
                         </tr>
-                    `).join('') : '<tr><td colspan="3" style="border: 1px solid #ddd; padding: 8px; text-align: center; color: #888;">추가 선택 옵션 없음</td></tr>'}
+                    `).join('') : '<tr style="page-break-inside: avoid;"><td colspan="3" style="border: 1px solid #ddd; padding: 8px; text-align: center; color: #888;">추가 선택 옵션 없음</td></tr>'}
                 </tbody>
             </table>
 
-            <div style="margin-top: 30px; font-size: 11px; color: #888; text-align: center; border-top: 1px solid #ddd; padding-top: 15px;">
+            <div style="margin-top: 30px; font-size: 11px; color: #888; text-align: center; border-top: 1px solid #ddd; padding-top: 15px; page-break-inside: avoid;">
                 본 구성서는 선택된 옵션 기반의 가이드입니다. 제조사 사정에 따라 사양이 변경될 수 있습니다. 생성일시: ${new Date().toLocaleString('ko-KR')}
             </div>
         `;
@@ -1508,11 +1524,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.appendChild(pdfWrapper);
 
         const dlObj = {
-            margin: [10, 10, 10, 10],
+            margin: [15, 15, 15, 15],
             filename: `Inovance_Config_${currentActiveProduct.name}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: {
-                scale: 2,
+                scale: 1.5,
                 useCORS: true,
                 letterRendering: true,
                 backgroundColor: '#ffffff',
@@ -1521,7 +1537,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 scrollX: 0,
                 scrollY: 0
             },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
         };
 
         setTimeout(() => {

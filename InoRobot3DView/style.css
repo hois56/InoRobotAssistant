@@ -51,20 +51,19 @@ body {
 .logo-link {
     display: flex;
     align-items: center;
-    background: rgba(255,255,255,0.05);
-    padding: 8px 14px;
-    border-radius: 16px;
-    border: 1px solid rgba(255,255,255,0.08);
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    border: none;
     transition: all 0.3s var(--ease);
 }
 
 .logo-link:hover {
-    background: rgba(255,255,255,0.12);
-    transform: scale(1.02);
+    transform: scale(1.05);
 }
 
 .logo {
-    height: 40px; /* 로고를 더 크게 확대 (기존 42px -> 48px -> 현재 40px로 비율 재조정) */
+    height: 60px; /* 로고 크기 1.5배 확대 (40px -> 60px) 및 패딩 제거 */
     width: auto;
     object-fit: contain;
     display: block;
