@@ -630,15 +630,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
         leftCol.appendChild(imgContainer);
 
+        const ds = product.detailSpecs || {};
+        const is6Axis = product.specs.Type === '6-Axis';
+        const isScara = product.specs.Type === 'SCARA';
         const tech = getTechSpecs(product.name);
-        const repeatability = tech ? tech.repeatability : (product.specs.Type === 'SCARA' ? "±0.01mm" : "±0.02mm");
-        const ioPins = tech ? (tech.signals || tech.io) : (product.specs.Type === 'SCARA' ? "24 입력 / 16 출력" : "20 Signal lines");
-        const ipRating = tech ? tech.ip : (product.specs.Type === 'SCARA' ? "IP20" : "IP65 (Wrist IP67)");
-        const weight = tech ? tech.weight : (product.specs.Type === '6-Axis' ? "~130kg" : "12~56kg");
-        const cleanType = product.specs['Clean Type'] || '-';
+
+        // Dynamic spec extraction with fallbacks to tech map or defaults
+        const repeatability = ds['Repeatability (mm)'] || ds['Repeatability J1+J2 (mm)'] || (tech ? tech.repeatability : (isScara ? "±0.01mm" : "±0.02mm"));
+        const ioPins = ds['Customer Wiring'] || ds['Customer signal line'] || (tech ? (tech.signals || tech.io) : (isScara ? "24 입력 / 16 출력" : "20 Signal lines"));
+        const ipRating = ds['IP rating'] || (tech ? tech.ip : (isScara ? "IP20" : "IP65 (Wrist IP67)"));
+        const weight = ds['Weight (kg)'] || ds['Weight (excluding cables) (kg)'] || (tech ? tech.weight : (is6Axis ? "~130kg" : "12~56kg"));
+        const air = ds['Customer Air'] || ds['Customer air piping (0.59Mpa)'] || (tech ? tech.air : '-');
 
         let axesRows = '';
-        if (tech && tech.axes) {
+        const dks = Object.keys(ds);
+        // Check if we have J1-J6 info in detailSpecs
+        if (dks.length > 0 && dks.some(k => k.toLowerCase().includes('j1'))) {
+            axesRows = `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.1); font-size: 11px; color: var(--text-muted);"><td></td><td style="text-align:right; padding: 4px 5px 4px 0;">속도</td><td style="text-align:right; padding: 4px 0;">가동범위</td></tr>`;
+            const checkNums = is6Axis ? [1, 2, 3, 4, 5, 6] : [1, 3, 4];
+            checkNums.forEach(num => {
+                let label = isScara && num === 1 ? 'J1+J2' : 'J' + num;
+                let q = isScara && num === 1 ? 'j1+j2' : 'j' + num;
+                const sk = dks.find(k => k.toLowerCase().includes('speed') && k.toLowerCase().includes(q));
+                const rk = dks.find(k => k.toLowerCase().includes('range') && k.toLowerCase().includes(q));
+                if (sk || rk) {
+                    axesRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>${label} 사양</strong></td><td style="text-align:right; padding-right:10px;">${ds[sk] || '-'}</td><td style="text-align:right;">${ds[rk] || '-'}</td></tr>`;
+                }
+            });
+        } else if (tech && tech.axes) {
             axesRows = `
                 <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.1); font-size: 11px; color: var(--text-muted);">
                     <td></td>
@@ -660,16 +679,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 <table style="width:100%; font-size:13px; border-collapse: collapse; color: var(--text-main);">
                     <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>가반 하중(Payload)</strong></td><td colspan="2" style="text-align:right;">${product.specs['Payload(kg)'] || '-'} kg</td></tr>
                     <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>리치(Reach)</strong></td><td colspan="2" style="text-align:right;">${product.specs['Manipulator Length(mm)'] || '-'} mm</td></tr>
-                    ${product.specs.Type === 'SCARA' ? `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>로봇 타입</strong></td><td colspan="2" style="text-align:right;">${scaraSubtype}</td></tr>` : ''}
-                    ${product.specs.Type === 'SCARA' ? `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>Z축 길이</strong></td><td colspan="2" style="text-align:right;">${product.specs['Z axis Length(mm)'] || '-'} mm</td></tr>` : ''}
-                    ${product.specs.Type === '6-Axis' ? `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>중공형(Hollow Wrist)</strong></td><td colspan="2" style="text-align:right;">${product.specs['Hollow Wrist'] || '-'}</td></tr>` : ''}
-                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>클린 타입</strong></td><td colspan="2" style="text-align:right;">${cleanType}</td></tr>
+                    ${isScara ? `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>로봇 타입</strong></td><td colspan="2" style="text-align:right;">${scaraSubtype}</td></tr>` : ''}
+                    ${isScara ? `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>Z축 길이</strong></td><td colspan="2" style="text-align:right;">${product.specs['Z axis Length(mm)'] || '-'} mm</td></tr>` : ''}
+                    ${is6Axis ? `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>중공형(Hollow Wrist)</strong></td><td colspan="2" style="text-align:right;">${product.specs['Hollow Wrist'] || '-'}</td></tr>` : ''}
+                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>클린 타입</strong></td><td colspan="2" style="text-align:right;">${product.specs['Clean Type'] || '-'}</td></tr>
                     <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>반복 정밀도</strong></td><td colspan="2" style="text-align:right;">${repeatability}</td></tr>
                     <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>방수 방진 등급</strong></td><td colspan="2" style="text-align:right;">${ipRating}</td></tr>
                     <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>중량</strong></td><td colspan="2" style="text-align:right;">${weight}</td></tr>
                     ${axesRows}
                     <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>사용자 배선</strong></td><td colspan="2" style="text-align:right;">${ioPins}</td></tr>
-                    <tr><td style="padding:6px 0;"><strong>사용자 공압</strong></td><td colspan="2" style="text-align:right;">${tech ? tech.air : '-'}</td></tr>
+                    <tr><td style="padding:6px 0;"><strong>사용자 공압</strong></td><td colspan="2" style="text-align:right;">${air}</td></tr>
                 </table>
             </div>
         `;
