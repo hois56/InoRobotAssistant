@@ -4184,5 +4184,101 @@ const accessoriesList = [
         "description": "Used by the fork lift for handling",
         "spec": "-",
         "target_models": "R10-140, R16, R25"
+    },
+    {
+        "code": "01650025",
+        "type": "Expansion Card",
+        "name": "IRCB501-2ENID-BD",
+        "description": "2-channel differential input incremental encoder expansion card",
+        "spec": "Controller slot",
+        "target_models": "All"
+    },
+    {
+        "code": "01650026",
+        "type": "Expansion Card",
+        "name": "IRCB501-1600END-BD",
+        "description": "General I/O expansion card with 16 inputs",
+        "spec": "Controller slot",
+        "target_models": "All"
+    },
+    {
+        "code": "01650027",
+        "type": "Expansion Card",
+        "name": "IRCB501-0016ETND-BD",
+        "description": "General I/O expansion card with 16 NPN outputs",
+        "spec": "Controller slot",
+        "target_models": "All"
+    },
+    {
+        "code": "01650028",
+        "type": "Expansion Card",
+        "name": "IRCB501-2PN-BD",
+        "description": "PROFINET expansion card",
+        "spec": "Controller slot",
+        "target_models": "All"
+    },
+    {
+        "code": "01650030",
+        "type": "Expansion Card",
+        "name": "IRCB501-FS-01-BD",
+        "description": "Functional Safety Expansion Card",
+        "spec": "Controller slot",
+        "target_models": "All"
+    },
+    {
+        "code": "01650040",
+        "type": "Expansion Card",
+        "name": "IR-CE-CCLINK",
+        "description": "CC-LINK Expansion Card",
+        "spec": "Controller slot",
+        "target_models": "All"
+    },
+    {
+        "code": "01441075",
+        "type": "Expansion Card",
+        "name": "GL20-4AD-INT ",
+        "description": "4 channel analog input module (Resolution 16 bits, sampling time 250 μs)",
+        "spec": "ECAT remote IO",
+        "target_models": "All"
+    },
+    {
+        "code": "01441089",
+        "type": "Expansion Card",
+        "name": "GL20-4DA-INT",
+        "description": "4 channel analog output module (Resolution 16 bits, sampling time 250 μs)",
+        "spec": "ECAT remote IO",
+        "target_models": "All"
+    },
+    {
+        "code": "01441063",
+        "type": "Expansion Card",
+        "name": "GL20-0016ETN-INT",
+        "description": "16 channel digital output module (NPN)",
+        "spec": "ECAT remote IO",
+        "target_models": "All"
+    },
+    {
+        "code": "01441069",
+        "type": "Expansion Card",
+        "name": "GL20-0016ETP-INT",
+        "description": "16 channel digital output module (PNP)",
+        "spec": "ECAT remote IO",
+        "target_models": "All"
+    },
+    {
+        "code": "01441085",
+        "type": "Expansion Card",
+        "name": "GL20-1600END-INT",
+        "description": "16 channel digital input module (NPN/PNP)",
+        "spec": "ECAT remote IO",
+        "target_models": "All"
+    },
+    {
+        "code": "01441093",
+        "type": "Expansion Card",
+        "name": "GL20-RTU-ECT32-INT",
+        "description": "GL20 series EtherCAT remote module",
+        "spec": "ECAT remote IO",
+        "target_models": "All"
     }
 ];
