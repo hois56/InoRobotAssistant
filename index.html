@@ -264,6 +264,12 @@
         </footer>
     </main>
 
+    <!-- Invisible Visitor Counter -->
+    <footer class="mt-20 pb-8 text-center text-slate-500 text-[10px] opacity-10 hover:opacity-100 transition-opacity z-10 w-full cursor-default">
+        <p>&copy; 2026 INOVANCE Robot Assistant. All rights reserved.</p>
+        <p class="mt-1">SYS ID: <span id="visit-count">---</span></p>
+    </footer>
+
     <style>
         @keyframes fadeInUp {
             from {
@@ -305,6 +311,17 @@
                 card.style.setProperty('--mouse-y', `${y}px`);
             });
         });
+        // Visitor Counter (CounterAPI)
+        (function() {
+            try {
+                fetch('https://api.counterapi.dev/v1/inorobot_assistant/main/up')
+                .then(r => r.json())
+                .then(d => {
+                    const el = document.getElementById('visit-count');
+                    if (el && d.count) el.innerText = d.count;
+                }).catch(()=>{});
+            } catch(e) {}
+        })();
     </script>
 </body>
 
