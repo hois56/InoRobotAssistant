@@ -724,7 +724,6 @@ document.addEventListener('DOMContentLoaded', () => {
             axesRows = `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.1); font-size: 11px; color: var(--text-muted);"><td></td><td style="text-align:right; padding: 4px 10px 4px 0;">속도</td><td style="text-align:right; padding: 4px 0;">가동범위</td></tr>`;
 
             // Requirement 1: Combined Speed for SCARA J1+J2 (Standard color)
-            const isScara = product.specs.Type === 'SCARA';
             if (isScara) {
                 const combinedSpeedKey = dks.find(k => k.toLowerCase().includes('speed') && k.toLowerCase().includes('j1+j2'));
                 if (combinedSpeedKey) {
@@ -764,7 +763,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Additional Specs (Requirements 4, 5, 6)
         let extraRows = '';
         if (ds) {
-            const isScara = product.specs.Type === 'SCARA';
             // Repeatability
             if (isScara) {
                 const r12 = ds[dks.find(k => k.toLowerCase().includes('repeatability') && k.toLowerCase().includes('j1+j2'))];
