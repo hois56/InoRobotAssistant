@@ -314,7 +314,17 @@
         // Visitor Counter (CounterAPI)
         (function() {
             try {
-                fetch('https://api.counterapi.dev/v1/inorobot_assistant/main/up')
+                const visitedKey = 'inorobot_v3_visited';
+                const today = new Date().toISOString().split('T')[0];
+                const stored = localStorage.getItem(visitedKey);
+                
+                let endpoint = 'https://api.counterapi.dev/v1/inorobot_assistant/main';
+                if (stored !== today) {
+                    endpoint += '/up';
+                    localStorage.setItem(visitedKey, today);
+                }
+                
+                fetch(endpoint)
                 .then(r => r.json())
                 .then(d => {
                     const el = document.getElementById('visit-count');
