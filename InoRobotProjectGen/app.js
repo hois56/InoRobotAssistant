@@ -171,8 +171,9 @@ function initRobots() {
     const axis6Grp = document.createElement('optgroup');
     axis6Grp.label = "6-Axis Robots";
 
-    // SCARA
-    let linesS = Assets.Robots_SCARA.split(/\r?\n/);
+    // The source assets are swapped (Robots_SCARA has 6-axis data, Robots_6_axis has SCARA data)
+    // We map them correctly here:
+    let linesS = Assets.Robots_6_axis.split(/\r?\n/); 
     linesS.forEach(line => {
         let cols = line.split(',');
         if(cols.length >= 4) {
@@ -185,7 +186,7 @@ function initRobots() {
     });
 
     // 6-Axis
-    let lines6 = Assets.Robots_6_axis.split(/\r?\n/);
+    let lines6 = Assets.Robots_SCARA.split(/\r?\n/);
     lines6.forEach(line => {
         let cols = line.split(',');
         if(cols.length >= 4) {
