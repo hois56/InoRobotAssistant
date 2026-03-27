@@ -3439,6 +3439,34 @@ const productsData = [
             {
                 "code": "-",
                 "cable": "3m"
+            },
+            {
+                "code": "-",
+                "cable": "5m (Default)"
+            },
+            {
+                "code": "-",
+                "cable": "10m"
+            },
+            {
+                "code": "-",
+                "cable": "15m"
+            },
+            {
+                "code": "-",
+                "cable": "3m（High flex cables）"
+            },
+            {
+                "code": "-",
+                "cable": "5m（High flex cables）"
+            },
+            {
+                "code": "-",
+                "cable": "10m（High flex cables）"
+            },
+            {
+                "code": "-",
+                "cable": "15m（High flex cables）"
             }
         ],
         "detailSpecs": {
@@ -3512,90 +3540,6 @@ const productsData = [
             {
                 "code": "-",
                 "cable": "15m（High flex cables）"
-            },
-            {
-                "code": "01741363",
-                "cable": "5m (Default)"
-            },
-            {
-                "code": "-",
-                "cable": "10m"
-            },
-            {
-                "code": "-",
-                "cable": "15m"
-            },
-            {
-                "code": "-",
-                "cable": "3m（High flex cables）"
-            },
-            {
-                "code": "-",
-                "cable": "5m（High flex cables）"
-            },
-            {
-                "code": "-",
-                "cable": "10m（High flex cables）"
-            },
-            {
-                "code": "-",
-                "cable": "15m（High flex cables）"
-            },
-            {
-                "code": "-",
-                "cable": "5m (Default)"
-            },
-            {
-                "code": "-",
-                "cable": "10m"
-            },
-            {
-                "code": "-",
-                "cable": "15m"
-            },
-            {
-                "code": "-",
-                "cable": "3m（High flex cables）"
-            },
-            {
-                "code": "-",
-                "cable": "5m（High flex cables）"
-            },
-            {
-                "code": "-",
-                "cable": "10m（High flex cables）"
-            },
-            {
-                "code": "-",
-                "cable": "15m（High flex cables）"
-            },
-            {
-                "code": "-",
-                "cable": "5m (Default)"
-            },
-            {
-                "code": "-",
-                "cable": "10m"
-            },
-            {
-                "code": "-",
-                "cable": "15m"
-            },
-            {
-                "code": "-",
-                "cable": "3m（High flex cables）"
-            },
-            {
-                "code": "-",
-                "cable": "5m（High flex cables）"
-            },
-            {
-                "code": "-",
-                "cable": "10m（High flex cables）"
-            },
-            {
-                "code": "-",
-                "cable": "15m（High flex cables）"
             }
         ],
         "detailSpecs": {
@@ -3641,6 +3585,34 @@ const productsData = [
             {
                 "code": "-",
                 "cable": "3m"
+            },
+            {
+                "code": "-",
+                "cable": "5m (Default)"
+            },
+            {
+                "code": "-",
+                "cable": "10m"
+            },
+            {
+                "code": "-",
+                "cable": "15m"
+            },
+            {
+                "code": "-",
+                "cable": "3m（High flex cables）"
+            },
+            {
+                "code": "-",
+                "cable": "5m（High flex cables）"
+            },
+            {
+                "code": "-",
+                "cable": "10m（High flex cables）"
+            },
+            {
+                "code": "-",
+                "cable": "15m（High flex cables）"
             }
         ],
         "detailSpecs": {
@@ -3686,6 +3658,34 @@ const productsData = [
             {
                 "code": "-",
                 "cable": "3m"
+            },
+            {
+                "code": "-",
+                "cable": "5m (Default)"
+            },
+            {
+                "code": "-",
+                "cable": "10m"
+            },
+            {
+                "code": "-",
+                "cable": "15m"
+            },
+            {
+                "code": "-",
+                "cable": "3m（High flex cables）"
+            },
+            {
+                "code": "-",
+                "cable": "5m（High flex cables）"
+            },
+            {
+                "code": "-",
+                "cable": "10m（High flex cables）"
+            },
+            {
+                "code": "-",
+                "cable": "15m（High flex cables）"
             }
         ],
         "detailSpecs": {
@@ -3729,39 +3729,11 @@ const productsData = [
         },
         "cables": [
             {
-                "code": "01741367*M00002",
-                "cable": "5m (Default)"
-            },
-            {
-                "code": "-",
-                "cable": "10m"
-            },
-            {
-                "code": "-",
-                "cable": "15m"
-            },
-            {
-                "code": "-",
-                "cable": "3m（High flex cables）"
-            },
-            {
-                "code": "-",
-                "cable": "5m（High flex cables）"
-            },
-            {
-                "code": "-",
-                "cable": "10m（High flex cables）"
-            },
-            {
-                "code": "-",
-                "cable": "15m（High flex cables）"
-            },
-            {
                 "code": "-",
                 "cable": "3m"
             },
             {
-                "code": "01741340*M00003",
+                "code": "01741367*M00002",
                 "cable": "5m (Default)"
             },
             {
@@ -3832,6 +3804,34 @@ const productsData = [
             {
                 "code": "-",
                 "cable": "3m"
+            },
+            {
+                "code": "-",
+                "cable": "5m (Default)"
+            },
+            {
+                "code": "-",
+                "cable": "10m"
+            },
+            {
+                "code": "-",
+                "cable": "15m"
+            },
+            {
+                "code": "-",
+                "cable": "3m（High flex cables）"
+            },
+            {
+                "code": "-",
+                "cable": "5m（High flex cables）"
+            },
+            {
+                "code": "-",
+                "cable": "10m（High flex cables）"
+            },
+            {
+                "code": "-",
+                "cable": "15m（High flex cables）"
             }
         ],
         "detailSpecs": {
