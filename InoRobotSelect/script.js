@@ -1064,9 +1064,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 let timeStr = "-";
 
                 if (isScara) {
-                    if (subType === '일반형') timeStr = hasCode ? "6주" : "7주";
-                    else if (subType === '클린형' || subType === '경제형') timeStr = hasCode ? "6주" : "10주";
-                    else timeStr = hasCode ? "6주" : "7주"; // fallback for other types like '천장형'
+                    const isS60 = product.id.includes('S60');
+                    if (isS60) {
+                        timeStr = hasCode ? "6주" : "10주";
+                    } else if (subType === '일반형') {
+                        timeStr = hasCode ? "6주" : "7주";
+                    } else if (subType === '클린형' || subType === '경제형') {
+                        timeStr = hasCode ? "6주" : "10주";
+                    } else {
+                        timeStr = hasCode ? "6주" : "7주"; // fallback for other types like '천장형'
+                    }
                 } else {
                     timeStr = hasCode ? "7주" : "8주";
                 }
@@ -1401,6 +1408,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const ipRating = tech ? tech.ip : (currentActiveProduct.specs.Type === 'SCARA' ? "IP20" : "IP65 (Wrist IP67)");
         const weight = tech ? tech.weight : (currentActiveProduct.specs.Type === '6-Axis' ? "~130kg" : "12~56kg");
         const cleanType = currentActiveProduct.specs['Clean Type'] || '-';
+        const air = tech ? tech.air : (currentActiveProduct.detailSpecs['Customer air piping (0.59Mpa)'] || '-');
 
         let axesRowsHtml = '';
         if (tech && tech.axes) {
