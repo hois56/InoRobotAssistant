@@ -1496,8 +1496,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </tbody>
             </table>
 
-            <!-- Force clean page break for the next section -->
             <div class="html2pdf__page-break"></div>
+            <div style="height: 40px; width: 100%;"></div>
             <h3 style="color: #333; margin-top: 10px; margin-bottom: 10px; background: #eee; padding: 10px; border-radius: 4px;">옵션 및 악세서리 구성</h3>
             <div style="margin-left: 10px; margin-bottom: 15px;">
                 <p style="margin: 0; font-size: 13px;"><strong>기본 케이블 구성:</strong> 파워/엔코더 케이블 ${cableLen} (${cableType})</p>
@@ -1555,6 +1555,87 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.body.removeChild(pdfWrapper);
             });
         }, 800);
+    });
+
+    document.getElementById('download-cad-btn').addEventListener('click', async () => {
+        if (!currentActiveProduct) return;
+        const btn = document.getElementById('download-cad-btn');
+        const oldText = btn.innerText;
+        btn.innerText = "준비 중...";
+        btn.disabled = true;
+
+        try {
+            const zip = new JSZip();
+            const product = currentActiveProduct;
+            const modelId = product.id;
+            const type = product.specs.Type;
+            const name = product.name;
+
+            // Robot folder mapping
+            let folderBase = modelId.split('Z')[0]; // For SCARA
+            if (type === '6-Axis') {
+                const parts = modelId.split('-');
+                folderBase = parts.slice(0, 3).join('-');
+            }
+            
+            const typeDir = type === 'SCARA' ? 'SCARA' : '6-axis';
+            const robotFiles = [
+                { path: `Robot_CAD/${typeDir}/${folderBase}/${modelId}_2D.dwg`, name: `${modelId}_2D.dwg` },
+                { path: `Robot_CAD/${typeDir}/${folderBase}/${modelId}_3D.stp`, name: `${modelId}_3D.stp` }
+            ];
+
+            // Controller mapping
+            let ctrl = "";
+            if (type === "SCARA") {
+                if (name.includes("S20") || name.includes("S35") || name.includes("S60") || name.includes("GS60")) {
+                    ctrl = "IRCB501-SCARA-Highpower";
+                } else {
+                    ctrl = "IRCB501-SCARA-Standard";
+                }
+            } else {
+                if (name.includes("R10-140") || name.includes("R16") || name.includes("R25")) {
+                    ctrl = "IRCB501-6-axis-Highprotection";
+                } else if (name.includes("R4") || name.includes("R7")) {
+                    ctrl = "IRCB501-6-axis-Standard";
+                } else {
+                    ctrl = "IRCB501-6-axis-Highpower";
+                }
+            }
+
+            const ctrlFiles = [
+                { path: `Robot_CAD/Controller/${ctrl}/${ctrl}.dwg`, name: `${ctrl}.dwg` },
+                { path: `Robot_CAD/Controller/${ctrl}/${ctrl}.stp`, name: `${ctrl}.stp` }
+            ];
+
+            // Pendant check
+            const isPendant = document.querySelector('input[name="pendantSelection"]:checked')?.value !== 'none';
+            const tpFiles = isPendant ? [
+                { path: `Robot_CAD/IR-TP-200/IR-TP-200_2D-INT.dwg`, name: `IR-TP-200_2D.dwg` },
+                { path: `Robot_CAD/IR-TP-200/IR-TP-200_3D-INT.stp`, name: `IR-TP-200_3D.stp` }
+            ] : [];
+
+            const allFiles = [...robotFiles, ...ctrlFiles, ...tpFiles];
+            
+            for (const f of allFiles) {
+                try {
+                    const resp = await fetch(f.path);
+                    if (resp.ok) {
+                        const blob = await resp.blob();
+                        zip.file(f.name, blob);
+                    }
+                } catch (e) { console.error("File skip:", f.path); }
+            }
+
+            const content = await zip.generateAsync({ type: "blob" });
+            saveAs(content, `Inovance_CAD_${modelId}.zip`);
+
+        } catch (err) {
+            console.error("CAD Zip Error:", err);
+            alert("CAD 파일 생성 중 오류가 발생했습니다.");
+        } finally {
+            btn.innerText = oldText;
+            btn.disabled = false;
+        }
     });
 
     modalOverlay.addEventListener('click', (e) => {

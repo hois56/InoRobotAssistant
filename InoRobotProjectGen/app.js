@@ -92,18 +92,20 @@ function initApp() {
         toolControl: { title: "Tool Control", icon: "wrench", text: "에어(진공) 및 그리퍼 같은 매니퓰레이터 툴의 제어 모듈을 프로그램 내부에 활성화시켜 제어 로직을 생성합니다." }
     };
 
+    const updateOptDesc = (id) => {
+        const info = optDescs[id];
+        if (info) {
+            document.getElementById('optDescTitle').innerText = info.title;
+            document.getElementById('optDescText').innerText = info.text;
+            const iconBox = document.getElementById('optIconBox');
+            iconBox.innerHTML = `<i data-lucide="${info.icon}" class="w-10 h-10 text-white"></i>`;
+            if(window.lucide) lucide.createIcons();
+        }
+    };
+
     document.querySelectorAll('[data-opt-id]').forEach(el => {
-        el.addEventListener('mouseenter', () => {
-            const id = el.dataset.optId;
-            const info = optDescs[id];
-            if (info) {
-                document.getElementById('optDescTitle').innerText = info.title;
-                document.getElementById('optDescText').innerText = info.text;
-                const iconBox = document.getElementById('optIconBox');
-                iconBox.innerHTML = `<i data-lucide="${info.icon}" class="w-10 h-10 text-white"></i>`;
-                if(window.lucide) lucide.createIcons();
-            }
-        });
+        el.addEventListener('mouseenter', () => updateOptDesc(el.dataset.optId));
+        el.addEventListener('click', () => updateOptDesc(el.dataset.optId));
     });
 
     document.getElementById('btnApplyOptions').onclick = () => {
