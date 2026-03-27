@@ -822,14 +822,19 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span>기본 프로토콜 사용</span>
                     </label>
                     <label class="cable-option" style="margin:0;">
-                        <input type="radio" name="commSelection" value="PROFINET" data-code="PROFINET">
-                        <span>PROFINET</span>
+                        <input type="radio" name="commSelection" value="IRCB501-2PN-BD" data-code="01650028" data-label="PROFIBUS (PROFINET)">
+                        <span>PROFIBUS (PROFINET)</span>
                     </label>
                     <label class="cable-option" style="margin:0;">
-                        <input type="radio" name="commSelection" value="CC-Link" data-code="CC-Link">
+                        <input type="radio" name="commSelection" value="IR-CE-CCLINK" data-code="01650040" data-label="CC-Link">
                         <span>CC-Link</span>
                     </label>
                 </div>
+            </div>
+
+            <div style="margin-bottom:20px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
+                <label id="header-expansion" style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">컨트롤러 확장 카드 옵션</label>
+                <div id="expansion-cards-container" style="display:flex; flex-direction:column; gap:8px;"></div>
             </div>
         `;
         rightCol.innerHTML = infoHtml;
@@ -913,8 +918,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const commSel = rightCol.querySelector('input[name="commSelection"]:checked');
             const commHeader = rightCol.querySelector('#header-comm');
             if (commHeader) {
-                const code = (commSel && commSel.value !== 'none') ? ` (${commSel.value})` : '';
+                const code = (commSel && commSel.value !== 'none') ? ` (${commSel.getAttribute('data-code')})` : '';
                 commHeader.textContent = `통신 프로토콜 옵션 (확장카드 옵션)${code}`;
+            }
+
+            // Expansion
+            const expansionHeader = rightCol.querySelector('#header-expansion');
+            if (expansionHeader) {
+                const selectedCodes = Array.from(rightCol.querySelectorAll('input[name="expSelection"]:checked')).map(cb => cb.value);
+                const code = selectedCodes.length > 0 ? ` (${selectedCodes.join(', ')})` : '';
+                expansionHeader.textContent = `컨트롤러 확장 카드 옵션${code}`;
             }
         }
 
@@ -981,7 +994,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 armContainer.innerHTML = `<div style="display:flex; flex-wrap:wrap; gap:10px;" id="arm-radios"><label class="cable-option" style="margin:0;"><input type="radio" name="armSelectionCode" value="none" checked><span>사용안함</span></label></div>`;
                 const armRadios = armContainer.querySelector('#arm-radios');
                 armOptions.forEach(opt => {
-                    const isFlex = opt.description.toLowerCase().includes('flexible');
+                    const isFlex = opt.description.toLowerCase().includes('flexible') && !opt.description.toLowerCase().includes('non-flexible');
                     let displaySpec = opt.spec;
                     if (opt.spec === '-') displaySpec = '커넥터만';
                     else displaySpec = `${opt.spec} (${isFlex ? '플렉시블' : '논플렉시블'})`;
@@ -1000,7 +1013,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 bodyContainer.innerHTML = `<div style="display:flex; flex-wrap:wrap; gap:10px;" id="body-radios"><label class="cable-option" style="margin:0;"><input type="radio" name="bodySelectionCode" value="none" checked><span>사용안함</span></label></div>`;
                 const bodyRadios = bodyContainer.querySelector('#body-radios');
                 bodyOptions.forEach(opt => {
-                    const isFlex = opt.description.toLowerCase().includes('flexible');
+                    const isFlex = opt.description.toLowerCase().includes('flexible') && !opt.description.toLowerCase().includes('non-flexible');
                     let displaySpec = opt.spec;
                     if (opt.spec === '-') displaySpec = '커넥터만';
                     else displaySpec = `${opt.spec} (${isFlex ? '플렉시블' : '논플렉시블'})`;
@@ -1019,8 +1032,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (a.type === 'Pendant') return false;
             if (a.name === 'Robot arm I/O cable' || a.name === 'Robot Body I/O cable') return false;
             if (a.type === 'Software' && a.name.includes('Simulation')) return false;
-            if (a.description.includes('1.0 TP Connector')) return false; // Filter Dummy Plug 1.0TP
-            if (a.description.includes('TP2.0 adapter to old version')) return false; // Filter old adapter
+            if (a.description.includes('1.0 TP Connector')) return false; 
+            if (a.description.includes('TP2.0 adapter to old version')) return false;
+            if (a.type === 'Expansion Card') return false;
             return isModelMatch(a.target_models, prodName);
         });
 
@@ -1030,14 +1044,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 lbl.style.display = "flex"; lbl.style.alignItems = "start"; lbl.style.gap = "8px"; lbl.style.fontSize = "13px"; lbl.style.cursor = "pointer";
                 lbl.innerHTML = `
                     <input type="checkbox" name="accSelection" value="${acc.code}" data-desc="${acc.type} - ${acc.description}" style="margin-top:3px;">
-                    <div><strong>${acc.type || 'Accessory'}</strong><br><span style="color:#666;">${acc.description}</span></div>
+                    <div><strong>${acc.type || 'Accessory'}</strong><br><span style="color:#666;">${acc.target_models}</span></div>
                 `;
                 otherAccContainer.appendChild(lbl);
             });
+            otherAccContainer.addEventListener('change', updateHeaderCodes);
         } else {
             otherAccContainer.innerHTML = '<span style="color:#999; font-size:13px;">기타 악세서리가 없습니다.</span>';
         }
 
+        // 4. Expansion Cards Logic
+        const expContainer = rightCol.querySelector('#expansion-cards-container');
+        const expOptions = accs.filter(a => a.type === 'Expansion Card');
+        
+        if (expOptions.length > 0) {
+            expOptions.forEach(acc => {
+                const lbl = document.createElement('label');
+                lbl.style.display = "flex"; lbl.style.alignItems = "start"; lbl.style.gap = "8px"; lbl.style.fontSize = "13px"; lbl.style.cursor = "pointer";
+                lbl.innerHTML = `
+                    <input type="checkbox" name="expSelection" value="${acc.code}" data-desc="${acc.name} - ${acc.description}" style="margin-top:3px;">
+                    <div><strong>${acc.name}</strong><br><span style="color:#666;">${acc.description}</span></div>
+                `;
+                expContainer.appendChild(lbl);
+            });
+            expContainer.addEventListener('change', updateHeaderCodes);
+        } else {
+            expContainer.innerHTML = '<span style="color:#999; font-size:13px;">확장 카드 옵션이 없습니다.</span>';
+        }
+
+        rightCol.querySelector('#comm-radios').addEventListener('change', updateHeaderCodes);
+
+        updateDynamicCode();
         modalOverlay.style.display = 'flex';
     }
 
@@ -1141,8 +1178,32 @@ document.addEventListener('DOMContentLoaded', () => {
         // Communication
         const selComm = document.querySelector('input[name="commSelection"]:checked');
         if (selComm && selComm.value !== 'none') {
-            selectedAccs.push({ name: '추가 통신 옵션', details: selComm.value, code: '-' });
+            const commLabel = selComm.getAttribute('data-label') || selComm.value;
+            selectedAccs.push({ 
+                name: selComm.value, 
+                details: `${commLabel} expansion card`, 
+                code: selComm.getAttribute('data-code') || '-' 
+            });
         }
+
+        // Expansion Cards
+        document.querySelectorAll('input[name="expSelection"]:checked').forEach(cb => {
+            const fullDesc = cb.getAttribute('data-desc') || "";
+            let namePart = "확장 카드";
+            let detailPart = fullDesc;
+
+            if (fullDesc.includes(' - ')) {
+                const parts = fullDesc.split(' - ');
+                namePart = parts[0];
+                detailPart = parts.slice(1).join(' - ');
+            }
+
+            selectedAccs.push({
+                name: namePart,
+                details: detailPart,
+                code: cb.value
+            });
+        });
 
         // Rename for PDF
         let pdfDisplayName = currentActiveProduct.name;
