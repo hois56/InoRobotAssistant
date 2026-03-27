@@ -87,8 +87,8 @@ function initApp() {
     // Option Description logic
     const optDescs = {
         multiRecipe: { title: "Multi Recipe", icon: "layers", text: "여러 로봇 포인트 파일(레시피)을 생성하여 프로그램에서 동적으로 로드할 수 있도록 합니다." },
-        tcpSpeed: { title: "TCP Speed", icon: "gauge", text: "로봇의 TCP(툴 중심점) 이동 속도를 지속적으로 모니터링하여 변수에 기록하고 표시하는 기능입니다." },
-        torque: { title: "Torque", icon: "activity", text: "각 축 모터의 현재 토크(전류 부하율)를 실시간으로 모니터링하여 충돌 감지 등에 활용할 수 있는 기능입니다." },
+        tcpSpeed: { title: "TCP Speed Monitoring", icon: "gauge", text: "로봇의 TCP(툴 중심점) 이동 속도를 지속적으로 모니터링하여 변수에 기록하고 표시하는 기능입니다." },
+        torque: { title: "Torque Monitoring", icon: "activity", text: "각 축 모터의 현재 토크(전류 부하율)를 실시간으로 모니터링하여 충돌 감지 등에 활용할 수 있는 기능입니다." },
         toolControl: { title: "Tool Control", icon: "wrench", text: "에어(진공) 및 그리퍼 같은 매니퓰레이터 툴의 제어 모듈을 프로그램 내부에 활성화시켜 제어 로직을 생성합니다." }
     };
 
@@ -105,7 +105,20 @@ function initApp() {
 
     document.querySelectorAll('[data-opt-id]').forEach(el => {
         el.addEventListener('mouseenter', () => updateOptDesc(el.dataset.optId));
-        el.addEventListener('click', () => updateOptDesc(el.dataset.optId));
+        el.addEventListener('click', (e) => {
+            // Prevent double-toggle if click was on the input itself
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+            
+            // For non-label parents (like div), toggle the child checkbox
+            if (el.tagName !== 'LABEL') {
+                const chk = el.querySelector('input[type="checkbox"]');
+                if (chk) {
+                    chk.checked = !chk.checked;
+                    chk.dispatchEvent(new Event('change'));
+                }
+            }
+            updateOptDesc(el.dataset.optId);
+        });
     });
 
     document.getElementById('btnApplyOptions').onclick = () => {
@@ -184,8 +197,8 @@ function initRobots() {
         }
     });
 
-    cmb.appendChild(axis6Grp);
     cmb.appendChild(scaraGrp);
+    cmb.appendChild(axis6Grp);
     cmb.value = state.options.RobotName;
     cmb.onchange = (e) => {
         state.options.RobotName = e.target.value;
