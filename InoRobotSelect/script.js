@@ -721,15 +721,30 @@ document.addEventListener('DOMContentLoaded', () => {
         const dks = Object.keys(ds);
         // Check if we have J1-J6 info in detailSpecs
         if (dks.length > 0 && dks.some(k => k.toLowerCase().includes('j1'))) {
-            axesRows = `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.1); font-size: 11px; color: var(--text-muted);"><td></td><td style="text-align:right; padding: 4px 5px 4px 0;">속도</td><td style="text-align:right; padding: 4px 0;">가동범위</td></tr>`;
+            axesRows = `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.1); font-size: 11px; color: var(--text-muted);"><td></td><td style="text-align:right; padding: 4px 10px 4px 0;">속도</td><td style="text-align:right; padding: 4px 0;">가동범위</td></tr>`;
+
+            // Requirement 1: Combined Speed for SCARA J1+J2
+            const isScara = product.specs.Type === 'SCARA';
+            if (isScara) {
+                const combinedSpeedKey = dks.find(k => k.toLowerCase().includes('speed') && k.toLowerCase().includes('j1+j2'));
+                if (combinedSpeedKey) {
+                    axesRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); color: var(--primary-blue); font-weight:bold;"><td style="padding:6px 0;"><strong>J1+J2 합산 속도</strong></td><td style="text-align:right; padding-right:10px;">${ds[combinedSpeedKey]}</td><td style="text-align:right;">-</td></tr>`;
+                }
+            }
+
             const checkNums = is6Axis ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4];
             checkNums.forEach(num => {
                 let label = 'J' + num;
                 let q = 'j' + num;
                 const sk = dks.find(k => k.toLowerCase().includes('speed') && k.toLowerCase().includes(q));
                 const rk = dks.find(k => k.toLowerCase().includes('range') && k.toLowerCase().includes(q));
+                
+                let speedVal = ds[sk] || '-';
+                // Hide individual J1, J2 speed for SCARA
+                if (isScara && (num === 1 || num === 2)) speedVal = '-';
+
                 if (sk || rk) {
-                    axesRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>${label} 사양</strong></td><td style="text-align:right; padding-right:10px;">${ds[sk] || '-'}</td><td style="text-align:right;">${ds[rk] || '-'}</td></tr>`;
+                    axesRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>${label} 사양</strong></td><td style="text-align:right; padding-right:10px;">${speedVal}</td><td style="text-align:right;">${ds[rk] || '-'}</td></tr>`;
                 }
             });
         } else if (tech && tech.axes) {
@@ -780,6 +795,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const infoHtml = `
             <div id="dynamic-purchase-code" style="font-size:14px;margin-bottom:8px;font-weight:bold;color:var(--primary-blue);">현재 구매 코드: ${baseCode}</div>
+            <div id="lead-time-display" style="font-size:13px;margin-bottom:15px;color:#eee;background:rgba(255,255,255,0.05);padding:10px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);">
+                <strong>예상 납기:</strong> <span id="lead-time-value" style="color:var(--secondary-orange); font-weight:bold;">TBD</span>
+            </div>
             <h2 style="color:var(--text-main);margin-bottom:12px;">${displayName}</h2>
             
             <h4 style="margin-bottom: 12px; color: var(--text-main);">로봇 구성 선택</h4>
@@ -861,13 +879,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (lengths.size === 0) lengths.add('N/A');
 
+        // Find Default cable
+        let defaultLen = "";
+        let defaultType = "Standard (표준형)";
+        if (product.cables && product.cables.length > 0) {
+            const defC = product.cables.find(c => c.cable.includes('(Default)'));
+            if (defC) {
+                const lenM = defC.cable.match(/\d+m/);
+                if (lenM) defaultLen = lenM[0];
+                if (defC.cable.includes('High flex')) defaultType = 'High Flex (유연형)';
+            }
+        }
+
         Array.from(lengths).sort((a, b) => parseLen(a) - parseLen(b)).forEach((l, i) => {
             const btn = document.createElement('label');
             btn.className = 'cable-option';
             btn.style.margin = '0';
 
-            // Requirement 5: Default 3m for everything if available
-            let isChecked = (l === '3m') || (i === 0 && !lengths.has('3m'));
+            // Requirement 3: Use Default marker from data
+            let isChecked = defaultLen ? (l === defaultLen) : (i === 0);
 
             btn.innerHTML = `<input type="radio" name="cableLenSelection" value="${l}" ${isChecked ? 'checked' : ''}><span>${l}</span>`;
             lenContainer.appendChild(btn);
@@ -877,7 +907,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const btn = document.createElement('label');
             btn.className = 'cable-option';
             btn.style.margin = '0';
-            btn.innerHTML = `<input type="radio" name="cableTypeSelection" value="${t}" ${i === 0 ? 'checked' : ''}><span>${t}</span>`;
+            // Requirement 3: Default type also from marker
+            let isChecked = defaultType ? (t === defaultType) : (i === 0);
+            btn.innerHTML = `<input type="radio" name="cableTypeSelection" value="${t}" ${isChecked ? 'checked' : ''}><span>${t}</span>`;
             typeContainer.appendChild(btn);
         });
 
@@ -989,9 +1021,26 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const codeDisplay = rightCol.querySelector('#dynamic-purchase-code');
+            const leadTimeVal = rightCol.querySelector('#lead-time-value');
+            
             if (codeDisplay) {
                 const finalCode = matched ? matched.code : (product.cables.length > 0 ? product.cables[0].code : 'N/A');
                 codeDisplay.textContent = `현재 구매 코드: ${finalCode} `;
+
+                // Requirement 2: Dynamic Lead Time Calculation
+                const isScara = product.specs.Type === 'SCARA';
+                const subType = product.specs['Sub Type'] || '일반형';
+                const hasCode = finalCode && finalCode !== '-';
+                let timeStr = "-";
+
+                if (isScara) {
+                    if (subType === '일반형') timeStr = hasCode ? "6주" : "7주";
+                    else if (subType === '클린형' || subType === '경제형') timeStr = hasCode ? "6주" : "10주";
+                    else timeStr = hasCode ? "6주" : "7주"; // fallback for other types like '천장형'
+                } else {
+                    timeStr = hasCode ? "7주" : "8주";
+                }
+                if (leadTimeVal) leadTimeVal.textContent = timeStr;
             }
             updateHeaderCodes();
         }
@@ -1331,23 +1380,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let displayAxes = [...tech.axes];
 
-            // Requirement 6: Split J1/J2 in PDF if it's SCARA
+            // Requirement 1 & 6: Split J1/J2 Range and show Combined Speed for PDF
             if (isScara) {
-                // If J1 and J2 speed/range exist in detailSpecs, replace the "J1+J2" item
-                const j1Speed = ds[dks.find(k => k.toLowerCase().includes('speed') && k.toLowerCase().includes('j1'))];
-                const j2Speed = ds[dks.find(k => k.toLowerCase().includes('speed') && k.toLowerCase().includes('j2'))];
                 const j1Range = ds[dks.find(k => k.toLowerCase().includes('range') && k.toLowerCase().includes('j1'))];
                 const j2Range = ds[dks.find(k => k.toLowerCase().includes('range') && k.toLowerCase().includes('j2'))];
+                const j1j2Speed = ds[dks.find(k => k.toLowerCase().includes('speed') && k.toLowerCase().includes('j1+j2'))];
 
-                if (j1Speed || j1Range || j2Speed || j2Range) {
-                    // Remove J1+J2 if it exists
-                    displayAxes = displayAxes.filter(a => a.axis !== "J1+J2");
-                    // Add J1, J2 at start
-                    displayAxes.unshift(
-                        { axis: "J1", speed: j1Speed || "-", range: j1Range || "-" },
-                        { axis: "J2", speed: j2Speed || "-", range: j2Range || "-" }
-                    );
-                }
+                // Remove existing J1, J2, J1+J2 to avoid duplicates
+                displayAxes = displayAxes.filter(a => !["J1+J2", "J1", "J2"].includes(a.axis));
+
+                const newRows = [];
+                if (j1j2Speed) newRows.push({ axis: "J1+J2 합산 속도", speed: j1j2Speed, range: "-" });
+                if (j1Range) newRows.push({ axis: "J1 사양", speed: "-", range: j1Range });
+                if (j2Range) newRows.push({ axis: "J2 사양", speed: "-", range: j2Range });
+
+                displayAxes = [...newRows, ...displayAxes];
             }
 
             axesRowsHtml = `
