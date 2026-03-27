@@ -92,14 +92,23 @@ body::before {
 .cable-option { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; margin-bottom: 10px; cursor: pointer; background: rgba(255,255,255,0.02); transition: all 0.3s; }
 .cable-option:hover { border-color: rgba(56,189,248,0.5); background: rgba(56,189,248,0.05); }
 .cable-option:has(input:checked) {
-    border-color: #38bdf8;
-    background: rgba(56, 189, 248, 0.1);
-    box-shadow: 0 0 15px rgba(56, 189, 248, 0.2), inset 0 0 10px rgba(56, 189, 248, 0.1);
-    transform: scale(1.02);
+    border-color: rgba(56, 189, 248, 0.5);
+    background: rgba(56, 189, 248, 0.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transform: scale(1.01);
 }
 .cable-option:has(input:checked) span {
     color: #fff;
     font-weight: 600;
+}
+#dynamic-purchase-code {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b !important;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 700;
+    margin-left: 5px;
+    border: 1px solid rgba(245, 158, 11, 0.2);
 }
 .cable-option input { accent-color: #38bdf8; }
 @media (max-width: 768px) { .filter-row { flex-direction: column; } .filter-label { width: 100%; margin-bottom: 8px; } }
