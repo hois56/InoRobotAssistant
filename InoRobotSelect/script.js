@@ -1022,8 +1022,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (expansionHeader) {
                 const checkedExp = Array.from(rightCol.querySelectorAll('input[name="expSelection"]:checked'));
                 const selectedCodes = checkedExp.map(cb => cb.value);
-                const codeText = selectedCodes.length > 0 ? ` (${selectedCodes.join(', ')})` : '';
-                expansionHeader.textContent = `컨트롤러 확장 카드 옵션${codeText}`;
+                const codeBadgeHtml = selectedCodes.length > 0 ? selectedCodes.map(c => `<span class="code-badge">${c}</span>`).join('') : '';
+                expansionHeader.innerHTML = `컨트롤러 확장 카드 옵션 ${codeBadgeHtml}`;
 
                 // Requirement 2: Show code inline for expansion cards
                 rightCol.querySelectorAll('input[name="expSelection"]').forEach(cb => {
@@ -1055,7 +1055,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (codeDisplay) {
                 const finalCode = matched ? matched.code : (product.cables.length > 0 ? product.cables[0].code : 'N/A');
-                codeDisplay.textContent = `현재 구매 코드: ${finalCode} `;
+                codeDisplay.innerHTML = `현재 구매 코드: <span class="code-badge">${finalCode}</span>`;
 
                 // Requirement 2: Dynamic Lead Time Calculation
                 const isScara = product.specs.Type === 'SCARA';
@@ -1643,7 +1643,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } catch (e) { console.error("File fetch error:", f.path, e); }
             }
 
-            const content = await zip.generateAsync({ type: "blob" });
+            const content = await zip.generateAsync({ type: "blob", compression: "STORE" });
             saveAs(content, `Inovance_CAD_${modelId}.zip`);
 
         } catch (err) {

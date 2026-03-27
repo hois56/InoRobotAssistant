@@ -101,14 +101,16 @@ body::before {
     color: #fff;
     font-weight: 600;
 }
-#dynamic-purchase-code {
-    background: rgba(245, 158, 11, 0.15);
+.code-badge {
+    background: rgba(245, 158, 11, 0.12);
     color: #f59e0b !important;
-    padding: 3px 8px;
-    border-radius: 6px;
+    padding: 2px 6px;
+    border-radius: 4px;
     font-weight: 700;
     margin-left: 5px;
-    border: 1px solid rgba(245, 158, 11, 0.2);
+    border: 1px solid rgba(245, 158, 11, 0.15);
+    font-size: 11px;
+    vertical-align: middle;
 }
 .cable-option input { accent-color: #38bdf8; }
 @media (max-width: 768px) { .filter-row { flex-direction: column; } .filter-label { width: 100%; margin-bottom: 8px; } }
