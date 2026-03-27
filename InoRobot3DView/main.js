@@ -136,7 +136,7 @@ function setupEventListeners() {
                         zip.file(f.name, await r.blob());
                     }
                 }
-                const content = await zip.generateAsync({ type: "blob" });
+                const content = await zip.generateAsync({ type: "blob", compression: "STORE" });
                 saveAs(content, `Inovance_CAD_${modelId}.zip`);
             } catch (e) { console.error(e); }
             
