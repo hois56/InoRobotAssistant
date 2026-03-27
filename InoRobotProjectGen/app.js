@@ -75,7 +75,36 @@ function initApp() {
         document.getElementById('chkToolControl').checked = state.options.EnableToolControl;
         document.getElementById('cmbToolControlType').value = state.options.ToolControlType || "PLC_IO";
         document.getElementById('optionsModal').classList.remove('hidden');
+        
+        // Reset description panel
+        document.getElementById('optDescTitle').innerText = "Option Info";
+        document.getElementById('optDescText').innerText = "항목 위에 마우스를 올리면 상세 설명이 표시됩니다.";
+        const iconBox = document.getElementById('optIconBox');
+        iconBox.innerHTML = '<i data-lucide="info" class="w-10 h-10 text-slate-400"></i>';
+        if(window.lucide) lucide.createIcons();
     };
+
+    // Option Description logic
+    const optDescs = {
+        multiRecipe: { title: "Multi Recipe", icon: "layers", text: "여러 로봇 포인트 파일(레시피)을 생성하여 프로그램에서 동적으로 로드할 수 있도록 합니다." },
+        tcpSpeed: { title: "TCP Speed", icon: "gauge", text: "로봇의 TCP(툴 중심점) 이동 속도를 지속적으로 모니터링하여 변수에 기록하고 표시하는 기능입니다." },
+        torque: { title: "Torque", icon: "activity", text: "각 축 모터의 현재 토크(전류 부하율)를 실시간으로 모니터링하여 충돌 감지 등에 활용할 수 있는 기능입니다." },
+        toolControl: { title: "Tool Control", icon: "wrench", text: "에어(진공) 및 그리퍼 같은 매니퓰레이터 툴의 제어 모듈을 프로그램 내부에 활성화시켜 제어 로직을 생성합니다." }
+    };
+
+    document.querySelectorAll('[data-opt-id]').forEach(el => {
+        el.addEventListener('mouseenter', () => {
+            const id = el.dataset.optId;
+            const info = optDescs[id];
+            if (info) {
+                document.getElementById('optDescTitle').innerText = info.title;
+                document.getElementById('optDescText').innerText = info.text;
+                const iconBox = document.getElementById('optIconBox');
+                iconBox.innerHTML = `<i data-lucide="${info.icon}" class="w-10 h-10 text-white"></i>`;
+                if(window.lucide) lucide.createIcons();
+            }
+        });
+    });
 
     document.getElementById('btnApplyOptions').onclick = () => {
         state.options.EnableTcpSpeed = document.getElementById('chkTcpSpeed').checked;
@@ -120,20 +149,41 @@ function initApp() {
 
 function initRobots() {
     let cmb = document.getElementById('cmbRobotModel');
-    let csvs = [Assets.Robots_SCARA, Assets.Robots_6_axis];
-    csvs.forEach(csv => {
-        let lines = csv.split(/\r?\n/);
-        for(let i=0; i<lines.length; i++) {
-            let cols = lines[i].split(',');
-            if(cols.length >= 4) {
-                let name = cols[0].trim()+cols[1].trim()+cols[2].trim()+cols[3].trim();
-                let opt = document.createElement('option');
-                opt.value = name;
-                opt.text = cols[1].trim();
-                cmb.appendChild(opt);
-            }
+    cmb.innerHTML = ''; // Clear existing
+    
+    const scaraGrp = document.createElement('optgroup');
+    scaraGrp.label = "SCARA Robots";
+    const axis6Grp = document.createElement('optgroup');
+    axis6Grp.label = "6-Axis Robots";
+
+    // SCARA
+    let linesS = Assets.Robots_SCARA.split(/\r?\n/);
+    linesS.forEach(line => {
+        let cols = line.split(',');
+        if(cols.length >= 4) {
+            let name = cols[0].trim()+cols[1].trim()+cols[2].trim()+cols[3].trim();
+            let opt = document.createElement('option');
+            opt.value = name;
+            opt.text = cols[1].trim();
+            scaraGrp.appendChild(opt);
         }
     });
+
+    // 6-Axis
+    let lines6 = Assets.Robots_6_axis.split(/\r?\n/);
+    lines6.forEach(line => {
+        let cols = line.split(',');
+        if(cols.length >= 4) {
+            let name = cols[0].trim()+cols[1].trim()+cols[2].trim()+cols[3].trim();
+            let opt = document.createElement('option');
+            opt.value = name;
+            opt.text = cols[1].trim();
+            axis6Grp.appendChild(opt);
+        }
+    });
+
+    cmb.appendChild(axis6Grp);
+    cmb.appendChild(scaraGrp);
     cmb.value = state.options.RobotName;
     cmb.onchange = (e) => {
         state.options.RobotName = e.target.value;
