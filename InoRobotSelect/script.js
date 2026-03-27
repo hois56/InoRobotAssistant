@@ -890,36 +890,59 @@ document.addEventListener('DOMContentLoaded', () => {
                 pHeader.textContent = `티칭 펜던트 구성 (유로 옵션)${code}`;
             }
 
-            // Arm
-            const armSel = rightCol.querySelector('input[name="armSelectionCode"]:checked');
+            // Arm - Dynamic for multiple pin types
+            const armSelections = Array.from(rightCol.querySelectorAll('input[name^="armSelection_"]:checked'));
             const armHeader = rightCol.querySelector('#header-arm');
             if (armHeader) {
-                const code = (armSel && armSel.value !== 'none') ? ` (${armSel.value})` : '';
-                armHeader.textContent = `Arm I/O 케이블 구성 (유로 옵션)${code}`;
+                const codes = armSelections.filter(s => s.value !== 'none').map(s => s.value);
+                const codeText = codes.length > 0 ? ` (${codes.join(', ')})` : '';
+                armHeader.textContent = `Arm I/O 케이블 구성 (유로 옵션)${codeText}`;
             }
 
-            // Body
-            const bodySel = rightCol.querySelector('input[name="bodySelectionCode"]:checked');
+            // Body - Dynamic for multiple pin types
+            const bodySelections = Array.from(rightCol.querySelectorAll('input[name^="bodySelection_"]:checked'));
             const bodyHeader = rightCol.querySelector('#header-body');
             if (bodyHeader) {
-                const code = (bodySel && bodySel.value !== 'none') ? ` (${bodySel.value})` : '';
-                bodyHeader.textContent = `Body I/O 케이블 구성 (유로 옵션)${code}`;
+                const codes = bodySelections.filter(s => s.value !== 'none').map(s => s.value);
+                const codeText = codes.length > 0 ? ` (${codes.join(', ')})` : '';
+                bodyHeader.textContent = `Body I/O 케이블 구성 (유로 옵션)${codeText}`;
             }
 
             // Other
             const otherHeader = rightCol.querySelector('#header-other');
             if (otherHeader) {
-                const selectedCodes = Array.from(rightCol.querySelectorAll('input[name="accSelection"]:checked')).map(cb => cb.value);
+                const checkedItems = Array.from(rightCol.querySelectorAll('input[name="accSelection"]:checked'));
+                const selectedCodes = checkedItems.map(cb => cb.value);
                 const code = selectedCodes.length > 0 ? ` (${selectedCodes.join(', ')})` : '';
                 otherHeader.textContent = `기타 악세서리${code}`;
+
+                // Requirement 2: Show code on the right of each item
+                rightCol.querySelectorAll('input[name="accSelection"]').forEach(cb => {
+                    const codeSpan = cb.parentElement.querySelector('.item-code-inline');
+                    if (codeSpan) {
+                        codeSpan.style.display = cb.checked ? 'inline' : 'none';
+                    }
+                });
             }
 
-            // Comm
+            // Comm & Auto-check Expansion (Requirement 3)
             const commSel = rightCol.querySelector('input[name="commSelection"]:checked');
             const commHeader = rightCol.querySelector('#header-comm');
             if (commHeader) {
-                const code = (commSel && commSel.value !== 'none') ? ` (${commSel.getAttribute('data-code')})` : '';
+                const commCode = commSel ? commSel.getAttribute('data-code') : '';
+                const code = (commSel && commSel.value !== 'none' && commCode) ? ` (${commCode})` : '';
                 commHeader.textContent = `통신 프로토콜 옵션 (확장카드 옵션)${code}`;
+
+                // Auto-check logic
+                if (commCode) {
+                    const expCheckbox = rightCol.querySelector(`input[name="expSelection"][value="${commCode}"]`);
+                    if (expCheckbox && !expCheckbox.checked) {
+                        expCheckbox.checked = true;
+                        // Trigger expansion card change logic safely
+                        const event = new Event('change');
+                        expCheckbox.dispatchEvent(event);
+                    }
+                }
             }
 
             // Expansion
@@ -985,48 +1008,90 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         pRadios.addEventListener('change', updateHeaderCodes);
 
-        // 2. Arm / Body Cable Logic
+        // helper to get pins
+        function getPinCount(desc) {
+            const match = desc.match(/(\d+)\s*pin/i);
+            return match ? match[1] + '핀' : null;
+        }
+
+        // 2. Arm / Body Cable Logic (Requirement 4)
         if (product.specs.Type === '6-Axis') {
+            // Group Arm I/O by pins
             const armContainer = rightCol.querySelector('#arm-container');
             const armOptions = accs.filter(a => a.name === 'Robot arm I/O cable' && isModelMatch(a.target_models, prodName));
             
             if (armOptions.length > 0) {
-                armContainer.innerHTML = `<div style="display:flex; flex-wrap:wrap; gap:10px;" id="arm-radios"><label class="cable-option" style="margin:0;"><input type="radio" name="armSelectionCode" value="none" checked><span>사용안함</span></label></div>`;
-                const armRadios = armContainer.querySelector('#arm-radios');
+                armContainer.innerHTML = '';
+                const pinGroups = {};
                 armOptions.forEach(opt => {
-                    const isFlex = opt.description.toLowerCase().includes('flexible') && !opt.description.toLowerCase().includes('non-flexible');
-                    let displaySpec = opt.spec;
-                    if (opt.spec === '-') displaySpec = '커넥터만';
-                    else displaySpec = `${opt.spec} (${isFlex ? '플렉시블' : '논플렉시블'})`;
-
-                    armRadios.innerHTML += `<label class="cable-option" style="margin:0;"><input type="radio" name="armSelectionCode" value="${opt.code}" data-desc="${opt.description}"><span>${displaySpec}</span></label>`;
+                    const pin = getPinCount(opt.description) || '기본핀';
+                    if (!pinGroups[pin]) pinGroups[pin] = [];
+                    pinGroups[pin].push(opt);
                 });
-                armRadios.addEventListener('change', updateHeaderCodes);
+
+                Object.keys(pinGroups).forEach(pin => {
+                    const groupDiv = document.createElement('div');
+                    groupDiv.style.marginBottom = '12px';
+                    groupDiv.innerHTML = `<div style="font-size:12px; margin-bottom:5px; color:#aaa;">${pin} 케이블 선택</div>
+                        <div style="display:flex; flex-wrap:wrap; gap:10px;" id="arm-radios-${pin}">
+                            <label class="cable-option" style="margin:0;"><input type="radio" name="armSelection_${pin}" value="none" checked><span>사용안함</span></label>
+                        </div>`;
+                    armContainer.appendChild(groupDiv);
+                    
+                    const radios = groupDiv.querySelector(`#arm-radios-${pin}`);
+                    pinGroups[pin].forEach(opt => {
+                        const isFlex = opt.description.toLowerCase().includes('flexible') && !opt.description.toLowerCase().includes('non-flexible');
+                        let displaySpec = opt.spec;
+                        if (opt.spec === '-') displaySpec = '커넥터만';
+                        else displaySpec = `${opt.spec} (${isFlex ? '플렉시블' : '논플렉시블'})`;
+
+                        radios.innerHTML += `<label class="cable-option" style="margin:0;"><input type="radio" name="armSelection_${pin}" value="${opt.code}" data-desc="${opt.description}"><span>${displaySpec}</span></label>`;
+                    });
+                    radios.addEventListener('change', updateHeaderCodes);
+                });
             } else {
                 armContainer.innerHTML = `<span style="font-size:13px; color:#999;">해당 모델에 호환되는 Arm 케이블 옵션이 없습니다.</span>`;
             }
 
+            // Group Body I/O by pins
             const bodyContainer = rightCol.querySelector('#body-container');
             const bodyOptions = accs.filter(a => a.name === 'Robot Body I/O cable' && isModelMatch(a.target_models, prodName));
             
             if (bodyOptions.length > 0) {
-                bodyContainer.innerHTML = `<div style="display:flex; flex-wrap:wrap; gap:10px;" id="body-radios"><label class="cable-option" style="margin:0;"><input type="radio" name="bodySelectionCode" value="none" checked><span>사용안함</span></label></div>`;
-                const bodyRadios = bodyContainer.querySelector('#body-radios');
+                bodyContainer.innerHTML = '';
+                const bodyPinGroups = {};
                 bodyOptions.forEach(opt => {
-                    const isFlex = opt.description.toLowerCase().includes('flexible') && !opt.description.toLowerCase().includes('non-flexible');
-                    let displaySpec = opt.spec;
-                    if (opt.spec === '-') displaySpec = '커넥터만';
-                    else displaySpec = `${opt.spec} (${isFlex ? '플렉시블' : '논플렉시블'})`;
-
-                    bodyRadios.innerHTML += `<label class="cable-option" style="margin:0;"><input type="radio" name="bodySelectionCode" value="${opt.code}" data-desc="${opt.description}"><span>${displaySpec}</span></label>`;
+                    const pin = getPinCount(opt.description) || '기본핀';
+                    if (!bodyPinGroups[pin]) bodyPinGroups[pin] = [];
+                    bodyPinGroups[pin].push(opt);
                 });
-                bodyRadios.addEventListener('change', updateHeaderCodes);
+
+                Object.keys(bodyPinGroups).forEach(pin => {
+                    const groupDiv = document.createElement('div');
+                    groupDiv.style.marginBottom = '12px';
+                    groupDiv.innerHTML = `<div style="font-size:12px; margin-bottom:5px; color:#aaa;">${pin} 케이블 선택</div>
+                        <div style="display:flex; flex-wrap:wrap; gap:10px;" id="body-radios-${pin}">
+                            <label class="cable-option" style="margin:0;"><input type="radio" name="bodySelection_${pin}" value="none" checked><span>사용안함</span></label>
+                        </div>`;
+                    bodyContainer.appendChild(groupDiv);
+                    
+                    const radios = groupDiv.querySelector(`#body-radios-${pin}`);
+                    bodyPinGroups[pin].forEach(opt => {
+                        const isFlex = opt.description.toLowerCase().includes('flexible') && !opt.description.toLowerCase().includes('non-flexible');
+                        let displaySpec = opt.spec;
+                        if (opt.spec === '-') displaySpec = '커넥터만';
+                        else displaySpec = `${opt.spec} (${isFlex ? '플렉시블' : '논플렉시블'})`;
+
+                        radios.innerHTML += `<label class="cable-option" style="margin:0;"><input type="radio" name="bodySelection_${pin}" value="${opt.code}" data-desc="${opt.description}"><span>${displaySpec}</span></label>`;
+                    });
+                    radios.addEventListener('change', updateHeaderCodes);
+                });
             } else {
                 bodyContainer.innerHTML = `<span style="font-size:13px; color:#999;">해당 모델에 호환되는 Body 케이블 옵션이 없습니다.</span>`;
             }
         }
 
-        // 3. Other Accessories Logic
+        // 3. Other Accessories Logic (Requirement 1 & 2)
         const otherAccContainer = rightCol.querySelector('#other-accessories-container');
         const otherOptions = accs.filter(a => {
             if (a.type === 'Pendant') return false;
@@ -1044,7 +1109,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 lbl.style.display = "flex"; lbl.style.alignItems = "start"; lbl.style.gap = "8px"; lbl.style.fontSize = "13px"; lbl.style.cursor = "pointer";
                 lbl.innerHTML = `
                     <input type="checkbox" name="accSelection" value="${acc.code}" data-desc="${acc.type} - ${acc.description}" style="margin-top:3px;">
-                    <div><strong>${acc.type || 'Accessory'}</strong><br><span style="color:#666;">${acc.target_models}</span></div>
+                    <div style="flex:1;">
+                        <strong>${acc.type || 'Accessory'}</strong> 
+                        <span class="item-code-inline" style="display:none; color:var(--primary-blue); font-weight:bold; margin-left:8px;">(${acc.code})</span>
+                        <br><span style="color:#666;">${acc.target_models}</span>
+                    </div>
                 `;
                 otherAccContainer.appendChild(lbl);
             });
@@ -1143,18 +1212,21 @@ document.addEventListener('DOMContentLoaded', () => {
             selectedAccs.push({ name: '티칭 펜던트', details: pSelected.getAttribute('data-desc'), code: pSelected.value });
         }
 
-        // Arm
-        let armSelected = document.querySelector('input[name="armSelectionCode"]:checked');
-        if (armSelected && armSelected.value !== 'none') {
-            const armDesc = armSelected.getAttribute('data-desc') || (armSelected.nextElementSibling ? armSelected.nextElementSibling.textContent : '해당 호환 모델');
-            selectedAccs.push({ name: 'Arm I/O 케이블', details: armDesc, code: armSelected.value });
-        }
-
-        // Body
-        if (wantsBody) {
-            const bodyDesc = document.getElementById('bodySelectionDesc').value;
-            selectedAccs.push({ name: 'Body I/O 케이블', details: bodyDesc, code: bodyCodeInput.value });
-        }
+        // Arm / Body I/O (Multi-pin)
+        document.querySelectorAll('input[name^="armSelection_"]:checked').forEach(sel => {
+            if (sel.value !== 'none') {
+                const pinLabel = sel.name.split('_')[1];
+                const armDesc = sel.getAttribute('data-desc') || (sel.nextElementSibling ? sel.nextElementSibling.textContent : '해당 호환 모델');
+                selectedAccs.push({ name: `Arm I/O 케이블 (${pinLabel})`, details: armDesc, code: sel.value });
+            }
+        });
+        document.querySelectorAll('input[name^="bodySelection_"]:checked').forEach(sel => {
+            if (sel.value !== 'none') {
+                const pinLabel = sel.name.split('_')[1];
+                const bodyDesc = sel.getAttribute('data-desc') || (sel.nextElementSibling ? sel.nextElementSibling.textContent : '해당 호환 모델');
+                selectedAccs.push({ name: `Body I/O 케이블 (${pinLabel})`, details: bodyDesc, code: sel.value });
+            }
+        });
 
         // Other Accs
         document.querySelectorAll('input[name="accSelection"]:checked').forEach(cb => {
