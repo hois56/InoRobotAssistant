@@ -206,26 +206,24 @@ const filtersData = [
         ]
     },
     {
-        "id": "Clean Type",
-        "label": "클린 타입",
+        "id": "Sub Type",
+        "label": "타입",
         "options": [
             {
-                "id": "No",
-                "label": "No"
+                "id": "일반형",
+                "label": "일반형"
             },
             {
-                "id": "Yes",
-                "label": "Yes"
-            }
-        ]
-    },
-    {
-        "id": "Ceiling Mount",
-        "label": "천장 설치",
-        "options": [
+                "id": "경제형",
+                "label": "경제형"
+            },
             {
-                "id": "Yes",
-                "label": "Yes"
+                "id": "클린형",
+                "label": "클린형"
+            },
+            {
+                "id": "천장형",
+                "label": "천장형"
             }
         ]
     }

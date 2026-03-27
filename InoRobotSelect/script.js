@@ -17,6 +17,23 @@ document.addEventListener('DOMContentLoaded', () => {
         accessories: (typeof accessoriesList !== 'undefined') ? JSON.parse(JSON.stringify(accessoriesList)) : []
     };
 
+    // Initialize Sub Type for each product
+    state.products.forEach(product => {
+        const name = product.name.toUpperCase();
+        const isClean = product.specs['Clean Type'] === 'Yes';
+        let sub = '일반형';
+
+        if (name.includes('IR-CS')) {
+            sub = '경제형';
+        } else if (isClean) {
+            sub = '클린형';
+        } else if (product.specs.Type === 'SCARA' && (name.includes('TS4') || name.includes('TS5'))) {
+            sub = '천장형';
+        }
+        
+        product.specs['Sub Type'] = sub;
+    });
+
     function isModelMatch(targetStr, robotName) {
         if (!targetStr || targetStr.toLowerCase() === 'all') return true;
         const targets = targetStr.split(',').map(t => t.trim().toUpperCase());
@@ -131,21 +148,24 @@ document.addEventListener('DOMContentLoaded', () => {
             let img = 'robot.png';
 
             if (product.specs.Type === 'SCARA') {
-                if (name.includes('IR-CS')) {
-                    scaraSubtype = '경제형';
-                } else if (isClean) {
-                    scaraSubtype = '클린형';
-                } else if (name.includes('TS4') || name.includes('TS5')) {
-                    scaraSubtype = '천장형';
-                }
+                scaraSubtype = product.specs['Sub Type'];
 
                 // 이미지 선택 로직 (SCARA)
                 if (name.includes('TS4')) img = 'IR-TS4.png';
                 else if (name.includes('TS5')) img = 'IR-TS5.png';
-                else if (name.includes('S4')) img = 'IR-S4.png';
-                else if (name.includes('S7')) img = 'IR-S7.png';
-                else if (name.includes('S10')) img = 'IR-S10.png';
-                else if (name.includes('S25')) {
+                else if (name.includes('S4')) {
+                    img = isClean ? 'IR-S4_Clean.png' : 'IR-S4.png';
+                } else if (name.includes('S7')) {
+                    if (isClean && name.includes('-50')) img = 'IR-S7-50_Clean.png';
+                    else if (isClean && name.includes('-60')) img = 'IR-S7-60_Clean.png';
+                    else if (isClean && name.includes('-70')) img = 'IR-S7-70_Clean.png';
+                    else img = 'IR-S7.png';
+                } else if (name.includes('S10')) {
+                    if (isClean && name.includes('-60')) img = 'IR-S10-60_Clean.png';
+                    else if (isClean && name.includes('-70')) img = 'IR-S10-70_Clean.png';
+                    else if (isClean && name.includes('-80')) img = 'IR-S10-80_Clean.png';
+                    else img = 'IR-S10.png';
+                } else if (name.includes('S25')) {
                     img = isClean ? 'IR-S25-Clean.png' : 'IR-S25.png';
                 } else if (name.includes('S35')) {
                     // 암 길이 매칭 로직
@@ -165,6 +185,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (name.includes('IR-R4')) img = 'IR-R4.png';
                 else if (name.includes('IR-R7H')) img = 'IR-R7H.png';
                 else if (name.includes('IR-R10-110')) img = 'IR-R10-110.png';
+                else if (name.includes('IR-R10-140')) img = 'IR-R10-140.png';
+                else if (name.includes('IR-R10H-120')) img = 'IR-R10H-120.png';
                 else if (name.includes('IR-R11')) img = 'IR-R11.png';
                 else if (name.includes('IR-R15H')) img = 'IR-R15H.png';
                 else if (name.includes('IR-R16')) img = 'IR-R16.png';
@@ -759,9 +781,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const infoHtml = `
             <div id="dynamic-purchase-code" style="font-size:14px;margin-bottom:8px;font-weight:bold;color:var(--primary-blue);">현재 구매 코드: ${baseCode}</div>
             <h2 style="color:var(--text-main);margin-bottom:12px;">${displayName}</h2>
-            <p style="font-size:14px;color:var(--text-muted);margin-bottom:24px;line-height:1.6;">
-                Inovance 산업용 로봇 (${product.specs.Type}). 제조 과정의 높은 정밀도와 효율성을 위해 설계되었습니다.
-            </p>
             
             <h4 style="margin-bottom: 12px; color: var(--text-main);">로봇 구성 선택</h4>
             
@@ -775,39 +794,39 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
 
             <div style="margin-bottom:20px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
-                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">티칭 펜던트 길이 선택 (유로 옵션)</label>
+                <label id="header-pendant" style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">티칭 펜던트 구성 (유로 옵션)</label>
                 <div id="pendant-container" style="display:flex; flex-direction:column; gap:8px;"></div>
             </div>
 
             ${product.specs.Type === '6-Axis' ? `
             <div style="margin-bottom:12px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
-                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">Arm I/O 케이블 구성</label>
+                <label id="header-arm" style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">Arm I/O 케이블 구성 (유로 옵션)</label>
                 <div id="arm-container" style="display:flex; flex-direction:column; gap:8px;"></div>
             </div>
             <div style="margin-bottom:20px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
-                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">Body I/O 케이블 구성</label>
+                <label id="header-body" style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">Body I/O 케이블 구성 (유로 옵션)</label>
                 <div id="body-container" style="display:flex; flex-direction:column; gap:8px;"></div>
             </div>` : ''}
 
             <div style="margin-bottom:20px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
-                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">기타 악세서리</label>
+                <label id="header-other" style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">기타 악세서리</label>
                 <div id="other-accessories-container" style="display:flex; flex-direction:column; gap:8px;"></div>
             </div>
 
             <div style="margin-bottom:20px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
-                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">통신 프로토콜 옵션 (확장카드 옵션)</label>
+                <label id="header-comm" style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">통신 프로토콜 옵션 (확장카드 옵션)</label>
                 <p style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Modbus-RTU, Modbus-TCP, EtherNet/IP, EtherCAT, MC 통신은 기본 제공됩니다.</p>
                 <div id="comm-radios" style="display:flex; flex-wrap:wrap; gap:10px;">
                     <label class="cable-option" style="margin:0;">
-                        <input type="radio" name="commSelection" value="none" checked>
+                        <input type="radio" name="commSelection" value="none" checked data-code="">
                         <span>기본 프로토콜 사용</span>
                     </label>
                     <label class="cable-option" style="margin:0;">
-                        <input type="radio" name="commSelection" value="PROFINET">
+                        <input type="radio" name="commSelection" value="PROFINET" data-code="PROFINET">
                         <span>PROFINET</span>
                     </label>
                     <label class="cable-option" style="margin:0;">
-                        <input type="radio" name="commSelection" value="CC-Link">
+                        <input type="radio" name="commSelection" value="CC-Link" data-code="CC-Link">
                         <span>CC-Link</span>
                     </label>
                 </div>
@@ -856,6 +875,49 @@ document.addEventListener('DOMContentLoaded', () => {
             typeContainer.appendChild(btn);
         });
 
+        // Function to update dynamic header codes
+        function updateHeaderCodes() {
+            // Pendant
+            const pSel = rightCol.querySelector('input[name="pendantLength"]:checked');
+            const pHeader = rightCol.querySelector('#header-pendant');
+            if (pHeader) {
+                const code = (pSel && pSel.value !== 'none') ? ` (${pSel.value})` : '';
+                pHeader.textContent = `티칭 펜던트 구성 (유로 옵션)${code}`;
+            }
+
+            // Arm
+            const armSel = rightCol.querySelector('input[name="armSelectionCode"]:checked');
+            const armHeader = rightCol.querySelector('#header-arm');
+            if (armHeader) {
+                const code = (armSel && armSel.value !== 'none') ? ` (${armSel.value})` : '';
+                armHeader.textContent = `Arm I/O 케이블 구성 (유로 옵션)${code}`;
+            }
+
+            // Body
+            const bodySel = rightCol.querySelector('input[name="bodySelectionCode"]:checked');
+            const bodyHeader = rightCol.querySelector('#header-body');
+            if (bodyHeader) {
+                const code = (bodySel && bodySel.value !== 'none') ? ` (${bodySel.value})` : '';
+                bodyHeader.textContent = `Body I/O 케이블 구성 (유로 옵션)${code}`;
+            }
+
+            // Other
+            const otherHeader = rightCol.querySelector('#header-other');
+            if (otherHeader) {
+                const selectedCodes = Array.from(rightCol.querySelectorAll('input[name="accSelection"]:checked')).map(cb => cb.value);
+                const code = selectedCodes.length > 0 ? ` (${selectedCodes.join(', ')})` : '';
+                otherHeader.textContent = `기타 악세서리${code}`;
+            }
+
+            // Comm
+            const commSel = rightCol.querySelector('input[name="commSelection"]:checked');
+            const commHeader = rightCol.querySelector('#header-comm');
+            if (commHeader) {
+                const code = (commSel && commSel.value !== 'none') ? ` (${commSel.value})` : '';
+                commHeader.textContent = `통신 프로토콜 옵션 (확장카드 옵션)${code}`;
+            }
+        }
+
         // Function to update dynamic code display
         function updateDynamicCode() {
             const lenEl = rightCol.querySelector('input[name="cableLenSelection"]:checked');
@@ -876,12 +938,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const finalCode = matched ? matched.code : (product.cables.length > 0 ? product.cables[0].code : 'N/A');
                 codeDisplay.textContent = `현재 구매 코드: ${finalCode} `;
             }
+            updateHeaderCodes();
         }
 
         lenContainer.addEventListener('change', updateDynamicCode);
         typeContainer.addEventListener('change', updateDynamicCode);
-        updateDynamicCode();
-
+        
         // Accessory Filtering Logic
         const accs = state.accessories;
         const prodName = product.name;
@@ -908,6 +970,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </label>
             `;
         });
+        pRadios.addEventListener('change', updateHeaderCodes);
 
         // 2. Arm / Body Cable Logic
         if (product.specs.Type === '6-Axis') {
@@ -918,8 +981,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 armContainer.innerHTML = `<div style="display:flex; flex-wrap:wrap; gap:10px;" id="arm-radios"><label class="cable-option" style="margin:0;"><input type="radio" name="armSelectionCode" value="none" checked><span>사용안함</span></label></div>`;
                 const armRadios = armContainer.querySelector('#arm-radios');
                 armOptions.forEach(opt => {
-                    armRadios.innerHTML += `<label class="cable-option" style="margin:0;"><input type="radio" name="armSelectionCode" value="${opt.code}" data-desc="${opt.description}"><span>${opt.spec}</span></label>`;
+                    const isFlex = opt.description.toLowerCase().includes('flexible');
+                    let displaySpec = opt.spec;
+                    if (opt.spec === '-') displaySpec = '커넥터만';
+                    else displaySpec = `${opt.spec} (${isFlex ? '플렉시블' : '논플렉시블'})`;
+
+                    armRadios.innerHTML += `<label class="cable-option" style="margin:0;"><input type="radio" name="armSelectionCode" value="${opt.code}" data-desc="${opt.description}"><span>${displaySpec}</span></label>`;
                 });
+                armRadios.addEventListener('change', updateHeaderCodes);
             } else {
                 armContainer.innerHTML = `<span style="font-size:13px; color:#999;">해당 모델에 호환되는 Arm 케이블 옵션이 없습니다.</span>`;
             }
@@ -931,8 +1000,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 bodyContainer.innerHTML = `<div style="display:flex; flex-wrap:wrap; gap:10px;" id="body-radios"><label class="cable-option" style="margin:0;"><input type="radio" name="bodySelectionCode" value="none" checked><span>사용안함</span></label></div>`;
                 const bodyRadios = bodyContainer.querySelector('#body-radios');
                 bodyOptions.forEach(opt => {
-                    bodyRadios.innerHTML += `<label class="cable-option" style="margin:0;"><input type="radio" name="bodySelectionCode" value="${opt.code}" data-desc="${opt.description}"><span>${opt.spec}</span></label>`;
+                    const isFlex = opt.description.toLowerCase().includes('flexible');
+                    let displaySpec = opt.spec;
+                    if (opt.spec === '-') displaySpec = '커넥터만';
+                    else displaySpec = `${opt.spec} (${isFlex ? '플렉시블' : '논플렉시블'})`;
+
+                    bodyRadios.innerHTML += `<label class="cable-option" style="margin:0;"><input type="radio" name="bodySelectionCode" value="${opt.code}" data-desc="${opt.description}"><span>${displaySpec}</span></label>`;
                 });
+                bodyRadios.addEventListener('change', updateHeaderCodes);
             } else {
                 bodyContainer.innerHTML = `<span style="font-size:13px; color:#999;">해당 모델에 호환되는 Body 케이블 옵션이 없습니다.</span>`;
             }
@@ -944,6 +1019,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (a.type === 'Pendant') return false;
             if (a.name === 'Robot arm I/O cable' || a.name === 'Robot Body I/O cable') return false;
             if (a.type === 'Software' && a.name.includes('Simulation')) return false;
+            if (a.description.includes('1.0 TP Connector')) return false; // Filter Dummy Plug 1.0TP
+            if (a.description.includes('TP2.0 adapter to old version')) return false; // Filter old adapter
             return isModelMatch(a.target_models, prodName);
         });
 
