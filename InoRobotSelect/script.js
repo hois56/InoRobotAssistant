@@ -722,10 +722,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Check if we have J1-J6 info in detailSpecs
         if (dks.length > 0 && dks.some(k => k.toLowerCase().includes('j1'))) {
             axesRows = `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.1); font-size: 11px; color: var(--text-muted);"><td></td><td style="text-align:right; padding: 4px 5px 4px 0;">속도</td><td style="text-align:right; padding: 4px 0;">가동범위</td></tr>`;
-            const checkNums = is6Axis ? [1, 2, 3, 4, 5, 6] : [1, 3, 4];
+            const checkNums = is6Axis ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4];
             checkNums.forEach(num => {
-                let label = isScara && num === 1 ? 'J1+J2' : 'J' + num;
-                let q = isScara && num === 1 ? 'j1+j2' : 'j' + num;
+                let label = 'J' + num;
+                let q = 'j' + num;
                 const sk = dks.find(k => k.toLowerCase().includes('speed') && k.toLowerCase().includes(q));
                 const rk = dks.find(k => k.toLowerCase().includes('range') && k.toLowerCase().includes(q));
                 if (sk || rk) {
@@ -866,7 +866,8 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.className = 'cable-option';
             btn.style.margin = '0';
 
-            let isChecked = (product.specs.Type === '6-Axis') ? (l === '5m') : (i === 0);
+            // Requirement 5: Default 3m for everything if available
+            let isChecked = (l === '3m') || (i === 0 && !lengths.has('3m'));
 
             btn.innerHTML = `<input type="radio" name="cableLenSelection" value="${l}" ${isChecked ? 'checked' : ''}><span>${l}</span>`;
             lenContainer.appendChild(btn);
@@ -933,24 +934,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 const code = (commSel && commSel.value !== 'none' && commCode) ? ` (${commCode})` : '';
                 commHeader.textContent = `통신 프로토콜 옵션 (확장카드 옵션)${code}`;
 
-                // Auto-check logic
+                // Requirement 3 Fix: Sync and Clear siblings
+                const commCodesToSync = ['01650028', '01650040'];
                 if (commCode) {
+                    commCodesToSync.forEach(c => {
+                        if (c !== commCode) {
+                            const cb = rightCol.querySelector(`input[name="expSelection"][value="${c}"]`);
+                            if (cb) cb.checked = false;
+                        }
+                    });
                     const expCheckbox = rightCol.querySelector(`input[name="expSelection"][value="${commCode}"]`);
                     if (expCheckbox && !expCheckbox.checked) {
                         expCheckbox.checked = true;
-                        // Trigger expansion card change logic safely
-                        const event = new Event('change');
-                        expCheckbox.dispatchEvent(event);
                     }
+                } else {
+                    commCodesToSync.forEach(c => {
+                        const cb = rightCol.querySelector(`input[name="expSelection"][value="${c}"]`);
+                        if (cb) cb.checked = false;
+                    });
                 }
             }
 
             // Expansion
             const expansionHeader = rightCol.querySelector('#header-expansion');
             if (expansionHeader) {
-                const selectedCodes = Array.from(rightCol.querySelectorAll('input[name="expSelection"]:checked')).map(cb => cb.value);
-                const code = selectedCodes.length > 0 ? ` (${selectedCodes.join(', ')})` : '';
-                expansionHeader.textContent = `컨트롤러 확장 카드 옵션${code}`;
+                const checkedExp = Array.from(rightCol.querySelectorAll('input[name="expSelection"]:checked'));
+                const selectedCodes = checkedExp.map(cb => cb.value);
+                const codeText = selectedCodes.length > 0 ? ` (${selectedCodes.join(', ')})` : '';
+                expansionHeader.textContent = `컨트롤러 확장 카드 옵션${codeText}`;
+
+                // Requirement 2: Show code inline for expansion cards
+                rightCol.querySelectorAll('input[name="expSelection"]').forEach(cb => {
+                    const codeSpan = cb.parentElement.querySelector('.exp-code-inline');
+                    if (codeSpan) {
+                        codeSpan.style.display = cb.checked ? 'inline' : 'none';
+                    }
+                });
             }
         }
 
@@ -1108,11 +1127,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const lbl = document.createElement('label');
                 lbl.style.display = "flex"; lbl.style.alignItems = "start"; lbl.style.gap = "8px"; lbl.style.fontSize = "13px"; lbl.style.cursor = "pointer";
                 lbl.innerHTML = `
-                    <input type="checkbox" name="accSelection" value="${acc.code}" data-desc="${acc.type} - ${acc.description}" style="margin-top:3px;">
+                    <input type="checkbox" name="accSelection" value="${acc.code}" data-desc="${acc.name} - ${acc.description}" style="margin-top:3px;">
                     <div style="flex:1;">
-                        <strong>${acc.type || 'Accessory'}</strong> 
+                        <strong>${acc.name || 'Accessory'}</strong> 
                         <span class="item-code-inline" style="display:none; color:var(--primary-blue); font-weight:bold; margin-left:8px;">(${acc.code})</span>
-                        <br><span style="color:#666;">${acc.target_models}</span>
+                        <br><span style="color:#666;">${acc.description}</span>
                     </div>
                 `;
                 otherAccContainer.appendChild(lbl);
@@ -1132,7 +1151,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 lbl.style.display = "flex"; lbl.style.alignItems = "start"; lbl.style.gap = "8px"; lbl.style.fontSize = "13px"; lbl.style.cursor = "pointer";
                 lbl.innerHTML = `
                     <input type="checkbox" name="expSelection" value="${acc.code}" data-desc="${acc.name} - ${acc.description}" style="margin-top:3px;">
-                    <div><strong>${acc.name}</strong><br><span style="color:#666;">${acc.description}</span></div>
+                    <div style="flex:1;">
+                        <strong>${acc.name}</strong> 
+                        <span class="exp-code-inline" style="display:none; color:var(--primary-blue); font-weight:bold; margin-left:8px;">(${acc.code})</span>
+                        <br><span style="color:#666;">${acc.description}</span>
+                    </div>
                 `;
                 expContainer.appendChild(lbl);
             });
@@ -1300,15 +1323,40 @@ document.addEventListener('DOMContentLoaded', () => {
         const weight = tech ? tech.weight : (currentActiveProduct.specs.Type === '6-Axis' ? "~130kg" : "12~56kg");
         const cleanType = currentActiveProduct.specs['Clean Type'] || '-';
 
-        let axesRows = '';
+        let axesRowsHtml = '';
         if (tech && tech.axes) {
-            axesRows = `
+            const isScara = currentActiveProduct.specs.Type === 'SCARA';
+            const ds = currentActiveProduct.detailSpecs || {};
+            const dks = Object.keys(ds);
+
+            let displayAxes = [...tech.axes];
+
+            // Requirement 6: Split J1/J2 in PDF if it's SCARA
+            if (isScara) {
+                // If J1 and J2 speed/range exist in detailSpecs, replace the "J1+J2" item
+                const j1Speed = ds[dks.find(k => k.toLowerCase().includes('speed') && k.toLowerCase().includes('j1'))];
+                const j2Speed = ds[dks.find(k => k.toLowerCase().includes('speed') && k.toLowerCase().includes('j2'))];
+                const j1Range = ds[dks.find(k => k.toLowerCase().includes('range') && k.toLowerCase().includes('j1'))];
+                const j2Range = ds[dks.find(k => k.toLowerCase().includes('range') && k.toLowerCase().includes('j2'))];
+
+                if (j1Speed || j1Range || j2Speed || j2Range) {
+                    // Remove J1+J2 if it exists
+                    displayAxes = displayAxes.filter(a => a.axis !== "J1+J2");
+                    // Add J1, J2 at start
+                    displayAxes.unshift(
+                        { axis: "J1", speed: j1Speed || "-", range: j1Range || "-" },
+                        { axis: "J2", speed: j2Speed || "-", range: j2Range || "-" }
+                    );
+                }
+            }
+
+            axesRowsHtml = `
                 <tr style="border-bottom: 1px solid #eee; font-size: 11px; background: #f2f2f2;">
                     <td style="padding: 8px; border: 1px solid #ddd;"></td>
                     <td style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">속도</td>
                     <td style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">가동범위</td>
                 </tr>
-            ` + tech.axes.map(ax => `
+            ` + displayAxes.map(ax => `
                 <tr style="border-bottom: 1px solid #eee;">
                     <td style="padding: 8px; border: 1px solid #ddd;"><strong>${ax.axis} 사양</strong></td>
                     <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${ax.speed}</td>
@@ -1336,20 +1384,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>반복 정밀도</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${repeatability}</td></tr>
                     <tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>방수 방진 등급</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${ipRating}</td></tr>
                     <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>중량</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${weight}</td></tr>
-                    ${axesRows}
+                    ${axesRowsHtml}
                     <tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>사용자 배선</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${ioPins}</td></tr>
-                    <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>사용자 공압</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${tech ? tech.air : '-'}</td></tr>
+                    <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>사용자 공압</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${air}</td></tr>
                 </tbody>
             </table>
 
-            <div class="html2pdf__page-break" style="page-break-before: always;"></div>
-
-            <h3 style="color: #333; margin-top: 30px; margin-bottom: 10px; background: #eee; padding: 10px; border-radius: 4px;">옵션 및 악세서리 구성</h3>
+            <!-- Requirement 4: Removed page-break to lift the table -->
+            <h3 style="color: #333; margin-top: 20px; margin-bottom: 10px; background: #eee; padding: 10px; border-radius: 4px;">옵션 및 악세서리 구성</h3>
             <div style="margin-left: 10px; margin-bottom: 15px;">
                 <p style="margin: 0; font-size: 13px;"><strong>기본 케이블 구성:</strong> 파워/엔코더 케이블 ${cableLen} (${cableType})</p>
             </div>
             
-            <table style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #ddd;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #ddd; margin-top: 10px;">
                 <thead>
                     <tr style="background: #eee;">
                         <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">항목</th>
@@ -1368,7 +1415,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </tbody>
             </table>
 
-            <div style="margin-top: 50px; font-size: 11px; color: #888; text-align: center; border-top: 1px solid #ddd; padding-top: 15px;">
+            <div style="margin-top: 30px; font-size: 11px; color: #888; text-align: center; border-top: 1px solid #ddd; padding-top: 15px;">
                 본 구성서는 선택된 옵션 기반의 가이드입니다. 제조사 사정에 따라 사양이 변경될 수 있습니다. 생성일시: ${new Date().toLocaleString('ko-KR')}
             </div>
         `;
