@@ -64,7 +64,7 @@ body {
 }
 
 .logo {
-    height: 48px; /* 로고를 더 크게 확대 (기존 42px -> 48px) */
+    height: 40px; /* 로고를 더 크게 확대 (기존 42px -> 48px -> 현재 40px로 비율 재조정) */
     width: auto;
     object-fit: contain;
     display: block;
