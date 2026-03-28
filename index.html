@@ -318,9 +318,9 @@
                 const today = new Date().toISOString().split('T')[0];
                 const stored = localStorage.getItem(visitedKey);
                 
-                let endpoint = 'https://api.counterapi.dev/v1/inorobot_assistant/main';
+                let endpoint = 'https://api.counterapi.dev/v1/inorobot_assistant/main/';
                 if (stored !== today) {
-                    endpoint += '/up';
+                    endpoint = 'https://api.counterapi.dev/v1/inorobot_assistant/main/up';
                     localStorage.setItem(visitedKey, today);
                 }
                 
