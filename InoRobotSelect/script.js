@@ -657,6 +657,55 @@ document.addEventListener('DOMContentLoaded', () => {
         const product = state.products.find(p => p.id === productId);
         if (!product) return;
 
+        // CAD availability check
+        const modelIdForCad = product.id;
+        const typeForCad = product.specs.Type;
+        const typeDirForCad = typeForCad === 'SCARA' ? 'SCARA' : '6-axis';
+        let folderBaseForCad = modelIdForCad.split('Z')[0];
+        
+        if (typeForCad === '6-Axis') {
+            const parts = modelIdForCad.split('-');
+            if (parts[2].endsWith('S') && !modelIdForCad.includes('R11-90S')) {
+                folderBaseForCad = parts.slice(0, 2).join('-') + '-' + parts[2].slice(0, -1);
+            } else if (parts[2].endsWith('S5')) {
+                folderBaseForCad = parts.slice(0, 2).join('-') + '-' + parts[2].slice(0, -2);
+            } else {
+                folderBaseForCad = parts.slice(0, 3).join('-');
+            }
+        }
+        const cadFolderMapForCad = {
+            "IR-R15H-145S5-INT": "IR-R15H-145",
+            "IR-R16-210S5-INT": "IR-R16-210",
+            "IR-R20H-120S5-INT": "IR-R20H-120",
+            "IR-R25-178S5-INT": "IR-R25-178"
+        };
+        if(cadFolderMapForCad[modelIdForCad]) folderBaseForCad = cadFolderMapForCad[modelIdForCad];
+
+        const cadPathToCheck = `Robot_CAD/${typeDirForCad}/${folderBaseForCad}/${modelIdForCad}_3D.stp`;
+        const cadBtn = document.getElementById('download-cad-btn');
+        cadBtn.disabled = true;
+        cadBtn.innerText = "상태 확인 중..";
+        cadBtn.style.opacity = "0.7";
+
+        fetch(cadPathToCheck, { method: 'HEAD' }).then(resp => {
+            if (resp.ok) {
+                cadBtn.disabled = false;
+                cadBtn.innerText = "CAD 다운로드";
+                cadBtn.style.opacity = "1";
+                cadBtn.style.cursor = "pointer";
+            } else {
+                cadBtn.disabled = true;
+                cadBtn.innerText = "CAD 준비 중";
+                cadBtn.style.opacity = "0.4";
+                cadBtn.style.cursor = "not-allowed";
+            }
+        }).catch(() => {
+            cadBtn.disabled = true;
+            cadBtn.innerText = "CAD 준비 중";
+            cadBtn.style.opacity = "0.4";
+            cadBtn.style.cursor = "not-allowed";
+        });
+
         // Rename SCARA clean types for modal title
         let displayName = product.name;
         let scaraSubtype = '일반형';
@@ -1623,7 +1672,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ];
 
             // Pendant check
-            const isPendant = document.querySelector('input[name="pendantSelection"]:checked')?.value !== 'none';
+            const isPendant = document.querySelector('input[name="pendantLength"]:checked')?.value !== 'none';
             const tpFiles = isPendant ? [
                 { path: `Robot_CAD/IR-TP-200/IR-TP-200_2D-INT.dwg`, name: `IR-TP-200_2D.dwg` },
                 { path: `Robot_CAD/IR-TP-200/IR-TP-200_3D-INT.stp`, name: `IR-TP-200_3D.stp` }

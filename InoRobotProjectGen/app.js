@@ -66,6 +66,12 @@ function initApp() {
         uSelector();
     };
 
+    document.getElementById('chkToolControl').onchange = (e) => {
+        state.options.EnableToolControl = e.target.checked;
+        document.getElementById('cmbToolControlType').disabled = !e.target.checked;
+        uSelector();
+    };
+
     document.getElementById('btnOption').onclick = () => {
         document.getElementById('chkMultiRecipe').checked = state.options.EnableMultiRecipe;
         document.getElementById('numRecipeCount').value = state.options.RecipeCount;
@@ -74,6 +80,7 @@ function initApp() {
         document.getElementById('chkTorque').checked = state.options.EnableTorque;
         document.getElementById('chkToolControl').checked = state.options.EnableToolControl;
         document.getElementById('cmbToolControlType').value = state.options.ToolControlType || "PLC_IO";
+        document.getElementById('cmbToolControlType').disabled = !state.options.EnableToolControl;
         document.getElementById('optionsModal').classList.remove('hidden');
         
         // Reset description panel
