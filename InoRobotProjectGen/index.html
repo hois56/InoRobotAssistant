@@ -39,7 +39,7 @@
             transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
         }
         .logo-link:hover { transform: scale(1.05); }
-        .logo-img { height: 60px; width: auto; object-fit: contain; display: block; }
+        .logo-img { height: 42px; width: auto; object-fit: contain; display: block; }
         .header-divider {
             padding-left: 1.5rem;
             border-left: 1px solid rgba(255,255,255,0.09);
@@ -84,10 +84,8 @@
     </style>
 </head>
 
-<body class="p-4 md:p-8">
-    <div class="max-w-[1500px] mx-auto space-y-6">
-        <header
-            class="flex flex-row justify-between items-center bg-[rgba(15,19,28,0.95)] backdrop-blur-xl border-b border-white/[0.09] px-8 shrink-0 gap-6 h-[72px]">
+<body class="p-0">
+    <header class="sticky top-0 w-full flex flex-row justify-between items-center bg-[rgba(15,19,28,0.95)] backdrop-blur-xl border-b border-white/[0.09] px-8 shrink-0 gap-6 h-[72px] z-50">
             <div class="flex flex-row items-center gap-0">
                 <a href="/" class="logo-link" title="메인 페이지로 이동">
                     <img id="appLogo" src="../InoRobotSelect/INOVANCE_Logo.png" class="logo-img" alt="Inovance">
@@ -111,8 +109,8 @@
                     <span class="text-red-400 font-bold text-xs tracking-wide">* Work origin [0] 별도 설정 필요</span>
                 </div>
             </div>
-        </header>
-
+    </header>
+    <div class="max-w-[1500px] mx-auto space-y-6 p-4 md:p-8">
         <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 h-auto xl:h-[760px]">
             <div class="xl:col-span-6 flex flex-col space-y-4 h-auto xl:h-full">
                 <!-- Project Settings -->
