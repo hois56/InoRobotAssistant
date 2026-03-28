@@ -13,13 +13,18 @@ const state = {
 
 // Controller mapping per robot model name
 function getControllerName(name) {
-    if (/^IR-S[47]-|^IR-S10-|^IR-TS[45]-/.test(name))       return 'IRCB501-SCARA-Standard';
-    if (/^IR-(S25|S35|S60|GS60)-/.test(name))                return 'IRCB501-SCARA-Highpower';
-    if (/^IR-R[47]H?-/.test(name))                           return 'IRCB501-6-axis-Standard';
-    if (/^IR-R(10-110|10H|11|15H|20H)-/.test(name))          return 'IRCB501-6-axis-Highpower';
-    if (/^IR-R(10-140|16|25)-/.test(name))                   return 'IRCB501-6-axis-Highprotection';
+    if (/^IR-S[47]-|^IR-S10-|^IR-TS[45]-/.test(name))            return 'IRCB501-SCARA-Standard';
+    if (/^IR-(S25|S35|S60|GS60)-/.test(name))                     return 'IRCB501-SCARA-Highpower';
+    if (/^IR-R[47]H?-/.test(name))                                return 'IRCB501-6-axis-Standard';
+    if (/^IR-R(10-110|10H|11|15H|20H)-/.test(name))               return 'IRCB501-6-axis-Highpower';
+    if (/^IR-R(10-140|16-|16$|25-|25$)/.test(name))               return 'IRCB501-6-axis-Highprotection';
     return null;
 }
+
+// Models that need special rotation fix
+const MODEL_ROTATION_FIX = {
+    'IR-S25-100Z42S': { z: Math.PI }
+};
 
 const el = {
     modelSelect:     document.getElementById('model-select'),
@@ -189,6 +194,24 @@ async function populateModelList() {
     } catch (e) { console.error(e); }
 }
 
+function applyFBXMaterial(fbx) {
+    fbx.traverse(c => {
+        if (!c.isMesh) return;
+        c.castShadow = c.receiveShadow = true;
+        // Force visible material in case FBX has transparent/black material
+        const mats = Array.isArray(c.material) ? c.material : [c.material];
+        mats.forEach(m => {
+            if (!m) return;
+            m.transparent = false;
+            m.opacity = 1;
+            if (m.color && m.color.r === 0 && m.color.g === 0 && m.color.b === 0) {
+                m.color.set(0xcccccc);
+            }
+            m.needsUpdate = true;
+        });
+    });
+}
+
 async function loadModelFromServer(file, name) {
     showLoading(true, `Loading ${name}...`);
     setStatus('Loading', '#f59e0b');
@@ -202,30 +225,40 @@ async function loadModelFromServer(file, name) {
         const robotFbx = await loadFBX(`./models/${file}`,
             (p) => showLoading(true, `Robot: ${p}%`));
         robotFbx.rotateX(-Math.PI / 2);
-        robotFbx.traverse(c => { if (c.isMesh) c.castShadow = c.receiveShadow = true; });
+
+        // Apply special rotation fix per model
+        const rotFix = MODEL_ROTATION_FIX[name];
+        if (rotFix && rotFix.z) robotFbx.rotateZ(rotFix.z);
+
+        applyFBXMaterial(robotFbx);
         state.model = robotFbx;
         state.scene.add(state.model);
 
-        // Load controller
+        // Load controller (failure doesn't block robot display)
         if (ctrlFile) {
             showLoading(true, `Loading controller...`);
-            const ctrlFbx = await loadFBX(`./models/${ctrlFile}`,
-                (p) => showLoading(true, `Controller: ${p}%`));
-            ctrlFbx.rotateX(-Math.PI / 2);
-            ctrlFbx.traverse(c => { if (c.isMesh) c.castShadow = c.receiveShadow = true; });
+            try {
+                const ctrlFbx = await loadFBX(`./models/${ctrlFile}`,
+                    (p) => showLoading(true, `Controller: ${p}%`));
+                ctrlFbx.rotateX(-Math.PI / 2);
+                applyFBXMaterial(ctrlFbx);
 
-            // Position controller 500mm to the right after centering robot
-            const robotBox = new THREE.Box3().setFromObject(robotFbx);
-            const robotSize = robotBox.getSize(new THREE.Vector3());
-            ctrlFbx.position.x = robotSize.x / 2 + 500;
-            state.controller = ctrlFbx;
-            state.scene.add(state.controller);
+                // Position controller 500mm in Z+ direction from robot
+                const robotBox = new THREE.Box3().setFromObject(robotFbx);
+                const robotSize = robotBox.getSize(new THREE.Vector3());
+                ctrlFbx.position.z = robotSize.z / 2 + 500;
+                state.controller = ctrlFbx;
+                state.scene.add(state.controller);
+            } catch (ctrlErr) {
+                console.warn('Controller load failed:', ctrlErr);
+            }
         }
 
         updateUIStatus(name);
         showLoading(false);
         fitCamera();
     } catch (err) {
+        console.error('Robot load failed:', err);
         setStatus('Error', '#ef4444');
         showLoading(false);
     }
