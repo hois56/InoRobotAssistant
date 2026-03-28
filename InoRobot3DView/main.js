@@ -243,10 +243,21 @@ async function loadModelFromServer(file, name) {
                 ctrlFbx.rotateX(-Math.PI / 2);
                 applyFBXMaterial(ctrlFbx);
 
-                // Position controller 500mm in Z+ direction from robot
+                // Normalize scale: if controller and robot differ by >50x, scale controller to match robot
                 const robotBox = new THREE.Box3().setFromObject(robotFbx);
-                const robotSize = robotBox.getSize(new THREE.Vector3());
-                ctrlFbx.position.z = robotSize.z / 2 + 500;
+                const robotDiag = robotBox.getSize(new THREE.Vector3()).length();
+                const ctrlBox0 = new THREE.Box3().setFromObject(ctrlFbx);
+                const ctrlDiag = ctrlBox0.getSize(new THREE.Vector3()).length();
+                if (ctrlDiag > 0 && robotDiag > 0) {
+                    const ratio = ctrlDiag / robotDiag;
+                    if (ratio > 50) ctrlFbx.scale.multiplyScalar(1 / ratio);
+                    else if (ratio < 1 / 50) ctrlFbx.scale.multiplyScalar(ratio);
+                }
+
+                // Position controller 500mm to the right (X+) of robot
+                const ctrlBoxFinal = new THREE.Box3().setFromObject(ctrlFbx);
+                ctrlFbx.position.x = robotBox.max.x + 500 - ctrlBoxFinal.min.x;
+
                 state.controller = ctrlFbx;
                 state.scene.add(state.controller);
             } catch (ctrlErr) {
