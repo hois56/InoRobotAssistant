@@ -198,12 +198,14 @@ function applyFBXMaterial(fbx) {
     fbx.traverse(c => {
         if (!c.isMesh) return;
         c.castShadow = c.receiveShadow = true;
-        // Force visible material in case FBX has transparent/black material
         const mats = Array.isArray(c.material) ? c.material : [c.material];
         mats.forEach(m => {
             if (!m) return;
             m.transparent = false;
             m.opacity = 1;
+            // Vertex colors from FBX often cause wrong colors — disable them
+            m.vertexColors = false;
+            // Pure black → neutral gray (invisible mesh fix)
             if (m.color && m.color.r === 0 && m.color.g === 0 && m.color.b === 0) {
                 m.color.set(0xcccccc);
             }
@@ -232,6 +234,20 @@ async function loadModelFromServer(file, name) {
 
         applyFBXMaterial(robotFbx);
         state.model = robotFbx;
+
+        // Auto-scale detection (Detect Meters vs Millimeters)
+        const robotBox = new THREE.Box3().setFromObject(state.model);
+        const robotSize = robotBox.getSize(new THREE.Vector3());
+        const robotMaxDim = Math.max(robotSize.x, robotSize.y, robotSize.z);
+        
+        // Typical robot sizes are 400mm to 3000mm. 
+        // If max dimension is < 10, it's likely Meters. If < 100, likely CM.
+        if (robotMaxDim > 0 && robotMaxDim < 15) {
+            state.model.scale.multiplyScalar(1000); // Meters -> MM
+        } else if (robotMaxDim >= 15 && robotMaxDim < 150) {
+            state.model.scale.multiplyScalar(10);   // CM -> MM
+        }
+
         state.scene.add(state.model);
 
         // Load controller (failure doesn't block robot display)
@@ -243,10 +259,34 @@ async function loadModelFromServer(file, name) {
                 ctrlFbx.rotateX(-Math.PI / 2);
                 applyFBXMaterial(ctrlFbx);
 
-                // Position controller 500mm to the right (X+) of robot
-                const robotBox = new THREE.Box3().setFromObject(robotFbx);
-                const ctrlBox  = new THREE.Box3().setFromObject(ctrlFbx);
-                ctrlFbx.position.x = robotBox.max.x + 500 - ctrlBox.min.x;
+                // Auto-scale detection for controller
+                const ctrlBoxTemp = new THREE.Box3().setFromObject(ctrlFbx);
+                const ctrlSizeTemp = ctrlBoxTemp.getSize(new THREE.Vector3());
+                const ctrlMaxDim = Math.max(ctrlSizeTemp.x, ctrlSizeTemp.y, ctrlSizeTemp.z);
+                if (ctrlMaxDim > 0 && ctrlMaxDim < 10) {
+                    ctrlFbx.scale.multiplyScalar(1000);
+                } else if (ctrlMaxDim >= 10 && ctrlMaxDim < 100) {
+                    ctrlFbx.scale.multiplyScalar(10);
+                }
+
+                // Final bounding boxes for placement after scaling
+                const rb = new THREE.Box3().setFromObject(state.model);
+                const cb = new THREE.Box3().setFromObject(ctrlFbx);
+                const rCenter = rb.getCenter(new THREE.Vector3());
+                const cCenter = cb.getCenter(new THREE.Vector3());
+
+                // Position controller to the RIGHT of the robot
+                // (In Three.js Y-up, if robot faces +X, right side is -Z)
+                
+                // 1. Center controller with robot along X axis (Front/Back)
+                ctrlFbx.position.x += (rCenter.x - cCenter.x);
+                
+                // 2. Move to the right side (-Z) with a 400mm gap
+                // Move controller's max.z to robot's min.z - 400
+                ctrlFbx.position.z += (rb.min.z - 400 - cb.max.z);
+                
+                // 3. Align bottom to floor
+                ctrlFbx.position.y += (rb.min.y - cb.min.y);
 
                 state.controller = ctrlFbx;
                 state.scene.add(state.controller);
