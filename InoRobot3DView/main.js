@@ -164,11 +164,18 @@ async function populateModelList() {
         const res = await fetch(`./models/models.json?v=${Date.now()}`);
         const list = await res.json();
         el.modelSelect.innerHTML = '<option value="" disabled selected>-- 로봇 모델을 선택하세요 --</option>';
+        let currentGroup = null;
         list.forEach(m => {
-            const opt = document.createElement('option');
-            opt.value = m.file;
-            opt.textContent = m.name;
-            el.modelSelect.appendChild(opt);
+            if (m.group) {
+                currentGroup = document.createElement('optgroup');
+                currentGroup.label = m.group;
+                el.modelSelect.appendChild(currentGroup);
+            } else {
+                const opt = document.createElement('option');
+                opt.value = m.file;
+                opt.textContent = m.name;
+                (currentGroup || el.modelSelect).appendChild(opt);
+            }
         });
     } catch (e) { console.error(e); }
 }
