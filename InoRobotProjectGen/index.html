@@ -29,6 +29,22 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
 
+        /* ── TOP BAR ── */
+        .logo-link {
+            display: flex;
+            align-items: center;
+            background: transparent;
+            border: none;
+            padding: 0;
+            transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+        }
+        .logo-link:hover { transform: scale(1.05); }
+        .logo-img { height: 60px; width: auto; object-fit: contain; display: block; }
+        .header-divider {
+            padding-left: 1.5rem;
+            border-left: 1px solid rgba(255,255,255,0.09);
+        }
+
         .scroll-custom::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -71,13 +87,13 @@
 <body class="p-4 md:p-8">
     <div class="max-w-[1500px] mx-auto space-y-6">
         <header
-            class="flex flex-col md:flex-row justify-between items-center bg-slate-900/50 backdrop-blur-md border-b border-white/5 py-4 px-6 md:px-10 shrink-0 gap-5">
-            <div class="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
-                <a href="https://inovancerobot.com" target="_self" title="Go to Inovancerobot.com Main" class="block transition-colors cursor-pointer"><img id="appLogo"
-                        class="h-10 w-auto object-contain drop-shadow-xl" alt="Inovance"></a>
-                <div>
-                    <h1
-                        class="text-xl sm:text-2xl font-bold font-[Outfit] text-white">
+            class="flex flex-row justify-between items-center bg-[rgba(15,19,28,0.95)] backdrop-blur-xl border-b border-white/[0.09] px-8 shrink-0 gap-6 h-[72px]">
+            <div class="flex flex-row items-center gap-0">
+                <a href="/" class="logo-link" title="메인 페이지로 이동">
+                    <img id="appLogo" src="../InoRobotSelect/INOVANCE_Logo.png" class="logo-img" alt="Inovance">
+                </a>
+                <div class="header-divider">
+                    <h1 class="text-xl sm:text-2xl font-bold font-[Outfit] text-white whitespace-nowrap">
                         Inovance Robot Project Generator</h1>
                     <p class="text-sm text-slate-400 font-mono tracking-wide">Ver R24.C4.1.0</p>
                 </div>
