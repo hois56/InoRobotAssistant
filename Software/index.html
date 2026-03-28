@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inovance Software Download</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-[#0b0e14] text-slate-200 min-h-screen overflow-x-hidden">
+    <div class="ambient-glow"></div>
+
+    <!-- Header Section -->
+    <header class="sticky top-0 w-full flex flex-row justify-between items-center bg-[rgba(15,19,28,0.9)] backdrop-blur-xl border-b border-white/[0.05] px-8 py-0 shrink-0 h-[72px] z-50">
+        <div class="flex flex-row items-center gap-6">
+            <a href="/" class="logo-link group" title="메인 페이지로">
+                <img src="../InoRobotSelect/INOVANCE_Logo.png" alt="Inovance" class="logo-img h-8 w-auto transition-transform group-hover:scale-105">
+            </a>
+            <div class="header-divider h-8 w-px bg-white/[0.1] mx-2"></div>
+            <h1 class="text-xl font-bold font-outfit text-white tracking-tight">Software Download Center</h1>
+        </div>
+        <div class="flex items-center gap-4">
+            <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/10 italic">Ver 26.03.29</span>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-6 md:p-12">
+        <!-- Hero Search Section -->
+        <section class="text-center mb-16 animate-fade-in-up" style="animation: fadeInUp 0.8s ease forwards;">
+            <h2 class="text-4xl md:text-5xl font-extrabold font-outfit text-white mb-6">최신 소프트웨어를 확인하세요</h2>
+            <p class="text-slate-400 text-lg max-w-2xl mx-auto mb-10">로봇 시스템의 성능을 극대화하기 위한 필수 도구들을 제공합니다.</p>
+            
+            <div class="relative max-w-2xl mx-auto">
+                <i data-lucide="search" class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 font-bold"></i>
+                <input type="text" id="swSearch" placeholder="찾으시는 소프트웨어를 입력하세요..." 
+                       class="w-full bg-slate-900/40 border border-white/10 rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-md transition-all text-white placeholder-slate-600">
+            </div>
+        </section>
+
+        <!-- Category Tabs -->
+        <div class="flex flex-wrap justify-center gap-4 mb-14 overflow-x-auto pb-4 scrollbar-hide">
+            <button class="cat-btn active px-6 py-2.5 rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-md text-sm font-medium transition-all" data-category="all">전체</button>
+            <button class="cat-btn px-6 py-2.5 rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-md text-sm font-medium transition-all" data-category="controller">컨트롤러 (Studio)</button>
+            <button class="cat-btn px-6 py-2.5 rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-md text-sm font-medium transition-all" data-category="tool">모듈/툴 도구</button>
+            <button class="cat-btn px-6 py-2.5 rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-md text-sm font-medium transition-all" data-category="driver">드라이버</button>
+            <button class="cat-btn px-6 py-2.5 rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-md text-sm font-medium transition-all" data-category="patch">패치/펌웨어</button>
+        </div>
+
+        <!-- Software Grid -->
+        <div id="swGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Cards populated by script -->
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-20 py-10 text-center border-t border-white/[0.05]">
+        <p class="text-sm text-slate-500 font-mono italic">
+            &copy; 2026 INOVANCE Robot Assistant. All technical support ready.
+        </p>
+    </footer>
+
+    <style>
+        .font-outfit { font-family: 'Outfit', sans-serif; }
+        .ambient-glow {
+            position: fixed; top: 10%; right: 10%; width: 50vw; height: 50vh;
+            background: radial-gradient(circle, rgba(56,189,248,0.05) 0%, rgba(15,23,42,0) 70%);
+            z-index: -1; filter: blur(100px); pointer-events: none;
+        }
+
+        .cat-btn { background: rgba(15, 23, 42, 0.4); color: #94a3b8; border-color: rgba(255,255,255,0.05); }
+        .cat-btn:hover { border-color: rgba(56, 189, 248, 0.3); color: #fff; }
+        .cat-btn.active { background: rgba(37, 99, 235, 0.2); border-color: #3b82f6; color: #60a5fa; }
+
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(2rem); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+    <script src="script.js"></script>
+</body>
+</html>

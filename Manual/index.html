@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inovance Robot Manual Center</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-[#0b0e14] text-slate-200 min-h-screen overflow-x-hidden">
+    <div class="ambient-glow"></div>
+
+    <!-- Header Section -->
+    <header class="sticky top-0 w-full flex flex-row justify-between items-center bg-[rgba(15,19,28,0.9)] backdrop-blur-xl border-b border-white/[0.05] px-8 py-0 shrink-0 h-[72px] z-50">
+        <div class="flex flex-row items-center gap-6">
+            <a href="/" class="logo-link group" title="메인 페이지로">
+                <img src="../InoRobotSelect/INOVANCE_Logo.png" alt="Inovance" class="logo-img h-8 w-auto transition-transform group-hover:scale-105">
+            </a>
+            <div class="header-divider h-8 w-px bg-white/[0.1] mx-2"></div>
+            <h1 class="text-xl font-bold font-outfit text-white tracking-tight">Technical Manual Center</h1>
+        </div>
+        <div class="flex items-center gap-4">
+            <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/10 italic">Ver 26.03.29</span>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-6 md:p-12">
+        <!-- Hero Search Section -->
+        <section class="text-center mb-16 animate-fade-in-up" style="animation: fadeInUp 0.8s ease forwards;">
+            <h2 class="text-4xl md:text-5xl font-extrabold font-outfit text-white mb-6 font-bold">도움이 필요하신가요?</h2>
+            <p class="text-slate-400 text-lg max-w-2xl mx-auto mb-10 italic">필요한 매뉴얼을 검색하거나 모델별 카테고리를 선택하세요.</p>
+            
+            <div class="relative max-w-2xl mx-auto">
+                <i data-lucide="search" class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 font-bold"></i>
+                <input type="text" id="manualSearch" placeholder="키워드(예: SCARA, 설치, 통신)를 입력하세요..." 
+                       class="w-full bg-slate-900/40 border border-white/10 rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 backdrop-blur-md transition-all text-white placeholder-slate-600">
+            </div>
+        </section>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+            <!-- Sidebar Filters -->
+            <aside class="lg:col-span-3 space-y-8">
+                <div>
+                    <h3 class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <i data-lucide="layers" class="w-4 h-4 text-emerald-500"></i> Robot Type
+                    </h3>
+                    <div class="space-y-2" id="typeFilters">
+                        <button class="filter-btn active w-full text-left" data-type="all">전체 모델</button>
+                        <button class="filter-btn w-full text-left" data-type="scara">SCARA Robots</button>
+                        <button class="filter-btn w-full text-left" data-type="6axis">6-Axis Robots</button>
+                        <button class="filter-btn w-full text-left" data-type="controller">Controllers</button>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <i data-lucide="tag" class="w-4 h-4 text-emerald-500"></i> Category
+                    </h3>
+                    <div class="space-y-2" id="catFilters">
+                        <button class="filter-btn active w-full text-left" data-cat="all">전체 카테고리</button>
+                        <button class="filter-btn w-full text-left" data-cat="operation">사용/조작 매뉴얼</button>
+                        <button class="filter-btn w-full text-left" data-cat="hardware">하드웨어/설치</button>
+                        <button class="filter-btn w-full text-left" data-cat="comm">통신/프로토콜</button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Manual List -->
+            <div class="lg:col-span-9">
+                <div id="manualList" class="space-y-4">
+                    <!-- Items populated by script -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-20 py-10 text-center border-t border-white/[0.05]">
+        <p class="text-sm text-slate-500 font-mono italic">
+            &copy; 2026 INOVANCE Robot Assistant. All technical support ready.
+        </p>
+    </footer>
+
+    <style>
+        .font-outfit { font-family: 'Outfit', sans-serif; }
+        .ambient-glow {
+            position: fixed; bottom: 10%; right: 10%; width: 50vw; height: 50vh;
+            background: radial-gradient(circle, rgba(16,185,129,0.05) 0%, rgba(15,23,42,0) 70%);
+            z-index: -1; filter: blur(100px); pointer-events: none;
+        }
+
+        .filter-btn {
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            background: transparent;
+            border: 1px solid transparent;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #94a3b8;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: left;
+        }
+        .filter-btn:hover { background: rgba(30, 41, 59, 0.4); color: #fff; }
+        .filter-btn.active { 
+            background: rgba(16, 185, 129, 0.1); 
+            border-color: rgba(16, 185, 129, 0.3); 
+            color: #10b981; 
+            font-weight: 700;
+        }
+
+        .manual-item {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.3s ease;
+        }
+        .manual-item:hover {
+            background: rgba(30, 41, 59, 0.7);
+            border-color: rgba(16, 185, 129, 0.4);
+            transform: translateX(8px);
+        }
+
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(2rem); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+    <script src="script.js"></script>
+</body>
+</html>
