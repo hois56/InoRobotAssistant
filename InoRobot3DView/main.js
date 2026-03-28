@@ -8,8 +8,18 @@ import { FBXLoader } from 'https://esm.sh/three@0.156.1/examples/jsm/loaders/FBX
 
 const state = {
     scene: null, camera: null, renderer: null,
-    controls: null, model: null, grid: null, occt: null
+    controls: null, model: null, controller: null, grid: null, occt: null
 };
+
+// Controller mapping per robot model name
+function getControllerName(name) {
+    if (/^IR-S[47]-|^IR-S10-|^IR-TS[45]-/.test(name))       return 'IRCB501-SCARA-Standard';
+    if (/^IR-(S25|S35|S60|GS60)-/.test(name))                return 'IRCB501-SCARA-Highpower';
+    if (/^IR-R[47]H?-/.test(name))                           return 'IRCB501-6-axis-Standard';
+    if (/^IR-R(10-110|10H|11|15H|20H)-/.test(name))          return 'IRCB501-6-axis-Highpower';
+    if (/^IR-R(10-140|16|25)-/.test(name))                   return 'IRCB501-6-axis-Highprotection';
+    return null;
+}
 
 const el = {
     modelSelect:     document.getElementById('model-select'),
@@ -30,18 +40,8 @@ async function init() {
     setupControls();
     setupEventListeners();
     animate();
-    await Promise.all([initEngine(), populateModelList()]);
-}
-
-async function initEngine() {
-    setStatus('Engine Init', '#94a3b8');
-    try {
-        if (typeof window.occtimportjs === 'undefined') return;
-        state.occt = await window.occtimportjs({
-            locateFile: (name) => `https://cdn.jsdelivr.net/npm/occt-import-js@0.0.12/dist/${name}`
-        });
-        setStatus('Ready', '#22c55e');
-    } catch (e) { console.error(e); }
+    await populateModelList();
+    setStatus('Ready', '#22c55e');
 }
 
 function setupScene() {
@@ -125,6 +125,15 @@ function setupEventListeners() {
                 { path: `../InoRobotSelect/Robot_CAD/${typeDir}/${folderBase}/${modelId}_3D.stp`, name: `${modelId}_3D.stp` }
             ];
 
+            // Add controller CAD files
+            const ctrl = getControllerName(name);
+            if (ctrl) {
+                files.push(
+                    { path: `../InoRobotSelect/Robot_CAD/Controller/${ctrl}/${ctrl}.dwg`, name: `${ctrl}.dwg` },
+                    { path: `../InoRobotSelect/Robot_CAD/Controller/${ctrl}/${ctrl}.stp`, name: `${ctrl}.stp` }
+                );
+            }
+
             btnDown.disabled = true;
             const oldHtml = btnDown.innerHTML;
             btnDown.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
@@ -139,7 +148,7 @@ function setupEventListeners() {
                 const content = await zip.generateAsync({ type: "blob", compression: "STORE" });
                 saveAs(content, `Inovance_CAD_${modelId}.zip`);
             } catch (e) { console.error(e); }
-            
+
             btnDown.disabled = false;
             btnDown.innerHTML = oldHtml;
         });
@@ -181,72 +190,68 @@ async function populateModelList() {
 }
 
 async function loadModelFromServer(file, name) {
-    const ext = file.split('.').pop().toLowerCase();
     showLoading(true, `Loading ${name}...`);
     setStatus('Loading', '#f59e0b');
+    cleanupScene();
+
+    const ctrlName = getControllerName(name);
+    const ctrlFile = ctrlName ? `${ctrlName}.fbx` : null;
+
     try {
-        const url = `./models/${file}`;
-        if (ext === 'fbx') {
-            new FBXLoader().load(url, (fbx) => renderFBXModel(fbx, name),
-                (xhr) => { if (xhr.total > 0) showLoading(true, `Downloading: ${Math.round(xhr.loaded/xhr.total*100)}%`); },
-                () => { setStatus('Error', '#ef4444'); showLoading(false); });
-            return;
+        // Load robot body
+        const robotFbx = await loadFBX(`./models/${file}`,
+            (p) => showLoading(true, `Robot: ${p}%`));
+        robotFbx.rotateX(-Math.PI / 2);
+        robotFbx.traverse(c => { if (c.isMesh) c.castShadow = c.receiveShadow = true; });
+        state.model = robotFbx;
+        state.scene.add(state.model);
+
+        // Load controller
+        if (ctrlFile) {
+            showLoading(true, `Loading controller...`);
+            const ctrlFbx = await loadFBX(`./models/${ctrlFile}`,
+                (p) => showLoading(true, `Controller: ${p}%`));
+            ctrlFbx.rotateX(-Math.PI / 2);
+            ctrlFbx.traverse(c => { if (c.isMesh) c.castShadow = c.receiveShadow = true; });
+
+            // Position controller 500mm to the right after centering robot
+            const robotBox = new THREE.Box3().setFromObject(robotFbx);
+            const robotSize = robotBox.getSize(new THREE.Vector3());
+            ctrlFbx.position.x = robotSize.x / 2 + 500;
+            state.controller = ctrlFbx;
+            state.scene.add(state.controller);
         }
-        const res = await fetch(url);
-        await parseAndRenderSTEP(await res.arrayBuffer(), name);
+
+        updateUIStatus(name);
+        showLoading(false);
+        fitCamera();
     } catch (err) {
         setStatus('Error', '#ef4444');
         showLoading(false);
     }
 }
 
-function renderFBXModel(fbx, name) {
-    cleanupScene();
-    fbx.rotateX(-Math.PI / 2);
-    fbx.traverse(c => { if (c.isMesh) c.castShadow = c.receiveShadow = true; });
-    state.model = fbx;
-    state.scene.add(state.model);
-    updateUIStatus(name);
-    showLoading(false);
-    fitCamera();
+function loadFBX(url, onProgress) {
+    return new Promise((resolve, reject) => {
+        new FBXLoader().load(url, resolve,
+            (xhr) => { if (xhr.total > 0 && onProgress) onProgress(Math.round(xhr.loaded / xhr.total * 100)); },
+            reject);
+    });
 }
 
-async function parseAndRenderSTEP(buffer, name) {
-    if (!state.occt) return;
-    cleanupScene();
-    try {
-        const result = state.occt.ReadStepFile(new Uint8Array(buffer));
-        const group = new THREE.Group();
-        result.meshes.forEach(mesh => {
-            const geo = new THREE.BufferGeometry();
-            geo.setAttribute('position', new THREE.Float32BufferAttribute(mesh.attributes.position.array, 3));
-            geo.setIndex(new THREE.Uint32BufferAttribute(mesh.index.array, 1));
-            geo.computeVertexNormals();
-            const mat = new THREE.MeshStandardMaterial({
-                color: mesh.color ? new THREE.Color(mesh.color[0], mesh.color[1], mesh.color[2]) : 0xcccccc,
-                metalness: 0.6, roughness: 0.35
-            });
-            group.add(new THREE.Mesh(geo, mat));
-        });
-        group.rotateX(-Math.PI / 2);
-        state.model = group;
-        state.scene.add(state.model);
-        updateUIStatus(name);
-        fitCamera();
-    } catch (e) { console.error(e); }
-    showLoading(false);
-}
 
 function cleanupScene() {
-    if (!state.model) return;
-    state.scene.remove(state.model);
-    state.model.traverse(c => {
-        if (c.isMesh) {
-            c.geometry.dispose();
-            (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose());
-        }
-    });
-    state.model = null;
+    for (const key of ['model', 'controller']) {
+        if (!state[key]) continue;
+        state.scene.remove(state[key]);
+        state[key].traverse(c => {
+            if (c.isMesh) {
+                c.geometry.dispose();
+                (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose());
+            }
+        });
+        state[key] = null;
+    }
 }
 
 function updateUIStatus(name) {
@@ -258,15 +263,13 @@ function updateUIStatus(name) {
 function fitCamera() {
     if (!state.model) return;
     const box = new THREE.Box3().setFromObject(state.model);
+    if (state.controller) box.expandByObject(state.controller);
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
-    state.model.position.x -= center.x;
-    state.model.position.z -= center.z;
-    state.model.position.y -= box.min.y;
     const dist = size.length() * 1.5;
-    state.camera.position.set(dist * 0.8, dist * 0.5, dist * 0.8);
-    state.camera.lookAt(0, size.y / 2, 0);
-    state.controls.target.set(0, size.y / 2, 0);
+    state.camera.position.set(center.x + dist * 0.8, dist * 0.5, center.z + dist * 0.8);
+    state.camera.lookAt(center.x, center.y, center.z);
+    state.controls.target.set(center.x, center.y, center.z);
 }
 
 function toggleGrid() {
