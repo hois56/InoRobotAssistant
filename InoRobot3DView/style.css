@@ -136,8 +136,17 @@ body {
     border-color: rgba(59, 130, 246, 0.5);
 }
 
+#model-select optgroup {
+    background-color: #0f172a;
+    color: #94a3b8;
+    font-weight: 600;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
 #model-select option {
-    background-color: #0f172a; 
+    background-color: #0f172a;
     color: #ffffff;
     padding: 10px;
 }
