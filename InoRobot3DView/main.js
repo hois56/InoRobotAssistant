@@ -8,7 +8,7 @@ import { FBXLoader } from 'https://esm.sh/three@0.156.1/examples/jsm/loaders/FBX
 
 const state = {
     scene: null, camera: null, renderer: null,
-    controls: null, model: null, controller: null, grid: null, occt: null
+    controls: null, model: null, controller: null, grid: null, labels: []
 };
 
 // Controller mapping per robot model name
@@ -54,16 +54,53 @@ function setupScene() {
     state.scene.background = new THREE.Color(0x0b0e14);
     state.camera = new THREE.PerspectiveCamera(45, el.canvasContainer.clientWidth / el.canvasContainer.clientHeight, 0.1, 1e7);
     state.camera.position.set(1200, 900, 1200);
-    state.renderer = new THREE.WebGLRenderer({ antialias: true });
+    state.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     state.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     state.renderer.setSize(el.canvasContainer.clientWidth, el.canvasContainer.clientHeight);
     state.renderer.shadowMap.enabled = true;
     state.renderer.toneMapping = THREE.ReinhardToneMapping;
     state.renderer.toneMappingExposure = 2.3;
     el.canvasContainer.appendChild(state.renderer.domElement);
-    state.grid = new THREE.GridHelper(10000, 200, 0x333333, 0x1a1a1a);
+    
+    // Main Grid: Major lines (1000mm) / Minor lines (100mm)
+    state.grid = new THREE.GridHelper(10000, 100, 0x475569, 0x1e293b);
     state.grid.position.y = -0.1;
     state.scene.add(state.grid);
+    
+    addGridLabels();
+}
+
+function addGridLabels() {
+    const intervals = [500, 1000, 1500, 2000, 3000, 4000, 5000];
+    const labelColor = '#94a3b8';
+    
+    intervals.forEach(val => {
+        // Labels for Axis
+        state.labels.push(createLabel(`${val}mm`, val, 5, 0, labelColor));
+        state.labels.push(createLabel(`-${val}mm`, -val, 5, 0, labelColor));
+        state.labels.push(createLabel(`${val}mm`, 0, 5, val, labelColor));
+        state.labels.push(createLabel(`-${val}mm`, 0, 5, -val, labelColor));
+    });
+    
+    state.labels.forEach(l => state.scene.add(l));
+}
+
+function createLabel(text, x, y, z, color) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256; canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    ctx.font = 'bold 32px Outfit, Inter, Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = color;
+    ctx.fillText(text, 128, 64);
+    
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+    const sprite = new THREE.Sprite(material);
+    sprite.position.set(x, y, z);
+    sprite.scale.set(160, 80, 1);
+    return sprite;
 }
 
 function setupLights() {
@@ -348,6 +385,7 @@ function fitCamera() {
 
 function toggleGrid() {
     state.grid.visible = !state.grid.visible;
+    state.labels.forEach(l => l.visible = state.grid.visible);
 }
 
 function showLoading(show, text = 'Loading...') {
