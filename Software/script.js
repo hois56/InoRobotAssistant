@@ -1,141 +1,203 @@
-const softwareData = [
+/**
+ * Software Data
+ * InoRobotLab, InoRobotTP 두 가지 메인 소프트웨어와 버전을 관리합니다.
+ */
+const softwareGroups = [
     {
-        id: "ino_studio_v4",
-        name: "InoRobot Studio (V4)",
-        category: "controller",
-        version: "4.2.1.0",
-        date: "2026-03-20",
-        description: "INOVANCE 로봇 컨트롤러 프로그래밍 및 설정을 위한 통합 개발 환경입니다.",
-        size: "450MB",
-        icon: "monitor"
+        name: "InoRobotLab",
+        fullName: "InoRobotLab (Robot Programming Studio)",
+        id: "InoRobotLab",
+        icon: "monitor",
+        versions: [
+            {
+                tagName: "V4R24C4SPC15",
+                description: "INOVANCE 로봇 컨트롤러 프로그래밍 및 설정을 위한 통합 개발 환경 (ST 전용) 입니다.",
+                date: "2026-03-20",
+                updates: ["ST 언어 최적화", "컴파일 성능 향상", "신규 라이브러리 추가"],
+                downloads: [
+                    { label: "설치 버전", type: "install", size: "450MB" },
+                    { label: "무설치 버전", type: "portable", size: "380MB" }
+                ]
+            },
+            {
+                tagName: "Display Version",
+                description: "특수 Display 제어 및 모니터링 기능을 포함한 버전입니다. (비밀번호 인증 필요)",
+                date: "2026-03-20",
+                isLocked: true,
+                updates: ["Display 드라이버 통합", "실시간 화면 캡처 지원"],
+                downloads: [
+                    { label: "설치 버전 (Display)", type: "install", size: "482MB" }
+                ]
+            }
+        ]
     },
     {
-        id: "ino_studio_v3",
-        name: "InoRobot Studio (V3)",
-        category: "controller",
-        version: "3.8.5.2",
-        date: "2025-11-12",
-        description: "구형 컨트롤러(S/M 시리즈)를 위한 레거시 프로그래밍 도구입니다.",
-        size: "380MB",
-        icon: "monitor"
-    },
-    {
-        id: "tool_config_util",
-        name: "Tool Configuration Utility",
-        category: "tool",
-        version: "1.0.5",
-        date: "2026-02-15",
-        description: "비전 시스템 및 그리퍼 연결 설정을 위한 전용 유틸리티입니다.",
-        size: "85MB",
-        icon: "wrench"
-    },
-    {
-        id: "usb_driver_pkg",
-        name: "USB Communication Driver",
-        category: "driver",
-        version: "2.1.0",
-        date: "2026-01-05",
-        description: "PC와 로봇 컨트롤러 간의 USB 연결을 위한 통합 드라이버 패키지입니다.",
-        size: "12MB",
-        icon: "cpu"
-    },
-    {
-        id: "firmware_update_tool",
-        name: "Firmware Update Tool",
-        category: "patch",
-        version: "5.0.1",
-        date: "2026-03-10",
-        description: "최신 펌웨어 업데이트 및 시스템 복구를 위한 도구입니다.",
-        size: "45MB",
-        icon: "refresh-cw"
+        name: "InoRobotTP",
+        fullName: "InoRobotTP (Teaching Pendant Software)",
+        id: "InoRobotTP",
+        icon: "smartphone",
+        versions: [
+            {
+                tagName: "V4R24C4SPC15",
+                description: "티칭 펜던트 에뮬레이터 및 설정 도구입니다. 가상 티칭 환경을 지원합니다.",
+                date: "2026-03-21",
+                updates: ["UI 반응 속도 개선", "단축키 커스텀 기능", "버그 수정"],
+                downloads: [
+                    { label: "설치 버전", type: "install", size: "125MB" },
+                    { label: "무설치 버전", type: "portable", size: "102MB" }
+                ]
+            },
+            {
+                tagName: "Display Version",
+                description: "디스플레이 전용 기능을 지원하는 TP 소프트웨어입니다. (비밀번호 인증 필요)",
+                date: "2026-03-21",
+                isLocked: true,
+                updates: ["디스플레이 미러링 최적화", "에러 로그 뷰어 강화"],
+                downloads: [
+                    { label: "설치 버전 (Display)", type: "install", size: "135MB" }
+                ]
+            }
+        ]
     }
 ];
 
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    init();
+});
+
 function init() {
-    renderSoftware('all');
+    renderSoftwareList('all');
     setupFilters();
     setupSearch();
     if(window.lucide) lucide.createIcons();
 }
 
-function renderSoftware(category, searchTerm = '') {
-    const grid = document.getElementById('swGrid');
-    grid.innerHTML = '';
+/**
+ * 소프트웨어 리스트 렌더링
+ * @param {string} filterType 'all', 'InoRobotLab', 'InoRobotTP'
+ * @param {string} searchTerm 검색어
+ */
+function renderSoftwareList(filterType = 'all', searchTerm = '') {
+    const listContainer = document.getElementById('softwareList');
+    listContainer.innerHTML = '';
 
-    const filtered = softwareData.filter(sw => {
-        const matchesCat = (category === 'all' || sw.category === category);
-        const matchesSearch = sw.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                             sw.description.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesCat && matchesSearch;
+    let matchCount = 0;
+
+    softwareGroups.forEach(group => {
+        // 필터링 적용
+        if (filterType !== 'all' && group.id !== filterType) return;
+
+        group.versions.forEach(ver => {
+            // 검색 가공
+            const isMatch = group.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          ver.tagName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          ver.description.toLowerCase().includes(searchTerm.toLowerCase());
+            
+            if (!isMatch) return;
+            matchCount++;
+
+            const card = document.createElement('div');
+            card.className = 'software-card p-6 md:p-8 flex flex-col md:flex-row gap-8 items-start animate-fade-in-up';
+            
+            // 아이콘 및 헤더
+            let verBadgeClass = ver.isLocked ? "bg-amber-500/10 text-amber-500 border-amber-500/20" : "bg-blue-600/10 text-blue-400 border-blue-500/20";
+            let verIcon = ver.isLocked ? "lock" : "check-circle";
+
+            card.innerHTML = `
+                <div class="flex-shrink-0 w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400">
+                    <i data-lucide="${group.icon}" class="w-8 h-8"></i>
+                </div>
+                <div class="flex-grow space-y-4">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <h3 class="text-2xl font-bold text-white font-outfit">${group.name}</h3>
+                        <div class="px-3 py-1 rounded-full border ${verBadgeClass} text-[11px] font-bold flex items-center gap-1.5 uppercase tracking-wide">
+                            <i data-lucide="${verIcon}" class="w-3 h-3"></i> ${ver.tagName}
+                        </div>
+                    </div>
+                    <p class="text-slate-400 text-[15px] leading-relaxed max-w-2xl">${ver.description}</p>
+                    
+                    <div class="flex flex-wrap gap-2 py-1">
+                        ${ver.updates.map(up => `
+                            <span class="text-[10px] bg-white/5 text-slate-500 px-2 py-0.5 rounded border border-white/5 tracking-tight font-medium"># ${up}</span>
+                        `).join('')}
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-4 pt-4 border-t border-white/[0.05]">
+                        <div class="flex items-center gap-6 text-xs text-slate-500 font-mono">
+                            <span class="flex items-center gap-1.5"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> ${ver.date}</span>
+                        </div>
+                        <div class="flex flex-wrap gap-3 ml-auto">
+                            ${ver.downloads.map(dl => `
+                                <button onclick="handleDownload('${group.id}', '${ver.tagName}', '${dl.label}', ${ver.isLocked})" 
+                                        class="px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${ver.isLocked ? 'locked-btn' : 'download-btn'}">
+                                    <i data-lucide="${ver.isLocked ? 'key' : 'download'}" class="w-3.5 h-3.5"></i> ${dl.label} (${dl.size})
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            listContainer.appendChild(card);
+        });
     });
 
-    if (filtered.length === 0) {
-        grid.innerHTML = `
-            <div class="col-span-full py-20 text-center text-slate-500">
-                <i data-lucide="info" class="w-12 h-12 mx-auto mb-4 opacity-20"></i>
-                <p>검색 결과가 없습니다.</p>
+    if (matchCount === 0) {
+        listContainer.innerHTML = `
+            <div class="py-20 text-center text-slate-500">
+                <i data-lucide="alert-circle" class="w-12 h-12 mx-auto mb-4 opacity-20"></i>
+                <p class="text-lg">해당 조건에 맞는 소프트웨어가 없습니다.</p>
             </div>
         `;
-        if(window.lucide) lucide.createIcons();
-        return;
     }
-
-    filtered.forEach(sw => {
-        const card = document.createElement('div');
-        card.className = 'glass-card p-6 rounded-2xl flex flex-col h-full group';
-        card.innerHTML = `
-            <div class="flex items-start justify-between mb-6">
-                <div class="w-12 h-12 rounded-xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
-                    <i data-lucide="${sw.icon}" class="w-6 h-6"></i>
-                </div>
-                <div class="text-right">
-                    <span class="text-[10px] font-mono text-slate-500 uppercase tracking-widest block mb-1">Version</span>
-                    <span class="text-xs font-bold text-slate-300 bg-slate-800 px-2 py-1 rounded-md border border-white/5">${sw.version}</span>
-                </div>
-            </div>
-            
-            <h3 class="text-xl font-bold text-white mb-2">${sw.name}</h3>
-            <p class="text-slate-400 text-sm leading-relaxed mb-6 flex-grow">${sw.description}</p>
-            
-            <div class="flex items-center justify-between pt-6 border-t border-white/5 mt-auto">
-                <div class="flex flex-col">
-                    <span class="text-[10px] text-slate-500 font-mono tracking-tight">${sw.date}</span>
-                    <span class="text-xs text-slate-400">${sw.size}</span>
-                </div>
-                <button onclick="handleDownload('${sw.id}')" 
-                        class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-xl font-medium text-sm transition-all shadow-lg shadow-blue-600/20 flex items-center gap-2">
-                    <i data-lucide="download" class="w-4 h-4"></i> Download
-                </button>
-            </div>
-        `;
-        grid.appendChild(card);
-    });
 
     if(window.lucide) lucide.createIcons();
 }
 
+/**
+ * 필터 설정
+ */
 function setupFilters() {
-    const btns = document.querySelectorAll('.cat-btn');
-    btns.forEach(btn => {
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    filterBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            btns.forEach(b => b.classList.remove('active'));
+            filterBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            renderSoftware(btn.dataset.category, document.getElementById('swSearch').value);
+            renderSoftwareList(btn.dataset.type, document.getElementById('softwareSearch').value);
         });
     });
 }
 
+/**
+ * 검색 설정
+ */
 function setupSearch() {
-    const input = document.getElementById('swSearch');
-    input.addEventListener('input', (e) => {
-        const activeCat = document.querySelector('.cat-btn.active').dataset.category;
-        renderSoftware(activeCat, e.target.value);
+    const searchInput = document.getElementById('softwareSearch');
+    searchInput.addEventListener('input', (e) => {
+        const activeFilter = document.querySelector('.filter-btn.active').dataset.type;
+        renderSoftwareList(activeFilter, e.target.value);
     });
 }
 
-function handleDownload(id) {
-    const sw = softwareData.find(s => s.id === id);
-    alert(`[${sw.name}] 다운로드를 시작합니다.\n(실제 환경에서는 파일 링크로 연결됩니다.)`);
+/**
+ * 다운로드 핸들러
+ * @param {string} gId 그룹 ID
+ * @param {string} vTag 버전 태그
+ * @param {string} dlLabel 다운로드 라벨
+ * @param {boolean} isLocked 잠김 여부
+ */
+function handleDownload(gId, vTag, dlLabel, isLocked) {
+    if (isLocked) {
+        const password = prompt("[기능 제한 안내] 이 버전은 전용 배포판입니다. 비밀번호를 입력해 주세요:");
+        
+        // 비밀번호 확인 (2206)
+        // 보안 참고: 클라이언트 사이드 검증은 깃허브 소스 코드에 노출되므로, 실제 운영 환경에서는 해시 매칭 또는 백엔드 검증을 권장합니다.
+        if (password === '2206') {
+            alert(`인증 성공! [${gId} - ${vTag} - ${dlLabel}] 다운로드를 시작합니다.`);
+        } else if (password !== null) {
+            alert("비밀번호가 올바르지 않습니다. 관리자에게 문의하세요.");
+        }
+    } else {
+        alert(`[${gId} - ${vTag} - ${dlLabel}] 다운로드를 시작합니다.`);
+    }
 }
-
-document.addEventListener('DOMContentLoaded', init);

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inovance Debugging Support Tool</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top right, #0f172a, #020617);
+            color: #e2e8f0;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        .font-outfit {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Ambient Background Glow */
+        .ambient-glow {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80vw;
+            height: 80vh;
+            background: radial-gradient(circle, rgba(239, 68, 68, 0.05) 0%, rgba(15, 23, 42, 0) 70%);
+            z-index: -1;
+            pointer-events: none;
+            filter: blur(100px);
+            animation: pulse-glow 8s infinite alternate;
+        }
+
+        @keyframes pulse-glow {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+            100% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.8; }
+        }
+
+        /* Header Style */
+        #topbar {
+            position: sticky;
+            top: 0;
+            height: 72px;
+            background: rgba(15, 19, 28, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,0.09);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            z-index: 200;
+        }
+
+        /* Glass Card */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 1.5rem;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(239, 68, 68, 0.3);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5), 0 0 20px rgba(239, 68, 68, 0.1);
+        }
+
+        .status-pill {
+            padding: 2px 10px;
+            border-radius: 99px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(2rem); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease forwards;
+        }
+    </style>
+</head>
+<body class="relative flex flex-col min-h-screen">
+    <div class="ambient-glow"></div>
+
+    <!-- Header -->
+    <header id="topbar">
+        <div class="flex items-center gap-6">
+            <a href="/" class="transition-transform hover:scale-105">
+                <img src="../InoRobotSelect/INOVANCE_Logo.png" alt="Inovance" class="h-[60px] w-auto">
+            </a>
+            <div class="h-8 w-px bg-white/10 mx-2 hidden md:block"></div>
+            <h1 class="font-outfit text-xl font-bold text-white hidden md:block tracking-tight">Debugging Support Tool</h1>
+        </div>
+        <div class="flex items-center gap-4">
+            <span class="text-xs font-mono text-slate-500 bg-slate-800/40 px-3 py-1.5 rounded-lg border border-white/10 italic">Ver 26.03.29</span>
+        </div>
+    </header>
+
+    <main class="w-full max-w-7xl mx-auto px-6 py-12 flex-grow">
+        <!-- Hero Section -->
+        <section class="text-center mb-16 animate-fade-in-up">
+            <h2 class="font-outfit text-4xl md:text-5xl font-extrabold mb-6 tracking-tight text-white">문제를 발견하셨나요?</h2>
+            <p class="text-slate-400 text-lg max-w-2xl mx-auto leading-relaxed italic">
+                INOVANCE 로봇의 실시간 상태 진단, 에러 코드 분석 및 문제 해결을 위한 최적의 가이드를 제공합니다.
+            </p>
+        </section>
+
+        <!-- Tool Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            
+            <!-- 1. Error Code Lookup -->
+            <div class="glass-card p-8 flex flex-col h-full animate-fade-in-up" style="animation-delay: 0.1s;">
+                <div class="w-12 h-12 bg-red-500/10 rounded-xl flex items-center justify-center mb-6 border border-red-500/20">
+                    <i data-lucide="alert-triangle" class="w-6 h-6 text-red-500"></i>
+                </div>
+                <h3 class="font-outfit text-xl font-bold mb-4 text-white">Error Code Lookup</h3>
+                <p class="text-slate-400 mb-8 text-sm leading-relaxed">
+                    티칭 펜던트에 나타난 에러 코드를 입력하여 상세한 원인과 조치 방법을 확인하세요.
+                </p>
+                <div class="relative mt-auto">
+                    <input type="text" placeholder="예: 0x1A2B" 
+                           class="w-full bg-slate-900/60 border border-white/10 rounded-xl py-3 pl-4 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/30 transition-all text-white">
+                    <button class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-500 hover:text-white transition-colors">
+                        <i data-lucide="search" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 2. Connection Diagnostics -->
+            <div class="glass-card p-8 flex flex-col h-full animate-fade-in-up" style="animation-delay: 0.2s;">
+                <div class="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center mb-6 border border-emerald-500/20">
+                    <i data-lucide="network" class="w-6 h-6 text-emerald-500"></i>
+                </div>
+                <h3 class="font-outfit text-xl font-bold mb-4 text-white">Network Diagnostics</h3>
+                <p class="text-slate-400 mb-8 text-sm leading-relaxed">
+                    컨트롤러와 PC, 또는 외부 기기(I/O, PLC)와의 통신 상태를 체크하고 핑을 테스트합니다.
+                </p>
+                <button class="w-full py-3 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 rounded-xl text-emerald-400 text-sm font-semibold transition-all mt-auto flex items-center justify-center gap-2">
+                    <i data-lucide="activity" class="w-4 h-4"></i> 진단 시작
+                </button>
+            </div>
+
+            <!-- 3. Log Analysis Simulator -->
+            <div class="glass-card p-8 flex flex-col h-full animate-fade-in-up" style="animation-delay: 0.3s;">
+                <div class="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center mb-6 border border-blue-500/20">
+                    <i data-lucide="file-text" class="w-6 h-6 text-blue-500"></i>
+                </div>
+                <h3 class="font-outfit text-xl font-bold mb-4 text-white">Log Analysis</h3>
+                <p class="text-slate-400 mb-8 text-sm leading-relaxed">
+                    컨트롤러에서 추출한 로그 파일을 업로드하여 문제 발생 시점의 데이터를 시각화합니다.
+                </p>
+                <div class="border-2 border-dashed border-white/5 bg-white/[0.02] rounded-xl p-6 text-center mt-auto cursor-pointer hover:bg-white/[0.04] transition-colors group">
+                    <i data-lucide="upload-cloud" class="w-8 h-8 text-slate-500 mb-2 mx-auto group-hover:text-blue-500 transition-colors"></i>
+                    <span class="text-xs text-slate-500 font-medium">로그 파일 업로드 (.log, .txt)</span>
+                </div>
+            </div>
+
+            <!-- 4. FAQ & Knowledge Base -->
+            <div class="glass-card p-8 flex flex-col h-full animate-fade-in-up md:col-span-1 lg:col-span-2" style="animation-delay: 0.4s;">
+                <div class="flex items-center justify-between mb-8">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 bg-amber-500/10 rounded-lg flex items-center justify-center border border-amber-500/20">
+                            <i data-lucide="help-circle" class="w-5 h-5 text-amber-500"></i>
+                        </div>
+                        <h3 class="font-outfit text-xl font-bold text-white">자주 묻는 질문 (FAQ)</h3>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="p-4 bg-slate-800/30 rounded-xl border border-white/5 hover:border-amber-500/30 transition-all cursor-pointer">
+                        <span class="text-[10px] text-amber-500 font-bold uppercase block mb-1">통신 오류</span>
+                        <p class="text-sm font-medium text-slate-300">Modbus TCP 통신이 간헐적으로 끊기는 경우</p>
+                    </div>
+                    <div class="p-4 bg-slate-800/30 rounded-xl border border-white/5 hover:border-amber-500/30 transition-all cursor-pointer">
+                        <span class="text-[10px] text-amber-500 font-bold uppercase block mb-1">모터 드라이브</span>
+                        <p class="text-sm font-medium text-slate-300">E500 에러: 엔코더 오프셋 불일치 시 조치법</p>
+                    </div>
+                    <div class="p-4 bg-slate-800/30 rounded-xl border border-white/5 hover:border-amber-500/30 transition-all cursor-pointer">
+                        <span class="text-[10px] text-amber-500 font-bold uppercase block mb-1">프로그래밍</span>
+                        <p class="text-sm font-medium text-slate-300">포인터 변수를 초기화하지 않고 사용할 때의 현상</p>
+                    </div>
+                    <div class="p-4 bg-slate-800/30 rounded-xl border border-white/5 hover:border-amber-500/30 transition-all cursor-pointer">
+                        <span class="text-[10px] text-amber-500 font-bold uppercase block mb-1">캘리브레이션</span>
+                        <p class="text-sm font-medium text-slate-300">원점 복귀 후 마스터링 값이 틀어지는 문제</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. Technical Support -->
+            <div class="glass-card p-8 flex flex-col h-full animate-fade-in-up bg-gradient-to-br from-indigo-600/10 to-transparent" style="animation-delay: 0.5s;">
+                <div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-6 border border-white/20 shadow-lg shadow-indigo-500/20">
+                    <i data-lucide="headphones" class="w-6 h-6 text-white"></i>
+                </div>
+                <h3 class="font-outfit text-xl font-bold mb-4 text-white">Live Support</h3>
+                <p class="text-slate-400 mb-8 text-sm leading-relaxed italic">
+                    스스로 해결하기 어렵다면, 기술 지원 팀에 직접 문의하세요. 원격 지원 및 방문 상담을 도와드립니다.
+                </p>
+                <div class="space-y-3 mt-auto">
+                    <div class="flex items-center gap-3 text-sm text-slate-300">
+                        <i data-lucide="phone" class="w-4 h-4 text-slate-500"></i>
+                        <span>1544-XXXX (평일 09:00 - 18:00)</span>
+                    </div>
+                    <div class="flex items-center gap-3 text-sm text-slate-300">
+                        <i data-lucide="mail" class="w-4 h-4 text-slate-500"></i>
+                        <span>support@inovance.com</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-20 py-10 text-center border-t border-white/[0.05]">
+        <p class="text-sm text-slate-500 font-mono italic tracking-wide">
+            &copy; 2026 INOVANCE Robot Assistant. Precision Debugging for Excellence.
+        </p>
+    </footer>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>

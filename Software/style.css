@@ -1,0 +1,74 @@
+/* Software Page Custom Styles */
+.font-outfit { font-family: 'Outfit', sans-serif; }
+
+.ambient-glow {
+    position: fixed;
+    bottom: 10%;
+    right: 10%;
+    width: 60vw;
+    height: 60vh;
+    background: radial-gradient(circle, rgba(37, 99, 235, 0.08) 0%, rgba(15, 23, 42, 0) 70%);
+    z-index: -1;
+    filter: blur(120px);
+    pointer-events: none;
+    animation: pulse-slow 15s infinite alternate;
+}
+
+@keyframes pulse-slow {
+    0% { transform: scale(1); opacity: 0.4; }
+    100% { transform: scale(1.1); opacity: 0.7; }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #0b0e14;
+}
+::-webkit-scrollbar-thumb {
+    background: #1e293b;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #334155;
+}
+
+/* Animation utilities */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+/* Glassmorphism Cards */
+.software-card {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.software-card:hover {
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6), 0 0 20px rgba(37, 99, 235, 0.1);
+}
+
+.filter-btn {
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.filter-btn:hover {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(37, 99, 235, 0.3);
+}
+
+.filter-btn.active {
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}

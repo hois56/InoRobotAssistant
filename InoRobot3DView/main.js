@@ -13,11 +13,11 @@ const state = {
 
 // Controller mapping per robot model name
 function getControllerName(name) {
-    if (/^IR-S[47]-|^IR-S10-|^IR-TS[45]-/.test(name))            return 'IRCB501-SCARA-Standard';
-    if (/^IR-(S25|S35|S60|GS60)-/.test(name))                     return 'IRCB501-SCARA-Highpower';
-    if (/^IR-R[47]H?-/.test(name))                                return 'IRCB501-6-axis-Standard';
-    if (/^IR-R(10-110|10H|11|15H|20H)-/.test(name))               return 'IRCB501-6-axis-Highpower';
-    if (/^IR-R(10-140|16-|16$|25-|25$)/.test(name))               return 'IRCB501-6-axis-Highprotection';
+    if (/^IR-S[47]|^IR-S10|^IR-TS[45]/.test(name))             return 'IRCB501-SCARA-Standard';
+    if (/^IR-(S25|S35|S60|GS60)/.test(name))                   return 'IRCB501-SCARA-Highpower';
+    if (/^IR-R[47]H?/.test(name))                              return 'IRCB501-6-axis-Standard';
+    if (/^IR-R(10-110|10H|11|15H|20H)/.test(name))             return 'IRCB501-6-axis-Highpower';
+    if (/^IR-R(10-140|16|25)/.test(name))                      return 'IRCB501-6-axis-Highprotection';
     return null;
 }
 
@@ -241,10 +241,10 @@ async function loadModelFromServer(file, name) {
         const robotMaxDim = Math.max(robotSize.x, robotSize.y, robotSize.z);
         
         // Typical robot sizes are 400mm to 3000mm. 
-        // If max dimension is < 10, it's likely Meters. If < 100, likely CM.
+        // If max dimension is < 15, it's likely Meters. If < 500, likely CM.
         if (robotMaxDim > 0 && robotMaxDim < 15) {
             state.model.scale.multiplyScalar(1000); // Meters -> MM
-        } else if (robotMaxDim >= 15 && robotMaxDim < 150) {
+        } else if (robotMaxDim >= 15 && robotMaxDim < 500) {
             state.model.scale.multiplyScalar(10);   // CM -> MM
         }
 
@@ -264,9 +264,9 @@ async function loadModelFromServer(file, name) {
                 const ctrlSizeTemp = ctrlBoxTemp.getSize(new THREE.Vector3());
                 const ctrlMaxDim = Math.max(ctrlSizeTemp.x, ctrlSizeTemp.y, ctrlSizeTemp.z);
                 if (ctrlMaxDim > 0 && ctrlMaxDim < 10) {
-                    ctrlFbx.scale.multiplyScalar(1000);
-                } else if (ctrlMaxDim >= 10 && ctrlMaxDim < 100) {
-                    ctrlFbx.scale.multiplyScalar(10);
+                    ctrlFbx.scale.multiplyScalar(1000); // Meters -> MM
+                } else if (ctrlMaxDim >= 10 && ctrlMaxDim < 200) {
+                    ctrlFbx.scale.multiplyScalar(10);   // CM -> MM
                 }
 
                 // Final bounding boxes for placement after scaling
