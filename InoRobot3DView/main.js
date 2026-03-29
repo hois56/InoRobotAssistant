@@ -357,6 +357,27 @@ function fitCamera() {
     state.controls.target.set(center.x, center.y, center.z);
 }
 
+async function populateModelList() {
+    try {
+        const res = await fetch('./models/models.json');
+        const list = await res.json();
+        el.modelSelect.innerHTML = '<option value="" disabled selected>-- 로봇 모델을 선택하세요 --</option>';
+        let currentGroup = null;
+        list.forEach(m => {
+            if (m.group) {
+                currentGroup = document.createElement('optgroup');
+                currentGroup.label = m.group;
+                el.modelSelect.appendChild(currentGroup);
+            } else {
+                const opt = document.createElement('option');
+                opt.value = m.file;
+                opt.textContent = m.name;
+                (currentGroup || el.modelSelect).appendChild(opt);
+            }
+        });
+    } catch (e) { console.error('Failed to load model list:', e); }
+}
+
 function showLoading(show, text = 'Loading...') {
     el.loadingOverlay.classList.toggle('hidden', !show);
     el.loadingText.textContent = text;
