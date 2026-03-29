@@ -78,7 +78,44 @@ body {
     border-left: 1px solid var(--border);
     white-space: nowrap;
     text-transform: none;
-    color: var(--text);
+    color: var(--text-1);
+    margin-right: 1.5rem;
+}
+
+.add-mode-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 1rem;
+    height: 44px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.2s var(--ease);
+    color: var(--text-2);
+    user-select: none;
+    margin-left: 1rem;
+}
+
+.add-mode-toggle:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: var(--accent);
+}
+
+.add-mode-toggle input {
+    display: none;
+}
+
+.add-mode-toggle input:checked + span {
+    color: var(--accent);
+}
+
+.add-mode-toggle input:checked ~ span i {
+    color: var(--accent);
 }
 
 /* ── Select Combobox ───────────────────────── */
