@@ -175,18 +175,21 @@ async function loadModelFromServer(file, name) {
 
         applyFBXMaterial(fbx);
 
-        // Highpower FBX files were exported in inches (UnitScaleFactor=2.54)
-        // while all other files use mm (UnitScaleFactor=0.1) → 25.4x correction needed
-        if (file.includes('Highpower')) {
-            fbx.scale.multiplyScalar(25.4);
-        }
-
-        // Auto-scale detection
+        // Auto-scale detection (skip for controllers — handled separately)
         const box = new THREE.Box3().setFromObject(fbx);
         const size = box.getSize(new THREE.Vector3());
         const maxDim = Math.max(size.x, size.y, size.z);
-        if (maxDim > 0 && maxDim < 15) fbx.scale.multiplyScalar(1000);
-        else if (maxDim >= 15 && maxDim < 500) fbx.scale.multiplyScalar(10);
+        if (file.includes('IRCB501')) {
+            // Standard/Highprotection: UnitScaleFactor=0.1 (mm), no extra scale needed
+            // Highpower: UnitScaleFactor=2.54 (inches) → normalize to mm scale
+            if (file.includes('Highpower')) {
+                fbx.scale.multiplyScalar(0.1 / 2.54); // ~0.0394: normalize inches→mm
+            }
+        } else if (maxDim > 0 && maxDim < 15) {
+            fbx.scale.multiplyScalar(1000);
+        } else if (maxDim >= 15 && maxDim < 500) {
+            fbx.scale.multiplyScalar(10);
+        }
 
         // Name it for CAD download mapping later
         fbx.userData.modelName = name;
