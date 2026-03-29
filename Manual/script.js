@@ -300,11 +300,11 @@ function renderManuals() {
             
             <div class="flex-grow">
                 <div class="flex flex-wrap items-center gap-2 mb-2">
-                    <div class="flex items-center gap-1 bg-white/10 px-2 py-0.5 rounded-md border border-white/10">
-                        <span class="text-[9px] font-bold text-slate-300 font-mono">${man.lang}</span>
+                    <div class="flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-md border border-white/10">
+                        <span class="text-[12px] font-bold text-slate-300 font-outfit tracking-tighter">${man.lang}</span>
                     </div>
-                    <span class="text-[10px] font-mono font-bold text-slate-500 bg-white/5 px-2 py-0.5 rounded border border-white/5 uppercase">${man.robotType === 'none' ? 'Common' : man.robotType}</span>
-                    <span class="text-[10px] font-mono text-slate-600">${man.date}</span>
+                    <span class="text-[12px] font-bold text-slate-500 bg-white/5 px-2.5 py-1 rounded border border-white/5 font-outfit capitalize">${man.robotType === 'none' ? 'Common' : man.robotType}</span>
+                    <span class="text-[11px] text-slate-600 ml-1 opacity-70">${man.date}</span>
                 </div>
                 <h3 class="text-lg font-bold text-white mb-1 group-hover:text-white transition-colors" style="word-break: break-all;">${man.title}</h3>
             </div>
