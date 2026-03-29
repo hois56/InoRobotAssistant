@@ -1616,38 +1616,34 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const zip = new JSZip();
             const product = currentActiveProduct;
-            const modelId = product.id; // e.g. IR-R4H-54S-INT
+            const modelId = product.id; // e.g. IR-R15H-145S-INT
             const type = product.specs.Type;
             const name = product.name;
 
-            // Improved Robot folder mapping
-            let folderBase = modelId.split('Z')[0]; // For SCARA: IR-S4-40
+            // Folder base mapping
+            let folderBase = modelId.split('Z')[0]; // SCARA default
             if (type === '6-Axis') {
                 const parts = modelId.split('-');
-                if (parts[2].endsWith('S') && !modelId.includes('R11-90S')) {
-                    folderBase = parts.slice(0, 2).join('-') + '-' + parts[2].slice(0, -1);
-                } else if (parts[2].endsWith('S5')) {
-                    folderBase = parts.slice(0, 2).join('-') + '-' + parts[2].slice(0, -2);
-                } else {
-                    folderBase = parts.slice(0, 3).join('-');
+                if (parts.length >= 3) {
+                    let lastPart = parts[2];
+                    if (lastPart.endsWith('S')) lastPart = lastPart.slice(0, -1);
+                    else if (lastPart.endsWith('S5')) lastPart = lastPart.slice(0, -2);
+                    folderBase = parts[0] + '-' + parts[1] + '-' + lastPart;
                 }
             }
             
-            // Hardcoded Exception map for 6-axis folder names
+            // Special mappings for folder bases
             const cadFolderMap = {
-                "IR-R15H-145S5-INT": "IR-R15H-145",
-                "IR-R16-210S5-INT": "IR-R16-210",
-                "IR-R20H-120S5-INT": "IR-R20H-120",
-                "IR-R25-178S5-INT": "IR-R25-178"
+                "IR-R15H-145S-INT": "IR-R15H-145",
+                "IR-R16-210S-INT": "IR-R16-210",
+                "IR-R20H-120S-INT": "IR-R20H-120",
+                "IR-R25-178S-INT": "IR-R25-178"
             };
             if(cadFolderMap[modelId]) folderBase = cadFolderMap[modelId];
 
             const typeDir = type === 'SCARA' ? 'SCARA' : '6-axis';
-            const robotFiles = [
-                { path: `Robot_CAD/${typeDir}/${folderBase}/${modelId}_2D.dwg`, name: `${modelId}_2D.dwg` },
-                { path: `Robot_CAD/${typeDir}/${folderBase}/${modelId}_3D.stp`, name: `${modelId}_3D.stp` }
-            ];
-
+            const robotBaseUrl = `Robot_CAD/${typeDir}/${folderBase}/`;
+            
             // Controller mapping
             let ctrl = "";
             if (type === "SCARA") {
@@ -1666,30 +1662,65 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
+            // Pendant check
+            const isPendant = document.querySelector('input[name="pendantLength"]:checked')?.value !== 'none';
+            
+            // Build all potential file objects
+            const robotFileTasks = [
+                { id: '2D', ext: 'dwg', baseUrl: robotBaseUrl, modelId: modelId },
+                { id: '3D', ext: 'stp', baseUrl: robotBaseUrl, modelId: modelId }
+            ];
+
             const ctrlFiles = [
                 { path: `Robot_CAD/Controller/${ctrl}/${ctrl}.dwg`, name: `${ctrl}.dwg` },
                 { path: `Robot_CAD/Controller/${ctrl}/${ctrl}.stp`, name: `${ctrl}.stp` }
             ];
 
-            // Pendant check
-            const isPendant = document.querySelector('input[name="pendantLength"]:checked')?.value !== 'none';
             const tpFiles = isPendant ? [
                 { path: `Robot_CAD/IR-TP-200/IR-TP-200_2D-INT.dwg`, name: `IR-TP-200_2D.dwg` },
                 { path: `Robot_CAD/IR-TP-200/IR-TP-200_3D-INT.stp`, name: `IR-TP-200_3D.stp` }
             ] : [];
 
-            const allFiles = [...robotFiles, ...ctrlFiles, ...tpFiles];
-            
-            for (const f of allFiles) {
+            // Helper to fetch single file with fallback (for -INT suffix)
+            async function fetchRobotFile(task) {
+                const pathsToTry = [
+                    `${task.baseUrl}${task.modelId}_${task.id}.${task.ext}`, // IR-R15H-145S-INT_3D.stp
+                    `${task.baseUrl}${task.modelId.replace('-INT', '')}_${task.id}.${task.ext}`, // IR-R15H-145S_3D.stp
+                    `${task.baseUrl}${task.modelId.replace('-INT', '')}_${task.id}_CN.${task.ext}` // IR-R15H-145S_3D_CN.stp
+                ];
+
+                for (let p of pathsToTry) {
+                    try {
+                        const r = await fetch(p);
+                        if (r.ok) return { name: `${task.modelId}_${task.id}.${task.ext}`, blob: await r.blob() };
+                    } catch(e) {}
+                }
+                return null;
+            }
+
+            async function fetchStaticFile(f) {
                 try {
-                    const resp = await fetch(f.path);
-                    if (resp.ok) {
-                        const blob = await resp.blob();
-                        zip.file(f.name, blob);
-                    } else {
-                        console.warn("File not found on server:", f.path);
-                    }
-                } catch (e) { console.error("File fetch error:", f.path, e); }
+                    const r = await fetch(f.path);
+                    if (r.ok) return { name: f.name, blob: await r.blob() };
+                } catch(e) {}
+                return null;
+            }
+
+            // Run in parallel
+            const [robotRes, ctrlRes, tpRes] = await Promise.all([
+                Promise.all(robotFileTasks.map(fetchRobotFile)),
+                Promise.all(ctrlFiles.map(fetchStaticFile)),
+                Promise.all(tpFiles.map(fetchStaticFile))
+            ]);
+
+            // Add to Zip
+            [...robotRes, ...ctrlRes, ...tpRes].forEach(res => {
+                if (res) zip.file(res.name, res.blob);
+            });
+
+            if (Object.keys(zip.files).length === 0) {
+                alert("다운로드 가능한 캐드 파일이 없습니다.");
+                return;
             }
 
             const content = await zip.generateAsync({ type: "blob", compression: "STORE" });
