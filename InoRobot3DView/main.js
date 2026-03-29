@@ -31,7 +31,7 @@ const el = {
     canvasContainer: document.getElementById('canvas-container'),
     btnResetView:    document.getElementById('btn-reset-view'),
     btnToggleGrid:   document.getElementById('btn-toggle-grid'),
-    btnAddMode:      null // To be added
+    btnAddMode:      null 
 };
 
 async function init() {
@@ -46,8 +46,9 @@ async function init() {
 }
 
 function setupUI() {
-    // Add "Add Mode" toggle in topbar-center after the select
     const wrapper = document.querySelector('.select-wrapper');
+    if (!wrapper) return;
+
     const container = document.createElement('label');
     container.className = 'add-mode-toggle';
     container.innerHTML = `
@@ -121,8 +122,7 @@ function setupLights() {
 
 function setupControls() {
     state.controls = new OrbitControls(state.camera, state.renderer.domElement);
-    state.controls.enableDamping = true;
-    state.controls.dampingFactor = 0.05;
+    state.controls.enableDamping = false;
 
     state.transformControls = new TransformControls(state.camera, state.renderer.domElement);
     state.transformControls.addEventListener('dragging-changed', (event) => {
@@ -155,9 +155,10 @@ function setupEventListeners() {
 async function loadModelFromServer(file, name) {
     showLoading(true, `Loading ${name}...`);
     setStatus('Loading', '#f59e0b');
+    const isAddMode = el.btnAddMode && el.btnAddMode.checked;
 
     // If not in Add Mode, clean up previous models
-    if (!el.btnAddMode.checked) {
+    if (!isAddMode) {
         cleanupScene();
     }
 
@@ -180,7 +181,7 @@ async function loadModelFromServer(file, name) {
         fbx.userData.modelName = name;
 
         // Spread models a bit if adding
-        if (el.btnAddMode.checked && state.models.length > 0) {
+        if (isAddMode && state.models.length > 0) {
             fbx.position.z += (state.models.length * 600);
         }
 
@@ -192,7 +193,7 @@ async function loadModelFromServer(file, name) {
 
         updateUIStatus();
         showLoading(false);
-        if(!el.btnAddMode.checked) fitCamera();
+        if(!isAddMode) fitCamera();
     } catch (err) {
         console.error('Load failed:', err);
         setStatus('Error', '#ef4444');
