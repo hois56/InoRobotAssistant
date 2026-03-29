@@ -175,6 +175,12 @@ async function loadModelFromServer(file, name) {
 
         applyFBXMaterial(fbx);
 
+        // Highpower FBX files were exported in inches (UnitScaleFactor=2.54)
+        // while all other files use mm (UnitScaleFactor=0.1) → 25.4x correction needed
+        if (file.includes('Highpower')) {
+            fbx.scale.multiplyScalar(25.4);
+        }
+
         // Auto-scale detection
         const box = new THREE.Box3().setFromObject(fbx);
         const size = box.getSize(new THREE.Vector3());
