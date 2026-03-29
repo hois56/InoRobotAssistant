@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inovance Software Download</title>
+    <title>Inovance Robot Software Center</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
@@ -22,7 +22,7 @@
                 <img src="../InoRobotSelect/INOVANCE_Logo.png" alt="Inovance" class="logo-img h-[60px] w-auto transition-transform group-hover:scale-105">
             </a>
             <div class="header-divider h-8 w-px bg-white/[0.1] mx-2"></div>
-            <h1 class="text-xl font-bold font-outfit text-white tracking-tight">Software Download Center</h1>
+            <h1 class="text-xl font-bold font-outfit text-white tracking-tight text-nowrap">Software Download Center</h1>
         </div>
         <div class="flex items-center gap-4">
             <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/10 italic">Ver 26.03.29</span>
@@ -33,48 +33,131 @@
         <!-- Hero Search Section -->
         <section class="text-center mb-16 animate-fade-in-up" style="animation: fadeInUp 0.8s ease forwards;">
             <h2 class="text-4xl md:text-5xl font-extrabold font-outfit text-white mb-6">최신 소프트웨어를 확인하세요</h2>
-            <p class="text-slate-400 text-lg max-w-2xl mx-auto mb-10">로봇 시스템의 성능을 극대화하기 위한 필수 도구들을 제공합니다.</p>
+            <p class="text-slate-400 text-lg max-w-2xl mx-auto mb-10 italic">로봇 제어 및 설정을 위한 최신 소프트웨어를 다운로드하세요.</p>
             
             <div class="relative max-w-2xl mx-auto">
                 <i data-lucide="search" class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 font-bold"></i>
-                <input type="text" id="swSearch" placeholder="찾으시는 소프트웨어를 입력하세요..." 
+                <input type="text" id="softwareSearch" placeholder="소프트웨어 버전 또는 키워드를 입력하세요..." 
                        class="w-full bg-slate-900/40 border border-white/10 rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-md transition-all text-white placeholder-slate-600">
             </div>
         </section>
 
-        <!-- Category Tabs -->
-        <div class="flex flex-wrap justify-center gap-4 mb-14 overflow-x-auto pb-4 scrollbar-hide">
-            <button class="cat-btn active px-6 py-2.5 rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-md text-sm font-medium transition-all" data-category="all">전체</button>
-            <button class="cat-btn px-6 py-2.5 rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-md text-sm font-medium transition-all" data-category="controller">컨트롤러 (Studio)</button>
-            <button class="cat-btn px-6 py-2.5 rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-md text-sm font-medium transition-all" data-category="tool">모듈/툴 도구</button>
-            <button class="cat-btn px-6 py-2.5 rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-md text-sm font-medium transition-all" data-category="driver">드라이버</button>
-            <button class="cat-btn px-6 py-2.5 rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-md text-sm font-medium transition-all" data-category="patch">패치/펌웨어</button>
-        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+            <!-- Sidebar Filters -->
+            <aside class="lg:col-span-3 space-y-8">
+                <div>
+                    <h3 class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <i data-lucide="package" class="w-4 h-4 text-blue-500"></i> Software Type
+                    </h3>
+                    <div class="space-y-2" id="typeFilters">
+                        <button class="filter-btn active w-full text-left" data-type="all">전체보기</button>
+                        <button class="filter-btn w-full text-left" data-type="InoRobotLab">InoRobotLab</button>
+                        <button class="filter-btn w-full text-left" data-type="InoRobotTP">InoRobotTP</button>
+                    </div>
+                </div>
 
-        <!-- Software Grid -->
-        <div id="swGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <!-- Cards populated by script -->
+                <div class="p-6 bg-blue-600/5 rounded-2xl border border-blue-500/10">
+                    <h4 class="text-sm font-bold text-blue-400 mb-2 flex items-center gap-2">
+                        <i data-lucide="info" class="w-4 h-4"></i> 알림
+                    </h4>
+                    <p class="text-xs text-slate-500 leading-relaxed">
+                        Display 버전은 배포가 제한되어 있으며, 별도의 비밀번호가 필요합니다. 권한이 있는 사용자만 다운로드해 주세요.
+                    </p>
+                </div>
+            </aside>
+
+            <!-- Software List -->
+            <div class="lg:col-span-9">
+                <div id="softwareList" class="space-y-6">
+                    <!-- Items populated by script -->
+                </div>
+            </div>
         </div>
     </main>
 
     <!-- Footer -->
     <footer class="mt-20 py-10 text-center border-t border-white/[0.05]">
         <p class="text-sm text-slate-500 font-mono italic">
-            &copy; 2026 INOVANCE Robot Assistant. All technical support ready.
+            &copy; 2026 INOVANCE Robot Assistant. All software resources are up-to-date.
         </p>
     </footer>
 
     <style>
         .font-outfit { font-family: 'Outfit', sans-serif; }
         .ambient-glow {
-            position: fixed; top: 10%; right: 10%; width: 50vw; height: 50vh;
-            background: radial-gradient(circle, rgba(56,189,248,0.05) 0%, rgba(15,23,42,0) 70%);
+            position: fixed; bottom: 10%; right: 10%; width: 50vw; height: 50vh;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.05) 0%, rgba(15,23,42,0) 70%);
             z-index: -1; filter: blur(100px); pointer-events: none;
         }
 
-        .cat-btn { background: rgba(15, 23, 42, 0.4); color: #94a3b8; border-color: rgba(255,255,255,0.05); }
-        .cat-btn:hover { border-color: rgba(56, 189, 248, 0.3); color: #fff; }
-        .cat-btn.active { background: rgba(37, 99, 235, 0.2); border-color: #3b82f6; color: #60a5fa; }
+        .filter-btn {
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            background: transparent;
+            border: 1px solid transparent;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #94a3b8;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: left;
+        }
+        .filter-btn:hover { background: rgba(30, 41, 59, 0.4); color: #fff; }
+        .filter-btn.active { 
+            background: rgba(37, 99, 235, 0.1); 
+            border-color: rgba(37, 99, 235, 0.3); 
+            color: #60a5fa; 
+            font-weight: 700;
+        }
+
+        .software-card {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 1.5rem;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .software-card:hover {
+            background: rgba(30, 41, 59, 0.6);
+            border-color: rgba(37, 99, 235, 0.4);
+            transform: translateY(-4px);
+        }
+
+        .version-badge {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 4px 12px;
+            border-radius: 99px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #94a3b8;
+        }
+
+        .download-btn {
+            background: rgba(37, 99, 235, 0.1);
+            border: 1px solid rgba(37, 99, 235, 0.2);
+            color: #60a5fa;
+            transition: all 0.2s;
+        }
+        .download-btn:hover {
+            background: #2563eb;
+            color: #fff;
+            border-color: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .locked-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #64748b;
+            cursor: pointer;
+        }
+        .locked-btn:hover {
+            border-color: #f59e0b;
+            color: #f59e0b;
+            background: rgba(245, 158, 11, 0.05);
+        }
 
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(2rem); } to { opacity: 1; transform: translateY(0); } }
     </style>
