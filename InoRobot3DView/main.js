@@ -175,17 +175,18 @@ async function loadModelFromServer(file, name) {
 
         applyFBXMaterial(fbx);
 
-        // Auto-scale (skip for IRCB501 controllers — their natural scale is used directly)
+        // Highpower FBX has wrong UnitScaleFactor (2.54/inches) → scale up to match Standard (360/16.10)
+        if (file.includes('Highpower')) {
+            fbx.scale.multiplyScalar(360 / 16.10);
+        }
+
+        // Auto-scale (skip for IRCB501 controllers — natural scale is correct after correction)
         const box = new THREE.Box3().setFromObject(fbx);
         const size = box.getSize(new THREE.Vector3());
         const maxDim = Math.max(size.x, size.y, size.z);
         if (!file.includes('IRCB501')) {
             if (maxDim > 0 && maxDim < 15) fbx.scale.multiplyScalar(1000);
             else if (maxDim >= 15 && maxDim < 500) fbx.scale.multiplyScalar(10);
-        }
-        // Log controller sizes to console for scale debugging
-        if (file.includes('IRCB501')) {
-            console.log(`[Scale Debug] ${file}: maxDim=${maxDim.toFixed(2)}`);
         }
 
         // Name it for CAD download mapping later
