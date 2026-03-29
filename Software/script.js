@@ -15,8 +15,8 @@ const softwareGroups = [
                 date: "2026-03-20",
                 updates: ["ST 언어 최적화", "컴파일 성능 향상", "신규 라이브러리 추가"],
                 downloads: [
-                    { label: "설치 버전", type: "install", size: "450MB" },
-                    { label: "무설치 버전", type: "portable", size: "380MB" }
+                    { label: "설치 버전", type: "install", size: "450MB", path: "InoRobotLab/InoRobotLabSetUp_V4R24C4SPC15_x64.exe" },
+                    { label: "무설치 버전", type: "portable", size: "380MB", path: "InoRobotLab/InoRobotLab_V4R24C4SPC15_x64.zip" }
                 ]
             },
             {
@@ -26,7 +26,8 @@ const softwareGroups = [
                 isLocked: true,
                 updates: ["Display 드라이버 통합", "실시간 화면 캡처 지원"],
                 downloads: [
-                    { label: "설치 버전 (Display)", type: "install", size: "482MB" }
+                    { label: "설치 버전 (Display)", type: "install", size: "482MB", path: "InoRobotLab/Display/InoRobotLabSetUp_V4R24C4SPC4L9F121_x64.exe" },
+                    { label: "무설치 버전 (Display)", type: "portable", size: "454MB", path: "InoRobotLab/Display/InoRobotLab_V4R24C4SPC4L9F121_x64.zip" }
                 ]
             }
         ]
@@ -43,8 +44,7 @@ const softwareGroups = [
                 date: "2026-03-21",
                 updates: ["UI 반응 속도 개선", "단축키 커스텀 기능", "버그 수정"],
                 downloads: [
-                    { label: "설치 버전", type: "install", size: "125MB" },
-                    { label: "무설치 버전", type: "portable", size: "102MB" }
+                    { label: "무설치 버전", type: "portable", size: "57MB", path: "InoRobotTP/InoRobotTP_win_x86_V4R24C4SPC15.zip" }
                 ]
             },
             {
@@ -54,7 +54,7 @@ const softwareGroups = [
                 isLocked: true,
                 updates: ["디스플레이 미러링 최적화", "에러 로그 뷰어 강화"],
                 downloads: [
-                    { label: "설치 버전 (Display)", type: "install", size: "135MB" }
+                    { label: "무설치 버전 (Display)", type: "portable", size: "57MB", path: "InoRobotTP/Display/InoRobotTP_win_x86_V4R24C4SPC4L9F121.zip" }
                 ]
             }
         ]
@@ -129,7 +129,7 @@ function renderSoftwareList(filterType = 'all', searchTerm = '') {
                         </div>
                         <div class="flex flex-wrap gap-3 ml-auto">
                             ${ver.downloads.map(dl => `
-                                <button onclick="handleDownload('${group.id}', '${ver.tagName}', '${dl.label}', ${ver.isLocked})" 
+                                <button onclick="handleDownload('${dl.path}', ${ver.isLocked})" 
                                         class="px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${ver.isLocked ? 'locked-btn' : 'download-btn'}">
                                     <i data-lucide="${ver.isLocked ? 'key' : 'download'}" class="w-3.5 h-3.5"></i> ${dl.label} (${dl.size})
                                 </button>
@@ -181,23 +181,28 @@ function setupSearch() {
 
 /**
  * 다운로드 핸들러
- * @param {string} gId 그룹 ID
- * @param {string} vTag 버전 태그
- * @param {string} dlLabel 다운로드 라벨
+ * @param {string} path 파일 경로
  * @param {boolean} isLocked 잠김 여부
  */
-function handleDownload(gId, vTag, dlLabel, isLocked) {
+function handleDownload(path, isLocked) {
     if (isLocked) {
         const password = prompt("[기능 제한 안내] 이 버전은 전용 배포판입니다. 비밀번호를 입력해 주세요:");
         
-        // 비밀번호 확인 (2206)
-        // 보안 참고: 클라이언트 사이드 검증은 깃허브 소스 코드에 노출되므로, 실제 운영 환경에서는 해시 매칭 또는 백엔드 검증을 권장합니다.
         if (password === '2206') {
-            alert(`인증 성공! [${gId} - ${vTag} - ${dlLabel}] 다운로드를 시작합니다.`);
+            downloadFile(path);
         } else if (password !== null) {
             alert("비밀번호가 올바르지 않습니다. 관리자에게 문의하세요.");
         }
     } else {
-        alert(`[${gId} - ${vTag} - ${dlLabel}] 다운로드를 시작합니다.`);
+        downloadFile(path);
     }
+}
+
+function downloadFile(path) {
+    const link = document.createElement('a');
+    link.href = path;
+    link.download = path.split('/').pop();
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
