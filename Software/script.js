@@ -5,56 +5,56 @@
 const softwareGroups = [
     {
         name: "InoRobotLab",
-        fullName: "InoRobotLab (Robot Programming Studio)",
+        fullName: "InoRobotLab (PC SW)",
         id: "InoRobotLab",
         icon: "monitor",
         versions: [
             {
-                tagName: "V4R24C4SPC15",
-                description: "INOVANCE 로봇 컨트롤러 프로그래밍 및 설정을 위한 통합 개발 환경 (ST 전용) 입니다.",
+                tagName: "Standard (V4R24C4SPC15)",
+                description: "InoRobotLab 소프트웨어 설명서 (설치/무설치)",
                 date: "2026-03-20",
-                updates: ["ST 언어 최적화", "컴파일 성능 향상", "신규 라이브러리 추가"],
+                updates: ["시스템 최적화", "환경 설정 지원"],
                 downloads: [
-                    { label: "설치 버전", type: "install", size: "450MB", path: "InoRobotLab/InoRobotLabSetUp_V4R24C4SPC15_x64.exe" },
-                    { label: "무설치 버전", type: "portable", size: "380MB", path: "InoRobotLab/InoRobotLab_V4R24C4SPC15_x64.zip" }
+                    { label: "Download (Install)", type: "install", size: "450MB", path: "InoRobotLab/InoRobotLabSetUp_V4R24C4SPC15_x64.exe" },
+                    { label: "Download (Portable)", type: "portable", size: "380MB", path: "InoRobotLab/InoRobotLab_V4R24C4SPC15_x64.zip" }
                 ]
             },
             {
-                tagName: "Display Version",
-                description: "특수 Display 제어 및 모니터링 기능을 포함한 버전입니다. (비밀번호 인증 필요)",
+                tagName: "Display Version (Special)",
+                description: "Display 공정용 특수 버전 설명서",
                 date: "2026-03-20",
                 isLocked: true,
-                updates: ["Display 드라이버 통합", "실시간 화면 캡처 지원"],
+                updates: ["Display 모듈 지원"],
                 downloads: [
-                    { label: "설치 버전 (Display)", type: "install", size: "482MB", path: "InoRobotLab/Display/InoRobotLabSetUp_V4R24C4SPC4L9F121_x64.exe" },
-                    { label: "무설치 버전 (Display)", type: "portable", size: "454MB", path: "InoRobotLab/Display/InoRobotLab_V4R24C4SPC4L9F121_x64.zip" }
+                    { label: "Download (Install)", type: "install", size: "482MB", path: "InoRobotLab/Display/InoRobotLabSetUp_V4R24C4SPC4L9F121_x64.exe" },
+                    { label: "Download (Portable)", type: "portable", size: "454MB", path: "InoRobotLab/Display/InoRobotLab_V4R24C4SPC4L9F121_x64.zip" }
                 ]
             }
         ]
     },
     {
         name: "InoRobotTP",
-        fullName: "InoRobotTP (Teaching Pendant Software)",
+        fullName: "InoRobotTP (Pendant SW)",
         id: "InoRobotTP",
         icon: "smartphone",
         versions: [
             {
-                tagName: "V4R24C4SPC15",
-                description: "티칭 펜던트 에뮬레이터 및 설정 도구입니다. 가상 티칭 환경을 지원합니다.",
+                tagName: "Standard (V4R24C4SPC15)",
+                description: "InoRobotTP 소프트웨어 설명서",
                 date: "2026-03-21",
-                updates: ["UI 반응 속도 개선", "단축키 커스텀 기능", "버그 수정"],
+                updates: ["사용자 환경 개선"],
                 downloads: [
-                    { label: "무설치 버전", type: "portable", size: "57MB", path: "InoRobotTP/InoRobotTP_win_x86_V4R24C4SPC15.zip" }
+                    { label: "Download", type: "portable", size: "57MB", path: "InoRobotTP/InoRobotTP_win_x86_V4R24C4SPC15.zip" }
                 ]
             },
             {
-                tagName: "Display Version",
-                description: "디스플레이 전용 기능을 지원하는 TP 소프트웨어입니다. (비밀번호 인증 필요)",
+                tagName: "Display Version (Special)",
+                description: "Display 공정용 TP 설명서",
                 date: "2026-03-21",
                 isLocked: true,
-                updates: ["디스플레이 미러링 최적화", "에러 로그 뷰어 강화"],
+                updates: ["Display 최적화"],
                 downloads: [
-                    { label: "무설치 버전 (Display)", type: "portable", size: "57MB", path: "InoRobotTP/Display/InoRobotTP_win_x86_V4R24C4SPC4L9F121.zip" }
+                    { label: "Download", type: "portable", size: "57MB", path: "InoRobotTP/Display/InoRobotTP_win_x86_V4R24C4SPC4L9F121.zip" }
                 ]
             }
         ]
@@ -115,14 +115,8 @@ function renderSoftwareList(filterType = 'all', searchTerm = '') {
                             <i data-lucide="${verIcon}" class="w-3 h-3"></i> ${ver.tagName}
                         </div>
                     </div>
-                    <p class="text-slate-400 text-[15px] leading-relaxed max-w-2xl">${ver.description}</p>
+                    <p class="text-slate-400 text-sm italic">${ver.description}</p>
                     
-                    <div class="flex flex-wrap gap-2 py-1">
-                        ${ver.updates.map(up => `
-                            <span class="text-[10px] bg-white/5 text-slate-500 px-2 py-0.5 rounded border border-white/5 tracking-tight font-medium"># ${up}</span>
-                        `).join('')}
-                    </div>
-
                     <div class="flex flex-wrap items-center gap-4 pt-4 border-t border-white/[0.05]">
                         <div class="flex items-center gap-6 text-xs text-slate-500 font-mono">
                             <span class="flex items-center gap-1.5"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> ${ver.date}</span>
