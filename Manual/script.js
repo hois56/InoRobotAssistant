@@ -127,18 +127,18 @@ const manualData = [
         description: "로봇 프로그램 명령어 가이드"
     },
     {
-        id: "eth_comm_guide",
-        title: "Ethernet 통신 가이드",
+        id: "api_guide",
+        title: "API 매뉴얼",
         robotType: "none",
-        category: "comm",
+        category: "api",
         date: "2025-07-20",
         lang: "EN",
         path: "Software_manual/Remote Ethernet Control Function User Guide.pdf",
-        description: "에더넷 통신 제어 가이드"
+        description: "Ethernet 통신 제어 가이드"
     },
     {
-        id: "io_comm_guide",
-        title: "IO 제어 가이드",
+        id: "fieldbus_guide",
+        title: "필드버스 통신 매뉴얼",
         robotType: "none",
         category: "comm",
         date: "2025-08-05",
@@ -186,7 +186,7 @@ const manualData = [
         robotType: "none",
         category: "entry",
         date: "2026-03-25",
-        lang: "EN",
+        lang: "KR",
         path: "교육 자료/입문과정/1.로봇 소개(INT).pdf",
         description: "입문 과정 로봇 소개"
     },
@@ -196,7 +196,7 @@ const manualData = [
         robotType: "none",
         category: "entry",
         date: "2026-03-25",
-        lang: "EN",
+        lang: "KR",
         path: "교육 자료/입문과정/2.로봇 기초(INT).pdf",
         description: "입문 과정 로봇 기초 가이드"
     },
@@ -206,7 +206,7 @@ const manualData = [
         robotType: "none",
         category: "entry",
         date: "2026-03-25",
-        lang: "EN",
+        lang: "KR",
         path: "교육 자료/입문과정/3.로봇 구조 및 초기 배선(INT).pdf",
         description: "입문 과정 초기 배선 가이드"
     },
@@ -216,7 +216,7 @@ const manualData = [
         robotType: "none",
         category: "entry",
         date: "2026-03-25",
-        lang: "EN",
+        lang: "KR",
         path: "교육 자료/입문과정/4. 펜던트 기본 조작(INT).pdf",
         description: "입문 과정 펜던트 조작 가이드"
     }
@@ -233,22 +233,31 @@ function renderManuals() {
     const list = document.getElementById('manualList');
     list.innerHTML = '';
 
-    const activeType = document.querySelector('#typeFilters .active').dataset.type;
-    // We check both catFilters and eduFilters
-    const activeCatBtn = document.querySelector('#catFilters .active') || document.querySelector('#eduFilters .active');
-    const activeCat = activeCatBtn ? activeCatBtn.dataset.cat : 'all';
+    const activeTypeBtn = document.querySelector('#typeFilters .active');
+    const activeSoftwareBtn = document.querySelector('#catFilters .active');
+    const activeEduBtn = document.querySelector('#eduFilters .active');
+
+    const activeType = activeTypeBtn ? activeTypeBtn.dataset.type : 'all';
+    const activeSoftware = activeSoftwareBtn ? activeSoftwareBtn.dataset.cat : 'all';
+    const activeEdu = activeEduBtn ? activeEduBtn.dataset.cat : 'all';
     
     const searchTerm = document.getElementById('manualSearch').value.toLowerCase();
 
     const filtered = manualData.filter(man => {
-        // Hardware filter mutual exclusivity
+        // Prioritize specific filters for Mutual Exclusivity
+        // If Hardware is specific, only show hardware
         if (activeType !== 'all') {
-            if (activeType !== man.robotType) return false;
+            if (man.robotType !== activeType) return false;
         }
 
-        // Software/Edu filter mutual exclusivity
-        if (activeCat !== 'all') {
-            if (activeCat !== man.category) return false;
+        // If Software is specific, only show software
+        if (activeSoftware !== 'all') {
+            if (man.category !== activeSoftware) return false;
+        }
+
+        // If Edu is specific, only show edu
+        if (activeEdu !== 'all') {
+            if (man.category !== activeEdu) return false;
         }
 
         const matchesSearch = man.title.toLowerCase().includes(searchTerm) || 
@@ -321,22 +330,21 @@ function setupFilters() {
         btn.addEventListener('click', () => {
             const parent = btn.parentElement;
             
-            // Unset all buttons in all groups first for mutual exclusivity
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            
+            // Set all buttons in CURRENT group to inactive
+            parent.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             // Set clicked button to active
             btn.classList.add('active');
 
-            // Find other groups and reset to "all" if necessary
-            // In our case, if any group is clicked, the OTHER groups must have their "all" selected (or just one "all" across all non-hardware?)
-            // The request was: Hardware, Software, Edu are all mutually exclusive.
-            
+            // Find OTHER groups and reset them to 'all' for mutual exclusivity
             const groupIds = ['typeFilters', 'catFilters', 'eduFilters'];
             groupIds.forEach(gid => {
-                const group = document.getElementById(gid);
-                if (group !== parent) {
-                    const allBtn = group.querySelector('[data-type="all"]') || group.querySelector('[data-cat="all"]');
-                    if (allBtn) allBtn.classList.add('active');
+                if (gid !== parent.id) {
+                    const group = document.getElementById(gid);
+                    if (group) {
+                        group.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                        const allBtn = group.querySelector('[data-type="all"]') || group.querySelector('[data-cat="all"]');
+                        if (allBtn) allBtn.classList.add('active');
+                    }
                 }
             });
 
