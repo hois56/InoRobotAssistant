@@ -3,10 +3,10 @@
  * Enhanced to support Multiple Models & Transformation
  */
 
-import * as THREE from 'https://esm.sh/three@0.156.1';
-import { OrbitControls } from 'https://esm.sh/three@0.156.1/examples/jsm/controls/OrbitControls.js';
-import { FBXLoader } from 'https://esm.sh/three@0.156.1/examples/jsm/loaders/FBXLoader.js';
-import { TransformControls } from 'https://esm.sh/three@0.156.1/examples/jsm/controls/TransformControls.js';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
 const state = {
     scene: null, camera: null, renderer: null,
@@ -35,14 +35,19 @@ const el = {
 };
 
 async function init() {
-    setupUI();
-    setupScene();
-    setupLights();
-    setupControls();
-    setupEventListeners();
-    animate();
-    await populateModelList();
-    setStatus('Ready', '#22c55e');
+    try {
+        setupUI();
+        setupScene();
+        setupLights();
+        setupControls();
+        setupEventListeners();
+        animate();
+        await populateModelList();
+        setStatus('Ready', '#22c55e');
+    } catch (err) {
+        console.error("Initialization Failed:", err);
+        setStatus('Error during Init', '#ef4444');
+    }
 }
 
 function setupUI() {
