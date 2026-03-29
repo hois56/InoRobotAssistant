@@ -46,7 +46,7 @@ async function init() {
         setStatus('Ready', '#22c55e');
     } catch (err) {
         console.error("Initialization Failed:", err);
-        setStatus('Error during Init', '#ef4444');
+        setStatus(`Init Error: ${err.message}`, '#ef4444');
     }
 }
 
