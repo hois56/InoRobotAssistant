@@ -1,27 +1,21 @@
 /**
  * Inovance Robot 3D Viewer
+ * Enhanced to support Multiple Models & Transformation
  */
 
 import * as THREE from 'https://esm.sh/three@0.156.1';
 import { OrbitControls } from 'https://esm.sh/three@0.156.1/examples/jsm/controls/OrbitControls.js';
 import { FBXLoader } from 'https://esm.sh/three@0.156.1/examples/jsm/loaders/FBXLoader.js';
+import { TransformControls } from 'https://esm.sh/three@0.156.1/examples/jsm/controls/TransformControls.js';
 
 const state = {
     scene: null, camera: null, renderer: null,
-    controls: null, model: null, controller: null, grid: null, labels: []
+    controls: null, transformControls: null,
+    models: [], // List of loaded models { group, name, type }
+    grid: null, labels: [],
+    addMode: false
 };
 
-// Controller mapping per robot model name
-function getControllerName(name) {
-    if (/^IR-S[47]|^IR-S10|^IR-TS[45]/.test(name))             return 'IRCB501-SCARA-Standard';
-    if (/^IR-(S25|S35|S60|GS60)/.test(name))                   return 'IRCB501-SCARA-Highpower';
-    if (/^IR-R[47]H?/.test(name))                              return 'IRCB501-6-axis-Standard';
-    if (/^IR-R(10-110|10H|11|15H|20H)/.test(name))             return 'IRCB501-6-axis-Highpower';
-    if (/^IR-R(10-140|16|25)/.test(name))                      return 'IRCB501-6-axis-Highprotection';
-    return null;
-}
-
-// Models that need special rotation fix
 const MODEL_ROTATION_FIX = {
     'IR-S25-100Z42S': { z: Math.PI }
 };
@@ -36,10 +30,12 @@ const el = {
     statusDot:       document.getElementById('status-dot'),
     canvasContainer: document.getElementById('canvas-container'),
     btnResetView:    document.getElementById('btn-reset-view'),
-    btnToggleGrid:   document.getElementById('btn-toggle-grid')
+    btnToggleGrid:   document.getElementById('btn-toggle-grid'),
+    btnAddMode:      null // To be added
 };
 
 async function init() {
+    setupUI();
     setupScene();
     setupLights();
     setupControls();
@@ -47,6 +43,23 @@ async function init() {
     animate();
     await populateModelList();
     setStatus('Ready', '#22c55e');
+}
+
+function setupUI() {
+    // Add "Add Mode" toggle in topbar-center after the select
+    const wrapper = document.querySelector('.select-wrapper');
+    const container = document.createElement('label');
+    container.className = 'add-mode-toggle';
+    container.innerHTML = `
+        <input type="checkbox" id="chk-add-mode">
+        <span><i class="fa-solid fa-plus-circle"></i> 모델 추가 모드</span>
+    `;
+    wrapper.after(container);
+    el.btnAddMode = document.getElementById('chk-add-mode');
+    
+    // Update CAD download button title
+    const btnDown = document.getElementById('btn-download-cad');
+    if(btnDown) btnDown.title = "현재 열린 모든 모델 CAD 다운로드";
 }
 
 function setupScene() {
@@ -62,26 +75,21 @@ function setupScene() {
     state.renderer.toneMappingExposure = 2.3;
     el.canvasContainer.appendChild(state.renderer.domElement);
     
-    // Main Grid: Major lines (1000mm) / Minor lines (100mm)
     state.grid = new THREE.GridHelper(10000, 100, 0x475569, 0x1e293b);
     state.grid.position.y = -0.1;
     state.scene.add(state.grid);
-    
     addGridLabels();
 }
 
 function addGridLabels() {
     const intervals = [500, 1000, 1500, 2000, 3000, 4000, 5000];
     const labelColor = '#94a3b8';
-    
     intervals.forEach(val => {
-        // Labels for Axis
         state.labels.push(createLabel(`${val}mm`, val, 5, 0, labelColor));
         state.labels.push(createLabel(`-${val}mm`, -val, 5, 0, labelColor));
         state.labels.push(createLabel(`${val}mm`, 0, 5, val, labelColor));
         state.labels.push(createLabel(`-${val}mm`, 0, 5, -val, labelColor));
     });
-    
     state.labels.forEach(l => state.scene.add(l));
 }
 
@@ -90,11 +98,8 @@ function createLabel(text, x, y, z, color) {
     canvas.width = 256; canvas.height = 128;
     const ctx = canvas.getContext('2d');
     ctx.font = 'bold 32px Outfit, Inter, Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = color;
-    ctx.fillText(text, 128, 64);
-    
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = color; ctx.fillText(text, 128, 64);
     const texture = new THREE.CanvasTexture(canvas);
     const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
     const sprite = new THREE.Sprite(material);
@@ -104,16 +109,26 @@ function createLabel(text, x, y, z, color) {
 }
 
 function setupLights() {
-    state.scene.add(new THREE.AmbientLight(0xffffff, 0.45));
+    state.scene.add(new THREE.AmbientLight(0xffffff, 0.6));
     const dir = new THREE.DirectionalLight(0xffffff, 1.25);
     dir.position.set(1500, 2500, 1000);
     dir.castShadow = true;
     state.scene.add(dir);
+    const dir2 = new THREE.DirectionalLight(0xffffff, 0.5);
+    dir2.position.set(-1500, 1000, -1000);
+    state.scene.add(dir2);
 }
 
 function setupControls() {
     state.controls = new OrbitControls(state.camera, state.renderer.domElement);
-    state.controls.enableDamping = false;
+    state.controls.enableDamping = true;
+    state.controls.dampingFactor = 0.05;
+
+    state.transformControls = new TransformControls(state.camera, state.renderer.domElement);
+    state.transformControls.addEventListener('dragging-changed', (event) => {
+        state.controls.enabled = !event.value;
+    });
+    state.scene.add(state.transformControls);
 }
 
 function setupEventListeners() {
@@ -124,18 +139,138 @@ function setupEventListeners() {
         const name = e.target.options[e.target.selectedIndex].text;
         await loadModelFromServer(file, name);
     });
-    el.btnResetView.addEventListener('click', fitCamera);
-    el.btnToggleGrid.addEventListener('click', toggleGrid);
     
+    el.btnResetView.addEventListener('click', fitCamera);
+    el.btnToggleGrid.addEventListener('click', () => {
+        state.grid.visible = !state.grid.visible;
+        state.labels.forEach(l => l.visible = state.grid.visible);
+    });
+
     const btnDown = document.getElementById('btn-download-cad');
     if (btnDown) {
-        btnDown.addEventListener('click', async () => {
-            const name = el.statName.textContent;
-            if (!name || name === '-') {
-                alert("모델이 선택되지 않았습니다.");
-                return;
-            }
+        btnDown.addEventListener('click', handleCADDownload);
+    }
+}
 
+async function loadModelFromServer(file, name) {
+    showLoading(true, `Loading ${name}...`);
+    setStatus('Loading', '#f59e0b');
+
+    // If not in Add Mode, clean up previous models
+    if (!el.btnAddMode.checked) {
+        cleanupScene();
+    }
+
+    try {
+        const fbx = await loadFBX(`./models/${file}`, (p) => showLoading(true, `Model: ${p}%`));
+        fbx.rotateX(-Math.PI / 2);
+        const rotFix = MODEL_ROTATION_FIX[name];
+        if (rotFix && rotFix.z) fbx.rotateZ(rotFix.z);
+
+        applyFBXMaterial(fbx);
+
+        // Auto-scale detection
+        const box = new THREE.Box3().setFromObject(fbx);
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        if (maxDim > 0 && maxDim < 15) fbx.scale.multiplyScalar(1000);
+        else if (maxDim >= 15 && maxDim < 500) fbx.scale.multiplyScalar(10);
+
+        // Name it for CAD download mapping later
+        fbx.userData.modelName = name;
+
+        // Spread models a bit if adding
+        if (el.btnAddMode.checked && state.models.length > 0) {
+            fbx.position.z += (state.models.length * 600);
+        }
+
+        state.models.push(fbx);
+        state.scene.add(fbx);
+        
+        // Attach transform controls to the newest model
+        state.transformControls.attach(fbx);
+
+        updateUIStatus();
+        showLoading(false);
+        if(!el.btnAddMode.checked) fitCamera();
+    } catch (err) {
+        console.error('Load failed:', err);
+        setStatus('Error', '#ef4444');
+        showLoading(false);
+    }
+}
+
+function loadFBX(url, onProgress) {
+    return new Promise((resolve, reject) => {
+        new FBXLoader().load(url, resolve,
+            (xhr) => { if (xhr.total > 0 && onProgress) onProgress(Math.round(xhr.loaded / xhr.total * 100)); },
+            reject);
+    });
+}
+
+function applyFBXMaterial(fbx) {
+    fbx.traverse(c => {
+        if (!c.isMesh) return;
+        c.castShadow = c.receiveShadow = true;
+        const mats = Array.isArray(c.material) ? c.material : [c.material];
+        mats.forEach(m => {
+            if (!m) return;
+            m.vertexColors = false; // Fix generic FBX dark colors
+            if (m.color && m.color.r === 0 && m.color.g === 0 && m.color.b === 0) {
+                m.color.set(0xcccccc);
+            }
+            m.needsUpdate = true;
+        });
+    });
+}
+
+function cleanupScene() {
+    state.transformControls.detach();
+    state.models.forEach(model => {
+        state.scene.remove(model);
+        model.traverse(c => {
+            if (c.isMesh) {
+                c.geometry.dispose();
+                (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose());
+            }
+        });
+    });
+    state.models = [];
+}
+
+function updateUIStatus() {
+    const names = state.models.map(m => m.userData.modelName);
+    el.statName.textContent = names.length > 1 ? `${names[0]} (+${names.length-1})` : (names[0] || '-');
+    el.emptyState.classList.add('hidden');
+    setStatus('Ready', '#22c55e');
+}
+
+/**
+ * Multi-Model CAD Download
+ */
+async function handleCADDownload() {
+    if (state.models.length === 0) {
+        alert("다운로드할 모델이 없습니다.");
+        return;
+    }
+
+    const btnDown = document.getElementById('btn-download-cad');
+    const oldHtml = btnDown.innerHTML;
+    btnDown.disabled = true;
+    btnDown.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+    const zip = new JSZip();
+    const downloadQueue = [];
+
+    state.models.forEach(model => {
+        const name = model.userData.modelName;
+        // Controller files
+        if (name.includes('IRCB501')) {
+            downloadQueue.push({ path: `../InoRobotSelect/Robot_CAD/Controller/${name}/${name}.dwg`, name: `${name}_2D.dwg` });
+            downloadQueue.push({ path: `../InoRobotSelect/Robot_CAD/Controller/${name}/${name}.stp`, name: `${name}_3D.stp` });
+        } 
+        // Robot files
+        else {
             const modelId = name.includes('-INT') ? name : name + '-INT';
             const isScara = name.includes('-S') || name.includes('-TS') || name.includes('-GS');
             const typeDir = isScara ? 'SCARA' : '6-axis';
@@ -147,7 +282,7 @@ function setupEventListeners() {
                     folderBase = parts.slice(0, 2).join('-') + '-' + parts[2].slice(0, -1);
                 } else if (parts[2].endsWith('S5')) {
                     folderBase = parts.slice(0, 2).join('-') + '-' + parts[2].slice(0, -2);
-                } else {
+                } else if (parts.length >= 3) {
                     folderBase = parts.slice(0, 3).join('-');
                 }
             }
@@ -161,40 +296,34 @@ function setupEventListeners() {
             };
             if (overrides[name]) folderBase = overrides[name];
 
-            const zip = new JSZip();
-            const files = [
-                { path: `../InoRobotSelect/Robot_CAD/${typeDir}/${folderBase}/${modelId}_2D.dwg`, name: `${modelId}_2D.dwg` },
-                { path: `../InoRobotSelect/Robot_CAD/${typeDir}/${folderBase}/${modelId}_3D.stp`, name: `${modelId}_3D.stp` }
-            ];
+            downloadQueue.push({ path: `../InoRobotSelect/Robot_CAD/${typeDir}/${folderBase}/${modelId}_2D.dwg`, name: `${modelId}_2D.dwg` });
+            downloadQueue.push({ path: `../InoRobotSelect/Robot_CAD/${typeDir}/${folderBase}/${modelId}_3D.stp`, name: `${modelId}_3D.stp` });
+        }
+    });
 
-            // Add controller CAD files
-            const ctrl = getControllerName(name);
-            if (ctrl) {
-                files.push(
-                    { path: `../InoRobotSelect/Robot_CAD/Controller/${ctrl}/${ctrl}.dwg`, name: `${ctrl}.dwg` },
-                    { path: `../InoRobotSelect/Robot_CAD/Controller/${ctrl}/${ctrl}.stp`, name: `${ctrl}.stp` }
-                );
-            }
-
-            btnDown.disabled = true;
-            const oldHtml = btnDown.innerHTML;
-            btnDown.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-
-            try {
-                for (const f of files) {
-                    const r = await fetch(f.path);
-                    if (r.ok) {
-                        zip.file(f.name, await r.blob());
-                    }
+    try {
+        await Promise.all(downloadQueue.map(async (file) => {
+            const r = await fetch(file.path);
+            if (r.ok) {
+                zip.file(file.name, await r.blob());
+            } else {
+                // Fallback for non-INT filenames
+                if (file.path.includes('-INT')) {
+                    const fallbackPath = file.path.replace('-INT', '');
+                    const r2 = await fetch(fallbackPath);
+                    if (r2.ok) zip.file(file.name, await r2.blob());
                 }
-                const content = await zip.generateAsync({ type: "blob", compression: "STORE" });
-                saveAs(content, `Inovance_CAD_${modelId}.zip`);
-            } catch (e) { console.error(e); }
+            }
+        }));
 
-            btnDown.disabled = false;
-            btnDown.innerHTML = oldHtml;
-        });
-    }
+        if (state.models.length > 0) {
+            const content = await zip.generateAsync({ type: "blob", compression: "STORE" });
+            saveAs(content, `Inovance_Total_CAD.zip`);
+        }
+    } catch (e) { console.error("CAD download failed:", e); }
+
+    btnDown.disabled = false;
+    btnDown.innerHTML = oldHtml;
 }
 
 function animate() {
@@ -210,182 +339,16 @@ function onResize() {
     state.renderer.setSize(w, h);
 }
 
-async function populateModelList() {
-    try {
-        const res = await fetch(`./models/models.json?v=${Date.now()}`);
-        const list = await res.json();
-        el.modelSelect.innerHTML = '<option value="" disabled selected>-- 로봇 모델을 선택하세요 --</option>';
-        let currentGroup = null;
-        list.forEach(m => {
-            if (m.group) {
-                currentGroup = document.createElement('optgroup');
-                currentGroup.label = m.group;
-                el.modelSelect.appendChild(currentGroup);
-            } else {
-                const opt = document.createElement('option');
-                opt.value = m.file;
-                opt.textContent = m.name;
-                (currentGroup || el.modelSelect).appendChild(opt);
-            }
-        });
-    } catch (e) { console.error(e); }
-}
-
-function applyFBXMaterial(fbx) {
-    fbx.traverse(c => {
-        if (!c.isMesh) return;
-        c.castShadow = c.receiveShadow = true;
-        const mats = Array.isArray(c.material) ? c.material : [c.material];
-        mats.forEach(m => {
-            if (!m) return;
-            m.transparent = false;
-            m.opacity = 1;
-            // Vertex colors from FBX often cause wrong colors — disable them
-            m.vertexColors = false;
-            // Pure black → neutral gray (invisible mesh fix)
-            if (m.color && m.color.r === 0 && m.color.g === 0 && m.color.b === 0) {
-                m.color.set(0xcccccc);
-            }
-            m.needsUpdate = true;
-        });
-    });
-}
-
-async function loadModelFromServer(file, name) {
-    showLoading(true, `Loading ${name}...`);
-    setStatus('Loading', '#f59e0b');
-    cleanupScene();
-
-    const ctrlName = getControllerName(name);
-    const ctrlFile = ctrlName ? `${ctrlName}.fbx` : null;
-
-    try {
-        // Load robot body
-        const robotFbx = await loadFBX(`./models/${file}`,
-            (p) => showLoading(true, `Robot: ${p}%`));
-        robotFbx.rotateX(-Math.PI / 2);
-
-        // Apply special rotation fix per model
-        const rotFix = MODEL_ROTATION_FIX[name];
-        if (rotFix && rotFix.z) robotFbx.rotateZ(rotFix.z);
-
-        applyFBXMaterial(robotFbx);
-        state.model = robotFbx;
-
-        // Auto-scale detection (Detect Meters vs Millimeters)
-        const robotBox = new THREE.Box3().setFromObject(state.model);
-        const robotSize = robotBox.getSize(new THREE.Vector3());
-        const robotMaxDim = Math.max(robotSize.x, robotSize.y, robotSize.z);
-        
-        // Typical robot sizes are 400mm to 3000mm. 
-        // If max dimension is < 15, it's likely Meters. If < 500, likely CM.
-        if (robotMaxDim > 0 && robotMaxDim < 15) {
-            state.model.scale.multiplyScalar(1000); // Meters -> MM
-        } else if (robotMaxDim >= 15 && robotMaxDim < 500) {
-            state.model.scale.multiplyScalar(10);   // CM -> MM
-        }
-
-        state.scene.add(state.model);
-
-        // Load controller (failure doesn't block robot display)
-        if (ctrlFile) {
-            showLoading(true, `Loading controller...`);
-            try {
-                const ctrlFbx = await loadFBX(`./models/${ctrlFile}`,
-                    (p) => showLoading(true, `Controller: ${p}%`));
-                ctrlFbx.rotateX(-Math.PI / 2);
-                applyFBXMaterial(ctrlFbx);
-
-                // Auto-scale detection for controller
-                const ctrlBoxTemp = new THREE.Box3().setFromObject(ctrlFbx);
-                const ctrlSizeTemp = ctrlBoxTemp.getSize(new THREE.Vector3());
-                const ctrlMaxDim = Math.max(ctrlSizeTemp.x, ctrlSizeTemp.y, ctrlSizeTemp.z);
-                if (ctrlMaxDim > 0 && ctrlMaxDim < 10) {
-                    ctrlFbx.scale.multiplyScalar(1000); // Meters -> MM
-                } else if (ctrlMaxDim >= 10 && ctrlMaxDim < 200) {
-                    ctrlFbx.scale.multiplyScalar(10);   // CM -> MM
-                }
-
-                // Final bounding boxes for placement after scaling
-                const rb = new THREE.Box3().setFromObject(state.model);
-                const cb = new THREE.Box3().setFromObject(ctrlFbx);
-                const rCenter = rb.getCenter(new THREE.Vector3());
-                const cCenter = cb.getCenter(new THREE.Vector3());
-
-                // Position controller to the RIGHT of the robot
-                // (In Three.js Y-up, if robot faces +X, right side is -Z)
-                
-                // 1. Center controller with robot along X axis (Front/Back)
-                ctrlFbx.position.x += (rCenter.x - cCenter.x);
-                
-                // 2. Move to the right side (-Z) with a 400mm gap
-                // Move controller's max.z to robot's min.z - 400
-                ctrlFbx.position.z += (rb.min.z - 400 - cb.max.z);
-                
-                // 3. Align bottom to floor
-                ctrlFbx.position.y += (rb.min.y - cb.min.y);
-
-                state.controller = ctrlFbx;
-                state.scene.add(state.controller);
-            } catch (ctrlErr) {
-                console.warn('Controller load failed:', ctrlErr);
-            }
-        }
-
-        updateUIStatus(name);
-        showLoading(false);
-        fitCamera();
-    } catch (err) {
-        console.error('Robot load failed:', err);
-        setStatus('Error', '#ef4444');
-        showLoading(false);
-    }
-}
-
-function loadFBX(url, onProgress) {
-    return new Promise((resolve, reject) => {
-        new FBXLoader().load(url, resolve,
-            (xhr) => { if (xhr.total > 0 && onProgress) onProgress(Math.round(xhr.loaded / xhr.total * 100)); },
-            reject);
-    });
-}
-
-
-function cleanupScene() {
-    for (const key of ['model', 'controller']) {
-        if (!state[key]) continue;
-        state.scene.remove(state[key]);
-        state[key].traverse(c => {
-            if (c.isMesh) {
-                c.geometry.dispose();
-                (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose());
-            }
-        });
-        state[key] = null;
-    }
-}
-
-function updateUIStatus(name) {
-    el.statName.textContent = name;
-    el.emptyState.classList.add('hidden');
-    setStatus('Ready', '#22c55e');
-}
-
 function fitCamera() {
-    if (!state.model) return;
-    const box = new THREE.Box3().setFromObject(state.model);
-    if (state.controller) box.expandByObject(state.controller);
+    if (state.models.length === 0) return;
+    const box = new THREE.Box3();
+    state.models.forEach(m => box.expandByObject(m));
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
     const dist = size.length() * 1.5;
     state.camera.position.set(center.x + dist * 0.8, dist * 0.5, center.z + dist * 0.8);
     state.camera.lookAt(center.x, center.y, center.z);
     state.controls.target.set(center.x, center.y, center.z);
-}
-
-function toggleGrid() {
-    state.grid.visible = !state.grid.visible;
-    state.labels.forEach(l => l.visible = state.grid.visible);
 }
 
 function showLoading(show, text = 'Loading...') {
@@ -397,5 +360,30 @@ function setStatus(text, color) {
     el.statStatus.textContent = text;
     el.statusDot.style.color = color;
 }
+
+/**
+ * Handle object selection for TransformControls
+ */
+window.addEventListener('mousedown', (e) => {
+    if (state.models.length <= 1) return;
+    
+    const mouse = new THREE.Vector2();
+    mouse.x = ( (e.clientX - el.canvasContainer.getBoundingClientRect().left) / el.canvasContainer.clientWidth ) * 2 - 1;
+    mouse.y = - ( (e.clientY - el.canvasContainer.getBoundingClientRect().top) / el.canvasContainer.clientHeight ) * 2 + 1;
+
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, state.camera);
+    
+    const intersects = raycaster.intersectObjects(state.models, true);
+    if (intersects.length > 0) {
+        let object = intersects[0].object;
+        while (object.parent && !state.models.includes(object)) {
+            object = object.parent;
+        }
+        if (state.models.includes(object)) {
+            state.transformControls.attach(object);
+        }
+    }
+});
 
 init();
