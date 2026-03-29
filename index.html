@@ -313,10 +313,19 @@
         <!-- Footer removed -->
     </main>
 
-    <!-- Invisible Visitor Counter -->
-    <footer class="mt-20 pb-8 text-center text-slate-500 text-[10px] opacity-10 hover:opacity-100 transition-opacity z-10 w-full cursor-default">
-        <p>&copy; 2026 INOVANCE Robot Assistant. All rights reserved.</p>
-        <p class="mt-1">SYS ID: <span id="visit-count">---</span></p>
+    <!-- Main Footer -->
+    <footer class="mt-20 pb-12 text-center z-10 w-full animate-fade-in" style="animation: fadeIn 1.5s ease forwards;">
+        <div class="flex flex-col items-center justify-center gap-2 opacity-40 hover:opacity-90 transition-opacity duration-500 cursor-default">
+            <p class="text-xs font-outfit tracking-wider text-slate-400">
+                &copy; 2026 <span class="text-slate-200">INOVANCE Robot Assistant</span>. All rights reserved.
+            </p>
+            <p class="text-[11px] font-medium text-slate-500">
+                Designed & Developed by <span class="text-sky-400/80">Jeongchan Lee</span>
+            </p>
+            <p class="text-[9px] font-mono text-slate-600 mt-2 uppercase tracking-widest">
+                SYS ID: <span id="visit-count" class="text-slate-500">---</span>
+            </p>
+        </div>
     </footer>
 
     <style>
