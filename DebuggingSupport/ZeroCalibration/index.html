@@ -119,13 +119,13 @@
                 <table class="w-full border-collapse">
                     <thead>
                         <tr class="text-left border-b border-white/5">
-                            <th class="p-6 text-xs font-bold text-slate-500 uppercase tracking-widest w-24">축</th>
-                            <th class="p-6 text-xs font-bold text-slate-500 uppercase tracking-widest text-center">공장 출하 영점값</th>
-                            <th class="p-6 text-xs font-bold text-slate-500 uppercase tracking-widest text-center">
-                                새로운 티칭값
-                                <span class="block text-[10px] font-medium text-slate-500 mt-1 normal-case leading-tight">(최대한 홈에 일치하도록 티칭)</span>
+                            <th class="p-8 text-2xl font-bold text-slate-500 uppercase tracking-widest w-24">축</th>
+                            <th class="p-8 text-2xl font-bold text-slate-500 uppercase tracking-widest text-center">공장 출하 영점값</th>
+                            <th class="p-8 text-2xl font-bold text-slate-500 uppercase tracking-widest text-center relative pt-10 pb-14">
+                                티칭값
+                                <span class="absolute bottom-4 left-1/2 -translate-x-1/2 w-full text-sm font-medium text-slate-500 mt-1 normal-case leading-tight">(최대한 홈에 일치하도록 티칭)</span>
                             </th>
-                            <th class="p-6 text-xs font-bold text-blue-400 uppercase tracking-widest text-right">최종 계산 결과</th>
+                            <th class="p-8 text-2xl font-bold text-blue-400 uppercase tracking-widest text-right">최종 결과</th>
                         </tr>
                     </thead>
                     <tbody id="axis-rows">
@@ -158,19 +158,19 @@
             const row = document.createElement('tr');
             row.className = 'border-b border-white/5 group hover:bg-white/[0.01] transition-colors';
             row.innerHTML = `
-                <td class="p-6 font-outfit font-bold text-white text-lg">${axis}</td>
-                <td class="p-6">
+                <td class="p-8 font-outfit font-bold text-white text-3xl">${axis}</td>
+                <td class="p-8">
                     <input type="number" id="factory-${index}" placeholder="0" 
-                           class="w-full bg-slate-900/60 border border-white/10 rounded-xl py-3 px-4 text-center text-white input-focus"
+                           class="w-full bg-slate-900/60 border border-white/10 rounded-xl py-5 px-6 text-center text-white text-2xl input-focus font-mono"
                            oninput="calculate(${index})">
                 </td>
-                <td class="p-6">
+                <td class="p-8">
                     <input type="number" id="teaching-${index}" placeholder="0" 
-                           class="w-full bg-slate-900/60 border border-white/10 rounded-xl py-3 px-4 text-center text-white input-focus"
+                           class="w-full bg-slate-900/60 border border-white/10 rounded-xl py-5 px-6 text-center text-white text-2xl input-focus font-mono"
                            oninput="calculate(${index})">
                 </td>
-                <td class="p-6 text-right">
-                    <div id="result-${index}" class="text-xl font-bold text-blue-400 font-mono result-highlight py-3 px-6 rounded-xl inline-block min-w-[160px]">
+                <td class="p-8 text-right">
+                    <div id="result-${index}" class="text-3xl font-bold text-blue-400 font-mono result-highlight py-5 px-8 rounded-xl inline-block min-w-[240px]">
                         0
                     </div>
                 </td>
