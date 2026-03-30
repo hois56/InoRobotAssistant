@@ -11,7 +11,7 @@ const softwareGroups = [
         versions: [
             {
                 tagName: "Standard (V4R24C4SPC15)",
-                description: "InoRobotLab 소프트웨어 설명서 (설치/무설치)",
+                description: "InoRobotLab 소프트웨어 (설치/무설치)",
                 date: "2026-03-20",
                 updates: ["시스템 최적화", "환경 설정 지원"],
                 downloads: [
@@ -21,7 +21,7 @@ const softwareGroups = [
             },
             {
                 tagName: "Display Version (Special)",
-                description: "Display 공정용 특수 버전 설명서",
+                description: "Display 공정용 특수 버전 소프트웨어",
                 date: "2026-03-20",
                 isLocked: true,
                 updates: ["Display 모듈 지원"],
@@ -40,7 +40,7 @@ const softwareGroups = [
         versions: [
             {
                 tagName: "Standard (V4R24C4SPC15)",
-                description: "InoRobotTP 소프트웨어 설명서",
+                description: "InoRobotTP 소프트웨어",
                 date: "2026-03-21",
                 updates: ["사용자 환경 개선"],
                 downloads: [
@@ -49,7 +49,7 @@ const softwareGroups = [
             },
             {
                 tagName: "Display Version (Special)",
-                description: "Display 공정용 TP 설명서",
+                description: "Display 공정용 TP 소프트웨어",
                 date: "2026-03-21",
                 isLocked: true,
                 updates: ["Display 최적화"],
