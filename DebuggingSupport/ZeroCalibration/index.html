@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zero Calibration Tool | Inovance</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top right, #0f172a, #020617);
+            color: #e2e8f0;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        .font-outfit {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Ambient Background Glow */
+        .ambient-glow {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80vw;
+            height: 80vh;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.05) 0%, rgba(15, 23, 42, 0) 70%);
+            z-index: -1;
+            pointer-events: none;
+            filter: blur(100px);
+            animation: pulse-glow 8s infinite alternate;
+        }
+
+        @keyframes pulse-glow {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.3; }
+            100% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.5; }
+        }
+
+        /* Glass Card */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .input-focus {
+            transition: all 0.2s ease;
+        }
+        .input-focus:focus {
+            border-color: rgba(59, 130, 246, 0.5);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            background: rgba(30, 41, 59, 0.8);
+        }
+
+        .result-highlight {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.05) 100%);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+    </style>
+</head>
+<body class="relative flex flex-col min-h-screen">
+    <div class="ambient-glow"></div>
+
+    <!-- Header -->
+    <header class="sticky top-0 h-16 bg-[#0f131c]/95 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-8 z-50">
+        <div class="flex items-center gap-4">
+            <a href="../index.html" class="p-2 hover:bg-white/5 rounded-lg transition-colors text-slate-400 hover:text-white">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </a>
+            <h1 class="font-outfit text-lg font-bold text-white tracking-tight">Zero Calibration Tool</h1>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="status-pill bg-blue-500/10 text-blue-400 text-[10px] font-bold px-2 py-1 rounded-md border border-blue-500/20 uppercase tracking-wider">Calibration Mode</span>
+        </div>
+    </header>
+
+    <main class="w-full max-w-5xl mx-auto px-6 py-12 flex-grow">
+        <!-- Description -->
+        <div class="glass-card p-8 mb-8 border-l-4 border-l-blue-500">
+            <div class="flex gap-4 items-start">
+                <div class="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center shrink-0 border border-blue-500/20">
+                    <i data-lucide="info" class="w-5 h-5 text-blue-500"></i>
+                </div>
+                <div>
+                    <h2 class="text-white font-bold mb-2">툴 설명</h2>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        로봇의 영점이 엔코더 베터리 방전 혹은 영점값 데이터 소실 등 하드웨어 고장 및 교체가 아닌 경우 엔코더 영점을 하드웨어 보정 툴없이 보정하는 툴입니다.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calculator Table -->
+        <div class="glass-card overflow-hidden">
+            <div class="p-6 border-b border-white/5 bg-white/[0.02]">
+                <h3 class="font-outfit text-white font-bold flex items-center gap-2">
+                    <i data-lucide="calculator" class="w-4 h-4 text-blue-400"></i>
+                    영점 보정 계산기
+                </h3>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse">
+                    <thead>
+                        <tr class="text-left border-b border-white/5">
+                            <th class="p-6 text-xs font-bold text-slate-500 uppercase tracking-widest w-24">축(Axis)</th>
+                            <th class="p-6 text-xs font-bold text-slate-500 uppercase tracking-widest text-center">공장 출하 영점값 (C)</th>
+                            <th class="p-6 text-xs font-bold text-slate-500 uppercase tracking-widest text-center">새로운 티칭값 (D)</th>
+                            <th class="p-6 text-xs font-bold text-blue-400 uppercase tracking-widest text-right">최종 계산 결과</th>
+                        </tr>
+                    </thead>
+                    <tbody id="axis-rows">
+                        <!-- Rows will be generated by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="p-6 bg-slate-900/40 border-t border-white/5">
+                <div class="flex items-center justify-between text-xs text-slate-500 italic">
+                    <p>공식: 최종값 = C + ROUND((D - C) / 1,048,576, 0) * 1,048,576</p>
+                    <button onclick="resetAll()" class="flex items-center gap-2 px-4 py-2 hover:text-white transition-colors">
+                        <i data-lucide="refresh-cw" class="w-3 h-3"></i> 전체 초기화
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="py-8 text-center border-t border-white/5">
+        <p class="text-slate-600 text-xs">© 2026 INOVANCE ROBOTICS. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Generate rows for J1 to J6
+        const tbody = document.getElementById('axis-rows');
+        const axes = ['J1', 'J2', 'J3', 'J4', 'J5', 'J6'];
+        
+        axes.forEach((axis, index) => {
+            const row = document.createElement('tr');
+            row.className = 'border-b border-white/5 group hover:bg-white/[0.01] transition-colors';
+            row.innerHTML = `
+                <td class="p-6 font-outfit font-bold text-white text-lg">${axis}</td>
+                <td class="p-6">
+                    <input type="number" id="factory-${index}" placeholder="0" 
+                           class="w-full bg-slate-900/60 border border-white/10 rounded-xl py-3 px-4 text-center text-white input-focus"
+                           oninput="calculate(${index})">
+                </td>
+                <td class="p-6">
+                    <input type="number" id="teaching-${index}" placeholder="0" 
+                           class="w-full bg-slate-900/60 border border-white/10 rounded-xl py-3 px-4 text-center text-white input-focus"
+                           oninput="calculate(${index})">
+                </td>
+                <td class="p-6 text-right">
+                    <div id="result-${index}" class="text-xl font-bold text-blue-400 font-mono result-highlight py-3 px-6 rounded-xl inline-block min-w-[160px]">
+                        0
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        function calculate(index) {
+            const factoryVal = parseFloat(document.getElementById(`factory-${index}`).value) || 0;
+            const teachingVal = parseFloat(document.getElementById(`teaching-${index}`).value) || 0;
+            
+            // Formula: C4 + ROUND((D4-C4)/1048576, 0) * 1048576
+            const divisor = 1048576;
+            const finalValue = factoryVal + Math.round((teachingVal - factoryVal) / divisor) * divisor;
+            
+            const resultEl = document.getElementById(`result-${index}`);
+            resultEl.textContent = finalValue.toLocaleString();
+            
+            // Add pulse effect on change
+            resultEl.classList.remove('animate-pulse');
+            void resultEl.offsetWidth; // trigger reflow
+            resultEl.classList.add('animate-pulse');
+            setTimeout(() => resultEl.classList.remove('animate-pulse'), 500);
+        }
+
+        function resetAll() {
+            for(let i=0; i<6; i++) {
+                document.getElementById(`factory-${i}`).value = '';
+                document.getElementById(`teaching-${i}`).value = '';
+                document.getElementById(`result-${i}`).textContent = '0';
+            }
+        }
+
+        // Initialize Icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>
