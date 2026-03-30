@@ -86,8 +86,10 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 0 1rem;
+    padding: 0 1.5rem;
     height: 44px;
+    min-width: 160px;
+    white-space: nowrap;
     background: rgba(255,255,255,0.05);
     border: 1px solid var(--border);
     border-radius: 12px;

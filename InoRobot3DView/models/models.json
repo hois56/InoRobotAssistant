@@ -1,5 +1,5 @@
 [
-    { "group": "SCARA - Standard Type" },
+    { "group": "SCARA" },
     { "name": "IR-S4-40Z15S-INT", "file": "IR-S4-40Z15S-INT_3D.fbx" },
     { "name": "IR-S7-50Z20S-INT", "file": "IR-S7-50Z20S-INT_3D.fbx" },
     { "name": "IR-S7-60Z20S-INT", "file": "IR-S7-60Z20S-INT_3D.fbx" },
@@ -9,8 +9,6 @@
     { "name": "IR-S10-80Z20S-INT", "file": "IR-S10-80Z20S-INT_3D.fbx" },
     { "name": "IR-TS4-35Z15S-INT", "file": "IR-TS4-35Z15S-INT_3D.fbx" },
     { "name": "IR-TS5-55Z15S-INT", "file": "IR-TS5-55Z15S-INT_3D.fbx" },
-
-    { "group": "SCARA - High Power / Large" },
     { "name": "IR-S25-80Z42S", "file": "IR-S25-80Z42S_3D.fbx" },
     { "name": "IR-S25-100Z42S", "file": "IR-S25-100Z42S_3D.fbx" },
     { "name": "IR-S35-80Z42S-INT", "file": "IR-S35-80Z42S-INT_3D.fbx" },
@@ -18,7 +16,7 @@
     { "name": "IR-S60-120Z40S-INT", "file": "IR-S60-120Z40S-INT_3D.fbx" },
     { "name": "IR-GS60-120Z40S-INT", "file": "IR-GS60-120Z40S-INT_3D.fbx" },
 
-    { "group": "6-Axis - Small / Medium" },
+    { "group": "6-Axis" },
     { "name": "IR-R4-56S-INT", "file": "IR-R4-56S-INT_3D.fbx" },
     { "name": "IR-R4H-54S-INT", "file": "IR-R4H-54S-INT_3D.fbx" },
     { "name": "IR-R7H-70S-INT", "file": "IR-R7H-70S-INT_3D.fbx" },
@@ -26,15 +24,13 @@
     { "name": "IR-R10-110S-INT", "file": "IR-R10-110S-INT_3D.fbx" },
     { "name": "IR-R10H-120S-INT", "file": "IR-R10H-120S-INT_3D.fbx" },
     { "name": "IR-R11-90S-INT", "file": "IR-R11-90S-INT_3D.fbx" },
-
-    { "group": "6-Axis - Heavy Duty / High Speed" },
     { "name": "IR-R10-140S-INT", "file": "IR-R10-140S-INT_3D.fbx" },
     { "name": "IR-R15H-145S", "file": "IR-R15H-145S_3D.fbx" },
     { "name": "IR-R16-210S-INT", "file": "IR-R16-210S-INT_3D.fbx" },
     { "name": "IR-R20H-120S", "file": "IR-R20H-120S-3D.fbx" },
     { "name": "IR-R25-178S-INT", "file": "IR-R25-178S-INT_3D.fbx" },
 
-    { "group": "Controllers" },
+    { "group": "Controller" },
     { "name": "IRCB501-SCARA-Standard", "file": "IRCB501-SCARA-Standard.fbx" },
     { "name": "IRCB501-SCARA-Highpower", "file": "IRCB501-SCARA-Highpower.fbx" },
     { "name": "IRCB501-6-axis-Standard", "file": "IRCB501-6-axis-Standard.fbx" },
