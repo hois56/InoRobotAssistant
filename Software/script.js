@@ -193,8 +193,9 @@ function handleDownload(path, isLocked) {
 }
 
 function downloadFile(path) {
+    const lfsUrl = `https://media.githubusercontent.com/media/hois56/InoRobotAssistant/main/Software/${path}`;
     const link = document.createElement('a');
-    link.href = path;
+    link.href = lfsUrl;
     link.download = path.split('/').pop();
     document.body.appendChild(link);
     link.click();
