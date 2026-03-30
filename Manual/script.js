@@ -5,7 +5,7 @@ const manualData = [
         title: "IR-S4&S7&S10 Series User Guide - Manipulator.pdf",
         robotType: "scara",
         category: "hardware",
-        date: "2025-06-15",
+        date: "2026-03-29",
         lang: "EN",
         path: "Hardware_manual/SCARA/IR-S4&S7&S10 Series User Guide - Manipulator.pdf",
         description: "User Guide"
@@ -15,7 +15,7 @@ const manualData = [
         title: "IR-TS Series User Guide - Manipulator.pdf",
         robotType: "scara",
         category: "hardware",
-        date: "2025-04-20",
+        date: "2026-03-29",
         lang: "EN",
         path: "Hardware_manual/SCARA/IR-TS Series User Guide - Manipulator.pdf",
         description: "User Guide"
@@ -27,7 +27,7 @@ const manualData = [
         title: "IR-R4&R4H Series User Guide - Manipulator.pdf",
         robotType: "6axis",
         category: "hardware",
-        date: "2025-08-10",
+        date: "2026-03-29",
         lang: "EN",
         path: "Hardware_manual/6-axis/IR-R4&R4H Series User Guide - Manipulator.pdf",
         description: "User Guide"
@@ -37,7 +37,7 @@ const manualData = [
         title: "IR-R7H Series User Guide - Manipulator.PDF",
         robotType: "6axis",
         category: "hardware",
-        date: "2025-11-25",
+        date: "2026-03-29",
         lang: "EN",
         path: "Hardware_manual/6-axis/IR-R7H Series User Guide - Manipulator.PDF",
         description: "User Guide"
@@ -47,7 +47,7 @@ const manualData = [
         title: "IR-R10-110&R10H&R11 Series User Guide - Manipulator.PDF",
         robotType: "6axis",
         category: "hardware",
-        date: "2025-09-15",
+        date: "2026-03-29",
         lang: "EN",
         path: "Hardware_manual/6-axis/IR-R10-110&R10H&R11 Series User Guide - Manipulator.PDF",
         description: "User Guide"
@@ -57,7 +57,7 @@ const manualData = [
         title: "IR-R10-140 User Guide - Manipulator.pdf",
         robotType: "6axis",
         category: "hardware",
-        date: "2025-03-12",
+        date: "2026-03-29",
         lang: "EN",
         path: "Hardware_manual/6-axis/IR-R10-140 User Guide - Manipulator.pdf",
         description: "User Guide"
@@ -67,7 +67,7 @@ const manualData = [
         title: "IR-R25&R16 Series User Guide - Manipulator.pdf",
         robotType: "6axis",
         category: "hardware",
-        date: "2026-01-30",
+        date: "2026-03-29",
         lang: "EN",
         path: "Hardware_manual/6-axis/IR-R25&R16 Series User Guide - Manipulator.pdf",
         description: "User Guide"
@@ -79,7 +79,7 @@ const manualData = [
         title: "IRCB501 User Guide.pdf",
         robotType: "controller",
         category: "hardware",
-        date: "2025-12-05",
+        date: "2026-03-29",
         lang: "EN",
         path: "Hardware_manual/Controller/IRCB501 User Guide.pdf",
         description: "User Guide"
@@ -89,7 +89,7 @@ const manualData = [
         title: "IRCB501-High-Protection User Guide.pdf",
         robotType: "controller",
         category: "hardware",
-        date: "2025-10-20",
+        date: "2026-03-29",
         lang: "EN",
         path: "Hardware_manual/Controller/IRCB501-High-Protection User Guide.pdf",
         description: "User Guide"
@@ -101,7 +101,7 @@ const manualData = [
         title: "InoRobotLab User Guide.pdf",
         robotType: "none",
         category: "lab",
-        date: "2026-03-15",
+        date: "2026-03-29",
         lang: "EN",
         path: "Software_manual/InoRobotLab User Guide.pdf",
         description: "User Guide"
@@ -111,7 +111,7 @@ const manualData = [
         title: "Teach Pendant User Manual.pdf",
         robotType: "none",
         category: "pendant",
-        date: "2026-02-28",
+        date: "2026-03-29",
         lang: "EN",
         path: "Software_manual/Teach Pendant User Manual.pdf",
         description: "User Guide"
@@ -121,7 +121,7 @@ const manualData = [
         title: "Instructions Guide.pdf",
         robotType: "none",
         category: "api",
-        date: "2025-12-10",
+        date: "2026-03-29",
         lang: "EN",
         path: "Software_manual/Instructions Guide.pdf",
         description: "Instruction Guide"
@@ -131,7 +131,7 @@ const manualData = [
         title: "Remote Ethernet Control Function User Guide.pdf",
         robotType: "none",
         category: ["api", "comm"],
-        date: "2025-07-20",
+        date: "2026-03-29",
         lang: "EN",
         path: "Software_manual/Remote Ethernet Control Function User Guide.pdf",
         description: "API Guide"
@@ -141,7 +141,7 @@ const manualData = [
         title: "Remote IO Control Function User Guide.pdf",
         robotType: "none",
         category: "comm",
-        date: "2025-08-05",
+        date: "2026-03-29",
         lang: "EN",
         path: "Software_manual/Remote IO Control Function User Guide.pdf",
         description: "Fieldbus Guide"
@@ -153,7 +153,7 @@ const manualData = [
         title: "INOVANCE ROBOT Selection Guide.pdf",
         robotType: "none",
         category: "selection",
-        date: "2025-11-20",
+        date: "2026-03-29",
         lang: "EN",
         path: "Selection_manual/INOVANCE ROBOT Selection Guide.pdf",
         description: "Selection Guide"
@@ -163,7 +163,7 @@ const manualData = [
         title: "INOVANCE ROBOT Selection Leaflet.pdf",
         robotType: "none",
         category: "selection",
-        date: "2025-10-15",
+        date: "2026-03-29",
         lang: "EN",
         path: "Selection_manual/INOVANCE ROBOT Selection Leaflet.pdf",
         description: "Product Leaflet"
@@ -173,7 +173,7 @@ const manualData = [
         title: "INOVANCE ROBOT Selection Leaflet_Special Robot of Display.pdf",
         robotType: "none",
         category: "selection",
-        date: "2026-02-10",
+        date: "2026-03-29",
         lang: "EN",
         path: "Selection_manual/INOVANCE ROBOT Selection Leaflet_Special Robot of Display.pdf",
         description: "Special Robot Leaflet"
@@ -185,7 +185,7 @@ const manualData = [
         title: "1.로봇 소개(INT).pdf",
         robotType: "none",
         category: "entry",
-        date: "2026-03-25",
+        date: "2026-03-29",
         lang: "KR",
         path: "교육 자료/입문과정/1.로봇 소개(INT).pdf",
         description: "Education Item"
@@ -195,7 +195,7 @@ const manualData = [
         title: "2.로봇 기초(INT).pdf",
         robotType: "none",
         category: "entry",
-        date: "2026-03-25",
+        date: "2026-03-29",
         lang: "KR",
         path: "교육 자료/입문과정/2.로봇 기초(INT).pdf",
         description: "Education Item"
@@ -205,7 +205,7 @@ const manualData = [
         title: "3.로봇 구조 및 초기 배선(INT).pdf",
         robotType: "none",
         category: "entry",
-        date: "2026-03-25",
+        date: "2026-03-29",
         lang: "KR",
         path: "교육 자료/입문과정/3.로봇 구조 및 초기 배선(INT).pdf",
         description: "Education Item"
@@ -215,7 +215,7 @@ const manualData = [
         title: "4. 펜던트 기본 조작(INT).pdf",
         robotType: "none",
         category: "entry",
-        date: "2026-03-25",
+        date: "2026-03-29",
         lang: "KR",
         path: "교육 자료/입문과정/4. 펜던트 기본 조작(INT).pdf",
         description: "Education Item"
