@@ -218,6 +218,16 @@ body {
     box-shadow: 0 4px 12px var(--accent-glow);
 }
 
+.ui-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.ui-btn.active:hover {
+    box-shadow: 0 4px 12px var(--accent-glow), 0 0 20px rgba(0, 122, 255, 0.4);
+}
+
 
 
 /* ── Viewport & Overlays ─────────────── */

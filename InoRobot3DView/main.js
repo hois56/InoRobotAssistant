@@ -31,6 +31,7 @@ const el = {
     canvasContainer: document.getElementById('canvas-container'),
     btnResetView:    document.getElementById('btn-reset-view'),
     btnToggleGrid:   document.getElementById('btn-toggle-grid'),
+    btnToggleTransform: document.getElementById('btn-toggle-transform'),
     btnAddMode:      null 
 };
 
@@ -149,6 +150,20 @@ function setupEventListeners() {
     el.btnToggleGrid.addEventListener('click', () => {
         state.grid.visible = !state.grid.visible;
         state.labels.forEach(l => l.visible = state.grid.visible);
+        el.btnToggleGrid.classList.toggle('active', state.grid.visible);
+    });
+
+    el.btnToggleTransform.addEventListener('click', () => {
+        state.transformControls.visible = !state.transformControls.visible;
+        state.transformControls.enabled = state.transformControls.visible;
+        if (!state.transformControls.enabled) state.transformControls.detach();
+        el.btnToggleTransform.classList.toggle('active', state.transformControls.visible);
+    });
+
+    window.addEventListener('keydown', (e) => {
+        if ((e.key === 'Delete' || e.key === 'Backspace') && state.transformControls.object) {
+            deleteSelectedModel();
+        }
     });
 
     const btnDown = document.getElementById('btn-download-cad');
@@ -249,6 +264,29 @@ function cleanupScene() {
         });
     });
     state.models = [];
+}
+
+function deleteSelectedModel() {
+    const model = state.transformControls.object;
+    if (!model) return;
+
+    state.transformControls.detach();
+    state.scene.remove(model);
+    
+    const index = state.models.indexOf(model);
+    if (index > -1) state.models.splice(index, 1);
+
+    model.traverse(c => {
+        if (c.isMesh) {
+            c.geometry.dispose();
+            (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose());
+        }
+    });
+
+    updateUIStatus();
+    if (state.models.length === 0) {
+        el.emptyState.classList.remove('hidden');
+    }
 }
 
 function updateUIStatus() {
@@ -399,7 +437,8 @@ function setStatus(text, color) {
  * Handle object selection for TransformControls
  */
 window.addEventListener('mousedown', (e) => {
-    if (state.models.length <= 1) return;
+    // Only allow selection if transform controls are enabled
+    if (!state.transformControls.enabled) return;
     
     const mouse = new THREE.Vector2();
     mouse.x = ( (e.clientX - el.canvasContainer.getBoundingClientRect().left) / el.canvasContainer.clientWidth ) * 2 - 1;
