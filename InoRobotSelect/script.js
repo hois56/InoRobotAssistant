@@ -998,26 +998,26 @@ document.addEventListener('DOMContentLoaded', () => {
             const pSel = rightCol.querySelector('input[name="pendantLength"]:checked');
             const pHeader = rightCol.querySelector('#header-pendant');
             if (pHeader) {
-                const code = (pSel && pSel.value !== 'none') ? ` (${pSel.value})` : '';
-                pHeader.textContent = `티칭 펜던트 구성 (유로 옵션)${code}`;
+                const codeHtml = (pSel && pSel.value !== 'none') ? ` <span class="code-badge">${pSel.value}</span>` : '';
+                pHeader.innerHTML = `티칭 펜던트 구성 (유로 옵션)${codeHtml}`;
             }
 
             // Arm - Dynamic for multiple pin types
             const armSelections = Array.from(rightCol.querySelectorAll('input[name^="armSelection_"]:checked'));
             const armHeader = rightCol.querySelector('#header-arm');
             if (armHeader) {
-                const codes = armSelections.filter(s => s.value !== 'none').map(s => s.value);
-                const codeText = codes.length > 0 ? ` (${codes.join(', ')})` : '';
-                armHeader.textContent = `Arm I/O 케이블 구성 (유로 옵션)${codeText}`;
+                const armCodes = armSelections.filter(s => s.value !== 'none').map(s => s.value);
+                const codeHtml = armCodes.length > 0 ? armCodes.map(c => `<span class="code-badge">${c}</span>`).join('') : '';
+                armHeader.innerHTML = `Arm I/O 케이블 구성 (유로 옵션) ${codeHtml}`;
             }
 
             // Body - Dynamic for multiple pin types
             const bodySelections = Array.from(rightCol.querySelectorAll('input[name^="bodySelection_"]:checked'));
             const bodyHeader = rightCol.querySelector('#header-body');
             if (bodyHeader) {
-                const codes = bodySelections.filter(s => s.value !== 'none').map(s => s.value);
-                const codeText = codes.length > 0 ? ` (${codes.join(', ')})` : '';
-                bodyHeader.textContent = `Body I/O 케이블 구성 (유로 옵션)${codeText}`;
+                const bodyCodes = bodySelections.filter(s => s.value !== 'none').map(s => s.value);
+                const codeHtml = bodyCodes.length > 0 ? bodyCodes.map(c => `<span class="code-badge">${c}</span>`).join('') : '';
+                bodyHeader.innerHTML = `Body I/O 케이블 구성 (유로 옵션) ${codeHtml}`;
             }
 
             // Other
@@ -1025,8 +1025,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (otherHeader) {
                 const checkedItems = Array.from(rightCol.querySelectorAll('input[name="accSelection"]:checked'));
                 const selectedCodes = checkedItems.map(cb => cb.value);
-                const code = selectedCodes.length > 0 ? ` (${selectedCodes.join(', ')})` : '';
-                otherHeader.textContent = `기타 악세서리 (유로 옵션)${code}`;
+                const codeHtml = selectedCodes.length > 0 ? selectedCodes.map(c => `<span class="code-badge">${c}</span>`).join('') : '';
+                otherHeader.innerHTML = `기타 악세서리 (유로 옵션) ${codeHtml}`;
 
                 // Requirement 2: Show code on the right of each item
                 rightCol.querySelectorAll('input[name="accSelection"]').forEach(cb => {
@@ -1042,8 +1042,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const commHeader = rightCol.querySelector('#header-comm');
             if (commHeader) {
                 const commCode = commSel ? commSel.getAttribute('data-code') : '';
-                const code = (commSel && commSel.value !== 'none' && commCode) ? ` (${commCode})` : '';
-                commHeader.textContent = `통신 프로토콜 옵션 (확장카드 옵션)${code}`;
+                const codeHtml = (commSel && commSel.value !== 'none' && commCode) ? ` <span class="code-badge">${commCode}</span>` : '';
+                commHeader.innerHTML = `통신 프로토콜 옵션 (확장카드 옵션)${codeHtml}`;
 
                 // Requirement 3 Fix: Sync and Clear siblings
                 const commCodesToSync = ['01650028', '01650040'];
@@ -1265,7 +1265,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="checkbox" name="accSelection" value="${acc.code}" data-desc="${acc.name} - ${acc.description}" data-spec="${acc.spec || ''}" style="margin-top:3px;">
                     <div style="flex:1;">
                         <strong>${acc.name || 'Accessory'}</strong> 
-                        <span class="item-code-inline" style="display:none; color:var(--primary-blue); font-weight:bold; margin-left:8px;">(${acc.code})</span>
+                        <span class="item-code-inline code-badge" style="display:none; margin-left:8px;">${acc.code}</span>
                         <br><span style="color:#888; font-size:13px;">${acc.description}</span>
                     </div>
                 `;
@@ -1288,7 +1288,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="checkbox" name="expSelection" value="${acc.code}" data-desc="${acc.name} - ${acc.description}" data-spec="${acc.spec || ''}" style="margin-top:3px;">
                     <div style="flex:1;">
                         <strong>${acc.name}</strong> 
-                        <span class="exp-code-inline" style="display:none; color:var(--primary-blue); font-weight:bold; margin-left:8px;">(${acc.code})</span>
+                        <span class="exp-code-inline code-badge" style="display:none; margin-left:8px;">${acc.code}</span>
                         <br><span style="color:#888; font-size:13px;">${acc.description}</span>
                     </div>
                 `;

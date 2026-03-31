@@ -4084,7 +4084,7 @@ const accessoriesList = [
     {
         "code": "1504R444",
         "type": "Cable & Connector",
-        "name": "IR-TP200 Teach Pendant Extension Cable",
+        "name": "IR-TP200 Teach Pendant Extension Cable (5m)",
         "description": "Robot teach pendant Extension Cable",
         "spec": "5m",
         "target_models": "All"
@@ -4092,7 +4092,7 @@ const accessoriesList = [
     {
         "code": "1504R445",
         "type": "Cable & Connector",
-        "name": "IR-TP200 Teach Pendant Extension Cable",
+        "name": "IR-TP200 Teach Pendant Extension Cable (15m)",
         "description": "Robot teach pendant Extension Cable",
         "spec": "15m",
         "target_models": "All"
@@ -4100,7 +4100,7 @@ const accessoriesList = [
     {
         "code": "1504R446",
         "type": "Cable & Connector",
-        "name": "IR-TP200 Teach Pendant Extension Cable",
+        "name": "IR-TP200 Teach Pendant Extension Cable (25m)",
         "description": "Robot teach pendant Extension Cable",
         "spec": "25m",
         "target_models": "All"
