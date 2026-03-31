@@ -25,9 +25,9 @@
     { "name": "IR-R10H-120S-INT", "file": "IR-R10H-120S-INT_3D.fbx" },
     { "name": "IR-R11-90S-INT", "file": "IR-R11-90S-INT_3D.fbx" },
     { "name": "IR-R10-140S-INT", "file": "IR-R10-140S-INT_3D.fbx" },
-    { "name": "IR-R15H-145S", "file": "IR-R15H-145S_3D.fbx" },
+    { "name": "IR-R15H-145S-INT", "file": "IR-R15H-145S-INT_3D.fbx" },
     { "name": "IR-R16-210S-INT", "file": "IR-R16-210S-INT_3D.fbx" },
-    { "name": "IR-R20H-120S", "file": "IR-R20H-120S-3D.fbx" },
+    { "name": "IR-R20H-120S-INT", "file": "IR-R20H-120S-INT_3D.fbx" },
     { "name": "IR-R25-178S-INT", "file": "IR-R25-178S-INT_3D.fbx" },
 
     { "group": "Controller" },
