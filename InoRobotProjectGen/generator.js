@@ -241,6 +241,11 @@ EndFunc;
         // wait_pos function
         let waitStr = "";
         if (options.EnableWaitPos) {
+            let waitMoveSection = `    R_Cur_pos = ${n * 100};\n    Movj P${n}_App,V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n    R_Cur_pos = ${n * 100 + 1};\n    Movj P${n}_Wait,V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n`;
+            for (let i = 1; i <= (s.ExtraWaitCount || 0); i++) {
+                waitMoveSection += `    R_Cur_pos = ${n * 100 + 1 + i};\n    Movj P${n}_Wait${i+1},V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n`;
+            }
+
             let busyOn = options.EnableProcessBusy ? `    Set yP${n}_wait_pos_busy,ON; #Process Wait pos busy ON\n` : "";
             let busyOff = options.EnableProcessBusy ? `    Set yP${n}_wait_pos_busy,OFF;\n` : "";
 
