@@ -381,6 +381,7 @@ EndFunc;
             {nIndex: 513, sLabel: "xStop_prog", sDescription: "Stop program", sOriginalName: "IN[513]"},
             {nIndex: 514, sLabel: "xReset_prog", sDescription: "Reset program", sOriginalName: "IN[514]"},
             {nIndex: 515, sLabel: "xReset_alarm", sDescription: "Clear alarm", sOriginalName: "IN[515]"},
+            {nIndex: 519, sLabel: "xRobot_homing", sDescription: "", sOriginalName: "IN[519]"},
         ];
 
         if (options.EnableTeachingMode) {
