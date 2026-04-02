@@ -33,8 +33,8 @@ const state = {
         EnableTorque: false,
         EnableToolControl: false,
         ToolControlType: "PLC_IO", // "PLC_IO" or "DIO"
-        EnableTeachingMode: true,
-        EnableWaitPos: true,
+        EnableTeachingMode: false,
+        EnableWaitPos: false,
         EnableProcessBusy: false,
         VisionConfigs: {} // idx -> { IsClient, IpAddress, Port }
     },
