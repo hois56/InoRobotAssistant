@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,7 +10,9 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap"
+        rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -40,8 +43,15 @@
         }
 
         @keyframes pulse-glow {
-            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
-            100% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.8; }
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(1.1);
+                opacity: 0.8;
+            }
         }
 
         /* Header Style */
@@ -52,7 +62,7 @@
             background: rgba(15, 19, 28, 0.95);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255,255,255,0.09);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.09);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -67,13 +77,13 @@
             border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 1.5rem;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
 
         .glass-card:hover {
             transform: translateY(-5px);
             border-color: rgba(239, 68, 68, 0.3);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5), 0 0 20px rgba(239, 68, 68, 0.1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(239, 68, 68, 0.1);
         }
 
         .status-pill {
@@ -86,8 +96,15 @@
         }
 
         @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(2rem); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(2rem);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .animate-fade-in-up {
@@ -95,6 +112,7 @@
         }
     </style>
 </head>
+
 <body class="relative flex flex-col min-h-screen">
     <div class="ambient-glow"></div>
 
@@ -108,7 +126,9 @@
             <h1 class="font-outfit text-xl font-bold text-white hidden md:block tracking-tight">Debugging Tool</h1>
         </div>
         <div class="flex items-center gap-4">
-            <span class="text-xs font-mono text-slate-500 bg-slate-800/40 px-3 py-1.5 rounded-lg border border-white/10 italic">Ver 26.04.02.08</span>
+            <span
+                class="text-xs font-mono text-slate-500 bg-slate-800/40 px-3 py-1.5 rounded-lg border border-white/10 italic">Ver
+                26.04.02.08</span>
         </div>
     </header>
 
@@ -123,10 +143,12 @@
 
         <!-- Tool Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            
+
             <!-- 1. Zero Calibration -->
-            <a href="ZeroCalibration/index.html" class="glass-card p-6 md:p-8 flex flex-col group animate-fade-in-up" style="animation-delay: 0.1s; text-decoration: none;">
-                <div class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
+            <a href="ZeroCalibration/index.html" class="glass-card p-6 md:p-8 flex flex-col group animate-fade-in-up"
+                style="animation-delay: 0.1s; text-decoration: none;">
+                <div
+                    class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
                     <i data-lucide="target" class="w-8 h-8 text-white"></i>
                 </div>
                 <h2 class="font-outfit text-2xl font-bold mb-3 text-white">
@@ -136,26 +158,34 @@
                     엔코더 배터리 방전 등으로 인한 영점 소실 시, 하드웨어 지그 없이 소프트웨어적으로 영점을 보정하는 툴입니다.
                 </p>
                 <div class="mt-auto flex items-center justify-end border-t border-slate-700/50 pt-5">
-                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20">Ver 26.04.02.08</span>
+                    <span
+                        class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20">Ver
+                        26.04.02.08</span>
                 </div>
             </a>
 
             <!-- 2. Communication Tester -->
-            <a href="CommunicationTester/InoRobot_Comm_Test_V2.2.zip" download class="glass-card p-6 md:p-8 flex flex-col group animate-fade-in-up" style="animation-delay: 0.2s; text-decoration: none;">
-                <div class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
+            <a href="https://media.githubusercontent.com/media/hois56/InoRobotAssistant/main/DebuggingSupport/CommunicationTester/InoRobot_Comm_Test_V2.2.zip" download
+                class="glass-card p-6 md:p-8 flex flex-col group animate-fade-in-up"
+                style="animation-delay: 0.2s; text-decoration: none;">
+                <div
+                    class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
                     <i data-lucide="network" class="w-8 h-8 text-white"></i>
                 </div>
                 <div class="flex items-center gap-2 mb-3">
                     <h2 class="font-outfit text-2xl font-bold text-white">
                         Communication Tester
                     </h2>
-                    <i data-lucide="download" class="w-4 h-4 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                    <i data-lucide="download"
+                        class="w-4 h-4 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"></i>
                 </div>
                 <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
                     로봇과 PLC, 상위 PC 간의 통신(TCP/IP, Modbus, EIP 등) 상태를 간편하게 테스트하고 패킷을 분석할 수 있는 소프트웨어입니다.
                 </p>
                 <div class="mt-auto flex items-center justify-end border-t border-slate-700/50 pt-5">
-                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20">Ver 26.04.02.08</span>
+                    <span
+                        class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20">Ver
+                        26.04.02.08</span>
                 </div>
             </a>
 
@@ -195,4 +225,5 @@
         lucide.createIcons();
     </script>
 </body>
+
 </html>
