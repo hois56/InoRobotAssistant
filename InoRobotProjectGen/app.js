@@ -33,6 +33,9 @@ const state = {
         EnableTorque: false,
         EnableToolControl: false,
         ToolControlType: "PLC_IO", // "PLC_IO" or "DIO"
+        EnableTeachingMode: true,
+        EnableWaitPos: true,
+        EnableProcessBusy: false,
         VisionConfigs: {} // idx -> { IsClient, IpAddress, Port }
     },
     userEdits: {}, // { filename: "edited code without ProgramInfo" }
@@ -81,6 +84,11 @@ function initApp() {
         document.getElementById('chkToolControl').checked = state.options.EnableToolControl;
         document.getElementById('cmbToolControlType').value = state.options.ToolControlType || "PLC_IO";
         document.getElementById('cmbToolControlType').disabled = !state.options.EnableToolControl;
+        
+        document.getElementById('chkTeachingMode').checked = state.options.EnableTeachingMode;
+        document.getElementById('chkWaitPos').checked = state.options.EnableWaitPos;
+        document.getElementById('chkProcessBusy').checked = state.options.EnableProcessBusy;
+
         document.getElementById('optionsModal').classList.remove('hidden');
         
         // Reset description panel
@@ -96,7 +104,10 @@ function initApp() {
         multiRecipe: { title: "Multi Recipe", icon: "layers", text: "여러 로봇 포인트 파일(레시피)을 생성하여 프로그램에서 동적으로 로드할 수 있도록 합니다." },
         tcpSpeed: { title: "TCP Speed Monitoring", icon: "gauge", text: "로봇의 TCP(툴 중심점) 이동 속도를 지속적으로 모니터링하여 변수에 기록하고 표시하는 기능입니다." },
         torque: { title: "Torque Monitoring", icon: "activity", text: "각 축 모터의 현재 토크(전류 부하율)를 실시간으로 모니터링하여 충돌 감지 등에 활용할 수 있는 기능입니다." },
-        toolControl: { title: "Tool Control", icon: "wrench", text: "에어(진공) 및 그리퍼 같은 매니퓰레이터 툴의 제어 모듈을 프로그램 내부에 활성화시켜 제어 로직을 생성합니다." }
+        toolControl: { title: "Tool Control", icon: "wrench", text: "에어(진공) 및 그리퍼 같은 매니퓰레이터 툴의 제어 모듈을 프로그램 내부에 활성화시켜 제어 로직을 생성합니다." },
+        teachingMode: { title: "Teaching Mode", icon: "pencil", text: "프로그램 내부에 이설 혹은 티칭 수정을 위한 전용 로직을 추가합니다." },
+        waitPos: { title: "Wait Position", icon: "map-pin", text: "로봇이 공정 시작 전 대기하는 Standby(Wait) 포지션 기능을 사용 여부를 설정합니다." },
+        processBusy: { title: "Process Busy Signal", icon: "zap", text: "공정 진행 중임을 알리는 Busy 신호를 프로그램 및 라벨 데이터에서 사용할지 결정합니다." }
     };
 
     const updateOptDesc = (id) => {
@@ -133,6 +144,10 @@ function initApp() {
         state.options.EnableTorque = document.getElementById('chkTorque').checked;
         state.options.EnableToolControl = document.getElementById('chkToolControl').checked;
         state.options.ToolControlType = document.getElementById('cmbToolControlType').value;
+        state.options.EnableTeachingMode = document.getElementById('chkTeachingMode').checked;
+        state.options.EnableWaitPos = document.getElementById('chkWaitPos').checked;
+        state.options.EnableProcessBusy = document.getElementById('chkProcessBusy').checked;
+        
         let pCount = parseInt(document.getElementById('numRecipeCount').value) || 2;
         state.options.RecipeCount = Math.min(127, Math.max(2, pCount));
         state.options.RobotName = document.getElementById('cmbRobotModel').value;

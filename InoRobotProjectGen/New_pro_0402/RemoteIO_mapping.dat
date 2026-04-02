@@ -1,0 +1,1923 @@
+FileInfo
+    FileType="FieldBusFunIoCfgFile"
+    Version="1.0"
+    SystemVersion="V4R24"
+    RobotName="IR-R7H-90S5-C2H-INT_01741200"
+    Time="2026-04-02 10:28:40"
+    CheckCode="67B10D3D"
+EndFileInfo
+{
+  "BusIoFuncMap": [
+    {
+      "IoType": 0,
+      "FuncId": 0,
+      "MemAddr": 512,
+      "Length": 1,
+      "Name": "Start program"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 1,
+      "MemAddr": 513,
+      "Length": 1,
+      "Name": "Stop program"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 2,
+      "MemAddr": 514,
+      "Length": 1,
+      "Name": "Reset program"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 3,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Enable"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 4,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Emergency stop"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 5,
+      "MemAddr": 515,
+      "Length": 1,
+      "Name": "Clear alarm"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 6,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Speed increase"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 7,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Speed decrease"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Homing"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 9,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Manual/Auto mode switch"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 10,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Start all static tasks"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 11,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Set type of currently operated point"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 12,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Dynamic brake"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 13,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "External signal triggered collision detection."
+    },
+    {
+      "IoType": 0,
+      "FuncId": 14,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Homing"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 16,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Teach J1/X+"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 17,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Teach J2/Y+"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 18,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Teach J3/Z+"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 19,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Teach J4/A+"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 20,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Teach J5/B+"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 21,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Teach J6/C+"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 24,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Teach J1/X-"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 25,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Teach J2/Y-"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 26,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Teach J3/Z-"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 27,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Teach J4/A-"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 28,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Teach J5/B-"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 29,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Teach J6/C-"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 32,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Write current position into current P/JP variable"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 34,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Direct movement to P/JP variable position"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 35,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[0] control command"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 36,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[1] control command"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 37,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[2] control command"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 38,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[3] control command"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 39,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[4] control command"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 40,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[5] control command"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 41,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[6] control command"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 42,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[7] control command"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 43,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[8] control command"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 44,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[9] control command"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 45,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[10] control command"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 46,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[11] control command"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 47,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[12] control command"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 48,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[13] control command"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 49,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[14] control command"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 50,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[15] control command"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8192,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control command"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8193,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 1"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8194,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 2"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8195,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 3"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8196,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 4"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8197,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 5"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8198,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 6"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8199,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 7"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8200,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 8"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8201,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 9"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8202,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 10"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8203,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 11"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8204,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 12"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8205,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 13"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8206,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 14"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8207,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 15"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8208,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 16"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8209,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 17"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8210,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 18"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8211,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 19"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8212,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 20"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8213,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 21"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8214,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 22"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8215,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 23"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8216,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 24"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8217,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 25"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8218,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 26"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8219,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 27"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8220,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 28"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8221,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 29"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8222,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 30"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8223,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 31"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8224,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 32"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8225,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 33"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8226,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 34"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8227,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 35"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8228,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 36"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8229,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 37"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8230,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 38"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8231,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 39"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8232,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 40"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8233,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 41"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8234,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 42"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8235,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 43"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8236,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 44"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8237,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 45"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8238,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 46"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8239,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 47"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8240,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 48"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8241,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 49"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8242,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 50"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8243,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 51"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8244,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 52"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8245,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 53"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8246,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 54"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8247,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 55"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8248,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 56"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8249,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 57"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8250,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 58"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8251,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 59"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8252,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Input parameter 60"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8267,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Extended remote cycle command"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8268,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Extended remote cycle input parameter 1"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8269,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Extended remote cycle input parameter 2"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8286,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Robot zero programming mode switch"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8290,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Robot zero programming external permission Settings"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8288,
+      "MemAddr": 736,
+      "Length": 16,
+      "Name": "Switch point file via I/O"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8291,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Switch project via I/O"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8292,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Load No. settings"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8293,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Frame selection"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8294,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Tool frame No. selection"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8295,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Workobject frame No. selection"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8296,
+      "MemAddr": 752,
+      "Length": 16,
+      "Name": "Speed settings"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8297,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Direct motion mode settings"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8298,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Jump motion LH parameter-Low"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8299,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Jump motion LH parameter-High"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8300,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Jump motion MH parameter-Low"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8301,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Jump motion MH parameter-High"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8302,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Jump motion RH parameter-Low"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8303,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Jump motion RH parameter-High"
+    },
+    {
+      "IoType": 0,
+      "FuncId": 8304,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Active P/JP variable number"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32768,
+      "MemAddr": 512,
+      "Length": 1,
+      "Name": "Program run status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32769,
+      "MemAddr": 513,
+      "Length": 1,
+      "Name": "Program stopped"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32770,
+      "MemAddr": 514,
+      "Length": 1,
+      "Name": "Program reset successful"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32771,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Enable status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32772,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Emergency Stop status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32773,
+      "MemAddr": 515,
+      "Length": 1,
+      "Name": "System fault status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32774,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "System warning status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32775,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Servo fault status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32776,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Servo warning status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32777,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Safety door warning status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32778,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "System startup completion status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32779,
+      "MemAddr": 516,
+      "Length": 1,
+      "Name": "Robot in motion"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32780,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Robot motion completion status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32781,
+      "MemAddr": 517,
+      "Length": 1,
+      "Name": "Bus communication heartbeat"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32782,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Dynamic brake"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32783,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "P/JP variable write success"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32784,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "IN[0] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32785,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "IN[1] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32786,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "IN[2] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32787,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "IN[3] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32788,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "IN[4] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32789,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "IN[5] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32790,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "IN[6] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32791,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "IN[7] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32792,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "IN[8] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32793,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "IN[9] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32794,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "IN[10] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32795,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "IN[11] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32796,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "IN[12] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32797,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "IN[13] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32798,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "IN[14] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32799,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "IN[15] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32800,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[0] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32801,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[1] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32802,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[2] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32803,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[3] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32804,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[4] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32805,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[5] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32806,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[6] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32807,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[7] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32808,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[8] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32809,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[9] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32810,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[10] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32811,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[11] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32812,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[12] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32813,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[13] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32814,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[14] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32815,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "OUT[15] status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 32816,
+      "MemAddr": -1,
+      "Length": 1,
+      "Name": "Read type of currently operated point"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40960,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40961,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 1/Fault code"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40962,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 2/System fault code"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40963,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 3"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40964,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 4"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40965,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 5"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40966,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 6"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40967,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 7"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40968,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 8"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40969,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 9"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40970,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 10"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40971,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 11"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40972,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 12"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40973,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 13"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40974,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 14"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40975,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 15"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40976,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 16"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40977,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 17"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40978,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 18"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40979,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 19"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40980,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 20"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40981,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 21"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40982,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 22"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40983,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 23"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40984,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 24"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40985,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 25"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40986,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 26"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40987,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 27"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40988,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 28"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40989,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 29"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40990,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 30"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40991,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 31"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40992,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 32"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40993,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 33"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40994,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 34"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40995,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 35"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40996,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 36"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40997,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 37"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40998,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 38"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 40999,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 39"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41000,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 40"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41001,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 41"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41002,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 42"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41003,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 43"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41004,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 44"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41005,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 45"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41006,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 46"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41007,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 47"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41008,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 48"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41009,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 49"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41010,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control return parameter 50"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41011,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control returns parameter 51"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41012,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control returns parameter 52"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41013,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control returns parameter 53"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41014,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control returns parameter 54"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41015,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control returns parameter 55"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41016,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control returns parameter 56"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41017,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control returns parameter 57"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41018,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control returns parameter 58"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41019,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control returns parameter 59"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41020,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Remote control returns parameter 60"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41035,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Extended remote periodic state"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41036,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Extended remote cycle output parameter 1"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41037,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Extended remote cycle output parameter 2"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41038,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Robot zero programming mode state"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41039,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Robot zero programming external permission status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41040,
+      "MemAddr": 816,
+      "Length": 16,
+      "Name": "X coordinate of J1 at current position-Low"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41041,
+      "MemAddr": 832,
+      "Length": 16,
+      "Name": "X coordinate of J1 at current position-High"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41042,
+      "MemAddr": 848,
+      "Length": 16,
+      "Name": "Y coordinate of J2 at current position-Low"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41043,
+      "MemAddr": 864,
+      "Length": 16,
+      "Name": "Y coordinate of J2 at current position-High"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41044,
+      "MemAddr": 880,
+      "Length": 16,
+      "Name": "Z coordinate of J3 at current position-Low"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41045,
+      "MemAddr": 896,
+      "Length": 16,
+      "Name": "Z coordinate of J3 at current position-High"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41046,
+      "MemAddr": 912,
+      "Length": 16,
+      "Name": "A coordinate of J4 at current position-Low"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41047,
+      "MemAddr": 928,
+      "Length": 16,
+      "Name": "A coordinate of J4 at current position-High"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41048,
+      "MemAddr": 944,
+      "Length": 16,
+      "Name": "B coordinate of J5 at current position-Low"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41049,
+      "MemAddr": 960,
+      "Length": 16,
+      "Name": "B coordinate of J5 at current position-High"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41050,
+      "MemAddr": 976,
+      "Length": 16,
+      "Name": "C coordinate of J6 at current position-Low"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41051,
+      "MemAddr": 992,
+      "Length": 16,
+      "Name": "C coordinate of J6 at current position-High"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41055,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Collision alarm status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41074,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Active P/JP variable number"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41056,
+      "MemAddr": 736,
+      "Length": 16,
+      "Name": "Point file switching status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41057,
+      "MemAddr": 768,
+      "Length": 16,
+      "Name": "Current control"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41058,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Active  project No."
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41059,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Current project status"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41060,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Active load No."
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41061,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Current frame"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41062,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Active tool frame No."
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41063,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Active workobject frame No."
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41064,
+      "MemAddr": 752,
+      "Length": 16,
+      "Name": "Current speed"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41065,
+      "MemAddr": 800,
+      "Length": 16,
+      "Name": "Current fault code"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41066,
+      "MemAddr": 784,
+      "Length": 16,
+      "Name": "Current mode"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41067,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Current direct motion mode"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41068,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Current jump motion LH parameter-Low"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41069,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Current jump motion LH parameter-High"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41070,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Current jump motion MH parameter-Low"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41071,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Current jump motion MH parameter-High"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41072,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Current jump motion RH parameter-Low"
+    },
+    {
+      "IoType": 1,
+      "FuncId": 41073,
+      "MemAddr": -1,
+      "Length": 16,
+      "Name": "Current jump motion RH parameter-High"
+    }
+  ]
+}

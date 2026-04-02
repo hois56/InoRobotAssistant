@@ -1,0 +1,20 @@
+{
+  "Warings": [
+    "ERR : Tool Vacuum ON Error!",
+    "ERR : Tool Vacuum OFF Error!",
+    "ERR : Gripper ON Error!",
+    "ERR : Gripper OFF Error!",
+    "",
+    "",
+    "ERR : Stage Vacuum ON Error!",
+    "ERR : Stage Vacuum OFF Error!",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "ERR : Homing Error!",
+    "ERR : Tool position Error!"
+  ]
+}
