@@ -12,26 +12,26 @@ const Generator = {
         let ratios = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
         let csvLines = Assets.Robots_Torque.split(/\r?\n/);
         let foundRobot = null;
-        for(let i=1; i<csvLines.length; i++) {
-             let cols = csvLines[i].split(',');
-             if(cols.length < 6) continue;
-             let mName = cols[0].trim();
-             if(!mName) continue;
-             
-             if(foundRobot && mName !== foundRobot) {
-                 if (ratios.some(r => r !== 1.0)) break; 
-             }
-             if(mName && (robotName.toLowerCase().includes(mName.toLowerCase()) || mName.toLowerCase().includes(robotName.toLowerCase()))) {
-                 foundRobot = mName;
-                 let axis = cols[1].trim().toUpperCase();
-                 let ratio = parseFloat(cols[5]) || 1.0;
-                 if (axis === 'J1') ratios[0] = ratio;
-                 else if (axis === 'J2') ratios[1] = ratio;
-                 else if (axis === 'J3') ratios[2] = ratio;
-                 else if (axis === 'J4') ratios[3] = ratio;
-                 else if (axis === 'J5') ratios[4] = ratio;
-                 else if (axis === 'J6') ratios[5] = ratio;
-             }
+        for (let i = 1; i < csvLines.length; i++) {
+            let cols = csvLines[i].split(',');
+            if (cols.length < 6) continue;
+            let mName = cols[0].trim();
+            if (!mName) continue;
+
+            if (foundRobot && mName !== foundRobot) {
+                if (ratios.some(r => r !== 1.0)) break;
+            }
+            if (mName && (robotName.toLowerCase().includes(mName.toLowerCase()) || mName.toLowerCase().includes(robotName.toLowerCase()))) {
+                foundRobot = mName;
+                let axis = cols[1].trim().toUpperCase();
+                let ratio = parseFloat(cols[5]) || 1.0;
+                if (axis === 'J1') ratios[0] = ratio;
+                else if (axis === 'J2') ratios[1] = ratio;
+                else if (axis === 'J3') ratios[2] = ratio;
+                else if (axis === 'J4') ratios[3] = ratio;
+                else if (axis === 'J5') ratios[4] = ratio;
+                else if (axis === 'J6') ratios[5] = ratio;
+            }
         }
         return `ProgramInfo\n    Version = "S4.24"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getNowAmPm()}"\n    RobotName = "${robotName}"\nEndProgramInfo\nStart;\n    D_J1_cur_torque = Abs(GetTorque(1) * ${ratios[0].toFixed(3)});\n    D_J2_cur_torque = Abs(GetTorque(2) * ${ratios[1].toFixed(3)});\n    D_J3_cur_torque = Abs(GetTorque(3) * ${ratios[2].toFixed(3)});\n    D_J4_cur_torque = Abs(GetTorque(4) * ${ratios[3].toFixed(3)});\n    D_J5_cur_torque = Abs(GetTorque(5) * ${ratios[4].toFixed(3)});\n    D_J6_cur_torque = Abs(GetTorque(6) * ${ratios[5].toFixed(3)});\n    #================================================================================\n    ywCur_J1_torque = D_J1_cur_torque;\n    ywCur_J2_torque = D_J2_cur_torque;\n    ywCur_J3_torque = D_J3_cur_torque;\n    ywCur_J4_torque = D_J4_cur_torque;\n    ywCur_J5_torque = D_J5_cur_torque;\n    ywCur_J6_torque = D_J6_cur_torque;\n    #================================================================================\n    If D_J1_cur_torque > D_J1_max_torque\n        D_J1_max_torque = D_J1_cur_torque;\n    EndIf;\n    If D_J2_cur_torque > D_J2_max_torque\n        D_J2_max_torque = D_J2_cur_torque;\n    EndIf;\n    If D_J3_cur_torque > D_J3_max_torque\n        D_J3_max_torque = D_J3_cur_torque;\n    EndIf;\n    If D_J4_cur_torque > D_J4_max_torque\n        D_J4_max_torque = D_J4_cur_torque;\n    EndIf;\n    If D_J5_cur_torque > D_J5_max_torque\n        D_J5_max_torque = D_J5_cur_torque;\n    EndIf;\n    If D_J6_cur_torque > D_J6_max_torque\n        D_J6_max_torque = D_J6_cur_torque;\n    EndIf;\nEnd;`;
     },
@@ -39,7 +39,7 @@ const Generator = {
         if (!options.EnableToolControl) return null;
         let hasVacuum = false, hasGripper = false, hasTrash = false;
         let stageCount = 0;
-        
+
         steps.forEach(s => {
             if (s.ToolType === "Vacuum") hasVacuum = true;
             if (s.ToolType === "Gripper" || s.WorkType === "Peeling" || s.WorkMethod === "Peeling") hasGripper = true;
@@ -105,7 +105,7 @@ const Generator = {
         steps.forEach(s => {
             let isPeeling = s.WorkType === "Peeling" || s.WorkMethod === "Peeling";
             let tNum = s.ToolType === "Gripper" ? "2" : "1";
-            sb += `        #============================================================================\n        #  P${s.No} - ${s.WorkType} ${s.WorkMethod}\n        #============================================================================\n`;    
+            sb += `        #============================================================================\n        #  P${s.No} - ${s.WorkType} ${s.WorkMethod}\n        #============================================================================\n`;
             if (isPeeling) {
                 sb += `        Case ${s.No}12:\n            Movl P${s.No}_Peel_1,V[100],Z[2],Tool[${tNum}],Wobj[B_W_num];\n            R_Cur_pos = ${s.No}12;\n        Case ${s.No}13:\n            Movl P${s.No}_Peel_2,V[100],Z[2],Tool[${tNum}],Wobj[B_W_num];\n            R_Cur_pos = ${s.No}13;\n        Case ${s.No}14:\n            Movl P${s.No}_Peel_3,V[100],Z[2],Tool[${tNum}],Wobj[B_W_num];\n            R_Cur_pos = ${s.No}14;\n        Case ${s.No}15:\n            Movl P${s.No}_Peel_4,V[100],Z[2],Tool[${tNum}],Wobj[B_W_num];\n            R_Cur_pos = ${s.No}15;\n        Case ${s.No}16:\n            Movl P${s.No}_Peel_5,V[100],Z[2],Tool[${tNum}],Wobj[B_W_num];\n            R_Cur_pos = ${s.No}16;\n        Case ${s.No}20:\n            R_Cur_pos = ${s.No}20;\n            Movl P${s.No}_Peel_end,V[100],Z[2],Tool[${tNum}],Wobj[B_W_num];\n            R_Cur_pos = ${s.No}00;\n            Movj P${s.No}_App,V[100],Z[CP],Tool[${tNum}],Wobj[B_W_num];\n            Break;\n        #============================================================================\n`;
             }
@@ -117,7 +117,7 @@ const Generator = {
             R_Cur_pos = ${s.No}01;
 `;
             for (let i = (s.ExtraWaitCount || 0); i >= 1; i--) {
-                sb += `        Case ${s.No}0${1+i}:\n            Movj P${s.No}_Wait${1+i},V[100],Z[1],Tool[${tNum}],Wobj[B_W_num];\n            R_Cur_pos = ${s.No}0${1+i};\n`;
+                sb += `        Case ${s.No}0${1 + i}:\n            Movj P${s.No}_Wait${1 + i},V[100],Z[1],Tool[${tNum}],Wobj[B_W_num];\n            R_Cur_pos = ${s.No}0${1 + i};\n`;
             }
             sb += `        Case ${s.No}00 To ${s.No}01:
             Movj P${s.No}_App,V[100],Z[CP],Tool[${tNum}],Wobj[B_W_num];
@@ -150,7 +150,7 @@ EndFunc;
         let type = s.WorkType, method = s.WorkMethod, tool = s.ToolType, visionUse = s.VisionUse;
         let stagePrefix = stageIndex === 1 ? "Stage" : `Stage${stageIndex}`;
         let tNum = tool === "Gripper" ? "2" : "1";
-        
+
         // Offset Logic
         let offsetFunc = `Func Set_offset()\n    PR[B_PR_num] = (xwP${n}_offset_X.Int/10000,xwP${n}_offset_Y.Int/10000,xwP${n}_offset_Z.Int/10000,xwP${n}_offset_A.Int/10000,0,0);\nEndFunc;`;
         if (visionUse === "Use - IO") {
@@ -164,7 +164,7 @@ EndFunc;
         let chkHeader = "    #================================================================================\n    #  Tool position check                 \n    #================================================================================\n";
         let ctrlHeader = "    #================================================================================\n";
         let toolPosCheck = "", toolCtrlLogic = "";
-        
+
         if (options.EnableToolControl) {
             if (type === "Trash") {
                 toolPosCheck = chkHeader + "    If xTrash_ungrip\n        Alarm[15];\n    EndIf;\n";
@@ -193,10 +193,10 @@ EndFunc;
 
         let isCalib = method === "Calibration", isPeeling = type === "Peeling" || method === "Peeling";
         let isSocket = (method === "Check" && visionUse === "Use - Socket") || (isCalib && tool === "Vision (Socket)");
-        
+
         let peekInit = isPeeling ? "    Set yPeel_pos_comp,OFF;\n" : "";
         let connectSocket = "", startAction = "", endAction = "", afterTeach = "";
-        
+
         let socketFuncs = "";
         if (isSocket) {
             let vis = options.VisionConfigs[n - 1] || { IsClient: true, IpAddress: "192.168.1.10", Port: "5000" };
@@ -245,7 +245,7 @@ EndFunc;
         if (options.EnableWaitPos) {
             let waitMoveSection = `    R_Cur_pos = ${n * 100};\n    Movj P${n}_App,V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n    R_Cur_pos = ${n * 100 + 1};\n    Movj P${n}_Wait,V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n`;
             for (let i = 1; i <= (s.ExtraWaitCount || 0); i++) {
-                waitMoveSection += `    R_Cur_pos = ${n * 100 + 1 + i};\n    Movj P${n}_Wait${i+1},V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n`;
+                waitMoveSection += `    R_Cur_pos = ${n * 100 + 1 + i};\n    Movj P${n}_Wait${i + 1},V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n`;
             }
 
             let busyOn = options.EnableProcessBusy ? `    Set yP${n}_wait_pos_busy,ON; #Process Wait pos busy ON\n` : "";
@@ -274,7 +274,7 @@ EndFunc;
         } else {
             workStr += `    Bool return_result = s01_initial.Return_move();\n`;
         }
-        workStr += `    #================================================================================\n    #  Signal Initial                      \n    #================================================================================\n    Print "P${n} - ${type} ${method} Work pos Start";\n    #================================================================================\n${connectSocket}    Set_offset();\n    #================================================================================\n    #  Move                     \n    #================================================================================\n${workMoveSection}    #================================================================================\n${teachingCall}${afterTeach}${toolCtrlLogic}${startAction}    #================================================================================\n    #  Process Complete                    \n    #================================================================================\n${endAction}    Print "P${n} - ${type} ${method} Work pos End";\n${workBusyOff}    Set yP${n}_work_pos_comp,ON;\nEndFunc;\n`;
+        workStr += `    #================================================================================\n    #  Signal Initial                      \n    #================================================================================\n    Print "P${n} - ${type} ${method} Work pos Start";\n    B_T_num = ${tNum}; #Tool No\n    B_W_num = 0;\n    B_PR_num = ${prNum};\n    #================================================================================\n${connectSocket}    Set_offset();\n    #================================================================================\n    #  Move                     \n    #================================================================================\n${workMoveSection}    #================================================================================\n${teachingCall}${afterTeach}${toolCtrlLogic}${startAction}    #================================================================================\n    #  Process Complete                    \n    #================================================================================\n${endAction}    Print "P${n} - ${type} ${method} Work pos End";\n${workBusyOff}    Set yP${n}_work_pos_comp,ON;\nEndFunc;\n`;
 
         let teachModeFunc = "";
         if (options.EnableTeachingMode) {
@@ -297,13 +297,13 @@ EndFunc;
         const cfg = "0, 0, 0, 0";
         steps.forEach(s => {
             let n = s.No * 100;
-            let list = [{N:"App",O:0},{N:"Wait",O:1}];
+            let list = [{ N: "App", O: 0 }, { N: "Wait", O: 1 }];
             for (let i = 1; i <= (s.ExtraWaitCount || 0); i++) {
-                list.push({N:`Wait${i+1}`, O: 1 + i});
+                list.push({ N: `Wait${i + 1}`, O: 1 + i });
             }
-            list.push({N:"Up",O:10},{N:"Down",O:11});
+            list.push({ N: "Up", O: 10 }, { N: "Down", O: 11 });
             if (s.WorkType === "Peeling" || s.WorkMethod === "Peeling") {
-                list.push({N:"Peel_1",O:12}, {N:"Peel_2",O:13}, {N:"Peel_3",O:14}, {N:"Peel_4",O:15}, {N:"Peel_5",O:16}, {N:"Peel_end",O:20});
+                list.push({ N: "Peel_1", O: 12 }, { N: "Peel_2", O: 13 }, { N: "Peel_3", O: 14 }, { N: "Peel_4", O: 15 }, { N: "Peel_5", O: 16 }, { N: "Peel_end", O: 20 });
             }
             list.forEach(p => {
                 sb += `P[${n + p.O}] = ${zero}; ${cfg};${zero};Name = P${s.No}_${p.N};Notes = "T1_W0";\n`;
@@ -312,25 +312,25 @@ EndFunc;
         return sb;
     },
     DataWarning(steps, options) {
-        let warn = ["","","","","","","","","","","","","","","",""];
+        let warn = ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""];
         steps.forEach(s => {
-            if (s.ToolType === "Vacuum") { warn[0]="ERR : Tool Vacuum ON Error!"; warn[1]="ERR : Tool Vacuum OFF Error!"; }
-            if (s.ToolType === "Gripper") { warn[2]="ERR : Gripper ON Error!"; warn[3]="ERR : Gripper OFF Error!"; }
-            if (s.WorkType === "Trash") { warn[4]="ERR : Trash Gripper ON Error!"; warn[5]="ERR : Trash Gripper OFF Error!"; }
-            if (s.WorkType === "Stage") { warn[6]="ERR : Stage Vacuum ON Error!"; warn[7]="ERR : Stage Vacuum OFF Error!"; }
-            if (s.WorkMethod === "Check" && s.WorkType === "MCR") warn[8]="ERR : MCR Shot Error!";
-            if (s.WorkMethod === "Check" && s.WorkType === "Vision") warn[9]="ERR : Vision Shot Error!";
-            if (s.WorkMethod === "Calibration" && s.ToolType === "Vision (Socket)") warn[13]="ERR : Socket communication Error!";
+            if (s.ToolType === "Vacuum") { warn[0] = "ERR : Tool Vacuum ON Error!"; warn[1] = "ERR : Tool Vacuum OFF Error!"; }
+            if (s.ToolType === "Gripper") { warn[2] = "ERR : Gripper ON Error!"; warn[3] = "ERR : Gripper OFF Error!"; }
+            if (s.WorkType === "Trash") { warn[4] = "ERR : Trash Gripper ON Error!"; warn[5] = "ERR : Trash Gripper OFF Error!"; }
+            if (s.WorkType === "Stage") { warn[6] = "ERR : Stage Vacuum ON Error!"; warn[7] = "ERR : Stage Vacuum OFF Error!"; }
+            if (s.WorkMethod === "Check" && s.WorkType === "MCR") warn[8] = "ERR : MCR Shot Error!";
+            if (s.WorkMethod === "Check" && s.WorkType === "Vision") warn[9] = "ERR : Vision Shot Error!";
+            if (s.WorkMethod === "Calibration" && s.ToolType === "Vision (Socket)") warn[13] = "ERR : Socket communication Error!";
         });
         warn[14] = "ERR : Homing Error!";
-        if(options.EnableToolControl) warn[15] = "ERR : Tool position Error!";
+        if (options.EnableToolControl) warn[15] = "ERR : Tool position Error!";
         return '{\n  "Warings": [\n' + warn.map(w => `    "${w}"`).join(',\n') + '\n  ]\n}';
     },
     DataPrj(steps, options, prjName) {
         let progFiles = ["main.pro", "s01_initial.pro"];
         let tasks = [];
         let tid = 1;
-        if(options.EnableTcpSpeed) {
+        if (options.EnableTcpSpeed) {
             tasks.push(`    {\n      "TaskId": ${tid++},\n      "EnterProgramFile": "PLC_TCP_Speed.pro",\n      "TaskType": 1,\n      "IsActive": true\n    }`);
             progFiles.push("PLC_TCP_Speed.pro");
         }
@@ -342,11 +342,11 @@ EndFunc;
         steps.forEach(s => progFiles.push(`${s.ProcessName}.pro`));
 
         let ptF = ["P.pts"];
-        if(options.EnableMultiRecipe) {
-            for(let i=1; i<options.RecipeCount; i++) ptF.push(`P${i.toString().padStart(2, '0')}.pts`);
+        if (options.EnableMultiRecipe) {
+            for (let i = 1; i < options.RecipeCount; i++) ptF.push(`P${i.toString().padStart(2, '0')}.pts`);
         }
-        
-        return `{\n  "FileType": "RobotProjectConfigFile",\n  "Company": "Inovance",\n  "MajorVersion": 2,\n  "MinorVersion": 1,\n  "IsMainActive": true,\n  "MultiTaskCount": ${tasks.length},\n  "MultiTaskInfos": [\n${tasks.join(',\n')}\n  ],\n  "ProgramFilesCount": ${progFiles.length},\n  "ProgramFiles": [\n${progFiles.map(p=>`    "${p}"`).join(',\n')}\n  ],\n  "RobPointFilesCount": ${ptF.length},\n  "RobPointFiles": [\n${ptF.map(p=>`    "${p}"`).join(',\n')}\n  ]\n}`;
+
+        return `{\n  "FileType": "RobotProjectConfigFile",\n  "Company": "Inovance",\n  "MajorVersion": 2,\n  "MinorVersion": 1,\n  "IsMainActive": true,\n  "MultiTaskCount": ${tasks.length},\n  "MultiTaskInfos": [\n${tasks.join(',\n')}\n  ],\n  "ProgramFilesCount": ${progFiles.length},\n  "ProgramFiles": [\n${progFiles.map(p => `    "${p}"`).join(',\n')}\n  ],\n  "RobPointFilesCount": ${ptF.length},\n  "RobPointFiles": [\n${ptF.map(p => `    "${p}"`).join(',\n')}\n  ]\n}`;
     },
     RemoteIOInfo(options) {
         let t = Assets.RemoteIO.replace(/Time="[^"]*"/, `Time="${TemplateHelper.getNow()}"`);
@@ -355,8 +355,8 @@ EndFunc;
     },
     RobPointMapping(options) {
         let t = `FileInfo\n    FileType="PosMappingFile"\n    Version="1.0"\n    SystemVersion="V4R24"\n    RobotName="${options.RobotName}"\n    Time="${TemplateHelper.getNow()}"\n    CheckCode="558447AB"\nEndFileInfo\n0-P.pts\n`;
-        if(options.EnableMultiRecipe) {
-            for(let i=1; i<options.RecipeCount; i++) t += `${i}-P${i.toString().padStart(2, '0')}.pts\n`;
+        if (options.EnableMultiRecipe) {
+            for (let i = 1; i < options.RecipeCount; i++) t += `${i}-P${i.toString().padStart(2, '0')}.pts\n`;
         }
         return t;
     },
@@ -364,7 +364,7 @@ EndFunc;
         let hasCalibPlc = false, hasPeeling = false, hasVisionIo = false;
         let hasVacuum = false, hasGripper = false, hasTrash = false;
         let stageCount = 0;
-        
+
         steps.forEach(s => {
             if (s.WorkMethod === "Calibration" && s.ToolType === "PLC (IO)") hasCalibPlc = true;
             if (s.WorkType === "Peeling" || s.WorkMethod === "Peeling") hasPeeling = true;
@@ -377,52 +377,52 @@ EndFunc;
 
         // 1. InputBitLabels
         let inBits = [
-            {nIndex: 512, sLabel: "xStart_prog", sDescription: "Start program", sOriginalName: "IN[512]"},
-            {nIndex: 513, sLabel: "xStop_prog", sDescription: "Stop program", sOriginalName: "IN[513]"},
-            {nIndex: 514, sLabel: "xReset_prog", sDescription: "Reset program", sOriginalName: "IN[514]"},
-            {nIndex: 515, sLabel: "xReset_alarm", sDescription: "Clear alarm", sOriginalName: "IN[515]"},
-            {nIndex: 519, sLabel: "xRobot_homing", sDescription: "", sOriginalName: "IN[519]"},
+            { nIndex: 512, sLabel: "xStart_prog", sDescription: "Start program", sOriginalName: "IN[512]" },
+            { nIndex: 513, sLabel: "xStop_prog", sDescription: "Stop program", sOriginalName: "IN[513]" },
+            { nIndex: 514, sLabel: "xReset_prog", sDescription: "Reset program", sOriginalName: "IN[514]" },
+            { nIndex: 515, sLabel: "xReset_alarm", sDescription: "Clear alarm", sOriginalName: "IN[515]" },
+            { nIndex: 519, sLabel: "xRobot_homing", sDescription: "", sOriginalName: "IN[519]" },
         ];
 
         if (options.EnableTeachingMode) {
             inBits.push(
-                {nIndex: 520, sLabel: "xTeaching_mode", sDescription: "", sOriginalName: "IN[520]"},
-                {nIndex: 521, sLabel: "xTeaching_save", sDescription: "", sOriginalName: "IN[521]"},
-                {nIndex: 522, sLabel: "xTeaching_cancel", sDescription: "", sOriginalName: "IN[522]"}
+                { nIndex: 520, sLabel: "xTeaching_mode", sDescription: "", sOriginalName: "IN[520]" },
+                { nIndex: 521, sLabel: "xTeaching_save", sDescription: "", sOriginalName: "IN[521]" },
+                { nIndex: 522, sLabel: "xTeaching_cancel", sDescription: "", sOriginalName: "IN[522]" }
             );
         }
 
         let baseInIdx = 528;
-        steps.forEach(s => { inBits.push({nIndex: baseInIdx, sLabel: `xP${s.No}_wait_pos_start`, sDescription: "", sOriginalName: `IN[${baseInIdx}]`}); baseInIdx++; });
+        steps.forEach(s => { inBits.push({ nIndex: baseInIdx, sLabel: `xP${s.No}_wait_pos_start`, sDescription: "", sOriginalName: `IN[${baseInIdx}]` }); baseInIdx++; });
         let baseWorkInIdx = 544;
-        steps.forEach(s => { inBits.push({nIndex: baseWorkInIdx, sLabel: `xP${s.No}_work_pos_start`, sDescription: "", sOriginalName: `IN[${baseWorkInIdx}]`}); baseWorkInIdx++; });
-        if (hasCalibPlc) { inBits.push({nIndex: 576, sLabel: "xVision_move_next", sDescription: "", sOriginalName: "IN[576]"}, {nIndex: 577, sLabel: "xVision_cali_comp", sDescription: "", sOriginalName: "IN[577]"}); }
-        if (hasPeeling) { inBits.push({nIndex: 568, sLabel: "xPeel_start", sDescription: "", sOriginalName: "IN[568]"}); }
-        
+        steps.forEach(s => { inBits.push({ nIndex: baseWorkInIdx, sLabel: `xP${s.No}_work_pos_start`, sDescription: "", sOriginalName: `IN[${baseWorkInIdx}]` }); baseWorkInIdx++; });
+        if (hasCalibPlc) { inBits.push({ nIndex: 576, sLabel: "xVision_move_next", sDescription: "", sOriginalName: "IN[576]" }, { nIndex: 577, sLabel: "xVision_cali_comp", sDescription: "", sOriginalName: "IN[577]" }); }
+        if (hasPeeling) { inBits.push({ nIndex: 568, sLabel: "xPeel_start", sDescription: "", sOriginalName: "IN[568]" }); }
+
         if (options.EnableToolControl) {
             const isDIO = options.ToolControlType === "DIO";
             if (hasVacuum) {
                 if (isDIO) {
-                    inBits.push({nIndex: 0, sLabel: "xTool_vac_on_chk", sDescription: "DIO Tool", sOriginalName: "IN[0]"}, {nIndex: 1, sLabel: "xTool_vac_off_chk", sDescription: "DIO Tool", sOriginalName: "IN[1]"});
-                    inBits.push({nIndex: 608, sLabel: "xTool_vac_on_REQ", sDescription: "COMM Tool", sOriginalName: "IN[608]"}, {nIndex: 609, sLabel: "xTool_vac_off_REQ", sDescription: "COMM Tool", sOriginalName: "IN[609]"});
+                    inBits.push({ nIndex: 0, sLabel: "xTool_vac_on_chk", sDescription: "DIO Tool", sOriginalName: "IN[0]" }, { nIndex: 1, sLabel: "xTool_vac_off_chk", sDescription: "DIO Tool", sOriginalName: "IN[1]" });
+                    inBits.push({ nIndex: 608, sLabel: "xTool_vac_on_REQ", sDescription: "COMM Tool", sOriginalName: "IN[608]" }, { nIndex: 609, sLabel: "xTool_vac_off_REQ", sDescription: "COMM Tool", sOriginalName: "IN[609]" });
                 } else {
-                    inBits.push({nIndex: 608, sLabel: "xTool_vac_on", sDescription: "", sOriginalName: "IN[608]"}, {nIndex: 609, sLabel: "xTool_vac_off", sDescription: "", sOriginalName: "IN[609]"});
+                    inBits.push({ nIndex: 608, sLabel: "xTool_vac_on", sDescription: "", sOriginalName: "IN[608]" }, { nIndex: 609, sLabel: "xTool_vac_off", sDescription: "", sOriginalName: "IN[609]" });
                 }
             }
             if (hasGripper) {
                 if (isDIO) {
-                    inBits.push({nIndex: 2, sLabel: "xTool_grip_chk", sDescription: "DIO Tool", sOriginalName: "IN[2]"}, {nIndex: 3, sLabel: "xTool_ungrip_chk", sDescription: "DIO Tool", sOriginalName: "IN[3]"});
-                    inBits.push({nIndex: 610, sLabel: "xTool_grip_REQ", sDescription: "COMM Tool", sOriginalName: "IN[610]"}, {nIndex: 611, sLabel: "xTool_ungrip_REQ", sDescription: "COMM Tool", sOriginalName: "IN[611]"});
+                    inBits.push({ nIndex: 2, sLabel: "xTool_grip_chk", sDescription: "DIO Tool", sOriginalName: "IN[2]" }, { nIndex: 3, sLabel: "xTool_ungrip_chk", sDescription: "DIO Tool", sOriginalName: "IN[3]" });
+                    inBits.push({ nIndex: 610, sLabel: "xTool_grip_REQ", sDescription: "COMM Tool", sOriginalName: "IN[610]" }, { nIndex: 611, sLabel: "xTool_ungrip_REQ", sDescription: "COMM Tool", sOriginalName: "IN[611]" });
                 } else {
-                    inBits.push({nIndex: 610, sLabel: "xTool_grip", sDescription: "", sOriginalName: "IN[610]"}, {nIndex: 611, sLabel: "xTool_ungrip", sDescription: "", sOriginalName: "IN[611]"});
+                    inBits.push({ nIndex: 610, sLabel: "xTool_grip", sDescription: "", sOriginalName: "IN[610]" }, { nIndex: 611, sLabel: "xTool_ungrip", sDescription: "", sOriginalName: "IN[611]" });
                 }
             }
             if (hasTrash) {
                 if (isDIO) {
-                    inBits.push({nIndex: 4, sLabel: "xTrash_grip_chk", sDescription: "DIO Tool", sOriginalName: "IN[4]"}, {nIndex: 5, sLabel: "xTrash_ungrip_chk", sDescription: "DIO Tool", sOriginalName: "IN[5]"});
-                    inBits.push({nIndex: 612, sLabel: "xTrash_grip_REQ", sDescription: "COMM Tool", sOriginalName: "IN[612]"}, {nIndex: 613, sLabel: "xTool_ungrip_REQ", sDescription: "COMM Tool", sOriginalName: "IN[613]"});
+                    inBits.push({ nIndex: 4, sLabel: "xTrash_grip_chk", sDescription: "DIO Tool", sOriginalName: "IN[4]" }, { nIndex: 5, sLabel: "xTrash_ungrip_chk", sDescription: "DIO Tool", sOriginalName: "IN[5]" });
+                    inBits.push({ nIndex: 612, sLabel: "xTrash_grip_REQ", sDescription: "COMM Tool", sOriginalName: "IN[612]" }, { nIndex: 613, sLabel: "xTool_ungrip_REQ", sDescription: "COMM Tool", sOriginalName: "IN[613]" });
                 } else {
-                    inBits.push({nIndex: 612, sLabel: "xTrash_grip", sDescription: "", sOriginalName: "IN[612]"}, {nIndex: 613, sLabel: "xTrash_ungrip", sDescription: "", sOriginalName: "IN[613]"});
+                    inBits.push({ nIndex: 612, sLabel: "xTrash_grip", sDescription: "", sOriginalName: "IN[612]" }, { nIndex: 613, sLabel: "xTrash_ungrip", sDescription: "", sOriginalName: "IN[613]" });
                 }
             }
             let curStageInIdx = 614;
@@ -430,14 +430,14 @@ EndFunc;
             for (let i = 1; i <= stageCount; i++) {
                 let prefix = i === 1 ? "Stage" : `Stage${i}`;
                 if (isDIO) {
-                    inBits.push({nIndex: curDioInIdx, sLabel: `x${prefix}_vac_on_chk`, sDescription: "DIO Tool", sOriginalName: `IN[${curDioInIdx}]`});
-                    inBits.push({nIndex: curDioInIdx+1, sLabel: `x${prefix}_vac_off_chk`, sDescription: "DIO Tool", sOriginalName: `IN[${curDioInIdx+1}]`});
-                    inBits.push({nIndex: curStageInIdx, sLabel: `x${prefix}_vac_on_REQ`, sDescription: "COMM Tool", sOriginalName: `IN[${curStageInIdx}]`});
-                    inBits.push({nIndex: curStageInIdx+1, sLabel: `x${prefix}_vac_off_REQ`, sDescription: "COMM Tool", sOriginalName: `IN[${curStageInIdx+1}]`});
+                    inBits.push({ nIndex: curDioInIdx, sLabel: `x${prefix}_vac_on_chk`, sDescription: "DIO Tool", sOriginalName: `IN[${curDioInIdx}]` });
+                    inBits.push({ nIndex: curDioInIdx + 1, sLabel: `x${prefix}_vac_off_chk`, sDescription: "DIO Tool", sOriginalName: `IN[${curDioInIdx + 1}]` });
+                    inBits.push({ nIndex: curStageInIdx, sLabel: `x${prefix}_vac_on_REQ`, sDescription: "COMM Tool", sOriginalName: `IN[${curStageInIdx}]` });
+                    inBits.push({ nIndex: curStageInIdx + 1, sLabel: `x${prefix}_vac_off_REQ`, sDescription: "COMM Tool", sOriginalName: `IN[${curStageInIdx + 1}]` });
                     curDioInIdx += 2;
                 } else {
-                    inBits.push({nIndex: curStageInIdx, sLabel: `x${prefix}_vac_on`, sDescription: "", sOriginalName: `IN[${curStageInIdx}]`});
-                    inBits.push({nIndex: curStageInIdx+1, sLabel: `x${prefix}_vac_off`, sDescription: "", sOriginalName: `IN[${curStageInIdx+1}]`});
+                    inBits.push({ nIndex: curStageInIdx, sLabel: `x${prefix}_vac_on`, sDescription: "", sOriginalName: `IN[${curStageInIdx}]` });
+                    inBits.push({ nIndex: curStageInIdx + 1, sLabel: `x${prefix}_vac_off`, sDescription: "", sOriginalName: `IN[${curStageInIdx + 1}]` });
                 }
                 curStageInIdx += 2;
             }
@@ -446,78 +446,78 @@ EndFunc;
         // 3. InputWordLabels
         let inWords = [];
         if (hasVisionIo) {
-            inWords.push({nIndex: 40, sLabel: "xwVision_offset_X", sDescription: "2Word_/10000", sOriginalName: "INW[40]"});
-            inWords.push({nIndex: 42, sLabel: "xwVision_offset_Y", sDescription: "2Word_/10000", sOriginalName: "INW[42]"});
-            inWords.push({nIndex: 44, sLabel: "xwVision_offset_A", sDescription: "2Word_/10000", sOriginalName: "INW[44]"});
+            inWords.push({ nIndex: 40, sLabel: "xwVision_offset_X", sDescription: "2Word_/10000", sOriginalName: "INW[40]" });
+            inWords.push({ nIndex: 42, sLabel: "xwVision_offset_Y", sDescription: "2Word_/10000", sOriginalName: "INW[42]" });
+            inWords.push({ nIndex: 44, sLabel: "xwVision_offset_A", sDescription: "2Word_/10000", sOriginalName: "INW[44]" });
         }
-        if (options.EnableMultiRecipe) inWords.push({nIndex: 46, sLabel: "xwP_file_switch", sDescription: "", sOriginalName: "INW[46]"});
-        inWords.push({nIndex: 47, sLabel: "xwSet_speed", sDescription: "Speed settings", sOriginalName: "INW[47]"});
-        if (hasPeeling) inWords.push({nIndex: 48, sLabel: "xwPeel_speed", sDescription: "", sOriginalName: "INW[48]"});
+        if (options.EnableMultiRecipe) inWords.push({ nIndex: 46, sLabel: "xwP_file_switch", sDescription: "", sOriginalName: "INW[46]" });
+        inWords.push({ nIndex: 47, sLabel: "xwSet_speed", sDescription: "Speed settings", sOriginalName: "INW[47]" });
+        if (hasPeeling) inWords.push({ nIndex: 48, sLabel: "xwPeel_speed", sDescription: "", sOriginalName: "INW[48]" });
         let valW = 49;
-        for (let j=0; j<steps.length; j++) {
+        for (let j = 0; j < steps.length; j++) {
             let s = steps[j];
-            if(s.No > 10) break;
-            inWords.push({nIndex: valW, sLabel: `xwP${s.No}_offset_X`, sDescription: "2 Word, /10000", sOriginalName: `INW[${valW}]`});
-            inWords.push({nIndex: valW+2, sLabel: `xwP${s.No}_offset_Y`, sDescription: "2 Word, /10000", sOriginalName: `INW[${valW+2}]`});
-            inWords.push({nIndex: valW+4, sLabel: `xwP${s.No}_offset_Z`, sDescription: "2 Word, /10000", sOriginalName: `INW[${valW+4}]`});
-            inWords.push({nIndex: valW+6, sLabel: `xwP${s.No}_offset_A`, sDescription: "2 Word, /10000", sOriginalName: `INW[${valW+6}]`});
+            if (s.No > 10) break;
+            inWords.push({ nIndex: valW, sLabel: `xwP${s.No}_offset_X`, sDescription: "2 Word, /10000", sOriginalName: `INW[${valW}]` });
+            inWords.push({ nIndex: valW + 2, sLabel: `xwP${s.No}_offset_Y`, sDescription: "2 Word, /10000", sOriginalName: `INW[${valW + 2}]` });
+            inWords.push({ nIndex: valW + 4, sLabel: `xwP${s.No}_offset_Z`, sDescription: "2 Word, /10000", sOriginalName: `INW[${valW + 4}]` });
+            inWords.push({ nIndex: valW + 6, sLabel: `xwP${s.No}_offset_A`, sDescription: "2 Word, /10000", sOriginalName: `INW[${valW + 6}]` });
             valW += 8;
         }
 
         // 4. OutputBitLabels
         let outBits = [
-            {nIndex: 512, sLabel: "yProg_run_sts", sDescription: "Program run status", sOriginalName: "OUT[512]"},
-            {nIndex: 513, sLabel: "yProg_stop_sts", sDescription: "Program stopped", sOriginalName: "OUT[513]"},
-            {nIndex: 514, sLabel: "yProg_reset_sts", sDescription: "Program reset successful", sOriginalName: "OUT[514]"},
-            {nIndex: 515, sLabel: "yAlarm_sts", sDescription: "System fault status", sOriginalName: "OUT[515]"},
-            {nIndex: 519, sLabel: "yRobot_home_sts", sDescription: "", sOriginalName: "OUT[519]"}
+            { nIndex: 512, sLabel: "yProg_run_sts", sDescription: "Program run status", sOriginalName: "OUT[512]" },
+            { nIndex: 513, sLabel: "yProg_stop_sts", sDescription: "Program stopped", sOriginalName: "OUT[513]" },
+            { nIndex: 514, sLabel: "yProg_reset_sts", sDescription: "Program reset successful", sOriginalName: "OUT[514]" },
+            { nIndex: 515, sLabel: "yAlarm_sts", sDescription: "System fault status", sOriginalName: "OUT[515]" },
+            { nIndex: 519, sLabel: "yRobot_home_sts", sDescription: "", sOriginalName: "OUT[519]" }
         ];
         if (options.EnableTeachingMode) {
-            outBits.push({nIndex: 520, sLabel: "yTeaching_running", sDescription: "", sOriginalName: "OUT[520]"});
+            outBits.push({ nIndex: 520, sLabel: "yTeaching_running", sDescription: "", sOriginalName: "OUT[520]" });
         }
         // yP{n}_wait_pos_comp: OUT[528..527+N]
         let baseOutIdx = 528;
-        steps.forEach(s => { outBits.push({nIndex: baseOutIdx, sLabel: `yP${s.No}_wait_pos_comp`, sDescription: "", sOriginalName: `OUT[${baseOutIdx}]`}); baseOutIdx++; });
+        steps.forEach(s => { outBits.push({ nIndex: baseOutIdx, sLabel: `yP${s.No}_wait_pos_comp`, sDescription: "", sOriginalName: `OUT[${baseOutIdx}]` }); baseOutIdx++; });
         // yP{n}_work_pos_comp: OUT[544..543+N]
         baseOutIdx = 544;
-        steps.forEach(s => { outBits.push({nIndex: baseOutIdx, sLabel: `yP${s.No}_work_pos_comp`, sDescription: "", sOriginalName: `OUT[${baseOutIdx}]`}); baseOutIdx++; });
-        
+        steps.forEach(s => { outBits.push({ nIndex: baseOutIdx, sLabel: `yP${s.No}_work_pos_comp`, sDescription: "", sOriginalName: `OUT[${baseOutIdx}]` }); baseOutIdx++; });
+
         if (options.EnableProcessBusy) {
             // yP{n}_wait_pos_busy: OUT[560..559+N]
             baseOutIdx = 560;
-            steps.forEach(s => { outBits.push({nIndex: baseOutIdx, sLabel: `yP${s.No}_wait_pos_busy`, sDescription: "", sOriginalName: `OUT[${baseOutIdx}]`}); baseOutIdx++; });
+            steps.forEach(s => { outBits.push({ nIndex: baseOutIdx, sLabel: `yP${s.No}_wait_pos_busy`, sDescription: "", sOriginalName: `OUT[${baseOutIdx}]` }); baseOutIdx++; });
             // yP{n}_work_pos_busy: OUT[576..575+N]
             baseOutIdx = 576;
-            steps.forEach(s => { outBits.push({nIndex: baseOutIdx, sLabel: `yP${s.No}_work_pos_busy`, sDescription: "", sOriginalName: `OUT[${baseOutIdx}]`}); baseOutIdx++; });
+            steps.forEach(s => { outBits.push({ nIndex: baseOutIdx, sLabel: `yP${s.No}_work_pos_busy`, sDescription: "", sOriginalName: `OUT[${baseOutIdx}]` }); baseOutIdx++; });
         }
 
-        if (hasCalibPlc) outBits.push({nIndex: 592, sLabel: "yVision_move_comp", sDescription: "", sOriginalName: "OUT[592]"});
-        if (hasPeeling) outBits.push({nIndex: 600, sLabel: "yPeel_pos_comp", sDescription: "", sOriginalName: "OUT[600]"});
+        if (hasCalibPlc) outBits.push({ nIndex: 592, sLabel: "yVision_move_comp", sDescription: "", sOriginalName: "OUT[592]" });
+        if (hasPeeling) outBits.push({ nIndex: 600, sLabel: "yPeel_pos_comp", sDescription: "", sOriginalName: "OUT[600]" });
 
         if (options.EnableToolControl) {
             const isDIO = options.ToolControlType === "DIO";
             if (hasVacuum) {
                 if (isDIO) {
-                    outBits.push({nIndex: 0, sLabel: "yTool_vac_on", sDescription: "DIO Tool", sOriginalName: "OUT[0]"}, {nIndex: 1, sLabel: "yTool_vac_off", sDescription: "DIO Tool", sOriginalName: "OUT[1]"});
-                    outBits.push({nIndex: 608, sLabel: "yTool_vac_on_sts", sDescription: "COMM Tool", sOriginalName: "OUT[608]"}, {nIndex: 609, sLabel: "yTool_vac_off_sts", sDescription: "COMM Tool", sOriginalName: "OUT[609]"});
+                    outBits.push({ nIndex: 0, sLabel: "yTool_vac_on", sDescription: "DIO Tool", sOriginalName: "OUT[0]" }, { nIndex: 1, sLabel: "yTool_vac_off", sDescription: "DIO Tool", sOriginalName: "OUT[1]" });
+                    outBits.push({ nIndex: 608, sLabel: "yTool_vac_on_sts", sDescription: "COMM Tool", sOriginalName: "OUT[608]" }, { nIndex: 609, sLabel: "yTool_vac_off_sts", sDescription: "COMM Tool", sOriginalName: "OUT[609]" });
                 } else {
-                    outBits.push({nIndex: 608, sLabel: "yTool_vac_on_REQ", sDescription: "", sOriginalName: "OUT[608]"}, {nIndex: 609, sLabel: "yTool_vac_off_REQ", sDescription: "", sOriginalName: "OUT[609]"});
+                    outBits.push({ nIndex: 608, sLabel: "yTool_vac_on_REQ", sDescription: "", sOriginalName: "OUT[608]" }, { nIndex: 609, sLabel: "yTool_vac_off_REQ", sDescription: "", sOriginalName: "OUT[609]" });
                 }
             }
             if (hasGripper) {
                 if (isDIO) {
-                    outBits.push({nIndex: 2, sLabel: "yTool_grip", sDescription: "DIO Tool", sOriginalName: "OUT[2]"}, {nIndex: 3, sLabel: "yTool_ungrip", sDescription: "DIO Tool", sOriginalName: "OUT[3]"});
-                    outBits.push({nIndex: 610, sLabel: "yTool_grip_sts", sDescription: "COMM Tool", sOriginalName: "OUT[610]"}, {nIndex: 611, sLabel: "yTool_ungrip_sts", sDescription: "COMM Tool", sOriginalName: "OUT[611]"});
+                    outBits.push({ nIndex: 2, sLabel: "yTool_grip", sDescription: "DIO Tool", sOriginalName: "OUT[2]" }, { nIndex: 3, sLabel: "yTool_ungrip", sDescription: "DIO Tool", sOriginalName: "OUT[3]" });
+                    outBits.push({ nIndex: 610, sLabel: "yTool_grip_sts", sDescription: "COMM Tool", sOriginalName: "OUT[610]" }, { nIndex: 611, sLabel: "yTool_ungrip_sts", sDescription: "COMM Tool", sOriginalName: "OUT[611]" });
                 } else {
-                    outBits.push({nIndex: 610, sLabel: "yTool_grip_REQ", sDescription: "", sOriginalName: "OUT[610]"}, {nIndex: 611, sLabel: "yTool_ungrip_REQ", sDescription: "", sOriginalName: "OUT[611]"});
+                    outBits.push({ nIndex: 610, sLabel: "yTool_grip_REQ", sDescription: "", sOriginalName: "OUT[610]" }, { nIndex: 611, sLabel: "yTool_ungrip_REQ", sDescription: "", sOriginalName: "OUT[611]" });
                 }
             }
             if (hasTrash) {
                 if (isDIO) {
-                    outBits.push({nIndex: 4, sLabel: "yTrash_grip", sDescription: "DIO Tool", sOriginalName: "OUT[4]"}, {nIndex: 5, sLabel: "yTrash_ungrip", sDescription: "DIO Tool", sOriginalName: "OUT[5]"});
-                    outBits.push({nIndex: 612, sLabel: "yTrash_grip_sts", sDescription: "COMM Tool", sOriginalName: "OUT[612]"}, {nIndex: 613, sLabel: "yTrash_ungrip_sts", sDescription: "COMM Tool", sOriginalName: "OUT[613]"});
+                    outBits.push({ nIndex: 4, sLabel: "yTrash_grip", sDescription: "DIO Tool", sOriginalName: "OUT[4]" }, { nIndex: 5, sLabel: "yTrash_ungrip", sDescription: "DIO Tool", sOriginalName: "OUT[5]" });
+                    outBits.push({ nIndex: 612, sLabel: "yTrash_grip_sts", sDescription: "COMM Tool", sOriginalName: "OUT[612]" }, { nIndex: 613, sLabel: "yTrash_ungrip_sts", sDescription: "COMM Tool", sOriginalName: "OUT[613]" });
                 } else {
-                    outBits.push({nIndex: 612, sLabel: "yTrash_grip_REQ", sDescription: "", sOriginalName: "OUT[612]"}, {nIndex: 613, sLabel: "yTrash_ungrip_REQ", sDescription: "", sOriginalName: "OUT[613]"});
+                    outBits.push({ nIndex: 612, sLabel: "yTrash_grip_REQ", sDescription: "", sOriginalName: "OUT[612]" }, { nIndex: 613, sLabel: "yTrash_ungrip_REQ", sDescription: "", sOriginalName: "OUT[613]" });
                 }
             }
             let curStageOutIdx = 614;
@@ -525,14 +525,14 @@ EndFunc;
             for (let i = 1; i <= stageCount; i++) {
                 let prefix = i === 1 ? "Stage" : `Stage${i}`;
                 if (isDIO) {
-                    outBits.push({nIndex: curDioOutIdx, sLabel: `y${prefix}_vac_on`, sDescription: "DIO Tool", sOriginalName: `OUT[${curDioOutIdx}]`});
-                    outBits.push({nIndex: curDioOutIdx+1, sLabel: `y${prefix}_vac_off`, sDescription: "DIO Tool", sOriginalName: `OUT[${curDioOutIdx+1}]`});
-                    outBits.push({nIndex: curStageOutIdx, sLabel: `y${prefix}_vac_on_sts`, sDescription: "COMM Tool", sOriginalName: `OUT[${curStageOutIdx}]`});
-                    outBits.push({nIndex: curStageOutIdx+1, sLabel: `y${prefix}_vac_off_sts`, sDescription: "COMM Tool", sOriginalName: `OUT[${curStageOutIdx+1}]`});
+                    outBits.push({ nIndex: curDioOutIdx, sLabel: `y${prefix}_vac_on`, sDescription: "DIO Tool", sOriginalName: `OUT[${curDioOutIdx}]` });
+                    outBits.push({ nIndex: curDioOutIdx + 1, sLabel: `y${prefix}_vac_off`, sDescription: "DIO Tool", sOriginalName: `OUT[${curDioOutIdx + 1}]` });
+                    outBits.push({ nIndex: curStageOutIdx, sLabel: `y${prefix}_vac_on_sts`, sDescription: "COMM Tool", sOriginalName: `OUT[${curStageOutIdx}]` });
+                    outBits.push({ nIndex: curStageOutIdx + 1, sLabel: `y${prefix}_vac_off_sts`, sDescription: "COMM Tool", sOriginalName: `OUT[${curStageOutIdx + 1}]` });
                     curDioOutIdx += 2;
                 } else {
-                    outBits.push({nIndex: curStageOutIdx, sLabel: `y${prefix}_vac_on_REQ`, sDescription: "", sOriginalName: `OUT[${curStageOutIdx}]`});
-                    outBits.push({nIndex: curStageOutIdx+1, sLabel: `y${prefix}_vac_off_REQ`, sDescription: "", sOriginalName: `OUT[${curStageOutIdx+1}]`});
+                    outBits.push({ nIndex: curStageOutIdx, sLabel: `y${prefix}_vac_on_REQ`, sDescription: "", sOriginalName: `OUT[${curStageOutIdx}]` });
+                    outBits.push({ nIndex: curStageOutIdx + 1, sLabel: `y${prefix}_vac_off_REQ`, sDescription: "", sOriginalName: `OUT[${curStageOutIdx + 1}]` });
                 }
                 curStageOutIdx += 2;
             }
@@ -540,40 +540,40 @@ EndFunc;
 
         // 5. OutputWordLabels
         let outWords = [];
-        if(options.EnableMultiRecipe) outWords.push({nIndex: 46, sLabel: "ywCur_P_file", sDescription: "", sOriginalName: "OUTW[46]"});
+        if (options.EnableMultiRecipe) outWords.push({ nIndex: 46, sLabel: "ywCur_P_file", sDescription: "", sOriginalName: "OUTW[46]" });
         outWords.push(
-            {nIndex: 47, sLabel: "ywCur_speed", sDescription: "", sOriginalName: "OUTW[47]"},
-            {nIndex: 48, sLabel: "ywCur_control_mode", sDescription: "", sOriginalName: "OUTW[48]"},
-            {nIndex: 49, sLabel: "ywCur_mode", sDescription: "", sOriginalName: "OUTW[49]"},
-            {nIndex: 50, sLabel: "ywCur_alarm_code", sDescription: "", sOriginalName: "OUTW[50]"},
-            {nIndex: 51, sLabel: "ywCur_pos_X", sDescription: "", sOriginalName: "OUTW[51]"},
-            {nIndex: 53, sLabel: "ywCur_pos_Y", sDescription: "", sOriginalName: "OUTW[53]"},
-            {nIndex: 55, sLabel: "ywCur_pos_Z", sDescription: "", sOriginalName: "OUTW[55]"},
-            {nIndex: 57, sLabel: "ywCur_pos_A", sDescription: "", sOriginalName: "OUTW[57]"},
-            {nIndex: 59, sLabel: "ywCur_pos_B", sDescription: "", sOriginalName: "OUTW[59]"},
-            {nIndex: 61, sLabel: "ywCur_pos_C", sDescription: "", sOriginalName: "OUTW[61]"}
+            { nIndex: 47, sLabel: "ywCur_speed", sDescription: "", sOriginalName: "OUTW[47]" },
+            { nIndex: 48, sLabel: "ywCur_control_mode", sDescription: "", sOriginalName: "OUTW[48]" },
+            { nIndex: 49, sLabel: "ywCur_mode", sDescription: "", sOriginalName: "OUTW[49]" },
+            { nIndex: 50, sLabel: "ywCur_alarm_code", sDescription: "", sOriginalName: "OUTW[50]" },
+            { nIndex: 51, sLabel: "ywCur_pos_X", sDescription: "", sOriginalName: "OUTW[51]" },
+            { nIndex: 53, sLabel: "ywCur_pos_Y", sDescription: "", sOriginalName: "OUTW[53]" },
+            { nIndex: 55, sLabel: "ywCur_pos_Z", sDescription: "", sOriginalName: "OUTW[55]" },
+            { nIndex: 57, sLabel: "ywCur_pos_A", sDescription: "", sOriginalName: "OUTW[57]" },
+            { nIndex: 59, sLabel: "ywCur_pos_B", sDescription: "", sOriginalName: "OUTW[59]" },
+            { nIndex: 61, sLabel: "ywCur_pos_C", sDescription: "", sOriginalName: "OUTW[61]" }
         );
-        if (options.EnableTcpSpeed) outWords.push({nIndex: 63, sLabel: "ywCur_TCP_speed", sDescription: "", sOriginalName: "OUTW[63]"});
+        if (options.EnableTcpSpeed) outWords.push({ nIndex: 63, sLabel: "ywCur_TCP_speed", sDescription: "", sOriginalName: "OUTW[63]" });
         if (options.EnableTorque) {
-            outWords.push({nIndex: 64, sLabel: "ywCur_J1_torque", sDescription: "", sOriginalName: "OUTW[64]"}, {nIndex: 65, sLabel: "ywCur_J2_torque", sDescription: "", sOriginalName: "OUTW[65]"}, {nIndex: 66, sLabel: "ywCur_J3_torque", sDescription: "", sOriginalName: "OUTW[66]"}, {nIndex: 67, sLabel: "ywCur_J4_torque", sDescription: "", sOriginalName: "OUTW[67]"}, {nIndex: 68, sLabel: "ywCur_J5_torque", sDescription: "", sOriginalName: "OUTW[68]"}, {nIndex: 69, sLabel: "ywCur_J6_torque", sDescription: "", sOriginalName: "OUTW[69]"});
+            outWords.push({ nIndex: 64, sLabel: "ywCur_J1_torque", sDescription: "", sOriginalName: "OUTW[64]" }, { nIndex: 65, sLabel: "ywCur_J2_torque", sDescription: "", sOriginalName: "OUTW[65]" }, { nIndex: 66, sLabel: "ywCur_J3_torque", sDescription: "", sOriginalName: "OUTW[66]" }, { nIndex: 67, sLabel: "ywCur_J4_torque", sDescription: "", sOriginalName: "OUTW[67]" }, { nIndex: 68, sLabel: "ywCur_J5_torque", sDescription: "", sOriginalName: "OUTW[68]" }, { nIndex: 69, sLabel: "ywCur_J6_torque", sDescription: "", sOriginalName: "OUTW[69]" });
         }
 
         let bVars = [
-            {nIndex: 0, sLabel: "B_T_num", sDescription: "", sOriginalName: "B[0]"},
-            {nIndex: 1, sLabel: "B_W_num", sDescription: "", sOriginalName: "B[1]"},
-            {nIndex: 2, sLabel: "B_PR_num", sDescription: "", sOriginalName: "B[2]"}
+            { nIndex: 0, sLabel: "B_T_num", sDescription: "", sOriginalName: "B[0]" },
+            { nIndex: 1, sLabel: "B_W_num", sDescription: "", sOriginalName: "B[1]" },
+            { nIndex: 2, sLabel: "B_PR_num", sDescription: "", sOriginalName: "B[2]" }
         ];
-        if (hasCalibPlc) bVars.push({nIndex: 5, sLabel: "B_Vision_cali_count", sDescription: "", sOriginalName: "B[5]"});
-        let rVars = [{nIndex: 0, sLabel: "R_Cur_pos", sDescription: "", sOriginalName: "R[0]"}];
+        if (hasCalibPlc) bVars.push({ nIndex: 5, sLabel: "B_Vision_cali_count", sDescription: "", sOriginalName: "B[5]" });
+        let rVars = [{ nIndex: 0, sLabel: "R_Cur_pos", sDescription: "", sOriginalName: "R[0]" }];
         let dVars = [];
-        if (options.EnableTcpSpeed) dVars.push({nIndex: 0, sLabel: "D_TCP_speed", sDescription: "", sOriginalName: "D[0]"});
+        if (options.EnableTcpSpeed) dVars.push({ nIndex: 0, sLabel: "D_TCP_speed", sDescription: "", sOriginalName: "D[0]" });
         if (options.EnableTorque) {
-            dVars.push({nIndex: 1, sLabel: "D_J1_cur_torque", sDescription: "", sOriginalName: "D[1]"}, {nIndex: 2, sLabel: "D_J2_cur_torque", sDescription: "", sOriginalName: "D[2]"}, {nIndex: 3, sLabel: "D_J3_cur_torque", sDescription: "", sOriginalName: "D[3]"}, {nIndex: 4, sLabel: "D_J4_cur_torque", sDescription: "", sOriginalName: "D[4]"}, {nIndex: 5, sLabel: "D_J5_cur_torque", sDescription: "", sOriginalName: "D[5]"}, {nIndex: 6, sLabel: "D_J6_cur_torque", sDescription: "", sOriginalName: "D[6]"});
-            dVars.push({nIndex: 7, sLabel: "D_J1_max_torque", sDescription: "", sOriginalName: "D[7]"}, {nIndex: 8, sLabel: "D_J2_max_torque", sDescription: "", sOriginalName: "D[8]"}, {nIndex: 9, sLabel: "D_J3_max_torque", sDescription: "", sOriginalName: "D[9]"}, {nIndex: 10, sLabel: "D_J4_max_torque", sDescription: "", sOriginalName: "D[10]"}, {nIndex: 11, sLabel: "D_J5_max_torque", sDescription: "", sOriginalName: "D[11]"}, {nIndex: 12, sLabel: "D_J6_max_torque", sDescription: "", sOriginalName: "D[12]"});
+            dVars.push({ nIndex: 1, sLabel: "D_J1_cur_torque", sDescription: "", sOriginalName: "D[1]" }, { nIndex: 2, sLabel: "D_J2_cur_torque", sDescription: "", sOriginalName: "D[2]" }, { nIndex: 3, sLabel: "D_J3_cur_torque", sDescription: "", sOriginalName: "D[3]" }, { nIndex: 4, sLabel: "D_J4_cur_torque", sDescription: "", sOriginalName: "D[4]" }, { nIndex: 5, sLabel: "D_J5_cur_torque", sDescription: "", sOriginalName: "D[5]" }, { nIndex: 6, sLabel: "D_J6_cur_torque", sDescription: "", sOriginalName: "D[6]" });
+            dVars.push({ nIndex: 7, sLabel: "D_J1_max_torque", sDescription: "", sOriginalName: "D[7]" }, { nIndex: 8, sLabel: "D_J2_max_torque", sDescription: "", sOriginalName: "D[8]" }, { nIndex: 9, sLabel: "D_J3_max_torque", sDescription: "", sOriginalName: "D[9]" }, { nIndex: 10, sLabel: "D_J4_max_torque", sDescription: "", sOriginalName: "D[10]" }, { nIndex: 11, sLabel: "D_J5_max_torque", sDescription: "", sOriginalName: "D[11]" }, { nIndex: 12, sLabel: "D_J6_max_torque", sDescription: "", sOriginalName: "D[12]" });
         }
 
         function createSection(name, arr) {
-            return `  "${name}": {\n    "nNumberOfLabels": ${arr.length},\n    "LabelsArray": [\n${arr.map((a,i)=>`      {\n        "nLabelId": ${i},\n        "nIndex": ${a.nIndex},\n        "sLabel": "${a.sLabel}",\n        "sDescription": "${a.sDescription}",\n        "sOriginalName": "${a.sOriginalName}"\n      }`).join(',\n')}\n    ]\n  }`;
+            return `  "${name}": {\n    "nNumberOfLabels": ${arr.length},\n    "LabelsArray": [\n${arr.map((a, i) => `      {\n        "nLabelId": ${i},\n        "nIndex": ${a.nIndex},\n        "sLabel": "${a.sLabel}",\n        "sDescription": "${a.sDescription}",\n        "sOriginalName": "${a.sOriginalName}"\n      }`).join(',\n')}\n    ]\n  }`;
         }
 
         return `{\n` +
