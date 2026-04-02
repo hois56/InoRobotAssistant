@@ -75,14 +75,17 @@ const Generator = {
         let sb = `ProgramInfo\n    Version = "S4.24"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getNowAmPm()}"\n    RobotName = "${options.RobotName}"\nEndProgramInfo\nInclude "s01_initial.pro";\n`;
         if (options.EnableToolControl) sb += `Include "s02_Tool_Control.pro";\n`;
         steps.forEach(s => sb += `Include "${s.ProcessName}.pro";\n`);
-        sb += `Start;\n    L[0]:\n`;
+        sb += `Start;\n    If Tool[1].TLoad.Mass == 0\n        Tool[1].TLoad.Mass = 7;\n    EndIf;\n    #================================================================================\n    If xwSet_speed <= 0\n        Velset Rate[1];\n    ElseIf xwSet_speed > 100\n        Velset Rate[100];\n    Else\n        Velset Rate[xwSet_speed];\n    EndIf;\n    #================================================================================\n    L[0]:\n`;
         if (options.EnableMultiRecipe) sb += `    s01_initial.Manual_set_recipe();\n`;
-        sb += `    If xwSet_speed <= 0\n        Velset Rate[1];\n    ElseIf xwSet_speed > 100\n        Velset Rate[100];\n    Else\n        Velset Rate[xwSet_speed];\n    EndIf;\n    #================================================================================\n    If xRobot_homing\n        s01_initial.Init_move_home();\n        s01_initial.Init_signal();\n    EndIf;\n    #================================================================================\n    If xReturn_wait_pos\n        Return_wait_pos();\n    EndIf;\n    #================================================================================\n    If InW[33] <> OutW[33]\n        Switch InW[33]\n`;
-        steps.forEach((s, idx) => {
-            let cv = 1 << idx;
-            sb += `            Case ${cv}:\n                ${s.ProcessName}.P${s.No}_main();\n                Break;\n`;
+        sb += `    If xRobot_homing\n        s01_initial.Init_move_home();\n        s01_initial.Init_signal();\n    EndIf;\n    #================================================================================\n    #  Process Wait pos               \n    #================================================================================\n`;
+        steps.forEach(s => {
+            sb += `    If xP${s.No}_wait_pos_start\n        ${s.ProcessName}.P${s.No}_wait_pos();\n    EndIf;\n`;
         });
-        sb += `        EndSwitch;\n    EndIf;\n    Delay T[0.1];\n    Goto L[0];\nEnd;\n#====================================================================================\nFunc Return_wait_pos()\n    Set yWait_pos_running, ON;\n    s01_initial.Return_move();\n    s01_initial.Init_signal();\n    Set yWait_pos_comp, ON;\n    Set yWait_pos_running, OFF;\nEndFunc;\n`;
+        sb += `    #================================================================================\n    #  Process Work pos               \n    #================================================================================\n    If InW[33] == 0\n`;
+        steps.forEach(s => {
+            sb += `        If xP${s.No}_work_pos_start\n            ${s.ProcessName}.P${s.No}_work_pos();\n        EndIf;\n`;
+        });
+        sb += `    EndIf;\n    #====================================================================================\n    Delay T[0.1];\n    Goto L[0];\nEnd;\n`;
         return sb;
     },
     InitialProgram(steps, options) {
@@ -93,8 +96,8 @@ const Generator = {
             if (mPos > lastPosNum) lastPosNum = mPos;
         });
         let sb = `ProgramInfo\n    Version = "S4.24"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getNowAmPm()}"\n    RobotName = "${options.RobotName}"\nEndProgramInfo\n`;
-        sb += `#====================================================================================\n#  Init Signal\n#====================================================================================\nFunc Init_signal()\n    Clear Out[528],192; #[528] ~ [719]\n    Set yRobot_homing,OFF;\nEndFunc;\n`;
-        sb += `#====================================================================================\n#  Init Move Home\n#====================================================================================\nFunc Init_move_home()\n    #================================================================================\n    #  Signal Set                  \n    #================================================================================\n    B_W_num = R_Cur_pos / 100;\n    Set yRobot_homing,ON;\n    #================================================================================\n    #  Find cur point number                  \n    #================================================================================\n    If yRobot_home_sts\n        R_Cur_pos = 0;\n    Else\n        Find_cur_point_all();\n    EndIf;\n    #================================================================================\n    Velset 50;\n    Bool return_result = Return_move();\n    If return_result == OFF\n        Velset OFF;\n        Set yRobot_homing,OFF;\n        Print "Homing Fail! Incorrect value. R_Cur_pos :  " + R_Cur_pos;\n        Alarm[15]; #Homing Error\n    EndIf;\n    #================================================================================\n    R_Cur_pos = 0;\n    Home[0],V[100];\n    Velset OFF;\n    Set yRobot_homing,OFF;\nEndFunc;\n`;
+        sb += `#====================================================================================\n#  Init Signal\n#====================================================================================\nFunc Init_signal()\n    Clear Out[528],192; #[528] ~ [719]\nEndFunc;\n`;
+        sb += `#====================================================================================\n#  Init Move Home\n#====================================================================================\nFunc Init_move_home()\n    #================================================================================\n    #  Signal Set                  \n    #================================================================================\n    B_W_num = R_Cur_pos / 100;\n    #================================================================================\n    #  Find cur point number                  \n    #================================================================================\n    If yRobot_home_sts\n        R_Cur_pos = 0;\n    Else\n        Find_cur_point_all();\n    EndIf;\n    #================================================================================\n    Velset 50;\n    Bool return_result = Return_move();\n    If return_result == OFF\n        Velset OFF;\n        Print "Homing Fail! Incorrect value. R_Cur_pos :  " + R_Cur_pos;\n        Alarm[14]; #Homing Error\n    EndIf;\n    #================================================================================\n    R_Cur_pos = 0;\n    Home[0],V[100];\n    Velset OFF;\nEndFunc;\n`;
         sb += `#====================================================================================\n#  Return Move\n#====================================================================================\nFunc Bool Return_move()\n    Int cur_proces = R_Cur_pos / 100;\n    Print "Return move Process : " + cur_proces;\n    Switch R_Cur_pos\n        Case 0: #Home\n            Break;\n`;
         steps.forEach(s => {
             let isPeeling = s.WorkType === "Peeling" || s.WorkMethod === "Peeling";
@@ -131,11 +134,11 @@ EndFunc;
 `;
         sb += `#====================================================================================\n#  Find Current Point Number\n#====================================================================================\nFunc Find_cur_point_all()\n    Int min_index;\n    Int PR_num;\n    Int last_pos_num = ${lastPosNum}; # Find range : P[0] ~ P[${lastPosNum}]\n    int i;    \n    Double pos_dist[${lastPosNum + 1}];\n    Double min_dist = 5000;\n    #================================================================================\n    LP[0] = GetCurPos();\n    For i=0,i<=last_pos_num,Step[1]\n        pos_dist[i] = Dist(P[i],LP[0]);\n        If (i % 100) >= 10 And (i % 100) <= 11\n            PR_num = i / 100;\n            LP[1] = Offset(P[i],PR[PR_num]);\n            pos_dist[i] = Dist(LP[1],LP[0]);\n        EndIf;\n        If pos_dist[i] < min_dist\n            min_dist = pos_dist[i];\n            min_index = i;\n        EndIf;\n    EndFor;\n    #================================================================================\n    If min_dist < 1 \n        Print "Current pos : P[ " + min_index + " ]";\n        R_Cur_pos = min_index;\n    Else\n        Print "Cannot find the correct point number. Proceeding to Home based on R_cur_pos.";\n    EndIf;\nEndFunc;\n`;
         if (options.EnableMultiRecipe && options.RecipeCount > 1) {
-            sb += `#====================================================================================\n#  Manual Set Recipe                     \n#====================================================================================\nFunc Manual_set_recipe() #Change recipe  \n    Switch xwP_file_switch\n        Case 0:\n            LoadPoints("P.pts");\n            Break;\n`;
+            sb += `#====================================================================================\n#  Manual Set Recipe                     \n#====================================================================================\nFunc Manual_set_recipe() #Change recipe  \n    If xwP_file_switch == ywCur_P_file\n        ret;\n    EndIf;\n    #================================================================================\n    Switch xwP_file_switch\n        Case 0:\n            LoadPoints("P.pts");\n            Break;\n`;
             for (let i = 1; i < options.RecipeCount; i++) {
                 sb += `        Case ${i}:\n            LoadPoints("P${i.toString().padStart(2, '0')}.pts");\n            Break;\n`;
             }
-            sb += `    EndSwitch;\n    Print "Manual set recipe : " + GetCurPointsFileName();\nEndFunc;\n`;
+            sb += `    EndSwitch;\n    #================================================================================\n    String P_name = GetCurPointsFileName();\n    Print "Current Point file : " + P_name;\n    P_name = StrRePlace(P_name,"P","");\n    P_name = StrRePlace(P_name,".pts","");\n    ywCur_P_file = StrToR(P_name);\nEndFunc;\n`;
         }
         return sb;
     },
@@ -229,13 +232,26 @@ EndFunc;
             }
         }
 
-        let moveSection = `    R_Cur_pos = ${n}00;\n    Movj P${n}_App,V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n    R_Cur_pos = ${n}01;\n    Movj P${n}_Wait,V[100],Z[1],Tool[B_T_num],Wobj[B_W_num];\n`;
-        for (let i = 1; i <= (s.ExtraWaitCount || 0); i++) {
-            moveSection += `    R_Cur_pos = ${n}0${1+i};\n    Movj P${n}_Wait${i+1},V[100],Z[1],Tool[B_T_num],Wobj[B_W_num];\n`;
-        }
-        moveSection += `    R_Cur_pos = ${n}10;\n    Movl Offset(P${n}_Up, PR[B_PR_num]),V[100],Z[1],Tool[B_T_num],Wobj[B_W_num];\n    R_Cur_pos = ${n}11;\n    Movl Offset(P${n}_Down, PR[B_PR_num]),Speed[100],Fine,Tool[B_T_num],Wobj[B_W_num];\n`;
+        let prNum = n * 10; // B_PR_num = process_no * 10
+        let lastWaitIdx = 1 + (s.ExtraWaitCount || 0); // last wait position index (101, 102, ...)
 
-        let mainStr = `ProgramInfo\n    Version = "S4.24"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getNowAmPm()}"\n    RobotName = "${options.RobotName}"\nEndProgramInfo\nFunc P${n}_main()\n${toolPosCheck}    #================================================================================\n    #  Return move before process pos                 \n    #================================================================================\n    OutW[33] = 0; #Process signal reset\n${peekInit}    Set yP${n}_running,ON;\n    Bool return_result = s01_initial.Return_move();\n    #================================================================================\n    #  Signal Initial                      \n    #================================================================================\n    L[0]:\n    Print "P${n} - ${type} ${method} Start";\n    B_T_num = ${tNum}; #Tool No\n    B_W_num = ${n};\n    B_PR_num = ${n}0;\n${connectSocket}    #================================================================================\n    Set_offset();\n    #================================================================================\n    #  Move                     \n    #================================================================================\n${moveSection}    #================================================================================\n    If xTeaching_mode\n        P${n}_teaching_mode();\n    EndIf;\n${afterTeach}${toolCtrlLogic}${startAction}    #================================================================================\n    #  Process Complete                    \n    #================================================================================\n${endAction}    Print "P${n} - ${type} ${method} End";\n    Set yP${n}_running,OFF;\n    Set yP${n}_comp,ON;\nEndFunc;\n\n#====================================================================================\n#  Position check mode\n#====================================================================================\nFunc P${n}_teaching_mode()\n    #================================================================================\n    #  Return move before process pos                 \n    #================================================================================\n    Set yTeaching_running,ON;    \n    Print "P${n} - ${type} ${method} Teaching mode Start";\n    #================================================================================\n    #  Move                     \n    #================================================================================\n    While xTeaching_mode == OFF or xTeaching_cancel == OFF\n        Set_offset();\n        Movl Offset(P${n}_Down, PR[B_PR_num]),Speed[50],Fine,Tool[B_T_num],Wobj[B_W_num];\n        If xTeaching_save\n            Print "Up Pos saved (Origin pos :" + P${n}_Up + ")";\n            Print "Down Pos saved (Origin pos :" + P${n}_Down + ")";\n            P${n}_Up = Offset(P${n}_Up,PR[B_PR_num]);\n            P${n}_Down = Offset(P${n}_Down,PR[B_PR_num]);\n            Print "Saved Offset value : " + PR[B_PR_num];\n            Print "Up Pos saved (Saved pos :" + P${n}_Up + ")";\n            Print "Down Pos saved (Saved pos :" + P${n}_Down + ")";\n            SavePoints;\n            Break;\n        EndIf;\n    EndWhile;\n    #================================================================================\n    Set yTeaching_running,OFF;\n    Print "P${n} - ${type} ${method} Teaching mode End";\nEndFunc;\n#====================================================================================\n# Set Offset                  \n#====================================================================================\n${offsetFunc}\n${socketFuncs}`;
+        // wait_pos: move section (App -> Wait -> [ExtraWaits])
+        let waitMoveSection = `    R_Cur_pos = ${n * 100};\n    Movj P${n}_App,V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n    R_Cur_pos = ${n * 100 + 1};\n    Movj P${n}_Wait,V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n`;
+        for (let i = 1; i <= (s.ExtraWaitCount || 0); i++) {
+            waitMoveSection += `    R_Cur_pos = ${n * 100 + 1 + i};\n    Movj P${n}_Wait${i+1},V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n`;
+        }
+
+        // work_pos: conditional App->Wait if not already there, then Up->Down
+        let workMoveSection = `    If R_Cur_pos <> ${n * 100 + lastWaitIdx}\n        R_Cur_pos = ${n * 100};\n        Movj P${n}_App,V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n        R_Cur_pos = ${n * 100 + 1};\n        Movj P${n}_Wait,V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n    EndIf;\n`;
+        workMoveSection += `    #================================================================================\n    R_Cur_pos = ${n * 100 + 10};\n    Movl Offset(P${n}_Up, PR[B_PR_num]),V[100],Z[1],Tool[B_T_num],Wobj[B_W_num];\n    R_Cur_pos = ${n * 100 + 11};\n    Movl Offset(P${n}_Down, PR[B_PR_num]),Speed[100],Fine,Tool[B_T_num],Wobj[B_W_num];\n`;
+
+        // wait_pos function
+        let waitStr = `ProgramInfo\n    Version = "S4.24"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getNowAmPm()}"\n    RobotName = "${options.RobotName}"\nEndProgramInfo\n#================================================================================\n#  Process Wait pos                   \n#================================================================================\nFunc P${n}_wait_pos()\n    #================================================================================\n    #  Return move before process pos                 \n    #================================================================================\n    OutW[33] = 0; #Process Wait pos comp reset\n    OutW[34] = 0; #Process Work pos comp reset\n    Print "P${n} - ${type} ${method} Wait pos Start";\n    Set yP${n}_wait_pos_busy,ON; #Process Wait pos busy ON\n    #================================================================================\n    If R_Cur_pos == ${n * 100 + 10} Or R_Cur_pos == ${n * 100 + 11}\n        B_T_num = ${tNum}; #Tool No\n        B_W_num = 0;\n        B_PR_num = ${prNum};\n        R_Cur_pos = ${n * 100 + 10};\n        Movl Offset(P${n}_Up, PR[B_PR_num]),V[100],Z[1],Tool[B_T_num],Wobj[B_W_num];\n        R_Cur_pos = ${n * 100 + 1};\n        Movj P${n}_Wait,V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n        Goto L[0];\n    Else\n        Bool return_result = s01_initial.Return_move(); #Return move before process pos  \n    EndIf;\n    #================================================================================\n    #  Tool / Wobj Setting                   \n    #================================================================================\n    B_T_num = ${tNum}; #Tool No\n    B_W_num = 0;\n    #================================================================================\n    #  Move                     \n    #================================================================================\n${waitMoveSection}    #================================================================================\n    #  Process Wait pos Complete                    \n    #================================================================================\n    L[0]:\n    Print "P${n} - ${type} ${method} Wait pos End";\n    Set yP${n}_wait_pos_busy,OFF;\n    Set yP${n}_wait_pos_comp,ON;\nEndFunc;\n`;
+
+        // work_pos function
+        let workStr = `#================================================================================\n#  Process Work pos                   \n#================================================================================\nFunc P${n}_work_pos()\n${toolPosCheck}    #================================================================================\n    #  Return move before process pos                 \n    #================================================================================\n    OutW[33] = 0; #Process signal reset\n    OutW[34] = 0; #Process signal reset\n${peekInit}    Set yP${n}_work_pos_busy,ON;\n    #================================================================================\n    If R_Cur_pos <> ${n * 100 + lastWaitIdx}\n        Bool return_result = s01_initial.Return_move();\n    EndIf;\n    #================================================================================\n    #  Signal Initial                      \n    #================================================================================\n    Print "P${n} - ${type} ${method} Work pos Start";\n    B_T_num = ${tNum}; #Tool No\n    B_W_num = 0;\n    B_PR_num = ${prNum};\n    #================================================================================\n${connectSocket}    Set_offset();\n    #================================================================================\n    #  Move                     \n    #================================================================================\n${workMoveSection}    #================================================================================\n    If xTeaching_mode\n        P${n}_teaching_mode();\n    EndIf;\n${afterTeach}${toolCtrlLogic}${startAction}    #================================================================================\n    #  Process Complete                    \n    #================================================================================\n${endAction}    Print "P${n} - ${type} ${method} Work pos End";\n    Set yP${n}_work_pos_busy,OFF;\n    Set yP${n}_work_pos_comp,ON;\nEndFunc;\n`;
+
+        let mainStr = `${waitStr}\n${workStr}\n#====================================================================================\n#  Position check mode\n#====================================================================================\nFunc P${n}_teaching_mode()\n    #================================================================================\n    #  Return move before process pos                 \n    #================================================================================\n    Set yTeaching_running,ON;    \n    Print "P${n} - ${type} ${method} Teaching mode Start";\n    #================================================================================\n    #  Move                     \n    #================================================================================\n    While xTeaching_mode == OFF or xTeaching_cancel == OFF\n        Set_offset();\n        Movl Offset(P${n}_Down, PR[B_PR_num]),Speed[50],Fine,Tool[B_T_num],Wobj[B_W_num];\n        If xTeaching_save\n            Print "Up Pos saved (Origin pos :" + P${n}_Up + ")";\n            Print "Down Pos saved (Origin pos :" + P${n}_Down + ")";\n            P${n}_Up = Offset(P${n}_Up,PR[B_PR_num]);\n            P${n}_Down = Offset(P${n}_Down,PR[B_PR_num]);\n            Print "Saved Offset value : " + PR[B_PR_num];\n            Print "Up Pos saved (Saved pos :" + P${n}_Up + ")";\n            Print "Down Pos saved (Saved pos :" + P${n}_Down + ")";\n            SavePoints;\n            Break;\n        EndIf;\n    EndWhile;\n    #================================================================================\n    Set yTeaching_running,OFF;\n    Print "P${n} - ${type} ${method} Teaching mode End";\nEndFunc;\n#====================================================================================\n# Set Offset                  \n#====================================================================================\n${offsetFunc}\n${socketFuncs}`;
         return mainStr;
     },
     // Data files
@@ -335,14 +351,15 @@ EndFunc;
             {nIndex: 514, sLabel: "xReset_prog", sDescription: "Reset program", sOriginalName: "IN[514]"},
             {nIndex: 515, sLabel: "xReset_alarm", sDescription: "Clear alarm", sOriginalName: "IN[515]"},
             {nIndex: 519, sLabel: "xRobot_homing", sDescription: "", sOriginalName: "IN[519]"},
-            {nIndex: 526, sLabel: "xReturn_wait_pos", sDescription: "", sOriginalName: "IN[526]"},
-            {nIndex: 592, sLabel: "xTeaching_mode", sDescription: "", sOriginalName: "IN[592]"},
-            {nIndex: 593, sLabel: "xTeaching_save", sDescription: "", sOriginalName: "IN[593]"},
-            {nIndex: 594, sLabel: "xTeaching_cancel", sDescription: "", sOriginalName: "IN[594]"}
+            {nIndex: 520, sLabel: "xTeaching_mode", sDescription: "", sOriginalName: "IN[520]"},
+            {nIndex: 521, sLabel: "xTeaching_save", sDescription: "", sOriginalName: "IN[521]"},
+            {nIndex: 522, sLabel: "xTeaching_cancel", sDescription: "", sOriginalName: "IN[522]"}
         ];
 
         let baseInIdx = 528;
-        steps.forEach(s => { inBits.push({nIndex: baseInIdx, sLabel: `xP${s.No}_start`, sDescription: "", sOriginalName: `IN[${baseInIdx}]`}); baseInIdx++; });
+        steps.forEach(s => { inBits.push({nIndex: baseInIdx, sLabel: `xP${s.No}_wait_pos_start`, sDescription: "", sOriginalName: `IN[${baseInIdx}]`}); baseInIdx++; });
+        let baseWorkInIdx = 544;
+        steps.forEach(s => { inBits.push({nIndex: baseWorkInIdx, sLabel: `xP${s.No}_work_pos_start`, sDescription: "", sOriginalName: `IN[${baseWorkInIdx}]`}); baseWorkInIdx++; });
         if (hasCalibPlc) { inBits.push({nIndex: 576, sLabel: "xVision_move_next", sDescription: "", sOriginalName: "IN[576]"}, {nIndex: 577, sLabel: "xVision_cali_comp", sDescription: "", sOriginalName: "IN[577]"}); }
         if (hasPeeling) { inBits.push({nIndex: 568, sLabel: "xPeel_start", sDescription: "", sOriginalName: "IN[568]"}); }
         
@@ -351,28 +368,28 @@ EndFunc;
             if (hasVacuum) {
                 if (isDIO) {
                     inBits.push({nIndex: 0, sLabel: "xTool_vac_on_chk", sDescription: "DIO Tool", sOriginalName: "IN[0]"}, {nIndex: 1, sLabel: "xTool_vac_off_chk", sDescription: "DIO Tool", sOriginalName: "IN[1]"});
-                    inBits.push({nIndex: 600, sLabel: "xTool_vac_on_REQ", sDescription: "COMM Tool", sOriginalName: "IN[600]"}, {nIndex: 601, sLabel: "xTool_vac_off_REQ", sDescription: "COMM Tool", sOriginalName: "IN[601]"});
+                    inBits.push({nIndex: 608, sLabel: "xTool_vac_on_REQ", sDescription: "COMM Tool", sOriginalName: "IN[608]"}, {nIndex: 609, sLabel: "xTool_vac_off_REQ", sDescription: "COMM Tool", sOriginalName: "IN[609]"});
                 } else {
-                    inBits.push({nIndex: 600, sLabel: "xTool_vac_on", sDescription: "", sOriginalName: "IN[600]"}, {nIndex: 601, sLabel: "xTool_vac_off", sDescription: "", sOriginalName: "IN[601]"});
+                    inBits.push({nIndex: 608, sLabel: "xTool_vac_on", sDescription: "", sOriginalName: "IN[608]"}, {nIndex: 609, sLabel: "xTool_vac_off", sDescription: "", sOriginalName: "IN[609]"});
                 }
             }
             if (hasGripper) {
                 if (isDIO) {
                     inBits.push({nIndex: 2, sLabel: "xTool_grip_chk", sDescription: "DIO Tool", sOriginalName: "IN[2]"}, {nIndex: 3, sLabel: "xTool_ungrip_chk", sDescription: "DIO Tool", sOriginalName: "IN[3]"});
-                    inBits.push({nIndex: 602, sLabel: "xTool_grip_REQ", sDescription: "COMM Tool", sOriginalName: "IN[602]"}, {nIndex: 603, sLabel: "xTool_ungrip_REQ", sDescription: "COMM Tool", sOriginalName: "IN[603]"});
+                    inBits.push({nIndex: 610, sLabel: "xTool_grip_REQ", sDescription: "COMM Tool", sOriginalName: "IN[610]"}, {nIndex: 611, sLabel: "xTool_ungrip_REQ", sDescription: "COMM Tool", sOriginalName: "IN[611]"});
                 } else {
-                    inBits.push({nIndex: 602, sLabel: "xTool_grip", sDescription: "", sOriginalName: "IN[602]"}, {nIndex: 603, sLabel: "xTool_ungrip", sDescription: "", sOriginalName: "IN[603]"});
+                    inBits.push({nIndex: 610, sLabel: "xTool_grip", sDescription: "", sOriginalName: "IN[610]"}, {nIndex: 611, sLabel: "xTool_ungrip", sDescription: "", sOriginalName: "IN[611]"});
                 }
             }
             if (hasTrash) {
                 if (isDIO) {
                     inBits.push({nIndex: 4, sLabel: "xTrash_grip_chk", sDescription: "DIO Tool", sOriginalName: "IN[4]"}, {nIndex: 5, sLabel: "xTrash_ungrip_chk", sDescription: "DIO Tool", sOriginalName: "IN[5]"});
-                    inBits.push({nIndex: 604, sLabel: "xTrash_grip_REQ", sDescription: "COMM Tool", sOriginalName: "IN[604]"}, {nIndex: 605, sLabel: "xTrash_ungrip_REQ", sDescription: "COMM Tool", sOriginalName: "IN[605]"});
+                    inBits.push({nIndex: 612, sLabel: "xTrash_grip_REQ", sDescription: "COMM Tool", sOriginalName: "IN[612]"}, {nIndex: 613, sLabel: "xTool_ungrip_REQ", sDescription: "COMM Tool", sOriginalName: "IN[613]"});
                 } else {
-                    inBits.push({nIndex: 604, sLabel: "xTrash_grip", sDescription: "", sOriginalName: "IN[604]"}, {nIndex: 605, sLabel: "xTrash_ungrip", sDescription: "", sOriginalName: "IN[605]"});
+                    inBits.push({nIndex: 612, sLabel: "xTrash_grip", sDescription: "", sOriginalName: "IN[612]"}, {nIndex: 613, sLabel: "xTrash_ungrip", sDescription: "", sOriginalName: "IN[613]"});
                 }
             }
-            let curStageInIdx = 606;
+            let curStageInIdx = 614;
             let curDioInIdx = 6;
             for (let i = 1; i <= stageCount; i++) {
                 let prefix = i === 1 ? "Stage" : `Stage${i}`;
@@ -417,49 +434,52 @@ EndFunc;
             {nIndex: 513, sLabel: "yProg_stop_sts", sDescription: "Program stopped", sOriginalName: "OUT[513]"},
             {nIndex: 514, sLabel: "yProg_reset_sts", sDescription: "Program reset successful", sOriginalName: "OUT[514]"},
             {nIndex: 515, sLabel: "yAlarm_sts", sDescription: "System fault status", sOriginalName: "OUT[515]"},
-            {nIndex: 516, sLabel: "yRobot_busy", sDescription: "Robot in motion", sOriginalName: "OUT[516]"},
-            {nIndex: 517, sLabel: "yComm_heartbeat", sDescription: "Bus communication heartbeat", sOriginalName: "OUT[517]"},
-            {nIndex: 518, sLabel: "yRobot_homing", sDescription: "", sOriginalName: "OUT[518]"},
             {nIndex: 519, sLabel: "yRobot_home_sts", sDescription: "", sOriginalName: "OUT[519]"},
-            {nIndex: 526, sLabel: "yWait_pos_comp", sDescription: "", sOriginalName: "OUT[526]"},
-            {nIndex: 527, sLabel: "yWait_pos_running", sDescription: "", sOriginalName: "OUT[527]"},
-            {nIndex: 592, sLabel: "yTeaching_running", sDescription: "", sOriginalName: "OUT[592]"}
+            {nIndex: 520, sLabel: "yTeaching_running", sDescription: "", sOriginalName: "OUT[520]"}
         ];
+        // yP{n}_wait_pos_comp: OUT[528..527+N]
         let baseOutIdx = 528;
-        steps.forEach(s => { outBits.push({nIndex: baseOutIdx, sLabel: `yP${s.No}_comp`, sDescription: "", sOriginalName: `OUT[${baseOutIdx}]`}); baseOutIdx++; });
+        steps.forEach(s => { outBits.push({nIndex: baseOutIdx, sLabel: `yP${s.No}_wait_pos_comp`, sDescription: "", sOriginalName: `OUT[${baseOutIdx}]`}); baseOutIdx++; });
+        // yP{n}_work_pos_comp: OUT[544..543+N]
         baseOutIdx = 544;
-        steps.forEach(s => { outBits.push({nIndex: baseOutIdx+1, sLabel: `yP${s.No}_running`, sDescription: "", sOriginalName: `OUT[${baseOutIdx+1}]`}); baseOutIdx++; });
+        steps.forEach(s => { outBits.push({nIndex: baseOutIdx, sLabel: `yP${s.No}_work_pos_comp`, sDescription: "", sOriginalName: `OUT[${baseOutIdx}]`}); baseOutIdx++; });
+        // yP{n}_wait_pos_busy: OUT[560..559+N]
+        baseOutIdx = 560;
+        steps.forEach(s => { outBits.push({nIndex: baseOutIdx, sLabel: `yP${s.No}_wait_pos_busy`, sDescription: "", sOriginalName: `OUT[${baseOutIdx}]`}); baseOutIdx++; });
+        // yP{n}_work_pos_busy: OUT[576..575+N]
+        baseOutIdx = 576;
+        steps.forEach(s => { outBits.push({nIndex: baseOutIdx, sLabel: `yP${s.No}_work_pos_busy`, sDescription: "", sOriginalName: `OUT[${baseOutIdx}]`}); baseOutIdx++; });
 
-        if (hasCalibPlc) outBits.push({nIndex: 576, sLabel: "yVision_move_comp", sDescription: "", sOriginalName: "OUT[576]"});
-        if (hasPeeling) outBits.push({nIndex: 568, sLabel: "yPeel_pos_comp", sDescription: "", sOriginalName: "OUT[568]"});
+        if (hasCalibPlc) outBits.push({nIndex: 592, sLabel: "yVision_move_comp", sDescription: "", sOriginalName: "OUT[592]"});
+        if (hasPeeling) outBits.push({nIndex: 600, sLabel: "yPeel_pos_comp", sDescription: "", sOriginalName: "OUT[600]"});
 
         if (options.EnableToolControl) {
             const isDIO = options.ToolControlType === "DIO";
             if (hasVacuum) {
                 if (isDIO) {
                     outBits.push({nIndex: 0, sLabel: "yTool_vac_on", sDescription: "DIO Tool", sOriginalName: "OUT[0]"}, {nIndex: 1, sLabel: "yTool_vac_off", sDescription: "DIO Tool", sOriginalName: "OUT[1]"});
-                    outBits.push({nIndex: 600, sLabel: "yTool_vac_on_sts", sDescription: "COMM Tool", sOriginalName: "OUT[600]"}, {nIndex: 601, sLabel: "yTool_vac_off_sts", sDescription: "COMM Tool", sOriginalName: "OUT[601]"});
+                    outBits.push({nIndex: 608, sLabel: "yTool_vac_on_sts", sDescription: "COMM Tool", sOriginalName: "OUT[608]"}, {nIndex: 609, sLabel: "yTool_vac_off_sts", sDescription: "COMM Tool", sOriginalName: "OUT[609]"});
                 } else {
-                    outBits.push({nIndex: 600, sLabel: "yTool_vac_on_REQ", sDescription: "", sOriginalName: "OUT[600]"}, {nIndex: 601, sLabel: "yTool_vac_off_REQ", sDescription: "", sOriginalName: "OUT[601]"});
+                    outBits.push({nIndex: 608, sLabel: "yTool_vac_on_REQ", sDescription: "", sOriginalName: "OUT[608]"}, {nIndex: 609, sLabel: "yTool_vac_off_REQ", sDescription: "", sOriginalName: "OUT[609]"});
                 }
             }
             if (hasGripper) {
                 if (isDIO) {
                     outBits.push({nIndex: 2, sLabel: "yTool_grip", sDescription: "DIO Tool", sOriginalName: "OUT[2]"}, {nIndex: 3, sLabel: "yTool_ungrip", sDescription: "DIO Tool", sOriginalName: "OUT[3]"});
-                    outBits.push({nIndex: 602, sLabel: "yTool_grip_sts", sDescription: "COMM Tool", sOriginalName: "OUT[602]"}, {nIndex: 603, sLabel: "yTool_ungrip_sts", sDescription: "COMM Tool", sOriginalName: "OUT[603]"});
+                    outBits.push({nIndex: 610, sLabel: "yTool_grip_sts", sDescription: "COMM Tool", sOriginalName: "OUT[610]"}, {nIndex: 611, sLabel: "yTool_ungrip_sts", sDescription: "COMM Tool", sOriginalName: "OUT[611]"});
                 } else {
-                    outBits.push({nIndex: 602, sLabel: "yTool_grip_REQ", sDescription: "", sOriginalName: "OUT[602]"}, {nIndex: 603, sLabel: "yTool_ungrip_REQ", sDescription: "", sOriginalName: "OUT[603]"});
+                    outBits.push({nIndex: 610, sLabel: "yTool_grip_REQ", sDescription: "", sOriginalName: "OUT[610]"}, {nIndex: 611, sLabel: "yTool_ungrip_REQ", sDescription: "", sOriginalName: "OUT[611]"});
                 }
             }
             if (hasTrash) {
                 if (isDIO) {
                     outBits.push({nIndex: 4, sLabel: "yTrash_grip", sDescription: "DIO Tool", sOriginalName: "OUT[4]"}, {nIndex: 5, sLabel: "yTrash_ungrip", sDescription: "DIO Tool", sOriginalName: "OUT[5]"});
-                    outBits.push({nIndex: 604, sLabel: "yTrash_grip_sts", sDescription: "COMM Tool", sOriginalName: "OUT[604]"}, {nIndex: 605, sLabel: "yTrash_ungrip_sts", sDescription: "COMM Tool", sOriginalName: "OUT[605]"});
+                    outBits.push({nIndex: 612, sLabel: "yTrash_grip_sts", sDescription: "COMM Tool", sOriginalName: "OUT[612]"}, {nIndex: 613, sLabel: "yTrash_ungrip_sts", sDescription: "COMM Tool", sOriginalName: "OUT[613]"});
                 } else {
-                    outBits.push({nIndex: 604, sLabel: "yTrash_grip_REQ", sDescription: "", sOriginalName: "OUT[604]"}, {nIndex: 605, sLabel: "yTrash_ungrip_REQ", sDescription: "", sOriginalName: "OUT[605]"});
+                    outBits.push({nIndex: 612, sLabel: "yTrash_grip_REQ", sDescription: "", sOriginalName: "OUT[612]"}, {nIndex: 613, sLabel: "yTrash_ungrip_REQ", sDescription: "", sOriginalName: "OUT[613]"});
                 }
             }
-            let curStageOutIdx = 606;
+            let curStageOutIdx = 614;
             let curDioOutIdx = 6;
             for (let i = 1; i <= stageCount; i++) {
                 let prefix = i === 1 ? "Stage" : `Stage${i}`;
@@ -479,7 +499,7 @@ EndFunc;
 
         // 5. OutputWordLabels
         let outWords = [];
-        if(options.EnableMultiRecipe) outWords.push({nIndex: 46, sLabel: "ywP_file_switch_sts", sDescription: "", sOriginalName: "OUTW[46]"});
+        if(options.EnableMultiRecipe) outWords.push({nIndex: 46, sLabel: "ywCur_P_file", sDescription: "", sOriginalName: "OUTW[46]"});
         outWords.push(
             {nIndex: 47, sLabel: "ywCur_speed", sDescription: "", sOriginalName: "OUTW[47]"},
             {nIndex: 48, sLabel: "ywCur_control_mode", sDescription: "", sOriginalName: "OUTW[48]"},
