@@ -108,7 +108,7 @@
             <h1 class="font-outfit text-xl font-bold text-white hidden md:block tracking-tight">Debugging Tool</h1>
         </div>
         <div class="flex items-center gap-4">
-            <span class="text-xs font-mono text-slate-500 bg-slate-800/40 px-3 py-1.5 rounded-lg border border-white/10 italic">Ver 26.03.31.01</span>
+            <span class="text-xs font-mono text-slate-500 bg-slate-800/40 px-3 py-1.5 rounded-lg border border-white/10 italic">Ver 26.04.02.01</span>
         </div>
     </header>
 
@@ -122,10 +122,10 @@
         </section>
 
         <!-- Tool Grid -->
-        <div class="flex justify-center">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             
             <!-- 1. Zero Calibration -->
-            <a href="ZeroCalibration/index.html" class="glass-card p-6 md:p-8 flex flex-col w-full max-w-md animate-fade-in-up group" style="animation-delay: 0.2s; text-decoration: none;">
+            <a href="ZeroCalibration/index.html" class="glass-card p-6 md:p-8 flex flex-col group animate-fade-in-up" style="animation-delay: 0.1s; text-decoration: none;">
                 <div class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
                     <i data-lucide="target" class="w-8 h-8 text-white"></i>
                 </div>
@@ -136,7 +136,26 @@
                     엔코더 배터리 방전 등으로 인한 영점 소실 시, 하드웨어 지그 없이 소프트웨어적으로 영점을 보정하는 툴입니다.
                 </p>
                 <div class="mt-auto flex items-center justify-end border-t border-slate-700/50 pt-5">
-                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20">Ver 26.03.31.01</span>
+                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20">Ver 26.04.02.01</span>
+                </div>
+            </a>
+
+            <!-- 2. Communication Tester -->
+            <a href="CommunicationTester/InoRobot_Comm_Test_V2.2.zip" download class="glass-card p-6 md:p-8 flex flex-col group animate-fade-in-up" style="animation-delay: 0.2s; text-decoration: none;">
+                <div class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
+                    <i data-lucide="network" class="w-8 h-8 text-white"></i>
+                </div>
+                <div class="flex items-center gap-2 mb-3">
+                    <h2 class="font-outfit text-2xl font-bold text-white">
+                        Communication Tester
+                    </h2>
+                    <i data-lucide="download" class="w-4 h-4 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                </div>
+                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
+                    로봇과 PLC, 상위 PC 간의 통신(TCP/IP, Modbus, EIP 등) 상태를 간편하게 테스트하고 패킷을 분석할 수 있는 소프트웨어입니다.
+                </p>
+                <div class="mt-auto flex items-center justify-end border-t border-slate-700/50 pt-5">
+                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20">Ver 22.0</span>
                 </div>
             </a>
 
