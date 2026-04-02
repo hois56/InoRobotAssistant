@@ -12,6 +12,8 @@ class ProcessStep {
         this.VisionUse = "No use";
         this._customName = null;
         this.ExtraWaitCount = 0;
+        this.teachMode = false;
+        this.waitPos = false;
     }
     get ProcessName() { return this._customName || `sP${String(this.No).padStart(2, '0')}_${this.WorkType}_${this.WorkMethod}`; }
     set ProcessName(val) { this._customName = val; }
@@ -368,7 +370,7 @@ function stripHeader(codeStr) {
 }
 
 function prependHeader(codeStr, robotName) {
-    let header = `ProgramInfo\n    Version = "S4.24"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getNowAmPm()}"\n    RobotName = "${robotName}"\nEndProgramInfo\n`;
+    let header = `ProgramInfo\n    Version = "26.04.02.08"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getNowAmPm()}"\n    RobotName = "${robotName}"\nEndProgramInfo\n`;
     // Data files use getNow() format, but getNowAmPm() is mostly ok. Wait, we don't prepend header blindly to Javascript data files.
     // The generator should continue to produce full strings, we just strip them for Editor.
     return header + codeStr;
@@ -395,7 +397,7 @@ function handleGeneratedContent(file) {
         code = JSON.stringify(vars);
     }
     else if (file === "MonitorVars.jsn") code = "[]";
-    else if (file === "JP.pts") code = `ProgramInfo\n    Version = "S4.24"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getNow()}"\n    RobotName = "${state.options.RobotName}"\nEndProgramInfo\n`;
+    else if (file === "JP.pts") code = `ProgramInfo\n    Version = "26.04.02.08"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getNow()}"\n    RobotName = "${state.options.RobotName}"\nEndProgramInfo\n`;
     else if (file.endsWith(".pts")) { // DataPoints
         code = Generator.DataPoints(state.steps, state.options);
     }
@@ -444,9 +446,9 @@ function getFinalFileContent(file) {
     let result;
     if (edited !== undefined) {
         if (generated.includes("ProgramInfo")) {
-            let header = `ProgramInfo\n    Version = "S4.24"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getNowAmPm()}"\n    RobotName = "${state.options.RobotName}"\nEndProgramInfo\n`;
+            let header = `ProgramInfo\n    Version = "26.04.02.08"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getNowAmPm()}"\n    RobotName = "${state.options.RobotName}"\nEndProgramInfo\n`;
             if (file.endsWith(".pts")) {
-                header = `ProgramInfo\n    Version = "S4.24"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getNow()}"\n    RobotName = "${state.options.RobotName}"\nEndProgramInfo\n`;
+                header = `ProgramInfo\n    Version = "26.04.02.08"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getNow()}"\n    RobotName = "${state.options.RobotName}"\nEndProgramInfo\n`;
             }
             result = header + edited;
         } else {

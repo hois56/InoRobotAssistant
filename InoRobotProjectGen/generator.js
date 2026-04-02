@@ -282,6 +282,12 @@ EndFunc;
         }
 
         let mainStr = `${header}\n${waitStr}\n${workStr}\n${teachModeFunc}#====================================================================================\n# Set Offset                  \n#====================================================================================\n${offsetFunc}\n${socketFuncs}`;
+
+        // Ensure ProgramInfo header is always prepended to sub-programs
+        if (mainStr && !mainStr.startsWith('ProgramInfo')) {
+            mainStr = Generator.MainProgram.header + '\n' + mainStr;
+        }
+
         return mainStr;
     },
     // Data files
