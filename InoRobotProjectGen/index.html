@@ -200,7 +200,7 @@
     <!-- Options Modal -->
     <div id="optionsModal"
         class="fixed inset-0 bg-black/70 backdrop-blur-md hidden flex items-center justify-center z-50 p-4">
-        <div class="glass w-full max-w-4xl p-0 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row h-[500px]">
+        <div class="glass w-full max-w-4xl p-0 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row h-[640px]">
             <!-- Left: Options List -->
             <div class="w-full md:w-1/2 p-6 flex flex-col border-r border-white/5 bg-slate-900/40">
                 <h2 class="text-xl font-bold flex items-center gap-2 mb-6"><i data-lucide="settings"
@@ -253,6 +253,32 @@
                                 </select>
                             </div>
                         </div>
+
+                        <!-- 3 New Options -->
+                        <label
+                            class="flex items-center justify-between bg-slate-800/40 p-4 rounded-xl border border-slate-700 cursor-pointer text-sm relative group hover:bg-slate-700/50 transition-colors" data-opt-id="teachingMode">
+                            <div class="flex items-center gap-3">
+                                <input type="checkbox" id="chkTeachingMode"
+                                    class="w-5 h-5 rounded text-blue-500 bg-slate-900 border-slate-600">
+                                <span class="font-medium whitespace-nowrap">Teaching Mode</span>
+                            </div>
+                        </label>
+                        <label
+                            class="flex items-center justify-between bg-slate-800/40 p-4 rounded-xl border border-slate-700 cursor-pointer text-sm relative group hover:bg-slate-700/50 transition-colors" data-opt-id="waitPos">
+                            <div class="flex items-center gap-3">
+                                <input type="checkbox" id="chkWaitPos"
+                                    class="w-5 h-5 rounded text-blue-500 bg-slate-900 border-slate-600">
+                                <span class="font-medium whitespace-nowrap">Wait Position</span>
+                            </div>
+                        </label>
+                        <label
+                            class="flex items-center justify-between bg-slate-800/40 p-4 rounded-xl border border-slate-700 cursor-pointer text-sm relative group hover:bg-slate-700/50 transition-colors" data-opt-id="processBusy">
+                            <div class="flex items-center gap-3">
+                                <input type="checkbox" id="chkProcessBusy"
+                                    class="w-5 h-5 rounded text-blue-500 bg-slate-900 border-slate-600">
+                                <span class="font-medium whitespace-nowrap">Process Busy Signal</span>
+                            </div>
+                        </label>
                     </div>
                 </div>
 

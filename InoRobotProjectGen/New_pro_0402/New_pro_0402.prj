@@ -1,0 +1,39 @@
+{
+  "FileType": "RobotProjectConfigFile",
+  "Company": "Inovance",
+  "MajorVersion": 2,
+  "MinorVersion": 1,
+  "IsMainActive": true,
+  "MultiTaskCount": 2,
+  "MultiTaskInfos": [
+    {
+      "TaskId": 1,
+      "EnterProgramFile": "PLC_TCP_Speed.pro",
+      "TaskType": 1,
+      "IsActive": true
+    },
+    {
+      "TaskId": 2,
+      "EnterProgramFile": "PLC_Current_Torque.pro",
+      "TaskType": 1,
+      "IsActive": true
+    }
+  ],
+  "ProgramFilesCount": 9,
+  "ProgramFiles": [
+    "main.pro",
+    "PLC_Current_Torque.pro",
+    "PLC_TCP_Speed.pro",
+    "s01_initial.pro",
+    "s02_Tool_Control.pro",
+    "sP01_Tray_Get.pro",
+    "sP02_Tray_Put.pro",
+    "sP03_Stage_Get.pro",
+    "sP04_Stage_Put.pro"
+  ],
+  "RobPointFilesCount": 2,
+  "RobPointFiles": [
+    "P.pts",
+    "P01.pts"
+  ]
+}

@@ -6,7 +6,7 @@ const TemplateHelper = {
 
 const Generator = {
     TcpSpeedProgram(robotName) {
-        return `ProgramInfo\n    Version = "S4.24"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getNowAmPm()}"\n    RobotName = "${robotName}"\nEndProgramInfo\nStart;\n    Double TCP_dist;\n    LP[0] = GetCurPos();\n    While True\n        Delay T[0.1];\n        LP[1] = GetCurPos();\n        TCP_dist = Dist(LP[0],LP[1]);\n        D_TCP_speed = TCP_dist / 0.1;\n        LP[1] = LP[0];\n        ywCur_TCP_speed = D_TCP_speed;\n    EndWhile;\nEnd;`;
+        return `ProgramInfo\n    Version = "S4.24"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getNowAmPm()}"\n    RobotName = "${robotName}"\nEndProgramInfo\nStart;\n    Double TCP_dist;\n    LP[0] = GetCurPos();\n    #================================================================================\n    While True\n        Delay T[0.1];\n        LP[1] = GetCurPos();\n        TCP_dist = Dist(LP[0],LP[1]);\n        D_TCP_speed = TCP_dist / 0.1;\n        LP[0] = LP[1];\n        ywCur_TCP_speed = D_TCP_speed;\n    EndWhile;\nEnd;`;
     },
     TorqueProgram(robotName) {
         let ratios = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
@@ -77,10 +77,13 @@ const Generator = {
         steps.forEach(s => sb += `Include "${s.ProcessName}.pro";\n`);
         sb += `Start;\n    If Tool[1].TLoad.Mass == 0\n        Tool[1].TLoad.Mass = 7;\n    EndIf;\n    #================================================================================\n    If xwSet_speed <= 0\n        Velset Rate[1];\n    ElseIf xwSet_speed > 100\n        Velset Rate[100];\n    Else\n        Velset Rate[xwSet_speed];\n    EndIf;\n    #================================================================================\n    L[0]:\n`;
         if (options.EnableMultiRecipe) sb += `    s01_initial.Manual_set_recipe();\n`;
-        sb += `    If xRobot_homing\n        s01_initial.Init_move_home();\n        s01_initial.Init_signal();\n    EndIf;\n    #================================================================================\n    #  Process Wait pos               \n    #================================================================================\n`;
-        steps.forEach(s => {
-            sb += `    If xP${s.No}_wait_pos_start\n        ${s.ProcessName}.P${s.No}_wait_pos();\n    EndIf;\n`;
-        });
+        sb += `    If xRobot_homing\n        s01_initial.Init_move_home();\n        s01_initial.Init_signal();\n    EndIf;\n`;
+        if (options.EnableWaitPos !== false) {
+            sb += `    #================================================================================\n    #  Process Wait pos               \n    #================================================================================\n`;
+            steps.forEach(s => {
+                sb += `    If xP${s.No}_wait_pos_start\n        ${s.ProcessName}.P${s.No}_wait_pos();\n    EndIf;\n`;
+            });
+        }
         sb += `    #================================================================================\n    #  Process Work pos               \n    #================================================================================\n    If InW[33] == 0\n`;
         steps.forEach(s => {
             sb += `        If xP${s.No}_work_pos_start\n            ${s.ProcessName}.P${s.No}_work_pos();\n        EndIf;\n`;
@@ -235,23 +238,43 @@ EndFunc;
         let prNum = n * 10; // B_PR_num = process_no * 10
         let lastWaitIdx = 1 + (s.ExtraWaitCount || 0); // last wait position index (101, 102, ...)
 
-        // wait_pos: move section (App -> Wait -> [ExtraWaits])
-        let waitMoveSection = `    R_Cur_pos = ${n * 100};\n    Movj P${n}_App,V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n    R_Cur_pos = ${n * 100 + 1};\n    Movj P${n}_Wait,V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n`;
-        for (let i = 1; i <= (s.ExtraWaitCount || 0); i++) {
-            waitMoveSection += `    R_Cur_pos = ${n * 100 + 1 + i};\n    Movj P${n}_Wait${i+1},V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n`;
+        // wait_pos function
+        let waitStr = "";
+        if (options.EnableWaitPos) {
+            let busyOn = options.EnableProcessBusy ? `    Set yP${n}_wait_pos_busy,ON; #Process Wait pos busy ON\n` : "";
+            let busyOff = options.EnableProcessBusy ? `    Set yP${n}_wait_pos_busy,OFF;\n` : "";
+
+            waitStr = `ProgramInfo\n    Version = "S4.24"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getNowAmPm()}"\n    RobotName = "${options.RobotName}"\nEndProgramInfo\n#================================================================================\n#  Process Wait pos                   \n#================================================================================\nFunc P${n}_wait_pos()\n    #================================================================================\n    #  Return move before process pos                 \n    #================================================================================\n    OutW[33] = 0; #Process Wait pos comp reset\n    OutW[34] = 0; #Process Work pos comp reset\n    Print "P${n} - ${type} ${method} Wait pos Start";\n${busyOn}    #================================================================================\n    If R_Cur_pos == ${n * 100 + 10} Or R_Cur_pos == ${n * 100 + 11}\n        B_T_num = ${tNum}; #Tool No\n        B_W_num = 0;\n        B_PR_num = ${prNum};\n        R_Cur_pos = ${n * 100 + 10};\n        Movl Offset(P${n}_Up, PR[B_PR_num]),V[100],Z[1],Tool[B_T_num],Wobj[B_W_num];\n        R_Cur_pos = ${n * 100 + 1};\n        Movj P${n}_Wait,V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n        Goto L[0];\n    Else\n        Bool return_result = s01_initial.Return_move(); #Return move before process pos  \n    EndIf;\n    #================================================================================\n    #  Tool / Wobj Setting                   \n    #================================================================================\n    B_T_num = ${tNum}; #Tool No\n    B_W_num = 0;\n    #================================================================================\n    #  Move                     \n    #================================================================================\n${waitMoveSection}    #================================================================================\n    #  Process Wait pos Complete                    \n    #================================================================================\n    L[0]:\n    Print "P${n} - ${type} ${method} Wait pos End";\n${busyOff}    Set yP${n}_wait_pos_comp,ON;\nEndFunc;\n`;
         }
 
-        // work_pos: conditional App->Wait if not already there, then Up->Down
-        let workMoveSection = `    If R_Cur_pos <> ${n * 100 + lastWaitIdx}\n        R_Cur_pos = ${n * 100};\n        Movj P${n}_App,V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n        R_Cur_pos = ${n * 100 + 1};\n        Movj P${n}_Wait,V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n    EndIf;\n`;
+        // work_pos function
+        let workBusyOn = options.EnableProcessBusy ? `    Set yP${n}_work_pos_busy,ON;\n` : "";
+        let workBusyOff = options.EnableProcessBusy ? `    Set yP${n}_work_pos_busy,OFF;\n` : "";
+
+        let workMoveSection = "";
+        if (options.EnableWaitPos) {
+            workMoveSection = `    If R_Cur_pos <> ${n * 100 + lastWaitIdx}\n        R_Cur_pos = ${n * 100};\n        Movj P${n}_App,V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n        R_Cur_pos = ${n * 100 + 1};\n        Movj P${n}_Wait,V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n    EndIf;\n`;
+        } else {
+            workMoveSection = `    R_Cur_pos = ${n * 100};\n    Movj P${n}_App,V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n    R_Cur_pos = ${n * 100 + 1};\n    Movj P${n}_Wait,V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n`;
+        }
         workMoveSection += `    #================================================================================\n    R_Cur_pos = ${n * 100 + 10};\n    Movl Offset(P${n}_Up, PR[B_PR_num]),V[100],Z[1],Tool[B_T_num],Wobj[B_W_num];\n    R_Cur_pos = ${n * 100 + 11};\n    Movl Offset(P${n}_Down, PR[B_PR_num]),Speed[100],Fine,Tool[B_T_num],Wobj[B_W_num];\n`;
 
-        // wait_pos function
-        let waitStr = `ProgramInfo\n    Version = "S4.24"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getNowAmPm()}"\n    RobotName = "${options.RobotName}"\nEndProgramInfo\n#================================================================================\n#  Process Wait pos                   \n#================================================================================\nFunc P${n}_wait_pos()\n    #================================================================================\n    #  Return move before process pos                 \n    #================================================================================\n    OutW[33] = 0; #Process Wait pos comp reset\n    OutW[34] = 0; #Process Work pos comp reset\n    Print "P${n} - ${type} ${method} Wait pos Start";\n    Set yP${n}_wait_pos_busy,ON; #Process Wait pos busy ON\n    #================================================================================\n    If R_Cur_pos == ${n * 100 + 10} Or R_Cur_pos == ${n * 100 + 11}\n        B_T_num = ${tNum}; #Tool No\n        B_W_num = 0;\n        B_PR_num = ${prNum};\n        R_Cur_pos = ${n * 100 + 10};\n        Movl Offset(P${n}_Up, PR[B_PR_num]),V[100],Z[1],Tool[B_T_num],Wobj[B_W_num];\n        R_Cur_pos = ${n * 100 + 1};\n        Movj P${n}_Wait,V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n        Goto L[0];\n    Else\n        Bool return_result = s01_initial.Return_move(); #Return move before process pos  \n    EndIf;\n    #================================================================================\n    #  Tool / Wobj Setting                   \n    #================================================================================\n    B_T_num = ${tNum}; #Tool No\n    B_W_num = 0;\n    #================================================================================\n    #  Move                     \n    #================================================================================\n${waitMoveSection}    #================================================================================\n    #  Process Wait pos Complete                    \n    #================================================================================\n    L[0]:\n    Print "P${n} - ${type} ${method} Wait pos End";\n    Set yP${n}_wait_pos_busy,OFF;\n    Set yP${n}_wait_pos_comp,ON;\nEndFunc;\n`;
+        let teachingCall = options.EnableTeachingMode ? `    If xTeaching_mode\n        P${n}_teaching_mode();\n    EndIf;\n` : "";
 
-        // work_pos function
-        let workStr = `#================================================================================\n#  Process Work pos                   \n#================================================================================\nFunc P${n}_work_pos()\n${toolPosCheck}    #================================================================================\n    #  Return move before process pos                 \n    #================================================================================\n    OutW[33] = 0; #Process signal reset\n    OutW[34] = 0; #Process signal reset\n${peekInit}    Set yP${n}_work_pos_busy,ON;\n    #================================================================================\n    If R_Cur_pos <> ${n * 100 + lastWaitIdx}\n        Bool return_result = s01_initial.Return_move();\n    EndIf;\n    #================================================================================\n    #  Signal Initial                      \n    #================================================================================\n    Print "P${n} - ${type} ${method} Work pos Start";\n    B_T_num = ${tNum}; #Tool No\n    B_W_num = 0;\n    B_PR_num = ${prNum};\n    #================================================================================\n${connectSocket}    Set_offset();\n    #================================================================================\n    #  Move                     \n    #================================================================================\n${workMoveSection}    #================================================================================\n    If xTeaching_mode\n        P${n}_teaching_mode();\n    EndIf;\n${afterTeach}${toolCtrlLogic}${startAction}    #================================================================================\n    #  Process Complete                    \n    #================================================================================\n${endAction}    Print "P${n} - ${type} ${method} Work pos End";\n    Set yP${n}_work_pos_busy,OFF;\n    Set yP${n}_work_pos_comp,ON;\nEndFunc;\n`;
+        let workStr = `#================================================================================\n#  Process Work pos                   \n#================================================================================\nFunc P${n}_work_pos()\n${toolPosCheck}    #================================================================================\n    #  Return move before process pos                 \n    #================================================================================\n    OutW[33] = 0; #Process signal reset\n    OutW[34] = 0; #Process signal reset\n${peekInit}${workBusyOn}    #================================================================================\n`;
+        if (options.EnableWaitPos) {
+            workStr += `    If R_Cur_pos <> ${n * 100 + lastWaitIdx}\n        Bool return_result = s01_initial.Return_move();\n    EndIf;\n`;
+        } else {
+            workStr += `    Bool return_result = s01_initial.Return_move();\n`;
+        }
+        workStr += `    #================================================================================\n    #  Signal Initial                      \n    #================================================================================\n    Print "P${n} - ${type} ${method} Work pos Start";\n    B_T_num = ${tNum}; #Tool No\n    B_W_num = 0;\n    B_PR_num = ${prNum};\n    #================================================================================\n${connectSocket}    Set_offset();\n    #================================================================================\n    #  Move                     \n    #================================================================================\n${workMoveSection}    #================================================================================\n${teachingCall}${afterTeach}${toolCtrlLogic}${startAction}    #================================================================================\n    #  Process Complete                    \n    #================================================================================\n${endAction}    Print "P${n} - ${type} ${method} Work pos End";\n${workBusyOff}    Set yP${n}_work_pos_comp,ON;\nEndFunc;\n`;
 
-        let mainStr = `${waitStr}\n${workStr}\n#====================================================================================\n#  Position check mode\n#====================================================================================\nFunc P${n}_teaching_mode()\n    #================================================================================\n    #  Return move before process pos                 \n    #================================================================================\n    Set yTeaching_running,ON;    \n    Print "P${n} - ${type} ${method} Teaching mode Start";\n    #================================================================================\n    #  Move                     \n    #================================================================================\n    While xTeaching_mode == OFF or xTeaching_cancel == OFF\n        Set_offset();\n        Movl Offset(P${n}_Down, PR[B_PR_num]),Speed[50],Fine,Tool[B_T_num],Wobj[B_W_num];\n        If xTeaching_save\n            Print "Up Pos saved (Origin pos :" + P${n}_Up + ")";\n            Print "Down Pos saved (Origin pos :" + P${n}_Down + ")";\n            P${n}_Up = Offset(P${n}_Up,PR[B_PR_num]);\n            P${n}_Down = Offset(P${n}_Down,PR[B_PR_num]);\n            Print "Saved Offset value : " + PR[B_PR_num];\n            Print "Up Pos saved (Saved pos :" + P${n}_Up + ")";\n            Print "Down Pos saved (Saved pos :" + P${n}_Down + ")";\n            SavePoints;\n            Break;\n        EndIf;\n    EndWhile;\n    #================================================================================\n    Set yTeaching_running,OFF;\n    Print "P${n} - ${type} ${method} Teaching mode End";\nEndFunc;\n#====================================================================================\n# Set Offset                  \n#====================================================================================\n${offsetFunc}\n${socketFuncs}`;
+        let teachModeFunc = "";
+        if (options.EnableTeachingMode) {
+            teachModeFunc = `#====================================================================================\n#  Position check mode\n#====================================================================================\nFunc P${n}_teaching_mode()\n    #================================================================================\n    #  Return move before process pos                 \n    #================================================================================\n    Set yTeaching_running,ON;    \n    Print "P${n} - ${type} ${method} Teaching mode Start";\n    #================================================================================\n    #  Move                     \n    #================================================================================\n    While xTeaching_mode == OFF or xTeaching_cancel == OFF\n        Set_offset();\n        Movl Offset(P${n}_Down, PR[B_PR_num]),Speed[50],Fine,Tool[B_T_num],Wobj[B_W_num];\n        If xTeaching_save\n            Print "Up Pos saved (Origin pos :" + P${n}_Up + ")";\n            Print "Down Pos saved (Origin pos :" + P${n}_Down + ")";\n            P${n}_Up = Offset(P${n}_Up,PR[B_PR_num]);\n            P${n}_Down = Offset(P${n}_Down,PR[B_PR_num]);\n            Print "Saved Offset value : " + PR[B_PR_num];\n            Print "Up Pos saved (Saved pos :" + P${n}_Up + ")";\n            Print "Down Pos saved (Saved pos :" + P${n}_Down + ")";\n            SavePoints;\n            Break;\n        EndIf;\n    EndWhile;\n    #================================================================================\n    Set yTeaching_running,OFF;\n    Print "P${n} - ${type} ${method} Teaching mode End";\nEndFunc;\n`;
+        }
+
+        let mainStr = `${waitStr}\n${workStr}\n${teachModeFunc}#====================================================================================\n# Set Offset                  \n#====================================================================================\n${offsetFunc}\n${socketFuncs}`;
         return mainStr;
     },
     // Data files
@@ -350,11 +373,15 @@ EndFunc;
             {nIndex: 513, sLabel: "xStop_prog", sDescription: "Stop program", sOriginalName: "IN[513]"},
             {nIndex: 514, sLabel: "xReset_prog", sDescription: "Reset program", sOriginalName: "IN[514]"},
             {nIndex: 515, sLabel: "xReset_alarm", sDescription: "Clear alarm", sOriginalName: "IN[515]"},
-            {nIndex: 519, sLabel: "xRobot_homing", sDescription: "", sOriginalName: "IN[519]"},
-            {nIndex: 520, sLabel: "xTeaching_mode", sDescription: "", sOriginalName: "IN[520]"},
-            {nIndex: 521, sLabel: "xTeaching_save", sDescription: "", sOriginalName: "IN[521]"},
-            {nIndex: 522, sLabel: "xTeaching_cancel", sDescription: "", sOriginalName: "IN[522]"}
         ];
+
+        if (options.EnableTeachingMode) {
+            inBits.push(
+                {nIndex: 520, sLabel: "xTeaching_mode", sDescription: "", sOriginalName: "IN[520]"},
+                {nIndex: 521, sLabel: "xTeaching_save", sDescription: "", sOriginalName: "IN[521]"},
+                {nIndex: 522, sLabel: "xTeaching_cancel", sDescription: "", sOriginalName: "IN[522]"}
+            );
+        }
 
         let baseInIdx = 528;
         steps.forEach(s => { inBits.push({nIndex: baseInIdx, sLabel: `xP${s.No}_wait_pos_start`, sDescription: "", sOriginalName: `IN[${baseInIdx}]`}); baseInIdx++; });
@@ -434,21 +461,26 @@ EndFunc;
             {nIndex: 513, sLabel: "yProg_stop_sts", sDescription: "Program stopped", sOriginalName: "OUT[513]"},
             {nIndex: 514, sLabel: "yProg_reset_sts", sDescription: "Program reset successful", sOriginalName: "OUT[514]"},
             {nIndex: 515, sLabel: "yAlarm_sts", sDescription: "System fault status", sOriginalName: "OUT[515]"},
-            {nIndex: 519, sLabel: "yRobot_home_sts", sDescription: "", sOriginalName: "OUT[519]"},
-            {nIndex: 520, sLabel: "yTeaching_running", sDescription: "", sOriginalName: "OUT[520]"}
+            {nIndex: 519, sLabel: "yRobot_home_sts", sDescription: "", sOriginalName: "OUT[519]"}
         ];
+        if (options.EnableTeachingMode) {
+            outBits.push({nIndex: 520, sLabel: "yTeaching_running", sDescription: "", sOriginalName: "OUT[520]"});
+        }
         // yP{n}_wait_pos_comp: OUT[528..527+N]
         let baseOutIdx = 528;
         steps.forEach(s => { outBits.push({nIndex: baseOutIdx, sLabel: `yP${s.No}_wait_pos_comp`, sDescription: "", sOriginalName: `OUT[${baseOutIdx}]`}); baseOutIdx++; });
         // yP{n}_work_pos_comp: OUT[544..543+N]
         baseOutIdx = 544;
         steps.forEach(s => { outBits.push({nIndex: baseOutIdx, sLabel: `yP${s.No}_work_pos_comp`, sDescription: "", sOriginalName: `OUT[${baseOutIdx}]`}); baseOutIdx++; });
-        // yP{n}_wait_pos_busy: OUT[560..559+N]
-        baseOutIdx = 560;
-        steps.forEach(s => { outBits.push({nIndex: baseOutIdx, sLabel: `yP${s.No}_wait_pos_busy`, sDescription: "", sOriginalName: `OUT[${baseOutIdx}]`}); baseOutIdx++; });
-        // yP{n}_work_pos_busy: OUT[576..575+N]
-        baseOutIdx = 576;
-        steps.forEach(s => { outBits.push({nIndex: baseOutIdx, sLabel: `yP${s.No}_work_pos_busy`, sDescription: "", sOriginalName: `OUT[${baseOutIdx}]`}); baseOutIdx++; });
+        
+        if (options.EnableProcessBusy) {
+            // yP{n}_wait_pos_busy: OUT[560..559+N]
+            baseOutIdx = 560;
+            steps.forEach(s => { outBits.push({nIndex: baseOutIdx, sLabel: `yP${s.No}_wait_pos_busy`, sDescription: "", sOriginalName: `OUT[${baseOutIdx}]`}); baseOutIdx++; });
+            // yP{n}_work_pos_busy: OUT[576..575+N]
+            baseOutIdx = 576;
+            steps.forEach(s => { outBits.push({nIndex: baseOutIdx, sLabel: `yP${s.No}_work_pos_busy`, sDescription: "", sOriginalName: `OUT[${baseOutIdx}]`}); baseOutIdx++; });
+        }
 
         if (hasCalibPlc) outBits.push({nIndex: 592, sLabel: "yVision_move_comp", sDescription: "", sOriginalName: "OUT[592]"});
         if (hasPeeling) outBits.push({nIndex: 600, sLabel: "yPeel_pos_comp", sDescription: "", sOriginalName: "OUT[600]"});
