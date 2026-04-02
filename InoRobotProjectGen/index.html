@@ -36,13 +36,23 @@
             background: transparent;
             border: none;
             padding: 0;
-            transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .logo-link:hover { transform: scale(1.05); }
-        .logo-img { height: 32px; width: auto; object-fit: contain; display: block; }
+
+        .logo-link:hover {
+            transform: scale(1.05);
+        }
+
+        .logo-img {
+            height: 32px;
+            width: auto;
+            object-fit: contain;
+            display: block;
+        }
+
         .header-divider {
             padding-left: 1.5rem;
-            border-left: 1px solid rgba(255,255,255,0.09);
+            border-left: 1px solid rgba(255, 255, 255, 0.09);
         }
 
         .scroll-custom::-webkit-scrollbar {
@@ -85,27 +95,28 @@
 </head>
 
 <body class="p-0">
-    <header class="sticky top-0 w-full flex flex-row justify-between items-center bg-[rgba(15,19,28,0.95)] backdrop-blur-xl border-b border-white/[0.09] px-8 shrink-0 gap-6 h-[72px] z-50">
-            <div class="flex flex-row items-center gap-6 flex-shrink-0">
-                <a href="/" class="logo-link" title="메인 페이지로 이동">
-                    <img id="appLogo" src="../InoRobotSelect/INOVANCE_Logo.png" class="logo-img" alt="Inovance">
-                </a>
-                <div class="header-divider">
-                    <h1 class="text-xl font-bold font-[Outfit] text-white whitespace-nowrap">
-                        Inovance Robot Project Generator</h1>
-                    <p class="text-sm text-slate-400 font-mono tracking-wide">Based on R24.C4 (Ver. 26.04.02.08)</p>
-                </div>
+    <header
+        class="sticky top-0 w-full flex flex-row justify-between items-center bg-[rgba(15,19,28,0.95)] backdrop-blur-xl border-b border-white/[0.09] px-8 shrink-0 gap-6 h-[72px] z-50">
+        <div class="flex flex-row items-center gap-6 flex-shrink-0">
+            <a href="/" class="logo-link" title="메인 페이지로 이동">
+                <img id="appLogo" src="../InoRobotSelect/INOVANCE_Logo.png" class="logo-img" alt="Inovance">
+            </a>
+            <div class="header-divider">
+                <h1 class="text-xl font-bold font-[Outfit] text-white whitespace-nowrap">
+                    Inovance Robot Project Generator</h1>
+                <p class="text-sm text-slate-400 font-mono tracking-wide">Based on R24.C4 (Ver. 26.04.02.08)</p>
             </div>
-            <div class="flex flex-row items-center gap-3 flex-shrink-0">
-                <button id="btnOption"
-                    class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-xl font-medium transition-colors flex items-center gap-2 text-sm h-10">
-                    <i data-lucide="settings" class="w-4 h-4"></i> Options
-                </button>
-                <button id="btnGenerate"
-                    class="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl font-medium transition-colors shadow-lg shadow-blue-600/20 flex items-center gap-2 text-sm h-10">
-                    <i data-lucide="download" class="w-4 h-4"></i> Generate Project
-                </button>
-            </div>
+        </div>
+        <div class="flex flex-row items-center gap-3 flex-shrink-0">
+            <button id="btnOption"
+                class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-xl font-medium transition-colors flex items-center gap-2 text-sm h-10">
+                <i data-lucide="settings" class="w-4 h-4"></i> Options
+            </button>
+            <button id="btnGenerate"
+                class="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl font-medium transition-colors shadow-lg shadow-blue-600/20 flex items-center gap-2 text-sm h-10">
+                <i data-lucide="download" class="w-4 h-4"></i> Generate Project
+            </button>
+        </div>
     </header>
     <div class="max-w-[1500px] mx-auto space-y-6 p-4 md:p-8">
         <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 h-auto xl:h-[760px]">
@@ -119,7 +130,7 @@
                         <input type="text" id="prjName" maxlength="16"
                             class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 transition-all font-mono">
                         <script>
-                            (function() {
+                            (function () {
                                 const d = new Date();
                                 const mm = String(d.getMonth() + 1).padStart(2, '0');
                                 const dd = String(d.getDate()).padStart(2, '0');
@@ -154,12 +165,12 @@
                     <div id="stepsListParent" class="flex-1 overflow-x-auto flex flex-col min-h-0 scroll-custom">
                         <div class="min-w-[650px] flex-1 flex flex-col min-h-0 pb-2">
                             <!-- Headers -->
-                            <div
-                                class="flex gap-2 px-3 mb-2 text-sm font-semibold text-slate-500 flex-shrink-0">
+                            <div class="flex gap-2 px-3 mb-2 text-sm font-semibold text-slate-500 flex-shrink-0">
                                 <span class="w-6 text-center">No</span><span class="w-10 text-center">Name</span><span
-                                    class="flex-1 text-center">Type</span><span class="flex-1 text-left">Method</span><span
-                                    class="flex-1 text-center">Tool</span><span class="flex-1 text-center">Vision offset</span><span
-                                    class="w-6"></span>
+                                    class="flex-1 text-center">Type</span><span
+                                    class="flex-1 text-left">Method</span><span
+                                    class="flex-1 text-center">Tool</span><span class="flex-1 text-center">Vision
+                                    offset</span><span class="w-6"></span>
                             </div>
                             <div id="stepsList" class="flex-1 overflow-y-auto scroll-custom space-y-3 pr-2"></div>
                         </div>
@@ -184,7 +195,9 @@
                 </div>
                 <!-- The contenteditable logic or textarea -->
                 <div class="bg-slate-950/80 rounded-xl p-4 flex-grow overflow-hidden relative">
-                    <div id="tableContainer" class="absolute inset-0 w-full h-full overflow-auto scroll-custom p-4 transition-opacity duration-200 opacity-0 pointer-events-none"></div>
+                    <div id="tableContainer"
+                        class="absolute inset-0 w-full h-full overflow-auto scroll-custom p-4 transition-opacity duration-200 opacity-0 pointer-events-none">
+                    </div>
                     <div id="prismContainer"
                         class="w-full h-full overflow-auto scroll-custom transition-opacity duration-200">
                         <pre><code id="codeOutput" class="language-robot text-sm leading-relaxed"></code></pre>
@@ -200,14 +213,16 @@
     <!-- Options Modal -->
     <div id="optionsModal"
         class="fixed inset-0 bg-black/70 backdrop-blur-md hidden flex items-center justify-center z-50 p-4">
-        <div class="glass w-full max-w-4xl p-0 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row h-[640px]">
+        <div
+            class="glass w-full max-w-4xl p-0 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row h-[640px]">
             <!-- Left: Options List -->
             <div class="w-full md:w-1/2 p-6 flex flex-col border-r border-white/5 bg-slate-900/40">
                 <h2 class="text-xl font-bold flex items-center gap-2 mb-6"><i data-lucide="settings"
                         class="w-6 h-6 text-white"></i> Project Options</h2>
 
                 <div class="space-y-3 overflow-y-auto flex-1 pr-2 scroll-custom">
-                    <div class="flex items-center justify-between bg-slate-800/40 p-4 rounded-xl border border-slate-700 text-sm relative group cursor-pointer hover:bg-slate-700/50 transition-colors" data-opt-id="multiRecipe">
+                    <div class="flex items-center justify-between bg-slate-800/40 p-4 rounded-xl border border-slate-700 text-sm relative group cursor-pointer hover:bg-slate-700/50 transition-colors"
+                        data-opt-id="multiRecipe">
                         <div class="flex items-center gap-3">
                             <input type="checkbox" id="chkMultiRecipe"
                                 class="w-5 h-5 rounded text-blue-500 bg-slate-900 border-slate-600 focus:ring-0">
@@ -223,7 +238,8 @@
 
                     <div class="grid grid-cols-1 gap-3">
                         <label
-                            class="flex items-center justify-between bg-slate-800/40 p-4 rounded-xl border border-slate-700 cursor-pointer text-sm relative group hover:bg-slate-700/50 transition-colors" data-opt-id="tcpSpeed">
+                            class="flex items-center justify-between bg-slate-800/40 p-4 rounded-xl border border-slate-700 cursor-pointer text-sm relative group hover:bg-slate-700/50 transition-colors"
+                            data-opt-id="tcpSpeed">
                             <div class="flex items-center gap-3">
                                 <input type="checkbox" id="chkTcpSpeed"
                                     class="w-5 h-5 rounded text-blue-500 bg-slate-900 border-slate-600">
@@ -231,15 +247,16 @@
                             </div>
                         </label>
                         <label
-                            class="flex items-center justify-between bg-slate-800/40 p-4 rounded-xl border border-slate-700 cursor-pointer text-sm relative group hover:bg-slate-700/50 transition-colors" data-opt-id="torque">
+                            class="flex items-center justify-between bg-slate-800/40 p-4 rounded-xl border border-slate-700 cursor-pointer text-sm relative group hover:bg-slate-700/50 transition-colors"
+                            data-opt-id="torque">
                             <div class="flex items-center gap-3">
                                 <input type="checkbox" id="chkTorque"
                                     class="w-5 h-5 rounded text-blue-500 bg-slate-900 border-slate-600">
                                 <span class="font-medium whitespace-nowrap">Torque Monitoring</span>
                             </div>
                         </label>
-                        <div
-                            class="flex items-center justify-between bg-slate-800/40 p-4 rounded-xl border border-slate-700 text-sm relative group cursor-pointer hover:bg-slate-700/50 transition-colors" data-opt-id="toolControl">
+                        <div class="flex items-center justify-between bg-slate-800/40 p-4 rounded-xl border border-slate-700 text-sm relative group cursor-pointer hover:bg-slate-700/50 transition-colors"
+                            data-opt-id="toolControl">
                             <div class="flex items-center gap-3">
                                 <input type="checkbox" id="chkToolControl"
                                     class="w-5 h-5 rounded text-blue-500 bg-slate-900 border-slate-600 focus:ring-0">
@@ -256,7 +273,8 @@
 
                         <!-- 3 New Options -->
                         <label
-                            class="flex items-center justify-between bg-slate-800/40 p-4 rounded-xl border border-slate-700 cursor-pointer text-sm relative group hover:bg-slate-700/50 transition-colors" data-opt-id="teachingMode">
+                            class="flex items-center justify-between bg-slate-800/40 p-4 rounded-xl border border-slate-700 cursor-pointer text-sm relative group hover:bg-slate-700/50 transition-colors"
+                            data-opt-id="teachingMode">
                             <div class="flex items-center gap-3">
                                 <input type="checkbox" id="chkTeachingMode"
                                     class="w-5 h-5 rounded text-blue-500 bg-slate-900 border-slate-600">
@@ -264,7 +282,8 @@
                             </div>
                         </label>
                         <label
-                            class="flex items-center justify-between bg-slate-800/40 p-4 rounded-xl border border-slate-700 cursor-pointer text-sm relative group hover:bg-slate-700/50 transition-colors" data-opt-id="waitPos">
+                            class="flex items-center justify-between bg-slate-800/40 p-4 rounded-xl border border-slate-700 cursor-pointer text-sm relative group hover:bg-slate-700/50 transition-colors"
+                            data-opt-id="waitPos">
                             <div class="flex items-center gap-3">
                                 <input type="checkbox" id="chkWaitPos"
                                     class="w-5 h-5 rounded text-blue-500 bg-slate-900 border-slate-600">
@@ -272,7 +291,8 @@
                             </div>
                         </label>
                         <label
-                            class="flex items-center justify-between bg-slate-800/40 p-4 rounded-xl border border-slate-700 cursor-pointer text-sm relative group hover:bg-slate-700/50 transition-colors" data-opt-id="processBusy">
+                            class="flex items-center justify-between bg-slate-800/40 p-4 rounded-xl border border-slate-700 cursor-pointer text-sm relative group hover:bg-slate-700/50 transition-colors"
+                            data-opt-id="processBusy">
                             <div class="flex items-center gap-3">
                                 <input type="checkbox" id="chkProcessBusy"
                                     class="w-5 h-5 rounded text-blue-500 bg-slate-900 border-slate-600">
@@ -291,7 +311,8 @@
             </div>
 
             <!-- Right: Description Panel -->
-            <div class="hidden md:flex w-1/2 p-8 bg-slate-950/40 flex-col justify-center items-center text-center space-y-4">
+            <div
+                class="hidden md:flex w-1/2 p-8 bg-slate-950/40 flex-col justify-center items-center text-center space-y-4">
                 <div id="optIconBox" class="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center">
                     <i data-lucide="info" class="w-10 h-10 text-slate-400"></i>
                 </div>
