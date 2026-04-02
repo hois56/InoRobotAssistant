@@ -343,11 +343,6 @@ EndFunc;
     RemoteIOInfo(options) {
         let t = Assets.RemoteIO.replace(/Time="[^"]*"/, `Time="${TemplateHelper.getNow()}"`);
         t = t.replace(/RobotName="[^"]*"/, `RobotName="${options.RobotName}"`);
-        let chkCode = options.EnableMultiRecipe ? "67B10D3D" : "B584C2A8";
-        t = t.replace(/CheckCode="[^"]*"/, `CheckCode="${chkCode}"`);
-        let rAddr = options.EnableMultiRecipe ? "736" : "-1";
-        t = t.replace(/("FuncId"\s*:\s*8288\s*,\s*"MemAddr"\s*:\s*)-?\d+/g, `$1${rAddr}`);
-        t = t.replace(/("FuncId"\s*:\s*41056\s*,\s*"MemAddr"\s*:\s*)-?\d+/g, `$1${rAddr}`);
         return t;
     },
     RobPointMapping(options) {
