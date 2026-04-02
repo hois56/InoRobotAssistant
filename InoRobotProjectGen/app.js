@@ -893,7 +893,7 @@ async function exportProj() {
         // Name changes dynamically based on input
         addCustomZFile(root, `${name}.prj`, `${name}.prj`);
         
-        root.file("InoRobot_IO_Map_V24.C4.01.xlsx", Assets.IO_Map_Excel, {base64: true});
+        root.file("InoRobot_IO_Map_V24.C4.02.xlsx", Assets.IO_Map_Excel, {base64: true});
 
         const blob = await zip.generateAsync({type:"blob"});
         saveAs(blob, `${name}.zip`);
