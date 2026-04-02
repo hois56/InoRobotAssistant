@@ -44,10 +44,25 @@ const state = {
 };
 
 function initApp() {
-    initRobots();
-    addStep();
-    document.getElementById('btnAdd').onclick = addStep;
-    document.getElementById('btnGenerate').onclick = exportProj;
+    // 1. Core Button Binding - Move to top for reliability
+    const btnAdd = document.getElementById('btnAdd');
+    if (btnAdd) btnAdd.onclick = addStep;
+    
+    const btnGenerate = document.getElementById('btnGenerate');
+    if (btnGenerate) btnGenerate.onclick = exportProj;
+
+    // 2. Data Initialization with try-catch
+    try {
+        initRobots();
+    } catch (e) {
+        console.error("Robot data initialization failed:", e);
+    }
+
+    try {
+        addStep();
+    } catch (e) {
+        console.error("Initial step creation failed:", e);
+    }
     
     // Name validation
     document.getElementById('prjName').addEventListener('input', function(e) {
@@ -180,12 +195,24 @@ function initApp() {
         updatePreview();
     };
 
-    updatePreview();
-    if(window.lucide) lucide.createIcons();
+    try {
+        updatePreview();
+    } catch (e) {
+        console.error("Initial preview update failed:", e);
+    }
+    
+    if(window.lucide) {
+        try {
+            lucide.createIcons();
+        } catch (e) {
+            console.warn("Lucide icons could not be initialized:", e);
+        }
+    }
 }
 
 function initRobots() {
     let cmb = document.getElementById('cmbRobotModel');
+    if (!cmb) return;
     cmb.innerHTML = ''; // Clear existing
     
     const scaraGrp = document.createElement('optgroup');
@@ -193,36 +220,43 @@ function initRobots() {
     const axis6Grp = document.createElement('optgroup');
     axis6Grp.label = "6-Axis Robots";
 
-    // The source assets are swapped (Robots_SCARA has 6-axis data, Robots_6_axis has SCARA data)
-    // We map them correctly here:
-    let linesS = Assets.Robots_6_axis.split(/\r?\n/); 
-    linesS.forEach(line => {
-        let cols = line.split(',');
-        if(cols.length >= 4) {
-            let name = cols[0].trim()+cols[1].trim()+cols[2].trim()+cols[3].trim();
-            let opt = document.createElement('option');
-            opt.value = name;
-            opt.text = cols[1].trim();
-            scaraGrp.appendChild(opt);
-        }
-    });
+    // Handle SCARA data (Mapped from Robots_6_axis assets)
+    if (typeof Assets !== 'undefined' && Assets.Robots_6_axis) {
+        let linesS = Assets.Robots_6_axis.split(/\r?\n/); 
+        linesS.forEach(line => {
+            let cols = line.split(',');
+            if(cols.length >= 4) {
+                let name = cols[0].trim()+cols[1].trim()+cols[2].trim()+cols[3].trim();
+                let opt = document.createElement('option');
+                opt.value = name;
+                opt.text = cols[1].trim();
+                scaraGrp.appendChild(opt);
+            }
+        });
+    }
 
-    // 6-Axis
-    let lines6 = Assets.Robots_SCARA.split(/\r?\n/);
-    lines6.forEach(line => {
-        let cols = line.split(',');
-        if(cols.length >= 4) {
-            let name = cols[0].trim()+cols[1].trim()+cols[2].trim()+cols[3].trim();
-            let opt = document.createElement('option');
-            opt.value = name;
-            opt.text = cols[1].trim();
-            axis6Grp.appendChild(opt);
-        }
-    });
+    // Handle 6-Axis data (Mapped from Robots_SCARA assets)
+    if (typeof Assets !== 'undefined' && Assets.Robots_SCARA) {
+        let lines6 = Assets.Robots_SCARA.split(/\r?\n/);
+        lines6.forEach(line => {
+            let cols = line.split(',');
+            if(cols.length >= 4) {
+                let name = cols[0].trim()+cols[1].trim()+cols[2].trim()+cols[3].trim();
+                let opt = document.createElement('option');
+                opt.value = name;
+                opt.text = cols[1].trim();
+                axis6Grp.appendChild(opt);
+            }
+        });
+    }
 
     cmb.appendChild(scaraGrp);
     cmb.appendChild(axis6Grp);
-    cmb.value = state.options.RobotName;
+    
+    if (state.options.RobotName) {
+        cmb.value = state.options.RobotName;
+    }
+    
     cmb.onchange = (e) => {
         state.options.RobotName = e.target.value;
         updatePreview();
