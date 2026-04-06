@@ -412,104 +412,192 @@
                 <!-- ── TIMING CHART TAB ── -->
                 <div id="guideTab-timing" class="guide-tab-content space-y-8">
 
-                    <!-- 1. 프로그램 시작 -->
+                    <!-- 1. 프로그램 시작 (7 steps) -->
                     <div class="guide-section">
                         <h3 class="guide-section-title"><span class="guide-num">1</span> 프로그램 시작</h3>
                         <p class="guide-desc">상위 제어기(PLC)에서 로봇 프로그램을 시작하는 신호 순서입니다.</p>
-                        <div class="guide-chart">
-                            <div class="guide-signal-row">
-                                <span class="guide-label">xRobot_run <span class="guide-addr">(IN[512])</span></span>
-                                <div class="guide-wave">
-                                    <div class="w-low w-8"></div><div class="w-rise"></div><div class="w-high flex-1"></div>
+                        <div class="tc">
+                            <!-- Header -->
+                            <div class="tc-row tc-hdr-row">
+                                <div class="tc-lbl-pad"></div>
+                                <div class="tc-grid" style="grid-template-columns:repeat(7,1fr)">
+                                    <div class="tc-sh"><div class="tc-sh-num">①</div><div class="tc-sh-lbl">yProg_stop_sts<br>ON 확인</div></div>
+                                    <div class="tc-sh"><div class="tc-sh-num">②</div><div class="tc-sh-lbl">xReset_prog<br>ON</div></div>
+                                    <div class="tc-sh"><div class="tc-sh-num">③</div><div class="tc-sh-lbl">yProg_reset_sts<br>ON 확인</div></div>
+                                    <div class="tc-sh"><div class="tc-sh-num">④</div><div class="tc-sh-lbl">xReset_prog<br>OFF</div></div>
+                                    <div class="tc-sh"><div class="tc-sh-num">⑤</div><div class="tc-sh-lbl">xStart_prog<br>ON</div></div>
+                                    <div class="tc-sh"><div class="tc-sh-num">⑥</div><div class="tc-sh-lbl">yProg_run_sts<br>ON 확인</div></div>
+                                    <div class="tc-sh"><div class="tc-sh-num">⑦</div><div class="tc-sh-lbl">xStart_prog<br>OFF</div></div>
                                 </div>
-                                <span class="guide-dir guide-dir-in">PLC→Robot</span>
+                                <div class="tc-dir-pad"></div>
                             </div>
-                            <div class="guide-signal-row">
-                                <span class="guide-label">xRobot_ready <span class="guide-addr">(OUT[512])</span></span>
-                                <div class="guide-wave">
-                                    <div class="w-low w-12"></div><div class="w-rise"></div><div class="w-high flex-1"></div>
+                            <!-- yProg_stop_sts: H H H H H H H -->
+                            <div class="tc-row">
+                                <div class="tc-lbl">yProg_stop_sts</div>
+                                <div class="tc-grid" style="grid-template-columns:repeat(7,1fr)">
+                                    <div class="seg h"></div><div class="seg h"></div><div class="seg h"></div><div class="seg h"></div><div class="seg h"></div><div class="seg h"></div><div class="seg h"></div>
                                 </div>
-                                <span class="guide-dir guide-dir-out">Robot→PLC</span>
+                                <span class="tc-dir tc-out">OUT</span>
                             </div>
-                            <div class="guide-signal-row">
-                                <span class="guide-label">xRobot_busy <span class="guide-addr">(OUT[513])</span></span>
-                                <div class="guide-wave">
-                                    <div class="w-low w-16"></div><div class="w-rise"></div><div class="w-high flex-1"></div>
+                            <!-- xReset_prog: L H H L L L L -->
+                            <div class="tc-row">
+                                <div class="tc-lbl">xReset_prog</div>
+                                <div class="tc-grid" style="grid-template-columns:repeat(7,1fr)">
+                                    <div class="seg l"></div><div class="seg h tr"></div><div class="seg h"></div><div class="seg l tr"></div><div class="seg l"></div><div class="seg l"></div><div class="seg l"></div>
                                 </div>
-                                <span class="guide-dir guide-dir-out">Robot→PLC</span>
+                                <span class="tc-dir tc-in">IN</span>
+                            </div>
+                            <!-- yProg_reset_sts: L L H H H H H -->
+                            <div class="tc-row">
+                                <div class="tc-lbl">yProg_reset_sts</div>
+                                <div class="tc-grid" style="grid-template-columns:repeat(7,1fr)">
+                                    <div class="seg l"></div><div class="seg l"></div><div class="seg h tr"></div><div class="seg h"></div><div class="seg h"></div><div class="seg h"></div><div class="seg h"></div>
+                                </div>
+                                <span class="tc-dir tc-out">OUT</span>
+                            </div>
+                            <!-- xStart_prog: L L L L H H L -->
+                            <div class="tc-row">
+                                <div class="tc-lbl">xStart_prog</div>
+                                <div class="tc-grid" style="grid-template-columns:repeat(7,1fr)">
+                                    <div class="seg l"></div><div class="seg l"></div><div class="seg l"></div><div class="seg l"></div><div class="seg h tr"></div><div class="seg h"></div><div class="seg l tr"></div>
+                                </div>
+                                <span class="tc-dir tc-in">IN</span>
+                            </div>
+                            <!-- yProg_run_sts: L L L L L H H -->
+                            <div class="tc-row">
+                                <div class="tc-lbl">yProg_run_sts</div>
+                                <div class="tc-grid" style="grid-template-columns:repeat(7,1fr)">
+                                    <div class="seg l"></div><div class="seg l"></div><div class="seg l"></div><div class="seg l"></div><div class="seg l"></div><div class="seg h tr"></div><div class="seg h"></div>
+                                </div>
+                                <span class="tc-dir tc-out">OUT</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 2. 프로그램 정지 -->
+                    <!-- 2. 프로그램 정지 (4 steps) -->
                     <div class="guide-section">
                         <h3 class="guide-section-title"><span class="guide-num">2</span> 프로그램 정지</h3>
-                        <p class="guide-desc">프로그램 정지 신호를 수신하면 로봇은 현재 동작을 완료 후 대기 상태로 전환됩니다.</p>
-                        <div class="guide-chart">
-                            <div class="guide-signal-row">
-                                <span class="guide-label">xRobot_run <span class="guide-addr">(IN[512])</span></span>
-                                <div class="guide-wave">
-                                    <div class="w-high w-1/3"></div><div class="w-fall"></div><div class="w-low flex-1"></div>
+                        <p class="guide-desc">정지 신호를 수신하면 로봇은 현재 동작을 완료 후 대기 상태로 전환됩니다.</p>
+                        <div class="tc">
+                            <div class="tc-row tc-hdr-row">
+                                <div class="tc-lbl-pad"></div>
+                                <div class="tc-grid" style="grid-template-columns:repeat(4,1fr)">
+                                    <div class="tc-sh"><div class="tc-sh-num">①</div><div class="tc-sh-lbl">yProg_run_sts<br>ON 확인</div></div>
+                                    <div class="tc-sh"><div class="tc-sh-num">②</div><div class="tc-sh-lbl">xStop_prog<br>ON</div></div>
+                                    <div class="tc-sh"><div class="tc-sh-num">③</div><div class="tc-sh-lbl">yProg_run_sts OFF<br>yProg_stop_sts ON 확인</div></div>
+                                    <div class="tc-sh"><div class="tc-sh-num">④</div><div class="tc-sh-lbl">xStop_prog<br>OFF</div></div>
                                 </div>
-                                <span class="guide-dir guide-dir-in">PLC→Robot</span>
+                                <div class="tc-dir-pad"></div>
                             </div>
-                            <div class="guide-signal-row">
-                                <span class="guide-label">xRobot_busy <span class="guide-addr">(OUT[513])</span></span>
-                                <div class="guide-wave">
-                                    <div class="w-high w-1/3"></div><div class="w-high w-8"></div><div class="w-fall"></div><div class="w-low flex-1"></div>
+                            <!-- yProg_run_sts: H H L L -->
+                            <div class="tc-row">
+                                <div class="tc-lbl">yProg_run_sts</div>
+                                <div class="tc-grid" style="grid-template-columns:repeat(4,1fr)">
+                                    <div class="seg h"></div><div class="seg h"></div><div class="seg l tr"></div><div class="seg l"></div>
                                 </div>
-                                <span class="guide-dir guide-dir-out">Robot→PLC</span>
+                                <span class="tc-dir tc-out">OUT</span>
                             </div>
-                            <div class="guide-signal-row">
-                                <span class="guide-label">xRobot_ready <span class="guide-addr">(OUT[512])</span></span>
-                                <div class="guide-wave">
-                                    <div class="w-high w-1/3"></div><div class="w-high w-12"></div><div class="w-fall"></div><div class="w-low flex-1"></div>
+                            <!-- xStop_prog: L H H L -->
+                            <div class="tc-row">
+                                <div class="tc-lbl">xStop_prog</div>
+                                <div class="tc-grid" style="grid-template-columns:repeat(4,1fr)">
+                                    <div class="seg l"></div><div class="seg h tr"></div><div class="seg h"></div><div class="seg l tr"></div>
                                 </div>
-                                <span class="guide-dir guide-dir-out">Robot→PLC</span>
+                                <span class="tc-dir tc-in">IN</span>
+                            </div>
+                            <!-- yProg_stop_sts: L L H H -->
+                            <div class="tc-row">
+                                <div class="tc-lbl">yProg_stop_sts</div>
+                                <div class="tc-grid" style="grid-template-columns:repeat(4,1fr)">
+                                    <div class="seg l"></div><div class="seg l"></div><div class="seg h tr"></div><div class="seg h"></div>
+                                </div>
+                                <span class="tc-dir tc-out">OUT</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 3. 알람 -->
+                    <!-- 3. 알람 (5 steps) -->
                     <div class="guide-section">
                         <h3 class="guide-section-title"><span class="guide-num">3</span> 알람</h3>
-                        <p class="guide-desc">로봇 이상 발생 시 알람 신호를 출력합니다. 알람 리셋 신호 수신 후 해제됩니다.</p>
-                        <div class="guide-chart">
-                            <div class="guide-signal-row">
-                                <span class="guide-label">xRobot_alarm <span class="guide-addr">(OUT[514])</span></span>
-                                <div class="guide-wave">
-                                    <div class="w-low w-8"></div><div class="w-rise"></div><div class="w-high flex-1"></div><div class="w-fall"></div><div class="w-low w-8"></div>
+                        <p class="guide-desc">로봇 이상 발생 시 알람 신호와 알람 코드가 출력됩니다. 조치 후 리셋 신호로 해제합니다.</p>
+                        <div class="tc">
+                            <div class="tc-row tc-hdr-row">
+                                <div class="tc-lbl-pad"></div>
+                                <div class="tc-grid" style="grid-template-columns:repeat(5,1fr)">
+                                    <div class="tc-sh"><div class="tc-sh-num">①</div><div class="tc-sh-lbl">yAlarm_sts ON<br>alarm_code 확인</div></div>
+                                    <div class="tc-sh"><div class="tc-sh-num">②</div><div class="tc-sh-lbl">알람<br>조치</div></div>
+                                    <div class="tc-sh"><div class="tc-sh-num">③</div><div class="tc-sh-lbl">xReset_alarm<br>ON</div></div>
+                                    <div class="tc-sh"><div class="tc-sh-num">④</div><div class="tc-sh-lbl">yAlarm_sts OFF<br>alarm_code=0 확인</div></div>
+                                    <div class="tc-sh"><div class="tc-sh-num">⑤</div><div class="tc-sh-lbl">xReset_alarm<br>OFF</div></div>
                                 </div>
-                                <span class="guide-dir guide-dir-out">Robot→PLC</span>
+                                <div class="tc-dir-pad"></div>
                             </div>
-                            <div class="guide-signal-row">
-                                <span class="guide-label">xAlarm_reset <span class="guide-addr">(IN[515])</span></span>
-                                <div class="guide-wave">
-                                    <div class="w-low flex-1"></div><div class="w-rise"></div><div class="w-high w-10"></div><div class="w-fall"></div><div class="w-low w-8"></div>
+                            <!-- yAlarm_sts: H H H L L -->
+                            <div class="tc-row">
+                                <div class="tc-lbl">yAlarm_sts</div>
+                                <div class="tc-grid" style="grid-template-columns:repeat(5,1fr)">
+                                    <div class="seg h"></div><div class="seg h"></div><div class="seg h"></div><div class="seg l tr"></div><div class="seg l"></div>
                                 </div>
-                                <span class="guide-dir guide-dir-in">PLC→Robot</span>
+                                <span class="tc-dir tc-out">OUT</span>
+                            </div>
+                            <!-- ywCur_alarm_code: D D D L L (data) -->
+                            <div class="tc-row">
+                                <div class="tc-lbl">ywCur_alarm_code</div>
+                                <div class="tc-grid" style="grid-template-columns:repeat(5,1fr)">
+                                    <div class="seg d"></div><div class="seg d"></div><div class="seg d"></div><div class="seg l tr"></div><div class="seg l"></div>
+                                </div>
+                                <span class="tc-dir tc-out">OUT</span>
+                            </div>
+                            <!-- xReset_alarm: L L H H L -->
+                            <div class="tc-row">
+                                <div class="tc-lbl">xReset_alarm</div>
+                                <div class="tc-grid" style="grid-template-columns:repeat(5,1fr)">
+                                    <div class="seg l"></div><div class="seg l"></div><div class="seg h tr"></div><div class="seg h"></div><div class="seg l tr"></div>
+                                </div>
+                                <span class="tc-dir tc-in">IN</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 4. 로봇 호밍 -->
+                    <!-- 4. 로봇 호밍 (5 steps) -->
                     <div class="guide-section">
                         <h3 class="guide-section-title"><span class="guide-num">4</span> 로봇 호밍</h3>
-                        <p class="guide-desc">호밍 신호 수신 시 로봇이 홈 위치로 복귀합니다. 복귀 완료 후 호밍 완료 신호를 출력합니다.</p>
-                        <div class="guide-chart">
-                            <div class="guide-signal-row">
-                                <span class="guide-label">xRobot_homing <span class="guide-addr">(IN[516])</span></span>
-                                <div class="guide-wave">
-                                    <div class="w-low w-8"></div><div class="w-rise"></div><div class="w-high w-1/3"></div><div class="w-fall"></div><div class="w-low flex-1"></div>
+                        <p class="guide-desc">호밍 신호 수신 시 로봇이 원점으로 복귀합니다. 완료 후 home_sts가 ON됩니다.</p>
+                        <div class="tc">
+                            <div class="tc-row tc-hdr-row">
+                                <div class="tc-lbl-pad"></div>
+                                <div class="tc-grid" style="grid-template-columns:repeat(5,1fr)">
+                                    <div class="tc-sh"><div class="tc-sh-num">①</div><div class="tc-sh-lbl">yProg_run_sts<br>ON 확인</div></div>
+                                    <div class="tc-sh"><div class="tc-sh-num">②</div><div class="tc-sh-lbl">xRobot_homing<br>ON</div></div>
+                                    <div class="tc-sh"><div class="tc-sh-num">③</div><div class="tc-sh-lbl">원점 복귀 중...</div></div>
+                                    <div class="tc-sh"><div class="tc-sh-num">④</div><div class="tc-sh-lbl">yRobot_home_sts<br>ON 확인</div></div>
+                                    <div class="tc-sh"><div class="tc-sh-num">⑤</div><div class="tc-sh-lbl">xRobot_homing<br>OFF</div></div>
                                 </div>
-                                <span class="guide-dir guide-dir-in">PLC→Robot</span>
+                                <div class="tc-dir-pad"></div>
                             </div>
-                            <div class="guide-signal-row">
-                                <span class="guide-label">xRobot_homing_comp <span class="guide-addr">(OUT[516])</span></span>
-                                <div class="guide-wave">
-                                    <div class="w-low w-20"></div><div class="w-rise"></div><div class="w-high flex-1"></div><div class="w-fall"></div><div class="w-low w-4"></div>
+                            <!-- yProg_run_sts: H H H H H -->
+                            <div class="tc-row">
+                                <div class="tc-lbl">yProg_run_sts</div>
+                                <div class="tc-grid" style="grid-template-columns:repeat(5,1fr)">
+                                    <div class="seg h"></div><div class="seg h"></div><div class="seg h"></div><div class="seg h"></div><div class="seg h"></div>
                                 </div>
-                                <span class="guide-dir guide-dir-out">Robot→PLC</span>
+                                <span class="tc-dir tc-out">OUT</span>
+                            </div>
+                            <!-- xRobot_homing: L H H H L -->
+                            <div class="tc-row">
+                                <div class="tc-lbl">xRobot_homing</div>
+                                <div class="tc-grid" style="grid-template-columns:repeat(5,1fr)">
+                                    <div class="seg l"></div><div class="seg h tr"></div><div class="seg h"></div><div class="seg h"></div><div class="seg l tr"></div>
+                                </div>
+                                <span class="tc-dir tc-in">IN</span>
+                            </div>
+                            <!-- yRobot_home_sts: L L L H H -->
+                            <div class="tc-row">
+                                <div class="tc-lbl">yRobot_home_sts</div>
+                                <div class="tc-grid" style="grid-template-columns:repeat(5,1fr)">
+                                    <div class="seg l"></div><div class="seg l"></div><div class="seg l"></div><div class="seg h tr"></div><div class="seg h"></div>
+                                </div>
+                                <span class="tc-dir tc-out">OUT</span>
                             </div>
                         </div>
                     </div>
@@ -692,42 +780,100 @@
         }
         .guide-desc { font-size: 0.8rem; color: #94a3b8; margin-bottom: 1rem; }
 
-        .guide-chart { display: flex; flex-direction: column; gap: 0.5rem; }
-        .guide-signal-row {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            background: rgba(30,41,59,0.5);
-            border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 0.5rem;
-            padding: 0.5rem 0.75rem;
+        /* ── Timing Chart (grid-based) ── */
+        .tc { width: 100%; overflow-x: auto; }
+        .tc-row { display: flex; align-items: stretch; }
+        .tc-lbl-pad { width: 160px; flex-shrink: 0; }
+        .tc-dir-pad { width: 52px; flex-shrink: 0; }
+        .tc-grid { flex: 1; display: grid; min-width: 0; }
+
+        /* Step header row */
+        .tc-hdr-row { margin-bottom: 2px; }
+        .tc-sh {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 6px 4px 8px;
+            border-left: 1px dashed rgba(255,255,255,0.08);
+            gap: 4px;
         }
-        .guide-label {
-            font-size: 0.7rem;
-            font-family: monospace;
-            color: #e2e8f0;
-            width: 220px;
+        .tc-sh:first-child { border-left: none; }
+        .tc-sh-num {
+            width: 20px; height: 20px; border-radius: 50%;
+            background: rgba(255,255,255,0.07); color: #94a3b8;
+            font-size: 11px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
             flex-shrink: 0;
         }
-        .guide-addr { color: #64748b; font-size: 0.65rem; }
-        .guide-wave {
-            display: flex;
-            align-items: center;
-            flex: 1;
-            height: 28px;
+        .tc-sh-lbl { color: #475569; font-size: 9px; line-height: 1.3; text-align: center; }
+
+        /* Signal rows */
+        .tc-row .tc-lbl {
+            width: 160px; flex-shrink: 0;
+            font-size: 0.68rem; font-family: monospace; color: #cbd5e1;
+            display: flex; align-items: center; justify-content: flex-end;
+            padding-right: 12px; border-right: 1px solid rgba(255,255,255,0.08);
         }
+        .tc-dir {
+            width: 52px; flex-shrink: 0;
+            font-size: 0.6rem; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+            padding-left: 8px;
+        }
+        .tc-in  { color: #60a5fa; }
+        .tc-out { color: #34d399; }
+
+        /* Waveform segments */
+        .seg {
+            position: relative; height: 44px;
+            border-left: 1px dashed rgba(255,255,255,0.05);
+        }
+        .seg:first-child { border-left: none; }
+        /* HIGH state: line near top */
+        .seg.h::after {
+            content: ''; position: absolute;
+            top: 10px; left: 0; right: 0; height: 2px;
+            background: #10b981;
+        }
+        /* LOW state: line near bottom */
+        .seg.l::after {
+            content: ''; position: absolute;
+            bottom: 10px; left: 0; right: 0; height: 2px;
+            background: #334155;
+        }
+        /* DATA state (word value): hatched bar near top */
+        .seg.d::after {
+            content: ''; position: absolute;
+            top: 10px; left: 0; right: 0; height: 24px;
+            background: repeating-linear-gradient(
+                45deg, rgba(251,191,36,0.25), rgba(251,191,36,0.25) 3px,
+                rgba(251,191,36,0.07) 3px, rgba(251,191,36,0.07) 8px
+            );
+            border-top: 2px solid #fbbf24;
+            border-bottom: 2px solid #fbbf24;
+        }
+        /* Transition (rising or falling) — vertical line at left edge */
+        .seg.tr::before {
+            content: ''; position: absolute;
+            left: 0; bottom: 10px; width: 2px; height: 24px;
+            background: #10b981; z-index: 1;
+        }
+        /* Falling edge from DATA */
+        .seg.l.tr.from-d::before { background: #fbbf24; }
+
+        /* guide-chart legacy (used by charts 5-8) */
+        .guide-chart { display: flex; flex-direction: column; gap: 0.5rem; }
+        .guide-signal-row {
+            display: flex; align-items: center; gap: 0.75rem;
+            background: rgba(30,41,59,0.5); border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 0.5rem; padding: 0.5rem 0.75rem;
+        }
+        .guide-label { font-size: 0.7rem; font-family: monospace; color: #e2e8f0; width: 220px; flex-shrink: 0; }
+        .guide-addr { color: #64748b; font-size: 0.65rem; }
+        .guide-wave { display: flex; align-items: center; flex: 1; height: 28px; }
         .w-low  { height: 4px; background: #334155; align-self: flex-end; margin-bottom: 2px; }
         .w-high { height: 4px; background: #10b981; align-self: flex-start; margin-top: 2px; }
         .w-rise { width: 0; height: 0; border-left: 8px solid transparent; border-right: 0; border-bottom: 24px solid #10b981; align-self: flex-end; }
         .w-fall { width: 0; height: 0; border-right: 8px solid transparent; border-left: 0; border-top: 24px solid #10b981; align-self: flex-start; }
-        .guide-dir {
-            font-size: 0.6rem;
-            font-weight: 700;
-            padding: 2px 6px;
-            border-radius: 4px;
-            flex-shrink: 0;
-            white-space: nowrap;
-        }
+        .guide-dir { font-size: 0.6rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; flex-shrink: 0; white-space: nowrap; }
         .guide-dir-in  { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); }
         .guide-dir-out { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
 
