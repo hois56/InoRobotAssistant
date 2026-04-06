@@ -173,30 +173,45 @@ function setupSearch() {
     });
 }
 
+// Cloudflare Worker URL - 배포 후 실제 URL로 교체하세요
+const WORKER_URL = 'https://ino-robot-display-auth.hois56.workers.dev/';
+
 /**
  * 다운로드 핸들러
  * @param {string} path 파일 경로
  * @param {boolean} isLocked 잠김 여부
  */
-function handleDownload(path, isLocked) {
+async function handleDownload(path, isLocked) {
     if (isLocked) {
         const password = prompt("[기능 제한 안내] 이 버전은 전용 배포판입니다. 비밀번호를 입력해 주세요:");
-        
-        if (password === '2206') {
-            downloadFile(path);
-        } else if (password !== null) {
-            alert("비밀번호가 올바르지 않습니다. 관리자에게 문의하세요.");
+        if (password === null) return;
+
+        try {
+            const res = await fetch(WORKER_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password, path })
+            });
+            const data = await res.json();
+
+            if (data.ok) {
+                downloadFile(data.url);
+            } else {
+                alert(data.message || "비밀번호가 올바르지 않습니다. 관리자에게 문의하세요.");
+            }
+        } catch {
+            alert("서버 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.");
         }
     } else {
-        downloadFile(path);
+        const lfsUrl = `https://media.githubusercontent.com/media/hois56/InoRobotAssistant/main/Software/${path}`;
+        downloadFile(lfsUrl);
     }
 }
 
-function downloadFile(path) {
-    const lfsUrl = `https://media.githubusercontent.com/media/hois56/InoRobotAssistant/main/Software/${path}`;
+function downloadFile(url) {
     const link = document.createElement('a');
-    link.href = lfsUrl;
-    link.download = path.split('/').pop();
+    link.href = url;
+    link.download = url.split('/').pop();
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

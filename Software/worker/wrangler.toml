@@ -1,0 +1,9 @@
+name = "ino-robot-display-auth"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+# 비밀번호는 절대 여기 적지 마세요.
+# Cloudflare Dashboard > Workers > ino-robot-display-auth > Settings > Variables 에서 설정:
+#   변수명: DISPLAY_PASSWORD
+#   값: (실제 비밀번호)
+#   반드시 "Encrypt" 체크
