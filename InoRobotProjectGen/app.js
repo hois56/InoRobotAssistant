@@ -20,7 +20,7 @@ class ProcessStep {
 }
 
 const state = {
-    projectName: (function() {
+    projectName: (function () {
         const d = new Date();
         const mm = String(d.getMonth() + 1).padStart(2, '0');
         const dd = String(d.getDate()).padStart(2, '0');
@@ -49,7 +49,7 @@ function initApp() {
     // 1. Core Button Binding - Move to top for reliability
     const btnAdd = document.getElementById('btnAdd');
     if (btnAdd) btnAdd.onclick = addStep;
-    
+
     const btnGenerate = document.getElementById('btnGenerate');
     if (btnGenerate) btnGenerate.onclick = exportProj;
 
@@ -65,9 +65,9 @@ function initApp() {
     } catch (e) {
         console.error("Initial step creation failed:", e);
     }
-    
+
     // Name validation
-    document.getElementById('prjName').addEventListener('input', function(e) {
+    document.getElementById('prjName').addEventListener('input', function (e) {
         this.value = this.value.replace(/[^a-zA-Z0-9_]/g, '').substring(0, 16);
         state.projectName = this.value || "InoRobot_Pro_New";
         uSelector();
@@ -101,30 +101,30 @@ function initApp() {
         document.getElementById('chkToolControl').checked = state.options.EnableToolControl;
         document.getElementById('cmbToolControlType').value = state.options.ToolControlType || "PLC_IO";
         document.getElementById('cmbToolControlType').disabled = !state.options.EnableToolControl;
-        
+
         document.getElementById('chkTeachingMode').checked = state.options.EnableTeachingMode;
         document.getElementById('chkWaitPos').checked = state.options.EnableWaitPos;
         document.getElementById('chkProcessBusy').checked = state.options.EnableProcessBusy;
 
         document.getElementById('optionsModal').classList.remove('hidden');
-        
+
         // Reset description panel
         document.getElementById('optDescTitle').innerText = "Option Info";
         document.getElementById('optDescText').innerText = "항목 위에 마우스를 올리면 상세 설명이 표시됩니다.";
         const iconBox = document.getElementById('optIconBox');
         iconBox.innerHTML = '<i data-lucide="info" class="w-10 h-10 text-slate-400"></i>';
-        if(window.lucide) lucide.createIcons();
+        if (window.lucide) lucide.createIcons();
     };
 
     // Option Description logic
     const optDescs = {
         multiRecipe: { title: "Multi Recipe", icon: "layers", text: "여러 로봇 포인트 파일(레시피)을 생성하여 프로그램에서 동적으로 로드할 수 있도록 합니다." },
         tcpSpeed: { title: "TCP Speed Monitoring", icon: "gauge", text: "로봇의 TCP(툴 중심점) 이동 속도를 지속적으로 모니터링하여 변수에 기록하고 표시하는 기능입니다." },
-        torque: { title: "Torque Monitoring", icon: "activity", text: "각 축 모터의 현재 토크(전류 부하율)를 실시간으로 모니터링하여 충돌 감지 등에 활용할 수 있는 기능입니다." },
-        toolControl: { title: "Tool Control", icon: "wrench", text: "에어(진공) 및 그리퍼 같은 매니퓰레이터 툴의 제어 모듈을 프로그램 내부에 활성화시켜 제어 로직을 생성합니다." },
-        teachingMode: { title: "Teaching Mode", icon: "pencil", text: "프로그램 내부에 이설 혹은 티칭 수정을 위한 전용 로직을 추가합니다." },
+        torque: { title: "Torque Monitoring", icon: "activity", text: "각 축 모터의 현재 토크(전류)를 실시간으로 모니터링하는 기능입니다." },
+        toolControl: { title: "Tool Control", icon: "wrench", text: "에어(진공) 및 그리퍼 같은 매니퓰레이터 툴의 제어를 로봇에서 제어할지 여부를 선택합니다." },
+        teachingMode: { title: "Teaching Mode", icon: "pencil", text: "펜던트 조작 없이 PLC에서 로봇의 작업 위치를 수정할 수 있는 기능을 추가합니다." },
         waitPos: { title: "Wait Position", icon: "map-pin", text: "로봇이 공정 시작 전 대기하는 Standby(Wait) 포지션 기능을 사용 여부를 설정합니다." },
-        processBusy: { title: "Process Busy Signal", icon: "zap", text: "공정 진행 중임을 알리는 Busy 신호를 프로그램 및 라벨 데이터에서 사용할지 결정합니다." }
+        processBusy: { title: "Process Busy Signal", icon: "zap", text: "공정 진행 중임을 알리는 Busy 신호를 사용할지 결정합니다." }
     };
 
     const updateOptDesc = (id) => {
@@ -134,7 +134,7 @@ function initApp() {
             document.getElementById('optDescText').innerText = info.text;
             const iconBox = document.getElementById('optIconBox');
             iconBox.innerHTML = `<i data-lucide="${info.icon}" class="w-10 h-10 text-white"></i>`;
-            if(window.lucide) lucide.createIcons();
+            if (window.lucide) lucide.createIcons();
         }
     };
 
@@ -143,7 +143,7 @@ function initApp() {
         el.addEventListener('click', (e) => {
             // Prevent double-toggle if click was on the input itself
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-            
+
             // For non-label parents (like div), toggle the child checkbox
             if (el.tagName !== 'LABEL') {
                 const chk = el.querySelector('input[type="checkbox"]');
@@ -164,15 +164,15 @@ function initApp() {
         state.options.EnableTeachingMode = document.getElementById('chkTeachingMode').checked;
         state.options.EnableWaitPos = document.getElementById('chkWaitPos').checked;
         state.options.EnableProcessBusy = document.getElementById('chkProcessBusy').checked;
-        
+
         let pCount = parseInt(document.getElementById('numRecipeCount').value) || 2;
         state.options.RecipeCount = Math.min(127, Math.max(2, pCount));
         state.options.RobotName = document.getElementById('cmbRobotModel').value;
         document.getElementById('optionsModal').classList.add('hidden');
-        renderSteps(); 
+        renderSteps();
         updatePreview();
     };
-    
+
     // Edit mode toggle
     document.getElementById('btnToggleEdit').onclick = toggleEditMode;
     document.getElementById('codeEditor').oninput = (e) => {
@@ -202,8 +202,8 @@ function initApp() {
     } catch (e) {
         console.error("Initial preview update failed:", e);
     }
-    
-    if(window.lucide) {
+
+    if (window.lucide) {
         try {
             lucide.createIcons();
         } catch (e) {
@@ -216,7 +216,7 @@ function initRobots() {
     let cmb = document.getElementById('cmbRobotModel');
     if (!cmb) return;
     cmb.innerHTML = ''; // Clear existing
-    
+
     const scaraGrp = document.createElement('optgroup');
     scaraGrp.label = "SCARA Robots";
     const axis6Grp = document.createElement('optgroup');
@@ -224,11 +224,11 @@ function initRobots() {
 
     // Handle SCARA data (Mapped from Robots_6_axis assets)
     if (typeof Assets !== 'undefined' && Assets.Robots_6_axis) {
-        let linesS = Assets.Robots_6_axis.split(/\r?\n/); 
+        let linesS = Assets.Robots_6_axis.split(/\r?\n/);
         linesS.forEach(line => {
             let cols = line.split(',');
-            if(cols.length >= 4) {
-                let name = cols[0].trim()+cols[1].trim()+cols[2].trim()+cols[3].trim();
+            if (cols.length >= 4) {
+                let name = cols[0].trim() + cols[1].trim() + cols[2].trim() + cols[3].trim();
                 let opt = document.createElement('option');
                 opt.value = name;
                 opt.text = cols[1].trim();
@@ -242,8 +242,8 @@ function initRobots() {
         let lines6 = Assets.Robots_SCARA.split(/\r?\n/);
         lines6.forEach(line => {
             let cols = line.split(',');
-            if(cols.length >= 4) {
-                let name = cols[0].trim()+cols[1].trim()+cols[2].trim()+cols[3].trim();
+            if (cols.length >= 4) {
+                let name = cols[0].trim() + cols[1].trim() + cols[2].trim() + cols[3].trim();
                 let opt = document.createElement('option');
                 opt.value = name;
                 opt.text = cols[1].trim();
@@ -254,11 +254,11 @@ function initRobots() {
 
     cmb.appendChild(scaraGrp);
     cmb.appendChild(axis6Grp);
-    
+
     if (state.options.RobotName) {
         cmb.value = state.options.RobotName;
     }
-    
+
     cmb.onchange = (e) => {
         state.options.RobotName = e.target.value;
         updatePreview();
@@ -280,7 +280,7 @@ function rStep(idx) {
 
 function updateRowRules(s) {
     let t = s.WorkType, m = s.WorkMethod, tool = s.ToolType, v = s.VisionUse;
-    
+
     if (t === "Trash") {
         s.WorkMethod = "Put"; s.ToolType = "Gripper"; s.VisionUse = "No use";
     } else {
@@ -288,7 +288,7 @@ function updateRowRules(s) {
         else if ((t === "Tray" || t === "Stage") && m === "Check") s.WorkMethod = "Get";
         else if (t !== "Stage" && m === "Peeling") s.WorkMethod = "Get";
     }
-    
+
     t = s.WorkType; m = s.WorkMethod;
 
     if (t === "Peeling" || m === "Peeling" || t === "Trash") {
@@ -315,7 +315,7 @@ function openVisionModal(idx) {
     document.getElementById('visionModal').classList.remove('hidden');
 }
 
-window.uStep = function(idx, field, val) {
+window.uStep = function (idx, field, val) {
     state.steps[idx][field] = val;
     updateRowRules(state.steps[idx]);
     let s = state.steps[idx];
@@ -325,16 +325,16 @@ window.uStep = function(idx, field, val) {
     renderSteps();
 }
 
-window.addExtraWait = function(stepIdx) {
+window.addExtraWait = function (stepIdx) {
     if (!state.steps[stepIdx]) return;
     state.steps[stepIdx].ExtraWaitCount = (state.steps[stepIdx].ExtraWaitCount || 0) + 1;
     updatePreview();
 };
 
-window.removeExtraWait = function(stepIdx) {
+window.removeExtraWait = function (stepIdx) {
     if (!state.steps[stepIdx]) return;
     state.steps[stepIdx].ExtraWaitCount = Math.max(0, (state.steps[stepIdx].ExtraWaitCount || 0) - 1);
-    let removedId = (state.steps[stepIdx].No * 100) + state.steps[stepIdx].ExtraWaitCount + 2; 
+    let removedId = (state.steps[stepIdx].No * 100) + state.steps[stepIdx].ExtraWaitCount + 2;
     if (state.ptsOverrides) {
         for (let key in state.ptsOverrides) {
             if (state.ptsOverrides[key][removedId.toString()]) {
@@ -346,7 +346,7 @@ window.removeExtraWait = function(stepIdx) {
 };
 
 // Modal hook for editing Name
-window.openNameModal = function(idx) {
+window.openNameModal = function (idx) {
     document.getElementById('editNameIdx').value = idx;
     document.getElementById('editNameInput').value = state.steps[idx].ProcessName;
     document.getElementById('nameModal').classList.remove('hidden');
@@ -355,7 +355,7 @@ window.openNameModal = function(idx) {
 document.getElementById('btnApplyName').onclick = () => {
     let idx = parseInt(document.getElementById('editNameIdx').value);
     let val = document.getElementById('editNameInput').value.trim();
-    if(val) state.steps[idx].ProcessName = val;
+    if (val) state.steps[idx].ProcessName = val;
     else state.steps[idx].ProcessName = null; // Revert to automation
     document.getElementById('nameModal').classList.add('hidden');
     renderSteps();
@@ -389,10 +389,10 @@ function handleGeneratedContent(file) {
     else if (file === "UserDefineWarning.jsn") code = Generator.DataWarning(state.steps, state.options);
     else if (file === "BreakPoints.jsn") code = '{\n  "ProgramsCount": 0,\n  "ProgramsBreaks": []\n}';
     else if (file === "MonitorGlobalVars.jsn") {
-        let vars = ["ywCur_process_sel","xwSet_speed","B_T_num","B_W_num","yRobot_homing","R_Cur_pos","xProcess_start","xProcess_exit","xProcess_restart","xwSet_offset_X.Int","xwSet_offset_Y.Int","xwSet_offset_Z.Int","xwP_file_switch"];
+        let vars = ["ywCur_process_sel", "xwSet_speed", "B_T_num", "B_W_num", "yRobot_homing", "R_Cur_pos", "xProcess_start", "xProcess_exit", "xProcess_restart", "xwSet_offset_X.Int", "xwSet_offset_Y.Int", "xwSet_offset_Z.Int", "xwP_file_switch"];
         if (state.options.EnableTcpSpeed) vars.push("D_TCP_speed");
         if (state.options.EnableTorque) {
-            for(let i=1; i<=6; i++) { vars.push(`D_J${i}_cur_torque`); vars.push(`D_J${i}_max_torque`); }
+            for (let i = 1; i <= 6; i++) { vars.push(`D_J${i}_cur_torque`); vars.push(`D_J${i}_max_torque`); }
         }
         code = JSON.stringify(vars);
     }
@@ -405,9 +405,9 @@ function handleGeneratedContent(file) {
     else if (file && file.startsWith("sP")) {
         const stepName = file.replace(".pro", "");
         let stageIdx = 0;
-        state.steps.forEach(s => { if(s.WorkType==="Stage") stageIdx++; if(s.ProcessName===stepName) code = Generator.ProcessProgram(s, state.options, stageIdx); });
+        state.steps.forEach(s => { if (s.WorkType === "Stage") stageIdx++; if (s.ProcessName === stepName) code = Generator.ProcessProgram(s, state.options, stageIdx); });
     }
-    
+
     return code;
 }
 
@@ -420,7 +420,7 @@ function applyDynamicOverrides(file, code) {
                 if (state.warningOverrides[i] !== undefined) arr[i] = state.warningOverrides[i];
             }
             return JSON.stringify({ Warings: arr }, null, 2);
-        } catch(e) {}
+        } catch (e) { }
     }
     if (file.endsWith('.pts') && state.ptsOverrides && state.ptsOverrides[file]) {
         let lines = code.split(/\r?\n/);
@@ -438,11 +438,11 @@ function applyDynamicOverrides(file, code) {
 function getFinalFileContent(file) {
     let generated = applyDynamicOverrides(file, handleGeneratedContent(file));
     let edited = state.userEdits[file];
-    
+
     if (file === 'UserDefineWarning.jsn' || file.endsWith('.pts') || file === 'Labels.jsn') {
         edited = undefined;
     }
-    
+
     let result;
     if (edited !== undefined) {
         if (generated.includes("ProgramInfo")) {
@@ -496,24 +496,24 @@ function renderSteps() {
     state.steps.forEach((s, idx) => {
         const el = document.createElement('div');
         el.className = 'flex items-center gap-2 p-3 bg-slate-900/40 border border-slate-700/50 rounded-xl max-w-full overflow-hidden';
-        
+
         let mOpts = [];
-        if(s.WorkType === "Trash") mOpts.push("Put");
+        if (s.WorkType === "Trash") mOpts.push("Put");
         else {
             mOpts.push("Get", "Put");
-            if(s.WorkType === "Stage") mOpts.push("Peeling");
-            if(s.WorkType === "MCR" || s.WorkType === "Vision") mOpts.push("Check");
-            if(s.WorkType === "Vision") mOpts.push("Calibration");
+            if (s.WorkType === "Stage") mOpts.push("Peeling");
+            if (s.WorkType === "MCR" || s.WorkType === "Vision") mOpts.push("Check");
+            if (s.WorkType === "Vision") mOpts.push("Calibration");
         }
 
         let tOpts = [];
-        if(s.WorkType === "Trash") tOpts.push("Gripper");
-        else if(s.WorkMethod === "Calibration") tOpts.push("PLC (IO)", "Vision (Socket)");
+        if (s.WorkType === "Trash") tOpts.push("Gripper");
+        else if (s.WorkMethod === "Calibration") tOpts.push("PLC (IO)", "Vision (Socket)");
         else tOpts.push("Vacuum", "Gripper");
 
         let vOpts = [];
-        if(s.WorkType === "Trash" || s.WorkMethod === "Calibration") vOpts.push("No use");
-        else if(s.WorkType === "Vision" && s.WorkMethod === "Check") vOpts.push("Use - IO", "Use - Socket");
+        if (s.WorkType === "Trash" || s.WorkMethod === "Calibration") vOpts.push("No use");
+        else if (s.WorkType === "Vision" && s.WorkMethod === "Check") vOpts.push("Use - IO", "Use - Socket");
         else vOpts.push("No use", "Use - IO", "Use - Socket");
 
         let disM = s.WorkType === "Trash" ? "disabled" : "";
@@ -523,30 +523,30 @@ function renderSteps() {
         el.innerHTML = `
             <div class="w-6 h-6 rounded bg-blue-600 flex-shrink-0 flex items-center justify-center font-bold text-xs">${s.No}</div>
             <button onclick="window.openNameModal(${idx})" class="w-10 h-8 rounded bg-slate-800 border border-slate-600 flex items-center justify-center hover:bg-slate-700 flex-shrink-0"><i data-lucide="more-horizontal" class="w-4 h-4 text-slate-400"></i></button>
-            <select onchange="window.uStep(${idx}, 'WorkType', this.value)" class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${WorkTypes.map(t=>`<option ${s.WorkType===t?'selected':''}>${t}</option>`).join('')}</select>
-            <select onchange="window.uStep(${idx}, 'WorkMethod', this.value)" ${disM} class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${mOpts.map(m=>`<option ${s.WorkMethod===m?'selected':''}>${m}</option>`).join('')}</select>
-            <select onchange="window.uStep(${idx}, 'ToolType', this.value)" ${disT} class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${tOpts.map(t=>`<option ${s.ToolType===t?'selected':''}>${t}</option>`).join('')}</select>
-            <select onchange="window.uStep(${idx}, 'VisionUse', this.value)" ${disV} class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${vOpts.map(v=>`<option ${s.VisionUse===v?'selected':''}>${v}</option>`).join('')}</select>
+            <select onchange="window.uStep(${idx}, 'WorkType', this.value)" class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${WorkTypes.map(t => `<option ${s.WorkType === t ? 'selected' : ''}>${t}</option>`).join('')}</select>
+            <select onchange="window.uStep(${idx}, 'WorkMethod', this.value)" ${disM} class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${mOpts.map(m => `<option ${s.WorkMethod === m ? 'selected' : ''}>${m}</option>`).join('')}</select>
+            <select onchange="window.uStep(${idx}, 'ToolType', this.value)" ${disT} class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${tOpts.map(t => `<option ${s.ToolType === t ? 'selected' : ''}>${t}</option>`).join('')}</select>
+            <select onchange="window.uStep(${idx}, 'VisionUse', this.value)" ${disV} class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${vOpts.map(v => `<option ${s.VisionUse === v ? 'selected' : ''}>${v}</option>`).join('')}</select>
             <button onclick="window.rStep(${idx})" class="text-slate-500 hover:text-red-400 font-bold ml-1 w-6 h-6 flex items-center justify-center flex-shrink-0">X</button>
         `;
         list.appendChild(el);
     });
     uSelector();
     updatePreview();
-    if(window.lucide) lucide.createIcons();
+    if (window.lucide) lucide.createIcons();
 }
 
 function uSelector() {
     const sel = document.getElementById('fileSelector');
     const cur = sel.value;
-    
+
     // [1] Main Task: main.pro 하나만
     const mainOpts = `<option>main.pro</option>`;
-    
+
     // [2] Static Task: PLC_ 프로그램들 (옵션 활성화 시에만)
     let staticOpts = '';
     if (state.options.EnableTcpSpeed) staticOpts += `<option>PLC_TCP_Speed.pro</option>`;
-    if (state.options.EnableTorque)   staticOpts += `<option>PLC_Current_Torque.pro</option>`;
+    if (state.options.EnableTorque) staticOpts += `<option>PLC_Current_Torque.pro</option>`;
 
     // [3] Basic Sub: s01, s02_Tool 등
     let subOpts = `<option>s01_initial.pro</option>`;
@@ -566,7 +566,7 @@ function uSelector() {
     let html = `<optgroup label="Main Task">${mainOpts}</optgroup>`;
     if (staticOpts) html += `<optgroup label="Static Task">${staticOpts}</optgroup>`;
     html += `<optgroup label="Basic Sub">${subOpts}</optgroup>`;
-    if (pOpts)      html += `<optgroup label="Process">${pOpts}</optgroup>`;
+    if (pOpts) html += `<optgroup label="Process">${pOpts}</optgroup>`;
     html += `<optgroup label="Data">${dOpts}</optgroup>`;
 
     sel.innerHTML = html;
@@ -594,7 +594,7 @@ function updatePreview() {
     const file = document.getElementById('fileSelector').value;
     const editor = document.getElementById('codeEditor');
     const prismCon = document.getElementById('prismContainer');
-    const codeOut  = document.getElementById('codeOutput');
+    const codeOut = document.getElementById('codeOutput');
     const tableCon = document.getElementById('tableContainer');
 
     const isReadOnly = file === 'RemoteIO_mapping.dat';
@@ -616,12 +616,12 @@ function updatePreview() {
     try {
         let rawGen = handleGeneratedContent(file);
         const gen = applyDynamicOverrides(file, rawGen);
-        
+
         let existingEdit = state.userEdits[file];
         if (file === 'UserDefineWarning.jsn' || file.endsWith('.pts') || file === 'Labels.jsn') {
-            existingEdit = undefined; 
+            existingEdit = undefined;
         }
-        
+
         rawCode = (existingEdit !== undefined) ? existingEdit : stripHeader(gen);
 
         // .pro 파일 프리뷰에도 labelOverrides 실시간 반영
@@ -650,7 +650,7 @@ function updatePreview() {
                     if (state.editMode) {
                         return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
                             <td style="padding:5px 8px;font-size:12px;color:#94a3b8;font-family:monospace">${orig}</td>
-                            <td style="padding:5px 8px"><input type="text" data-orig-label="${item.sLabel||''}" value="${label}" style="background:transparent;border:1px solid rgba(56,189,248,0.3);color:#38bdf8;font-family:monospace;font-size:12px;width:100%;box-sizing:border-box;outline:none;padding:3px 6px;border-radius:4px" onfocus="this.style.borderColor='#38bdf8'" onblur="this.style.borderColor='rgba(56,189,248,0.3)';updateLabelCell(this)" onkeydown="if(event.key==='Enter'){this.blur();}" /></td>
+                            <td style="padding:5px 8px"><input type="text" data-orig-label="${item.sLabel || ''}" value="${label}" style="background:transparent;border:1px solid rgba(56,189,248,0.3);color:#38bdf8;font-family:monospace;font-size:12px;width:100%;box-sizing:border-box;outline:none;padding:3px 6px;border-radius:4px" onfocus="this.style.borderColor='#38bdf8'" onblur="this.style.borderColor='rgba(56,189,248,0.3)';updateLabelCell(this)" onkeydown="if(event.key==='Enter'){this.blur();}" /></td>
                             <td style="padding:5px 8px;font-size:12px;color:#e2e8f0;font-family:monospace">${desc}</td>
                         </tr>`;
                     }
@@ -660,10 +660,10 @@ function updatePreview() {
                         <td style="padding:7px 12px;font-size:12px;color:#e2e8f0;font-family:monospace">${desc}</td>
                     </tr>`;
                 }).join('');
-                const th = ['ID','Label','Description'].map(h => `<th style="padding:8px 12px;text-align:left;color:#94a3b8;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.08)">${h}</th>`).join('');
+                const th = ['ID', 'Label', 'Description'].map(h => `<th style="padding:8px 12px;text-align:left;color:#94a3b8;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.08)">${h}</th>`).join('');
                 tableHtml = `<div style="overflow:auto;max-height:100%"><table style="width:100%;border-collapse:collapse"><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>`;
 
-                window.updateLabelCell = function(input) {
+                window.updateLabelCell = function (input) {
                     const origLabel = input.dataset.origLabel;
                     const newLabel = input.value.trim();
                     if (origLabel && newLabel && origLabel !== newLabel) {
@@ -683,9 +683,9 @@ function updatePreview() {
                             }
                         });
                         state.userEdits['Labels.jsn'] = JSON.stringify(obj, null, 2);
-                    } catch(e) {}
+                    } catch (e) { }
                 };
-            } catch(e) { /* fallback */ }
+            } catch (e) { /* fallback */ }
         }
 
         // ── RemoteIO_mapping.dat (읽기 전용) ─────────────
@@ -704,7 +704,7 @@ function updatePreview() {
                         return [dir, bitWord, item.MemAddr, item.Name];
                     });
                 tableHtml = buildTable(['In / Out', 'Bit / Word', 'MemAddr', 'Name'], rows);
-            } catch(e) {
+            } catch (e) {
                 tableHtml = `<div style="padding:20px;color:#ef4444">RemoteIO 파싱 오류: ${e.message}</div>`;
             }
         }
@@ -717,18 +717,18 @@ function updatePreview() {
             const rows = lines.map((l, rowIdx) => {
                 const idMatch = l.match(/^P\[(\d+)\]/);
                 const id = idMatch ? idMatch[1] : '-';
-                
+
                 let idCell = `<span style="color:#94a3b8;font-family:monospace;font-size:12px">${id}</span>`;
                 if (state.editMode && id !== '-') {
                     const numericId = parseInt(id, 10);
                     const stepNo = Math.floor(numericId / 100);
                     const posType = numericId % 100;
-                    
+
                     const stepIdx = state.steps.findIndex(s => s.No === stepNo);
                     if (stepIdx !== -1) {
                         const step = state.steps[stepIdx];
                         const exCount = step.ExtraWaitCount || 0;
-                        if (posType === 1) { 
+                        if (posType === 1) {
                             if (exCount < 8) {
                                 idCell = `<div style="display:flex;align-items:center;gap:4px"><button onclick="window.addExtraWait(${stepIdx})" style="background:#1e293b;border:1px solid rgba(34,197,94,0.3);color:#4ade80;cursor:pointer;padding:0 4px;border-radius:3px;font-size:11px;font-weight:bold">+</button>${idCell}</div>`;
                             }
@@ -739,13 +739,13 @@ function updatePreview() {
                         }
                     }
                 }
-                
+
                 const nameMatch = l.match(/Name\s*=\s*([^;]+)/);
                 const name = nameMatch ? nameMatch[1].trim() : '-';
                 const coordPart = l.replace(/^P\[\d+\]\s*=\s*/, '').split(';')[0];
                 const coords = coordPart.split(',').map(v => { const n = parseFloat(v); return isNaN(n) ? v.trim() : n.toFixed(3); });
-                const [x='',y='',z='',a='',b='',c=''] = coords;
-                
+                const [x = '', y = '', z = '', a = '', b = '', c = ''] = coords;
+
                 function ec(ri, ci, val) {
                     if (state.editMode) {
                         return `<td style="padding:4px 6px"><input type="text" data-row="${ri}" data-col="${ci}" value="${val}" style="background:transparent;border:1px solid rgba(255,255,255,0.1);color:#e2e8f0;font-family:monospace;font-size:12px;width:100%;box-sizing:border-box;outline:none;padding:2px 4px;border-radius:4px" onfocus="this.style.borderColor='#38bdf8'" onblur="this.style.borderColor='rgba(255,255,255,0.1)';updatePtsCell(this)" onkeydown="if(event.key==='Enter'){this.blur();}" /></td>`;
@@ -753,38 +753,38 @@ function updatePreview() {
                         return `<td style="padding:4px 6px;color:#e2e8f0;font-family:monospace;font-size:12px">${val}</td>`;
                     }
                 }
-                
+
                 let nameCell = '';
                 if (state.editMode && canEditName) {
                     nameCell = `<td style="padding:4px 6px"><input type="text" data-row="${rowIdx}" data-col="name" value="${name}" data-orig="${name}" style="background:transparent;border:1px solid rgba(56,189,248,0.3);color:#38bdf8;font-family:monospace;font-size:12px;width:100%;box-sizing:border-box;outline:none;padding:2px 4px;border-radius:4px" onfocus="this.style.borderColor='#38bdf8'" onblur="this.style.borderColor='rgba(56,189,248,0.3)';updatePtsCell(this)" onkeydown="if(event.key==='Enter'){this.blur();}" /></td>`;
                 } else {
                     nameCell = `<td style="padding:4px 6px;color:#38bdf8;font-family:monospace;font-size:12px">${name}</td>`;
                 }
-                
+
                 let rowCode = `<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
                     <td style="padding:4px 6px">${idCell}</td>
                     ${nameCell}
-                    ${ec(rowIdx,'x',x)}${ec(rowIdx,'y',y)}${ec(rowIdx,'z',z)}${ec(rowIdx,'a',a)}`;
-                
+                    ${ec(rowIdx, 'x', x)}${ec(rowIdx, 'y', y)}${ec(rowIdx, 'z', z)}${ec(rowIdx, 'a', a)}`;
+
                 if (!isScara) {
-                    rowCode += `${ec(rowIdx,'b',b)}${ec(rowIdx,'c',c)}`;
+                    rowCode += `${ec(rowIdx, 'b', b)}${ec(rowIdx, 'c', c)}`;
                 }
                 rowCode += `</tr>`;
                 return rowCode;
             }).join('');
-            
-            let thArr = ['ID','Name','X','Y','Z','A'];
+
+            let thArr = ['ID', 'Name', 'X', 'Y', 'Z', 'A'];
             if (!isScara) thArr.push('B', 'C');
             const th = thArr.map(h => `<th style="padding:6px;text-align:left;color:#94a3b8;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.08)">${h}</th>`).join('');
-            
+
             let colgroup = `<colgroup><col style="width:50px"><col style="width:90px"><col style="width:70px"><col style="width:70px"><col style="width:70px">${isScara ? '<col style="width:70px">' : '<col style="width:70px"><col style="width:70px"><col style="width:70px">'}</colgroup>`;
-            
+
             tableHtml = `<div style="overflow:auto;max-height:100%"><table style="width:100%;border-collapse:collapse">${colgroup}<thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>`;
 
             window._ptsLines = lines.slice();
             window._ptsFile = file;
             window._ptsRawCode = rawCode;
-            window.updatePtsCell = function(input) {
+            window.updatePtsCell = function (input) {
                 const ri = parseInt(input.dataset.row);
                 const ck = input.dataset.col;
                 let line = window._ptsLines[ri];
@@ -797,7 +797,7 @@ function updatePreview() {
                     }
                     line = line.replace(/(Name\s*=\s*)([^;]+)/, `$1${val}`);
                 } else {
-                    const cm = {x:0,y:1,z:2,a:3,b:4,c:5};
+                    const cm = { x: 0, y: 1, z: 2, a: 3, b: 4, c: 5 };
                     const ci = cm[ck];
                     const cp = line.replace(/^P\[\d+\]\s*=\s*/, '').split(';')[0];
                     const parts = cp.split(',');
@@ -805,7 +805,7 @@ function updatePreview() {
                     line = line.replace(/(P\[\d+\]\s*=\s*)([^;]+)/, `$1${parts.join(',')}`);
                 }
                 window._ptsLines[ri] = line;
-                
+
                 if (!state.ptsOverrides) state.ptsOverrides = {};
                 if (!state.ptsOverrides[window._ptsFile]) state.ptsOverrides[window._ptsFile] = {};
                 const idMatch = line.match(/^P\[(\d+)\]/);
@@ -822,8 +822,8 @@ function updatePreview() {
                 const obj = JSON.parse(gen);
                 const arr = obj.Warings || obj.Warnings || [];
                 const items = [];
-                for(let i=0; i<16; i++) {
-                    items.push({ id: i+1, text: arr[i] || '', idx: i });
+                for (let i = 0; i < 16; i++) {
+                    items.push({ id: i + 1, text: arr[i] || '', idx: i });
                 }
 
                 if (state.editMode) {
@@ -833,13 +833,13 @@ function updatePreview() {
                             <td style="padding:5px 8px"><input type="text" data-idx="${item.idx}" value="${item.text}" style="background:transparent;border:1px solid rgba(255,255,255,0.1);color:#e2e8f0;font-family:monospace;font-size:12px;width:100%;box-sizing:border-box;outline:none;padding:3px 6px;border-radius:4px" onfocus="this.style.borderColor='#38bdf8'" onblur="this.style.borderColor='rgba(255,255,255,0.1)';updateWarningCell(this)" onkeydown="if(event.key==='Enter'){this.blur();}" /></td>
                         </tr>`;
                     }).join('');
-                    const th = ['ID','Description'].map(h => `<th style="padding:8px 12px;text-align:left;color:#94a3b8;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.08)">${h}</th>`).join('');
+                    const th = ['ID', 'Description'].map(h => `<th style="padding:8px 12px;text-align:left;color:#94a3b8;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.08)">${h}</th>`).join('');
                     tableHtml = `<div style="overflow:auto;max-height:100%"><table style="width:100%;border-collapse:collapse"><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>`;
 
                     window._warningArr = [];
-                    for(let i=0; i<16; i++) window._warningArr.push(arr[i] || "");
-                    
-                    window.updateWarningCell = function(input) {
+                    for (let i = 0; i < 16; i++) window._warningArr.push(arr[i] || "");
+
+                    window.updateWarningCell = function (input) {
                         const idx = parseInt(input.dataset.idx);
                         window._warningArr[idx] = input.value.trim();
                         if (!state.warningOverrides) state.warningOverrides = {};
@@ -850,10 +850,10 @@ function updatePreview() {
                     const rows = items.map(item => [item.id, item.text]);
                     tableHtml = buildTable(['ID', 'Description'], rows);
                 }
-            } catch(e) { /* fallback */ }
+            } catch (e) { /* fallback */ }
         }
 
-    } catch(e) { rawCode = 'Error rendering preview: ' + e; }
+    } catch (e) { rawCode = 'Error rendering preview: ' + e; }
 
     // 표가 있으면 표로 표시 (tableContainer 사용)
     if (tableHtml) {
@@ -886,26 +886,26 @@ async function exportProj() {
     const zip = new JSZip();
     const name = document.getElementById('prjName').value || state.projectName;
     const root = zip.folder(name);
-    
+
     function addZFile(f, n) {
         let content = getFinalFileContent(n);
         content = content.replace(/\r?\n/g, '\r\n'); // Force CRLF
         f.file(n, content);
     }
-    
+
     function addCustomZFile(f, n, n2) {
         let content = getFinalFileContent(n);
         content = content.replace(/\r?\n/g, '\r\n'); // Force CRLF
         f.file(n2, content);
     }
-    
+
     try {
         addZFile(root, "main.pro");
         addZFile(root, "s01_initial.pro");
-        if(state.options.EnableToolControl) addZFile(root, "s02_Tool_Control.pro");
-        if(state.options.EnableTcpSpeed) addZFile(root, "PLC_TCP_Speed.pro");
-        if(state.options.EnableTorque) addZFile(root, "PLC_Current_Torque.pro");
-        
+        if (state.options.EnableToolControl) addZFile(root, "s02_Tool_Control.pro");
+        if (state.options.EnableTcpSpeed) addZFile(root, "PLC_TCP_Speed.pro");
+        if (state.options.EnableTorque) addZFile(root, "PLC_Current_Torque.pro");
+
         state.steps.forEach(s => {
             addZFile(root, `${s.ProcessName}.pro`);
         });
@@ -918,23 +918,23 @@ async function exportProj() {
         addZFile(data, "Labels.jsn");
         addZFile(data, "UserDefineWarning.jsn");
         addZFile(data, "P.pts");
-        
-        if(state.options.EnableMultiRecipe) {
-            for(let i=1; i<state.options.RecipeCount; i++) {
+
+        if (state.options.EnableMultiRecipe) {
+            for (let i = 1; i < state.options.RecipeCount; i++) {
                 addZFile(data, `P${i.toString().padStart(2, '0')}.pts`);
             }
         }
-        
+
         addZFile(root, "RemoteIO_mapping.dat");
         // Name changes dynamically based on input
         addCustomZFile(root, `${name}.prj`, `${name}.prj`);
-        
-        root.file("InoRobot_IO_Map_V24.C4.02.xlsx", Assets.IO_Map_Excel, {base64: true});
 
-        const blob = await zip.generateAsync({type:"blob"});
+        root.file("InoRobot_IO_Map_V24.C4.02.xlsx", Assets.IO_Map_Excel, { base64: true });
+
+        const blob = await zip.generateAsync({ type: "blob" });
         saveAs(blob, `${name}.zip`);
         alert("Project Generation Completed!");
-    } catch(e) {
+    } catch (e) {
         console.error(e);
         alert("Error generating zip: " + e.message);
     }
