@@ -170,11 +170,58 @@
                         <div class="min-w-[650px] flex-1 flex flex-col min-h-0 pb-2">
                             <!-- Headers -->
                             <div class="flex gap-2 px-3 mb-2 text-sm font-semibold text-slate-500 flex-shrink-0">
-                                <span class="w-6 text-center">No</span><span class="w-10 text-center">Name</span><span
-                                    class="flex-1 text-center">Type</span><span
-                                    class="flex-1 text-left">Method</span><span
-                                    class="flex-1 text-center">Tool</span><span class="flex-1 text-center">Vision
-                                    offset</span><span class="w-6"></span>
+                                <span class="w-6 text-center">No</span>
+                                <span class="w-10 text-center">Name</span>
+                                <span class="flex-1 text-center flex items-center justify-center gap-1 group relative">
+                                    Type
+                                    <i data-lucide="info" class="w-3.5 h-3.5 text-slate-500 cursor-help hover:text-blue-400 transition-colors"></i>
+                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-slate-800 border border-slate-700 rounded-xl text-xs font-normal text-slate-300 opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-[60] shadow-2xl backdrop-blur-md">
+                                        <div class="space-y-2">
+                                            <p><span class="text-blue-400 font-bold">Tray</span>: 격자형 배열(Row/Col) 기반 적재/취출 공정</p>
+                                            <p><span class="text-emerald-400 font-bold">Stage</span>: 특정 고정 소스/타겟 위치 작업 공정</p>
+                                            <p><span class="text-purple-400 font-bold">MCR</span>: 바코드/QR코드 등 고정형 스캐너 연동 공정</p>
+                                            <p><span class="text-amber-400 font-bold">Vision</span>: 비전 시스템 연동 보정 및 판정 공정</p>
+                                            <p><span class="text-red-400 font-bold">Trash</span>: 불량품 퇴출 및 예외 처리 전용 공정</p>
+                                        </div>
+                                    </div>
+                                </span>
+                                <span class="flex-1 text-center flex items-center justify-center gap-1 group relative">
+                                    Method
+                                    <i data-lucide="info" class="w-3.5 h-3.5 text-slate-500 cursor-help hover:text-blue-400 transition-colors"></i>
+                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-slate-800 border border-slate-700 rounded-xl text-xs font-normal text-slate-300 opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-[60] shadow-2xl backdrop-blur-md">
+                                        <div class="space-y-2">
+                                            <p><span class="text-blue-400 font-bold">Get</span>: 부품을 잡는(Picking) 흡착/그립 동작</p>
+                                            <p><span class="text-emerald-400 font-bold">Put</span>: 부품을 내려놓는(Placing) 동작</p>
+                                            <p><span class="text-purple-400 font-bold">Check</span>: 센서/비전을 통한 유무 및 상태 판독</p>
+                                            <p><span class="text-amber-400 font-bold">Calibration</span>: 비전 9-Point 교정 전용 동작</p>
+                                            <p><span class="text-slate-400 font-bold">Peeling</span>: 부품 보호 필름 제거 등 특수 궤적 작업</p>
+                                        </div>
+                                    </div>
+                                </span>
+                                <span class="flex-1 text-center flex items-center justify-center gap-1 group relative">
+                                    Tool
+                                    <i data-lucide="info" class="w-3.5 h-3.5 text-slate-500 cursor-help hover:text-blue-400 transition-colors"></i>
+                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-slate-800 border border-slate-700 rounded-xl text-xs font-normal text-slate-300 opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-[60] shadow-2xl backdrop-blur-md">
+                                        <div class="space-y-2">
+                                            <p><span class="text-blue-400 font-bold">Vacuum</span>: 진공 흡착 패드 툴 제어 (Vac ON/OFF)</p>
+                                            <p><span class="text-emerald-400 font-bold">Gripper</span>: 기구형 그리퍼 툴 제어 (Open/Close)</p>
+                                            <p><span class="text-purple-400 font-bold">PLC (IO)</span>: 상위 제어기(PLC)의 IO 신호로 직접 제어</p>
+                                            <p><span class="text-amber-400 font-bold">Vision (Socket)</span>: 비전 연동 및 소켓 데이터 송수신 동작</p>
+                                        </div>
+                                    </div>
+                                </span>
+                                <span class="flex-1 text-center flex items-center justify-center gap-1 group relative">
+                                    Vision offset
+                                    <i data-lucide="info" class="w-3.5 h-3.5 text-slate-500 cursor-help hover:text-blue-400 transition-colors"></i>
+                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-slate-800 border border-slate-700 rounded-xl text-xs font-normal text-slate-300 opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-[60] shadow-2xl backdrop-blur-md">
+                                        <div class="space-y-2">
+                                            <p><span class="text-slate-400 font-bold">No use</span>: 비전 보정 데이터를 사용하지 않음</p>
+                                            <p><span class="text-blue-400 font-bold">Use - IO</span>: PLC 통신 IO(Word)를 통해 보정 데이터 수신</p>
+                                            <p><span class="text-amber-400 font-bold">Use - Socket</span>: TCP/IP 직접 통신으로 보정 데이터 수신</p>
+                                        </div>
+                                    </div>
+                                </span>
+                                <span class="w-6"></span>
                             </div>
                             <div id="stepsList" class="flex-1 overflow-y-auto scroll-custom space-y-3 pr-2"></div>
                         </div>
