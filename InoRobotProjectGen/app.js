@@ -53,6 +53,20 @@ function initApp() {
     const btnGenerate = document.getElementById('btnGenerate');
     if (btnGenerate) btnGenerate.onclick = exportProj;
 
+    // Guide modal
+    document.getElementById('btnGuide').onclick = () => {
+        document.getElementById('guideModal').classList.remove('hidden');
+        lucide.createIcons();
+    };
+    document.querySelectorAll('.guide-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.guide-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.guide-tab-content').forEach(c => c.classList.add('hidden'));
+            tab.classList.add('active');
+            document.getElementById('guideTab-' + tab.dataset.tab).classList.remove('hidden');
+        });
+    });
+
     // 2. Data Initialization with try-catch
     try {
         initRobots();
