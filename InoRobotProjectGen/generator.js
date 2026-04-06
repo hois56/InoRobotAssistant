@@ -10,6 +10,10 @@ const Generator = {
     },
     TorqueProgram(robotName) {
         let ratios = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
+        let isScara = Assets.Robots_6_axis.split(/\r?\n/).some(line => {
+            let cols = line.split(',');
+            return cols.length >= 4 && (cols[0].trim()+cols[1].trim()+cols[2].trim()+cols[3].trim()) === robotName;
+        });
         let csvLines = Assets.Robots_Torque.split(/\r?\n/);
         let foundRobot = null;
         for (let i = 1; i < csvLines.length; i++) {
@@ -33,7 +37,10 @@ const Generator = {
                 else if (axis === 'J6') ratios[5] = ratio;
             }
         }
-        return `ProgramInfo\n    Version = "S4.24"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getNowAmPm()}"\n    RobotName = "${robotName}"\nEndProgramInfo\nStart;\n    D_J1_cur_torque = Abs(GetTorque(1) * ${ratios[0].toFixed(3)});\n    D_J2_cur_torque = Abs(GetTorque(2) * ${ratios[1].toFixed(3)});\n    D_J3_cur_torque = Abs(GetTorque(3) * ${ratios[2].toFixed(3)});\n    D_J4_cur_torque = Abs(GetTorque(4) * ${ratios[3].toFixed(3)});\n    D_J5_cur_torque = Abs(GetTorque(5) * ${ratios[4].toFixed(3)});\n    D_J6_cur_torque = Abs(GetTorque(6) * ${ratios[5].toFixed(3)});\n    #================================================================================\n    ywCur_J1_torque = D_J1_cur_torque;\n    ywCur_J2_torque = D_J2_cur_torque;\n    ywCur_J3_torque = D_J3_cur_torque;\n    ywCur_J4_torque = D_J4_cur_torque;\n    ywCur_J5_torque = D_J5_cur_torque;\n    ywCur_J6_torque = D_J6_cur_torque;\n    #================================================================================\n    If D_J1_cur_torque > D_J1_max_torque\n        D_J1_max_torque = D_J1_cur_torque;\n    EndIf;\n    If D_J2_cur_torque > D_J2_max_torque\n        D_J2_max_torque = D_J2_cur_torque;\n    EndIf;\n    If D_J3_cur_torque > D_J3_max_torque\n        D_J3_max_torque = D_J3_cur_torque;\n    EndIf;\n    If D_J4_cur_torque > D_J4_max_torque\n        D_J4_max_torque = D_J4_cur_torque;\n    EndIf;\n    If D_J5_cur_torque > D_J5_max_torque\n        D_J5_max_torque = D_J5_cur_torque;\n    EndIf;\n    If D_J6_cur_torque > D_J6_max_torque\n        D_J6_max_torque = D_J6_cur_torque;\n    EndIf;\nEnd;`;
+        let j56get = isScara ? "" : `    D_J5_cur_torque = Abs(GetTorque(5) * ${ratios[4].toFixed(3)});\n    D_J6_cur_torque = Abs(GetTorque(6) * ${ratios[5].toFixed(3)});\n`;
+        let j56out = isScara ? "" : `    ywCur_J5_torque = D_J5_cur_torque;\n    ywCur_J6_torque = D_J6_cur_torque;\n`;
+        let j56max = isScara ? "" : `    If D_J5_cur_torque > D_J5_max_torque\n        D_J5_max_torque = D_J5_cur_torque;\n    EndIf;\n    If D_J6_cur_torque > D_J6_max_torque\n        D_J6_max_torque = D_J6_cur_torque;\n    EndIf;\n`;
+        return `ProgramInfo\n    Version = "S4.24"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getNowAmPm()}"\n    RobotName = "${robotName}"\nEndProgramInfo\nStart;\n    D_J1_cur_torque = Abs(GetTorque(1) * ${ratios[0].toFixed(3)});\n    D_J2_cur_torque = Abs(GetTorque(2) * ${ratios[1].toFixed(3)});\n    D_J3_cur_torque = Abs(GetTorque(3) * ${ratios[2].toFixed(3)});\n    D_J4_cur_torque = Abs(GetTorque(4) * ${ratios[3].toFixed(3)});\n${j56get}    #================================================================================\n    ywCur_J1_torque = D_J1_cur_torque;\n    ywCur_J2_torque = D_J2_cur_torque;\n    ywCur_J3_torque = D_J3_cur_torque;\n    ywCur_J4_torque = D_J4_cur_torque;\n${j56out}    #================================================================================\n    If D_J1_cur_torque > D_J1_max_torque\n        D_J1_max_torque = D_J1_cur_torque;\n    EndIf;\n    If D_J2_cur_torque > D_J2_max_torque\n        D_J2_max_torque = D_J2_cur_torque;\n    EndIf;\n    If D_J3_cur_torque > D_J3_max_torque\n        D_J3_max_torque = D_J3_cur_torque;\n    EndIf;\n    If D_J4_cur_torque > D_J4_max_torque\n        D_J4_max_torque = D_J4_cur_torque;\n    EndIf;\n${j56max}End;`;
     },
     ToolControlProgram(options, steps) {
         if (!options.EnableToolControl) return null;
@@ -260,7 +267,8 @@ EndFunc;
 
         let workMoveSection = "";
         if (options.EnableWaitPos) {
-            workMoveSection = `    If R_Cur_pos <> ${n * 100 + lastWaitIdx}\n        R_Cur_pos = ${n * 100};\n        Movj P${n}_App,V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n        R_Cur_pos = ${n * 100 + 1};\n        Movj P${n}_Wait,V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n    EndIf;\n`;
+            let workMoveCond = (isCalib || tool === "PLC (IO)") ? `R_Cur_pos <> ${n * 100 + 1} Or R_Cur_pos <> ${n * 100 + 11}` : `R_Cur_pos <> ${n * 100 + lastWaitIdx}`;
+            workMoveSection = `    If ${workMoveCond}\n        R_Cur_pos = ${n * 100};\n        Movj P${n}_App,V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n        R_Cur_pos = ${n * 100 + 1};\n        Movj P${n}_Wait,V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n    EndIf;\n`;
         } else {
             workMoveSection = `    R_Cur_pos = ${n * 100};\n    Movj P${n}_App,V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n    R_Cur_pos = ${n * 100 + 1};\n    Movj P${n}_Wait,V[100],Z[CP],Tool[B_T_num],Wobj[B_W_num];\n`;
         }
@@ -270,7 +278,8 @@ EndFunc;
 
         let workStr = `#================================================================================\n#  Process Work pos                   \n#================================================================================\nFunc P${n}_work_pos()\n${toolPosCheck}    #================================================================================\n    #  Return move before process pos                 \n    #================================================================================\n    OutW[33] = 0; #Process signal reset\n    OutW[34] = 0; #Process signal reset\n${peekInit}${workBusyOn}    #================================================================================\n`;
         if (options.EnableWaitPos) {
-            workStr += `    If R_Cur_pos <> ${n * 100 + lastWaitIdx}\n        Bool return_result = s01_initial.Return_move();\n    EndIf;\n`;
+            let returnCond = (isCalib || tool === "PLC (IO)") ? `R_Cur_pos <> ${n * 100 + 1} Or R_Cur_pos <> ${n * 100 + 11}` : `R_Cur_pos <> ${n * 100 + lastWaitIdx}`;
+            workStr += `    If ${returnCond}\n        Bool return_result = s01_initial.Return_move();\n    EndIf;\n`;
         } else {
             workStr += `    Bool return_result = s01_initial.Return_move();\n`;
         }
@@ -361,6 +370,10 @@ EndFunc;
         return t;
     },
     LabelsJson(steps, options) {
+        let isScara = Assets.Robots_6_axis.split(/\r?\n/).some(line => {
+            let cols = line.split(',');
+            return cols.length >= 4 && (cols[0].trim()+cols[1].trim()+cols[2].trim()+cols[3].trim()) === options.RobotName;
+        });
         let hasCalibPlc = false, hasPeeling = false, hasVisionIo = false;
         let hasVacuum = false, hasGripper = false, hasTrash = false;
         let stageCount = 0;
@@ -396,7 +409,6 @@ EndFunc;
         steps.forEach(s => { inBits.push({ nIndex: baseInIdx, sLabel: `xP${s.No}_wait_pos_start`, sDescription: "", sOriginalName: `IN[${baseInIdx}]` }); baseInIdx++; });
         let baseWorkInIdx = 544;
         steps.forEach(s => { inBits.push({ nIndex: baseWorkInIdx, sLabel: `xP${s.No}_work_pos_start`, sDescription: "", sOriginalName: `IN[${baseWorkInIdx}]` }); baseWorkInIdx++; });
-        if (hasCalibPlc) { inBits.push({ nIndex: 576, sLabel: "xVision_move_next", sDescription: "", sOriginalName: "IN[576]" }, { nIndex: 577, sLabel: "xVision_cali_comp", sDescription: "", sOriginalName: "IN[577]" }); }
         if (hasPeeling) { inBits.push({ nIndex: 568, sLabel: "xPeel_start", sDescription: "", sOriginalName: "IN[568]" }); }
 
         if (options.EnableToolControl) {
@@ -555,7 +567,8 @@ EndFunc;
         );
         if (options.EnableTcpSpeed) outWords.push({ nIndex: 63, sLabel: "ywCur_TCP_speed", sDescription: "", sOriginalName: "OUTW[63]" });
         if (options.EnableTorque) {
-            outWords.push({ nIndex: 64, sLabel: "ywCur_J1_torque", sDescription: "", sOriginalName: "OUTW[64]" }, { nIndex: 65, sLabel: "ywCur_J2_torque", sDescription: "", sOriginalName: "OUTW[65]" }, { nIndex: 66, sLabel: "ywCur_J3_torque", sDescription: "", sOriginalName: "OUTW[66]" }, { nIndex: 67, sLabel: "ywCur_J4_torque", sDescription: "", sOriginalName: "OUTW[67]" }, { nIndex: 68, sLabel: "ywCur_J5_torque", sDescription: "", sOriginalName: "OUTW[68]" }, { nIndex: 69, sLabel: "ywCur_J6_torque", sDescription: "", sOriginalName: "OUTW[69]" });
+            outWords.push({ nIndex: 64, sLabel: "ywCur_J1_torque", sDescription: "", sOriginalName: "OUTW[64]" }, { nIndex: 65, sLabel: "ywCur_J2_torque", sDescription: "", sOriginalName: "OUTW[65]" }, { nIndex: 66, sLabel: "ywCur_J3_torque", sDescription: "", sOriginalName: "OUTW[66]" }, { nIndex: 67, sLabel: "ywCur_J4_torque", sDescription: "", sOriginalName: "OUTW[67]" });
+            if (!isScara) outWords.push({ nIndex: 68, sLabel: "ywCur_J5_torque", sDescription: "", sOriginalName: "OUTW[68]" }, { nIndex: 69, sLabel: "ywCur_J6_torque", sDescription: "", sOriginalName: "OUTW[69]" });
         }
 
         let bVars = [
@@ -568,8 +581,10 @@ EndFunc;
         let dVars = [];
         if (options.EnableTcpSpeed) dVars.push({ nIndex: 0, sLabel: "D_TCP_speed", sDescription: "", sOriginalName: "D[0]" });
         if (options.EnableTorque) {
-            dVars.push({ nIndex: 1, sLabel: "D_J1_cur_torque", sDescription: "", sOriginalName: "D[1]" }, { nIndex: 2, sLabel: "D_J2_cur_torque", sDescription: "", sOriginalName: "D[2]" }, { nIndex: 3, sLabel: "D_J3_cur_torque", sDescription: "", sOriginalName: "D[3]" }, { nIndex: 4, sLabel: "D_J4_cur_torque", sDescription: "", sOriginalName: "D[4]" }, { nIndex: 5, sLabel: "D_J5_cur_torque", sDescription: "", sOriginalName: "D[5]" }, { nIndex: 6, sLabel: "D_J6_cur_torque", sDescription: "", sOriginalName: "D[6]" });
-            dVars.push({ nIndex: 7, sLabel: "D_J1_max_torque", sDescription: "", sOriginalName: "D[7]" }, { nIndex: 8, sLabel: "D_J2_max_torque", sDescription: "", sOriginalName: "D[8]" }, { nIndex: 9, sLabel: "D_J3_max_torque", sDescription: "", sOriginalName: "D[9]" }, { nIndex: 10, sLabel: "D_J4_max_torque", sDescription: "", sOriginalName: "D[10]" }, { nIndex: 11, sLabel: "D_J5_max_torque", sDescription: "", sOriginalName: "D[11]" }, { nIndex: 12, sLabel: "D_J6_max_torque", sDescription: "", sOriginalName: "D[12]" });
+            dVars.push({ nIndex: 1, sLabel: "D_J1_cur_torque", sDescription: "", sOriginalName: "D[1]" }, { nIndex: 2, sLabel: "D_J2_cur_torque", sDescription: "", sOriginalName: "D[2]" }, { nIndex: 3, sLabel: "D_J3_cur_torque", sDescription: "", sOriginalName: "D[3]" }, { nIndex: 4, sLabel: "D_J4_cur_torque", sDescription: "", sOriginalName: "D[4]" });
+            if (!isScara) dVars.push({ nIndex: 5, sLabel: "D_J5_cur_torque", sDescription: "", sOriginalName: "D[5]" }, { nIndex: 6, sLabel: "D_J6_cur_torque", sDescription: "", sOriginalName: "D[6]" });
+            dVars.push({ nIndex: 7, sLabel: "D_J1_max_torque", sDescription: "", sOriginalName: "D[7]" }, { nIndex: 8, sLabel: "D_J2_max_torque", sDescription: "", sOriginalName: "D[8]" }, { nIndex: 9, sLabel: "D_J3_max_torque", sDescription: "", sOriginalName: "D[9]" }, { nIndex: 10, sLabel: "D_J4_max_torque", sDescription: "", sOriginalName: "D[10]" });
+            if (!isScara) dVars.push({ nIndex: 11, sLabel: "D_J5_max_torque", sDescription: "", sOriginalName: "D[11]" }, { nIndex: 12, sLabel: "D_J6_max_torque", sDescription: "", sOriginalName: "D[12]" });
         }
 
         function createSection(name, arr) {
