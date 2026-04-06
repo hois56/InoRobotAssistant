@@ -312,13 +312,13 @@
 
             <!-- Right: Description Panel -->
             <div
-                class="hidden md:flex w-1/2 p-8 bg-slate-950/40 flex-col justify-center items-center text-center space-y-4">
-                <div id="optIconBox" class="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center">
+                class="hidden md:flex w-1/2 p-8 bg-slate-950/40 flex-col items-center space-y-4 overflow-y-auto scroll-custom">
+                <div id="optIconBox" class="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center flex-shrink-0">
                     <i data-lucide="info" class="w-10 h-10 text-slate-400"></i>
                 </div>
-                <div>
-                    <h3 id="optDescTitle" class="text-xl font-bold text-white mb-2">Option Info</h3>
-                    <p id="optDescText" class="text-slate-400 leading-relaxed text-sm">항목 위에 마우스를 올리면 상세 설명이 표시됩니다.</p>
+                <div class="w-full">
+                    <h3 id="optDescTitle" class="text-xl font-bold text-white mb-2 text-center">Option Info</h3>
+                    <p id="optDescText" class="text-slate-400 leading-relaxed text-sm text-center">항목 위에 마우스를 올리면 상세 설명이 표시됩니다.</p>
                 </div>
             </div>
         </div>
