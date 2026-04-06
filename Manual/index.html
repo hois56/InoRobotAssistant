@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,17 +10,22 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body class="bg-[#0b0e14] text-slate-200 min-h-screen overflow-x-hidden">
     <div class="ambient-glow"></div>
 
     <!-- Header Section -->
-    <header class="sticky top-0 w-full flex flex-row justify-between items-center bg-[rgba(15,19,28,0.9)] backdrop-blur-xl border-b border-white/[0.05] px-8 py-0 shrink-0 h-[72px] z-50">
+    <header
+        class="sticky top-0 w-full flex flex-row justify-between items-center bg-[rgba(15,19,28,0.9)] backdrop-blur-xl border-b border-white/[0.05] px-8 py-0 shrink-0 h-[72px] z-50">
         <div class="flex flex-row items-center gap-6">
             <a href="/" class="logo-link group" title="메인 페이지로">
-                <img src="../InoRobotSelect/INOVANCE_Logo.png" alt="Inovance" class="logo-img h-[60px] w-auto transition-transform group-hover:scale-105">
+                <img src="../InoRobotSelect/INOVANCE_Logo.png" alt="Inovance"
+                    class="logo-img h-[60px] w-auto transition-transform group-hover:scale-105">
             </a>
             <div class="header-divider h-8 w-px bg-white/[0.1] mx-2"></div>
             <h1 class="text-xl font-bold font-outfit text-white tracking-tight">Technical Manual Center</h1>
@@ -33,11 +39,12 @@
         <section class="text-center mb-16 animate-fade-in-up" style="animation: fadeInUp 0.8s ease forwards;">
             <h2 class="text-4xl md:text-5xl font-extrabold font-outfit text-white mb-6 font-bold">도움이 필요하신가요?</h2>
             <p class="text-slate-400 text-lg max-w-2xl mx-auto mb-10 italic">필요한 매뉴얼을 검색하거나 모델별 카테고리를 선택하세요.</p>
-            
+
             <div class="relative max-w-2xl mx-auto">
-                <i data-lucide="search" class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 font-bold"></i>
-                <input type="text" id="manualSearch" placeholder="키워드(예: SCARA, 설치, 통신)를 입력하세요..." 
-                       class="w-full bg-slate-900/40 border border-white/10 rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 backdrop-blur-md transition-all text-white placeholder-slate-600">
+                <i data-lucide="search"
+                    class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 font-bold"></i>
+                <input type="text" id="manualSearch" placeholder="키워드(예: SCARA, 설치, 통신)를 입력하세요..."
+                    class="w-full bg-slate-900/40 border border-white/10 rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 backdrop-blur-md transition-all text-white placeholder-slate-600">
             </div>
         </section>
 
@@ -45,11 +52,12 @@
             <!-- Sidebar Filters -->
             <aside class="lg:col-span-3 space-y-8">
                 <div>
-                    <h3 class="text-sm font-bold font-outfit text-slate-500 tracking-wider mb-4 flex items-center gap-2">
+                    <h3
+                        class="text-sm font-bold font-outfit text-slate-500 tracking-wider mb-4 flex items-center gap-2">
                         <i data-lucide="layers" class="w-4 h-4 text-emerald-500"></i> Hardware Manual
                     </h3>
                     <div class="space-y-2" id="typeFilters">
-                        <button class="filter-btn active w-full text-left" data-type="all">전체 모델</button>
+                        <button class="filter-btn active w-full text-left" data-type="all">All Model</button>
                         <button class="filter-btn w-full text-left" data-type="scara">SCARA Robots</button>
                         <button class="filter-btn w-full text-left" data-type="6axis">6-Axis Robots</button>
                         <button class="filter-btn w-full text-left" data-type="controller">Controllers</button>
@@ -57,27 +65,29 @@
                 </div>
 
                 <div>
-                    <h3 class="text-sm font-bold font-outfit text-slate-500 tracking-wider mb-4 flex items-center gap-2">
+                    <h3
+                        class="text-sm font-bold font-outfit text-slate-500 tracking-wider mb-4 flex items-center gap-2">
                         <i data-lucide="tag" class="w-4 h-4 text-emerald-500"></i> Software Manual
                     </h3>
                     <div class="space-y-2" id="catFilters">
-                        <button class="filter-btn active w-full text-left" data-cat="all">전체 카테고리</button>
+                        <button class="filter-btn active w-full text-left" data-cat="all">All Category</button>
                         <button class="filter-btn w-full text-left" data-cat="lab">InoRobotLab</button>
-                        <button class="filter-btn w-full text-left" data-cat="pendant">펜던트</button>
-                        <button class="filter-btn w-full text-left" data-cat="comm">통신</button>
-                        <button class="filter-btn w-full text-left" data-cat="api">명령어</button>
-                        <button class="filter-btn w-full text-left" data-cat="selection">Select 가이드</button>
+                        <button class="filter-btn w-full text-left" data-cat="pendant">Pandent</button>
+                        <button class="filter-btn w-full text-left" data-cat="comm">Communication</button>
+                        <button class="filter-btn w-full text-left" data-cat="api">Instruction</button>
+                        <button class="filter-btn w-full text-left" data-cat="selection">Select Guide</button>
                     </div>
                 </div>
 
                 <div>
-                    <h3 class="text-sm font-bold font-outfit text-slate-500 tracking-wider mb-4 flex items-center gap-2">
-                        <i data-lucide="graduation-cap" class="w-4 h-4 text-emerald-500"></i> 교육 자료
+                    <h3
+                        class="text-sm font-bold font-outfit text-slate-500 tracking-wider mb-4 flex items-center gap-2">
+                        <i data-lucide="graduation-cap" class="w-4 h-4 text-emerald-500"></i> Training Manual
                     </h3>
                     <div class="space-y-2" id="eduFilters">
-                        <button class="filter-btn active w-full text-left" data-cat="all">전체 교육 자료</button>
-                        <button class="filter-btn w-full text-left" data-cat="entry">입문 과정</button>
-                        <button class="filter-btn w-full text-left" data-cat="basic">초급 과정</button>
+                        <button class="filter-btn active w-full text-left" data-cat="all">All Training Manual</button>
+                        <button class="filter-btn w-full text-left" data-cat="entry">Beginner Level</button>
+                        <button class="filter-btn w-full text-left" data-cat="basic">Basic Level</button>
                     </div>
                 </div>
             </aside>
@@ -94,11 +104,20 @@
     <!-- Footer removed -->
 
     <style>
-        .font-outfit { font-family: 'Outfit', sans-serif; }
+        .font-outfit {
+            font-family: 'Outfit', sans-serif;
+        }
+
         .ambient-glow {
-            position: fixed; bottom: 10%; right: 10%; width: 50vw; height: 50vh;
-            background: radial-gradient(circle, rgba(16,185,129,0.05) 0%, rgba(15,23,42,0) 70%);
-            z-index: -1; filter: blur(100px); pointer-events: none;
+            position: fixed;
+            bottom: 10%;
+            right: 10%;
+            width: 50vw;
+            height: 50vh;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.05) 0%, rgba(15, 23, 42, 0) 70%);
+            z-index: -1;
+            filter: blur(100px);
+            pointer-events: none;
         }
 
         .filter-btn {
@@ -112,28 +131,45 @@
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             text-align: left;
         }
-        .filter-btn:hover { background: rgba(30, 41, 59, 0.4); color: #fff; }
-        .filter-btn.active { 
-            background: rgba(16, 185, 129, 0.1); 
-            border-color: rgba(16, 185, 129, 0.3); 
-            color: #10b981; 
+
+        .filter-btn:hover {
+            background: rgba(30, 41, 59, 0.4);
+            color: #fff;
+        }
+
+        .filter-btn.active {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.3);
+            color: #10b981;
             font-weight: 700;
         }
 
         .manual-item {
             background: rgba(30, 41, 59, 0.4);
             backdrop-filter: blur(16px);
-            border: 1px solid rgba(255,255,255,0.05);
+            border: 1px solid rgba(255, 255, 255, 0.05);
             transition: all 0.3s ease;
         }
+
         .manual-item:hover {
             background: rgba(30, 41, 59, 0.7);
             border-color: rgba(16, 185, 129, 0.4);
             transform: translateX(8px);
         }
 
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(2rem); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(2rem);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
     <script src="script.js"></script>
 </body>
+
 </html>
