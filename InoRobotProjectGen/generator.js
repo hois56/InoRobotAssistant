@@ -82,7 +82,9 @@ const Generator = {
         let sb = `ProgramInfo\n    Version = "S4.24"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getNowAmPm()}"\n    RobotName = "${options.RobotName}"\nEndProgramInfo\nInclude "s01_initial.pro";\n`;
         if (options.EnableToolControl) sb += `Include "s02_Tool_Control.pro";\n`;
         steps.forEach(s => sb += `Include "${s.ProcessName}.pro";\n`);
-        sb += `Start;\n    If Tool[1].TLoad.Mass == 0\n        Tool[1].TLoad.Mass = 7;\n    EndIf;\n    #================================================================================\n    If xwSet_speed <= 0\n        Velset Rate[1];\n    ElseIf xwSet_speed > 100\n        Velset Rate[100];\n    Else\n        Velset Rate[xwSet_speed];\n    EndIf;\n    #================================================================================\n    L[0]:\n`;
+        let payloadMatch = options.RobotName.match(/IR-(?:TS|[RS])(\d+)/i);
+        let payload = payloadMatch ? parseInt(payloadMatch[1]) : 7;
+        sb += `Start;\n    If Tool[1].TLoad.Mass == 0\n        Tool[1].TLoad.Mass = ${payload};\n    EndIf;\n    #================================================================================\n    If xwSet_speed <= 0\n        Velset Rate[1];\n    ElseIf xwSet_speed > 100\n        Velset Rate[100];\n    Else\n        Velset Rate[xwSet_speed];\n    EndIf;\n    #================================================================================\n    L[0]:\n`;
         if (options.EnableMultiRecipe) sb += `    s01_initial.Manual_set_recipe();\n`;
         sb += `    If xRobot_homing\n        s01_initial.Init_move_home();\n        s01_initial.Init_signal();\n    EndIf;\n`;
         if (options.EnableWaitPos !== false) {
