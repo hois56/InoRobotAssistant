@@ -1546,6 +1546,10 @@
             background: #10b981;
         }
 
+        .seg.h.tr::after {
+            left: 50%;
+        }
+
         /* LOW state: line near bottom */
         .seg.l::after {
             content: '';
@@ -1555,6 +1559,10 @@
             right: 0;
             height: 2px;
             background: #334155;
+        }
+
+        .seg.l.tr::after {
+            left: 50%;
         }
 
         /* DATA state (word value): hatched bar near top */
@@ -1571,21 +1579,44 @@
             border-bottom: 2px solid #fbbf24;
         }
 
+        .seg.d.tr::after {
+            left: 50%;
+        }
+
         /* Transition (rising or falling) — vertical line at left edge */
         .seg.tr::before {
             content: '';
             position: absolute;
             left: 0;
-            bottom: 10px;
-            width: 2px;
+            width: 50%;
             height: 24px;
-            background: #10b981;
             z-index: 1;
+            background: #10b981;
         }
 
-        /* Falling edge from DATA */
+        .seg.h.tr::before {
+            bottom: 10px;
+            clip-path: polygon(0% 100%, 2px 100%, 100% 0%, calc(100% - 2px) 0%);
+        }
+
+        .seg.l.tr::before {
+            bottom: 10px;
+            clip-path: polygon(0% 0%, 2px 0%, 100% 100%, calc(100% - 2px) 100%);
+        }
+
+        .seg.d.tr::before {
+            top: 10px;
+            background: #fbbf24;
+            clip-path: polygon(0% 10%, 100% 90%, 100% 100%, 0% 100%, 0% 90%, 100% 10%, 100% 0%, 0% 0%);
+            /* simplified crossover shape */
+            opacity: 0.8;
+            background: repeating-linear-gradient(45deg, #fbbf24, #fbbf24 2px, transparent 2px, transparent 5px);
+        }
+
         .seg.l.tr.from-d::before {
             background: #fbbf24;
+            bottom: 10px;
+            clip-path: polygon(0% 0%, 2px 0%, 100% 100%, calc(100% - 2px) 100%);
         }
 
         /* guide-chart legacy (used by charts 5-8) */
