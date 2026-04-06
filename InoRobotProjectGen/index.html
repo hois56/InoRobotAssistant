@@ -108,6 +108,10 @@
             </div>
         </div>
         <div class="flex flex-row items-center gap-3 flex-shrink-0">
+            <button id="btnGuide"
+                class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-xl font-medium transition-colors flex items-center gap-2 text-sm h-10">
+                <i data-lucide="book-open" class="w-4 h-4 text-emerald-400"></i> Guide
+            </button>
             <button id="btnOption"
                 class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-xl font-medium transition-colors flex items-center gap-2 text-sm h-10">
                 <i data-lucide="settings" class="w-4 h-4"></i> Options
@@ -379,6 +383,369 @@
             </div>
         </div>
     </div>
+
+    <!-- Guide Modal -->
+    <div id="guideModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="document.getElementById('guideModal').classList.add('hidden')"></div>
+        <div class="relative glass rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col z-10">
+            <!-- Header -->
+            <div class="flex items-center justify-between px-8 py-5 border-b border-white/10 flex-shrink-0">
+                <div class="flex items-center gap-3">
+                    <i data-lucide="book-open" class="w-5 h-5 text-emerald-400"></i>
+                    <h2 class="font-outfit text-lg font-bold text-white">Program Operation Guide</h2>
+                </div>
+                <button onclick="document.getElementById('guideModal').classList.add('hidden')"
+                    class="text-slate-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-slate-700">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Tab Bar -->
+            <div class="flex gap-1 px-8 pt-4 pb-0 border-b border-white/10 flex-shrink-0 overflow-x-auto">
+                <button class="guide-tab active" data-tab="timing">IO 타이밍 차트</button>
+                <button class="guide-tab" data-tab="process">프로세스 설명</button>
+            </div>
+
+            <!-- Content -->
+            <div class="overflow-y-auto flex-1 px-8 py-6 space-y-10" id="guideContent">
+
+                <!-- ── TIMING CHART TAB ── -->
+                <div id="guideTab-timing" class="guide-tab-content space-y-8">
+
+                    <!-- 1. 프로그램 시작 -->
+                    <div class="guide-section">
+                        <h3 class="guide-section-title"><span class="guide-num">1</span> 프로그램 시작</h3>
+                        <p class="guide-desc">상위 제어기(PLC)에서 로봇 프로그램을 시작하는 신호 순서입니다.</p>
+                        <div class="guide-chart">
+                            <div class="guide-signal-row">
+                                <span class="guide-label">xRobot_run <span class="guide-addr">(IN[512])</span></span>
+                                <div class="guide-wave">
+                                    <div class="w-low w-8"></div><div class="w-rise"></div><div class="w-high flex-1"></div>
+                                </div>
+                                <span class="guide-dir guide-dir-in">PLC→Robot</span>
+                            </div>
+                            <div class="guide-signal-row">
+                                <span class="guide-label">xRobot_ready <span class="guide-addr">(OUT[512])</span></span>
+                                <div class="guide-wave">
+                                    <div class="w-low w-12"></div><div class="w-rise"></div><div class="w-high flex-1"></div>
+                                </div>
+                                <span class="guide-dir guide-dir-out">Robot→PLC</span>
+                            </div>
+                            <div class="guide-signal-row">
+                                <span class="guide-label">xRobot_busy <span class="guide-addr">(OUT[513])</span></span>
+                                <div class="guide-wave">
+                                    <div class="w-low w-16"></div><div class="w-rise"></div><div class="w-high flex-1"></div>
+                                </div>
+                                <span class="guide-dir guide-dir-out">Robot→PLC</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. 프로그램 정지 -->
+                    <div class="guide-section">
+                        <h3 class="guide-section-title"><span class="guide-num">2</span> 프로그램 정지</h3>
+                        <p class="guide-desc">프로그램 정지 신호를 수신하면 로봇은 현재 동작을 완료 후 대기 상태로 전환됩니다.</p>
+                        <div class="guide-chart">
+                            <div class="guide-signal-row">
+                                <span class="guide-label">xRobot_run <span class="guide-addr">(IN[512])</span></span>
+                                <div class="guide-wave">
+                                    <div class="w-high w-1/3"></div><div class="w-fall"></div><div class="w-low flex-1"></div>
+                                </div>
+                                <span class="guide-dir guide-dir-in">PLC→Robot</span>
+                            </div>
+                            <div class="guide-signal-row">
+                                <span class="guide-label">xRobot_busy <span class="guide-addr">(OUT[513])</span></span>
+                                <div class="guide-wave">
+                                    <div class="w-high w-1/3"></div><div class="w-high w-8"></div><div class="w-fall"></div><div class="w-low flex-1"></div>
+                                </div>
+                                <span class="guide-dir guide-dir-out">Robot→PLC</span>
+                            </div>
+                            <div class="guide-signal-row">
+                                <span class="guide-label">xRobot_ready <span class="guide-addr">(OUT[512])</span></span>
+                                <div class="guide-wave">
+                                    <div class="w-high w-1/3"></div><div class="w-high w-12"></div><div class="w-fall"></div><div class="w-low flex-1"></div>
+                                </div>
+                                <span class="guide-dir guide-dir-out">Robot→PLC</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. 알람 -->
+                    <div class="guide-section">
+                        <h3 class="guide-section-title"><span class="guide-num">3</span> 알람</h3>
+                        <p class="guide-desc">로봇 이상 발생 시 알람 신호를 출력합니다. 알람 리셋 신호 수신 후 해제됩니다.</p>
+                        <div class="guide-chart">
+                            <div class="guide-signal-row">
+                                <span class="guide-label">xRobot_alarm <span class="guide-addr">(OUT[514])</span></span>
+                                <div class="guide-wave">
+                                    <div class="w-low w-8"></div><div class="w-rise"></div><div class="w-high flex-1"></div><div class="w-fall"></div><div class="w-low w-8"></div>
+                                </div>
+                                <span class="guide-dir guide-dir-out">Robot→PLC</span>
+                            </div>
+                            <div class="guide-signal-row">
+                                <span class="guide-label">xAlarm_reset <span class="guide-addr">(IN[515])</span></span>
+                                <div class="guide-wave">
+                                    <div class="w-low flex-1"></div><div class="w-rise"></div><div class="w-high w-10"></div><div class="w-fall"></div><div class="w-low w-8"></div>
+                                </div>
+                                <span class="guide-dir guide-dir-in">PLC→Robot</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. 로봇 호밍 -->
+                    <div class="guide-section">
+                        <h3 class="guide-section-title"><span class="guide-num">4</span> 로봇 호밍</h3>
+                        <p class="guide-desc">호밍 신호 수신 시 로봇이 홈 위치로 복귀합니다. 복귀 완료 후 호밍 완료 신호를 출력합니다.</p>
+                        <div class="guide-chart">
+                            <div class="guide-signal-row">
+                                <span class="guide-label">xRobot_homing <span class="guide-addr">(IN[516])</span></span>
+                                <div class="guide-wave">
+                                    <div class="w-low w-8"></div><div class="w-rise"></div><div class="w-high w-1/3"></div><div class="w-fall"></div><div class="w-low flex-1"></div>
+                                </div>
+                                <span class="guide-dir guide-dir-in">PLC→Robot</span>
+                            </div>
+                            <div class="guide-signal-row">
+                                <span class="guide-label">xRobot_homing_comp <span class="guide-addr">(OUT[516])</span></span>
+                                <div class="guide-wave">
+                                    <div class="w-low w-20"></div><div class="w-rise"></div><div class="w-high flex-1"></div><div class="w-fall"></div><div class="w-low w-4"></div>
+                                </div>
+                                <span class="guide-dir guide-dir-out">Robot→PLC</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5. Wait Pos -->
+                    <div class="guide-section">
+                        <h3 class="guide-section-title"><span class="guide-num">5</span> Wait Pos</h3>
+                        <p class="guide-desc">각 프로세스의 대기 위치 이동 신호입니다. Pn = 프로세스 번호.</p>
+                        <div class="guide-chart">
+                            <div class="guide-signal-row">
+                                <span class="guide-label">xPn_wait_pos_start <span class="guide-addr">(INW[n])</span></span>
+                                <div class="guide-wave">
+                                    <div class="w-low w-8"></div><div class="w-rise"></div><div class="w-high w-1/3"></div><div class="w-fall"></div><div class="w-low flex-1"></div>
+                                </div>
+                                <span class="guide-dir guide-dir-in">PLC→Robot</span>
+                            </div>
+                            <div class="guide-signal-row">
+                                <span class="guide-label">xPn_wait_pos_comp <span class="guide-addr">(OUTW[n])</span></span>
+                                <div class="guide-wave">
+                                    <div class="w-low w-16"></div><div class="w-rise"></div><div class="w-high flex-1"></div><div class="w-fall"></div><div class="w-low w-4"></div>
+                                </div>
+                                <span class="guide-dir guide-dir-out">Robot→PLC</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 6. Work Pos -->
+                    <div class="guide-section">
+                        <h3 class="guide-section-title"><span class="guide-num">6</span> Work Pos</h3>
+                        <p class="guide-desc">작업 동작 시작 신호입니다. 작업 완료 후 완료 신호를 출력합니다.</p>
+                        <div class="guide-chart">
+                            <div class="guide-signal-row">
+                                <span class="guide-label">xPn_work_start <span class="guide-addr">(INW[n])</span></span>
+                                <div class="guide-wave">
+                                    <div class="w-low w-8"></div><div class="w-rise"></div><div class="w-high w-1/3"></div><div class="w-fall"></div><div class="w-low flex-1"></div>
+                                </div>
+                                <span class="guide-dir guide-dir-in">PLC→Robot</span>
+                            </div>
+                            <div class="guide-signal-row">
+                                <span class="guide-label">xPn_work_comp <span class="guide-addr">(OUTW[n])</span></span>
+                                <div class="guide-wave">
+                                    <div class="w-low w-24"></div><div class="w-rise"></div><div class="w-high flex-1"></div><div class="w-fall"></div><div class="w-low w-4"></div>
+                                </div>
+                                <span class="guide-dir guide-dir-out">Robot→PLC</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 7. Teaching Mode -->
+                    <div class="guide-section">
+                        <h3 class="guide-section-title"><span class="guide-num">7</span> Teaching Mode</h3>
+                        <p class="guide-desc">티칭 모드 진입 시 로봇이 안전 속도로 전환됩니다. 티칭 완료 후 신호를 해제합니다.</p>
+                        <div class="guide-chart">
+                            <div class="guide-signal-row">
+                                <span class="guide-label">xTeaching_mode <span class="guide-addr">(IN[520])</span></span>
+                                <div class="guide-wave">
+                                    <div class="w-low w-8"></div><div class="w-rise"></div><div class="w-high flex-1"></div><div class="w-fall"></div><div class="w-low w-8"></div>
+                                </div>
+                                <span class="guide-dir guide-dir-in">PLC→Robot</span>
+                            </div>
+                            <div class="guide-signal-row">
+                                <span class="guide-label">xTeaching_mode_on <span class="guide-addr">(OUT[520])</span></span>
+                                <div class="guide-wave">
+                                    <div class="w-low w-12"></div><div class="w-rise"></div><div class="w-high flex-1"></div><div class="w-fall"></div><div class="w-low w-4"></div>
+                                </div>
+                                <span class="guide-dir guide-dir-out">Robot→PLC</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 8. Tool Control -->
+                    <div class="guide-section">
+                        <h3 class="guide-section-title"><span class="guide-num">8</span> Tool Control</h3>
+                        <p class="guide-desc">툴(그리퍼 등) 동작 명령 및 완료 신호입니다. 툴 번호(n)에 따라 주소가 결정됩니다.</p>
+                        <div class="guide-chart">
+                            <div class="guide-signal-row">
+                                <span class="guide-label">xTool_n_on <span class="guide-addr">(INW[n])</span></span>
+                                <div class="guide-wave">
+                                    <div class="w-low w-8"></div><div class="w-rise"></div><div class="w-high w-1/3"></div><div class="w-fall"></div><div class="w-low flex-1"></div>
+                                </div>
+                                <span class="guide-dir guide-dir-in">PLC→Robot</span>
+                            </div>
+                            <div class="guide-signal-row">
+                                <span class="guide-label">xTool_n_comp <span class="guide-addr">(OUTW[n])</span></span>
+                                <div class="guide-wave">
+                                    <div class="w-low w-16"></div><div class="w-rise"></div><div class="w-high flex-1"></div><div class="w-fall"></div><div class="w-low w-4"></div>
+                                </div>
+                                <span class="guide-dir guide-dir-out">Robot→PLC</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div><!-- /timing tab -->
+
+                <!-- ── PROCESS TAB ── -->
+                <div id="guideTab-process" class="guide-tab-content hidden space-y-6">
+                    <div class="guide-section">
+                        <h3 class="guide-section-title">프로세스 타입 설명</h3>
+                        <p class="guide-desc mb-4">프로젝트 생성 시 선택하는 각 프로세스 타입의 역할과 특징을 설명합니다.</p>
+                        <div class="space-y-4">
+                            <div class="guide-process-card">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="guide-process-badge bg-blue-500/20 text-blue-400 border-blue-500/30">Tray</span>
+                                    <span class="text-white font-semibold text-sm">트레이 공정</span>
+                                </div>
+                                <p class="text-slate-400 text-sm leading-relaxed">격자형으로 배열된 트레이에서 순차적으로 픽앤플레이스하는 공정입니다. 행/열 수와 피치를 설정하면 자동으로 각 셀 좌표를 계산하여 동작합니다. 트레이 교체 신호와 완료 신호를 통해 PLC와 연동합니다.</p>
+                            </div>
+                            <div class="guide-process-card">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="guide-process-badge bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Stage</span>
+                                    <span class="text-white font-semibold text-sm">스테이지 공정</span>
+                                </div>
+                                <p class="text-slate-400 text-sm leading-relaxed">고정된 위치(스테이지)에 대해 단순 픽앤플레이스 또는 조립 동작을 수행하는 공정입니다. 단일 위치 작업에 최적화되어 있으며, 센서 신호와 연동하여 부품 유무를 확인합니다.</p>
+                            </div>
+                            <div class="guide-process-card">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="guide-process-badge bg-purple-500/20 text-purple-400 border-purple-500/30">Vision Calibration</span>
+                                    <span class="text-white font-semibold text-sm">비전 캘리브레이션</span>
+                                </div>
+                                <p class="text-slate-400 text-sm leading-relaxed">카메라 비전 시스템과 연동하여 로봇 좌표계를 보정하는 공정입니다. 캘리브레이션 완료 후 보정값을 적용하여 이후 비전 기반 공정의 정밀도를 향상시킵니다.</p>
+                            </div>
+                            <div class="guide-process-card">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="guide-process-badge bg-amber-500/20 text-amber-400 border-amber-500/30">IO COMM</span>
+                                    <span class="text-white font-semibold text-sm">IO 통신 공정</span>
+                                </div>
+                                <p class="text-slate-400 text-sm leading-relaxed">PLC IO 신호를 통해 동작하는 공정입니다. 상위 제어기의 신호에 따라 로봇이 반응하며, Communication IO 방식의 핸드셰이킹으로 동작합니다.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- /process tab -->
+
+            </div><!-- /content -->
+        </div>
+    </div>
+
+    <style>
+        .guide-tab {
+            padding: 0.5rem 1.25rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #94a3b8;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            white-space: nowrap;
+            background: transparent;
+            border-top: none; border-left: none; border-right: none;
+        }
+        .guide-tab:hover { color: #fff; }
+        .guide-tab.active { color: #10b981; border-bottom-color: #10b981; }
+
+        .guide-section {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 1rem;
+            padding: 1.5rem;
+        }
+        .guide-section-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .guide-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 50%;
+            background: rgba(16,185,129,0.15);
+            color: #10b981;
+            font-size: 0.75rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .guide-desc { font-size: 0.8rem; color: #94a3b8; margin-bottom: 1rem; }
+
+        .guide-chart { display: flex; flex-direction: column; gap: 0.5rem; }
+        .guide-signal-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: rgba(30,41,59,0.5);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+        }
+        .guide-label {
+            font-size: 0.7rem;
+            font-family: monospace;
+            color: #e2e8f0;
+            width: 220px;
+            flex-shrink: 0;
+        }
+        .guide-addr { color: #64748b; font-size: 0.65rem; }
+        .guide-wave {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            height: 28px;
+        }
+        .w-low  { height: 4px; background: #334155; align-self: flex-end; margin-bottom: 2px; }
+        .w-high { height: 4px; background: #10b981; align-self: flex-start; margin-top: 2px; }
+        .w-rise { width: 0; height: 0; border-left: 8px solid transparent; border-right: 0; border-bottom: 24px solid #10b981; align-self: flex-end; }
+        .w-fall { width: 0; height: 0; border-right: 8px solid transparent; border-left: 0; border-top: 24px solid #10b981; align-self: flex-start; }
+        .guide-dir {
+            font-size: 0.6rem;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+        .guide-dir-in  { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); }
+        .guide-dir-out { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
+
+        .guide-process-card {
+            background: rgba(30,41,59,0.5);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 0.75rem;
+            padding: 1rem 1.25rem;
+        }
+        .guide-process-badge {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 2px 10px;
+            border-radius: 999px;
+            border-width: 1px;
+            border-style: solid;
+        }
+    </style>
 
     <!-- Background text watermark removed per request -->
 
