@@ -969,54 +969,54 @@
                     <!-- 7. Teaching Mode -->
                     <div class="guide-section">
                         <h3 class="guide-section-title"><span class="guide-num">7</span> Teaching Mode</h3>
-                        <p class="guide-desc">Work 위치 이동 후 Offset을 변경하여 로봇 위치를 보정합니다.</p>
+                        <p class="guide-desc">Work 위치로 이동 후 Offset을 변경하여 로봇 위치를 수정된 위치로 이동 및 저장하여 로봇의 위치를 수정합니다.</p>
                         <div class="tc">
                             <div class="tc-row tc-hdr-row">
                                 <div class="tc-lbl-pad"></div>
                                 <div class="tc-grid" style="grid-template-columns:repeat(11,1fr)">
                                     <div class="tc-sh">
                                         <div class="tc-sh-num">①</div>
-                                        <div class="tc-sh-lbl">yProg_run_sts<br>ON 확인</div>
+                                        <div class="tc-sh-lbl">프로그램<br>동작 중</div>
                                     </div>
                                     <div class="tc-sh">
                                         <div class="tc-sh-num">②</div>
-                                        <div class="tc-sh-lbl">xPn_work_pos &<br>xTeaching_mode ON</div>
+                                        <div class="tc-sh-lbl">Work 위치 및<br>티칭 모드 ON</div>
                                     </div>
                                     <div class="tc-sh">
                                         <div class="tc-sh-num">③</div>
-                                        <div class="tc-sh-lbl">yPn_work_busy<br>ON 확인(Option)</div>
+                                        <div class="tc-sh-lbl">Work 위치<br>동작 중</div>
                                     </div>
                                     <div class="tc-sh">
                                         <div class="tc-sh-num">④</div>
-                                        <div class="tc-sh-lbl">xPn_work_pos<br>OFF</div>
+                                        <div class="tc-sh-lbl">Work 위치<br>입력 OFF</div>
                                     </div>
                                     <div class="tc-sh">
                                         <div class="tc-sh-num">⑤</div>
-                                        <div class="tc-sh-lbl">Work 위치<br>도달</div>
+                                        <div class="tc-sh-lbl">Work 위치<br>도착</div>
                                     </div>
                                     <div class="tc-sh">
                                         <div class="tc-sh-num">⑥</div>
-                                        <div class="tc-sh-lbl">yTeaching_running<br>ON 확인</div>
+                                        <div class="tc-sh-lbl">티칭 모드<br>동작 중</div>
                                     </div>
                                     <div class="tc-sh">
                                         <div class="tc-sh-num">⑦</div>
-                                        <div class="tc-sh-lbl">Offset 변경<br>(xwPn_offset_X~A)</div>
+                                        <div class="tc-sh-lbl">Offset 변경</div>
                                     </div>
                                     <div class="tc-sh">
                                         <div class="tc-sh-num">⑧</div>
-                                        <div class="tc-sh-lbl">Offset 위치<br>이동 중</div>
+                                        <div class="tc-sh-lbl">Offset 위치로<br>이동</div>
                                     </div>
                                     <div class="tc-sh">
                                         <div class="tc-sh-num">⑨</div>
-                                        <div class="tc-sh-lbl">xTeaching_save<br>ON</div>
+                                        <div class="tc-sh-lbl">티칭 저장<br>입력 ON</div>
                                     </div>
                                     <div class="tc-sh">
                                         <div class="tc-sh-num">⑩</div>
-                                        <div class="tc-sh-lbl">yPn_work_comp<br>ON 확인</div>
+                                        <div class="tc-sh-lbl">Work comp<br>ON 확인</div>
                                     </div>
                                     <div class="tc-sh">
                                         <div class="tc-sh-num">⑪</div>
-                                        <div class="tc-sh-lbl">xTeaching_mode<br>OFF</div>
+                                        <div class="tc-sh-lbl">티칭 모드<br>입력 OFF</div>
                                     </div>
                                 </div>
                                 <div class="tc-dir-pad"></div>
@@ -1172,14 +1172,15 @@
                     <!-- 8. Tool Control -->
                     <div class="guide-section">
                         <h3 class="guide-section-title"><span class="guide-num">8</span> Tool Control</h3>
-                        <p class="guide-desc">Work 위치 도달 후 툴 제어 신호를 요청하고 완료 신호를 출력합니다.</p>
+                        <p class="guide-desc">Work 위치 도달 후 로봇은 툴 제어 신호를 요청하면 PLC는 솔레노이드를 제어하고 센서 입력을 로봇에게 출력하여 완료 신호를
+                            출력합니다.</p>
                         <div class="tc">
                             <div class="tc-row tc-hdr-row">
                                 <div class="tc-lbl-pad"></div>
                                 <div class="tc-grid" style="grid-template-columns:repeat(8,1fr)">
                                     <div class="tc-sh">
                                         <div class="tc-sh-num">①</div>
-                                        <div class="tc-sh-lbl">yProg_run_sts<br>ON 확인</div>
+                                        <div class="tc-sh-lbl">프로그램<br>동작 중</div>
                                     </div>
                                     <div class="tc-sh">
                                         <div class="tc-sh-num">②</div>
