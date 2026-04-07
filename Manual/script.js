@@ -411,13 +411,13 @@ function renderManuals() {
             
             <div class="flex items-center gap-2 pt-4 md:pt-0 shrink-0 w-full md:w-auto">
                 <div class="flex gap-2 ml-auto">
-                    <button onclick="handleView('${man.id}')" 
-                            class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-emerald-600 text-white text-xs font-bold transition-all flex items-center gap-2 min-w-[100px] justify-center ${man.isLocked ? 'border border-amber-500/50 text-amber-500' : ''}">
-                        <i data-lucide="${man.isLocked ? 'key' : 'eye'}" class="w-4 h-4"></i> ${man.isLocked ? 'Unlock' : 'View'}
+                    <button onclick="handleView('${man.id}')"
+                            class="px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 min-w-[100px] justify-center ${man.isLocked ? 'locked-btn' : 'view-btn'}">
+                        <i data-lucide="${man.isLocked ? 'key' : 'eye'}" class="w-3.5 h-3.5"></i> ${man.isLocked ? 'Unlock' : 'View'}
                     </button>
-                    <button onclick="handleDownload('${man.id}')" 
-                            class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-blue-600 text-white text-xs font-bold transition-all flex items-center gap-2 min-w-[100px] justify-center ${man.isLocked ? 'border border-amber-500/50 text-amber-500' : ''}">
-                        <i data-lucide="${man.isLocked ? 'lock' : 'download'}" class="w-4 h-4"></i> ${man.isLocked ? 'Secure' : 'Download'}
+                    <button onclick="handleDownload('${man.id}')"
+                            class="px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 min-w-[100px] justify-center ${man.isLocked ? 'locked-btn' : 'download-btn'}">
+                        <i data-lucide="${man.isLocked ? 'lock' : 'download'}" class="w-3.5 h-3.5"></i> ${man.isLocked ? 'Secure' : 'Download'}
                     </button>
                 </div>
             </div>
@@ -478,7 +478,7 @@ async function handleView(id) {
             const data = await res.json();
 
             if (data.ok) {
-                window.open(data.url, '_blank');
+                window.open(encodeURI(data.url), '_blank');
             } else {
                 alert(data.message || "비밀번호가 올바르지 않습니다.");
             }
@@ -507,7 +507,7 @@ async function handleDownload(id) {
             const data = await res.json();
 
             if (data.ok) {
-                downloadFile(data.url);
+                downloadFile(encodeURI(data.url));
             } else {
                 alert(data.message || "비밀번호가 올바르지 않습니다.");
             }
