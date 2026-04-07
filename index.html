@@ -172,6 +172,12 @@
             color: transparent;
             display: inline-block;
         }
+
+        /* Logo: always white regardless of browser/device */
+        .site-logo {
+            filter: brightness(0) invert(1) !important;
+            -webkit-filter: brightness(0) invert(1) !important;
+        }
     </style>
 </head>
 
@@ -185,8 +191,7 @@
             style="animation: fadeInUp 0.5s ease forwards;">
             <div class="inline-flex items-center justify-center mb-8">
                 <img src="./InoRobotSelect/INOVANCE_Logo.png" alt="INOVANCE Logo"
-                    class="h-16 md:h-24 w-auto object-contain opacity-95"
-                    style="filter: brightness(0) invert(1);">
+                    class="site-logo h-16 md:h-24 w-auto object-contain">
             </div>
             <h1 class="font-outfit text-5xl md:text-7xl font-extrabold mb-4 tracking-tight drop-shadow-xl">
                 <span class="title-gradient pt-2 pb-2">InoRobot Assistant</span>

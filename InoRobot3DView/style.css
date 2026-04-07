@@ -372,11 +372,15 @@ body {
     
     .topbar-center {
         max-width: none;
+        min-width: 0;
+        overflow: hidden;
     }
-    
+
     #model-select {
         padding: 0.6rem 2rem;
         font-size: 0.9rem;
+        min-width: 0;
+        width: 100%;
     }
 
     .select-icon {
