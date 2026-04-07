@@ -13,7 +13,6 @@ const CORS_HEADERS = {
 
 export default {
     async fetch(request, env) {
-        // CORS preflight
         if (request.method === 'OPTIONS') {
             return new Response(null, { status: 204, headers: CORS_HEADERS });
         }
@@ -35,29 +34,41 @@ export default {
             return json({ ok: false, message: '필수 항목이 누락되었습니다.' }, 400);
         }
 
-        // 환경변수에서 비밀번호 검증 (코드에 비밀번호 없음)
         if (password !== env.DISPLAY_PASSWORD) {
             return json({ ok: false, message: '비밀번호가 올바르지 않습니다.' }, 401);
         }
 
-        // 경로 검증 (path traversal 방지)
         const safeFolder = (folder || 'Software').replace(/\.\./g, '').replace(/^\/+/, '');
         const safePath = path.replace(/\.\./g, '').replace(/^\/+/, '');
         const encodedPath = safePath.split('/').map(seg => encodeURIComponent(seg)).join('/');
 
-        let downloadUrl;
         if (safeFolder === 'Software') {
-            // Software(exe/zip): LFS → media.githubusercontent.com
-            downloadUrl = `https://media.githubusercontent.com/media/hois56/InoRobotAssistant/main/Software/${encodedPath}`;
-        } else if (mode === 'view') {
-            // 미리보기: GitHub blob 뷰어 (브라우저 내 인라인 PDF 표시)
-            downloadUrl = `https://github.com/hois56/InoRobotAssistant/blob/main/${safeFolder}/${encodedPath}`;
-        } else {
-            // 다운로드: raw URL
-            downloadUrl = `https://raw.githubusercontent.com/hois56/InoRobotAssistant/main/${safeFolder}/${encodedPath}`;
+            // Software(exe/zip): LFS → URL 반환
+            const downloadUrl = `https://media.githubusercontent.com/media/hois56/InoRobotAssistant/main/Software/${encodedPath}`;
+            return json({ ok: true, url: downloadUrl });
         }
 
-        return json({ ok: true, url: downloadUrl });
+        // Manual PDF: raw URL로 파일 가져오기
+        const rawUrl = `https://raw.githubusercontent.com/hois56/InoRobotAssistant/main/${safeFolder}/${encodedPath}`;
+        const fileRes = await fetch(rawUrl);
+
+        if (!fileRes.ok) {
+            return json({ ok: false, message: '파일을 찾을 수 없습니다.' }, 404);
+        }
+
+        const fileName = safePath.split('/').pop();
+        const disposition = mode === 'view'
+            ? `inline; filename="${fileName}"`
+            : `attachment; filename="${fileName}"`;
+
+        return new Response(fileRes.body, {
+            status: 200,
+            headers: {
+                'Content-Type': 'application/pdf',
+                'Content-Disposition': disposition,
+                ...CORS_HEADERS,
+            }
+        });
     }
 };
 
