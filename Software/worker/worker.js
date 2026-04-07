@@ -29,7 +29,7 @@ export default {
             return json({ ok: false, message: '잘못된 요청입니다.' }, 400);
         }
 
-        const { password, path } = body;
+        const { password, path, folder } = body;
 
         if (!password || !path) {
             return json({ ok: false, message: '필수 항목이 누락되었습니다.' }, 400);
@@ -41,8 +41,10 @@ export default {
         }
 
         // 경로 검증 (path traversal 방지)
+        const safeFolder = (folder || 'Software').replace(/\.\./g, '').replace(/^\/+/, '');
         const safePath = path.replace(/\.\./g, '').replace(/^\/+/, '');
-        const downloadUrl = `https://media.githubusercontent.com/media/hois56/InoRobotAssistant/main/Software/${safePath}`;
+        const encodedPath = safePath.split('/').map(seg => encodeURIComponent(seg)).join('/');
+        const downloadUrl = `https://media.githubusercontent.com/media/hois56/InoRobotAssistant/main/${safeFolder}/${encodedPath}`;
 
         return json({ ok: true, url: downloadUrl });
     }
