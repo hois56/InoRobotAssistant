@@ -44,7 +44,12 @@ export default {
         const safeFolder = (folder || 'Software').replace(/\.\./g, '').replace(/^\/+/, '');
         const safePath = path.replace(/\.\./g, '').replace(/^\/+/, '');
         const encodedPath = safePath.split('/').map(seg => encodeURIComponent(seg)).join('/');
-        const downloadUrl = `https://media.githubusercontent.com/media/hois56/InoRobotAssistant/main/${safeFolder}/${encodedPath}`;
+
+        // Software(exe/zip)는 LFS → media.githubusercontent.com
+        // 그 외(PDF 등)는 일반 파일 → raw.githubusercontent.com
+        const downloadUrl = safeFolder === 'Software'
+            ? `https://media.githubusercontent.com/media/hois56/InoRobotAssistant/main/Software/${encodedPath}`
+            : `https://raw.githubusercontent.com/hois56/InoRobotAssistant/main/${safeFolder}/${encodedPath}`;
 
         return json({ ok: true, url: downloadUrl });
     }
