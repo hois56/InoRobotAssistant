@@ -473,12 +473,12 @@ async function handleView(id) {
             const res = await fetch(WORKER_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password, path: man.path })
+                body: JSON.stringify({ password, path: man.path, folder: 'Manual' })
             });
             const data = await res.json();
 
             if (data.ok) {
-                window.open(encodeURI(data.url), '_blank');
+                window.open(data.url, '_blank');
             } else {
                 alert(data.message || "비밀번호가 올바르지 않습니다.");
             }
@@ -502,12 +502,12 @@ async function handleDownload(id) {
             const res = await fetch(WORKER_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password, path: man.path })
+                body: JSON.stringify({ password, path: man.path, folder: 'Manual' })
             });
             const data = await res.json();
 
             if (data.ok) {
-                downloadFile(encodeURI(data.url));
+                downloadFile(data.url);
             } else {
                 alert(data.message || "비밀번호가 올바르지 않습니다.");
             }
