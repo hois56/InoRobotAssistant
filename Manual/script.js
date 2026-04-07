@@ -284,42 +284,35 @@ const manualData = [
     // 6-2. For Display Education
     {
         id: "edu_disp_1",
-        title: "1.로봇 소개(SDC).pdf",
+        title: "1.로봇 소개(Display).pdf",
         robotType: "none",
         category: "display",
         date: "2026-04-07",
         lang: "KR",
-        path: "교육 자료/입문과정/Display/1.로봇 소개(SDC).pdf",
+        isLocked: true,
+        path: "교육 자료/입문과정/Display/1.로봇 소개(Display).pdf",
         description: "Education Item"
     },
     {
         id: "edu_disp_2",
-        title: "2.로봇 기초(SDC).pdf",
+        title: "2.로봇 기초(Display).pdf",
         robotType: "none",
         category: "display",
         date: "2026-04-07",
         lang: "KR",
-        path: "교육 자료/입문과정/Display/2.로봇 기초(SDC).pdf",
+        isLocked: true,
+        path: "교육 자료/입문과정/Display/2.로봇 기초(Display).pdf",
         description: "Education Item"
     },
     {
         id: "edu_disp_3",
-        title: "3.로봇 구조 및 초기 배선(SDC).pdf",
+        title: "3.로봇 구조 및 초기 배선(Display).pdf",
         robotType: "none",
         category: "display",
         date: "2026-04-07",
         lang: "KR",
-        path: "교육 자료/입문과정/Display/3.로봇 구조 및 초기 배선(SDC).pdf",
-        description: "Education Item"
-    },
-    {
-        id: "edu_disp_4",
-        title: "4. 펜던트 기본 조작(SDC).pdf",
-        robotType: "none",
-        category: "display",
-        date: "2026-04-07",
-        lang: "KR",
-        path: "교육 자료/입문과정/Display/4. 펜던트 기본 조작(SDC).pdf",
+        isLocked: true,
+        path: "교육 자료/입문과정/Display/3.로봇 구조 및 초기 배선(Display).pdf",
         description: "Education Item"
     }
 ];
@@ -419,12 +412,12 @@ function renderManuals() {
             <div class="flex items-center gap-2 pt-4 md:pt-0 shrink-0 w-full md:w-auto">
                 <div class="flex gap-2 ml-auto">
                     <button onclick="handleView('${man.id}')" 
-                            class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-emerald-600 text-white text-xs font-bold transition-all flex items-center gap-2 min-w-[100px] justify-center">
-                        <i data-lucide="eye" class="w-4 h-4"></i> View
+                            class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-emerald-600 text-white text-xs font-bold transition-all flex items-center gap-2 min-w-[100px] justify-center ${man.isLocked ? 'border border-amber-500/50 text-amber-500' : ''}">
+                        <i data-lucide="${man.isLocked ? 'key' : 'eye'}" class="w-4 h-4"></i> ${man.isLocked ? 'Unlock' : 'View'}
                     </button>
                     <button onclick="handleDownload('${man.id}')" 
-                            class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-blue-600 text-white text-xs font-bold transition-all flex items-center gap-2 min-w-[100px] justify-center">
-                        <i data-lucide="download" class="w-4 h-4"></i> Download
+                            class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-blue-600 text-white text-xs font-bold transition-all flex items-center gap-2 min-w-[100px] justify-center ${man.isLocked ? 'border border-amber-500/50 text-amber-500' : ''}">
+                        <i data-lucide="${man.isLocked ? 'lock' : 'download'}" class="w-4 h-4"></i> ${man.isLocked ? 'Secure' : 'Download'}
                     </button>
                 </div>
             </div>
@@ -465,23 +458,74 @@ function setupSearch() {
     input.addEventListener('input', renderManuals);
 }
 
-function handleView(id) {
+// Cloudflare Worker URL
+const WORKER_URL = 'https://ino-robot-display-auth.hois56.workers.dev/';
+
+async function handleView(id) {
     const man = manualData.find(m => m.id === id);
-    if (man && man.path) {
+    if (!man) return;
+    
+    if (man.isLocked) {
+        const password = prompt("[보안 안내] 이 자료는 열람이 제한되어 있습니다. 비밀번호를 입력해 주세요:");
+        if (password === null) return;
+
+        try {
+            const res = await fetch(WORKER_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password, path: man.path })
+            });
+            const data = await res.json();
+
+            if (data.ok) {
+                window.open(data.url, '_blank');
+            } else {
+                alert(data.message || "비밀번호가 올바르지 않습니다.");
+            }
+        } catch {
+            alert("서버 연결에 실패했습니다.");
+        }
+    } else {
         window.open(man.path, '_blank');
     }
 }
 
-function handleDownload(id) {
+async function handleDownload(id) {
     const man = manualData.find(m => m.id === id);
-    if (man && man.path) {
-        const link = document.createElement('a');
-        link.href = man.path;
-        link.download = man.path.split('/').pop();
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    if (!man) return;
+
+    if (man.isLocked) {
+        const password = prompt("[보안 안내] 이 자료는 다운로드가 제한되어 있습니다. 비밀번호를 입력해 주세요:");
+        if (password === null) return;
+
+        try {
+            const res = await fetch(WORKER_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password, path: man.path })
+            });
+            const data = await res.json();
+
+            if (data.ok) {
+                downloadFile(data.url);
+            } else {
+                alert(data.message || "비밀번호가 올바르지 않습니다.");
+            }
+        } catch {
+            alert("서버 연결에 실패했습니다.");
+        }
+    } else {
+        downloadFile(man.path);
     }
+}
+
+function downloadFile(url) {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = url.split('/').pop();
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 document.addEventListener('DOMContentLoaded', init);
