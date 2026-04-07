@@ -473,7 +473,7 @@ async function handleView(id) {
             const res = await fetch(WORKER_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password, path: man.path, folder: 'Manual' })
+                body: JSON.stringify({ password, path: man.path, folder: 'Manual', mode: 'view' })
             });
             const data = await res.json();
 

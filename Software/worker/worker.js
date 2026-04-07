@@ -29,7 +29,7 @@ export default {
             return json({ ok: false, message: '잘못된 요청입니다.' }, 400);
         }
 
-        const { password, path, folder } = body;
+        const { password, path, folder, mode } = body;
 
         if (!password || !path) {
             return json({ ok: false, message: '필수 항목이 누락되었습니다.' }, 400);
@@ -45,11 +45,17 @@ export default {
         const safePath = path.replace(/\.\./g, '').replace(/^\/+/, '');
         const encodedPath = safePath.split('/').map(seg => encodeURIComponent(seg)).join('/');
 
-        // Software(exe/zip)는 LFS → media.githubusercontent.com
-        // 그 외(PDF 등)는 일반 파일 → raw.githubusercontent.com
-        const downloadUrl = safeFolder === 'Software'
-            ? `https://media.githubusercontent.com/media/hois56/InoRobotAssistant/main/Software/${encodedPath}`
-            : `https://raw.githubusercontent.com/hois56/InoRobotAssistant/main/${safeFolder}/${encodedPath}`;
+        let downloadUrl;
+        if (safeFolder === 'Software') {
+            // Software(exe/zip): LFS → media.githubusercontent.com
+            downloadUrl = `https://media.githubusercontent.com/media/hois56/InoRobotAssistant/main/Software/${encodedPath}`;
+        } else if (mode === 'view') {
+            // 미리보기: GitHub blob 뷰어 (브라우저 내 인라인 PDF 표시)
+            downloadUrl = `https://github.com/hois56/InoRobotAssistant/blob/main/${safeFolder}/${encodedPath}`;
+        } else {
+            // 다운로드: raw URL
+            downloadUrl = `https://raw.githubusercontent.com/hois56/InoRobotAssistant/main/${safeFolder}/${encodedPath}`;
+        }
 
         return json({ ok: true, url: downloadUrl });
     }
