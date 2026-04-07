@@ -219,6 +219,108 @@ const manualData = [
         lang: "KR",
         path: "교육 자료/입문과정/4. 펜던트 기본 조작(INT).pdf",
         description: "Education Item"
+    },
+    // 6-1. Basic Level Education
+    {
+        id: "edu_basic_1",
+        title: "1. InoRobotLab 소프트웨어(INT).pdf",
+        robotType: "none",
+        category: "basic",
+        date: "2026-04-07",
+        lang: "KR",
+        path: "교육 자료/초급과정/1. InoRobotLab 소프트웨어(INT).pdf",
+        description: "Education Item"
+    },
+    {
+        id: "edu_basic_2",
+        title: "2. 프로그램 기초 - 변수.pdf",
+        robotType: "none",
+        category: "basic",
+        date: "2026-04-07",
+        lang: "KR",
+        path: "교육 자료/초급과정/2. 프로그램 기초 - 변수.pdf",
+        description: "Education Item"
+    },
+    {
+        id: "edu_basic_3",
+        title: "3. 프로그램 기초 - 주요 명령어.pdf",
+        robotType: "none",
+        category: "basic",
+        date: "2026-04-07",
+        lang: "KR",
+        path: "교육 자료/초급과정/3. 프로그램 기초 - 주요 명령어.pdf",
+        description: "Education Item"
+    },
+    {
+        id: "edu_basic_4",
+        title: "4. 주요 설정.pdf",
+        robotType: "none",
+        category: "basic",
+        date: "2026-04-07",
+        lang: "KR",
+        path: "교육 자료/초급과정/4. 주요 설정.pdf",
+        description: "Education Item"
+    },
+    {
+        id: "edu_basic_5",
+        title: "6. Socket 통신.pdf",
+        robotType: "none",
+        category: "basic",
+        date: "2026-04-07",
+        lang: "KR",
+        path: "교육 자료/초급과정/6. Socket 통신.pdf",
+        description: "Education Item"
+    },
+    {
+        id: "edu_basic_6",
+        title: "7. Fieldbus 통신.pdf",
+        robotType: "none",
+        category: "basic",
+        date: "2026-04-07",
+        lang: "KR",
+        path: "교육 자료/초급과정/7. Fieldbus 통신.pdf",
+        description: "Education Item"
+    },
+    // 6-2. For Display Education
+    {
+        id: "edu_disp_1",
+        title: "1.로봇 소개(SDC).pdf",
+        robotType: "none",
+        category: "display",
+        date: "2026-04-07",
+        lang: "KR",
+        path: "교육 자료/입문과정/Display/1.로봇 소개(SDC).pdf",
+        description: "Education Item"
+    },
+    {
+        id: "edu_disp_2",
+        title: "2.로봇 기초(SDC).pdf",
+        robotType: "none",
+        category: "display",
+        date: "2026-04-07",
+        lang: "KR",
+        path: "교육 자료/입문과정/Display/2.로봇 기초(SDC).pdf",
+        description: "Education Item"
+    },
+    {
+        id: "edu_disp_3",
+        title: "3.로봇 구조 및 초기 배선(SDC).pdf",
+        robotType: "none",
+        category: "display",
+        date: "2026-04-07",
+        lang: "KR",
+        path: "교육 자료/입문과정/Display/3.로봇 구조 및 초기 배선(SDC).pdf",
+        description: "Education Item"
+    },
+    {
+        id: "edu_disp_4",
+        title: "4. 펜던트 기본 조작(SDC).pdf",
+        robotType: "none",
+        category: "display",
+        date: "2026-04-07",
+        lang: "KR",
+        path: "교육 자료/입문과정/Display/4. 펜던트 기본 조작(SDC).pdf",
+        description: "Education Item"
     }
 ];
 
@@ -291,7 +393,7 @@ function renderManuals() {
         if (man.category.includes('comm')) { iconColor = "text-amber-500"; bgColor = "group-hover:bg-amber-500"; }
         if (man.category.includes('pendant')) { iconColor = "text-indigo-500"; bgColor = "group-hover:bg-indigo-500"; }
         if (man.category.includes('api')) { iconColor = "text-rose-500"; bgColor = "group-hover:bg-rose-500"; }
-        if (man.category.includes('entry') || man.category.includes('basic')) { iconColor = "text-fuchsia-500"; bgColor = "group-hover:bg-fuchsia-500"; }
+        if (man.category.includes('entry') || man.category.includes('basic') || man.category.includes('display')) { iconColor = "text-fuchsia-500"; bgColor = "group-hover:bg-fuchsia-500"; }
 
         item.innerHTML = `
             <div class="w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center ${iconColor} flex-shrink-0 ${bgColor} group-hover:text-white transition-all">
@@ -303,7 +405,12 @@ function renderManuals() {
                     <div class="flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-md border border-white/10">
                         <span class="text-[12px] font-bold text-slate-300 font-outfit tracking-tighter">${man.lang}</span>
                     </div>
-                    <span class="text-[12px] font-bold text-slate-500 bg-white/5 px-2.5 py-1 rounded border border-white/5 font-outfit capitalize">${man.robotType === 'none' ? 'Common' : man.robotType}</span>
+                    <span class="text-[12px] font-bold text-slate-500 bg-white/5 px-2.5 py-1 rounded border border-white/5 font-outfit capitalize">
+                        ${man.category.includes('entry') ? 'Beginner' : 
+                          man.category.includes('basic') ? 'Basic' : 
+                          man.category.includes('display') ? 'For Display' : 
+                          (man.robotType === 'none' ? 'Common' : man.robotType)}
+                    </span>
                     <span class="text-[11px] text-slate-600 ml-1 opacity-70">${man.date}</span>
                 </div>
                 <h3 class="text-lg font-bold text-white mb-1 group-hover:text-white transition-colors" style="word-break: break-all;">${man.title}</h3>
