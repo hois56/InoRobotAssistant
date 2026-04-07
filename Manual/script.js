@@ -464,7 +464,7 @@ const WORKER_URL = 'https://ino-robot-display-auth.hois56.workers.dev/';
 async function handleView(id) {
     const man = manualData.find(m => m.id === id);
     if (!man) return;
-    
+
     if (man.isLocked) {
         const password = prompt("[보안 안내] 이 자료는 열람이 제한되어 있습니다. 비밀번호를 입력해 주세요:");
         if (password === null) return;
@@ -475,13 +475,16 @@ async function handleView(id) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ password, path: man.path, folder: 'Manual', mode: 'view' })
             });
-            const data = await res.json();
 
-            if (data.ok) {
-                window.open(data.url, '_blank');
-            } else {
+            if (!res.ok) {
+                const data = await res.json();
                 alert(data.message || "비밀번호가 올바르지 않습니다.");
+                return;
             }
+
+            const blob = await res.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            window.open(blobUrl, '_blank');
         } catch {
             alert("서버 연결에 실패했습니다.");
         }
