@@ -469,6 +469,9 @@ async function handleView(id) {
         const password = prompt("[보안 안내] 이 자료는 열람이 제한되어 있습니다. 비밀번호를 입력해 주세요:");
         if (password === null) return;
 
+        // 팝업 차단 방지: 사용자 제스처 시점에 미리 창 열기
+        const win = window.open('', '_blank');
+
         try {
             const res = await fetch(WORKER_URL, {
                 method: 'POST',
@@ -476,17 +479,27 @@ async function handleView(id) {
                 body: JSON.stringify({ password, path: man.path, folder: 'Manual', mode: 'view' })
             });
 
-            if (!res.ok) {
+            const contentType = res.headers.get('Content-Type') || '';
+
+            if (contentType.includes('application/json')) {
                 const data = await res.json();
+                win.close();
                 alert(data.message || "비밀번호가 올바르지 않습니다.");
+                return;
+            }
+
+            if (!res.ok) {
+                win.close();
+                alert("파일을 불러오는데 실패했습니다.");
                 return;
             }
 
             const blob = await res.blob();
             const blobUrl = URL.createObjectURL(blob);
-            window.open(blobUrl, '_blank');
-        } catch {
-            alert("서버 연결에 실패했습니다.");
+            win.location.href = blobUrl;
+        } catch (e) {
+            win.close();
+            alert("서버 연결에 실패했습니다: " + e.message);
         }
     } else {
         window.open(man.path, '_blank');
