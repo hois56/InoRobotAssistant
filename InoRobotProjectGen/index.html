@@ -476,7 +476,6 @@
             <!-- Tab Bar -->
             <div class="flex gap-1 px-8 pt-4 pb-0 border-b border-white/10 flex-shrink-0 overflow-x-auto">
                 <button class="guide-tab active" data-tab="timing">IO 타이밍 차트</button>
-                <button class="guide-tab" data-tab="process">프로세스 설명</button>
             </div>
 
             <!-- Content -->
@@ -1308,54 +1307,6 @@
                     </div>
 
                 </div><!-- /timing tab -->
-
-                <!-- ── PROCESS TAB ── -->
-                <div id="guideTab-process" class="guide-tab-content hidden space-y-6">
-                    <div class="guide-section">
-                        <h3 class="guide-section-title">프로세스 타입 설명</h3>
-                        <p class="guide-desc mb-4">프로젝트 생성 시 선택하는 각 프로세스 타입의 역할과 특징을 설명합니다.</p>
-                        <div class="space-y-4">
-                            <div class="guide-process-card">
-                                <div class="flex items-center gap-3 mb-2">
-                                    <span
-                                        class="guide-process-badge bg-blue-500/20 text-blue-400 border-blue-500/30">Tray</span>
-                                    <span class="text-white font-semibold text-sm">트레이 공정</span>
-                                </div>
-                                <p class="text-slate-400 text-sm leading-relaxed">격자형으로 배열된 트레이에서 순차적으로 픽앤플레이스하는 공정입니다.
-                                    행/열 수와 피치를 설정하면 자동으로 각 셀 좌표를 계산하여 동작합니다. 트레이 교체 신호와 완료 신호를 통해 PLC와 연동합니다.</p>
-                            </div>
-                            <div class="guide-process-card">
-                                <div class="flex items-center gap-3 mb-2">
-                                    <span
-                                        class="guide-process-badge bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Stage</span>
-                                    <span class="text-white font-semibold text-sm">스테이지 공정</span>
-                                </div>
-                                <p class="text-slate-400 text-sm leading-relaxed">고정된 위치(스테이지)에 대해 단순 픽앤플레이스 또는 조립 동작을
-                                    수행하는 공정입니다. 단일 위치 작업에 최적화되어 있으며, 센서 신호와 연동하여 부품 유무를 확인합니다.</p>
-                            </div>
-                            <div class="guide-process-card">
-                                <div class="flex items-center gap-3 mb-2">
-                                    <span
-                                        class="guide-process-badge bg-purple-500/20 text-purple-400 border-purple-500/30">Vision
-                                        Calibration</span>
-                                    <span class="text-white font-semibold text-sm">비전 캘리브레이션</span>
-                                </div>
-                                <p class="text-slate-400 text-sm leading-relaxed">카메라 비전 시스템과 연동하여 로봇 좌표계를 보정하는 공정입니다.
-                                    캘리브레이션 완료 후 보정값을 적용하여 이후 비전 기반 공정의 정밀도를 향상시킵니다.</p>
-                            </div>
-                            <div class="guide-process-card">
-                                <div class="flex items-center gap-3 mb-2">
-                                    <span
-                                        class="guide-process-badge bg-amber-500/20 text-amber-400 border-amber-500/30">IO
-                                        COMM</span>
-                                    <span class="text-white font-semibold text-sm">IO 통신 공정</span>
-                                </div>
-                                <p class="text-slate-400 text-sm leading-relaxed">PLC IO 신호를 통해 동작하는 공정입니다. 상위 제어기의 신호에
-                                    따라 로봇이 반응하며, Communication IO 방식의 핸드셰이킹으로 동작합니다.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div><!-- /process tab -->
 
             </div><!-- /content -->
         </div>
