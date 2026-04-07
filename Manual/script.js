@@ -478,7 +478,7 @@ async function handleView(id) {
             const data = await res.json();
 
             if (data.ok) {
-                window.open(`https://docs.google.com/viewer?url=${encodeURIComponent(data.url)}`, '_blank');
+                window.open(data.url, '_blank');
             } else {
                 alert(data.message || "비밀번호가 올바르지 않습니다.");
             }
@@ -486,7 +486,7 @@ async function handleView(id) {
             alert("서버 연결에 실패했습니다.");
         }
     } else {
-        window.open(`https://docs.google.com/viewer?url=${encodeURIComponent(location.origin + '/' + man.path)}`, '_blank');
+        window.open(man.path, '_blank');
     }
 }
 
