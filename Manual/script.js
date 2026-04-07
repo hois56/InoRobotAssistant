@@ -413,11 +413,11 @@ function renderManuals() {
                 <div class="flex gap-2 ml-auto">
                     <button onclick="handleView('${man.id}')"
                             class="px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 min-w-[100px] justify-center ${man.isLocked ? 'locked-btn' : 'view-btn'}">
-                        <i data-lucide="${man.isLocked ? 'key' : 'eye'}" class="w-3.5 h-3.5"></i> ${man.isLocked ? 'Unlock' : 'View'}
+                        <i data-lucide="eye" class="w-3.5 h-3.5"></i> 미리보기
                     </button>
                     <button onclick="handleDownload('${man.id}')"
                             class="px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 min-w-[100px] justify-center ${man.isLocked ? 'locked-btn' : 'download-btn'}">
-                        <i data-lucide="${man.isLocked ? 'lock' : 'download'}" class="w-3.5 h-3.5"></i> ${man.isLocked ? 'Secure' : 'Download'}
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i> 다운로드
                     </button>
                 </div>
             </div>
@@ -478,7 +478,7 @@ async function handleView(id) {
             const data = await res.json();
 
             if (data.ok) {
-                window.open(data.url, '_blank');
+                window.open(`https://docs.google.com/viewer?url=${encodeURIComponent(data.url)}`, '_blank');
             } else {
                 alert(data.message || "비밀번호가 올바르지 않습니다.");
             }
@@ -486,7 +486,7 @@ async function handleView(id) {
             alert("서버 연결에 실패했습니다.");
         }
     } else {
-        window.open(man.path, '_blank');
+        window.open(`https://docs.google.com/viewer?url=${encodeURIComponent(location.origin + '/' + man.path)}`, '_blank');
     }
 }
 
