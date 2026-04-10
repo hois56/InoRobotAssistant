@@ -281,7 +281,19 @@ const manualData = [
         path: "교육 자료/초급과정/7. Fieldbus 통신.pdf",
         description: "Education Item"
     },
-    // 6-2. For Display Education
+    // 6-2. Application Level Education
+    {
+        id: "edu_advanced_api",
+        title: "API 교육 자료",
+        robotType: "none",
+        category: "advanced",
+        date: "2026-04-10",
+        lang: "KR",
+        path: "교육 자료/응용과정/API 교육 자료.pdf",
+        downloadPath: "교육 자료/응용과정/API.zip",
+        description: "Application Level - API"
+    },
+    // 6-3. For Display Education
     {
         id: "edu_disp_1",
         title: "1.로봇 소개(Display).pdf",
@@ -387,6 +399,7 @@ function renderManuals() {
         if (man.category.includes('pendant')) { iconColor = "text-indigo-500"; bgColor = "group-hover:bg-indigo-500"; }
         if (man.category.includes('api')) { iconColor = "text-rose-500"; bgColor = "group-hover:bg-rose-500"; }
         if (man.category.includes('entry') || man.category.includes('basic') || man.category.includes('display')) { iconColor = "text-fuchsia-500"; bgColor = "group-hover:bg-fuchsia-500"; }
+        if (man.category.includes('advanced')) { iconColor = "text-orange-400"; bgColor = "group-hover:bg-orange-500"; }
 
         item.innerHTML = `
             <div class="w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center ${iconColor} flex-shrink-0 ${bgColor} group-hover:text-white transition-all">
@@ -399,9 +412,10 @@ function renderManuals() {
                         <span class="text-[12px] font-bold text-slate-300 font-outfit tracking-tighter">${man.lang}</span>
                     </div>
                     <span class="text-[12px] font-bold text-slate-500 bg-white/5 px-2.5 py-1 rounded border border-white/5 font-outfit capitalize">
-                        ${man.category.includes('entry') ? 'Beginner' : 
-                          man.category.includes('basic') ? 'Basic' : 
-                          man.category.includes('display') ? 'For Display' : 
+                        ${man.category.includes('entry') ? 'Beginner' :
+                          man.category.includes('basic') ? 'Basic' :
+                          man.category.includes('advanced') ? 'Application' :
+                          man.category.includes('display') ? 'For Display' :
                           (man.robotType === 'none' ? 'Common' : man.robotType)}
                     </span>
                     <span class="text-[11px] text-slate-600 ml-1 opacity-70">${man.date}</span>
@@ -531,7 +545,7 @@ async function handleDownload(id) {
             alert("서버 연결에 실패했습니다.");
         }
     } else {
-        downloadFile(man.path);
+        downloadFile(man.downloadPath || man.path);
     }
 }
 
