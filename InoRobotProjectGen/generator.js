@@ -93,11 +93,11 @@ const Generator = {
                 sb += `    If xP${s.No}_wait_pos_start\n        ${s.ProcessName}.P${s.No}_wait_pos();\n    EndIf;\n`;
             });
         }
-        sb += `    #================================================================================\n    #  Process Work pos               \n    #================================================================================\n    If InW[33] == 0\n`;
+        sb += `    #================================================================================\n    #  Process Work pos               \n    #================================================================================\n`;
         steps.forEach(s => {
-            sb += `        If xP${s.No}_work_pos_start\n            ${s.ProcessName}.P${s.No}_work_pos();\n        EndIf;\n`;
+            sb += `    If xP${s.No}_work_pos_start\n        ${s.ProcessName}.P${s.No}_work_pos();\n    EndIf;\n`;
         });
-        sb += `    EndIf;\n    #====================================================================================\n    Delay T[0.1];\n    Goto L[0];\nEnd;\n`;
+        sb += `    #====================================================================================\n    Delay T[0.1];\n    Goto L[0];\nEnd;\n`;
         return sb;
     },
     InitialProgram(steps, options) {
