@@ -652,6 +652,22 @@ document.addEventListener('DOMContentLoaded', () => {
         return null;
     }
 
+    function getCircuitBreaker(name) {
+        const u = name.toUpperCase();
+        if (u.includes('R10-140')) return '20A';
+        if (u.includes('R16')) return '30A';
+        if (u.includes('R25')) return '30A';
+        if (u.includes('R10-110')) return '15A';
+        if (u.includes('R10H')) return '15A';
+        if (u.includes('R11')) return '15A';
+        if (u.includes('R4H') || u.includes('R4')) return '10A';
+        if (u.includes('R7H')) return '10A';
+        if (u.includes('S35') || u.includes('S50') || u.includes('S60') || u.includes('GS60')) return '20A';
+        if (u.includes('S25')) return '15A';
+        if (u.includes('S4') || u.includes('S7') || u.includes('S10') || u.includes('TS4') || u.includes('TS5')) return '10A';
+        return '-';
+    }
+
     // Modal Logic
     function openOptionsModal(productId) {
         const product = state.products.find(p => p.id === productId);
@@ -857,7 +873,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${extraRows}
                     ${axesRows}
                     <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>사용자 배선</strong></td><td colspan="2" style="text-align:right;">${ioPins}</td></tr>
-                    <tr><td style="padding:6px 0;"><strong>사용자 공압</strong></td><td colspan="2" style="text-align:right;">${air}</td></tr>
+                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>사용자 공압</strong></td><td colspan="2" style="text-align:right;">${air}</td></tr>
+                    <tr><td style="padding:6px 0;"><strong>권장 차단기</strong></td><td colspan="2" style="text-align:right;">${getCircuitBreaker(product.name)}</td></tr>
                 </table>
             </div>
         `;
