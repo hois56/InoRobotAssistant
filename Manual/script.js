@@ -560,12 +560,31 @@ async function handleDownload(id) {
 }
 
 function downloadFile(url) {
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = url.split('/').pop();
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    fetch(url)
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.blob();
+        })
+        .then(blob => {
+            const blobUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = decodeURIComponent(url.split('/').pop());
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(blobUrl);
+        })
+        .catch(err => {
+            console.warn('Fetch download failed, falling back to direct link', err);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = decodeURIComponent(url.split('/').pop());
+            link.target = '_blank';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
 }
 
 document.addEventListener('DOMContentLoaded', init);
