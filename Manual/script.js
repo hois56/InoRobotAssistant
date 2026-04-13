@@ -146,6 +146,16 @@ const manualData = [
         path: "Software_manual/Remote IO Control Function User Guide.pdf",
         description: "Fieldbus Guide"
     },
+    {
+        id: "remote_io_list",
+        title: "Remote_IO_List.xlsx",
+        robotType: "none",
+        category: "comm",
+        date: "2026-04-13",
+        lang: "KR",
+        path: "Software_manual/Remote_IO_List.xlsx",
+        description: "Remote IO Address List"
+    },
 
     // 5. Selection Guides
     {
