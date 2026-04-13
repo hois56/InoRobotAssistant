@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>로봇 Tool 부하 선정 툴</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{font-family:'Inter','Malgun Gothic',sans-serif;background:#0b0e14;color:#e2e8f0;margin:0;min-height:100vh;overflow-x:hidden}
+  .font-outfit{font-family:'Outfit',sans-serif}
+  .ambient-glow{position:fixed;bottom:10%;right:10%;width:50vw;height:50vh;background:radial-gradient(circle,rgba(37,99,235,.05) 0%,rgba(15,23,42,0) 70%);z-index:-1;filter:blur(100px);pointer-events:none}
+  #topbar { position: sticky; top: 0; height: 72px; background: rgba(15, 19, 28, 0.95); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.09); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; z-index: 200; }
+  .topbar-left { display: flex; align-items: center; gap: 1.5rem; }
+  .logo-link { transition: transform 0.3s ease; text-decoration: none; }
+  .logo-link:hover { transform: scale(1.05); }
+  .logo { height: 60px; width: auto; object-fit: contain; }
+  .app-title { font-family: 'Outfit', sans-serif; font-size: 1.45rem; font-weight: 700; color: #fff; padding-left: 1.5rem; border-left: 1px solid rgba(255,255,255,0.09); margin: 0; }
+  .wrap{max-width:1100px;margin:0 auto;padding:40px 24px}
+  .hero{text-align:center;margin-bottom:40px}
+  .hero h2{font-family:'Outfit',sans-serif;font-size:38px;font-weight:800;color:#fff;margin:0 0 12px}
+  .hero p{color:#94a3b8;font-size:15px;font-style:italic;margin:0}
+  .card{background:rgba(30,41,59,.4);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.05);border-radius:24px;padding:24px;margin-bottom:20px;transition:all .3s ease}
+  .card:hover{border-color:rgba(37,99,235,.25)}
+  .card h2{margin:0 0 16px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;color:#60a5fa;text-transform:uppercase;letter-spacing:.08em;padding-left:10px;border-left:3px solid #2563eb;display:flex;align-items:center;gap:8px}
+  .tabs{display:flex;gap:10px;margin-bottom:20px}
+  .tab{flex:1;padding:14px;background:rgba(30,41,59,.4);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.05);border-radius:14px;cursor:pointer;font-size:13px;font-weight:600;color:#94a3b8;text-align:center;transition:all .2s cubic-bezier(.4,0,.2,1)}
+  .tab:hover{background:rgba(30,41,59,.6);color:#fff}
+  .tab.active{background:rgba(37,99,235,.12);border-color:rgba(37,99,235,.4);color:#60a5fa;font-weight:700}
+  .row{display:grid;grid-template-columns:1fr 130px 60px;gap:10px;align-items:center;margin-bottom:10px}
+  .row label{font-size:13px;color:#cbd5e1}
+  .row input,.row select{padding:9px 12px;background:rgba(15,23,42,.6);border:1px solid rgba(255,255,255,.08);border-radius:10px;font-size:13px;text-align:right;width:100%;color:#fff;transition:all .2s;font-family:inherit}
+  .row input:focus,.row select:focus{outline:none;border-color:rgba(37,99,235,.5);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+  .row select{text-align:left}
+  .row .unit{font-size:12px;color:#64748b}
+  .grid3{display:grid;gap:8px;align-items:center;font-size:12px;margin-bottom:8px}
+  .grid3 input{padding:7px;background:rgba(15,23,42,.6);border:1px solid rgba(255,255,255,.08);border-radius:8px;font-size:12px;text-align:right;width:100%;color:#fff;font-family:inherit}
+  .grid3 input:focus{outline:none;border-color:rgba(37,99,235,.5)}
+  .grid3 .hd{font-weight:600;color:#64748b;text-align:center;text-transform:uppercase;font-size:11px;letter-spacing:.05em}
+  .btn{padding:13px 24px;background:#2563eb;color:#fff;border:0;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;letter-spacing:.02em;transition:all .2s;box-shadow:0 4px 12px rgba(37,99,235,.25)}
+  .btn:hover{background:#1d4ed8;transform:translateY(-2px);box-shadow:0 6px 20px rgba(37,99,235,.4)}
+  .btn.sec{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#94a3b8;box-shadow:none}
+  .btn.sec:hover{background:rgba(255,255,255,.1);color:#fff;transform:none;box-shadow:none}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:12px;border-bottom:1px solid rgba(255,255,255,.05);text-align:right;color:#cbd5e1}
+  th{background:rgba(15,23,42,.4);font-weight:600;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+  td:first-child,th:first-child{text-align:left}
+  .ok{color:#10b981;font-weight:700}
+  .ng{color:#ef4444;font-weight:700}
+  .warn{color:#f59e0b;font-weight:700}
+  .overall{padding:16px;border-radius:14px;text-align:center;font-size:15px;font-weight:700;margin-top:14px;font-family:'Outfit',sans-serif}
+  .overall.ok{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:#34d399}
+  .overall.ng{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#f87171}
+  .hide{display:none}
+  body.scara .scara-hide{display:none}
+  .hint{font-size:12px;color:#64748b;margin-top:8px;font-style:italic}
+  .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+  .summary div{background:rgba(15,23,42,.5);border:1px solid rgba(255,255,255,.05);padding:14px;border-radius:12px;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.05em}
+  .summary div b{display:block;color:#fff;font-size:16px;margin-top:4px;font-family:'Outfit',sans-serif;text-transform:none;letter-spacing:0}
+  .delbtn{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3);border-radius:6px;cursor:pointer;padding:4px 8px;font-weight:700}
+  .delbtn:hover{background:rgba(239,68,68,.3)}
+  .label-with-info{display:inline-flex;align-items:center;gap:6px}
+  .info-wrap{position:relative;display:inline-flex;align-items:center}
+  .info-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:rgba(37,99,235,.15);border:1px solid rgba(37,99,235,.4);color:#60a5fa;font-size:10px;font-weight:700;font-family:'Outfit',sans-serif;cursor:help;transition:all .2s;font-style:italic}
+  .info-wrap:hover .info-icon{background:rgba(37,99,235,.3);color:#fff;transform:scale(1.1)}
+  .info-tip{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.96);background:rgba(15,19,28,.97);backdrop-filter:blur(20px);border:1px solid rgba(37,99,235,.3);border-radius:16px;padding:20px;width:600px;max-width:90vw;max-height:85vh;overflow-y:auto;opacity:0;visibility:hidden;transition:all .2s cubic-bezier(.4,0,.2,1);z-index:9999;box-shadow:0 20px 60px rgba(0,0,0,.75);pointer-events:none}
+  .info-wrap:hover .info-tip{opacity:1;visibility:visible;transform:translate(-50%,-50%) scale(1)}
+  .info-tip img{width:100%;border-radius:12px;background:#fff;padding:10px;display:block}
+  .info-tip .img-row{display:flex;gap:14px}
+  .info-tip .img-row img{flex:1;min-width:0}
+  .info-tip img + img{margin-top:14px}
+  .info-tip .img-row img + img{margin-top:0}
+  .info-tip p{font-size:14px;color:#cbd5e1;line-height:1.6;margin:14px 0 0}
+  .info-tip.wide{width:1040px}
+</style>
+</head>
+<body>
+<div class="ambient-glow"></div>
+<header id="topbar">
+    <div class="topbar-left">
+        <a href="/" class="logo-link" title="메인 페이지로 이동">
+            <img src="../InoRobotSelect/INOVANCE_Logo.png" alt="Inovance" class="logo">
+        </a>
+        <h1 class="app-title">InoRobot Tool Select</h1>
+    </div>
+</header>
+
+<div class="wrap">
+  <div class="hero">
+    <h2>로봇 Tool 부하 선정 툴</h2>
+    <p>Tool 부하 조건에 따른 모델 적합성 판정</p>
+  </div>
+
+  <div class="card" id="robot-card">
+    <h2>로봇 모델 선택</h2>
+    <div class="row"><label>모델</label><select id="robot"></select><span></span></div>
+    <div class="row" id="j5off-row"><label><span class="label-with-info">J5 → 끝단 플랜지 거리 <span class="info-wrap"><span class="info-icon">i</span><span class="info-tip"><img src="j5_flange_ref.png" alt="J5 to flange"><p>J5 회전축 중심에서 끝단 플랜지(User Interface Flange)까지의 거리. 도면의 빨간 박스 구간(예: 78mm)에 해당하며, 모델별로 기본값이 자동 입력됩니다.</p></span></span></span></label><input type="number" id="j5off" value="325" step="1"><span class="unit">mm</span></div>
+    <div id="spec" class="hint"></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-mode="direct">모드 A · 값을 이미 알고 있음</div>
+    <div class="tab" data-mode="calc">모드 B · 재질·치수로부터 계산</div>
+    <div class="tab" data-mode="shape">모드 C · Tool 관성모멘트 계산</div>
+  </div>
+
+  <div id="mode-direct">
+    <div class="card">
+      <h2>부하 정보 (Tool 좌표계) <span class="info-wrap"><span class="info-icon">i</span><span class="info-tip"><img src="tool_coord_ref.png" alt="Tool coordinate"><p>Tool 좌표계는 끝단 플랜지 중심을 원점으로 하며, 축 방향은 로봇 J6(끝단) 좌표계를 따릅니다. 빨강=X, 초록=Y, 파랑=Z. 모든 좌표값은 이 기준으로 입력하세요.</p></span></span></h2>
+      <div class="row"><label>부하 질량 M</label><input type="number" id="d_m" value="14" step="0.01"><span class="unit">kg</span></div>
+      <div class="row"><label>무게중심 Lx</label><input type="number" id="d_lx" value="-25.7" step="0.1"><span class="unit">mm</span></div>
+      <div class="row"><label>무게중심 Ly</label><input type="number" id="d_ly" value="-12.5" step="0.1"><span class="unit">mm</span></div>
+      <div class="row"><label>무게중심 Lz</label><input type="number" id="d_lz" value="10.77" step="0.1"><span class="unit">mm</span></div>
+      <div class="row scara-hide"><label>관성모멘트 Ixx</label><input type="number" id="d_ixx" value="1.045" step="0.001"><span class="unit">kgm²</span></div>
+      <div class="row scara-hide"><label>관성모멘트 Iyy</label><input type="number" id="d_iyy" value="0.549" step="0.001"><span class="unit">kgm²</span></div>
+      <div class="row"><label><span id="d_izz_label">관성모멘트 Izz</span></label><input type="number" id="d_izz" value="0.534" step="0.001"><span class="unit">kgm²</span></div>
+      <div class="hint">※ 관성모멘트는 부하 무게중심 기준 (Tool 좌표계)</div>
+    </div>
+  </div>
+
+  <div id="mode-shape" class="hide">
+    <div class="card">
+      <h2>블록 정보 <span class="info-wrap"><span class="info-icon">i</span><span class="info-tip wide"><span class="img-row"><img src="tool_coord_ref.png" alt="Tool coordinate"><img src="block_ref.png" alt="Block example"></span><p>X·Y·Z 치수는 Tool 좌표계 방향(빨강=X, 초록=Y, 파랑=Z)을 기준으로 입력합니다. Tool 전체를 여러 직육면체 블록으로 분할해 각 블록의 무게와 치수를 입력하세요.</p></span></span></h2>
+      <div class="grid3" style="grid-template-columns:60px 1fr 1fr 1fr 1fr 40px"><span class="hd">블록</span><span class="hd">무게(kg)</span><span class="hd">X(mm)</span><span class="hd">Y(mm)</span><span class="hd">Z(mm)</span><span class="hd"></span></div>
+      <div id="sblocks"></div>
+      <button class="btn sec" onclick="addSBlock()" style="margin-top:8px;font-size:12px;padding:8px 14px">+ 블록 추가</button>
+      <div class="hint">※ 균질 직육면체로 근사해 자체 무게중심 기준 Ixx/Iyy/Izz 계산</div>
+    </div>
+  </div>
+
+  <div id="mode-calc" class="hide">
+    <div class="card">
+      <h2>1. Tool 블록 치수 <span class="info-wrap"><span class="info-icon">i</span><span class="info-tip wide"><span class="img-row"><img src="tool_coord_ref.png" alt="Tool coordinate"><img src="block_ref.png" alt="Block example"></span><p>각 블록의 X·Y·Z 치수는 Tool 좌표계 방향(빨강=X, 초록=Y, 파랑=Z)을 기준으로 입력합니다. Tool 전체를 여러 개의 직육면체 블록으로 분할해 각 블록의 재질과 치수를 입력하세요.</p></span></span></h2>
+      <div class="grid3" style="grid-template-columns:60px 140px repeat(3,1fr) 40px"><span class="hd">블록</span><span class="hd">재질</span><span class="hd">X(mm)</span><span class="hd">Y(mm)</span><span class="hd">Z(mm)</span><span class="hd"></span></div>
+      <div id="blocks"></div>
+      <button class="btn sec" onclick="addBlock()" style="margin-top:8px;font-size:12px;padding:8px 14px">+ 블록 추가</button>
+      <div class="hint">알루미늄 합금 ≈ 2.7 · 강철 ≈ 7.87 · 스테인리스 ≈ 7.93 · 황동 ≈ 8.5 g/cm³</div>
+    </div>
+    <div class="card">
+      <h2>2. 끝단 플랜지 → 각 블록 무게중심 거리 <span class="info-wrap"><span class="info-icon">i</span><span class="info-tip"><img src="tool_coord_ref.png" alt="Tool coordinate"><p>각 블록 무게중심의 위치를 <b>끝단 플랜지 원점으로부터의 거리(mm)</b>로 Tool 좌표계 기준 입력합니다. 빨강=X, 초록=Y, 파랑=Z. 끝단 바깥쪽(+)·안쪽(−) 부호를 유지하세요.</p></span></span></h2>
+      <div class="grid3" style="grid-template-columns:60px 140px repeat(3,1fr) 40px"><span class="hd">블록</span><span class="hd"></span><span class="hd">Dx (mm)</span><span class="hd">Dy (mm)</span><span class="hd">Dz (mm)</span><span class="hd"></span></div>
+      <div id="coms"></div>
+    </div>
+  </div>
+
+  <button class="btn" onclick="calculate()">계산하기</button>
+
+  <div id="result" class="card hide" style="margin-top:20px">
+    <h2>판정 결과</h2>
+    <div class="summary" id="summary"></div>
+    <table>
+      <thead id="reshead"><tr><th>축 / 항목</th><th>계산값</th><th>허용값</th><th>여유율</th><th>판정</th></tr></thead>
+      <tbody id="restable"></tbody>
+    </table>
+    <div id="overall" class="overall"></div>
+  </div>
+</div>
+
+<script>
+const ROBOTS=[{type:"cobot",name:"R4",load:4,t5:8.86,t6:4.9,i5:.20,i6:.067,j5:70},{type:"cobot",name:"R4H",load:4,t5:8.86,t6:4.9,i5:.20,i6:.067,j5:75},{type:"cobot",name:"R7H",load:7,t5:16.9,t6:9.4,i5:.49,i6:.150,j5:78},{type:"cobot",name:"R10-110",load:10,t5:18.59,t6:9.8,i5:.60,i6:.200,j5:80},{type:"cobot",name:"R10-140",load:10,t5:22.0,t6:9.8,i5:.63,i6:.200,j5:107.7},{type:"cobot",name:"R10H",load:10,t5:18.59,t6:9.8,i5:.60,i6:.200,j5:78},{type:"cobot",name:"R11",load:11,t5:20.45,t6:10.8,i5:.60,i6:.200,j5:80},{type:"cobot",name:"R15H",load:15,t5:26.5,t6:12.0,i5:.90,i6:.300,j5:86},{type:"cobot",name:"R16",load:16,t5:25.0,t6:12.0,i5:.78,i6:.300,j5:123},{type:"cobot",name:"R20H",load:20,t5:35.0,t6:20.0,i5:1.0,i6:.400,j5:86},{type:"cobot",name:"R25",load:25,t5:50.0,t6:30.0,i5:2.20,i6:1.500,j5:123},{type:"scara",name:"S4",load:4,rated:2,i4r:.005,i4:.05},{type:"scara",name:"S7",load:7,rated:3,i4r:.01,i4:.12},{type:"scara",name:"S10",load:10,rated:5,i4r:.02,i4:.30},{type:"scara",name:"S25",load:25,rated:10,i4r:.5,i4:1.2},{type:"scara",name:"S35",load:35,rated:20,i4r:.6,i4:1.2},{type:"scara",name:"S60",load:60,rated:30,i4r:1.2,i4:2.45},{type:"scara",name:"TS4",load:4,rated:2,i4r:.005,i4:.01},{type:"scara",name:"TS5",load:5,rated:2,i4r:.05,i4:.12}];
+const G=9.8;
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');const m=t.dataset.mode;document.getElementById('mode-direct').classList.toggle('hide',m!=='direct');document.getElementById('mode-calc').classList.toggle('hide',m!=='calc');document.getElementById('mode-shape').classList.toggle('hide',m!=='shape');document.getElementById('robot-card').classList.toggle('hide',m==='shape');document.getElementById('result').classList.add('hide');});
+const sel=document.getElementById('robot');
+const gCobot=document.createElement('optgroup');gCobot.label='다관절로봇';
+const gScara=document.createElement('optgroup');gScara.label='SCARA';
+ROBOTS.forEach((r,i)=>{const o=document.createElement('option');o.value=i;o.textContent=r.name;(r.type==='scara'?gScara:gCobot).appendChild(o);});
+sel.appendChild(gCobot);sel.appendChild(gScara);
+sel.value=ROBOTS.findIndex(r=>r.name==='R25');
+sel.onchange=showSpec;
+function showSpec(){const r=ROBOTS[sel.value];const isScara=r.type==='scara';document.body.classList.toggle('scara',isScara);document.getElementById('j5off-row').classList.toggle('hide',isScara);document.getElementById('d_izz_label').textContent=isScara?'J4 관성모멘트':'관성모멘트 Izz';if(!isScara){document.getElementById('j5off').value=r.j5;document.getElementById('spec').innerHTML=`허용 질량 ${r.load} kg · J5 토크 ${r.t5} N·m · J6 토크 ${r.t6} N·m · J5 관성 ${r.i5} kgm² · J6 관성 ${r.i6} kgm²`;}else{document.getElementById('spec').innerHTML=`형식 SCARA · 정격 부하 ${r.rated} kg · 최대 부하 ${r.load} kg · J4 정격 관성 ${r.i4r} kgm² · J4 최대 관성 ${r.i4} kgm²`;}}
+showSpec();
+const MATERIALS={al:{name:"알루미늄 합금",rho:2.7},steel:{name:"강철",rho:7.87},sus:{name:"스테인리스",rho:7.93},brass:{name:"황동",rho:8.5}};
+const DEF_BLOCKS=[{mat:"al",x:100,y:100,z:4.5,cx:0,cy:0,cz:-2.25},{mat:"al",x:65,y:117,z:49,cx:0,cy:415,cz:24.5},{mat:"al",x:65,y:117,z:49,cx:0,cy:-415,cz:24.5},{mat:"al",x:280,y:320,z:10,cx:0,cy:463,cz:5},{mat:"al",x:280,y:320,z:10,cx:0,cy:-463,cz:5}];
+function renderBlocks(){const b=document.getElementById('blocks'),c=document.getElementById('coms');b.innerHTML='';c.innerHTML='';DEF_BLOCKS.forEach((bl,i)=>{const opts=Object.entries(MATERIALS).map(([k,v])=>`<option value="${k}" ${bl.mat===k?'selected':''}>${v.name}</option>`).join('');b.innerHTML+=`<div class="grid3" style="grid-template-columns:60px 140px repeat(3,1fr) 40px"><span style="text-align:center;color:#94a3b8">#${i+1}</span><select data-i="${i}" data-k="mat" style="padding:7px;background:rgba(15,23,42,.6);border:1px solid rgba(255,255,255,.08);border-radius:8px;color:#fff;font-size:12px;font-family:inherit">${opts}</select><input type="number" data-i="${i}" data-k="x" value="${bl.x}" step="1"><input type="number" data-i="${i}" data-k="y" value="${bl.y}" step="1"><input type="number" data-i="${i}" data-k="z" value="${bl.z}" step="1"><button class="delbtn" onclick="delBlock(${i})">×</button></div>`;c.innerHTML+=`<div class="grid3" style="grid-template-columns:60px 140px repeat(3,1fr) 40px"><span style="text-align:center;color:#94a3b8">#${i+1}</span><span></span><input type="number" data-i="${i}" data-k="cx" value="${bl.cx}" step="1"><input type="number" data-i="${i}" data-k="cy" value="${bl.cy}" step="1"><input type="number" data-i="${i}" data-k="cz" value="${bl.cz}" step="1"><span></span></div>`;});}
+function addBlock(){DEF_BLOCKS.push({mat:"al",x:50,y:50,z:50,cx:0,cy:0,cz:0});renderBlocks();}
+function delBlock(i){if(DEF_BLOCKS.length>1){DEF_BLOCKS.splice(i,1);renderBlocks();}}
+renderBlocks();
+function readBlocks(){document.querySelectorAll('#blocks input, #blocks select, #coms input').forEach(inp=>{const v=inp.tagName==='SELECT'?inp.value:(parseFloat(inp.value)||0);DEF_BLOCKS[inp.dataset.i][inp.dataset.k]=v;});}
+function fromBlocks(){readBlocks();let M=0,Sx=0,Sy=0,Sz=0;const items=[];DEF_BLOCKS.forEach(b=>{const rho=MATERIALS[b.mat].rho;const m=rho*b.x*b.y*b.z*1e-6;M+=m;Sx+=m*b.cx;Sy+=m*b.cy;Sz+=m*b.cz;items.push({m,x:b.x,y:b.y,z:b.z,cx:b.cx,cy:b.cy,cz:b.cz});});const Cx=Sx/M,Cy=Sy/M,Cz=Sz/M;let Ixx=0,Iyy=0,Izz=0;items.forEach(it=>{const a=it.x/1000,b=it.y/1000,c=it.z/1000;const ixx0=it.m*(b*b+c*c)/12;const iyy0=it.m*(a*a+c*c)/12;const izz0=it.m*(a*a+b*b)/12;const dx=it.cx/1000,dy=it.cy/1000,dz=it.cz/1000;Ixx+=ixx0+it.m*(dy*dy+dz*dz);Iyy+=iyy0+it.m*(dx*dx+dz*dz);Izz+=izz0+it.m*(dx*dx+dy*dy);});return {M,Cx,Cy,Cz,Ixx,Iyy,Izz};}
+const SBLOCKS=[{m:1.0,x:100,y:100,z:50},{m:2.5,x:280,y:320,z:10}];
+function renderSBlocks(){const c=document.getElementById('sblocks');c.innerHTML='';SBLOCKS.forEach((bl,i)=>{c.innerHTML+=`<div class="grid3" style="grid-template-columns:60px 1fr 1fr 1fr 1fr 40px"><span style="text-align:center;color:#94a3b8">#${i+1}</span><input type="number" data-sk="m" data-si="${i}" value="${bl.m}" step="0.01"><input type="number" data-sk="x" data-si="${i}" value="${bl.x}" step="1"><input type="number" data-sk="y" data-si="${i}" value="${bl.y}" step="1"><input type="number" data-sk="z" data-si="${i}" value="${bl.z}" step="1"><button class="delbtn" onclick="delSBlock(${i})">×</button></div>`;});}
+function addSBlock(){SBLOCKS.push({m:1.0,x:100,y:100,z:50});renderSBlocks();}
+function delSBlock(i){if(SBLOCKS.length>1){SBLOCKS.splice(i,1);renderSBlocks();}}
+function readSBlocks(){document.querySelectorAll('#sblocks input').forEach(inp=>{SBLOCKS[inp.dataset.si][inp.dataset.sk]=parseFloat(inp.value)||0;});}
+renderSBlocks();
+function calculate(){const mode=document.querySelector('.tab.active').dataset.mode;if(mode==='shape'){readSBlocks();const tbody=document.getElementById('restable');let html=`<tr><th style="text-align:left">블록</th><th>무게(kg)</th><th>Ixx</th><th>Iyy</th><th>Izz</th></tr>`;let totM=0,totIxx=0,totIyy=0,totIzz=0;SBLOCKS.forEach((b,i)=>{const a=b.x/1000,B=b.y/1000,c=b.z/1000;const Ixx=b.m*(B*B+c*c)/12;const Iyy=b.m*(a*a+c*c)/12;const Izz=b.m*(a*a+B*B)/12;totM+=b.m;totIxx+=Ixx;totIyy+=Iyy;totIzz+=Izz;html+=`<tr><td>#${i+1}</td><td>${b.m.toFixed(3)}</td><td>${Ixx.toFixed(6)}</td><td>${Iyy.toFixed(6)}</td><td>${Izz.toFixed(6)}</td></tr>`;});html+=`<tr style="background:rgba(37,99,235,.1);font-weight:700"><td>합계</td><td>${totM.toFixed(3)}</td><td>${totIxx.toFixed(6)}</td><td>${totIyy.toFixed(6)}</td><td>${totIzz.toFixed(6)}</td></tr>`;tbody.innerHTML=html;document.getElementById('reshead').classList.add('hide');document.getElementById('summary').innerHTML=`<div>블록 수<b>${SBLOCKS.length} 개</b></div><div>총 질량<b>${totM.toFixed(3)} kg</b></div><div>기준<b>자체 무게중심</b></div>`;const ov=document.getElementById('overall');ov.className='overall ok';ov.textContent='✅ 블록 별 관성모멘트 산출 완료';document.getElementById('result').classList.remove('hide');document.getElementById('result').scrollIntoView({behavior:'smooth'});return;}
+const r=ROBOTS[sel.value];const isScara=r.type==='scara';const j5raw=parseFloat(document.getElementById('j5off').value);const j5off=isScara?0:((isNaN(j5raw)?r.j5:j5raw)/1000);let M,Lx,Ly,Lz,Ixx,Iyy,Izz;
+if(mode==='direct'){M=parseFloat(d_m.value);Lx=parseFloat(d_lx.value)/1000;Ly=parseFloat(d_ly.value)/1000;const Lz_end=parseFloat(d_lz.value)/1000;Lz=Lz_end+j5off;const ixx0=isScara?0:parseFloat(d_ixx.value),iyy0=isScara?0:parseFloat(d_iyy.value),izz0=parseFloat(d_izz.value);Ixx=ixx0+M*(Ly*Ly+Lz*Lz);Iyy=iyy0+M*(Lx*Lx+Lz*Lz);Izz=izz0+M*(Lx*Lx+Ly*Ly);}else{const f=fromBlocks();M=f.M;Lx=f.Cx/1000;Ly=f.Cy/1000;const Lz_end=f.Cz/1000;Lz=Lz_end+j5off;Ixx=f.Ixx+M*(j5off*j5off+2*Lz_end*j5off);Iyy=f.Iyy+M*(j5off*j5off+2*Lz_end*j5off);Izz=f.Izz;}
+const rJ5=Math.sqrt(Lz*Lz+Lx*Lx),rJ6=Math.sqrt(Lx*Lx+Ly*Ly);const tJ5=M*G*rJ5,tJ6=M*G*rJ6;const iJ5=Iyy,iJ6=Izz;
+const rows=isScara?[['최대 부하',M,r.load,'kg'],['J4 관성모멘트',Izz,r.i4,'kgm²']]:[['허용 질량',M,r.load,'kg'],['J5 토크',tJ5,r.t5,'N·m'],['J6 토크',tJ6,r.t6,'N·m'],['J5 관성모멘트',iJ5,r.i5,'kgm²'],['J6 관성모멘트',iJ6,r.i6,'kgm²']];
+const tbody=document.getElementById('restable');document.getElementById('reshead').classList.remove('hide');tbody.innerHTML='';let anyNG=false,anyTight=false;
+rows.forEach(([name,val,lim,u])=>{const margin=(1-val/lim)*100;const ok=val<=lim;if(!ok)anyNG=true;const tight=ok&&margin<10;if(tight)anyTight=true;const cls=!ok?'ng':(tight?'warn':'ok');const lbl=!ok?'NG':(tight?'OK (마진부족)':'OK');tbody.innerHTML+=`<tr><td>${name}</td><td>${val.toFixed(3)} ${u}</td><td>${lim.toFixed(2)} ${u}</td><td>${margin.toFixed(1)}%</td><td class="${cls}">${lbl}</td></tr>`;});
+document.getElementById('summary').innerHTML=isScara?`<div>총 질량<b>${M.toFixed(3)} kg</b></div><div>COM 반경 (XY)<b>${(rJ6*1000).toFixed(1)} mm</b></div><div>J4 관성<b>${Izz.toFixed(4)} kgm²</b></div>`:`<div>총 질량<b>${M.toFixed(3)} kg</b></div><div>J5→COM<b>${(rJ5*1000).toFixed(1)} mm</b></div><div>J6→COM<b>${(rJ6*1000).toFixed(1)} mm</b></div>`;
+const ov=document.getElementById('overall');if(anyNG){ov.className='overall ng';ov.textContent='❌ 부적합 — 상위 모델 또는 Tool 재설계 필요';}else if(anyTight){ov.className='overall ng';ov.style.background='rgba(245,158,11,.1)';ov.style.borderColor='rgba(245,158,11,.3)';ov.style.color='#fbbf24';ov.textContent='⚠️ 적합하나 마진 부족';}else{ov.className='overall ok';ov.textContent='✅ 적합 — 설치 가능';}
+document.getElementById('result').classList.remove('hide');document.getElementById('result').scrollIntoView({behavior:'smooth'});}
+</script>
+</body>
+</html>
