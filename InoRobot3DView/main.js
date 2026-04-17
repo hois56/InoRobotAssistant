@@ -17,7 +17,9 @@ const state = {
 };
 
 const MODEL_ROTATION_FIX = {
-    'IR-S25-100Z42S': { z: Math.PI }
+    'IR-S25-100Z42S': { z: Math.PI },
+    'IR-S25-120Z42S-INT': { z: Math.PI },
+    'IR-S35-120Z42S-INT': { z: Math.PI }
 };
 
 const el = {
