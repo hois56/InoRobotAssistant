@@ -1516,7 +1516,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tech = getTechSpecs(currentActiveProduct.name);
         const repeatability = tech ? tech.repeatability : (currentActiveProduct.specs.Type === 'SCARA' ? "±0.01mm" : "±0.02mm");
         const ioPins = tech ? (tech.signals || tech.io) : (currentActiveProduct.specs.Type === 'SCARA' ? "24 입력 / 16 출력" : "20 Signal lines");
-        const ipRating = tech ? tech.ip : (currentActiveProduct.specs.Type === 'SCARA' ? "IP20" : "IP65 (Wrist IP67)");
+        const ipRating = (currentActiveProduct.detailSpecs && currentActiveProduct.detailSpecs['IP rating']) ? currentActiveProduct.detailSpecs['IP rating'].replace(/\\n/g, ' ') : (tech ? tech.ip : (currentActiveProduct.specs.Type === 'SCARA' ? "IP20" : "IP40"));
         const weight = tech ? tech.weight : (currentActiveProduct.specs.Type === '6-Axis' ? "~130kg" : "12~56kg");
         const cleanType = currentActiveProduct.specs['Clean Type'] || '-';
         const air = tech ? tech.air : (currentActiveProduct.detailSpecs['Customer air piping (0.59Mpa)'] || '-');
