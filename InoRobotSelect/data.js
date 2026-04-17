@@ -3133,6 +3133,72 @@ const productsData = [
         }
     },
     {
+        "id": "IR-S25-120Z42S-INT",
+        "name": "IR-S25-120Z42S-INT",
+        "image": "robot.png",
+        "specs": {
+            "Type": "SCARA",
+            "Payload(kg)": "25",
+            "Manipulator Length(mm)": "1200",
+            "Z axis Length(mm)": "420",
+            "Clean Type": "No"
+        },
+        "cables": [
+            {
+                "code": "-",
+                "cable": "3m"
+            },
+            {
+                "code": "01741436*M00001",
+                "cable": "5m (Default)"
+            },
+            {
+                "code": "-",
+                "cable": "10m"
+            },
+            {
+                "code": "-",
+                "cable": "15m"
+            },
+            {
+                "code": "-",
+                "cable": "3m（High flex cables）"
+            },
+            {
+                "code": "-", "cable": "5m（High flex cables）"
+            },
+            { "code": "-", "cable": "10m（High flex cables）" },
+            { "code": "-", "cable": "15m（High flex cables）" }
+        ],
+        "detailSpecs": {
+            "Arm length J1+J2 (mm)": "1200",
+            "Arm length J1 (mm)": "750",
+            "Arm length J2 (mm)": "450",
+            "Max speed J1+J2 (mm/s)": "9400",
+            "Max speed J3 (mm/s)": "1200",
+            "Max speed J4 (°/s)": "705",
+            "Repeatability J1+J2 (mm)": "±0.08",
+            "Repeatability J3 (mm)": "±0.01",
+            "Repeatability J4 (°)": "±0.01",
+            "Rated Load (kg)": "10",
+            "Maximum Load (kg)": "25",
+            "J4 Permissible inertia Rated (kg·m²)": "0.5",
+            "J4 Permissible inertia Max (kg·m²)": "1.2",
+            "Cable Length": "Stand:5m\n(Option:3/10/15m)",
+            "Weight (excluding cables) (kg)": "78",
+            "Customer signal line": "25 lines 30V 0.5A\nRJ45 (Cat.5e)",
+            "Customer air piping (0.59Mpa)": "Φ6 mm x 2\nΦ8 mm x 2",
+            "Max motion range J1 (°)": "±139",
+            "Max motion range J2 (°)": "±151",
+            "Max motion range J3 (mm)": "420",
+            "Max motion range J4 (°)": "±360",
+            "Standard cycle time (s)": "0.40",
+            "Controller": "IRCB501-4ED-INT",
+            "Certification": "KCs, KC, CE, cSGSus, FCC, Safety",
+            "IP rating": "IP20"
+        }
+    },
+    {
         "id": "IR-S25-120Z36C-INT",
         "name": "IR-S25-120Z36C-INT",
         "image": "robot.png",
@@ -3202,79 +3268,6 @@ const productsData = [
             "Standard cycle time (s)": "0.42",
             "Controller": "IRCB501-4ED-INT",
             "Certification": "CE, cSGSus, FCC, Safety",
-            "IP rating": "IP20"
-        }
-    },
-    {
-        "id": "IR-S25-120Z42S-INT",
-        "name": "IR-S25-120Z42S-INT",
-        "image": "robot.png",
-        "specs": {
-            "Type": "SCARA",
-            "Payload(kg)": "25",
-            "Manipulator Length(mm)": "1200",
-            "Z axis Length(mm)": "420",
-            "Clean Type": "No"
-        },
-        "cables": [
-            {
-                "code": "-",
-                "cable": "3m"
-            },
-            {
-                "code": "01741364",
-                "cable": "5m (Default)"
-            },
-            {
-                "code": "-",
-                "cable": "10m"
-            },
-            {
-                "code": "-",
-                "cable": "15m"
-            },
-            {
-                "code": "-",
-                "cable": "3m（High flex cables）"
-            },
-            {
-                "code": "-",
-                "cable": "5m（High flex cables）"
-            },
-            {
-                "code": "-",
-                "cable": "10m（High flex cables）"
-            },
-            {
-                "code": "-",
-                "cable": "15m（High flex cables）"
-            }
-        ],
-        "detailSpecs": {
-            "Arm length J1+J2 (mm)": "1200",
-            "Arm length J1 (mm)": "750",
-            "Arm length J2 (mm)": "450",
-            "Max speed J1+J2 (mm/s)": "9400",
-            "Max speed J3 (mm/s)": "1200",
-            "Max speed J4 (°/s)": "705",
-            "Repeatability J1+J2 (mm)": "±0.08",
-            "Repeatability J3 (mm)": "±0.01",
-            "Repeatability J4 (°)": "±0.01",
-            "Rated Load (kg)": "10",
-            "Maximum Load (kg)": "25",
-            "J4 Permissible inertia Rated (kg·m²)": "0.5",
-            "J4 Permissible inertia Max (kg·m²)": "1.2",
-            "Cable Length": "Stand:5m\n(Option:3/10/15m)",
-            "Weight (excluding cables) (kg)": "78",
-            "Customer signal line": "25 lines 30V 0.5A\nRJ45 (Cat.5e)",
-            "Customer air piping (0.59Mpa)": "Φ6 mm x 2\nΦ8 mm x 2",
-            "Max motion range J1 (°)": "±139",
-            "Max motion range J2 (°)": "±151",
-            "Max motion range J3 (mm)": "420",
-            "Max motion range J4 (°)": "±360",
-            "Standard cycle time (s)": "0.4",
-            "Controller": "IRCB501-4ED-INT",
-            "Certification": "KCs, KC, CE, cSGSus, FCC, Safety",
             "IP rating": "IP20"
         }
     },
@@ -3425,6 +3418,104 @@ const productsData = [
         }
     },
     {
+        "id": "IR-S35-120Z42S-INT",
+        "name": "IR-S35-120Z42S-INT",
+        "image": "robot.png",
+        "specs": {
+            "Type": "SCARA",
+            "Payload(kg)": "35",
+            "Manipulator Length(mm)": "1200",
+            "Z axis Length(mm)": "420",
+            "Clean Type": "No"
+        },
+        "cables": [
+            { "code": "-", "cable": "3m" },
+            { "code": "01741332*M00002", "cable": "5m (Default)" },
+            { "code": "-", "cable": "10m" },
+            { "code": "-", "cable": "15m" },
+            { "code": "-", "cable": "3m（High flex cables）" },
+            { "code": "-", "cable": "5m（High flex cables）" },
+            { "code": "-", "cable": "10m（High flex cables）" },
+            { "code": "-", "cable": "15m（High flex cables）" }
+        ],
+        "detailSpecs": {
+            "Arm length J1+J2 (mm)": "1200",
+            "Arm length J1 (mm)": "750",
+            "Arm length J2 (mm)": "450",
+            "Max speed J1+J2 (mm/s)": "9400",
+            "Max speed J3 (mm/s)": "1200",
+            "Max speed J4 (°/s)": "705",
+            "Repeatability J1+J2 (mm)": "±0.08",
+            "Repeatability J3 (mm)": "±0.01",
+            "Repeatability J4 (°)": "±0.01",
+            "Rated Load (kg)": "20",
+            "Maximum Load (kg)": "35",
+            "J4 Permissible inertia Rated (kg·m²)": "0.6",
+            "J4 Permissible inertia Max (kg·m²)": "1.2",
+            "Cable Length": "Stand:5m\n(Option:3/10/15m)",
+            "Weight (excluding cables) (kg)": "80.5",
+            "Customer signal line": "25 lines 30V 0.5A\nRJ45 (Cat.5e)",
+            "Customer air piping (0.59Mpa)": "Φ6 mm x 2\nΦ8 mm x 2",
+            "Max motion range J1 (°)": "±139",
+            "Max motion range J2 (°)": "±151",
+            "Max motion range J3 (mm)": "420",
+            "Max motion range J4 (°)": "±360",
+            "Standard cycle time (s)": "0.42",
+            "Controller": "IRCB501-4ED-INT",
+            "Certification": "KCs, KC, CE, cSGSus, FCC, Safety",
+            "IP rating": "IP20"
+        }
+    },
+    {
+        "id": "IR-S35-120Z35C-INT",
+        "name": "IR-S35-120Z35C-INT",
+        "image": "robot.png",
+        "specs": {
+            "Type": "SCARA",
+            "Payload(kg)": "35",
+            "Manipulator Length(mm)": "1200",
+            "Z axis Length(mm)": "350",
+            "Clean Type": "Yes"
+        },
+        "cables": [
+            { "code": "-", "cable": "3m" },
+            { "code": "-", "cable": "5m (Default)" },
+            { "code": "-", "cable": "10m" },
+            { "code": "-", "cable": "15m" },
+            { "code": "-", "cable": "3m（High flex cables）" },
+            { "code": "-", "cable": "5m（High flex cables）" },
+            { "code": "-", "cable": "10m（High flex cables）" },
+            { "code": "-", "cable": "15m（High flex cables）" }
+        ],
+        "detailSpecs": {
+            "Arm length J1+J2 (mm)": "1200",
+            "Arm length J1 (mm)": "750",
+            "Arm length J2 (mm)": "450",
+            "Maximum speed J1+J2 (mm/s)": "9400",
+            "Maximum speed J3 (mm/s)": "1200",
+            "Maximum speed J4 (°/s)": "705",
+            "Repeatability J1+J2 (mm)": "±0.08",
+            "Repeatability J3 (mm)": "±0.01",
+            "Repeatability J4 (°)": "±0.01",
+            "Load Rated (kg)": "20",
+            "Load Maximum (kg)": "35",
+            "J4 Permissible inertia Rated (kg·m²)": "0.6",
+            "J4 Permissible inertia Max (kg·m²)": "1.2",
+            "Cable Length": "Stand:5m\n(Option:3/10/15m)",
+            "Weight (excluding cables) (kg)": "80.5",
+            "Customer signal line": "25 lines 30V 0.5A\nRJ45 (Cat.5e)",
+            "Customer air piping (0.59Mpa)": "Φ6 mm x 2\nΦ8 mm x 2",
+            "Max motion range J1 (°)": "±139",
+            "Max motion range J2 (°)": "±151",
+            "Max motion range J3 (mm)": "350",
+            "Max motion range J4 (°)": "±360",
+            "Standard cycle time (s)": "0.44",
+            "Controller": "IRCB501-4ED-INT",
+            "Certification": "CE, cSGSus, FCC, Safety",
+            "IP rating": "IP20"
+        }
+    },
+    {
         "id": "IR-S35-100Z35C-INT",
         "name": "IR-S35-100Z35C-INT",
         "image": "robot.png",
@@ -3571,110 +3662,6 @@ const productsData = [
         }
     },
     {
-        "id": "IR-S35-120Z35C-INT",
-        "name": "IR-S35-120Z35C-INT",
-        "image": "robot.png",
-        "specs": {
-            "Type": "SCARA",
-            "Payload(kg)": "35",
-            "Manipulator Length(mm)": "1200",
-            "Z axis Length(mm)": "350",
-            "Clean Type": "Yes"
-        },
-        "cables": [
-            {
-                "code": "-",
-                "cable": "3m"
-            },
-            {
-                "code": "-",
-                "cable": "5m (Default)"
-            },
-            {
-                "code": "-",
-                "cable": "10m"
-            },
-            {
-                "code": "-",
-                "cable": "15m"
-            },
-            {
-                "code": "-",
-                "cable": "3m（High flex cables）"
-            },
-            {
-                "code": "-",
-                "cable": "5m（High flex cables）"
-            },
-            {
-                "code": "-",
-                "cable": "10m（High flex cables）"
-            },
-            {
-                "code": "-",
-                "cable": "15m（High flex cables）"
-            }
-        ],
-        "detailSpecs": {
-            "Arm length J1+J2 (mm)": "1200",
-            "Arm length J1 (mm)": "750",
-            "Arm length J2 (mm)": "450",
-            "Maximum speed J1+J2 (mm/s)": "9400",
-            "Maximum speed J3 (mm/s)": "1200",
-            "Maximum speed J4 (°/s)": "705",
-            "Repeatability J1+J2 (mm)": "±0.08",
-            "Repeatability J3 (mm)": "±0.01",
-            "Repeatability J4 (°)": "±0.01",
-            "Load Rated (kg)": "20",
-            "Load Maximum (kg)": "35",
-            "J4 Permissible inertia Rated (kg·m²)": "0.6",
-            "J4 Permissible inertia Max (kg·m²)": "1.2",
-            "Cable Length": "Stand:5m\n(Option:3/10/15m)",
-            "Weight (excluding cables) (kg)": "80.5",
-            "Customer signal line": "25 lines 30V 0.5A\nRJ45 (Cat.5e)",
-            "Customer air piping (0.59Mpa)": "Φ6 mm x 2\nΦ8 mm x 2",
-            "Max motion range J1 (°)": "±139",
-            "Max motion range J2 (°)": "±151",
-            "Max motion range J3 (mm)": "350",
-            "Max motion range J4 (°)": "±360",
-            "Standard cycle time (s)": "0.44",
-            "Controller": "IRCB501-4ED-INT",
-            "Certification": "CE, cSGSus, FCC, Safety",
-            "IP rating": "IP20"
-        }
-    },
-    {
-        "id": "IR-S35-120Z42S-INT",
-        "name": "IR-S35-120Z42S-INT",
-        "image": "robot.png",
-        "specs": {
-            "Type": "SCARA",
-            "Payload(kg)": "35",
-            "Manipulator Length(mm)": "1200",
-            "Z axis Length(mm)": "420",
-            "Clean Type": "No"
-        },
-        "cables": [
-            {
-                "code": "-",
-                "cable": "3m"
-            },
-            {
-                "code": "-",
-                "cable": "5m (Default)"
-            },
-            {
-                "code": "-",
-                "cable": "10m"
-            },
-            {
-                "code": "-",
-                "cable": "15m"
-            },
-            {
-                "code": "-",
-                "cable": "3m（High flex cables）"
-            },
             {
                 "code": "-",
                 "cable": "5m（High flex cables）"

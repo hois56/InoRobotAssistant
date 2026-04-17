@@ -11,8 +11,10 @@
     { "name": "IR-TS5-55Z15S-INT", "file": "IR-TS5-55Z15S-INT_3D.fbx" },
     { "name": "IR-S25-80Z42S", "file": "IR-S25-80Z42S_3D.fbx" },
     { "name": "IR-S25-100Z42S", "file": "IR-S25-100Z42S_3D.fbx" },
+    { "name": "IR-S25-120Z42S-INT", "file": "IR-S25-120Z42S_INT_3D.fbx" },
     { "name": "IR-S35-80Z42S-INT", "file": "IR-S35-80Z42S-INT_3D.fbx" },
     { "name": "IR-S35-100Z42S-INT", "file": "IR-S35-100Z42S-INT_3D.fbx" },
+    { "name": "IR-S35-120Z42S-INT", "file": "IR-S35-120Z42S_INT_3D.fbx" },
     { "name": "IR-S60-120Z40S-INT", "file": "IR-S60-120Z40S-INT_3D.fbx" },
     { "name": "IR-GS60-120Z40S-INT", "file": "IR-GS60-120Z40S-INT_3D.fbx" },
 

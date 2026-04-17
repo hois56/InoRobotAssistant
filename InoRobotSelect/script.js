@@ -630,6 +630,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 { axis: 'J4', speed: '705°/s', range: '±360°' }
             ]
         },
+        'S25-120': {
+            repeatability: 'J1+J2: ±0.08mm, J3: ±0.01mm',
+            signals: '25 Signal lines',
+            air: 'Φ6mm x 2, Φ8mm x 2',
+            ip: 'IP20',
+            weight: '78 kg',
+            axes: [
+                { axis: 'J1+J2', speed: '9400 mm/s', range: 'J1: ±139°, J2: ±151°' },
+                { axis: 'J3', speed: '1200 mm/s', range: '420 mm' },
+                { axis: 'J4', speed: '705°/s', range: '±360°' }
+            ]
+        },
+        'S35-120': {
+            repeatability: 'J1+J2: ±0.08mm, J3: ±0.01mm',
+            signals: '25 Signal lines',
+            air: 'Φ6mm x 2, Φ8mm x 2',
+            ip: 'IP20',
+            weight: '80.5 kg',
+            axes: [
+                { axis: 'J1+J2', speed: '9400 mm/s', range: 'J1: ±139°, J2: ±151°' },
+                { axis: 'J3', speed: '1200 mm/s', range: '420 mm' },
+                { axis: 'J4', speed: '705°/s', range: '±360°' }
+            ]
+        },
         'GS60-120': {
             repeatability: 'J1+J2: ±0.07mm, J3: ±0.02mm',
             signals: '25 Signal lines',
