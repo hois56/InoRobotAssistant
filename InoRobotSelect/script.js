@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize Sub Type for each product
     state.products.forEach(product => {
+        if (!product || !product.specs) return;
         const name = product.name.toUpperCase();
         const isClean = product.specs['Clean Type'] === 'Yes';
         let sub = '일반형';
@@ -295,6 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function parseLen(l) {
+        if (!l || l === 'N/A') return 999;
         let num = parseFloat(l.replace('m', ''));
         return isNaN(num) ? 999 : num;
     }
@@ -1516,10 +1518,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const tech = getTechSpecs(currentActiveProduct.name);
         const repeatability = tech ? tech.repeatability : (currentActiveProduct.specs.Type === 'SCARA' ? "±0.01mm" : "±0.02mm");
         const ioPins = tech ? (tech.signals || tech.io) : (currentActiveProduct.specs.Type === 'SCARA' ? "24 입력 / 16 출력" : "20 Signal lines");
-        const ipRating = (currentActiveProduct.detailSpecs && currentActiveProduct.detailSpecs['IP rating']) ? currentActiveProduct.detailSpecs['IP rating'].replace(/\\n/g, ' ') : (tech ? tech.ip : (currentActiveProduct.specs.Type === 'SCARA' ? "IP20" : "IP40"));
+        
+        // IP rating with safety check for detailSpecs and correct newline regex
+        let ipRating = "IP40";
+        if (currentActiveProduct.detailSpecs && currentActiveProduct.detailSpecs['IP rating']) {
+            ipRating = currentActiveProduct.detailSpecs['IP rating'].replace(/\n/g, ' ');
+        } else if (tech && tech.ip) {
+            ipRating = tech.ip;
+        } else if (currentActiveProduct.specs.Type === 'SCARA') {
+            ipRating = "IP20";
+        }
+        
         const weight = tech ? tech.weight : (currentActiveProduct.specs.Type === '6-Axis' ? "~130kg" : "12~56kg");
         const cleanType = currentActiveProduct.specs['Clean Type'] || '-';
-        const air = tech ? tech.air : (currentActiveProduct.detailSpecs['Customer air piping (0.59Mpa)'] || '-');
+        const air = tech ? tech.air : (currentActiveProduct.detailSpecs ? (currentActiveProduct.detailSpecs['Customer air piping (0.59Mpa)'] || '-') : '-');
 
         let axesRowsHtml = '';
         if (tech && tech.axes) {
@@ -1786,8 +1798,5 @@ document.addEventListener('DOMContentLoaded', () => {
     renderFilters();
     renderProducts();
 
-    function parseLen(l) {
-        if (l === 'N/A') return 0;
-        return parseInt(l.replace('m', '')) || 0;
-    }
+
 });
