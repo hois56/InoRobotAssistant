@@ -369,7 +369,15 @@
                 Designed & Developed by <span class="text-sky-400/80">Jeongchan Lee</span>
             </p>
             <p class="text-[9px] font-mono text-slate-600 mt-2 uppercase tracking-widest">
-                SYS ID: <span id="visit-count" class="text-slate-500">---</span>
+                SYS ID:
+                <span id="visit-count" class="inline-flex align-middle ml-2">
+                    <img
+                        src="https://hits.sh/inovancerobot.com.svg?view=total&style=flat&label=visits"
+                        alt="Visitor count"
+                        class="h-5 w-auto"
+                        loading="eager"
+                    >
+                </span>
             </p>
         </div>
     </footer>
@@ -415,68 +423,6 @@
                 card.style.setProperty('--mouse-y', `${y}px`);
             });
         });
-        // Visitor Counter (CounterAPI)
-        (async function () {
-            const el = document.getElementById('visit-count');
-            if (!el) return;
-
-            const visitedKey = 'inorobot_v3_visited';
-            const today = new Date().toISOString().split('T')[0];
-            const baseUrl = 'https://api.counterapi.dev/v1/inorobot_assistant/main';
-
-            const readCount = (data) => {
-                if (data && typeof data.count === 'number') return data.count;
-                if (data && typeof data.value === 'number') return data.value;
-                if (data && data.data && typeof data.data.count === 'number') return data.data.count;
-                if (data && data.data && typeof data.data.value === 'number') return data.data.value;
-                return null;
-            };
-
-            const fetchCount = async (url) => {
-                const response = await fetch(url, { cache: 'no-store' });
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const data = await response.json();
-                const count = readCount(data);
-                if (count === null) throw new Error('Invalid counter payload');
-                return count;
-            };
-
-            let stored = null;
-            try {
-                stored = localStorage.getItem(visitedKey);
-            } catch (e) {
-                stored = null;
-            }
-
-            const shouldIncrement = stored !== today;
-
-            try {
-                const count = shouldIncrement
-                    ? await fetchCount(`${baseUrl}/up`)
-                    : await fetchCount(`${baseUrl}/`);
-
-                el.innerText = count;
-
-                if (shouldIncrement) {
-                    try {
-                        localStorage.setItem(visitedKey, today);
-                    } catch (e) { }
-                }
-            } catch (e) {
-                try {
-                    const count = await fetchCount(`${baseUrl}/`);
-                    el.innerText = count;
-                } catch (fallbackError) {
-                    el.innerText = 'N/A';
-                    el.title = 'CounterAPI unavailable';
-                    if (shouldIncrement) {
-                        try {
-                            localStorage.removeItem(visitedKey);
-                        } catch (e) { }
-                    }
-                }
-            }
-        })();
     </script>
 </body>
 
