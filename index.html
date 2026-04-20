@@ -416,25 +416,66 @@
             });
         });
         // Visitor Counter (CounterAPI)
-        (function () {
+        (async function () {
+            const el = document.getElementById('visit-count');
+            if (!el) return;
+
+            const visitedKey = 'inorobot_v3_visited';
+            const today = new Date().toISOString().split('T')[0];
+            const baseUrl = 'https://api.counterapi.dev/v1/inorobot_assistant/main';
+
+            const readCount = (data) => {
+                if (data && typeof data.count === 'number') return data.count;
+                if (data && typeof data.value === 'number') return data.value;
+                if (data && data.data && typeof data.data.count === 'number') return data.data.count;
+                if (data && data.data && typeof data.data.value === 'number') return data.data.value;
+                return null;
+            };
+
+            const fetchCount = async (url) => {
+                const response = await fetch(url, { cache: 'no-store' });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                const count = readCount(data);
+                if (count === null) throw new Error('Invalid counter payload');
+                return count;
+            };
+
+            let stored = null;
             try {
-                const visitedKey = 'inorobot_v3_visited';
-                const today = new Date().toISOString().split('T')[0];
-                const stored = localStorage.getItem(visitedKey);
+                stored = localStorage.getItem(visitedKey);
+            } catch (e) {
+                stored = null;
+            }
 
-                let endpoint = 'https://api.counterapi.dev/v1/inorobot_assistant/main/';
-                if (stored !== today) {
-                    endpoint = 'https://api.counterapi.dev/v1/inorobot_assistant/main/up';
-                    localStorage.setItem(visitedKey, today);
+            const shouldIncrement = stored !== today;
+
+            try {
+                const count = shouldIncrement
+                    ? await fetchCount(`${baseUrl}/up`)
+                    : await fetchCount(`${baseUrl}/`);
+
+                el.innerText = count;
+
+                if (shouldIncrement) {
+                    try {
+                        localStorage.setItem(visitedKey, today);
+                    } catch (e) { }
                 }
-
-                fetch(endpoint)
-                    .then(r => r.json())
-                    .then(d => {
-                        const el = document.getElementById('visit-count');
-                        if (el && d.count) el.innerText = d.count;
-                    }).catch(() => { });
-            } catch (e) { }
+            } catch (e) {
+                try {
+                    const count = await fetchCount(`${baseUrl}/`);
+                    el.innerText = count;
+                } catch (fallbackError) {
+                    el.innerText = 'N/A';
+                    el.title = 'CounterAPI unavailable';
+                    if (shouldIncrement) {
+                        try {
+                            localStorage.removeItem(visitedKey);
+                        } catch (e) { }
+                    }
+                }
+            }
         })();
     </script>
 </body>
