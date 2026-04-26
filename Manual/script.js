@@ -64,12 +64,12 @@ const manualData = [
     },
     {
         id: "6axis_r25_r16_guide",
-        title: "IR-R25&R16 Series User Guide - Manipulator.pdf",
+        title: "IR-R25&16 Series User Guide - Manipulator.PDF",
         robotType: "6axis",
         category: "hardware",
-        date: "2026-03-29",
+        date: "2026-04-26",
         lang: "EN",
-        path: "Hardware_manual/6-axis/IR-R25&R16 Series User Guide - Manipulator.pdf",
+        path: "Hardware_manual/6-axis/IR-R25&16 Series User Guide - Manipulator.PDF",
         description: "User Guide"
     },
 
