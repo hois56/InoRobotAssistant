@@ -30,14 +30,14 @@ const softwareGroups = [
                 ]
             },
             {
-                tagName: "Display Version (Special)",
+                tagName: "Display Version (V4R24C4SPC0L18F121)",
                 description: "Display 공정용 특수 버전 소프트웨어",
-                date: "2026-03-20",
+                date: "2026-05-14",
                 isLocked: true,
                 updates: ["Display 모듈 지원"],
                 downloads: [
-                    { label: "Download (Install)", type: "install", size: "482MB", path: "InoRobotLab/Display/InoRobotLabSetUp_V4R24C4SPC4L9F121_x64.exe" },
-                    { label: "Download (Portable)", type: "portable", size: "454MB", path: "InoRobotLab/Display/InoRobotLab_V4R24C4SPC4L9F121_x64.zip" }
+                    { label: "Download (Install)", type: "install", size: "-", path: "", disabled: true },
+                    { label: "Download (Portable)", type: "portable", size: "454MB", path: "InoRobotLab/Display/InoRobotLab_V4R24C4SPC0L18F121_x64.zip" }
                 ]
             }
         ]
@@ -67,13 +67,13 @@ const softwareGroups = [
                 ]
             },
             {
-                tagName: "Display Version (Special)",
+                tagName: "Display Version (V4R24C4SPC0L18F121)",
                 description: "Display 공정용 TP 소프트웨어",
-                date: "2026-03-21",
+                date: "2026-05-14",
                 isLocked: true,
                 updates: ["Display 최적화"],
                 downloads: [
-                    { label: "Download", type: "portable", size: "57MB", path: "InoRobotTP/Display/InoRobotTP_win_x86_V4R24C4SPC4L9F121.zip" }
+                    { label: "Download", type: "portable", size: "57MB", path: "InoRobotTP/Display/InoRobotTP_win_x86_V4R24C4SPC0L18F121.zip" }
                 ]
             }
         ]
@@ -122,6 +122,20 @@ function renderSoftwareList(filterType = 'all', searchTerm = '') {
             // 아이콘 및 헤더
             let verBadgeClass = ver.isLocked ? "bg-amber-500/10 text-amber-500 border-amber-500/20" : "bg-blue-600/10 text-blue-400 border-blue-500/20";
             let verIcon = ver.isLocked ? "lock" : "check-circle";
+            const downloadButtons = ver.downloads.map(dl => {
+                const isDisabled = dl.disabled || !dl.path;
+                const clickAttr = isDisabled ? '' : `onclick="handleDownload('${dl.path}', ${ver.isLocked})"`;
+                const disabledAttr = isDisabled ? 'disabled aria-disabled="true"' : '';
+                const buttonClass = isDisabled ? 'disabled-btn' : (ver.isLocked ? 'locked-btn' : 'download-btn');
+                const icon = isDisabled ? 'ban' : (ver.isLocked ? 'key' : 'download');
+
+                return `
+                    <button ${clickAttr} ${disabledAttr}
+                            class="px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${buttonClass}">
+                        <i data-lucide="${icon}" class="w-3.5 h-3.5"></i> ${dl.label} (${dl.size})
+                    </button>
+                `;
+            }).join('');
 
             card.innerHTML = `
                 <div class="flex-shrink-0 w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400">
@@ -141,12 +155,7 @@ function renderSoftwareList(filterType = 'all', searchTerm = '') {
                             <span class="flex items-center gap-1.5"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> ${ver.date}</span>
                         </div>
                         <div class="flex flex-wrap gap-3 ml-auto">
-                            ${ver.downloads.map(dl => `
-                                <button onclick="handleDownload('${dl.path}', ${ver.isLocked})" 
-                                        class="px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${ver.isLocked ? 'locked-btn' : 'download-btn'}">
-                                    <i data-lucide="${ver.isLocked ? 'key' : 'download'}" class="w-3.5 h-3.5"></i> ${dl.label} (${dl.size})
-                                </button>
-                            `).join('')}
+                            ${downloadButtons}
                         </div>
                     </div>
                 </div>
