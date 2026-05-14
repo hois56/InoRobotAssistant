@@ -580,6 +580,19 @@ function setupSearch() {
 // Cloudflare Worker URL
 const WORKER_URL = 'https://ino-robot-display-auth.hois56.workers.dev/';
 
+function encodeManualPath(path) {
+    return path.split('/').map(segment => encodeURIComponent(segment)).join('/');
+}
+
+function getFileName(path) {
+    return path.split('/').pop();
+}
+
+function resolveManualUrl(path) {
+    if (/^https?:\/\//i.test(path)) return path;
+    return encodeManualPath(path);
+}
+
 async function handleView(id) {
     const man = manualData.find(m => m.id === id);
     if (!man) return;
@@ -621,7 +634,7 @@ async function handleView(id) {
             alert("서버 연결에 실패했습니다: " + e.message);
         }
     } else {
-        window.open(man.path, '_blank');
+        window.open(resolveManualUrl(man.path), '_blank');
     }
 }
 
@@ -650,36 +663,19 @@ async function handleDownload(id) {
             alert("서버 연결에 실패했습니다.");
         }
     } else {
-        downloadFile(man.downloadPath || man.path);
+        const path = man.downloadPath || man.path;
+        downloadFile(resolveManualUrl(path), getFileName(path));
     }
 }
 
-function downloadFile(url) {
-    fetch(url)
-        .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.blob();
-        })
-        .then(blob => {
-            const blobUrl = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = blobUrl;
-            link.download = decodeURIComponent(url.split('/').pop());
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(blobUrl);
-        })
-        .catch(err => {
-            console.warn('Fetch download failed, falling back to direct link', err);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = decodeURIComponent(url.split('/').pop());
-            link.target = '_blank';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        });
+function downloadFile(url, fileName = '') {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 document.addEventListener('DOMContentLoaded', init);
