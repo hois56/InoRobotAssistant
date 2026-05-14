@@ -5,9 +5,29 @@ const manualData = [
         title: "IR-S4&S7&S10 Series User Guide - Manipulator.pdf",
         robotType: "scara",
         category: "hardware",
-        date: "2026-03-29",
+        date: "2026-05-14",
         lang: "EN",
         path: "Hardware_manual/SCARA/IR-S4&S7&S10 Series User Guide - Manipulator.pdf",
+        description: "User Guide"
+    },
+    {
+        id: "scara_s25_s35_guide",
+        title: "IR-S25&S35-INT Series User Guide - Manipulator.pdf",
+        robotType: "scara",
+        category: "hardware",
+        date: "2026-05-14",
+        lang: "EN",
+        path: "Hardware_manual/SCARA/IR-S25&S35-INT Series User Guide - Manipulator.pdf",
+        description: "User Guide"
+    },
+    {
+        id: "scara_s60_gs60_guide",
+        title: "IR-S60&GS60 Series User Guide - Mechanical.pdf",
+        robotType: "scara",
+        category: "hardware",
+        date: "2026-05-14",
+        lang: "EN",
+        path: "Hardware_manual/SCARA/IR-S60&GS60 Series User Guide - Mechanical.pdf",
         description: "User Guide"
     },
     {
@@ -63,6 +83,16 @@ const manualData = [
         description: "User Guide"
     },
     {
+        id: "6axis_r15h_r20h_guide",
+        title: "IR-R15H&20H Series User Guide - Manipulator.pdf",
+        robotType: "6axis",
+        category: "hardware",
+        date: "2026-05-14",
+        lang: "EN",
+        path: "Hardware_manual/6-axis/IR-R15H&20H Series User Guide - Manipulator.pdf",
+        description: "User Guide"
+    },
+    {
         id: "6axis_r25_r16_guide",
         title: "IR-R25&16 Series User Guide - Manipulator.PDF",
         robotType: "6axis",
@@ -95,7 +125,69 @@ const manualData = [
         description: "User Guide"
     },
 
-    // 4. Software & Operation
+    // 4. Expansion Cards
+    {
+        id: "expansion_input_io_16ch_guide",
+        title: "IRCB501 Series 16-Channel Input IO Expansion Card User Guide.pdf",
+        robotType: "expansion",
+        category: "expansion",
+        date: "2026-05-14",
+        lang: "EN",
+        path: "Hardware_manual/ExpansionCard/IRCB501 Series 16-Channel Input IO Expansion Card User Guide.pdf",
+        description: "Expansion Card User Guide"
+    },
+    {
+        id: "expansion_npn_output_io_16ch_guide",
+        title: "IRCB501 Series 16-Channel NPN Output IO Expansion Card User Guide.pdf",
+        robotType: "expansion",
+        category: "expansion",
+        date: "2026-05-14",
+        lang: "EN",
+        path: "Hardware_manual/ExpansionCard/IRCB501 Series 16-Channel NPN Output IO Expansion Card User Guide.pdf",
+        description: "Expansion Card User Guide"
+    },
+    {
+        id: "expansion_incremental_encoder_2ch_guide",
+        title: "IRCB501 Series 2-Channel Incremental Encoder Expansion Card User Guide.pdf",
+        robotType: "expansion",
+        category: "expansion",
+        date: "2026-05-14",
+        lang: "EN",
+        path: "Hardware_manual/ExpansionCard/IRCB501 Series 2-Channel Incremental Encoder Expansion Card User Guide.pdf",
+        description: "Expansion Card User Guide"
+    },
+    {
+        id: "expansion_functional_safety_guide",
+        title: "IRCB501 Series Functional Safety Expansion Card User Guide.pdf",
+        robotType: "expansion",
+        category: "expansion",
+        date: "2026-05-14",
+        lang: "EN",
+        path: "Hardware_manual/ExpansionCard/IRCB501 Series Functional Safety Expansion Card User Guide.pdf",
+        description: "Expansion Card User Guide"
+    },
+    {
+        id: "expansion_ir_link_guide",
+        title: "IRCB501 Series IR-LINK Expansion Card User Guide.pdf",
+        robotType: "expansion",
+        category: "expansion",
+        date: "2026-05-14",
+        lang: "EN",
+        path: "Hardware_manual/ExpansionCard/IRCB501 Series IR-LINK Expansion Card User Guide.pdf",
+        description: "Expansion Card User Guide"
+    },
+    {
+        id: "expansion_profinet_guide",
+        title: "IRCB501 Series PROFINET Expansion Card User Guide.pdf",
+        robotType: "expansion",
+        category: "expansion",
+        date: "2026-05-14",
+        lang: "EN",
+        path: "Hardware_manual/ExpansionCard/IRCB501 Series PROFINET Expansion Card User Guide.pdf",
+        description: "Expansion Card User Guide"
+    },
+
+    // 5. Software & Operation
     {
         id: "lab_user_guide",
         title: "InoRobotLab User Guide.pdf",
@@ -157,11 +249,11 @@ const manualData = [
         description: "Remote IO Address List"
     },
 
-    // 5. Selection Guides
+    // 6. Selection Guides
     {
         id: "sel_guide",
         title: "INOVANCE ROBOT Selection Guide.pdf",
-        robotType: "none",
+        robotType: "selection",
         category: "selection",
         date: "2026-03-29",
         lang: "EN",
@@ -171,7 +263,7 @@ const manualData = [
     {
         id: "sel_leaflet",
         title: "INOVANCE ROBOT Selection Leaflet.pdf",
-        robotType: "none",
+        robotType: "selection",
         category: "selection",
         date: "2026-03-29",
         lang: "EN",
@@ -181,7 +273,7 @@ const manualData = [
     {
         id: "sel_leaflet_display",
         title: "INOVANCE ROBOT Selection Leaflet_Special Robot of Display.pdf",
-        robotType: "none",
+        robotType: "selection",
         category: "selection",
         date: "2026-03-29",
         lang: "EN",
@@ -189,7 +281,7 @@ const manualData = [
         description: "Special Robot Leaflet"
     },
 
-    // 6. Education Material
+    // 7. Education Material
     {
         id: "edu_intro_1",
         title: "1.로봇 소개(INT).pdf",
@@ -405,6 +497,7 @@ function renderManuals() {
         let iconColor = "text-emerald-500";
         let bgColor = "group-hover:bg-emerald-500";
         if (man.category.includes('selection')) { iconColor = "text-blue-500"; bgColor = "group-hover:bg-blue-500"; }
+        if (man.category.includes('expansion')) { iconColor = "text-cyan-500"; bgColor = "group-hover:bg-cyan-500"; }
         if (man.category.includes('comm')) { iconColor = "text-amber-500"; bgColor = "group-hover:bg-amber-500"; }
         if (man.category.includes('pendant')) { iconColor = "text-indigo-500"; bgColor = "group-hover:bg-indigo-500"; }
         if (man.category.includes('api')) { iconColor = "text-rose-500"; bgColor = "group-hover:bg-rose-500"; }
@@ -426,6 +519,8 @@ function renderManuals() {
                           man.category.includes('basic') ? 'Basic' :
                           man.category.includes('advanced') ? 'Application' :
                           man.category.includes('display') ? 'For Display' :
+                          man.robotType === 'expansion' ? 'Expansion Card' :
+                          man.robotType === 'selection' ? 'Selection Guide' :
                           (man.robotType === 'none' ? 'Common' : man.robotType)}
                     </span>
                     <span class="text-[11px] text-slate-600 ml-1 opacity-70">${man.date}</span>
