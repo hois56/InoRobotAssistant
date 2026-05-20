@@ -113,7 +113,7 @@ Func P1_teaching_mode()
     #================================================================================
     #  Move                     
     #================================================================================
-    While xTeaching_mode == OFF or xTeaching_cancel == OFF
+    While xTeaching_mode == ON or xTeaching_cancel == ON
         Set_offset();
         Movl Offset(P1_Down, PR[B_PR_num]),Speed[50],Fine,Tool[B_T_num],Wobj[B_W_num];
         If xTeaching_save
