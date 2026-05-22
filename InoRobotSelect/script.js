@@ -694,12 +694,90 @@ document.addEventListener('DOMContentLoaded', () => {
         return '-';
     }
 
+    function getCadFolderBase(product) {
+        const modelId = product.id;
+        const type = product.specs.Type;
+        let folderBase = modelId.split('Z')[0];
+
+        if (type === '6-Axis') {
+            const parts = modelId.split('-');
+            if (parts[2].endsWith('S') && !modelId.includes('R11-90S')) {
+                folderBase = parts.slice(0, 2).join('-') + '-' + parts[2].slice(0, -1);
+            } else if (parts[2].endsWith('S5')) {
+                folderBase = parts.slice(0, 2).join('-') + '-' + parts[2].slice(0, -2);
+            } else {
+                folderBase = parts.slice(0, 3).join('-');
+            }
+        }
+
+        const cadFolderMap = {
+            "IR-R15H-145S5-INT": "IR-R15H-145",
+            "IR-R16-210S5-INT": "IR-R16-210",
+            "IR-R20H-120S5-INT": "IR-R20H-120",
+            "IR-R25-178S5-INT": "IR-R25-178"
+        };
+        if (cadFolderMap[modelId]) folderBase = cadFolderMap[modelId];
+
+        return folderBase;
+    }
+
+    function getCadBaseUrl(product) {
+        const typeDir = product.specs.Type === 'SCARA' ? 'SCARA' : '6-axis';
+        return `Robot_CAD/${typeDir}/${getCadFolderBase(product)}/`;
+    }
+
+    function getCadCandidatePaths(product, fileId, ext) {
+        const modelId = product.id;
+        const baseUrl = getCadBaseUrl(product);
+        const modelIdNoInt = modelId.replace('-INT', '');
+        return [...new Set([
+            `${baseUrl}${modelId}_${fileId}.${ext}`,
+            `${baseUrl}${modelIdNoInt}_${fileId}.${ext}`,
+            `${baseUrl}${modelIdNoInt}_${fileId}_CN.${ext}`
+        ])];
+    }
+
+    async function hasAnyCadFile(product, fileId, ext) {
+        for (const path of getCadCandidatePaths(product, fileId, ext)) {
+            try {
+                const resp = await fetch(path, { method: 'HEAD' });
+                if (resp.ok) return true;
+            } catch (e) {}
+        }
+        return false;
+    }
+
     // Modal Logic
     function openOptionsModal(productId) {
         const product = state.products.find(p => p.id === productId);
         if (!product) return;
 
         // CAD availability check
+        const cadBtn = document.getElementById('download-cad-btn');
+        cadBtn.disabled = true;
+        cadBtn.innerText = "?곹깭 ?뺤씤 以?.";
+        cadBtn.style.opacity = "0.7";
+
+        hasAnyCadFile(product, '3D', 'stp').then(isAvailable => {
+            if (isAvailable) {
+                cadBtn.disabled = false;
+                cadBtn.innerText = "CAD ?ㅼ슫濡쒕뱶";
+                cadBtn.style.opacity = "1";
+                cadBtn.style.cursor = "pointer";
+            } else {
+                cadBtn.disabled = true;
+                cadBtn.innerText = "CAD 以鍮?以?";
+                cadBtn.style.opacity = "0.4";
+                cadBtn.style.cursor = "not-allowed";
+            }
+        }).catch(() => {
+            cadBtn.disabled = true;
+            cadBtn.innerText = "CAD 以鍮?以?";
+            cadBtn.style.opacity = "0.4";
+            cadBtn.style.cursor = "not-allowed";
+        });
+
+        /*
         const modelIdForCad = product.id;
         const typeForCad = product.specs.Type;
         const typeDirForCad = typeForCad === 'SCARA' ? 'SCARA' : '6-axis';
@@ -747,6 +825,8 @@ document.addEventListener('DOMContentLoaded', () => {
             cadBtn.style.opacity = "0.4";
             cadBtn.style.cursor = "not-allowed";
         });
+
+        */
 
         // Rename SCARA clean types for modal title
         let displayName = product.name;
