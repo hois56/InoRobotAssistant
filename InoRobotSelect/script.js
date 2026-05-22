@@ -755,60 +755,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // CAD availability check
         const cadBtn = document.getElementById('download-cad-btn');
         cadBtn.disabled = true;
-        cadBtn.innerText = "Checking...";
+        cadBtn.innerText = "상태 확인 중...";
         cadBtn.style.opacity = "0.7";
 
         hasAnyCadFile(product, '3D', 'stp').then(isAvailable => {
             if (isAvailable) {
-                cadBtn.disabled = false;
-                cadBtn.innerText = "CAD Download";
-                cadBtn.style.opacity = "1";
-                cadBtn.style.cursor = "pointer";
-            } else {
-                cadBtn.disabled = true;
-                cadBtn.innerText = "CAD Not Ready";
-                cadBtn.style.opacity = "0.4";
-                cadBtn.style.cursor = "not-allowed";
-            }
-        }).catch(() => {
-            cadBtn.disabled = true;
-            cadBtn.innerText = "CAD Not Ready";
-            cadBtn.style.opacity = "0.4";
-            cadBtn.style.cursor = "not-allowed";
-        });
-
-        /*
-        const modelIdForCad = product.id;
-        const typeForCad = product.specs.Type;
-        const typeDirForCad = typeForCad === 'SCARA' ? 'SCARA' : '6-axis';
-        let folderBaseForCad = modelIdForCad.split('Z')[0];
-        
-        if (typeForCad === '6-Axis') {
-            const parts = modelIdForCad.split('-');
-            if (parts[2].endsWith('S') && !modelIdForCad.includes('R11-90S')) {
-                folderBaseForCad = parts.slice(0, 2).join('-') + '-' + parts[2].slice(0, -1);
-            } else if (parts[2].endsWith('S5')) {
-                folderBaseForCad = parts.slice(0, 2).join('-') + '-' + parts[2].slice(0, -2);
-            } else {
-                folderBaseForCad = parts.slice(0, 3).join('-');
-            }
-        }
-        const cadFolderMapForCad = {
-            "IR-R15H-145S5-INT": "IR-R15H-145",
-            "IR-R16-210S5-INT": "IR-R16-210",
-            "IR-R20H-120S5-INT": "IR-R20H-120",
-            "IR-R25-178S5-INT": "IR-R25-178"
-        };
-        if(cadFolderMapForCad[modelIdForCad]) folderBaseForCad = cadFolderMapForCad[modelIdForCad];
-
-        const cadPathToCheck = `Robot_CAD/${typeDirForCad}/${folderBaseForCad}/${modelIdForCad}_3D.stp`;
-        const cadBtn = document.getElementById('download-cad-btn');
-        cadBtn.disabled = true;
-        cadBtn.innerText = "상태 확인 중..";
-        cadBtn.style.opacity = "0.7";
-
-        fetch(cadPathToCheck, { method: 'HEAD' }).then(resp => {
-            if (resp.ok) {
                 cadBtn.disabled = false;
                 cadBtn.innerText = "CAD 다운로드";
                 cadBtn.style.opacity = "1";
@@ -825,8 +776,6 @@ document.addEventListener('DOMContentLoaded', () => {
             cadBtn.style.opacity = "0.4";
             cadBtn.style.cursor = "not-allowed";
         });
-
-        */
 
         // Rename SCARA clean types for modal title
         let displayName = product.name;
@@ -1743,7 +1692,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!currentActiveProduct) return;
         const btn = document.getElementById('download-cad-btn');
         const oldText = btn.innerText;
-        btn.innerText = "Preparing...";
+        btn.innerText = "준비 중...";
         btn.disabled = true;
 
         try {
