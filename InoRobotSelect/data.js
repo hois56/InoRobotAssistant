@@ -239,7 +239,7 @@ const productsData = [
             "Payload(kg)": "4",
             "Manipulator Length(mm)": "545.7",
             "Hollow Wrist": "Yes",
-            "Clean Type": "Yes"
+            "Clean Type": "No"
         },
         "cables": [
             {
@@ -393,7 +393,7 @@ const productsData = [
             "Payload(kg)": "7",
             "Manipulator Length(mm)": "722.3",
             "Hollow Wrist": "Yes",
-            "Clean Type": "Yes"
+            "Clean Type": "No"
         },
         "cables": [
             {
@@ -470,7 +470,7 @@ const productsData = [
             "Payload(kg)": "7",
             "Manipulator Length(mm)": "911.9",
             "Hollow Wrist": "Yes",
-            "Clean Type": "Yes"
+            "Clean Type": "No"
         },
         "cables": [
             {
@@ -624,7 +624,7 @@ const productsData = [
             "Payload(kg)": "10",
             "Manipulator Length(mm)": "1201.2",
             "Hollow Wrist": "Yes",
-            "Clean Type": "Yes"
+            "Clean Type": "No"
         },
         "cables": [
             {
@@ -855,7 +855,7 @@ const productsData = [
             "Payload(kg)": "15",
             "Manipulator Length(mm)": "1455",
             "Hollow Wrist": "Yes",
-            "Clean Type": "Yes"
+            "Clean Type": "No"
         },
         "cables": [
             {
@@ -1009,7 +1009,7 @@ const productsData = [
             "Payload(kg)": "20",
             "Manipulator Length(mm)": "1218",
             "Hollow Wrist": "Yes",
-            "Clean Type": "Yes"
+            "Clean Type": "No"
         },
         "cables": [
             {

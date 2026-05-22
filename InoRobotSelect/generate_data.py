@@ -160,10 +160,9 @@ for sheet in ['SCARA Robot', '6-Axis Robot']:
         else:
             if is_hollow_wrist(model):
                 specs["Hollow Wrist"] = "Yes"
-                specs["Clean Type"] = "Yes"
             else:
                 specs["Hollow Wrist"] = "No"
-                specs["Clean Type"] = "No"
+            specs["Clean Type"] = "No"
 
         # Build cables
         cables = []
