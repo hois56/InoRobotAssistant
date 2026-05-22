@@ -755,24 +755,24 @@ document.addEventListener('DOMContentLoaded', () => {
         // CAD availability check
         const cadBtn = document.getElementById('download-cad-btn');
         cadBtn.disabled = true;
-        cadBtn.innerText = "?곹깭 ?뺤씤 以?.";
+        cadBtn.innerText = "Checking...";
         cadBtn.style.opacity = "0.7";
 
         hasAnyCadFile(product, '3D', 'stp').then(isAvailable => {
             if (isAvailable) {
                 cadBtn.disabled = false;
-                cadBtn.innerText = "CAD ?ㅼ슫濡쒕뱶";
+                cadBtn.innerText = "CAD Download";
                 cadBtn.style.opacity = "1";
                 cadBtn.style.cursor = "pointer";
             } else {
                 cadBtn.disabled = true;
-                cadBtn.innerText = "CAD 以鍮?以?";
+                cadBtn.innerText = "CAD Not Ready";
                 cadBtn.style.opacity = "0.4";
                 cadBtn.style.cursor = "not-allowed";
             }
         }).catch(() => {
             cadBtn.disabled = true;
-            cadBtn.innerText = "CAD 以鍮?以?";
+            cadBtn.innerText = "CAD Not Ready";
             cadBtn.style.opacity = "0.4";
             cadBtn.style.cursor = "not-allowed";
         });
@@ -1743,7 +1743,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!currentActiveProduct) return;
         const btn = document.getElementById('download-cad-btn');
         const oldText = btn.innerText;
-        btn.innerText = "준비 중...";
+        btn.innerText = "Preparing...";
         btn.disabled = true;
 
         try {
