@@ -1185,8 +1185,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 let timeStr = "-";
 
                 if (isScara) {
+                    const isCleanScara = product.id.endsWith('C-INT');
                     const isS60 = product.id.includes('S60');
-                    if (isS60) {
+                    if (isCleanScara) {
+                        timeStr = "6\uac1c\uc6d4";
+                    } else if (isS60) {
                         timeStr = hasCode ? "6주" : "10주";
                     } else if (subType === '일반형') {
                         timeStr = hasCode ? "6주" : "7주";
