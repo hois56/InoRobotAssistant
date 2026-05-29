@@ -303,6 +303,34 @@ function updateUIStatus() {
 /**
  * Multi-Model CAD Download
  */
+function getCadPathVariants(path) {
+    const variants = [];
+    const add = (value) => {
+        if (!variants.includes(value)) variants.push(value);
+    };
+    const withCnSuffix = (value) => value.replace(/(\.[^/.]+)$/i, '_CN$1');
+    const withDwg3dCnSuffix = (value) => value.replace(/_2D\.dwg$/i, '_3D_CN.dwg');
+
+    add(path);
+    add(withCnSuffix(path));
+
+    if (/_2D\.dwg$/i.test(path)) {
+        add(withDwg3dCnSuffix(path));
+    }
+
+    if (path.includes('-INT')) {
+        const noIntPath = path.replace('-INT', '');
+        add(noIntPath);
+        add(withCnSuffix(noIntPath));
+
+        if (/_2D\.dwg$/i.test(noIntPath)) {
+            add(withDwg3dCnSuffix(noIntPath));
+        }
+    }
+
+    return variants;
+}
+
 async function handleCADDownload() {
     if (state.models.length === 0) {
         alert("다운로드할 모델이 없습니다.");
@@ -358,15 +386,11 @@ async function handleCADDownload() {
 
     try {
         await Promise.all(downloadQueue.map(async (file) => {
-            const r = await fetch(file.path);
-            if (r.ok) {
-                zip.file(file.name, await r.blob());
-            } else {
-                // Fallback for non-INT filenames
-                if (file.path.includes('-INT')) {
-                    const fallbackPath = file.path.replace('-INT', '');
-                    const r2 = await fetch(fallbackPath);
-                    if (r2.ok) zip.file(file.name, await r2.blob());
+            for (const path of getCadPathVariants(file.path)) {
+                const r = await fetch(path);
+                if (r.ok) {
+                    zip.file(file.name, await r.blob());
+                    return;
                 }
             }
         }));

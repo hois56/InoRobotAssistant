@@ -730,11 +730,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const modelId = product.id;
         const baseUrl = getCadBaseUrl(product);
         const modelIdNoInt = modelId.replace('-INT', '');
-        return [...new Set([
+        const paths = [
             `${baseUrl}${modelId}_${fileId}.${ext}`,
+            `${baseUrl}${modelId}_${fileId}_CN.${ext}`,
             `${baseUrl}${modelIdNoInt}_${fileId}.${ext}`,
             `${baseUrl}${modelIdNoInt}_${fileId}_CN.${ext}`
-        ])];
+        ];
+
+        if (fileId === '2D' && ext.toLowerCase() === 'dwg') {
+            paths.splice(2, 0, `${baseUrl}${modelId}_3D_CN.${ext}`);
+            paths.push(`${baseUrl}${modelIdNoInt}_3D_CN.${ext}`);
+        }
+
+        return [...new Set(paths)];
     }
 
     async function hasAnyCadFile(product, fileId, ext) {
@@ -1768,11 +1776,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Helper to fetch single file with fallback (for -INT suffix)
             async function fetchRobotFile(task) {
-                const pathsToTry = [
-                    `${task.baseUrl}${task.modelId}_${task.id}.${task.ext}`, // IR-R15H-145S-INT_3D.stp
-                    `${task.baseUrl}${task.modelId.replace('-INT', '')}_${task.id}.${task.ext}`, // IR-R15H-145S_3D.stp
-                    `${task.baseUrl}${task.modelId.replace('-INT', '')}_${task.id}_CN.${task.ext}` // IR-R15H-145S_3D_CN.stp
-                ];
+                const pathsToTry = getCadCandidatePaths(product, task.id, task.ext);
 
                 for (let p of pathsToTry) {
                     try {
