@@ -49,6 +49,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function isHiddenProduct(product) {
+        return product?.specs?.Type === 'SCARA' && String(product.name || '').toUpperCase().startsWith('IR-CS');
+    }
+
     function renderFilters() {
         filterContainer.innerHTML = '';
 
@@ -74,12 +78,15 @@ document.addEventListener('DOMContentLoaded', () => {
             let hasVisibleOptions = false;
 
             filterCategory.options.forEach(opt => {
+                if (filterCategory.id === 'Sub Type' && opt.id === '경제형') return;
+
                 let isValid = false;
 
                 if (opt.isSelected) {
                     isValid = true;
                 } else {
                     isValid = state.products.some(p => {
+                        if (isHiddenProduct(p)) return false;
                         if (String(p.specs[filterCategory.id]) !== opt.id) return false;
 
                         for (const catId in activeConstraints) {
@@ -125,6 +132,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         const filteredProducts = state.products.filter(product => {
+            if (isHiddenProduct(product)) return false;
+
             for (const catId in activeConstraints) {
                 const productVal = String(product.specs[catId]);
                 if (!activeConstraints[catId].includes(productVal)) {
@@ -271,6 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
             cat.options.forEach(opt => {
                 if (opt.isSelected) {
                     let isValid = state.products.some(p => {
+                        if (isHiddenProduct(p)) return false;
                         if (String(p.specs[cat.id]) !== opt.id) return false;
                         for (const cId in activeConstraints) {
                             if (cId === cat.id) continue;
@@ -710,6 +720,84 @@ document.addEventListener('DOMContentLoaded', () => {
         return null;
     }
 
+    function getRobotBodyOptions(product) {
+        if (!product || !product.specs || product.specs.Type !== '6-Axis') return [];
+
+        const name = product.name.toUpperCase();
+
+        if (isFixedBodySpecModel(name)) {
+            return [
+                { id: 'standard', label: '기본형', spec: 'Body: IP65, Wrist: IP67, 클린 사양 없음' }
+            ];
+        }
+
+        const cleanClass = (name.includes('R15H') || name.includes('R20H')) ? 'ISO Class 4' : 'ISO Class 3';
+        return [
+            { id: 'standard', label: '기본형', spec: 'IP40, 클린 사양 없음' },
+            { id: 'clean', label: '클린형', spec: cleanClass },
+            { id: 'ip67', label: '방수방진형', spec: 'IP67' }
+        ];
+    }
+
+    function getCleanTypeDisplay(product) {
+        const cleanType = product?.specs?.['Clean Type'] || '-';
+        if (!product || !product.specs || product.specs.Type !== '6-Axis') return cleanType;
+
+        const name = product.name.toUpperCase();
+        if (isFixedBodySpecModel(name)) return 'No';
+        if (name.includes('R15H') || name.includes('R20H')) return 'No (Option : Class 4)';
+        return 'No (Option : Class 3)';
+    }
+
+    function isFixedBodySpecModel(name) {
+        const upper = String(name || '').toUpperCase();
+        return upper.includes('R10-140') || upper.includes('R16') || upper.includes('R25');
+    }
+
+    function formatIpRating(value) {
+        return String(value || '-')
+            .replace(/\s*\n\s*/g, ' ')
+            .replace(/\(\s*Option\s*:\s*IP67\s*\)/gi, '(Option : IP67)');
+    }
+
+    function appendUnitIfMissing(value, unit) {
+        const text = (value === undefined || value === null || value === '') ? '-' : String(value).trim();
+        if (text === '-') return text;
+        const pattern = new RegExp(`\\b${unit}\\b`, 'i');
+        return pattern.test(text) ? text : `${text} ${unit}`;
+    }
+
+    function formatWeight(value) {
+        return appendUnitIfMissing(value, 'kg');
+    }
+
+    function formatRepeatability(value) {
+        return appendUnitIfMissing(value, 'mm');
+    }
+
+    function formatCertification(value, product) {
+        const certs = String(value || '')
+            .split(',')
+            .map(item => item.trim())
+            .filter(Boolean);
+
+        if (String(product?.name || '').toUpperCase() === 'IR-S35-80Z42S-INT') {
+            return certs.filter(item => !['KC', 'KCS'].includes(item.toUpperCase())).join(', ');
+        }
+
+        return certs.join(', ');
+    }
+
+    function getBodyOptionModelName(modelName, bodyOptionId) {
+        const suffixMap = {
+            standard: 'S',
+            clean: 'C',
+            ip67: 'P'
+        };
+        const suffix = suffixMap[bodyOptionId] || suffixMap.standard;
+        return String(modelName || '').replace(/[SPC]-INT$/i, `${suffix}-INT`);
+    }
+
     function getCircuitBreaker(name) {
         const u = name.toUpperCase();
         if (u.includes('R10-140')) return '20A';
@@ -848,6 +936,18 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('modal-title').textContent = `[${displayName}] 제품 상세 및 구성`;
         modalBody.innerHTML = '';
 
+        function updateModalModelName() {
+            if (product.specs.Type !== '6-Axis') return;
+
+            const selectedBodyOption = rightCol.querySelector('input[name="robotBodyOption"]:checked');
+            const nextName = getBodyOptionModelName(product.name, selectedBodyOption ? selectedBodyOption.value : 'standard');
+            const modalTitle = document.getElementById('modal-title');
+            const modalModelName = rightCol.querySelector('#modal-model-name');
+
+            if (modalTitle) modalTitle.textContent = `[${nextName}] 제품 상세 및 구성`;
+            if (modalModelName) modalModelName.textContent = nextName;
+        }
+
         const leftCol = document.createElement('div');
         leftCol.style.flex = "1";
         leftCol.style.display = "flex";
@@ -873,7 +973,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Dynamic spec extraction with fallbacks to tech map or defaults
         const repeatability = ds['Repeatability (mm)'] || ds['Repeatability J1+J2 (mm)'] || (tech ? tech.repeatability : (isScara ? "±0.01mm" : "±0.02mm"));
         const ioPins = ds['Customer Wiring'] || ds['Customer signal line'] || (tech ? (tech.signals || tech.io) : (isScara ? "24 입력 / 16 출력" : "20 Signal lines"));
-        const ipRating = ds['IP rating'] || (tech ? tech.ip : (isScara ? "IP20" : "IP65 (Wrist IP67)"));
+        const ipRating = formatIpRating(ds['IP rating'] || (tech ? tech.ip : (isScara ? "IP20" : "IP65 (Wrist IP67)")));
         const weight = ds['Weight (kg)'] || ds['Weight (excluding cables) (kg)'] || (tech ? tech.weight : (is6Axis ? "~130kg" : "12~56kg"));
         const air = ds['Customer Air'] || ds['Customer air piping (0.59Mpa)'] || (tech ? tech.air : '-');
 
@@ -930,11 +1030,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const r12 = ds[dks.find(k => k.toLowerCase().includes('repeatability') && k.toLowerCase().includes('j1+j2'))];
                 const r3 = ds[dks.find(k => k.toLowerCase().includes('repeatability') && k.toLowerCase().includes('j3'))];
                 const r4 = ds[dks.find(k => k.toLowerCase().includes('repeatability') && k.toLowerCase().includes('j4'))];
-                if (r12) extraRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>반복 정밀도 (J1+J2)</strong></td><td colspan="2" style="text-align:right;">${r12}</td></tr>`;
-                if (r3) extraRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>반복 정밀도 (J3)</strong></td><td colspan="2" style="text-align:right;">${r3}</td></tr>`;
-                if (r4) extraRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>반복 정밀도 (J4)</strong></td><td colspan="2" style="text-align:right;">${r4}</td></tr>`;
+                if (r12) extraRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>반복 정밀도 (J1+J2)</strong></td><td colspan="2" style="text-align:right;">${formatRepeatability(r12)}</td></tr>`;
+                if (r3) extraRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>반복 정밀도 (J3)</strong></td><td colspan="2" style="text-align:right;">${formatRepeatability(r3)}</td></tr>`;
+                if (r4) extraRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>반복 정밀도 (J4)</strong></td><td colspan="2" style="text-align:right;">${formatRepeatability(r4)}</td></tr>`;
             } else {
-                extraRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>반복 정밀도</strong></td><td colspan="2" style="text-align:right;">${repeatability}</td></tr>`;
+                extraRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>반복 정밀도</strong></td><td colspan="2" style="text-align:right;">${formatRepeatability(repeatability)}</td></tr>`;
             }
 
             // Inertia
@@ -949,8 +1049,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Certification
             const cert = ds[dks.find(k => k.toLowerCase().includes('cert'))];
-            if (cert) {
-                extraRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.1);"><td style="padding:6px 0;"><strong>인증 정보</strong></td><td colspan="2" style="text-align:right; font-size:11px;">${cert}</td></tr>`;
+            const certDisplay = formatCertification(cert, product);
+            if (certDisplay) {
+                extraRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.1);"><td style="padding:6px 0;"><strong>인증 정보</strong></td><td colspan="2" style="text-align:right; font-size:11px;">${certDisplay}</td></tr>`;
             }
         }
 
@@ -963,9 +1064,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${isScara ? `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>로봇 타입</strong></td><td colspan="2" style="text-align:right;">${scaraSubtype}</td></tr>` : ''}
                     ${isScara ? `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>Z축 길이</strong></td><td colspan="2" style="text-align:right;">${product.specs['Z axis Length(mm)'] || '-'} mm</td></tr>` : ''}
                     ${is6Axis ? `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>중공형(Hollow Wrist)</strong></td><td colspan="2" style="text-align:right;">${product.specs['Hollow Wrist'] || '-'}</td></tr>` : ''}
-                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>클린 타입</strong></td><td colspan="2" style="text-align:right;">${product.specs['Clean Type'] || '-'}</td></tr>
+                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>클린 타입</strong></td><td colspan="2" style="text-align:right;">${getCleanTypeDisplay(product)}</td></tr>
                     <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>방수 방진 등급</strong></td><td colspan="2" style="text-align:right;">${ipRating}</td></tr>
-                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>중량</strong></td><td colspan="2" style="text-align:right;">${weight}</td></tr>
+                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>중량</strong></td><td colspan="2" style="text-align:right;">${formatWeight(weight)}</td></tr>
                     ${extraRows}
                     ${axesRows}
                     <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>사용자 배선</strong></td><td colspan="2" style="text-align:right;">${ioPins}</td></tr>
@@ -990,7 +1091,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div id="lead-time-display" style="font-size:13px;margin-bottom:15px;color:#eee;background:rgba(255,255,255,0.05);padding:10px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);">
                 <strong>예상 납기:</strong> <span id="lead-time-value" style="color:var(--secondary-orange); font-weight:bold;">TBD</span>
             </div>
-            <h2 style="color:var(--text-main);margin-bottom:12px;">${displayName}</h2>
+            <h2 id="modal-model-name" style="color:var(--text-main);margin-bottom:12px;">${displayName}</h2>
             
             <h4 style="margin-bottom: 12px; color: var(--text-main);">로봇 구성 선택</h4>
             
@@ -1002,6 +1103,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">파워/엔코더 케이블 타입 <span style="color:#ef4444">*</span></label>
                 <div id="cable-type-container" style="display:flex; gap:10px; flex-wrap:wrap;"></div>
             </div>
+
+            ${product.specs.Type === '6-Axis' ? `
+            <div style="margin-bottom:20px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
+                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">로봇 바디 옵션 <span style="color:#ef4444">*</span></label>
+                <div id="robot-body-option-container" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
+            </div>` : ''}
 
             <div style="margin-bottom:20px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
                 <label id="header-pendant" style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">티칭 펜던트 구성 (유로 옵션)</label>
@@ -1104,6 +1211,25 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.innerHTML = `<input type="radio" name="cableTypeSelection" value="${t}" ${isChecked ? 'checked' : ''}><span>${t}</span>`;
             typeContainer.appendChild(btn);
         });
+
+        const robotBodyOptionContainer = rightCol.querySelector('#robot-body-option-container');
+        if (robotBodyOptionContainer) {
+            getRobotBodyOptions(product).forEach((option, index) => {
+                const btn = document.createElement('label');
+                btn.className = 'cable-option';
+                btn.style.margin = '0';
+                btn.style.alignItems = 'center';
+                btn.style.minWidth = '190px';
+                btn.innerHTML = `
+                    <input type="radio" name="robotBodyOption" value="${option.id}" ${index === 0 ? 'checked' : ''} data-label="${option.label}" data-spec="${option.spec}">
+                    <span>
+                        <strong>${option.label}</strong>
+                        <small style="display:block; margin-top:4px; color:var(--text-muted); font-size:12px; line-height:1.35;">${option.spec}</small>
+                    </span>
+                `;
+                robotBodyOptionContainer.appendChild(btn);
+            });
+        }
 
         // Function to update dynamic header codes
         function updateHeaderCodes() {
@@ -1216,7 +1342,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const leadTimeVal = rightCol.querySelector('#lead-time-value');
             
             if (codeDisplay) {
-                const finalCode = matched ? matched.code : (product.cables.length > 0 ? product.cables[0].code : 'N/A');
+                const selectedBodyOption = rightCol.querySelector('input[name="robotBodyOption"]:checked');
+                const bodyOptionNeedsCode = selectedBodyOption && selectedBodyOption.value !== 'standard';
+                const finalCode = bodyOptionNeedsCode ? '-' : (matched ? matched.code : (product.cables.length > 0 ? product.cables[0].code : 'N/A'));
                 codeDisplay.innerHTML = `현재 구매 코드: <span class="code-badge">${finalCode}</span>`;
 
                 // Requirement 2: Dynamic Lead Time Calculation
@@ -1244,11 +1372,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (leadTimeVal) leadTimeVal.textContent = timeStr;
             }
+            updateModalModelName();
             updateHeaderCodes();
         }
 
         lenContainer.addEventListener('change', updateDynamicCode);
         typeContainer.addEventListener('change', updateDynamicCode);
+        if (robotBodyOptionContainer) {
+            robotBodyOptionContainer.addEventListener('change', updateDynamicCode);
+        }
         
         // Accessory Filtering Logic
         const accs = state.accessories;
@@ -1370,6 +1502,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (a.description.includes('1.0 TP Connector')) return false; 
             if (a.description.includes('TP2.0 adapter to old version')) return false;
             if (a.type === 'Expansion Card') return false;
+            if (isFixedBodySpecModel(prodName) && a.name === 'Handheld motor break release box') return false;
             return isModelMatch(a.target_models, prodName);
         });
 
@@ -1462,9 +1595,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const lenEl = document.querySelector('input[name="cableLenSelection"]:checked');
         const typeEl = document.querySelector('input[name="cableTypeSelection"]:checked');
+        const robotBodySelected = document.querySelector('input[name="robotBodyOption"]:checked');
 
         const cableLen = lenEl ? lenEl.value : 'N/A';
         const cableType = typeEl ? typeEl.value : 'Standard';
+        const robotBodyOptionValue = robotBodySelected ? robotBodySelected.value : 'standard';
 
         const isFlex = cableType.includes('High Flex');
         let foundCode = 'N/A';
@@ -1478,8 +1613,19 @@ document.addEventListener('DOMContentLoaded', () => {
             if (matched) foundCode = matched.code;
             else if (currentActiveProduct.cables.length > 0) foundCode = currentActiveProduct.cables[0].code;
         }
+        if (robotBodyOptionValue !== 'standard') foundCode = '-';
 
         const selectedAccs = [];
+
+        if (robotBodySelected) {
+            const bodyLabel = robotBodySelected.getAttribute('data-label') || robotBodySelected.value;
+            const bodySpec = robotBodySelected.getAttribute('data-spec') || '';
+            selectedAccs.push({
+                name: '로봇 바디 옵션',
+                details: `${bodyLabel}${bodySpec ? ' (' + bodySpec + ')' : ''}`,
+                code: '-'
+            });
+        }
 
         // Pendant
         let pSelected = document.querySelector('input[name="pendantLength"]:checked');
@@ -1586,6 +1732,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     return 'Z' + newNum + 'C';
                 });
             }
+        } else if (currentActiveProduct.specs.Type === '6-Axis') {
+            pdfDisplayName = getBodyOptionModelName(currentActiveProduct.name, robotBodyOptionValue);
         }
 
         const tech = getTechSpecs(currentActiveProduct.name);
@@ -1595,15 +1743,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // IP rating with safety check for detailSpecs and correct newline regex
         let ipRating = "IP40";
         if (currentActiveProduct.detailSpecs && currentActiveProduct.detailSpecs['IP rating']) {
-            ipRating = currentActiveProduct.detailSpecs['IP rating'].replace(/\n/g, ' ');
+            ipRating = currentActiveProduct.detailSpecs['IP rating'];
         } else if (tech && tech.ip) {
             ipRating = tech.ip;
         } else if (currentActiveProduct.specs.Type === 'SCARA') {
             ipRating = "IP20";
         }
+        ipRating = formatIpRating(ipRating);
         
         const weight = tech ? tech.weight : (currentActiveProduct.specs.Type === '6-Axis' ? "~130kg" : "12~56kg");
-        const cleanType = currentActiveProduct.specs['Clean Type'] || '-';
+        const cleanType = getCleanTypeDisplay(currentActiveProduct);
         const air = tech ? tech.air : (currentActiveProduct.detailSpecs ? (currentActiveProduct.detailSpecs['Customer air piping (0.59Mpa)'] || '-') : '-');
 
         let axesRowsHtml = '';
@@ -1665,9 +1814,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${currentActiveProduct.specs.Type === 'SCARA' ? `<tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Z축 길이</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${currentActiveProduct.specs['Z axis Length(mm)'] || '-'} mm</td></tr>` : ''}
                     ${currentActiveProduct.specs.Type === '6-Axis' ? `<tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>중공형(Hollow Wrist)</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${currentActiveProduct.specs['Hollow Wrist'] || '-'}</td></tr>` : ''}
                     <tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>클린 타입</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${cleanType}</td></tr>
-                    <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>반복 정밀도</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${repeatability}</td></tr>
+                    <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>반복 정밀도</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${formatRepeatability(repeatability)}</td></tr>
                     <tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>방수 방진 등급</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${ipRating}</td></tr>
-                    <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>중량</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${weight}</td></tr>
+                    <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>중량</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${formatWeight(weight)}</td></tr>
                     ${axesRowsHtml}
                     <tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>사용자 배선</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${ioPins}</td></tr>
                     <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>사용자 공압</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${air}</td></tr>
@@ -1709,7 +1858,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const dlObj = {
             margin: [15, 15, 15, 15],
-            filename: `Inovance_Config_${currentActiveProduct.name}.pdf`,
+            filename: `Inovance_Config_${pdfDisplayName}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: {
                 scale: 1.5,
