@@ -301,6 +301,38 @@ document.addEventListener('DOMContentLoaded', () => {
         return isNaN(num) ? 999 : num;
     }
 
+    function getSpecUnit(specKey) {
+        const match = String(specKey || '').match(/\(([^)]+)\)\s*$/);
+        return match ? match[1] : '';
+    }
+
+    function formatAxisSpecValue(value, specKey) {
+        const text = (value === undefined || value === null || value === '') ? '-' : String(value).trim();
+        if (text === '-') return text;
+
+        const unit = getSpecUnit(specKey);
+        if (!unit) return text;
+
+        if (unit === '°') {
+            if (text.includes('°')) return text;
+            return text.replace(/([+-]?\d+(?:\.\d+)?)(?!\s*°)/g, '$1°');
+        }
+
+        if (unit === '°/s') {
+            return /°\s*\/\s*s/i.test(text) ? text : `${text}°/s`;
+        }
+
+        if (unit === 'mm/s') {
+            return /mm\s*\/\s*s/i.test(text) ? text : `${text} mm/s`;
+        }
+
+        if (unit === 'mm') {
+            return /\bmm\b/i.test(text) ? text : `${text} mm`;
+        }
+
+        return text.includes(unit) ? text : `${text} ${unit}`;
+    }
+
     const technicalSpecsMap = {
         'R4-56': {
             repeatability: '±0.01 mm',
@@ -855,7 +887,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isScara) {
                 const combinedSpeedKey = dks.find(k => k.toLowerCase().includes('speed') && k.toLowerCase().includes('j1+j2'));
                 if (combinedSpeedKey) {
-                    axesRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>J1+J2 합산 속도</strong></td><td style="text-align:right; padding-right:10px;">${ds[combinedSpeedKey]}</td><td style="text-align:right;">-</td></tr>`;
+                    axesRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>J1+J2 합산 속도</strong></td><td style="text-align:right; padding-right:10px;">${formatAxisSpecValue(ds[combinedSpeedKey], combinedSpeedKey)}</td><td style="text-align:right;">-</td></tr>`;
                 }
             }
 
@@ -866,11 +898,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const sk = dks.find(k => k.toLowerCase().includes('speed') && k.toLowerCase().includes(q));
                 const rk = dks.find(k => k.toLowerCase().includes('range') && k.toLowerCase().includes(q));
                 
-                let speedVal = ds[sk] || '-';
+                let speedVal = formatAxisSpecValue(ds[sk], sk);
+                const rangeVal = formatAxisSpecValue(ds[rk], rk);
                 if (isScara && (num === 1 || num === 2)) speedVal = '-';
 
                 if (sk || rk) {
-                    axesRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>${label}</strong></td><td style="text-align:right; padding-right:10px;">${speedVal}</td><td style="text-align:right;">${ds[rk] || '-'}</td></tr>`;
+                    axesRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>${label}</strong></td><td style="text-align:right; padding-right:10px;">${speedVal}</td><td style="text-align:right;">${rangeVal}</td></tr>`;
                 }
             });
         } else if (tech && tech.axes) {
@@ -1583,17 +1616,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Requirement 1 & 6: Split J1/J2 Range and show Combined Speed for PDF
             if (isScara) {
-                const j1Range = ds[dks.find(k => k.toLowerCase().includes('range') && k.toLowerCase().includes('j1'))];
-                const j2Range = ds[dks.find(k => k.toLowerCase().includes('range') && k.toLowerCase().includes('j2'))];
-                const j1j2Speed = ds[dks.find(k => k.toLowerCase().includes('speed') && k.toLowerCase().includes('j1+j2'))];
+                const j1RangeKey = dks.find(k => k.toLowerCase().includes('range') && k.toLowerCase().includes('j1'));
+                const j2RangeKey = dks.find(k => k.toLowerCase().includes('range') && k.toLowerCase().includes('j2'));
+                const j1j2SpeedKey = dks.find(k => k.toLowerCase().includes('speed') && k.toLowerCase().includes('j1+j2'));
+                const j1Range = ds[j1RangeKey];
+                const j2Range = ds[j2RangeKey];
+                const j1j2Speed = ds[j1j2SpeedKey];
 
                 // Remove existing J1, J2, J1+J2 to avoid duplicates
                 displayAxes = displayAxes.filter(a => !["J1+J2", "J1", "J2"].includes(a.axis));
 
                 const newRows = [];
-                if (j1j2Speed) newRows.push({ axis: "J1+J2 합산 속도", speed: j1j2Speed, range: "-" });
-                if (j1Range) newRows.push({ axis: "J1 사양", speed: "-", range: j1Range });
-                if (j2Range) newRows.push({ axis: "J2 사양", speed: "-", range: j2Range });
+                if (j1j2Speed) newRows.push({ axis: "J1+J2 합산 속도", speed: formatAxisSpecValue(j1j2Speed, j1j2SpeedKey), range: "-" });
+                if (j1Range) newRows.push({ axis: "J1 사양", speed: "-", range: formatAxisSpecValue(j1Range, j1RangeKey) });
+                if (j2Range) newRows.push({ axis: "J2 사양", speed: "-", range: formatAxisSpecValue(j2Range, j2RangeKey) });
 
                 displayAxes = [...newRows, ...displayAxes];
             }
