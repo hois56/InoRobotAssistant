@@ -297,7 +297,7 @@ const manualData = [
         title: "2.로봇 기초(INT).pdf",
         robotType: "none",
         category: "entry",
-        date: "2026-03-29",
+        date: "2026-06-01",
         lang: "KR",
         path: "교육 자료/입문과정/2.로봇 기초(INT).pdf",
         description: "Education Item"
@@ -412,7 +412,7 @@ const manualData = [
         title: "2.로봇 기초(Display).pdf",
         robotType: "none",
         category: "display",
-        date: "2026-04-07",
+        date: "2026-06-01",
         lang: "KR",
         isLocked: true,
         path: "교육 자료/입문과정/Display/2.로봇 기초(Display).pdf",
