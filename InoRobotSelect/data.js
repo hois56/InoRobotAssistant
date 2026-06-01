@@ -705,7 +705,7 @@ const productsData = [
         },
         "cables": [
             {
-                "code": "-",
+                "code": "01741086*M00008",
                 "cable": "3m"
             },
             {
