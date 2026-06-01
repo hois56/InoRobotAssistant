@@ -847,8 +847,8 @@ const productsData = [
         }
     },
     {
-        "id": "IR-R15H-145S-INT",
-        "name": "IR-R15H-145S-INT",
+        "id": "IR-R15H-145S-K-INT",
+        "name": "IR-R15H-145S-K-INT",
         "image": "robot.png",
         "specs": {
             "Type": "6-Axis",
@@ -1001,8 +1001,8 @@ const productsData = [
         }
     },
     {
-        "id": "IR-R20H-120S-INT",
-        "name": "IR-R20H-120S-INT",
+        "id": "IR-R20H-120S-K-INT",
+        "name": "IR-R20H-120S-K-INT",
         "image": "robot.png",
         "specs": {
             "Type": "6-Axis",
@@ -3072,7 +3072,7 @@ const productsData = [
         },
         "cables": [
             {
-                "code": "-",
+                "code": "01741436*M00002",
                 "cable": "3m"
             },
             {
@@ -3751,7 +3751,7 @@ const productsData = [
                 "cable": "3m"
             },
             {
-                "code": "-",
+                "code": "01741367*M00002",
                 "cable": "5m (Default)"
             },
             {
@@ -3759,7 +3759,7 @@ const productsData = [
                 "cable": "10m"
             },
             {
-                "code": "-",
+                "code": "01741367*M00003",
                 "cable": "15m"
             },
             {
