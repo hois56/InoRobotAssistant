@@ -795,7 +795,20 @@ document.addEventListener('DOMContentLoaded', () => {
             ip67: 'P'
         };
         const suffix = suffixMap[bodyOptionId] || suffixMap.standard;
-        return String(modelName || '').replace(/[SPC]-INT$/i, `${suffix}-INT`);
+        const text = String(modelName || '');
+        const hasKVariant = /[SPC]-K-INT$/i.test(text);
+        return text.replace(/[SPC](?:-K)?-INT$/i, `${suffix}${hasKVariant ? '-K' : ''}-INT`);
+    }
+
+    function getBodyOptionPurchaseCode(product, bodyOptionId) {
+        if (!product || bodyOptionId === 'standard') return '';
+
+        const bodyOptionCodeMap = {
+            'IR-R15H-145P-K-INT': '01741446',
+            'IR-R20H-120P-K-INT': '01741597'
+        };
+        const optionModelName = getBodyOptionModelName(product.name, bodyOptionId).toUpperCase();
+        return bodyOptionCodeMap[optionModelName] || '-';
     }
 
     function getCircuitBreaker(name) {
@@ -857,9 +870,27 @@ document.addEventListener('DOMContentLoaded', () => {
             `${baseUrl}${modelIdNoInt}_${fileId}_CN.${ext}`
         ];
 
+        const modelIdNoK = modelId.replace(/([SPC])-K-INT$/i, '$1-INT');
+        if (modelIdNoK !== modelId) {
+            const modelIdNoKNoInt = modelIdNoK.replace('-INT', '');
+            paths.push(
+                `${baseUrl}${modelIdNoK}_${fileId}.${ext}`,
+                `${baseUrl}${modelIdNoK}_${fileId}_CN.${ext}`,
+                `${baseUrl}${modelIdNoKNoInt}_${fileId}.${ext}`,
+                `${baseUrl}${modelIdNoKNoInt}_${fileId}_CN.${ext}`
+            );
+        }
+
         if (fileId === '2D' && ext.toLowerCase() === 'dwg') {
             paths.splice(2, 0, `${baseUrl}${modelId}_3D_CN.${ext}`);
             paths.push(`${baseUrl}${modelIdNoInt}_3D_CN.${ext}`);
+            if (modelIdNoK !== modelId) {
+                const modelIdNoKNoInt = modelIdNoK.replace('-INT', '');
+                paths.push(
+                    `${baseUrl}${modelIdNoK}_3D_CN.${ext}`,
+                    `${baseUrl}${modelIdNoKNoInt}_3D_CN.${ext}`
+                );
+            }
         }
 
         return [...new Set(paths)];
@@ -1344,7 +1375,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (codeDisplay) {
                 const selectedBodyOption = rightCol.querySelector('input[name="robotBodyOption"]:checked');
                 const bodyOptionNeedsCode = selectedBodyOption && selectedBodyOption.value !== 'standard';
-                const finalCode = bodyOptionNeedsCode ? '-' : (matched ? matched.code : (product.cables.length > 0 ? product.cables[0].code : 'N/A'));
+                const bodyOptionCode = getBodyOptionPurchaseCode(product, selectedBodyOption ? selectedBodyOption.value : 'standard');
+                const finalCode = bodyOptionNeedsCode ? bodyOptionCode : (matched ? matched.code : (product.cables.length > 0 ? product.cables[0].code : 'N/A'));
                 codeDisplay.innerHTML = `현재 구매 코드: <span class="code-badge">${finalCode}</span>`;
 
                 // Requirement 2: Dynamic Lead Time Calculation
@@ -1613,7 +1645,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (matched) foundCode = matched.code;
             else if (currentActiveProduct.cables.length > 0) foundCode = currentActiveProduct.cables[0].code;
         }
-        if (robotBodyOptionValue !== 'standard') foundCode = '-';
+        if (robotBodyOptionValue !== 'standard') foundCode = getBodyOptionPurchaseCode(currentActiveProduct, robotBodyOptionValue);
 
         const selectedAccs = [];
 
@@ -1623,7 +1655,7 @@ document.addEventListener('DOMContentLoaded', () => {
             selectedAccs.push({
                 name: '로봇 바디 옵션',
                 details: `${bodyLabel}${bodySpec ? ' (' + bodySpec + ')' : ''}`,
-                code: '-'
+                code: getBodyOptionPurchaseCode(currentActiveProduct, robotBodyOptionValue) || '-'
             });
         }
 
@@ -1894,7 +1926,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const zip = new JSZip();
             const product = currentActiveProduct;
-            const modelId = product.id; // e.g. IR-R15H-145S-INT
+            const modelId = product.id; // e.g. IR-R15H-145S-K-INT
             const type = product.specs.Type;
             const name = product.name;
 
@@ -1912,9 +1944,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Special mappings for folder bases
             const cadFolderMap = {
-                "IR-R15H-145S-INT": "IR-R15H-145",
+                "IR-R15H-145S-K-INT": "IR-R15H-145",
                 "IR-R16-210S-INT": "IR-R16-210",
-                "IR-R20H-120S-INT": "IR-R20H-120",
+                "IR-R20H-120S-K-INT": "IR-R20H-120",
                 "IR-R25-178S-INT": "IR-R25-178"
             };
             if(cadFolderMap[modelId]) folderBase = cadFolderMap[modelId];
