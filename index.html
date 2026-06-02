@@ -365,14 +365,8 @@
             </p>
             <p class="text-[9px] font-mono text-slate-600 mt-2 uppercase tracking-widest">
                 SYS ID:
-                <span id="visit-count" class="inline-flex align-middle ml-2">
-                    <img
-                        src="https://hits.sh/inovancerobot.com.svg?view=total&style=flat&label=visits"
-                        alt="Visitor count"
-                        class="h-5 w-auto"
-                        loading="eager"
-                    >
-                </span>
+                <span id="visit-count"
+                    class="inline-flex align-middle ml-2 rounded border border-white/10 bg-slate-900/60 px-2 py-0.5 text-slate-400">visits 721</span>
             </p>
         </div>
     </footer>
@@ -411,6 +405,37 @@
                 badge.textContent = `Ver ${version}`;
             }
         });
+
+        const visitCounterStart = 721;
+        const visitCounterUrl = 'https://ino-robot-display-auth.hois56.workers.dev/visit';
+        const visitCounter = document.getElementById('visit-count');
+
+        function renderVisitCount(total) {
+            const count = Math.max(visitCounterStart, Number(total) || visitCounterStart);
+            visitCounter.textContent = `visits ${count.toLocaleString('en-US')}`;
+        }
+
+        renderVisitCount(visitCounterStart);
+
+        fetch(visitCounterUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                page_path: window.location.pathname,
+                page_title: document.title,
+                referrer: document.referrer
+            }),
+            cache: 'no-store'
+        })
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+                if (data && data.ok) {
+                    renderVisitCount(data.total);
+                }
+            })
+            .catch(() => {
+                renderVisitCount(visitCounterStart);
+            });
 
         // Initialize Icons
         lucide.createIcons();
