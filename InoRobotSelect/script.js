@@ -788,6 +788,14 @@ document.addEventListener('DOMContentLoaded', () => {
         return certs.join(', ');
     }
 
+    function hasKcsCertification(product) {
+        const certText = product?.detailSpecs?.Certification || '';
+        return String(certText)
+            .split(',')
+            .map(item => item.trim().toUpperCase())
+            .includes('KCS');
+    }
+
     function getBodyOptionModelName(modelName, bodyOptionId) {
         const suffixMap = {
             standard: 'S',
@@ -1390,6 +1398,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const isS60 = product.id.includes('S60');
                     if (isCleanScara) {
                         timeStr = "6\uac1c\uc6d4";
+                    } else if (!hasKcsCertification(product)) {
+                        timeStr = "10주";
                     } else if (isS60) {
                         timeStr = hasCode ? "6주" : "10주";
                     } else if (subType === '일반형') {
