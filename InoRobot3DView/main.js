@@ -318,6 +318,16 @@ function getCadPathVariants(path) {
         add(withDwg3dCnSuffix(path));
     }
 
+    if (/[SPC]-K-INT/i.test(path)) {
+        const noKPath = path.replace(/([SPC])-K-INT/ig, '$1-INT');
+        add(noKPath);
+        add(withCnSuffix(noKPath));
+
+        if (/_2D\.dwg$/i.test(noKPath)) {
+            add(withDwg3dCnSuffix(noKPath));
+        }
+    }
+
     if (path.includes('-INT')) {
         const noIntPath = path.replace('-INT', '');
         add(noIntPath);
