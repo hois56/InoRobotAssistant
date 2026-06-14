@@ -815,19 +815,19 @@
                                     </div>
                                     <div class="tc-sh">
                                         <div class="tc-sh-num">②</div>
-                                        <div class="tc-sh-lbl">xPn_wait_pos<br>ON</div>
+                                        <div class="tc-sh-lbl">xPn_wait_pos_start<br>ON</div>
                                     </div>
                                     <div class="tc-sh">
                                         <div class="tc-sh-num">③</div>
-                                        <div class="tc-sh-lbl">yPn_wait_busy<br>ON 확인(Option)</div>
+                                        <div class="tc-sh-lbl">ywProcess_wait_busy<br>ON 확인(Option)</div>
                                     </div>
                                     <div class="tc-sh">
                                         <div class="tc-sh-num">④</div>
-                                        <div class="tc-sh-lbl">xPn_wait_pos<br>OFF</div>
+                                        <div class="tc-sh-lbl">xPn_wait_pos_start<br>OFF</div>
                                     </div>
                                     <div class="tc-sh">
                                         <div class="tc-sh-num">⑤</div>
-                                        <div class="tc-sh-lbl">yPn_wait_comp<br>ON 확인</div>
+                                        <div class="tc-sh-lbl">yPn_wait_pos_comp<br>ON 확인</div>
                                     </div>
                                 </div>
                                 <div class="tc-dir-pad"></div>
@@ -844,9 +844,9 @@
                                 </div>
                                 <span class="tc-dir tc-out">OUT</span>
                             </div>
-                            <!-- xPn_wait_pos: L H H L L -->
+                            <!-- xPn_wait_pos_start: L H H L L -->
                             <div class="tc-row">
-                                <div class="tc-lbl">xPn_wait_pos</div>
+                                <div class="tc-lbl">xPn_wait_pos_start</div>
                                 <div class="tc-grid" style="grid-template-columns:repeat(5,1fr)">
                                     <div class="seg l"></div>
                                     <div class="seg h tr"></div>
@@ -856,9 +856,9 @@
                                 </div>
                                 <span class="tc-dir tc-in">IN</span>
                             </div>
-                            <!-- yPn_wait_busy: L L H H L (Option) -->
+                            <!-- ywProcess_wait_busy: L L H H L (Option) -->
                             <div class="tc-row">
-                                <div class="tc-lbl">yPn_wait_busy <span
+                                <div class="tc-lbl">ywProcess_wait_busy <span
                                         style="color:#475569;font-size:0.58rem;font-style:italic">(Opt)</span></div>
                                 <div class="tc-grid" style="grid-template-columns:repeat(5,1fr)">
                                     <div class="seg l"></div>
@@ -869,9 +869,9 @@
                                 </div>
                                 <span class="tc-dir tc-out">OUT</span>
                             </div>
-                            <!-- yPn_wait_comp: L L L L H -->
+                            <!-- yPn_wait_pos_comp: L L L L H -->
                             <div class="tc-row">
-                                <div class="tc-lbl">yPn_wait_comp</div>
+                                <div class="tc-lbl">yPn_wait_pos_comp</div>
                                 <div class="tc-grid" style="grid-template-columns:repeat(5,1fr)">
                                     <div class="seg l"></div>
                                     <div class="seg l"></div>
@@ -898,19 +898,19 @@
                                     </div>
                                     <div class="tc-sh">
                                         <div class="tc-sh-num">②</div>
-                                        <div class="tc-sh-lbl">xPn_work_pos<br>ON</div>
+                                        <div class="tc-sh-lbl">xPn_work_pos_start<br>ON</div>
                                     </div>
                                     <div class="tc-sh">
                                         <div class="tc-sh-num">③</div>
-                                        <div class="tc-sh-lbl">yPn_work_busy<br>ON 확인(Option)</div>
+                                        <div class="tc-sh-lbl">ywProcess_work_busy<br>ON 확인(Option)</div>
                                     </div>
                                     <div class="tc-sh">
                                         <div class="tc-sh-num">④</div>
-                                        <div class="tc-sh-lbl">xPn_work_pos<br>OFF</div>
+                                        <div class="tc-sh-lbl">xPn_work_pos_start<br>OFF</div>
                                     </div>
                                     <div class="tc-sh">
                                         <div class="tc-sh-num">⑤</div>
-                                        <div class="tc-sh-lbl">yPn_work_comp<br>ON 확인</div>
+                                        <div class="tc-sh-lbl">yPn_work_pos_comp<br>ON 확인</div>
                                     </div>
                                 </div>
                                 <div class="tc-dir-pad"></div>
@@ -927,9 +927,9 @@
                                 </div>
                                 <span class="tc-dir tc-out">OUT</span>
                             </div>
-                            <!-- xPn_work_pos: L H H L L -->
+                            <!-- xPn_work_pos_start: L H H L L -->
                             <div class="tc-row">
-                                <div class="tc-lbl">xPn_work_pos</div>
+                                <div class="tc-lbl">xPn_work_pos_start</div>
                                 <div class="tc-grid" style="grid-template-columns:repeat(5,1fr)">
                                     <div class="seg l"></div>
                                     <div class="seg h tr"></div>
@@ -939,9 +939,9 @@
                                 </div>
                                 <span class="tc-dir tc-in">IN</span>
                             </div>
-                            <!-- yPn_work_busy: L L H H L (Option) -->
+                            <!-- ywProcess_work_busy: L L H H L (Option) -->
                             <div class="tc-row">
-                                <div class="tc-lbl">yPn_work_busy <span
+                                <div class="tc-lbl">ywProcess_work_busy <span
                                         style="color:#475569;font-size:0.58rem;font-style:italic">(Opt)</span></div>
                                 <div class="tc-grid" style="grid-template-columns:repeat(5,1fr)">
                                     <div class="seg l"></div>
@@ -952,9 +952,9 @@
                                 </div>
                                 <span class="tc-dir tc-out">OUT</span>
                             </div>
-                            <!-- yPn_work_comp: L L L L H -->
+                            <!-- yPn_work_pos_comp: L L L L H -->
                             <div class="tc-row">
-                                <div class="tc-lbl">yPn_work_comp</div>
+                                <div class="tc-lbl">yPn_work_pos_comp</div>
                                 <div class="tc-grid" style="grid-template-columns:repeat(5,1fr)">
                                     <div class="seg l"></div>
                                     <div class="seg l"></div>
@@ -1040,9 +1040,9 @@
                                 </div>
                                 <span class="tc-dir tc-out">OUT</span>
                             </div>
-                            <!-- xPn_work_pos: L H H L L L L L L L L -->
+                            <!-- xPn_work_pos_start: L H H L L L L L L L L -->
                             <div class="tc-row">
-                                <div class="tc-lbl">xPn_work_pos</div>
+                                <div class="tc-lbl">xPn_work_pos_start</div>
                                 <div class="tc-grid" style="grid-template-columns:repeat(11,1fr)">
                                     <div class="seg l"></div>
                                     <div class="seg h tr"></div>
@@ -1058,9 +1058,9 @@
                                 </div>
                                 <span class="tc-dir tc-in">IN</span>
                             </div>
-                            <!-- xTeaching_mode: L H H H H H H H H H L -->
+                            <!-- xTeach_mode: L H H H H H H H H H L -->
                             <div class="tc-row">
-                                <div class="tc-lbl">xTeaching_mode</div>
+                                <div class="tc-lbl">xTeach_mode</div>
                                 <div class="tc-grid" style="grid-template-columns:repeat(11,1fr)">
                                     <div class="seg l"></div>
                                     <div class="seg h tr"></div>
@@ -1076,9 +1076,9 @@
                                 </div>
                                 <span class="tc-dir tc-in">IN</span>
                             </div>
-                            <!-- yPn_work_busy: L L H H H L L L L L L (Option) -->
+                            <!-- ywProcess_work_busy: L L H H H L L L L L L (Option) -->
                             <div class="tc-row">
-                                <div class="tc-lbl">yPn_work_busy <span
+                                <div class="tc-lbl">ywProcess_work_busy <span
                                         style="color:#475569;font-size:0.58rem;font-style:italic">(Opt)</span></div>
                                 <div class="tc-grid" style="grid-template-columns:repeat(11,1fr)">
                                     <div class="seg l"></div>
@@ -1095,9 +1095,9 @@
                                 </div>
                                 <span class="tc-dir tc-out">OUT</span>
                             </div>
-                            <!-- yTeaching_running: L L L L L H H H H L L -->
+                            <!-- yTeach_mode_sts: L L L L L H H H H L L -->
                             <div class="tc-row">
-                                <div class="tc-lbl">yTeaching_running</div>
+                                <div class="tc-lbl">yTeach_mode_sts</div>
                                 <div class="tc-grid" style="grid-template-columns:repeat(11,1fr)">
                                     <div class="seg l"></div>
                                     <div class="seg l"></div>
@@ -1113,9 +1113,9 @@
                                 </div>
                                 <span class="tc-dir tc-out">OUT</span>
                             </div>
-                            <!-- xwPn_offset_X~A: L L L L L L D D L L L -->
+                            <!-- xwTeach_offset_X~C: L L L L L L D D L L L -->
                             <div class="tc-row">
-                                <div class="tc-lbl">xwPn_offset_X~A</div>
+                                <div class="tc-lbl">xwTeach_offset_X~C</div>
                                 <div class="tc-grid" style="grid-template-columns:repeat(11,1fr)">
                                     <div class="seg l"></div>
                                     <div class="seg l"></div>
@@ -1131,9 +1131,9 @@
                                 </div>
                                 <span class="tc-dir tc-in">IN</span>
                             </div>
-                            <!-- xTeaching_save: L L L L L L L L H L L -->
+                            <!-- xTeach_save: L L L L L L L L H L L -->
                             <div class="tc-row">
-                                <div class="tc-lbl">xTeaching_save</div>
+                                <div class="tc-lbl">xTeach_save</div>
                                 <div class="tc-grid" style="grid-template-columns:repeat(11,1fr)">
                                     <div class="seg l"></div>
                                     <div class="seg l"></div>
@@ -1149,9 +1149,9 @@
                                 </div>
                                 <span class="tc-dir tc-in">IN</span>
                             </div>
-                            <!-- yPn_work_comp: L L L L L L L L L H H -->
+                            <!-- yPn_work_pos_comp: L L L L L L L L L H H -->
                             <div class="tc-row">
-                                <div class="tc-lbl">yPn_work_comp</div>
+                                <div class="tc-lbl">yPn_work_pos_comp</div>
                                 <div class="tc-grid" style="grid-template-columns:repeat(11,1fr)">
                                     <div class="seg l"></div>
                                     <div class="seg l"></div>
@@ -1185,15 +1185,15 @@
                                     </div>
                                     <div class="tc-sh">
                                         <div class="tc-sh-num">②</div>
-                                        <div class="tc-sh-lbl">xPn_work_pos<br>ON</div>
+                                        <div class="tc-sh-lbl">xPn_work_pos_start<br>ON</div>
                                     </div>
                                     <div class="tc-sh">
                                         <div class="tc-sh-num">③</div>
-                                        <div class="tc-sh-lbl">yPn_work_busy<br>ON 확인(Option)</div>
+                                        <div class="tc-sh-lbl">ywProcess_work_busy<br>ON 확인(Option)</div>
                                     </div>
                                     <div class="tc-sh">
                                         <div class="tc-sh-num">④</div>
-                                        <div class="tc-sh-lbl">xPn_work_pos<br>OFF</div>
+                                        <div class="tc-sh-lbl">xPn_work_pos_start<br>OFF</div>
                                     </div>
                                     <div class="tc-sh">
                                         <div class="tc-sh-num">⑤</div>
@@ -1209,7 +1209,7 @@
                                     </div>
                                     <div class="tc-sh">
                                         <div class="tc-sh-num">⑧</div>
-                                        <div class="tc-sh-lbl">yPn_work_comp<br>ON 확인</div>
+                                        <div class="tc-sh-lbl">yPn_work_pos_comp<br>ON 확인</div>
                                     </div>
                                 </div>
                                 <div class="tc-dir-pad"></div>
@@ -1229,9 +1229,9 @@
                                 </div>
                                 <span class="tc-dir tc-out">OUT</span>
                             </div>
-                            <!-- xPn_work_pos: L H H L L L L L -->
+                            <!-- xPn_work_pos_start: L H H L L L L L -->
                             <div class="tc-row">
-                                <div class="tc-lbl">xPn_work_pos</div>
+                                <div class="tc-lbl">xPn_work_pos_start</div>
                                 <div class="tc-grid" style="grid-template-columns:repeat(8,1fr)">
                                     <div class="seg l"></div>
                                     <div class="seg h tr"></div>
@@ -1244,9 +1244,9 @@
                                 </div>
                                 <span class="tc-dir tc-in">IN</span>
                             </div>
-                            <!-- yPn_work_busy: L L H H H L L L (Option) -->
+                            <!-- ywProcess_work_busy: L L H H H L L L (Option) -->
                             <div class="tc-row">
-                                <div class="tc-lbl">yPn_work_busy <span
+                                <div class="tc-lbl">ywProcess_work_busy <span
                                         style="color:#475569;font-size:0.58rem;font-style:italic">(Opt)</span></div>
                                 <div class="tc-grid" style="grid-template-columns:repeat(8,1fr)">
                                     <div class="seg l"></div>
@@ -1290,9 +1290,9 @@
                                 </div>
                                 <span class="tc-dir tc-in">IN</span>
                             </div>
-                            <!-- yPn_work_comp: L L L L L L L H -->
+                            <!-- yPn_work_pos_comp: L L L L L L L H -->
                             <div class="tc-row">
-                                <div class="tc-lbl">yPn_work_comp</div>
+                                <div class="tc-lbl">yPn_work_pos_comp</div>
                                 <div class="tc-grid" style="grid-template-columns:repeat(8,1fr)">
                                     <div class="seg l"></div>
                                     <div class="seg l"></div>

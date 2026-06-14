@@ -35,9 +35,9 @@ const state = {
         EnableTorque: false,
         EnableToolControl: false,
         ToolControlType: "PLC_IO", // "PLC_IO" or "DIO"
-        EnableTeachingMode: false,
-        EnableWaitPos: false,
-        EnableProcessBusy: false,
+        EnableTeachingMode: true,
+        EnableWaitPos: true,
+        EnableProcessBusy: true,
         VisionConfigs: {} // idx -> { IsClient, IpAddress, Port }
     },
     userEdits: {}, // { filename: "edited code without ProgramInfo" }
@@ -132,13 +132,13 @@ function initApp() {
 
     // Option Description logic
     const optDescs = {
-        multiRecipe: { title: "Multi Recipe", icon: "layers", text: `여러 로봇 포인트 파일(레시피)을 생성하여 프로그램에서 동적으로 로드할 수 있도록 합니다.<ul class="mt-3 space-y-1 text-left text-xs text-slate-400 list-none"><li>📄 <b>포인트 파일</b> : P.pts 외에 P01.pts ~ P0N.pts 추가 생성</li><li>📄 <b>매핑 파일</b> : RobPointMapping.dat에 레시피 파일 목록 추가</li><li>📄 <b>프로젝트 파일</b> : RobPointFiles 배열에 pts 파일 등록</li><li>⚙️ <b>s01_initial.pro</b> : Manual_set_recipe() 함수 추가 (LoadPoints 분기)</li><li>⚙️ <b>main.pro</b> : 루프 내 Manual_set_recipe() 호출 추가</li><li>🏷️ <b>라벨</b> : INW[46] xwP_file_switch, OUTW[46] ywCur_P_file 추가</li></ul>` },
+        multiRecipe: { title: "Multi Recipe", icon: "layers", text: `여러 로봇 포인트 파일(레시피)을 생성하여 프로그램에서 동적으로 로드할 수 있도록 합니다.<ul class="mt-3 space-y-1 text-left text-xs text-slate-400 list-none"><li>📄 <b>포인트 파일</b> : P.pts 외에 P01.pts ~ P0N.pts 추가 생성</li><li>📄 <b>매핑 파일</b> : RobPointMapping.dat에 레시피 파일 목록 추가</li><li>📄 <b>프로젝트 파일</b> : RobPointFiles 배열에 pts 파일 등록</li><li>⚙️ <b>s01_initial.pro</b> : Manual_set_recipe() 함수 추가 (LoadPoints 분기)</li><li>⚙️ <b>main.pro</b> : 루프 내 Manual_set_recipe() 호출 추가</li><li>🏷️ <b>라벨</b> : INW[40] xwP_file_switch, OUTW[46] ywCur_P_file 추가</li></ul>` },
         tcpSpeed: { title: "TCP Speed Monitoring", icon: "gauge", text: `로봇의 TCP(툴 중심점) 이동 속도를 0.1초 간격으로 계산하여 모니터링합니다.<ul class="mt-3 space-y-1 text-left text-xs text-slate-400 list-none"><li>📄 <b>신규 파일</b> : PLC_TCP_Speed.pro 생성 (별도 Task 실행)</li><li>📄 <b>프로젝트 파일</b> : MultiTaskInfos / ProgramFiles에 등록</li><li>🏷️ <b>라벨</b> : OUTW[63] ywCur_TCP_speed, D[0] D_TCP_speed 추가</li></ul>` },
-        torque: { title: "Torque Monitoring", icon: "activity", text: `각 축 모터의 현재/최대 토크를 실시간으로 모니터링합니다. SCARA 로봇 선택 시 J5/J6 항목은 제외됩니다.<ul class="mt-3 space-y-1 text-left text-xs text-slate-400 list-none"><li>📄 <b>신규 파일</b> : PLC_Current_Torque.pro 생성 (별도 Task 실행)</li><li>📄 <b>프로젝트 파일</b> : MultiTaskInfos / ProgramFiles에 등록</li><li>🏷️ <b>라벨</b> : OUTW[64~69] ywCur_J1~J6_torque 추가</li><li>🏷️ <b>라벨</b> : D[1~6] D_J1~J6_cur_torque, D[7~12] D_J1~J6_max_torque 추가</li></ul>` },
-        toolControl: { title: "Tool Control", icon: "wrench", text: `진공/그리퍼 툴 제어 함수를 생성하고, 각 공정 프로그램에 툴 동작 호출을 추가합니다.<ul class="mt-3 space-y-1 text-left text-xs text-slate-400 list-none"><li>📄 <b>신규 파일</b> : s02_Tool_Control.pro 생성 (Vac/Grip/Trash/Stage 함수 포함)</li><li>⚙️ <b>각 공정 .pro</b> : 툴 상태 사전 체크(Alarm[15]) 및 툴 동작 호출 추가</li><li>⚙️ <b>main.pro</b> : Include "s02_Tool_Control.pro" 추가</li><li>🏷️ <b>라벨</b> : Communication IO — IN/OUT[608~] xTool_*/yTool_*_REQ 추가</li><li>🏷️ <b>라벨</b> : DIO — IN[0~]/OUT[0~] + IN/OUT[608~] 양쪽 모두 추가</li><li>⚠️ <b>경고 파일</b> : Alarm[15] "Tool position Error!" 등록</li></ul>` },
-        teachingMode: { title: "Teaching Mode", icon: "pencil", text: 'PLC 신호로 로봇 작업 위치를 현장에서 직접 수정할 수 있는 티칭 기능을 추가합니다.<ul class="mt-3 space-y-1 text-left text-xs text-slate-400 list-none"><li>⚙️ <b>각 공정 .pro</b> : Pn_teaching_mode() 함수 추가 및 work_pos에서 호출</li><li>🏷️ <b>라벨 IN</b> : IN[520] xTeaching_mode, IN[521] xTeaching_save, IN[522] xTeaching_cancel</li><li>🏷️ <b>라벨 OUT</b> : OUT[520] yTeaching_running</li></ul>' },
-        waitPos: { title: "Wait Position", icon: "map-pin", text: '공정 시작 전 대기 위치(App→Wait) 이동 기능을 추가합니다.<ul class="mt-3 space-y-1 text-left text-xs text-slate-400 list-none"><li>⚙️ <b>각 공정 .pro</b> : Pn_wait_pos() 함수 추가 (App→Wait 이동, comp 출력)</li><li>⚙️ <b>각 공정 .pro</b> : work_pos의 Return_move 조건부 호출로 변경</li><li>⚙️ <b>main.pro</b> : 루프 내 Wait pos 섹션 추가 (xPn_wait_pos_start 감시)</li><li>🏷️ <b>라벨 IN</b> : IN[528~] xP1_wait_pos_start, xP2_... (프로세스 수만큼)</li><li>🏷️ <b>라벨 OUT</b> : OUT[528~] yP1_wait_pos_comp, yP2_... (프로세스 수만큼)</li></ul>' },
-        processBusy: { title: "Process Busy Signal", icon: "zap", text: `공정 함수 실행 중임을 알리는 Busy 신호를 wait_pos / work_pos 양쪽에 추가합니다.<ul class="mt-3 space-y-1 text-left text-xs text-slate-400 list-none"><li>⚙️ <b>각 공정 .pro</b> : wait_pos/work_pos 시작 시 Busy ON, 종료 시 OFF</li><li>🏷️ <b>라벨 OUT</b> : OUT[560~] yP1_wait_pos_busy, yP2_... (프로세스 수만큼)</li><li>🏷️ <b>라벨 OUT</b> : OUT[576~] yP1_work_pos_busy, yP2_... (프로세스 수만큼)</li></ul>` }
+        torque: { title: "Torque Monitoring", icon: "activity", text: `각 축 모터의 현재/최대 토크를 PLC_internal.pro 정적 태스크 안에서 실시간 모니터링합니다. SCARA 로봇 선택 시 J5/J6 항목은 제외됩니다.<ul class="mt-3 space-y-1 text-left text-xs text-slate-400 list-none"><li>⚙️ <b>정적 파일</b> : PLC_internal.pro의 Current_torque()에 통합</li><li>📄 <b>프로젝트 파일</b> : 별도 PLC_Current_Torque.pro는 생성하지 않음</li><li>🏷️ <b>라벨</b> : OUTW[64~69] ywCur_J1~J6_torque 추가</li><li>🏷️ <b>라벨</b> : D[1~6] D_J1~J6_cur_torque, D[7~12] D_J1~J6_max_torque 추가</li></ul>` },
+        toolControl: { title: "Tool Control", icon: "wrench", text: `진공/그리퍼 툴 제어 함수를 생성하고, 각 공정 프로그램에 툴 동작 호출을 추가합니다.<ul class="mt-3 space-y-1 text-left text-xs text-slate-400 list-none"><li>📄 <b>신규 파일</b> : s04_Tool_Control.pro 생성 (Vac/Grip/Trash/Stage 함수 포함)</li><li>⚙️ <b>각 공정 .pro</b> : 툴 상태 사전 체크(Alarm[15]) 및 툴 동작 호출 추가</li><li>⚙️ <b>main.pro</b> : Include "s04_Tool_Control.pro" 추가</li><li>🏷️ <b>라벨</b> : Communication IO — IN/OUT[608~] xTool_*/yTool_*_REQ 추가</li><li>🏷️ <b>라벨</b> : DIO — IN[0~]/OUT[0~] + IN/OUT[608~] 양쪽 모두 추가</li><li>⚠️ <b>경고 파일</b> : Alarm[15] "Tool position Error!" 등록</li></ul>` },
+        teachingMode: { title: "Teaching Mode", icon: "pencil", text: 'PLC 신호로 로봇 작업 위치를 현장에서 직접 수정할 수 있는 통합 티칭 기능을 추가합니다.<ul class="mt-3 space-y-1 text-left text-xs text-slate-400 list-none"><li>📄 <b>신규 파일</b> : s03_teach_mode.pro 생성</li><li>⚙️ <b>각 공정 .pro</b> : B_Cur_process 설정 후 통합 Teaching_mode() 호출</li><li>🏷️ <b>라벨 IN</b> : IN[520] xTeach_mode, IN[521] xTeach_move_next, IN[522] xTeach_move_prev, IN[523] xTeach_move_offset, IN[524] xTeach_save</li><li>🏷️ <b>라벨 OUT</b> : OUT[520] yTeach_mode_sts, OUT[521] yTeach_move_comp, OUT[524] yTeach_save_comp</li></ul>' },
+        waitPos: { title: "Wait Position", icon: "map-pin", text: '공정 시작 전 대기 위치(Safe→Wait) 이동 기능을 추가합니다.<ul class="mt-3 space-y-1 text-left text-xs text-slate-400 list-none"><li>⚙️ <b>각 공정 .pro</b> : Pn_pos() 단일 함수에서 Wait/Work 경로 분기</li><li>⚙️ <b>main.pro</b> : xwProcess_wait_pos / xwProcess_work_pos 기준으로 공정 시작</li><li>🏷️ <b>라벨 IN</b> : IN[528~] xP1_wait_pos_start, xP2_... (프로세스 수만큼)</li><li>🏷️ <b>라벨 OUT</b> : OUT[528~] yP1_wait_pos_comp, yP2_... (프로세스 수만큼)</li></ul>' },
+        processBusy: { title: "Process Busy Signal", icon: "zap", text: `공정 함수 실행 중임을 알리는 Busy 신호를 wait/work 양쪽에 추가합니다.<ul class="mt-3 space-y-1 text-left text-xs text-slate-400 list-none"><li>⚙️ <b>main.pro</b> : ywProcess_wait_busy / ywProcess_work_busy word 신호 관리</li><li>🏷️ <b>라벨 OUT</b> : OUTW[35] ywProcess_wait_busy, OUTW[36] ywProcess_work_busy</li><li>🏷️ <b>라벨 OUT</b> : OUT[560~] yP1_wait_pos_busy, OUT[576~] yP1_work_pos_busy (프로세스 수만큼)</li></ul>` }
     };
 
     const updateOptDesc = (id) => {
@@ -394,16 +394,18 @@ function handleGeneratedContent(file) {
     // Generate the raw code using Generator
     let code = "";
     if (file === "main.pro") code = Generator.MainProgram(state.steps, state.options);
+    else if (file === "PLC_internal.pro") code = Generator.PLCInternalProgram(state.options);
     else if (file === "s01_initial.pro") code = Generator.InitialProgram(state.steps, state.options);
-    else if (file === "s02_Tool_Control.pro") code = Generator.ToolControlProgram(state.options, state.steps);
+    else if (file === "s02_offset.pro") code = Generator.OffsetProgram(state.steps, state.options);
+    else if (file === "s03_teach_mode.pro") code = Generator.TeachModeProgram(state.steps, state.options);
+    else if (file === "s04_Tool_Control.pro") code = Generator.ToolControlProgram(state.options, state.steps);
     else if (file === "PLC_TCP_Speed.pro") code = Generator.TcpSpeedProgram(state.options.RobotName);
-    else if (file === "PLC_Current_Torque.pro") code = Generator.TorqueProgram(state.options.RobotName);
     else if (file === "RemoteIO_mapping.dat") code = Generator.RemoteIOInfo(state.options);
     else if (file === "Labels.jsn") code = Generator.LabelsJson(state.steps, state.options);
     else if (file === "UserDefineWarning.jsn") code = Generator.DataWarning(state.steps, state.options);
     else if (file === "BreakPoints.jsn") code = '{\n  "ProgramsCount": 0,\n  "ProgramsBreaks": []\n}';
     else if (file === "MonitorGlobalVars.jsn") {
-        let vars = ["ywCur_process_sel", "xwSet_speed", "B_T_num", "B_W_num", "yRobot_homing", "R_Cur_pos", "xProcess_start", "xProcess_exit", "xProcess_restart", "xwSet_offset_X.Int", "xwSet_offset_Y.Int", "xwSet_offset_Z.Int", "xwP_file_switch"];
+        let vars = ["xReIO_run_all_static", "xwProcess_wait_pos", "xwProcess_work_pos", "ywProcess_wait_comp", "ywProcess_work_comp", "ywProcess_wait_busy", "ywProcess_work_busy", "xwSet_speed", "ywReIO_cur_control", "yRemote_mode_sts", "B_Tool", "B_Wobj", "B_PR", "B_path", "B_Cur_process", "yRobot_homing", "R_Cur_pos", "xwP_file_switch"];
         if (state.options.EnableTcpSpeed) vars.push("D_TCP_speed");
         if (state.options.EnableTorque) {
             for (let i = 1; i <= 6; i++) { vars.push(`D_J${i}_cur_torque`); vars.push(`D_J${i}_max_torque`); }
@@ -413,7 +415,7 @@ function handleGeneratedContent(file) {
     else if (file === "MonitorVars.jsn") code = "[]";
     else if (file === "JP.pts") code = `ProgramInfo\n    Version = "26.04.02.08"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getNow()}"\n    RobotName = "${state.options.RobotName}"\nEndProgramInfo\n`;
     else if (file.endsWith(".pts")) { // DataPoints
-        code = Generator.DataPoints(state.steps, state.options);
+        code = Generator.DataPoints(state.steps, state.options, file);
     }
     else if (file.endsWith(".prj")) code = Generator.DataPrj(state.steps, state.options, file.replace(/\.prj$/, ''));
     else if (file && file.startsWith("sP")) {
@@ -558,13 +560,13 @@ function uSelector() {
     const mainOpts = `<option>main.pro</option>`;
 
     // [2] Static Task: PLC_ 프로그램들 (옵션 활성화 시에만)
-    let staticOpts = '';
+    let staticOpts = '<option>PLC_internal.pro</option>';
     if (state.options.EnableTcpSpeed) staticOpts += `<option>PLC_TCP_Speed.pro</option>`;
-    if (state.options.EnableTorque) staticOpts += `<option>PLC_Current_Torque.pro</option>`;
 
     // [3] Basic Sub: s01, s02_Tool 등
-    let subOpts = `<option>s01_initial.pro</option>`;
-    if (state.options.EnableToolControl) subOpts += `<option>s02_Tool_Control.pro</option>`;
+    let subOpts = `<option>s01_initial.pro</option><option>s02_offset.pro</option>`;
+    if (state.options.EnableTeachingMode) subOpts += `<option>s03_teach_mode.pro</option>`;
+    if (state.options.EnableToolControl) subOpts += `<option>s04_Tool_Control.pro</option>`;
 
     // [4] Process Programs
     const pOpts = state.steps.map(s => `<option>${s.ProcessName}.pro</option>`).join('');
@@ -837,7 +839,7 @@ function updatePreview() {
                 const arr = obj.Warings || obj.Warnings || [];
                 const items = [];
                 for (let i = 0; i < 16; i++) {
-                    items.push({ id: i + 1, text: arr[i] || '', idx: i });
+                    items.push({ id: i, text: arr[i] || '', idx: i });
                 }
 
                 if (state.editMode) {
@@ -915,10 +917,12 @@ async function exportProj() {
 
     try {
         addZFile(root, "main.pro");
-        addZFile(root, "s01_initial.pro");
-        if (state.options.EnableToolControl) addZFile(root, "s02_Tool_Control.pro");
+        addZFile(root, "PLC_internal.pro");
         if (state.options.EnableTcpSpeed) addZFile(root, "PLC_TCP_Speed.pro");
-        if (state.options.EnableTorque) addZFile(root, "PLC_Current_Torque.pro");
+        addZFile(root, "s01_initial.pro");
+        addZFile(root, "s02_offset.pro");
+        if (state.options.EnableTeachingMode) addZFile(root, "s03_teach_mode.pro");
+        if (state.options.EnableToolControl) addZFile(root, "s04_Tool_Control.pro");
 
         state.steps.forEach(s => {
             addZFile(root, `${s.ProcessName}.pro`);
@@ -943,7 +947,7 @@ async function exportProj() {
         // Name changes dynamically based on input
         addCustomZFile(root, `${name}.prj`, `${name}.prj`);
 
-        root.file("InoRobot_IO_Map_V24.C4.02.xlsx", Assets.IO_Map_Excel, { base64: true });
+        root.file("InoRobot_IO_Map_0614.xlsx", Assets.IO_Map_Excel, { base64: true });
 
         const blob = await zip.generateAsync({ type: "blob" });
         saveAs(blob, `${name}.zip`);
