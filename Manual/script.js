@@ -431,6 +431,181 @@ const manualData = [
     }
 ];
 
+const communicationProfileData = [
+    {
+        id: "profile_ethercat_ircb501",
+        title: "EtherCAT_IRCB501_v1.0.1.xml",
+        robotType: "profile",
+        category: ["commProfile", "profile-ethercat"],
+        date: "2026-06-15",
+        lang: "XML",
+        path: "Comm_profile/EtherCAT_IRCB501_v1.0.1.xml",
+        description: "EtherCAT Communication Profile"
+    },
+    {
+        id: "profile_profinet_ircb501",
+        title: "PROFINET_IRCB501_V2.35(GSDML).xml",
+        robotType: "profile",
+        category: ["commProfile", "profile-profinet"],
+        date: "2026-06-15",
+        lang: "XML",
+        path: "Comm_profile/PROFINET_IRCB501_V2.35(GSDML).xml",
+        description: "PROFINET Communication Profile"
+    },
+    {
+        id: "profile_ethernetip_ircb501",
+        title: "EthernetIP_IRCB501_V4.5.EDS",
+        robotType: "profile",
+        category: ["commProfile", "profile-ethernetip"],
+        date: "2026-06-15",
+        lang: "EDS",
+        path: "Comm_profile/EthernetIP_IRCB501_V4.5.EDS",
+        description: "EtherNet/IP Communication Profile"
+    }
+];
+
+const certificateCategoryLabels = {
+    "cert-ce-doc": "CE - DoC",
+    "cert-ce-emc": "CE - EMC",
+    "cert-ce-md": "CE - MD",
+    "cert-clean": "Clean",
+    "cert-csgsus": "cSGSus",
+    "cert-fcc": "FCC",
+    "cert-fs": "Functional Safety",
+    "cert-kcs-6axis": "KCs 6-Axis",
+    "cert-kcs-6axis-high": "KCs 6-Axis High Protection",
+    "cert-kcs-6axis-ip67": "KCs 6-Axis IP67 Option",
+    "cert-kcs-6axis-sol": "KCs 6-Axis Sol/VV Option",
+    "cert-kcs-scara": "KCs SCARA",
+    "cert-kcs-scara-high": "KCs SCARA High Protection",
+    "cert-lifetime": "Lifetime"
+};
+
+const certificateFiles = [
+    ["cert-ce-doc", "Certificate/CE/DoC/DoC_Medium_SCARA&6-axis cabinet.pdf"],
+    ["cert-ce-doc", "Certificate/CE/DoC/DoC_Small_SCARA&6-axis cabinet.pdf"],
+    ["cert-ce-emc", "Certificate/CE/EMC/EMC_Medium_6-axis cabinet.pdf"],
+    ["cert-ce-emc", "Certificate/CE/EMC/EMC_SCARA&Small_6-axis cabinet.pdf"],
+    ["cert-ce-md", "Certificate/CE/MD/MD_Ceiling_SCARA.pdf"],
+    ["cert-ce-md", "Certificate/CE/MD/MD_Large_SCARA.pdf"],
+    ["cert-ce-md", "Certificate/CE/MD/MD_Medium_6-axis.pdf"],
+    ["cert-ce-md", "Certificate/CE/MD/MD_Medium_SCARA.pdf"],
+    ["cert-ce-md", "Certificate/CE/MD/MD_Small_6-axis.pdf"],
+    ["cert-ce-md", "Certificate/CE/MD/MD_Small_SCARA.pdf"],
+    ["cert-clean", "Certificate/Clean/IR-R10-110 Cleanliness Class 3 Certification-EN.pdf"],
+    ["cert-clean", "Certificate/Clean/IR-R10H Cleanliness Class 3 Certification-EN.pdf"],
+    ["cert-clean", "Certificate/Clean/IR-R4H Cleanliness Class 3 Certification-EN.pdf"],
+    ["cert-clean", "Certificate/Clean/IR-R7H Cleanliness Class 3 Certification-CN.pdf"],
+    ["cert-csgsus", "Certificate/cSGSus/cSGSus_Medium_6-axis.pdf"],
+    ["cert-csgsus", "Certificate/cSGSus/cSGSus_SCARA.pdf"],
+    ["cert-csgsus", "Certificate/cSGSus/cSGSus_SCARA_4MD cabinet.pdf"],
+    ["cert-csgsus", "Certificate/cSGSus/cSGSus_Small_6-axis.pdf"],
+    ["cert-fcc", "Certificate/FCC/EMC_Medium_6-axis.pdf"],
+    ["cert-fcc", "Certificate/FCC/EMC_SCARA&Small_6-axis.pdf"],
+    ["cert-fs", "Certificate/FS/FS_71_220_25_2081.pdf"],
+    ["cert-fs", "Certificate/FS/ISO 13849 PL d Cat3_6-axis.pdf"],
+    ["cert-kcs-6axis-high", "Certificate/KCs/6-axis/High_protection/IR-R10-110S-INT.pdf"],
+    ["cert-kcs-6axis-high", "Certificate/KCs/6-axis/High_protection/IR-R10H-120S-INT.pdf"],
+    ["cert-kcs-6axis-high", "Certificate/KCs/6-axis/High_protection/IR-R11-90S-INT.pdf"],
+    ["cert-kcs-6axis-high", "Certificate/KCs/6-axis/High_protection/IR-R15H-145S-INT.pdf"],
+    ["cert-kcs-6axis-high", "Certificate/KCs/6-axis/High_protection/IR-R20H-120S-INT.pdf"],
+    ["cert-kcs-6axis-high", "Certificate/KCs/6-axis/High_protection/IR-R4-56S-INT.pdf"],
+    ["cert-kcs-6axis-high", "Certificate/KCs/6-axis/High_protection/IR-R4H-54S-INT.pdf"],
+    ["cert-kcs-6axis-high", "Certificate/KCs/6-axis/High_protection/IR-R7H-70S-INT.pdf"],
+    ["cert-kcs-6axis-high", "Certificate/KCs/6-axis/High_protection/IR-R7H-90S-INT.pdf"],
+    ["cert-kcs-6axis-ip67", "Certificate/KCs/6-axis/IP67_option/IR-R20H-120P-K-INT.pdf"],
+    ["cert-kcs-6axis-ip67", "Certificate/KCs/6-axis/IP67_option/IR-R4-56P-INT.pdf"],
+    ["cert-kcs-6axis-ip67", "Certificate/KCs/6-axis/IP67_option/IR-R4H-54P-INT.pdf"],
+    ["cert-kcs-6axis", "Certificate/KCs/6-axis/IR-R10-110S-INT.pdf"],
+    ["cert-kcs-6axis", "Certificate/KCs/6-axis/IR-R10-140S-INT.pdf"],
+    ["cert-kcs-6axis", "Certificate/KCs/6-axis/IR-R10H-120S-INT.pdf"],
+    ["cert-kcs-6axis", "Certificate/KCs/6-axis/IR-R11-90S-INT.pdf"],
+    ["cert-kcs-6axis", "Certificate/KCs/6-axis/IR-R15H-145S-K-INT.pdf"],
+    ["cert-kcs-6axis", "Certificate/KCs/6-axis/IR-R16-210S-INT.pdf"],
+    ["cert-kcs-6axis", "Certificate/KCs/6-axis/IR-R25-178S-INT.pdf"],
+    ["cert-kcs-6axis", "Certificate/KCs/6-axis/IR-R4-56S-INT.pdf"],
+    ["cert-kcs-6axis", "Certificate/KCs/6-axis/IR-R4H-54S-INT.pdf"],
+    ["cert-kcs-6axis", "Certificate/KCs/6-axis/IR-R7H-70S-INT.pdf"],
+    ["cert-kcs-6axis", "Certificate/KCs/6-axis/IR-R7H-90S-INT.pdf"],
+    ["cert-kcs-6axis-sol", "Certificate/KCs/6-axis/Sol_VV_option/IR-R10H-120C-KEM2SV-INT.pdf"],
+    ["cert-kcs-6axis-sol", "Certificate/KCs/6-axis/Sol_VV_option/IR-R15H-145C-KEM3SV-INT.pdf"],
+    ["cert-kcs-6axis-sol", "Certificate/KCs/6-axis/Sol_VV_option/IR-R20H-120C-KEM3SV-INT.pdf"],
+    ["cert-kcs-6axis-sol", "Certificate/KCs/6-axis/Sol_VV_option/IR-R4H-54C-KEM2SV-INT.pdf"],
+    ["cert-kcs-6axis-sol", "Certificate/KCs/6-axis/Sol_VV_option/IR-R7H-90C-KEM2SV-INT.pdf"],
+    ["cert-kcs-scara-high", "Certificate/KCs/SCARA/High_protection/IR-S10-60Z20S-INT.pdf"],
+    ["cert-kcs-scara-high", "Certificate/KCs/SCARA/High_protection/IR-S10-60Z20S-INT_2.pdf"],
+    ["cert-kcs-scara-high", "Certificate/KCs/SCARA/High_protection/IR-S10-70Z20S-INT.pdf"],
+    ["cert-kcs-scara-high", "Certificate/KCs/SCARA/High_protection/IR-S10-70Z20S-INT_2.pdf"],
+    ["cert-kcs-scara-high", "Certificate/KCs/SCARA/High_protection/IR-S10-80Z20S-INT.pdf"],
+    ["cert-kcs-scara-high", "Certificate/KCs/SCARA/High_protection/IR-S10-80Z20S-INT_2.pdf"],
+    ["cert-kcs-scara-high", "Certificate/KCs/SCARA/High_protection/IR-S25-100Z42S-INT.pdf"],
+    ["cert-kcs-scara-high", "Certificate/KCs/SCARA/High_protection/IR-S25-80Z42S-INT.pdf"],
+    ["cert-kcs-scara-high", "Certificate/KCs/SCARA/High_protection/IR-S35-100Z42S-INT.pdf"],
+    ["cert-kcs-scara-high", "Certificate/KCs/SCARA/High_protection/IR-S4-40Z15S-INT.pdf"],
+    ["cert-kcs-scara-high", "Certificate/KCs/SCARA/High_protection/IR-S7-50Z20S-INT.pdf"],
+    ["cert-kcs-scara-high", "Certificate/KCs/SCARA/High_protection/IR-S7-60Z20S-INT.pdf"],
+    ["cert-kcs-scara-high", "Certificate/KCs/SCARA/High_protection/IR-S7-70Z20S-INT.pdf"],
+    ["cert-kcs-scara-high", "Certificate/KCs/SCARA/High_protection/IR-TS4-35Z15S-INT.pdf"],
+    ["cert-kcs-scara-high", "Certificate/KCs/SCARA/High_protection/IR-TS5-55Z15S-INT.pdf"],
+    ["cert-kcs-scara", "Certificate/KCs/SCARA/IR-S10-60Z20S-INT.pdf"],
+    ["cert-kcs-scara", "Certificate/KCs/SCARA/IR-S10-70Z20S-INT.pdf"],
+    ["cert-kcs-scara", "Certificate/KCs/SCARA/IR-S10-80Z20S-INT.pdf"],
+    ["cert-kcs-scara", "Certificate/KCs/SCARA/IR-S20-100Z42S-INT.pdf"],
+    ["cert-kcs-scara", "Certificate/KCs/SCARA/IR-S20-80Z42S-INT.pdf"],
+    ["cert-kcs-scara", "Certificate/KCs/SCARA/IR-S25-100Z42S-INT.pdf"],
+    ["cert-kcs-scara", "Certificate/KCs/SCARA/IR-S25-120Z42S-INT.pdf"],
+    ["cert-kcs-scara", "Certificate/KCs/SCARA/IR-S25-80Z42S-INT.pdf"],
+    ["cert-kcs-scara", "Certificate/KCs/SCARA/IR-S35-100Z42S-INT.pdf"],
+    ["cert-kcs-scara", "Certificate/KCs/SCARA/IR-S35-120Z42S-INT.pdf"],
+    ["cert-kcs-scara", "Certificate/KCs/SCARA/IR-S4-40215S-INT.pdf"],
+    ["cert-kcs-scara", "Certificate/KCs/SCARA/IR-S7-50Z20S-INT.pdf"],
+    ["cert-kcs-scara", "Certificate/KCs/SCARA/IR-S7-60Z20S-INT.pdf"],
+    ["cert-kcs-scara", "Certificate/KCs/SCARA/IR-S7-70Z20S-INT.pdf"],
+    ["cert-kcs-scara", "Certificate/KCs/SCARA/IR-TS4-35Z15S-INT.pdf"],
+    ["cert-kcs-scara", "Certificate/KCs/SCARA/IR-TS5-55Z15S-INT.pdf"],
+    ["cert-lifetime", "Certificate/Lifetime/MTBF_Large_6-axis.pdf"],
+    ["cert-lifetime", "Certificate/Lifetime/MTBF_Small_SCARA.pdf"]
+];
+
+const certificateData = certificateFiles.map(([category, path]) => ({
+    id: `cert_${path.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')}`,
+    title: path.split('/').pop(),
+    robotType: "certificate",
+    category: ["certificate", category],
+    date: "2026-06-15",
+    lang: "PDF",
+    path,
+    description: certificateCategoryLabels[category] || "Certificate"
+}));
+
+manualData.push(...communicationProfileData, ...certificateData);
+
+function getCategories(man) {
+    return Array.isArray(man.category) ? man.category : [man.category];
+}
+
+function hasCategory(man, category) {
+    return getCategories(man).includes(category);
+}
+
+function getManualTagLabel(man) {
+    const categories = getCategories(man);
+    const certificateCategory = categories.find(cat => cat.startsWith('cert-'));
+
+    if (certificateCategory) return certificateCategoryLabels[certificateCategory] || 'Certificate';
+    if (hasCategory(man, 'profile-ethercat')) return 'EtherCAT Profile';
+    if (hasCategory(man, 'profile-profinet')) return 'PROFINET Profile';
+    if (hasCategory(man, 'profile-ethernetip')) return 'EtherNet/IP Profile';
+    if (hasCategory(man, 'entry')) return 'Beginner';
+    if (hasCategory(man, 'basic')) return 'Basic';
+    if (hasCategory(man, 'advanced')) return 'Application';
+    if (hasCategory(man, 'display')) return 'For Display';
+    if (man.robotType === 'expansion') return 'Expansion Card';
+    if (man.robotType === 'selection') return 'Selection Guide';
+    if (man.robotType === 'none') return 'Common';
+    return man.robotType;
+}
+
 function init() {
     renderManuals();
     setupFilters();
@@ -445,10 +620,14 @@ function renderManuals() {
     const activeTypeBtn = document.querySelector('#typeFilters .active');
     const activeSoftwareBtn = document.querySelector('#catFilters .active');
     const activeEduBtn = document.querySelector('#eduFilters .active');
+    const activeProfileBtn = document.querySelector('#profileFilters .active');
+    const activeCertBtn = document.querySelector('#certFilters .active');
 
     const activeType = activeTypeBtn ? activeTypeBtn.dataset.type : 'all';
     const activeSoftware = activeSoftwareBtn ? activeSoftwareBtn.dataset.cat : 'all';
     const activeEdu = activeEduBtn ? activeEduBtn.dataset.cat : 'all';
+    const activeProfile = activeProfileBtn ? activeProfileBtn.dataset.cat : 'all';
+    const activeCert = activeCertBtn ? activeCertBtn.dataset.cat : 'all';
     
     const searchTerm = document.getElementById('manualSearch').value.toLowerCase();
 
@@ -459,23 +638,24 @@ function renderManuals() {
         }
 
         if (activeSoftware !== 'all') {
-            if (Array.isArray(man.category)) {
-                if (!man.category.includes(activeSoftware)) return false;
-            } else {
-                if (man.category !== activeSoftware) return false;
-            }
+            if (!hasCategory(man, activeSoftware)) return false;
         }
 
         if (activeEdu !== 'all') {
-            if (Array.isArray(man.category)) {
-                if (!man.category.includes(activeEdu)) return false;
-            } else {
-                if (man.category !== activeEdu) return false;
-            }
+            if (!hasCategory(man, activeEdu)) return false;
         }
 
-        const matchesSearch = man.title.toLowerCase().includes(searchTerm) || 
-                             man.description.toLowerCase().includes(searchTerm);
+        if (activeProfile !== 'all') {
+            if (!hasCategory(man, activeProfile)) return false;
+        }
+
+        if (activeCert !== 'all') {
+            if (!hasCategory(man, activeCert)) return false;
+        }
+
+        const matchesSearch = man.title.toLowerCase().includes(searchTerm) ||
+                             man.description.toLowerCase().includes(searchTerm) ||
+                             man.path.toLowerCase().includes(searchTerm);
         return matchesSearch;
     });
 
@@ -496,13 +676,14 @@ function renderManuals() {
         
         let iconColor = "text-emerald-500";
         let bgColor = "group-hover:bg-emerald-500";
-        if (man.category.includes('selection')) { iconColor = "text-blue-500"; bgColor = "group-hover:bg-blue-500"; }
-        if (man.category.includes('expansion')) { iconColor = "text-cyan-500"; bgColor = "group-hover:bg-cyan-500"; }
-        if (man.category.includes('comm')) { iconColor = "text-amber-500"; bgColor = "group-hover:bg-amber-500"; }
-        if (man.category.includes('pendant')) { iconColor = "text-indigo-500"; bgColor = "group-hover:bg-indigo-500"; }
-        if (man.category.includes('api')) { iconColor = "text-rose-500"; bgColor = "group-hover:bg-rose-500"; }
-        if (man.category.includes('entry') || man.category.includes('basic') || man.category.includes('display')) { iconColor = "text-fuchsia-500"; bgColor = "group-hover:bg-fuchsia-500"; }
-        if (man.category.includes('advanced')) { iconColor = "text-orange-400"; bgColor = "group-hover:bg-orange-500"; }
+        if (hasCategory(man, 'selection')) { iconColor = "text-blue-500"; bgColor = "group-hover:bg-blue-500"; }
+        if (hasCategory(man, 'expansion')) { iconColor = "text-cyan-500"; bgColor = "group-hover:bg-cyan-500"; }
+        if (hasCategory(man, 'comm') || hasCategory(man, 'commProfile')) { iconColor = "text-amber-500"; bgColor = "group-hover:bg-amber-500"; }
+        if (hasCategory(man, 'pendant')) { iconColor = "text-indigo-500"; bgColor = "group-hover:bg-indigo-500"; }
+        if (hasCategory(man, 'api')) { iconColor = "text-rose-500"; bgColor = "group-hover:bg-rose-500"; }
+        if (hasCategory(man, 'entry') || hasCategory(man, 'basic') || hasCategory(man, 'display')) { iconColor = "text-fuchsia-500"; bgColor = "group-hover:bg-fuchsia-500"; }
+        if (hasCategory(man, 'advanced')) { iconColor = "text-orange-400"; bgColor = "group-hover:bg-orange-500"; }
+        if (hasCategory(man, 'certificate')) { iconColor = "text-violet-500"; bgColor = "group-hover:bg-violet-500"; }
 
         item.innerHTML = `
             <div class="w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center ${iconColor} flex-shrink-0 ${bgColor} group-hover:text-white transition-all">
@@ -515,13 +696,7 @@ function renderManuals() {
                         <span class="text-[12px] font-bold text-slate-300 font-outfit tracking-tighter">${man.lang}</span>
                     </div>
                     <span class="text-[12px] font-bold text-slate-500 bg-white/5 px-2.5 py-1 rounded border border-white/5 font-outfit capitalize">
-                        ${man.category.includes('entry') ? 'Beginner' :
-                          man.category.includes('basic') ? 'Basic' :
-                          man.category.includes('advanced') ? 'Application' :
-                          man.category.includes('display') ? 'For Display' :
-                          man.robotType === 'expansion' ? 'Expansion Card' :
-                          man.robotType === 'selection' ? 'Selection Guide' :
-                          (man.robotType === 'none' ? 'Common' : man.robotType)}
+                        ${getManualTagLabel(man)}
                     </span>
                     <span class="text-[11px] text-slate-600 ml-1 opacity-70">${man.date}</span>
                 </div>
@@ -555,7 +730,7 @@ function setupFilters() {
             parent.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
 
-            const groupIds = ['typeFilters', 'catFilters', 'eduFilters'];
+            const groupIds = ['typeFilters', 'catFilters', 'eduFilters', 'profileFilters', 'certFilters'];
             groupIds.forEach(gid => {
                 if (gid !== parent.id) {
                     const group = document.getElementById(gid);

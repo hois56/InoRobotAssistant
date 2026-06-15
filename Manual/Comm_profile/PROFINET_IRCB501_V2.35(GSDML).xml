@@ -1,0 +1,1632 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ISO15745Profile xmlns="http://www.profibus.com/GSDML/2003/11/DeviceProfile" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.profibus.com/GSDML/2003/11/DeviceProfile ..\xsd\GSDML-DeviceProfile-V2.35.xsd">
+	<!-- ProfileHeader Definition as defined in ISO15745-1. Please do not change the content. -->
+	<ProfileHeader>
+		<ProfileIdentification>PROFINET Device Profile</ProfileIdentification>
+		<ProfileRevision>1.00</ProfileRevision>
+		<ProfileName>Device Profile for PROFINET Devices</ProfileName>
+		<ProfileSource>PROFIBUS Nutzerorganisation e. V. (PNO)</ProfileSource>
+		<ProfileClassID>Device</ProfileClassID>
+		<ISO15745Reference>
+			<ISO15745Part>4</ISO15745Part>
+			<ISO15745Edition>1</ISO15745Edition>
+			<ProfileTechnology>GSDML</ProfileTechnology>
+		</ISO15745Reference>
+	</ProfileHeader>
+	<ProfileBody>
+		<DeviceIdentity VendorID="0x044D" DeviceID="0x1f5">
+			<InfoText TextId="IRCB501 PN"/>
+			<VendorName Value="INOVANCE"/>
+		</DeviceIdentity>
+		<DeviceFunction>
+			<Family MainFamily="Drives" ProductFamily="IRCB50X"/>
+		</DeviceFunction>
+		<ApplicationProcess>
+			<DeviceAccessPointList>        
+				<!-- ============================================ -->
+	            <!--                  IRCB501: Standard MRP with S2 and DR (CiR)     (fits to example device code)          -->
+	            <!-- ============================================ -->
+				<DeviceAccessPointItem ID="IRCB501" PhysicalSlots="0..1" ModuleIdentNumber="0x00000008" MinDeviceInterval="64" ImplementationType="ERTEC200P" DNS_CompatibleName="IRCB501-PN" FixedInSlots="0" ObjectUUID_LocalIndex="1" MultipleWriteSupported="true" SharedDeviceSupported="true" DeviceAccessSupported="true" NumberOfDeviceAccessAR="1" MaxSupportedRecordSize="8192" NameOfStationNotTransferable="true" ParameterizationSpeedupSupported="false" LLDP_NoD_Supported="true" ResetToFactoryModes="2" CheckDeviceID_Allowed="true" PowerOnToCommReady="490" IOXS_Required="false" RequiredSchemaVersion="V2.31" PNIO_Version="V2.31" PrmBeginPrmEndSequenceSupported="true"  CIR_Supported="true" AddressAssignment="LOCAL;DCP">
+					<ModuleInfo CategoryRef="ID_IRCB501_PN">
+						<Name TextId="TOK_Standard_MRP_S2_DR"/>
+						<InfoText TextId="TOK_ModInfo_InfoTextId_IRCB501"/>
+						<VendorName Value="INOVANCE"/>
+						<OrderNumber Value="IRCB501"/>
+						<HardwareRelease Value="0001"/>    
+						<SoftwareRelease Value="V1.0.0" />  
+					</ModuleInfo>
+					<CertificationInfo ConformanceClass="C" ApplicationClass="Isochronous;HighPerformance" NetloadClass="III"/>
+					<SubslotList>
+						<SubslotItem SubslotNumber="32768" TextId="TOK_Subslot_8000"/>
+						<SubslotItem SubslotNumber="32769" TextId="TOK_Subslot_8001"/>
+						<SubslotItem SubslotNumber="32770" TextId="TOK_Subslot_8002"/>
+					</SubslotList>  
+					<IOConfigData MaxInputLength="1440" MaxOutputLength="1440"/>
+					<UseableModules>					
+						<ModuleItemRef ModuleItemTarget="ID_2_Byte_IO" AllowedInSlots="1"/>
+						<ModuleItemRef ModuleItemTarget="ID_4_Byte_IO" AllowedInSlots="1"/>
+						<ModuleItemRef ModuleItemTarget="ID_8_Byte_IO" AllowedInSlots="1"/>
+						<ModuleItemRef ModuleItemTarget="ID_16_Byte_IO" AllowedInSlots="1"/>
+						<ModuleItemRef ModuleItemTarget="ID_32_Byte_IO" AllowedInSlots="1"/>
+						<ModuleItemRef ModuleItemTarget="ID_64_Byte_IO" AllowedInSlots="1"/>
+						<ModuleItemRef ModuleItemTarget="ID_128_Byte_IO" AllowedInSlots="1"/>						
+						<ModuleItemRef ModuleItemTarget="ID_254_Byte_IO" AllowedInSlots="1"/>	
+					</UseableModules>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="IRCB501" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" IM5_Supported="true" MayIssueProcessAlarm="false">
+							<IOData/> <ModuleInfo><Name TextId="TOK_Standard_MRP_S2_DR"/><InfoText TextId="TOK_ModInfo_InfoTextId_IRCB501"/></ModuleInfo>
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>
+					<SystemDefinedSubmoduleList>
+						<InterfaceSubmoduleItem ID="IDS_8I" SubslotNumber="32768" SubmoduleIdentNumber="0x0002" IsochroneModeSupported="true" IsochroneModeInRT_Classes="RT_CLASS_3" SupportedRT_Classes="RT_CLASS_1;RT_CLASS_3" TextId="TOK_DAP_InterfaceModule" SupportedProtocols="SNMP;LLDP" NetworkComponentDiagnosisSupported="true" PTP_BoundarySupported="true" DCP_BoundarySupported="true" MulticastBoundarySupported="true" DCP_HelloSupported="true" MaxFrameStartTime="1600" MinNRT_Gap="960" DelayMeasurementSupported="true" Writeable_IM_Records="1 2 3 4" IM5_Supported="true" PDEV_CombinedObjectSupported="true">						
+							<RT_Class3Properties ForwardingMode="Absolute;Relative" MaxBridgeDelay="2088" MaxBridgeDelayFFW="1024" MaxNumberIR_FrameData="1024" MaxRangeIR_FrameID="1024" StartupMode="Legacy;Advanced" MaxDFP_Frames="1" MaxDFP_Feed="340" AlignDFP_Subframes="false" FragmentationType="Dynamic" MaxRedPeriodLength="4000" MinFSO="1760" MinRTC3_Gap="1120" MinYellowTime="10240" YellowSafetyMargin="160"/>
+							<SynchronisationMode SupportedRole="SyncSlave" MaxLocalJitter="300" T_PLL_MAX="1000" SupportedSyncProtocols="PTCP" PeerToPeerJitter="250"/>
+							<ApplicationRelations NumberOfAR="4" StartupMode="Legacy;Advanced" NumberOfAdditionalInputCR="0" NumberOfAdditionalMulticastProviderCR="0" NumberOfAdditionalOutputCR="0" NumberOfMulticastConsumerCR="0" PullModuleAlarmSupported="true">
+                <!-- ReductionRatio="1 2 4 8 16 32 64 128 256 512 1024 2048 4096 8192 16384" /> --><TimingProperties ReductionRatio="1 2 4 8 16 32 64 128 256 512" SendClock="32 64 128"/>
+                <RT_Class3TimingProperties ReductionRatioPow2="2 4 8 16" SendClock="4 6 8 12 16 20 24 28 32 36 40 44 48 52 56 60 64 68 72 76 80 84 88 92 96 100 104 108 112 116 120 124 128" ReductionRatio="1"/>
+							</ApplicationRelations>
+                            <MediaRedundancy SupportedRole="Client" MRPD_Supported="true" AdditionalForwardingRulesSupported="true"/>
+						</InterfaceSubmoduleItem>
+						<PortSubmoduleItem ID="IDS_8P1" SubslotNumber="32769" SubmoduleIdentNumber="0x0003" TextId="TOK_Port1" MaxPortRxDelay="198" MaxPortTxDelay="6" IsDefaultRingport="true" MAUType="100BASETXFD" MAUTypes="16" PortDeactivationSupported="true" LinkStateDiagnosisCapability="Up+Down" ShortPreamble100MBitSupported="true" CheckMAUTypeSupported="true" CheckMAUTypeDifferenceSupported="true" Writeable_IM_Records="1 2 3 4" IM5_Supported="true">
+							<MAUTypeList>
+								<MAUTypeItem Value="16" AdjustSupported="true"/>
+							</MAUTypeList>
+						 </PortSubmoduleItem>
+						<PortSubmoduleItem ID="IDS_8P2" SubslotNumber="32770" SubmoduleIdentNumber="0x0003" TextId="TOK_Port2" MaxPortRxDelay="198" MaxPortTxDelay="6" IsDefaultRingport="true" MAUType="100BASETXFD" MAUTypes="16" PortDeactivationSupported="true" LinkStateDiagnosisCapability="Up+Down" ShortPreamble100MBitSupported="true" CheckMAUTypeSupported="true" CheckMAUTypeDifferenceSupported="true" Writeable_IM_Records="1 2 3 4" IM5_Supported="true">
+							<MAUTypeList>
+								<MAUTypeItem Value="16" AdjustSupported="true"/>
+							</MAUTypeList>
+						 </PortSubmoduleItem>
+					</SystemDefinedSubmoduleList>
+					<Graphics>
+						<GraphicItemRef Type="DeviceSymbol" GraphicItemTarget="ID_Graph_1"/>
+					</Graphics>
+					<SystemRedundancy NumberOfAR_Sets="1" RT_InputOnBackupAR_Supported="false" MaxSwitchOverTime="30" DeviceType="S2"/>
+				</DeviceAccessPointItem>
+				
+				
+			</DeviceAccessPointList>
+	        <!-- ============================================ -->
+	        <!--            List of modules                   -->
+	        <!-- ============================================ -->
+			<ModuleList>
+	            <!-- ================================== -->
+	            <!--    1 byte digital input/output     -->
+	            <!--   (param-rec, support PROFIenergy)-->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_1_Byte_IO" ModuleIdentNumber="0x00000020">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_1IO"/>
+						<InfoText TextId="TOK_InfoTextId_Module_1IO"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.3" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="1" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="true">
+							<IOData>
+								<Input Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Input_DataItem_1" Length="1" UseAsBits="true"/>
+								</Input>
+								<Output Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Output_DataItem_1" Length="1" UseAsBits="true"/>
+								</Output>
+							</IOData>
+							<RecordDataList>
+								<ParameterRecordDataItem Index="1" Length="4" TransferSequence="0">
+									<Name TextId="T_general_parameter"/>
+									<Const Data="0x20,0x01,0x56,0x78" ByteOffset="0"/>
+								</ParameterRecordDataItem>
+							</RecordDataList>
+							<ModuleInfo><Name TextId="TOK_TextId_Module_1IO"/><InfoText TextId="TOK_InfoTextId_Module_1IO"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>					
+				</ModuleItem>
+				
+				
+	            <!-- ================================== -->
+	            <!--         1 byte digital input       -->
+	            <!--         (support PROFIenergy)      -->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_1_Byte_I" ModuleIdentNumber="0x00000021">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_1I"/>
+						<InfoText TextId="TOK_InfoTextId_Module_1I"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.2" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="2" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="true">
+							<IOData>
+								<Input Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Input_DataItem_1" Length="1" UseAsBits="true"/>
+								</Input>
+							</IOData><ModuleInfo><Name TextId="TOK_TextId_Module_1I"/><InfoText TextId="TOK_InfoTextId_Module_1I"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>
+				</ModuleItem>
+				
+				
+	            <!-- ================================== -->
+	            <!--       1 byte digital output        -->
+	            <!--         (support PROFIenergy)      -->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_1_Byte_O" ModuleIdentNumber="0x00000022">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_1O"/>
+						<InfoText TextId="TOK_InfoTextId_Module_1O"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.3" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="3" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="false">
+							<IOData>
+								<Output Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Output_DataItem_1" Length="1" UseAsBits="true"/>
+								</Output>
+							</IOData><ModuleInfo><Name TextId="TOK_TextId_Module_1O"/><InfoText TextId="TOK_InfoTextId_Module_1O"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>
+				</ModuleItem>
+				
+				
+				
+				<!-- ================================== -->
+	            <!--    2 byte digital input/output     -->
+	            <!--   (param-rec, support PROFIenergy)-->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_2_Byte_IO" ModuleIdentNumber="0x00000023">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_2IO"/>
+						<InfoText TextId="TOK_InfoTextId_Module_2IO"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.3" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="4" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="true">
+							<IOData>
+								<Input Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Input_DataItem_2" Length="2" UseAsBits="true"/>
+								</Input>
+								<Output Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Output_DataItem_2" Length="2" UseAsBits="true"/>
+								</Output>
+							</IOData>
+							<RecordDataList>
+								<ParameterRecordDataItem Index="1" Length="4" TransferSequence="0">
+									<Name TextId="T_general_parameter"/>
+									<Const Data="0x20,0x01,0x56,0x78" ByteOffset="0"/>
+								</ParameterRecordDataItem>
+							</RecordDataList>
+							<ModuleInfo><Name TextId="TOK_TextId_Module_2IO"/><InfoText TextId="TOK_InfoTextId_Module_2IO"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>					
+				</ModuleItem>
+				
+				
+	            <!-- ================================== -->
+	            <!--         2 byte digital input       -->
+	            <!--         (support PROFIenergy)      -->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_2_Byte_I" ModuleIdentNumber="0x00000024">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_2I"/>
+						<InfoText TextId="TOK_InfoTextId_Module_2I"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.2" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="5" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="true">
+							<IOData>
+								<Input Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Input_DataItem_2" Length="2" UseAsBits="true"/>
+								</Input>
+							</IOData><ModuleInfo><Name TextId="TOK_TextId_Module_2I"/><InfoText TextId="TOK_InfoTextId_Module_2I"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>
+				</ModuleItem>
+				
+				
+	            <!-- ================================== -->
+	            <!--       2 byte digital output        -->
+	            <!--         (support PROFIenergy)      -->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_2_Byte_O" ModuleIdentNumber="0x00000025">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_2O"/>
+						<InfoText TextId="TOK_InfoTextId_Module_2O"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.3" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="6" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="false">
+							<IOData>
+								<Output Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Output_DataItem_2" Length="2" UseAsBits="true"/>
+								</Output>
+							</IOData><ModuleInfo><Name TextId="TOK_TextId_Module_2O"/><InfoText TextId="TOK_InfoTextId_Module_2O"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>
+				</ModuleItem>
+				
+				
+				
+				<!-- ================================== -->
+	            <!--    4 byte digital input/output     -->
+	            <!--   (param-rec, support PROFIenergy)-->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_4_Byte_IO" ModuleIdentNumber="0x00000026">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_4IO"/>
+						<InfoText TextId="TOK_InfoTextId_Module_4IO"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.3" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="7" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="true">
+							<IOData>
+								<Input Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Input_DataItem_4" Length="4" UseAsBits="true"/>
+								</Input>
+								<Output Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Output_DataItem_4" Length="4" UseAsBits="true"/>
+								</Output>
+							</IOData>
+							<RecordDataList>
+								<ParameterRecordDataItem Index="1" Length="4" TransferSequence="0">
+									<Name TextId="T_general_parameter"/>
+									<Const Data="0x20,0x01,0x56,0x78" ByteOffset="0"/>
+								</ParameterRecordDataItem>
+							</RecordDataList>
+							<ModuleInfo><Name TextId="TOK_TextId_Module_4IO"/><InfoText TextId="TOK_InfoTextId_Module_4IO"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>					
+				</ModuleItem>
+				
+				
+	            <!-- ================================== -->
+	            <!--         4 byte digital input       -->
+	            <!--         (support PROFIenergy)      -->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_4_Byte_I" ModuleIdentNumber="0x00000027">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_4I"/>
+						<InfoText TextId="TOK_InfoTextId_Module_4I"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.2" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="8" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="true">
+							<IOData>
+								<Input Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Input_DataItem_4" Length="4" UseAsBits="true"/>
+								</Input>
+							</IOData><ModuleInfo><Name TextId="TOK_TextId_Module_4I"/><InfoText TextId="TOK_InfoTextId_Module_4I"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>
+				</ModuleItem>
+				
+				
+	            <!-- ================================== -->
+	            <!--       4 byte digital output        -->
+	            <!--         (support PROFIenergy)      -->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_4_Byte_O" ModuleIdentNumber="0x00000028">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_4O"/>
+						<InfoText TextId="TOK_InfoTextId_Module_4O"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.3" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="9" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="false">
+							<IOData>
+								<Output Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Output_DataItem_4" Length="4" UseAsBits="true"/>
+								</Output>
+							</IOData><ModuleInfo><Name TextId="TOK_TextId_Module_4O"/><InfoText TextId="TOK_InfoTextId_Module_4O"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>
+				</ModuleItem>
+				
+				
+				
+				<!-- ================================== -->
+	            <!--    8 byte digital input/output     -->
+	            <!--   (param-rec, support PROFIenergy)-->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_8_Byte_IO" ModuleIdentNumber="0x00000029">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_8IO"/>
+						<InfoText TextId="TOK_InfoTextId_Module_8IO"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.3" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="10" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="true">
+							<IOData>
+								<Input Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Input_DataItem_8" Length="8" UseAsBits="true"/>
+								</Input>
+								<Output Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Output_DataItem_8" Length="8" UseAsBits="true"/>
+								</Output>
+							</IOData>
+							<RecordDataList>
+								<ParameterRecordDataItem Index="1" Length="4" TransferSequence="0">
+									<Name TextId="T_general_parameter"/>
+									<Const Data="0x20,0x01,0x56,0x78" ByteOffset="0"/>
+								</ParameterRecordDataItem>
+							</RecordDataList>
+							<ModuleInfo><Name TextId="TOK_TextId_Module_8IO"/><InfoText TextId="TOK_InfoTextId_Module_8IO"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>					
+				</ModuleItem>
+				
+				
+	            <!-- ================================== -->
+	            <!--         8 byte digital input       -->
+	            <!--         (support PROFIenergy)      -->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_8_Byte_I" ModuleIdentNumber="0x0000002a">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_8I"/>
+						<InfoText TextId="TOK_InfoTextId_Module_8I"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.2" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="11" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="true">
+							<IOData>
+								<Input Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Input_DataItem_8" Length="8" UseAsBits="true"/>
+								</Input>
+							</IOData><ModuleInfo><Name TextId="TOK_TextId_Module_8I"/><InfoText TextId="TOK_InfoTextId_Module_8I"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>
+				</ModuleItem>
+				
+				
+	            <!-- ================================== -->
+	            <!--       8 byte digital output        -->
+	            <!--         (support PROFIenergy)      -->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_8_Byte_O" ModuleIdentNumber="0x0000002b">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_8O"/>
+						<InfoText TextId="TOK_InfoTextId_Module_8O"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.3" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="12" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="false">
+							<IOData>
+								<Output Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Output_DataItem_8" Length="8" UseAsBits="true"/>
+								</Output>
+							</IOData><ModuleInfo><Name TextId="TOK_TextId_Module_8O"/><InfoText TextId="TOK_InfoTextId_Module_8O"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>
+				</ModuleItem>
+				
+				
+				
+				
+				<!-- ================================== -->
+	            <!--    16 byte digital input/output     -->
+	            <!--   (param-rec, support PROFIenergy)-->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_16_Byte_IO" ModuleIdentNumber="0x0000002c">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_16IO"/>
+						<InfoText TextId="TOK_InfoTextId_Module_16IO"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.3" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="13" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="true">
+							<IOData>
+								<Input Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Input_DataItem_16" Length="16" UseAsBits="true"/>
+								</Input>
+								<Output Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Output_DataItem_16" Length="16" UseAsBits="true"/>
+								</Output>
+							</IOData>
+							<RecordDataList>
+								<ParameterRecordDataItem Index="1" Length="4" TransferSequence="0">
+									<Name TextId="T_general_parameter"/>
+									<Const Data="0x20,0x01,0x56,0x78" ByteOffset="0"/>
+								</ParameterRecordDataItem>
+							</RecordDataList>
+							<ModuleInfo><Name TextId="TOK_TextId_Module_16IO"/><InfoText TextId="TOK_InfoTextId_Module_16IO"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>					
+				</ModuleItem>
+				
+				
+	            <!-- ================================== -->
+	            <!--         16 byte digital input       -->
+	            <!--         (support PROFIenergy)      -->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_16_Byte_I" ModuleIdentNumber="0x0000002d">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_16I"/>
+						<InfoText TextId="TOK_InfoTextId_Module_16I"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.2" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="14" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="true">
+							<IOData>
+								<Input Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Input_DataItem_16" Length="16" UseAsBits="true"/>
+								</Input>
+							</IOData><ModuleInfo><Name TextId="TOK_TextId_Module_16I"/><InfoText TextId="TOK_InfoTextId_Module_16I"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>
+				</ModuleItem>
+				
+				
+	            <!-- ================================== -->
+	            <!--       16 byte digital output        -->
+	            <!--         (support PROFIenergy)      -->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_16_Byte_O" ModuleIdentNumber="0x0000002e">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_16O"/>
+						<InfoText TextId="TOK_InfoTextId_Module_16O"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.3" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="15" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="false">
+							<IOData>
+								<Output Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Output_DataItem_16" Length="16" UseAsBits="true"/>
+								</Output>
+							</IOData><ModuleInfo><Name TextId="TOK_TextId_Module_16O"/><InfoText TextId="TOK_InfoTextId_Module_16O"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>
+				</ModuleItem>
+				
+				
+				<!-- ================================== -->
+	            <!--    32 byte digital input/output     -->
+	            <!--   (param-rec, support PROFIenergy)-->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_32_Byte_IO" ModuleIdentNumber="0x0000002f">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_32IO"/>
+						<InfoText TextId="TOK_InfoTextId_Module_32IO"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.3" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="16" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="true">
+							<IOData>
+								<Input Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Input_DataItem_32" Length="32" UseAsBits="true"/>
+								</Input>
+								<Output Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Output_DataItem_32" Length="32" UseAsBits="true"/>
+								</Output>
+							</IOData>
+							<RecordDataList>
+								<ParameterRecordDataItem Index="1" Length="4" TransferSequence="0">
+									<Name TextId="T_general_parameter"/>
+									<Const Data="0x20,0x01,0x56,0x78" ByteOffset="0"/>
+								</ParameterRecordDataItem>
+							</RecordDataList>
+							<ModuleInfo><Name TextId="TOK_TextId_Module_32IO"/><InfoText TextId="TOK_InfoTextId_Module_32IO"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>					
+				</ModuleItem>
+				
+				
+	            <!-- ================================== -->
+	            <!--         32 byte digital input       -->
+	            <!--         (support PROFIenergy)      -->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_32_Byte_I" ModuleIdentNumber="0x00000030">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_32I"/>
+						<InfoText TextId="TOK_InfoTextId_Module_32I"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.2" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="17" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="true">
+							<IOData>
+								<Input Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Input_DataItem_32" Length="32" UseAsBits="true"/>
+								</Input>
+							</IOData><ModuleInfo><Name TextId="TOK_TextId_Module_32I"/><InfoText TextId="TOK_InfoTextId_Module_32I"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>
+				</ModuleItem>
+				
+				
+	            <!-- ================================== -->
+	            <!--       32 byte digital output        -->
+	            <!--         (support PROFIenergy)      -->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_32_Byte_O" ModuleIdentNumber="0x00000031">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_32O"/>
+						<InfoText TextId="TOK_InfoTextId_Module_32O"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.3" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="18" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="false">
+							<IOData>
+								<Output Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Output_DataItem_32" Length="32" UseAsBits="true"/>
+								</Output>
+							</IOData><ModuleInfo><Name TextId="TOK_TextId_Module_32O"/><InfoText TextId="TOK_InfoTextId_Module_32O"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>
+				</ModuleItem>
+				
+				
+				
+	            <!-- ================================== -->
+	            <!--    64 byte digital input/output    -->
+	            <!--   (param-rec, support PROFIenergy) -->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_64_Byte_IO" ModuleIdentNumber="0x00000032">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_64IO"/>
+						<InfoText TextId="TOK_InfoTextId_Module_64IO"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.3" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="19" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="true">
+							<IOData>
+								<Input Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Input_DataItem_64" Length="64" UseAsBits="true"/>
+								</Input>
+								<Output Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Output_DataItem_64" Length="64" UseAsBits="true"/>
+								</Output>
+							</IOData>
+							<RecordDataList>
+								<ParameterRecordDataItem Index="1" Length="4" TransferSequence="0">
+									<Name TextId="T_general_parameter"/>
+									<Const Data="0x29,0x01,0x56,0x78" ByteOffset="0"/>
+								</ParameterRecordDataItem>
+							</RecordDataList>
+							<ModuleInfo><Name TextId="TOK_TextId_Module_64IO"/><InfoText TextId="TOK_InfoTextId_Module_64IO"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>
+				</ModuleItem>
+	            <!-- ================================== -->
+	            <!--         64 byte digital input      -->
+	            <!--   (param-rec, support PROFIenergy) -->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_64_Byte_I" ModuleIdentNumber="0x00000033">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_64I"/>
+						<InfoText TextId="TOK_InfoTextId_Module_64I"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.3" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="20" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="true">
+							<IOData>
+								<Input Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Input_DataItem_64" Length="64" UseAsBits="true"/>
+								</Input>
+							</IOData>
+							<RecordDataList>
+								<ParameterRecordDataItem Index="1" Length="4" TransferSequence="0">
+									<Name TextId="T_general_parameter"/>
+									<Const Data="0x30,0x01,0x56,0x78" ByteOffset="0"/>
+								</ParameterRecordDataItem>
+							</RecordDataList>
+							<ModuleInfo><Name TextId="TOK_TextId_Module_64I"/><InfoText TextId="TOK_InfoTextId_Module_64I"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>
+				</ModuleItem>
+				
+				
+	            <!-- ================================== -->
+	            <!--       64 byte digital output       -->
+	            <!--   (param-rec, support PROFIenergy) -->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_64_Byte_O" ModuleIdentNumber="0x00000034">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_64O"/>
+						<InfoText TextId="TOK_InfoTextId_Module_64O"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.3" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="21" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="false">
+							<IOData>
+								<Output Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Output_DataItem_64" Length="64" UseAsBits="true"/>
+								</Output>
+							</IOData>
+							<RecordDataList>
+								<ParameterRecordDataItem Index="1" Length="4" TransferSequence="0">
+									<Name TextId="T_general_parameter"/>
+									<Const Data="0x31,0x01,0x56,0x78" ByteOffset="0"/>
+								</ParameterRecordDataItem>
+							</RecordDataList>
+							<ModuleInfo><Name TextId="TOK_TextId_Module_64O"/><InfoText TextId="TOK_InfoTextId_Module_64O"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>
+				</ModuleItem>
+
+				
+				<!-- ================================== -->
+	            <!--    128 byte digital input/output    -->
+	            <!--   (param-rec, support PROFIenergy) -->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_128_Byte_IO" ModuleIdentNumber="0x00000035">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_128IO"/>
+						<InfoText TextId="TOK_InfoTextId_Module_128IO"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.3" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="22" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="true">
+							<IOData>
+								<Input Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Input_DataItem_128" Length="128" UseAsBits="true"/>
+								</Input>
+								<Output Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Output_DataItem_128" Length="128" UseAsBits="true"/>
+								</Output>
+							</IOData>
+							<RecordDataList>
+								<ParameterRecordDataItem Index="1" Length="4" TransferSequence="0">
+									<Name TextId="T_general_parameter"/>
+									<Const Data="0x29,0x01,0x56,0x78" ByteOffset="0"/>
+								</ParameterRecordDataItem>
+							</RecordDataList>
+							<ModuleInfo><Name TextId="TOK_TextId_Module_128IO"/><InfoText TextId="TOK_InfoTextId_Module_128IO"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>
+				</ModuleItem>
+	            <!-- ================================== -->
+	            <!--         128 byte digital input      -->
+	            <!--   (param-rec, support PROFIenergy) -->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_128_Byte_I" ModuleIdentNumber="0x00000036">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_128I"/>
+						<InfoText TextId="TOK_InfoTextId_Module_128I"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.3" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="23" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="true">
+							<IOData>
+								<Input Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Input_DataItem_128" Length="128" UseAsBits="true"/>
+								</Input>
+							</IOData>
+							<RecordDataList>
+								<ParameterRecordDataItem Index="1" Length="4" TransferSequence="0">
+									<Name TextId="T_general_parameter"/>
+									<Const Data="0x30,0x01,0x56,0x78" ByteOffset="0"/>
+								</ParameterRecordDataItem>
+							</RecordDataList>
+							<ModuleInfo><Name TextId="TOK_TextId_Module_128I"/><InfoText TextId="TOK_InfoTextId_Module_128I"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>
+				</ModuleItem>
+				
+				
+	            <!-- ================================== -->
+	            <!--       128 byte digital output       -->
+	            <!--   (param-rec, support PROFIenergy) -->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_128_Byte_O" ModuleIdentNumber="0x00000037">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_128O"/>
+						<InfoText TextId="TOK_InfoTextId_Module_128O"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.3" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="24" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="false">
+							<IOData>
+								<Output Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Output_DataItem_128" Length="128" UseAsBits="true"/>
+								</Output>
+							</IOData>
+							<RecordDataList>
+								<ParameterRecordDataItem Index="1" Length="4" TransferSequence="0">
+									<Name TextId="T_general_parameter"/>
+									<Const Data="0x31,0x01,0x56,0x78" ByteOffset="0"/>
+								</ParameterRecordDataItem>
+							</RecordDataList>
+							<ModuleInfo><Name TextId="TOK_TextId_Module_128O"/><InfoText TextId="TOK_InfoTextId_Module_128O"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>
+				</ModuleItem>
+				
+				<!-- ================================== -->
+	            <!--      254 byte digital input/output       -->
+	            <!--         (support PROFIenergy)      -->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_254_Byte_IO" ModuleIdentNumber="0x00000038">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_254IO"/>
+						<InfoText TextId="TOK_InfoTextId_Module_254IO"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.3" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="25" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="true">
+							<IOData>
+								<Input Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Input_DataItem_254" Length="254" UseAsBits="true"/>
+								</Input>
+								<Output Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Output_DataItem_254" Length="254" UseAsBits="true"/>
+								</Output>
+							</IOData><ModuleInfo><Name TextId="TOK_TextId_Module_254IO"/><InfoText TextId="TOK_InfoTextId_Module_254IO"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>
+				</ModuleItem>
+				
+	            <!-- ================================== -->
+	            <!--      254 byte digital input        -->
+	            <!--         (support PROFIenergy)      -->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_254_Byte_I" ModuleIdentNumber="0x00000039">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_254I"/>
+						<InfoText TextId="TOK_InfoTextId_Module_254I"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.3" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="26" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="true">
+							<IOData>
+								<Input Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Input_DataItem_254" Length="254" UseAsBits="true"/>
+								</Input>
+							</IOData><ModuleInfo><Name TextId="TOK_TextId_Module_254I"/><InfoText TextId="TOK_InfoTextId_Module_254I"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>
+				</ModuleItem>
+	            <!-- ================================== -->
+	            <!--      250 byte digital output       -->
+	            <!--         (support PROFIenergy)      -->
+	            <!-- ================================== -->
+				<ModuleItem ID="ID_254_Byte_O" ModuleIdentNumber="0x0000003a">
+					<ModuleInfo>
+						<Name TextId="TOK_TextId_Module_254O"/>
+						<InfoText TextId="TOK_InfoTextId_Module_254O"/>
+						<!-- optional keyword:  <HardwareRelease Value="0001" />   -->
+						<!-- optional keyword:  <SoftwareRelease Value="V4.3" />  -->
+					</ModuleInfo>
+					<VirtualSubmoduleList>
+						<VirtualSubmoduleItem ID="27" SubmoduleIdentNumber="0x0001" Writeable_IM_Records="1 2 3 4" MayIssueProcessAlarm="false">
+							<IOData>
+								<Output Consistency="All items consistency">
+									<DataItem DataType="OctetString" TextId="TOK_Output_DataItem_254" Length="254" UseAsBits="true"/>
+								</Output>
+							</IOData><ModuleInfo><Name TextId="TOK_TextId_Module_254O"/><InfoText TextId="TOK_InfoTextId_Module_254O"/></ModuleInfo>
+							<PROFIenergy ProfileVersion="V1.1" EntityClass="Class3">
+								<EnergySavingModeList>
+									<EnergySavingModeItem ID="1" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="2" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+									<EnergySavingModeItem ID="255" TimeToPause="600" RTTO="600" TimeMinLengthOfStay="200"/>
+								</EnergySavingModeList>
+								<MeasurementList>
+									<MeasurementItem Number="0">
+										<MeasurementValue ID="13" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="1">
+										<MeasurementValue ID="14" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+									<MeasurementItem Number="2">
+										<MeasurementValue ID="15" AccuracyDomain="1" AccuracyClass="3"/>
+									</MeasurementItem>
+								</MeasurementList>
+							</PROFIenergy>
+						</VirtualSubmoduleItem>
+					</VirtualSubmoduleList>
+				</ModuleItem>
+			</ModuleList>	
+	        <!-- ============================================ -->
+			<!--       Channel diagnosis list                 -->
+			<!-- ============================================ -->
+			<ChannelDiagList>
+				<ChannelDiagItem ErrorType="71">
+					<Name TextId="TOK_Name_ErrorType71"/>
+					<Help TextId="TOK_HelpName_ErrorType71"/>
+				</ChannelDiagItem>
+				<ChannelDiagItem ErrorType="72">
+					<Name TextId="TOK_Name_ErrorType72"/>
+					<Help TextId="TOK_HelpName_ErrorType72"/>
+				</ChannelDiagItem>
+				<ChannelDiagItem ErrorType="73">
+					<Name TextId="TOK_Name_ErrorType73"/>
+					<Help TextId="TOK_HelpName_ErrorType73"/>
+				</ChannelDiagItem>
+				<ChannelDiagItem ErrorType="74">
+					<Name TextId="TOK_Name_ErrorType74"/>
+					<Help TextId="TOK_HelpName_ErrorType74"/>
+				</ChannelDiagItem>
+				<ChannelDiagItem ErrorType="75">
+					<Name TextId="TOK_Name_ErrorType75"/>
+					<Help TextId="TOK_HelpName_ErrorType75"/>
+				</ChannelDiagItem>
+			</ChannelDiagList>
+			<GraphicsList>
+				<GraphicItem ID="ID_Graph_1" GraphicFile="GSDML-044D-01F5-IRCB501"/>
+			</GraphicsList>
+			<CategoryList>
+				<CategoryItem ID="ID_IRCB501_PN" TextId="TOK_IRCB501_PN"/>
+			</CategoryList>
+	        <!-- ============================================ -->
+	        <!--     language dependent text lists            -->
+	        <!-- ============================================ -->
+			<ExternalTextList>
+	            <!-- ============================= -->
+	            <!--    primary language: english  -->
+	            <!-- ============================= -->
+				<PrimaryLanguage>
+					<Text TextId="IRCB501 PN" Value="IRCB501"/>
+					
+					<!--DAP - ERTEC 200p Devkit-->
+					<Text TextId="TOK_IRCB501_PN" Value="IRCB501"/>
+					<Text TextId="TOK_Standard_no_PDEV" Value="Standard, no PDEV"/>
+					<Text TextId="TOK_Standard_no_MRP" Value="Standard, no MRP"/>
+					<Text TextId="TOK_Standard_MRP" Value="Standard, MRP"/>
+					<Text TextId="TOK_Standard_1Port" Value="Standard, 1 port"/>
+					<Text TextId="TOK_Standard_POF" Value="Standard, POF Port"/>
+					<Text TextId="TOK_Standard_2POF" Value="Standard, 2 POF Ports"/>
+					<Text TextId="TOK_Standard_MRP_S2" Value="Standard, MRP, S2 redundancy"/>
+					<Text TextId="TOK_Standard_MRP_S2_DR" Value="IRCB501"/>
+					
+
+					<Text TextId="TOK_ModInfo_InfoTextId_IRCB501" Value="Inovance Driver profinet,Inovance robot2.0 IRCB501"/>
+					
+					<!--port name-->
+					<Text TextId="TOK_Subslot_8000" Value="X1"/>
+					<Text TextId="TOK_Subslot_8001" Value="X1 P1"/>
+					<Text TextId="TOK_Subslot_8002" Value="X1 P2"/>
+					<Text TextId="TOK_DAP_InterfaceModule" Value="PN-IO"/>
+					<Text TextId="TOK_Port1" Value="Port 1"/>
+					<Text TextId="TOK_Port2" Value="Port 2"/>
+					<!--module name-->
+					<Text TextId="TOK_TextId_Module_1IO" Value="Input/Output 001 byte"/>
+					<Text TextId="TOK_TextId_Module_1I" Value="Input 001 byte"/>
+					<Text TextId="TOK_TextId_Module_1O" Value="Output 001 byte"/>
+					<Text TextId="TOK_TextId_Module_2IO" Value="Input/Output 002 bytes"/>
+					<Text TextId="TOK_TextId_Module_2I" Value="Input 002 bytes"/>
+					<Text TextId="TOK_TextId_Module_2O" Value="Output 002 bytes"/>
+					<Text TextId="TOK_TextId_Module_4IO" Value="Input/Output 004 bytes"/>
+					<Text TextId="TOK_TextId_Module_4I" Value="Input 004 bytes"/>
+					<Text TextId="TOK_TextId_Module_4O" Value="Output 004 bytes"/>
+					<Text TextId="TOK_TextId_Module_8IO" Value="Input/Output 008 bytes"/>
+					<Text TextId="TOK_TextId_Module_8I" Value="Input 008 bytes"/>
+					<Text TextId="TOK_TextId_Module_8O" Value="Output 008 bytes"/>
+					<Text TextId="TOK_TextId_Module_16IO" Value="Input/Output 016 bytes"/>
+					<Text TextId="TOK_TextId_Module_16I" Value="Input 016 bytes"/>
+					<Text TextId="TOK_TextId_Module_16O" Value="Output 016 bytes"/>
+					<Text TextId="TOK_TextId_Module_32IO" Value="Input/Output 032 bytes"/>
+					<Text TextId="TOK_TextId_Module_32I" Value="Input 032 bytes"/>
+					<Text TextId="TOK_TextId_Module_32O" Value="Output 032 bytes"/>
+					<Text TextId="TOK_TextId_Module_64IO" Value="Input/Output 064 bytes"/>
+					<Text TextId="TOK_TextId_Module_64I" Value="Input 064 bytes"/>
+					<Text TextId="TOK_TextId_Module_64O" Value="Output 064 bytes"/>
+					<Text TextId="TOK_TextId_Module_128IO" Value="Input/Output 128 bytes"/>
+					<Text TextId="TOK_TextId_Module_128I" Value="Input 128 bytes"/>
+					<Text TextId="TOK_TextId_Module_128O" Value="Output 128 bytes"/>
+					<Text TextId="TOK_TextId_Module_254IO" Value="Input/Output 254 bytes"/>
+					<Text TextId="TOK_TextId_Module_254I" Value="Input 254 bytes"/>
+					<Text TextId="TOK_TextId_Module_254O" Value="Output 254 bytes"/>
+					<Text TextId="TOK_TextId_Module_64I_Isochron" Value="Input IRT 064 bytes"/>
+					<Text TextId="TOK_TextId_Module_64O_Isochron" Value="Output IRT 064 bytes"/>
+					<Text TextId="TOK_TextId_Module_1I_Isochron" Value="Input IRT 001 byte"/>
+					<Text TextId="TOK_TextId_Module_1O_Isochron" Value="Output IRT 001 byte"/>
+					<Text TextId="TOK_TextId_Module_MultiSub" Value="multi subslots 1I 1I 1O 1O"/>
+					<Text TextId="TOK_TextId_MultiSub1I" Value="001 byte  I"/>
+					<Text TextId="TOK_TextId_MultiSub1O" Value="001 byte  O"/>
+					<Text TextId="TOK_TextId_Module_PROFIdrive" Value="PROFIdrive Module AC1" />
+					<Text TextId="TOK_TextId_Module_PROFIdriveAC4" Value="PROFIdrive Module AC4" />
+					<Text TextId="TOK_TextId_PROFIdrive_PAP" Value="Parameter Access Point" />
+					<!--module info name-->
+					<Text TextId="TOK_InfoTextId_Module_1IO"   Value="1 byte IO    (overall consistency) - ModuleIdentNumber:0x20 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_1I"    Value="1 byte I     (overall consistency) - ModuleIdentNumber:0x21 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_1O"    Value="1 byte O     (overall consistency) - ModuleIdentNumber:0x22 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_2IO"   Value="2 bytes IO    (overall consistency) - ModuleIdentNumber:0x23 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_2I"    Value="2 bytes I     (overall consistency) - ModuleIdentNumber:0x24 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_2O"    Value="2 bytes O     (overall consistency) - ModuleIdentNumber:0x25 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_4IO"   Value="4 bytes IO    (overall consistency) - ModuleIdentNumber:0x26 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_4I"    Value="4 bytes I     (overall consistency) - ModuleIdentNumber:0x27 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_4O"    Value="4 bytes O     (overall consistency) - ModuleIdentNumber:0x28 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_8IO"   Value="8 bytes IO    (overall consistency) - ModuleIdentNumber:0x29 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_8I"    Value="8 bytes I     (overall consistency) - ModuleIdentNumber:0x2a - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_8O"    Value="8 bytes O     (overall consistency) - ModuleIdentNumber:0x2b - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_16IO"   Value="16 bytes IO    (overall consistency) - ModuleIdentNumber:0x2c - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_16I"    Value="16 bytes I     (overall consistency) - ModuleIdentNumber:0x2d - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_16O"    Value="16 bytes O     (overall consistency) - ModuleIdentNumber:0x2e - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_32IO"   Value="32 bytes IO    (overall consistency) - ModuleIdentNumber:0x2f - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_32I"    Value="32 bytes I     (overall consistency) - ModuleIdentNumber:0x30 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_32O"    Value="32 bytes O     (overall consistency) - ModuleIdentNumber:0x31 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_64IO"    Value="64 bytes IO    (overall consistency) - ModuleIdentNumber:0x32 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_64I"     Value="64 bytes I     (overall consistency) - ModuleIdentNumber:0x33 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_64O"     Value="64 bytes O     (overall consistency) - ModuleIdentNumber:0x34 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_128IO"   Value="128 bytes IO    (overall consistency) - ModuleIdentNumber:0x35 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_128I"    Value="128 bytes I     (overall consistency) - ModuleIdentNumber:0x36 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_128O"    Value="128 bytes O     (overall consistency) - ModuleIdentNumber:0x37 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_254IO"   Value="254 bytes IO    (overall consistency) - ModuleIdentNumber:0x38 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_254I"    Value="254 bytes I     (overall consistency) - ModuleIdentNumber:0x39 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_254O"    Value="254 bytes O     (overall consistency) - ModuleIdentNumber:0x3a - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_64I_Isochron" Value="64 bytes I (isochrone, overall consistency) - ModuleIdentNumber:0x50 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_64O_Isochron" Value="64 bytes O (isochrone, overall consistency) - ModuleIdentNumber:0x51 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_1I_Isochron" Value="1 byte I (isochrone, overall consistency) - ModuleIdentNumber:0x52 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_1O_Isochron" Value="1 byte O (isochrone, overall consistency) - ModuleIdentNumber:0x53 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_MultiSub" Value="1 byte I + 1 byte I + 1 byte O + 1 byte O - ModuleIdentNumber:0x60"/>
+					<Text TextId="TOK_InfoTextId_MultiSub1I" Value="1 byte I (overall consistency) - SubmoduleIdentNumber:0x0001 - API:0x00"/>
+					<Text TextId="TOK_InfoTextId_MultiSub1O" Value="1 byte O (overall consistency) - SubmoduleIdentNumber:0x0002 - API:0x00"/>
+					<!--dataitem name-->
+					<Text TextId="TOK_Input_DataItem_1" Value="Input 001 byte"/>
+					<Text TextId="TOK_Output_DataItem_1" Value="Output 001 byte"/>
+					<Text TextId="TOK_Input_DataItem_2" Value="Input 002 bytes"/>
+					<Text TextId="TOK_Output_DataItem_2" Value="Output 002 bytes"/>
+					<Text TextId="TOK_Input_DataItem_4" Value="Input 004 byte"/>
+					<Text TextId="TOK_Output_DataItem_4" Value="Output 004 bytse"/>
+					<Text TextId="TOK_Input_DataItem_8" Value="Input 008 byte"/>
+					<Text TextId="TOK_Output_DataItem_8" Value="Output 008 bytes"/>
+					<Text TextId="TOK_Input_DataItem_16" Value="Input 016 bytes"/>
+					<Text TextId="TOK_Output_DataItem_16" Value="Output 016 bytes"/>
+					<Text TextId="TOK_Input_DataItem_32" Value="Input 032 bytes"/>
+					<Text TextId="TOK_Output_DataItem_32" Value="Output 032 bytes"/>
+					<Text TextId="TOK_Input_DataItem_64" Value="Input 064 bytes"/>
+					<Text TextId="TOK_Output_DataItem_64" Value="Output 064 bytes"/>
+					<Text TextId="TOK_Input_DataItem_128" Value="Input 128 bytes"/>
+					<Text TextId="TOK_Output_DataItem_128" Value="Output 128 bytes"/>
+					<Text TextId="TOK_Input_DataItem_254" Value="Input 254 bytes"/>
+					<Text TextId="TOK_Output_DataItem_254" Value="Output 254 bytes"/>
+					<Text TextId="TOK_Input_DataItem_64_Isochron" Value="Input 064 bytes IRT"/>
+					<Text TextId="TOK_Output_DataItem_64_Isochron" Value="Output0 64 bytes IRT"/>
+					<Text TextId="TOK_Input_DataItem_1_Isochron" Value="Input 001 byte IRT"/>
+					<Text TextId="TOK_Output_DataItem_1_Isochron" Value="Output 001 byte IRT"/>
+					<Text TextId="TOK_InfoTextId_Module_PROFIdrive" Value="PROFIdrive Drive object (DO) AC1"/>
+					<Text TextId="TOK_InfoTextId_Module_PROFIdriveAC4" Value="PROFIdrive Drive object (DO) AC4"/>
+					<Text TextId="TOK_InfoTextId_PROFIdrive_PAP" Value="Access point to the parameters of the drive object (DO)"/>
+					<!--dataitem name-->
+					<!--errortype name-->
+					<Text TextId="TOK_Name_ErrorType71" Value="MAC address error."/>
+					<Text TextId="TOK_Name_ErrorType72" Value="Parallel port error."/>
+					<Text TextId="TOK_Name_ErrorType73" Value="Inobus communication not connected."/>
+					<Text TextId="TOK_Name_ErrorType74" Value="Inobus data frame CRC check failed."/>
+					<Text TextId="TOK_Name_ErrorType75" Value="Inobus data frame length check failed."/>
+					<Text TextId="TOK_HelpName_ErrorType71" Value="The slave`s MAC address is the default,please flash the MAC address for Profinet card."/>
+					<Text TextId="TOK_HelpName_ErrorType72" Value="Check the parallel port on slave."/>
+					<Text TextId="TOK_HelpName_ErrorType73" Value="Check the Inobus link on slave."/>
+					<Text TextId="TOK_HelpName_ErrorType74" Value="Check the Inobus link on slave for electronic interferance."/>
+					<Text TextId="TOK_HelpName_ErrorType75" Value="Check the if the set length of inobus standard frame data area is the same as the actual data length."/>
+					<!--other text definitions-->
+					<Text TextId="T_general_parameter" Value="general parameter"/>
+				</PrimaryLanguage>
+	            <!-- ==================== -->
+	            <!--      chinese          -->
+	            <!-- ==================== -->
+				<Language xml:lang="zh">
+					<Text TextId="IRCB501 PN" Value="IRCB501"/>
+					
+					<!--DAP - ERTEC 200p Devkit-->
+					<Text TextId="TOK_IRCB501_PN" Value="IRCB501"/>
+					<Text TextId="TOK_Standard_no_PDEV" Value="Standard, no PDEV"/>
+					<Text TextId="TOK_Standard_no_MRP" Value="Standard, no MRP"/>
+					<Text TextId="TOK_Standard_MRP" Value="Standard, MRP"/>
+					<Text TextId="TOK_Standard_1Port" Value="Standard, 1 port"/>
+					<Text TextId="TOK_Standard_POF" Value="Standard, POF Port"/>
+					<Text TextId="TOK_Standard_2POF" Value="Standard, 2 POF Ports"/>
+					<Text TextId="TOK_Standard_MRP_S2" Value="Standard, MRP, S2 redundancy"/>
+					<Text TextId="TOK_Standard_MRP_S2_DR" Value="IRCB501"/>
+					
+
+					<Text TextId="TOK_ModInfo_InfoTextId_IRCB501" Value="Inovance Driver profinet,Inovance robot2.0 IRCB501"/>
+					
+					<!--port name-->
+					<Text TextId="TOK_Subslot_8000" Value="X1"/>
+					<Text TextId="TOK_Subslot_8001" Value="X1 P1"/>
+					<Text TextId="TOK_Subslot_8002" Value="X1 P2"/>
+					<Text TextId="TOK_DAP_InterfaceModule" Value="PN-IO"/>
+					<Text TextId="TOK_Port1" Value="Port 1"/>
+					<Text TextId="TOK_Port2" Value="Port 2"/>
+					<!--module name-->
+					<Text TextId="TOK_TextId_Module_1IO" Value="Input/Output 001 byte"/>
+					<Text TextId="TOK_TextId_Module_1I" Value="Input 001 byte"/>
+					<Text TextId="TOK_TextId_Module_1O" Value="Output 001 byte"/>
+					<Text TextId="TOK_TextId_Module_2IO" Value="Input/Output 002 bytes"/>
+					<Text TextId="TOK_TextId_Module_2I" Value="Input 002 bytes"/>
+					<Text TextId="TOK_TextId_Module_2O" Value="Output 002 bytes"/>
+					<Text TextId="TOK_TextId_Module_4IO" Value="Input/Output 004 bytes"/>
+					<Text TextId="TOK_TextId_Module_4I" Value="Input 004 bytes"/>
+					<Text TextId="TOK_TextId_Module_4O" Value="Output 004 bytes"/>
+					<Text TextId="TOK_TextId_Module_8IO" Value="Input/Output 008 bytes"/>
+					<Text TextId="TOK_TextId_Module_8I" Value="Input 008 bytes"/>
+					<Text TextId="TOK_TextId_Module_8O" Value="Output 008 bytes"/>
+					<Text TextId="TOK_TextId_Module_16IO" Value="Input/Output 016 bytes"/>
+					<Text TextId="TOK_TextId_Module_16I" Value="Input 016 bytes"/>
+					<Text TextId="TOK_TextId_Module_16O" Value="Output 016 bytes"/>
+					<Text TextId="TOK_TextId_Module_32IO" Value="Input/Output 032 bytes"/>
+					<Text TextId="TOK_TextId_Module_32I" Value="Input 032 bytes"/>
+					<Text TextId="TOK_TextId_Module_32O" Value="Output 032 bytes"/>
+					<Text TextId="TOK_TextId_Module_64IO" Value="Input/Output 064 bytes"/>
+					<Text TextId="TOK_TextId_Module_64I" Value="Input 064 bytes"/>
+					<Text TextId="TOK_TextId_Module_64O" Value="Output 064 bytes"/>
+					<Text TextId="TOK_TextId_Module_128IO" Value="Input/Output 128 bytes"/>
+					<Text TextId="TOK_TextId_Module_128I" Value="Input 128 bytes"/>
+					<Text TextId="TOK_TextId_Module_128O" Value="Output 128 bytes"/>
+					<Text TextId="TOK_TextId_Module_254IO" Value="Input/Output 254 bytes"/>
+					<Text TextId="TOK_TextId_Module_254I" Value="Input 254 bytes"/>
+					<Text TextId="TOK_TextId_Module_254O" Value="Output 254 bytes"/>
+					<Text TextId="TOK_TextId_Module_64I_Isochron" Value="Input IRT 064 bytes"/>
+					<Text TextId="TOK_TextId_Module_64O_Isochron" Value="Output IRT 064 bytes"/>
+					<Text TextId="TOK_TextId_Module_1I_Isochron" Value="Input IRT 001 byte"/>
+					<Text TextId="TOK_TextId_Module_1O_Isochron" Value="Output IRT 001 byte"/>
+					<Text TextId="TOK_TextId_Module_MultiSub" Value="multi subslots 1I 1I 1O 1O"/>
+					<Text TextId="TOK_TextId_MultiSub1I" Value="001 byte  I"/>
+					<Text TextId="TOK_TextId_MultiSub1O" Value="001 byte  O"/>
+					<Text TextId="TOK_TextId_Module_PROFIdrive" Value="PROFIdrive Module AC1" />
+					<Text TextId="TOK_TextId_Module_PROFIdriveAC4" Value="PROFIdrive Module AC4" />
+					<Text TextId="TOK_TextId_PROFIdrive_PAP" Value="Parameter Access Point" />
+					<!--module info name-->
+					<Text TextId="TOK_InfoTextId_Module_1IO"   Value="1 byte IO    (overall consistency) - ModuleIdentNumber:0x20 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_1I"    Value="1 byte I     (overall consistency) - ModuleIdentNumber:0x21 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_1O"    Value="1 byte O     (overall consistency) - ModuleIdentNumber:0x22 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_2IO"   Value="2 bytes IO    (overall consistency) - ModuleIdentNumber:0x23 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_2I"    Value="2 bytes I     (overall consistency) - ModuleIdentNumber:0x24 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_2O"    Value="2 bytes O     (overall consistency) - ModuleIdentNumber:0x25 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_4IO"   Value="4 bytes IO    (overall consistency) - ModuleIdentNumber:0x26 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_4I"    Value="4 bytes I     (overall consistency) - ModuleIdentNumber:0x27 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_4O"    Value="4 bytes O     (overall consistency) - ModuleIdentNumber:0x28 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_8IO"   Value="8 bytes IO    (overall consistency) - ModuleIdentNumber:0x29 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_8I"    Value="8 bytes I     (overall consistency) - ModuleIdentNumber:0x2a - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_8O"    Value="8 bytes O     (overall consistency) - ModuleIdentNumber:0x2b - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_16IO"   Value="16 bytes IO    (overall consistency) - ModuleIdentNumber:0x2c - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_16I"    Value="16 bytes I     (overall consistency) - ModuleIdentNumber:0x2d - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_16O"    Value="16 bytes O     (overall consistency) - ModuleIdentNumber:0x2e - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_32IO"   Value="32 bytes IO    (overall consistency) - ModuleIdentNumber:0x2f - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_32I"    Value="32 bytes I     (overall consistency) - ModuleIdentNumber:0x30 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_32O"    Value="32 bytes O     (overall consistency) - ModuleIdentNumber:0x31 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_64IO"    Value="64 bytes IO    (overall consistency) - ModuleIdentNumber:0x32 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_64I"     Value="64 bytes I     (overall consistency) - ModuleIdentNumber:0x33 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_64O"     Value="64 bytes O     (overall consistency) - ModuleIdentNumber:0x34 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_128IO"   Value="128 bytes IO    (overall consistency) - ModuleIdentNumber:0x35 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_128I"    Value="128 bytes I     (overall consistency) - ModuleIdentNumber:0x36 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_128O"    Value="128 bytes O     (overall consistency) - ModuleIdentNumber:0x37 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_254IO"   Value="254 bytes IO    (overall consistency) - ModuleIdentNumber:0x38 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_254I"    Value="254 bytes I     (overall consistency) - ModuleIdentNumber:0x39 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_254O"    Value="254 bytes O     (overall consistency) - ModuleIdentNumber:0x3a - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_64I_Isochron" Value="64 bytes I (isochrone, overall consistency) - ModuleIdentNumber:0x50 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_64O_Isochron" Value="64 bytes O (isochrone, overall consistency) - ModuleIdentNumber:0x51 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_1I_Isochron" Value="1 byte I (isochrone, overall consistency) - ModuleIdentNumber:0x52 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_1O_Isochron" Value="1 byte O (isochrone, overall consistency) - ModuleIdentNumber:0x53 - SubmoduleIdentNumber:0x0001 - API:0x00 - PROFIenergy"/>
+					<Text TextId="TOK_InfoTextId_Module_MultiSub" Value="1 byte I + 1 byte I + 1 byte O + 1 byte O - ModuleIdentNumber:0x60"/>
+					<Text TextId="TOK_InfoTextId_MultiSub1I" Value="1 byte I (overall consistency) - SubmoduleIdentNumber:0x0001 - API:0x00"/>
+					<Text TextId="TOK_InfoTextId_MultiSub1O" Value="1 byte O (overall consistency) - SubmoduleIdentNumber:0x0002 - API:0x00"/>
+					<!--dataitem name-->
+					<Text TextId="TOK_Input_DataItem_1" Value="Input 001 byte"/>
+					<Text TextId="TOK_Output_DataItem_1" Value="Output 001 byte"/>
+					<Text TextId="TOK_Input_DataItem_2" Value="Input 002 bytes"/>
+					<Text TextId="TOK_Output_DataItem_2" Value="Output 002 bytes"/>
+					<Text TextId="TOK_Input_DataItem_4" Value="Input 004 byte"/>
+					<Text TextId="TOK_Output_DataItem_4" Value="Output 004 bytse"/>
+					<Text TextId="TOK_Input_DataItem_8" Value="Input 008 byte"/>
+					<Text TextId="TOK_Output_DataItem_8" Value="Output 008 bytes"/>
+					<Text TextId="TOK_Input_DataItem_16" Value="Input 016 bytes"/>
+					<Text TextId="TOK_Output_DataItem_16" Value="Output 016 bytes"/>
+					<Text TextId="TOK_Input_DataItem_32" Value="Input 032 bytes"/>
+					<Text TextId="TOK_Output_DataItem_32" Value="Output 032 bytes"/>
+					<Text TextId="TOK_Input_DataItem_64" Value="Input 064 bytes"/>
+					<Text TextId="TOK_Output_DataItem_64" Value="Output 064 bytes"/>
+					<Text TextId="TOK_Input_DataItem_128" Value="Input 128 bytes"/>
+					<Text TextId="TOK_Output_DataItem_128" Value="Output 128 bytes"/>
+					<Text TextId="TOK_Input_DataItem_254" Value="Input 254 bytes"/>
+					<Text TextId="TOK_Output_DataItem_254" Value="Output 254 bytes"/>
+					<Text TextId="TOK_Input_DataItem_64_Isochron" Value="Input 064 bytes IRT"/>
+					<Text TextId="TOK_Output_DataItem_64_Isochron" Value="Output0 64 bytes IRT"/>
+					<Text TextId="TOK_Input_DataItem_1_Isochron" Value="Input 001 byte IRT"/>
+					<Text TextId="TOK_Output_DataItem_1_Isochron" Value="Output 001 byte IRT"/>
+					<Text TextId="TOK_InfoTextId_Module_PROFIdrive" Value="PROFIdrive Drive object (DO) AC1"/>
+					<Text TextId="TOK_InfoTextId_Module_PROFIdriveAC4" Value="PROFIdrive Drive object (DO) AC4"/>
+					<Text TextId="TOK_InfoTextId_PROFIdrive_PAP" Value="Access point to the parameters of the drive object (DO)"/>
+					<!--dataitem name-->					
+					<!--errortype name-->
+					<Text TextId="TOK_Name_ErrorType71" Value="从站MAC错误"/>
+					<Text TextId="TOK_Name_ErrorType72" Value="从站未检测到MCU"/>
+					<Text TextId="TOK_Name_ErrorType73" Value="从站Inobus未连接"/>
+					<Text TextId="TOK_Name_ErrorType74" Value="从站Ilnobus数据帧RCR校验错误"/>
+					<Text TextId="TOK_Name_ErrorType75" Value="从站Inobus数据帧长度校验错误"/>
+					<Text TextId="TOK_HelpName_ErrorType71" Value="从站当前为默认MAC地址，请为其烧录唯一MAC地址。"/>
+					<Text TextId="TOK_HelpName_ErrorType72" Value="请检查从站MCU是否启动。"/>
+					<Text TextId="TOK_HelpName_ErrorType73" Value="请检查从站Inobus链路是否断开。"/>
+					<Text TextId="TOK_HelpName_ErrorType74" Value="请检查从站Inobus链路是否存在干扰。"/>
+					<Text TextId="TOK_HelpName_ErrorType75" Value="请检查Inobus标准帧的数据区设定长度与真实数据长度是否一致。"/>
+					<!--other text definitions-->       
+					<Text TextId="T_general_parameter" Value="general parameter"/>
+				</Language>
+			</ExternalTextList>
+		</ApplicationProcess>
+	</ProfileBody>
+</ISO15745Profile>

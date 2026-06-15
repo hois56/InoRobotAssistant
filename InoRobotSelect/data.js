@@ -1904,7 +1904,7 @@ const productsData = [
                 "cable": "3m (Default)"
             },
             {
-                "code": "-",
+                "code": "01741079*M00018",
                 "cable": "5m"
             },
             {

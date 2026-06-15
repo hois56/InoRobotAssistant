@@ -1,0 +1,170 @@
+$ EZ-EDS Version 3.31.1.20220811 Generated Electronic Data Sheet
+
+$ ****************************************************************************
+$  
+$ File:   INOVANCE ROBOT ENIP V1.1.1.EDS
+$  
+$ Author: Xiong Riwei,Inovance Robot, Shenzhen, China
+$ Date:   28.03.2019
+$  
+$ ****************************************************************************
+$  
+$ ATTENTION:
+$  
+$  DO NOT CHANGE THE FILE
+$  
+$ ****************************************************************************
+$  
+$ Changes:
+$  
+$  Version  Date        Name            Description
+$ -------------------------------------------------------------------------
+$  
+$  1.1      28.03.2019  Xiong Riwei     created
+$  2.0      13.11.2020  Ye Yanmao       modified
+$  3.0      17.12.2020  Ye Yanmao       modified
+$  4.0      13.05.2021  Ye Yanmao       modified
+$  4.1      12.06.2021  Ye Yanmao       modified
+$  4.2      26.11.2021  Wang Hongwen    monified
+$ ****************************************************************************
+
+[File]
+        DescText = "EDS-File for Inovance Robot EtherNet/IP Adapter";
+        CreateDate = 03-28-2019;
+        CreateTime = 15:00:00;
+        ModDate = 03-27-2023;
+        ModTime = 14:16:20;
+        Revision = 4.5;
+        HomeURL = "www.inovance.com";
+
+
+[Device]
+        VendCode = 1660;
+        VendName = "Inovance";
+        ProdType = 26;
+        ProdTypeStr = "Inovance Robot IRCB50x Series";
+        ProdCode = 259;
+        MajRev = 1;
+        MinRev = 1;
+        ProdName = "Inovance Robot IRCB50x Series";
+        Catalog = "Inovance Robot IRCB50x Series";
+        Icon = "IRCB50x.ico";
+
+[Device Classification]
+        Class1 = EtherNetIP;
+
+
+[Params]
+        Param1 =
+                0,
+                ,,
+                0x0000,
+                0xC7,
+                2,
+                "Assembly Output Size",
+                "",
+                "",
+                2,256,256,
+                ,,,,
+                ,,,,
+                0;
+
+        Param2 =
+                0,
+                ,,
+                0x0000,
+                0xC7,
+                2,
+                "Assembly Input Size",
+                "",
+                "",
+                2,256,256,
+                ,,,,
+                ,,,,
+                0;
+
+        Param3 =
+                0,
+                ,,
+                0x0000,
+                0xC7,
+                2,
+                "IN Data",
+                "",
+                "",
+                ,,0,
+                ,,,,
+                ,,,,
+                0;
+
+        Param4 =
+                0,
+                ,,
+                0x0000,
+                0xC7,
+                2,
+                "OUT Data",
+                "",
+                "",
+                ,,0,
+                ,,,,
+                ,,,,
+                0;
+
+[Assembly]
+        Assem100 =
+                "Bytes Out",
+                ,
+                256,
+                0x0000,
+                ,,
+                2048,Param4;
+        Assem101 =
+                "Bytes In",
+                ,
+                256,
+                0x0000,
+                ,,
+                2048,Param3;
+
+[Connection Manager]
+        Object_Name = "Connection Manager Object";
+        Object_Class_Code = 0x06;
+        Connection1 =
+                0x04010002,             $ Trigger and Transport
+                0x44440405,             $ Point Multicast
+                ,Param1,Assem100,       $ OT RPI Size format
+                ,Param2,Assem101,       $ TO RPI Size format
+                ,,                      $ config 1
+                ,,                      $ config 2
+                "Data, In/Out       ",  $ connection name
+                "Assembly Object In/Out Data",    $ help string
+                "20 04 24 01 2C 64 2C 65";    $ path
+
+[Port]
+        Object_Name = "Port Object";
+        Object_Class_Code = 0xF4;
+        Port1 =
+                TCP,
+                "Port 1",
+                "20 F5 24 01",
+                2,
+                0x00,
+                ;
+
+
+[Capacity]
+
+        ConnOverhead = .004;            $ Connection Overhead
+
+        MaxIOConnections = 3;           $ Maximum number of Class 1 Connections
+        MaxMsgConnections = 5;          $ Maximum number of Class 3 Connections
+        TSpec1 = TxRx, 10, 1400;        $ packets per sec @ 10 bytes
+        TSpec2 = TxRx, 100, 1300;       $ packets per sec @ 100 bytes
+        TSpec3 = TxRx, 200, 1120;       $ packets per sec @ 200 bytes
+
+
+
+$ ****************************************************************************
+$ EOF
+$ ****************************************************************************
