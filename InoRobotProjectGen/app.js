@@ -400,7 +400,7 @@ function handleGeneratedContent(file) {
     else if (file === "s03_teach_mode.pro") code = Generator.TeachModeProgram(state.steps, state.options);
     else if (file === "s04_Tool_Control.pro") code = Generator.ToolControlProgram(state.options, state.steps);
     else if (file === "PLC_TCP_Speed.pro") code = Generator.TcpSpeedProgram(state.options.RobotName);
-    else if (file === "RemoteIO_mapping.dat") code = Generator.RemoteIOInfo(state.options);
+    else if (file === "Remote_IO_mapping.dat") code = Generator.RemoteIOInfo(state.options);
     else if (file === "Labels.jsn") code = Generator.LabelsJson(state.steps, state.options);
     else if (file === "UserDefineWarning.jsn") code = Generator.DataWarning(state.steps, state.options);
     else if (file === "BreakPoints.jsn") code = '{\n  "ProgramsCount": 0,\n  "ProgramsBreaks": []\n}';
@@ -489,7 +489,7 @@ function getFinalFileContent(file) {
 function toggleEditMode() {
     const file = document.getElementById('fileSelector').value;
     // RemoteIO는 편집 불가
-    if (file === 'RemoteIO_mapping.dat') return;
+    if (file === 'Remote_IO_mapping.dat') return;
 
     state.editMode = !state.editMode;
     const btn = document.getElementById('btnToggleEdit');
@@ -572,7 +572,7 @@ function uSelector() {
     const pOpts = state.steps.map(s => `<option>${s.ProcessName}.pro</option>`).join('');
 
     // [5] Data Files (Project, MonitorVars, JP.pts, MonitorGlobalVars, BreakPoints 제외)
-    let dOpts = `<option>Labels.jsn</option><option>RemoteIO_mapping.dat</option><option>UserDefineWarning.jsn</option><option>P.pts</option>`;
+    let dOpts = `<option>Labels.jsn</option><option>Remote_IO_mapping.dat</option><option>UserDefineWarning.jsn</option><option>P.pts</option>`;
     if (state.options.EnableMultiRecipe) {
         for (let i = 1; i < state.options.RecipeCount; i++) {
             dOpts += `<option>P${i.toString().padStart(2, '0')}.pts</option>`;
@@ -590,7 +590,7 @@ function uSelector() {
 
     // Edit 버튼 제어: RemoteIO는 편집 불가
     const editBtn = document.getElementById('btnToggleEdit');
-    const isReadOnly = sel.value === 'RemoteIO_mapping.dat';
+    const isReadOnly = sel.value === 'Remote_IO_mapping.dat';
     editBtn.disabled = isReadOnly;
     editBtn.style.opacity = isReadOnly ? '0.3' : '1';
     editBtn.style.cursor = isReadOnly ? 'not-allowed' : 'pointer';
@@ -613,7 +613,7 @@ function updatePreview() {
     const codeOut = document.getElementById('codeOutput');
     const tableCon = document.getElementById('tableContainer');
 
-    const isReadOnly = file === 'RemoteIO_mapping.dat';
+    const isReadOnly = file === 'Remote_IO_mapping.dat';
     const editBtn = document.getElementById('btnToggleEdit');
     editBtn.disabled = isReadOnly;
     editBtn.style.opacity = isReadOnly ? '0.3' : '1';
@@ -704,8 +704,8 @@ function updatePreview() {
             } catch (e) { /* fallback */ }
         }
 
-        // ── RemoteIO_mapping.dat (읽기 전용) ─────────────
-        else if (file === 'RemoteIO_mapping.dat') {
+        // ── Remote_IO_mapping.dat (읽기 전용) ─────────────
+        else if (file === 'Remote_IO_mapping.dat') {
             try {
                 // FileInfo 헤더를 잘라내고 JSON 부분만 추출
                 const jsonStart = gen.indexOf('{');
@@ -943,7 +943,7 @@ async function exportProj() {
             }
         }
 
-        addZFile(root, "RemoteIO_mapping.dat");
+        addZFile(root, "Remote_IO_mapping.dat");
         // Name changes dynamically based on input
         addCustomZFile(root, `${name}.prj`, `${name}.prj`);
 

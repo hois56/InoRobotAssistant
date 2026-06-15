@@ -2,9 +2,9 @@ FileInfo
     FileType="FieldBusFunIoCfgFile"
     Version="1.0"
     SystemVersion="V4R24"
-    RobotName="IR-R7H-90S5-C2H-INT_01741200"
-    Time="2026-04-02 15:40:15.786"
-    CheckCode="2CE93BDF"
+    RobotName="IR-R4H-54S5-C1H-INT_01741031"
+    Time="2026-06-15 10:28:52.064"
+    CheckCode="9CF712CD"
 EndFileInfo
 {
   "BusIoFuncMap": [
@@ -81,7 +81,7 @@ EndFileInfo
     {
       "IoType": 0,
       "FuncId": 10,
-      "MemAddr": -1,
+      "MemAddr": 12800,
       "Length": 1,
       "Name": "Start all static tasks"
     },
@@ -830,7 +830,7 @@ EndFileInfo
     {
       "IoType": 0,
       "FuncId": 8296,
-      "MemAddr": 752,
+      "MemAddr": 656,
       "Length": 16,
       "Name": "Speed settings"
     },
@@ -1698,84 +1698,84 @@ EndFileInfo
     {
       "IoType": 1,
       "FuncId": 41040,
-      "MemAddr": 784,
+      "MemAddr": 672,
       "Length": 16,
       "Name": "X coordinate of J1 at current position-Low"
     },
     {
       "IoType": 1,
       "FuncId": 41041,
-      "MemAddr": 800,
+      "MemAddr": 688,
       "Length": 16,
       "Name": "X coordinate of J1 at current position-High"
     },
     {
       "IoType": 1,
       "FuncId": 41042,
-      "MemAddr": 816,
+      "MemAddr": 704,
       "Length": 16,
       "Name": "Y coordinate of J2 at current position-Low"
     },
     {
       "IoType": 1,
       "FuncId": 41043,
-      "MemAddr": 832,
+      "MemAddr": 720,
       "Length": 16,
       "Name": "Y coordinate of J2 at current position-High"
     },
     {
       "IoType": 1,
       "FuncId": 41044,
-      "MemAddr": 848,
+      "MemAddr": 736,
       "Length": 16,
       "Name": "Z coordinate of J3 at current position-Low"
     },
     {
       "IoType": 1,
       "FuncId": 41045,
-      "MemAddr": 864,
+      "MemAddr": 752,
       "Length": 16,
       "Name": "Z coordinate of J3 at current position-High"
     },
     {
       "IoType": 1,
       "FuncId": 41046,
-      "MemAddr": 880,
+      "MemAddr": 768,
       "Length": 16,
       "Name": "A coordinate of J4 at current position-Low"
     },
     {
       "IoType": 1,
       "FuncId": 41047,
-      "MemAddr": 896,
+      "MemAddr": 784,
       "Length": 16,
       "Name": "A coordinate of J4 at current position-High"
     },
     {
       "IoType": 1,
       "FuncId": 41048,
-      "MemAddr": 912,
+      "MemAddr": 800,
       "Length": 16,
       "Name": "B coordinate of J5 at current position-Low"
     },
     {
       "IoType": 1,
       "FuncId": 41049,
-      "MemAddr": 928,
+      "MemAddr": 816,
       "Length": 16,
       "Name": "B coordinate of J5 at current position-High"
     },
     {
       "IoType": 1,
       "FuncId": 41050,
-      "MemAddr": 944,
+      "MemAddr": 832,
       "Length": 16,
       "Name": "C coordinate of J6 at current position-Low"
     },
     {
       "IoType": 1,
       "FuncId": 41051,
-      "MemAddr": 960,
+      "MemAddr": 848,
       "Length": 16,
       "Name": "C coordinate of J6 at current position-High"
     },
@@ -1803,7 +1803,7 @@ EndFileInfo
     {
       "IoType": 1,
       "FuncId": 41057,
-      "MemAddr": 768,
+      "MemAddr": 12816,
       "Length": 16,
       "Name": "Current control"
     },
@@ -1852,14 +1852,14 @@ EndFileInfo
     {
       "IoType": 1,
       "FuncId": 41064,
-      "MemAddr": 752,
+      "MemAddr": -1,
       "Length": 16,
       "Name": "Current speed"
     },
     {
       "IoType": 1,
       "FuncId": 41065,
-      "MemAddr": 720,
+      "MemAddr": 656,
       "Length": 16,
       "Name": "Current fault code"
     },
