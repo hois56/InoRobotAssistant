@@ -596,6 +596,12 @@ const Generator = {
             );
         }
         let valW = 54;
+        if (hasVisionIo) {
+            inWords.push({ nIndex: valW, sLabel: "xwVision_offset_X", sDescription: "2Word_/10000", sOriginalName: `INW[${valW}]` });
+            inWords.push({ nIndex: valW + 2, sLabel: "xwVision_offset_Y", sDescription: "2Word_/10000", sOriginalName: `INW[${valW + 2}]` });
+            inWords.push({ nIndex: valW + 4, sLabel: "xwVision_offset_A", sDescription: "2Word_/10000", sOriginalName: `INW[${valW + 4}]` });
+            valW += 6;
+        }
         for (let j = 0; j < steps.length; j++) {
             let s = steps[j];
             if (s.No > 10) break;
@@ -608,11 +614,6 @@ const Generator = {
         if (hasPeeling) {
             inWords.push({ nIndex: valW, sLabel: "xwPeel_speed", sDescription: "", sOriginalName: `INW[${valW}]` });
             valW += 1;
-        }
-        if (hasVisionIo) {
-            inWords.push({ nIndex: valW, sLabel: "xwVision_offset_X", sDescription: "2Word_/10000", sOriginalName: `INW[${valW}]` });
-            inWords.push({ nIndex: valW + 2, sLabel: "xwVision_offset_Y", sDescription: "2Word_/10000", sOriginalName: `INW[${valW + 2}]` });
-            inWords.push({ nIndex: valW + 4, sLabel: "xwVision_offset_A", sDescription: "2Word_/10000", sOriginalName: `INW[${valW + 4}]` });
         }
 
         let outBits = [
