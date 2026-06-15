@@ -25,6 +25,10 @@ const Generator = {
         return step.WorkType === "Peeling" || step.WorkMethod === "Peeling";
     },
 
+    UsesVisionOffset(step) {
+        return step.VisionUse === "Use - IO" || (step.WorkType === "Vision" && step.WorkMethod === "Calibration");
+    },
+
     LastWaitOffset(step) {
         return 1 + (step.ExtraWaitCount || 0);
     },
@@ -36,11 +40,11 @@ const Generator = {
         }
 
         let code = "";
-        if (step.VisionUse === "Use - IO") {
+        if (Generator.UsesVisionOffset(step)) {
             code += `${indent}LPR[B_PR] = (xwVision_offset_X.Int/10000,xwVision_offset_Y.Int/10000,0,xwVision_offset_A.Int/10000,0,0);\n`;
         }
         code += `${indent}PR[B_PR] = (xwOffset_${n}_X.Int/10000,xwOffset_${n}_Y.Int/10000,xwOffset_${n}_Z.Int/10000,xwOffset_${n}_A.Int/10000,0,0);\n`;
-        if (step.VisionUse === "Use - IO") {
+        if (Generator.UsesVisionOffset(step)) {
             code += `${indent}PR[B_PR] = PR[B_PR] + LPR[B_PR];\n`;
         } else if (step.VisionUse === "Use - Socket" && step.WorkMethod !== "Check" && step.WorkMethod !== "Calibration") {
             code += `${indent}PR[B_PR] = PR[B_PR] + PR[0];\n`;
@@ -176,11 +180,11 @@ const Generator = {
             if (n > 10) {
                 sb += `            PR[B_PR] = (0,0,0,0,0,0);\n`;
             } else {
-                if (s.VisionUse === "Use - IO") {
+                if (Generator.UsesVisionOffset(s)) {
                     sb += `            LPR[B_PR] = (xwVision_offset_X.Int/10000,xwVision_offset_Y.Int/10000,0,xwVision_offset_A.Int/10000,0,0);\n`;
                 }
                 sb += `            PR[B_PR] = (xwOffset_${n}_X.Int/10000,xwOffset_${n}_Y.Int/10000,xwOffset_${n}_Z.Int/10000,xwOffset_${n}_A.Int/10000,0,0);\n`;
-                if (s.VisionUse === "Use - IO") {
+                if (Generator.UsesVisionOffset(s)) {
                     sb += `            PR[B_PR] = PR[B_PR] + LPR[B_PR];\n`;
                 } else if (s.VisionUse === "Use - Socket" && s.WorkMethod !== "Check" && s.WorkMethod !== "Calibration") {
                     sb += `            PR[B_PR] = PR[B_PR] + PR[0];\n`;
@@ -272,7 +276,7 @@ const Generator = {
 
     InitialProgram(steps, options) {
         let sb = Generator.Header(options.RobotName);
-        sb += `#====================================================================================\n#  Init Signal\n#====================================================================================\nFunc Init_signal()\n    Clear Out[520],200; #[520] ~ [719]\nEndFunc;\n#====================================================================================\n#  Init Move Home\n#====================================================================================\nFunc Init_move_home()\n    #================================================================================\n    #  Signal Set\n    #================================================================================\n    If yRobot_home_sts\n        R_Cur_pos = 1;\n    EndIf;\n    #================================================================================\n    #  Start Return\n    #================================================================================\n    Velset 50;\n    Return_move(0);\n    #================================================================================\n    R_Cur_pos = 1;\n    Home[0],V[100];\n    Velset OFF;\nEndFunc;\n#====================================================================================\n#  Return Move\n#====================================================================================\nFunc Return_move(Int return_path)\n    Int cur_proces = R_Cur_pos / 100;\n    Print "Return move Process : " + cur_proces;\n    Switch R_Cur_pos\n        Case 1: #Home\n            Break;\n`;
+        sb += `#====================================================================================\n#  Init Signal\n#====================================================================================\nFunc Init_signal()\n    Clear Out[520],120; #[520] ~ [639]\nEndFunc;\n#====================================================================================\n#  Init Move Home\n#====================================================================================\nFunc Init_move_home()\n    #================================================================================\n    #  Signal Set\n    #================================================================================\n    If yRobot_home_sts\n        R_Cur_pos = 1;\n    EndIf;\n    #================================================================================\n    #  Start Return\n    #================================================================================\n    Velset 50;\n    Return_move(0);\n    #================================================================================\n    R_Cur_pos = 1;\n    Home[0],V[100];\n    Velset OFF;\nEndFunc;\n#====================================================================================\n#  Return Move\n#====================================================================================\nFunc Return_move(Int return_path)\n    Int cur_proces = R_Cur_pos / 100;\n    Print "Return move Process : " + cur_proces;\n    Switch R_Cur_pos\n        Case 1: #Home\n            Break;\n`;
 
         steps.forEach(s => {
             const n = s.No;
@@ -395,6 +399,8 @@ const Generator = {
             teachingCall = `    If xTeach_mode\n        s03_teach_mode.Teaching_mode();\n        Goto L[0];\n    EndIf;\n    #================================================================================\n`;
         }
 
+        const downDec = method === "Put" ? ",DEC[5]" : "";
+
         let completion = "";
         if (hasWait) {
             completion = `    If ${waitFlag}\n        Set yP${n}_wait_pos_comp,ON;\n    ElseIf ${workFlag}\n        Set yP${n}_work_pos_comp,ON;\n    EndIf;\n`;
@@ -410,7 +416,7 @@ const Generator = {
         if (hasWait) {
             sb += `            If ${waitFlag}\n                Break;\n            EndIf;\n`;
         }
-        sb += `        Case 10:\n            R_Cur_pos = ${n * 100 + 10};\n            Movj Offset(P${n}_Up, PR[B_PR]),V[100],Z[1],Tool[B_Tool],Wobj[B_Wobj];\n            R_Cur_pos = ${n * 100 + 11};\n            Movl Offset(P${n}_Down, PR[B_PR]),V[100],Z[0],Tool[B_Tool],Wobj[B_Wobj];\n            Break;\n    EndSwitch;\n${afterMoveAction}${toolCtrlLogic}${processAction}    #================================================================================\n    #  Process Complete\n    #================================================================================\n${finalAction}    L[0]:\n    Print "P${n} - ${type} ${method} pos End";\n${completion}EndFunc;\n`;
+        sb += `        Case 10:\n            R_Cur_pos = ${n * 100 + 10};\n            Movj Offset(P${n}_Up, PR[B_PR]),V[100],Z[1],Tool[B_Tool],Wobj[B_Wobj];\n            R_Cur_pos = ${n * 100 + 11};\n            Movl Offset(P${n}_Down, PR[B_PR]),V[100],Z[0],Tool[B_Tool],Wobj[B_Wobj]${downDec};\n            Break;\n    EndSwitch;\n${afterMoveAction}${toolCtrlLogic}${processAction}    #================================================================================\n    #  Process Complete\n    #================================================================================\n${finalAction}    L[0]:\n    Print "P${n} - ${type} ${method} pos End";\n${completion}EndFunc;\n`;
 
         if (socketFuncs) {
             sb += `\n${socketFuncs}`;
@@ -501,7 +507,7 @@ const Generator = {
 
         steps.forEach(s => {
             if (Generator.IsPeeling(s)) hasPeeling = true;
-            if (s.VisionUse === "Use - IO") hasVisionIo = true;
+            if (Generator.UsesVisionOffset(s)) hasVisionIo = true;
             if (s.ToolType === "Vacuum") hasVacuum = true;
             if (s.ToolType === "Gripper" || Generator.IsPeeling(s)) hasGripper = true;
             if (s.WorkType === "Trash") hasTrash = true;
