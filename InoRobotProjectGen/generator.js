@@ -593,12 +593,12 @@ const Generator = {
         inWords.push({ nIndex: 41, sLabel: "xwSet_speed", sDescription: "Speed settings", sOriginalName: "INW[41]" });
         if (options.EnableTeachingMode) {
             inWords.push(
-                { nIndex: 42, sLabel: "xwTeach_offset_X", sDescription: "", sOriginalName: "INW[42]" },
-                { nIndex: 44, sLabel: "xwTeach_offset_Y", sDescription: "", sOriginalName: "INW[44]" },
-                { nIndex: 46, sLabel: "xwTeach_offset_Z", sDescription: "", sOriginalName: "INW[46]" },
-                { nIndex: 48, sLabel: "xwTeach_offset_A", sDescription: "", sOriginalName: "INW[48]" },
-                { nIndex: 50, sLabel: "xwTeach_offset_B", sDescription: "", sOriginalName: "INW[50]" },
-                { nIndex: 52, sLabel: "xwTeach_offset_C", sDescription: "", sOriginalName: "INW[52]" }
+                { nIndex: 42, sLabel: "xwTeach_offset_X", sDescription: "2 Word /10000", sOriginalName: "INW[42]" },
+                { nIndex: 44, sLabel: "xwTeach_offset_Y", sDescription: "2 Word /10000", sOriginalName: "INW[44]" },
+                { nIndex: 46, sLabel: "xwTeach_offset_Z", sDescription: "2 Word /10000", sOriginalName: "INW[46]" },
+                { nIndex: 48, sLabel: "xwTeach_offset_A", sDescription: "2 Word /10000", sOriginalName: "INW[48]" },
+                { nIndex: 50, sLabel: "xwTeach_offset_B", sDescription: "2 Word /10000", sOriginalName: "INW[50]" },
+                { nIndex: 52, sLabel: "xwTeach_offset_C", sDescription: "2 Word /10000", sOriginalName: "INW[52]" }
             );
         }
         let valW = 54;
