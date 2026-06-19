@@ -1273,10 +1273,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Function to update dynamic header codes
         function updateHeaderCodes() {
             // Pendant
+            const pConfig = rightCol.querySelector('input[name="pendantConfig"]:checked');
             const pSel = rightCol.querySelector('input[name="pendantLength"]:checked');
             const pHeader = rightCol.querySelector('#header-pendant');
             if (pHeader) {
-                const codeHtml = (pSel && pSel.value !== 'none') ? ` <span class="code-badge">${pSel.value}</span>` : '';
+                const codeHtml = (pConfig && pConfig.value !== 'none' && pSel) ? ` <span class="code-badge">${pSel.value}</span>` : '';
                 pHeader.innerHTML = `티칭 펜던트 구성 (유로 옵션)${codeHtml}`;
             }
 
@@ -1433,24 +1434,51 @@ document.addEventListener('DOMContentLoaded', () => {
         const pendantOptions = accs.filter(a => a.type === 'Pendant' && isModelMatch(a.target_models, prodName));
         
         pendantContainer.innerHTML = `
-            <div style="display:flex; flex-wrap:wrap; gap:10px;" id="pendant-radios">
-                <label class="cable-option" style="margin:0;">
-                    <input type="radio" name="pendantLength" value="none" checked data-desc="사용안함">
-                    <span>사용안함</span>
-                </label>
+            <div>
+                <div style="font-size:12px; margin-bottom:5px; color:#aaa;">펜던트 사용 여부 선택</div>
+                <div style="display:flex; flex-wrap:wrap; gap:10px;" id="pendant-config-radios">
+                    <label class="cable-option" style="margin:0;">
+                        <input type="radio" name="pendantConfig" value="none" checked data-label="사용안함">
+                        <span>사용안함</span>
+                    </label>
+                    <label class="cable-option" style="margin:0;">
+                        <input type="radio" name="pendantConfig" value="without-cover" data-label="비상정지 보호 커버 없음">
+                        <span>비상정지 보호 커버 없음</span>
+                    </label>
+                    <label class="cable-option" style="margin:0;">
+                        <input type="radio" name="pendantConfig" value="with-cover" data-label="비상정지 보호 커버 있음">
+                        <span>비상정지 보호 커버 있음</span>
+                    </label>
+                </div>
+            </div>
+            <div style="margin-top:4px;">
+                <div style="font-size:12px; margin-bottom:5px; color:#aaa;">펜던트 길이 선택</div>
+                <div style="display:flex; flex-wrap:wrap; gap:10px;" id="pendant-length-radios"></div>
             </div>
         `;
-        const pRadios = pendantContainer.querySelector('#pendant-radios');
-        pendantOptions.forEach(opt => {
-            const label = opt.spec || opt.name;
-            pRadios.innerHTML += `
+        const pConfigRadios = pendantContainer.querySelector('#pendant-config-radios');
+        const pLengthRadios = pendantContainer.querySelector('#pendant-length-radios');
+
+        function updatePendantState() {
+            const config = pConfigRadios.querySelector('input[name="pendantConfig"]:checked');
+            const isEnabled = config && config.value !== 'none';
+            const hasCover = config && config.value === 'with-cover';
+            const availableOptions = pendantOptions
+                .filter(option => Boolean(option.emergency_stop_cover) === hasCover)
+                .sort((a, b) => parseLen(a.spec) - parseLen(b.spec));
+
+            pLengthRadios.innerHTML = availableOptions.map((opt, index) => `
                 <label class="cable-option" style="margin:0;">
-                    <input type="radio" name="pendantLength" value="${opt.code}" data-desc="${opt.description}" data-spec="${opt.spec || ''}">
-                    <span>${label}</span>
+                    <input type="radio" name="pendantLength" value="${opt.code}" data-desc="${opt.description}" data-spec="${opt.spec || ''}" ${isEnabled && index === 0 ? 'checked' : ''} ${isEnabled ? '' : 'disabled'}>
+                    <span>${opt.spec || opt.name}</span>
                 </label>
-            `;
-        });
-        pRadios.addEventListener('change', updateHeaderCodes);
+            `).join('');
+            updateHeaderCodes();
+        }
+
+        pConfigRadios.addEventListener('change', updatePendantState);
+        pLengthRadios.addEventListener('change', updateHeaderCodes);
+        updatePendantState();
 
         // helper to get pins
         function getPinCount(desc) {
@@ -1670,13 +1698,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Pendant
+        const pConfig = document.querySelector('input[name="pendantConfig"]:checked');
         let pSelected = document.querySelector('input[name="pendantLength"]:checked');
-        if (pSelected && pSelected.value !== 'none') {
+        if (pConfig && pConfig.value !== 'none' && pSelected) {
             const pLen = pSelected.getAttribute('data-spec') || '';
             const showLen = pLen && pLen !== '-';
             selectedAccs.push({ 
                 name: '티칭 펜던트', 
-                details: `${pSelected.getAttribute('data-desc')}${showLen ? ' (길이: ' + pLen + ')' : ''}`, 
+                details: `${pConfig.getAttribute('data-label')}${showLen ? ' (길이: ' + pLen + ')' : ''}`,
                 code: pSelected.value 
             });
         }
@@ -1983,7 +2012,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Pendant check
-            const isPendant = document.querySelector('input[name="pendantLength"]:checked')?.value !== 'none';
+            const isPendant = document.querySelector('input[name="pendantConfig"]:checked')?.value !== 'none';
             
             // Build all potential file objects
             const robotFileTasks = [
