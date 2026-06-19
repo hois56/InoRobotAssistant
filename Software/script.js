@@ -10,13 +10,13 @@ const softwareGroups = [
         icon: "monitor",
         versions: [
             {
-                tagName: "Standard (V4R24C4SPC18)",
+                tagName: "Standard (V4R24C4SPC21)",
                 description: "InoRobotLab 소프트웨어 (설치/무설치)",
-                date: "2026-06-01",
+                date: "2026-06-19",
                 updates: ["시스템 안정성 개선"],
                 downloads: [
-                    { label: "Download (Install)", type: "install", size: "459MB", path: "InoRobotLab/InoRobotLabSetUp_V4R24C4SPC18_x64.exe" },
-                    { label: "Download (Portable)", type: "portable", size: "457MB", path: "InoRobotLab/InoRobotLab_V4R24C4SPC18_x64.zip" }
+                    { label: "Download (Install)", type: "install", size: "470MB", path: "InoRobotLab/InoRobotLabSetUp_V4R24C4SPC21_x64.exe" },
+                    { label: "Download (Portable)", type: "portable", size: "473MB", path: "InoRobotLab/InoRobotLab_V4R24C4SPC21_x64.zip" }
                 ]
             },
             {
@@ -39,12 +39,12 @@ const softwareGroups = [
         icon: "smartphone",
         versions: [
             {
-                tagName: "Standard (V4R24C4SPC18)",
+                tagName: "Standard (V4R24C4SPC21)",
                 description: "InoRobotTP 소프트웨어",
-                date: "2026-06-01",
+                date: "2026-06-19",
                 updates: ["시스템 안정성 개선"],
                 downloads: [
-                    { label: "Download", type: "portable", size: "57MB", path: "InoRobotTP/InoRobotTP_win_x86_V4R24C4SPC18.zip" }
+                    { label: "Download", type: "portable", size: "57MB", path: "InoRobotTP/InoRobotTP_win_x86_V4R24C4SPC21.zip" }
                 ]
             },
             {
