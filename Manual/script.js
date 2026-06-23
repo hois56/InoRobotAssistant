@@ -267,7 +267,7 @@ const manualData = [
         title: "INOVANCE ROBOT Selection Guide.pdf",
         robotType: "selection",
         category: "selection",
-        date: "2026-03-29",
+        date: "2026-06-23",
         lang: "EN",
         path: "Selection_manual/INOVANCE ROBOT Selection Guide.pdf",
         description: "Selection Guide"
@@ -277,7 +277,7 @@ const manualData = [
         title: "INOVANCE ROBOT Selection Leaflet.pdf",
         robotType: "selection",
         category: "selection",
-        date: "2026-03-29",
+        date: "2026-06-23",
         lang: "EN",
         path: "Selection_manual/INOVANCE ROBOT Selection Leaflet.pdf",
         description: "Product Leaflet"
