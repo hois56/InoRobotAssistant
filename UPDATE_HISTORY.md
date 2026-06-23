@@ -202,6 +202,11 @@
 
 ## Document
 
+### Ver 26.06.23.01
+
+- `[추가]` 하드웨어 매뉴얼에 `Safety Function` 탭을 추가했습니다.
+- `[추가]` `Robot System Safety Function Guide.PDF`를 Safety Function 매뉴얼로 등록했습니다.
+
 ### Ver 26.06.19.01
 
 - `[변경]` 메인 카드 이름을 `Manual → Document`로 변경했습니다.
