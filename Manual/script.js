@@ -187,7 +187,19 @@ const manualData = [
         description: "Expansion Card User Guide"
     },
 
-    // 5. Software & Operation
+    // 5. Safety Function
+    {
+        id: "safety_function_guide",
+        title: "Robot System Safety Function Guide.PDF",
+        robotType: "safetyFunction",
+        category: "safetyFunction",
+        date: "2026-06-23",
+        lang: "EN",
+        path: "Hardware_manual/Robot System Safety Function Guide.PDF",
+        description: "Safety Function Guide"
+    },
+
+    // 6. Software & Operation
     {
         id: "lab_user_guide",
         title: "InoRobotLab User Guide.pdf",
@@ -249,7 +261,7 @@ const manualData = [
         description: "Remote IO Address List"
     },
 
-    // 6. Selection Guides
+    // 7. Selection Guides
     {
         id: "sel_guide",
         title: "INOVANCE ROBOT Selection Guide.pdf",
@@ -281,7 +293,7 @@ const manualData = [
         description: "Special Robot Leaflet"
     },
 
-    // 7. Education Material
+    // 8. Education Material
     {
         id: "edu_intro_1",
         title: "1.로봇 소개(INT).pdf",
@@ -601,6 +613,7 @@ function getManualTagLabel(man) {
     if (hasCategory(man, 'advanced')) return 'Application';
     if (hasCategory(man, 'display')) return 'For Display';
     if (man.robotType === 'expansion') return 'Expansion Card';
+    if (man.robotType === 'safetyFunction') return 'Safety Function';
     if (man.robotType === 'selection') return 'Selection Guide';
     if (man.robotType === 'none') return 'Common';
     return man.robotType;
@@ -678,6 +691,7 @@ function renderManuals() {
         let bgColor = "group-hover:bg-emerald-500";
         if (hasCategory(man, 'selection')) { iconColor = "text-blue-500"; bgColor = "group-hover:bg-blue-500"; }
         if (hasCategory(man, 'expansion')) { iconColor = "text-cyan-500"; bgColor = "group-hover:bg-cyan-500"; }
+        if (hasCategory(man, 'safetyFunction')) { iconColor = "text-red-400"; bgColor = "group-hover:bg-red-500"; }
         if (hasCategory(man, 'comm') || hasCategory(man, 'commProfile')) { iconColor = "text-amber-500"; bgColor = "group-hover:bg-amber-500"; }
         if (hasCategory(man, 'pendant')) { iconColor = "text-indigo-500"; bgColor = "group-hover:bg-indigo-500"; }
         if (hasCategory(man, 'api')) { iconColor = "text-rose-500"; bgColor = "group-hover:bg-rose-500"; }
