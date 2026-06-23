@@ -206,6 +206,7 @@
 
 - `[추가]` 하드웨어 매뉴얼에 `Safety Function` 탭을 추가했습니다.
 - `[추가]` `Robot System Safety Function Guide.PDF`를 Safety Function 매뉴얼로 등록했습니다.
+- `[업데이트]` `INOVANCE ROBOT Selection Guide.pdf`와 `INOVANCE ROBOT Selection Leaflet.pdf`를 최신 파일로 교체했습니다.
 
 ### Ver 26.06.19.01
 
