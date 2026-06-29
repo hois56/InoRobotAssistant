@@ -99,8 +99,9 @@
         .history-button {
             display: inline-flex;
             align-items: center;
-            gap: 0.35rem;
-            padding: 0.625rem 0.75rem;
+            flex: 0 0 auto;
+            gap: 0.25rem;
+            padding: 0.625rem 0.5rem;
             border: 1px solid rgba(56, 189, 248, 0.25);
             border-radius: 0.75rem;
             background: rgba(14, 165, 233, 0.1);
@@ -108,8 +109,15 @@
             font-size: 0.75rem;
             font-weight: 700;
             line-height: 1;
+            white-space: nowrap;
             cursor: pointer;
             transition: all 0.2s ease;
+        }
+
+        .history-button svg {
+            width: 0.8rem;
+            height: 0.8rem;
+            flex: 0 0 auto;
         }
 
         .history-button:hover,
@@ -119,6 +127,49 @@
             color: #e0f2fe;
             outline: none;
             transform: translateY(-1px);
+        }
+
+        .tool-version-actions {
+            display: flex;
+            align-items: center;
+            flex: 0 0 auto;
+            gap: 0.25rem;
+        }
+
+        .download-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            gap: 0.3rem;
+            padding: 0.625rem 0.7rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.75rem;
+            background: #2563eb;
+            color: #fff;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.8125rem;
+            font-weight: 700;
+            line-height: 1;
+            white-space: nowrap;
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.2), 0 4px 6px -4px rgba(59, 130, 246, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        .download-button svg {
+            width: 1rem;
+            height: 1rem;
+            flex: 0 0 auto;
+        }
+
+        .download-button:hover,
+        .download-button:focus-visible {
+            background: #3b82f6;
+            outline: none;
+        }
+
+        .download-button:active {
+            transform: scale(0.95);
         }
 
         .history-modal {
@@ -397,20 +448,20 @@
                     로봇 프로그램 검증용으로 상위 제어기 없이 PC에서 로봇과 통신 (Modbus-TCP, EtherNet/IP, MC, Socket)을 테스트 할 수 있는 소프트웨어입니다.
                     또한 HMI 화면을 사용자가 직접 구성하여 더 쉽게 로봇을 테스트 할 수 있습니다.
                 </p>
-                <div class="mt-auto flex items-center justify-between border-t border-slate-700/50 pt-5">
-                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/10">V2.6</span>
-                    <div class="flex items-center gap-2">
+                <div class="mt-auto flex items-center justify-between gap-1 border-t border-slate-700/50 pt-5">
+                    <div class="tool-version-actions">
+                        <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-1.5 py-1.5 rounded-lg border border-white/10">V2.6</span>
                         <button type="button" class="history-button" data-debug-history="communicationTester" data-current-version="V2.6">
                             <i data-lucide="scroll-text" class="w-4 h-4"></i>
                             버전 기록
                         </button>
-                        <a href="CommunicationTester/InoRobot_Comm_Test_V2.6.zip"
-                           download
-                           class="text-sm font-outfit font-bold text-white bg-blue-600 hover:bg-blue-500 px-6 py-2.5 rounded-xl border border-white/10 transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20 active:scale-95">
-                           <i data-lucide="download" class="w-4 h-4"></i>
-                           Download
-                        </a>
                     </div>
+                    <a href="CommunicationTester/InoRobot_Comm_Test_V2.6.zip"
+                       download
+                       class="download-button">
+                       <i data-lucide="download" class="w-4 h-4"></i>
+                       Download
+                    </a>
                 </div>
             </div>
 
@@ -429,20 +480,20 @@
                 <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
                     로봇 프로그램의 라벨을 자동 생성하고 파일로 저장할 수 있는 툴입니다.
                 </p>
-                <div class="mt-auto flex items-center justify-between border-t border-slate-700/50 pt-5">
-                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/10">V2.1</span>
-                    <div class="flex items-center gap-2">
+                <div class="mt-auto flex items-center justify-between gap-1 border-t border-slate-700/50 pt-5">
+                    <div class="tool-version-actions">
+                        <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-1.5 py-1.5 rounded-lg border border-white/10">V2.1</span>
                         <button type="button" class="history-button" data-debug-history="labelGenerator" data-current-version="V2.1">
                             <i data-lucide="scroll-text" class="w-4 h-4"></i>
                             버전 기록
                         </button>
-                        <a href="InoRobotLabelGen/InoRobot_Label_Gen_V2.1.zip"
-                           download
-                           class="text-sm font-outfit font-bold text-white bg-blue-600 hover:bg-blue-500 px-6 py-2.5 rounded-xl border border-white/10 transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20 active:scale-95">
-                            <i data-lucide="download" class="w-4 h-4"></i>
-                            Download
-                        </a>
                     </div>
+                    <a href="InoRobotLabelGen/InoRobot_Label_Gen_V2.1.zip"
+                       download
+                       class="download-button">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        Download
+                    </a>
                 </div>
             </div>
 
@@ -461,20 +512,20 @@
                 <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
                     로봇 위치, 속도 등의 모니터링 화면을 트레이스 화면으로 모니터링하고 파일을 저장할 수 있습니다.
                 </p>
-                <div class="mt-auto flex items-center justify-between border-t border-slate-700/50 pt-5">
-                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/10">V1.2</span>
-                    <div class="flex items-center gap-2">
+                <div class="mt-auto flex items-center justify-between gap-1 border-t border-slate-700/50 pt-5">
+                    <div class="tool-version-actions">
+                        <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-1.5 py-1.5 rounded-lg border border-white/10">V1.2</span>
                         <button type="button" class="history-button" data-debug-history="trace" data-current-version="V1.2">
                             <i data-lucide="scroll-text" class="w-4 h-4"></i>
                             버전 기록
                         </button>
-                        <a href="Trace/InoRobotTrace_V1.2.zip"
-                           download
-                           class="text-sm font-outfit font-bold text-white bg-blue-600 hover:bg-blue-500 px-6 py-2.5 rounded-xl border border-white/10 transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20 active:scale-95">
-                            <i data-lucide="download" class="w-4 h-4"></i>
-                            Download
-                        </a>
                     </div>
+                    <a href="Trace/InoRobotTrace_V1.2.zip"
+                       download
+                       class="download-button">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        Download
+                    </a>
                 </div>
             </div>
 
@@ -493,20 +544,20 @@
                 <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
                     두 개의 로봇 프로젝트 파일을 비교하여 프로그램, 포인트 데이터 등의 차이점을 한눈에 파악할 수 있는 툴입니다.
                 </p>
-                <div class="mt-auto flex items-center justify-between border-t border-slate-700/50 pt-5">
-                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/10">V2.1</span>
-                    <div class="flex items-center gap-2">
+                <div class="mt-auto flex items-center justify-between gap-1 border-t border-slate-700/50 pt-5">
+                    <div class="tool-version-actions">
+                        <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-1.5 py-1.5 rounded-lg border border-white/10">V2.1</span>
                         <button type="button" class="history-button" data-debug-history="projectCompare" data-current-version="V2.1">
                             <i data-lucide="scroll-text" class="w-4 h-4"></i>
                             버전 기록
                         </button>
-                        <a href="ProjectCompare/InoRobot_Compare_Project_V2.1.zip"
-                           download
-                           class="text-sm font-outfit font-bold text-white bg-blue-600 hover:bg-blue-500 px-6 py-2.5 rounded-xl border border-white/10 transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20 active:scale-95">
-                           <i data-lucide="download" class="w-4 h-4"></i>
-                           Download
-                        </a>
                     </div>
+                    <a href="ProjectCompare/InoRobot_Compare_Project_V2.1.zip"
+                       download
+                       class="download-button">
+                       <i data-lucide="download" class="w-4 h-4"></i>
+                       Download
+                    </a>
                 </div>
             </div>
 
