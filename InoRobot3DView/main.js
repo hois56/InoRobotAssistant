@@ -24,6 +24,11 @@ const MODEL_ROTATION_FIX = {
     'IR-S35-120Z35C-INT': { z: Math.PI }
 };
 
+const MODEL_UNIT_SCALE_FIX = {
+    'IR-R16-210S-INT_3D.fbx': 25.4,
+    'IR-R25-178S-INT_3D.fbx': 25.4
+};
+
 const el = {
     modelSelect:     document.getElementById('model-select'),
     loadingOverlay:  document.getElementById('loading-overlay'),
@@ -197,6 +202,12 @@ async function loadModelFromServer(file, name) {
         // Highpower FBX has wrong UnitScaleFactor (2.54/inches) → scale up to match Standard (360/16.10)
         if (file.includes('Highpower')) {
             fbx.scale.multiplyScalar(360 / 16.10);
+        }
+
+        // R16/R25 FBX files are authored in inches (UnitScaleFactor 2.54); convert to mm.
+        const unitScaleFix = MODEL_UNIT_SCALE_FIX[file];
+        if (unitScaleFix) {
+            fbx.scale.multiplyScalar(unitScaleFix);
         }
 
         // Auto-scale (skip for IRCB501 controllers — natural scale is correct after correction)
