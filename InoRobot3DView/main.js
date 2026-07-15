@@ -8,6 +8,10 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
+function uiText(value) {
+    return window.InoRobotI18n ? window.InoRobotI18n.translate(String(value)) : String(value);
+}
+
 const state = {
     scene: null, camera: null, renderer: null,
     controls: null, transformControls: null,
@@ -354,7 +358,7 @@ function getCadPathVariants(path) {
 
 async function handleCADDownload() {
     if (state.models.length === 0) {
-        alert("다운로드할 모델이 없습니다.");
+        alert(uiText("다운로드할 모델이 없습니다."));
         return;
     }
 

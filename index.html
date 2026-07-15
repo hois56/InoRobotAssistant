@@ -445,8 +445,7 @@
                 <span class="title-gradient pt-2 pb-2">InoRobot Assistant</span>
             </h1>
             <p class="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-                InoRobot Assistant는 INOVANCE Robot을 설계부터 프로그래밍, 시운전까지 지원하는 유용한 협업 도구입니다.
-                필요한 도구를 선택하여 작업을 시작하세요.
+                InoRobot Assistant는 INOVANCE Robot을 설계부터 프로그래밍, 시운전까지 지원하는 유용한 협업 도구입니다. 필요한 도구를 선택하여 작업을 시작하세요.
             </p>
         </header>
 
@@ -465,8 +464,7 @@
                     로봇 모델 Select
                 </h2>
                 <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
-                    INOVANCE 로봇의 라인업을 확인하세요. 선택한 모델과 옵션 구성을 PDF로 저장하여 발주시 활용할 수 있습니다.
-                    또한 2D, 3D CAD 파일도 다운로드 받을 수 있습니다.
+                    INOVANCE 로봇의 라인업을 확인하세요. 선택한 모델과 옵션 구성을 PDF로 저장하여 발주시 활용할 수 있습니다. 또한 2D, 3D CAD 파일도 다운로드 받을 수 있습니다.
                 </p>
                 <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
                     <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg"
@@ -752,7 +750,7 @@
         document.addEventListener('mousemove', (e) => {
             const cards = document.querySelectorAll('.glass-card');
             cards.forEach(card => {
-                const rect = card.getBoundingClientRect();
+                const rect = card.getBounding클라이언트Rect();
                 const x = e.clientX - rect.left;
                 const y = e.clientY - rect.top;
 

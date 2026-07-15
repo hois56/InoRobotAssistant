@@ -3,6 +3,10 @@ const WorkMethods = ["Get", "Put", "Check", "Calibration", "Peeling"];
 const ToolTypes = ["Vacuum", "Gripper", "PLC (IO)", "Vision (Socket)"];
 const VisionUses = ["No use", "Use - IO", "Use - Socket"];
 
+function uiText(value) {
+    return window.InoRobotI18n ? window.InoRobotI18n.translate(String(value)) : String(value);
+}
+
 class ProcessStep {
     constructor(no) {
         this.No = no;
@@ -280,7 +284,7 @@ function initRobots() {
 }
 
 function addStep() {
-    if (state.steps.length >= 15) { alert("Max 15 processes."); return; }
+    if (state.steps.length >= 15) { alert(uiText("Max 15 processes.")); return; }
     state.steps.push(new ProcessStep(state.steps.length + 1));
     renderSteps();
 }
@@ -951,10 +955,10 @@ async function exportProj() {
 
         const blob = await zip.generateAsync({ type: "blob" });
         saveAs(blob, `${name}.zip`);
-        alert("Project Generation Completed!");
+        alert(uiText("Project Generation Completed!"));
     } catch (e) {
         console.error(e);
-        alert("Error generating zip: " + e.message);
+        alert(uiText("Error generating zip."));
     }
 }
 

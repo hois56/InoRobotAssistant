@@ -367,6 +367,7 @@
     window.InoRobotI18n = {
         t: t,
         get: get,
+        translate: translateSource,
         setLocale: setLocale,
         formatNumber: formatNumber,
         formatDate: formatDate,

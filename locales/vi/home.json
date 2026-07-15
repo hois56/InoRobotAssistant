@@ -1,0 +1,17 @@
+{
+  "legacy": {
+    "이노밴스 테크놀로지 코리아": "Inovance Technology Korea",
+    "InoRobot Assistant는 INOVANCE Robot을 설계부터 프로그래밍, 시운전까지 지원하는 유용한 협업 도구입니다. 필요한 도구를 선택하여 작업을 시작하세요.": "InoRobot Assistant hỗ trợ robot INOVANCE từ thiết kế, lập trình đến chạy thử. Hãy chọn công cụ cần dùng để bắt đầu.",
+    "INOVANCE 로봇의 라인업을 확인하세요. 선택한 모델과 옵션 구성을 PDF로 저장하여 발주시 활용할 수 있습니다. 또한 2D, 3D CAD 파일도 다운로드 받을 수 있습니다.": "Khám phá dòng robot INOVANCE. Lưu model và tùy chọn đã chọn thành PDF để đặt hàng, đồng thời tải tệp CAD 2D và 3D.",
+    "로봇 Tool 부하 조건에 따른 모델 적합성을 판정합니다. 관성 모멘트 및 허용 하중을 계산하여 최적의 모델을 선택하세요.": "Đánh giá mức phù hợp của robot theo tải Tool. Tính mômen quán tính và tải cho phép để chọn model tối ưu.",
+    "로봇 모델과 공정 구성을 선택하면, 컨트롤러에 바로 적용 가능한 프로젝트 파일 구조를 자동으로 생성합니다. 번거로운 초기 설정 없이 티칭 수정만으로 프로그램을 바로 완성해보세요.": "Chọn model robot và cấu hình công đoạn để tự động tạo cấu trúc dự án dùng ngay trên bộ điều khiển. Chỉ cần điều chỉnh phần teaching để hoàn tất chương trình.",
+    "Robot Model Select 버전 기록 보기": "Mở lịch sử phiên bản Robot Model Select",
+    "Robot 3D Viewer 버전 기록 보기": "Mở lịch sử phiên bản Robot 3D Viewer",
+    "Robot Tool Selector 버전 기록 보기": "Mở lịch sử phiên bản Robot Tool Selector",
+    "Project Generator 버전 기록 보기": "Mở lịch sử phiên bản Project Generator",
+    "Software 버전 기록 보기": "Mở lịch sử phiên bản Software",
+    "Document 버전 기록 보기": "Mở lịch sử phiên bản Document",
+    "Debugging Tool 버전 기록 보기": "Mở lịch sử phiên bản Debugging Tool"
+  },
+  "patterns": []
+}
