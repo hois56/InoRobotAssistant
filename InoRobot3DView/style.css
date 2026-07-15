@@ -197,6 +197,20 @@ body {
     gap: 0.75rem;
 }
 
+.viewer-language-row {
+    position: fixed;
+    top: calc(var(--topbar-h) + 8px);
+    right: 2rem;
+    z-index: 190;
+    display: flex;
+    justify-content: flex-end;
+    pointer-events: none;
+}
+
+.viewer-language-row .inorobot-language-switcher {
+    pointer-events: auto;
+}
+
 .ui-btn {
     width: 44px;
     height: 44px;
@@ -394,6 +408,10 @@ body {
     .topbar-right {
         gap: 0.4rem;
         flex-shrink: 0;
+    }
+
+    .viewer-language-row {
+        right: 1rem;
     }
     
     .ui-btn {
