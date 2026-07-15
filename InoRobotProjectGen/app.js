@@ -128,7 +128,9 @@ function initApp() {
         document.getElementById('chkWaitPos').checked = state.options.EnableWaitPos;
         document.getElementById('chkProcessBusy').checked = state.options.EnableProcessBusy;
 
-        document.getElementById('optionsModal').classList.remove('hidden');
+        const optionsModal = document.getElementById('optionsModal');
+        optionsModal.classList.remove('hidden');
+        if (window.InoRobotI18n) window.InoRobotI18n.apply(optionsModal);
 
         // Reset description panel
         document.getElementById('optDescTitle').innerText = uiText('Option Info');

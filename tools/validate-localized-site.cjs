@@ -35,6 +35,10 @@ function parseSiteCardVersions(source) {
     return versions;
 }
 
+function formatCardVersion(version) {
+    return String(version).replace(/^(\d{2}\.\d{2}\.\d{2})\.\d+$/, '$1');
+}
+
 function escapeRegExp(value) {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -142,7 +146,7 @@ vm.runInNewContext(read('InoRobotSelect/data.js') + '\nthis.__accessories = acce
 const accessorySources = [...new Set(robotDataContext.__accessories.flatMap(item => [item.name, item.description]).filter(Boolean))];
 const technicalOptionName = /^(?:IRCB\d|IR-[A-Z0-9]|GL20-)/;
 localeCodes.forEach(code => {
-    ['가반 하중(kg)', '리치(mm)', 'Z축 길이(mm)', 'Standard (표준형)', 'High Flex (유연형)', '클린 사양 없음', '사양', '통신은 기본 제공됩니다.', '파워/엔코더 케이블', 'Pendant'].forEach(source => {
+    ['가반 하중(kg)', '리치(mm)', 'Z축 길이(mm)', 'Standard (표준형)', 'High Flex (유연형)', '클린 사양 없음', '사양', '통신은 기본 제공됩니다.', '파워/엔코더 케이블', 'Pendant', 'Option :', 'Pins', '24 입력 / 16 출력'].forEach(source => {
         assert(Object.prototype.hasOwnProperty.call(locales[code].legacy, source), code + ' is missing Robot Select text: ' + source);
     });
     accessorySources.forEach(source => {
@@ -152,6 +156,30 @@ localeCodes.forEach(code => {
 ['ko', 'zh-CN', 'vi'].forEach(code => {
     accessorySources.filter(source => !technicalOptionName.test(source.trim())).forEach(source => {
         assert(locales[code].legacy[source.trim()] !== source.trim(), code + ' leaves a Robot Select option untranslated: ' + source);
+    });
+});
+
+const projectScriptSource = read('InoRobotProjectGen/app.js');
+const optionDescriptionBlock = projectScriptSource.match(/const optDescs = \{([\s\S]*?)\n\s*\};\s*\n\s*const updateOptDesc/)?.[1] || '';
+const optionDescriptionSources = [...optionDescriptionBlock.matchAll(/text:\s*(?:`([\s\S]*?)`|'([\s\S]*?)')\s*\}/g)]
+    .flatMap(match => (match[1] || match[2] || '').replace(/<[^>]+>/g, '\n').split(/\r?\n/))
+    .map(source => source.replace(/\s+/g, ' ').trim())
+    .filter(source => /[가-힣]/.test(source));
+assert(optionDescriptionSources.length > 20, 'Project option tooltip sources could not be inspected.');
+const optionLabelSources = ['Multi Recipe', 'TCP Speed Monitoring', 'Torque Monitoring', 'Tool Control', 'Communication IO', 'Teaching Mode', 'Wait Position', 'Process Busy Signal'];
+localeCodes.forEach(code => {
+    [...optionLabelSources, ...optionDescriptionSources].forEach(source => {
+        assert(Object.prototype.hasOwnProperty.call(locales[code].legacy, source), code + ' is missing Project option text: ' + source);
+    });
+});
+targetLocaleCodes.forEach(code => {
+    optionDescriptionSources.forEach(source => {
+        assert(locales[code].legacy[source] !== source, code + ' leaves a Project option tooltip untranslated: ' + source);
+    });
+});
+['ko', 'zh-CN', 'vi'].forEach(code => {
+    optionLabelSources.forEach(source => {
+        assert(locales[code].legacy[source] !== source, code + ' leaves a Project option label untranslated: ' + source);
     });
 });
 
@@ -213,15 +241,16 @@ routes.forEach(route => {
     assert(html.includes('id="inorobot-language-switcher"') && html.includes('id="inorobot-language-select"'), route.file + ' is missing the top-right language UI.');
     assert(html.includes('<span class="inorobot-language-label" aria-hidden="true">Language</span>'), route.file + ' does not show the Language label.');
     assert(!html.includes('>文</span>'), route.file + ' still shows the Chinese language symbol.');
-    assert(html.includes('position: fixed !important') && html.includes('right: calc(14px + env(safe-area-inset-right, 0px)) !important'), route.file + ' does not force the language UI to the upper-right corner.');
+    assert(html.includes('position: fixed !important') && html.includes('top: calc(16px + env(safe-area-inset-top, 0px)) !important') && html.includes('right: 18px !important'), route.file + ' does not align the language UI with subpages.');
     assert(html.includes("const routes = { ko: '/', en: '/en/', 'zh-CN': '/cn/', vi: '/vn/' }") && html.includes('window.location.assign(target)'), route.file + ' is missing the standalone route switch handler.');
     validateStandaloneLanguageSwitch(html, route.file);
     assert(html.includes('<option value="' + route.locale + '" selected>'), route.file + ' does not preselect its route language.');
     assert(/<h2[^>]*data-i18n-skip[^>]*>\s*Debugging Tool\s*<\/h2>/.test(html), route.file + ' translates the Debugging Tool card name.');
     Object.entries(siteCardVersions).forEach(([key, version]) => {
-        const pattern = new RegExp('data-site-card-version=["\']' + escapeRegExp(key) + '["\'][^>]*>\\s*Ver ' + escapeRegExp(version) + '\\s*<\\/span>');
+        const pattern = new RegExp('data-site-card-version=["\']' + escapeRegExp(key) + '["\'][^>]*>\\s*Ver ' + escapeRegExp(formatCardVersion(version)) + '\\s*<\\/span>');
         assert(pattern.test(html), route.file + ' does not show the current ' + key + ' version.');
     });
+    assert(!/data-site-card-version=["'][^"']+["'][^>]*>\s*Ver \d{2}\.\d{2}\.\d{2}\.\d+\s*<\/span>/.test(html), route.file + ' still shows a detailed card-version suffix.');
     if (targetLocaleCodes.includes(route.locale)) {
         assert(!/[가-힣]/.test(visibleHtml(html)), route.file + ' contains Korean visible initial HTML.');
         assert(html.includes('<title>' + locales[route.locale].pages.home.title + '</title>'), route.file + ' has an untranslated title.');
@@ -318,10 +347,12 @@ assert(robotSelectScript.includes('window.InoRobotI18n.apply(modalBody)') && rob
 assert(robotSelectScript.includes("uiText('현재 구매 코드')") && robotSelectScript.includes("uiText('제품 상세 및 구성')"), 'Robot Select composed headings are not localized.');
 assert(robotSelectScript.includes("uiText('파워/엔코더 케이블')") && robotSelectScript.includes('uiText(cableType)'), 'Robot Select PDF cable details are not localized.');
 assert(robotSelectScript.includes('uiText(acc.description)') && robotSelectScript.includes('localizeDisplayText(option.spec)'), 'Robot Select option descriptions are not localized.');
+assert(robotSelectScript.includes("['클린 사양 없음', 'Option :']") && robotSelectScript.includes("uiText('Pins')") && robotSelectScript.includes('formatSignalPins('), 'Robot Select Option or Pin composites are not localized.');
 assert(robotSelectScript.includes('captureModalSelections') && robotSelectScript.includes('restoreModalSelections'), 'Robot Select does not preserve modal selections while changing language.');
 const projectScript = read('InoRobotProjectGen/app.js');
 assert(projectScript.includes('new JSZip()') && projectScript.includes('zip.generateAsync') && projectScript.includes('saveAs(blob'), 'Project ZIP generation hook is missing.');
 assert(projectScript.includes("uiText('Option Info')") && projectScript.includes('window.InoRobotI18n.apply(description)'), 'Project option guide descriptions are not localized.');
+assert(projectScript.includes('window.InoRobotI18n.apply(optionsModal)'), 'Project option items are not explicitly localized when the modal opens.');
 const viewerScript = read('InoRobot3DView/main.js');
 assert(viewerScript.includes("uiText('모델 추가 모드')") && viewerScript.includes("'inorobot:languagechange', refreshLocalizedControls"), '3D Viewer dynamic controls are not localized.');
 const softwareScript = read('Software/script.js');
@@ -376,6 +407,7 @@ targetLocaleCodes.forEach(code => {
         assert(localized[section].bullets === sourceHistory[section].bullets, code + ' history entry count differs for ' + section + '.');
     });
 });
+assert(!read('Languge/zh-CN/history.md').includes('**【修复】**') && !read('Languge/zh-CN/debug-history.md').includes('**【修复】**'), 'Chinese version history still shows the repair badge.');
 
 const debugSources = {
     communicationTester: parseSections(read('DebuggingSupport/CommunicationTester/업데이트_기록.md'))['Communication Tester'],

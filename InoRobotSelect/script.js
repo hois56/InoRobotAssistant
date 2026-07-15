@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const source = String(value ?? '');
         const exact = uiText(source);
         if (exact !== source) return exact;
-        return ['클린 사양 없음'].reduce(
+        return ['클린 사양 없음', 'Option :'].reduce(
             (text, fragment) => text.replaceAll(fragment, uiText(fragment)),
             source
         );
@@ -772,9 +772,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function formatIpRating(value) {
-        return String(value || '-')
+        return localizeDisplayText(String(value || '-')
             .replace(/\s*\n\s*/g, ' ')
-            .replace(/\(\s*Option\s*:\s*IP67\s*\)/gi, '(Option : IP67)');
+            .replace(/\(\s*Option\s*:\s*IP67\s*\)/gi, '(Option : IP67)'));
+    }
+
+    function formatSignalPins(value) {
+        const source = localizeDisplayText(value || '-');
+        return source.replace(/Signal\s+lines?/gi, uiText('Pins'));
     }
 
     function appendUnitIfMissing(value, unit) {
@@ -1028,7 +1033,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Dynamic spec extraction with fallbacks to tech map or defaults
         const repeatability = ds['Repeatability (mm)'] || ds['Repeatability J1+J2 (mm)'] || (tech ? tech.repeatability : (isScara ? "±0.01mm" : "±0.02mm"));
-        const ioPins = ds['Customer Wiring'] || ds['Customer signal line'] || (tech ? (tech.signals || tech.io) : (isScara ? "24 입력 / 16 출력" : "20 Signal lines"));
+        const ioPins = formatSignalPins(ds['Customer Wiring'] || ds['Customer signal line'] || (tech ? (tech.signals || tech.io) : (isScara ? "24 입력 / 16 출력" : "20 Signal lines")));
         const ipRating = formatIpRating(ds['IP rating'] || (tech ? tech.ip : (isScara ? "IP20" : "IP65 (Wrist IP67)")));
         const weight = ds['Weight (kg)'] || ds['Weight (excluding cables) (kg)'] || (tech ? tech.weight : (is6Axis ? "~130kg" : "12~56kg"));
         const air = ds['Customer Air'] || ds['Customer air piping (0.59Mpa)'] || (tech ? tech.air : '-');
@@ -1834,7 +1839,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const tech = getTechSpecs(currentActiveProduct.name);
         const repeatability = tech ? tech.repeatability : (currentActiveProduct.specs.Type === 'SCARA' ? "±0.01mm" : "±0.02mm");
-        const ioPins = tech ? (tech.signals || tech.io) : (currentActiveProduct.specs.Type === 'SCARA' ? "24 입력 / 16 출력" : "20 Signal lines");
+        const ioPins = formatSignalPins(tech ? (tech.signals || tech.io) : (currentActiveProduct.specs.Type === 'SCARA' ? "24 입력 / 16 출력" : "20 Signal lines"));
         
         // IP rating with safety check for detailSpecs and correct newline regex
         let ipRating = "IP40";
