@@ -5,6 +5,13 @@ const path = require('path');
 const root = path.resolve(__dirname, '..');
 const host = '127.0.0.1';
 const port = Number(process.argv[2] || 8765);
+const landingFiles = new Map([
+    ['/', 'Language/ko/index.html'],
+    ['/kr/', 'Language/kr/index.html'],
+    ['/en/', 'Language/en/index.html'],
+    ['/cn/', 'Language/zh-CN/index.html'],
+    ['/vn/', 'Language/vi/index.html']
+]);
 
 const mimeTypes = {
     '.css': 'text/css; charset=utf-8',
@@ -41,7 +48,10 @@ const server = http.createServer((request, response) => {
         return;
     }
 
-    let filePath = path.resolve(root, '.' + pathname);
+    const landingFile = landingFiles.get(pathname);
+    let filePath = landingFile
+        ? path.resolve(root, landingFile)
+        : path.resolve(root, '.' + pathname);
     if (filePath !== root && !filePath.startsWith(root + path.sep)) {
         sendError(response, 403, 'Forbidden');
         return;
@@ -62,6 +72,11 @@ const server = http.createServer((request, response) => {
     });
     if (request.method === 'HEAD') {
         response.end();
+        return;
+    }
+    if (contentType.startsWith('text/html')) {
+        const html = fs.readFileSync(filePath, 'utf8').replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '');
+        response.end(html);
         return;
     }
     fs.createReadStream(filePath).pipe(response);

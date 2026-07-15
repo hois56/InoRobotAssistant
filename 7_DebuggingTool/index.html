@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inovance Debugging Support Tool</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top right, #0f172a, #020617);
+            color: #e2e8f0;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        .font-outfit {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Ambient Background Glow */
+        .ambient-glow {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80vw;
+            height: 80vh;
+            background: radial-gradient(circle, rgba(239, 68, 68, 0.05) 0%, rgba(15, 23, 42, 0) 70%);
+            z-index: -1;
+            pointer-events: none;
+            filter: blur(100px);
+            animation: pulse-glow 8s infinite alternate;
+        }
+
+        @keyframes pulse-glow {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(1.1);
+                opacity: 0.8;
+            }
+        }
+
+        /* Header Style */
+        #topbar {
+            position: sticky;
+            top: 0;
+            height: 72px;
+            background: rgba(15, 19, 28, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            z-index: 200;
+        }
+
+        /* Glass Card */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 1.5rem;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            border-color: rgba(56, 189, 248, 0.3);
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 189, 248, 0.2);
+            background: rgba(30, 41, 59, 0.6);
+        }
+
+        .status-pill {
+            padding: 2px 10px;
+            border-radius: 99px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+
+        .history-button {
+            display: inline-flex;
+            align-items: center;
+            flex: 0 0 auto;
+            gap: 0.25rem;
+            padding: 0.625rem 0.5rem;
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            border-radius: 0.75rem;
+            background: rgba(14, 165, 233, 0.1);
+            color: #7dd3fc;
+            font-size: 0.75rem;
+            font-weight: 700;
+            line-height: 1;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .history-button svg {
+            width: 0.8rem;
+            height: 0.8rem;
+            flex: 0 0 auto;
+        }
+
+        .history-button:hover,
+        .history-button:focus-visible {
+            border-color: rgba(56, 189, 248, 0.65);
+            background: rgba(14, 165, 233, 0.2);
+            color: #e0f2fe;
+            outline: none;
+            transform: translateY(-1px);
+        }
+
+        .tool-version-actions {
+            display: flex;
+            align-items: center;
+            flex: 0 0 auto;
+            gap: 0.25rem;
+        }
+
+        .download-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            gap: 0.3rem;
+            padding: 0.625rem 0.7rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.75rem;
+            background: #2563eb;
+            color: #fff;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.8125rem;
+            font-weight: 700;
+            line-height: 1;
+            white-space: nowrap;
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.2), 0 4px 6px -4px rgba(59, 130, 246, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        .download-button svg {
+            width: 1rem;
+            height: 1rem;
+            flex: 0 0 auto;
+        }
+
+        .download-button:hover,
+        .download-button:focus-visible {
+            background: #3b82f6;
+            outline: none;
+        }
+
+        .download-button:active {
+            transform: scale(0.95);
+        }
+
+        .history-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 300;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1.25rem;
+            background: rgba(2, 6, 23, 0.84);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .history-modal.is-open {
+            display: flex;
+            animation: historyFadeIn 0.2s ease-out;
+        }
+
+        .history-dialog {
+            display: flex;
+            flex-direction: column;
+            width: min(780px, 100%);
+            max-height: min(82vh, 820px);
+            overflow: hidden;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 1.5rem;
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.99), rgba(2, 6, 23, 0.99));
+            box-shadow: 0 35px 90px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            animation: historyDialogIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .history-dialog-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 1.35rem 1.5rem;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+            background: rgba(15, 23, 42, 0.72);
+        }
+
+        .history-dialog-body {
+            overflow-y: auto;
+            padding: 1.5rem;
+            scrollbar-color: rgba(56, 189, 248, 0.45) transparent;
+            scrollbar-width: thin;
+        }
+
+        .history-close-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.4rem;
+            height: 2.4rem;
+            flex: 0 0 auto;
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            border-radius: 0.75rem;
+            background: rgba(30, 41, 59, 0.65);
+            color: #94a3b8;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .history-close-button:hover,
+        .history-close-button:focus-visible {
+            border-color: rgba(248, 113, 113, 0.45);
+            background: rgba(239, 68, 68, 0.12);
+            color: #fca5a5;
+            outline: none;
+        }
+
+        .history-version-block + .history-version-block {
+            margin-top: 1.75rem;
+            padding-top: 1.75rem;
+            border-top: 1px solid rgba(148, 163, 184, 0.12);
+        }
+
+        .history-version-title {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin: 0 0 0.9rem;
+            color: #f8fafc;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+
+        .history-version-title::before {
+            content: '';
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 999px;
+            background: #38bdf8;
+            box-shadow: 0 0 14px rgba(56, 189, 248, 0.7);
+        }
+
+        .history-entry {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            align-items: start;
+            gap: 0.65rem;
+            margin-top: 0.65rem;
+            color: #cbd5e1;
+            font-size: 0.9rem;
+            line-height: 1.65;
+        }
+
+        .history-tag {
+            min-width: 3.8rem;
+            margin-top: 0.15rem;
+            padding: 0.15rem 0.45rem;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 0.4rem;
+            background: rgba(51, 65, 85, 0.5);
+            color: #cbd5e1;
+            font-size: 0.68rem;
+            font-weight: 800;
+            line-height: 1.45;
+            text-align: center;
+        }
+
+        .history-tag[data-tag="신규"],
+        .history-tag[data-tag="추가"] {
+            border-color: rgba(52, 211, 153, 0.3);
+            background: rgba(16, 185, 129, 0.1);
+            color: #6ee7b7;
+        }
+
+        .history-tag[data-tag="수정"] {
+            border-color: rgba(251, 191, 36, 0.3);
+            background: rgba(245, 158, 11, 0.1);
+            color: #fcd34d;
+        }
+
+        .history-tag[data-tag="변경"] {
+            border-color: rgba(96, 165, 250, 0.3);
+            background: rgba(59, 130, 246, 0.1);
+            color: #93c5fd;
+        }
+
+        .history-tag[data-tag="개선"],
+        .history-tag[data-tag="배포"] {
+            border-color: rgba(192, 132, 252, 0.3);
+            background: rgba(168, 85, 247, 0.1);
+            color: #d8b4fe;
+        }
+
+        .history-entry code {
+            padding: 0.12rem 0.35rem;
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            border-radius: 0.35rem;
+            background: rgba(2, 6, 23, 0.72);
+            color: #bae6fd;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.82em;
+        }
+
+        .history-message {
+            padding: 2.5rem 1rem;
+            color: #94a3b8;
+            text-align: center;
+        }
+
+        @keyframes historyFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes historyDialogIn {
+            from { opacity: 0; transform: translateY(16px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @media (max-width: 640px) {
+            .history-modal {
+                padding: 0.75rem;
+            }
+
+            .history-dialog {
+                max-height: 90vh;
+                border-radius: 1.15rem;
+            }
+
+            .history-dialog-header,
+            .history-dialog-body {
+                padding: 1.1rem;
+            }
+
+            .history-entry {
+                grid-template-columns: 1fr;
+                gap: 0.35rem;
+            }
+
+            .history-tag {
+                width: fit-content;
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(2rem);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease forwards;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/Language/runtime/i18n.css">
+    <script src="/Language/runtime/locales-data.js" defer></script>
+    <script src="/Language/runtime/i18n.js" defer></script>
+    <script src="/Language/runtime/icon-fallback.js" defer></script>
+</head>
+
+<body class="relative flex flex-col min-h-screen">
+    <div class="ambient-glow"></div>
+
+    <!-- Header -->
+    <header id="topbar">
+        <div class="flex items-center gap-6">
+            <a href="/" class="transition-transform hover:scale-105">
+                <img src="../1_RobotModelSelect/INOVANCE_Logo.png" alt="Inovance" class="h-[60px] w-auto">
+            </a>
+            <div class="h-8 w-px bg-white/10 mx-2 hidden md:block"></div>
+            <h1 class="font-outfit text-xl font-bold text-white hidden md:block tracking-tight" data-i18n-skip>Debugging Tool</h1>
+        </div>
+        <div class="flex items-center gap-4">
+        </div>
+    </header>
+
+    <main class="w-full max-w-7xl mx-auto px-6 py-12 flex-grow">
+        <!-- Hero Section -->
+        <section class="text-center mb-16 animate-fade-in-up">
+            <h2 class="font-outfit text-4xl md:text-5xl font-extrabold mb-6 tracking-tight text-white">문제를 발견하셨나요?</h2>
+            <p class="text-slate-400 text-lg max-w-2xl mx-auto leading-relaxed italic">
+                INOVANCE 로봇의 디버깅 및 영점 보정에 효율적인 디버깅 툴을 제공합니다.
+            </p>
+        </section>
+
+        <!-- Tool Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+
+            <!-- 1. Zero Calibration -->
+            <a href="ZeroCalibration/index.html" class="glass-card p-6 md:p-8 flex flex-col group animate-fade-in-up"
+                style="animation-delay: 0.1s; text-decoration: none;">
+                <div
+                    class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
+                    <i data-lucide="target" class="w-8 h-8 text-white"></i>
+                </div>
+                <h2 class="font-outfit text-2xl font-bold mb-3 text-white">
+                    Zero Calibration
+                </h2>
+                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
+                    엔코더 배터리 방전 등으로 인한 영점 소실 시, 하드웨어 지그 없이 소프트웨어적으로 영점을 보정하는 툴입니다.
+                </p>
+            </a>
+
+            <!-- 2. Communication Tester -->
+            <div class="glass-card p-6 md:p-8 flex flex-col group animate-fade-in-up"
+                style="animation-delay: 0.2s;">
+                <div
+                    class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
+                    <i data-lucide="network" class="w-8 h-8 text-white"></i>
+                </div>
+                <div class="flex items-center gap-2 mb-3">
+                    <h2 class="font-outfit text-2xl font-bold text-white">
+                        Communication Tester
+                    </h2>
+                </div>
+                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
+                    로봇 프로그램 검증용으로 상위 제어기 없이 PC에서 로봇과 통신 (Modbus-TCP, EtherNet/IP, MC, Socket)을 테스트 할 수 있는 소프트웨어입니다.
+                    또한 HMI 화면을 사용자가 직접 구성하여 더 쉽게 로봇을 테스트 할 수 있습니다.
+                </p>
+                <div class="mt-auto flex items-center justify-between gap-1 border-t border-slate-700/50 pt-5">
+                    <div class="tool-version-actions">
+                        <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-1.5 py-1.5 rounded-lg border border-white/10">V2.6</span>
+                        <button type="button" class="history-button" data-debug-history="communicationTester" data-current-version="V2.6">
+                            <i data-lucide="scroll-text" class="w-4 h-4"></i>
+                            버전 기록
+                        </button>
+                    </div>
+                    <a href="CommunicationTester/InoRobot_Comm_Test_V2.6.zip"
+                       download
+                       class="download-button">
+                       <i data-lucide="download" class="w-4 h-4"></i>
+                       Download
+                    </a>
+                </div>
+            </div>
+
+            <!-- 3. Label Generator -->
+            <div class="glass-card p-6 md:p-8 flex flex-col group animate-fade-in-up"
+                style="animation-delay: 0.3s;">
+                <div
+                    class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
+                    <i data-lucide="tag" class="w-8 h-8 text-white"></i>
+                </div>
+                <div class="flex items-center gap-2 mb-3">
+                    <h2 class="font-outfit text-2xl font-bold text-white">
+                        Label Generator
+                    </h2>
+                </div>
+                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
+                    로봇 프로그램의 라벨을 자동 생성하고 파일로 저장할 수 있는 툴입니다.
+                </p>
+                <div class="mt-auto flex items-center justify-between gap-1 border-t border-slate-700/50 pt-5">
+                    <div class="tool-version-actions">
+                        <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-1.5 py-1.5 rounded-lg border border-white/10">V2.1</span>
+                        <button type="button" class="history-button" data-debug-history="labelGenerator" data-current-version="V2.1">
+                            <i data-lucide="scroll-text" class="w-4 h-4"></i>
+                            버전 기록
+                        </button>
+                    </div>
+                    <a href="InoRobotLabelGen/InoRobot_Label_Gen_V2.1.zip"
+                       download
+                       class="download-button">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        Download
+                    </a>
+                </div>
+            </div>
+
+            <!-- 4. Trace -->
+            <div class="glass-card p-6 md:p-8 flex flex-col group animate-fade-in-up"
+                style="animation-delay: 0.4s;">
+                <div
+                    class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
+                    <i data-lucide="activity" class="w-8 h-8 text-white"></i>
+                </div>
+                <div class="flex items-center gap-2 mb-3">
+                    <h2 class="font-outfit text-2xl font-bold text-white">
+                        Trace
+                    </h2>
+                </div>
+                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
+                    로봇 위치, 속도 등의 모니터링 화면을 트레이스 화면으로 모니터링하고 파일을 저장할 수 있습니다.
+                </p>
+                <div class="mt-auto flex items-center justify-between gap-1 border-t border-slate-700/50 pt-5">
+                    <div class="tool-version-actions">
+                        <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-1.5 py-1.5 rounded-lg border border-white/10">V1.3</span>
+                        <button type="button" class="history-button" data-debug-history="trace" data-current-version="V1.3">
+                            <i data-lucide="scroll-text" class="w-4 h-4"></i>
+                            버전 기록
+                        </button>
+                    </div>
+                    <a href="Trace/InoRobotTrace_V1.3.zip"
+                       download
+                       class="download-button">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        Download
+                    </a>
+                </div>
+            </div>
+
+            <!-- 5. Project Compare -->
+            <div class="glass-card p-6 md:p-8 flex flex-col group animate-fade-in-up"
+                style="animation-delay: 0.5s;">
+                <div
+                    class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
+                    <i data-lucide="git-compare" class="w-8 h-8 text-white"></i>
+                </div>
+                <div class="flex items-center gap-2 mb-3">
+                    <h2 class="font-outfit text-2xl font-bold text-white">
+                        Project Compare
+                    </h2>
+                </div>
+                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
+                    두 개의 로봇 프로젝트 파일을 비교하여 프로그램, 포인트 데이터 등의 차이점을 한눈에 파악할 수 있는 툴입니다.
+                </p>
+                <div class="mt-auto flex items-center justify-between gap-1 border-t border-slate-700/50 pt-5">
+                    <div class="tool-version-actions">
+                        <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-1.5 py-1.5 rounded-lg border border-white/10">V2.1</span>
+                        <button type="button" class="history-button" data-debug-history="projectCompare" data-current-version="V2.1">
+                            <i data-lucide="scroll-text" class="w-4 h-4"></i>
+                            버전 기록
+                        </button>
+                    </div>
+                    <a href="ProjectCompare/InoRobot_Compare_Project_V2.1.zip"
+                       download
+                       class="download-button">
+                       <i data-lucide="download" class="w-4 h-4"></i>
+                       Download
+                    </a>
+                </div>
+            </div>
+
+        </div>
+
+
+
+    </main>
+
+    <div id="debug-history-modal" class="history-modal" aria-hidden="true">
+        <section class="history-dialog" role="dialog" aria-modal="true" aria-labelledby="debug-history-title">
+            <header class="history-dialog-header">
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2 mb-1 text-sky-400">
+                        <i data-lucide="scroll-text" class="w-4 h-4"></i>
+                        <span class="text-[11px] font-bold uppercase tracking-[0.18em]">Update History</span>
+                    </div>
+                    <h2 id="debug-history-title" class="font-outfit text-xl md:text-2xl font-bold text-white truncate">버전 기록</h2>
+                    <p id="debug-history-current-version" class="mt-1 text-xs font-mono text-slate-500"></p>
+                </div>
+                <button type="button" id="debug-history-close" class="history-close-button" aria-label="버전 기록 닫기">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </header>
+            <div id="debug-history-body" class="history-dialog-body">
+                <p class="history-message">버전 기록을 불러오는 중입니다.</p>
+            </div>
+        </section>
+    </div>
+
+    <script src="./debugging-history-data.js"></script>
+    <script src="./debugging-history.js"></script>
+    <script>
+        // Initialize Icons, or retain the local text fallback when the CDN is unavailable.
+        if (window.lucide) {
+            lucide.createIcons();
+        } else if (window.InoRobotIconFallback) {
+            window.InoRobotIconFallback.apply(document);
+        }
+    </script>
+</body>
+
+</html>

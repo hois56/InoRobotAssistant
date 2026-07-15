@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(cmd.exe /c \"gh release list --repo hois56/InoRobotAssistant\")",
-      "Bash(cmd.exe /c \"gh --version\")",
-      "Bash(powershell.exe -Command \"gh --version\")"
-    ]
-  }
-}
