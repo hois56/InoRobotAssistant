@@ -43,7 +43,7 @@
       "description": "Search robot manuals, training materials, certificates, and communication profiles."
     },
     "debugging": {
-      "title": "INOVANCE Robot Debugging Tools",
+      "title": "Debugging Tool | InoRobot Assistant",
       "description": "Tools for robot diagnostics, communication testing, data comparison, and zero calibration."
     },
     "zeroCalibration": {
@@ -225,7 +225,7 @@
     "시스템 안정성 개선": "Improved system stability",
     "Display 모듈 지원": "Added Display module support",
     "Display 최적화": "Optimized for Display applications",
-    "Debugging Tool": "Debugging Tools",
+    "Debugging Tool": "Debugging Tool",
     "문제를 발견하셨나요?": "Found a problem?",
     "INOVANCE 로봇의 디버깅 및 영점 보정에 효율적인 디버깅 툴을 제공합니다.": "Use efficient tools for debugging and zero calibration of INOVANCE robots.",
     "Zero Calibration": "Zero Calibration",

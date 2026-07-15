@@ -43,7 +43,7 @@
       "description": "搜索机器人手册、培训资料、认证文件和通信配置文件。"
     },
     "debugging": {
-      "title": "INOVANCE 机器人调试工具",
+      "title": "Debugging Tool | InoRobot Assistant",
       "description": "提供机器人诊断、通信测试、数据比较和零点校准工具。"
     },
     "zeroCalibration": {
@@ -225,7 +225,7 @@
     "시스템 안정성 개선": "提升系统稳定性",
     "Display 모듈 지원": "支持 Display 模块",
     "Display 최적화": "针对 Display 应用进行优化",
-    "Debugging Tool": "调试工具",
+    "Debugging Tool": "Debugging Tool",
     "문제를 발견하셨나요?": "发现问题了吗？",
     "INOVANCE 로봇의 디버깅 및 영점 보정에 효율적인 디버깅 툴을 제공합니다.": "提供用于 INOVANCE 机器人调试和零点校准的高效工具。",
     "Zero Calibration": "零点校准",

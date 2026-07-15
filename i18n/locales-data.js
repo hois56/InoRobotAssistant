@@ -45,7 +45,7 @@ window.INOROBOT_LOCALES = {
         "description": "로봇 매뉴얼, 교육자료, 인증서와 통신 프로파일을 검색합니다."
       },
       "debugging": {
-        "title": "INOVANCE 로봇 디버깅 도구",
+        "title": "Debugging Tool | InoRobot Assistant",
         "description": "로봇 점검, 통신 시험, 데이터 비교와 영점 보정 도구를 제공합니다."
       },
       "zeroCalibration": {
@@ -227,7 +227,7 @@ window.INOROBOT_LOCALES = {
       "시스템 안정성 개선": "시스템 안정성 개선",
       "Display 모듈 지원": "Display 모듈 지원",
       "Display 최적화": "Display 최적화",
-      "Debugging Tool": "디버깅 도구",
+      "Debugging Tool": "Debugging Tool",
       "문제를 발견하셨나요?": "문제를 발견하셨나요?",
       "INOVANCE 로봇의 디버깅 및 영점 보정에 효율적인 디버깅 툴을 제공합니다.": "INOVANCE 로봇의 디버깅과 영점 보정을 위한 효율적인 도구를 제공합니다.",
       "Zero Calibration": "영점 보정",
@@ -468,7 +468,7 @@ window.INOROBOT_LOCALES = {
         "description": "Search robot manuals, training materials, certificates, and communication profiles."
       },
       "debugging": {
-        "title": "INOVANCE Robot Debugging Tools",
+        "title": "Debugging Tool | InoRobot Assistant",
         "description": "Tools for robot diagnostics, communication testing, data comparison, and zero calibration."
       },
       "zeroCalibration": {
@@ -650,7 +650,7 @@ window.INOROBOT_LOCALES = {
       "시스템 안정성 개선": "Improved system stability",
       "Display 모듈 지원": "Added Display module support",
       "Display 최적화": "Optimized for Display applications",
-      "Debugging Tool": "Debugging Tools",
+      "Debugging Tool": "Debugging Tool",
       "문제를 발견하셨나요?": "Found a problem?",
       "INOVANCE 로봇의 디버깅 및 영점 보정에 효율적인 디버깅 툴을 제공합니다.": "Use efficient tools for debugging and zero calibration of INOVANCE robots.",
       "Zero Calibration": "Zero Calibration",
@@ -891,7 +891,7 @@ window.INOROBOT_LOCALES = {
         "description": "搜索机器人手册、培训资料、认证文件和通信配置文件。"
       },
       "debugging": {
-        "title": "INOVANCE 机器人调试工具",
+        "title": "Debugging Tool | InoRobot Assistant",
         "description": "提供机器人诊断、通信测试、数据比较和零点校准工具。"
       },
       "zeroCalibration": {
@@ -1073,7 +1073,7 @@ window.INOROBOT_LOCALES = {
       "시스템 안정성 개선": "提升系统稳定性",
       "Display 모듈 지원": "支持 Display 模块",
       "Display 최적화": "针对 Display 应用进行优化",
-      "Debugging Tool": "调试工具",
+      "Debugging Tool": "Debugging Tool",
       "문제를 발견하셨나요?": "发现问题了吗？",
       "INOVANCE 로봇의 디버깅 및 영점 보정에 효율적인 디버깅 툴을 제공합니다.": "提供用于 INOVANCE 机器人调试和零点校准的高效工具。",
       "Zero Calibration": "零点校准",
@@ -1112,7 +1112,7 @@ window.INOROBOT_LOCALES = {
       "Project Generator 버전 기록 보기": "打开项目生成器版本记录",
       "Software 버전 기록 보기": "打开软件版本记录",
       "Document 버전 기록 보기": "打开文档版本记录",
-      "Debugging Tool 버전 기록 보기": "打开调试工具版本记录",
+      "Debugging Tool 버전 기록 보기": "打开 Debugging Tool 版本记录",
       "Live Source Preview": "实时源码预览",
       "Edit Mode": "编辑模式",
       "Project Options": "项目选项",
@@ -1314,7 +1314,7 @@ window.INOROBOT_LOCALES = {
         "description": "Tìm hướng dẫn, tài liệu đào tạo, chứng nhận và profile truyền thông."
       },
       "debugging": {
-        "title": "Công cụ gỡ lỗi robot INOVANCE",
+        "title": "Debugging Tool | InoRobot Assistant",
         "description": "Công cụ chẩn đoán robot, kiểm tra truyền thông, so sánh dữ liệu và hiệu chỉnh zero."
       },
       "zeroCalibration": {
@@ -1496,7 +1496,7 @@ window.INOROBOT_LOCALES = {
       "시스템 안정성 개선": "Cải thiện độ ổn định hệ thống",
       "Display 모듈 지원": "Hỗ trợ mô-đun Display",
       "Display 최적화": "Tối ưu cho ứng dụng Display",
-      "Debugging Tool": "Công cụ gỡ lỗi",
+      "Debugging Tool": "Debugging Tool",
       "문제를 발견하셨나요?": "Bạn phát hiện sự cố?",
       "INOVANCE 로봇의 디버깅 및 영점 보정에 효율적인 디버깅 툴을 제공합니다.": "Cung cấp công cụ hiệu quả để gỡ lỗi và hiệu chỉnh zero robot INOVANCE.",
       "Zero Calibration": "Hiệu chỉnh zero",

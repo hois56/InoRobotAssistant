@@ -60,7 +60,11 @@ function initApp() {
     // Guide modal
     document.getElementById('btnGuide').onclick = () => {
         document.getElementById('guideModal').classList.remove('hidden');
-        lucide.createIcons();
+        if (window.lucide) {
+            lucide.createIcons();
+        } else if (window.InoRobotIconFallback) {
+            window.InoRobotIconFallback.apply(document.getElementById('guideModal'));
+        }
     };
     document.querySelectorAll('.guide-tab').forEach(tab => {
         tab.addEventListener('click', () => {

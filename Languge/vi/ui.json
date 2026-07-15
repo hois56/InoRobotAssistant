@@ -43,7 +43,7 @@
       "description": "Tìm hướng dẫn, tài liệu đào tạo, chứng nhận và profile truyền thông."
     },
     "debugging": {
-      "title": "Công cụ gỡ lỗi robot INOVANCE",
+      "title": "Debugging Tool | InoRobot Assistant",
       "description": "Công cụ chẩn đoán robot, kiểm tra truyền thông, so sánh dữ liệu và hiệu chỉnh zero."
     },
     "zeroCalibration": {
@@ -225,7 +225,7 @@
     "시스템 안정성 개선": "Cải thiện độ ổn định hệ thống",
     "Display 모듈 지원": "Hỗ trợ mô-đun Display",
     "Display 최적화": "Tối ưu cho ứng dụng Display",
-    "Debugging Tool": "Công cụ gỡ lỗi",
+    "Debugging Tool": "Debugging Tool",
     "문제를 발견하셨나요?": "Bạn phát hiện sự cố?",
     "INOVANCE 로봇의 디버깅 및 영점 보정에 효율적인 디버깅 툴을 제공합니다.": "Cung cấp công cụ hiệu quả để gỡ lỗi và hiệu chỉnh zero robot INOVANCE.",
     "Zero Calibration": "Hiệu chỉnh zero",

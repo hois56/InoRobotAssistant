@@ -88,6 +88,7 @@
     <link rel="stylesheet" href="/i18n/i18n.css">
     <script src="/i18n/locales-data.js" defer></script>
     <script src="/i18n/i18n.js" defer></script>
+    <script src="/i18n/icon-fallback.js" defer></script>
 </head>
 
 <body class="relative flex flex-col min-h-screen">
@@ -267,8 +268,12 @@
                 });
         }
 
-        // Initialize Icons
-        lucide.createIcons();
+        // Initialize Icons, or retain the local text fallback when the CDN is unavailable.
+        if (window.lucide) {
+            lucide.createIcons();
+        } else if (window.InoRobotIconFallback) {
+            window.InoRobotIconFallback.apply(document);
+        }
     </script>
 </body>
 

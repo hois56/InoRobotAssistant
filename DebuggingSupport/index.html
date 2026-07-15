@@ -391,6 +391,7 @@
     <link rel="stylesheet" href="/i18n/i18n.css">
     <script src="/i18n/locales-data.js" defer></script>
     <script src="/i18n/i18n.js" defer></script>
+    <script src="/i18n/icon-fallback.js" defer></script>
 </head>
 
 <body class="relative flex flex-col min-h-screen">
@@ -403,7 +404,7 @@
                 <img src="../InoRobotSelect/INOVANCE_Logo.png" alt="Inovance" class="h-[60px] w-auto">
             </a>
             <div class="h-8 w-px bg-white/10 mx-2 hidden md:block"></div>
-            <h1 class="font-outfit text-xl font-bold text-white hidden md:block tracking-tight">Debugging Tool</h1>
+            <h1 class="font-outfit text-xl font-bold text-white hidden md:block tracking-tight" data-i18n-skip>Debugging Tool</h1>
         </div>
         <div class="flex items-center gap-4">
         </div>
@@ -595,8 +596,12 @@
     <script src="./debugging-history-data.js"></script>
     <script src="./debugging-history.js"></script>
     <script>
-        // Initialize Icons
-        lucide.createIcons();
+        // Initialize Icons, or retain the local text fallback when the CDN is unavailable.
+        if (window.lucide) {
+            lucide.createIcons();
+        } else if (window.InoRobotIconFallback) {
+            window.InoRobotIconFallback.apply(document);
+        }
     </script>
 </body>
 
