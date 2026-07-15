@@ -41,6 +41,16 @@ html:lang(zh-CN) body {
     right: calc(14px + env(safe-area-inset-right, 0px)) !important;
 }
 
+.inorobot-language-switcher[data-embedded="true"] {
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    z-index: auto;
+    box-shadow: none;
+}
+
 .inorobot-language-label {
     display: inline-flex;
     align-items: center;

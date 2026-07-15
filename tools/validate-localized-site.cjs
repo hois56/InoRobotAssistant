@@ -137,6 +137,24 @@ function translateLegacySource(locale, source) {
 const locales = Object.fromEntries(localeCodes.map(code => [code, loadMergedLocale(code)]));
 const siteCardVersions = parseSiteCardVersions(read('site-card-versions.js'));
 
+const robotDataContext = {};
+vm.runInNewContext(read('InoRobotSelect/data.js') + '\nthis.__accessories = accessoriesList;', robotDataContext);
+const accessorySources = [...new Set(robotDataContext.__accessories.flatMap(item => [item.name, item.description]).filter(Boolean))];
+const technicalOptionName = /^(?:IRCB\d|IR-[A-Z0-9]|GL20-)/;
+localeCodes.forEach(code => {
+    ['가반 하중(kg)', '리치(mm)', 'Z축 길이(mm)', 'Standard (표준형)', 'High Flex (유연형)', '클린 사양 없음', '사양', '통신은 기본 제공됩니다.', '파워/엔코더 케이블', 'Pendant'].forEach(source => {
+        assert(Object.prototype.hasOwnProperty.call(locales[code].legacy, source), code + ' is missing Robot Select text: ' + source);
+    });
+    accessorySources.forEach(source => {
+        assert(Object.prototype.hasOwnProperty.call(locales[code].legacy, source.trim()), code + ' is missing Robot Select option text: ' + source);
+    });
+});
+['ko', 'zh-CN', 'vi'].forEach(code => {
+    accessorySources.filter(source => !technicalOptionName.test(source.trim())).forEach(source => {
+        assert(locales[code].legacy[source.trim()] !== source.trim(), code + ' leaves a Robot Select option untranslated: ' + source);
+    });
+});
+
 localeCodes.forEach(code => {
     assert(locales[code].legacy['Debugging Tool'] === 'Debugging Tool', code + ' must keep Debugging Tool in English.');
     assert(locales[code].pages.debugging.title === 'Debugging Tool | InoRobot Assistant', code + ' has the wrong Debugging Tool page title.');
@@ -249,6 +267,7 @@ assert(runtime.includes("'/kr/': 'ko'") && runtime.includes("'/cn/': 'zh-CN'") &
 assert(runtime.includes('function formatNumber') && runtime.includes('function formatDate'), 'Locale number/date formatters are missing.');
 assert(runtime.includes('window.location.assign(LANDING_ROUTES[nextLocale])'), 'Landing language changes do not navigate to their localized route.');
 assert(runtime.includes("label.textContent = 'Language'") && !runtime.includes("icon.textContent = '文'"), 'Runtime language switcher has the wrong label.');
+assert(runtime.includes("document.querySelector('[data-i18n-language-slot]')") && runtime.includes("container.dataset.embedded = languageSlot ? 'true' : 'false'"), 'Runtime does not support page-specific language switcher slots.');
 ['/', '/kr/', '/en/', '/cn/', '/vn/'].forEach(route => {
     assert(runtime.includes(`a[href="${route}"]`), 'Runtime does not refresh home links already pointing to ' + route + '.');
 });
@@ -276,6 +295,15 @@ assert(localeStyles.includes('position: fixed !important') && localeStyles.inclu
 assert(localeStyles.includes('top: calc(16px + env(safe-area-inset-top, 0px)) !important'), 'The language UI is not positioned inside the desktop top bar.');
 const languageLabelStyle = localeStyles.match(/\.inorobot-language-label\s*\{([\s\S]*?)\}/)?.[1] || '';
 assert(!/text-transform\s*:\s*uppercase/i.test(languageLabelStyle), 'The Language label is still forced to uppercase.');
+assert(localeStyles.includes('.inorobot-language-switcher[data-embedded="true"]') && localeStyles.includes('position: static !important'), 'Embedded language switchers are not detached from the global fixed position.');
+
+const projectHtml = read('InoRobotProjectGen/index.html');
+assert(projectHtml.indexOf('data-i18n-language-slot') < projectHtml.indexOf('id="btnGuide"'), 'Project Generator language switcher is not placed left of Guide.');
+const viewerHtml = read('InoRobot3DView/index.html');
+const viewerStyles = read('InoRobot3DView/style.css');
+assert(viewerHtml.indexOf('data-i18n-language-slot') > viewerHtml.indexOf('</header>'), '3D Viewer language switcher is not below the top bar.');
+assert(viewerStyles.includes('top: calc(var(--topbar-h) + 8px)') && viewerStyles.includes('.viewer-language-row'), '3D Viewer language switcher row is not positioned below the top bar.');
+assert(read('Manual/index.html').includes('data-cat="pendant">Pendant</button>'), 'Document Pendant tab is not using the translatable source label.');
 
 const protectedScripts = read('Manual/script.js') + '\n' + read('Software/script.js');
 assert(!protectedScripts.includes('data.message ||'), 'A raw server error message can still be shown to users.');
@@ -287,6 +315,10 @@ assert(robotSelectScript.includes('html2pdf().set(dlObj)'), 'Robot Select PDF ge
 assert(robotSelectScript.includes('new JSZip()') && robotSelectScript.includes('saveAs(content'), 'Robot Select CAD ZIP generation hook is missing.');
 assert(robotSelectScript.includes('uiText(filterCategory.label)') && robotSelectScript.includes("uiText('가반 하중 (kg)')"), 'Robot Select dynamic filters or specification labels are not localized.');
 assert(robotSelectScript.includes('window.InoRobotI18n.apply(modalBody)') && robotSelectScript.includes('pdfFooterText'), 'Robot Select options or PDF footer are not localized.');
+assert(robotSelectScript.includes("uiText('현재 구매 코드')") && robotSelectScript.includes("uiText('제품 상세 및 구성')"), 'Robot Select composed headings are not localized.');
+assert(robotSelectScript.includes("uiText('파워/엔코더 케이블')") && robotSelectScript.includes('uiText(cableType)'), 'Robot Select PDF cable details are not localized.');
+assert(robotSelectScript.includes('uiText(acc.description)') && robotSelectScript.includes('localizeDisplayText(option.spec)'), 'Robot Select option descriptions are not localized.');
+assert(robotSelectScript.includes('captureModalSelections') && robotSelectScript.includes('restoreModalSelections'), 'Robot Select does not preserve modal selections while changing language.');
 const projectScript = read('InoRobotProjectGen/app.js');
 assert(projectScript.includes('new JSZip()') && projectScript.includes('zip.generateAsync') && projectScript.includes('saveAs(blob'), 'Project ZIP generation hook is missing.');
 assert(projectScript.includes("uiText('Option Info')") && projectScript.includes('window.InoRobotI18n.apply(description)'), 'Project option guide descriptions are not localized.');

@@ -2,6 +2,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const uiText = (value) => window.InoRobotI18n
         ? window.InoRobotI18n.translate(String(value))
         : String(value);
+    const localizeDisplayText = (value) => {
+        const source = String(value ?? '');
+        const exact = uiText(source);
+        if (exact !== source) return exact;
+        return ['클린 사양 없음'].reduce(
+            (text, fragment) => text.replaceAll(fragment, uiText(fragment)),
+            source
+        );
+    };
+    const formatAxisLabel = (axis) => {
+        const source = String(axis ?? '');
+        if (source.includes('합산 속도') || source.endsWith(' 사양')) return uiText(source);
+        return `${source} ${uiText('사양')}`;
+    };
     const filterContainer = document.getElementById('filter-container');
     const productContainer = document.getElementById('product-container');
     const resetBtn = document.getElementById('reset-btn');
@@ -925,24 +939,24 @@ document.addEventListener('DOMContentLoaded', () => {
         // CAD availability check
         const cadBtn = document.getElementById('download-cad-btn');
         cadBtn.disabled = true;
-        cadBtn.innerText = "상태 확인 중...";
+        cadBtn.innerText = uiText("상태 확인 중...");
         cadBtn.style.opacity = "0.7";
 
         hasAnyCadFile(product, '3D', 'stp').then(isAvailable => {
             if (isAvailable) {
                 cadBtn.disabled = false;
-                cadBtn.innerText = "CAD 다운로드";
+                cadBtn.innerText = uiText("CAD 다운로드");
                 cadBtn.style.opacity = "1";
                 cadBtn.style.cursor = "pointer";
             } else {
                 cadBtn.disabled = true;
-                cadBtn.innerText = "CAD 준비 중";
+                cadBtn.innerText = uiText("CAD 준비 중");
                 cadBtn.style.opacity = "0.4";
                 cadBtn.style.cursor = "not-allowed";
             }
         }).catch(() => {
             cadBtn.disabled = true;
-            cadBtn.innerText = "CAD 준비 중";
+            cadBtn.innerText = uiText("CAD 준비 중");
             cadBtn.style.opacity = "0.4";
             cadBtn.style.cursor = "not-allowed";
         });
@@ -975,7 +989,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         currentActiveProduct = product;
-        document.getElementById('modal-title').textContent = `[${displayName}] 제품 상세 및 구성`;
+        document.getElementById('modal-title').textContent = `[${displayName}] ${uiText('제품 상세 및 구성')}`;
         modalBody.innerHTML = '';
 
         function updateModalModelName() {
@@ -986,7 +1000,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const modalTitle = document.getElementById('modal-title');
             const modalModelName = rightCol.querySelector('#modal-model-name');
 
-            if (modalTitle) modalTitle.textContent = `[${nextName}] 제품 상세 및 구성`;
+            if (modalTitle) modalTitle.textContent = `[${nextName}] ${uiText('제품 상세 및 구성')}`;
             if (modalModelName) modalModelName.textContent = nextName;
         }
 
@@ -1029,13 +1043,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isScara) {
                 const combinedSpeedKey = dks.find(k => k.toLowerCase().includes('speed') && k.toLowerCase().includes('j1+j2'));
                 if (combinedSpeedKey) {
-                    axesRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>J1+J2 합산 속도</strong></td><td style="text-align:right; padding-right:10px;">${formatAxisSpecValue(ds[combinedSpeedKey], combinedSpeedKey)}</td><td style="text-align:right;">-</td></tr>`;
+                    axesRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>${uiText('J1+J2 합산 속도')}</strong></td><td style="text-align:right; padding-right:10px;">${formatAxisSpecValue(ds[combinedSpeedKey], combinedSpeedKey)}</td><td style="text-align:right;">-</td></tr>`;
                 }
             }
 
             const checkNums = is6Axis ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4];
             checkNums.forEach(num => {
-                let label = 'J' + num + ' 사양';
+                let label = formatAxisLabel('J' + num);
                 let q = 'j' + num;
                 const sk = dks.find(k => k.toLowerCase().includes('speed') && k.toLowerCase().includes(q));
                 const rk = dks.find(k => k.toLowerCase().includes('range') && k.toLowerCase().includes(q));
@@ -1057,7 +1071,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </tr>
             ` + tech.axes.map(ax => `
                 <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
-                    <td style="padding:6px 0;"><strong>${ax.axis} 사양</strong></td>
+                    <td style="padding:6px 0;"><strong>${formatAxisLabel(ax.axis)}</strong></td>
                     <td style="text-align:right; padding-right:10px;">${ax.speed}</td>
                     <td style="text-align:right;">${ax.range}</td>
                 </tr>
@@ -1129,9 +1143,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const baseCode = (product.cables && product.cables.length > 0) ? product.cables[0].code : 'N/A';
 
         const infoHtml = `
-            <div id="dynamic-purchase-code" style="font-size:14px;margin-bottom:8px;font-weight:bold;color:var(--primary-blue);">현재 구매 코드: ${baseCode}</div>
+            <div id="dynamic-purchase-code" style="font-size:14px;margin-bottom:8px;font-weight:bold;color:var(--primary-blue);">${uiText('현재 구매 코드')}: ${baseCode}</div>
             <div id="lead-time-display" style="font-size:13px;margin-bottom:15px;color:#eee;background:rgba(255,255,255,0.05);padding:10px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);">
-                <strong>예상 납기:</strong> <span id="lead-time-value" style="color:var(--secondary-orange); font-weight:bold;">TBD</span>
+                <strong>${uiText('예상 납기')}:</strong> <span id="lead-time-value" style="color:var(--secondary-orange); font-weight:bold;">TBD</span>
             </div>
             <h2 id="modal-model-name" style="color:var(--text-main);margin-bottom:12px;">${displayName}</h2>
             
@@ -1174,7 +1188,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             <div style="margin-bottom:20px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
                 <label id="header-comm" style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">통신 프로토콜 옵션 (확장카드 옵션)</label>
-                <p style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Modbus-RTU, Modbus-TCP, EtherNet/IP, EtherCAT, MC 통신은 기본 제공됩니다.</p>
+                <p style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Modbus-RTU, Modbus-TCP, EtherNet/IP, EtherCAT, MC ${uiText('통신은 기본 제공됩니다.')}</p>
                 <div id="comm-radios" style="display:flex; flex-wrap:wrap; gap:10px;">
                     <label class="cable-option" style="margin:0;">
                         <input type="radio" name="commSelection" value="none" checked data-code="">
@@ -1250,7 +1264,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.style.margin = '0';
             // Requirement 3: Default type also from marker
             let isChecked = defaultType ? (t === defaultType) : (i === 0);
-            btn.innerHTML = `<input type="radio" name="cableTypeSelection" value="${t}" ${isChecked ? 'checked' : ''}><span>${t}</span>`;
+            btn.innerHTML = `<input type="radio" name="cableTypeSelection" value="${t}" ${isChecked ? 'checked' : ''}><span>${uiText(t)}</span>`;
             typeContainer.appendChild(btn);
         });
 
@@ -1265,8 +1279,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.innerHTML = `
                     <input type="radio" name="robotBodyOption" value="${option.id}" ${index === 0 ? 'checked' : ''} data-label="${option.label}" data-spec="${option.spec}">
                     <span>
-                        <strong>${option.label}</strong>
-                        <small style="display:block; margin-top:4px; color:var(--text-muted); font-size:12px; line-height:1.35;">${option.spec}</small>
+                        <strong>${uiText(option.label)}</strong>
+                        <small style="display:block; margin-top:4px; color:var(--text-muted); font-size:12px; line-height:1.35;">${localizeDisplayText(option.spec)}</small>
                     </span>
                 `;
                 robotBodyOptionContainer.appendChild(btn);
@@ -1281,7 +1295,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const pHeader = rightCol.querySelector('#header-pendant');
             if (pHeader) {
                 const codeHtml = (pConfig && pConfig.value !== 'none' && pSel) ? ` <span class="code-badge">${pSel.value}</span>` : '';
-                pHeader.innerHTML = `티칭 펜던트 구성 (유로 옵션)${codeHtml}`;
+                pHeader.innerHTML = `${uiText('티칭 펜던트 구성 (유로 옵션)')}${codeHtml}`;
             }
 
             // Arm - Dynamic for multiple pin types
@@ -1290,7 +1304,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (armHeader) {
                 const armCodes = armSelections.filter(s => s.value !== 'none').map(s => s.value);
                 const codeHtml = armCodes.length > 0 ? armCodes.map(c => `<span class="code-badge">${c}</span>`).join('') : '';
-                armHeader.innerHTML = `Arm I/O 케이블 구성 (유로 옵션) ${codeHtml}`;
+                armHeader.innerHTML = `${uiText('Arm I/O 케이블 구성 (유로 옵션)')} ${codeHtml}`;
             }
 
             // Body - Dynamic for multiple pin types
@@ -1299,7 +1313,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (bodyHeader) {
                 const bodyCodes = bodySelections.filter(s => s.value !== 'none').map(s => s.value);
                 const codeHtml = bodyCodes.length > 0 ? bodyCodes.map(c => `<span class="code-badge">${c}</span>`).join('') : '';
-                bodyHeader.innerHTML = `Body I/O 케이블 구성 (유로 옵션) ${codeHtml}`;
+                bodyHeader.innerHTML = `${uiText('Body I/O 케이블 구성 (유로 옵션)')} ${codeHtml}`;
             }
 
             // Other
@@ -1308,7 +1322,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const checkedItems = Array.from(rightCol.querySelectorAll('input[name="accSelection"]:checked'));
                 const selectedCodes = checkedItems.map(cb => cb.value);
                 const codeHtml = selectedCodes.length > 0 ? selectedCodes.map(c => `<span class="code-badge">${c}</span>`).join('') : '';
-                otherHeader.innerHTML = `기타 악세서리 (유로 옵션) ${codeHtml}`;
+                otherHeader.innerHTML = `${uiText('기타 악세서리 (유로 옵션)')} ${codeHtml}`;
 
                 // Requirement 2: Show code on the right of each item
                 rightCol.querySelectorAll('input[name="accSelection"]').forEach(cb => {
@@ -1325,7 +1339,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (commHeader) {
                 const commCode = commSel ? commSel.getAttribute('data-code') : '';
                 const codeHtml = (commSel && commSel.value !== 'none' && commCode) ? ` <span class="code-badge">${commCode}</span>` : '';
-                commHeader.innerHTML = `통신 프로토콜 옵션 (확장카드 옵션)${codeHtml}`;
+                commHeader.innerHTML = `${uiText('통신 프로토콜 옵션 (확장카드 옵션)')}${codeHtml}`;
 
                 // Requirement 3 Fix: Sync and Clear siblings
                 const commCodesToSync = ['01650028', '01650040'];
@@ -1354,7 +1368,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const checkedExp = Array.from(rightCol.querySelectorAll('input[name="expSelection"]:checked'));
                 const selectedCodes = checkedExp.map(cb => cb.value);
                 const codeBadgeHtml = selectedCodes.length > 0 ? selectedCodes.map(c => `<span class="code-badge">${c}</span>`).join('') : '';
-                expansionHeader.innerHTML = `컨트롤러 확장 카드 옵션 ${codeBadgeHtml}`;
+                expansionHeader.innerHTML = `${uiText('컨트롤러 확장 카드 옵션')} ${codeBadgeHtml}`;
 
                 // Requirement 2: Show code inline for expansion cards
                 rightCol.querySelectorAll('input[name="expSelection"]').forEach(cb => {
@@ -1389,7 +1403,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const bodyOptionNeedsCode = selectedBodyOption && selectedBodyOption.value !== 'standard';
                 const bodyOptionCode = getBodyOptionPurchaseCode(product, selectedBodyOption ? selectedBodyOption.value : 'standard');
                 const finalCode = bodyOptionNeedsCode ? bodyOptionCode : (matched ? matched.code : (product.cables.length > 0 ? product.cables[0].code : 'N/A'));
-                codeDisplay.innerHTML = `현재 구매 코드: <span class="code-badge">${finalCode}</span>`;
+                codeDisplay.innerHTML = `${uiText('현재 구매 코드')}: <span class="code-badge">${finalCode}</span>`;
 
                 // Requirement 2: Dynamic Lead Time Calculation
                 const isScara = product.specs.Type === 'SCARA';
@@ -1416,7 +1430,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     timeStr = hasCode ? "7주" : "8주";
                 }
-                if (leadTimeVal) leadTimeVal.textContent = timeStr;
+                if (leadTimeVal) leadTimeVal.textContent = uiText(timeStr);
             }
             updateModalModelName();
             updateHeaderCodes();
@@ -1438,24 +1452,24 @@ document.addEventListener('DOMContentLoaded', () => {
         
         pendantContainer.innerHTML = `
             <div>
-                <div style="font-size:12px; margin-bottom:5px; color:#aaa;">펜던트 사용 여부 선택</div>
+                <div style="font-size:12px; margin-bottom:5px; color:#aaa;">${uiText('펜던트 사용 여부 선택')}</div>
                 <div style="display:flex; flex-wrap:wrap; gap:10px;" id="pendant-config-radios">
                     <label class="cable-option" style="margin:0;">
                         <input type="radio" name="pendantConfig" value="none" checked data-label="사용안함">
-                        <span>사용안함</span>
+                        <span>${uiText('사용안함')}</span>
                     </label>
                     <label class="cable-option" style="margin:0;">
                         <input type="radio" name="pendantConfig" value="without-cover" data-label="비상정지 보호 커버 없음">
-                        <span>비상정지 보호 커버 없음</span>
+                        <span>${uiText('비상정지 보호 커버 없음')}</span>
                     </label>
                     <label class="cable-option" style="margin:0;">
                         <input type="radio" name="pendantConfig" value="with-cover" data-label="비상정지 보호 커버 있음">
-                        <span>비상정지 보호 커버 있음</span>
+                        <span>${uiText('비상정지 보호 커버 있음')}</span>
                     </label>
                 </div>
             </div>
             <div style="margin-top:4px;">
-                <div style="font-size:12px; margin-bottom:5px; color:#aaa;">펜던트 길이 선택</div>
+                <div style="font-size:12px; margin-bottom:5px; color:#aaa;">${uiText('펜던트 길이 선택')}</div>
                 <div style="display:flex; flex-wrap:wrap; gap:10px;" id="pendant-length-radios"></div>
             </div>
         `;
@@ -1473,7 +1487,7 @@ document.addEventListener('DOMContentLoaded', () => {
             pLengthRadios.innerHTML = availableOptions.map((opt, index) => `
                 <label class="cable-option" style="margin:0;">
                     <input type="radio" name="pendantLength" value="${opt.code}" data-desc="${opt.description}" data-spec="${opt.spec || ''}" ${isEnabled && index === 0 ? 'checked' : ''} ${isEnabled ? '' : 'disabled'}>
-                    <span>${opt.spec || opt.name}</span>
+                    <span>${opt.spec || uiText(opt.name)}</span>
                 </label>
             `).join('');
             updateHeaderCodes();
@@ -1514,7 +1528,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     groupDiv.style.marginBottom = '12px';
                     groupDiv.innerHTML = `<div style="font-size:12px; margin-bottom:5px; color:#aaa;">${formatPinCount(pin)} ${uiText('케이블 선택')}</div>
                         <div style="display:flex; flex-wrap:wrap; gap:10px;" id="arm-radios-${pin}">
-                            <label class="cable-option" style="margin:0;"><input type="radio" name="armSelection_${pin}" value="none" checked><span>사용안함</span></label>
+                            <label class="cable-option" style="margin:0;"><input type="radio" name="armSelection_${pin}" value="none" checked><span>${uiText('사용안함')}</span></label>
                         </div>`;
                     armContainer.appendChild(groupDiv);
                     
@@ -1530,7 +1544,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     radios.addEventListener('change', updateHeaderCodes);
                 });
             } else {
-                armContainer.innerHTML = `<span style="font-size:13px; color:#999;">해당 모델에 호환되는 Arm 케이블 옵션이 없습니다.</span>`;
+                armContainer.innerHTML = `<span style="font-size:13px; color:#999;">${uiText('해당 모델에 호환되는 Arm 케이블 옵션이 없습니다.')}</span>`;
             }
 
             // Group Body I/O by pins
@@ -1551,7 +1565,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     groupDiv.style.marginBottom = '12px';
                     groupDiv.innerHTML = `<div style="font-size:12px; margin-bottom:5px; color:#aaa;">${formatPinCount(pin)} ${uiText('케이블 선택')}</div>
                         <div style="display:flex; flex-wrap:wrap; gap:10px;" id="body-radios-${pin}">
-                            <label class="cable-option" style="margin:0;"><input type="radio" name="bodySelection_${pin}" value="none" checked><span>사용안함</span></label>
+                            <label class="cable-option" style="margin:0;"><input type="radio" name="bodySelection_${pin}" value="none" checked><span>${uiText('사용안함')}</span></label>
                         </div>`;
                     bodyContainer.appendChild(groupDiv);
                     
@@ -1567,7 +1581,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     radios.addEventListener('change', updateHeaderCodes);
                 });
             } else {
-                bodyContainer.innerHTML = `<span style="font-size:13px; color:#999;">해당 모델에 호환되는 Body 케이블 옵션이 없습니다.</span>`;
+                bodyContainer.innerHTML = `<span style="font-size:13px; color:#999;">${uiText('해당 모델에 호환되는 Body 케이블 옵션이 없습니다.')}</span>`;
             }
         }
 
@@ -1591,16 +1605,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 lbl.innerHTML = `
                     <input type="checkbox" name="accSelection" value="${acc.code}" data-desc="${acc.name} - ${acc.description}" data-spec="${acc.spec || ''}" style="margin-top:3px;">
                     <div style="flex:1;">
-                        <strong>${acc.name || 'Accessory'}</strong> 
+                        <strong>${uiText(acc.name || 'Accessory')}</strong>
                         <span class="item-code-inline code-badge" style="display:none; margin-left:8px;">${acc.code}</span>
-                        <br><span style="color:#888; font-size:13px;">${acc.description}</span>
+                        <br><span style="color:#888; font-size:13px;">${uiText(acc.description)}</span>
                     </div>
                 `;
                 otherAccContainer.appendChild(lbl);
             });
             otherAccContainer.addEventListener('change', updateHeaderCodes);
         } else {
-            otherAccContainer.innerHTML = '<span style="color:#999; font-size:13px;">기타 악세서리가 없습니다.</span>';
+            otherAccContainer.innerHTML = `<span style="color:#999; font-size:13px;">${uiText('기타 악세서리가 없습니다.')}</span>`;
         }
 
         // 4. Expansion Cards Logic
@@ -1614,16 +1628,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 lbl.innerHTML = `
                     <input type="checkbox" name="expSelection" value="${acc.code}" data-desc="${acc.name} - ${acc.description}" data-spec="${acc.spec || ''}" style="margin-top:3px;">
                     <div style="flex:1;">
-                        <strong>${acc.name}</strong> 
+                        <strong>${uiText(acc.name)}</strong>
                         <span class="exp-code-inline code-badge" style="display:none; margin-left:8px;">${acc.code}</span>
-                        <br><span style="color:#888; font-size:13px;">${acc.description}</span>
+                        <br><span style="color:#888; font-size:13px;">${uiText(acc.description)}</span>
                     </div>
                 `;
                 expContainer.appendChild(lbl);
             });
             expContainer.addEventListener('change', updateHeaderCodes);
         } else {
-            expContainer.innerHTML = '<span style="color:#999; font-size:13px;">확장 카드 옵션이 없습니다.</span>';
+            expContainer.innerHTML = `<span style="color:#999; font-size:13px;">${uiText('확장 카드 옵션이 없습니다.')}</span>`;
         }
 
         rightCol.querySelector('#comm-radios').addEventListener('change', updateHeaderCodes);
@@ -1702,8 +1716,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const bodyLabel = robotBodySelected.getAttribute('data-label') || robotBodySelected.value;
             const bodySpec = robotBodySelected.getAttribute('data-spec') || '';
             selectedAccs.push({
-                name: '로봇 바디 옵션',
-                details: `${bodyLabel}${bodySpec ? ' (' + bodySpec + ')' : ''}`,
+                name: uiText('로봇 바디 옵션'),
+                details: `${uiText(bodyLabel)}${bodySpec ? ' (' + localizeDisplayText(bodySpec) + ')' : ''}`,
                 code: getBodyOptionPurchaseCode(currentActiveProduct, robotBodyOptionValue) || '-'
             });
         }
@@ -1715,8 +1729,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const pLen = pSelected.getAttribute('data-spec') || '';
             const showLen = pLen && pLen !== '-';
             selectedAccs.push({ 
-                name: '티칭 펜던트', 
-                details: `${pConfig.getAttribute('data-label')}${showLen ? ' (길이: ' + pLen + ')' : ''}`,
+                name: uiText('티칭 펜던트'),
+                details: `${uiText(pConfig.getAttribute('data-label'))}${showLen ? ` (${uiText('길이:')} ${pLen})` : ''}`,
                 code: pSelected.value 
             });
         }
@@ -1729,8 +1743,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const armLen = sel.getAttribute('data-spec') || '';
                 const showLen = armLen && armLen !== '-';
                 selectedAccs.push({ 
-                    name: `Arm I/O 케이블 (${pinLabel})`, 
-                    details: `${armDesc}${showLen ? ' (길이: ' + armLen + ')' : ''}`, 
+                    name: `${uiText('Arm I/O 케이블')} (${formatPinCount(pinLabel)})`,
+                    details: `${uiText(armDesc)}${showLen ? ` (${uiText('길이:')} ${armLen})` : ''}`,
                     code: sel.value 
                 });
             }
@@ -1742,8 +1756,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const bodyLen = sel.getAttribute('data-spec') || '';
                 const showLen = bodyLen && bodyLen !== '-';
                 selectedAccs.push({ 
-                    name: `Body I/O 케이블 (${pinLabel})`, 
-                    details: `${bodyDesc}${showLen ? ' (길이: ' + bodyLen + ')' : ''}`, 
+                    name: `${uiText('Body I/O 케이블')} (${formatPinCount(pinLabel)})`,
+                    details: `${uiText(bodyDesc)}${showLen ? ` (${uiText('길이:')} ${bodyLen})` : ''}`,
                     code: sel.value 
                 });
             }
@@ -1764,8 +1778,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             selectedAccs.push({
-                name: namePart,
-                details: `${detailPart}${showLen ? ' (길이: ' + itemLen + ')' : ''}`,
+                name: uiText(namePart),
+                details: `${uiText(detailPart)}${showLen ? ` (${uiText('길이:')} ${itemLen})` : ''}`,
                 code: cb.value
             });
         });
@@ -1776,7 +1790,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const commLabel = selComm.getAttribute('data-label') || selComm.value;
             selectedAccs.push({ 
                 name: selComm.value, 
-                details: `${commLabel} expansion card`, 
+                details: `${commLabel} ${uiText('확장 카드')}`,
                 code: selComm.getAttribute('data-code') || '-' 
             });
         }
@@ -1794,8 +1808,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             selectedAccs.push({
-                name: namePart,
-                details: detailPart,
+                name: uiText(namePart),
+                details: uiText(detailPart),
                 code: cb.value
             });
         });
@@ -1805,7 +1819,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let scaraSubtype = '';
         if (currentActiveProduct.specs.Type === 'SCARA') {
             const upperName = currentActiveProduct.name.toUpperCase();
-            scaraSubtype = (upperName.includes('TS4') || upperName.includes('TS5')) ? '천장형' : '일반형';
+            scaraSubtype = uiText((upperName.includes('TS4') || upperName.includes('TS5')) ? '천장형' : '일반형');
 
             if (currentActiveProduct.specs['Clean Type'] === 'Yes') {
                 pdfDisplayName = pdfDisplayName.replace(/\s*\(Clean Type\)\s*/gi, '');
@@ -1859,8 +1873,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const newRows = [];
                 if (j1j2Speed) newRows.push({ axis: "J1+J2 합산 속도", speed: formatAxisSpecValue(j1j2Speed, j1j2SpeedKey), range: "-" });
-                if (j1Range) newRows.push({ axis: "J1 사양", speed: "-", range: formatAxisSpecValue(j1Range, j1RangeKey) });
-                if (j2Range) newRows.push({ axis: "J2 사양", speed: "-", range: formatAxisSpecValue(j2Range, j2RangeKey) });
+                if (j1Range) newRows.push({ axis: "J1", speed: "-", range: formatAxisSpecValue(j1Range, j1RangeKey) });
+                if (j2Range) newRows.push({ axis: "J2", speed: "-", range: formatAxisSpecValue(j2Range, j2RangeKey) });
 
                 displayAxes = [...newRows, ...displayAxes];
             }
@@ -1873,7 +1887,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </tr>
             ` + displayAxes.map(ax => `
                 <tr style="border-bottom: 1px solid #eee; page-break-inside: avoid;">
-                    <td style="padding: 8px; border: 1px solid #ddd;"><strong>${ax.axis} 사양</strong></td>
+                    <td style="padding: 8px; border: 1px solid #ddd;"><strong>${formatAxisLabel(ax.axis)}</strong></td>
                     <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${ax.speed}</td>
                     <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${ax.range}</td>
                 </tr>
@@ -1900,7 +1914,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${currentActiveProduct.specs.Type === 'SCARA' ? `<tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>로봇 타입</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${scaraSubtype}</td></tr>` : ''}
                     ${currentActiveProduct.specs.Type === 'SCARA' ? `<tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Z축 길이</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${currentActiveProduct.specs['Z axis Length(mm)'] || '-'} mm</td></tr>` : ''}
                     ${currentActiveProduct.specs.Type === '6-Axis' ? `<tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>중공형(Hollow Wrist)</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${currentActiveProduct.specs['Hollow Wrist'] || '-'}</td></tr>` : ''}
-                    <tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>클린 타입</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${cleanType}</td></tr>
+                    <tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>클린 타입</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${localizeDisplayText(cleanType)}</td></tr>
                     <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>반복 정밀도</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${formatRepeatability(repeatability)}</td></tr>
                     <tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>방수 방진 등급</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${ipRating}</td></tr>
                     <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>중량</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${formatWeight(weight)}</td></tr>
@@ -1914,7 +1928,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="height: 50px; width: 100%;"></div>
             <h3 style="color: #333; margin-top: 10px; margin-bottom: 10px; background: #eee; padding: 10px; border-radius: 4px;">옵션 및 악세서리 구성</h3>
             <div style="margin-left: 10px; margin-bottom: 15px;">
-                <p style="margin: 0; font-size: 13px;"><strong>기본 케이블 구성:</strong> 파워/엔코더 케이블 ${cableLen} (${cableType})</p>
+                <p style="margin: 0; font-size: 13px;"><strong>기본 케이블 구성:</strong> ${uiText('파워/엔코더 케이블')} ${cableLen} (${uiText(cableType)})</p>
             </div>
             
             <table style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #ddd; margin-top: 10px; page-break-inside: avoid;">
@@ -2107,9 +2121,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    function captureModalSelections() {
+        return new Set(Array.from(modalBody.querySelectorAll('input:checked')).map(input => `${input.name}\u0000${input.value}`));
+    }
+
+    function restoreModalSelections(selected) {
+        modalBody.querySelectorAll('input').forEach(input => {
+            if (input.type === 'radio' || input.type === 'checkbox') {
+                input.checked = selected.has(`${input.name}\u0000${input.value}`);
+            }
+        });
+    }
+
     document.addEventListener('inorobot:languagechange', () => {
+        const activeProductId = currentActiveProduct && modalOverlay.style.display !== 'none'
+            ? currentActiveProduct.id
+            : null;
+        const selected = activeProductId ? captureModalSelections() : null;
         renderFilters();
         renderProducts();
+        if (activeProductId && selected) {
+            openOptionsModal(activeProductId);
+            restoreModalSelections(selected);
+            const pendantConfig = modalBody.querySelector('input[name="pendantConfig"]:checked');
+            if (pendantConfig) pendantConfig.dispatchEvent(new Event('change', { bubbles: true }));
+            restoreModalSelections(selected);
+            const cableLength = modalBody.querySelector('input[name="cableLenSelection"]:checked');
+            if (cableLength) cableLength.dispatchEvent(new Event('change', { bubbles: true }));
+        }
     });
 
     renderFilters();

@@ -283,6 +283,12 @@
             document.body.appendChild(container);
         }
 
+        const languageSlot = document.querySelector('[data-i18n-language-slot]');
+        if (languageSlot && container.parentElement !== languageSlot) {
+            languageSlot.appendChild(container);
+        }
+        container.dataset.embedded = languageSlot ? 'true' : 'false';
+
         const select = container.querySelector('select');
         if (!select) return;
         if (select.dataset.localeListener !== 'true') {
