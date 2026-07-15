@@ -39,6 +39,19 @@ function escapeRegExp(value) {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function extractNamedFunction(source, functionName) {
+    const start = source.indexOf('function ' + functionName + '(');
+    if (start < 0) return '';
+    const bodyStart = source.indexOf('{', start);
+    let depth = 0;
+    for (let index = bodyStart; index < source.length; index += 1) {
+        if (source[index] === '{') depth += 1;
+        if (source[index] === '}') depth -= 1;
+        if (depth === 0) return source.slice(start, index + 1);
+    }
+    return '';
+}
+
 function validateStandaloneLanguageSwitch(html, file) {
     const match = html.match(/<script>\s*\/\/ Keep route switching functional[^\r\n]*\r?\n([\s\S]*?)<\/script>/);
     assert(Boolean(match), file + ' is missing the executable standalone language handler.');
@@ -110,12 +123,50 @@ function visibleHtml(html) {
         .replace(/<!--[\s\S]*?-->/g, '');
 }
 
+function translateLegacySource(locale, source) {
+    const normalized = String(source).replace(/\s+/g, ' ').trim();
+    if (Object.prototype.hasOwnProperty.call(locale.legacy, normalized)) return locale.legacy[normalized];
+    for (const item of locale.patterns || []) {
+        if (!item || !item.source || typeof item.target !== 'string') continue;
+        const expression = new RegExp(item.source);
+        if (expression.test(normalized)) return normalized.replace(expression, item.target);
+    }
+    return normalized;
+}
+
 const locales = Object.fromEntries(localeCodes.map(code => [code, loadMergedLocale(code)]));
 const siteCardVersions = parseSiteCardVersions(read('site-card-versions.js'));
 
 localeCodes.forEach(code => {
     assert(locales[code].legacy['Debugging Tool'] === 'Debugging Tool', code + ' must keep Debugging Tool in English.');
     assert(locales[code].pages.debugging.title === 'Debugging Tool | InoRobot Assistant', code + ' has the wrong Debugging Tool page title.');
+});
+
+const requiredCoverageSources = [
+    '모델 추가 모드',
+    '엔코더 배터리 방전 등으로 인한 영점 소실 시, 하드웨어 지그 없이 소프트웨어적으로 영점을 보정하는 툴입니다.',
+    '로봇 프로그램 검증용으로 상위 제어기 없이 PC에서 로봇과 통신 (Modbus-TCP, EtherNet/IP, MC, Socket)을 테스트 할 수 있는 소프트웨어입니다. 또한 HMI 화면을 사용자가 직접 구성하여 더 쉽게 로봇을 테스트 할 수 있습니다.',
+    'InoRobotLab - Work origin 설정',
+    'TP - Work origin 설정',
+    'Work origin 설정 참고 이미지',
+    'TP Work origin 설정 참고 이미지',
+    'InoRobotLab 소프트웨어 (설치/무설치)',
+    'Display 공정용 특수 버전 소프트웨어',
+    'InoRobotTP 소프트웨어',
+    'Display 공정용 TP 소프트웨어',
+    '각 블록 무게중심의 위치를',
+    '끝단 플랜지 원점으로부터의 거리(mm)',
+    '로 Tool 좌표계 기준 입력합니다. 빨강=X, 초록=Y, 파랑=Z. 끝단 바깥쪽(+)·안쪽(−) 부호를 유지하세요.'
+];
+localeCodes.forEach(code => {
+    requiredCoverageSources.forEach(source => {
+        assert(Boolean(locales[code].legacy[source]), code + ' is missing required coverage for: ' + source);
+    });
+});
+targetLocaleCodes.forEach(code => {
+    requiredCoverageSources.forEach(source => {
+        assert(locales[code].legacy[source] !== source, code + ' still uses the source text for: ' + source);
+    });
 });
 
 const jsonFileSets = localeCodes.map(code => fs.readdirSync(path.join(root, 'Languge', code))
@@ -181,6 +232,14 @@ subpages.forEach(file => {
         const key = match[1];
         localeCodes.forEach(code => assert(getByPath(locales[code], key) !== undefined, file + ' references missing ' + code + ' key ' + key + '.'));
     }
+
+    for (const match of visibleHtml(html).matchAll(/>([^<>]+)</g)) {
+        const source = match[1].replace(/\s+/g, ' ').trim();
+        if (!/[가-힣]/.test(source)) continue;
+        targetLocaleCodes.forEach(code => {
+            assert(translateLegacySource(locales[code], source) !== source, file + ' leaves a Korean text node untranslated in ' + code + ': ' + source);
+        });
+    }
 });
 
 const runtime = read('i18n/i18n.js');
@@ -190,8 +249,33 @@ assert(runtime.includes("'/kr/': 'ko'") && runtime.includes("'/cn/': 'zh-CN'") &
 assert(runtime.includes('function formatNumber') && runtime.includes('function formatDate'), 'Locale number/date formatters are missing.');
 assert(runtime.includes('window.location.assign(LANDING_ROUTES[nextLocale])'), 'Landing language changes do not navigate to their localized route.');
 assert(runtime.includes("label.textContent = 'Language'") && !runtime.includes("icon.textContent = '文'"), 'Runtime language switcher has the wrong label.');
+['/', '/kr/', '/en/', '/cn/', '/vn/'].forEach(route => {
+    assert(runtime.includes(`a[href="${route}"]`), 'Runtime does not refresh home links already pointing to ' + route + '.');
+});
+assert(runtime.includes("link.setAttribute('data-i18n-home-link', '')"), 'Runtime does not retain home links for later locale changes.');
+const updateHomeLinksSource = extractNamedFunction(runtime, 'updateHomeLinks');
+assert(Boolean(updateHomeLinksSource), 'Runtime home-link updater cannot be tested.');
+if (updateHomeLinksSource) {
+    const homeLink = {
+        attributes: { href: '/' },
+        setAttribute(name, value) { this.attributes[name] = value; }
+    };
+    vm.runInNewContext(`
+        let currentLocale = 'zh-CN';
+        const LANDING_ROUTES = { ko: '/', en: '/en/', 'zh-CN': '/cn/', vi: '/vn/' };
+        ${updateHomeLinksSource}
+        updateHomeLinks();
+        currentLocale = 'en';
+        updateHomeLinks();
+    `, { document: { querySelectorAll: () => [homeLink] } });
+    assert(homeLink.attributes.href === '/en/', 'A home link remains on the previous landing locale after a tool-page language change.');
+    assert(Object.prototype.hasOwnProperty.call(homeLink.attributes, 'data-i18n-home-link'), 'A localized home link is not retained for later locale changes.');
+}
 const localeStyles = read('i18n/i18n.css');
 assert(localeStyles.includes('position: fixed !important') && localeStyles.includes('right: 18px !important') && localeStyles.includes('left: auto !important'), 'The language UI is not fixed to the upper-right corner.');
+assert(localeStyles.includes('top: calc(16px + env(safe-area-inset-top, 0px)) !important'), 'The language UI is not positioned inside the desktop top bar.');
+const languageLabelStyle = localeStyles.match(/\.inorobot-language-label\s*\{([\s\S]*?)\}/)?.[1] || '';
+assert(!/text-transform\s*:\s*uppercase/i.test(languageLabelStyle), 'The Language label is still forced to uppercase.');
 
 const protectedScripts = read('Manual/script.js') + '\n' + read('Software/script.js');
 assert(!protectedScripts.includes('data.message ||'), 'A raw server error message can still be shown to users.');
@@ -201,9 +285,27 @@ assert(protectedScripts.includes('fetch(WORKER_URL'), 'Protected Manual/Software
 const robotSelectScript = read('InoRobotSelect/script.js');
 assert(robotSelectScript.includes('html2pdf().set(dlObj)'), 'Robot Select PDF generation hook is missing.');
 assert(robotSelectScript.includes('new JSZip()') && robotSelectScript.includes('saveAs(content'), 'Robot Select CAD ZIP generation hook is missing.');
+assert(robotSelectScript.includes('uiText(filterCategory.label)') && robotSelectScript.includes("uiText('가반 하중 (kg)')"), 'Robot Select dynamic filters or specification labels are not localized.');
+assert(robotSelectScript.includes('window.InoRobotI18n.apply(modalBody)') && robotSelectScript.includes('pdfFooterText'), 'Robot Select options or PDF footer are not localized.');
 const projectScript = read('InoRobotProjectGen/app.js');
 assert(projectScript.includes('new JSZip()') && projectScript.includes('zip.generateAsync') && projectScript.includes('saveAs(blob'), 'Project ZIP generation hook is missing.');
-assert(read('InoRobotToolSelect/index.html').includes('function calculate()'), 'Tool Selector calculation hook is missing.');
+assert(projectScript.includes("uiText('Option Info')") && projectScript.includes('window.InoRobotI18n.apply(description)'), 'Project option guide descriptions are not localized.');
+const viewerScript = read('InoRobot3DView/main.js');
+assert(viewerScript.includes("uiText('모델 추가 모드')") && viewerScript.includes("'inorobot:languagechange', refreshLocalizedControls"), '3D Viewer dynamic controls are not localized.');
+const softwareScript = read('Software/script.js');
+assert(softwareScript.includes('translateUiText(dl.label)') && softwareScript.includes('translateUiText(ver.description)'), 'Software descriptions or download buttons are not localized.');
+const toolSelector = read('InoRobotToolSelect/index.html');
+assert(toolSelector.includes('function calculate()'), 'Tool Selector calculation hook is missing.');
+assert(toolSelector.includes("uiText('형식 SCARA')") && toolSelector.includes("uiText('부하 무게중심 기준 관성모멘트 산출값')"), 'Tool Selector dynamic labels are not localized.');
+for (const [index, match] of [...toolSelector.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].entries()) {
+    if (!match[1].trim()) continue;
+    try {
+        new vm.Script(match[1], { filename: 'InoRobotToolSelect-inline-' + (index + 1) + '.js' });
+    } catch (error) {
+        assert(false, 'Tool Selector inline script does not compile: ' + error.message);
+    }
+}
+assert(read('DebuggingSupport/debugging-history.js').includes('window.InoRobotI18n.translate(message)'), 'Debugging Tool dynamic messages are not localized.');
 const zeroCalibration = read('DebuggingSupport/ZeroCalibration/index.html');
 assert(zeroCalibration.includes('function calculate(index)') && zeroCalibration.includes('function downloadOfflineTool()'), 'Zero Calibration calculation or offline download hook is missing.');
 

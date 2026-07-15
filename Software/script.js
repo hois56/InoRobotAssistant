@@ -74,10 +74,12 @@ function init() {
     renderSoftwareList('all');
     setupFilters();
     setupSearch();
-    document.addEventListener('inorobot:languagechange', () => {
+    const renderCurrentLocale = () => {
         const activeFilter = document.querySelector('.filter-btn.active')?.dataset.type || 'all';
         renderSoftwareList(activeFilter, document.getElementById('softwareSearch').value);
-    });
+    };
+    document.addEventListener('inorobot:i18nready', renderCurrentLocale);
+    document.addEventListener('inorobot:languagechange', renderCurrentLocale);
     if(window.lucide) lucide.createIcons();
 }
 
@@ -122,7 +124,7 @@ function renderSoftwareList(filterType = 'all', searchTerm = '') {
                 return `
                     <button ${clickAttr} ${disabledAttr}
                             class="px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${buttonClass}">
-                        <i data-lucide="${icon}" class="w-3.5 h-3.5"></i> ${dl.label} (${dl.size})
+                        <i data-lucide="${icon}" class="w-3.5 h-3.5"></i> ${translateUiText(dl.label)} (${dl.size})
                     </button>
                 `;
             }).join('');
@@ -138,7 +140,7 @@ function renderSoftwareList(filterType = 'all', searchTerm = '') {
                             <i data-lucide="${verIcon}" class="w-3 h-3"></i> ${ver.tagName}
                         </div>
                     </div>
-                    <p class="text-slate-400 text-sm italic">${ver.description}</p>
+                    <p class="text-slate-400 text-sm italic">${translateUiText(ver.description)}</p>
                     
                     <div class="flex flex-wrap items-center gap-4 pt-4 border-t border-white/[0.05]">
                         <div class="flex items-center gap-6 text-xs text-slate-500 font-mono">
@@ -158,7 +160,7 @@ function renderSoftwareList(filterType = 'all', searchTerm = '') {
         listContainer.innerHTML = `
             <div class="py-20 text-center text-slate-500">
                 <i data-lucide="alert-circle" class="w-12 h-12 mx-auto mb-4 opacity-20"></i>
-                <p class="text-lg">해당 조건에 맞는 소프트웨어가 없습니다.</p>
+                <p class="text-lg">${translateUiText('해당 조건에 맞는 소프트웨어가 없습니다.')}</p>
             </div>
         `;
     }

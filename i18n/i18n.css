@@ -14,7 +14,7 @@ html:lang(zh-CN) body {
 
 .inorobot-language-switcher {
     position: fixed !important;
-    top: 84px;
+    top: calc(16px + env(safe-area-inset-top, 0px)) !important;
     right: 18px !important;
     bottom: auto !important;
     left: auto !important;
@@ -53,7 +53,6 @@ html:lang(zh-CN) body {
     font-size: 10px;
     font-weight: 800;
     letter-spacing: 0.04em;
-    text-transform: uppercase;
 }
 
 .inorobot-language-select {
@@ -85,8 +84,8 @@ i.inorobot-icon-fallback {
 
 @media (max-width: 720px) {
     .inorobot-language-switcher {
-        top: 72px;
-        right: 10px;
+        top: calc(10px + env(safe-area-inset-top, 0px)) !important;
+        right: calc(10px + env(safe-area-inset-right, 0px)) !important;
         min-height: 34px;
         padding: 4px 7px;
     }

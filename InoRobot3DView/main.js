@@ -72,14 +72,25 @@ function setupUI() {
     container.className = 'add-mode-toggle';
     container.innerHTML = `
         <input type="checkbox" id="chk-add-mode">
-        <span><i class="fa-solid fa-plus-circle"></i> 모델 추가 모드</span>
+        <span><i class="fa-solid fa-plus-circle"></i> ${uiText('모델 추가 모드')}</span>
     `;
     wrapper.after(container);
     el.btnAddMode = document.getElementById('chk-add-mode');
     
     // Update CAD download button title
     const btnDown = document.getElementById('btn-download-cad');
-    if(btnDown) btnDown.title = "현재 열린 모든 모델 CAD 다운로드";
+    if(btnDown) btnDown.title = uiText('현재 열린 모든 모델 CAD 다운로드');
+}
+
+function refreshLocalizedControls() {
+    const addModeLabel = document.querySelector('.add-mode-toggle span');
+    if (addModeLabel) {
+        addModeLabel.innerHTML = `<i class="fa-solid fa-plus-circle"></i> ${uiText('모델 추가 모드')}`;
+    }
+    const btnDown = document.getElementById('btn-download-cad');
+    if (btnDown) btnDown.title = uiText('현재 열린 모든 모델 CAD 다운로드');
+    const placeholder = el.modelSelect?.querySelector('option[value=""]');
+    if (placeholder) placeholder.textContent = uiText('-- 로봇 모델을 선택하세요 --');
 }
 
 function setupScene() {
@@ -152,6 +163,8 @@ function setupControls() {
 
 function setupEventListeners() {
     window.addEventListener('resize', onResize);
+    document.addEventListener('inorobot:i18nready', refreshLocalizedControls);
+    document.addEventListener('inorobot:languagechange', refreshLocalizedControls);
     el.modelSelect.addEventListener('change', async (e) => {
         const file = e.target.value;
         if (!file) return;
@@ -459,7 +472,7 @@ async function populateModelList() {
     try {
         const res = await fetch('./models/models.json');
         const list = await res.json();
-        el.modelSelect.innerHTML = '<option value="" disabled selected>-- 로봇 모델을 선택하세요 --</option>';
+        el.modelSelect.innerHTML = `<option value="" disabled selected>${uiText('-- 로봇 모델을 선택하세요 --')}</option>`;
         let currentGroup = null;
         list.forEach(m => {
             if (m.group) {
