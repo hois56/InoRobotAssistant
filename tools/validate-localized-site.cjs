@@ -10,6 +10,10 @@ function read(relativePath) {
     return fs.readFileSync(path.join(root, relativePath), 'utf8');
 }
 
+function readBuffer(relativePath) {
+    return fs.readFileSync(path.join(root, relativePath));
+}
+
 function assert(condition, message) {
     if (!condition) failures.push(message);
 }
@@ -20,6 +24,18 @@ function readJson(relativePath) {
 
 function getByPath(value, keyPath) {
     return keyPath.split('.').reduce((current, key) => current && current[key], value);
+}
+
+function parseSiteCardVersions(source) {
+    const versions = {};
+    for (const match of source.matchAll(/([A-Za-z0-9_]+):\s*['"]([^'"]+)['"]/g)) {
+        versions[match[1]] = match[2];
+    }
+    return versions;
+}
+
+function escapeRegExp(value) {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function loadMergedLocale(code) {
@@ -61,6 +77,12 @@ function visibleHtml(html) {
 }
 
 const locales = Object.fromEntries(localeCodes.map(code => [code, loadMergedLocale(code)]));
+const siteCardVersions = parseSiteCardVersions(read('site-card-versions.js'));
+
+localeCodes.forEach(code => {
+    assert(locales[code].legacy['Debugging Tool'] === 'Debugging Tool', code + ' must keep Debugging Tool in English.');
+    assert(locales[code].pages.debugging.title === 'Debugging Tool | InoRobot Assistant', code + ' has the wrong Debugging Tool page title.');
+});
 
 const jsonFileSets = localeCodes.map(code => fs.readdirSync(path.join(root, 'Languge', code))
     .filter(fileName => fileName.endsWith('.json'))
@@ -84,8 +106,14 @@ routes.forEach(route => {
     assert(html.includes('rel="canonical" href="' + route.canonical + '"'), route.file + ' has the wrong canonical URL.');
     requiredAlternates.forEach(code => assert(html.includes('hreflang="' + code + '"'), route.file + ' is missing hreflang ' + code + '.'));
     assert(html.includes('/i18n/locales-data.js') && html.includes('/i18n/i18n.js'), route.file + ' is missing the i18n runtime.');
+    assert(html.includes('/i18n/icon-fallback.js'), route.file + ' is missing the local icon fallback.');
     assert(html.includes('id="inorobot-language-switcher"') && html.includes('id="inorobot-language-select"'), route.file + ' is missing the top-right language UI.');
     assert(html.includes('<option value="' + route.locale + '" selected>'), route.file + ' does not preselect its route language.');
+    assert(/<h2[^>]*data-i18n-skip[^>]*>\s*Debugging Tool\s*<\/h2>/.test(html), route.file + ' translates the Debugging Tool card name.');
+    Object.entries(siteCardVersions).forEach(([key, version]) => {
+        const pattern = new RegExp('data-site-card-version=["\']' + escapeRegExp(key) + '["\'][^>]*>\\s*Ver ' + escapeRegExp(version) + '\\s*<\\/span>');
+        assert(pattern.test(html), route.file + ' does not show the current ' + key + ' version.');
+    });
     if (targetLocaleCodes.includes(route.locale)) {
         assert(!/[가-힣]/.test(visibleHtml(html)), route.file + ' contains Korean visible initial HTML.');
         assert(html.includes('<title>' + locales[route.locale].pages.home.title + '</title>'), route.file + ' has an untranslated title.');
@@ -107,6 +135,7 @@ subpages.forEach(file => {
     const html = read(file);
     assert(html.includes('/i18n/i18n.css'), file + ' is missing locale styles.');
     assert(html.includes('/i18n/locales-data.js') && html.includes('/i18n/i18n.js'), file + ' is missing locale scripts.');
+    assert(html.includes('/i18n/icon-fallback.js'), file + ' is missing the local icon fallback.');
     assert(html.includes('Noto+Sans+KR') && html.includes('Noto+Sans+SC'), file + ' is missing multilingual fonts.');
 
     for (const match of html.matchAll(/data-i18n(?:-title|-placeholder|-aria-label|-alt)?=["']([^"']+)["']/g)) {
@@ -120,6 +149,7 @@ assert(runtime.includes("const STORAGE_KEY = 'inorobot.locale'"), 'Runtime sessi
 assert(runtime.includes("return readSessionLocale() || DEFAULT_LOCALE"), 'Direct tool access does not default to Korean.');
 assert(runtime.includes("'/kr/': 'ko'") && runtime.includes("'/cn/': 'zh-CN'") && runtime.includes("'/vn/': 'vi'"), 'Landing route map is incomplete.');
 assert(runtime.includes('function formatNumber') && runtime.includes('function formatDate'), 'Locale number/date formatters are missing.');
+assert(runtime.includes('window.location.assign(LANDING_ROUTES[nextLocale])'), 'Landing language changes do not navigate to their localized route.');
 const localeStyles = read('i18n/i18n.css');
 assert(localeStyles.includes('position: fixed') && localeStyles.includes('right: 18px'), 'The language UI is not fixed to the upper-right corner.');
 
@@ -137,7 +167,31 @@ assert(read('InoRobotToolSelect/index.html').includes('function calculate()'), '
 const zeroCalibration = read('DebuggingSupport/ZeroCalibration/index.html');
 assert(zeroCalibration.includes('function calculate(index)') && zeroCalibration.includes('function downloadOfflineTool()'), 'Zero Calibration calculation or offline download hook is missing.');
 
+const homeTemplate = read('templates/home.template.html');
+[
+    ['/InoRobotSelect/INOVANCE_Logo.png', 'InoRobotSelect/INOVANCE_Logo.png'],
+    ['/robot_select_icon_simple_1774428251953.png', 'robot_select_icon_simple_1774428251953.png'],
+    ['/project_gen_icon_simple_1774428268885.png', 'project_gen_icon_simple_1774428268885.png']
+].forEach(([webPath, filePath]) => {
+    assert(homeTemplate.includes('src="' + webPath + '"'), 'Home template does not use the absolute image path ' + webPath + '.');
+    const image = readBuffer(filePath);
+    assert(image.length > 8 && image.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])), filePath + ' is not a valid PNG asset.');
+});
+assert(read('DebuggingSupport/index.html').includes('data-i18n-skip>Debugging Tool</h1>'), 'Debugging Tool page heading is not fixed in English.');
+
 const sourceHistory = parseSections(read('UPDATE_HISTORY.md'));
+const cardVersionSections = {
+    robotSelect: 'Robot Model Select',
+    robot3dViewer: 'Robot 3D Viewer',
+    toolSelector: 'Robot Tool Selector',
+    projectGenerator: 'Project Generator',
+    software: 'Software',
+    manual: 'Document',
+    debuggingTool: 'Debugging Tool'
+};
+Object.entries(cardVersionSections).forEach(([key, section]) => {
+    assert(sourceHistory[section] && sourceHistory[section].versions[0] === 'Ver ' + siteCardVersions[key], key + ' card version does not match the latest update history entry.');
+});
 const cardSections = ['Robot Model Select', 'Robot 3D Viewer', 'Robot Tool Selector', 'Project Generator', 'Software', 'Document', 'Debugging Tool'];
 targetLocaleCodes.forEach(code => {
     const localized = parseSections(read(path.join('Languge', code, 'history.md')));
