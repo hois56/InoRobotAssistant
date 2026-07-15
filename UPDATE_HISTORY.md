@@ -261,6 +261,12 @@
 
 ## Debugging Tool
 
+### Ver 26.07.15.01
+
+- `[업데이트]` InoRobot Trace를 `V1.2 → V1.3`으로 업데이트했습니다.
+- `[추가]` Trace에 Joint Speed J1~J6 채널을 추가했습니다.
+- `[수정]` InoRobot Trace에서 가상 컨트롤러 연결 시 Joint Speed 채널이 비활성화되던 문제를 수정했습니다.
+
 ### Ver 26.06.19.01
 
 - `[업데이트]` InoRobot Label Generator를 `V2.0 → V2.1`로 업데이트했습니다.

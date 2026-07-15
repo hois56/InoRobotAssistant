@@ -1,0 +1,830 @@
+{
+  "InputBitLabels": {
+    "nNumberOfLabels": 19,
+    "LabelsArray": [
+      {
+        "nLabelId": 0,
+        "nIndex": 512,
+        "sLabel": "xStart_prog",
+        "sDescription": "Start program",
+        "sOriginalName": "IN[512]"
+      },
+      {
+        "nLabelId": 1,
+        "nIndex": 513,
+        "sLabel": "xStop_prog",
+        "sDescription": "Stop program",
+        "sOriginalName": "IN[513]"
+      },
+      {
+        "nLabelId": 2,
+        "nIndex": 514,
+        "sLabel": "xReset_prog",
+        "sDescription": "Reset program",
+        "sOriginalName": "IN[514]"
+      },
+      {
+        "nLabelId": 3,
+        "nIndex": 515,
+        "sLabel": "xReset_alarm",
+        "sDescription": "Clear alarm",
+        "sOriginalName": "IN[515]"
+      },
+      {
+        "nLabelId": 4,
+        "nIndex": 519,
+        "sLabel": "xRobot_homing",
+        "sDescription": "",
+        "sOriginalName": "IN[519]"
+      },
+      {
+        "nLabelId": 5,
+        "nIndex": 520,
+        "sLabel": "xTeach_mode",
+        "sDescription": "",
+        "sOriginalName": "IN[520]"
+      },
+      {
+        "nLabelId": 6,
+        "nIndex": 521,
+        "sLabel": "xTeach_move_next",
+        "sDescription": "",
+        "sOriginalName": "IN[521]"
+      },
+      {
+        "nLabelId": 7,
+        "nIndex": 522,
+        "sLabel": "xTeach_move_prev",
+        "sDescription": "",
+        "sOriginalName": "IN[522]"
+      },
+      {
+        "nLabelId": 8,
+        "nIndex": 523,
+        "sLabel": "xTeach_move_offset",
+        "sDescription": "",
+        "sOriginalName": "IN[523]"
+      },
+      {
+        "nLabelId": 9,
+        "nIndex": 524,
+        "sLabel": "xTeach_save",
+        "sDescription": "",
+        "sOriginalName": "IN[524]"
+      },
+      {
+        "nLabelId": 10,
+        "nIndex": 528,
+        "sLabel": "xP1_wait_pos_start",
+        "sDescription": "",
+        "sOriginalName": "IN[528]"
+      },
+      {
+        "nLabelId": 11,
+        "nIndex": 529,
+        "sLabel": "xP2_wait_pos_start",
+        "sDescription": "",
+        "sOriginalName": "IN[529]"
+      },
+      {
+        "nLabelId": 12,
+        "nIndex": 530,
+        "sLabel": "xP3_wait_pos_start",
+        "sDescription": "",
+        "sOriginalName": "IN[530]"
+      },
+      {
+        "nLabelId": 13,
+        "nIndex": 531,
+        "sLabel": "xP4_wait_pos_start",
+        "sDescription": "",
+        "sOriginalName": "IN[531]"
+      },
+      {
+        "nLabelId": 14,
+        "nIndex": 544,
+        "sLabel": "xP1_work_pos_start",
+        "sDescription": "",
+        "sOriginalName": "IN[544]"
+      },
+      {
+        "nLabelId": 15,
+        "nIndex": 545,
+        "sLabel": "xP2_work_pos_start",
+        "sDescription": "",
+        "sOriginalName": "IN[545]"
+      },
+      {
+        "nLabelId": 16,
+        "nIndex": 546,
+        "sLabel": "xP3_work_pos_start",
+        "sDescription": "",
+        "sOriginalName": "IN[546]"
+      },
+      {
+        "nLabelId": 17,
+        "nIndex": 547,
+        "sLabel": "xP4_work_pos_start",
+        "sDescription": "",
+        "sOriginalName": "IN[547]"
+      },
+      {
+        "nLabelId": 18,
+        "nIndex": 12800,
+        "sLabel": "xReIO_run_all_static",
+        "sDescription": "",
+        "sOriginalName": "IN[12800]"
+      }
+    ]
+  },
+  "InputByteLabels": {
+    "nNumberOfLabels": 0,
+    "LabelsArray": []
+  },
+  "InputWordLabels": {
+    "nNumberOfLabels": 26,
+    "LabelsArray": [
+      {
+        "nLabelId": 0,
+        "nIndex": 33,
+        "sLabel": "xwProcess_wait_pos",
+        "sDescription": "",
+        "sOriginalName": "INW[33]"
+      },
+      {
+        "nLabelId": 1,
+        "nIndex": 34,
+        "sLabel": "xwProcess_work_pos",
+        "sDescription": "",
+        "sOriginalName": "INW[34]"
+      },
+      {
+        "nLabelId": 2,
+        "nIndex": 40,
+        "sLabel": "xwP_file_switch",
+        "sDescription": "",
+        "sOriginalName": "INW[40]"
+      },
+      {
+        "nLabelId": 3,
+        "nIndex": 41,
+        "sLabel": "xwSet_speed",
+        "sDescription": "Speed settings",
+        "sOriginalName": "INW[41]"
+      },
+      {
+        "nLabelId": 4,
+        "nIndex": 42,
+        "sLabel": "xwTeach_offset_X",
+        "sDescription": "",
+        "sOriginalName": "INW[42]"
+      },
+      {
+        "nLabelId": 5,
+        "nIndex": 44,
+        "sLabel": "xwTeach_offset_Y",
+        "sDescription": "",
+        "sOriginalName": "INW[44]"
+      },
+      {
+        "nLabelId": 6,
+        "nIndex": 46,
+        "sLabel": "xwTeach_offset_Z",
+        "sDescription": "",
+        "sOriginalName": "INW[46]"
+      },
+      {
+        "nLabelId": 7,
+        "nIndex": 48,
+        "sLabel": "xwTeach_offset_A",
+        "sDescription": "",
+        "sOriginalName": "INW[48]"
+      },
+      {
+        "nLabelId": 8,
+        "nIndex": 50,
+        "sLabel": "xwTeach_offset_B",
+        "sDescription": "",
+        "sOriginalName": "INW[50]"
+      },
+      {
+        "nLabelId": 9,
+        "nIndex": 52,
+        "sLabel": "xwTeach_offset_C",
+        "sDescription": "",
+        "sOriginalName": "INW[52]"
+      },
+      {
+        "nLabelId": 10,
+        "nIndex": 54,
+        "sLabel": "xwOffset_1_X",
+        "sDescription": "2 Word, /1000",
+        "sOriginalName": "INW[54]"
+      },
+      {
+        "nLabelId": 11,
+        "nIndex": 56,
+        "sLabel": "xwOffset_1_Y",
+        "sDescription": "2 Word, /1000",
+        "sOriginalName": "INW[56]"
+      },
+      {
+        "nLabelId": 12,
+        "nIndex": 58,
+        "sLabel": "xwOffset_1_Z",
+        "sDescription": "2 Word, /1000",
+        "sOriginalName": "INW[58]"
+      },
+      {
+        "nLabelId": 13,
+        "nIndex": 60,
+        "sLabel": "xwOffset_1_A",
+        "sDescription": "2 Word, /1000",
+        "sOriginalName": "INW[60]"
+      },
+      {
+        "nLabelId": 14,
+        "nIndex": 62,
+        "sLabel": "xwOffset_2_X",
+        "sDescription": "2 Word, /1000",
+        "sOriginalName": "INW[62]"
+      },
+      {
+        "nLabelId": 15,
+        "nIndex": 64,
+        "sLabel": "xwOffset_2_Y",
+        "sDescription": "2 Word, /1000",
+        "sOriginalName": "INW[64]"
+      },
+      {
+        "nLabelId": 16,
+        "nIndex": 66,
+        "sLabel": "xwOffset_2_Z",
+        "sDescription": "2 Word, /1000",
+        "sOriginalName": "INW[66]"
+      },
+      {
+        "nLabelId": 17,
+        "nIndex": 68,
+        "sLabel": "xwOffset_2_A",
+        "sDescription": "2 Word, /1000",
+        "sOriginalName": "INW[68]"
+      },
+      {
+        "nLabelId": 18,
+        "nIndex": 70,
+        "sLabel": "xwOffset_3_X",
+        "sDescription": "2 Word, /1000",
+        "sOriginalName": "INW[70]"
+      },
+      {
+        "nLabelId": 19,
+        "nIndex": 72,
+        "sLabel": "xwOffset_3_Y",
+        "sDescription": "2 Word, /1000",
+        "sOriginalName": "INW[72]"
+      },
+      {
+        "nLabelId": 20,
+        "nIndex": 74,
+        "sLabel": "xwOffset_3_Z",
+        "sDescription": "2 Word, /1000",
+        "sOriginalName": "INW[74]"
+      },
+      {
+        "nLabelId": 21,
+        "nIndex": 76,
+        "sLabel": "xwOffset_3_A",
+        "sDescription": "2 Word, /1000",
+        "sOriginalName": "INW[76]"
+      },
+      {
+        "nLabelId": 22,
+        "nIndex": 78,
+        "sLabel": "xwOffset_4_X",
+        "sDescription": "2 Word, /1000",
+        "sOriginalName": "INW[78]"
+      },
+      {
+        "nLabelId": 23,
+        "nIndex": 80,
+        "sLabel": "xwOffset_4_Y",
+        "sDescription": "2 Word, /1000",
+        "sOriginalName": "INW[80]"
+      },
+      {
+        "nLabelId": 24,
+        "nIndex": 82,
+        "sLabel": "xwOffset_4_Z",
+        "sDescription": "2 Word, /1000",
+        "sOriginalName": "INW[82]"
+      },
+      {
+        "nLabelId": 25,
+        "nIndex": 84,
+        "sLabel": "xwOffset_4_A",
+        "sDescription": "2 Word, /1000",
+        "sOriginalName": "INW[84]"
+      }
+    ]
+  },
+  "OutputBitLabels": {
+    "nNumberOfLabels": 25,
+    "LabelsArray": [
+      {
+        "nLabelId": 0,
+        "nIndex": 512,
+        "sLabel": "yProg_run_sts",
+        "sDescription": "Program run status",
+        "sOriginalName": "OUT[512]"
+      },
+      {
+        "nLabelId": 1,
+        "nIndex": 513,
+        "sLabel": "yProg_stop_sts",
+        "sDescription": "Program stopped",
+        "sOriginalName": "OUT[513]"
+      },
+      {
+        "nLabelId": 2,
+        "nIndex": 514,
+        "sLabel": "yProg_reset_sts",
+        "sDescription": "Program reset successful",
+        "sOriginalName": "OUT[514]"
+      },
+      {
+        "nLabelId": 3,
+        "nIndex": 515,
+        "sLabel": "yAlarm_sts",
+        "sDescription": "System fault status",
+        "sOriginalName": "OUT[515]"
+      },
+      {
+        "nLabelId": 4,
+        "nIndex": 516,
+        "sLabel": "yRemote_mode_sts",
+        "sDescription": "ON : PLC can control robot",
+        "sOriginalName": "OUT[516]"
+      },
+      {
+        "nLabelId": 5,
+        "nIndex": 519,
+        "sLabel": "yRobot_home_sts",
+        "sDescription": "",
+        "sOriginalName": "OUT[519]"
+      },
+      {
+        "nLabelId": 6,
+        "nIndex": 520,
+        "sLabel": "yTeach_mode_sts",
+        "sDescription": "",
+        "sOriginalName": "OUT[520]"
+      },
+      {
+        "nLabelId": 7,
+        "nIndex": 521,
+        "sLabel": "yTeach_move_comp",
+        "sDescription": "",
+        "sOriginalName": "OUT[521]"
+      },
+      {
+        "nLabelId": 8,
+        "nIndex": 524,
+        "sLabel": "yTeach_save_comp",
+        "sDescription": "",
+        "sOriginalName": "OUT[524]"
+      },
+      {
+        "nLabelId": 9,
+        "nIndex": 528,
+        "sLabel": "yP1_wait_pos_comp",
+        "sDescription": "",
+        "sOriginalName": "OUT[528]"
+      },
+      {
+        "nLabelId": 10,
+        "nIndex": 529,
+        "sLabel": "yP2_wait_pos_comp",
+        "sDescription": "",
+        "sOriginalName": "OUT[529]"
+      },
+      {
+        "nLabelId": 11,
+        "nIndex": 530,
+        "sLabel": "yP3_wait_pos_comp",
+        "sDescription": "",
+        "sOriginalName": "OUT[530]"
+      },
+      {
+        "nLabelId": 12,
+        "nIndex": 531,
+        "sLabel": "yP4_wait_pos_comp",
+        "sDescription": "",
+        "sOriginalName": "OUT[531]"
+      },
+      {
+        "nLabelId": 13,
+        "nIndex": 544,
+        "sLabel": "yP1_work_pos_comp",
+        "sDescription": "",
+        "sOriginalName": "OUT[544]"
+      },
+      {
+        "nLabelId": 14,
+        "nIndex": 545,
+        "sLabel": "yP2_work_pos_comp",
+        "sDescription": "",
+        "sOriginalName": "OUT[545]"
+      },
+      {
+        "nLabelId": 15,
+        "nIndex": 546,
+        "sLabel": "yP3_work_pos_comp",
+        "sDescription": "",
+        "sOriginalName": "OUT[546]"
+      },
+      {
+        "nLabelId": 16,
+        "nIndex": 547,
+        "sLabel": "yP4_work_pos_comp",
+        "sDescription": "",
+        "sOriginalName": "OUT[547]"
+      },
+      {
+        "nLabelId": 17,
+        "nIndex": 560,
+        "sLabel": "yP1_wait_pos_busy",
+        "sDescription": "",
+        "sOriginalName": "OUT[560]"
+      },
+      {
+        "nLabelId": 18,
+        "nIndex": 561,
+        "sLabel": "yP2_wait_pos_busy",
+        "sDescription": "",
+        "sOriginalName": "OUT[561]"
+      },
+      {
+        "nLabelId": 19,
+        "nIndex": 562,
+        "sLabel": "yP3_wait_pos_busy",
+        "sDescription": "",
+        "sOriginalName": "OUT[562]"
+      },
+      {
+        "nLabelId": 20,
+        "nIndex": 563,
+        "sLabel": "yP4_wait_pos_busy",
+        "sDescription": "",
+        "sOriginalName": "OUT[563]"
+      },
+      {
+        "nLabelId": 21,
+        "nIndex": 576,
+        "sLabel": "yP1_work_pos_busy",
+        "sDescription": "",
+        "sOriginalName": "OUT[576]"
+      },
+      {
+        "nLabelId": 22,
+        "nIndex": 577,
+        "sLabel": "yP2_work_pos_busy",
+        "sDescription": "",
+        "sOriginalName": "OUT[577]"
+      },
+      {
+        "nLabelId": 23,
+        "nIndex": 578,
+        "sLabel": "yP3_work_pos_busy",
+        "sDescription": "",
+        "sOriginalName": "OUT[578]"
+      },
+      {
+        "nLabelId": 24,
+        "nIndex": 579,
+        "sLabel": "yP4_work_pos_busy",
+        "sDescription": "",
+        "sOriginalName": "OUT[579]"
+      }
+    ]
+  },
+  "OutputByteLabels": {
+    "nNumberOfLabels": 0,
+    "LabelsArray": []
+  },
+  "OutputWordLabels": {
+    "nNumberOfLabels": 22,
+    "LabelsArray": [
+      {
+        "nLabelId": 0,
+        "nIndex": 33,
+        "sLabel": "ywProcess_wait_comp",
+        "sDescription": "",
+        "sOriginalName": "OUTW[33]"
+      },
+      {
+        "nLabelId": 1,
+        "nIndex": 34,
+        "sLabel": "ywProcess_work_comp",
+        "sDescription": "",
+        "sOriginalName": "OUTW[34]"
+      },
+      {
+        "nLabelId": 2,
+        "nIndex": 35,
+        "sLabel": "ywProcess_wait_busy",
+        "sDescription": "",
+        "sOriginalName": "OUTW[35]"
+      },
+      {
+        "nLabelId": 3,
+        "nIndex": 36,
+        "sLabel": "ywProcess_work_busy",
+        "sDescription": "",
+        "sOriginalName": "OUTW[36]"
+      },
+      {
+        "nLabelId": 4,
+        "nIndex": 46,
+        "sLabel": "ywCur_P_file",
+        "sDescription": "",
+        "sOriginalName": "OUTW[46]"
+      },
+      {
+        "nLabelId": 5,
+        "nIndex": 47,
+        "sLabel": "ywCur_speed",
+        "sDescription": "",
+        "sOriginalName": "OUTW[47]"
+      },
+      {
+        "nLabelId": 6,
+        "nIndex": 49,
+        "sLabel": "ywCur_mode",
+        "sDescription": "",
+        "sOriginalName": "OUTW[49]"
+      },
+      {
+        "nLabelId": 7,
+        "nIndex": 50,
+        "sLabel": "ywCur_alarm_code",
+        "sDescription": "",
+        "sOriginalName": "OUTW[50]"
+      },
+      {
+        "nLabelId": 8,
+        "nIndex": 51,
+        "sLabel": "ywCur_pos_X",
+        "sDescription": "",
+        "sOriginalName": "OUTW[51]"
+      },
+      {
+        "nLabelId": 9,
+        "nIndex": 53,
+        "sLabel": "ywCur_pos_Y",
+        "sDescription": "",
+        "sOriginalName": "OUTW[53]"
+      },
+      {
+        "nLabelId": 10,
+        "nIndex": 55,
+        "sLabel": "ywCur_pos_Z",
+        "sDescription": "",
+        "sOriginalName": "OUTW[55]"
+      },
+      {
+        "nLabelId": 11,
+        "nIndex": 57,
+        "sLabel": "ywCur_pos_A",
+        "sDescription": "",
+        "sOriginalName": "OUTW[57]"
+      },
+      {
+        "nLabelId": 12,
+        "nIndex": 59,
+        "sLabel": "ywCur_pos_B",
+        "sDescription": "",
+        "sOriginalName": "OUTW[59]"
+      },
+      {
+        "nLabelId": 13,
+        "nIndex": 61,
+        "sLabel": "ywCur_pos_C",
+        "sDescription": "",
+        "sOriginalName": "OUTW[61]"
+      },
+      {
+        "nLabelId": 14,
+        "nIndex": 63,
+        "sLabel": "ywCur_TCP_speed",
+        "sDescription": "",
+        "sOriginalName": "OUTW[63]"
+      },
+      {
+        "nLabelId": 15,
+        "nIndex": 64,
+        "sLabel": "ywCur_J1_torque",
+        "sDescription": "",
+        "sOriginalName": "OUTW[64]"
+      },
+      {
+        "nLabelId": 16,
+        "nIndex": 65,
+        "sLabel": "ywCur_J2_torque",
+        "sDescription": "",
+        "sOriginalName": "OUTW[65]"
+      },
+      {
+        "nLabelId": 17,
+        "nIndex": 66,
+        "sLabel": "ywCur_J3_torque",
+        "sDescription": "",
+        "sOriginalName": "OUTW[66]"
+      },
+      {
+        "nLabelId": 18,
+        "nIndex": 67,
+        "sLabel": "ywCur_J4_torque",
+        "sDescription": "",
+        "sOriginalName": "OUTW[67]"
+      },
+      {
+        "nLabelId": 19,
+        "nIndex": 68,
+        "sLabel": "ywCur_J5_torque",
+        "sDescription": "",
+        "sOriginalName": "OUTW[68]"
+      },
+      {
+        "nLabelId": 20,
+        "nIndex": 69,
+        "sLabel": "ywCur_J6_torque",
+        "sDescription": "",
+        "sOriginalName": "OUTW[69]"
+      },
+      {
+        "nLabelId": 21,
+        "nIndex": 801,
+        "sLabel": "ywReIO_cur_control",
+        "sDescription": "",
+        "sOriginalName": "OUTW[801]"
+      }
+    ]
+  },
+  "AdLabels": {
+    "nNumberOfLabels": 0,
+    "LabelsArray": []
+  },
+  "DaLabels": {
+    "nNumberOfLabels": 0,
+    "LabelsArray": []
+  },
+  "BVarLabels": {
+    "nNumberOfLabels": 5,
+    "LabelsArray": [
+      {
+        "nLabelId": 0,
+        "nIndex": 0,
+        "sLabel": "B_Tool",
+        "sDescription": "",
+        "sOriginalName": "B[0]"
+      },
+      {
+        "nLabelId": 1,
+        "nIndex": 1,
+        "sLabel": "B_Wobj",
+        "sDescription": "",
+        "sOriginalName": "B[1]"
+      },
+      {
+        "nLabelId": 2,
+        "nIndex": 2,
+        "sLabel": "B_PR",
+        "sDescription": "",
+        "sOriginalName": "B[2]"
+      },
+      {
+        "nLabelId": 3,
+        "nIndex": 3,
+        "sLabel": "B_path",
+        "sDescription": "",
+        "sOriginalName": "B[3]"
+      },
+      {
+        "nLabelId": 4,
+        "nIndex": 4,
+        "sLabel": "B_Cur_process",
+        "sDescription": "",
+        "sOriginalName": "B[4]"
+      }
+    ]
+  },
+  "RVarLabels": {
+    "nNumberOfLabels": 1,
+    "LabelsArray": [
+      {
+        "nLabelId": 0,
+        "nIndex": 0,
+        "sLabel": "R_Cur_pos",
+        "sDescription": "",
+        "sOriginalName": "R[0]"
+      }
+    ]
+  },
+  "DVarLabels": {
+    "nNumberOfLabels": 13,
+    "LabelsArray": [
+      {
+        "nLabelId": 0,
+        "nIndex": 0,
+        "sLabel": "D_TCP_speed",
+        "sDescription": "",
+        "sOriginalName": "D[0]"
+      },
+      {
+        "nLabelId": 1,
+        "nIndex": 1,
+        "sLabel": "D_J1_cur_torque",
+        "sDescription": "",
+        "sOriginalName": "D[1]"
+      },
+      {
+        "nLabelId": 2,
+        "nIndex": 2,
+        "sLabel": "D_J2_cur_torque",
+        "sDescription": "",
+        "sOriginalName": "D[2]"
+      },
+      {
+        "nLabelId": 3,
+        "nIndex": 3,
+        "sLabel": "D_J3_cur_torque",
+        "sDescription": "",
+        "sOriginalName": "D[3]"
+      },
+      {
+        "nLabelId": 4,
+        "nIndex": 4,
+        "sLabel": "D_J4_cur_torque",
+        "sDescription": "",
+        "sOriginalName": "D[4]"
+      },
+      {
+        "nLabelId": 5,
+        "nIndex": 5,
+        "sLabel": "D_J5_cur_torque",
+        "sDescription": "",
+        "sOriginalName": "D[5]"
+      },
+      {
+        "nLabelId": 6,
+        "nIndex": 6,
+        "sLabel": "D_J6_cur_torque",
+        "sDescription": "",
+        "sOriginalName": "D[6]"
+      },
+      {
+        "nLabelId": 7,
+        "nIndex": 7,
+        "sLabel": "D_J1_max_torque",
+        "sDescription": "",
+        "sOriginalName": "D[7]"
+      },
+      {
+        "nLabelId": 8,
+        "nIndex": 8,
+        "sLabel": "D_J2_max_torque",
+        "sDescription": "",
+        "sOriginalName": "D[8]"
+      },
+      {
+        "nLabelId": 9,
+        "nIndex": 9,
+        "sLabel": "D_J3_max_torque",
+        "sDescription": "",
+        "sOriginalName": "D[9]"
+      },
+      {
+        "nLabelId": 10,
+        "nIndex": 10,
+        "sLabel": "D_J4_max_torque",
+        "sDescription": "",
+        "sOriginalName": "D[10]"
+      },
+      {
+        "nLabelId": 11,
+        "nIndex": 11,
+        "sLabel": "D_J5_max_torque",
+        "sDescription": "",
+        "sOriginalName": "D[11]"
+      },
+      {
+        "nLabelId": 12,
+        "nIndex": 12,
+        "sLabel": "D_J6_max_torque",
+        "sDescription": "",
+        "sOriginalName": "D[12]"
+      }
+    ]
+  }
+}
