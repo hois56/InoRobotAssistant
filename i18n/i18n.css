@@ -1,0 +1,84 @@
+:root {
+    --inorobot-language-bg: rgba(15, 23, 42, 0.94);
+    --inorobot-language-border: rgba(148, 163, 184, 0.28);
+    --inorobot-language-text: #e2e8f0;
+}
+
+html:lang(ko) body {
+    font-family: "Noto Sans KR", "Inter", sans-serif;
+}
+
+html:lang(zh-CN) body {
+    font-family: "Noto Sans SC", "Inter", sans-serif;
+}
+
+.inorobot-language-switcher {
+    position: fixed;
+    top: 84px;
+    right: 18px;
+    z-index: 10000;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 38px;
+    padding: 5px 9px;
+    border: 1px solid var(--inorobot-language-border);
+    border-radius: 12px;
+    background: var(--inorobot-language-bg);
+    box-shadow: 0 12px 30px rgba(2, 6, 23, 0.32);
+    color: var(--inorobot-language-text);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+.inorobot-language-switcher[data-landing="true"] {
+    top: 18px;
+}
+
+.inorobot-language-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    background: rgba(56, 189, 248, 0.12);
+    color: #7dd3fc;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.inorobot-language-select {
+    min-width: 96px;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.inorobot-language-select option {
+    background: #0f172a;
+    color: #e2e8f0;
+}
+
+@media (max-width: 720px) {
+    .inorobot-language-switcher {
+        top: 72px;
+        right: 10px;
+        min-height: 34px;
+        padding: 4px 7px;
+    }
+
+    .inorobot-language-switcher[data-landing="true"] {
+        top: 10px;
+    }
+
+    .inorobot-language-select {
+        min-width: 82px;
+        font-size: 11px;
+    }
+}
