@@ -413,6 +413,18 @@
                 width: fit-content;
             }
         }
+        /* Critical landing-page placement: remains top-right even if shared CSS is delayed. */
+        #inorobot-language-switcher[data-landing="true"] {
+            position: fixed !important;
+            top: calc(14px + env(safe-area-inset-top, 0px)) !important;
+            right: calc(14px + env(safe-area-inset-right, 0px)) !important;
+            bottom: auto !important;
+            left: auto !important;
+            margin: 0 !important;
+            transform: none !important;
+            align-self: auto !important;
+            z-index: 2147483647 !important;
+        }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/i18n/i18n.css">
@@ -434,7 +446,7 @@
 <body class="relative flex flex-col items-center justify-center min-h-screen p-6">
     <div id="inorobot-language-switcher" class="inorobot-language-switcher" data-landing="true"
         data-i18n-skip aria-label="언어 선택">
-        <span class="inorobot-language-icon" aria-hidden="true">文</span>
+        <span class="inorobot-language-label" aria-hidden="true">Language</span>
         <select id="inorobot-language-select" class="inorobot-language-select" aria-label="언어 선택">
             <option value="ko">한국어</option>
             <option value="en">English</option>
@@ -442,6 +454,26 @@
             <option value="vi" selected>Tiếng Việt</option>
         </select>
     </div>
+    <script>
+        // Keep route switching functional even when the shared translation runtime is delayed.
+        (() => {
+            const select = document.getElementById('inorobot-language-select');
+            const routes = { ko: '/', en: '/en/', 'zh-CN': '/cn/', vi: '/vn/' };
+            if (!select) return;
+            select.addEventListener('change', () => {
+                const locale = select.value;
+                const target = routes[locale];
+                if (!target) return;
+                try {
+                    window.sessionStorage.setItem('inorobot.locale', locale);
+                } catch {
+                    // Route-based language switching still works without browser storage.
+                }
+                window.location.assign(target);
+            });
+            select.dataset.localeListener = 'true';
+        })();
+    </script>
 
     <!-- Ambient background glow -->
     <div class="ambient-glow"></div>

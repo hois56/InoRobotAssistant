@@ -13,9 +13,14 @@ html:lang(zh-CN) body {
 }
 
 .inorobot-language-switcher {
-    position: fixed;
+    position: fixed !important;
     top: 84px;
-    right: 18px;
+    right: 18px !important;
+    bottom: auto !important;
+    left: auto !important;
+    margin: 0 !important;
+    transform: none !important;
+    align-self: auto !important;
     z-index: 10000;
     display: inline-flex;
     align-items: center;
@@ -32,20 +37,23 @@ html:lang(zh-CN) body {
 }
 
 .inorobot-language-switcher[data-landing="true"] {
-    top: 18px;
+    top: calc(14px + env(safe-area-inset-top, 0px)) !important;
+    right: calc(14px + env(safe-area-inset-right, 0px)) !important;
 }
 
-.inorobot-language-icon {
+.inorobot-language-label {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
+    min-height: 22px;
+    padding: 0 7px;
     border-radius: 6px;
     background: rgba(56, 189, 248, 0.12);
     color: #7dd3fc;
-    font-size: 12px;
+    font-size: 10px;
     font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
 }
 
 .inorobot-language-select {
@@ -84,7 +92,8 @@ i.inorobot-icon-fallback {
     }
 
     .inorobot-language-switcher[data-landing="true"] {
-        top: 10px;
+        top: calc(10px + env(safe-area-inset-top, 0px)) !important;
+        right: calc(10px + env(safe-area-inset-right, 0px)) !important;
     }
 
     .inorobot-language-select {
