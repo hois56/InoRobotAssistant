@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const uiText = (value) => window.InoRobotI18n
+        ? window.InoRobotI18n.translate(String(value))
+        : String(value);
     const filterContainer = document.getElementById('filter-container');
     const productContainer = document.getElementById('product-container');
     const resetBtn = document.getElementById('reset-btn');
@@ -1637,7 +1640,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const wantsBody = flexNode && flexNode.value !== 'none';
 
         if (wantsBody && bodyCodeInput && bodyCodeInput.value === "") {
-            alert("선택하신 Body I/O 케이블 타입 및 길이 조합은 사용할 수 없습니다.\n다른 조합을 선택해 주세요.");
+            alert(uiText("선택하신 Body I/O 케이블 타입 및 길이 조합은 사용할 수 없습니다.\n다른 조합을 선택해 주세요."));
             return;
         }
 
@@ -1657,7 +1660,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const pdfContainer = document.createElement('div');
         pdfContainer.style.padding = '40px';
         pdfContainer.style.paddingBottom = '80px';
-        pdfContainer.style.fontFamily = 'Inter, sans-serif, "Malgun Gothic"';
+        pdfContainer.style.fontFamily = '"Noto Sans KR", "Noto Sans SC", Inter, sans-serif, "Malgun Gothic"';
         pdfContainer.style.width = '720px';
         pdfContainer.style.color = '#222';
         pdfContainer.style.backgroundColor = '#fff';
@@ -1869,6 +1872,10 @@ document.addEventListener('DOMContentLoaded', () => {
             `).join('');
         }
 
+        const generatedAt = window.InoRobotI18n
+            ? window.InoRobotI18n.formatDate(new Date(), { dateStyle: 'medium', timeStyle: 'medium' })
+            : new Date().toLocaleString('ko-KR');
+
         pdfContainer.innerHTML = `
             <div style="border-bottom: 2px solid #f7941d; padding-bottom: 15px; margin-bottom: 20px;">
                 <h1 style="color: #222; margin: 0; font-size: 24px;">Inovance 로봇 구성서</h1>
@@ -1921,11 +1928,14 @@ document.addEventListener('DOMContentLoaded', () => {
             </table>
 
             <div style="margin-top: 30px; font-size: 11px; color: #888; text-align: center; border-top: 1px solid #ddd; padding-top: 15px; page-break-inside: avoid;">
-                본 구성서는 선택된 옵션 기반의 가이드입니다. 제조사 사정에 따라 사양이 변경될 수 있습니다. 생성일시: ${new Date().toLocaleString('ko-KR')}
+                본 구성서는 선택된 옵션 기반의 가이드입니다. 제조사 사정에 따라 사양이 변경될 수 있습니다. 생성일시: ${generatedAt}
             </div>
         `;
         pdfWrapper.appendChild(pdfContainer);
         document.body.appendChild(pdfWrapper);
+        if (window.InoRobotI18n) {
+            window.InoRobotI18n.apply(pdfContainer);
+        }
 
         const dlObj = {
             margin: [15, 15, 15, 15],
@@ -1946,7 +1956,8 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         setTimeout(() => {
-            html2pdf().set(dlObj).from(pdfContainer).save().then(() => {
+            const fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+            fontsReady.then(() => html2pdf().set(dlObj).from(pdfContainer).save()).then(() => {
                 document.body.removeChild(pdfWrapper);
             }).catch(err => {
                 console.error("PDF Generation Error:", err);
@@ -2064,7 +2075,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (Object.keys(zip.files).length === 0) {
-                alert("다운로드 가능한 캐드 파일이 없습니다.");
+                alert(uiText("다운로드 가능한 캐드 파일이 없습니다."));
                 return;
             }
 
@@ -2073,7 +2084,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (err) {
             console.error("CAD Zip Error:", err);
-            alert("CAD 파일 생성 중 오류가 발생했습니다.");
+            alert(uiText("CAD 파일 생성 중 오류가 발생했습니다."));
         } finally {
             btn.innerText = oldText;
             btn.disabled = false;
