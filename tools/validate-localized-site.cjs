@@ -90,8 +90,8 @@ function validateStandaloneLanguageSwitch(html, file) {
 }
 
 function loadMergedLocale(code) {
-    const localeDir = path.join(root, 'Languge', code);
-    const locale = readJson(path.join('Languge', code, 'ui.json'));
+    const localeDir = path.join(root, 'Language', code);
+    const locale = readJson(path.join('Language', code, 'ui.json'));
     fs.readdirSync(localeDir)
         .filter(fileName => fileName.endsWith('.json') && fileName !== 'ui.json')
         .sort()
@@ -142,7 +142,7 @@ const locales = Object.fromEntries(localeCodes.map(code => [code, loadMergedLoca
 const siteCardVersions = parseSiteCardVersions(read('site-card-versions.js'));
 
 const robotDataContext = {};
-vm.runInNewContext(read('InoRobotSelect/data.js') + '\nthis.__accessories = accessoriesList;', robotDataContext);
+vm.runInNewContext(read('1_RobotModelSelect/data.js') + '\nthis.__accessories = accessoriesList;', robotDataContext);
 const accessorySources = [...new Set(robotDataContext.__accessories.flatMap(item => [item.name, item.description]).filter(Boolean))];
 const technicalOptionName = /^(?:IRCB\d|IR-[A-Z0-9]|GL20-)/;
 localeCodes.forEach(code => {
@@ -159,7 +159,7 @@ localeCodes.forEach(code => {
     });
 });
 
-const projectScriptSource = read('InoRobotProjectGen/app.js');
+const projectScriptSource = read('4_ProjectGenerator/app.js');
 const optionDescriptionBlock = projectScriptSource.match(/const optDescs = \{([\s\S]*?)\n\s*\};\s*\n\s*const updateOptDesc/)?.[1] || '';
 const optionDescriptionSources = [...optionDescriptionBlock.matchAll(/text:\s*(?:`([\s\S]*?)`|'([\s\S]*?)')\s*\}/g)]
     .flatMap(match => (match[1] || match[2] || '').replace(/<[^>]+>/g, '\n').split(/\r?\n/))
@@ -215,18 +215,38 @@ targetLocaleCodes.forEach(code => {
     });
 });
 
-const jsonFileSets = localeCodes.map(code => fs.readdirSync(path.join(root, 'Languge', code))
+const jsonFileSets = localeCodes.map(code => fs.readdirSync(path.join(root, 'Language', code))
     .filter(fileName => fileName.endsWith('.json'))
     .sort()
     .join('|'));
 assert(new Set(jsonFileSets).size === 1, 'Locale directories must contain the same JSON source files.');
 
+const expectedToolFolders = [
+    '1_RobotModelSelect',
+    '2_Robot3DViewer',
+    '3_ToolSelector',
+    '4_ProjectGenerator',
+    '5_Software',
+    '6_Document',
+    '7_DebuggingTool'
+];
+expectedToolFolders.forEach(folder => {
+    assert(fs.existsSync(path.join(root, folder, 'index.html')), folder + ' is missing its entry page.');
+});
+['Languge', 'i18n', 'templates', 'InoRobotSelect', 'InoRobot3DView', 'InoRobotToolSelect', 'InoRobotProjectGen', 'Software', 'Manual', 'DebuggingSupport', 'cn', 'en', 'kr', 'vn'].forEach(oldPath => {
+    assert(!fs.existsSync(path.join(root, oldPath)), 'Obsolete root path still exists: ' + oldPath + '.');
+});
+assert(!fs.existsSync(path.join(root, 'index.html')), 'The generated Korean index must live under Language/ko.');
+const preservedDebugExe = path.join(root, '7_DebuggingTool', 'Trace', 'InoRobotTrace_V1.3.exe');
+assert(fs.existsSync(preservedDebugExe) && fs.statSync(preservedDebugExe).size > 0, 'The preserved extracted debugging EXE is missing.');
+assert(!fs.existsSync(path.join(root, '4_ProjectGenerator', 'CNAME')), 'The duplicate Project Generator CNAME was not removed.');
+
 const routes = [
-    { file: 'index.html', locale: 'ko', canonical: 'https://inovancerobot.com/' },
-    { file: 'kr/index.html', locale: 'ko', canonical: 'https://inovancerobot.com/' },
-    { file: 'en/index.html', locale: 'en', canonical: 'https://inovancerobot.com/en/' },
-    { file: 'cn/index.html', locale: 'zh-CN', canonical: 'https://inovancerobot.com/cn/' },
-    { file: 'vn/index.html', locale: 'vi', canonical: 'https://inovancerobot.com/vn/' }
+    { file: 'Language/ko/index.html', route: '/', locale: 'ko', canonical: 'https://inovancerobot.com/' },
+    { file: 'Language/kr/index.html', route: '/kr/', locale: 'ko', canonical: 'https://inovancerobot.com/' },
+    { file: 'Language/en/index.html', route: '/en/', locale: 'en', canonical: 'https://inovancerobot.com/en/' },
+    { file: 'Language/zh-CN/index.html', route: '/cn/', locale: 'zh-CN', canonical: 'https://inovancerobot.com/cn/' },
+    { file: 'Language/vi/index.html', route: '/vn/', locale: 'vi', canonical: 'https://inovancerobot.com/vn/' }
 ];
 const requiredAlternates = ['ko', 'en', 'zh-CN', 'vi', 'x-default'];
 
@@ -236,8 +256,9 @@ routes.forEach(route => {
     assert(html.includes('<html lang="' + route.locale + '"'), route.file + ' has the wrong html language.');
     assert(html.includes('rel="canonical" href="' + route.canonical + '"'), route.file + ' has the wrong canonical URL.');
     requiredAlternates.forEach(code => assert(html.includes('hreflang="' + code + '"'), route.file + ' is missing hreflang ' + code + '.'));
-    assert(html.includes('/i18n/locales-data.js') && html.includes('/i18n/i18n.js'), route.file + ' is missing the i18n runtime.');
-    assert(html.includes('/i18n/icon-fallback.js'), route.file + ' is missing the local icon fallback.');
+    assert(html.startsWith('---\npermalink: ' + route.route + '\n---\n'), route.file + ' is missing its stable public permalink.');
+    assert(html.includes('/Language/runtime/locales-data.js') && html.includes('/Language/runtime/i18n.js'), route.file + ' is missing the i18n runtime.');
+    assert(html.includes('/Language/runtime/icon-fallback.js'), route.file + ' is missing the local icon fallback.');
     assert(html.includes('id="inorobot-language-switcher"') && html.includes('id="inorobot-language-select"'), route.file + ' is missing the top-right language UI.');
     assert(html.includes('<span class="inorobot-language-label" aria-hidden="true">Language</span>'), route.file + ' does not show the Language label.');
     assert(!html.includes('>文</span>'), route.file + ' still shows the Chinese language symbol.');
@@ -258,21 +279,21 @@ routes.forEach(route => {
 });
 
 const subpages = [
-    'InoRobotSelect/index.html',
-    'InoRobot3DView/index.html',
-    'InoRobotToolSelect/index.html',
-    'InoRobotProjectGen/index.html',
-    'Software/index.html',
-    'Manual/index.html',
-    'DebuggingSupport/index.html',
-    'DebuggingSupport/ZeroCalibration/index.html'
+    '1_RobotModelSelect/index.html',
+    '2_Robot3DViewer/index.html',
+    '3_ToolSelector/index.html',
+    '4_ProjectGenerator/index.html',
+    '5_Software/index.html',
+    '6_Document/index.html',
+    '7_DebuggingTool/index.html',
+    '7_DebuggingTool/ZeroCalibration/index.html'
 ];
 
 subpages.forEach(file => {
     const html = read(file);
-    assert(html.includes('/i18n/i18n.css'), file + ' is missing locale styles.');
-    assert(html.includes('/i18n/locales-data.js') && html.includes('/i18n/i18n.js'), file + ' is missing locale scripts.');
-    assert(html.includes('/i18n/icon-fallback.js'), file + ' is missing the local icon fallback.');
+    assert(html.includes('/Language/runtime/i18n.css'), file + ' is missing locale styles.');
+    assert(html.includes('/Language/runtime/locales-data.js') && html.includes('/Language/runtime/i18n.js'), file + ' is missing locale scripts.');
+    assert(html.includes('/Language/runtime/icon-fallback.js'), file + ' is missing the local icon fallback.');
     assert(html.includes('Noto+Sans+KR') && html.includes('Noto+Sans+SC'), file + ' is missing multilingual fonts.');
 
     for (const match of html.matchAll(/data-i18n(?:-title|-placeholder|-aria-label|-alt)?=["']([^"']+)["']/g)) {
@@ -289,7 +310,7 @@ subpages.forEach(file => {
     }
 });
 
-const runtime = read('i18n/i18n.js');
+const runtime = read('Language/runtime/i18n.js');
 assert(runtime.includes("const STORAGE_KEY = 'inorobot.locale'"), 'Runtime session key is missing.');
 assert(runtime.includes("return readSessionLocale() || DEFAULT_LOCALE"), 'Direct tool access does not default to Korean.');
 assert(runtime.includes("'/kr/': 'ko'") && runtime.includes("'/cn/': 'zh-CN'") && runtime.includes("'/vn/': 'vi'"), 'Landing route map is incomplete.');
@@ -301,6 +322,10 @@ assert(runtime.includes("document.querySelector('[data-i18n-language-slot]')") &
     assert(runtime.includes(`a[href="${route}"]`), 'Runtime does not refresh home links already pointing to ' + route + '.');
 });
 assert(runtime.includes("link.setAttribute('data-i18n-home-link', '')"), 'Runtime does not retain home links for later locale changes.');
+const localServer = read('tools/serve-local.cjs');
+['Language/ko/index.html', 'Language/kr/index.html', 'Language/en/index.html', 'Language/zh-CN/index.html', 'Language/vi/index.html'].forEach(file => {
+    assert(localServer.includes(file), 'Local server is missing landing-page mapping for ' + file + '.');
+});
 const updateHomeLinksSource = extractNamedFunction(runtime, 'updateHomeLinks');
 assert(Boolean(updateHomeLinksSource), 'Runtime home-link updater cannot be tested.');
 if (updateHomeLinksSource) {
@@ -319,27 +344,27 @@ if (updateHomeLinksSource) {
     assert(homeLink.attributes.href === '/en/', 'A home link remains on the previous landing locale after a tool-page language change.');
     assert(Object.prototype.hasOwnProperty.call(homeLink.attributes, 'data-i18n-home-link'), 'A localized home link is not retained for later locale changes.');
 }
-const localeStyles = read('i18n/i18n.css');
+const localeStyles = read('Language/runtime/i18n.css');
 assert(localeStyles.includes('position: fixed !important') && localeStyles.includes('right: 18px !important') && localeStyles.includes('left: auto !important'), 'The language UI is not fixed to the upper-right corner.');
 assert(localeStyles.includes('top: calc(16px + env(safe-area-inset-top, 0px)) !important'), 'The language UI is not positioned inside the desktop top bar.');
 const languageLabelStyle = localeStyles.match(/\.inorobot-language-label\s*\{([\s\S]*?)\}/)?.[1] || '';
 assert(!/text-transform\s*:\s*uppercase/i.test(languageLabelStyle), 'The Language label is still forced to uppercase.');
 assert(localeStyles.includes('.inorobot-language-switcher[data-embedded="true"]') && localeStyles.includes('position: static !important'), 'Embedded language switchers are not detached from the global fixed position.');
 
-const projectHtml = read('InoRobotProjectGen/index.html');
+const projectHtml = read('4_ProjectGenerator/index.html');
 assert(projectHtml.indexOf('data-i18n-language-slot') < projectHtml.indexOf('id="btnGuide"'), 'Project Generator language switcher is not placed left of Guide.');
-const viewerHtml = read('InoRobot3DView/index.html');
-const viewerStyles = read('InoRobot3DView/style.css');
+const viewerHtml = read('2_Robot3DViewer/index.html');
+const viewerStyles = read('2_Robot3DViewer/style.css');
 assert(viewerHtml.indexOf('data-i18n-language-slot') > viewerHtml.indexOf('</header>'), '3D Viewer language switcher is not below the top bar.');
 assert(viewerStyles.includes('top: calc(var(--topbar-h) + 8px)') && viewerStyles.includes('.viewer-language-row'), '3D Viewer language switcher row is not positioned below the top bar.');
-assert(read('Manual/index.html').includes('data-cat="pendant">Pendant</button>'), 'Document Pendant tab is not using the translatable source label.');
+assert(read('6_Document/index.html').includes('data-cat="pendant">Pendant</button>'), 'Document Pendant tab is not using the translatable source label.');
 
-const protectedScripts = read('Manual/script.js') + '\n' + read('Software/script.js');
+const protectedScripts = read('6_Document/script.js') + '\n' + read('5_Software/script.js');
 assert(!protectedScripts.includes('data.message ||'), 'A raw server error message can still be shown to users.');
 assert(protectedScripts.includes('translateUiText'), 'Protected content prompts are not localized.');
 assert(protectedScripts.includes('fetch(WORKER_URL'), 'Protected Manual/Software authentication requests are missing.');
 
-const robotSelectScript = read('InoRobotSelect/script.js');
+const robotSelectScript = read('1_RobotModelSelect/script.js');
 assert(robotSelectScript.includes('html2pdf().set(dlObj)'), 'Robot Select PDF generation hook is missing.');
 assert(robotSelectScript.includes('new JSZip()') && robotSelectScript.includes('saveAs(content'), 'Robot Select CAD ZIP generation hook is missing.');
 assert(robotSelectScript.includes('uiText(filterCategory.label)') && robotSelectScript.includes("uiText('가반 하중 (kg)')"), 'Robot Select dynamic filters or specification labels are not localized.');
@@ -349,32 +374,32 @@ assert(robotSelectScript.includes("uiText('파워/엔코더 케이블')") && rob
 assert(robotSelectScript.includes('uiText(acc.description)') && robotSelectScript.includes('localizeDisplayText(option.spec)'), 'Robot Select option descriptions are not localized.');
 assert(robotSelectScript.includes("['클린 사양 없음', 'Option :']") && robotSelectScript.includes("uiText('Pins')") && robotSelectScript.includes('formatSignalPins('), 'Robot Select Option or Pin composites are not localized.');
 assert(robotSelectScript.includes('captureModalSelections') && robotSelectScript.includes('restoreModalSelections'), 'Robot Select does not preserve modal selections while changing language.');
-const projectScript = read('InoRobotProjectGen/app.js');
+const projectScript = read('4_ProjectGenerator/app.js');
 assert(projectScript.includes('new JSZip()') && projectScript.includes('zip.generateAsync') && projectScript.includes('saveAs(blob'), 'Project ZIP generation hook is missing.');
 assert(projectScript.includes("uiText('Option Info')") && projectScript.includes('window.InoRobotI18n.apply(description)'), 'Project option guide descriptions are not localized.');
 assert(projectScript.includes('window.InoRobotI18n.apply(optionsModal)'), 'Project option items are not explicitly localized when the modal opens.');
-const viewerScript = read('InoRobot3DView/main.js');
+const viewerScript = read('2_Robot3DViewer/main.js');
 assert(viewerScript.includes("uiText('모델 추가 모드')") && viewerScript.includes("'inorobot:languagechange', refreshLocalizedControls"), '3D Viewer dynamic controls are not localized.');
-const softwareScript = read('Software/script.js');
+const softwareScript = read('5_Software/script.js');
 assert(softwareScript.includes('translateUiText(dl.label)') && softwareScript.includes('translateUiText(ver.description)'), 'Software descriptions or download buttons are not localized.');
-const toolSelector = read('InoRobotToolSelect/index.html');
+const toolSelector = read('3_ToolSelector/index.html');
 assert(toolSelector.includes('function calculate()'), 'Tool Selector calculation hook is missing.');
 assert(toolSelector.includes("uiText('형식 SCARA')") && toolSelector.includes("uiText('부하 무게중심 기준 관성모멘트 산출값')"), 'Tool Selector dynamic labels are not localized.');
 for (const [index, match] of [...toolSelector.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].entries()) {
     if (!match[1].trim()) continue;
     try {
-        new vm.Script(match[1], { filename: 'InoRobotToolSelect-inline-' + (index + 1) + '.js' });
+        new vm.Script(match[1], { filename: '3_ToolSelector-inline-' + (index + 1) + '.js' });
     } catch (error) {
         assert(false, 'Tool Selector inline script does not compile: ' + error.message);
     }
 }
-assert(read('DebuggingSupport/debugging-history.js').includes('window.InoRobotI18n.translate(message)'), 'Debugging Tool dynamic messages are not localized.');
-const zeroCalibration = read('DebuggingSupport/ZeroCalibration/index.html');
+assert(read('7_DebuggingTool/debugging-history.js').includes('window.InoRobotI18n.translate(message)'), 'Debugging Tool dynamic messages are not localized.');
+const zeroCalibration = read('7_DebuggingTool/ZeroCalibration/index.html');
 assert(zeroCalibration.includes('function calculate(index)') && zeroCalibration.includes('function downloadOfflineTool()'), 'Zero Calibration calculation or offline download hook is missing.');
 
-const homeTemplate = read('templates/home.template.html');
+const homeTemplate = read('Language/templates/home.template.html');
 [
-    ['/InoRobotSelect/INOVANCE_Logo.png', 'InoRobotSelect/INOVANCE_Logo.png'],
+    ['/1_RobotModelSelect/INOVANCE_Logo.png', '1_RobotModelSelect/INOVANCE_Logo.png'],
     ['/robot_select_icon_simple_1774428251953.png', 'robot_select_icon_simple_1774428251953.png'],
     ['/project_gen_icon_simple_1774428268885.png', 'project_gen_icon_simple_1774428268885.png']
 ].forEach(([webPath, filePath]) => {
@@ -382,7 +407,7 @@ const homeTemplate = read('templates/home.template.html');
     const image = readBuffer(filePath);
     assert(image.length > 8 && image.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])), filePath + ' is not a valid PNG asset.');
 });
-assert(read('DebuggingSupport/index.html').includes('data-i18n-skip>Debugging Tool</h1>'), 'Debugging Tool page heading is not fixed in English.');
+assert(read('7_DebuggingTool/index.html').includes('data-i18n-skip>Debugging Tool</h1>'), 'Debugging Tool page heading is not fixed in English.');
 
 const sourceHistory = parseSections(read('UPDATE_HISTORY.md'));
 const cardVersionSections = {
@@ -399,7 +424,7 @@ Object.entries(cardVersionSections).forEach(([key, section]) => {
 });
 const cardSections = ['Robot Model Select', 'Robot 3D Viewer', 'Robot Tool Selector', 'Project Generator', 'Software', 'Document', 'Debugging Tool'];
 targetLocaleCodes.forEach(code => {
-    const localized = parseSections(read(path.join('Languge', code, 'history.md')));
+    const localized = parseSections(read(path.join('Language', code, 'history.md')));
     cardSections.forEach(section => {
         assert(Boolean(localized[section]), code + ' history is missing ' + section + '.');
         if (!localized[section]) return;
@@ -407,16 +432,16 @@ targetLocaleCodes.forEach(code => {
         assert(localized[section].bullets === sourceHistory[section].bullets, code + ' history entry count differs for ' + section + '.');
     });
 });
-assert(!read('Languge/zh-CN/history.md').includes('**【修复】**') && !read('Languge/zh-CN/debug-history.md').includes('**【修复】**'), 'Chinese version history still shows the repair badge.');
+assert(!read('Language/zh-CN/history.md').includes('**【修复】**') && !read('Language/zh-CN/debug-history.md').includes('**【修复】**'), 'Chinese version history still shows the repair badge.');
 
 const debugSources = {
-    communicationTester: parseSections(read('DebuggingSupport/CommunicationTester/업데이트_기록.md'))['Communication Tester'],
-    labelGenerator: parseSections(read('DebuggingSupport/InoRobotLabelGen/업데이트기록.md'))['InoRobot Label Gen'],
-    trace: parseSections(read('DebuggingSupport/Trace/업데이트_기록.md')).InoRobotTrace,
-    projectCompare: parseSections(read('DebuggingSupport/ProjectCompare/업데이트_기록.md'))['Project Compare']
+    communicationTester: parseSections(read('7_DebuggingTool/CommunicationTester/업데이트_기록.md'))['Communication Tester'],
+    labelGenerator: parseSections(read('7_DebuggingTool/InoRobotLabelGen/업데이트기록.md'))['InoRobot Label Gen'],
+    trace: parseSections(read('7_DebuggingTool/Trace/업데이트_기록.md')).InoRobotTrace,
+    projectCompare: parseSections(read('7_DebuggingTool/ProjectCompare/업데이트_기록.md'))['Project Compare']
 };
 targetLocaleCodes.forEach(code => {
-    const localized = parseSections(read(path.join('Languge', code, 'debug-history.md')));
+    const localized = parseSections(read(path.join('Language', code, 'debug-history.md')));
     Object.entries(debugSources).forEach(([section, source]) => {
         assert(Boolean(localized[section]), code + ' debugging history is missing ' + section + '.');
         if (!localized[section]) return;

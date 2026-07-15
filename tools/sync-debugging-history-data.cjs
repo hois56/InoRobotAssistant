@@ -3,10 +3,10 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '..');
 const histories = {
-    communicationTester: 'DebuggingSupport/CommunicationTester/업데이트_기록.md',
-    labelGenerator: 'DebuggingSupport/InoRobotLabelGen/업데이트기록.md',
-    trace: 'DebuggingSupport/Trace/업데이트_기록.md',
-    projectCompare: 'DebuggingSupport/ProjectCompare/업데이트_기록.md'
+    communicationTester: '7_DebuggingTool/CommunicationTester/업데이트_기록.md',
+    labelGenerator: '7_DebuggingTool/InoRobotLabelGen/업데이트기록.md',
+    trace: '7_DebuggingTool/Trace/업데이트_기록.md',
+    projectCompare: '7_DebuggingTool/ProjectCompare/업데이트_기록.md'
 };
 
 const encodedHistories = Object.fromEntries(
@@ -16,7 +16,7 @@ const encodedHistories = Object.fromEntries(
     ])
 );
 
-const outputPath = path.join(root, 'DebuggingSupport', 'debugging-history-data.js');
+const outputPath = path.join(root, '7_DebuggingTool', 'debugging-history-data.js');
 const output = '// Generated from each debugging tool update history by tools/sync-debugging-history-data.cjs.\n' +
     `window.DEBUGGING_HISTORY_DATA = ${JSON.stringify(encodedHistories, null, 4)};\n`;
 

@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inovance Robot Assistant | 이노밴스 테크놀로지 코리아</title>
+
+    <!-- 2. 사이트 이름 설정 (검색 결과 맨 위의 작은 글자) -->
+    <script type="application/ld+json">
+    {
+      "@context" : "https://schema.org",
+      "@type" : "WebSite",
+      "name" : "이노밴스 테크놀로지 코리아",
+      "url" : "https://inovancerobot.com/"
+    }
+    </script>
+
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top right, #0f172a, #020617);
+            color: #e2e8f0;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        .font-outfit {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Ambient Background Glow */
+        .ambient-glow {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80vw;
+            height: 80vh;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.1) 0%, rgba(15, 23, 42, 0) 70%);
+            z-index: -1;
+            pointer-events: none;
+            filter: blur(100px);
+            animation: pulse-glow 8s infinite alternate;
+        }
+
+        @keyframes pulse-glow {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(1.1);
+                opacity: 0.8;
+            }
+        }
+
+        /* Premium Glass Card Effect */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            border-radius: 1.5rem;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+            transform: skewX(-20deg);
+            transition: left 0.5s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            border-color: rgba(56, 189, 248, 0.3);
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 189, 248, 0.2);
+            background: rgba(30, 41, 59, 0.6);
+        }
+
+        .glass-card:hover::before {
+            left: 200%;
+        }
+
+        .card-icon-container {
+            position: relative;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 4rem;
+            height: 4rem;
+            border-radius: 1rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .glass-card:hover .card-icon-container {
+            transform: scale(1.1) rotate(5deg);
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        /* Generator specific colors */
+        .glass-card:hover .generator-icon {
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.4);
+            border-color: rgba(56, 189, 248, 0.4);
+        }
+
+        .glass-card:hover .generator-icon i {
+            color: #38bdf8;
+        }
+
+        /* Selector specific colors */
+        .glass-card:hover .selector-icon {
+            box-shadow: 0 0 25px rgba(52, 211, 153, 0.4);
+            border-color: rgba(52, 211, 153, 0.4);
+        }
+
+        .glass-card:hover .selector-icon i {
+            color: #34d399;
+        }
+
+        .btn-launch {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .btn-launch::after {
+            content: '';
+            position: absolute;
+            background: white;
+            opacity: 0.1;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .btn-launch:hover::after {
+            left: 0;
+        }
+
+        /* Title Gradients */
+        .title-gradient {
+            background: linear-gradient(135deg, #e0e7ff 0%, #38bdf8 50%, #34d399 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: inline-block;
+        }
+
+        /* Logo: always white regardless of browser/device */
+        .site-logo {
+            filter: brightness(0) invert(1) !important;
+            -webkit-filter: brightness(0) invert(1) !important;
+        }
+
+        .history-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.375rem 0.7rem;
+            border: 1px solid rgba(56, 189, 248, 0.22);
+            border-radius: 0.55rem;
+            background: rgba(14, 165, 233, 0.08);
+            color: #7dd3fc;
+            font-size: 0.72rem;
+            font-weight: 700;
+            line-height: 1;
+            cursor: pointer;
+            transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        }
+
+        .history-button:hover,
+        .history-button:focus-visible {
+            border-color: rgba(56, 189, 248, 0.65);
+            background: rgba(14, 165, 233, 0.18);
+            color: #e0f2fe;
+            outline: none;
+            transform: translateY(-1px);
+        }
+
+        .history-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1.25rem;
+            background: rgba(2, 6, 23, 0.82);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .history-modal.is-open {
+            display: flex;
+            animation: historyFadeIn 0.2s ease-out;
+        }
+
+        .history-dialog {
+            display: flex;
+            flex-direction: column;
+            width: min(780px, 100%);
+            max-height: min(82vh, 820px);
+            overflow: hidden;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 1.5rem;
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.98));
+            box-shadow: 0 35px 90px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            animation: historyDialogIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .history-dialog-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 1.35rem 1.5rem;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+            background: rgba(15, 23, 42, 0.7);
+        }
+
+        .history-dialog-body {
+            overflow-y: auto;
+            padding: 1.5rem;
+            scrollbar-color: rgba(56, 189, 248, 0.45) transparent;
+            scrollbar-width: thin;
+        }
+
+        .history-dialog-body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .history-dialog-body::-webkit-scrollbar-thumb {
+            border-radius: 999px;
+            background: rgba(56, 189, 248, 0.35);
+        }
+
+        .history-close-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.4rem;
+            height: 2.4rem;
+            flex: 0 0 auto;
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            border-radius: 0.75rem;
+            background: rgba(30, 41, 59, 0.65);
+            color: #94a3b8;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .history-close-button:hover,
+        .history-close-button:focus-visible {
+            border-color: rgba(248, 113, 113, 0.45);
+            background: rgba(239, 68, 68, 0.12);
+            color: #fca5a5;
+            outline: none;
+        }
+
+        .history-version-block + .history-version-block {
+            margin-top: 1.75rem;
+            padding-top: 1.75rem;
+            border-top: 1px solid rgba(148, 163, 184, 0.12);
+        }
+
+        .history-version-title {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin: 0 0 0.9rem;
+            color: #f8fafc;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+
+        .history-version-title::before {
+            content: '';
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 999px;
+            background: #38bdf8;
+            box-shadow: 0 0 14px rgba(56, 189, 248, 0.7);
+        }
+
+        .history-entry {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            align-items: start;
+            gap: 0.65rem;
+            margin-top: 0.65rem;
+            color: #cbd5e1;
+            font-size: 0.9rem;
+            line-height: 1.65;
+        }
+
+        .history-tag {
+            min-width: 3.8rem;
+            margin-top: 0.15rem;
+            padding: 0.15rem 0.45rem;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 0.4rem;
+            background: rgba(51, 65, 85, 0.5);
+            color: #cbd5e1;
+            font-size: 0.68rem;
+            font-weight: 800;
+            line-height: 1.45;
+            text-align: center;
+        }
+
+        .history-tag[data-tag="신규"],
+        .history-tag[data-tag="추가"] {
+            border-color: rgba(52, 211, 153, 0.3);
+            background: rgba(16, 185, 129, 0.1);
+            color: #6ee7b7;
+        }
+
+        .history-tag[data-tag="수정"] {
+            border-color: rgba(251, 191, 36, 0.3);
+            background: rgba(245, 158, 11, 0.1);
+            color: #fcd34d;
+        }
+
+        .history-tag[data-tag="변경"] {
+            border-color: rgba(96, 165, 250, 0.3);
+            background: rgba(59, 130, 246, 0.1);
+            color: #93c5fd;
+        }
+
+        .history-tag[data-tag="업데이트"] {
+            border-color: rgba(192, 132, 252, 0.3);
+            background: rgba(168, 85, 247, 0.1);
+            color: #d8b4fe;
+        }
+
+        .history-entry code {
+            padding: 0.12rem 0.35rem;
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            border-radius: 0.35rem;
+            background: rgba(2, 6, 23, 0.72);
+            color: #bae6fd;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.82em;
+        }
+
+        .history-message {
+            padding: 2.5rem 1rem;
+            color: #94a3b8;
+            text-align: center;
+        }
+
+        @keyframes historyFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes historyDialogIn {
+            from { opacity: 0; transform: translateY(16px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @media (max-width: 640px) {
+            .history-modal {
+                padding: 0.75rem;
+            }
+
+            .history-dialog {
+                max-height: 90vh;
+                border-radius: 1.15rem;
+            }
+
+            .history-dialog-header,
+            .history-dialog-body {
+                padding: 1.1rem;
+            }
+
+            .history-entry {
+                grid-template-columns: 1fr;
+                gap: 0.35rem;
+            }
+
+            .history-tag {
+                width: fit-content;
+            }
+        }
+        /* Critical landing-page placement: remains top-right even if shared CSS is delayed. */
+        #inorobot-language-switcher[data-landing="true"] {
+            position: fixed !important;
+            top: calc(16px + env(safe-area-inset-top, 0px)) !important;
+            right: 18px !important;
+            bottom: auto !important;
+            left: auto !important;
+            margin: 0 !important;
+            transform: none !important;
+            align-self: auto !important;
+            z-index: 2147483647 !important;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/Language/runtime/i18n.css">
+    <script src="/Language/runtime/locales-data.js" defer></script>
+    <script src="/Language/runtime/i18n.js" defer></script>
+</head>
+
+<body class="relative flex flex-col items-center justify-center min-h-screen p-6">
+    <div id="inorobot-language-switcher" class="inorobot-language-switcher" data-landing="true"
+        data-i18n-skip aria-label="언어 선택">
+        <span class="inorobot-language-label" aria-hidden="true">Language</span>
+        <select id="inorobot-language-select" class="inorobot-language-select" aria-label="언어 선택">
+            <option value="ko">한국어</option>
+            <option value="en">English</option>
+            <option value="zh-CN">简体中文</option>
+            <option value="vi">Tiếng Việt</option>
+        </select>
+    </div>
+    <script>
+        // Keep route switching functional even when the shared translation runtime is delayed.
+        (() => {
+            const select = document.getElementById('inorobot-language-select');
+            const routes = { ko: '/', en: '/en/', 'zh-CN': '/cn/', vi: '/vn/' };
+            if (!select) return;
+            select.addEventListener('change', () => {
+                const locale = select.value;
+                const target = routes[locale];
+                if (!target) return;
+                try {
+                    window.sessionStorage.setItem('inorobot.locale', locale);
+                } catch {
+                    // Route-based language switching still works without browser storage.
+                }
+                window.location.assign(target);
+            });
+            select.dataset.localeListener = 'true';
+        })();
+    </script>
+
+    <!-- Ambient background glow -->
+    <div class="ambient-glow"></div>
+
+    <main class="w-full max-w-5xl mx-auto z-10 flex flex-col items-center">
+        <!-- Header -->
+        <header class="text-center mb-16 opacity-0 translate-y-8 animate-fade-in-up"
+            style="animation: fadeInUp 0.5s ease forwards;">
+            <div class="inline-flex items-center justify-center mb-8">
+                <img src="/1_RobotModelSelect/INOVANCE_Logo.png" alt="INOVANCE Logo"
+                    class="site-logo h-16 md:h-24 w-auto object-contain"
+                    onerror="this.hidden=true; this.nextElementSibling.hidden=false">
+                <span hidden class="font-outfit text-3xl md:text-5xl font-extrabold tracking-wide text-white">INOVANCE</span>
+            </div>
+            <h1 class="font-outfit text-5xl md:text-7xl font-extrabold mb-4 tracking-tight drop-shadow-xl">
+                <span class="title-gradient pt-2 pb-2">InoRobot Assistant</span>
+            </h1>
+            <p class="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
+                InoRobot Assistant는 INOVANCE Robot을 설계부터 프로그래밍, 시운전까지 지원하는 유용한 협업 도구입니다.
+                필요한 도구를 선택하여 작업을 시작하세요.
+            </p>
+        </header>
+
+        <!-- Tool Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
+
+            <!-- 1. Robot Selector Card -->
+            <a href="./1_RobotModelSelect/" class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8"
+                style="animation: fadeInUp 0.5s ease 0.1s forwards; text-decoration: none;">
+                <div
+                    class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
+                    <img src="/robot_select_icon_simple_1774428251953.png" alt="Robot Model Select"
+                        class="w-full h-full object-cover"
+                        onerror="this.hidden=true; this.nextElementSibling.hidden=false">
+                    <span hidden class="font-outfit text-2xl font-bold text-sky-300">RS</span>
+                </div>
+                <h2 class="font-outfit text-2xl font-bold mb-3 text-white">
+                    Robot Model Select
+                </h2>
+                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
+                    INOVANCE 로봇의 라인업을 확인하세요. 선택한 모델과 옵션 구성을 PDF로 저장하여 발주시 활용할 수 있습니다.
+                    또한 2D, 3D CAD 파일도 다운로드 받을 수 있습니다.
+                </p>
+                <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
+                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg"
+                        data-site-card-version="robotSelect">Ver</span>
+                    <button type="button" class="history-button" data-history-card="robotSelect"
+                        aria-label="Robot Model Select 버전 기록 보기">
+                        <i data-lucide="history" class="w-3.5 h-3.5"></i>
+                        버전 기록
+                    </button>
+                </div>
+            </a>
+
+            <!-- 2. Robot 3D Viewer Card (가운데 위치) -->
+            <a href="./2_Robot3DViewer/" class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8"
+                style="animation: fadeInUp 0.5s ease 0.2s forwards; text-decoration: none;">
+                <div
+                    class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
+                    <i data-lucide="box" class="w-8 h-8 text-white"></i>
+                </div>
+                <h2 class="font-outfit text-2xl font-bold mb-3 text-white">
+                    Robot 3D Viewer
+                </h2>
+                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
+                    INOVANCE 로봇 3D 모델링을 웹 브라우저에서 확인하고, CAD 파일을 다운로드 받으세요.
+                </p>
+                <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
+                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20"
+                        data-site-card-version="robot3dViewer">Ver</span>
+                    <button type="button" class="history-button" data-history-card="robot3dViewer"
+                        aria-label="Robot 3D Viewer 버전 기록 보기">
+                        <i data-lucide="history" class="w-3.5 h-3.5"></i>
+                        버전 기록
+                    </button>
+                </div>
+            </a>
+
+            <!-- 3. Tool Select Card -->
+            <a href="./3_ToolSelector/" class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8"
+                style="animation: fadeInUp 0.5s ease 0.3s forwards; text-decoration: none;">
+                <div
+                    class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
+                    <i data-lucide="wrench" class="w-8 h-8 text-white"></i>
+                </div>
+                <h2 class="font-outfit text-2xl font-bold mb-3 text-white">
+                    Tool Selector
+                </h2>
+                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
+                    로봇 Tool 부하 조건에 따른 모델 적합성을 판정합니다. 관성 모멘트 및 허용 하중을 계산하여 최적의 모델을 선택하세요.
+                </p>
+                <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
+                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20"
+                        data-site-card-version="toolSelector">Ver</span>
+                    <button type="button" class="history-button" data-history-card="toolSelector"
+                        aria-label="Robot Tool Selector 버전 기록 보기">
+                        <i data-lucide="history" class="w-3.5 h-3.5"></i>
+                        버전 기록
+                    </button>
+                </div>
+            </a>
+
+            <!-- 4. Project Generator Card -->
+            <a href="./4_ProjectGenerator/"
+                class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8"
+                style="animation: fadeInUp 0.5s ease 0.4s forwards; text-decoration: none;">
+
+                <div
+                    class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
+                    <img src="/project_gen_icon_simple_1774428268885.png" alt="Project Generator"
+                        class="w-full h-full object-cover"
+                        onerror="this.hidden=true; this.nextElementSibling.hidden=false">
+                    <span hidden class="font-outfit text-2xl font-bold text-emerald-300">PG</span>
+                </div>
+                <h2 class="font-outfit text-2xl font-bold mb-3 text-white">
+                    Project Generator
+                </h2>
+                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
+                    로봇 모델과 공정 구성을 선택하면, 컨트롤러에 바로 적용 가능한 프로젝트 파일 구조를 자동으로 생성합니다. 번거로운 초기 설정 없이 티칭 수정만으로 프로그램을 바로 완성해보세요.
+                </p>
+
+                <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
+                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg"
+                        data-site-card-version="projectGenerator">Ver</span>
+                    <button type="button" class="history-button" data-history-card="projectGenerator"
+                        aria-label="Project Generator 버전 기록 보기">
+                        <i data-lucide="history" class="w-3.5 h-3.5"></i>
+                        버전 기록
+                    </button>
+                </div>
+            </a>
+
+            <!-- 5. Software Card -->
+            <a href="./5_Software/" class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8"
+                style="animation: fadeInUp 0.5s ease 0.5s forwards; text-decoration: none;">
+                <div
+                    class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
+                    <i data-lucide="monitor" class="w-8 h-8 text-white"></i>
+                </div>
+                <h2 class="font-outfit text-2xl font-bold mb-3 text-white">
+                    Software
+                </h2>
+                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
+                    로봇 제어 및 설정을 위한 최신 소프트웨어를 다운로드할 수 있습니다.
+                </p>
+                <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
+                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20"
+                        data-site-card-version="software">Ver</span>
+                    <button type="button" class="history-button" data-history-card="software"
+                        aria-label="Software 버전 기록 보기">
+                        <i data-lucide="history" class="w-3.5 h-3.5"></i>
+                        버전 기록
+                    </button>
+                </div>
+            </a>
+
+            <!-- 6. Document Card -->
+            <a href="./6_Document/" class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8"
+                style="animation: fadeInUp 0.5s ease 0.6s forwards; text-decoration: none;">
+                <div
+                    class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
+                    <i data-lucide="book-open" class="w-8 h-8 text-white"></i>
+                </div>
+                <h2 class="font-outfit text-2xl font-bold mb-3 text-white">
+                    Document
+                </h2>
+                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
+                    로봇 매뉴얼, 교육자료, 인증서, 통신 프로파일 다운로드 및 조회
+                </p>
+                <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
+                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20"
+                        data-site-card-version="manual">Ver</span>
+                    <button type="button" class="history-button" data-history-card="manual"
+                        aria-label="Document 버전 기록 보기">
+                        <i data-lucide="history" class="w-3.5 h-3.5"></i>
+                        버전 기록
+                    </button>
+                </div>
+            </a>
+
+            <!-- 7. Debugging Tool Card -->
+            <a href="./7_DebuggingTool/"
+                class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8"
+                style="animation: fadeInUp 0.5s ease 0.7s forwards; text-decoration: none;">
+                <div
+                    class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
+                    <i data-lucide="bug" class="w-8 h-8 text-white"></i>
+                </div>
+                <h2 class="font-outfit text-2xl font-bold mb-3 text-white" data-i18n-skip>
+                    Debugging Tool
+                </h2>
+                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
+                    로봇 디버깅 및 트러블 슈팅에 유용한 툴을 지원합니다.
+                </p>
+                <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
+                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20"
+                        data-site-card-version="debuggingTool">Ver</span>
+                    <button type="button" class="history-button" data-history-card="debuggingTool"
+                        aria-label="Debugging Tool 버전 기록 보기">
+                        <i data-lucide="history" class="w-3.5 h-3.5"></i>
+                        버전 기록
+                    </button>
+                </div>
+            </a>
+
+        </div>
+
+
+
+
+        <!-- Footer removed -->
+    </main>
+
+    <div id="version-history-modal" class="history-modal" aria-hidden="true">
+        <section class="history-dialog" role="dialog" aria-modal="true" aria-labelledby="history-dialog-title">
+            <header class="history-dialog-header">
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2 mb-1 text-sky-400">
+                        <i data-lucide="scroll-text" class="w-4 h-4"></i>
+                        <span class="text-[11px] font-bold uppercase tracking-[0.18em]">Update History</span>
+                    </div>
+                    <h2 id="history-dialog-title" class="font-outfit text-xl md:text-2xl font-bold text-white truncate">
+                        버전 기록
+                    </h2>
+                    <p id="history-current-version" class="mt-1 text-xs font-mono text-slate-500"></p>
+                </div>
+                <button type="button" id="history-close-button" class="history-close-button" aria-label="버전 기록 닫기">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </header>
+            <div id="history-dialog-body" class="history-dialog-body">
+                <p class="history-message">버전 기록을 불러오는 중입니다.</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- Main Footer -->
+    <footer class="mt-20 pb-12 text-center z-10 w-full animate-fade-in" style="animation: fadeIn 1.5s ease forwards;">
+        <div
+            class="flex flex-col items-center justify-center gap-2 opacity-40 hover:opacity-90 transition-opacity duration-500 cursor-default">
+            <p class="text-xs font-outfit tracking-wider text-slate-400">
+                &copy; 2026 <span class="text-slate-200">INOVANCE Robot Assistant</span>. All rights reserved.
+            </p>
+            <p class="text-[11px] font-medium text-slate-500">
+                Designed & Developed by <span class="text-sky-400/80">Jeongchan Lee</span>
+            </p>
+            <p class="text-[9px] font-mono text-slate-600 mt-2 uppercase tracking-widest">
+                SYS ID:
+                <span id="visit-count"
+                    class="inline-flex align-middle ml-2 rounded border border-white/10 bg-slate-900/60 px-2 py-0.5 text-slate-400">visits 721</span>
+            </p>
+        </div>
+    </footer>
+
+    <style>
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(2rem);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+
+    <script src="./site-card-versions.js?v=20260715-1"></script>
+    <script src="./site-card-history-data.js?v=20260715-1"></script>
+    <script src="./site-card-history.js"></script>
+    <script>
+        // Keep the main-site card versions in one place.
+        const siteCardVersions = window.SITE_CARD_VERSIONS || {};
+        document.querySelectorAll('[data-site-card-version]').forEach((badge) => {
+            const version = siteCardVersions[badge.dataset.siteCardVersion];
+            if (version) {
+                const displayVersion = String(version).replace(/^(\d{2}\.\d{2}\.\d{2})\.\d+$/, '$1');
+                badge.textContent = `Ver ${displayVersion}`;
+            }
+        });
+
+        const visitCounterStart = 721;
+        const visitCounterUrl = 'https://ino-robot-display-auth.hois56.workers.dev/visit';
+        const visitCounter = document.getElementById('visit-count');
+
+        function renderVisitCount(total) {
+            const count = Math.max(visitCounterStart, Number(total) || visitCounterStart);
+            visitCounter.textContent = `visits ${count.toLocaleString('en-US')}`;
+        }
+
+        renderVisitCount(visitCounterStart);
+
+        fetch(visitCounterUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                page_path: window.location.pathname,
+                page_title: document.title,
+                referrer: document.referrer
+            }),
+            cache: 'no-store'
+        })
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+                if (data && data.ok) {
+                    renderVisitCount(data.total);
+                }
+            })
+            .catch(() => {
+                renderVisitCount(visitCounterStart);
+            });
+
+        // Initialize Icons, or retain the local text fallback when the CDN is unavailable.
+        if (window.lucide) {
+            lucide.createIcons();
+        } else if (window.InoRobotIconFallback) {
+            window.InoRobotIconFallback.apply(document);
+        }
+
+        // Optional: Add subtle mouse movement effect to cards
+        document.addEventListener('mousemove', (e) => {
+            const cards = document.querySelectorAll('.glass-card');
+            cards.forEach(card => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                // Simple glow follow effect on hover inner
+                card.style.setProperty('--mouse-x', `${x}px`);
+                card.style.setProperty('--mouse-y', `${y}px`);
+            });
+        });
+    </script>
+</body>
+
+</html>
