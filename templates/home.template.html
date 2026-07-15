@@ -413,8 +413,8 @@
         /* Critical landing-page placement: remains top-right even if shared CSS is delayed. */
         #inorobot-language-switcher[data-landing="true"] {
             position: fixed !important;
-            top: calc(14px + env(safe-area-inset-top, 0px)) !important;
-            right: calc(14px + env(safe-area-inset-right, 0px)) !important;
+            top: calc(16px + env(safe-area-inset-top, 0px)) !important;
+            right: 18px !important;
             bottom: auto !important;
             left: auto !important;
             margin: 0 !important;
@@ -747,7 +747,8 @@
         document.querySelectorAll('[data-site-card-version]').forEach((badge) => {
             const version = siteCardVersions[badge.dataset.siteCardVersion];
             if (version) {
-                badge.textContent = `Ver ${version}`;
+                const displayVersion = String(version).replace(/^(\d{2}\.\d{2}\.\d{2})\.\d+$/, '$1');
+                badge.textContent = `Ver ${displayVersion}`;
             }
         });
 

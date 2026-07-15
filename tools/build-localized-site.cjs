@@ -47,7 +47,8 @@ function injectCardVersions(html, versions) {
         /(<span\b[^>]*data-site-card-version=["']([^"']+)["'][^>]*>)[\s\S]*?(<\/span>)/g,
         (match, open, key, close) => {
             if (!versions[key]) throw new Error('Missing site card version: ' + key);
-            return open + 'Ver ' + versions[key] + close;
+            const displayVersion = String(versions[key]).replace(/^(\d{2}\.\d{2}\.\d{2})\.\d+$/, '$1');
+            return open + 'Ver ' + displayVersion + close;
         }
     );
 }

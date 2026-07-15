@@ -37,8 +37,8 @@ html:lang(zh-CN) body {
 }
 
 .inorobot-language-switcher[data-landing="true"] {
-    top: calc(14px + env(safe-area-inset-top, 0px)) !important;
-    right: calc(14px + env(safe-area-inset-right, 0px)) !important;
+    top: calc(16px + env(safe-area-inset-top, 0px)) !important;
+    right: 18px !important;
 }
 
 .inorobot-language-switcher[data-embedded="true"] {

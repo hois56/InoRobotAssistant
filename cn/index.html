@@ -416,8 +416,8 @@
         /* Critical landing-page placement: remains top-right even if shared CSS is delayed. */
         #inorobot-language-switcher[data-landing="true"] {
             position: fixed !important;
-            top: calc(14px + env(safe-area-inset-top, 0px)) !important;
-            right: calc(14px + env(safe-area-inset-right, 0px)) !important;
+            top: calc(16px + env(safe-area-inset-top, 0px)) !important;
+            right: 18px !important;
             bottom: auto !important;
             left: auto !important;
             margin: 0 !important;
@@ -517,7 +517,7 @@
                 </p>
                 <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
                     <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg"
-                        data-site-card-version="robotSelect">Ver 26.06.19.01</span>
+                        data-site-card-version="robotSelect">Ver 26.06.19</span>
                     <button type="button" class="history-button" data-history-card="robotSelect"
                         aria-label="打开机器人型号选择版本记录">
                         <i data-lucide="history" class="w-3.5 h-3.5"></i>
@@ -541,7 +541,7 @@
                 </p>
                 <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
                     <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20"
-                        data-site-card-version="robot3dViewer">Ver 26.07.12.01</span>
+                        data-site-card-version="robot3dViewer">Ver 26.07.12</span>
                     <button type="button" class="history-button" data-history-card="robot3dViewer"
                         aria-label="打开机器人 3D 查看器版本记录">
                         <i data-lucide="history" class="w-3.5 h-3.5"></i>
@@ -565,7 +565,7 @@
                 </p>
                 <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
                     <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20"
-                        data-site-card-version="toolSelector">Ver 26.04.26.01</span>
+                        data-site-card-version="toolSelector">Ver 26.04.26</span>
                     <button type="button" class="history-button" data-history-card="toolSelector"
                         aria-label="打开机器人 Tool 选择器版本记录">
                         <i data-lucide="history" class="w-3.5 h-3.5"></i>
@@ -595,7 +595,7 @@
 
                 <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
                     <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg"
-                        data-site-card-version="projectGenerator">Ver 26.07.12.01</span>
+                        data-site-card-version="projectGenerator">Ver 26.07.12</span>
                     <button type="button" class="history-button" data-history-card="projectGenerator"
                         aria-label="打开项目生成器版本记录">
                         <i data-lucide="history" class="w-3.5 h-3.5"></i>
@@ -619,7 +619,7 @@
                 </p>
                 <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
                     <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20"
-                        data-site-card-version="software">Ver 26.06.19.01</span>
+                        data-site-card-version="software">Ver 26.06.19</span>
                     <button type="button" class="history-button" data-history-card="software"
                         aria-label="打开软件版本记录">
                         <i data-lucide="history" class="w-3.5 h-3.5"></i>
@@ -643,7 +643,7 @@
                 </p>
                 <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
                     <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20"
-                        data-site-card-version="manual">Ver 26.06.23.01</span>
+                        data-site-card-version="manual">Ver 26.06.23</span>
                     <button type="button" class="history-button" data-history-card="manual"
                         aria-label="打开文档版本记录">
                         <i data-lucide="history" class="w-3.5 h-3.5"></i>
@@ -668,7 +668,7 @@
                 </p>
                 <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
                     <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20"
-                        data-site-card-version="debuggingTool">Ver 26.07.15.01</span>
+                        data-site-card-version="debuggingTool">Ver 26.07.15</span>
                     <button type="button" class="history-button" data-history-card="debuggingTool"
                         aria-label="打开 Debugging Tool 版本记录">
                         <i data-lucide="history" class="w-3.5 h-3.5"></i>
@@ -759,7 +759,8 @@
         document.querySelectorAll('[data-site-card-version]').forEach((badge) => {
             const version = siteCardVersions[badge.dataset.siteCardVersion];
             if (version) {
-                badge.textContent = `Ver ${version}`;
+                const displayVersion = String(version).replace(/^(\d{2}\.\d{2}\.\d{2})\.\d+$/, '$1');
+                badge.textContent = `Ver ${displayVersion}`;
             }
         });
 
