@@ -1,0 +1,6 @@
+# Local extracted software and runtime logs are intentionally not versioned.
+/Software/InoRobotLab/InoRobotLab_V4R24C4SPC21_x64/
+/Software/InoRobotLab/Log/
+
+# Microsoft Office temporary lock files.
+~$*.xlsx
