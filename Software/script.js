@@ -61,6 +61,10 @@ const softwareGroups = [
     }
 ];
 
+function translateUiText(value) {
+    return window.InoRobotI18n ? window.InoRobotI18n.translate(String(value || '')) : String(value || '');
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     init();
@@ -70,6 +74,10 @@ function init() {
     renderSoftwareList('all');
     setupFilters();
     setupSearch();
+    document.addEventListener('inorobot:languagechange', () => {
+        const activeFilter = document.querySelector('.filter-btn.active')?.dataset.type || 'all';
+        renderSoftwareList(activeFilter, document.getElementById('softwareSearch').value);
+    });
     if(window.lucide) lucide.createIcons();
 }
 
@@ -92,7 +100,8 @@ function renderSoftwareList(filterType = 'all', searchTerm = '') {
             // 검색 가공
             const isMatch = group.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           ver.tagName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          ver.description.toLowerCase().includes(searchTerm.toLowerCase());
+                          ver.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          translateUiText(ver.description).toLowerCase().includes(searchTerm.toLowerCase());
             
             if (!isMatch) return;
             matchCount++;
@@ -192,7 +201,7 @@ const WORKER_URL = 'https://ino-robot-display-auth.hois56.workers.dev/';
  */
 async function handleDownload(path, isLocked) {
     if (isLocked) {
-        const password = prompt("[기능 제한 안내] 이 버전은 전용 배포판입니다. 비밀번호를 입력해 주세요:");
+        const password = prompt(translateUiText("[기능 제한 안내] 이 버전은 전용 배포판입니다. 비밀번호를 입력해 주세요:"));
         if (password === null) return;
 
         try {
@@ -206,10 +215,10 @@ async function handleDownload(path, isLocked) {
             if (data.ok) {
                 downloadFile(data.url);
             } else {
-                alert(data.message || "비밀번호가 올바르지 않습니다. 관리자에게 문의하세요.");
+                alert(translateUiText("비밀번호가 올바르지 않습니다. 관리자에게 문의하세요."));
             }
         } catch {
-            alert("서버 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+            alert(translateUiText("서버 연결에 실패했습니다. 잠시 후 다시 시도해 주세요."));
         }
     } else {
         const lfsUrl = `https://media.githubusercontent.com/media/hois56/InoRobotAssistant/main/Software/${path}`;

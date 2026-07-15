@@ -31,8 +31,29 @@
     const markdownPromises = {};
     let lastFocusedElement = null;
     let previousBodyOverflow = '';
+    let activeToolKey = null;
+
+    function extractLocalizedToolHistory(markdown, toolKey) {
+        const lines = String(markdown || '').split(/\r?\n/);
+        const startIndex = lines.findIndex((line) => line.trim() === '## ' + toolKey);
+        if (startIndex < 0) return '';
+        let endIndex = lines.length;
+        for (let index = startIndex + 1; index < lines.length; index += 1) {
+            if (lines[index].trim().startsWith('## ')) {
+                endIndex = index;
+                break;
+            }
+        }
+        return lines.slice(startIndex + 1, endIndex).join('\n');
+    }
 
     function getEmbeddedMarkdown(toolKey) {
+        const locale = window.InoRobotI18n?.locale || 'ko';
+        const localized = window.INOROBOT_LOCALES?.[locale]?.debugHistoryMarkdown;
+        if (locale !== 'ko' && localized) {
+            return extractLocalizedToolHistory(localized, toolKey);
+        }
+
         const encoded = window.DEBUGGING_HISTORY_DATA?.[toolKey];
         if (!encoded) return null;
 
@@ -50,8 +71,13 @@
 
         const tool = tools[toolKey];
         const embeddedMarkdown = getEmbeddedMarkdown(toolKey);
+        const locale = window.InoRobotI18n?.locale || 'ko';
 
-        if (window.location.protocol === 'file:') {
+        if (locale !== 'ko') {
+            markdownPromises[toolKey] = embeddedMarkdown
+                ? Promise.resolve(embeddedMarkdown)
+                : Promise.reject(new Error('Localized history data is unavailable'));
+        } else if (window.location.protocol === 'file:') {
             markdownPromises[toolKey] = embeddedMarkdown
                 ? Promise.resolve(embeddedMarkdown)
                 : Promise.reject(new Error('Embedded history data is unavailable'));
@@ -105,7 +131,8 @@
             if (!versionBlock || !trimmed.startsWith('- ')) return;
 
             const rawEntry = trimmed.slice(2).trim();
-            const tagMatch = rawEntry.match(/^`\[([^\]]+)\]`\s*(.*)$/);
+            const tagMatch = rawEntry.match(/^`\[([^\]]+)\]`\s*(.*)$/)
+                || rawEntry.match(/^\*\*\[([^\]]+)\]\*\*\s*(.*)$/);
             const tagName = tagMatch ? tagMatch[1] : '안내';
             const description = tagMatch ? tagMatch[2] : rawEntry;
             const entry = document.createElement('div');
@@ -156,6 +183,7 @@
         const tool = tools[toolKey];
         if (!tool) return;
 
+        activeToolKey = toolKey;
         lastFocusedElement = trigger;
         title.textContent = tool.title;
         currentVersion.textContent = trigger.dataset.currentVersion
@@ -181,5 +209,18 @@
     });
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && modal.classList.contains('is-open')) closeModal();
+    });
+
+    document.addEventListener('inorobot:languagechange', async () => {
+        Object.keys(markdownPromises).forEach((key) => delete markdownPromises[key]);
+        if (!activeToolKey || !modal.classList.contains('is-open')) return;
+        const tool = tools[activeToolKey];
+        title.textContent = tool.title;
+        renderMessage('버전 기록을 불러오는 중입니다.');
+        try {
+            renderHistory(await loadMarkdown(activeToolKey));
+        } catch {
+            renderMessage('버전 기록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+        }
     });
 })();
