@@ -23,8 +23,13 @@
     let historyMarkdownPromise = null;
     let lastFocusedElement = null;
     let previousBodyOverflow = '';
+    let activeCardKey = null;
 
     function getEmbeddedHistoryMarkdown() {
+        const locale = window.InoRobotI18n?.locale || 'ko';
+        const localized = window.INOROBOT_LOCALES?.[locale]?.historyMarkdown;
+        if (locale !== 'ko' && localized) return localized;
+
         const encoded = window.SITE_CARD_HISTORY_MARKDOWN_BASE64;
         if (!encoded) return null;
 
@@ -40,8 +45,13 @@
     function loadHistoryMarkdown() {
         if (!historyMarkdownPromise) {
             const embeddedMarkdown = getEmbeddedHistoryMarkdown();
+            const locale = window.InoRobotI18n?.locale || 'ko';
 
-            if (window.location.protocol === 'file:') {
+            if (locale !== 'ko') {
+                historyMarkdownPromise = embeddedMarkdown
+                    ? Promise.resolve(embeddedMarkdown)
+                    : Promise.reject(new Error('Localized history data is unavailable'));
+            } else if (window.location.protocol === 'file:') {
                 historyMarkdownPromise = embeddedMarkdown
                     ? Promise.resolve(embeddedMarkdown)
                     : Promise.reject(new Error('Embedded history data is unavailable'));
@@ -115,7 +125,8 @@
             if (!versionBlock || !trimmed.startsWith('- ')) return;
 
             const rawEntry = trimmed.slice(2).trim();
-            const tagMatch = rawEntry.match(/^`\[([^\]]+)\]`\s*(.*)$/);
+            const tagMatch = rawEntry.match(/^`\[([^\]]+)\]`\s*(.*)$/)
+                || rawEntry.match(/^\*\*\[([^\]]+)\]\*\*\s*(.*)$/);
             const tagName = tagMatch ? tagMatch[1] : '안내';
             const description = tagMatch ? tagMatch[2] : rawEntry;
 
@@ -175,6 +186,7 @@
         const heading = cardHeadings[cardKey];
         if (!heading) return;
 
+        activeCardKey = cardKey;
         lastFocusedElement = trigger;
         title.textContent = heading;
 
@@ -208,6 +220,20 @@
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && modal.classList.contains('is-open')) {
             closeModal();
+        }
+    });
+
+    document.addEventListener('inorobot:languagechange', async () => {
+        historyMarkdownPromise = null;
+        if (!activeCardKey || !modal.classList.contains('is-open')) return;
+        const heading = cardHeadings[activeCardKey];
+        title.textContent = heading;
+        renderMessage('버전 기록을 불러오는 중입니다.');
+        try {
+            const markdown = await loadHistoryMarkdown();
+            renderHistory(extractCardSection(markdown, heading));
+        } catch {
+            renderMessage('버전 기록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
         }
     });
 })();

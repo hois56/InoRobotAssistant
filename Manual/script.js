@@ -600,6 +600,10 @@ function hasCategory(man, category) {
     return getCategories(man).includes(category);
 }
 
+function translateUiText(value) {
+    return window.InoRobotI18n ? window.InoRobotI18n.translate(String(value || '')) : String(value || '');
+}
+
 function getManualTagLabel(man) {
     const categories = getCategories(man);
     const certificateCategory = categories.find(cat => cat.startsWith('cert-'));
@@ -623,6 +627,7 @@ function init() {
     renderManuals();
     setupFilters();
     setupSearch();
+    document.addEventListener('inorobot:languagechange', renderManuals);
     if(window.lucide) lucide.createIcons();
 }
 
@@ -668,7 +673,9 @@ function renderManuals() {
 
         const matchesSearch = man.title.toLowerCase().includes(searchTerm) ||
                              man.description.toLowerCase().includes(searchTerm) ||
-                             man.path.toLowerCase().includes(searchTerm);
+                             man.path.toLowerCase().includes(searchTerm) ||
+                             translateUiText(man.title).toLowerCase().includes(searchTerm) ||
+                             translateUiText(man.description).toLowerCase().includes(searchTerm);
         return matchesSearch;
     });
 
@@ -787,7 +794,7 @@ async function handleView(id) {
     if (!man) return;
 
     if (man.isLocked) {
-        const password = prompt("[보안 안내] 이 자료는 열람이 제한되어 있습니다. 비밀번호를 입력해 주세요:");
+        const password = prompt(translateUiText("[보안 안내] 이 자료는 열람이 제한되어 있습니다. 비밀번호를 입력해 주세요:"));
         if (password === null) return;
 
         // 팝업 차단 방지: 사용자 제스처 시점에 미리 창 열기
@@ -805,13 +812,13 @@ async function handleView(id) {
             if (contentType.includes('application/json')) {
                 const data = await res.json();
                 win.close();
-                alert(data.message || "비밀번호가 올바르지 않습니다.");
+                alert(translateUiText("비밀번호가 올바르지 않습니다."));
                 return;
             }
 
             if (!res.ok) {
                 win.close();
-                alert("파일을 불러오는데 실패했습니다.");
+                alert(translateUiText("파일을 불러오는데 실패했습니다."));
                 return;
             }
 
@@ -820,7 +827,8 @@ async function handleView(id) {
             win.location.href = blobUrl;
         } catch (e) {
             win.close();
-            alert("서버 연결에 실패했습니다: " + e.message);
+            console.error('Manual view request failed:', e);
+            alert(translateUiText("서버 연결에 실패했습니다."));
         }
     } else {
         window.open(resolveManualUrl(man.path), '_blank');
@@ -832,7 +840,7 @@ async function handleDownload(id) {
     if (!man) return;
 
     if (man.isLocked) {
-        const password = prompt("[보안 안내] 이 자료는 다운로드가 제한되어 있습니다. 비밀번호를 입력해 주세요:");
+        const password = prompt(translateUiText("[보안 안내] 이 자료는 다운로드가 제한되어 있습니다. 비밀번호를 입력해 주세요:"));
         if (password === null) return;
 
         try {
@@ -846,10 +854,10 @@ async function handleDownload(id) {
             if (data.ok) {
                 downloadFile(data.url);
             } else {
-                alert(data.message || "비밀번호가 올바르지 않습니다.");
+                alert(translateUiText("비밀번호가 올바르지 않습니다."));
             }
         } catch {
-            alert("서버 연결에 실패했습니다.");
+            alert(translateUiText("서버 연결에 실패했습니다."));
         }
     } else {
         const path = man.downloadPath || man.path;
