@@ -270,6 +270,13 @@
                 select.appendChild(option);
             });
 
+            container.append(icon, select);
+            document.body.appendChild(container);
+        }
+
+        const select = container.querySelector('select');
+        if (!select) return;
+        if (select.dataset.localeListener !== 'true') {
             select.addEventListener('change', function () {
                 const nextLocale = select.value;
                 if (!SUPPORTED_LOCALES.includes(nextLocale)) return;
@@ -280,14 +287,11 @@
                     setLocale(nextLocale);
                 }
             });
-
-            container.append(icon, select);
-            document.body.appendChild(container);
+            select.dataset.localeListener = 'true';
         }
-
-        const select = container.querySelector('select');
         select.value = currentLocale;
         select.setAttribute('aria-label', t('common.languageSelector'));
+        container.setAttribute('aria-label', t('common.languageSelector'));
         container.dataset.landing = isLandingPage() ? 'true' : 'false';
     }
 
