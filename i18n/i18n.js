@@ -250,10 +250,10 @@
             container.id = 'inorobot-language-switcher';
             container.className = 'inorobot-language-switcher';
 
-            const icon = document.createElement('span');
-            icon.className = 'inorobot-language-icon';
-            icon.setAttribute('aria-hidden', 'true');
-            icon.textContent = '文';
+            const label = document.createElement('span');
+            label.className = 'inorobot-language-label';
+            label.setAttribute('aria-hidden', 'true');
+            label.textContent = 'Language';
 
             const select = document.createElement('select');
             select.id = 'inorobot-language-select';
@@ -270,7 +270,7 @@
                 select.appendChild(option);
             });
 
-            container.append(icon, select);
+            container.append(label, select);
             document.body.appendChild(container);
         }
 

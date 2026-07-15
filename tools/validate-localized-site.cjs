@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
 const localeCodes = ['ko', 'en', 'zh-CN', 'vi'];
@@ -36,6 +37,39 @@ function parseSiteCardVersions(source) {
 
 function escapeRegExp(value) {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function validateStandaloneLanguageSwitch(html, file) {
+    const match = html.match(/<script>\s*\/\/ Keep route switching functional[^\r\n]*\r?\n([\s\S]*?)<\/script>/);
+    assert(Boolean(match), file + ' is missing the executable standalone language handler.');
+    if (!match) return;
+
+    let changeHandler = null;
+    const writes = [];
+    const assignments = [];
+    const select = {
+        value: 'ko',
+        dataset: {},
+        addEventListener(eventName, handler) {
+            if (eventName === 'change') changeHandler = handler;
+        }
+    };
+    vm.runInNewContext(match[1], {
+        document: { getElementById: id => id === 'inorobot-language-select' ? select : null },
+        window: {
+            sessionStorage: { setItem: (key, value) => writes.push([key, value]) },
+            location: { assign: value => assignments.push(value) }
+        }
+    });
+
+    assert(select.dataset.localeListener === 'true' && typeof changeHandler === 'function', file + ' does not attach the language change event.');
+    if (typeof changeHandler !== 'function') return;
+    Object.entries({ ko: '/', en: '/en/', 'zh-CN': '/cn/', vi: '/vn/' }).forEach(([locale, route]) => {
+        select.value = locale;
+        changeHandler();
+        assert(assignments.at(-1) === route, file + ' does not navigate ' + locale + ' to ' + route + '.');
+        assert(writes.at(-1).join('|') === 'inorobot.locale|' + locale, file + ' does not persist the ' + locale + ' session locale.');
+    });
 }
 
 function loadMergedLocale(code) {
@@ -108,6 +142,11 @@ routes.forEach(route => {
     assert(html.includes('/i18n/locales-data.js') && html.includes('/i18n/i18n.js'), route.file + ' is missing the i18n runtime.');
     assert(html.includes('/i18n/icon-fallback.js'), route.file + ' is missing the local icon fallback.');
     assert(html.includes('id="inorobot-language-switcher"') && html.includes('id="inorobot-language-select"'), route.file + ' is missing the top-right language UI.');
+    assert(html.includes('<span class="inorobot-language-label" aria-hidden="true">Language</span>'), route.file + ' does not show the Language label.');
+    assert(!html.includes('>文</span>'), route.file + ' still shows the Chinese language symbol.');
+    assert(html.includes('position: fixed !important') && html.includes('right: calc(14px + env(safe-area-inset-right, 0px)) !important'), route.file + ' does not force the language UI to the upper-right corner.');
+    assert(html.includes("const routes = { ko: '/', en: '/en/', 'zh-CN': '/cn/', vi: '/vn/' }") && html.includes('window.location.assign(target)'), route.file + ' is missing the standalone route switch handler.');
+    validateStandaloneLanguageSwitch(html, route.file);
     assert(html.includes('<option value="' + route.locale + '" selected>'), route.file + ' does not preselect its route language.');
     assert(/<h2[^>]*data-i18n-skip[^>]*>\s*Debugging Tool\s*<\/h2>/.test(html), route.file + ' translates the Debugging Tool card name.');
     Object.entries(siteCardVersions).forEach(([key, version]) => {
@@ -150,8 +189,9 @@ assert(runtime.includes("return readSessionLocale() || DEFAULT_LOCALE"), 'Direct
 assert(runtime.includes("'/kr/': 'ko'") && runtime.includes("'/cn/': 'zh-CN'") && runtime.includes("'/vn/': 'vi'"), 'Landing route map is incomplete.');
 assert(runtime.includes('function formatNumber') && runtime.includes('function formatDate'), 'Locale number/date formatters are missing.');
 assert(runtime.includes('window.location.assign(LANDING_ROUTES[nextLocale])'), 'Landing language changes do not navigate to their localized route.');
+assert(runtime.includes("label.textContent = 'Language'") && !runtime.includes("icon.textContent = '文'"), 'Runtime language switcher has the wrong label.');
 const localeStyles = read('i18n/i18n.css');
-assert(localeStyles.includes('position: fixed') && localeStyles.includes('right: 18px'), 'The language UI is not fixed to the upper-right corner.');
+assert(localeStyles.includes('position: fixed !important') && localeStyles.includes('right: 18px !important') && localeStyles.includes('left: auto !important'), 'The language UI is not fixed to the upper-right corner.');
 
 const protectedScripts = read('Manual/script.js') + '\n' + read('Software/script.js');
 assert(!protectedScripts.includes('data.message ||'), 'A raw server error message can still be shown to users.');
