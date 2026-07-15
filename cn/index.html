@@ -14,7 +14,7 @@
     {
       "@context" : "https://schema.org",
       "@type" : "WebSite",
-      "name" : "汇川技术韩国",
+      "name" : "이노밴스 테크놀로지 코리아",
       "url" : "https://inovancerobot.com/"
     }
     </script>
@@ -431,6 +431,17 @@
 </head>
 
 <body class="relative flex flex-col items-center justify-center min-h-screen p-6">
+    <div id="inorobot-language-switcher" class="inorobot-language-switcher" data-landing="true"
+        data-i18n-skip aria-label="언어 선택">
+        <span class="inorobot-language-icon" aria-hidden="true">文</span>
+        <select id="inorobot-language-select" class="inorobot-language-select" aria-label="언어 선택">
+            <option value="ko">한국어</option>
+            <option value="en">English</option>
+            <option value="zh-CN" selected>简体中文</option>
+            <option value="vi">Tiếng Việt</option>
+        </select>
+    </div>
+
     <!-- Ambient background glow -->
     <div class="ambient-glow"></div>
 
@@ -450,7 +461,7 @@
             </p>
         </header>
 
-        <!-- 工具 Cards -->
+        <!-- Tool Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
 
             <!-- 1. Robot Selector Card -->
@@ -458,11 +469,11 @@
                 style="animation: fadeInUp 0.5s ease 0.1s forwards; text-decoration: none;">
                 <div
                     class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
-                    <img src="./robot_select_icon_simple_1774428251953.png" alt="机器人型号 Select"
+                    <img src="./robot_select_icon_simple_1774428251953.png" alt="Robot Model Select"
                         class="w-full h-full object-cover">
                 </div>
                 <h2 class="font-outfit text-2xl font-bold mb-3 text-white">
-                    机器人型号 Select
+                    Robot Model Select
                 </h2>
                 <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
                     浏览 INOVANCE 机器人产品系列。可将所选型号与选项保存为订购用 PDF，并下载 2D、3D CAD 文件。
@@ -502,24 +513,24 @@
                 </div>
             </a>
 
-            <!-- 3. 工具 Select Card -->
-            <a href="./InoRobot工具Select/" class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8"
+            <!-- 3. Tool Select Card -->
+            <a href="./InoRobotToolSelect/" class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8"
                 style="animation: fadeInUp 0.5s ease 0.3s forwards; text-decoration: none;">
                 <div
                     class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
                     <i data-lucide="wrench" class="w-8 h-8 text-white"></i>
                 </div>
                 <h2 class="font-outfit text-2xl font-bold mb-3 text-white">
-                    工具 Selector
+                    Tool Selector
                 </h2>
                 <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
-                    根据 工具 负载条件评估机器人适用性，并通过转动惯量与允许负载计算选择最佳型号。
+                    根据 Tool 负载条件评估机器人适用性，并通过转动惯量与允许负载计算选择最佳型号。
                 </p>
                 <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
                     <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20"
                         data-site-card-version="toolSelector">Ver</span>
                     <button type="button" class="history-button" data-history-card="toolSelector"
-                        aria-label="打开机器人 工具 选择器版本记录">
+                        aria-label="打开机器人 Tool 选择器版本记录">
                         <i data-lucide="history" class="w-3.5 h-3.5"></i>
                         版本记录
                     </button>
@@ -602,7 +613,7 @@
                 </div>
             </a>
 
-            <!-- 7. 调试工具 Card -->
+            <!-- 7. Debugging Tool Card -->
             <a href="./DebuggingSupport/"
                 class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8"
                 style="animation: fadeInUp 0.5s ease 0.7s forwards; text-decoration: none;">
@@ -618,8 +629,8 @@
                 </p>
                 <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
                     <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20"
-                        data-site-card-version="debugging工具">Ver</span>
-                    <button type="button" class="history-button" data-history-card="debugging工具"
+                        data-site-card-version="debuggingTool">Ver</span>
+                    <button type="button" class="history-button" data-history-card="debuggingTool"
                         aria-label="打开调试工具版本记录">
                         <i data-lucide="history" class="w-3.5 h-3.5"></i>
                         版本记录
@@ -726,7 +737,7 @@
 
         fetch(visitCounterUrl, {
             method: 'POST',
-            headers: { 'Content-类型': 'application/json' },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 page_path: window.location.pathname,
                 page_title: document.title,
@@ -751,7 +762,7 @@
         document.addEventListener('mousemove', (e) => {
             const cards = document.querySelectorAll('.glass-card');
             cards.forEach(card => {
-                const rect = card.getBounding客户端Rect();
+                const rect = card.getBoundingClientRect();
                 const x = e.clientX - rect.left;
                 const y = e.clientY - rect.top;
 

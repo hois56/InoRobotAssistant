@@ -23,8 +23,8 @@ function getByPath(value, keyPath) {
 }
 
 function loadMergedLocale(code) {
-    const localeDir = path.join(root, 'locales', code);
-    const locale = readJson(path.join('locales', code, 'ui.json'));
+    const localeDir = path.join(root, 'Languge', code);
+    const locale = readJson(path.join('Languge', code, 'ui.json'));
     fs.readdirSync(localeDir)
         .filter(fileName => fileName.endsWith('.json') && fileName !== 'ui.json')
         .sort()
@@ -56,12 +56,13 @@ function visibleHtml(html) {
     return html
         .replace(/<style[\s\S]*?<\/style>/gi, '')
         .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<div id="inorobot-language-switcher"[\s\S]*?<\/div>/gi, '')
         .replace(/<!--[\s\S]*?-->/g, '');
 }
 
 const locales = Object.fromEntries(localeCodes.map(code => [code, loadMergedLocale(code)]));
 
-const jsonFileSets = localeCodes.map(code => fs.readdirSync(path.join(root, 'locales', code))
+const jsonFileSets = localeCodes.map(code => fs.readdirSync(path.join(root, 'Languge', code))
     .filter(fileName => fileName.endsWith('.json'))
     .sort()
     .join('|'));
@@ -83,6 +84,8 @@ routes.forEach(route => {
     assert(html.includes('rel="canonical" href="' + route.canonical + '"'), route.file + ' has the wrong canonical URL.');
     requiredAlternates.forEach(code => assert(html.includes('hreflang="' + code + '"'), route.file + ' is missing hreflang ' + code + '.'));
     assert(html.includes('/i18n/locales-data.js') && html.includes('/i18n/i18n.js'), route.file + ' is missing the i18n runtime.');
+    assert(html.includes('id="inorobot-language-switcher"') && html.includes('id="inorobot-language-select"'), route.file + ' is missing the top-right language UI.');
+    assert(html.includes('<option value="' + route.locale + '" selected>'), route.file + ' does not preselect its route language.');
     if (targetLocaleCodes.includes(route.locale)) {
         assert(!/[가-힣]/.test(visibleHtml(html)), route.file + ' contains Korean visible initial HTML.');
         assert(html.includes('<title>' + locales[route.locale].pages.home.title + '</title>'), route.file + ' has an untranslated title.');
@@ -117,6 +120,8 @@ assert(runtime.includes("const STORAGE_KEY = 'inorobot.locale'"), 'Runtime sessi
 assert(runtime.includes("return readSessionLocale() || DEFAULT_LOCALE"), 'Direct tool access does not default to Korean.');
 assert(runtime.includes("'/kr/': 'ko'") && runtime.includes("'/cn/': 'zh-CN'") && runtime.includes("'/vn/': 'vi'"), 'Landing route map is incomplete.');
 assert(runtime.includes('function formatNumber') && runtime.includes('function formatDate'), 'Locale number/date formatters are missing.');
+const localeStyles = read('i18n/i18n.css');
+assert(localeStyles.includes('position: fixed') && localeStyles.includes('right: 18px'), 'The language UI is not fixed to the upper-right corner.');
 
 const protectedScripts = read('Manual/script.js') + '\n' + read('Software/script.js');
 assert(!protectedScripts.includes('data.message ||'), 'A raw server error message can still be shown to users.');
@@ -135,7 +140,7 @@ assert(zeroCalibration.includes('function calculate(index)') && zeroCalibration.
 const sourceHistory = parseSections(read('UPDATE_HISTORY.md'));
 const cardSections = ['Robot Model Select', 'Robot 3D Viewer', 'Robot Tool Selector', 'Project Generator', 'Software', 'Document', 'Debugging Tool'];
 targetLocaleCodes.forEach(code => {
-    const localized = parseSections(read(path.join('locales', code, 'history.md')));
+    const localized = parseSections(read(path.join('Languge', code, 'history.md')));
     cardSections.forEach(section => {
         assert(Boolean(localized[section]), code + ' history is missing ' + section + '.');
         if (!localized[section]) return;
@@ -151,7 +156,7 @@ const debugSources = {
     projectCompare: parseSections(read('DebuggingSupport/ProjectCompare/업데이트_기록.md'))['Project Compare']
 };
 targetLocaleCodes.forEach(code => {
-    const localized = parseSections(read(path.join('locales', code, 'debug-history.md')));
+    const localized = parseSections(read(path.join('Languge', code, 'debug-history.md')));
     Object.entries(debugSources).forEach(([section, source]) => {
         assert(Boolean(localized[section]), code + ' debugging history is missing ' + section + '.');
         if (!localized[section]) return;

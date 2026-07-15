@@ -16,7 +16,7 @@ Tool pages keep their existing shared URLs. A landing page stores the chosen loc
 
 ## Files to edit
 
-Each locale has its own directory under locales:
+All translator-facing source files are grouped under the Languge directory. Each locale has its own subdirectory:
 
 - ui.json: common text, page metadata, card text, filters, and short UI labels.
 - project.json: Project Generator instructions, option help, chart labels, and preview UI.
@@ -25,7 +25,7 @@ Each locale has its own directory under locales:
 - history.md: home-card update history.
 - debug-history.md: debugging-tool version history.
 
-Korean UI text is the source language. UPDATE_HISTORY.md and each debugging tool's existing Korean update-history file are the canonical Korean version records. The files in locales/ko preserve the same locale-file layout used by translators.
+Korean UI text is the source language. UPDATE_HISTORY.md and each debugging tool's existing Korean update-history file are the canonical Korean version records. The files in Languge/ko preserve the same locale-file layout used by translators.
 
 ## Editing rules
 
