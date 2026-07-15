@@ -1,0 +1,40 @@
+{
+  "FileType": "RobotProjectConfigFile",
+  "Company": "Inovance",
+  "MajorVersion": 2,
+  "MinorVersion": 1,
+  "IsMainActive": true,
+  "MultiTaskCount": 2,
+  "MultiTaskInfos": [
+    {
+      "TaskId": 1,
+      "EnterProgramFile": "PLC_internal.pro",
+      "TaskType": 1,
+      "IsActive": true
+    },
+    {
+      "TaskId": 2,
+      "EnterProgramFile": "PLC_TCP_Speed.pro",
+      "TaskType": 1,
+      "IsActive": true
+    }
+  ],
+  "ProgramFilesCount": 10,
+  "ProgramFiles": [
+    "main.pro",
+    "PLC_internal.pro",
+    "PLC_TCP_Speed.pro",
+    "s01_initial.pro",
+    "s02_offset.pro",
+    "s03_teching_mode.pro",
+    "sP01_Tray_Get.pro",
+    "sP02_Tray_Put.pro",
+    "sP03_Tray_Get.pro",
+    "sP04_Tray_Get.pro"
+  ],
+  "RobPointFilesCount": 2,
+  "RobPointFiles": [
+    "P.pts",
+    "P01.pts"
+  ]
+}
