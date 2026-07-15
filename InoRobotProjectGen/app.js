@@ -131,8 +131,8 @@ function initApp() {
         document.getElementById('optionsModal').classList.remove('hidden');
 
         // Reset description panel
-        document.getElementById('optDescTitle').innerText = "Option Info";
-        document.getElementById('optDescText').innerText = "항목 위에 마우스를 올리면 상세 설명이 표시됩니다.";
+        document.getElementById('optDescTitle').innerText = uiText('Option Info');
+        document.getElementById('optDescText').innerText = uiText('항목 위에 마우스를 올리면 상세 설명이 표시됩니다.');
         const iconBox = document.getElementById('optIconBox');
         iconBox.innerHTML = '<i data-lucide="info" class="w-10 h-10 text-slate-400"></i>';
         if (window.lucide) lucide.createIcons();
@@ -152,8 +152,10 @@ function initApp() {
     const updateOptDesc = (id) => {
         const info = optDescs[id];
         if (info) {
-            document.getElementById('optDescTitle').innerText = info.title;
-            document.getElementById('optDescText').innerHTML = info.text;
+            document.getElementById('optDescTitle').innerText = uiText(info.title);
+            const description = document.getElementById('optDescText');
+            description.innerHTML = info.text;
+            if (window.InoRobotI18n) window.InoRobotI18n.apply(description);
             const iconBox = document.getElementById('optIconBox');
             iconBox.innerHTML = `<i data-lucide="${info.icon}" class="w-10 h-10 text-white"></i>`;
             if (window.lucide) lucide.createIcons();

@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const labelArea = document.createElement('div');
             labelArea.className = 'filter-label';
-            labelArea.textContent = filterCategory.label;
+            labelArea.textContent = uiText(filterCategory.label);
 
             const optionsArea = document.createElement('div');
             optionsArea.className = 'filter-options';
@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const btn = document.createElement('button');
                 btn.className = opt.isSelected ? 'filter-option active' : 'filter-option';
-                btn.textContent = opt.label;
+                btn.textContent = uiText(opt.label);
                 btn.addEventListener('click', () => {
                     toggleFilter(filterCategory.id, opt.id, !opt.isSelected);
                 });
@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (filteredProducts.length === 0) {
-            productContainer.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted)">현재 필터 규칙에 맞는 모델이 없습니다.</div>`;
+            productContainer.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted)">${uiText('현재 필터 규칙에 맞는 모델이 없습니다.')}</div>`;
             return;
         }
 
@@ -225,19 +225,19 @@ document.addEventListener('DOMContentLoaded', () => {
             if (product.specs.Type === 'SCARA') {
                 extraSpecsHTML = `
                     <div class="spec-row">
-                        <span>타입</span>
-                        <span class="spec-value">${scaraSubtype}</span>
+                        <span>${uiText('타입')}</span>
+                        <span class="spec-value">${uiText(scaraSubtype)}</span>
                     </div>
                     <div class="spec-row">
-                        <span>Z축 길이 (mm)</span>
+                        <span>${uiText('Z축 길이 (mm)')}</span>
                         <span class="spec-value">${product.specs['Z axis Length(mm)'] || '-'}</span>
                     </div>
                 `;
             } else if (product.specs.Type === '6-Axis') {
                 extraSpecsHTML = `
                     <div class="spec-row">
-                        <span>중공형</span>
-                        <span class="spec-value">${product.specs['Hollow Wrist'] || '-'}</span>
+                        <span>${uiText('중공형')}</span>
+                        <span class="spec-value">${uiText(product.specs['Hollow Wrist'] || '-')}</span>
                     </div>
                 `;
             }
@@ -247,11 +247,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="product-name" style="pointer-events:none;">${displayName}</div>
                 <div class="product-specs" style="pointer-events:none;">
                     <div class="spec-row">
-                        <span>가반 하중 (kg)</span>
+                        <span>${uiText('가반 하중 (kg)')}</span>
                         <span class="spec-value">${product.specs['Payload(kg)'] || '-'}</span>
                     </div>
                     <div class="spec-row">
-                        <span>리치 (mm)</span>
+                        <span>${uiText('리치 (mm)')}</span>
                         <span class="spec-value">${product.specs['Manipulator Length(mm)'] || '-'}</span>
                     </div>
                     ${extraSpecsHTML}
@@ -1489,6 +1489,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return match ? match[1] + '핀' : null;
         }
 
+        function formatPinCount(pin) {
+            const match = String(pin).match(/^(\d+)핀$/);
+            return match ? `${match[1]} ${uiText('핀')}` : uiText(pin);
+        }
+
         // 2. Arm / Body Cable Logic (Requirement 4)
         if (product.specs.Type === '6-Axis') {
             // Group Arm I/O by pins
@@ -1507,7 +1512,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 Object.keys(pinGroups).forEach(pin => {
                     const groupDiv = document.createElement('div');
                     groupDiv.style.marginBottom = '12px';
-                    groupDiv.innerHTML = `<div style="font-size:12px; margin-bottom:5px; color:#aaa;">${pin} 케이블 선택</div>
+                    groupDiv.innerHTML = `<div style="font-size:12px; margin-bottom:5px; color:#aaa;">${formatPinCount(pin)} ${uiText('케이블 선택')}</div>
                         <div style="display:flex; flex-wrap:wrap; gap:10px;" id="arm-radios-${pin}">
                             <label class="cable-option" style="margin:0;"><input type="radio" name="armSelection_${pin}" value="none" checked><span>사용안함</span></label>
                         </div>`;
@@ -1517,8 +1522,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     pinGroups[pin].forEach(opt => {
                         const isFlex = opt.description.toLowerCase().includes('flexible') && !opt.description.toLowerCase().includes('non-flexible');
                         let displaySpec = opt.spec;
-                        if (opt.spec === '-') displaySpec = '커넥터만';
-                        else displaySpec = `${opt.spec} (${isFlex ? '플렉시블' : '논플렉시블'})`;
+                        if (opt.spec === '-') displaySpec = uiText('커넥터만');
+                        else displaySpec = `${opt.spec} (${uiText(isFlex ? '플렉시블' : '논플렉시블')})`;
 
                         radios.innerHTML += `<label class="cable-option" style="margin:0;"><input type="radio" name="armSelection_${pin}" value="${opt.code}" data-desc="${opt.description}" data-spec="${opt.spec || ''}"><span>${displaySpec}</span></label>`;
                     });
@@ -1544,7 +1549,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 Object.keys(bodyPinGroups).forEach(pin => {
                     const groupDiv = document.createElement('div');
                     groupDiv.style.marginBottom = '12px';
-                    groupDiv.innerHTML = `<div style="font-size:12px; margin-bottom:5px; color:#aaa;">${pin} 케이블 선택</div>
+                    groupDiv.innerHTML = `<div style="font-size:12px; margin-bottom:5px; color:#aaa;">${formatPinCount(pin)} ${uiText('케이블 선택')}</div>
                         <div style="display:flex; flex-wrap:wrap; gap:10px;" id="body-radios-${pin}">
                             <label class="cable-option" style="margin:0;"><input type="radio" name="bodySelection_${pin}" value="none" checked><span>사용안함</span></label>
                         </div>`;
@@ -1554,8 +1559,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     bodyPinGroups[pin].forEach(opt => {
                         const isFlex = opt.description.toLowerCase().includes('flexible') && !opt.description.toLowerCase().includes('non-flexible');
                         let displaySpec = opt.spec;
-                        if (opt.spec === '-') displaySpec = '커넥터만';
-                        else displaySpec = `${opt.spec} (${isFlex ? '플렉시블' : '논플렉시블'})`;
+                        if (opt.spec === '-') displaySpec = uiText('커넥터만');
+                        else displaySpec = `${opt.spec} (${uiText(isFlex ? '플렉시블' : '논플렉시블')})`;
 
                         radios.innerHTML += `<label class="cable-option" style="margin:0;"><input type="radio" name="bodySelection_${pin}" value="${opt.code}" data-desc="${opt.description}" data-spec="${opt.spec || ''}"><span>${displaySpec}</span></label>`;
                     });
@@ -1624,6 +1629,9 @@ document.addEventListener('DOMContentLoaded', () => {
         rightCol.querySelector('#comm-radios').addEventListener('change', updateHeaderCodes);
 
         updateDynamicCode();
+        if (window.InoRobotI18n) {
+            window.InoRobotI18n.apply(modalBody);
+        }
         modalOverlay.style.display = 'flex';
     }
 
@@ -1875,6 +1883,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const generatedAt = window.InoRobotI18n
             ? window.InoRobotI18n.formatDate(new Date(), { dateStyle: 'medium', timeStyle: 'medium' })
             : new Date().toLocaleString('ko-KR');
+        const pdfFooterText = uiText('본 구성서는 선택된 옵션 기반의 가이드입니다. 제조사 사정에 따라 사양이 변경될 수 있습니다. 생성일시:');
 
         pdfContainer.innerHTML = `
             <div style="border-bottom: 2px solid #f7941d; padding-bottom: 15px; margin-bottom: 20px;">
@@ -1928,7 +1937,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </table>
 
             <div style="margin-top: 30px; font-size: 11px; color: #888; text-align: center; border-top: 1px solid #ddd; padding-top: 15px; page-break-inside: avoid;">
-                본 구성서는 선택된 옵션 기반의 가이드입니다. 제조사 사정에 따라 사양이 변경될 수 있습니다. 생성일시: ${generatedAt}
+                ${pdfFooterText} ${generatedAt}
             </div>
         `;
         pdfWrapper.appendChild(pdfContainer);
@@ -2096,6 +2105,11 @@ document.addEventListener('DOMContentLoaded', () => {
             modalOverlay.style.display = 'none';
             currentActiveProduct = null;
         }
+    });
+
+    document.addEventListener('inorobot:languagechange', () => {
+        renderFilters();
+        renderProducts();
     });
 
     renderFilters();

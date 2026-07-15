@@ -155,7 +155,9 @@
     function renderMessage(message) {
         const text = document.createElement('p');
         text.className = 'history-message';
-        text.textContent = message;
+        text.textContent = window.InoRobotI18n
+            ? window.InoRobotI18n.translate(message)
+            : message;
         body.replaceChildren(text);
     }
 

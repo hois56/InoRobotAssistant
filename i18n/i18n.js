@@ -238,7 +238,16 @@
 
     function updateHomeLinks() {
         const homePath = LANDING_ROUTES[currentLocale] || '/';
-        document.querySelectorAll('a[href="/"], a[data-i18n-home-link]').forEach(function (link) {
+        const landingSelectors = [
+            'a[data-i18n-home-link]',
+            'a[href="/"]',
+            'a[href="/kr/"]',
+            'a[href="/en/"]',
+            'a[href="/cn/"]',
+            'a[href="/vn/"]'
+        ];
+        document.querySelectorAll(landingSelectors.join(', ')).forEach(function (link) {
+            link.setAttribute('data-i18n-home-link', '');
             link.setAttribute('href', homePath);
         });
     }
