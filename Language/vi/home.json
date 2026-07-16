@@ -328,6 +328,16 @@
         "title": "Document",
         "versions": [
           {
+            "title": "Ver 26.07.15",
+            "items": [
+              "**[Cập nhật]** Thay hồ sơ truyền thông EtherCAT V1.01 bằng `IRCB50X_SERIES_ECAT_V1.05.xml`.",
+              "**[Thêm]** Thêm hồ sơ truyền thông EtherCAT `IRCB50X_SERIES_ECAT_V1.07.xml` dành cho Display.",
+              "**[Thay đổi]** Đổi nhãn của `Remote Ethernet Control Function User Guide.pdf` từ Common thành API.",
+              "**[Thay đổi]** Đổi nhãn của `Remote IO Control Function User Guide.pdf` và `Remote_IO_List.xlsx` từ Common thành Remote IO.",
+              "**[Thêm]** Thêm `Communication setting Guide.pdf` làm tài liệu truyền thông Common."
+            ]
+          },
+          {
             "title": "Ver 26.06.23.01",
             "items": [
               "**[Thêm]** Thêm thẻ Safety Function vào phần hướng dẫn phần cứng.",
