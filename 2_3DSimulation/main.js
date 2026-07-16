@@ -27,10 +27,11 @@ import {
     calculateMovjDuration,
     calculateMovlDuration,
     calculateDelayDuration,
+    calculateCycleElapsedSeconds,
     createEmptyMotionProgram,
     cloneMotionProgram,
     normalizeMotionProject
-} from './motion-program-core.mjs?v=20260717-cycle-time-command1';
+} from './motion-program-core.mjs?v=20260717-cycle-time-stopwatch2';
 
 function uiText(value) {
     return window.InoRobotI18n ? window.InoRobotI18n.translate(String(value)) : String(value);
@@ -73,6 +74,7 @@ const state = {
     collisionHelpers: new Map(),
     collisionHighlights: new Map(),
     lastCollisionCheck: 0,
+    lastCycleTimeDisplayUpdate: 0,
     pendingImportFile: null,
     occtImporterPromise: null,
     grid: null, baseAxes: null, labels: [],
@@ -206,6 +208,8 @@ const IMPORT_PLACEMENT_COLORS = { tcp: 0xf97316, scene: 0x65a30d };
 const OCCT_IMPORT_BASE_URL = 'https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/';
 const MOTION_PROJECT_STORAGE_KEY = 'inorobot.3d-simulation.motion-project.v1';
 const MOTION_COLLISION_INTERVAL = 100;
+const CYCLE_TIME_DISPLAY_INTERVAL = 50;
+const MAX_MOTION_TRANSITIONS_PER_FRAME = 256;
 const MOTION_MOVL_SAMPLE_DISTANCE = 25;
 const MOTION_MOVL_SAMPLE_ANGLE = 5;
 const PROGRAM_PANEL_MIN_WIDTH = 300;
@@ -2938,6 +2942,27 @@ function formatMotionStepPose(step) {
     return `TCP ${p}`;
 }
 
+function updateCycleTimeReadout(timestamp = performance.now(), force = false) {
+    if (!el.programCycleTime) return;
+    if (!force && timestamp - state.lastCycleTimeDisplayUpdate < CYCLE_TIME_DISPLAY_INTERVAL) return;
+    state.lastCycleTimeDisplayUpdate = timestamp;
+    const robot = state.activeProgramRobot;
+    const program = robot ? ensureMotionProgram(robot) : null;
+    const session = robot ? getMotionSession(robot) : null;
+    const timerNow = session?.status === 'paused' && Number.isFinite(session.pauseStarted)
+        ? session.pauseStarted
+        : timestamp;
+    const elapsed = calculateCycleElapsedSeconds(program?.cycleTimerStartedAt, timerNow);
+    const measuring = elapsed !== null;
+    el.programCycleTime.textContent = measuring
+        ? `${elapsed.toFixed(3)} s`
+        : Number.isFinite(program?.lastCycleTimeSeconds)
+            ? `${program.lastCycleTimeSeconds.toFixed(3)} s`
+            : '-- s';
+    el.programCycleTime.classList.toggle('measuring', measuring);
+    el.programCycleTime.setAttribute('aria-label', measuring ? 'Cycle time measuring' : 'Cycle time');
+}
+
 function renderMotionProgramPanel() {
     if (!el.programRobotList || !el.programStepList) return;
     const robots = getArticulatedRobots();
@@ -2976,15 +3001,7 @@ function renderMotionProgramPanel() {
     const robot = state.activeProgramRobot;
     const program = robot ? ensureMotionProgram(robot) : null;
     el.programRobotName.textContent = robot?.userData.motionDisplayName || 'Select a robot';
-    if (el.programCycleTime) {
-        const measuring = Number.isFinite(program?.cycleTimerStartedAt);
-        el.programCycleTime.textContent = measuring
-            ? 'MEASURING'
-            : Number.isFinite(program?.lastCycleTimeSeconds)
-                ? `${program.lastCycleTimeSeconds.toFixed(3)} s`
-                : '-- s';
-        el.programCycleTime.classList.toggle('measuring', measuring);
-    }
+    updateCycleTimeReadout(performance.now(), true);
     el.programStepList.replaceChildren();
     if (!program || program.steps.length === 0) {
         const empty = document.createElement('p');
@@ -3640,6 +3657,7 @@ function createMotionSession(robot, steps, startAt, options = {}) {
         currentStepId: null,
         segment: null,
         startAt,
+        nextSegmentStartAt: startAt,
         repeat: options.repeat ?? (controlScope === 'robot' ? state.motionRepeatRobot : state.motionRepeat),
         controlScope,
         stepIntoStepId: typeof options.stepIntoStepId === 'string' ? options.stepIntoStepId : null,
@@ -3738,6 +3756,7 @@ function setMotionSessionPaused(session, paused, now = performance.now()) {
     } else {
         const delay = Math.max(0, now - session.pauseStarted);
         session.startAt += delay;
+        session.nextSegmentStartAt += delay;
         if (session.segment) session.segment.startTime += delay;
         const program = ensureMotionProgram(session.robot);
         if (Number.isFinite(program.cycleTimerStartedAt)) program.cycleTimerStartedAt += delay;
@@ -3884,21 +3903,21 @@ function advanceMotionSegment(session, timestamp) {
     const { robot, segment } = session;
     if (segment.type === 'TIME_START' || segment.type === 'TIME_OUT') {
         const program = ensureMotionProgram(robot);
+        const markerTime = segment.startTime;
         if (segment.type === 'TIME_START') {
-            program.cycleTimerStartedAt = timestamp;
+            program.cycleTimerStartedAt = markerTime;
             program.lastCycleTimeSeconds = null;
         } else {
             if (!Number.isFinite(program.cycleTimerStartedAt)) {
                 throw new Error(`${segment.step.name}: TIME START must run before TIME OUT.`);
             }
-            program.lastCycleTimeSeconds = Math.max(0, timestamp - program.cycleTimerStartedAt) / 1000;
+            program.lastCycleTimeSeconds = calculateCycleElapsedSeconds(program.cycleTimerStartedAt, markerTime);
             program.cycleTimerStartedAt = null;
             setMotionProgramStatus(
                 `${robot.userData.motionDisplayName} cycle time: ${program.lastCycleTimeSeconds.toFixed(3)} s`
             );
         }
         program.progress = (session.cursor + 1) / session.steps.length;
-        renderMotionProgramPanel();
         return true;
     }
     const linearProgress = THREE.MathUtils.clamp((timestamp - segment.startTime) / segment.duration, 0, 1);
@@ -3945,26 +3964,36 @@ function updateMotionSessions(timestamp) {
     [...state.motionSessions.values()].forEach((session) => {
         if (session.status !== 'running' || timestamp < session.startAt) return;
         try {
-            if (!session.segment) {
-                session.segment = createMotionSegment(session, timestamp);
-                renderMotionProgramPanel();
-            }
-            if (!session.segment) {
-                finishRobotMotionSession(session, 'completed');
-                return;
-            }
-            if (!advanceMotionSegment(session, timestamp)) return;
-            session.cursor += 1;
-            session.segment = null;
-            session.currentStepId = null;
-            if (session.cursor >= session.steps.length) {
-                if (session.repeat) {
-                    session.cursor = 0;
-                    ensureMotionProgram(session.robot).progress = 0;
-                } else {
+            let renderNeeded = false;
+            for (let transition = 0; transition < MAX_MOTION_TRANSITIONS_PER_FRAME; transition += 1) {
+                if (!session.segment) {
+                    session.segment = createMotionSegment(session, session.nextSegmentStartAt);
+                    renderNeeded = true;
+                }
+                if (!session.segment) {
+                    finishRobotMotionSession(session, 'completed');
+                    return;
+                }
+                const completedSegment = session.segment;
+                if (!advanceMotionSegment(session, timestamp)) break;
+                session.nextSegmentStartAt = Number.isFinite(completedSegment.duration)
+                    ? completedSegment.startTime + completedSegment.duration
+                    : completedSegment.startTime;
+                session.cursor += 1;
+                session.segment = null;
+                session.currentStepId = null;
+                renderNeeded = true;
+                if (session.cursor >= session.steps.length) {
+                    if (session.repeat) {
+                        session.cursor = 0;
+                        ensureMotionProgram(session.robot).progress = 0;
+                        break;
+                    }
                     finishRobotMotionSession(session, 'completed', `${session.robot.userData.motionDisplayName} completed.`);
+                    return;
                 }
             }
+            if (renderNeeded) renderMotionProgramPanel();
         } catch (error) {
             finishRobotMotionSession(
                 session,
@@ -4350,6 +4379,7 @@ function animate() {
     requestAnimationFrame(animate);
     const timestamp = performance.now();
     updateMotionSessions(timestamp);
+    updateCycleTimeReadout(timestamp);
     updateRobotCollisions(timestamp);
     state.controls.update();
     state.renderer.render(state.scene, state.camera);
