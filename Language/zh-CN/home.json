@@ -410,9 +410,7 @@
           {
             "title": "Ver 26.07.15.01",
             "items": [
-              "InoRobot Trace 从 V1.2 更新至 V1.3。",
-              "Trace 添加 Joint Speed J1 至 J6 通道。",
-              "修复 InoRobot Trace 连接虚拟控制器时 Joint Speed 通道不可用的问题。"
+              "InoRobot Trace 从 V1.2 更新至 V1.3。"
             ]
           },
           {
@@ -431,8 +429,7 @@
           {
             "title": "Ver 26.06.10.01",
             "items": [
-              "Communication Tester 从 V2.4 更新至 V2.5。",
-              "移除旧版 Communication Tester V2.3 可执行文件和 ZIP。"
+              "Communication Tester 从 V2.4 更新至 V2.5。"
             ]
           },
           {
@@ -445,29 +442,13 @@
             "title": "Ver 26.04.26.01",
             "items": [
               "Communication Tester 从 V2.3 更新至 V2.4。",
-              "添加 InoRobot Trace V1.0 下载。",
-              "添加 InoRobot Label Generator V2.0 下载。",
               "Project Compare 从 V2.0 更新至 V2.1。"
             ]
           },
           {
             "title": "Ver 26.04.13.01",
             "items": [
-              "Communication Tester 从 V2.2 更新至 V2.3。",
-              "修复下载 ZIP 时返回 Git LFS 指针文件的问题。"
-            ]
-          },
-          {
-            "title": "Ver 26.04.07.01",
-            "items": [
-              "在 Zero Calibration 网页计算器中添加离线 Excel 下载按钮。"
-            ]
-          },
-          {
-            "title": "Ver 26.04.02",
-            "items": [
-              "添加 Communication Tester V2.2 下载。",
-              "添加 Project Compare V2.0 下载。"
+              "Communication Tester 从 V2.2 更新至 V2.3。"
             ]
           }
         ]

@@ -410,9 +410,7 @@
           {
             "title": "Ver 26.07.15.01",
             "items": [
-              "**[Cập nhật]** InoRobot Trace từ V1.2 lên V1.3.",
-              "**[Thêm]** Thêm kênh Joint Speed J1 đến J6 vào Trace.",
-              "**[Sửa]** Bật kênh Joint Speed khi InoRobot Trace kết nối bộ điều khiển ảo."
+              "**[Cập nhật]** InoRobot Trace từ V1.2 lên V1.3."
             ]
           },
           {
@@ -431,8 +429,7 @@
           {
             "title": "Ver 26.06.10.01",
             "items": [
-              "**[Cập nhật]** Communication Tester từ V2.4 lên V2.5.",
-              "**[Dọn dẹp]** Xóa tệp chạy và ZIP Communication Tester V2.3 cũ."
+              "**[Cập nhật]** Communication Tester từ V2.4 lên V2.5."
             ]
           },
           {
@@ -445,29 +442,13 @@
             "title": "Ver 26.04.26.01",
             "items": [
               "**[Cập nhật]** Communication Tester từ V2.3 lên V2.4.",
-              "**[Mới]** Thêm tải xuống InoRobot Trace V1.0.",
-              "**[Mới]** Thêm tải xuống InoRobot Label Generator V2.0.",
               "**[Cập nhật]** Project Compare từ V2.0 lên V2.1."
             ]
           },
           {
             "title": "Ver 26.04.13.01",
             "items": [
-              "**[Cập nhật]** Communication Tester từ V2.2 lên V2.3.",
-              "**[Sửa]** Sửa lỗi tải về con trỏ Git LFS thay vì tệp ZIP."
-            ]
-          },
-          {
-            "title": "Ver 26.04.07.01",
-            "items": [
-              "**[Thêm]** Thêm nút tải Excel ngoại tuyến cho công cụ tính Zero Calibration."
-            ]
-          },
-          {
-            "title": "Ver 26.04.02",
-            "items": [
-              "**[Mới]** Thêm tải xuống Communication Tester V2.2.",
-              "**[Mới]** Thêm tải xuống Project Compare V2.0."
+              "**[Cập nhật]** Communication Tester từ V2.2 lên V2.3."
             ]
           }
         ]

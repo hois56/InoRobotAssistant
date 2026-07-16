@@ -410,9 +410,7 @@
           {
             "title": "Ver 26.07.15.01",
             "items": [
-              "**[Updated]** Updated InoRobot Trace from V1.2 to V1.3.",
-              "**[Added]** Added Joint Speed J1 through J6 channels to Trace.",
-              "**[Fixed]** Enabled Joint Speed channels when InoRobot Trace connects to a virtual controller."
+              "**[Updated]** Updated InoRobot Trace from V1.2 to V1.3."
             ]
           },
           {
@@ -431,8 +429,7 @@
           {
             "title": "Ver 26.06.10.01",
             "items": [
-              "**[Updated]** Updated Communication Tester from V2.4 to V2.5.",
-              "**[Cleanup]** Removed the old Communication Tester V2.3 executable and ZIP."
+              "**[Updated]** Updated Communication Tester from V2.4 to V2.5."
             ]
           },
           {
@@ -445,29 +442,13 @@
             "title": "Ver 26.04.26.01",
             "items": [
               "**[Updated]** Updated Communication Tester from V2.3 to V2.4.",
-              "**[New]** Added the InoRobot Trace V1.0 download.",
-              "**[New]** Added the InoRobot Label Generator V2.0 download.",
               "**[Updated]** Updated Project Compare from V2.0 to V2.1."
             ]
           },
           {
             "title": "Ver 26.04.13.01",
             "items": [
-              "**[Updated]** Updated Communication Tester from V2.2 to V2.3.",
-              "**[Fixed]** Fixed downloads that returned a Git LFS pointer instead of the ZIP."
-            ]
-          },
-          {
-            "title": "Ver 26.04.07.01",
-            "items": [
-              "**[Added]** Added an offline Excel download button to the Zero Calibration web calculator."
-            ]
-          },
-          {
-            "title": "Ver 26.04.02",
-            "items": [
-              "**[New]** Added the Communication Tester V2.2 download.",
-              "**[New]** Added the Project Compare V2.0 download."
+              "**[Updated]** Updated Communication Tester from V2.2 to V2.3."
             ]
           }
         ]
