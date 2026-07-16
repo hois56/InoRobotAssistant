@@ -160,6 +160,8 @@ assert.throws(() => normalizeMotionProject(duplicateSteps), /Duplicate step id/)
 [
     'program-panel',
     'program-panel-resize',
+    'collision-alert',
+    'collision-alert-text',
     'program-robot-list',
     'program-step-list',
     'program-step-robot',
@@ -181,6 +183,9 @@ assert.deepEqual(programControlRows, [
 [
     'function updateMotionSessions(',
     'function updateRobotCollisions(',
+    'function addCollisionHighlight(',
+    'function removeCollisionHighlight(',
+    'function updateCollisionAlert(',
     'function preflightRobotMotion(',
     'function restoreMotionProjectData(',
     'function finalizeMotionHistoryIfIdle(',
@@ -218,6 +223,11 @@ const collisionSource = mainSource.slice(
 assert.ok(!/finishRobotMotionSession|stopRobotMotions/.test(collisionSource), 'Collision warnings must not stop motion.');
 assert.ok(mainSource.includes("object.name === 'CD conduit'"), 'CD conduit must be excluded from collision OBBs.');
 assert.ok(mainSource.includes('const MOTION_COLLISION_INTERVAL = 100'), 'Collision interval must remain 100 ms.');
+assert.ok(mainSource.includes('highlighted.color?.set(0xef4444)'), 'Colliding robot links must turn red.');
+assert.ok(mainSource.includes('mesh.material = highlight.originalMaterial'), 'Collision highlighting must restore the original link material.');
+assert.ok(mainSource.includes('updateCollisionAlert(collisionPairs)'), 'Collision pairs must update the viewport alert.');
+assert.match(htmlSource, /id="collision-alert"[^>]*role="alert"[^>]*aria-live="assertive"/);
+assert.match(cssSource, /\.collision-alert\s*\{[^}]*position:\s*absolute[^}]*background:\s*rgba\(127,\s*29,\s*29,\s*0\.94\)/s);
 assert.ok(
     mainSource.includes("if (robot === state.activeArticulatedModel) syncJointControls(robot);\n    updateTcpPresentation(robot);"),
     'Every animated robot must update its TCP visual, while only the active robot updates JOG controls.'
