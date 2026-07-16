@@ -360,6 +360,8 @@ const viewerStyles = read('2_Robot3DViewer/style.css');
 assert(viewerHtml.indexOf('data-i18n-language-slot') > viewerHtml.indexOf('</header>'), '3D Viewer language switcher is not below the top bar.');
 assert(viewerStyles.includes('top: calc(var(--topbar-h) + 8px)') && viewerStyles.includes('.viewer-language-row'), '3D Viewer language switcher row is not positioned below the top bar.');
 assert(read('6_Document/index.html').includes('data-cat="pendant">Pendant</button>'), 'Document Pendant tab is not using the translatable source label.');
+assert(/<h1\b[^>]*data-i18n-skip[^>]*>\s*Software Download Center\s*<\/h1>/.test(read('5_Software/index.html')), 'Software page header name is not fixed in English.');
+assert(/<h1\b[^>]*data-i18n-skip[^>]*>\s*Technical Manual Center\s*<\/h1>/.test(read('6_Document/index.html')), 'Document page header name is not fixed in English.');
 
 const protectedScripts = read('6_Document/script.js') + '\n' + read('5_Software/script.js');
 assert(!protectedScripts.includes('data.message ||'), 'A raw server error message can still be shown to users.');
