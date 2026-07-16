@@ -137,6 +137,17 @@ const makeDelayStep = (model, modelIndex) => ({
     }
 });
 
+const makeTimerStep = (model, modelIndex, motion) => ({
+    id: `${model.folder}-${motion}`,
+    name: motion === 'TIME_START' ? 'TS004' : 'TO005',
+    motion,
+    joints: model.limits.map(() => 0),
+    tcp: {
+        position: [modelIndex * 10, 25, 0],
+        quaternion: [0, 0, 0, 1]
+    }
+});
+
 const fullProject = {
     schemaVersion: MOTION_PROJECT_SCHEMA_VERSION,
     repeatCurrentRobot: false,
@@ -156,7 +167,9 @@ const fullProject = {
         steps: [
             makeStep(model, index, 'MOVJ', 20),
             makeStep(model, index, 'MOVL', 100),
-            makeDelayStep(model, index)
+            makeDelayStep(model, index),
+            makeTimerStep(model, index, 'TIME_START'),
+            makeTimerStep(model, index, 'TIME_OUT')
         ]
     }))
 };
@@ -168,6 +181,9 @@ assert.equal(normalized.repeatCurrentRobot, false);
 assert.equal(normalized.repeat, true);
 assert.equal(normalized.robots[0].steps[2].motion, 'DELAY');
 assert.equal(normalized.robots[0].steps[2].delaySeconds, 1.5);
+assert.equal(normalized.robots[0].steps[3].motion, 'TIME_START');
+assert.equal(normalized.robots[0].steps[4].motion, 'TIME_OUT');
+assert.ok(!('speed' in normalized.robots[0].steps[3]) && !('delaySeconds' in normalized.robots[0].steps[4]));
 const clonedDelayProgram = cloneMotionProgram({
     included: true,
     selectedStepId: normalized.robots[0].steps[2].id,
@@ -175,6 +191,8 @@ const clonedDelayProgram = cloneMotionProgram({
 });
 assert.equal(clonedDelayProgram.steps[2].motion, 'DELAY');
 assert.equal(clonedDelayProgram.steps[2].delaySeconds, 1.5);
+assert.equal(clonedDelayProgram.steps[3].motion, 'TIME_START');
+assert.equal(clonedDelayProgram.steps[4].motion, 'TIME_OUT');
 assert.deepEqual(normalizeMotionProject(JSON.parse(JSON.stringify(normalized))), normalized);
 const legacyRepeatProject = structuredClone(fullProject);
 delete legacyRepeatProject.repeatCurrentRobot;
@@ -213,6 +231,9 @@ assert.throws(() => normalizeMotionProject(duplicateSteps), /Duplicate step id/)
     'program-robot-list',
     'program-step-list',
     'program-add-delay',
+    'program-add-time-start',
+    'program-add-time-out',
+    'program-cycle-time',
     'program-step-robot',
     'program-run-robot',
     'program-repeat-robot',
@@ -237,6 +258,7 @@ assert.deepEqual(programControlRows, [
     'function updateCollisionAlert(',
     'function preflightRobotMotion(',
     'function addDelayMotionStep(',
+    'function addTimerMotionStep(',
     'function restoreMotionProjectData(',
     'function finalizeMotionHistoryIfIdle(',
     'function syncTcpVisualAtPose(',
@@ -262,9 +284,13 @@ assert.deepEqual(programControlRows, [
     'smoothstep(linearProgress)',
     "if (step.motion === 'DELAY')",
     "type: 'DELAY'",
+    "type: step.motion",
     'duration: calculateDelayDuration(step.delaySeconds) * 1000',
     'delaySeconds: step.delaySeconds',
     'step.motion === \'MOVJ\' ? 100 : MAX_MOVL_SPEED',
+    "segment.type === 'TIME_START' || segment.type === 'TIME_OUT'",
+    'program.lastCycleTimeSeconds.toFixed(3)',
+    'program.cycleTimerStartedAt += delay',
     'localStorage.setItem(MOTION_PROJECT_STORAGE_KEY',
     'window.showSaveFilePicker({',
     'await fileHandle.createWritable()',
@@ -292,12 +318,17 @@ assert.match(cssSource, /\.program-panel-resize\s*\{[^}]*cursor:\s*nesw-resize/s
 assert.match(cssSource, /\.program-panel-content\s*\{[^}]*overflow-y:\s*auto/s);
 assert.match(cssSource, /\.program-robot-row\.collision/);
 assert.match(cssSource, /\.program-step-row\.delay/);
-assert.ok(mainSource.includes("['MOVJ', 'MOVL', 'DELAY']"), 'Program rows must expose DELAY as a command type.');
+assert.match(cssSource, /\.program-step-row\.timer/);
+assert.match(cssSource, /\.program-cycle-time\s*\{/);
+assert.ok(mainSource.includes("['TIME_START', 'T.START']") && mainSource.includes("['TIME_OUT', 'T.OUT']"), 'Program rows must expose cycle timer commands.');
 const preflightSource = mainSource.slice(
     mainSource.indexOf('function preflightRobotMotion('),
     mainSource.indexOf('function createMotionSession(')
 );
 assert.ok(preflightSource.includes("if (step.motion === 'DELAY')") && preflightSource.includes('return;'), 'DELAY preflight must not run robot IK.');
+assert.ok(preflightSource.includes("if (step.motion === 'TIME_START')")
+    && preflightSource.includes("if (step.motion === 'TIME_OUT')")
+    && preflightSource.includes('TIME START must run before TIME OUT'), 'TIME OUT must require an active TIME START marker.');
 assert.ok(cssSource.includes('width: min(340px, calc(100% - 32px))'), 'Program Panel compact width must remain 340px.');
 assert.ok(htmlSource.includes('id="program-repeat" class="program-repeat-toggle"'), 'Repeat must be an icon toggle button.');
 assert.ok(htmlSource.includes('id="program-repeat-robot" class="program-repeat-toggle"'), 'Current robot repeat must be an icon toggle button.');
@@ -316,4 +347,4 @@ assert.ok(mainSource.includes('function makeProgramPanelResizable('), 'Program P
 assert.ok(mainSource.includes('PROGRAM_PANEL_MIN_WIDTH = 300'), 'Program Panel resizing must preserve a usable minimum width.');
 assert.ok(mainSource.includes("dataset.userResized === 'true'"), 'A resized Program Panel must be constrained after viewport changes.');
 
-console.log(`Motion program core OK: ${models.length} robots (${scaraCount} SCARA, ${sixAxisCount} six-axis), model-specific joint speeds, MOVJ/MOVL/DELAY timing, linear/quaternion interpolation, four-robot numerical stress, JSON round trip, collision policy and schema checks`);
+console.log(`Motion program core OK: ${models.length} robots (${scaraCount} SCARA, ${sixAxisCount} six-axis), MOVJ/MOVL/DELAY timing, cycle timers, four-robot numerical stress, JSON round trip, collision policy and schema checks`);

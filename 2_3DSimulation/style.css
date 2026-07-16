@@ -1159,6 +1159,13 @@ input[type="number"]::-webkit-outer-spin-button {
     gap: 0.2rem;
 }
 
+.program-point-actions button {
+    width: 27px;
+    min-width: 27px;
+    padding-right: 0;
+    padding-left: 0;
+}
+
 .program-robot-list {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -1256,6 +1263,20 @@ input[type="number"]::-webkit-outer-spin-button {
     color: #fbbf24;
 }
 
+.program-step-row.timer {
+    border-color: rgba(167, 139, 250, 0.38);
+}
+
+.program-step-row.timer .program-step-select {
+    color: #c4b5fd;
+}
+
+.program-step-row.timer .program-step-speed:disabled {
+    border-color: transparent;
+    background: transparent;
+    opacity: 0.55;
+}
+
 .program-step-select {
     min-width: 66px;
     border: 0;
@@ -1306,6 +1327,32 @@ input[type="number"]::-webkit-outer-spin-button {
     border-color: rgba(59, 130, 246, 0.85);
     color: #fff;
     background: rgba(37, 99, 235, 0.35);
+}
+
+.program-cycle-time {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 32px;
+    padding: 0.42rem 0.6rem;
+    border: 1px solid rgba(167, 139, 250, 0.24);
+    border-radius: 8px;
+    background: rgba(124, 58, 237, 0.08);
+}
+
+.program-cycle-time span {
+    color: var(--text-2);
+    font: 600 0.62rem 'Outfit', sans-serif;
+    letter-spacing: 0.06em;
+}
+
+.program-cycle-time strong {
+    color: #c4b5fd;
+    font: 700 0.75rem 'Outfit', sans-serif;
+}
+
+.program-cycle-time strong.measuring {
+    color: #fbbf24;
 }
 
 .program-file-row {

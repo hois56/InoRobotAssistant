@@ -29,7 +29,7 @@ import {
     createEmptyMotionProgram,
     cloneMotionProgram,
     normalizeMotionProject
-} from './motion-program-core.mjs?v=20260717-movl-speed-1500-1';
+} from './motion-program-core.mjs?v=20260717-cycle-time-command1';
 
 function uiText(value) {
     return window.InoRobotI18n ? window.InoRobotI18n.translate(String(value)) : String(value);
@@ -161,6 +161,8 @@ const el = {
     btnProgramSelectAll: document.getElementById('program-select-all'),
     btnProgramAdd: document.getElementById('program-add-step'),
     btnProgramAddDelay: document.getElementById('program-add-delay'),
+    btnProgramAddTimeStart: document.getElementById('program-add-time-start'),
+    btnProgramAddTimeOut: document.getElementById('program-add-time-out'),
     btnProgramUpdate: document.getElementById('program-update-step'),
     btnProgramUp: document.getElementById('program-step-up'),
     btnProgramDown: document.getElementById('program-step-down'),
@@ -174,6 +176,7 @@ const el = {
     btnProgramPauseGroup: document.getElementById('program-pause-group'),
     btnProgramStopGroup: document.getElementById('program-stop-group'),
     programRepeatButtons: [...document.querySelectorAll('[data-program-repeat]')],
+    programCycleTime: document.getElementById('program-cycle-time'),
     btnProgramExport: document.getElementById('program-export'),
     btnProgramImport: document.getElementById('program-import'),
     inputProgramImport: document.getElementById('program-import-file'),
@@ -496,6 +499,8 @@ function setupEventListeners() {
     el.btnProgramSelectAll?.addEventListener('click', selectAllProgramRobots);
     el.btnProgramAdd?.addEventListener('click', addCurrentMotionStep);
     el.btnProgramAddDelay?.addEventListener('click', addDelayMotionStep);
+    el.btnProgramAddTimeStart?.addEventListener('click', () => addTimerMotionStep('TIME_START'));
+    el.btnProgramAddTimeOut?.addEventListener('click', () => addTimerMotionStep('TIME_OUT'));
     el.btnProgramUpdate?.addEventListener('click', updateSelectedMotionStep);
     el.btnProgramUp?.addEventListener('click', () => moveSelectedMotionStep(-1));
     el.btnProgramDown?.addEventListener('click', () => moveSelectedMotionStep(1));
@@ -2926,6 +2931,8 @@ function setMotionProgramStatus(message, type = '') {
 
 function formatMotionStepPose(step) {
     if (step.motion === 'DELAY') return `WAIT ${Number(step.delaySeconds).toFixed(1)} s`;
+    if (step.motion === 'TIME_START') return 'TIMER START';
+    if (step.motion === 'TIME_OUT') return 'TIMER OUT';
     const p = step.tcp.position.map((value) => Number(value).toFixed(1)).join(', ');
     return `TCP ${p}`;
 }
@@ -2968,11 +2975,20 @@ function renderMotionProgramPanel() {
     const robot = state.activeProgramRobot;
     const program = robot ? ensureMotionProgram(robot) : null;
     el.programRobotName.textContent = robot?.userData.motionDisplayName || 'Select a robot';
+    if (el.programCycleTime) {
+        const measuring = Number.isFinite(program?.cycleTimerStartedAt);
+        el.programCycleTime.textContent = measuring
+            ? 'MEASURING'
+            : Number.isFinite(program?.lastCycleTimeSeconds)
+                ? `${program.lastCycleTimeSeconds.toFixed(3)} s`
+                : '-- s';
+        el.programCycleTime.classList.toggle('measuring', measuring);
+    }
     el.programStepList.replaceChildren();
     if (!program || program.steps.length === 0) {
         const empty = document.createElement('p');
         empty.className = 'program-step-empty';
-        empty.textContent = robot ? 'Add a pose or DELAY command.' : 'No programmable robot is loaded.';
+        empty.textContent = robot ? 'Add a pose, DELAY or timer command.' : 'No programmable robot is loaded.';
         el.programStepList.appendChild(empty);
     } else {
         program.steps.forEach((step, index) => {
@@ -2980,7 +2996,8 @@ function renderMotionProgramPanel() {
             const isSelected = step.id === program.selectedStepId;
             const session = getMotionSession(robot);
             const isRunning = session?.currentStepId === step.id && session.status === 'running';
-            row.className = `program-step-row${isSelected ? ' active' : ''}${isRunning ? ' running' : ''}${step.motion === 'DELAY' ? ' delay' : ''}`;
+            const isTimer = step.motion === 'TIME_START' || step.motion === 'TIME_OUT';
+            row.className = `program-step-row${isSelected ? ' active' : ''}${isRunning ? ' running' : ''}${step.motion === 'DELAY' ? ' delay' : ''}${isTimer ? ' timer' : ''}`;
             row.dataset.programStepId = step.id;
 
             const select = document.createElement('button');
@@ -2992,28 +3009,37 @@ function renderMotionProgramPanel() {
             const motion = document.createElement('select');
             motion.dataset.programStepMotion = step.id;
             motion.dataset.programEdit = '';
-            ['MOVJ', 'MOVL', 'DELAY'].forEach((value) => {
+            [
+                ['MOVJ', 'MOVJ'],
+                ['MOVL', 'MOVL'],
+                ['DELAY', 'DELAY'],
+                ['TIME_START', 'T.START'],
+                ['TIME_OUT', 'T.OUT']
+            ].forEach(([value, label]) => {
                 const option = document.createElement('option');
                 option.value = value;
-                option.textContent = value;
+                option.textContent = label;
                 motion.appendChild(option);
             });
             motion.value = step.motion;
+            motion.title = step.motion.replace('_', ' ');
 
             const speed = document.createElement('input');
             const isDelay = step.motion === 'DELAY';
             speed.type = 'number';
             speed.className = 'program-step-speed';
+            speed.disabled = isTimer;
+            speed.placeholder = isTimer ? '—' : '';
             speed.min = String(isDelay ? MIN_DELAY_SECONDS : 1);
             speed.max = String(isDelay ? MAX_DELAY_SECONDS : step.motion === 'MOVJ' ? 100 : MAX_MOVL_SPEED);
             speed.step = isDelay ? '0.1' : '1';
-            speed.value = String(isDelay ? step.delaySeconds : step.speed);
-            speed.dataset.programStepSpeed = step.id;
+            speed.value = isTimer ? '' : String(isDelay ? step.delaySeconds : step.speed);
+            if (!isTimer) speed.dataset.programStepSpeed = step.id;
             speed.dataset.programEdit = '';
 
             const unit = document.createElement('span');
             unit.className = 'program-step-unit';
-            unit.textContent = isDelay ? 's' : step.motion === 'MOVJ' ? '%' : 'mm/s';
+            unit.textContent = isTimer ? '' : isDelay ? 's' : step.motion === 'MOVJ' ? '%' : 'mm/s';
             const pose = document.createElement('span');
             pose.className = 'program-step-pose';
             pose.textContent = formatMotionStepPose(step);
@@ -3023,7 +3049,9 @@ function renderMotionProgramPanel() {
     }
     syncMotionRepeatControl();
     const selected = program?.steps.find((step) => step.id === program.selectedStepId) || null;
-    if (el.btnProgramUpdate) el.btnProgramUpdate.disabled = !selected || selected.motion === 'DELAY' || isMotionActive();
+    if (el.btnProgramUpdate) el.btnProgramUpdate.disabled = !selected
+        || !['MOVJ', 'MOVL'].includes(selected.motion)
+        || isMotionActive();
     if (el.btnProgramUp) el.btnProgramUp.disabled = !selected || program.steps[0] === selected || isMotionActive();
     if (el.btnProgramDown) el.btnProgramDown.disabled = !selected || program.steps.at(-1) === selected || isMotionActive();
     if (el.btnProgramDelete) el.btnProgramDelete.disabled = !selected || isMotionActive();
@@ -3085,17 +3113,18 @@ function handleProgramStepListChange(event) {
     if (!step) return;
     const before = captureSceneSnapshot();
     if (motionControl) {
-        step.motion = motionControl.value === 'DELAY'
-            ? 'DELAY'
-            : motionControl.value === 'MOVL'
-                ? 'MOVL'
-                : 'MOVJ';
+        step.motion = ['MOVJ', 'MOVL', 'DELAY', 'TIME_START', 'TIME_OUT'].includes(motionControl.value)
+            ? motionControl.value
+            : 'MOVJ';
         if (step.motion === 'DELAY') {
             delete step.speed;
             step.delaySeconds = DEFAULT_DELAY_SECONDS;
-        } else {
+        } else if (step.motion === 'MOVJ' || step.motion === 'MOVL') {
             delete step.delaySeconds;
             step.speed = step.motion === 'MOVJ' ? DEFAULT_MOVJ_SPEED : DEFAULT_MOVL_SPEED;
+        } else {
+            delete step.speed;
+            delete step.delaySeconds;
         }
     } else if (step.motion === 'DELAY') {
         step.delaySeconds = THREE.MathUtils.clamp(
@@ -3134,7 +3163,9 @@ function captureRobotMotionStep(robot, existing = null) {
         motion,
         ...(motion === 'DELAY'
             ? { delaySeconds: existing?.delaySeconds ?? DEFAULT_DELAY_SECONDS }
-            : { speed: existing?.speed ?? DEFAULT_MOVJ_SPEED }),
+            : motion === 'MOVJ' || motion === 'MOVL'
+                ? { speed: existing?.speed ?? DEFAULT_MOVJ_SPEED }
+                : {}),
         joints: robot.userData.joints.map((joint) => joint.angle),
         tcp: {
             position: pose.position.toArray(),
@@ -3168,6 +3199,23 @@ function addDelayMotionStep() {
     program.steps.push(step);
     program.selectedStepId = step.id;
     recordHistory('Add delay command', before, captureSceneSnapshot());
+    renderMotionProgramPanel();
+}
+
+function addTimerMotionStep(motion) {
+    if (isMotionActive() || !state.activeProgramRobot || !['TIME_START', 'TIME_OUT'].includes(motion)) return;
+    const before = captureSceneSnapshot();
+    const program = ensureMotionProgram(state.activeProgramRobot);
+    const step = captureRobotMotionStep(state.activeProgramRobot);
+    if (!step) return;
+    const prefix = motion === 'TIME_START' ? 'TS' : 'TO';
+    step.name = `${prefix}${String(program.steps.length + 1).padStart(3, '0')}`;
+    step.motion = motion;
+    delete step.speed;
+    delete step.delaySeconds;
+    program.steps.push(step);
+    program.selectedStepId = step.id;
+    recordHistory(`Add ${motion.replace('_', ' ')} command`, before, captureSceneSnapshot());
     renderMotionProgramPanel();
 }
 
@@ -3278,7 +3326,9 @@ function serializeMotionProject() {
                     motion: step.motion,
                     ...(step.motion === 'DELAY'
                         ? { delaySeconds: step.delaySeconds }
-                        : { speed: step.speed }),
+                        : step.motion === 'MOVJ' || step.motion === 'MOVL'
+                            ? { speed: step.speed }
+                            : {}),
                     joints: [...step.joints],
                     tcp: {
                         position: [...step.tcp.position],
@@ -3536,8 +3586,18 @@ function preflightRobotMotion(robot, steps) {
     }
     if (!steps.length) throw new Error(`${robot.userData.motionDisplayName}: no motion points.`);
     const originalAngles = robot.userData.joints.map((joint) => joint.angle);
+    let timerAvailable = Number.isFinite(ensureMotionProgram(robot).cycleTimerStartedAt);
     try {
         steps.forEach((step) => {
+            if (step.motion === 'TIME_START') {
+                timerAvailable = true;
+                return;
+            }
+            if (step.motion === 'TIME_OUT') {
+                if (!timerAvailable) throw new Error(`${step.name}: TIME START must run before TIME OUT.`);
+                timerAvailable = false;
+                return;
+            }
             if (step.motion === 'DELAY') {
                 if (!Number.isFinite(step.delaySeconds)
                     || step.delaySeconds < MIN_DELAY_SECONDS
@@ -3678,6 +3738,8 @@ function setMotionSessionPaused(session, paused, now = performance.now()) {
         const delay = Math.max(0, now - session.pauseStarted);
         session.startAt += delay;
         if (session.segment) session.segment.startTime += delay;
+        const program = ensureMotionProgram(session.robot);
+        if (Number.isFinite(program.cycleTimerStartedAt)) program.cycleTimerStartedAt += delay;
         session.status = 'running';
         session.pauseStarted = 0;
     }
@@ -3727,6 +3789,9 @@ function finishRobotMotionSession(session, status, message = '') {
     state.motionSessions.delete(robot.userData.motionInstanceId);
     const program = ensureMotionProgram(robot);
     program.status = status;
+    if (status === 'error' || (status === 'completed' && !session.stepIntoStepId)) {
+        program.cycleTimerStartedAt = null;
+    }
     if (status === 'completed' && session.stepIntoStepId && program.steps.length) {
         const completedIndex = program.steps.findIndex((step) => step.id === session.stepIntoStepId);
         const nextIndex = completedIndex >= 0 ? (completedIndex + 1) % program.steps.length : 0;
@@ -3748,7 +3813,9 @@ function stopRobotMotions(robots) {
         const session = getMotionSession(robot);
         if (!session) return;
         state.motionSessions.delete(robot.userData.motionInstanceId);
-        ensureMotionProgram(robot).status = 'stopped';
+        const program = ensureMotionProgram(robot);
+        program.status = 'stopped';
+        program.cycleTimerStartedAt = null;
         stopped += 1;
     });
     if (stopped) setMotionProgramStatus(`${stopped} robot motion${stopped === 1 ? '' : 's'} stopped.`);
@@ -3769,6 +3836,13 @@ function createMotionSegment(session, timestamp) {
     const step = session.steps[session.cursor];
     if (!step) return null;
     session.currentStepId = step.id;
+    if (step.motion === 'TIME_START' || step.motion === 'TIME_OUT') {
+        return {
+            type: step.motion,
+            step,
+            startTime: timestamp
+        };
+    }
     if (step.motion === 'DELAY') {
         return {
             type: 'DELAY',
@@ -3807,6 +3881,25 @@ function createMotionSegment(session, timestamp) {
 
 function advanceMotionSegment(session, timestamp) {
     const { robot, segment } = session;
+    if (segment.type === 'TIME_START' || segment.type === 'TIME_OUT') {
+        const program = ensureMotionProgram(robot);
+        if (segment.type === 'TIME_START') {
+            program.cycleTimerStartedAt = timestamp;
+            program.lastCycleTimeSeconds = null;
+        } else {
+            if (!Number.isFinite(program.cycleTimerStartedAt)) {
+                throw new Error(`${segment.step.name}: TIME START must run before TIME OUT.`);
+            }
+            program.lastCycleTimeSeconds = Math.max(0, timestamp - program.cycleTimerStartedAt) / 1000;
+            program.cycleTimerStartedAt = null;
+            setMotionProgramStatus(
+                `${robot.userData.motionDisplayName} cycle time: ${program.lastCycleTimeSeconds.toFixed(3)} s`
+            );
+        }
+        program.progress = (session.cursor + 1) / session.steps.length;
+        renderMotionProgramPanel();
+        return true;
+    }
     const linearProgress = THREE.MathUtils.clamp((timestamp - segment.startTime) / segment.duration, 0, 1);
     const progress = smoothstep(linearProgress);
     if (segment.type === 'MOVJ') {
