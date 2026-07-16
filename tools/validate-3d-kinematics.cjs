@@ -220,6 +220,10 @@ for (const model of robots) {
     const expectedJointCount = model.robotType === 'scara' ? 4 : 6;
     assert(model.structure.length === expectedJointCount, `${model.name}: invalid structure length`);
     assert(model.limits.length === expectedJointCount, `${model.name}: invalid limits length`);
+    assert(model.jointSpeeds.length === expectedJointCount, `${model.name}: invalid joint speed count`);
+    model.jointSpeeds.forEach((speed, index) => {
+        assert(Number.isFinite(speed) && speed > 0, `${model.name} J${index + 1}: invalid joint speed`);
+    });
     assert(['standard', 'ceiling-scara'].includes(model.kinematicVariant || 'standard'), `${model.name}: invalid kinematicVariant`);
     assert(model.robotType === 'scara' || !model.kinematicVariant, `${model.name}: six-axis robot cannot use a SCARA variant`);
     model.limits.forEach(([minimum, maximum], index) => {
