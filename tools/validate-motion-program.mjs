@@ -391,7 +391,10 @@ assert.ok(mainSource.includes('highlighted.color?.set(0xef4444)'), 'Colliding ro
 assert.ok(mainSource.includes('mesh.material = highlight.originalMaterial'), 'Collision highlighting must restore the original link material.');
 assert.ok(mainSource.includes('updateCollisionAlert(collisionPairs)'), 'Collision pairs must update the viewport alert.');
 assert.ok(mainSource.includes("./collision-core.mjs?v=20260717-collision-fallback1"), 'Collision fallback cache token must be current.');
-assert.ok(htmlSource.includes('main.js?v=20260717-i18n-complete1'), 'Viewer cache token must load complete four-language support.');
+assert.ok(htmlSource.includes('main.js?v=20260717-base-jog-gizmo-thickness1'), 'Viewer cache token must load the emphasized Base JOG gizmo.');
+assert.ok(mainSource.includes('BASE_JOG_GIZMO_MESH_THICKNESS = 1.55'), 'Base JOG axis meshes must remain visually thicker than TCP axes.');
+assert.ok(mainSource.includes('BASE_JOG_GIZMO_STROKE_RADIUS = 0.014'), 'Base JOG line handles must use a cross-platform mesh stroke.');
+assert.ok(mainSource.includes('emphasizeBaseJogTransformControls(controls)'), 'Base JOG controls must apply the emphasized handle treatment.');
 assert.ok(htmlSource.includes('style.css?v=20260717-panel-edge-resize1'), 'Stylesheet cache token must load panel edge cursors.');
 assert.match(htmlSource, /id="collision-alert"[^>]*role="alert"[^>]*aria-live="assertive"/);
 assert.match(cssSource, /\.collision-alert\s*\{[^}]*position:\s*absolute[^}]*background:\s*rgba\(127,\s*29,\s*29,\s*0\.94\)/s);
