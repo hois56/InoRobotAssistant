@@ -4,3 +4,7 @@
 
 # Microsoft Office temporary lock files.
 ~$*.xlsx
+
+# Local .NET build intermediates.
+**/bin/
+**/obj/

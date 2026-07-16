@@ -6,7 +6,8 @@ const modelsRoot = path.join(root, '2_3DSimulation', 'models');
 const catalogPath = path.join(modelsRoot, 'models.json');
 const viewerSourcePath = path.join(root, '2_3DSimulation', 'main.js');
 const viewerHtmlPath = path.join(root, '2_3DSimulation', 'index.html');
-const REVOLUTE_DIRECTION = -1;
+const REVOLUTE_DIRECTION_NEGATIVE = -1;
+const REVOLUTE_DIRECTION_POSITIVE = 1;
 const PRISMATIC_DIRECTION = 1;
 const AXIS_TOLERANCE_MM = 0.05;
 const CRITICAL_MANUAL_LIMITS = {
@@ -106,10 +107,10 @@ function createManifest(model) {
             tcp: wrist,
             tube: model.kinematicVariant === 'ceiling-scara' ? null : 'TUBE.stl',
             joints: [
-                { pivot: [0, 0, 0], axis: [0, 0, 1], mesh: 'P1.stl', direction: REVOLUTE_DIRECTION },
-                { pivot: [arm1, 0, 0], axis: [0, 0, 1], mesh: 'P2.stl', direction: REVOLUTE_DIRECTION },
+                { pivot: [0, 0, 0], axis: [0, 0, 1], mesh: 'P1.stl', direction: REVOLUTE_DIRECTION_POSITIVE },
+                { pivot: [arm1, 0, 0], axis: [0, 0, 1], mesh: 'P2.stl', direction: REVOLUTE_DIRECTION_POSITIVE },
                 { pivot: wrist, axis: [0, 0, 1], mesh: model.j3Mesh ? 'P3.stl' : 'P4.stl', type: 'prismatic', direction: PRISMATIC_DIRECTION },
-                { pivot: wrist, axis: [0, 0, 1], mesh: 'P4.stl', direction: REVOLUTE_DIRECTION }
+                { pivot: wrist, axis: [0, 0, 1], mesh: 'P4.stl', direction: REVOLUTE_DIRECTION_POSITIVE }
             ]
         };
     }
@@ -121,12 +122,12 @@ function createManifest(model) {
     return {
         tcp,
         joints: [
-            { pivot: [0, 0, 0], axis: [0, 0, 1], mesh: 'P1.stl', direction: REVOLUTE_DIRECTION },
-            { pivot: [shoulderOffset, 0, shoulderHeight], axis: [0, 1, 0], mesh: 'P2.stl', direction: REVOLUTE_DIRECTION },
-            { pivot: [shoulderOffset, 0, elbowHeight], axis: [0, 1, 0], mesh: 'P3.stl', direction: REVOLUTE_DIRECTION },
-            { pivot: [shoulderOffset, 0, wristHeight], axis: [1, 0, 0], mesh: 'P4.stl', direction: REVOLUTE_DIRECTION },
-            { pivot: [shoulderOffset + forearm, 0, wristHeight], axis: [0, 1, 0], mesh: 'P5.stl', direction: REVOLUTE_DIRECTION },
-            { pivot: tcp, axis: [1, 0, 0], mesh: 'P6.stl', direction: REVOLUTE_DIRECTION }
+            { pivot: [0, 0, 0], axis: [0, 0, 1], mesh: 'P1.stl', direction: REVOLUTE_DIRECTION_POSITIVE },
+            { pivot: [shoulderOffset, 0, shoulderHeight], axis: [0, 1, 0], mesh: 'P2.stl', direction: REVOLUTE_DIRECTION_NEGATIVE },
+            { pivot: [shoulderOffset, 0, elbowHeight], axis: [0, 1, 0], mesh: 'P3.stl', direction: REVOLUTE_DIRECTION_NEGATIVE },
+            { pivot: [shoulderOffset, 0, wristHeight], axis: [1, 0, 0], mesh: 'P4.stl', direction: REVOLUTE_DIRECTION_POSITIVE },
+            { pivot: [shoulderOffset + forearm, 0, wristHeight], axis: [0, 1, 0], mesh: 'P5.stl', direction: REVOLUTE_DIRECTION_NEGATIVE },
+            { pivot: tcp, axis: [1, 0, 0], mesh: 'P6.stl', direction: REVOLUTE_DIRECTION_POSITIVE }
         ]
     };
 }
@@ -138,13 +139,13 @@ function normalizeDegrees(value) {
 function forwardScara(model, angles) {
     const [arm1, arm2] = model.structure;
     const secondArmDirection = model.kinematicVariant === 'ceiling-scara' ? -1 : 1;
-    const physicalJ1 = -angles[0] * Math.PI / 180;
-    const physicalJ2 = -angles[1] * Math.PI / 180;
+    const physicalJ1 = angles[0] * Math.PI / 180;
+    const physicalJ2 = angles[1] * Math.PI / 180;
     return {
         x: arm1 * Math.cos(physicalJ1) + secondArmDirection * arm2 * Math.cos(physicalJ1 + physicalJ2),
         y: arm1 * Math.sin(physicalJ1) + secondArmDirection * arm2 * Math.sin(physicalJ1 + physicalJ2),
         z: angles[2],
-        rz: normalizeDegrees(-(angles[0] + angles[1] + angles[3]))
+        rz: normalizeDegrees(angles[0] + angles[1] + angles[3])
     };
 }
 
@@ -167,11 +168,11 @@ function solveScaraPose(model, target) {
     for (const physicalJ2 of elbowSolutions) {
         const physicalJ1 = Math.atan2(target.y, target.x)
             - Math.atan2(signedArm2 * Math.sin(physicalJ2), arm1 + signedArm2 * Math.cos(physicalJ2));
-        const baseJ1 = -physicalJ1 * 180 / Math.PI;
-        const baseJ2 = -physicalJ2 * 180 / Math.PI;
+        const baseJ1 = physicalJ1 * 180 / Math.PI;
+        const baseJ2 = physicalJ2 * 180 / Math.PI;
         for (const j1 of equivalentAngles(baseJ1, model.limits[0])) {
             for (const j2 of equivalentAngles(baseJ2, model.limits[1])) {
-                for (const j4 of equivalentAngles(-target.rz - j1 - j2, model.limits[3])) {
+                for (const j4 of equivalentAngles(target.rz - j1 - j2, model.limits[3])) {
                     return [j1, j2, target.z, j4];
                 }
             }
@@ -183,8 +184,11 @@ function solveScaraPose(model, target) {
 const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
 const viewerSource = fs.readFileSync(viewerSourcePath, 'utf8');
 const viewerHtml = fs.readFileSync(viewerHtmlPath, 'utf8');
-assert(/const CONTROLLER_REVOLUTE_DIRECTION\s*=\s*-1\s*;/.test(viewerSource), 'Viewer revolute Joint direction must match the controller convention');
+assert(/const REVOLUTE_DIRECTION_NEGATIVE\s*=\s*-1\s*;/.test(viewerSource), 'Viewer must define the negative revolute Joint direction');
+assert(/const REVOLUTE_DIRECTION_POSITIVE\s*=\s*1\s*;/.test(viewerSource), 'Viewer must define the positive revolute Joint direction');
 assert(/const CONTROLLER_PRISMATIC_DIRECTION\s*=\s*1\s*;/.test(viewerSource), 'Viewer prismatic Joint direction must match the controller convention');
+assert(viewerSource.includes('jointDirection: REVOLUTE_DIRECTION_POSITIVE'), 'SCARA J1, J2, and J4 must use the positive direction');
+assert((viewerSource.match(/direction: REVOLUTE_DIRECTION_POSITIVE/g) || []).length === 3, 'Six-axis J1, J4, and J6 must use the positive direction');
 assert(/const ROBOT_BODY_COLOR\s*=\s*['"]#ece9dd['"]\s*;/.test(viewerSource), 'Robot body material must use the approved ivory color');
 assert(/const AXIS_COLORS\s*=\s*Object\.freeze\(\{\s*x:\s*['"]#d32f2f['"],\s*y:\s*['"]#388e3c['"],\s*z:\s*['"]#1976d2['"]\s*\}\)/.test(viewerSource), 'Coordinate axes must use the subdued red, green, and blue palette');
 assert((viewerSource.match(/applyAxesHelperColors\(/g) || []).length >= 3, 'Every coordinate AxesHelper must use the shared RGB palette');
@@ -294,7 +298,16 @@ for (const model of robots) {
 
     manifest.joints.forEach((joint, index) => {
         jointCount += 1;
-        const expectedDirection = joint.type === 'prismatic' ? PRISMATIC_DIRECTION : REVOLUTE_DIRECTION;
+        const expectedDirection = model.robotType === 'scara'
+            ? REVOLUTE_DIRECTION_POSITIVE
+            : [
+                REVOLUTE_DIRECTION_POSITIVE,
+                REVOLUTE_DIRECTION_NEGATIVE,
+                REVOLUTE_DIRECTION_NEGATIVE,
+                REVOLUTE_DIRECTION_POSITIVE,
+                REVOLUTE_DIRECTION_NEGATIVE,
+                REVOLUTE_DIRECTION_POSITIVE
+            ][index];
         assert(joint.direction === expectedDirection, `${model.name} J${index + 1}: incorrect Joint direction`);
         const bounds = readBounds(path.join(folder, joint.mesh));
         const error = axisDistanceToBounds(joint.pivot, joint.axis, bounds);

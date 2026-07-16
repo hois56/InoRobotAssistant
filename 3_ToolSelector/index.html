@@ -209,6 +209,7 @@
               <option value="edge-midpoint">에지 중심점</option>
               <option value="face-center">면 중심점</option>
               <option value="circle-center">원/호 중심점</option>
+              <option value="multi-circle-center">다중 원 중심점</option>
               <option value="shape-center">형상 중심점</option>
               <option value="virtual-intersection">가상 교점</option>
             </select>
@@ -219,6 +220,11 @@
           </label>
         </div>
         <div id="cad-snap-readout" class="cad-snap-readout" aria-live="polite">점 찍기를 누른 뒤 CAD 형상 위로 포인터를 이동하세요.</div>
+        <div id="cad-multi-center-controls" class="cad-multi-center-controls" hidden>
+          <span id="cad-multi-center-count">원의 중심점 선택</span>
+          <button id="cad-multi-center-apply" type="button" disabled>계산 중심 적용</button>
+          <button id="cad-multi-center-reset" type="button" disabled>선택 초기화</button>
+        </div>
 
         <div class="cad-vector-block">
           <div class="cad-vector-title"><span>Tool 원점 (mm)</span><button type="button" class="cad-pick-button" data-pick="origin">점 찍기</button></div>
@@ -231,8 +237,8 @@
 
         <div class="cad-vector-block cad-orientation-block">
           <div class="cad-vector-title">
-            <span>좌표계 회전각 (deg)</span>
-            <label class="cad-handler-toggle"><input id="cad-rotation-handler" type="checkbox" checked> 3D 회전 핸들</label>
+            <span>좌표계 방향 (deg)</span>
+            <label class="cad-handler-toggle"><input id="cad-rotation-handler" type="checkbox"> 3D 회전 핸들</label>
           </div>
           <div class="cad-vector">
             <label><span>Rx</span><input type="number" data-vector="rotation" data-axis="x" value="0" step="0.1"></label>

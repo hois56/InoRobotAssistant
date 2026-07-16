@@ -1,4 +1,5 @@
 const DEG_TO_RAD = Math.PI / 180;
+export const DEFAULT_CAD_COLOR_HEX = '#64748b';
 
 function finiteTriplet(value, label) {
   const values = Array.from(value || []).map(Number);
@@ -6,6 +7,22 @@ function finiteTriplet(value, label) {
     throw new Error(`${label} must contain three finite numbers.`);
   }
   return values;
+}
+
+export function cadColorToHex(color, fallback = DEFAULT_CAD_COLOR_HEX) {
+  if (!Array.isArray(color) || color.length < 3) return fallback;
+  const channels = color.slice(0, 3).map(Number);
+  if (!channels.every(Number.isFinite)) return fallback;
+  const divisor = Math.max(...channels) > 1 ? 255 : 1;
+  return `#${channels.map((channel) => {
+    const byte = Math.round(Math.min(1, Math.max(0, channel / divisor)) * 255);
+    return byte.toString(16).padStart(2, '0');
+  }).join('')}`;
+}
+
+export function normalizeCadColorHex(value, fallback = DEFAULT_CAD_COLOR_HEX) {
+  const color = String(value || '').trim().toLowerCase();
+  return /^#[0-9a-f]{6}$/.test(color) ? color : fallback;
 }
 
 export function buildWorldToToolTransform(originMm, rotationDegrees) {

@@ -19,6 +19,18 @@ const normalize = (v) => {
 const midpoint = (a, b) => scale(add(a, b), 0.5);
 const edgeKey = (a, b) => a < b ? `${a}:${b}` : `${b}:${a}`;
 
+export function averageCircleCenters(points) {
+  if (!Array.isArray(points) || points.length < 2 || points.length > 4) {
+    throw new RangeError('Circle center count must be between 2 and 4.');
+  }
+  const normalized = points.map((point) => Array.from(point || [], Number));
+  if (normalized.some((point) => point.length !== 3 || !point.every(Number.isFinite))) {
+    throw new TypeError('Each circle center must contain three finite coordinates.');
+  }
+  const total = normalized.reduce((sum, point) => add(sum, point), [0, 0, 0]);
+  return scale(total, 1 / normalized.length);
+}
+
 function boundsOf(points) {
   const min = [Infinity, Infinity, Infinity];
   const max = [-Infinity, -Infinity, -Infinity];

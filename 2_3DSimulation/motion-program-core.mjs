@@ -139,6 +139,19 @@ export function cloneMotionProgram(program) {
     };
 }
 
+export function reorderMotionSteps(steps, sourceStepId, targetStepId, placeAfter = false) {
+    if (!Array.isArray(steps)) return false;
+    const sourceIndex = steps.findIndex((step) => step.id === sourceStepId);
+    const targetIndex = steps.findIndex((step) => step.id === targetStepId);
+    if (sourceIndex < 0 || targetIndex < 0) return false;
+    let insertionIndex = targetIndex + (placeAfter ? 1 : 0);
+    if (sourceIndex < insertionIndex) insertionIndex -= 1;
+    if (insertionIndex === sourceIndex) return false;
+    const [step] = steps.splice(sourceIndex, 1);
+    steps.splice(insertionIndex, 0, step);
+    return true;
+}
+
 function finiteArray(value, length, label) {
     if (!Array.isArray(value) || value.length !== length || !value.every(Number.isFinite)) {
         throw new Error(`${label} must contain ${length} finite numbers.`);

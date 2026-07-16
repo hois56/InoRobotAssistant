@@ -169,31 +169,26 @@
       "title": "3D Simulation",
       "versions": [
         {
-          "title": "Ver 26.07.17.01",
+          "title": "Ver 26.07.17",
           "items": [
-            "**[New]** Added a multi-robot Program Panel for building independent point programs per robot and running them individually or simultaneously.",
-            "**[Support]** Supports MOVJ, MOVL, Step Into, pause, resume, stop, and repeat execution.",
-            "**[Added]** Added DELAY, TIME START, and TIME OUT commands with live cycle-time measurement.",
-            "**[Added]** Supports motion-project autosave, JSON import/export, and undo/redo for execution results.",
-            "**[Added]** Added visual collision warnings that identify the collision location and affected robots."
+            "**[Release]** Rebuilt the legacy 3D Viewer as 3D Simulation for configuring and validating multi-robot workcells.",
+            "**[Support]** Supports joint JOG, Base-coordinate TCP JOG, Tool-coordinate visualization, numeric entry, and 3D handles for 29 provided SCARA and six-axis robots.",
+            "**[Support]** Multiple identical or different robots can be placed and their programs run individually or simultaneously.",
+            "**[Support]** Supports MOVJ, MOVL, DELAY, TIME START, TIME OUT, Step Into, pause, resume, stop, repeat, and live cycle-time measurement.",
+            "**[Support]** Tool and equipment 3D models can be attached to a TCP or placed in the scene, then positioned and rotated through the model tree, numeric entry, or 3D handles.",
+            "**[Support]** Imports 3D models in STL, FBX, OBJ, GLB, GLTF, STEP, and STP formats.",
+              "**[Support]** Provides motion-project autosave, JSON import/export, and undo/redo.",
+              "**[Support]** Model Tree, JOG, and Program panels can be moved, resized, or hidden, with Korean, English, Chinese, and Vietnamese interfaces.",
+              "**[Support]** 3D Simulation supports a Virtual Controller. (Program installation required)"
           ]
-        },
-        {
-          "title": "Ver 26.07.16.01",
-            "items": [
-              "**[Release]** Supports joint JOG and Base-coordinate TCP JOG for every provided robot model.",
-              "**[Support]** Provides Tool and equipment 3D import, tree-based placement, numeric transforms, and 3D handles.",
-              "**[Support]** Supports STL, FBX, OBJ, GLB, GLTF, STEP, and STP formats with undo and redo.",
-              "**[Redesign]** Renamed and redesigned the experience as 3D Simulation with movable, detachable, hideable panels and a multilingual UI."
-            ]
-          }
+        }
         ]
       },
       {
         "title": "Robot Tool Selector",
         "versions": [
           {
-            "title": "Ver 26.07.17.01",
+            "title": "Ver 26.07.17",
             "items": [
               "**[New]** Added Mode D for calculating mass properties from STEP/STP CAD files.",
               "**[Added]** Added per-part inclusion, material, and density settings with total mass, CoG, and Tool-origin/load-center Ixx, Iyy, and Izz calculations.",
@@ -201,11 +196,13 @@
               "**[Added]** Coordinate orientation can be set with a 3D rotation handle or Rx, Ry, and Rz values.",
               "**[Added]** TCP and CoG use distinct colors and shapes with a legend in the 3D viewer.",
               "**[Added]** Added a 3D viewer grid ON/OFF button with OFF as the default.",
-              "**[Added]** The imported CAD can be exported as a STEP file using the selected Tool origin and coordinate orientation."
+              "**[Added]** The imported CAD can be exported as a STEP file using the selected Tool origin and coordinate orientation.",
+              "**[Added]** Added multiple-circle-center snapping, which calculates the average center from 2 to 4 selected circle/arc centers.",
+              "**[Changed]** Original CAD colors are preserved when changing material or density settings and when exporting STEP with the selected coordinate system."
             ]
           },
           {
-            "title": "Ver 26.04.26.01",
+            "title": "Ver 26.04.26",
             "items": [
               "**[Changed]** Set all default mass, CoG, and inertia inputs to zero.",
               "**[Fixed]** Block inertia is now calculated about the combined CoG.",

@@ -169,31 +169,26 @@
       "title": "3D Simulation",
       "versions": [
         {
-          "title": "Ver 26.07.17.01",
+          "title": "Ver 26.07.17",
           "items": [
-            "**[Mới]** Đã thêm Program Panel đa robot để xây dựng chương trình điểm độc lập cho từng robot và chạy riêng lẻ hoặc đồng thời.",
-            "**[Hỗ trợ]** Hỗ trợ MOVJ, MOVL, Step Into, tạm dừng, tiếp tục, dừng và chạy lặp.",
-            "**[Thêm]** Đã thêm lệnh DELAY, TIME START, TIME OUT và đo cycle time theo thời gian thực.",
-            "**[Thêm]** Hỗ trợ tự động lưu project chuyển động, nhập/xuất JSON và hoàn tác/làm lại kết quả chạy.",
-            "**[Thêm]** Đã thêm cảnh báo va chạm trực quan, hiển thị vị trí va chạm và robot liên quan."
+            "**[Phát hành]** Cải tổ hoàn toàn 3D Viewer hiện có thành 3D Simulation để cấu hình và kiểm tra cell đa robot.",
+            "**[Hỗ trợ]** Hỗ trợ JOG khớp, JOG TCP theo tọa độ Base, hiển thị tọa độ Tool, nhập số và tay nắm 3D cho 29 robot SCARA và sáu trục được cung cấp.",
+            "**[Hỗ trợ]** Có thể bố trí nhiều robot cùng loại hoặc khác loại và chạy chương trình của từng robot riêng lẻ hoặc đồng thời.",
+            "**[Hỗ trợ]** Hỗ trợ MOVJ, MOVL, DELAY, TIME START, TIME OUT, Step Into, tạm dừng, tiếp tục, dừng, lặp và đo cycle time theo thời gian thực.",
+            "**[Hỗ trợ]** Có thể gắn mô hình 3D Tool vào TCP hoặc đặt thiết bị trong scene, sau đó chỉnh vị trí và góc xoay bằng cây model, nhập số hoặc tay nắm 3D.",
+            "**[Hỗ trợ]** Nhập mô hình 3D định dạng STL, FBX, OBJ, GLB, GLTF, STEP và STP.",
+              "**[Hỗ trợ]** Hỗ trợ tự động lưu project chuyển động, nhập/xuất JSON và hoàn tác/làm lại.",
+              "**[Hỗ trợ]** Các panel Model Tree, JOG và Program có thể di chuyển, thay đổi kích thước hoặc ẩn, với giao diện tiếng Hàn, Anh, Trung và Việt.",
+              "**[Hỗ trợ]** 3D Simulation hỗ trợ Bộ điều khiển ảo. (Cần cài đặt chương trình)"
           ]
-        },
-        {
-          "title": "Ver 26.07.16.01",
-            "items": [
-              "**[Phát hành]** Hỗ trợ JOG khớp và JOG TCP theo tọa độ Base cho mọi model robot được cung cấp.",
-              "**[Hỗ trợ]** Cung cấp nhập 3D Tool/thiết bị, bố trí theo cây model, biến đổi số và tay nắm 3D.",
-              "**[Hỗ trợ]** Hỗ trợ STL, FBX, OBJ, GLB, GLTF, STEP, STP cùng hoàn tác và làm lại.",
-              "**[Thiết kế lại]** Đổi tên và cải tổ thành 3D Simulation với panel có thể di chuyển, tách, ẩn và giao diện đa ngôn ngữ."
-            ]
-          }
+        }
         ]
       },
       {
         "title": "Robot Tool Selector",
         "versions": [
           {
-            "title": "Ver 26.07.17.01",
+            "title": "Ver 26.07.17",
             "items": [
               "**[Mới]** Thêm Mode D để tính đặc tính khối lượng từ tệp CAD STEP/STP.",
               "**[Thêm]** Cho phép đặt trạng thái tham gia tính toán, vật liệu và mật độ cho từng chi tiết; đồng thời tính tổng khối lượng, CoG và Ixx, Iyy, Izz theo gốc Tool/tâm tải.",
@@ -201,11 +196,13 @@
               "**[Thêm]** Có thể đặt hướng hệ tọa độ bằng tay cầm xoay 3D hoặc giá trị Rx, Ry và Rz.",
               "**[Thêm]** TCP và CoG được hiển thị bằng màu sắc, hình dạng riêng và có chú giải trong trình xem 3D.",
               "**[Thêm]** Thêm nút ON/OFF lưới cho trình xem 3D với trạng thái mặc định là OFF.",
-              "**[Thêm]** Có thể xuất lại tệp STEP theo gốc Tool và hướng hệ tọa độ đã chọn."
+              "**[Thêm]** Có thể xuất lại tệp STEP theo gốc Tool và hướng hệ tọa độ đã chọn.",
+              "**[Thêm]** Thêm bắt điểm nhiều tâm đường tròn để tính tâm trung bình từ 2 đến 4 tâm đường tròn/cung đã chọn.",
+              "**[Thay đổi]** Giữ nguyên màu CAD gốc khi thay đổi cài đặt vật liệu hoặc mật độ và khi xuất STEP theo hệ tọa độ đã chọn."
             ]
           },
           {
-            "title": "Ver 26.04.26.01",
+            "title": "Ver 26.04.26",
             "items": [
               "**[Thay đổi]** Đặt mặc định khối lượng, tọa độ CoG và mômen quán tính về 0.",
               "**[Sửa]** Mômen quán tính của khối được tính theo CoG tổng.",
