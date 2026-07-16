@@ -328,6 +328,16 @@
         "title": "Document",
         "versions": [
           {
+            "title": "Ver 26.07.15",
+            "items": [
+              "`[업데이트]` EtherCAT 통신 프로파일 `V1.01`을 `IRCB50X_SERIES_ECAT_V1.05.xml`로 교체했습니다.",
+              "`[추가]` Display용 EtherCAT 통신 프로파일 `IRCB50X_SERIES_ECAT_V1.07.xml`을 추가했습니다.",
+              "`[변경]` `Remote Ethernet Control Function User Guide.pdf`의 표시를 `Common`에서 `API`로 변경했습니다.",
+              "`[변경]` `Remote IO Control Function User Guide.pdf`와 `Remote_IO_List.xlsx`의 표시를 `Common`에서 `Remote IO`로 변경했습니다.",
+              "`[추가]` `Communication setting Guide.pdf`를 Common 통신 매뉴얼로 추가했습니다."
+            ]
+          },
+          {
             "title": "Ver 26.06.23.01",
             "items": [
               "`[추가]` 하드웨어 매뉴얼에 `Safety Function` 탭을 추가했습니다.",

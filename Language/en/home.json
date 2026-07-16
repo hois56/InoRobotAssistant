@@ -328,6 +328,16 @@
         "title": "Document",
         "versions": [
           {
+            "title": "Ver 26.07.15",
+            "items": [
+              "**[Updated]** Replaced the EtherCAT V1.01 communication profile with `IRCB50X_SERIES_ECAT_V1.05.xml`.",
+              "**[Added]** Added the `IRCB50X_SERIES_ECAT_V1.07.xml` EtherCAT communication profile for Display.",
+              "**[Changed]** Changed the label for `Remote Ethernet Control Function User Guide.pdf` from Common to API.",
+              "**[Changed]** Changed the labels for `Remote IO Control Function User Guide.pdf` and `Remote_IO_List.xlsx` from Common to Remote IO.",
+              "**[Added]** Added `Communication setting Guide.pdf` as a Common communication manual."
+            ]
+          },
+          {
             "title": "Ver 26.06.23.01",
             "items": [
               "**[Added]** Added a Safety Function tab to Hardware Manuals.",

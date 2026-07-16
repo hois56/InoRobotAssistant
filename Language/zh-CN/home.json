@@ -328,6 +328,16 @@
         "title": "Document",
         "versions": [
           {
+            "title": "Ver 26.07.15",
+            "items": [
+              "将 EtherCAT V1.01 通信配置文件替换为 `IRCB50X_SERIES_ECAT_V1.05.xml`。",
+              "添加 Display 专用 EtherCAT 通信配置文件 `IRCB50X_SERIES_ECAT_V1.07.xml`。",
+              "将 `Remote Ethernet Control Function User Guide.pdf` 的标签从 Common 更改为 API。",
+              "将 `Remote IO Control Function User Guide.pdf` 与 `Remote_IO_List.xlsx` 的标签从 Common 更改为 Remote IO。",
+              "将 `Communication setting Guide.pdf` 添加为 Common 通信手册。"
+            ]
+          },
+          {
             "title": "Ver 26.06.23.01",
             "items": [
               "在硬件手册中添加 Safety Function 标签页。",

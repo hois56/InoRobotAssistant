@@ -238,7 +238,8 @@ const manualData = [
         date: "2026-03-29",
         lang: "EN",
         path: "Software_manual/Remote Ethernet Control Function User Guide.pdf",
-        description: "API Guide"
+        description: "API Guide",
+        tagLabel: "API"
     },
     {
         id: "fieldbus_guide",
@@ -248,7 +249,8 @@ const manualData = [
         date: "2026-03-29",
         lang: "EN",
         path: "Software_manual/Remote IO Control Function User Guide.pdf",
-        description: "Fieldbus Guide"
+        description: "Fieldbus Guide",
+        tagLabel: "Remote IO"
     },
     {
         id: "remote_io_list",
@@ -258,7 +260,18 @@ const manualData = [
         date: "2026-04-13",
         lang: "KR",
         path: "Software_manual/Remote_IO_List.xlsx",
-        description: "Remote IO Address List"
+        description: "Remote IO Address List",
+        tagLabel: "Remote IO"
+    },
+    {
+        id: "communication_setting_guide",
+        title: "Communication setting Guide.pdf",
+        robotType: "none",
+        category: "comm",
+        date: "2026-07-15",
+        lang: "EN",
+        path: "Software_manual/Communication setting Guide.pdf",
+        description: "Communication Setting Guide"
     },
 
     // 7. Selection Guides
@@ -446,13 +459,24 @@ const manualData = [
 const communicationProfileData = [
     {
         id: "profile_ethercat_ircb501",
-        title: "EtherCAT_IRCB501_v1.0.1.xml",
+        title: "IRCB50X_SERIES_ECAT_V1.05.xml",
         robotType: "profile",
         category: ["commProfile", "profile-ethercat"],
-        date: "2026-06-15",
+        date: "2026-07-15",
         lang: "XML",
-        path: "Comm_profile/EtherCAT_IRCB501_v1.0.1.xml",
+        path: "Comm_profile/IRCB50X_SERIES_ECAT_V1.05.xml",
         description: "EtherCAT Communication Profile"
+    },
+    {
+        id: "profile_ethercat_ircb50x_display",
+        title: "IRCB50X_SERIES_ECAT_V1.07.xml",
+        robotType: "profile",
+        category: ["commProfile", "profile-ethercat"],
+        date: "2026-07-15",
+        lang: "XML",
+        path: "Comm_profile/IRCB50X_SERIES_ECAT_V1.07.xml",
+        description: "EtherCAT Communication Profile",
+        additionalTag: "For Display"
     },
     {
         id: "profile_profinet_ircb501",
@@ -608,6 +632,7 @@ function getManualTagLabel(man) {
     const categories = getCategories(man);
     const certificateCategory = categories.find(cat => cat.startsWith('cert-'));
 
+    if (man.tagLabel) return man.tagLabel;
     if (certificateCategory) return certificateCategoryLabels[certificateCategory] || 'Certificate';
     if (hasCategory(man, 'profile-ethercat')) return 'EtherCAT Profile';
     if (hasCategory(man, 'profile-profinet')) return 'PROFINET Profile';
@@ -674,8 +699,10 @@ function renderManuals() {
         const matchesSearch = man.title.toLowerCase().includes(searchTerm) ||
                              man.description.toLowerCase().includes(searchTerm) ||
                              man.path.toLowerCase().includes(searchTerm) ||
+                             String(man.additionalTag || '').toLowerCase().includes(searchTerm) ||
                              translateUiText(man.title).toLowerCase().includes(searchTerm) ||
-                             translateUiText(man.description).toLowerCase().includes(searchTerm);
+                             translateUiText(man.description).toLowerCase().includes(searchTerm) ||
+                             translateUiText(man.additionalTag).toLowerCase().includes(searchTerm);
         return matchesSearch;
     });
 
@@ -719,6 +746,10 @@ function renderManuals() {
                     <span class="text-[12px] font-bold text-slate-500 bg-white/5 px-2.5 py-1 rounded border border-white/5 font-outfit capitalize">
                         ${getManualTagLabel(man)}
                     </span>
+                    ${man.additionalTag ? `
+                    <span class="text-[12px] font-bold text-fuchsia-300 bg-fuchsia-500/10 px-2.5 py-1 rounded border border-fuchsia-400/20 font-outfit">
+                        ${man.additionalTag}
+                    </span>` : ''}
                     <span class="text-[11px] text-slate-600 ml-1 opacity-70">${man.date}</span>
                 </div>
                 <h3 class="text-lg font-bold text-white mb-1 group-hover:text-white transition-colors" style="word-break: break-all;">${man.title}</h3>
