@@ -83,6 +83,11 @@ export function calculateDelayDuration(delaySeconds) {
     return clamp(Number(delaySeconds) || DEFAULT_DELAY_SECONDS, MIN_DELAY_SECONDS, MAX_DELAY_SECONDS);
 }
 
+export function calculateCycleElapsedSeconds(startedAt, currentAt) {
+    if (!Number.isFinite(startedAt) || !Number.isFinite(currentAt)) return null;
+    return Math.max(0, currentAt - startedAt) / 1000;
+}
+
 export function createEmptyMotionProgram(included = true) {
     return {
         included: Boolean(included),
@@ -102,7 +107,9 @@ export function cloneMotionProgram(program) {
         status: 'idle',
         progress: 0,
         cycleTimerStartedAt: null,
-        lastCycleTimeSeconds: null,
+        lastCycleTimeSeconds: Number.isFinite(program?.lastCycleTimeSeconds)
+            ? Math.max(0, Number(program.lastCycleTimeSeconds))
+            : null,
         steps: (program?.steps || []).map((step) => {
             const motion = step.motion === 'TIME_START'
                 ? 'TIME_START'

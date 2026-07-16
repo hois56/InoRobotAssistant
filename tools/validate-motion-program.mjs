@@ -13,6 +13,7 @@ import {
     calculateMovjDuration,
     calculateMovlDuration,
     calculateDelayDuration,
+    calculateCycleElapsedSeconds,
     cloneMotionProgram,
     normalizeMotionProject
 } from '../2_3DSimulation/motion-program-core.mjs';
@@ -74,6 +75,9 @@ closeTo(calculateDelayDuration(2.5), 2.5);
 closeTo(calculateDelayDuration(MIN_DELAY_SECONDS), MIN_DELAY_SECONDS);
 closeTo(calculateDelayDuration(MAX_DELAY_SECONDS), MAX_DELAY_SECONDS);
 closeTo(calculateDelayDuration(undefined), DEFAULT_DELAY_SECONDS);
+closeTo(calculateCycleElapsedSeconds(1000, 2345), 1.345);
+closeTo(calculateCycleElapsedSeconds(2345, 1000), 0);
+assert.equal(calculateCycleElapsedSeconds(null, 1000), null);
 
 const stressDurations = [
     calculateMovjDuration([0], [45], [revolute], 20),
@@ -202,12 +206,14 @@ assert.ok(!('speed' in normalized.robots[0].steps[3]) && !('delaySeconds' in nor
 const clonedDelayProgram = cloneMotionProgram({
     included: true,
     selectedStepId: normalized.robots[0].steps[2].id,
+    lastCycleTimeSeconds: 12.345,
     steps: normalized.robots[0].steps
 });
 assert.equal(clonedDelayProgram.steps[2].motion, 'DELAY');
 assert.equal(clonedDelayProgram.steps[2].delaySeconds, 1.5);
 assert.equal(clonedDelayProgram.steps[3].motion, 'TIME_START');
 assert.equal(clonedDelayProgram.steps[4].motion, 'TIME_OUT');
+assert.equal(clonedDelayProgram.lastCycleTimeSeconds, 12.345);
 assert.deepEqual(normalizeMotionProject(JSON.parse(JSON.stringify(normalized))), normalized);
 const legacyRepeatProject = structuredClone(fullProject);
 delete legacyRepeatProject.repeatCurrentRobot;
@@ -306,6 +312,14 @@ assert.deepEqual(programControlRows, [
     "segment.type === 'TIME_START' || segment.type === 'TIME_OUT'",
     'program.lastCycleTimeSeconds.toFixed(3)',
     'program.cycleTimerStartedAt += delay',
+    'session.nextSegmentStartAt += delay',
+    'calculateCycleElapsedSeconds(program.cycleTimerStartedAt, markerTime)',
+    'function updateCycleTimeReadout(',
+    'updateCycleTimeReadout(timestamp)',
+    'MAX_MOTION_TRANSITIONS_PER_FRAME',
+    'session.segment = createMotionSegment(session, session.nextSegmentStartAt)',
+    'completedSegment.startTime + completedSegment.duration',
+    'const markerTime = segment.startTime',
     'localStorage.setItem(MOTION_PROJECT_STORAGE_KEY',
     'window.showSaveFilePicker({',
     'await fileHandle.createWritable()',
@@ -326,7 +340,7 @@ assert.ok(mainSource.includes('highlighted.color?.set(0xef4444)'), 'Colliding ro
 assert.ok(mainSource.includes('mesh.material = highlight.originalMaterial'), 'Collision highlighting must restore the original link material.');
 assert.ok(mainSource.includes('updateCollisionAlert(collisionPairs)'), 'Collision pairs must update the viewport alert.');
 assert.ok(mainSource.includes("./collision-core.mjs?v=20260717-collision-fallback1"), 'Collision fallback cache token must be current.');
-assert.ok(htmlSource.includes('main.js?v=20260717-collision-fallback1'), 'Viewer cache token must load the collision fix.');
+assert.ok(htmlSource.includes('main.js?v=20260717-cycle-time-stopwatch2'), 'Viewer cache token must load the live cycle stopwatch.');
 assert.match(htmlSource, /id="collision-alert"[^>]*role="alert"[^>]*aria-live="assertive"/);
 assert.match(cssSource, /\.collision-alert\s*\{[^}]*position:\s*absolute[^}]*background:\s*rgba\(127,\s*29,\s*29,\s*0\.94\)/s);
 assert.ok(
