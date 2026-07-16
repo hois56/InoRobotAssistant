@@ -3,11 +3,16 @@ import { readFile } from 'node:fs/promises';
 import {
     MOTION_PROJECT_SCHEMA_VERSION,
     MOVJ_EASING_PEAK_SLOPE,
+    DEFAULT_DELAY_SECONDS,
+    MIN_DELAY_SECONDS,
+    MAX_DELAY_SECONDS,
     smoothstep,
     interpolateLinearPosition,
     slerpQuaternion,
     calculateMovjDuration,
     calculateMovlDuration,
+    calculateDelayDuration,
+    cloneMotionProgram,
     normalizeMotionProject
 } from '../2_3DSimulation/motion-program-core.mjs';
 
@@ -46,6 +51,10 @@ closeTo(MOVJ_EASING_PEAK_SLOPE, 1.5);
 closeTo(calculateMovlDuration(100, 0, 100), 1);
 closeTo(calculateMovlDuration(0, 180, 1000), 2);
 closeTo(calculateMovlDuration(0, 0, 100), 0.1);
+closeTo(calculateDelayDuration(2.5), 2.5);
+closeTo(calculateDelayDuration(MIN_DELAY_SECONDS), MIN_DELAY_SECONDS);
+closeTo(calculateDelayDuration(MAX_DELAY_SECONDS), MAX_DELAY_SECONDS);
+closeTo(calculateDelayDuration(undefined), DEFAULT_DELAY_SECONDS);
 
 const stressDurations = [
     calculateMovjDuration([0], [45], [revolute], 20),
@@ -112,6 +121,18 @@ const makeStep = (model, modelIndex, motion, speed) => ({
     }
 });
 
+const makeDelayStep = (model, modelIndex) => ({
+    id: `${model.folder}-DELAY`,
+    name: 'D003',
+    motion: 'DELAY',
+    delaySeconds: 1.5,
+    joints: model.limits.map(() => 0),
+    tcp: {
+        position: [modelIndex * 10, 25, 0],
+        quaternion: [0, 0, 0, 1]
+    }
+});
+
 const fullProject = {
     schemaVersion: MOTION_PROJECT_SCHEMA_VERSION,
     repeatCurrentRobot: false,
@@ -128,7 +149,11 @@ const fullProject = {
             quaternion: [0, 0, 0, 1],
             scale: [1, 1, 1]
         },
-        steps: [makeStep(model, index, 'MOVJ', 20), makeStep(model, index, 'MOVL', 100)]
+        steps: [
+            makeStep(model, index, 'MOVJ', 20),
+            makeStep(model, index, 'MOVL', 100),
+            makeDelayStep(model, index)
+        ]
     }))
 };
 
@@ -137,6 +162,15 @@ assert.equal(normalized.robots.length, 29);
 assert.equal(normalized.robots.filter((robot) => robot.included).length, 4);
 assert.equal(normalized.repeatCurrentRobot, false);
 assert.equal(normalized.repeat, true);
+assert.equal(normalized.robots[0].steps[2].motion, 'DELAY');
+assert.equal(normalized.robots[0].steps[2].delaySeconds, 1.5);
+const clonedDelayProgram = cloneMotionProgram({
+    included: true,
+    selectedStepId: normalized.robots[0].steps[2].id,
+    steps: normalized.robots[0].steps
+});
+assert.equal(clonedDelayProgram.steps[2].motion, 'DELAY');
+assert.equal(clonedDelayProgram.steps[2].delaySeconds, 1.5);
 assert.deepEqual(normalizeMotionProject(JSON.parse(JSON.stringify(normalized))), normalized);
 const legacyRepeatProject = structuredClone(fullProject);
 delete legacyRepeatProject.repeatCurrentRobot;
@@ -153,6 +187,10 @@ const invalidSpeed = structuredClone(fullProject);
 invalidSpeed.robots[0].steps[0].speed = 101;
 assert.throws(() => normalizeMotionProject(invalidSpeed), /speed is outside/);
 
+const invalidDelay = structuredClone(fullProject);
+invalidDelay.robots[0].steps[2].delaySeconds = 0;
+assert.throws(() => normalizeMotionProject(invalidDelay), /delay is outside/);
+
 const duplicateSteps = structuredClone(fullProject);
 duplicateSteps.robots[0].steps[1].id = duplicateSteps.robots[0].steps[0].id;
 assert.throws(() => normalizeMotionProject(duplicateSteps), /Duplicate step id/);
@@ -164,6 +202,7 @@ assert.throws(() => normalizeMotionProject(duplicateSteps), /Duplicate step id/)
     'collision-alert-text',
     'program-robot-list',
     'program-step-list',
+    'program-add-delay',
     'program-step-robot',
     'program-run-robot',
     'program-repeat-robot',
@@ -187,6 +226,7 @@ assert.deepEqual(programControlRows, [
     'function removeCollisionHighlight(',
     'function updateCollisionAlert(',
     'function preflightRobotMotion(',
+    'function addDelayMotionStep(',
     'function restoreMotionProjectData(',
     'function finalizeMotionHistoryIfIdle(',
     'function syncTcpVisualAtPose(',
@@ -210,6 +250,10 @@ assert.deepEqual(programControlRows, [
     'const startAt = performance.now() + 40',
     'slerpQuaternion(',
     'smoothstep(linearProgress)',
+    "if (step.motion === 'DELAY')",
+    "type: 'DELAY'",
+    'duration: calculateDelayDuration(step.delaySeconds) * 1000',
+    'delaySeconds: step.delaySeconds',
     'localStorage.setItem(MOTION_PROJECT_STORAGE_KEY',
     'window.showSaveFilePicker({',
     'await fileHandle.createWritable()',
@@ -236,6 +280,13 @@ assert.match(cssSource, /\.program-panel\s*\{/);
 assert.match(cssSource, /\.program-panel-resize\s*\{[^}]*cursor:\s*nesw-resize/s);
 assert.match(cssSource, /\.program-panel-content\s*\{[^}]*overflow-y:\s*auto/s);
 assert.match(cssSource, /\.program-robot-row\.collision/);
+assert.match(cssSource, /\.program-step-row\.delay/);
+assert.ok(mainSource.includes("['MOVJ', 'MOVL', 'DELAY']"), 'Program rows must expose DELAY as a command type.');
+const preflightSource = mainSource.slice(
+    mainSource.indexOf('function preflightRobotMotion('),
+    mainSource.indexOf('function createMotionSession(')
+);
+assert.ok(preflightSource.includes("if (step.motion === 'DELAY')") && preflightSource.includes('return;'), 'DELAY preflight must not run robot IK.');
 assert.ok(cssSource.includes('width: min(340px, calc(100% - 32px))'), 'Program Panel compact width must remain 340px.');
 assert.ok(htmlSource.includes('id="program-repeat" class="program-repeat-toggle"'), 'Repeat must be an icon toggle button.');
 assert.ok(htmlSource.includes('id="program-repeat-robot" class="program-repeat-toggle"'), 'Current robot repeat must be an icon toggle button.');
@@ -254,4 +305,4 @@ assert.ok(mainSource.includes('function makeProgramPanelResizable('), 'Program P
 assert.ok(mainSource.includes('PROGRAM_PANEL_MIN_WIDTH = 300'), 'Program Panel resizing must preserve a usable minimum width.');
 assert.ok(mainSource.includes("dataset.userResized === 'true'"), 'A resized Program Panel must be constrained after viewport changes.');
 
-console.log(`Motion program core OK: ${models.length} robots (${scaraCount} SCARA, ${sixAxisCount} six-axis), model-specific joint speeds, MOVJ/MOVL timing, linear/quaternion interpolation, four-robot numerical stress, JSON round trip, collision policy and schema checks`);
+console.log(`Motion program core OK: ${models.length} robots (${scaraCount} SCARA, ${sixAxisCount} six-axis), model-specific joint speeds, MOVJ/MOVL/DELAY timing, linear/quaternion interpolation, four-robot numerical stress, JSON round trip, collision policy and schema checks`);

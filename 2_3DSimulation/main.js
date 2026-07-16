@@ -16,15 +16,19 @@ import {
     MOTION_PROJECT_SCHEMA_VERSION,
     DEFAULT_MOVJ_SPEED,
     DEFAULT_MOVL_SPEED,
+    DEFAULT_DELAY_SECONDS,
+    MIN_DELAY_SECONDS,
+    MAX_DELAY_SECONDS,
     smoothstep,
     interpolateLinearPosition,
     slerpQuaternion,
     calculateMovjDuration,
     calculateMovlDuration,
+    calculateDelayDuration,
     createEmptyMotionProgram,
     cloneMotionProgram,
     normalizeMotionProject
-} from './motion-program-core.mjs?v=20260717-step-into-controls1';
+} from './motion-program-core.mjs?v=20260717-delay-command1';
 
 function uiText(value) {
     return window.InoRobotI18n ? window.InoRobotI18n.translate(String(value)) : String(value);
@@ -155,6 +159,7 @@ const el = {
     programStatus: document.getElementById('program-status'),
     btnProgramSelectAll: document.getElementById('program-select-all'),
     btnProgramAdd: document.getElementById('program-add-step'),
+    btnProgramAddDelay: document.getElementById('program-add-delay'),
     btnProgramUpdate: document.getElementById('program-update-step'),
     btnProgramUp: document.getElementById('program-step-up'),
     btnProgramDown: document.getElementById('program-step-down'),
@@ -489,6 +494,7 @@ function setupEventListeners() {
     el.programStepList?.addEventListener('change', handleProgramStepListChange);
     el.btnProgramSelectAll?.addEventListener('click', selectAllProgramRobots);
     el.btnProgramAdd?.addEventListener('click', addCurrentMotionStep);
+    el.btnProgramAddDelay?.addEventListener('click', addDelayMotionStep);
     el.btnProgramUpdate?.addEventListener('click', updateSelectedMotionStep);
     el.btnProgramUp?.addEventListener('click', () => moveSelectedMotionStep(-1));
     el.btnProgramDown?.addEventListener('click', () => moveSelectedMotionStep(1));
@@ -2918,6 +2924,7 @@ function setMotionProgramStatus(message, type = '') {
 }
 
 function formatMotionStepPose(step) {
+    if (step.motion === 'DELAY') return `WAIT ${Number(step.delaySeconds).toFixed(1)} s`;
     const p = step.tcp.position.map((value) => Number(value).toFixed(1)).join(', ');
     return `TCP ${p}`;
 }
@@ -2964,7 +2971,7 @@ function renderMotionProgramPanel() {
     if (!program || program.steps.length === 0) {
         const empty = document.createElement('p');
         empty.className = 'program-step-empty';
-        empty.textContent = robot ? 'Add the current robot pose.' : 'No programmable robot is loaded.';
+        empty.textContent = robot ? 'Add a pose or DELAY command.' : 'No programmable robot is loaded.';
         el.programStepList.appendChild(empty);
     } else {
         program.steps.forEach((step, index) => {
@@ -2972,7 +2979,7 @@ function renderMotionProgramPanel() {
             const isSelected = step.id === program.selectedStepId;
             const session = getMotionSession(robot);
             const isRunning = session?.currentStepId === step.id && session.status === 'running';
-            row.className = `program-step-row${isSelected ? ' active' : ''}${isRunning ? ' running' : ''}`;
+            row.className = `program-step-row${isSelected ? ' active' : ''}${isRunning ? ' running' : ''}${step.motion === 'DELAY' ? ' delay' : ''}`;
             row.dataset.programStepId = step.id;
 
             const select = document.createElement('button');
@@ -2984,7 +2991,7 @@ function renderMotionProgramPanel() {
             const motion = document.createElement('select');
             motion.dataset.programStepMotion = step.id;
             motion.dataset.programEdit = '';
-            ['MOVJ', 'MOVL'].forEach((value) => {
+            ['MOVJ', 'MOVL', 'DELAY'].forEach((value) => {
                 const option = document.createElement('option');
                 option.value = value;
                 option.textContent = value;
@@ -2993,18 +3000,19 @@ function renderMotionProgramPanel() {
             motion.value = step.motion;
 
             const speed = document.createElement('input');
+            const isDelay = step.motion === 'DELAY';
             speed.type = 'number';
             speed.className = 'program-step-speed';
-            speed.min = '1';
-            speed.max = step.motion === 'MOVJ' ? '100' : '1000';
-            speed.step = '1';
-            speed.value = String(step.speed);
+            speed.min = String(isDelay ? MIN_DELAY_SECONDS : 1);
+            speed.max = String(isDelay ? MAX_DELAY_SECONDS : step.motion === 'MOVJ' ? 100 : 1000);
+            speed.step = isDelay ? '0.1' : '1';
+            speed.value = String(isDelay ? step.delaySeconds : step.speed);
             speed.dataset.programStepSpeed = step.id;
             speed.dataset.programEdit = '';
 
             const unit = document.createElement('span');
             unit.className = 'program-step-unit';
-            unit.textContent = step.motion === 'MOVJ' ? '%' : 'mm/s';
+            unit.textContent = isDelay ? 's' : step.motion === 'MOVJ' ? '%' : 'mm/s';
             const pose = document.createElement('span');
             pose.className = 'program-step-pose';
             pose.textContent = formatMotionStepPose(step);
@@ -3014,7 +3022,7 @@ function renderMotionProgramPanel() {
     }
     syncMotionRepeatControl();
     const selected = program?.steps.find((step) => step.id === program.selectedStepId) || null;
-    if (el.btnProgramUpdate) el.btnProgramUpdate.disabled = !selected || isMotionActive();
+    if (el.btnProgramUpdate) el.btnProgramUpdate.disabled = !selected || selected.motion === 'DELAY' || isMotionActive();
     if (el.btnProgramUp) el.btnProgramUp.disabled = !selected || program.steps[0] === selected || isMotionActive();
     if (el.btnProgramDown) el.btnProgramDown.disabled = !selected || program.steps.at(-1) === selected || isMotionActive();
     if (el.btnProgramDelete) el.btnProgramDelete.disabled = !selected || isMotionActive();
@@ -3076,8 +3084,24 @@ function handleProgramStepListChange(event) {
     if (!step) return;
     const before = captureSceneSnapshot();
     if (motionControl) {
-        step.motion = motionControl.value === 'MOVL' ? 'MOVL' : 'MOVJ';
-        step.speed = step.motion === 'MOVJ' ? DEFAULT_MOVJ_SPEED : DEFAULT_MOVL_SPEED;
+        step.motion = motionControl.value === 'DELAY'
+            ? 'DELAY'
+            : motionControl.value === 'MOVL'
+                ? 'MOVL'
+                : 'MOVJ';
+        if (step.motion === 'DELAY') {
+            delete step.speed;
+            step.delaySeconds = DEFAULT_DELAY_SECONDS;
+        } else {
+            delete step.delaySeconds;
+            step.speed = step.motion === 'MOVJ' ? DEFAULT_MOVJ_SPEED : DEFAULT_MOVL_SPEED;
+        }
+    } else if (step.motion === 'DELAY') {
+        step.delaySeconds = THREE.MathUtils.clamp(
+            Number(speedControl.value) || DEFAULT_DELAY_SECONDS,
+            MIN_DELAY_SECONDS,
+            MAX_DELAY_SECONDS
+        );
     } else {
         const maximum = step.motion === 'MOVJ' ? 100 : 1000;
         step.speed = THREE.MathUtils.clamp(Number(speedControl.value) || 1, 1, maximum);
@@ -3102,11 +3126,14 @@ function captureRobotMotionStep(robot, existing = null) {
     if (!pose) return null;
     const program = ensureMotionProgram(robot);
     const number = existing ? program.steps.indexOf(existing) + 1 : program.steps.length + 1;
+    const motion = existing?.motion || 'MOVJ';
     return {
         id: existing?.id || createMotionId('point'),
         name: existing?.name || `P${String(number).padStart(3, '0')}`,
-        motion: existing?.motion || 'MOVJ',
-        speed: existing?.speed || DEFAULT_MOVJ_SPEED,
+        motion,
+        ...(motion === 'DELAY'
+            ? { delaySeconds: existing?.delaySeconds ?? DEFAULT_DELAY_SECONDS }
+            : { speed: existing?.speed ?? DEFAULT_MOVJ_SPEED }),
         joints: robot.userData.joints.map((joint) => joint.angle),
         tcp: {
             position: pose.position.toArray(),
@@ -3124,6 +3151,22 @@ function addCurrentMotionStep() {
     program.steps.push(step);
     program.selectedStepId = step.id;
     recordHistory('Add motion point', before, captureSceneSnapshot());
+    renderMotionProgramPanel();
+}
+
+function addDelayMotionStep() {
+    if (isMotionActive() || !state.activeProgramRobot) return;
+    const before = captureSceneSnapshot();
+    const program = ensureMotionProgram(state.activeProgramRobot);
+    const step = captureRobotMotionStep(state.activeProgramRobot);
+    if (!step) return;
+    step.name = `D${String(program.steps.length + 1).padStart(3, '0')}`;
+    step.motion = 'DELAY';
+    delete step.speed;
+    step.delaySeconds = DEFAULT_DELAY_SECONDS;
+    program.steps.push(step);
+    program.selectedStepId = step.id;
+    recordHistory('Add delay command', before, captureSceneSnapshot());
     renderMotionProgramPanel();
 }
 
@@ -3232,7 +3275,9 @@ function serializeMotionProject() {
                     id: step.id,
                     name: step.name,
                     motion: step.motion,
-                    speed: step.speed,
+                    ...(step.motion === 'DELAY'
+                        ? { delaySeconds: step.delaySeconds }
+                        : { speed: step.speed }),
                     joints: [...step.joints],
                     tcp: {
                         position: [...step.tcp.position],
@@ -3492,11 +3537,19 @@ function preflightRobotMotion(robot, steps) {
     const originalAngles = robot.userData.joints.map((joint) => joint.angle);
     try {
         steps.forEach((step) => {
+            if (step.motion === 'DELAY') {
+                if (!Number.isFinite(step.delaySeconds)
+                    || step.delaySeconds < MIN_DELAY_SECONDS
+                    || step.delaySeconds > MAX_DELAY_SECONDS) {
+                    throw new Error(`${step.name}: delay must be ${MIN_DELAY_SECONDS} to ${MAX_DELAY_SECONDS} seconds.`);
+                }
+                return;
+            }
             if (step.motion === 'MOVJ') {
                 validateMovjTarget(robot, step);
                 step.joints.forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle, false));
                 robot.updateMatrixWorld(true);
-            } else {
+            } else if (step.motion === 'MOVL') {
                 validateMovjTarget(robot, step);
                 solveMovlSamples(robot, motionStepTargetPose(step), step.name);
                 step.joints.forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle, false));
@@ -3507,6 +3560,8 @@ function preflightRobotMotion(robot, steps) {
                     || THREE.MathUtils.radToDeg(settled.quaternion.angleTo(target.quaternion)) > 0.35) {
                     throw new Error(`${step.name}: stored TCP and joint targets are inconsistent.`);
                 }
+            } else {
+                throw new Error(`${step.name}: unsupported program command.`);
             }
         });
     } finally {
@@ -3713,6 +3768,14 @@ function createMotionSegment(session, timestamp) {
     const step = session.steps[session.cursor];
     if (!step) return null;
     session.currentStepId = step.id;
+    if (step.motion === 'DELAY') {
+        return {
+            type: 'DELAY',
+            step,
+            startTime: timestamp,
+            duration: calculateDelayDuration(step.delaySeconds) * 1000
+        };
+    }
     if (step.motion === 'MOVJ') {
         validateMovjTarget(robot, step);
         const startAngles = robot.userData.joints.map((joint) => joint.angle);
@@ -3751,7 +3814,7 @@ function advanceMotionSegment(session, timestamp) {
             setJointAngle(robot.userData.joints[index], value, false);
         });
         robot.updateMatrixWorld(true);
-    } else {
+    } else if (segment.type === 'MOVL') {
         const target = {
             position: new THREE.Vector3().fromArray(interpolateLinearPosition(
                 segment.startPose.position.toArray(),
