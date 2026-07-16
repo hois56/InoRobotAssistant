@@ -410,9 +410,7 @@
           {
             "title": "Ver 26.07.15.01",
             "items": [
-              "`[업데이트]` InoRobot Trace를 `V1.2 → V1.3`으로 업데이트했습니다.",
-              "`[추가]` Trace에 Joint Speed J1~J6 채널을 추가했습니다.",
-              "`[수정]` InoRobot Trace에서 가상 컨트롤러 연결 시 Joint Speed 채널이 비활성화되던 문제를 수정했습니다."
+              "`[업데이트]` InoRobot Trace를 `V1.2 → V1.3`으로 업데이트했습니다."
             ]
           },
           {
@@ -431,8 +429,7 @@
           {
             "title": "Ver 26.06.10.01",
             "items": [
-              "`[업데이트]` Communication Tester를 `V2.4 → V2.5`로 업데이트했습니다.",
-              "`[정리]` 기존 Communication Tester V2.3 실행 파일과 ZIP 파일을 제거했습니다."
+              "`[업데이트]` Communication Tester를 `V2.4 → V2.5`로 업데이트했습니다."
             ]
           },
           {
@@ -445,29 +442,13 @@
             "title": "Ver 26.04.26.01",
             "items": [
               "`[업데이트]` Communication Tester를 `V2.3 → V2.4`로 업데이트했습니다.",
-              "`[신규]` InoRobot Trace V1.0 다운로드를 추가했습니다.",
-              "`[신규]` InoRobot Label Generator V2.0 다운로드를 추가했습니다.",
               "`[업데이트]` Project Compare를 `V2.0 → V2.1`로 업데이트했습니다."
             ]
           },
           {
             "title": "Ver 26.04.13.01",
             "items": [
-              "`[업데이트]` Communication Tester를 `V2.2 → V2.3`으로 업데이트했습니다.",
-              "`[수정]` ZIP 파일 대신 Git LFS 정보 파일이 다운로드되던 문제를 수정했습니다."
-            ]
-          },
-          {
-            "title": "Ver 26.04.07.01",
-            "items": [
-              "`[추가]` Zero Calibration 웹 계산기에 오프라인 Excel 다운로드 버튼을 추가했습니다."
-            ]
-          },
-          {
-            "title": "Ver 26.04.02",
-            "items": [
-              "`[신규]` Communication Tester V2.2 다운로드를 추가했습니다.",
-              "`[신규]` Project Compare V2.0 다운로드를 추가했습니다."
+              "`[업데이트]` Communication Tester를 `V2.2 → V2.3`으로 업데이트했습니다."
             ]
           }
         ]
