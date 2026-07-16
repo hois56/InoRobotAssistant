@@ -16,6 +16,7 @@ import {
     MOTION_PROJECT_SCHEMA_VERSION,
     DEFAULT_MOVJ_SPEED,
     DEFAULT_MOVL_SPEED,
+    MAX_MOVL_SPEED,
     DEFAULT_DELAY_SECONDS,
     MIN_DELAY_SECONDS,
     MAX_DELAY_SECONDS,
@@ -28,7 +29,7 @@ import {
     createEmptyMotionProgram,
     cloneMotionProgram,
     normalizeMotionProject
-} from './motion-program-core.mjs?v=20260717-delay-command1';
+} from './motion-program-core.mjs?v=20260717-movl-speed-1500-1';
 
 function uiText(value) {
     return window.InoRobotI18n ? window.InoRobotI18n.translate(String(value)) : String(value);
@@ -3004,7 +3005,7 @@ function renderMotionProgramPanel() {
             speed.type = 'number';
             speed.className = 'program-step-speed';
             speed.min = String(isDelay ? MIN_DELAY_SECONDS : 1);
-            speed.max = String(isDelay ? MAX_DELAY_SECONDS : step.motion === 'MOVJ' ? 100 : 1000);
+            speed.max = String(isDelay ? MAX_DELAY_SECONDS : step.motion === 'MOVJ' ? 100 : MAX_MOVL_SPEED);
             speed.step = isDelay ? '0.1' : '1';
             speed.value = String(isDelay ? step.delaySeconds : step.speed);
             speed.dataset.programStepSpeed = step.id;
@@ -3103,7 +3104,7 @@ function handleProgramStepListChange(event) {
             MAX_DELAY_SECONDS
         );
     } else {
-        const maximum = step.motion === 'MOVJ' ? 100 : 1000;
+        const maximum = step.motion === 'MOVJ' ? 100 : MAX_MOVL_SPEED;
         step.speed = THREE.MathUtils.clamp(Number(speedControl.value) || 1, 1, maximum);
     }
     recordHistory('Edit motion point', before, captureSceneSnapshot());

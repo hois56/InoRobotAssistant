@@ -1,6 +1,7 @@
 export const MOTION_PROJECT_SCHEMA_VERSION = 1;
 export const DEFAULT_MOVJ_SPEED = 20;
 export const DEFAULT_MOVL_SPEED = 100;
+export const MAX_MOVL_SPEED = 1500;
 export const DEFAULT_DELAY_SECONDS = 1;
 export const MIN_DELAY_SECONDS = 0.1;
 export const MAX_DELAY_SECONDS = 3600;
@@ -70,7 +71,7 @@ export function calculateMovjDuration(startAngles, targetAngles, joints, speedPe
 }
 
 export function calculateMovlDuration(distanceMillimeters, rotationDegrees, speedMillimetersPerSecond) {
-    const speed = clamp(Number(speedMillimetersPerSecond) || DEFAULT_MOVL_SPEED, 1, 1000);
+    const speed = clamp(Number(speedMillimetersPerSecond) || DEFAULT_MOVL_SPEED, 1, MAX_MOVL_SPEED);
     return Math.max(
         0.1,
         Math.max(0, Number(distanceMillimeters) || 0) / speed,
@@ -152,7 +153,7 @@ function normalizeStep(step, jointCount, index) {
             throw new Error(`Step ${index + 1} delay is outside the supported seconds range.`);
         }
     } else {
-        const maximumSpeed = motion === 'MOVJ' ? 100 : 1000;
+        const maximumSpeed = motion === 'MOVJ' ? 100 : MAX_MOVL_SPEED;
         if (!Number.isFinite(speed) || speed < 1 || speed > maximumSpeed) {
             throw new Error(`Step ${index + 1} speed is outside the ${motion} range.`);
         }
