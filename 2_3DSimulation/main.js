@@ -204,6 +204,9 @@ const CONTROLLER_REVOLUTE_DIRECTION = -1;
 const CONTROLLER_PRISMATIC_DIRECTION = 1;
 const ROBOT_BODY_COLOR = '#ece9dd';
 const AXIS_COLORS = Object.freeze({ x: '#d32f2f', y: '#388e3c', z: '#1976d2' });
+const BASE_JOG_GIZMO_SIZE = 0.82;
+const BASE_JOG_GIZMO_MESH_THICKNESS = 1.55;
+const BASE_JOG_GIZMO_STROKE_RADIUS = 0.014;
 const SCARA_TOOL_AXES = { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] };
 const SIX_AXIS_TOOL_AXES = { x: [0, 0, 1], y: [0, -1, 0], z: [1, 0, 0] };
 const stlGeometryCache = new Map();
@@ -413,7 +416,6 @@ function setupBaseJogTransformControls() {
     const controls = new TransformControls(state.camera, state.renderer.domElement);
     controls.setMode(state.baseJogGizmoMode);
     controls.setSpace('local');
-    controls.setSize(0.82);
     controls.visible = false;
     controls.enabled = false;
     controls.addEventListener('dragging-changed', (event) => {
@@ -423,6 +425,7 @@ function setupBaseJogTransformControls() {
     controls.addEventListener('objectChange', applyBaseJogGizmoTarget);
     controls.addEventListener('mouseUp', endBaseJogGizmoDrag);
     removeRotationScreenHandle(controls);
+    emphasizeBaseJogTransformControls(controls);
     applyTransformControlColors(controls);
     state.baseJogTransformControls = controls;
     state.scene.add(controls);
@@ -660,6 +663,113 @@ function removeRotationScreenHandle(transformControls) {
     });
     handles.forEach((handle) => handle.removeFromParent());
     transformControls.userData.removedScreenRotationHandles = handles.length;
+}
+
+function createBaseJogHandleStroke(lineHandle) {
+    const position = lineHandle.geometry?.getAttribute('position');
+    if (!position || position.count < 2 || lineHandle.isLineSegments) return null;
+
+    let points = Array.from({ length: position.count }, (_, index) => (
+        new THREE.Vector3(position.getX(index), position.getY(index), position.getZ(index))
+    ));
+    let geometry;
+
+    if (points.length === 2) {
+        const direction = points[1].clone().sub(points[0]);
+        const length = direction.length();
+        if (length <= Number.EPSILON) return null;
+        const midpoint = points[0].clone().add(points[1]).multiplyScalar(0.5);
+        const orientation = new THREE.Quaternion().setFromUnitVectors(
+            new THREE.Vector3(0, 1, 0),
+            direction.normalize()
+        );
+        geometry = new THREE.CylinderGeometry(
+            BASE_JOG_GIZMO_STROKE_RADIUS,
+            BASE_JOG_GIZMO_STROKE_RADIUS,
+            length,
+            10
+        );
+        geometry.applyMatrix4(new THREE.Matrix4().compose(
+            midpoint,
+            orientation,
+            new THREE.Vector3(1, 1, 1)
+        ));
+    } else {
+        const closed = lineHandle.isLineLoop || points[0].distanceTo(points.at(-1)) < 1e-5;
+        if (closed && points.length > 3 && points[0].distanceTo(points.at(-1)) < 1e-5) {
+            points = points.slice(0, -1);
+        }
+        const curve = new THREE.CatmullRomCurve3(points, closed, 'centripetal');
+        geometry = new THREE.TubeGeometry(
+            curve,
+            Math.max(24, points.length * 2),
+            BASE_JOG_GIZMO_STROKE_RADIUS,
+            8,
+            closed
+        );
+    }
+
+    const sourceMaterial = Array.isArray(lineHandle.material)
+        ? lineHandle.material[0]
+        : lineHandle.material;
+    const stroke = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
+        color: sourceMaterial?.color?.clone() || 0xffffff,
+        opacity: sourceMaterial?.opacity ?? 1,
+        transparent: true,
+        depthTest: sourceMaterial?.depthTest ?? false,
+        depthWrite: false,
+        toneMapped: false
+    }));
+    stroke.name = lineHandle.name;
+    stroke.renderOrder = lineHandle.renderOrder;
+    stroke.userData.baseJogHandleStroke = true;
+    return stroke;
+}
+
+function emphasizeBaseJogTransformControls(transformControls) {
+    const axisNames = new Set(['X', 'Y', 'Z']);
+    const lineHandles = [];
+    transformControls.setSize(BASE_JOG_GIZMO_SIZE);
+
+    transformControls.traverse((object) => {
+        if (!axisNames.has(object.name)) return;
+
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        materials.forEach((material) => {
+            if (material && 'linewidth' in material) material.linewidth = 3;
+        });
+
+        if (object.isLine) {
+            lineHandles.push(object);
+            return;
+        }
+        if (!object.isMesh || !object.geometry || object.userData.baseJogHandleThickened) return;
+
+        object.geometry.computeBoundingBox();
+        const size = object.geometry.boundingBox?.getSize(new THREE.Vector3());
+        if (!size) return;
+        const dimensions = [size.x, size.y, size.z];
+        const longestAxis = dimensions.indexOf(Math.max(...dimensions));
+        const sortedDimensions = [...dimensions].sort((left, right) => right - left);
+        if (sortedDimensions[0] <= Number.EPSILON
+            || sortedDimensions[0] < sortedDimensions[1] * 1.35) return;
+
+        const scale = [
+            BASE_JOG_GIZMO_MESH_THICKNESS,
+            BASE_JOG_GIZMO_MESH_THICKNESS,
+            BASE_JOG_GIZMO_MESH_THICKNESS
+        ];
+        scale[longestAxis] = 1;
+        const thickenedGeometry = object.geometry.clone();
+        thickenedGeometry.scale(scale[0], scale[1], scale[2]);
+        object.geometry = thickenedGeometry;
+        object.userData.baseJogHandleThickened = true;
+    });
+
+    lineHandles.forEach((lineHandle) => {
+        const stroke = createBaseJogHandleStroke(lineHandle);
+        if (stroke) lineHandle.parent?.add(stroke);
+    });
 }
 
 function applyAxesHelperColors(helper) {
