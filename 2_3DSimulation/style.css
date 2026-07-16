@@ -1021,6 +1021,38 @@ input[type="number"]::-webkit-outer-spin-button {
     font-size: 1rem;
 }
 
+.program-panel-resize {
+    cursor: nesw-resize;
+    touch-action: none;
+}
+
+.program-panel-resize:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.program-panel-content {
+    min-height: 0;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.program-panel.program-panel-resized .program-point-section,
+.panel-popout.program-panel .program-point-section {
+    display: flex;
+    flex: 1 1 174px;
+    flex-direction: column;
+}
+
+.program-panel.program-panel-resized .program-step-list,
+.panel-popout.program-panel .program-step-list {
+    min-height: 0;
+    flex: 1 1 auto;
+    max-height: none;
+}
+
 .program-robot-section,
 .program-point-section,
 .program-playback,
@@ -1581,6 +1613,10 @@ input[type="number"]::-webkit-outer-spin-button {
     height: calc(100vh - 20px);
     max-height: none !important;
     border-radius: 12px !important;
+}
+
+.panel-popout .program-panel-resize {
+    display: none;
 }
 
 .panel-popout .model-tree {

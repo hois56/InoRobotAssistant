@@ -153,6 +153,7 @@ assert.throws(() => normalizeMotionProject(duplicateSteps), /Duplicate step id/)
 
 [
     'program-panel',
+    'program-panel-resize',
     'program-robot-list',
     'program-step-list',
     'program-run-robot',
@@ -195,6 +196,8 @@ assert.ok(
     'Every animated robot must update its TCP visual, while only the active robot updates JOG controls.'
 );
 assert.match(cssSource, /\.program-panel\s*\{/);
+assert.match(cssSource, /\.program-panel-resize\s*\{[^}]*cursor:\s*nesw-resize/s);
+assert.match(cssSource, /\.program-panel-content\s*\{[^}]*overflow-y:\s*auto/s);
 assert.match(cssSource, /\.program-robot-row\.collision/);
 assert.ok(cssSource.includes('width: min(340px, calc(100% - 32px))'), 'Program Panel compact width must remain 340px.');
 assert.ok(htmlSource.includes('id="program-repeat" class="program-repeat-toggle"'), 'Repeat must be an icon toggle button.');
@@ -205,5 +208,8 @@ assert.ok(
         && mainSource.includes("querySelectorAll('[data-panel-action]')"),
     'Panel window controls must remain available while motion editing is locked.'
 );
+assert.ok(mainSource.includes('function makeProgramPanelResizable('), 'Program Panel must support pointer and keyboard resizing.');
+assert.ok(mainSource.includes('PROGRAM_PANEL_MIN_WIDTH = 300'), 'Program Panel resizing must preserve a usable minimum width.');
+assert.ok(mainSource.includes("dataset.userResized === 'true'"), 'A resized Program Panel must be constrained after viewport changes.');
 
 console.log(`Motion program core OK: ${models.length} robots (${scaraCount} SCARA, ${sixAxisCount} six-axis), model-specific joint speeds, MOVJ/MOVL timing, linear/quaternion interpolation, four-robot numerical stress, JSON round trip, collision policy and schema checks`);

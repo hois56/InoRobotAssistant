@@ -146,6 +146,7 @@ const el = {
         rz: document.getElementById('tcp-rz')
     },
     programPanel: document.getElementById('program-panel'),
+    programPanelResize: document.getElementById('program-panel-resize'),
     programRobotList: document.getElementById('program-robot-list'),
     programRobotName: document.getElementById('program-robot-name'),
     programStepList: document.getElementById('program-step-list'),
@@ -192,6 +193,8 @@ const MOTION_PROJECT_STORAGE_KEY = 'inorobot.3d-simulation.motion-project.v1';
 const MOTION_COLLISION_INTERVAL = 100;
 const MOTION_MOVL_SAMPLE_DISTANCE = 25;
 const MOTION_MOVL_SAMPLE_ANGLE = 5;
+const PROGRAM_PANEL_MIN_WIDTH = 300;
+const PROGRAM_PANEL_MIN_HEIGHT = 320;
 
 async function init() {
     try {
@@ -473,6 +476,7 @@ function setupEventListeners() {
     makePanelDraggable(el.modelBrowserPanel, el.modelBrowserPanel.querySelector('.model-browser-header'));
     makePanelDraggable(el.jogPanel, el.jogPanel.querySelector('.jog-panel-header'));
     makePanelDraggable(el.programPanel, el.programPanel?.querySelector('.program-panel-header'));
+    makeProgramPanelResizable(el.programPanel, el.programPanelResize);
 
     el.programRobotList?.addEventListener('click', handleProgramRobotListClick);
     el.programRobotList?.addEventListener('change', handleProgramRobotListChange);
@@ -983,6 +987,87 @@ function makePanelDraggable(panel, handle) {
     handle.addEventListener('pointerup', stopDrag);
     handle.addEventListener('pointercancel', stopDrag);
     handle.addEventListener('lostpointercapture', stopDrag);
+}
+
+function normalizeProgramPanelResizeBox(panel) {
+    if (!panel || panel.ownerDocument !== document) return null;
+    const canvasRect = el.canvasContainer.getBoundingClientRect();
+    const panelRect = panel.getBoundingClientRect();
+    const left = THREE.MathUtils.clamp(panelRect.left - canvasRect.left, 0, Math.max(0, canvasRect.width - 1));
+    const bottom = THREE.MathUtils.clamp(canvasRect.bottom - panelRect.bottom, 0, Math.max(0, canvasRect.height - 1));
+    const maxWidth = Math.max(1, canvasRect.width - left);
+    const maxHeight = Math.max(1, canvasRect.height - bottom);
+    const minWidth = Math.min(PROGRAM_PANEL_MIN_WIDTH, maxWidth);
+    const minHeight = Math.min(PROGRAM_PANEL_MIN_HEIGHT, maxHeight);
+    const width = THREE.MathUtils.clamp(panelRect.width, minWidth, maxWidth);
+    const height = THREE.MathUtils.clamp(panelRect.height, minHeight, maxHeight);
+
+    panel.style.left = `${left}px`;
+    panel.style.right = 'auto';
+    panel.style.top = 'auto';
+    panel.style.bottom = `${bottom}px`;
+    panel.style.width = `${width}px`;
+    panel.style.height = `${height}px`;
+    panel.style.maxHeight = '100%';
+    panel.style.transform = 'none';
+    panel.classList.add('program-panel-resized');
+    panel.dataset.userResized = 'true';
+    return { width, height, minWidth, minHeight, maxWidth, maxHeight };
+}
+
+function makeProgramPanelResizable(panel, handle) {
+    if (!panel || !handle) return;
+    let resize = null;
+
+    handle.addEventListener('pointerdown', (event) => {
+        if (panel.ownerDocument !== document || event.button !== 0) return;
+        const box = normalizeProgramPanelResizeBox(panel);
+        if (!box) return;
+        resize = {
+            pointerId: event.pointerId,
+            startX: event.clientX,
+            startY: event.clientY,
+            ...box
+        };
+        handle.setPointerCapture(event.pointerId);
+        event.preventDefault();
+        event.stopPropagation();
+    });
+
+    handle.addEventListener('pointermove', (event) => {
+        if (!resize || resize.pointerId !== event.pointerId) return;
+        const width = THREE.MathUtils.clamp(
+            resize.width + event.clientX - resize.startX,
+            resize.minWidth,
+            resize.maxWidth
+        );
+        const height = THREE.MathUtils.clamp(
+            resize.height - (event.clientY - resize.startY),
+            resize.minHeight,
+            resize.maxHeight
+        );
+        panel.style.width = `${width}px`;
+        panel.style.height = `${height}px`;
+    });
+
+    const stopResize = (event) => {
+        if (!resize || (event.pointerId !== undefined && resize.pointerId !== event.pointerId)) return;
+        resize = null;
+    };
+    handle.addEventListener('pointerup', stopResize);
+    handle.addEventListener('pointercancel', stopResize);
+    handle.addEventListener('lostpointercapture', stopResize);
+    handle.addEventListener('keydown', (event) => {
+        if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+        const box = normalizeProgramPanelResizeBox(panel);
+        if (!box) return;
+        const step = event.shiftKey ? 48 : 16;
+        const widthDelta = event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0;
+        const heightDelta = event.key === 'ArrowUp' ? step : event.key === 'ArrowDown' ? -step : 0;
+        panel.style.width = `${THREE.MathUtils.clamp(box.width + widthDelta, box.minWidth, box.maxWidth)}px`;
+        panel.style.height = `${THREE.MathUtils.clamp(box.height + heightDelta, box.minHeight, box.maxHeight)}px`;
+        event.preventDefault();
+    });
 }
 
 function ensureModelTreeId(model) {
@@ -3984,6 +4069,7 @@ function onResize() {
     state.camera.aspect = w / h;
     state.camera.updateProjectionMatrix();
     state.renderer.setSize(w, h);
+    if (el.programPanel?.dataset.userResized === 'true') normalizeProgramPanelResizeBox(el.programPanel);
 }
 
 function fitCamera() {
