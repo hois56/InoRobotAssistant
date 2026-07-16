@@ -491,7 +491,7 @@ function setupEventListeners() {
     el.btnProgramRunGroup?.addEventListener('click', runCheckedRobotPrograms);
     el.btnProgramPauseGroup?.addEventListener('click', toggleCheckedRobotMotionPause);
     el.btnProgramStopGroup?.addEventListener('click', stopCheckedRobotMotions);
-    el.programRepeat?.addEventListener('change', updateMotionRepeat);
+    el.programRepeat?.addEventListener('click', updateMotionRepeat);
     el.btnProgramExport?.addEventListener('click', exportMotionProject);
     el.btnProgramImport?.addEventListener('click', () => el.inputProgramImport?.click());
     el.inputProgramImport?.addEventListener('change', handleMotionProjectImport);
@@ -756,7 +756,7 @@ function applySceneSnapshot(snapshot) {
     state.activeProgramRobot = state.models.includes(snapshot.activeProgramRobot)
         ? snapshot.activeProgramRobot
         : state.activeArticulatedModel;
-    if (el.programRepeat) el.programRepeat.checked = state.motionRepeat;
+    syncMotionRepeatControl();
     if (state.activeArticulatedModel) renderJogControls(state.activeArticulatedModel);
     else hideJogPanel();
 
@@ -2905,7 +2905,7 @@ function renderMotionProgramPanel() {
             el.programStepList.appendChild(row);
         });
     }
-    if (el.programRepeat) el.programRepeat.checked = state.motionRepeat;
+    syncMotionRepeatControl();
     const selected = program?.steps.find((step) => step.id === program.selectedStepId) || null;
     if (el.btnProgramUpdate) el.btnProgramUpdate.disabled = !selected || isMotionActive();
     if (el.btnProgramUp) el.btnProgramUp.disabled = !selected || program.steps[0] === selected || isMotionActive();
@@ -3052,14 +3052,20 @@ function deleteSelectedMotionStep() {
 }
 
 function updateMotionRepeat() {
-    if (isMotionActive()) {
-        if (el.programRepeat) el.programRepeat.checked = state.motionRepeat;
-        return;
-    }
-    const before = captureSceneSnapshot();
-    state.motionRepeat = Boolean(el.programRepeat?.checked);
-    recordHistory('Change motion repeat', before, captureSceneSnapshot());
+    const before = isMotionActive() ? null : captureSceneSnapshot();
+    state.motionRepeat = !state.motionRepeat;
+    state.motionSessions.forEach((session) => { session.repeat = state.motionRepeat; });
+    syncMotionRepeatControl();
+    if (before) recordHistory('Change motion repeat', before, captureSceneSnapshot());
+    else scheduleMotionProjectSave();
     renderMotionProgramPanel();
+}
+
+function syncMotionRepeatControl() {
+    if (!el.programRepeat) return;
+    el.programRepeat.classList.toggle('active', state.motionRepeat);
+    el.programRepeat.setAttribute('aria-pressed', String(state.motionRepeat));
+    el.programRepeat.title = state.motionRepeat ? '반복 실행 켜짐' : '반복 실행 꺼짐';
 }
 
 function updateMotionUiLock() {
@@ -3076,7 +3082,7 @@ function updateMotionUiLock() {
     el.modelTransformPanel?.querySelectorAll('button, input').forEach((control) => { control.disabled = locked; });
     el.programPanel?.querySelectorAll('[data-program-edit], [data-program-robot-include], [data-program-step-select], [data-program-robot-select]')
         .forEach((control) => { control.disabled = locked; });
-    if (el.programRepeat) el.programRepeat.disabled = locked;
+    if (el.programRepeat) el.programRepeat.disabled = false;
     if (locked) {
         setTransformHandlesEnabled(false);
         setBaseJogGizmoEnabled(false);
@@ -3208,7 +3214,7 @@ async function restoreMotionProjectData(input) {
     }
 
     state.motionRepeat = project.repeat;
-    if (el.programRepeat) el.programRepeat.checked = project.repeat;
+    syncMotionRepeatControl();
     state.activeArticulatedModel = getArticulatedRobots()[0] || null;
     state.activeProgramRobot = state.activeArticulatedModel;
     if (state.activeArticulatedModel) {

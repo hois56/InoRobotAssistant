@@ -6,7 +6,7 @@
     <title>3D Simulation</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=20260717-motion-program2">
+    <link rel="stylesheet" href="style.css?v=20260717-motion-program4">
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/occt-import-js.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -228,7 +228,6 @@
                     <div id="program-step-list" class="program-step-list"></div>
                 </div>
                 <div class="program-playback">
-                    <label class="program-repeat"><input id="program-repeat" type="checkbox"> 반복</label>
                     <div class="program-control-row">
                         <span>현재 로봇</span>
                         <button id="program-run-step" type="button" title="선택 포인트 실행"><i class="fa-solid fa-forward-step"></i></button>
@@ -238,9 +237,10 @@
                     </div>
                     <div class="program-control-row program-group-row">
                         <span>체크 로봇</span>
-                        <button id="program-run-group" type="button" title="체크 로봇 동시 시작"><i class="fa-solid fa-play"></i> 동시 시작</button>
+                        <button id="program-run-group" type="button" title="체크 로봇 동시 시작" aria-label="체크 로봇 동시 시작"><i class="fa-solid fa-play"></i></button>
                         <button id="program-pause-group" type="button" title="체크 로봇 일시정지/재개"><i class="fa-solid fa-pause"></i></button>
                         <button id="program-stop-group" type="button" title="체크 로봇 정지"><i class="fa-solid fa-stop"></i></button>
+                        <button id="program-repeat" class="program-repeat-toggle" type="button" title="반복 실행" aria-label="반복 실행" aria-pressed="false"><i class="fa-solid fa-repeat"></i></button>
                     </div>
                 </div>
                 <div class="program-file-row">
@@ -278,6 +278,6 @@
         </div>
     </footer>
 
-    <script type="module" src="main.js?v=20260717-motion-program3"></script>
+    <script type="module" src="main.js?v=20260717-motion-program4"></script>
 </body>
 </html>
