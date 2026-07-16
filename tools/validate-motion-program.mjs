@@ -162,6 +162,9 @@ assert.ok(mainSource.includes('const MOTION_COLLISION_INTERVAL = 100'), 'Collisi
 assert.match(cssSource, /\.program-panel\s*\{/);
 assert.match(cssSource, /\.program-robot-row\.collision/);
 assert.ok(cssSource.includes('width: min(340px, calc(100% - 32px))'), 'Program Panel compact width must remain 340px.');
+assert.ok(htmlSource.includes('id="program-repeat" class="program-repeat-toggle"'), 'Repeat must be an icon toggle button.');
+assert.ok(!htmlSource.includes('<input id="program-repeat"'), 'Repeat must not use a checkbox.');
+assert.ok(!htmlSource.includes('fa-play"></i> 동시 시작'), 'Group play must use the compact icon-only button.');
 assert.ok(
     mainSource.includes("button:not([data-panel-action]), input")
         && mainSource.includes("querySelectorAll('[data-panel-action]')"),

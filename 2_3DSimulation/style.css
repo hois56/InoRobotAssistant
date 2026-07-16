@@ -1197,12 +1197,6 @@ input[type="number"]::-webkit-outer-spin-button {
     gap: 0.4rem;
 }
 
-.program-repeat {
-    justify-self: end;
-    color: var(--text-2);
-    font-size: 0.65rem;
-}
-
 .program-control-row {
     gap: 0.3rem;
 }
@@ -1217,8 +1211,8 @@ input[type="number"]::-webkit-outer-spin-button {
     min-width: 32px;
 }
 
-.program-group-row #program-run-group {
-    flex: 1;
+.program-repeat-toggle.active {
+    border-color: rgba(59, 130, 246, 0.85);
     color: #fff;
     background: rgba(37, 99, 235, 0.35);
 }
