@@ -3247,13 +3247,35 @@ async function restoreMotionProjectFromStorage() {
     }
 }
 
-function exportMotionProject() {
+async function exportMotionProject() {
+    const suggestedName = `3D-Simulation-Motion-Project-${new Date().toISOString().slice(0, 10)}.json`;
     try {
         const project = normalizeMotionProject(serializeMotionProject());
         const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json;charset=utf-8' });
-        saveAs(blob, `3D-Simulation-Motion-Project-${new Date().toISOString().slice(0, 10)}.json`);
-        setMotionProgramStatus('Project JSON saved.');
+        if (typeof window.showSaveFilePicker === 'function') {
+            const fileHandle = await window.showSaveFilePicker({
+                id: 'inorobot-motion-project',
+                suggestedName,
+                startIn: 'documents',
+                excludeAcceptAllOption: true,
+                types: [{
+                    description: '3D Simulation Motion Project',
+                    accept: { 'application/json': ['.json'] }
+                }]
+            });
+            const writable = await fileHandle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+            setMotionProgramStatus(`Project saved: ${fileHandle.name}`);
+        } else {
+            saveAs(blob, suggestedName);
+            setMotionProgramStatus('Project downloaded. Folder selection is unavailable in this browser.');
+        }
     } catch (error) {
+        if (error?.name === 'AbortError') {
+            setMotionProgramStatus('Project save canceled.');
+            return;
+        }
         setMotionProgramStatus(error.message || 'Project export failed.', 'error');
     }
 }
