@@ -6,7 +6,7 @@
     <title>3D Simulation</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=20260717-model-tree-title1">
+    <link rel="stylesheet" href="style.css?v=20260717-motion-program1">
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/occt-import-js.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -199,6 +199,57 @@
                     <p id="base-jog-status" class="base-jog-status hidden"></p>
                 </div>
             </aside>
+            <aside id="program-panel" class="program-panel hidden" aria-label="Program Panel">
+                <div class="program-panel-header">
+                    <h2>Program Panel</h2>
+                    <div class="panel-header-actions">
+                        <button type="button" data-panel-action="popout" data-panel-id="program-panel" title="별도 창으로 분리" aria-label="Program Panel을 별도 창으로 분리"><i class="fa-solid fa-up-right-from-square"></i></button>
+                        <button type="button" data-panel-action="hide" data-panel-id="program-panel" title="숨기기" aria-label="Program Panel 숨기기"><i class="fa-solid fa-eye-slash"></i></button>
+                    </div>
+                </div>
+                <div class="program-robot-section">
+                    <div class="program-section-title">
+                        <span>ROBOTS</span>
+                        <button id="program-select-all" type="button" data-program-edit>전체 선택</button>
+                    </div>
+                    <div id="program-robot-list" class="program-robot-list"></div>
+                </div>
+                <div class="program-point-section">
+                    <div class="program-section-title">
+                        <strong id="program-robot-name">로봇을 선택하세요</strong>
+                        <div class="program-point-actions">
+                            <button id="program-add-step" type="button" data-program-edit title="현재 자세 추가"><i class="fa-solid fa-plus"></i></button>
+                            <button id="program-update-step" type="button" data-program-edit title="선택 포인트 덮어쓰기"><i class="fa-solid fa-camera-rotate"></i></button>
+                            <button id="program-step-up" type="button" data-program-edit title="위로 이동"><i class="fa-solid fa-arrow-up"></i></button>
+                            <button id="program-step-down" type="button" data-program-edit title="아래로 이동"><i class="fa-solid fa-arrow-down"></i></button>
+                            <button id="program-delete-step" type="button" data-program-edit title="포인트 삭제"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div id="program-step-list" class="program-step-list"></div>
+                </div>
+                <div class="program-playback">
+                    <label class="program-repeat"><input id="program-repeat" type="checkbox"> 반복</label>
+                    <div class="program-control-row">
+                        <span>현재 로봇</span>
+                        <button id="program-run-step" type="button" title="선택 포인트 실행"><i class="fa-solid fa-forward-step"></i></button>
+                        <button id="program-run-robot" type="button" title="현재 로봇 시작"><i class="fa-solid fa-play"></i></button>
+                        <button id="program-pause-robot" type="button" title="현재 로봇 일시정지/재개"><i class="fa-solid fa-pause"></i></button>
+                        <button id="program-stop-robot" type="button" title="현재 로봇 정지"><i class="fa-solid fa-stop"></i></button>
+                    </div>
+                    <div class="program-control-row program-group-row">
+                        <span>체크 로봇</span>
+                        <button id="program-run-group" type="button" title="체크 로봇 동시 시작"><i class="fa-solid fa-play"></i> 동시 시작</button>
+                        <button id="program-pause-group" type="button" title="체크 로봇 일시정지/재개"><i class="fa-solid fa-pause"></i></button>
+                        <button id="program-stop-group" type="button" title="체크 로봇 정지"><i class="fa-solid fa-stop"></i></button>
+                    </div>
+                </div>
+                <div class="program-file-row">
+                    <button id="program-export" type="button"><i class="fa-solid fa-file-export"></i> 프로젝트 저장</button>
+                    <button id="program-import" type="button" data-program-edit><i class="fa-solid fa-file-import"></i> 프로젝트 불러오기</button>
+                    <input id="program-import-file" type="file" accept="application/json,.json" hidden>
+                </div>
+                <p id="program-status" class="program-status">Ready</p>
+            </aside>
         </div>
     </main>
 
@@ -227,6 +278,6 @@
         </div>
     </footer>
 
-    <script type="module" src="main.js?v=20260717-axis-colors1"></script>
+    <script type="module" src="main.js?v=20260717-motion-program1"></script>
 </body>
 </html>
