@@ -11,6 +11,20 @@ import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { OBB } from 'three/addons/math/OBB.js';
+import {
+    MOTION_PROJECT_SCHEMA_VERSION,
+    DEFAULT_MOVJ_SPEED,
+    DEFAULT_MOVL_SPEED,
+    smoothstep,
+    interpolateLinearPosition,
+    slerpQuaternion,
+    calculateMovjDuration,
+    calculateMovlDuration,
+    createEmptyMotionProgram,
+    cloneMotionProgram,
+    normalizeMotionProject
+} from './motion-program-core.mjs?v=20260717-motion-program1';
 
 function uiText(value) {
     return window.InoRobotI18n ? window.InoRobotI18n.translate(String(value)) : String(value);
@@ -42,6 +56,15 @@ const state = {
     baseJogGizmoDragging: false,
     baseJogGizmoApplying: false,
     baseJogGizmoStartTarget: null,
+    motionPrograms: new Map(),
+    motionSessions: new Map(),
+    activeProgramRobot: null,
+    motionRepeat: false,
+    motionHistoryBefore: null,
+    motionSaveTimer: null,
+    collisionRobotIds: new Set(),
+    collisionHelpers: new Map(),
+    lastCollisionCheck: 0,
     pendingImportFile: null,
     occtImporterPromise: null,
     grid: null, baseAxes: null, labels: [],
@@ -122,6 +145,28 @@ const el = {
         ry: document.getElementById('tcp-ry'),
         rz: document.getElementById('tcp-rz')
     },
+    programPanel: document.getElementById('program-panel'),
+    programRobotList: document.getElementById('program-robot-list'),
+    programRobotName: document.getElementById('program-robot-name'),
+    programStepList: document.getElementById('program-step-list'),
+    programStatus: document.getElementById('program-status'),
+    btnProgramSelectAll: document.getElementById('program-select-all'),
+    btnProgramAdd: document.getElementById('program-add-step'),
+    btnProgramUpdate: document.getElementById('program-update-step'),
+    btnProgramUp: document.getElementById('program-step-up'),
+    btnProgramDown: document.getElementById('program-step-down'),
+    btnProgramDelete: document.getElementById('program-delete-step'),
+    btnProgramRunStep: document.getElementById('program-run-step'),
+    btnProgramRunRobot: document.getElementById('program-run-robot'),
+    btnProgramPauseRobot: document.getElementById('program-pause-robot'),
+    btnProgramStopRobot: document.getElementById('program-stop-robot'),
+    btnProgramRunGroup: document.getElementById('program-run-group'),
+    btnProgramPauseGroup: document.getElementById('program-pause-group'),
+    btnProgramStopGroup: document.getElementById('program-stop-group'),
+    programRepeat: document.getElementById('program-repeat'),
+    btnProgramExport: document.getElementById('program-export'),
+    btnProgramImport: document.getElementById('program-import'),
+    inputProgramImport: document.getElementById('program-import-file'),
     btnAddMode:      null 
 };
 
@@ -143,6 +188,10 @@ const SUPPORTED_IMPORT_EXTENSIONS = new Set(['stl', 'fbx', 'obj', 'glb', 'gltf',
 const Y_UP_IMPORT_EXTENSIONS = new Set(['fbx', 'glb', 'gltf']);
 const IMPORT_PLACEMENT_COLORS = { tcp: 0xf97316, scene: 0x65a30d };
 const OCCT_IMPORT_BASE_URL = 'https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/';
+const MOTION_PROJECT_STORAGE_KEY = 'inorobot.3d-simulation.motion-project.v1';
+const MOTION_COLLISION_INTERVAL = 100;
+const MOTION_MOVL_SAMPLE_DISTANCE = 25;
+const MOTION_MOVL_SAMPLE_ANGLE = 5;
 
 async function init() {
     try {
@@ -153,6 +202,7 @@ async function init() {
         setupEventListeners();
         animate();
         await populateModelList();
+        await restoreMotionProjectFromStorage();
         setStatus('Ready', '#22c55e');
     } catch (err) {
         console.error("Initialization Failed:", err);
@@ -172,6 +222,17 @@ function setupUI() {
     `;
     wrapper.after(container);
     el.btnAddMode = document.getElementById('chk-add-mode');
+
+    if (el.panelLauncher && !el.panelLauncher.querySelector('[data-panel-toggle="program-panel"]')) {
+        const programButton = document.createElement('button');
+        programButton.type = 'button';
+        programButton.dataset.panelToggle = 'program-panel';
+        programButton.disabled = true;
+        programButton.title = '모션 프로그램 표시/숨김';
+        programButton.innerHTML = '<i class="fa-solid fa-list-check"></i> Program';
+        const divider = el.panelLauncher.querySelector('.viewer-control-divider');
+        el.panelLauncher.insertBefore(programButton, divider);
+    }
     
     // Update CAD download button title
     const btnDown = document.getElementById('btn-download-cad');
@@ -194,6 +255,7 @@ function refreshLocalizedControls() {
     });
     renderModelTree();
     refreshJointControlLabels();
+    renderMotionProgramPanel();
     if (el.baseJogStatus?.dataset.sourceMessage) {
         el.baseJogStatus.textContent = uiText(el.baseJogStatus.dataset.sourceMessage);
     }
@@ -410,6 +472,29 @@ function setupEventListeners() {
     el.btnRedo?.addEventListener('click', redoLastAction);
     makePanelDraggable(el.modelBrowserPanel, el.modelBrowserPanel.querySelector('.model-browser-header'));
     makePanelDraggable(el.jogPanel, el.jogPanel.querySelector('.jog-panel-header'));
+    makePanelDraggable(el.programPanel, el.programPanel?.querySelector('.program-panel-header'));
+
+    el.programRobotList?.addEventListener('click', handleProgramRobotListClick);
+    el.programRobotList?.addEventListener('change', handleProgramRobotListChange);
+    el.programStepList?.addEventListener('click', handleProgramStepListClick);
+    el.programStepList?.addEventListener('change', handleProgramStepListChange);
+    el.btnProgramSelectAll?.addEventListener('click', selectAllProgramRobots);
+    el.btnProgramAdd?.addEventListener('click', addCurrentMotionStep);
+    el.btnProgramUpdate?.addEventListener('click', updateSelectedMotionStep);
+    el.btnProgramUp?.addEventListener('click', () => moveSelectedMotionStep(-1));
+    el.btnProgramDown?.addEventListener('click', () => moveSelectedMotionStep(1));
+    el.btnProgramDelete?.addEventListener('click', deleteSelectedMotionStep);
+    el.btnProgramRunStep?.addEventListener('click', runSelectedMotionStep);
+    el.btnProgramRunRobot?.addEventListener('click', runActiveRobotProgram);
+    el.btnProgramPauseRobot?.addEventListener('click', toggleActiveRobotMotionPause);
+    el.btnProgramStopRobot?.addEventListener('click', stopActiveRobotMotion);
+    el.btnProgramRunGroup?.addEventListener('click', runCheckedRobotPrograms);
+    el.btnProgramPauseGroup?.addEventListener('click', toggleCheckedRobotMotionPause);
+    el.btnProgramStopGroup?.addEventListener('click', stopCheckedRobotMotions);
+    el.programRepeat?.addEventListener('change', updateMotionRepeat);
+    el.btnProgramExport?.addEventListener('click', exportMotionProject);
+    el.btnProgramImport?.addEventListener('click', () => el.inputProgramImport?.click());
+    el.inputProgramImport?.addEventListener('change', handleMotionProjectImport);
 
     el.btnResetJoints?.addEventListener('click', () => {
         stopBaseJogHold();
@@ -474,6 +559,7 @@ function setupEventListeners() {
     });
 
     el.btnToggleTransform.addEventListener('click', () => {
+        if (isMotionActive()) return;
         setTransformHandlesEnabled(!state.transformControls.enabled);
     });
 
@@ -485,6 +571,7 @@ function setupEventListeners() {
     }
 
     window.addEventListener('beforeunload', () => {
+        saveMotionProjectNow();
         [...state.panelWindows.keys()].forEach((panelId) => restorePanelFromWindow(panelId, true));
     });
 }
@@ -502,6 +589,7 @@ function handleGlobalKeyDown(event) {
     const target = event.target;
     const isEditing = target?.isContentEditable || ['INPUT', 'SELECT', 'TEXTAREA'].includes(target?.tagName);
     if (isEditing || el.importDialog?.open) return;
+    if (isMotionActive()) return;
 
     const mode = { w: 'translate', e: 'rotate', r: 'scale' }[key];
     if (mode && state.selectedModel) {
@@ -581,7 +669,13 @@ function captureSceneSnapshot() {
                 angles: robot.userData.joints.map((joint) => joint.angle)
             })),
         selectedModel: currentModels.has(state.selectedModel) ? state.selectedModel : null,
-        activeArticulatedModel: currentModels.has(state.activeArticulatedModel) ? state.activeArticulatedModel : null
+        activeArticulatedModel: currentModels.has(state.activeArticulatedModel) ? state.activeArticulatedModel : null,
+        activeProgramRobot: currentModels.has(state.activeProgramRobot) ? state.activeProgramRobot : null,
+        motionRepeat: state.motionRepeat,
+        motionPrograms: getArticulatedRobots().map((robot) => ({
+            robot,
+            program: cloneMotionProgram(ensureMotionProgram(robot))
+        }))
     };
 }
 
@@ -603,13 +697,25 @@ function sceneSnapshotsEqual(a, b) {
         if (a.joints[index].robot !== b.joints[index].robot
             || !numberArraysEqual(a.joints[index].angles, b.joints[index].angles)) return false;
     }
-    return a.selectedModel === b.selectedModel
-        && a.activeArticulatedModel === b.activeArticulatedModel;
+    if (a.selectedModel !== b.selectedModel
+        || a.activeArticulatedModel !== b.activeArticulatedModel
+        || a.activeProgramRobot !== b.activeProgramRobot
+        || Boolean(a.motionRepeat) !== Boolean(b.motionRepeat)) return false;
+    const leftPrograms = (a.motionPrograms || []).map(({ robot, program }) => ({
+        instanceId: robot.userData.motionInstanceId,
+        program
+    }));
+    const rightPrograms = (b.motionPrograms || []).map(({ robot, program }) => ({
+        instanceId: robot.userData.motionInstanceId,
+        program
+    }));
+    return JSON.stringify(leftPrograms) === JSON.stringify(rightPrograms);
 }
 
 function applySceneSnapshot(snapshot) {
     if (!snapshot) return;
     state.historySuspended = true;
+    clearCollisionWarnings();
     setTransformHandlesEnabled(false);
     setBaseJogGizmoEnabled(false);
 
@@ -642,23 +748,35 @@ function applySceneSnapshot(snapshot) {
     state.activeArticulatedModel = state.models.includes(snapshot.activeArticulatedModel)
         ? snapshot.activeArticulatedModel
         : [...state.models].reverse().find((model) => model.userData.tcpFrame) || null;
+    state.motionPrograms = new Map((snapshot.motionPrograms || [])
+        .filter(({ robot }) => state.models.includes(robot))
+        .map(({ robot, program }) => [robot.userData.motionInstanceId, cloneMotionProgram(program)]));
+    getArticulatedRobots().forEach((robot) => ensureMotionProgram(robot));
+    state.motionRepeat = Boolean(snapshot.motionRepeat);
+    state.activeProgramRobot = state.models.includes(snapshot.activeProgramRobot)
+        ? snapshot.activeProgramRobot
+        : state.activeArticulatedModel;
+    if (el.programRepeat) el.programRepeat.checked = state.motionRepeat;
     if (state.activeArticulatedModel) renderJogControls(state.activeArticulatedModel);
     else hideJogPanel();
 
     updateUIStatus();
     selectSceneModel(state.models.includes(snapshot.selectedModel) ? snapshot.selectedModel : null);
+    renderMotionProgramPanel();
+    scheduleMotionProjectSave();
     state.historySuspended = false;
 }
 
 function updateHistoryButtons() {
+    const locked = isMotionActive();
     if (el.btnUndo) {
-        el.btnUndo.disabled = state.undoStack.length === 0;
+        el.btnUndo.disabled = locked || state.undoStack.length === 0;
         el.btnUndo.title = state.undoStack.length
             ? `되돌리기: ${state.undoStack[state.undoStack.length - 1].label} (Ctrl+Z)`
             : '되돌리기 (Ctrl+Z)';
     }
     if (el.btnRedo) {
-        el.btnRedo.disabled = state.redoStack.length === 0;
+        el.btnRedo.disabled = locked || state.redoStack.length === 0;
         el.btnRedo.title = state.redoStack.length
             ? `다시 실행: ${state.redoStack[state.redoStack.length - 1].label} (Ctrl+Y)`
             : '다시 실행 (Ctrl+Y)';
@@ -671,6 +789,7 @@ function recordHistory(label, before, after) {
     if (state.undoStack.length > 100) state.undoStack.shift();
     state.redoStack = [];
     updateHistoryButtons();
+    scheduleMotionProjectSave();
 }
 
 function commitPendingHistory(label, stateKey) {
@@ -691,6 +810,7 @@ function commitAllPendingHistories() {
 }
 
 function undoLastAction() {
+    if (isMotionActive()) return;
     commitAllPendingHistories();
     const entry = state.undoStack.pop();
     if (!entry) return;
@@ -701,6 +821,7 @@ function undoLastAction() {
 }
 
 function redoLastAction() {
+    if (isMotionActive()) return;
     commitAllPendingHistories();
     const entry = state.redoStack.pop();
     if (!entry) return;
@@ -711,16 +832,19 @@ function redoLastAction() {
 }
 
 function getPanelElement(panelId) {
-    return panelId === 'model-browser-panel' ? el.modelBrowserPanel
-        : panelId === 'jog-panel' ? el.jogPanel
-            : null;
+    return {
+        'model-browser-panel': el.modelBrowserPanel,
+        'jog-panel': el.jogPanel,
+        'program-panel': el.programPanel
+    }[panelId] || null;
 }
 
 function updatePanelLauncher(panelId) {
     const panel = getPanelElement(panelId);
     const button = document.querySelector(`[data-panel-toggle="${panelId}"]`);
     if (!panel || !button) return;
-    const unavailable = panelId === 'jog-panel' && !state.activeArticulatedModel;
+    const unavailable = (panelId === 'jog-panel' && !state.activeArticulatedModel)
+        || (panelId === 'program-panel' && getArticulatedRobots().length === 0);
     button.disabled = unavailable;
     button.classList.toggle('active', !unavailable && !panel.classList.contains('panel-user-hidden'));
 }
@@ -800,6 +924,7 @@ function popOutPanel(panelId) {
 }
 
 function getPanelWindowTitle(panelId) {
+    if (panelId === 'program-panel') return '3D Simulation - Program Panel';
     const panelName = panelId === 'model-browser-panel' ? uiText('모델 트리') : uiText('JOG Panel');
     return `3D Simulation - ${panelName}`;
 }
@@ -849,6 +974,7 @@ function makePanelDraggable(panel, handle) {
         panel.style.top = `${top}px`;
         panel.style.right = 'auto';
         panel.style.bottom = 'auto';
+        panel.style.transform = 'none';
     });
     const stopDrag = (event) => {
         if (!drag || (event.pointerId !== undefined && drag.pointerId !== event.pointerId)) return;
@@ -893,7 +1019,8 @@ function createModelTreeNode(model) {
     button.className = `model-tree-button${model === state.selectedModel ? ' active' : ''}`;
     button.classList.add(`model-tree-button-${meta.kind.toLowerCase()}`);
     button.dataset.modelTreeId = treeId;
-    button.title = `${model.userData.modelName || model.name || uiText('MODEL')} ${uiText('선택')}`;
+    const displayName = model.userData.motionDisplayName || model.userData.modelName || model.name || uiText('MODEL');
+    button.title = `${displayName} ${uiText('선택')}`;
 
     const icon = document.createElement('span');
     icon.className = 'model-tree-icon';
@@ -901,7 +1028,7 @@ function createModelTreeNode(model) {
 
     const name = document.createElement('span');
     name.className = 'model-tree-name';
-    name.textContent = model.userData.modelName || model.name || uiText('Unnamed model');
+    name.textContent = displayName;
 
     const kind = document.createElement('span');
     kind.className = 'model-tree-kind';
@@ -995,6 +1122,7 @@ function setSelectedTransformMode(mode) {
 }
 
 function selectSceneModel(model) {
+    if (isMotionActive()) return;
     if (model && !state.models.includes(model)) return;
     state.selectedModel = model || null;
     renderModelTree();
@@ -1006,11 +1134,15 @@ function selectSceneModel(model) {
     }
 
     el.modelTransformPanel.classList.remove('hidden');
-    el.selectedModelName.textContent = model.userData.modelName || model.name || uiText('Unnamed model');
+    el.selectedModelName.textContent = model.userData.motionDisplayName || model.userData.modelName || model.name || uiText('Unnamed model');
     el.selectedCoordinateLabel.textContent = model.userData.placement === 'tcp' ? 'TOOL' : 'BASE';
     if (model.userData.tcpFrame && state.activeArticulatedModel !== model) {
         state.activeArticulatedModel = model;
         renderJogControls(model);
+    }
+    if (model.userData.tcpFrame) {
+        state.activeProgramRobot = model;
+        renderMotionProgramPanel();
     }
     updateSelectedModelTransformInputs();
     setSelectedTransformMode('translate');
@@ -1023,6 +1155,7 @@ function beginNumericTransformHistory() {
 }
 
 function applySelectedModelNumericTransform(event) {
+    if (isMotionActive()) return;
     const model = state.selectedModel;
     if (!model) return;
     beginNumericTransformHistory();
@@ -1047,6 +1180,7 @@ function applySelectedModelNumericTransform(event) {
 }
 
 async function loadModelFromServer(modelDefinition) {
+    if (isMotionActive()) return;
     const { file, folder, name, type = 'fbx' } = modelDefinition;
     setTransformHandlesEnabled(false);
     setBaseJogGizmoEnabled(false);
@@ -1101,13 +1235,20 @@ async function loadModelFromServer(modelDefinition) {
             model.position.y += (state.models.length * 600);
         }
 
+        if (type === 'articulated-stl') {
+            assignRobotInstanceMetadata(model, modelDefinition);
+            ensureMotionProgram(model);
+        }
+
         state.models.push(model);
         state.scene.add(model);
         ensureModelTreeId(model);
 
         if (type === 'articulated-stl') {
             state.activeArticulatedModel = model;
+            state.activeProgramRobot = model;
             renderJogControls(model);
+            showMotionProgramPanel();
         } else {
             state.activeArticulatedModel = null;
             hideJogPanel();
@@ -1115,6 +1256,7 @@ async function loadModelFromServer(modelDefinition) {
 
         updateUIStatus();
         selectSceneModel(model);
+        renderMotionProgramPanel();
         recordHistory('모델 불러오기', historyBefore, captureSceneSnapshot());
         showLoading(false);
         if(!isAddMode) fitCamera();
@@ -1239,6 +1381,7 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
     baseAxesAtTcp.renderOrder = 20;
     robot.add(baseAxesAtTcp);
     robot.userData.baseAxesAtTcp = baseAxesAtTcp;
+    prepareRobotCollisionParts(robot);
 
     return robot;
 }
@@ -2580,6 +2723,978 @@ function solveLinearSystem(matrix, vector) {
     return augmented.map((row) => row[size]);
 }
 
+function getArticulatedRobots() {
+    return state.models.filter((model) => Array.isArray(model.userData.joints) && model.userData.tcpFrame);
+}
+
+function createMotionId(prefix = 'motion') {
+    if (globalThis.crypto?.randomUUID) return `${prefix}-${globalThis.crypto.randomUUID()}`;
+    return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function assignRobotInstanceMetadata(robot, modelDefinition, preferred = {}) {
+    const modelName = preferred.modelName || modelDefinition?.name || robot.userData.robotName || robot.name || 'Robot';
+    const matchingRobots = getArticulatedRobots().filter((candidate) => (
+        (candidate.userData.motionModelName || candidate.userData.robotName) === modelName
+    ));
+    const nextSequence = Math.max(
+        matchingRobots.length,
+        ...matchingRobots.map((candidate) => {
+            const match = candidate.userData.motionDisplayName?.match(/#(\d+)$/);
+            return match ? Number(match[1]) : 0;
+        })
+    ) + 1;
+    robot.userData.motionInstanceId = preferred.instanceId || robot.userData.motionInstanceId || createMotionId('robot');
+    robot.userData.motionModelName = modelName;
+    robot.userData.motionDisplayName = preferred.displayName || `${modelName} #${nextSequence}`;
+    robot.userData.motionModelFolder = preferred.modelFolder || modelDefinition?.folder || '';
+    robot.userData.motionRobotType = preferred.robotType || modelDefinition?.robotType || robot.userData.manifest?.robotType || '';
+    robot.userData.motionModelDefinition = modelDefinition || robot.userData.motionModelDefinition || null;
+    return robot.userData.motionInstanceId;
+}
+
+function ensureMotionProgram(robot) {
+    if (!robot?.userData.tcpFrame) return null;
+    if (!robot.userData.motionInstanceId) {
+        assignRobotInstanceMetadata(robot, robot.userData.motionModelDefinition || {
+            name: robot.userData.robotName,
+            folder: robot.userData.motionModelFolder,
+            robotType: robot.userData.manifest?.robotType
+        });
+    }
+    const id = robot.userData.motionInstanceId;
+    if (!state.motionPrograms.has(id)) state.motionPrograms.set(id, createEmptyMotionProgram(true));
+    return state.motionPrograms.get(id);
+}
+
+function getMotionSession(robot) {
+    return robot ? state.motionSessions.get(robot.userData.motionInstanceId) || null : null;
+}
+
+function isMotionActive() {
+    return state.motionSessions.size > 0;
+}
+
+function getMotionStatus(robot) {
+    const id = robot.userData.motionInstanceId;
+    if (state.collisionRobotIds.has(id)) return 'collision';
+    return getMotionSession(robot)?.status || ensureMotionProgram(robot)?.status || 'idle';
+}
+
+function motionStatusLabel(status) {
+    return ({
+        idle: 'Waiting',
+        running: 'Running',
+        paused: 'Paused',
+        completed: 'Completed',
+        error: 'Error',
+        collision: 'Collision',
+        stopped: 'Stopped'
+    })[status] || status;
+}
+
+function showMotionProgramPanel() {
+    if (!el.programPanel) return;
+    el.programPanel.classList.remove('hidden');
+    if (!el.programPanel.dataset.motionPanelInitialized) {
+        el.programPanel.classList.remove('panel-user-hidden');
+        el.programPanel.dataset.motionPanelInitialized = 'true';
+    }
+    updatePanelLauncher('program-panel');
+}
+
+function setMotionProgramStatus(message, type = '') {
+    if (!el.programStatus) return;
+    el.programStatus.textContent = message;
+    el.programStatus.classList.toggle('error', type === 'error');
+    el.programStatus.classList.toggle('working', type === 'working');
+}
+
+function formatMotionStepPose(step) {
+    const p = step.tcp.position.map((value) => Number(value).toFixed(1)).join(', ');
+    return `TCP ${p}`;
+}
+
+function renderMotionProgramPanel() {
+    if (!el.programRobotList || !el.programStepList) return;
+    const robots = getArticulatedRobots();
+    if (!robots.includes(state.activeProgramRobot)) {
+        state.activeProgramRobot = robots.includes(state.activeArticulatedModel)
+            ? state.activeArticulatedModel
+            : robots[0] || null;
+    }
+    el.programRobotList.replaceChildren();
+    robots.forEach((robot) => {
+        const program = ensureMotionProgram(robot);
+        const status = getMotionStatus(robot);
+        const row = document.createElement('div');
+        row.className = `program-robot-row${robot === state.activeProgramRobot ? ' active' : ''}${status === 'collision' ? ' collision' : ''}`;
+        row.dataset.robotInstanceId = robot.userData.motionInstanceId;
+
+        const included = document.createElement('input');
+        included.type = 'checkbox';
+        included.checked = program.included;
+        included.dataset.programRobotInclude = robot.userData.motionInstanceId;
+        included.setAttribute('aria-label', `${robot.userData.motionDisplayName} simultaneous run`);
+
+        const select = document.createElement('button');
+        select.type = 'button';
+        select.className = 'program-robot-select';
+        select.dataset.programRobotSelect = robot.userData.motionInstanceId;
+        select.textContent = robot.userData.motionDisplayName;
+
+        const statusText = document.createElement('span');
+        statusText.className = `program-robot-status ${status}`;
+        statusText.textContent = motionStatusLabel(status);
+        row.append(included, select, statusText);
+        el.programRobotList.appendChild(row);
+    });
+
+    const robot = state.activeProgramRobot;
+    const program = robot ? ensureMotionProgram(robot) : null;
+    el.programRobotName.textContent = robot?.userData.motionDisplayName || 'Select a robot';
+    el.programStepList.replaceChildren();
+    if (!program || program.steps.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'program-step-empty';
+        empty.textContent = robot ? 'Add the current robot pose.' : 'No programmable robot is loaded.';
+        el.programStepList.appendChild(empty);
+    } else {
+        program.steps.forEach((step, index) => {
+            const row = document.createElement('div');
+            const isSelected = step.id === program.selectedStepId;
+            const session = getMotionSession(robot);
+            const isRunning = session?.currentStepId === step.id && session.status === 'running';
+            row.className = `program-step-row${isSelected ? ' active' : ''}${isRunning ? ' running' : ''}`;
+            row.dataset.programStepId = step.id;
+
+            const select = document.createElement('button');
+            select.type = 'button';
+            select.className = 'program-step-select';
+            select.dataset.programStepSelect = step.id;
+            select.textContent = step.name || `P${String(index + 1).padStart(3, '0')}`;
+
+            const motion = document.createElement('select');
+            motion.dataset.programStepMotion = step.id;
+            motion.dataset.programEdit = '';
+            ['MOVJ', 'MOVL'].forEach((value) => {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = value;
+                motion.appendChild(option);
+            });
+            motion.value = step.motion;
+
+            const speed = document.createElement('input');
+            speed.type = 'number';
+            speed.className = 'program-step-speed';
+            speed.min = '1';
+            speed.max = step.motion === 'MOVJ' ? '100' : '1000';
+            speed.step = '1';
+            speed.value = String(step.speed);
+            speed.dataset.programStepSpeed = step.id;
+            speed.dataset.programEdit = '';
+
+            const unit = document.createElement('span');
+            unit.className = 'program-step-unit';
+            unit.textContent = step.motion === 'MOVJ' ? '%' : 'mm/s';
+            const pose = document.createElement('span');
+            pose.className = 'program-step-pose';
+            pose.textContent = formatMotionStepPose(step);
+            row.append(select, motion, speed, unit, pose);
+            el.programStepList.appendChild(row);
+        });
+    }
+    if (el.programRepeat) el.programRepeat.checked = state.motionRepeat;
+    const selected = program?.steps.find((step) => step.id === program.selectedStepId) || null;
+    if (el.btnProgramUpdate) el.btnProgramUpdate.disabled = !selected || isMotionActive();
+    if (el.btnProgramUp) el.btnProgramUp.disabled = !selected || program.steps[0] === selected || isMotionActive();
+    if (el.btnProgramDown) el.btnProgramDown.disabled = !selected || program.steps.at(-1) === selected || isMotionActive();
+    if (el.btnProgramDelete) el.btnProgramDelete.disabled = !selected || isMotionActive();
+    if (el.btnProgramRunStep) el.btnProgramRunStep.disabled = !selected;
+    if (el.btnProgramRunRobot) el.btnProgramRunRobot.disabled = !program?.steps.length;
+    if (el.btnProgramRunGroup) el.btnProgramRunGroup.disabled = !robots.some((candidate) => {
+        const candidateProgram = ensureMotionProgram(candidate);
+        return candidateProgram.included && candidateProgram.steps.length;
+    });
+    updateMotionUiLock();
+    updatePanelLauncher('program-panel');
+}
+
+function findProgramRobot(instanceId) {
+    return getArticulatedRobots().find((robot) => robot.userData.motionInstanceId === instanceId) || null;
+}
+
+function handleProgramRobotListClick(event) {
+    const button = event.target.closest('[data-program-robot-select]');
+    if (!button || isMotionActive()) return;
+    const robot = findProgramRobot(button.dataset.programRobotSelect);
+    if (!robot) return;
+    state.activeProgramRobot = robot;
+    selectSceneModel(robot);
+    renderMotionProgramPanel();
+}
+
+function handleProgramRobotListChange(event) {
+    const checkbox = event.target.closest('[data-program-robot-include]');
+    if (!checkbox || isMotionActive()) return;
+    const robot = findProgramRobot(checkbox.dataset.programRobotInclude);
+    if (!robot) return;
+    const before = captureSceneSnapshot();
+    ensureMotionProgram(robot).included = checkbox.checked;
+    recordHistory('Change simultaneous run selection', before, captureSceneSnapshot());
+    renderMotionProgramPanel();
+}
+
+function handleProgramStepListClick(event) {
+    const button = event.target.closest('[data-program-step-select]');
+    if (!button || isMotionActive()) return;
+    const program = ensureMotionProgram(state.activeProgramRobot);
+    if (!program) return;
+    program.selectedStepId = button.dataset.programStepSelect;
+    renderMotionProgramPanel();
+}
+
+function handleProgramStepListChange(event) {
+    if (isMotionActive()) return;
+    const motionControl = event.target.closest('[data-program-step-motion]');
+    const speedControl = event.target.closest('[data-program-step-speed]');
+    const stepId = motionControl?.dataset.programStepMotion || speedControl?.dataset.programStepSpeed;
+    const program = ensureMotionProgram(state.activeProgramRobot);
+    const step = program?.steps.find((candidate) => candidate.id === stepId);
+    if (!step) return;
+    const before = captureSceneSnapshot();
+    if (motionControl) {
+        step.motion = motionControl.value === 'MOVL' ? 'MOVL' : 'MOVJ';
+        step.speed = step.motion === 'MOVJ' ? DEFAULT_MOVJ_SPEED : DEFAULT_MOVL_SPEED;
+    } else {
+        const maximum = step.motion === 'MOVJ' ? 100 : 1000;
+        step.speed = THREE.MathUtils.clamp(Number(speedControl.value) || 1, 1, maximum);
+    }
+    recordHistory('Edit motion point', before, captureSceneSnapshot());
+    renderMotionProgramPanel();
+}
+
+function selectAllProgramRobots() {
+    if (isMotionActive()) return;
+    const robots = getArticulatedRobots();
+    if (!robots.length) return;
+    const before = captureSceneSnapshot();
+    const shouldSelect = robots.some((robot) => !ensureMotionProgram(robot).included);
+    robots.forEach((robot) => { ensureMotionProgram(robot).included = shouldSelect; });
+    recordHistory('Select all simultaneous robots', before, captureSceneSnapshot());
+    renderMotionProgramPanel();
+}
+
+function captureRobotMotionStep(robot, existing = null) {
+    const pose = getCurrentTcpPoseBase(robot);
+    if (!pose) return null;
+    const program = ensureMotionProgram(robot);
+    const number = existing ? program.steps.indexOf(existing) + 1 : program.steps.length + 1;
+    return {
+        id: existing?.id || createMotionId('point'),
+        name: existing?.name || `P${String(number).padStart(3, '0')}`,
+        motion: existing?.motion || 'MOVJ',
+        speed: existing?.speed || DEFAULT_MOVJ_SPEED,
+        joints: robot.userData.joints.map((joint) => joint.angle),
+        tcp: {
+            position: pose.position.toArray(),
+            quaternion: pose.quaternion.toArray()
+        }
+    };
+}
+
+function addCurrentMotionStep() {
+    if (isMotionActive() || !state.activeProgramRobot) return;
+    const before = captureSceneSnapshot();
+    const program = ensureMotionProgram(state.activeProgramRobot);
+    const step = captureRobotMotionStep(state.activeProgramRobot);
+    if (!step) return;
+    program.steps.push(step);
+    program.selectedStepId = step.id;
+    recordHistory('Add motion point', before, captureSceneSnapshot());
+    renderMotionProgramPanel();
+}
+
+function updateSelectedMotionStep() {
+    if (isMotionActive() || !state.activeProgramRobot) return;
+    const program = ensureMotionProgram(state.activeProgramRobot);
+    const index = program.steps.findIndex((step) => step.id === program.selectedStepId);
+    if (index < 0) return;
+    const before = captureSceneSnapshot();
+    program.steps[index] = captureRobotMotionStep(state.activeProgramRobot, program.steps[index]);
+    recordHistory('Overwrite motion point', before, captureSceneSnapshot());
+    renderMotionProgramPanel();
+}
+
+function moveSelectedMotionStep(direction) {
+    if (isMotionActive()) return;
+    const program = ensureMotionProgram(state.activeProgramRobot);
+    const index = program?.steps.findIndex((step) => step.id === program.selectedStepId) ?? -1;
+    const nextIndex = index + direction;
+    if (index < 0 || nextIndex < 0 || nextIndex >= program.steps.length) return;
+    const before = captureSceneSnapshot();
+    [program.steps[index], program.steps[nextIndex]] = [program.steps[nextIndex], program.steps[index]];
+    recordHistory('Reorder motion point', before, captureSceneSnapshot());
+    renderMotionProgramPanel();
+}
+
+function deleteSelectedMotionStep() {
+    if (isMotionActive()) return;
+    const program = ensureMotionProgram(state.activeProgramRobot);
+    const index = program?.steps.findIndex((step) => step.id === program.selectedStepId) ?? -1;
+    if (index < 0) return;
+    const before = captureSceneSnapshot();
+    program.steps.splice(index, 1);
+    program.selectedStepId = program.steps[Math.min(index, program.steps.length - 1)]?.id || null;
+    recordHistory('Delete motion point', before, captureSceneSnapshot());
+    renderMotionProgramPanel();
+}
+
+function updateMotionRepeat() {
+    if (isMotionActive()) {
+        if (el.programRepeat) el.programRepeat.checked = state.motionRepeat;
+        return;
+    }
+    const before = captureSceneSnapshot();
+    state.motionRepeat = Boolean(el.programRepeat?.checked);
+    recordHistory('Change motion repeat', before, captureSceneSnapshot());
+    renderMotionProgramPanel();
+}
+
+function updateMotionUiLock() {
+    const locked = isMotionActive();
+    if (el.modelSelect) el.modelSelect.disabled = locked;
+    if (el.btnImport3D) el.btnImport3D.disabled = locked;
+    if (el.btnToggleTransform) el.btnToggleTransform.disabled = locked;
+    if (el.btnAddMode) el.btnAddMode.disabled = locked;
+    if (el.modelTree) el.modelTree.classList.toggle('motion-locked', locked);
+    el.jogPanel?.querySelectorAll('button, input').forEach((control) => { control.disabled = locked; });
+    el.modelTransformPanel?.querySelectorAll('button, input').forEach((control) => { control.disabled = locked; });
+    el.programPanel?.querySelectorAll('[data-program-edit], [data-program-robot-include], [data-program-step-select], [data-program-robot-select]')
+        .forEach((control) => { control.disabled = locked; });
+    if (el.programRepeat) el.programRepeat.disabled = locked;
+    if (locked) {
+        setTransformHandlesEnabled(false);
+        setBaseJogGizmoEnabled(false);
+    }
+    updateHistoryButtons();
+}
+
+function serializeMotionProject() {
+    return {
+        schemaVersion: MOTION_PROJECT_SCHEMA_VERSION,
+        repeat: state.motionRepeat,
+        robots: getArticulatedRobots().map((robot) => {
+            const program = ensureMotionProgram(robot);
+            return {
+                instanceId: robot.userData.motionInstanceId,
+                modelFolder: robot.userData.motionModelFolder,
+                displayName: robot.userData.motionDisplayName,
+                robotType: robot.userData.motionRobotType || robot.userData.manifest?.robotType,
+                jointCount: robot.userData.joints.length,
+                included: program.included,
+                baseTransform: {
+                    position: robot.position.toArray(),
+                    quaternion: robot.quaternion.toArray(),
+                    scale: robot.scale.toArray()
+                },
+                steps: program.steps.map((step) => ({
+                    id: step.id,
+                    name: step.name,
+                    motion: step.motion,
+                    speed: step.speed,
+                    joints: [...step.joints],
+                    tcp: {
+                        position: [...step.tcp.position],
+                        quaternion: [...step.tcp.quaternion]
+                    }
+                }))
+            };
+        })
+    };
+}
+
+function saveMotionProjectNow() {
+    window.clearTimeout(state.motionSaveTimer);
+    state.motionSaveTimer = null;
+    try {
+        localStorage.setItem(MOTION_PROJECT_STORAGE_KEY, JSON.stringify(serializeMotionProject()));
+    } catch (error) {
+        console.warn('Motion project autosave failed:', error);
+    }
+}
+
+function scheduleMotionProjectSave() {
+    window.clearTimeout(state.motionSaveTimer);
+    state.motionSaveTimer = window.setTimeout(saveMotionProjectNow, 180);
+}
+
+function findMotionModelDefinition(robotProject) {
+    return [...state.catalog.values()].find((definition) => (
+        definition.type === 'articulated-stl'
+        && definition.folder === robotProject.modelFolder
+        && (!robotProject.robotType || definition.robotType === robotProject.robotType)
+    )) || null;
+}
+
+function clearCollisionWarnings() {
+    state.collisionHelpers.forEach((helper) => {
+        helper.removeFromParent();
+        helper.geometry?.dispose();
+        helper.material?.dispose();
+    });
+    state.collisionHelpers.clear();
+    state.collisionRobotIds.clear();
+}
+
+async function restoreMotionProjectData(input) {
+    if (isMotionActive()) throw new Error('Stop all robot motions before loading a project.');
+    const project = normalizeMotionProject(input);
+    const definitions = project.robots.map((robotProject) => {
+        const definition = findMotionModelDefinition(robotProject);
+        if (!definition) throw new Error(`Robot model is unavailable: ${robotProject.modelFolder}`);
+        if ((definition.limits || []).length !== robotProject.jointCount) {
+            throw new Error(`Joint count does not match the current catalog: ${robotProject.displayName}`);
+        }
+        return definition;
+    });
+
+    setTransformHandlesEnabled(false);
+    setBaseJogGizmoEnabled(false);
+    clearCollisionWarnings();
+    const replacedRobots = new Set(getArticulatedRobots());
+    const removedModels = new Set([
+        ...replacedRobots,
+        ...state.models.filter((model) => replacedRobots.has(model.userData.attachmentHost))
+    ]);
+    removedModels.forEach((model) => model.removeFromParent());
+    state.models = state.models.filter((model) => !removedModels.has(model));
+    state.motionPrograms.clear();
+    state.activeArticulatedModel = null;
+    state.activeProgramRobot = null;
+
+    for (let index = 0; index < project.robots.length; index += 1) {
+        const robotProject = project.robots[index];
+        const definition = definitions[index];
+        showLoading(true, `Loading ${robotProject.displayName}...`);
+        const robot = await loadArticulatedRobot(definition, (progress) => {
+            showLoading(true, `${robotProject.displayName}: ${progress}%`);
+        });
+        robot.userData.modelName = definition.name;
+        assignRobotInstanceMetadata(robot, definition, {
+            instanceId: robotProject.instanceId,
+            displayName: robotProject.displayName,
+            modelFolder: robotProject.modelFolder,
+            robotType: robotProject.robotType
+        });
+        robot.position.fromArray(robotProject.baseTransform.position);
+        robot.quaternion.fromArray(robotProject.baseTransform.quaternion);
+        robot.scale.fromArray(robotProject.baseTransform.scale);
+        robot.updateMatrixWorld(true);
+        state.models.push(robot);
+        state.scene.add(robot);
+        ensureModelTreeId(robot);
+        const program = cloneMotionProgram({
+            included: robotProject.included,
+            selectedStepId: robotProject.steps[0]?.id || null,
+            steps: robotProject.steps
+        });
+        state.motionPrograms.set(robotProject.instanceId, program);
+        captureCurrentTcpTarget(robot);
+    }
+
+    state.motionRepeat = project.repeat;
+    if (el.programRepeat) el.programRepeat.checked = project.repeat;
+    state.activeArticulatedModel = getArticulatedRobots()[0] || null;
+    state.activeProgramRobot = state.activeArticulatedModel;
+    if (state.activeArticulatedModel) {
+        renderJogControls(state.activeArticulatedModel);
+        showMotionProgramPanel();
+    } else {
+        hideJogPanel();
+    }
+    updateUIStatus();
+    selectSceneModel(state.activeArticulatedModel || state.models.at(-1) || null);
+    renderMotionProgramPanel();
+    showLoading(false);
+    if (state.models.length) fitCamera();
+    scheduleMotionProjectSave();
+    return project;
+}
+
+async function restoreMotionProjectFromStorage() {
+    let raw = null;
+    try {
+        raw = localStorage.getItem(MOTION_PROJECT_STORAGE_KEY);
+    } catch (error) {
+        console.warn('Motion project autosave is unavailable:', error);
+    }
+    if (!raw) {
+        renderMotionProgramPanel();
+        return;
+    }
+    try {
+        await restoreMotionProjectData(JSON.parse(raw));
+        setMotionProgramStatus('Autosaved project restored.');
+    } catch (error) {
+        console.error('Motion project restore failed:', error);
+        showLoading(false);
+        setMotionProgramStatus(error.message || 'Project restore failed.', 'error');
+    }
+}
+
+function exportMotionProject() {
+    try {
+        const project = normalizeMotionProject(serializeMotionProject());
+        const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json;charset=utf-8' });
+        saveAs(blob, `3D-Simulation-Motion-Project-${new Date().toISOString().slice(0, 10)}.json`);
+        setMotionProgramStatus('Project JSON saved.');
+    } catch (error) {
+        setMotionProgramStatus(error.message || 'Project export failed.', 'error');
+    }
+}
+
+async function handleMotionProjectImport() {
+    const file = el.inputProgramImport?.files?.[0];
+    if (el.inputProgramImport) el.inputProgramImport.value = '';
+    if (!file || isMotionActive()) return;
+    const before = captureSceneSnapshot();
+    try {
+        const project = JSON.parse(await file.text());
+        await restoreMotionProjectData(project);
+        recordHistory('Load motion project', before, captureSceneSnapshot());
+        setMotionProgramStatus(`Loaded ${file.name}.`);
+    } catch (error) {
+        applySceneSnapshot(before);
+        showLoading(false);
+        setMotionProgramStatus(error.message || 'Project import failed.', 'error');
+    }
+}
+
+function restoreRobotJointAngles(robot, angles) {
+    angles.forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle, false));
+    robot.updateMatrixWorld(true);
+    syncJointControls(robot);
+    if (robot === state.activeArticulatedModel) captureCurrentTcpTarget(robot);
+}
+
+function motionStepTargetPose(step) {
+    return {
+        position: new THREE.Vector3().fromArray(step.tcp.position),
+        quaternion: new THREE.Quaternion().fromArray(step.tcp.quaternion).normalize()
+    };
+}
+
+function validateMovjTarget(robot, step) {
+    const joints = robot.userData.joints;
+    if (!Array.isArray(step.joints) || step.joints.length !== joints.length) {
+        throw new Error(`${step.name}: joint count mismatch.`);
+    }
+    step.joints.forEach((value, index) => {
+        const joint = joints[index];
+        if (!Number.isFinite(value) || value < joint.definition.min - 1e-7 || value > joint.definition.max + 1e-7) {
+            throw new Error(`${step.name}: ${joint.definition.name} is outside its joint limit.`);
+        }
+    });
+}
+
+function solveMovlSamples(robot, target, label) {
+    const start = getCurrentTcpPoseBase(robot);
+    const distance = start.position.distanceTo(target.position);
+    const rotation = THREE.MathUtils.radToDeg(start.quaternion.angleTo(target.quaternion));
+    const samples = Math.max(1, Math.min(240, Math.ceil(Math.max(
+        distance / MOTION_MOVL_SAMPLE_DISTANCE,
+        rotation / MOTION_MOVL_SAMPLE_ANGLE
+    ))));
+    for (let sample = 1; sample <= samples; sample += 1) {
+        const alpha = sample / samples;
+        const pose = {
+            position: new THREE.Vector3().fromArray(interpolateLinearPosition(
+                start.position.toArray(),
+                target.position.toArray(),
+                alpha
+            )),
+            quaternion: new THREE.Quaternion().fromArray(slerpQuaternion(
+                start.quaternion.toArray(),
+                target.quaternion.toArray(),
+                alpha
+            ))
+        };
+        const previousAngles = robot.userData.joints.map((joint) => joint.angle);
+        const result = solveRobotIK(robot, pose);
+        if (!result.success) {
+            restoreRobotJointAngles(robot, previousAngles);
+            throw new Error(`${label}: unreachable, singular, or outside joint limits.`);
+        }
+    }
+}
+
+function preflightRobotMotion(robot, steps) {
+    if (!robot?.userData.joints?.length || !robot.userData.tcpFrame) {
+        throw new Error('This model does not provide articulated kinematics.');
+    }
+    if (!steps.length) throw new Error(`${robot.userData.motionDisplayName}: no motion points.`);
+    const originalAngles = robot.userData.joints.map((joint) => joint.angle);
+    try {
+        steps.forEach((step) => {
+            if (step.motion === 'MOVJ') {
+                validateMovjTarget(robot, step);
+                step.joints.forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle, false));
+                robot.updateMatrixWorld(true);
+            } else {
+                validateMovjTarget(robot, step);
+                solveMovlSamples(robot, motionStepTargetPose(step), step.name);
+                step.joints.forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle, false));
+                robot.updateMatrixWorld(true);
+                const settled = getCurrentTcpPoseBase(robot);
+                const target = motionStepTargetPose(step);
+                if (settled.position.distanceTo(target.position) > 0.8
+                    || THREE.MathUtils.radToDeg(settled.quaternion.angleTo(target.quaternion)) > 0.35) {
+                    throw new Error(`${step.name}: stored TCP and joint targets are inconsistent.`);
+                }
+            }
+        });
+    } finally {
+        restoreRobotJointAngles(robot, originalAngles);
+    }
+}
+
+function createMotionSession(robot, steps, startAt) {
+    return {
+        robot,
+        steps,
+        cursor: 0,
+        currentStepId: null,
+        segment: null,
+        startAt,
+        repeat: state.motionRepeat,
+        status: 'running',
+        pauseStarted: 0
+    };
+}
+
+function startRobotMotionPlans(plans) {
+    if (isMotionActive() || plans.length === 0) return;
+    try {
+        plans.forEach(({ robot, steps }) => preflightRobotMotion(robot, steps));
+    } catch (error) {
+        setMotionProgramStatus(error.message || 'Motion path validation failed.', 'error');
+        return;
+    }
+    commitAllPendingHistories();
+    state.motionHistoryBefore = captureSceneSnapshot();
+    const startAt = performance.now() + 40;
+    plans.forEach(({ robot, steps }) => {
+        const program = ensureMotionProgram(robot);
+        program.status = 'running';
+        program.progress = 0;
+        state.motionSessions.set(robot.userData.motionInstanceId, createMotionSession(robot, steps, startAt));
+    });
+    setMotionProgramStatus(`${plans.length} robot motion${plans.length === 1 ? '' : 's'} started.`, 'working');
+    updateMotionUiLock();
+    renderMotionProgramPanel();
+}
+
+function runSelectedMotionStep() {
+    const robot = state.activeProgramRobot;
+    const program = ensureMotionProgram(robot);
+    const step = program?.steps.find((candidate) => candidate.id === program.selectedStepId);
+    if (robot && step) startRobotMotionPlans([{ robot, steps: [step] }]);
+}
+
+function runActiveRobotProgram() {
+    const robot = state.activeProgramRobot;
+    const program = ensureMotionProgram(robot);
+    if (robot && program?.steps.length) startRobotMotionPlans([{ robot, steps: program.steps }]);
+}
+
+function runCheckedRobotPrograms() {
+    const plans = getArticulatedRobots()
+        .map((robot) => ({ robot, program: ensureMotionProgram(robot) }))
+        .filter(({ program }) => program.included && program.steps.length)
+        .map(({ robot, program }) => ({ robot, steps: program.steps }));
+    startRobotMotionPlans(plans);
+}
+
+function setMotionSessionPaused(session, paused, now = performance.now()) {
+    if (!session || (paused && session.status !== 'running') || (!paused && session.status !== 'paused')) return;
+    if (paused) {
+        session.status = 'paused';
+        session.pauseStarted = now;
+    } else {
+        const delay = Math.max(0, now - session.pauseStarted);
+        session.startAt += delay;
+        if (session.segment) session.segment.startTime += delay;
+        session.status = 'running';
+        session.pauseStarted = 0;
+    }
+    ensureMotionProgram(session.robot).status = session.status;
+}
+
+function toggleMotionPauseForRobots(robots) {
+    const sessions = robots.map(getMotionSession).filter(Boolean);
+    if (!sessions.length) return;
+    const shouldResume = sessions.some((session) => session.status === 'paused');
+    const now = performance.now();
+    sessions.forEach((session) => setMotionSessionPaused(session, !shouldResume, now));
+    setMotionProgramStatus(shouldResume ? 'Motion resumed.' : 'Motion paused.', 'working');
+    renderMotionProgramPanel();
+}
+
+function toggleActiveRobotMotionPause() {
+    if (state.activeProgramRobot) toggleMotionPauseForRobots([state.activeProgramRobot]);
+}
+
+function toggleCheckedRobotMotionPause() {
+    toggleMotionPauseForRobots(getArticulatedRobots().filter((robot) => ensureMotionProgram(robot).included));
+}
+
+function finalizeMotionHistoryIfIdle() {
+    if (isMotionActive()) return;
+    const before = state.motionHistoryBefore;
+    state.motionHistoryBefore = null;
+    if (before) recordHistory('Multi-robot motion', before, captureSceneSnapshot());
+    updateMotionUiLock();
+    renderMotionProgramPanel();
+    scheduleMotionProjectSave();
+}
+
+function finishRobotMotionSession(session, status, message = '') {
+    const robot = session.robot;
+    state.motionSessions.delete(robot.userData.motionInstanceId);
+    const program = ensureMotionProgram(robot);
+    program.status = status;
+    program.progress = status === 'completed' ? 1 : program.progress;
+    syncJointControls(robot);
+    if (robot === state.activeArticulatedModel) captureCurrentTcpTarget(robot);
+    if (message) setMotionProgramStatus(message, status === 'error' ? 'error' : '');
+    renderMotionProgramPanel();
+    finalizeMotionHistoryIfIdle();
+}
+
+function stopRobotMotions(robots) {
+    let stopped = 0;
+    robots.forEach((robot) => {
+        const session = getMotionSession(robot);
+        if (!session) return;
+        state.motionSessions.delete(robot.userData.motionInstanceId);
+        ensureMotionProgram(robot).status = 'stopped';
+        stopped += 1;
+    });
+    if (stopped) setMotionProgramStatus(`${stopped} robot motion${stopped === 1 ? '' : 's'} stopped.`);
+    finalizeMotionHistoryIfIdle();
+    renderMotionProgramPanel();
+}
+
+function stopActiveRobotMotion() {
+    if (state.activeProgramRobot) stopRobotMotions([state.activeProgramRobot]);
+}
+
+function stopCheckedRobotMotions() {
+    stopRobotMotions(getArticulatedRobots().filter((robot) => ensureMotionProgram(robot).included));
+}
+
+function createMotionSegment(session, timestamp) {
+    const { robot } = session;
+    const step = session.steps[session.cursor];
+    if (!step) return null;
+    session.currentStepId = step.id;
+    if (step.motion === 'MOVJ') {
+        validateMovjTarget(robot, step);
+        const startAngles = robot.userData.joints.map((joint) => joint.angle);
+        return {
+            type: 'MOVJ',
+            step,
+            startAngles,
+            targetAngles: [...step.joints],
+            startTime: timestamp,
+            duration: calculateMovjDuration(startAngles, step.joints, robot.userData.joints, step.speed) * 1000
+        };
+    }
+    const startPose = getCurrentTcpPoseBase(robot);
+    const targetPose = motionStepTargetPose(step);
+    return {
+        type: 'MOVL',
+        step,
+        startPose,
+        targetPose,
+        startTime: timestamp,
+        duration: calculateMovlDuration(
+            startPose.position.distanceTo(targetPose.position),
+            THREE.MathUtils.radToDeg(startPose.quaternion.angleTo(targetPose.quaternion)),
+            step.speed
+        ) * 1000
+    };
+}
+
+function advanceMotionSegment(session, timestamp) {
+    const { robot, segment } = session;
+    const linearProgress = THREE.MathUtils.clamp((timestamp - segment.startTime) / segment.duration, 0, 1);
+    const progress = smoothstep(linearProgress);
+    if (segment.type === 'MOVJ') {
+        segment.targetAngles.forEach((target, index) => {
+            const value = THREE.MathUtils.lerp(segment.startAngles[index], target, progress);
+            setJointAngle(robot.userData.joints[index], value, false);
+        });
+        robot.updateMatrixWorld(true);
+    } else {
+        const target = {
+            position: new THREE.Vector3().fromArray(interpolateLinearPosition(
+                segment.startPose.position.toArray(),
+                segment.targetPose.position.toArray(),
+                progress
+            )),
+            quaternion: new THREE.Quaternion().fromArray(slerpQuaternion(
+                segment.startPose.quaternion.toArray(),
+                segment.targetPose.quaternion.toArray(),
+                progress
+            ))
+        };
+        const previousAngles = robot.userData.joints.map((joint) => joint.angle);
+        const result = solveRobotIK(robot, target);
+        if (!result.success) {
+            restoreRobotJointAngles(robot, previousAngles);
+            throw new Error(`${segment.step.name}: runtime IK failed.`);
+        }
+        if (linearProgress >= 1) {
+            segment.step.joints.forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle, false));
+            robot.updateMatrixWorld(true);
+        }
+    }
+    const program = ensureMotionProgram(robot);
+    program.progress = (session.cursor + linearProgress) / session.steps.length;
+    if (robot === state.activeArticulatedModel) {
+        syncJointControls(robot);
+        updateTcpPresentation(robot);
+    }
+    return linearProgress >= 1;
+}
+
+function updateMotionSessions(timestamp) {
+    if (!isMotionActive()) return;
+    [...state.motionSessions.values()].forEach((session) => {
+        if (session.status !== 'running' || timestamp < session.startAt) return;
+        try {
+            if (!session.segment) {
+                session.segment = createMotionSegment(session, timestamp);
+                renderMotionProgramPanel();
+            }
+            if (!session.segment) {
+                finishRobotMotionSession(session, 'completed');
+                return;
+            }
+            if (!advanceMotionSegment(session, timestamp)) return;
+            session.cursor += 1;
+            session.segment = null;
+            session.currentStepId = null;
+            if (session.cursor >= session.steps.length) {
+                if (session.repeat) {
+                    session.cursor = 0;
+                    ensureMotionProgram(session.robot).progress = 0;
+                } else {
+                    finishRobotMotionSession(session, 'completed', `${session.robot.userData.motionDisplayName} completed.`);
+                }
+            }
+        } catch (error) {
+            finishRobotMotionSession(
+                session,
+                'error',
+                `${session.robot.userData.motionDisplayName}: ${error.message || 'motion failed.'}`
+            );
+        }
+    });
+}
+
+function prepareRobotCollisionParts(robot) {
+    const parts = [];
+    robot.traverse((object) => {
+        if (!object.isMesh || object.name === 'CD conduit' || !object.geometry) return;
+        object.geometry.computeBoundingBox();
+        const box = object.geometry.boundingBox;
+        if (!box || box.isEmpty()) return;
+        const center = box.getCenter(new THREE.Vector3());
+        const halfSize = box.getSize(new THREE.Vector3()).multiplyScalar(0.5);
+        parts.push({
+            mesh: object,
+            localObb: new OBB(center, halfSize, new THREE.Matrix3())
+        });
+    });
+    robot.userData.collisionParts = parts;
+}
+
+function addCollisionWarningBox(mesh) {
+    if (state.collisionHelpers.has(mesh)) {
+        state.collisionHelpers.get(mesh).update();
+        return;
+    }
+    const helper = new THREE.BoxHelper(mesh, 0xef4444);
+    helper.name = 'Robot collision warning';
+    helper.material.depthTest = false;
+    helper.material.transparent = true;
+    helper.material.opacity = 0.95;
+    helper.renderOrder = 100;
+    state.scene.add(helper);
+    state.collisionHelpers.set(mesh, helper);
+}
+
+function removeCollisionWarningBox(mesh) {
+    const helper = state.collisionHelpers.get(mesh);
+    if (!helper) return;
+    helper.removeFromParent();
+    helper.geometry?.dispose();
+    helper.material?.dispose();
+    state.collisionHelpers.delete(mesh);
+}
+
+function collisionSetsEqual(left, right) {
+    return left.size === right.size && [...left].every((value) => right.has(value));
+}
+
+function updateRobotCollisions(timestamp) {
+    if (timestamp - state.lastCollisionCheck < MOTION_COLLISION_INTERVAL) return;
+    state.lastCollisionCheck = timestamp;
+    const previous = new Set(state.collisionRobotIds);
+    const nextCollisionRobotIds = new Set();
+    const robots = getArticulatedRobots();
+    const collisionMeshes = new Set();
+    robots.forEach((robot) => robot.updateMatrixWorld(true));
+    const worldParts = new Map(robots.map((robot) => [
+        robot,
+        (robot.userData.collisionParts || []).map((part) => ({
+            mesh: part.mesh,
+            obb: part.localObb.clone().applyMatrix4(part.mesh.matrixWorld)
+        }))
+    ]));
+    for (let leftIndex = 0; leftIndex < robots.length; leftIndex += 1) {
+        const leftRobot = robots[leftIndex];
+        const leftParts = worldParts.get(leftRobot);
+        for (let rightIndex = leftIndex + 1; rightIndex < robots.length; rightIndex += 1) {
+            const rightRobot = robots[rightIndex];
+            const rightParts = worldParts.get(rightRobot);
+            let pairCollision = false;
+            for (const leftPart of leftParts) {
+                for (const rightPart of rightParts) {
+                    if (!leftPart.obb.intersectsOBB(rightPart.obb)) continue;
+                    pairCollision = true;
+                    collisionMeshes.add(leftPart.mesh);
+                    collisionMeshes.add(rightPart.mesh);
+                }
+            }
+            if (pairCollision) {
+                nextCollisionRobotIds.add(leftRobot.userData.motionInstanceId);
+                nextCollisionRobotIds.add(rightRobot.userData.motionInstanceId);
+            }
+        }
+    }
+    [...state.collisionHelpers.keys()].forEach((mesh) => {
+        if (!collisionMeshes.has(mesh)) removeCollisionWarningBox(mesh);
+    });
+    collisionMeshes.forEach(addCollisionWarningBox);
+    state.collisionRobotIds = nextCollisionRobotIds;
+    if (!collisionSetsEqual(previous, state.collisionRobotIds)) renderMotionProgramPanel();
+}
+
 function applyFBXMaterial(fbx) {
     fbx.traverse(c => {
         if (!c.isMesh) return;
@@ -2627,16 +3742,22 @@ function cleanupScene() {
     setBaseJogGizmoEnabled(false);
     state.transformControls.detach();
     const models = [...state.models];
+    models.forEach((model) => {
+        if (model.userData.motionInstanceId) state.motionPrograms.delete(model.userData.motionInstanceId);
+    });
     models.forEach((model) => model.removeFromParent());
     state.models = [];
     state.selectedModel = null;
     state.activeArticulatedModel = null;
+    state.activeProgramRobot = null;
     hideJogPanel();
     renderModelTree();
     el.modelTransformPanel.classList.add('hidden');
+    renderMotionProgramPanel();
 }
 
 function deleteSelectedModel() {
+    if (isMotionActive()) return;
     const model = state.selectedModel;
     if (!model) return;
     commitAllPendingHistories();
@@ -2647,6 +3768,7 @@ function deleteSelectedModel() {
     const modelsToDelete = [model, ...attachments];
     state.transformControls.detach();
     modelsToDelete.forEach((item) => {
+        if (item.userData.motionInstanceId) state.motionPrograms.delete(item.userData.motionInstanceId);
         item.removeFromParent();
         const index = state.models.indexOf(item);
         if (index > -1) state.models.splice(index, 1);
@@ -2657,6 +3779,7 @@ function deleteSelectedModel() {
         if (state.activeArticulatedModel) renderJogControls(state.activeArticulatedModel);
         else hideJogPanel();
     }
+    if (state.activeProgramRobot === model) state.activeProgramRobot = state.activeArticulatedModel;
 
     const formerHost = model.userData.attachmentHost;
     const nextSelection = formerHost && state.models.includes(formerHost)
@@ -2664,6 +3787,7 @@ function deleteSelectedModel() {
         : state.models[state.models.length - 1] || null;
     updateUIStatus();
     selectSceneModel(nextSelection);
+    renderMotionProgramPanel();
     recordHistory('모델 삭제', historyBefore, captureSceneSnapshot());
 }
 
@@ -2793,6 +3917,9 @@ async function handleCADDownload() {
 
 function animate() {
     requestAnimationFrame(animate);
+    const timestamp = performance.now();
+    updateMotionSessions(timestamp);
+    updateRobotCollisions(timestamp);
     state.controls.update();
     state.renderer.render(state.scene, state.camera);
 }
