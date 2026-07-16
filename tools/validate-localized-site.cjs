@@ -217,7 +217,12 @@ targetLocaleCodes.forEach(code => {
 localeCodes.forEach(code => {
     assert(locales[code].legacy['Debugging Tool'] === 'Debugging Tool', code + ' must keep Debugging Tool in English.');
     assert(locales[code].pages.debugging.title === 'Debugging Tool | InoRobot Assistant', code + ' has the wrong Debugging Tool page title.');
+    assert(Object.prototype.hasOwnProperty.call(locales[code].sources['debugging-tool.json'].legacy, 'Trace'), code + ' is missing the Trace card translation.');
 });
+assert(locales.ko.legacy.Trace === '트레이스', 'Korean Trace card title is not localized.');
+assert(locales.en.legacy.Trace === 'Trace', 'English Trace card title is incorrect.');
+assert(locales['zh-CN'].legacy.Trace === '轨迹监控', 'Chinese Trace card title is not localized.');
+assert(locales.vi.legacy.Trace === 'Theo dõi tín hiệu', 'Vietnamese Trace card title is not localized.');
 
 const requiredCoverageSources = [
     '모델 추가 모드',
@@ -441,7 +446,9 @@ for (const [index, match] of [...toolSelector.matchAll(/<script(?:\s[^>]*)?>([\s
         assert(false, 'Tool Selector inline script does not compile: ' + error.message);
     }
 }
-assert(read('7_DebuggingTool/debugging-history.js').includes('window.InoRobotI18n.translate(message)'), 'Debugging Tool dynamic messages are not localized.');
+const debuggingHistoryScript = read('7_DebuggingTool/debugging-history.js');
+assert(debuggingHistoryScript.includes('window.InoRobotI18n.translate(message)'), 'Debugging Tool dynamic messages are not localized.');
+assert(debuggingHistoryScript.includes('window.InoRobotI18n.translate(tool.title)'), 'Debugging Tool history titles are not localized.');
 const zeroCalibration = read('7_DebuggingTool/ZeroCalibration/index.html');
 assert(zeroCalibration.includes('function calculate(index)') && zeroCalibration.includes('function downloadOfflineTool()'), 'Zero Calibration calculation or offline download hook is missing.');
 

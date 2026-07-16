@@ -180,7 +180,9 @@
 
         activeToolKey = toolKey;
         lastFocusedElement = trigger;
-        title.textContent = tool.title;
+        title.textContent = window.InoRobotI18n
+            ? window.InoRobotI18n.translate(tool.title)
+            : tool.title;
         currentVersion.textContent = trigger.dataset.currentVersion
             ? `Current Ver ${trigger.dataset.currentVersion.replace(/^V/i, '')}`
             : '';
@@ -210,7 +212,9 @@
         Object.keys(markdownPromises).forEach((key) => delete markdownPromises[key]);
         if (!activeToolKey || !modal.classList.contains('is-open')) return;
         const tool = tools[activeToolKey];
-        title.textContent = tool.title;
+        title.textContent = window.InoRobotI18n
+            ? window.InoRobotI18n.translate(tool.title)
+            : tool.title;
         renderMessage('버전 기록을 불러오는 중입니다.');
         try {
             renderHistory(await loadMarkdown(activeToolKey));
