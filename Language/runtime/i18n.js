@@ -2,6 +2,7 @@
     'use strict';
 
     const STORAGE_KEY = 'inorobot.locale';
+    const CHANNEL_NAME = 'inorobot.locale.sync';
     const DEFAULT_LOCALE = 'ko';
     const SUPPORTED_LOCALES = ['ko', 'en', 'zh-CN', 'vi'];
     const LANDING_ROUTES = {
@@ -35,6 +36,8 @@
     const attributeSources = new WeakMap();
     let currentLocale = DEFAULT_LOCALE;
     let mutationObserver = null;
+    let localeChannel = null;
+    let localeSynchronizationReady = false;
 
     function normalizePath(pathname) {
         const value = String(pathname || '/').replace(/\/index\.html$/i, '/');
@@ -49,13 +52,21 @@
         return Boolean(getRouteLocale());
     }
 
-    function readSessionLocale() {
+    function readStorageLocale(storage) {
         try {
-            const stored = window.sessionStorage.getItem(STORAGE_KEY);
+            const stored = storage.getItem(STORAGE_KEY);
             return SUPPORTED_LOCALES.includes(stored) ? stored : null;
         } catch {
             return null;
         }
+    }
+
+    function readSessionLocale() {
+        return readStorageLocale(window.sessionStorage);
+    }
+
+    function readSharedLocale() {
+        return readStorageLocale(window.localStorage);
     }
 
     function writeSessionLocale(locale) {
@@ -66,13 +77,35 @@
         }
     }
 
+    function writeSharedLocale(locale) {
+        try {
+            window.localStorage.setItem(STORAGE_KEY, locale);
+        } catch {
+            // Fall back to session-only synchronization when local storage is unavailable.
+        }
+    }
+
+    function persistLocale(locale, shouldBroadcast) {
+        writeSessionLocale(locale);
+        writeSharedLocale(locale);
+        if (shouldBroadcast !== false && localeChannel) {
+            try {
+                localeChannel.postMessage({ locale: locale });
+            } catch {
+                // Storage and page lifecycle events still keep the locale synchronized.
+            }
+        }
+    }
+
     function resolveInitialLocale() {
         const routeLocale = getRouteLocale();
         if (routeLocale) {
-            writeSessionLocale(routeLocale);
+            persistLocale(routeLocale, true);
             return routeLocale;
         }
-        return readSessionLocale() || DEFAULT_LOCALE;
+        const storedLocale = readSharedLocale() || readSessionLocale() || DEFAULT_LOCALE;
+        writeSessionLocale(storedLocale);
+        return storedLocale;
     }
 
     function getByPath(source, path) {
@@ -208,14 +241,14 @@
     function detectPageKey() {
         const pathname = normalizePath(window.location.pathname).toLowerCase();
         if (ROUTE_LOCALES[normalizePath(window.location.pathname)]) return 'home';
-        if (pathname.includes('/debuggingsupport/zerocalibration/')) return 'zeroCalibration';
-        if (pathname.includes('/debuggingsupport/')) return 'debugging';
-        if (pathname.includes('/inorobotprojectgen/')) return 'projectGenerator';
-        if (pathname.includes('/inorobottoolselect/')) return 'toolSelector';
-        if (pathname.includes('/inorobot3dview/')) return 'robot3dViewer';
-        if (pathname.includes('/inorobotselect/')) return 'robotSelect';
-        if (pathname.includes('/manual/')) return 'manual';
-        if (pathname.includes('/software/')) return 'software';
+        if (pathname.includes('/7_debuggingtool/zerocalibration/') || pathname.includes('/debuggingsupport/zerocalibration/')) return 'zeroCalibration';
+        if (pathname.includes('/7_debuggingtool/') || pathname.includes('/debuggingsupport/')) return 'debugging';
+        if (pathname.includes('/4_projectgenerator/') || pathname.includes('/inorobotprojectgen/')) return 'projectGenerator';
+        if (pathname.includes('/3_toolselector/') || pathname.includes('/inorobottoolselect/')) return 'toolSelector';
+        if (pathname.includes('/2_robot3dviewer/') || pathname.includes('/inorobot3dview/')) return 'robot3dViewer';
+        if (pathname.includes('/1_robotmodelselect/') || pathname.includes('/inorobotselect/')) return 'robotSelect';
+        if (pathname.includes('/6_document/') || pathname.includes('/manual/')) return 'manual';
+        if (pathname.includes('/5_software/') || pathname.includes('/software/')) return 'software';
         return 'home';
     }
 
@@ -295,8 +328,8 @@
             select.addEventListener('change', function () {
                 const nextLocale = select.value;
                 if (!SUPPORTED_LOCALES.includes(nextLocale)) return;
-                writeSessionLocale(nextLocale);
                 if (isLandingPage()) {
+                    persistLocale(nextLocale, true);
                     window.location.assign(LANDING_ROUTES[nextLocale]);
                 } else {
                     setLocale(nextLocale);
@@ -355,16 +388,70 @@
         startObserver();
     }
 
-    function setLocale(locale) {
+    function setLocale(locale, options) {
         const nextLocale = SUPPORTED_LOCALES.includes(locale) ? locale : DEFAULT_LOCALE;
         const previousLocale = currentLocale;
         currentLocale = nextLocale;
-        writeSessionLocale(nextLocale);
+        if (options && options.persist === false) {
+            writeSessionLocale(nextLocale);
+        } else {
+            persistLocale(nextLocale, !options || options.broadcast !== false);
+        }
         applyLocale(false);
         document.dispatchEvent(new CustomEvent('inorobot:languagechange', {
             detail: { locale: nextLocale, previousLocale: previousLocale }
         }));
         return nextLocale;
+    }
+
+    function synchronizeLocale(locale) {
+        if (!SUPPORTED_LOCALES.includes(locale)) return;
+
+        writeSessionLocale(locale);
+        if (isLandingPage()) {
+            const targetPath = LANDING_ROUTES[locale] || '/';
+            if (normalizePath(window.location.pathname) !== normalizePath(targetPath)) {
+                window.location.replace(targetPath);
+                return;
+            }
+        }
+
+        if (locale !== currentLocale) {
+            setLocale(locale, { persist: false });
+        }
+    }
+
+    function synchronizeFromStorage() {
+        const storedLocale = readSharedLocale() || readSessionLocale();
+        if (storedLocale) synchronizeLocale(storedLocale);
+    }
+
+    function setupLocaleSynchronization() {
+        if (localeSynchronizationReady) return;
+        localeSynchronizationReady = true;
+
+        if ('BroadcastChannel' in window) {
+            try {
+                localeChannel = new BroadcastChannel(CHANNEL_NAME);
+                localeChannel.addEventListener('message', function (event) {
+                    const locale = event && event.data ? event.data.locale : null;
+                    synchronizeLocale(locale);
+                });
+            } catch {
+                localeChannel = null;
+            }
+        }
+
+        window.addEventListener('storage', function (event) {
+            if (event.key === STORAGE_KEY && SUPPORTED_LOCALES.includes(event.newValue)) {
+                synchronizeLocale(event.newValue);
+            }
+        });
+        window.addEventListener('pageshow', synchronizeFromStorage);
+        window.addEventListener('focus', synchronizeFromStorage);
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'visible') synchronizeFromStorage();
+        });
     }
 
     function formatNumber(value, options) {
@@ -376,6 +463,7 @@
     }
 
     function init() {
+        setupLocaleSynchronization();
         currentLocale = resolveInitialLocale();
         applyLocale(true);
         document.dispatchEvent(new CustomEvent('inorobot:i18nready', {

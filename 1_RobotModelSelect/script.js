@@ -779,7 +779,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function formatSignalPins(value) {
         const source = localizeDisplayText(value || '-');
-        return source.replace(/Signal\s+lines?/gi, uiText('Pins'));
+        return source.replace(/\b(?:Signal\s+)?lines?\b/gi, uiText('Pins'));
     }
 
     function appendUnitIfMissing(value, unit) {
