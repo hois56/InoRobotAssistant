@@ -1,0 +1,45 @@
+{
+  "pages": {
+    "software": {
+      "title": "INOVANCE Robot Software Center",
+      "description": "Check and download the latest INOVANCE robot software."
+    }
+  },
+  "legacy": {
+    "안내": "Info",
+    "Download": "Download",
+    "Download (Install)": "Download Installer",
+    "Download (Portable)": "Download Portable",
+    "다운로드": "Download",
+    "메인 페이지로": "Go to home page",
+    "전체보기": "View All",
+    "Model": "Model",
+    "Name": "Name",
+    "Type": "Type",
+    "서버 연결에 실패했습니다.": "Could not connect to the server.",
+    "Software Download Center": "Software Download Center",
+    "최신 소프트웨어를 확인하세요": "Get the Latest Software",
+    "로봇 제어 및 설정을 위한 최신 소프트웨어를 다운로드하세요.": "Download the latest software for robot control and configuration.",
+    "소프트웨어 버전 또는 키워드를 입력하세요...": "Enter a software version or keyword...",
+    "Software Type": "Software Type",
+    "알림": "Notice",
+    "Display 버전은 배포가 제한되어 있으며, 별도의 비밀번호가 필요합니다. 권한이 있는 사용자만 다운로드해 주세요.": "Display versions have restricted distribution and require a separate password. Download them only if you are authorized.",
+    "해당 조건에 맞는 소프트웨어가 없습니다.": "No software matches the selected criteria.",
+    "시스템 안정성 개선": "Improved system stability",
+    "Display 모듈 지원": "Added Display module support",
+    "Display 최적화": "Optimized for Display applications",
+    "[기능 제한 안내] 이 버전은 전용 배포판입니다. 비밀번호를 입력해 주세요:": "[Restricted feature] This version is a private distribution. Enter the password:",
+    "비밀번호가 올바르지 않습니다. 관리자에게 문의하세요.": "The password is incorrect. Contact the administrator.",
+    "서버 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.": "Could not connect to the server. Please try again shortly.",
+    "비밀번호가 올바르지 않습니다.": "The password is incorrect.",
+    "InoRobotLab 소프트웨어 (설치/무설치)": "InoRobotLab software (installer/portable)",
+    "Display 공정용 특수 버전 소프트웨어": "Special software version for Display processes",
+    "InoRobotTP 소프트웨어": "InoRobotTP software",
+    "Display 공정용 TP 소프트웨어": "TP software for Display processes",
+    "개": "items",
+    "Pendant": "Pendant",
+    "No": "No",
+    "Port": "Port"
+  },
+  "patterns": []
+}

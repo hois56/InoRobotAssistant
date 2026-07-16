@@ -1,0 +1,42 @@
+{
+  "pages": {
+    "robot3dViewer": {
+      "title": "Trình xem 3D robot INOVANCE",
+      "description": "Xem model 3D robot INOVANCE và tải các tệp CAD liên quan."
+    }
+  },
+  "legacy": {
+    "Download": "Tải xuống",
+    "다운로드": "Tải xuống",
+    "메인 페이지로 이동": "Về trang chủ",
+    "메인 페이지로": "Về trang chủ",
+    "로딩 중...": "Đang tải...",
+    "Loading model...": "Đang tải model...",
+    "Initializing...": "Đang khởi tạo...",
+    "Model": "Model",
+    "Status": "Trạng thái",
+    "Ready": "Sẵn sàng",
+    "Error": "Lỗi",
+    "Model Visualization": "Hiển thị model",
+    "상단의 드롭다운 메뉴에서 로봇 모델을 선택해주세요.": "Chọn model robot từ danh sách phía trên.",
+    "마우스로 로봇을 회전하고 확대할 수 있습니다.": "Dùng chuột để xoay và phóng to robot.",
+    "Download CAD files": "Tải tệp CAD",
+    "Reset Camera": "Đặt lại camera",
+    "Toggle Coordinate System": "Bật/tắt hệ tọa độ",
+    "Toggle Grid": "Bật/tắt lưới",
+    "현재 열린 모든 모델 CAD 다운로드": "Tải CAD cho tất cả model đang mở",
+    "다운로드할 모델이 없습니다.": "Không có mô hình nào để tải xuống.",
+    "-- 로봇 모델을 선택하세요 --": "-- Chọn model robot --",
+    "CAD 다운로드": "Tải CAD",
+    "모델": "Model",
+    "Name": "Tên",
+    "Edit": "Chỉnh sửa",
+    "Save": "Lưu",
+    "모델 추가 모드": "Chế độ thêm model",
+    "이동": "Di chuyển",
+    "No": "Không",
+    "Client": "Client",
+    "Server": "Server"
+  },
+  "patterns": []
+}

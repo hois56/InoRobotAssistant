@@ -28,7 +28,7 @@
     function getEmbeddedHistoryMarkdown() {
         const locale = window.InoRobotI18n?.locale || 'ko';
         const localized = window.INOROBOT_LOCALES?.[locale]?.historyMarkdown;
-        if (locale !== 'ko' && localized) return localized;
+        if (localized) return localized;
 
         const encoded = window.SITE_CARD_HISTORY_MARKDOWN_BASE64;
         if (!encoded) return null;
@@ -45,16 +45,10 @@
     function loadHistoryMarkdown() {
         if (!historyMarkdownPromise) {
             const embeddedMarkdown = getEmbeddedHistoryMarkdown();
-            const locale = window.InoRobotI18n?.locale || 'ko';
-
-            if (locale !== 'ko') {
-                historyMarkdownPromise = embeddedMarkdown
-                    ? Promise.resolve(embeddedMarkdown)
-                    : Promise.reject(new Error('Localized history data is unavailable'));
+            if (embeddedMarkdown) {
+                historyMarkdownPromise = Promise.resolve(embeddedMarkdown);
             } else if (window.location.protocol === 'file:') {
-                historyMarkdownPromise = embeddedMarkdown
-                    ? Promise.resolve(embeddedMarkdown)
-                    : Promise.reject(new Error('Embedded history data is unavailable'));
+                historyMarkdownPromise = Promise.reject(new Error('Embedded history data is unavailable'));
             } else {
                 historyMarkdownPromise = fetch('./UPDATE_HISTORY.md', { cache: 'no-cache' })
                     .then((response) => {
@@ -62,7 +56,6 @@
                         return response.text();
                     })
                     .catch((error) => {
-                        if (embeddedMarkdown) return embeddedMarkdown;
                         historyMarkdownPromise = null;
                         throw error;
                     });

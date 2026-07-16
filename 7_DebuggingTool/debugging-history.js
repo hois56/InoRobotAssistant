@@ -50,7 +50,7 @@
     function getEmbeddedMarkdown(toolKey) {
         const locale = window.InoRobotI18n?.locale || 'ko';
         const localized = window.INOROBOT_LOCALES?.[locale]?.debugHistoryMarkdown;
-        if (locale !== 'ko' && localized) {
+        if (localized) {
             return extractLocalizedToolHistory(localized, toolKey);
         }
 
@@ -71,16 +71,10 @@
 
         const tool = tools[toolKey];
         const embeddedMarkdown = getEmbeddedMarkdown(toolKey);
-        const locale = window.InoRobotI18n?.locale || 'ko';
-
-        if (locale !== 'ko') {
-            markdownPromises[toolKey] = embeddedMarkdown
-                ? Promise.resolve(embeddedMarkdown)
-                : Promise.reject(new Error('Localized history data is unavailable'));
+        if (embeddedMarkdown) {
+            markdownPromises[toolKey] = Promise.resolve(embeddedMarkdown);
         } else if (window.location.protocol === 'file:') {
-            markdownPromises[toolKey] = embeddedMarkdown
-                ? Promise.resolve(embeddedMarkdown)
-                : Promise.reject(new Error('Embedded history data is unavailable'));
+            markdownPromises[toolKey] = Promise.reject(new Error('Embedded history data is unavailable'));
         } else {
             markdownPromises[toolKey] = fetch(tool.markdownPath, { cache: 'no-cache' })
                 .then((response) => {
@@ -88,7 +82,6 @@
                     return response.text();
                 })
                 .catch((error) => {
-                    if (embeddedMarkdown) return embeddedMarkdown;
                     delete markdownPromises[toolKey];
                     throw error;
                 });

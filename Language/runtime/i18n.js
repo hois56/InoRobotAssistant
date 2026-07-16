@@ -137,17 +137,12 @@
         return korean !== undefined ? korean : fallback;
     }
 
-    function translateSource(source) {
-        const dictionary = get('legacy', {});
-        if (dictionary && Object.prototype.hasOwnProperty.call(dictionary, source)) {
-            return dictionary[source];
-        }
-        const normalizedSource = String(source).replace(/\s+/g, ' ').trim();
-        if (dictionary && Object.prototype.hasOwnProperty.call(dictionary, normalizedSource)) {
-            return dictionary[normalizedSource];
-        }
+    function translateFromPageData(pageData, source, normalizedSource) {
+        const dictionary = pageData && pageData.legacy;
+        if (dictionary && Object.prototype.hasOwnProperty.call(dictionary, source)) return dictionary[source];
+        if (dictionary && Object.prototype.hasOwnProperty.call(dictionary, normalizedSource)) return dictionary[normalizedSource];
 
-        const patterns = get('patterns', []);
+        const patterns = pageData && pageData.patterns;
         if (Array.isArray(patterns)) {
             for (const item of patterns) {
                 if (!item || !item.source || typeof item.target !== 'string') continue;
@@ -155,6 +150,20 @@
                 if (expression.test(source)) return source.replace(expression, item.target);
             }
         }
+        return undefined;
+    }
+
+    function translateSource(source) {
+        const normalizedSource = String(source).replace(/\s+/g, ' ').trim();
+        const pageTranslation = get('pageTranslations.' + detectPageKey(), null);
+        const pageResult = translateFromPageData(pageTranslation, source, normalizedSource);
+        if (pageResult !== undefined) return pageResult;
+
+        const fallbackResult = translateFromPageData({
+            legacy: get('legacy', {}),
+            patterns: get('patterns', [])
+        }, source, normalizedSource);
+        if (fallbackResult !== undefined) return fallbackResult;
         return source;
     }
 

@@ -1,5 +1,38 @@
 {
+  "pages": {
+    "home": {
+      "title": "Inovance 机器人助手",
+      "description": "面向 INOVANCE 机器人设计、编程和调试的一站式工具集。"
+    }
+  },
   "legacy": {
+    "InoRobot Assistant는 INOVANCE Robot을 설계부터 프로그래밍, 시운전까지 지원하는 유용한 협업 도구입니다.": "InoRobot Assistant 为 INOVANCE 机器人从设计、编程到调试的各阶段提供支持。",
+    "필요한 도구를 선택하여 작업을 시작하세요.": "请选择所需工具并开始工作。",
+    "INOVANCE 로봇의 라인업을 확인하세요. 선택한 모델과 옵션 구성을 PDF로 저장하여 발주에 활용할 수 있습니다. 또한 2D, 3D CAD 파일을 다운로드 받을 수 있습니다.": "查看 INOVANCE 机器人产品系列。可将所选型号和选项保存为 PDF 用于订购，并下载 2D、3D CAD 文件。",
+    "INOVANCE 로봇 3D 모델링을 웹 브라우저에서 확인하고, CAD 파일을 다운로드 받으세요.": "在浏览器中查看 INOVANCE 机器人 3D 模型并下载 CAD 文件。",
+    "로봇 Tool 부하 조건에 따른 모델 적합성을 판정합니다. 관련 모멘트 및 허용 하중을 계산하여 최적의 모델을 선택하세요.": "根据末端工具负载判断机器人是否适用，并通过力矩和允许负载计算选择最佳型号。",
+    "로봇 모델과 공정 구성을 선택하면, 컨트롤러에 바로 적용 가능한 프로젝트 파일 구조를 자동으로 생성합니다. 번거로운 초기 설정 없이 몇 번의 선택만으로 프로그래밍을 바로 완성해보세요.": "选择机器人型号和工艺配置，自动生成可直接用于控制器的项目结构。",
+    "로봇 제어 및 설정을 위한 최신 소프트웨어를 다운로드할 수 있습니다.": "下载用于机器人控制和设置的最新软件。",
+    "로봇 매뉴얼, 교육자료, 인증서, 통신 프로파일 다운로드 및 조회": "浏览并下载机器人手册、培训资料、认证文件和通信配置文件。",
+    "로봇 디버깅 및 트러블 슈팅에 유용한 툴을 지원합니다.": "提供机器人调试和故障排查工具。",
+    "버전 기록": "版本记录",
+    "Update History": "更新记录",
+    "버전 기록 닫기": "关闭版本记录",
+    "버전 기록을 불러오는 중입니다.": "正在加载版本记录。",
+    "등록된 버전 기록이 없습니다.": "暂无版本记录。",
+    "버전 기록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.": "无法加载版本记录，请稍后重试。",
+    "안내": "提示",
+    "다운로드": "下载",
+    "Model": "型号",
+    "Error": "错误",
+    "판정": "判定",
+    "모델": "型号",
+    "Robot Model": "机器人型号",
+    "Name": "名称",
+    "Type": "类型",
+    "Tool": "工具",
+    "Debugging Tool": "Debugging Tool",
+    "프로그램": "程序",
     "이노밴스 테크놀로지 코리아": "汇川技术韩国",
     "InoRobot Assistant는 INOVANCE Robot을 설계부터 프로그래밍, 시운전까지 지원하는 유용한 협업 도구입니다. 필요한 도구를 선택하여 작업을 시작하세요.": "InoRobot Assistant 为 INOVANCE 机器人提供从设计、编程到调试的支持。请选择所需工具开始使用。",
     "INOVANCE 로봇의 라인업을 확인하세요. 선택한 모델과 옵션 구성을 PDF로 저장하여 발주시 활용할 수 있습니다. 또한 2D, 3D CAD 파일도 다운로드 받을 수 있습니다.": "浏览 INOVANCE 机器人产品系列。可将所选型号与选项保存为订购用 PDF，并下载 2D、3D CAD 文件。",
@@ -11,7 +44,599 @@
     "Project Generator 버전 기록 보기": "打开项目生成器版本记录",
     "Software 버전 기록 보기": "打开软件版本记录",
     "Document 버전 기록 보기": "打开文档版本记录",
-    "Debugging Tool 버전 기록 보기": "打开 Debugging Tool 版本记录"
+    "Debugging Tool 버전 기록 보기": "打开 Debugging Tool 版本记录",
+    "No": "无",
+    "Client": "客户端",
+    "프로젝트 파일": "项目文件"
   },
-  "patterns": []
+  "patterns": [
+    {
+      "source": "^Current Ver (.+)$",
+      "target": "当前版本 $1"
+    },
+    {
+      "source": "^visits ([0-9,]+)$",
+      "target": "访问量 $1"
+    }
+  ],
+  "_meta": {
+    "locale": "zh-CN",
+    "name": "简体中文",
+    "ogLocale": "zh_CN",
+    "status": "draft"
+  },
+  "common": {
+    "languageSelector": "选择语言",
+    "currentVersion": "当前版本 {version}"
+  },
+  "versionHistory": {
+    "title": "InoRobot Assistant 更新记录",
+    "intro": "本文记录主页各功能卡片中用户可见的新增功能、资料更新、显示变更与问题修复。",
+    "sections": [
+      {
+        "title": "Robot Model Select",
+        "versions": [
+          {
+            "title": "Ver 26.06.19.01",
+            "items": [
+              "添加带急停保护罩的 IR-TP200 示教器。",
+              "添加保护罩型示教器订购代码：5 m 01640069、10 m 01640072、15 m 01640073。",
+              "示教器选择调整为未选择 / 无保护罩 / 有保护罩。",
+              "结果与 PDF 现在显示保护罩、长度及订购代码。"
+            ]
+          },
+          {
+            "title": "Ver 26.06.15.01",
+            "items": [
+              "添加 IR-S7-60Z20S-INT 5 m 电缆订购代码 01741079*M00018。"
+            ]
+          },
+          {
+            "title": "Ver 26.06.02.01",
+            "items": [
+              "无 KCs 认证的 SCARA 型号预计交期改为 10 周。"
+            ]
+          },
+          {
+            "title": "Ver 26.06.01.02",
+            "items": [
+              "型号由 IR-R15H-145S-INT 更名为 IR-R15H-145S-K-INT。",
+              "型号由 IR-R20H-120S-INT 更名为 IR-R20H-120S-K-INT。",
+              "添加 IR-R15H IP67 型订购代码 01741446。",
+              "添加 IR-R20H IP67 型订购代码 01741597。",
+              "添加 IR-S25-100Z42S-INT 3 m 电缆订购代码 01741436*M00002。",
+              "添加 IR-S60-120Z40S-INT 订购代码：5 m 01741367*M00002、15 m 01741367*M00003。",
+              "修复 R15H、R20H 型号代码变更后无法找到原 CAD 文件的问题。"
+            ]
+          },
+          {
+            "title": "Ver 26.06.01.01",
+            "items": [
+              "添加 IR-R10-140S-INT 3 m 电缆订购代码 01741086*M00008。"
+            ]
+          },
+          {
+            "title": "Ver 26.05.29.01",
+            "items": [
+              "为六轴机器人添加标准型、洁净型和 IP67 型机身选项。",
+              "R10-140、R16、R25 仅显示固定规格 Body IP65 / Wrist IP67。",
+              "R15H、R20H 洁净型显示 ISO Class 4，其他六轴洁净型显示 ISO Class 3。",
+              "选择机身选项时，型号中的 S/C/P 代码和 PDF 文件名同步更新。",
+              "修复 R16、R25 等使用 _CN 或 _3D_CN 文件名的型号无法下载 CAD 的问题。",
+              "恢复轴速度与运动范围中的 °、°/s、mm、mm/s 单位。",
+              "恢复详情和 PDF 中质量 kg 与重复定位精度 mm 单位。",
+              "移除 IR-S35-80Z42S-INT 上错误显示的 KC、KCs 认证。",
+              "从筛选和搜索结果中排除尚未发布的 IR-CS 型号。",
+              "隐藏 R10-140、R16、R25 不支持的 Handheld Motor Brake Release Box 选项。"
+            ]
+          },
+          {
+            "title": "Ver 26.05.22.01",
+            "items": [
+              "将 IR-R4H、R7H-70、R7H-90、R10H、R15H、R20H 的 Clean Type 从 Yes 修正为 No。",
+              "上述六轴型号的洁净规格改为可选项，而非默认规格。",
+              "SCARA 洁净型预计交期改为 6 个月。",
+              "修复 R16、R25 型号代码与 CAD 文件夹名不同时 CAD 按钮不可用的问题。",
+              "CAD 按钮文字统一为 Checking / CAD Download / CAD Not Ready / Preparing。"
+            ]
+          },
+          {
+            "title": "Ver 26.04.17.01",
+            "items": [
+              "修正 IR-S25-120 标准型与洁净型数据互换的问题。",
+              "修正 IR-S35-100、120 各版本的型号名、臂长、Z 轴行程、质量、循环时间及认证信息关联。",
+              "添加 IR-S25-120Z42S-INT 与 IR-S35-120Z42S-INT 的 2D DWG、3D STP 和 FBX 文件。",
+              "修正 R15H、R20H 在 PDF 中显示错误 IP 等级的问题。"
+            ]
+          },
+          {
+            "title": "Ver 26.04.12.01",
+            "items": [
+              "在型号详情中添加建议断路器容量。",
+              "显示规格：R4/R7H 10 A、R10/R11 15 A、R10-140 20 A、R16/R25 30 A、S25 15 A、S35/S60 20 A。"
+            ]
+          },
+          {
+            "title": "Ver 26.03.31.02",
+            "items": [
+              "示教器、Arm I/O、Body I/O 和通信扩展选项的订购代码改用橙色徽标显示。",
+              "IR-TP200 延长电缆名称直接显示 5 m、15 m、25 m 长度。"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Robot 3D Viewer",
+        "versions": [
+          {
+            "title": "Ver 26.07.12.01",
+            "items": [
+              "修复 R16、R25 型号显示尺寸过小的问题。"
+            ]
+          },
+          {
+            "title": "Ver 26.06.02.01",
+            "items": [
+              "型号由 IR-R15H-145S-INT 更名为 IR-R15H-145S-K-INT。",
+              "型号由 IR-R20H-120S-INT 更名为 IR-R20H-120S-K-INT。",
+              "修复选择 -S-K-INT 型号时无法找到已有 -S-INT CAD 文件的问题。"
+            ]
+          },
+          {
+            "title": "Ver 26.05.29.01",
+            "items": [
+              "修复 R16、R25 等以 _CN 或 _3D_CN 保存的 CAD 文件未包含在 ZIP 中的问题。",
+              "无 _2D.dwg 文件时改为下载 _3D_CN.dwg。"
+            ]
+          },
+          {
+            "title": "Ver 26.04.17.01",
+            "items": [
+              "添加 IR-S25-120Z42S-INT 与 IR-S35-120Z42S-INT 的 3D 模型。",
+              "修正 IR-S25-120 与 IR-S35-120 显示方向相反的问题。",
+              "修正 Robot Model Select 传入的初始旋转值。"
+            ]
+          },
+          {
+            "title": "Ver 26.03.31.01",
+            "items": [
+              "支持使用 Delete 或 Backspace 单独删除模型。",
+              "支持显示或隐藏移动、旋转和缩放控制柄。"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Robot Tool Selector",
+        "versions": [
+          {
+            "title": "Ver 26.04.26.01",
+            "items": [
+              "质量、重心坐标和转动惯量输入的默认值全部改为 0。",
+              "块体转动惯量改为按整体 CoG 计算。",
+              "移除 Mode B 中块体自身惯量与平行轴定理的重复应用。",
+              "添加或删除块体时不再重置已有输入。",
+              "总质量为 0 kg 时不再显示 NaN。",
+              "CoM、COM 统一标记为 CoG。",
+              "转动惯量结果显示到小数点后三位。",
+              "添加说明 Tool Block CoG 输入坐标的参考图。"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Project Generator",
+        "versions": [
+          {
+            "title": "Ver 26.07.12.01",
+            "items": [
+              "在 Save 后添加 Break;，使循环和 Teach mode 正确结束。"
+            ]
+          },
+          {
+            "title": "Ver 26.06.19.01",
+            "items": [
+              "Teaching Offset X、Y、Z、A、B、C 显示数据格式 2 Word /10000。"
+            ]
+          },
+          {
+            "title": "Ver 26.06.15.01",
+            "items": [
+              "Teaching Mode、Wait Position、Process Busy 默认启用。",
+              "Teaching Mode 新增下一位置、上一位置、Offset 位置移动和保存当前位置功能。",
+              "Wait Position 与 Work Position 分别使用 Start、Complete、Busy 状态。",
+              "修正 Vision Offset 与 Process Offset 同时使用时的应用顺序。",
+              "防止 Vision Offset 与 Process Offset 重复应用。",
+              "修正从其他工序返回 Wait 或 Work 位置时的错误路径。",
+              "移除 SCARA 项目中不存在的 J5、J6 扭矩项。",
+              "项目内 IO Map 替换为 InoRobot_IO_Map_0614.xlsx。",
+              "Remote IO Mapping 更新为最新 Process Wait、Work、Busy、Teaching 配置。",
+              "修正 Multi Recipe 说明中的 Point File 切换地址。",
+              "帮助文字和时序图信号名称与实际生成结果保持一致。"
+            ]
+          },
+          {
+            "title": "Ver 26.05.20.01",
+            "items": [
+              "未选择 Teaching Mode 时不再生成 Teaching 条件。"
+            ]
+          },
+          {
+            "title": "Ver 26.04.10.01",
+            "items": [
+              "移除特定选项组合中阻止工序启动的无关条件。"
+            ]
+          },
+          {
+            "title": "Ver 26.04.07",
+            "items": [
+              "添加项目选项详细说明按钮和工具提示。",
+              "添加包含 IO 时序图的使用指南。",
+              "防止 Vision Offset 工具提示被表格遮挡。",
+              "修正 Teaching Mode 时序图中的信号与波形位置。",
+              "对齐时序图标题、标签和波形间距，并统一用竖线表示信号变化。"
+            ]
+          },
+          {
+            "title": "Ver 26.04.02",
+            "items": [
+              "添加 Labels、Remote IO、P.pts、User Warning 文件的表格预览。",
+              "可直接在页面编辑 Labels、User Warning 与 P.pts 数据。",
+              "Labels 中修改的名称会反映到所有程序预览。",
+              "文件选择器按 Main、Static Task、Sub Program、Process、Data File 分组。"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Software",
+        "versions": [
+          {
+            "title": "Ver 26.06.19.01",
+            "items": [
+              "InoRobotLab 从 V4R24C4SPC18 更新至 V4R24C4SPC21。",
+              "InoRobotTP 从 V4R24C4SPC18 更新至 V4R24C4SPC21。",
+              "InoRobotLab 下载容量更新为安装版 470 MB、便携版 473 MB。"
+            ]
+          },
+          {
+            "title": "Ver 26.06.06.01",
+            "items": [
+              "InoRobotLab 从 V4R24C4SPC17 更新至 V4R24C4SPC18。",
+              "InoRobotTP 从 V4R24C4SPC17 更新至 V4R24C4SPC18。",
+              "移除 SPC15、SPC17 下载，仅显示 SPC18。"
+            ]
+          },
+          {
+            "title": "Ver 26.05.14.01",
+            "items": [
+              "Display 版 InoRobotLab 与 InoRobotTP 替换为 V4R24C4SPC0L18F121。",
+              "禁用未提供的 Display 版 InoRobotLab 安装按钮。",
+              "添加 Display 用 InoRobotLab 便携版 454 MB 与 InoRobotTP 57 MB 下载。"
+            ]
+          },
+          {
+            "title": "Ver 26.04.17.01",
+            "items": [
+              "添加 InoRobotLab V4R24C4SPC17 安装版与便携版下载。",
+              "添加 InoRobotTP V4R24C4SPC17 下载。"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Document",
+        "versions": [
+          {
+            "title": "Ver 26.06.23.01",
+            "items": [
+              "在硬件手册中添加 Safety Function 标签页。",
+              "将 Robot System Safety Function Guide.PDF 注册为 Safety Function 手册。",
+              "INOVANCE ROBOT Selection Guide.pdf 与 INOVANCE ROBOT Selection Leaflet.pdf 替换为最新文件。"
+            ]
+          },
+          {
+            "title": "Ver 26.06.19.01",
+            "items": [
+              "主页卡片名称由 Manual 更改为 Document。",
+              "卡片说明更新为机器人手册、培训资料、证书、通信配置文件的查看与下载。"
+            ]
+          },
+          {
+            "title": "Ver 26.06.15.01",
+            "items": [
+              "添加 EtherCAT v1.0.1、PROFINET V2.35、EtherNet/IP V4.5 通信配置文件。",
+              "添加共 83 份证书：CE 10、Clean 4、cSGSus 4、FCC 2、Functional Safety 2、KCs 59、MTBF 2。",
+              "添加 CE、Clean、cSGSus、FCC、Functional Safety、KCs、MTBF 证书筛选。",
+              "文档搜索除标题和说明外，现也包含实际文件名与路径。"
+            ]
+          },
+          {
+            "title": "Ver 26.06.01.01",
+            "items": [
+              "替换入门课程 2. Robot Basics 的 INT 与 Display 培训 PDF。"
+            ]
+          },
+          {
+            "title": "Ver 26.05.14.01",
+            "items": [
+              "添加 IR-S25&S35、IR-S60&GS60、IR-R15H&R20H 用户手册。",
+              "添加 Input IO、NPN Output IO、Encoder、Functional Safety、IR-LINK、PROFINET 扩展卡手册。",
+              "添加 Expansion Card 与 Selection Guide 文档筛选。"
+            ]
+          },
+          {
+            "title": "Ver 26.04.26.01",
+            "items": [
+              "R25/R16 手册由 IR-R25&R16 更名为 IR-R25&16，并替换为最新 PDF。"
+            ]
+          },
+          {
+            "title": "Ver 26.04.12.01",
+            "items": [
+              "替换入门课程 1. Robot Introduction 的 INT 与 Display 培训 PDF。"
+            ]
+          },
+          {
+            "title": "Ver 26.04.10.01",
+            "items": [
+              "添加 Application Level 培训分类。",
+              "添加 API 培训 PDF 与练习用 API.zip。"
+            ]
+          },
+          {
+            "title": "Ver 26.04.07.01",
+            "items": [
+              "添加 InoRobotLab、变量、主要命令、主要设置、Socket 通信和 Fieldbus 通信入门资料。",
+              "添加 Display 培训专用 For Display 筛选。",
+              "文档操作拆分为预览与下载。"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Debugging Tool",
+        "versions": [
+          {
+            "title": "Ver 26.07.15.01",
+            "items": [
+              "InoRobot Trace 从 V1.2 更新至 V1.3。",
+              "Trace 添加 Joint Speed J1 至 J6 通道。",
+              "修复 InoRobot Trace 连接虚拟控制器时 Joint Speed 通道不可用的问题。"
+            ]
+          },
+          {
+            "title": "Ver 26.06.19.01",
+            "items": [
+              "InoRobot Label Generator 从 V2.0 更新至 V2.1。"
+            ]
+          },
+          {
+            "title": "Ver 26.06.15.01",
+            "items": [
+              "Communication Tester 从 V2.5 更新至 V2.6。",
+              "InoRobot Trace 从 V1.1 更新至 V1.2。"
+            ]
+          },
+          {
+            "title": "Ver 26.06.10.01",
+            "items": [
+              "Communication Tester 从 V2.4 更新至 V2.5。",
+              "移除旧版 Communication Tester V2.3 可执行文件和 ZIP。"
+            ]
+          },
+          {
+            "title": "Ver 26.05.18.01",
+            "items": [
+              "InoRobot Trace 从 V1.0 更新至 V1.1。"
+            ]
+          },
+          {
+            "title": "Ver 26.04.26.01",
+            "items": [
+              "Communication Tester 从 V2.3 更新至 V2.4。",
+              "添加 InoRobot Trace V1.0 下载。",
+              "添加 InoRobot Label Generator V2.0 下载。",
+              "Project Compare 从 V2.0 更新至 V2.1。"
+            ]
+          },
+          {
+            "title": "Ver 26.04.13.01",
+            "items": [
+              "Communication Tester 从 V2.2 更新至 V2.3。",
+              "修复下载 ZIP 时返回 Git LFS 指针文件的问题。"
+            ]
+          },
+          {
+            "title": "Ver 26.04.07.01",
+            "items": [
+              "在 Zero Calibration 网页计算器中添加离线 Excel 下载按钮。"
+            ]
+          },
+          {
+            "title": "Ver 26.04.02",
+            "items": [
+              "添加 Communication Tester V2.2 下载。",
+              "添加 Project Compare V2.0 下载。"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "debugVersionHistory": {
+    "title": "调试工具版本记录",
+    "intro": "",
+    "sections": [
+      {
+        "title": "communicationTester",
+        "versions": [
+          {
+            "title": "Ver 2.6 (2026.06.15)",
+            "items": [
+              "根据标准化程序变更重新设计默认 HMI 画面。",
+              "将最新默认 HMI 内置到程序中，无需单独文件。",
+              "程序启动时自动应用内置默认 HMI。"
+            ]
+          },
+          {
+            "title": "Ver 2.5 (2026.06.10)",
+            "items": [
+              "为 HMI Code Block 添加脚本系统。",
+              "添加 If / ElseIf / Else / EndIf 条件语句。",
+              "添加逻辑、比较、算术运算和 Delay 命令。",
+              "脚本可读取或写入通信地址值。",
+              "添加自动完成、语法高亮和错误检查。",
+              "添加 Byte 与 BitField 数据类型。",
+              "Word 数据可展开为 Bit、Byte 子行。",
+              "多重写入可处理各目标的数据类型。",
+              "提升与现有 HMI 文件的兼容性。"
+            ]
+          },
+          {
+            "title": "Ver 2.4 (2026.04.26)",
+            "items": [
+              "改为无需单独安装 .NET 运行时的自包含程序。",
+              "将程序和必要组件合并为一个可执行文件。",
+              "修正启动入口和部署路径设置。",
+              "提升运行与部署稳定性。"
+            ]
+          },
+          {
+            "title": "Ver 2.3 (2026.04.13)",
+            "items": [
+              "为 HMI Word Button 添加条件比较与执行。",
+              "添加单个按钮控制最多 10 个地址的多重写入。",
+              "条件目标与执行目标可分别设置。",
+              "改进 HMI 状态与触发提示。"
+            ]
+          },
+          {
+            "title": "Ver 2.2 (2026.04.02)",
+            "items": [
+              "在网站发布 Communication Tester。",
+              "添加 Modbus TCP 通信。",
+              "添加 EtherNet/IP 通信。",
+              "添加 MC Protocol 通信。",
+              "添加 TCP/IP Socket Client 与 Server 通信。",
+              "添加通信数据实时监控与控制。",
+              "添加可在 PC 上构建测试画面的 HMI Builder。"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "labelGenerator",
+        "versions": [
+          {
+            "title": "Ver 2.1.0",
+            "items": [
+              "修复同一地址存在 Bit、Byte、Word 标签时部分标签缺失或被覆盖的问题。",
+              "地址冲突时优先显示 Bit 标签，并在说明区域显示相关 Byte、Word 标签。",
+              "自动识别说明中的 Double Word、2 Word、DWORD、32-bit。",
+              "Double Word 数据在 Excel 中按 32 位范围正确合并。",
+              "程序标题与可执行文件版本统一为 V2.1。"
+            ]
+          },
+          {
+            "title": "Ver 2.0.0",
+            "items": [
+              "将原先独立发布的标签格式合并到一个程序。",
+              "添加 20 字符 Word、20 字符 Byte、64 字符 Word、64 字符 Byte 格式。",
+              "Excel 转 JSN 与 JSN 转 Excel 可分别选择格式。",
+              "添加 JSN 转 Excel 前检查、编辑标签名与说明的界面。",
+              "根据所选格式自动指定 Excel 文件名。",
+              "改进变量名规范化，在 20 字符格式中自动缩短长名称。",
+              "状态区域显示当前格式与已加载数据数。",
+              "默认格式改为 20 字符 Word。"
+            ]
+          },
+          {
+            "title": "Ver 1.0.0",
+            "items": [
+              "添加 Excel 标签数据转 JSN。",
+              "添加 JSN 转 Excel 标签工作簿。",
+              "支持 Input、Output 的 Bit、Byte、Word 标签。",
+              "支持 B、R、D 变量标签。",
+              "添加标签查看、排序、选择与编辑。",
+              "添加变量名规范化与变更预览。",
+              "支持 64 字符 Byte 与 20 字符 Word 格式。"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "trace",
+        "versions": [
+          {
+            "title": "Ver 1.3 (2026.07.15)",
+            "items": [
+              "添加 J1 至 J6 轴速度实时监控。"
+            ]
+          },
+          {
+            "title": "Ver 1.2 (2026.06.15)",
+            "items": [
+              "添加 16 个 DI 与 16 个 DO 通道实时监控。",
+              "数字信号状态由数值改为 ON / OFF。",
+              "优化图表范围，使 DI、DO 变化更易识别。",
+              "可将所有已选跟踪通道保存为 CSV。",
+              "加载 CSV 时自动识别并显示其中的通道。",
+              "保持与旧版本 CSV 文件的兼容性。"
+            ]
+          },
+          {
+            "title": "Ver 1.1 (2026.05.18)",
+            "items": [
+              "由读取全部 B、R、D 变量改为仅采集用户选择的变量。",
+              "跟踪运行中也可更改 B、R、D 跟踪变量。",
+              "减少不必要的机器人 API 调用，提高高速采样稳定性和响应速度。",
+              "降低实时跟踪时机器人和程序的通信负载。"
+            ]
+          },
+          {
+            "title": "Ver 1.0 (2026.04.26)",
+            "items": [
+              "首次发布 InoRobotTrace。",
+              "添加机器人 TCP 速度与当前位置实时跟踪。",
+              "添加错误状态、错误代码、各轴伺服错误和急停状态监控。",
+              "添加程序行、运动行、系统时间和固件版本监控。",
+              "添加 Tool、Work Object、Load 编号与 B/R/D 变量监控。",
+              "添加图表缩放、平移、通道分离和光标测量。",
+              "添加跟踪数据 CSV 保存与重新加载。",
+              "以无需安装的单一可执行文件提供。"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "projectCompare",
+        "versions": [
+          {
+            "title": "Ver 2.1",
+            "items": [
+              "更新显示设置以适配 Windows 125%、150% 等缩放。",
+              "修复高分辨率屏幕中文字、按钮、输入框重叠或尺寸异常的问题。",
+              "改为无需单独安装 .NET 的单一可执行文件。",
+              "程序标题与可执行文件版本统一为 V2.1。"
+            ]
+          },
+          {
+            "title": "Ver 2.0",
+            "items": [
+              "添加两个 InoRobot 项目的并排比较。",
+              "添加 .pro、.pts、.jsn、.dat 文件自动分类。",
+              "文件状态显示为一致 / 不同 / 仅 A / 仅 B。",
+              "添加以颜色突出不同代码与数据的比较画面。",
+              "添加点位与标签数据的表格比较和编辑。",
+              "添加所选文件 A 到 B 或 B 到 A 覆盖。",
+              "可在比较画面直接编辑并保存文件。",
+              "添加复制现有项目的另存为功能。",
+              "支持韩语、英语、中文和越南语界面。"
+            ]
+          }
+        ]
+      }
+    ]
+  }
 }
