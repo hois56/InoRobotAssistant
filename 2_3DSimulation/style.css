@@ -1248,6 +1248,14 @@ input[type="number"]::-webkit-outer-spin-button {
     box-shadow: inset 3px 0 0 var(--accent);
 }
 
+.program-step-row.delay {
+    border-color: rgba(245, 158, 11, 0.32);
+}
+
+.program-step-row.delay .program-step-select {
+    color: #fbbf24;
+}
+
 .program-step-select {
     min-width: 66px;
     border: 0;

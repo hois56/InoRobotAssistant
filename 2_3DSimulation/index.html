@@ -6,7 +6,7 @@
     <title>3D Simulation</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=20260717-collision-alert1">
+    <link rel="stylesheet" href="style.css?v=20260717-delay-command1">
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/occt-import-js.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -228,6 +228,7 @@
                         <strong id="program-robot-name">로봇을 선택하세요</strong>
                         <div class="program-point-actions">
                             <button id="program-add-step" type="button" data-program-edit title="현재 자세 추가"><i class="fa-solid fa-plus"></i></button>
+                            <button id="program-add-delay" type="button" data-program-edit title="딜레이 추가"><i class="fa-solid fa-hourglass-half"></i></button>
                             <button id="program-update-step" type="button" data-program-edit title="선택 포인트 덮어쓰기"><i class="fa-solid fa-camera-rotate"></i></button>
                             <button id="program-step-up" type="button" data-program-edit title="위로 이동"><i class="fa-solid fa-arrow-up"></i></button>
                             <button id="program-step-down" type="button" data-program-edit title="아래로 이동"><i class="fa-solid fa-arrow-down"></i></button>
@@ -290,6 +291,6 @@
         </div>
     </footer>
 
-    <script type="module" src="main.js?v=20260717-collision-alert1"></script>
+    <script type="module" src="main.js?v=20260717-delay-command1"></script>
 </body>
 </html>
