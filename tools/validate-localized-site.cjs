@@ -294,7 +294,8 @@ routes.forEach(route => {
     assert(html.includes('<html lang="' + route.locale + '"'), route.file + ' has the wrong html language.');
     assert(html.includes('rel="canonical" href="' + route.canonical + '"'), route.file + ' has the wrong canonical URL.');
     requiredAlternates.forEach(code => assert(html.includes('hreflang="' + code + '"'), route.file + ' is missing hreflang ' + code + '.'));
-    assert(html.startsWith('---\npermalink: ' + route.route + '\n---\n'), route.file + ' is missing its stable public permalink.');
+    const permalinkHeader = new RegExp('^---\\r?\\npermalink: ' + escapeRegExp(route.route) + '\\r?\\n---\\r?\\n');
+    assert(permalinkHeader.test(html), route.file + ' is missing its stable public permalink.');
     assert(html.includes('/Language/runtime/locales-data.js') && html.includes('/Language/runtime/i18n.js'), route.file + ' is missing the i18n runtime.');
     assert(html.includes('/Language/runtime/icon-fallback.js'), route.file + ' is missing the local icon fallback.');
     assert(html.includes('id="inorobot-language-switcher"') && html.includes('id="inorobot-language-select"'), route.file + ' is missing the top-right language UI.');
