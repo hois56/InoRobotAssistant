@@ -65,6 +65,7 @@ const state = {
     motionSaveTimer: null,
     collisionRobotIds: new Set(),
     collisionHelpers: new Map(),
+    collisionHighlights: new Map(),
     lastCollisionCheck: 0,
     pendingImportFile: null,
     occtImporterPromise: null,
@@ -170,6 +171,8 @@ const el = {
     btnProgramExport: document.getElementById('program-export'),
     btnProgramImport: document.getElementById('program-import'),
     inputProgramImport: document.getElementById('program-import-file'),
+    collisionAlert: document.getElementById('collision-alert'),
+    collisionAlertText: document.getElementById('collision-alert-text'),
     btnAddMode:      null 
 };
 
@@ -3271,7 +3274,9 @@ function clearCollisionWarnings() {
         helper.material?.dispose();
     });
     state.collisionHelpers.clear();
+    [...state.collisionHighlights.keys()].forEach(removeCollisionHighlight);
     state.collisionRobotIds.clear();
+    updateCollisionAlert([]);
 }
 
 async function restoreMotionProjectData(input) {
@@ -3853,6 +3858,43 @@ function removeCollisionWarningBox(mesh) {
     state.collisionHelpers.delete(mesh);
 }
 
+function addCollisionHighlight(mesh) {
+    if (state.collisionHighlights.has(mesh)) return;
+    const originalMaterial = mesh.material;
+    const sourceMaterials = Array.isArray(originalMaterial) ? originalMaterial : [originalMaterial];
+    const highlightedMaterials = sourceMaterials.map((material) => {
+        const highlighted = material.clone();
+        highlighted.color?.set(0xef4444);
+        highlighted.emissive?.set(0x7f1d1d);
+        if ('emissiveIntensity' in highlighted) highlighted.emissiveIntensity = 1.25;
+        highlighted.needsUpdate = true;
+        return highlighted;
+    });
+    mesh.material = Array.isArray(originalMaterial) ? highlightedMaterials : highlightedMaterials[0];
+    state.collisionHighlights.set(mesh, { originalMaterial, highlightedMaterials });
+}
+
+function removeCollisionHighlight(mesh) {
+    const highlight = state.collisionHighlights.get(mesh);
+    if (!highlight) return;
+    mesh.material = highlight.originalMaterial;
+    highlight.highlightedMaterials.forEach((material) => material.dispose());
+    state.collisionHighlights.delete(mesh);
+}
+
+function updateCollisionAlert(collisionPairs) {
+    if (!el.collisionAlert || !el.collisionAlertText) return;
+    if (!collisionPairs.length) {
+        el.collisionAlert.classList.add('hidden');
+        el.collisionAlertText.textContent = 'Robot collision detected';
+        return;
+    }
+    el.collisionAlertText.textContent = collisionPairs
+        .map(([leftRobot, rightRobot]) => `${leftRobot.userData.motionDisplayName} ↔ ${rightRobot.userData.motionDisplayName}`)
+        .join(' · ');
+    el.collisionAlert.classList.remove('hidden');
+}
+
 function collisionSetsEqual(left, right) {
     return left.size === right.size && [...left].every((value) => right.has(value));
 }
@@ -3864,6 +3906,7 @@ function updateRobotCollisions(timestamp) {
     const nextCollisionRobotIds = new Set();
     const robots = getArticulatedRobots();
     const collisionMeshes = new Set();
+    const collisionPairs = [];
     robots.forEach((robot) => robot.updateMatrixWorld(true));
     const worldParts = new Map(robots.map((robot) => [
         robot,
@@ -3890,15 +3933,34 @@ function updateRobotCollisions(timestamp) {
             if (pairCollision) {
                 nextCollisionRobotIds.add(leftRobot.userData.motionInstanceId);
                 nextCollisionRobotIds.add(rightRobot.userData.motionInstanceId);
+                collisionPairs.push([leftRobot, rightRobot]);
             }
         }
     }
     [...state.collisionHelpers.keys()].forEach((mesh) => {
         if (!collisionMeshes.has(mesh)) removeCollisionWarningBox(mesh);
     });
-    collisionMeshes.forEach(addCollisionWarningBox);
+    [...state.collisionHighlights.keys()].forEach((mesh) => {
+        if (!collisionMeshes.has(mesh)) removeCollisionHighlight(mesh);
+    });
+    collisionMeshes.forEach((mesh) => {
+        addCollisionWarningBox(mesh);
+        addCollisionHighlight(mesh);
+    });
+    updateCollisionAlert(collisionPairs);
     state.collisionRobotIds = nextCollisionRobotIds;
-    if (!collisionSetsEqual(previous, state.collisionRobotIds)) renderMotionProgramPanel();
+    if (!collisionSetsEqual(previous, state.collisionRobotIds)) {
+        if (state.collisionRobotIds.size) {
+            const names = [...state.collisionRobotIds]
+                .map((id) => findProgramRobot(id)?.userData.motionDisplayName)
+                .filter(Boolean)
+                .join(', ');
+            setMotionProgramStatus(`Collision detected: ${names}`, 'error');
+        } else if (previous.size) {
+            setMotionProgramStatus('Collision cleared.');
+        }
+        renderMotionProgramPanel();
+    }
 }
 
 function applyFBXMaterial(fbx) {
@@ -3946,6 +4008,7 @@ function disposeObjectResources(object, disposed = null) {
 
 function cleanupScene() {
     setBaseJogGizmoEnabled(false);
+    clearCollisionWarnings();
     state.transformControls.detach();
     const models = [...state.models];
     models.forEach((model) => {
