@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import {
     MOTION_PROJECT_SCHEMA_VERSION,
     MOVJ_EASING_PEAK_SLOPE,
+    MAX_MOVL_SPEED,
     DEFAULT_DELAY_SECONDS,
     MIN_DELAY_SECONDS,
     MAX_DELAY_SECONDS,
@@ -51,6 +52,9 @@ closeTo(MOVJ_EASING_PEAK_SLOPE, 1.5);
 closeTo(calculateMovlDuration(100, 0, 100), 1);
 closeTo(calculateMovlDuration(0, 180, 1000), 2);
 closeTo(calculateMovlDuration(0, 0, 100), 0.1);
+closeTo(MAX_MOVL_SPEED, 1500);
+closeTo(calculateMovlDuration(1500, 0, MAX_MOVL_SPEED), 1);
+closeTo(calculateMovlDuration(1500, 0, 2000), 1);
 closeTo(calculateDelayDuration(2.5), 2.5);
 closeTo(calculateDelayDuration(MIN_DELAY_SECONDS), MIN_DELAY_SECONDS);
 closeTo(calculateDelayDuration(MAX_DELAY_SECONDS), MAX_DELAY_SECONDS);
@@ -187,6 +191,12 @@ const invalidSpeed = structuredClone(fullProject);
 invalidSpeed.robots[0].steps[0].speed = 101;
 assert.throws(() => normalizeMotionProject(invalidSpeed), /speed is outside/);
 
+const maximumMovlSpeed = structuredClone(fullProject);
+maximumMovlSpeed.robots[0].steps[1].speed = MAX_MOVL_SPEED;
+assert.equal(normalizeMotionProject(maximumMovlSpeed).robots[0].steps[1].speed, 1500);
+maximumMovlSpeed.robots[0].steps[1].speed = MAX_MOVL_SPEED + 1;
+assert.throws(() => normalizeMotionProject(maximumMovlSpeed), /speed is outside/);
+
 const invalidDelay = structuredClone(fullProject);
 invalidDelay.robots[0].steps[2].delaySeconds = 0;
 assert.throws(() => normalizeMotionProject(invalidDelay), /delay is outside/);
@@ -254,6 +264,7 @@ assert.deepEqual(programControlRows, [
     "type: 'DELAY'",
     'duration: calculateDelayDuration(step.delaySeconds) * 1000',
     'delaySeconds: step.delaySeconds',
+    'step.motion === \'MOVJ\' ? 100 : MAX_MOVL_SPEED',
     'localStorage.setItem(MOTION_PROJECT_STORAGE_KEY',
     'window.showSaveFilePicker({',
     'await fileHandle.createWritable()',
