@@ -3069,7 +3069,10 @@ function updateMotionUiLock() {
     if (el.btnToggleTransform) el.btnToggleTransform.disabled = locked;
     if (el.btnAddMode) el.btnAddMode.disabled = locked;
     if (el.modelTree) el.modelTree.classList.toggle('motion-locked', locked);
-    el.jogPanel?.querySelectorAll('button, input').forEach((control) => { control.disabled = locked; });
+    el.jogPanel?.querySelectorAll('button:not([data-panel-action]), input')
+        .forEach((control) => { control.disabled = locked; });
+    el.jogPanel?.querySelectorAll('[data-panel-action]')
+        .forEach((control) => { control.disabled = false; });
     el.modelTransformPanel?.querySelectorAll('button, input').forEach((control) => { control.disabled = locked; });
     el.programPanel?.querySelectorAll('[data-program-edit], [data-program-robot-include], [data-program-step-select], [data-program-robot-select]')
         .forEach((control) => { control.disabled = locked; });
