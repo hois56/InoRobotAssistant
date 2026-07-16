@@ -99,13 +99,23 @@
 
     function resolveInitialLocale() {
         const routeLocale = getRouteLocale();
+        const storedLocale = readSharedLocale() || readSessionLocale();
         if (routeLocale) {
+            const currentPath = normalizePath(window.location.pathname);
+            if (currentPath === '/' && storedLocale && storedLocale !== DEFAULT_LOCALE) {
+                writeSessionLocale(storedLocale);
+                const targetPath = LANDING_ROUTES[storedLocale] || '/';
+                if (normalizePath(targetPath) !== currentPath) {
+                    window.location.replace(targetPath);
+                }
+                return storedLocale;
+            }
             persistLocale(routeLocale, true);
             return routeLocale;
         }
-        const storedLocale = readSharedLocale() || readSessionLocale() || DEFAULT_LOCALE;
-        writeSessionLocale(storedLocale);
-        return storedLocale;
+        const initialLocale = storedLocale || DEFAULT_LOCALE;
+        writeSessionLocale(initialLocale);
+        return initialLocale;
     }
 
     function getByPath(source, path) {

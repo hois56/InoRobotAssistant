@@ -472,6 +472,11 @@ permalink: /en/
                 } catch {
                     // Route-based language switching still works without browser storage.
                 }
+                try {
+                    window.localStorage.setItem('inorobot.locale', locale);
+                } catch {
+                    // Session storage and route switching still preserve the selected language.
+                }
                 window.location.assign(target);
             });
             select.dataset.localeListener = 'true';

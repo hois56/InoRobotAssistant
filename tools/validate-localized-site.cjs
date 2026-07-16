@@ -72,7 +72,8 @@ function validateStandaloneLanguageSwitch(html, file) {
     if (!match) return;
 
     let changeHandler = null;
-    const writes = [];
+    const sessionWrites = [];
+    const sharedWrites = [];
     const assignments = [];
     const select = {
         value: 'ko',
@@ -84,7 +85,8 @@ function validateStandaloneLanguageSwitch(html, file) {
     vm.runInNewContext(match[1], {
         document: { getElementById: id => id === 'inorobot-language-select' ? select : null },
         window: {
-            sessionStorage: { setItem: (key, value) => writes.push([key, value]) },
+            sessionStorage: { setItem: (key, value) => sessionWrites.push([key, value]) },
+            localStorage: { setItem: (key, value) => sharedWrites.push([key, value]) },
             location: { assign: value => assignments.push(value) }
         }
     });
@@ -95,7 +97,8 @@ function validateStandaloneLanguageSwitch(html, file) {
         select.value = locale;
         changeHandler();
         assert(assignments.at(-1) === route, file + ' does not navigate ' + locale + ' to ' + route + '.');
-        assert(writes.at(-1).join('|') === 'inorobot.locale|' + locale, file + ' does not persist the ' + locale + ' session locale.');
+        assert(sessionWrites.at(-1).join('|') === 'inorobot.locale|' + locale, file + ' does not persist the ' + locale + ' session locale.');
+        assert(sharedWrites.at(-1).join('|') === 'inorobot.locale|' + locale, file + ' does not persist the ' + locale + ' shared locale.');
     });
 }
 
@@ -359,7 +362,10 @@ subpages.forEach(({ file, localeFile, pageKey }) => {
 const runtime = read('Language/runtime/i18n.js');
 assert(runtime.includes("const STORAGE_KEY = 'inorobot.locale'"), 'Runtime session key is missing.');
 assert(runtime.includes('function translateFromPageData') && runtime.includes("get('pageTranslations.' + detectPageKey()"), 'Runtime does not prioritize the active page locale file.');
-assert(runtime.includes('readSharedLocale() || readSessionLocale() || DEFAULT_LOCALE'), 'Direct tool access does not prioritize the shared locale with a Korean fallback.');
+assert(runtime.includes('const storedLocale = readSharedLocale() || readSessionLocale();')
+    && runtime.includes('const initialLocale = storedLocale || DEFAULT_LOCALE;'), 'Direct tool access does not prioritize the shared locale with a Korean fallback.');
+assert(runtime.includes("currentPath === '/' && storedLocale && storedLocale !== DEFAULT_LOCALE")
+    && runtime.includes('window.location.replace(targetPath)'), 'The canonical Korean landing route can overwrite a stored non-Korean locale.');
 assert(runtime.includes("'/kr/': 'ko'") && runtime.includes("'/cn/': 'zh-CN'") && runtime.includes("'/vn/': 'vi'"), 'Landing route map is incomplete.');
 assert(runtime.includes('function formatNumber') && runtime.includes('function formatDate'), 'Locale number/date formatters are missing.');
 assert(runtime.includes('window.location.assign(LANDING_ROUTES[nextLocale])'), 'Landing language changes do not navigate to their localized route.');
@@ -371,6 +377,64 @@ assert(runtime.includes("document.querySelector('[data-i18n-language-slot]')") &
     assert(runtime.includes(`a[href="${route}"]`), 'Runtime does not refresh home links already pointing to ' + route + '.');
 });
 assert(runtime.includes("link.setAttribute('data-i18n-home-link', '')"), 'Runtime does not retain home links for later locale changes.');
+const resolveInitialLocaleSource = extractNamedFunction(runtime, 'resolveInitialLocale');
+assert(Boolean(resolveInitialLocaleSource), 'Runtime initial-locale resolver cannot be tested.');
+if (resolveInitialLocaleSource) {
+    function testInitialLocaleScenario({ pathname, routeLocale, sharedLocale, sessionLocale }) {
+        const result = { replacements: [], persisted: [], sessionWrites: [] };
+        const context = {
+            window: {
+                location: {
+                    pathname,
+                    replace(target) { result.replacements.push(target); }
+                }
+            },
+            DEFAULT_LOCALE: 'ko',
+            LANDING_ROUTES: { ko: '/', en: '/en/', 'zh-CN': '/cn/', vi: '/vn/' },
+            getRouteLocale: () => routeLocale,
+            readSharedLocale: () => sharedLocale,
+            readSessionLocale: () => sessionLocale,
+            writeSessionLocale(locale) { result.sessionWrites.push(locale); },
+            persistLocale(locale) { result.persisted.push(locale); },
+            normalizePath(value) {
+                const normalized = String(value || '/').replace(/\/index\.html$/i, '/');
+                return normalized.endsWith('/') ? normalized : normalized + '/';
+            }
+        };
+        vm.runInNewContext(`${resolveInitialLocaleSource}; this.selectedLocale = resolveInitialLocale();`, context);
+        return { ...result, selectedLocale: context.selectedLocale };
+    }
+
+    const storedEnglishHome = testInitialLocaleScenario({
+        pathname: '/',
+        routeLocale: 'ko',
+        sharedLocale: 'en',
+        sessionLocale: null
+    });
+    assert(storedEnglishHome.selectedLocale === 'en'
+        && storedEnglishHome.replacements.at(-1) === '/en/'
+        && !storedEnglishHome.persisted.includes('ko'), 'Returning home after a tool-page language change resets the locale to Korean.');
+
+    const freshKoreanHome = testInitialLocaleScenario({
+        pathname: '/',
+        routeLocale: 'ko',
+        sharedLocale: null,
+        sessionLocale: null
+    });
+    assert(freshKoreanHome.selectedLocale === 'ko'
+        && freshKoreanHome.persisted.at(-1) === 'ko'
+        && freshKoreanHome.replacements.length === 0, 'A fresh canonical home visit does not default to Korean.');
+
+    const explicitEnglishRoute = testInitialLocaleScenario({
+        pathname: '/en/',
+        routeLocale: 'en',
+        sharedLocale: 'zh-CN',
+        sessionLocale: null
+    });
+    assert(explicitEnglishRoute.selectedLocale === 'en'
+        && explicitEnglishRoute.persisted.at(-1) === 'en'
+        && explicitEnglishRoute.replacements.length === 0, 'An explicit localized landing route does not override the stored locale.');
+}
 const localServer = read('tools/serve-local.cjs');
 ['0_Home/ko/index.html', '0_Home/kr/index.html', '0_Home/en/index.html', '0_Home/zh-CN/index.html', '0_Home/vi/index.html'].forEach(file => {
     assert(localServer.includes(file), 'Local server is missing landing-page mapping for ' + file + '.');
