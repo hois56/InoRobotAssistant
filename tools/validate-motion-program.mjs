@@ -147,6 +147,9 @@ assert.equal(new Set(htmlIds).size, htmlIds.length, 'HTML ids must be unique.');
     'slerpQuaternion(',
     'smoothstep(linearProgress)',
     'localStorage.setItem(MOTION_PROJECT_STORAGE_KEY',
+    'window.showSaveFilePicker({',
+    'await fileHandle.createWritable()',
+    "startIn: 'documents'",
     'new OBB('
 ].forEach((marker) => assert.ok(mainSource.includes(marker), `Missing integration marker: ${marker}`));
 const collisionSource = mainSource.slice(
