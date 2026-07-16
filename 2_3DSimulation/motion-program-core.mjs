@@ -89,6 +89,8 @@ export function createEmptyMotionProgram(included = true) {
         selectedStepId: null,
         status: 'idle',
         progress: 0,
+        cycleTimerStartedAt: null,
+        lastCycleTimeSeconds: null,
         steps: []
     };
 }
@@ -99,15 +101,27 @@ export function cloneMotionProgram(program) {
         selectedStepId: typeof program?.selectedStepId === 'string' ? program.selectedStepId : null,
         status: 'idle',
         progress: 0,
+        cycleTimerStartedAt: null,
+        lastCycleTimeSeconds: null,
         steps: (program?.steps || []).map((step) => {
-            const motion = step.motion === 'DELAY' ? 'DELAY' : step.motion === 'MOVL' ? 'MOVL' : 'MOVJ';
+            const motion = step.motion === 'TIME_START'
+                ? 'TIME_START'
+                : step.motion === 'TIME_OUT'
+                    ? 'TIME_OUT'
+                    : step.motion === 'DELAY'
+                        ? 'DELAY'
+                        : step.motion === 'MOVL'
+                            ? 'MOVL'
+                            : 'MOVJ';
             return {
                 id: String(step.id),
                 name: String(step.name),
                 motion,
                 ...(motion === 'DELAY'
                     ? { delaySeconds: Number(step.delaySeconds) }
-                    : { speed: Number(step.speed) }),
+                    : motion === 'MOVJ' || motion === 'MOVL'
+                        ? { speed: Number(step.speed) }
+                        : {}),
                 joints: [...step.joints],
                 tcp: {
                     position: [...step.tcp.position],
@@ -138,21 +152,25 @@ function normalizedQuaternion(value, label) {
 }
 
 function normalizeStep(step, jointCount, index) {
-    const motion = step?.motion === 'DELAY'
-        ? 'DELAY'
-        : step?.motion === 'MOVL'
-            ? 'MOVL'
-            : step?.motion === 'MOVJ'
-                ? 'MOVJ'
-                : null;
+    const motion = step?.motion === 'TIME_START'
+        ? 'TIME_START'
+        : step?.motion === 'TIME_OUT'
+            ? 'TIME_OUT'
+            : step?.motion === 'DELAY'
+                ? 'DELAY'
+                : step?.motion === 'MOVL'
+                    ? 'MOVL'
+                    : step?.motion === 'MOVJ'
+                        ? 'MOVJ'
+                        : null;
     if (!motion) throw new Error(`Step ${index + 1} has an unsupported motion type.`);
     const delaySeconds = motion === 'DELAY' ? Number(step.delaySeconds) : null;
-    const speed = motion === 'DELAY' ? null : Number(step.speed);
+    const speed = motion === 'MOVJ' || motion === 'MOVL' ? Number(step.speed) : null;
     if (motion === 'DELAY') {
         if (!Number.isFinite(delaySeconds) || delaySeconds < MIN_DELAY_SECONDS || delaySeconds > MAX_DELAY_SECONDS) {
             throw new Error(`Step ${index + 1} delay is outside the supported seconds range.`);
         }
-    } else {
+    } else if (motion === 'MOVJ' || motion === 'MOVL') {
         const maximumSpeed = motion === 'MOVJ' ? 100 : MAX_MOVL_SPEED;
         if (!Number.isFinite(speed) || speed < 1 || speed > maximumSpeed) {
             throw new Error(`Step ${index + 1} speed is outside the ${motion} range.`);
@@ -163,7 +181,11 @@ function normalizeStep(step, jointCount, index) {
         id: requiredString(step.id, `Step ${index + 1} id`),
         name: requiredString(step.name, `Step ${index + 1} name`),
         motion,
-        ...(motion === 'DELAY' ? { delaySeconds } : { speed }),
+        ...(motion === 'DELAY'
+            ? { delaySeconds }
+            : motion === 'MOVJ' || motion === 'MOVL'
+                ? { speed }
+                : {}),
         joints: finiteArray(step.joints, jointCount, `Step ${index + 1} joints`),
         tcp: {
             position: finiteArray(step.tcp?.position, 3, `Step ${index + 1} TCP position`),
