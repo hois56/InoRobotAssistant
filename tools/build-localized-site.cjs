@@ -20,11 +20,11 @@ const localeRoutes = {
     vi: '/vn/'
 };
 const outputRoutes = {
-    ko: 'Language/ko/index.html',
-    kr: 'Language/kr/index.html',
-    en: 'Language/en/index.html',
-    'zh-CN': 'Language/zh-CN/index.html',
-    vi: 'Language/vi/index.html'
+    ko: '0_Home/ko/index.html',
+    kr: '0_Home/kr/index.html',
+    en: '0_Home/en/index.html',
+    'zh-CN': '0_Home/zh-CN/index.html',
+    vi: '0_Home/vi/index.html'
 };
 const htmlLanguages = {
     ko: 'ko',
@@ -33,21 +33,21 @@ const htmlLanguages = {
     vi: 'vi'
 };
 const siteUrl = 'https://inovancerobot.com';
-const templatePath = path.join(root, 'Language', 'templates', 'home.template.html');
-const rootIndexPath = path.join(root, 'Language', 'ko', 'index.html');
+const templatePath = path.join(root, '0_Home', 'home.template.html');
+const rootIndexPath = path.join(root, '0_Home', 'ko', 'index.html');
 
 function readJson(filePath) {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
 }
 
 function loadSiteCardVersions() {
-    const source = fs.readFileSync(path.join(root, 'site-card-versions.js'), 'utf8');
+    const source = fs.readFileSync(path.join(root, '0_Home', 'site-card-versions.js'), 'utf8');
     const versions = {};
     for (const match of source.matchAll(/([A-Za-z0-9_]+):\s*['"]([^'"]+)['"]/g)) {
         versions[match[1]] = match[2];
     }
     if (!Object.keys(versions).length) {
-        throw new Error('No card versions were found in site-card-versions.js.');
+        throw new Error('No card versions were found in 0_Home/site-card-versions.js.');
     }
     return versions;
 }

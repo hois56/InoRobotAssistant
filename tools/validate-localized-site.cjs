@@ -170,7 +170,7 @@ function translateLegacySource(locale, source) {
 }
 
 const locales = Object.fromEntries(localeCodes.map(code => [code, loadMergedLocale(code)]));
-const siteCardVersions = parseSiteCardVersions(read('site-card-versions.js'));
+const siteCardVersions = parseSiteCardVersions(read('0_Home/site-card-versions.js'));
 
 const robotDataContext = {};
 vm.runInNewContext(read('1_RobotModelSelect/data.js') + '\nthis.__accessories = accessoriesList;', robotDataContext);
@@ -280,11 +280,11 @@ assert(fs.existsSync(preservedDebugExe) && fs.statSync(preservedDebugExe).size >
 assert(!fs.existsSync(path.join(root, '4_ProjectGenerator', 'CNAME')), 'The duplicate Project Generator CNAME was not removed.');
 
 const routes = [
-    { file: 'Language/ko/index.html', route: '/', locale: 'ko', canonical: 'https://inovancerobot.com/' },
-    { file: 'Language/kr/index.html', route: '/kr/', locale: 'ko', canonical: 'https://inovancerobot.com/' },
-    { file: 'Language/en/index.html', route: '/en/', locale: 'en', canonical: 'https://inovancerobot.com/en/' },
-    { file: 'Language/zh-CN/index.html', route: '/cn/', locale: 'zh-CN', canonical: 'https://inovancerobot.com/cn/' },
-    { file: 'Language/vi/index.html', route: '/vn/', locale: 'vi', canonical: 'https://inovancerobot.com/vn/' }
+    { file: '0_Home/ko/index.html', route: '/', locale: 'ko', canonical: 'https://inovancerobot.com/' },
+    { file: '0_Home/kr/index.html', route: '/kr/', locale: 'ko', canonical: 'https://inovancerobot.com/' },
+    { file: '0_Home/en/index.html', route: '/en/', locale: 'en', canonical: 'https://inovancerobot.com/en/' },
+    { file: '0_Home/zh-CN/index.html', route: '/cn/', locale: 'zh-CN', canonical: 'https://inovancerobot.com/cn/' },
+    { file: '0_Home/vi/index.html', route: '/vn/', locale: 'vi', canonical: 'https://inovancerobot.com/vn/' }
 ];
 const requiredAlternates = ['ko', 'en', 'zh-CN', 'vi', 'x-default'];
 
@@ -366,7 +366,7 @@ assert(runtime.includes("document.querySelector('[data-i18n-language-slot]')") &
 });
 assert(runtime.includes("link.setAttribute('data-i18n-home-link', '')"), 'Runtime does not retain home links for later locale changes.');
 const localServer = read('tools/serve-local.cjs');
-['Language/ko/index.html', 'Language/kr/index.html', 'Language/en/index.html', 'Language/zh-CN/index.html', 'Language/vi/index.html'].forEach(file => {
+['0_Home/ko/index.html', '0_Home/kr/index.html', '0_Home/en/index.html', '0_Home/zh-CN/index.html', '0_Home/vi/index.html'].forEach(file => {
     assert(localServer.includes(file), 'Local server is missing landing-page mapping for ' + file + '.');
 });
 const updateHomeLinksSource = extractNamedFunction(runtime, 'updateHomeLinks');
@@ -444,15 +444,29 @@ assert(read('7_DebuggingTool/debugging-history.js').includes('window.InoRobotI18
 const zeroCalibration = read('7_DebuggingTool/ZeroCalibration/index.html');
 assert(zeroCalibration.includes('function calculate(index)') && zeroCalibration.includes('function downloadOfflineTool()'), 'Zero Calibration calculation or offline download hook is missing.');
 
-const homeTemplate = read('Language/templates/home.template.html');
+const homeTemplate = read('0_Home/home.template.html');
 [
-    ['/1_RobotModelSelect/INOVANCE_Logo.png', '1_RobotModelSelect/INOVANCE_Logo.png'],
-    ['/robot_select_icon_simple_1774428251953.png', 'robot_select_icon_simple_1774428251953.png'],
-    ['/project_gen_icon_simple_1774428268885.png', 'project_gen_icon_simple_1774428268885.png']
+    ['/1_RobotModelSelect/INOVANCE_Logo.png', '1_RobotModelSelect/INOVANCE_Logo.png']
 ].forEach(([webPath, filePath]) => {
     assert(homeTemplate.includes('src="' + webPath + '"'), 'Home template does not use the absolute image path ' + webPath + '.');
     const image = readBuffer(filePath);
     assert(image.length > 8 && image.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])), filePath + ' is not a valid PNG asset.');
+});
+assert(homeTemplate.includes('data-lucide="bot"') && homeTemplate.includes('data-lucide="file-code-2"'), 'Home cards do not use the shared Lucide icon style.');
+assert(!homeTemplate.includes('robot_select_icon_simple_') && !homeTemplate.includes('project_gen_icon_simple_'), 'Home template still references the removed one-off PNG icons.');
+assert(homeTemplate.includes('src="/0_Home/site-card-versions.js') && homeTemplate.includes('src="/0_Home/site-card-history-data.js') && homeTemplate.includes('src="/0_Home/site-card-history.js'), 'Home template does not load its scripts from 0_Home.');
+['1_RobotModelSelect', '2_Robot3DViewer', '3_ToolSelector', '4_ProjectGenerator', '5_Software', '6_Document', '7_DebuggingTool'].forEach(folder => {
+    assert(homeTemplate.includes('href="/' + folder + '/"'), 'Home card does not use an absolute route for ' + folder + '.');
+});
+['robot_select_icon_simple_1774428251953.png', 'project_gen_icon_simple_1774428268885.png'].forEach(file => {
+    assert(!fs.existsSync(path.join(root, file)), 'Unused root icon still exists: ' + file + '.');
+});
+['UPDATE_HISTORY.md', 'site-card-history.js', 'site-card-history-data.js', 'site-card-versions.js'].forEach(file => {
+    assert(!fs.existsSync(path.join(root, file)), 'Home-only file still exists at the repository root: ' + file + '.');
+    assert(fs.existsSync(path.join(root, '0_Home', file)), '0_Home is missing ' + file + '.');
+});
+['ko', 'kr', 'en', 'zh-CN', 'vi'].forEach(code => {
+    assert(!fs.existsSync(path.join(root, 'Language', code, 'index.html')), 'Generated home page still exists inside Language/' + code + '.');
 });
 assert(read('7_DebuggingTool/index.html').includes('data-i18n-skip>Debugging Tool</h1>'), 'Debugging Tool page heading is not fixed in English.');
 

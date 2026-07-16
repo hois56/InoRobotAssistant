@@ -6,11 +6,11 @@ const root = path.resolve(__dirname, '..');
 const host = '127.0.0.1';
 const port = Number(process.argv[2] || 8765);
 const landingFiles = new Map([
-    ['/', 'Language/ko/index.html'],
-    ['/kr/', 'Language/kr/index.html'],
-    ['/en/', 'Language/en/index.html'],
-    ['/cn/', 'Language/zh-CN/index.html'],
-    ['/vn/', 'Language/vi/index.html']
+    ['/', '0_Home/ko/index.html'],
+    ['/kr/', '0_Home/kr/index.html'],
+    ['/en/', '0_Home/en/index.html'],
+    ['/cn/', '0_Home/zh-CN/index.html'],
+    ['/vn/', '0_Home/vi/index.html']
 ]);
 
 const mimeTypes = {

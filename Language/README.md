@@ -47,9 +47,9 @@ node tools\validate-localized-site.cjs
 다음 파일은 자동 생성되므로 직접 수정하지 않습니다.
 
 - `Language/runtime/locales-data.js`
-- `Language/ko/index.html`
-- `Language/kr/index.html`
-- `Language/en/index.html`
-- `Language/zh-CN/index.html`
-- `Language/vi/index.html`
+- `0_Home/ko/index.html`
+- `0_Home/kr/index.html`
+- `0_Home/en/index.html`
+- `0_Home/zh-CN/index.html`
+- `0_Home/vi/index.html`
 - `sitemap.xml`
