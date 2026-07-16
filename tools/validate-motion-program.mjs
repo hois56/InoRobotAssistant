@@ -395,8 +395,9 @@ assert.ok(htmlSource.includes('main.js?v=20260717-i18n-complete1'), 'Viewer cach
 assert.ok(htmlSource.includes('style.css?v=20260717-panel-edge-resize1'), 'Stylesheet cache token must load panel edge cursors.');
 assert.match(htmlSource, /id="collision-alert"[^>]*role="alert"[^>]*aria-live="assertive"/);
 assert.match(cssSource, /\.collision-alert\s*\{[^}]*position:\s*absolute[^}]*background:\s*rgba\(127,\s*29,\s*29,\s*0\.94\)/s);
-assert.ok(
-    mainSource.includes("if (robot === state.activeArticulatedModel) syncJointControls(robot);\n    updateTcpPresentation(robot);"),
+assert.match(
+    mainSource,
+    /if \(robot === state\.activeArticulatedModel\) syncJointControls\(robot\);\r?\n\s*updateTcpPresentation\(robot\);/,
     'Every animated robot must update its TCP visual, while only the active robot updates JOG controls.'
 );
 assert.match(cssSource, /\.program-panel\s*\{/);
