@@ -269,7 +269,7 @@ jsonFileSets.forEach((files, index) => {
 
 const expectedToolFolders = [
     '1_RobotModelSelect',
-    '2_Robot3DViewer',
+    '2_3DSimulation',
     '3_ToolSelector',
     '4_ProjectGenerator',
     '5_Software',
@@ -327,7 +327,7 @@ routes.forEach(route => {
 
 const subpages = [
     { file: '1_RobotModelSelect/index.html', localeFile: 'robot-model-select.json', pageKey: 'robotSelect' },
-    { file: '2_Robot3DViewer/index.html', localeFile: 'robot-3d-viewer.json', pageKey: 'robot3dViewer' },
+    { file: '2_3DSimulation/index.html', localeFile: 'robot-3d-viewer.json', pageKey: 'robot3dViewer' },
     { file: '3_ToolSelector/index.html', localeFile: 'tool-selector.json', pageKey: 'toolSelector' },
     { file: '4_ProjectGenerator/index.html', localeFile: 'project-generator.json', pageKey: 'projectGenerator' },
     { file: '5_Software/index.html', localeFile: 'software.json', pageKey: 'software' },
@@ -466,10 +466,13 @@ assert(localeStyles.includes('.inorobot-language-switcher[data-embedded="true"]'
 
 const projectHtml = read('4_ProjectGenerator/index.html');
 assert(projectHtml.indexOf('data-i18n-language-slot') < projectHtml.indexOf('id="btnGuide"'), 'Project Generator language switcher is not placed left of Guide.');
-const viewerHtml = read('2_Robot3DViewer/index.html');
-const viewerStyles = read('2_Robot3DViewer/style.css');
-assert(viewerHtml.indexOf('data-i18n-language-slot') > viewerHtml.indexOf('</header>'), '3D Viewer language switcher is not below the top bar.');
-assert(viewerStyles.includes('top: calc(var(--topbar-h) + 8px)') && viewerStyles.includes('.viewer-language-row'), '3D Viewer language switcher row is not positioned below the top bar.');
+const viewerHtml = read('2_3DSimulation/index.html');
+const viewerStyles = read('2_3DSimulation/style.css');
+const viewerLanguageSlot = viewerHtml.indexOf('data-i18n-language-slot');
+assert(viewerLanguageSlot > viewerHtml.indexOf('<div class="topbar-right">')
+    && viewerLanguageSlot < viewerHtml.indexOf('</header>'), '3D Simulation language switcher is not inside the top-right bar.');
+assert(viewerStyles.includes('.viewer-language-row .inorobot-language-switcher')
+    && viewerStyles.includes('position: static;'), '3D Simulation language switcher is not embedded in the top-right bar.');
 assert(read('6_Document/index.html').includes('data-cat="pendant">Pendant</button>'), 'Document Pendant tab is not using the translatable source label.');
 assert(/<h1\b[^>]*data-i18n-skip[^>]*>\s*Software Download Center\s*<\/h1>/.test(read('5_Software/index.html')), 'Software page header name is not fixed in English.');
 assert(/<h1\b[^>]*data-i18n-skip[^>]*>\s*Technical Manual Center\s*<\/h1>/.test(read('6_Document/index.html')), 'Document page header name is not fixed in English.');
@@ -494,18 +497,42 @@ const projectScript = read('4_ProjectGenerator/app.js');
 assert(projectScript.includes('new JSZip()') && projectScript.includes('zip.generateAsync') && projectScript.includes('saveAs(blob'), 'Project ZIP generation hook is missing.');
 assert(projectScript.includes("uiText('Option Info')") && projectScript.includes('window.InoRobotI18n.apply(description)'), 'Project option guide descriptions are not localized.');
 assert(projectScript.includes('window.InoRobotI18n.apply(optionsModal)'), 'Project option items are not explicitly localized when the modal opens.');
-const viewerScript = read('2_Robot3DViewer/main.js');
-assert(viewerScript.includes("uiText('모델 추가 모드')") && viewerScript.includes("'inorobot:languagechange', refreshLocalizedControls"), '3D Viewer dynamic controls are not localized.');
+const viewerScript = read('2_3DSimulation/main.js');
+assert(viewerScript.includes("uiText('모델 추가 모드')") && viewerScript.includes("'inorobot:languagechange', refreshLocalizedControls"), '3D Simulation dynamic controls are not localized.');
+const simulationModels = JSON.parse(read('2_3DSimulation/models/models.json'));
+let simulationModelGroup = '';
+let articulatedRobotCount = 0;
+simulationModels.forEach(model => {
+    if (model.group) {
+        simulationModelGroup = model.group;
+        return;
+    }
+    if (simulationModelGroup === 'Controller') return;
+    articulatedRobotCount += 1;
+    assert(model.type === 'articulated-stl', model.name + ' does not support articulated JOG.');
+    assert(['scara', 'six-axis'].includes(model.robotType), model.name + ' has an invalid robot type.');
+    const isScara = model.robotType === 'scara';
+    assert(Array.isArray(model.structure) && model.structure.length === (isScara ? 4 : 6), model.name + ' has invalid kinematic structure data.');
+    assert(Array.isArray(model.limits) && model.limits.length === (isScara ? 4 : 6), model.name + ' has invalid joint limits.');
+    const linkIndices = isScara ? [0, 1, 2, ...(model.j3Mesh ? [3] : []), 4] : [0, 1, 2, 3, 4, 5, 6];
+    linkIndices.forEach(index => {
+        const linkPath = path.join(root, '2_3DSimulation', 'models', model.folder, `P${index}.stl`);
+        assert(fs.existsSync(linkPath) && fs.statSync(linkPath).size > 0, model.name + ` is missing P${index}.stl.`);
+    });
+});
+assert(articulatedRobotCount === 29, '3D Simulation robot catalog count is not 29.');
 const softwareScript = read('5_Software/script.js');
 assert(softwareScript.includes('translateUiText(dl.label)') && softwareScript.includes('translateUiText(ver.description)'), 'Software descriptions or download buttons are not localized.');
 const toolSelector = read('3_ToolSelector/index.html');
 assert(toolSelector.includes('function calculate()'), 'Tool Selector calculation hook is missing.');
 assert(toolSelector.includes("uiText('형식 SCARA')") && toolSelector.includes("uiText('부하 무게중심 기준 관성모멘트 산출값')"), 'Tool Selector dynamic labels are not localized.');
 assert(toolSelector.includes('.card:has(.info-wrap:hover)') && toolSelector.includes('z-index:2147483002'), 'Tool Selector info tooltips are not layered above the surrounding controls.');
-for (const [index, match] of [...toolSelector.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].entries()) {
-    if (!match[1].trim()) continue;
+for (const [index, match] of [...toolSelector.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/gi)].entries()) {
+    const attributes = match[1] || '';
+    const source = match[2] || '';
+    if (/\btype=["'](?:importmap|application\/json)["']/i.test(attributes) || !source.trim()) continue;
     try {
-        new vm.Script(match[1], { filename: '3_ToolSelector-inline-' + (index + 1) + '.js' });
+        new vm.Script(source, { filename: '3_ToolSelector-inline-' + (index + 1) + '.js' });
     } catch (error) {
         assert(false, 'Tool Selector inline script does not compile: ' + error.message);
     }
@@ -527,7 +554,7 @@ const homeTemplate = read('0_Home/home.template.html');
 assert(homeTemplate.includes('data-lucide="bot"') && homeTemplate.includes('data-lucide="file-code-2"'), 'Home cards do not use the shared Lucide icon style.');
 assert(!homeTemplate.includes('robot_select_icon_simple_') && !homeTemplate.includes('project_gen_icon_simple_'), 'Home template still references the removed one-off PNG icons.');
 assert(homeTemplate.includes('src="/0_Home/site-card-versions.js') && homeTemplate.includes('src="/0_Home/site-card-history-data.js') && homeTemplate.includes('src="/0_Home/site-card-history.js'), 'Home template does not load its scripts from 0_Home.');
-['1_RobotModelSelect', '2_Robot3DViewer', '3_ToolSelector', '4_ProjectGenerator', '5_Software', '6_Document', '7_DebuggingTool'].forEach(folder => {
+['1_RobotModelSelect', '2_3DSimulation', '3_ToolSelector', '4_ProjectGenerator', '5_Software', '6_Document', '7_DebuggingTool'].forEach(folder => {
     assert(homeTemplate.includes('href="/' + folder + '/"'), 'Home card does not use an absolute route for ' + folder + '.');
 });
 ['robot_select_icon_simple_1774428251953.png', 'project_gen_icon_simple_1774428268885.png'].forEach(file => {
@@ -555,7 +582,7 @@ localeCodes.forEach(code => {
 const sourceHistory = parseSections(historyToMarkdown(locales.ko.sources['home.json'].versionHistory));
 const cardVersionSections = {
     robotSelect: 'Robot Model Select',
-    robot3dViewer: 'Robot 3D Viewer',
+    robot3dViewer: '3D Simulation',
     toolSelector: 'Robot Tool Selector',
     projectGenerator: 'Project Generator',
     software: 'Software',
@@ -565,7 +592,7 @@ const cardVersionSections = {
 Object.entries(cardVersionSections).forEach(([key, section]) => {
     assert(sourceHistory[section] && sourceHistory[section].versions[0] === 'Ver ' + siteCardVersions[key], key + ' card version does not match the latest update history entry.');
 });
-const cardSections = ['Robot Model Select', 'Robot 3D Viewer', 'Robot Tool Selector', 'Project Generator', 'Software', 'Document', 'Debugging Tool'];
+const cardSections = ['Robot Model Select', '3D Simulation', 'Robot Tool Selector', 'Project Generator', 'Software', 'Document', 'Debugging Tool'];
 targetLocaleCodes.forEach(code => {
     const localized = parseSections(historyToMarkdown(locales[code].sources['home.json'].versionHistory));
     cardSections.forEach(section => {

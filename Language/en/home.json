@@ -9,7 +9,7 @@
     "InoRobot Assistant는 INOVANCE Robot을 설계부터 프로그래밍, 시운전까지 지원하는 유용한 협업 도구입니다.": "InoRobot Assistant supports every stage of working with INOVANCE robots, from design and programming to commissioning.",
     "필요한 도구를 선택하여 작업을 시작하세요.": "Choose the tool you need to get started.",
     "INOVANCE 로봇의 라인업을 확인하세요. 선택한 모델과 옵션 구성을 PDF로 저장하여 발주에 활용할 수 있습니다. 또한 2D, 3D CAD 파일을 다운로드 받을 수 있습니다.": "Explore the INOVANCE robot lineup. Save the selected model and options as a PDF for ordering, and download 2D and 3D CAD files.",
-    "INOVANCE 로봇 3D 모델링을 웹 브라우저에서 확인하고, CAD 파일을 다운로드 받으세요.": "View INOVANCE robot 3D models in your browser and download CAD files.",
+    "INOVANCE 로봇의 관절 및 Base JOG, Tool·설비 배치와 3D 모델 시뮬레이션을 지원합니다.": "Simulate INOVANCE robots with joint and Base JOG, Tool and equipment placement, and imported 3D models.",
     "로봇 Tool 부하 조건에 따른 모델 적합성을 판정합니다. 관련 모멘트 및 허용 하중을 계산하여 최적의 모델을 선택하세요.": "Evaluate robot suitability for your tool load. Calculate moments and allowable loads to select the best model.",
     "로봇 모델과 공정 구성을 선택하면, 컨트롤러에 바로 적용 가능한 프로젝트 파일 구조를 자동으로 생성합니다. 번거로운 초기 설정 없이 몇 번의 선택만으로 프로그래밍을 바로 완성해보세요.": "Select a robot model and process configuration to automatically generate a controller-ready project structure.",
     "로봇 제어 및 설정을 위한 최신 소프트웨어를 다운로드할 수 있습니다.": "Download the latest software for robot control and configuration.",
@@ -39,7 +39,7 @@
     "로봇 Tool 부하 조건에 따른 모델 적합성을 판정합니다. 관성 모멘트 및 허용 하중을 계산하여 최적의 모델을 선택하세요.": "Evaluate robot suitability for the Tool load. Calculate inertia and allowable load to select the optimal model.",
     "로봇 모델과 공정 구성을 선택하면, 컨트롤러에 바로 적용 가능한 프로젝트 파일 구조를 자동으로 생성합니다. 번거로운 초기 설정 없이 티칭 수정만으로 프로그램을 바로 완성해보세요.": "Select a robot and process configuration to generate a controller-ready project structure. Complete the program with teaching adjustments instead of repetitive initial setup.",
     "Robot Model Select 버전 기록 보기": "Open Robot Model Select version history",
-    "Robot 3D Viewer 버전 기록 보기": "Open Robot 3D Viewer version history",
+    "3D Simulation 버전 기록 보기": "Open 3D Simulation version history",
     "Robot Tool Selector 버전 기록 보기": "Open Robot Tool Selector version history",
     "Project Generator 버전 기록 보기": "Open Project Generator version history",
     "Software 버전 기록 보기": "Open Software version history",
@@ -165,43 +165,26 @@
           }
         ]
       },
-      {
-        "title": "Robot 3D Viewer",
-        "versions": [
-          {
-            "title": "Ver 26.07.12.01",
+    {
+      "title": "3D Simulation",
+      "versions": [
+        {
+          "title": "Ver 26.07.17.01",
+          "items": [
+            "**[New]** Added a multi-robot Program Panel for building independent point programs per robot and running them individually or simultaneously.",
+            "**[Support]** Supports MOVJ, MOVL, Step Into, pause, resume, stop, and repeat execution.",
+            "**[Added]** Added DELAY, TIME START, and TIME OUT commands with live cycle-time measurement.",
+            "**[Added]** Supports motion-project autosave, JSON import/export, and undo/redo for execution results.",
+            "**[Added]** Added visual collision warnings that identify the collision location and affected robots."
+          ]
+        },
+        {
+          "title": "Ver 26.07.16.01",
             "items": [
-              "**[Fixed]** Corrected the undersized display of R16 and R25 models."
-            ]
-          },
-          {
-            "title": "Ver 26.06.02.01",
-            "items": [
-              "**[Changed]** Renamed IR-R15H-145S-INT to IR-R15H-145S-K-INT.",
-              "**[Changed]** Renamed IR-R20H-120S-INT to IR-R20H-120S-K-INT.",
-              "**[Fixed]** Restored lookup of existing -S-INT CAD files for -S-K-INT selections."
-            ]
-          },
-          {
-            "title": "Ver 26.05.29.01",
-            "items": [
-              "**[Fixed]** Included CAD files stored with _CN or _3D_CN names in ZIP downloads for R16, R25, and related models.",
-              "**[Fixed]** When _2D.dwg is unavailable, _3D_CN.dwg is now downloaded instead."
-            ]
-          },
-          {
-            "title": "Ver 26.04.17.01",
-            "items": [
-              "**[New]** Added 3D models for IR-S25-120Z42S-INT and IR-S35-120Z42S-INT.",
-              "**[Fixed]** Corrected reversed orientations for IR-S25-120 and IR-S35-120.",
-              "**[Fixed]** Corrected initial rotation values passed from Robot Model Select."
-            ]
-          },
-          {
-            "title": "Ver 26.03.31.01",
-            "items": [
-              "**[New]** Added per-model deletion with Delete or Backspace.",
-              "**[New]** Added controls to show or hide move, rotate, and scale handles."
+              "**[Release]** Supports joint JOG and Base-coordinate TCP JOG for every provided robot model.",
+              "**[Support]** Provides Tool and equipment 3D import, tree-based placement, numeric transforms, and 3D handles.",
+              "**[Support]** Supports STL, FBX, OBJ, GLB, GLTF, STEP, and STP formats with undo and redo.",
+              "**[Redesign]** Renamed and redesigned the experience as 3D Simulation with movable, detachable, hideable panels and a multilingual UI."
             ]
           }
         ]
@@ -209,6 +192,18 @@
       {
         "title": "Robot Tool Selector",
         "versions": [
+          {
+            "title": "Ver 26.07.17.01",
+            "items": [
+              "**[New]** Added Mode D for calculating mass properties from STEP/STP CAD files.",
+              "**[Added]** Added per-part inclusion, material, and density settings with total mass, CoG, and Tool-origin/load-center Ixx, Iyy, and Izz calculations.",
+              "**[Added]** Tool origin and TCP can be set with vertex, endpoint, center-point, and virtual-intersection snapping.",
+              "**[Added]** Coordinate orientation can be set with a 3D rotation handle or Rx, Ry, and Rz values.",
+              "**[Added]** TCP and CoG use distinct colors and shapes with a legend in the 3D viewer.",
+              "**[Added]** Added a 3D viewer grid ON/OFF button with OFF as the default.",
+              "**[Added]** The imported CAD can be exported as a STEP file using the selected Tool origin and coordinate orientation."
+            ]
+          },
           {
             "title": "Ver 26.04.26.01",
             "items": [

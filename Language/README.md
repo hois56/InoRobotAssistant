@@ -15,7 +15,7 @@
 | --- | --- | --- |
 | Home (메인 사이트) | `home.json` | 메인 화면, 공통 언어 UI, 모든 사이트의 버전 기록, Debugging Tool 상세 버전 기록 |
 | Robot Model Select | `robot-model-select.json` | 필터, 상세 사양, 옵션, 툴팁, PDF 문구 |
-| Robot 3D Viewer | `robot-3d-viewer.json` | 뷰어 UI, 모델 추가 모드, 툴팁 |
+| 3D Simulation | `robot-3d-viewer.json` | 시뮬레이션 UI, 모델 추가 모드, 툴팁 |
 | Tool Selector | `tool-selector.json` | 입력 항목, 계산 결과, 툴팁 |
 | Project Generator | `project-generator.json` | 옵션 창, 가이드, 차트, 미리보기 UI |
 | Software | `software.json` | 설명, 툴팁, 다운로드 및 오류 문구 |
