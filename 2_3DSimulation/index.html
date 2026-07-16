@@ -232,17 +232,19 @@
                 <div class="program-playback">
                     <div class="program-control-row">
                         <span>현재 로봇</span>
-                        <button id="program-run-step" type="button" title="선택 포인트 실행"><i class="fa-solid fa-forward-step"></i></button>
+                        <button id="program-step-robot" type="button" title="현재 로봇 Step Into" aria-label="현재 로봇 다음 명령 한 스텝 실행"><i class="fa-solid fa-forward-step"></i></button>
                         <button id="program-run-robot" type="button" title="현재 로봇 시작"><i class="fa-solid fa-play"></i></button>
                         <button id="program-pause-robot" type="button" title="현재 로봇 일시정지"><i class="fa-solid fa-pause"></i></button>
                         <button id="program-stop-robot" type="button" title="현재 로봇 정지"><i class="fa-solid fa-stop"></i></button>
+                        <button id="program-repeat-robot" class="program-repeat-toggle" data-program-repeat data-program-repeat-scope="robot" type="button" title="반복 실행" aria-label="현재 로봇 반복 실행" aria-pressed="false"><i class="fa-solid fa-repeat"></i></button>
                     </div>
                     <div class="program-control-row program-group-row">
                         <span>체크 로봇</span>
+                        <button id="program-step-group" type="button" title="체크 로봇 Step Into" aria-label="체크 로봇 다음 명령 동시 한 스텝 실행"><i class="fa-solid fa-forward-step"></i></button>
                         <button id="program-run-group" type="button" title="체크 로봇 동시 시작" aria-label="체크 로봇 동시 시작"><i class="fa-solid fa-play"></i></button>
                         <button id="program-pause-group" type="button" title="체크 로봇 일시정지"><i class="fa-solid fa-pause"></i></button>
                         <button id="program-stop-group" type="button" title="체크 로봇 정지"><i class="fa-solid fa-stop"></i></button>
-                        <button id="program-repeat" class="program-repeat-toggle" type="button" title="반복 실행" aria-label="반복 실행" aria-pressed="false"><i class="fa-solid fa-repeat"></i></button>
+                        <button id="program-repeat" class="program-repeat-toggle" data-program-repeat data-program-repeat-scope="group" type="button" title="반복 실행" aria-label="체크 로봇 반복 실행" aria-pressed="false"><i class="fa-solid fa-repeat"></i></button>
                     </div>
                 </div>
                 <div class="program-file-row">
@@ -281,6 +283,6 @@
         </div>
     </footer>
 
-    <script type="module" src="main.js?v=20260717-program-panel-resize1"></script>
+    <script type="module" src="main.js?v=20260717-step-into-controls1"></script>
 </body>
 </html>
