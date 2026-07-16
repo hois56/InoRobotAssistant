@@ -486,10 +486,10 @@ function setupEventListeners() {
     el.btnProgramDelete?.addEventListener('click', deleteSelectedMotionStep);
     el.btnProgramRunStep?.addEventListener('click', runSelectedMotionStep);
     el.btnProgramRunRobot?.addEventListener('click', runActiveRobotProgram);
-    el.btnProgramPauseRobot?.addEventListener('click', toggleActiveRobotMotionPause);
+    el.btnProgramPauseRobot?.addEventListener('click', pauseActiveRobotMotion);
     el.btnProgramStopRobot?.addEventListener('click', stopActiveRobotMotion);
     el.btnProgramRunGroup?.addEventListener('click', runCheckedRobotPrograms);
-    el.btnProgramPauseGroup?.addEventListener('click', toggleCheckedRobotMotionPause);
+    el.btnProgramPauseGroup?.addEventListener('click', pauseCheckedRobotMotions);
     el.btnProgramStopGroup?.addEventListener('click', stopCheckedRobotMotions);
     el.programRepeat?.addEventListener('click', updateMotionRepeat);
     el.btnProgramExport?.addEventListener('click', exportMotionProject);
@@ -3436,14 +3436,18 @@ function runSelectedMotionStep() {
 
 function runActiveRobotProgram() {
     const robot = state.activeProgramRobot;
+    if (robot && resumePausedRobotMotions([robot])) return;
     const program = ensureMotionProgram(robot);
     if (robot && program?.steps.length) startRobotMotionPlans([{ robot, steps: program.steps }]);
 }
 
 function runCheckedRobotPrograms() {
-    const plans = getArticulatedRobots()
+    const robots = getArticulatedRobots()
+        .filter((robot) => ensureMotionProgram(robot).included);
+    if (resumePausedRobotMotions(robots)) return;
+    const plans = robots
         .map((robot) => ({ robot, program: ensureMotionProgram(robot) }))
-        .filter(({ program }) => program.included && program.steps.length)
+        .filter(({ program }) => program.steps.length)
         .map(({ robot, program }) => ({ robot, steps: program.steps }));
     startRobotMotionPlans(plans);
 }
@@ -3463,22 +3467,32 @@ function setMotionSessionPaused(session, paused, now = performance.now()) {
     ensureMotionProgram(session.robot).status = session.status;
 }
 
-function toggleMotionPauseForRobots(robots) {
-    const sessions = robots.map(getMotionSession).filter(Boolean);
-    if (!sessions.length) return;
-    const shouldResume = sessions.some((session) => session.status === 'paused');
+function pauseRobotMotions(robots) {
+    const sessions = robots.map(getMotionSession).filter((session) => session?.status === 'running');
+    if (!sessions.length) return false;
     const now = performance.now();
-    sessions.forEach((session) => setMotionSessionPaused(session, !shouldResume, now));
-    setMotionProgramStatus(shouldResume ? 'Motion resumed.' : 'Motion paused.', 'working');
+    sessions.forEach((session) => setMotionSessionPaused(session, true, now));
+    setMotionProgramStatus('Motion paused.', 'working');
     renderMotionProgramPanel();
+    return true;
 }
 
-function toggleActiveRobotMotionPause() {
-    if (state.activeProgramRobot) toggleMotionPauseForRobots([state.activeProgramRobot]);
+function resumePausedRobotMotions(robots) {
+    const sessions = robots.map(getMotionSession).filter((session) => session?.status === 'paused');
+    if (!sessions.length) return false;
+    const now = performance.now();
+    sessions.forEach((session) => setMotionSessionPaused(session, false, now));
+    setMotionProgramStatus('Motion resumed.', 'working');
+    renderMotionProgramPanel();
+    return true;
 }
 
-function toggleCheckedRobotMotionPause() {
-    toggleMotionPauseForRobots(getArticulatedRobots().filter((robot) => ensureMotionProgram(robot).included));
+function pauseActiveRobotMotion() {
+    if (state.activeProgramRobot) pauseRobotMotions([state.activeProgramRobot]);
+}
+
+function pauseCheckedRobotMotions() {
+    pauseRobotMotions(getArticulatedRobots().filter((robot) => ensureMotionProgram(robot).included));
 }
 
 function finalizeMotionHistoryIfIdle() {
