@@ -2236,10 +2236,18 @@ function getTcpRotationDegrees(robot, pose) {
     };
 }
 
+function syncTcpVisualAtPose(robot, pose) {
+    const axes = robot.userData.baseAxesAtTcp;
+    if (!axes || !pose) return;
+    axes.position.copy(pose.position);
+    axes.updateMatrix();
+    axes.matrixWorldNeedsUpdate = true;
+}
+
 function updateTcpPresentation(robot, pose = getCurrentTcpPoseBase(robot)) {
     if (!pose) return;
-    const axes = robot.userData.baseAxesAtTcp;
-    if (axes) axes.position.copy(pose.position);
+    syncTcpVisualAtPose(robot, pose);
+    if (robot !== state.activeArticulatedModel) return;
 
     const rotation = getTcpRotationDegrees(robot, pose);
     const values = {
@@ -3609,10 +3617,8 @@ function advanceMotionSegment(session, timestamp) {
     }
     const program = ensureMotionProgram(robot);
     program.progress = (session.cursor + linearProgress) / session.steps.length;
-    if (robot === state.activeArticulatedModel) {
-        syncJointControls(robot);
-        updateTcpPresentation(robot);
-    }
+    if (robot === state.activeArticulatedModel) syncJointControls(robot);
+    updateTcpPresentation(robot);
     return linearProgress >= 1;
 }
 
