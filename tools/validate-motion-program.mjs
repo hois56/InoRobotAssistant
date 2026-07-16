@@ -158,5 +158,11 @@ assert.ok(mainSource.includes("object.name === 'CD conduit'"), 'CD conduit must 
 assert.ok(mainSource.includes('const MOTION_COLLISION_INTERVAL = 100'), 'Collision interval must remain 100 ms.');
 assert.match(cssSource, /\.program-panel\s*\{/);
 assert.match(cssSource, /\.program-robot-row\.collision/);
+assert.ok(cssSource.includes('width: min(340px, calc(100% - 32px))'), 'Program Panel compact width must remain 340px.');
+assert.ok(
+    mainSource.includes("button:not([data-panel-action]), input")
+        && mainSource.includes("querySelectorAll('[data-panel-action]')"),
+    'Panel window controls must remain available while motion editing is locked.'
+);
 
 console.log(`Motion program core OK: ${models.length} robots (${scaraCount} SCARA, ${sixAxisCount} six-axis), MOVJ/MOVL timing, linear/quaternion interpolation, four-robot numerical stress, JSON round trip, collision policy and schema checks`);

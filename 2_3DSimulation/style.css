@@ -984,7 +984,7 @@ input[type="number"]::-webkit-outer-spin-button {
     bottom: 0;
     left: 50%;
     z-index: 65;
-    width: min(560px, calc(100% - 48px));
+    width: min(340px, calc(100% - 32px));
     max-height: 62%;
     display: flex;
     flex-direction: column;
@@ -1078,7 +1078,7 @@ input[type="number"]::-webkit-outer-spin-button {
 
 .program-robot-list {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.35rem;
     max-height: 104px;
     overflow-y: auto;
