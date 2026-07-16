@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import {
     MOTION_PROJECT_SCHEMA_VERSION,
+    MOVJ_EASING_PEAK_SLOPE,
     smoothstep,
     interpolateLinearPosition,
     slerpQuaternion,
@@ -35,11 +36,13 @@ closeTo(Math.hypot(...halfwayRotation), 1, 1e-12);
 closeTo(Math.abs(halfwayRotation[2]), Math.SQRT1_2, 1e-12);
 closeTo(Math.abs(halfwayRotation[3]), Math.SQRT1_2, 1e-12);
 
-const revolute = { definition: { type: 'revolute' } };
-const prismatic = { definition: { type: 'prismatic' } };
-closeTo(calculateMovjDuration([0], [180], [revolute], 100), 1);
-closeTo(calculateMovjDuration([0], [250], [prismatic], 50), 1);
-closeTo(calculateMovjDuration([0, 0], [90, 250], [revolute, prismatic], 100), 0.5);
+const revolute = { definition: { type: 'revolute', maxSpeed: 360 } };
+const prismatic = { definition: { type: 'prismatic', maxSpeed: 1000 } };
+closeTo(calculateMovjDuration([0], [180], [revolute], 100), 0.75);
+closeTo(calculateMovjDuration([0], [250], [prismatic], 50), 0.75);
+closeTo(calculateMovjDuration([0, 0], [90, 250], [revolute, prismatic], 100), 0.375);
+closeTo(calculateMovjDuration([0], [180], [{ definition: { type: 'revolute' } }], 100), 1.5);
+closeTo(MOVJ_EASING_PEAK_SLOPE, 1.5);
 closeTo(calculateMovlDuration(100, 0, 100), 1);
 closeTo(calculateMovlDuration(0, 180, 1000), 2);
 closeTo(calculateMovlDuration(0, 0, 100), 0.1);
@@ -73,6 +76,27 @@ const scaraCount = models.filter((entry) => entry.robotType === 'scara').length;
 const sixAxisCount = models.filter((entry) => entry.robotType === 'six-axis').length;
 assert.equal(scaraCount, 17);
 assert.equal(sixAxisCount, 12);
+models.forEach((model) => {
+    assert.equal(model.jointSpeeds.length, model.limits.length, `${model.name} must define one speed per joint.`);
+    assert.ok(model.jointSpeeds.every((speed) => Number.isFinite(speed) && speed > 0), `${model.name} joint speeds must be positive.`);
+});
+assert.ok(new Set(models.map((model) => model.jointSpeeds.join(','))).size > 10, 'Joint speed profiles must vary by robot model.');
+const r7h90 = models.find((model) => model.folder === 'IR-R7H-90');
+const s4 = models.find((model) => model.folder === 'IR-S4-40Z15');
+assert.deepEqual(r7h90.jointSpeeds, [336, 280, 390, 550, 438, 764.7]);
+assert.deepEqual(s4.jointSpeeds, [705.9, 747.1, 1300, 2600]);
+closeTo(calculateMovjDuration(
+    [0, 0, 0, 0, 0, 0],
+    [0, 280, 0, 0, 0, 0],
+    r7h90.jointSpeeds.map((maxSpeed) => ({ definition: { type: 'revolute', maxSpeed } })),
+    100
+), 1.5);
+closeTo(calculateMovjDuration(
+    [0, 0, 0, 0],
+    [0, 0, 150, 0],
+    s4.jointSpeeds.map((maxSpeed, index) => ({ definition: { type: index === 2 ? 'prismatic' : 'revolute', maxSpeed } })),
+    100
+), 150 * MOVJ_EASING_PEAK_SLOPE / 1300);
 
 const makeStep = (model, modelIndex, motion, speed) => ({
     id: `${model.folder}-${motion}`,
@@ -144,6 +168,8 @@ assert.equal(new Set(htmlIds).size, htmlIds.length, 'HTML ids must be unique.');
     'function restoreMotionProjectData(',
     'function finalizeMotionHistoryIfIdle(',
     'function syncTcpVisualAtPose(',
+    'maxSpeed: jointSpeeds[index]',
+    'Robot joint speeds are invalid for',
     'if (robot !== state.activeArticulatedModel) return;',
     'function resumePausedRobotMotions(',
     'if (robot && resumePausedRobotMotions([robot])) return;',
@@ -180,4 +206,4 @@ assert.ok(
     'Panel window controls must remain available while motion editing is locked.'
 );
 
-console.log(`Motion program core OK: ${models.length} robots (${scaraCount} SCARA, ${sixAxisCount} six-axis), MOVJ/MOVL timing, linear/quaternion interpolation, four-robot numerical stress, JSON round trip, collision policy and schema checks`);
+console.log(`Motion program core OK: ${models.length} robots (${scaraCount} SCARA, ${sixAxisCount} six-axis), model-specific joint speeds, MOVJ/MOVL timing, linear/quaternion interpolation, four-robot numerical stress, JSON round trip, collision policy and schema checks`);

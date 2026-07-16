@@ -3,6 +3,7 @@ export const DEFAULT_MOVJ_SPEED = 20;
 export const DEFAULT_MOVL_SPEED = 100;
 export const MOVJ_REVOLUTE_RATE = 180;
 export const MOVJ_PRISMATIC_RATE = 500;
+export const MOVJ_EASING_PEAK_SLOPE = 1.5;
 export const MOVL_ROTATION_RATE = 90;
 
 export function clamp(value, minimum, maximum) {
@@ -53,10 +54,14 @@ export function calculateMovjDuration(startAngles, targetAngles, joints, speedPe
     const speedScale = clamp(Number(speedPercent) || DEFAULT_MOVJ_SPEED, 1, 100) / 100;
     const durations = targetAngles.map((target, index) => {
         const start = Number(startAngles[index]) || 0;
-        const rate = joints[index]?.definition?.type === 'prismatic'
+        const configuredRate = Number(joints[index]?.definition?.maxSpeed);
+        const fallbackRate = joints[index]?.definition?.type === 'prismatic'
             ? MOVJ_PRISMATIC_RATE
             : MOVJ_REVOLUTE_RATE;
-        return Math.abs(Number(target) - start) / (rate * speedScale);
+        const rate = Number.isFinite(configuredRate) && configuredRate > 0
+            ? configuredRate
+            : fallbackRate;
+        return Math.abs(Number(target) - start) * MOVJ_EASING_PEAK_SLOPE / (rate * speedScale);
     });
     return Math.max(0.1, ...durations);
 }

@@ -24,7 +24,7 @@ import {
     createEmptyMotionProgram,
     cloneMotionProgram,
     normalizeMotionProject
-} from './motion-program-core.mjs?v=20260717-motion-program1';
+} from './motion-program-core.mjs?v=20260717-model-joint-speeds1';
 
 function uiText(value) {
     return window.InoRobotI18n ? window.InoRobotI18n.translate(String(value)) : String(value);
@@ -1387,9 +1387,12 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
 }
 
 function createRobotManifest(modelDefinition) {
-    const { name, robotType, kinematicVariant = 'standard', structure, limits, j3Mesh = false } = modelDefinition;
-    if (!Array.isArray(structure) || !Array.isArray(limits)) {
+    const { name, robotType, kinematicVariant = 'standard', structure, limits, jointSpeeds, j3Mesh = false } = modelDefinition;
+    if (!Array.isArray(structure) || !Array.isArray(limits) || !Array.isArray(jointSpeeds)) {
         throw new Error(`Robot kinematics are missing for ${name}.`);
+    }
+    if (jointSpeeds.length !== limits.length || jointSpeeds.some((speed) => !Number.isFinite(speed) || speed <= 0)) {
+        throw new Error(`Robot joint speeds are invalid for ${name}.`);
     }
 
     const joint = (index, mesh, pivot, axis, extra = {}) => ({
@@ -1399,6 +1402,7 @@ function createRobotManifest(modelDefinition) {
         axis,
         min: limits[index][0],
         max: limits[index][1],
+        maxSpeed: jointSpeeds[index],
         color: ROBOT_BODY_COLOR,
         ...extra
     });
@@ -3997,7 +4001,7 @@ function fitCamera() {
 
 async function populateModelList() {
     try {
-        const res = await fetch('./models/models.json');
+        const res = await fetch('./models/models.json?v=20260717-model-joint-speeds1');
         const list = await res.json();
         state.catalog.clear();
         el.modelSelect.innerHTML = `<option value="" disabled selected>${uiText('-- 로봇 모델을 선택하세요 --')}</option>`;
