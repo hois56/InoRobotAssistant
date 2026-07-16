@@ -24,7 +24,7 @@ import {
     createEmptyMotionProgram,
     cloneMotionProgram,
     normalizeMotionProject
-} from './motion-program-core.mjs?v=20260717-model-joint-speeds1';
+} from './motion-program-core.mjs?v=20260717-step-into-controls1';
 
 function uiText(value) {
     return window.InoRobotI18n ? window.InoRobotI18n.translate(String(value)) : String(value);
@@ -59,6 +59,7 @@ const state = {
     motionPrograms: new Map(),
     motionSessions: new Map(),
     activeProgramRobot: null,
+    motionRepeatRobot: false,
     motionRepeat: false,
     motionHistoryBefore: null,
     motionSaveTimer: null,
@@ -157,14 +158,15 @@ const el = {
     btnProgramUp: document.getElementById('program-step-up'),
     btnProgramDown: document.getElementById('program-step-down'),
     btnProgramDelete: document.getElementById('program-delete-step'),
-    btnProgramRunStep: document.getElementById('program-run-step'),
+    btnProgramStepRobot: document.getElementById('program-step-robot'),
     btnProgramRunRobot: document.getElementById('program-run-robot'),
     btnProgramPauseRobot: document.getElementById('program-pause-robot'),
     btnProgramStopRobot: document.getElementById('program-stop-robot'),
+    btnProgramStepGroup: document.getElementById('program-step-group'),
     btnProgramRunGroup: document.getElementById('program-run-group'),
     btnProgramPauseGroup: document.getElementById('program-pause-group'),
     btnProgramStopGroup: document.getElementById('program-stop-group'),
-    programRepeat: document.getElementById('program-repeat'),
+    programRepeatButtons: [...document.querySelectorAll('[data-program-repeat]')],
     btnProgramExport: document.getElementById('program-export'),
     btnProgramImport: document.getElementById('program-import'),
     inputProgramImport: document.getElementById('program-import-file'),
@@ -488,14 +490,15 @@ function setupEventListeners() {
     el.btnProgramUp?.addEventListener('click', () => moveSelectedMotionStep(-1));
     el.btnProgramDown?.addEventListener('click', () => moveSelectedMotionStep(1));
     el.btnProgramDelete?.addEventListener('click', deleteSelectedMotionStep);
-    el.btnProgramRunStep?.addEventListener('click', runSelectedMotionStep);
+    el.btnProgramStepRobot?.addEventListener('click', stepIntoActiveRobot);
     el.btnProgramRunRobot?.addEventListener('click', runActiveRobotProgram);
     el.btnProgramPauseRobot?.addEventListener('click', pauseActiveRobotMotion);
     el.btnProgramStopRobot?.addEventListener('click', stopActiveRobotMotion);
+    el.btnProgramStepGroup?.addEventListener('click', stepIntoCheckedRobots);
     el.btnProgramRunGroup?.addEventListener('click', runCheckedRobotPrograms);
     el.btnProgramPauseGroup?.addEventListener('click', pauseCheckedRobotMotions);
     el.btnProgramStopGroup?.addEventListener('click', stopCheckedRobotMotions);
-    el.programRepeat?.addEventListener('click', updateMotionRepeat);
+    el.programRepeatButtons.forEach((button) => button.addEventListener('click', updateMotionRepeat));
     el.btnProgramExport?.addEventListener('click', exportMotionProject);
     el.btnProgramImport?.addEventListener('click', () => el.inputProgramImport?.click());
     el.inputProgramImport?.addEventListener('change', handleMotionProjectImport);
@@ -675,6 +678,7 @@ function captureSceneSnapshot() {
         selectedModel: currentModels.has(state.selectedModel) ? state.selectedModel : null,
         activeArticulatedModel: currentModels.has(state.activeArticulatedModel) ? state.activeArticulatedModel : null,
         activeProgramRobot: currentModels.has(state.activeProgramRobot) ? state.activeProgramRobot : null,
+        motionRepeatRobot: state.motionRepeatRobot,
         motionRepeat: state.motionRepeat,
         motionPrograms: getArticulatedRobots().map((robot) => ({
             robot,
@@ -704,6 +708,7 @@ function sceneSnapshotsEqual(a, b) {
     if (a.selectedModel !== b.selectedModel
         || a.activeArticulatedModel !== b.activeArticulatedModel
         || a.activeProgramRobot !== b.activeProgramRobot
+        || Boolean(a.motionRepeatRobot) !== Boolean(b.motionRepeatRobot)
         || Boolean(a.motionRepeat) !== Boolean(b.motionRepeat)) return false;
     const leftPrograms = (a.motionPrograms || []).map(({ robot, program }) => ({
         instanceId: robot.userData.motionInstanceId,
@@ -756,6 +761,7 @@ function applySceneSnapshot(snapshot) {
         .filter(({ robot }) => state.models.includes(robot))
         .map(({ robot, program }) => [robot.userData.motionInstanceId, cloneMotionProgram(program)]));
     getArticulatedRobots().forEach((robot) => ensureMotionProgram(robot));
+    state.motionRepeatRobot = Boolean(snapshot.motionRepeatRobot);
     state.motionRepeat = Boolean(snapshot.motionRepeat);
     state.activeProgramRobot = state.models.includes(snapshot.activeProgramRobot)
         ? snapshot.activeProgramRobot
@@ -3008,8 +3014,12 @@ function renderMotionProgramPanel() {
     if (el.btnProgramUp) el.btnProgramUp.disabled = !selected || program.steps[0] === selected || isMotionActive();
     if (el.btnProgramDown) el.btnProgramDown.disabled = !selected || program.steps.at(-1) === selected || isMotionActive();
     if (el.btnProgramDelete) el.btnProgramDelete.disabled = !selected || isMotionActive();
-    if (el.btnProgramRunStep) el.btnProgramRunStep.disabled = !selected;
+    if (el.btnProgramStepRobot) el.btnProgramStepRobot.disabled = !program?.steps.length || isMotionActive();
     if (el.btnProgramRunRobot) el.btnProgramRunRobot.disabled = !program?.steps.length;
+    if (el.btnProgramStepGroup) el.btnProgramStepGroup.disabled = isMotionActive() || !robots.some((candidate) => {
+        const candidateProgram = ensureMotionProgram(candidate);
+        return candidateProgram.included && candidateProgram.steps.length;
+    });
     if (el.btnProgramRunGroup) el.btnProgramRunGroup.disabled = !robots.some((candidate) => {
         const candidateProgram = ensureMotionProgram(candidate);
         return candidateProgram.included && candidateProgram.steps.length;
@@ -3148,10 +3158,14 @@ function deleteSelectedMotionStep() {
     renderMotionProgramPanel();
 }
 
-function updateMotionRepeat() {
+function updateMotionRepeat(event) {
+    const scope = event.currentTarget?.dataset.programRepeatScope === 'robot' ? 'robot' : 'group';
+    const stateKey = scope === 'robot' ? 'motionRepeatRobot' : 'motionRepeat';
     const before = isMotionActive() ? null : captureSceneSnapshot();
-    state.motionRepeat = !state.motionRepeat;
-    state.motionSessions.forEach((session) => { session.repeat = state.motionRepeat; });
+    state[stateKey] = !state[stateKey];
+    state.motionSessions.forEach((session) => {
+        if (!session.stepIntoStepId && session.controlScope === scope) session.repeat = state[stateKey];
+    });
     syncMotionRepeatControl();
     if (before) recordHistory('Change motion repeat', before, captureSceneSnapshot());
     else scheduleMotionProjectSave();
@@ -3159,10 +3173,14 @@ function updateMotionRepeat() {
 }
 
 function syncMotionRepeatControl() {
-    if (!el.programRepeat) return;
-    el.programRepeat.classList.toggle('active', state.motionRepeat);
-    el.programRepeat.setAttribute('aria-pressed', String(state.motionRepeat));
-    el.programRepeat.title = state.motionRepeat ? '반복 실행 켜짐' : '반복 실행 꺼짐';
+    el.programRepeatButtons.forEach((button) => {
+        const enabled = button.dataset.programRepeatScope === 'robot'
+            ? state.motionRepeatRobot
+            : state.motionRepeat;
+        button.classList.toggle('active', enabled);
+        button.setAttribute('aria-pressed', String(enabled));
+        button.title = enabled ? '반복 실행 켜짐' : '반복 실행 꺼짐';
+    });
 }
 
 function updateMotionUiLock() {
@@ -3179,7 +3197,7 @@ function updateMotionUiLock() {
     el.modelTransformPanel?.querySelectorAll('button, input').forEach((control) => { control.disabled = locked; });
     el.programPanel?.querySelectorAll('[data-program-edit], [data-program-robot-include], [data-program-step-select], [data-program-robot-select]')
         .forEach((control) => { control.disabled = locked; });
-    if (el.programRepeat) el.programRepeat.disabled = false;
+    el.programRepeatButtons.forEach((button) => { button.disabled = false; });
     if (locked) {
         setTransformHandlesEnabled(false);
         setBaseJogGizmoEnabled(false);
@@ -3190,6 +3208,7 @@ function updateMotionUiLock() {
 function serializeMotionProject() {
     return {
         schemaVersion: MOTION_PROJECT_SCHEMA_VERSION,
+        repeatCurrentRobot: state.motionRepeatRobot,
         repeat: state.motionRepeat,
         robots: getArticulatedRobots().map((robot) => {
             const program = ensureMotionProgram(robot);
@@ -3310,6 +3329,7 @@ async function restoreMotionProjectData(input) {
         captureCurrentTcpTarget(robot);
     }
 
+    state.motionRepeatRobot = project.repeatCurrentRobot;
     state.motionRepeat = project.repeat;
     syncMotionRepeatControl();
     state.activeArticulatedModel = getArticulatedRobots()[0] || null;
@@ -3488,7 +3508,8 @@ function preflightRobotMotion(robot, steps) {
     }
 }
 
-function createMotionSession(robot, steps, startAt) {
+function createMotionSession(robot, steps, startAt, options = {}) {
+    const controlScope = options.controlScope === 'robot' ? 'robot' : 'group';
     return {
         robot,
         steps,
@@ -3496,7 +3517,9 @@ function createMotionSession(robot, steps, startAt) {
         currentStepId: null,
         segment: null,
         startAt,
-        repeat: state.motionRepeat,
+        repeat: options.repeat ?? (controlScope === 'robot' ? state.motionRepeatRobot : state.motionRepeat),
+        controlScope,
+        stepIntoStepId: typeof options.stepIntoStepId === 'string' ? options.stepIntoStepId : null,
         status: 'running',
         pauseStarted: 0
     };
@@ -3513,29 +3536,59 @@ function startRobotMotionPlans(plans) {
     commitAllPendingHistories();
     state.motionHistoryBefore = captureSceneSnapshot();
     const startAt = performance.now() + 40;
-    plans.forEach(({ robot, steps }) => {
+    plans.forEach(({ robot, steps, repeat, controlScope, stepIntoStepId }) => {
         const program = ensureMotionProgram(robot);
         program.status = 'running';
         program.progress = 0;
-        state.motionSessions.set(robot.userData.motionInstanceId, createMotionSession(robot, steps, startAt));
+        state.motionSessions.set(robot.userData.motionInstanceId, createMotionSession(robot, steps, startAt, {
+            repeat,
+            controlScope,
+            stepIntoStepId
+        }));
     });
     setMotionProgramStatus(`${plans.length} robot motion${plans.length === 1 ? '' : 's'} started.`, 'working');
     updateMotionUiLock();
     renderMotionProgramPanel();
 }
 
-function runSelectedMotionStep() {
-    const robot = state.activeProgramRobot;
+function createStepIntoPlan(robot) {
+    if (!robot) return null;
     const program = ensureMotionProgram(robot);
-    const step = program?.steps.find((candidate) => candidate.id === program.selectedStepId);
-    if (robot && step) startRobotMotionPlans([{ robot, steps: [step] }]);
+    if (!program?.steps.length) return null;
+    const selectedIndex = program.steps.findIndex((step) => step.id === program.selectedStepId);
+    const step = program.steps[selectedIndex >= 0 ? selectedIndex : 0];
+    return {
+        robot,
+        steps: [step],
+        repeat: false,
+        stepIntoStepId: step.id
+    };
+}
+
+function stepIntoActiveRobot() {
+    const plan = createStepIntoPlan(state.activeProgramRobot);
+    if (plan) startRobotMotionPlans([{ ...plan, controlScope: 'robot' }]);
+}
+
+function stepIntoCheckedRobots() {
+    const plans = getArticulatedRobots()
+        .filter((robot) => ensureMotionProgram(robot).included)
+        .map(createStepIntoPlan)
+        .filter(Boolean)
+        .map((plan) => ({ ...plan, controlScope: 'group' }));
+    startRobotMotionPlans(plans);
 }
 
 function runActiveRobotProgram() {
     const robot = state.activeProgramRobot;
     if (robot && resumePausedRobotMotions([robot])) return;
     const program = ensureMotionProgram(robot);
-    if (robot && program?.steps.length) startRobotMotionPlans([{ robot, steps: program.steps }]);
+    if (robot && program?.steps.length) startRobotMotionPlans([{
+        robot,
+        steps: program.steps,
+        repeat: state.motionRepeatRobot,
+        controlScope: 'robot'
+    }]);
 }
 
 function runCheckedRobotPrograms() {
@@ -3545,7 +3598,12 @@ function runCheckedRobotPrograms() {
     const plans = robots
         .map((robot) => ({ robot, program: ensureMotionProgram(robot) }))
         .filter(({ program }) => program.steps.length)
-        .map(({ robot, program }) => ({ robot, steps: program.steps }));
+        .map(({ robot, program }) => ({
+            robot,
+            steps: program.steps,
+            repeat: state.motionRepeat,
+            controlScope: 'group'
+        }));
     startRobotMotionPlans(plans);
 }
 
@@ -3607,7 +3665,14 @@ function finishRobotMotionSession(session, status, message = '') {
     state.motionSessions.delete(robot.userData.motionInstanceId);
     const program = ensureMotionProgram(robot);
     program.status = status;
-    program.progress = status === 'completed' ? 1 : program.progress;
+    if (status === 'completed' && session.stepIntoStepId && program.steps.length) {
+        const completedIndex = program.steps.findIndex((step) => step.id === session.stepIntoStepId);
+        const nextIndex = completedIndex >= 0 ? (completedIndex + 1) % program.steps.length : 0;
+        program.selectedStepId = program.steps[nextIndex].id;
+        program.progress = nextIndex / program.steps.length;
+    } else if (status === 'completed') {
+        program.progress = 1;
+    }
     syncJointControls(robot);
     if (robot === state.activeArticulatedModel) captureCurrentTcpTarget(robot);
     if (message) setMotionProgramStatus(message, status === 'error' ? 'error' : '');

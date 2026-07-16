@@ -192,6 +192,9 @@ export function normalizeMotionProject(input) {
     });
     return {
         schemaVersion: MOTION_PROJECT_SCHEMA_VERSION,
+        repeatCurrentRobot: input.repeatCurrentRobot === undefined
+            ? Boolean(input.repeat)
+            : Boolean(input.repeatCurrentRobot),
         repeat: Boolean(input.repeat),
         robots
     };

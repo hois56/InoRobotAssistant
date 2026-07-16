@@ -114,6 +114,7 @@ const makeStep = (model, modelIndex, motion, speed) => ({
 
 const fullProject = {
     schemaVersion: MOTION_PROJECT_SCHEMA_VERSION,
+    repeatCurrentRobot: false,
     repeat: true,
     robots: models.map((model, index) => ({
         instanceId: `robot-${index + 1}`,
@@ -134,7 +135,12 @@ const fullProject = {
 const normalized = normalizeMotionProject(fullProject);
 assert.equal(normalized.robots.length, 29);
 assert.equal(normalized.robots.filter((robot) => robot.included).length, 4);
+assert.equal(normalized.repeatCurrentRobot, false);
+assert.equal(normalized.repeat, true);
 assert.deepEqual(normalizeMotionProject(JSON.parse(JSON.stringify(normalized))), normalized);
+const legacyRepeatProject = structuredClone(fullProject);
+delete legacyRepeatProject.repeatCurrentRobot;
+assert.equal(normalizeMotionProject(legacyRepeatProject).repeatCurrentRobot, true, 'Legacy repeat must apply to both scopes.');
 
 const duplicateModels = structuredClone(fullProject);
 duplicateModels.robots = [
@@ -156,12 +162,22 @@ assert.throws(() => normalizeMotionProject(duplicateSteps), /Duplicate step id/)
     'program-panel-resize',
     'program-robot-list',
     'program-step-list',
+    'program-step-robot',
     'program-run-robot',
+    'program-repeat-robot',
+    'program-step-group',
     'program-run-group',
+    'program-repeat',
     'program-import-file'
 ].forEach((id) => assert.match(htmlSource, new RegExp(`id=["']${id}["']`)));
 const htmlIds = [...htmlSource.matchAll(/\sid=["']([^"']+)["']/g)].map((match) => match[1]);
 assert.equal(new Set(htmlIds).size, htmlIds.length, 'HTML ids must be unique.');
+const programControlRows = [...htmlSource.matchAll(/<div class="program-control-row(?: program-group-row)?">([\s\S]*?)<\/div>/g)]
+    .map((match) => [...match[1].matchAll(/<button id="([^"]+)"/g)].map((button) => button[1]));
+assert.deepEqual(programControlRows, [
+    ['program-step-robot', 'program-run-robot', 'program-pause-robot', 'program-stop-robot', 'program-repeat-robot'],
+    ['program-step-group', 'program-run-group', 'program-pause-group', 'program-stop-group', 'program-repeat']
+], 'Current and checked robot rows must share the Step Into, play, pause, stop and repeat layout.');
 [
     'function updateMotionSessions(',
     'function updateRobotCollisions(',
@@ -173,6 +189,15 @@ assert.equal(new Set(htmlIds).size, htmlIds.length, 'HTML ids must be unique.');
     'Robot joint speeds are invalid for',
     'if (robot !== state.activeArticulatedModel) return;',
     'function resumePausedRobotMotions(',
+    'function createStepIntoPlan(',
+    'function stepIntoActiveRobot(',
+    'function stepIntoCheckedRobots(',
+    'stepIntoStepId: step.id',
+    'repeat: false',
+    "controlScope: 'robot'",
+    "controlScope: 'group'",
+    'repeatCurrentRobot: state.motionRepeatRobot',
+    'program.selectedStepId = program.steps[nextIndex].id',
     'if (robot && resumePausedRobotMotions([robot])) return;',
     'if (resumePausedRobotMotions(robots)) return;',
     'const startAt = performance.now() + 40',
@@ -201,7 +226,12 @@ assert.match(cssSource, /\.program-panel-content\s*\{[^}]*overflow-y:\s*auto/s);
 assert.match(cssSource, /\.program-robot-row\.collision/);
 assert.ok(cssSource.includes('width: min(340px, calc(100% - 32px))'), 'Program Panel compact width must remain 340px.');
 assert.ok(htmlSource.includes('id="program-repeat" class="program-repeat-toggle"'), 'Repeat must be an icon toggle button.');
+assert.ok(htmlSource.includes('id="program-repeat-robot" class="program-repeat-toggle"'), 'Current robot repeat must be an icon toggle button.');
+assert.equal((htmlSource.match(/data-program-repeat(?=[\s>])/g) || []).length, 2, 'Both playback rows must expose a repeat control.');
+assert.match(htmlSource, /id="program-repeat-robot"[^>]*data-program-repeat-scope="robot"/);
+assert.match(htmlSource, /id="program-repeat"[^>]*data-program-repeat-scope="group"/);
 assert.ok(!htmlSource.includes('<input id="program-repeat"'), 'Repeat must not use a checkbox.');
+assert.ok(!htmlSource.includes('id="program-run-step"'), 'The old selected-row run control must be replaced by Step Into.');
 assert.ok(!htmlSource.includes('fa-play"></i> 동시 시작'), 'Group play must use the compact icon-only button.');
 assert.ok(
     mainSource.includes("button:not([data-panel-action]), input")
