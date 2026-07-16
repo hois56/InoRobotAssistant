@@ -1,0 +1,45 @@
+{
+  "pages": {
+    "software": {
+      "title": "Trung tâm phần mềm robot INOVANCE",
+      "description": "Kiểm tra và tải phiên bản phần mềm robot INOVANCE mới nhất."
+    }
+  },
+  "legacy": {
+    "안내": "Thông tin",
+    "Download": "Tải xuống",
+    "Download (Install)": "Tải bản cài đặt",
+    "Download (Portable)": "Tải bản portable",
+    "다운로드": "Tải xuống",
+    "메인 페이지로": "Về trang chủ",
+    "전체보기": "Xem tất cả",
+    "Model": "Model",
+    "Name": "Tên",
+    "Type": "Loại",
+    "서버 연결에 실패했습니다.": "Không thể kết nối máy chủ.",
+    "Software Download Center": "Trung tâm tải phần mềm",
+    "최신 소프트웨어를 확인하세요": "Nhận phần mềm mới nhất",
+    "로봇 제어 및 설정을 위한 최신 소프트웨어를 다운로드하세요.": "Tải phần mềm mới nhất để điều khiển và cài đặt robot.",
+    "소프트웨어 버전 또는 키워드를 입력하세요...": "Nhập phiên bản phần mềm hoặc từ khóa...",
+    "Software Type": "Loại phần mềm",
+    "알림": "Thông báo",
+    "Display 버전은 배포가 제한되어 있으며, 별도의 비밀번호가 필요합니다. 권한이 있는 사용자만 다운로드해 주세요.": "Phiên bản Display bị giới hạn phân phối và cần mật khẩu riêng. Chỉ người dùng được cấp quyền mới được tải.",
+    "해당 조건에 맞는 소프트웨어가 없습니다.": "Không có phần mềm phù hợp với điều kiện đã chọn.",
+    "시스템 안정성 개선": "Cải thiện độ ổn định hệ thống",
+    "Display 모듈 지원": "Hỗ trợ mô-đun Display",
+    "Display 최적화": "Tối ưu cho ứng dụng Display",
+    "[기능 제한 안내] 이 버전은 전용 배포판입니다. 비밀번호를 입력해 주세요:": "[Tính năng hạn chế] Đây là bản phân phối riêng. Vui lòng nhập mật khẩu:",
+    "비밀번호가 올바르지 않습니다. 관리자에게 문의하세요.": "Mật khẩu không đúng. Vui lòng liên hệ quản trị viên.",
+    "서버 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.": "Không thể kết nối máy chủ. Vui lòng thử lại sau.",
+    "비밀번호가 올바르지 않습니다.": "Mật khẩu không đúng.",
+    "InoRobotLab 소프트웨어 (설치/무설치)": "Phần mềm InoRobotLab (bản cài đặt/portable)",
+    "Display 공정용 특수 버전 소프트웨어": "Phiên bản phần mềm chuyên dụng cho công đoạn Display",
+    "InoRobotTP 소프트웨어": "Phần mềm InoRobotTP",
+    "Display 공정용 TP 소프트웨어": "Phần mềm TP cho công đoạn Display",
+    "개": "khối",
+    "Pendant": "Tay dạy",
+    "No": "Không",
+    "Port": "Cổng"
+  },
+  "patterns": []
+}

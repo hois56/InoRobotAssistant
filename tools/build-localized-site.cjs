@@ -3,6 +3,16 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '..');
 const localeCodes = ['ko', 'en', 'zh-CN', 'vi'];
+const localeFileDefinitions = [
+    { file: 'home.json', pageKeys: ['home'] },
+    { file: 'robot-model-select.json', pageKeys: ['robotSelect'] },
+    { file: 'robot-3d-viewer.json', pageKeys: ['robot3dViewer'] },
+    { file: 'tool-selector.json', pageKeys: ['toolSelector'] },
+    { file: 'project-generator.json', pageKeys: ['projectGenerator'] },
+    { file: 'software.json', pageKeys: ['software'] },
+    { file: 'document.json', pageKeys: ['manual'] },
+    { file: 'debugging-tool.json', pageKeys: ['debugging', 'zeroCalibration'] }
+];
 const localeRoutes = {
     ko: '/',
     en: '/en/',
@@ -125,7 +135,7 @@ function compareShape(reference, candidate, currentPath, errors) {
         errors.push(currentPath + ' type differs.');
         return;
     }
-    if (typeof candidate === 'string' && candidate.trim() === '') {
+    if (typeof reference === 'string' && reference.trim() !== '' && typeof candidate === 'string' && candidate.trim() === '') {
         errors.push(currentPath + ' is empty.');
     }
     if (typeof reference === 'string') {
@@ -135,33 +145,77 @@ function compareShape(reference, candidate, currentPath, errors) {
     }
 }
 
+function historyToMarkdown(history) {
+    if (!history || typeof history !== 'object') return '';
+    const lines = ['# ' + history.title, ''];
+    if (history.intro) lines.push(history.intro, '');
+    (history.sections || []).forEach(section => {
+        lines.push('## ' + section.title, '');
+        (section.versions || []).forEach(version => {
+            lines.push('### ' + version.title, '');
+            (version.items || []).forEach(item => lines.push('- ' + item));
+            lines.push('');
+        });
+    });
+    return lines.join('\n').trimEnd() + '\n';
+}
+
 function loadLocales() {
     const locales = {};
+    const sources = {};
+
     localeCodes.forEach(code => {
         const localeDir = path.join(root, 'Language', code);
-        const uiPath = path.join(localeDir, 'ui.json');
-        const historyPath = path.join(localeDir, 'history.md');
-        const debugHistoryPath = path.join(localeDir, 'debug-history.md');
-        if (!fs.existsSync(uiPath)) throw new Error('Missing locale file: ' + path.relative(root, uiPath));
-        locales[code] = readJson(uiPath);
-        fs.readdirSync(localeDir)
-            .filter(fileName => fileName.endsWith('.json') && fileName !== 'ui.json')
-            .sort()
-            .forEach(fileName => {
-                const supplement = readJson(path.join(localeDir, fileName));
-                if (supplement.legacy) Object.assign(locales[code].legacy, supplement.legacy);
-                if (supplement.patterns) locales[code].patterns.push(...supplement.patterns);
+        sources[code] = {};
+        localeFileDefinitions.forEach(definition => {
+            const filePath = path.join(localeDir, definition.file);
+            if (!fs.existsSync(filePath)) throw new Error('Missing locale file: ' + path.relative(root, filePath));
+            sources[code][definition.file] = readJson(filePath);
+        });
+    });
+
+    const errors = [];
+    localeFileDefinitions.forEach(definition => {
+        localeCodes.filter(code => code !== 'ko').forEach(code => {
+            compareShape(
+                sources.ko[definition.file],
+                sources[code][definition.file],
+                code + '/' + definition.file,
+                errors
+            );
+        });
+    });
+
+    localeCodes.forEach(code => {
+        const locale = {
+            _meta: {},
+            common: {},
+            pages: {},
+            legacy: {},
+            patterns: [],
+            pageTranslations: {}
+        };
+        localeFileDefinitions.forEach(definition => {
+            const source = sources[code][definition.file];
+            if (source._meta) Object.assign(locale._meta, source._meta);
+            if (source.common) Object.assign(locale.common, source.common);
+            if (source.pages) Object.assign(locale.pages, source.pages);
+            if (source.legacy) Object.assign(locale.legacy, source.legacy);
+            if (source.patterns) locale.patterns.push(...source.patterns);
+            definition.pageKeys.forEach(pageKey => {
+                locale.pageTranslations[pageKey] = {
+                    legacy: { ...(source.legacy || {}) },
+                    patterns: [...(source.patterns || [])]
+                };
             });
-        locales[code].historyMarkdown = fs.existsSync(historyPath)
-            ? fs.readFileSync(historyPath, 'utf8')
-            : '';
-        locales[code].debugHistoryMarkdown = fs.existsSync(debugHistoryPath)
-            ? fs.readFileSync(debugHistoryPath, 'utf8')
-            : '';
+        });
+        const homeSource = sources[code]['home.json'];
+        locale.historyMarkdown = historyToMarkdown(homeSource.versionHistory);
+        locale.debugHistoryMarkdown = historyToMarkdown(homeSource.debugVersionHistory);
+        locales[code] = locale;
     });
 
     const reference = locales.ko;
-    const errors = [];
     localeCodes.filter(code => code !== 'ko').forEach(code => {
         compareShape(reference, locales[code], code, errors);
     });
@@ -248,7 +302,7 @@ function translateHomeTemplate(template, localeCode, locales, route, versions) {
         html = html.replace('<head>', '<head>\n    <base href="/">');
     }
 
-    html = translateVisibleHtml(html, locale);
+    html = translateVisibleHtml(html, locale.pageTranslations.home);
     html = injectCardVersions(html, versions);
     html = html.replace(/(<option value="(?:ko|en|zh-CN|vi)") selected/g, '$1');
     html = html.replace('<option value="' + localeCode + '">', '<option value="' + localeCode + '" selected>');

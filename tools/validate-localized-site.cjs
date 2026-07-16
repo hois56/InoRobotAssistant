@@ -5,6 +5,16 @@ const vm = require('vm');
 const root = path.resolve(__dirname, '..');
 const localeCodes = ['ko', 'en', 'zh-CN', 'vi'];
 const targetLocaleCodes = ['en', 'zh-CN', 'vi'];
+const localeFileDefinitions = [
+    { file: 'home.json', pageKeys: ['home'] },
+    { file: 'robot-model-select.json', pageKeys: ['robotSelect'] },
+    { file: 'robot-3d-viewer.json', pageKeys: ['robot3dViewer'] },
+    { file: 'tool-selector.json', pageKeys: ['toolSelector'] },
+    { file: 'project-generator.json', pageKeys: ['projectGenerator'] },
+    { file: 'software.json', pageKeys: ['software'] },
+    { file: 'document.json', pageKeys: ['manual'] },
+    { file: 'debugging-tool.json', pageKeys: ['debugging', 'zeroCalibration'] }
+];
 const failures = [];
 
 function read(relativePath) {
@@ -90,17 +100,38 @@ function validateStandaloneLanguageSwitch(html, file) {
 }
 
 function loadMergedLocale(code) {
-    const localeDir = path.join(root, 'Language', code);
-    const locale = readJson(path.join('Language', code, 'ui.json'));
-    fs.readdirSync(localeDir)
-        .filter(fileName => fileName.endsWith('.json') && fileName !== 'ui.json')
-        .sort()
-        .forEach(fileName => {
-            const supplement = JSON.parse(fs.readFileSync(path.join(localeDir, fileName), 'utf8'));
-            Object.assign(locale.legacy, supplement.legacy || {});
-            locale.patterns.push(...(supplement.patterns || []));
+    const locale = { _meta: {}, common: {}, pages: {}, legacy: {}, patterns: [], pageTranslations: {}, sources: {} };
+    localeFileDefinitions.forEach(definition => {
+        const supplement = readJson(path.join('Language', code, definition.file));
+        locale.sources[definition.file] = supplement;
+        Object.assign(locale._meta, supplement._meta || {});
+        Object.assign(locale.common, supplement.common || {});
+        Object.assign(locale.pages, supplement.pages || {});
+        Object.assign(locale.legacy, supplement.legacy || {});
+        locale.patterns.push(...(supplement.patterns || []));
+        definition.pageKeys.forEach(pageKey => {
+            locale.pageTranslations[pageKey] = {
+                legacy: supplement.legacy || {},
+                patterns: supplement.patterns || []
+            };
         });
+    });
     return locale;
+}
+
+function historyToMarkdown(history) {
+    if (!history || typeof history !== 'object') return '';
+    const lines = ['# ' + history.title, ''];
+    if (history.intro) lines.push(history.intro, '');
+    (history.sections || []).forEach(section => {
+        lines.push('## ' + section.title, '');
+        (section.versions || []).forEach(version => {
+            lines.push('### ' + version.title, '');
+            (version.items || []).forEach(item => lines.push('- ' + item));
+            lines.push('');
+        });
+    });
+    return lines.join('\n').trimEnd() + '\n';
 }
 
 function parseSections(markdown) {
@@ -220,6 +251,13 @@ const jsonFileSets = localeCodes.map(code => fs.readdirSync(path.join(root, 'Lan
     .sort()
     .join('|'));
 assert(new Set(jsonFileSets).size === 1, 'Locale directories must contain the same JSON source files.');
+const expectedLocaleJsonFiles = localeFileDefinitions.map(definition => definition.file).sort().join('|');
+jsonFileSets.forEach((files, index) => {
+    assert(files === expectedLocaleJsonFiles, localeCodes[index] + ' must contain only the eight page-specific locale JSON files.');
+});
+['ui.json', 'content-centers.json', 'coverage.json', 'model-select.json', 'project-options.json', 'project.json', 'robot-tools.json', 'history.md', 'debug-history.md'].forEach(oldFile => {
+    localeCodes.forEach(code => assert(!fs.existsSync(path.join(root, 'Language', code, oldFile)), 'Obsolete locale source still exists: Language/' + code + '/' + oldFile + '.'));
+});
 
 const expectedToolFolders = [
     '1_RobotModelSelect',
@@ -279,17 +317,17 @@ routes.forEach(route => {
 });
 
 const subpages = [
-    '1_RobotModelSelect/index.html',
-    '2_Robot3DViewer/index.html',
-    '3_ToolSelector/index.html',
-    '4_ProjectGenerator/index.html',
-    '5_Software/index.html',
-    '6_Document/index.html',
-    '7_DebuggingTool/index.html',
-    '7_DebuggingTool/ZeroCalibration/index.html'
+    { file: '1_RobotModelSelect/index.html', localeFile: 'robot-model-select.json', pageKey: 'robotSelect' },
+    { file: '2_Robot3DViewer/index.html', localeFile: 'robot-3d-viewer.json', pageKey: 'robot3dViewer' },
+    { file: '3_ToolSelector/index.html', localeFile: 'tool-selector.json', pageKey: 'toolSelector' },
+    { file: '4_ProjectGenerator/index.html', localeFile: 'project-generator.json', pageKey: 'projectGenerator' },
+    { file: '5_Software/index.html', localeFile: 'software.json', pageKey: 'software' },
+    { file: '6_Document/index.html', localeFile: 'document.json', pageKey: 'manual' },
+    { file: '7_DebuggingTool/index.html', localeFile: 'debugging-tool.json', pageKey: 'debugging' },
+    { file: '7_DebuggingTool/ZeroCalibration/index.html', localeFile: 'debugging-tool.json', pageKey: 'zeroCalibration' }
 ];
 
-subpages.forEach(file => {
+subpages.forEach(({ file, localeFile, pageKey }) => {
     const html = read(file);
     assert(html.includes('/Language/runtime/i18n.css'), file + ' is missing locale styles.');
     assert(html.includes('/Language/runtime/locales-data.js') && html.includes('/Language/runtime/i18n.js'), file + ' is missing locale scripts.');
@@ -298,20 +336,23 @@ subpages.forEach(file => {
 
     for (const match of html.matchAll(/data-i18n(?:-title|-placeholder|-aria-label|-alt)?=["']([^"']+)["']/g)) {
         const key = match[1];
-        localeCodes.forEach(code => assert(getByPath(locales[code], key) !== undefined, file + ' references missing ' + code + ' key ' + key + '.'));
+        localeCodes.forEach(code => {
+            assert(getByPath(locales[code].sources[localeFile], key) !== undefined, file + ' references ' + key + ' outside its ' + code + ' page locale file.');
+        });
     }
 
     for (const match of visibleHtml(html).matchAll(/>([^<>]+)</g)) {
         const source = match[1].replace(/\s+/g, ' ').trim();
         if (!/[가-힣]/.test(source)) continue;
         targetLocaleCodes.forEach(code => {
-            assert(translateLegacySource(locales[code], source) !== source, file + ' leaves a Korean text node untranslated in ' + code + ': ' + source);
+            assert(translateLegacySource(locales[code].pageTranslations[pageKey], source) !== source, file + ' leaves a Korean text node outside its ' + code + ' page locale file: ' + source);
         });
     }
 });
 
 const runtime = read('Language/runtime/i18n.js');
 assert(runtime.includes("const STORAGE_KEY = 'inorobot.locale'"), 'Runtime session key is missing.');
+assert(runtime.includes('function translateFromPageData') && runtime.includes("get('pageTranslations.' + detectPageKey()"), 'Runtime does not prioritize the active page locale file.');
 assert(runtime.includes('readSharedLocale() || readSessionLocale() || DEFAULT_LOCALE'), 'Direct tool access does not prioritize the shared locale with a Korean fallback.');
 assert(runtime.includes("'/kr/': 'ko'") && runtime.includes("'/cn/': 'zh-CN'") && runtime.includes("'/vn/': 'vi'"), 'Landing route map is incomplete.');
 assert(runtime.includes('function formatNumber') && runtime.includes('function formatDate'), 'Locale number/date formatters are missing.');
@@ -415,7 +456,17 @@ const homeTemplate = read('Language/templates/home.template.html');
 });
 assert(read('7_DebuggingTool/index.html').includes('data-i18n-skip>Debugging Tool</h1>'), 'Debugging Tool page heading is not fixed in English.');
 
-const sourceHistory = parseSections(read('UPDATE_HISTORY.md'));
+localeCodes.forEach(code => {
+    const homeSource = locales[code].sources['home.json'];
+    assert(Boolean(homeSource.versionHistory), code + '/home.json is missing the home version history.');
+    assert(Boolean(homeSource.debugVersionHistory), code + '/home.json is missing the debugging-tool version history.');
+    localeFileDefinitions.filter(definition => definition.file !== 'home.json').forEach(definition => {
+        const source = locales[code].sources[definition.file];
+        assert(!source.versionHistory && !source.debugVersionHistory, code + '/' + definition.file + ' must not contain version history.');
+    });
+});
+
+const sourceHistory = parseSections(historyToMarkdown(locales.ko.sources['home.json'].versionHistory));
 const cardVersionSections = {
     robotSelect: 'Robot Model Select',
     robot3dViewer: 'Robot 3D Viewer',
@@ -430,7 +481,7 @@ Object.entries(cardVersionSections).forEach(([key, section]) => {
 });
 const cardSections = ['Robot Model Select', 'Robot 3D Viewer', 'Robot Tool Selector', 'Project Generator', 'Software', 'Document', 'Debugging Tool'];
 targetLocaleCodes.forEach(code => {
-    const localized = parseSections(read(path.join('Language', code, 'history.md')));
+    const localized = parseSections(historyToMarkdown(locales[code].sources['home.json'].versionHistory));
     cardSections.forEach(section => {
         assert(Boolean(localized[section]), code + ' history is missing ' + section + '.');
         if (!localized[section]) return;
@@ -438,16 +489,15 @@ targetLocaleCodes.forEach(code => {
         assert(localized[section].bullets === sourceHistory[section].bullets, code + ' history entry count differs for ' + section + '.');
     });
 });
-assert(!/\*\*【[^】]+】\*\*/.test(read('Language/zh-CN/history.md')) && !/\*\*【[^】]+】\*\*/.test(read('Language/zh-CN/debug-history.md')), 'Chinese version history still shows a bold category prefix.');
+const chineseHomeHistory = JSON.stringify({
+    versionHistory: locales['zh-CN'].sources['home.json'].versionHistory,
+    debugVersionHistory: locales['zh-CN'].sources['home.json'].debugVersionHistory
+});
+assert(!/\*\*【[^】]+】\*\*/.test(chineseHomeHistory), 'Chinese version history still shows a bold category prefix.');
 
-const debugSources = {
-    communicationTester: parseSections(read('7_DebuggingTool/CommunicationTester/업데이트_기록.md'))['Communication Tester'],
-    labelGenerator: parseSections(read('7_DebuggingTool/InoRobotLabelGen/업데이트기록.md'))['InoRobot Label Gen'],
-    trace: parseSections(read('7_DebuggingTool/Trace/업데이트_기록.md')).InoRobotTrace,
-    projectCompare: parseSections(read('7_DebuggingTool/ProjectCompare/업데이트_기록.md'))['Project Compare']
-};
+const debugSources = parseSections(historyToMarkdown(locales.ko.sources['home.json'].debugVersionHistory));
 targetLocaleCodes.forEach(code => {
-    const localized = parseSections(read(path.join('Language', code, 'debug-history.md')));
+    const localized = parseSections(historyToMarkdown(locales[code].sources['home.json'].debugVersionHistory));
     Object.entries(debugSources).forEach(([section, source]) => {
         assert(Boolean(localized[section]), code + ' debugging history is missing ' + section + '.');
         if (!localized[section]) return;
