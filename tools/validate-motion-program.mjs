@@ -143,6 +143,8 @@ assert.equal(new Set(htmlIds).size, htmlIds.length, 'HTML ids must be unique.');
     'function preflightRobotMotion(',
     'function restoreMotionProjectData(',
     'function finalizeMotionHistoryIfIdle(',
+    'function syncTcpVisualAtPose(',
+    'if (robot !== state.activeArticulatedModel) return;',
     'function resumePausedRobotMotions(',
     'if (robot && resumePausedRobotMotions([robot])) return;',
     'if (resumePausedRobotMotions(robots)) return;',
@@ -162,6 +164,10 @@ const collisionSource = mainSource.slice(
 assert.ok(!/finishRobotMotionSession|stopRobotMotions/.test(collisionSource), 'Collision warnings must not stop motion.');
 assert.ok(mainSource.includes("object.name === 'CD conduit'"), 'CD conduit must be excluded from collision OBBs.');
 assert.ok(mainSource.includes('const MOTION_COLLISION_INTERVAL = 100'), 'Collision interval must remain 100 ms.');
+assert.ok(
+    mainSource.includes("if (robot === state.activeArticulatedModel) syncJointControls(robot);\n    updateTcpPresentation(robot);"),
+    'Every animated robot must update its TCP visual, while only the active robot updates JOG controls.'
+);
 assert.match(cssSource, /\.program-panel\s*\{/);
 assert.match(cssSource, /\.program-robot-row\.collision/);
 assert.ok(cssSource.includes('width: min(340px, calc(100% - 32px))'), 'Program Panel compact width must remain 340px.');
