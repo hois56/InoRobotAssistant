@@ -192,6 +192,15 @@ assert((viewerSource.match(/applyTransformControlColors\(/g) || []).length >= 3,
 assert(/const SCARA_TOOL_AXES\s*=\s*\{\s*x:\s*\[1,\s*0,\s*0\],\s*y:\s*\[0,\s*1,\s*0\],\s*z:\s*\[0,\s*0,\s*1\]\s*\}/.test(viewerSource), 'SCARA Tool axes must match the Base coordinate system');
 assert(/const SIX_AXIS_TOOL_AXES\s*=\s*\{\s*x:\s*\[0,\s*0,\s*1\],\s*y:\s*\[0,\s*-1,\s*0\],\s*z:\s*\[1,\s*0,\s*0\]\s*\}/.test(viewerSource), 'Six-axis Tool axes must retain the flange coordinate mapping');
 assert(viewerSource.includes('toolAxes: SCARA_TOOL_AXES') && viewerSource.includes('toolAxes: SIX_AXIS_TOOL_AXES'), 'Robot manifests must use their type-specific Tool axes');
+assert(viewerSource.includes("toolAxesAtTcp.name = 'Tool axes at TCP'"), 'TCP axes must be identified as the Tool coordinate system');
+assert(viewerSource.includes('tcpFrame.add(toolAxesAtTcp)'), 'TCP axes must inherit the live Tool frame pose');
+assert(viewerSource.includes('robot.userData.toolAxesAtTcp = toolAxesAtTcp'), 'Robot state must retain the Tool axes helper');
+assert(!viewerSource.includes('Base axes at TCP') && !viewerSource.includes('baseAxesAtTcp'), 'TCP axes must not remain fixed to the Base frame');
+const tcpVisualSource = viewerSource.slice(
+    viewerSource.indexOf('function syncTcpVisualAtPose('),
+    viewerSource.indexOf('function updateTcpPresentation(')
+);
+assert(tcpVisualSource.includes('axes.position.set(0, 0, 0)') && tcpVisualSource.includes('axes.quaternion.identity()'), 'TCP axes must stay aligned to their Tool-frame parent');
 assert(!/#4f5968|#1d6fd6/.test(viewerSource), 'Robot links must not retain the old gray base or blue J6 colors');
 assert(!/addInovanceBrandDecal|isBrandDecal|INOVANCE_LOGO_URL/.test(viewerSource), 'Robot body logo decals must remain disabled');
 assert(/kinematicVariant\s*===\s*['"]ceiling-scara['"]\s*\?\s*-1\s*:\s*1/.test(viewerSource), 'Viewer must preserve the folded TS4/TS5 zero pose');
