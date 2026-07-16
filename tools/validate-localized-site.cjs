@@ -312,10 +312,12 @@ subpages.forEach(file => {
 
 const runtime = read('Language/runtime/i18n.js');
 assert(runtime.includes("const STORAGE_KEY = 'inorobot.locale'"), 'Runtime session key is missing.');
-assert(runtime.includes("return readSessionLocale() || DEFAULT_LOCALE"), 'Direct tool access does not default to Korean.');
+assert(runtime.includes('readSharedLocale() || readSessionLocale() || DEFAULT_LOCALE'), 'Direct tool access does not prioritize the shared locale with a Korean fallback.');
 assert(runtime.includes("'/kr/': 'ko'") && runtime.includes("'/cn/': 'zh-CN'") && runtime.includes("'/vn/': 'vi'"), 'Landing route map is incomplete.');
 assert(runtime.includes('function formatNumber') && runtime.includes('function formatDate'), 'Locale number/date formatters are missing.');
 assert(runtime.includes('window.location.assign(LANDING_ROUTES[nextLocale])'), 'Landing language changes do not navigate to their localized route.');
+assert(runtime.includes('new BroadcastChannel(CHANNEL_NAME)') && runtime.includes("window.addEventListener('storage'") && runtime.includes("window.addEventListener('pageshow'"), 'Locale changes are not synchronized across pages, tabs, and back-forward restoration.');
+assert(runtime.includes('window.location.replace(targetPath)'), 'A restored landing page does not move to the current locale route.');
 assert(runtime.includes("label.textContent = 'Language'") && !runtime.includes("icon.textContent = '文'"), 'Runtime language switcher has the wrong label.');
 assert(runtime.includes("document.querySelector('[data-i18n-language-slot]')") && runtime.includes("container.dataset.embedded = languageSlot ? 'true' : 'false'"), 'Runtime does not support page-specific language switcher slots.');
 ['/', '/kr/', '/en/', '/cn/', '/vn/'].forEach(route => {
@@ -373,6 +375,7 @@ assert(robotSelectScript.includes("uiText('현재 구매 코드')") && robotSele
 assert(robotSelectScript.includes("uiText('파워/엔코더 케이블')") && robotSelectScript.includes('uiText(cableType)'), 'Robot Select PDF cable details are not localized.');
 assert(robotSelectScript.includes('uiText(acc.description)') && robotSelectScript.includes('localizeDisplayText(option.spec)'), 'Robot Select option descriptions are not localized.');
 assert(robotSelectScript.includes("['클린 사양 없음', 'Option :']") && robotSelectScript.includes("uiText('Pins')") && robotSelectScript.includes('formatSignalPins('), 'Robot Select Option or Pin composites are not localized.');
+assert(robotSelectScript.includes('(?:Signal\\s+)?lines?'), 'Robot Select detail specifications can still show Lines instead of localized Pins.');
 assert(robotSelectScript.includes('captureModalSelections') && robotSelectScript.includes('restoreModalSelections'), 'Robot Select does not preserve modal selections while changing language.');
 const projectScript = read('4_ProjectGenerator/app.js');
 assert(projectScript.includes('new JSZip()') && projectScript.includes('zip.generateAsync') && projectScript.includes('saveAs(blob'), 'Project ZIP generation hook is missing.');
@@ -385,6 +388,7 @@ assert(softwareScript.includes('translateUiText(dl.label)') && softwareScript.in
 const toolSelector = read('3_ToolSelector/index.html');
 assert(toolSelector.includes('function calculate()'), 'Tool Selector calculation hook is missing.');
 assert(toolSelector.includes("uiText('형식 SCARA')") && toolSelector.includes("uiText('부하 무게중심 기준 관성모멘트 산출값')"), 'Tool Selector dynamic labels are not localized.');
+assert(toolSelector.includes('.card:has(.info-wrap:hover)') && toolSelector.includes('z-index:2147483002'), 'Tool Selector info tooltips are not layered above the surrounding controls.');
 for (const [index, match] of [...toolSelector.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].entries()) {
     if (!match[1].trim()) continue;
     try {
@@ -432,7 +436,7 @@ targetLocaleCodes.forEach(code => {
         assert(localized[section].bullets === sourceHistory[section].bullets, code + ' history entry count differs for ' + section + '.');
     });
 });
-assert(!read('Language/zh-CN/history.md').includes('**【修复】**') && !read('Language/zh-CN/debug-history.md').includes('**【修复】**'), 'Chinese version history still shows the repair badge.');
+assert(!/\*\*【[^】]+】\*\*/.test(read('Language/zh-CN/history.md')) && !/\*\*【[^】]+】\*\*/.test(read('Language/zh-CN/debug-history.md')), 'Chinese version history still shows a bold category prefix.');
 
 const debugSources = {
     communicationTester: parseSections(read('7_DebuggingTool/CommunicationTester/업데이트_기록.md'))['Communication Tester'],
