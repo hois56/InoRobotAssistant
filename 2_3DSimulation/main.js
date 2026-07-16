@@ -12,6 +12,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { OBB } from 'three/addons/math/OBB.js';
+import { hasMeaningfulAabbOverlap } from './collision-core.mjs?v=20260717-collision-fallback1';
 import {
     MOTION_PROJECT_SCHEMA_VERSION,
     DEFAULT_MOVJ_SPEED,
@@ -3985,6 +3986,7 @@ function prepareRobotCollisionParts(robot) {
         const halfSize = box.getSize(new THREE.Vector3()).multiplyScalar(0.5);
         parts.push({
             mesh: object,
+            localBox: box.clone(),
             localObb: new OBB(center, halfSize, new THREE.Matrix3())
         });
     });
@@ -4069,6 +4071,7 @@ function updateRobotCollisions(timestamp) {
         robot,
         (robot.userData.collisionParts || []).map((part) => ({
             mesh: part.mesh,
+            aabb: part.localBox.clone().applyMatrix4(part.mesh.matrixWorld),
             obb: part.localObb.clone().applyMatrix4(part.mesh.matrixWorld)
         }))
     ]));
@@ -4081,7 +4084,9 @@ function updateRobotCollisions(timestamp) {
             let pairCollision = false;
             for (const leftPart of leftParts) {
                 for (const rightPart of rightParts) {
-                    if (!leftPart.obb.intersectsOBB(rightPart.obb)) continue;
+                    const obbCollision = leftPart.obb.intersectsOBB(rightPart.obb);
+                    const fallbackCollision = hasMeaningfulAabbOverlap(leftPart.aabb, rightPart.aabb);
+                    if (!obbCollision && !fallbackCollision) continue;
                     pairCollision = true;
                     collisionMeshes.add(leftPart.mesh);
                     collisionMeshes.add(rightPart.mesh);

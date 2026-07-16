@@ -16,6 +16,10 @@ import {
     cloneMotionProgram,
     normalizeMotionProject
 } from '../2_3DSimulation/motion-program-core.mjs';
+import {
+    aabbOverlapDepth,
+    hasMeaningfulAabbOverlap
+} from '../2_3DSimulation/collision-core.mjs';
 
 const closeTo = (actual, expected, epsilon = 1e-9) => {
     assert.ok(Math.abs(actual - expected) <= epsilon, `${actual} is not within ${epsilon} of ${expected}`);
@@ -25,6 +29,17 @@ closeTo(smoothstep(0), 0);
 closeTo(smoothstep(0.5), 0.5);
 closeTo(smoothstep(1), 1);
 assert.ok(smoothstep(0.25) < smoothstep(0.5));
+
+const makeAabb = (min, max) => ({
+    min: { x: min[0], y: min[1], z: min[2] },
+    max: { x: max[0], y: max[1], z: max[2] }
+});
+const unitAabb = makeAabb([0, 0, 0], [10, 10, 10]);
+assert.deepEqual(aabbOverlapDepth(unitAabb, makeAabb([8, 7, 6], [18, 17, 16])), { x: 2, y: 3, z: 4 });
+assert.equal(hasMeaningfulAabbOverlap(unitAabb, makeAabb([8, 8, 8], [18, 18, 18])), true);
+assert.equal(hasMeaningfulAabbOverlap(unitAabb, makeAabb([10, 0, 0], [20, 10, 10])), false, 'Touching faces are not a collision.');
+assert.equal(hasMeaningfulAabbOverlap(unitAabb, makeAabb([11, 0, 0], [21, 10, 10])), false, 'Separated boxes are not a collision.');
+assert.equal(hasMeaningfulAabbOverlap(unitAabb, makeAabb([9.5, 0, 0], [19.5, 10, 10])), false, 'Sub-millimetre AABB noise is ignored.');
 
 const lineStart = [10, -20, 30];
 const lineTarget = [110, 180, -70];
@@ -295,7 +310,10 @@ assert.deepEqual(programControlRows, [
     'window.showSaveFilePicker({',
     'await fileHandle.createWritable()',
     "startIn: 'documents'",
-    'new OBB('
+    'new OBB(',
+    'localBox: box.clone()',
+    'hasMeaningfulAabbOverlap(leftPart.aabb, rightPart.aabb)',
+    'if (!obbCollision && !fallbackCollision) continue'
 ].forEach((marker) => assert.ok(mainSource.includes(marker), `Missing integration marker: ${marker}`));
 const collisionSource = mainSource.slice(
     mainSource.indexOf('function updateRobotCollisions('),
@@ -307,6 +325,8 @@ assert.ok(mainSource.includes('const MOTION_COLLISION_INTERVAL = 100'), 'Collisi
 assert.ok(mainSource.includes('highlighted.color?.set(0xef4444)'), 'Colliding robot links must turn red.');
 assert.ok(mainSource.includes('mesh.material = highlight.originalMaterial'), 'Collision highlighting must restore the original link material.');
 assert.ok(mainSource.includes('updateCollisionAlert(collisionPairs)'), 'Collision pairs must update the viewport alert.');
+assert.ok(mainSource.includes("./collision-core.mjs?v=20260717-collision-fallback1"), 'Collision fallback cache token must be current.');
+assert.ok(htmlSource.includes('main.js?v=20260717-collision-fallback1'), 'Viewer cache token must load the collision fix.');
 assert.match(htmlSource, /id="collision-alert"[^>]*role="alert"[^>]*aria-live="assertive"/);
 assert.match(cssSource, /\.collision-alert\s*\{[^}]*position:\s*absolute[^}]*background:\s*rgba\(127,\s*29,\s*29,\s*0\.94\)/s);
 assert.ok(
