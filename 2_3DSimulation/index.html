@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Simulation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="style.css?v=20260717-model-tree-title1">
+    <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/occt-import-js.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://esm.sh/three@0.156.1",
+        "three/addons/": "https://esm.sh/three@0.156.1/examples/jsm/"
+      }
+    }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/Language/runtime/i18n.css">
+    <script src="/Language/runtime/locales-data.js" defer></script>
+    <script src="/Language/runtime/i18n.js" defer></script>
+    <script src="/Language/runtime/icon-fallback.js" defer></script>
+</head>
+<body>
+
+    <header id="topbar">
+        <div class="topbar-left">
+            <a href="/" class="logo-link" title="메인 페이지로 이동">
+                <img src="../1_RobotModelSelect/INOVANCE_Logo.png" alt="Inovance" class="logo">
+            </a>
+            <h1 class="app-title">3D Simulation</h1>
+        </div>
+        <div class="topbar-center">
+            <div class="select-wrapper">
+                <i class="fa-solid fa-cube select-icon"></i>
+                <select id="model-select">
+                    <option value="" disabled selected>로딩 중...</option>
+                </select>
+                <i class="fa-solid fa-chevron-down arrow-icon"></i>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <div class="viewer-language-row" data-i18n-language-slot></div>
+            <button id="btn-import-3d" class="ui-btn" title="3D 파일 불러오기" aria-label="3D 파일 불러오기">
+                <i class="fa-solid fa-file-arrow-up"></i>
+            </button>
+            <input id="input-import-3d" class="hidden" type="file" accept=".stl,.fbx,.obj,.glb,.gltf,.stp,.step">
+            <button id="btn-download-cad" class="ui-btn" title="Download CAD files">
+                <i class="fa-solid fa-download"></i>
+            </button>
+        </div>
+    </header>
+
+    <dialog id="import-3d-dialog" class="import-dialog" aria-labelledby="import-dialog-title">
+        <div class="import-dialog-header">
+            <h2 id="import-dialog-title">3D 모델 배치</h2>
+            <button id="btn-close-import" type="button" class="import-close-btn" aria-label="닫기">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="import-settings-grid">
+            <label>
+                <span>배치 방식</span>
+                <select id="import-placement">
+                    <option value="scene">로봇 외부에 설치</option>
+                    <option value="tcp">Tool에 부착</option>
+                </select>
+            </label>
+        </div>
+        <div class="import-dialog-actions">
+            <button id="btn-cancel-import" type="button" class="import-secondary-btn">취소</button>
+            <button id="btn-confirm-import" type="button" class="import-primary-btn">
+                <i class="fa-solid fa-file-import"></i>
+                불러오기
+            </button>
+        </div>
+    </dialog>
+
+    <main id="main-content">
+        <div id="canvas-container">
+            <aside id="model-browser-panel" class="model-browser-panel" aria-label="장면 모델 트리와 위치 편집기">
+                <div class="model-browser-header">
+                    <div>
+                        <h2>모델 트리</h2>
+                    </div>
+                    <div class="panel-header-actions">
+                        <span id="model-tree-count" class="model-tree-count">0</span>
+                        <button type="button" data-panel-action="popout" data-panel-id="model-browser-panel" title="별도 창으로 분리" aria-label="모델 트리를 별도 창으로 분리"><i class="fa-solid fa-up-right-from-square"></i></button>
+                        <button type="button" data-panel-action="hide" data-panel-id="model-browser-panel" title="숨기기" aria-label="모델 트리 숨기기"><i class="fa-solid fa-eye-slash"></i></button>
+                    </div>
+                </div>
+                <div id="model-tree" class="model-tree" role="tree" aria-label="불러온 모델">
+                    <p id="model-tree-empty" class="model-tree-empty">불러온 모델이 없습니다.</p>
+                </div>
+                <section id="model-transform-panel" class="model-transform-panel hidden" aria-label="선택 모델 위치 편집">
+                    <div class="model-transform-heading">
+                        <div>
+                            <span>SELECTED MODEL</span>
+                            <strong id="selected-model-name">-</strong>
+                        </div>
+                        <span id="selected-coordinate-label" class="selected-coordinate-label">BASE</span>
+                    </div>
+                    <div class="transform-mode-buttons" aria-label="변환 모드">
+                        <button type="button" data-transform-mode="translate" class="active" title="이동 (W)"><i class="fa-solid fa-up-down-left-right"></i> 이동</button>
+                        <button type="button" data-transform-mode="rotate" title="회전 (E)"><i class="fa-solid fa-rotate"></i> 회전</button>
+                        <button type="button" data-transform-mode="scale" title="크기 (R)"><i class="fa-solid fa-expand"></i> 크기</button>
+                    </div>
+                    <div id="model-numeric-transform" class="numeric-position-editor">
+                        <div class="numeric-position-title">
+                            <span>POSITION</span>
+                            <small>mm</small>
+                        </div>
+                        <div class="numeric-position-grid">
+                            <label class="axis-x"><span>X</span><input id="model-position-x" type="number" step="0.5" value="0"></label>
+                            <label class="axis-y"><span>Y</span><input id="model-position-y" type="number" step="0.5" value="0"></label>
+                            <label class="axis-z"><span>Z</span><input id="model-position-z" type="number" step="0.5" value="0"></label>
+                        </div>
+                        <div class="numeric-position-title numeric-rotation-title">
+                            <span>ROTATION</span>
+                            <small>deg</small>
+                        </div>
+                        <div class="numeric-position-grid">
+                            <label class="axis-x"><span>RX</span><input id="model-rotation-x" type="number" step="0.5" value="0"></label>
+                            <label class="axis-y"><span>RY</span><input id="model-rotation-y" type="number" step="0.5" value="0"></label>
+                            <label class="axis-z"><span>RZ</span><input id="model-rotation-z" type="number" step="0.5" value="0"></label>
+                        </div>
+                    </div>
+                    <p class="model-transform-help">트리에서 선택한 모델만 조정됩니다. 패널 제목을 끌어 이동하고, <i class="fa-solid fa-up-right-from-square"></i> 버튼으로 별도 창에 분리할 수 있습니다.</p>
+                </section>
+            </aside>
+            <div id="empty-state">
+                <div class="hero-icon-wrap">
+                    <i class="fa-solid fa-robot"></i>
+                </div>
+                <h2>Model Visualization</h2>
+                <p>상단의 드롭다운 메뉴에서 로봇 모델을 선택해주세요.</p>
+                <div class="hint">
+                    <i class="fa-solid fa-lightbulb"></i> 마우스로 로봇을 회전하고 확대할 수 있습니다.
+                </div>
+            </div>
+            <div id="loading-overlay" class="hidden">
+                <div class="loader-content">
+                    <div class="spinner"></div>
+                    <p id="loading-text">Loading model...</p>
+                </div>
+            </div>
+            <aside id="jog-panel" class="jog-panel hidden" aria-label="JOG Panel">
+                <div class="jog-panel-header">
+                    <div>
+                        <h2>JOG Panel</h2>
+                    </div>
+                    <div class="panel-header-actions">
+                        <button id="btn-reset-joints" type="button" class="jog-reset-btn" title="Reset all joints to 0 degrees"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+                        <button type="button" data-panel-action="popout" data-panel-id="jog-panel" title="별도 창으로 분리" aria-label="JOG 패널을 별도 창으로 분리"><i class="fa-solid fa-up-right-from-square"></i></button>
+                        <button type="button" data-panel-action="hide" data-panel-id="jog-panel" title="숨기기" aria-label="JOG 패널 숨기기"><i class="fa-solid fa-eye-slash"></i></button>
+                    </div>
+                </div>
+                <div class="jog-mode-tabs" role="tablist" aria-label="JOG coordinate mode">
+                    <button id="btn-jog-joint-mode" type="button" class="jog-mode-btn active" role="tab" aria-selected="true">JOINT</button>
+                    <button id="btn-jog-base-mode" type="button" class="jog-mode-btn" role="tab" aria-selected="false">BASE</button>
+                </div>
+                <div id="joint-jog-view" class="jog-view" role="tabpanel">
+                    <div id="jog-controls" class="jog-controls"></div>
+                </div>
+                <div id="base-jog-view" class="jog-view hidden" role="tabpanel">
+                    <div class="base-gizmo-mode" role="group" aria-label="BASE 3D handle mode">
+                        <button id="btn-base-gizmo-translate" type="button" class="active" title="X/Y/Z translate handle">
+                            <i class="fa-solid fa-up-down-left-right"></i> XYZ
+                        </button>
+                        <button id="btn-base-gizmo-rotate" type="button" title="RX/RY/RZ rotate handle">
+                            <i class="fa-solid fa-rotate"></i> <span id="base-gizmo-rotate-label">RX · RY · RZ</span>
+                        </button>
+                    </div>
+                    <div class="base-step-settings">
+                        <label><span>Move</span> <input id="base-move-step" type="number" min="0.1" max="100" step="0.1" value="10"> mm</label>
+                        <label><span>Rotate</span> <input id="base-rotate-step" type="number" min="0.1" max="30" step="0.1" value="5"> deg</label>
+                    </div>
+                    <div class="base-jog-section">
+                        <span class="base-jog-title">TCP POSITION / BASE</span>
+                        <div class="base-jog-grid">
+                            <div class="base-jog-row"><strong>X</strong><button type="button" data-base-jog="move" data-axis="x" data-direction="-1">−</button><label class="base-jog-value"><input id="tcp-x" type="number" step="0.5" value="0.00" aria-label="TCP X (mm)"><span>mm</span></label><button type="button" data-base-jog="move" data-axis="x" data-direction="1">+</button></div>
+                            <div class="base-jog-row"><strong>Y</strong><button type="button" data-base-jog="move" data-axis="y" data-direction="-1">−</button><label class="base-jog-value"><input id="tcp-y" type="number" step="0.5" value="0.00" aria-label="TCP Y (mm)"><span>mm</span></label><button type="button" data-base-jog="move" data-axis="y" data-direction="1">+</button></div>
+                            <div class="base-jog-row"><strong>Z</strong><button type="button" data-base-jog="move" data-axis="z" data-direction="-1">−</button><label class="base-jog-value"><input id="tcp-z" type="number" step="0.5" value="0.00" aria-label="TCP Z (mm)"><span>mm</span></label><button type="button" data-base-jog="move" data-axis="z" data-direction="1">+</button></div>
+                        </div>
+                    </div>
+                    <div class="base-jog-section">
+                        <span class="base-jog-title">TCP ROTATION / BASE</span>
+                        <div class="base-jog-grid">
+                            <div class="base-jog-row" data-base-rotation-row="x"><strong>RX</strong><button type="button" data-base-jog="rotate" data-axis="x" data-direction="-1">−</button><label class="base-jog-value"><input id="tcp-rx" type="number" step="0.5" value="0.00" aria-label="TCP RX (deg)"><span>deg</span></label><button type="button" data-base-jog="rotate" data-axis="x" data-direction="1">+</button></div>
+                            <div class="base-jog-row" data-base-rotation-row="y"><strong>RY</strong><button type="button" data-base-jog="rotate" data-axis="y" data-direction="-1">−</button><label class="base-jog-value"><input id="tcp-ry" type="number" step="0.5" value="0.00" aria-label="TCP RY (deg)"><span>deg</span></label><button type="button" data-base-jog="rotate" data-axis="y" data-direction="1">+</button></div>
+                            <div class="base-jog-row" data-base-rotation-row="z"><strong>RZ</strong><button type="button" data-base-jog="rotate" data-axis="z" data-direction="-1">−</button><label class="base-jog-value"><input id="tcp-rz" type="number" step="0.5" value="0.00" aria-label="TCP RZ (deg)"><span>deg</span></label><button type="button" data-base-jog="rotate" data-axis="z" data-direction="1">+</button></div>
+                        </div>
+                    </div>
+                    <p id="base-jog-status" class="base-jog-status hidden"></p>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <footer id="stats-bar">
+        <div class="stat-item">
+            <i class="fa-solid fa-circle-nodes"></i>
+            <label>Model</label>
+            <span id="stat-name">-</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+            <i id="status-dot" class="fa-solid fa-circle"></i>
+            <label>Status</label>
+            <span id="stat-status">Initializing...</span>
+        </div>
+        <div id="panel-launcher" class="viewer-control-dock" aria-label="뷰어 제어 도크">
+            <button type="button" data-panel-toggle="model-browser-panel" class="active" title="모델 트리 표시/숨김"><i class="fa-solid fa-list-ul"></i> 모델</button>
+            <button type="button" data-panel-toggle="jog-panel" disabled title="로봇 JOG 패널 표시/숨김"><i class="fa-solid fa-gamepad"></i> JOG</button>
+            <span class="viewer-control-divider"></span>
+            <button id="btn-undo" type="button" disabled title="되돌리기 (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
+            <button id="btn-redo" type="button" disabled title="다시 실행 (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i></button>
+            <span class="viewer-control-divider"></span>
+            <button id="btn-reset-view" type="button" title="뷰 초기화" aria-label="뷰 초기화"><i class="fa-solid fa-arrows-rotate"></i></button>
+            <button id="btn-toggle-transform" type="button" title="선택 모델 변환 핸들 표시/숨김" aria-label="선택 모델 변환 핸들 표시/숨김"><i class="fa-solid fa-up-down-left-right"></i></button>
+            <button id="btn-toggle-grid" type="button" class="active" title="그리드 표시/숨김" aria-label="그리드 표시/숨김"><i class="fa-solid fa-border-all"></i></button>
+        </div>
+    </footer>
+
+    <script type="module" src="main.js?v=20260717-axis-colors1"></script>
+</body>
+</html>

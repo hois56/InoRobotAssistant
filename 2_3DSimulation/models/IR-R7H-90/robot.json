@@ -1,0 +1,73 @@
+{
+  "name": "IR-R7H-90S-INT",
+  "unit": "mm",
+  "coordinateSystem": "Z-up",
+  "jointDirection": -1,
+  "tcp": [548, 0, 830],
+  "toolAxes": {
+    "x": [0, 0, 1],
+    "y": [0, -1, 0],
+    "z": [1, 0, 0]
+  },
+  "base": {
+    "name": "P0",
+    "mesh": "P0.stl",
+    "color": "#4f5968"
+  },
+  "joints": [
+    {
+      "name": "J1",
+      "mesh": "P1.stl",
+      "pivot": [0, 0, 201],
+      "axis": [0, 0, 1],
+      "min": -170,
+      "max": 170,
+      "color": "#d7dce3"
+    },
+    {
+      "name": "J2",
+      "mesh": "P2.stl",
+      "pivot": [50, 0, 350],
+      "axis": [0, 1, 0],
+      "min": -135,
+      "max": 80,
+      "color": "#f0f2f5"
+    },
+    {
+      "name": "J3",
+      "mesh": "P3.stl",
+      "pivot": [50, 0, 790],
+      "axis": [0, 1, 0],
+      "min": -70,
+      "max": 190,
+      "color": "#d7dce3"
+    },
+    {
+      "name": "J4",
+      "mesh": "P4.stl",
+      "pivot": [137, 0, 830],
+      "axis": [1, 0, 0],
+      "min": -190,
+      "max": 190,
+      "color": "#f0f2f5"
+    },
+    {
+      "name": "J5",
+      "mesh": "P5.stl",
+      "pivot": [470, 0, 830],
+      "axis": [0, 1, 0],
+      "min": -120,
+      "max": 120,
+      "color": "#d7dce3"
+    },
+    {
+      "name": "J6",
+      "mesh": "P6.stl",
+      "pivot": [548, 0, 830],
+      "axis": [1, 0, 0],
+      "min": -360,
+      "max": 360,
+      "color": "#1d6fd6"
+    }
+  ]
+}
