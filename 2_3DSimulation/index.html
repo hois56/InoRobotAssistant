@@ -6,7 +6,7 @@
     <title>3D Simulation</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=20260717-panel-edge-resize1">
+    <link rel="stylesheet" href="style.css?v=20260717-jog-button-layout1">
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/occt-import-js.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -22,7 +22,7 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/Language/runtime/i18n.css">
-    <script src="/Language/runtime/locales-data.js?v=20260717-3d-i18n1" defer></script>
+    <script src="/Language/runtime/locales-data.js?v=20260717-program-ui-compact1" defer></script>
     <script src="/Language/runtime/i18n.js" defer></script>
     <script src="/Language/runtime/icon-fallback.js" defer></script>
 </head>
@@ -45,32 +45,30 @@
             </div>
         </div>
         <div class="topbar-right">
-            <div class="viewer-language-row" data-i18n-language-slot></div>
             <button id="btn-import-3d" class="ui-btn" title="3D 파일 불러오기" aria-label="3D 파일 불러오기">
-                <i class="fa-solid fa-file-arrow-up"></i>
+                <i class="fa-solid fa-cube"></i>
+                <span>3D</span>
             </button>
             <input id="input-import-3d" class="hidden" type="file" accept=".stl,.fbx,.obj,.glb,.gltf,.stp,.step">
             <button id="btn-download-cad" class="ui-btn" title="Download CAD files">
                 <i class="fa-solid fa-download"></i>
             </button>
+            <div class="viewer-language-row" data-i18n-language-slot></div>
         </div>
     </header>
 
     <dialog id="import-3d-dialog" class="import-dialog" aria-labelledby="import-dialog-title">
         <div class="import-dialog-header">
-            <h2 id="import-dialog-title">3D 모델 배치</h2>
+            <h2 id="import-dialog-title">3D 모델 가져오기 방식</h2>
             <button id="btn-close-import" type="button" class="import-close-btn" aria-label="닫기">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
         <div class="import-settings-grid">
-            <label>
-                <span>배치 방식</span>
-                <select id="import-placement">
-                    <option value="scene">로봇 외부에 설치</option>
-                    <option value="tcp">Tool에 부착</option>
-                </select>
-            </label>
+            <select id="import-placement" aria-label="3D 모델 가져오기 방식">
+                <option value="tcp">Tool</option>
+                <option value="scene">3D 모델링</option>
+            </select>
         </div>
         <div class="import-dialog-actions">
             <button id="btn-cancel-import" type="button" class="import-secondary-btn">취소</button>
@@ -103,7 +101,6 @@
                             <span>SELECTED MODEL</span>
                             <strong id="selected-model-name">-</strong>
                         </div>
-                        <span id="selected-coordinate-label" class="selected-coordinate-label">BASE</span>
                     </div>
                     <div class="transform-mode-buttons" aria-label="변환 모드">
                         <button type="button" data-transform-mode="translate" class="active" title="이동 (W)"><i class="fa-solid fa-up-down-left-right"></i> 이동</button>
@@ -149,13 +146,6 @@
                     <p id="loading-text">Loading model...</p>
                 </div>
             </div>
-            <div id="collision-alert" class="collision-alert hidden" role="alert" aria-live="assertive" aria-atomic="true">
-                <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
-                <div>
-                    <strong>충돌</strong>
-                    <span id="collision-alert-text">로봇 충돌이 감지되었습니다.</span>
-                </div>
-            </div>
             <aside id="jog-panel" class="jog-panel hidden" aria-label="JOG Panel">
                 <div class="jog-panel-header">
                     <div>
@@ -177,7 +167,7 @@
                 <div id="base-jog-view" class="jog-view hidden" role="tabpanel">
                     <div class="base-gizmo-mode" role="group" aria-label="BASE 3D handle mode">
                         <button id="btn-base-gizmo-translate" type="button" class="active" title="X/Y/Z translate handle">
-                            <i class="fa-solid fa-up-down-left-right"></i> XYZ
+                            <i class="fa-solid fa-up-down-left-right"></i> X · Y · Z
                         </button>
                         <button id="btn-base-gizmo-rotate" type="button" title="RX/RY/RZ rotate handle">
                             <i class="fa-solid fa-rotate"></i> <span id="base-gizmo-rotate-label">RX · RY · RZ</span>
@@ -190,20 +180,53 @@
                     <div class="base-jog-section">
                         <span class="base-jog-title">TCP POSITION / BASE</span>
                         <div class="base-jog-grid">
-                            <div class="base-jog-row"><strong>X</strong><button type="button" data-base-jog="move" data-axis="x" data-direction="-1">−</button><label class="base-jog-value"><input id="tcp-x" type="number" step="0.5" value="0.00" aria-label="TCP X (mm)"><span>mm</span></label><button type="button" data-base-jog="move" data-axis="x" data-direction="1">+</button></div>
-                            <div class="base-jog-row"><strong>Y</strong><button type="button" data-base-jog="move" data-axis="y" data-direction="-1">−</button><label class="base-jog-value"><input id="tcp-y" type="number" step="0.5" value="0.00" aria-label="TCP Y (mm)"><span>mm</span></label><button type="button" data-base-jog="move" data-axis="y" data-direction="1">+</button></div>
-                            <div class="base-jog-row"><strong>Z</strong><button type="button" data-base-jog="move" data-axis="z" data-direction="-1">−</button><label class="base-jog-value"><input id="tcp-z" type="number" step="0.5" value="0.00" aria-label="TCP Z (mm)"><span>mm</span></label><button type="button" data-base-jog="move" data-axis="z" data-direction="1">+</button></div>
+                            <div class="base-jog-row"><strong>X</strong><div class="base-jog-buttons"><button type="button" data-base-jog="move" data-axis="x" data-direction="-1">−</button><button type="button" data-base-jog="move" data-axis="x" data-direction="1">+</button></div><label class="base-jog-value"><input id="tcp-x" type="number" step="0.5" value="0.00" aria-label="TCP X (mm)"><span>mm</span></label></div>
+                            <div class="base-jog-row"><strong>Y</strong><div class="base-jog-buttons"><button type="button" data-base-jog="move" data-axis="y" data-direction="-1">−</button><button type="button" data-base-jog="move" data-axis="y" data-direction="1">+</button></div><label class="base-jog-value"><input id="tcp-y" type="number" step="0.5" value="0.00" aria-label="TCP Y (mm)"><span>mm</span></label></div>
+                            <div class="base-jog-row"><strong>Z</strong><div class="base-jog-buttons"><button type="button" data-base-jog="move" data-axis="z" data-direction="-1">−</button><button type="button" data-base-jog="move" data-axis="z" data-direction="1">+</button></div><label class="base-jog-value"><input id="tcp-z" type="number" step="0.5" value="0.00" aria-label="TCP Z (mm)"><span>mm</span></label></div>
                         </div>
                     </div>
                     <div class="base-jog-section">
                         <span class="base-jog-title">TCP ROTATION / BASE</span>
                         <div class="base-jog-grid">
-                            <div class="base-jog-row" data-base-rotation-row="x"><strong>RX</strong><button type="button" data-base-jog="rotate" data-axis="x" data-direction="-1">−</button><label class="base-jog-value"><input id="tcp-rx" type="number" step="0.5" value="0.00" aria-label="TCP RX (deg)"><span>deg</span></label><button type="button" data-base-jog="rotate" data-axis="x" data-direction="1">+</button></div>
-                            <div class="base-jog-row" data-base-rotation-row="y"><strong>RY</strong><button type="button" data-base-jog="rotate" data-axis="y" data-direction="-1">−</button><label class="base-jog-value"><input id="tcp-ry" type="number" step="0.5" value="0.00" aria-label="TCP RY (deg)"><span>deg</span></label><button type="button" data-base-jog="rotate" data-axis="y" data-direction="1">+</button></div>
-                            <div class="base-jog-row" data-base-rotation-row="z"><strong>RZ</strong><button type="button" data-base-jog="rotate" data-axis="z" data-direction="-1">−</button><label class="base-jog-value"><input id="tcp-rz" type="number" step="0.5" value="0.00" aria-label="TCP RZ (deg)"><span>deg</span></label><button type="button" data-base-jog="rotate" data-axis="z" data-direction="1">+</button></div>
+                            <div class="base-jog-row" data-base-rotation-row="x"><strong>RX</strong><div class="base-jog-buttons"><button type="button" data-base-jog="rotate" data-axis="x" data-direction="-1">−</button><button type="button" data-base-jog="rotate" data-axis="x" data-direction="1">+</button></div><label class="base-jog-value"><input id="tcp-rx" type="number" step="0.5" value="0.00" aria-label="TCP RX (deg)"><span>deg</span></label></div>
+                            <div class="base-jog-row" data-base-rotation-row="y"><strong>RY</strong><div class="base-jog-buttons"><button type="button" data-base-jog="rotate" data-axis="y" data-direction="-1">−</button><button type="button" data-base-jog="rotate" data-axis="y" data-direction="1">+</button></div><label class="base-jog-value"><input id="tcp-ry" type="number" step="0.5" value="0.00" aria-label="TCP RY (deg)"><span>deg</span></label></div>
+                            <div class="base-jog-row" data-base-rotation-row="z"><strong>RZ</strong><div class="base-jog-buttons"><button type="button" data-base-jog="rotate" data-axis="z" data-direction="-1">−</button><button type="button" data-base-jog="rotate" data-axis="z" data-direction="1">+</button></div><label class="base-jog-value"><input id="tcp-rz" type="number" step="0.5" value="0.00" aria-label="TCP RZ (deg)"><span>deg</span></label></div>
                         </div>
                     </div>
                     <p id="base-jog-status" class="base-jog-status hidden"></p>
+                </div>
+            </aside>
+            <aside id="virtual-controller-panel" class="virtual-controller-panel panel-user-hidden" aria-label="가상 컨트롤러">
+                <div class="virtual-controller-header">
+                    <h2>가상 컨트롤러</h2>
+                    <div class="panel-header-actions">
+                        <button type="button" data-panel-action="popout" data-panel-id="virtual-controller-panel" title="별도 창으로 분리" aria-label="가상 컨트롤러 패널을 별도 창으로 분리"><i class="fa-solid fa-up-right-from-square"></i></button>
+                        <button type="button" data-panel-action="hide" data-panel-id="virtual-controller-panel" title="숨기기" aria-label="가상 컨트롤러 패널 숨기기"><i class="fa-solid fa-eye-slash"></i></button>
+                    </div>
+                </div>
+                <div class="virtual-controller-content">
+                    <div class="virtual-controller-endpoint">
+                        <span><i class="fa-solid fa-network-wired"></i> 127.0.0.1:2222</span>
+                        <strong>4 ms</strong>
+                    </div>
+                    <a class="virtual-controller-bridge-download" href="./bridge/InoRobotVirtualControllerBridge.exe" download>
+                        <i class="fa-solid fa-download"></i>
+                        <span>전용 브리지 다운로드</span>
+                    </a>
+                    <label class="virtual-controller-target">
+                        <span>대상 로봇</span>
+                        <select id="virtual-controller-robot" aria-label="가상 컨트롤러 대상 로봇">
+                            <option value="">로봇을 선택하세요</option>
+                        </select>
+                    </label>
+                    <button id="virtual-controller-connect" type="button" class="virtual-controller-connect">
+                        <i class="fa-solid fa-plug"></i>
+                        <span>연결</span>
+                    </button>
+                    <div class="virtual-controller-telemetry" role="status" aria-live="polite">
+                        <span><i id="virtual-controller-status-dot" class="fa-solid fa-circle"></i> <span id="virtual-controller-status">연결 안 됨</span></span>
+                        <strong id="virtual-controller-rate">-- Hz</strong>
+                    </div>
                 </div>
             </aside>
             <aside id="program-panel" class="program-panel hidden" aria-label="Program Panel">
@@ -218,7 +241,7 @@
                 <div class="program-robot-section">
                     <div class="program-section-title">
                         <span>ROBOTS</span>
-                        <button id="program-select-all" type="button" data-program-edit>전체 선택</button>
+                        <button id="program-select-all" type="button" data-program-edit aria-pressed="false">전체 선택</button>
                     </div>
                     <div id="program-robot-list" class="program-robot-list"></div>
                 </div>
@@ -231,8 +254,6 @@
                             <button id="program-add-time-start" type="button" data-program-edit title="TIME START 추가"><i class="fa-solid fa-stopwatch"></i></button>
                             <button id="program-add-time-out" type="button" data-program-edit title="TIME OUT 추가"><i class="fa-solid fa-flag-checkered"></i></button>
                             <button id="program-update-step" type="button" data-program-edit title="선택 포인트 덮어쓰기"><i class="fa-solid fa-camera-rotate"></i></button>
-                            <button id="program-step-up" type="button" data-program-edit title="위로 이동"><i class="fa-solid fa-arrow-up"></i></button>
-                            <button id="program-step-down" type="button" data-program-edit title="아래로 이동"><i class="fa-solid fa-arrow-down"></i></button>
                             <button id="program-delete-step" type="button" data-program-edit title="포인트 삭제"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
@@ -286,6 +307,7 @@
         <div id="panel-launcher" class="viewer-control-dock" aria-label="뷰어 제어 도크">
             <button type="button" data-panel-toggle="model-browser-panel" class="active" title="모델 트리 표시/숨김"><i class="fa-solid fa-list-ul"></i> 모델</button>
             <button type="button" data-panel-toggle="jog-panel" disabled title="로봇 JOG 패널 표시/숨김"><i class="fa-solid fa-gamepad"></i> JOG</button>
+            <button type="button" data-panel-toggle="virtual-controller-panel" disabled title="가상 컨트롤러 표시/숨김"><i class="fa-solid fa-tower-broadcast"></i> Virtual</button>
             <span class="viewer-control-divider"></span>
             <button id="btn-undo" type="button" disabled title="되돌리기 (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
             <button id="btn-redo" type="button" disabled title="다시 실행 (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i></button>
@@ -296,6 +318,6 @@
         </div>
     </footer>
 
-    <script type="module" src="main.js?v=20260717-base-jog-gizmo-thickness1"></script>
+    <script type="module" src="main.js?v=20260717-joint-directions2"></script>
 </body>
 </html>

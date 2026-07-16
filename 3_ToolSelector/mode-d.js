@@ -7,7 +7,8 @@ import {
   integrateStepMesh,
   pointInFrame
 } from './mass-properties.mjs';
-import { buildStepSnapCandidates } from './snap-geometry.mjs';
+import { averageCircleCenters, buildStepSnapCandidates } from './snap-geometry.mjs';
+import { cadColorToHex } from './step-export-transform.mjs';
 
 const OCCT_IMPORT_BASE_URL = 'https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/';
 const KG_PER_MM3_PER_G_PER_CM3 = 1e-6;
@@ -51,6 +52,7 @@ const state = {
   axesHelper: null,
   tcpMarker: null,
   centerMarker: null,
+  multiCenterHelper: null,
   helperScale: 100,
   pickMode: null,
   pointerDown: null,
@@ -60,6 +62,7 @@ const state = {
   snapType: 'auto',
   snapRadiusPx: 16,
   hoverSnap: null,
+  multiCircleCenters: [],
   occtPromise: null,
   sourceStepFile: null,
   exportingStep: false
@@ -95,6 +98,10 @@ function cacheElements() {
     snapMarker: document.getElementById('cad-snap-marker'),
     snapSymbol: document.getElementById('cad-snap-symbol'),
     snapLabel: document.getElementById('cad-snap-label'),
+    multiCenterControls: document.getElementById('cad-multi-center-controls'),
+    multiCenterCount: document.getElementById('cad-multi-center-count'),
+    multiCenterApply: document.getElementById('cad-multi-center-apply'),
+    multiCenterReset: document.getElementById('cad-multi-center-reset'),
     gridToggle: document.getElementById('cad-grid-toggle'),
     exportStep: document.getElementById('cad-export-step'),
     rotationHandlerToggle: document.getElementById('cad-rotation-handler'),
@@ -267,6 +274,79 @@ function createCenterOfMassMarker(size) {
   return group;
 }
 
+function isMultiCircleCenterMode() {
+  return state.snapType === 'multi-circle-center';
+}
+
+function getMultiCircleCenter() {
+  return new THREE.Vector3(...averageCircleCenters(state.multiCircleCenters.map((point) => point.toArray())));
+}
+
+function removeMultiCenterHelper() {
+  if (!state.multiCenterHelper) return;
+  state.multiCenterHelper.removeFromParent();
+  disposeHelper(state.multiCenterHelper);
+  state.multiCenterHelper = null;
+}
+
+function updateMultiCenterHelper() {
+  removeMultiCenterHelper();
+  if (!state.multiCircleCenters.length || !state.scene) return;
+
+  const group = new THREE.Group();
+  group.name = 'Multiple circle center selection';
+  const selectedSize = Math.max(state.helperScale * 0.025, 1);
+  state.multiCircleCenters.forEach((point) => {
+    const marker = new THREE.Mesh(
+      new THREE.SphereGeometry(selectedSize, 16, 12),
+      new THREE.MeshBasicMaterial({ color: 0xf472b6, depthTest: false })
+    );
+    marker.position.copy(point);
+    marker.renderOrder = 20;
+    group.add(marker);
+  });
+
+  if (state.multiCircleCenters.length >= 2) {
+    const center = getMultiCircleCenter();
+    const linePoints = state.multiCircleCenters.flatMap((point) => [point, center]);
+    const lines = new THREE.LineSegments(
+      new THREE.BufferGeometry().setFromPoints(linePoints),
+      new THREE.LineBasicMaterial({ color: 0x67e8f9, transparent: true, opacity: 0.72, depthTest: false })
+    );
+    lines.renderOrder = 19;
+    group.add(lines);
+    const centerMarker = new THREE.Mesh(
+      new THREE.OctahedronGeometry(Math.max(state.helperScale * 0.045, 1.8), 0),
+      new THREE.MeshBasicMaterial({ color: 0x22d3ee, depthTest: false })
+    );
+    centerMarker.position.copy(center);
+    centerMarker.renderOrder = 21;
+    group.add(centerMarker);
+  }
+
+  state.multiCenterHelper = group;
+  state.scene.add(group);
+}
+
+function updateMultiCenterControls() {
+  if (!el.multiCenterControls) return;
+  const count = state.multiCircleCenters.length;
+  el.multiCenterControls.hidden = !isMultiCircleCenterMode();
+  el.multiCenterCount.textContent = `${uiText('원의 중심점 선택')} ${count}/4`;
+  el.multiCenterApply.disabled = count < 2 || count > 4 || !state.pickMode;
+  el.multiCenterReset.disabled = count === 0;
+}
+
+function multiCenterInstruction() {
+  return `${uiText('원의 중심점 선택')} ${state.multiCircleCenters.length}/4 · ${uiText('원/호 중심점 2~4개를 선택하세요.')}`;
+}
+
+function resetMultiCircleCenters() {
+  state.multiCircleCenters = [];
+  removeMultiCenterHelper();
+  updateMultiCenterControls();
+}
+
 function createHelpers() {
   if (state.axesHelper) {
     state.axesHelper.removeFromParent();
@@ -406,6 +486,7 @@ function clearParts() {
   state.parts = [];
   state.snapCandidates = [];
   state.hoverSnap = null;
+  resetMultiCircleCenters();
   hideSnapMarker();
   state.centerMarker.visible = false;
   state.sourceStepFile = null;
@@ -415,9 +496,7 @@ function clearParts() {
 }
 
 function getDisplayColor(color) {
-  if (!Array.isArray(color) || color.length < 3) return MATERIALS.steel.color;
-  const divisor = Math.max(...color) > 1 ? 255 : 1;
-  return new THREE.Color(color[0] / divisor, color[1] / divisor, color[2] / divisor);
+  return new THREE.Color(cadColorToHex(color));
 }
 
 function createThreeGeometry(meshDefinition) {
@@ -478,6 +557,7 @@ async function loadStepFile(file) {
           mesh,
           geometry: geometryProperties,
           snapStats: snapData.stats,
+          sourceColorHex: cadColorToHex(meshDefinition.color),
           materialKey: 'steel',
           densityKgPerMm3: MATERIALS.steel.density,
           enabled: true
@@ -568,12 +648,10 @@ function updatePartFromControl(control) {
     part.materialKey = control.value;
     part.densityKgPerMm3 = MATERIALS[control.value].density;
     row.querySelector('[data-part-density]').value = Number((part.densityKgPerMm3 / KG_PER_MM3_PER_G_PER_CM3).toFixed(6));
-    part.mesh.material.color.setHex(MATERIALS[control.value].color);
   } else if (control.matches('[data-part-density]')) {
     part.densityKgPerMm3 = Number(control.value) * KG_PER_MM3_PER_G_PER_CM3;
     part.materialKey = 'custom';
     row.querySelector('[data-part-material]').value = 'custom';
-    part.mesh.material.color.setHex(MATERIALS.custom.color);
   }
   el.result.classList.add('hide');
   state.centerMarker.visible = false;
@@ -633,12 +711,13 @@ function findSnapAtPointer(pointerEvent) {
   const pointerX = pointerEvent.clientX - bounds.left;
   const pointerY = pointerEvent.clientY - bounds.top;
   const enabledMeshes = state.parts.filter((part) => part.enabled).map((part) => part.mesh);
+  const requiredType = isMultiCircleCenterMode() ? 'circle-center' : state.snapType;
 
   let best = null;
   const nearbyCandidates = [];
   state.snapCandidates.forEach((candidate) => {
     if (!state.parts[candidate.partIndex]?.enabled) return;
-    if (state.snapType !== 'auto' && candidate.type !== state.snapType) return;
+    if (requiredType !== 'auto' && candidate.type !== requiredType) return;
     const projected = candidate.point.clone().project(state.camera);
     if (projected.z < -1 || projected.z > 1) return;
     const screenX = (projected.x * 0.5 + 0.5) * bounds.width;
@@ -666,7 +745,11 @@ function findSnapAtPointer(pointerEvent) {
 function showSnapMarker(snap) {
   if (!snap) {
     hideSnapMarker();
-    if (state.pickMode) el.snapReadout.textContent = uiText('현재 위치에 선택 가능한 스냅 후보가 없습니다.');
+    if (state.pickMode) {
+      el.snapReadout.textContent = isMultiCircleCenterMode()
+        ? multiCenterInstruction()
+        : uiText('현재 위치에 선택 가능한 스냅 후보가 없습니다.');
+    }
     return;
   }
   state.hoverSnap = snap;
@@ -686,7 +769,9 @@ function showSnapMarker(snap) {
 }
 
 function setPickMode(mode) {
-  state.pickMode = state.pickMode === mode ? null : mode;
+  const nextPickMode = state.pickMode === mode ? null : mode;
+  if (nextPickMode !== state.pickMode) resetMultiCircleCenters();
+  state.pickMode = nextPickMode;
   el.mode.querySelectorAll('[data-pick]').forEach((button) => button.classList.toggle('active', button.dataset.pick === state.pickMode));
   el.viewport.classList.toggle('is-picking', Boolean(state.pickMode));
   const messages = {
@@ -694,12 +779,63 @@ function setPickMode(mode) {
     tcp: 'TCP 위치를 선택하세요.'
   };
   updateRotationHandlerVisibility();
+  updateMultiCenterControls();
   if (state.pickMode) {
     setStatus(messages[state.pickMode]);
-    el.snapReadout.textContent = uiText('CAD 형상 위로 이동하면 스냅 후보가 표시됩니다.');
+    el.snapReadout.textContent = isMultiCircleCenterMode()
+      ? multiCenterInstruction()
+      : uiText('CAD 형상 위로 이동하면 스냅 후보가 표시됩니다.');
   } else {
     hideSnapMarker();
     if (state.parts.length) setStatus('STEP 파일 분석 완료', 'ok');
+  }
+}
+
+function commitSnapPoint(point, selectedLabel) {
+  if (state.pickMode === 'origin') {
+    state.origin.copy(point);
+    writeVectorInputs('origin', state.origin.toArray());
+  } else if (state.pickMode === 'tcp') {
+    state.tcp.copy(point);
+    writeVectorInputs('tcp', state.tcp.toArray());
+  }
+  const selectedPoint = formatSnapPoint(point);
+  updateHelpers();
+  setPickMode(null);
+  setStatus(`${selectedLabel} ${uiText('스냅 선택')} · ${selectedPoint}`, 'ok');
+  el.snapReadout.textContent = `${selectedLabel} · ${selectedPoint}`;
+  el.result.classList.add('hide');
+  state.centerMarker.visible = false;
+}
+
+function addMultiCircleCenter(snap) {
+  if (state.multiCircleCenters.length >= 4) {
+    setStatus('최대 4개까지 선택할 수 있습니다.', 'error');
+    return;
+  }
+  const duplicateTolerance = Math.max(state.helperScale * 1e-5, 1e-4);
+  if (state.multiCircleCenters.some((point) => point.distanceTo(snap.point) <= duplicateTolerance)) {
+    setStatus('중복된 원/호 중심점입니다.', 'error');
+    return;
+  }
+  state.multiCircleCenters.push(snap.point.clone());
+  updateMultiCenterHelper();
+  updateMultiCenterControls();
+  const countLabel = `${uiText('원의 중심점 선택')} ${state.multiCircleCenters.length}/4`;
+  if (state.multiCircleCenters.length >= 2) {
+    el.snapReadout.textContent = `${countLabel} · ${uiText('다중 원 중심점')} ${formatSnapPoint(getMultiCircleCenter())}`;
+  } else {
+    el.snapReadout.textContent = `${countLabel} · ${uiText('원/호 중심점 2~4개를 선택하세요.')}`;
+  }
+  setStatus(countLabel, 'ok');
+}
+
+function applyMultiCircleCenter() {
+  if (!state.pickMode || state.multiCircleCenters.length < 2 || state.multiCircleCenters.length > 4) return;
+  try {
+    commitSnapPoint(getMultiCircleCenter(), uiText('다중 원 중심점'));
+  } catch {
+    setStatus('원/호 중심점 2~4개를 선택하세요.', 'error');
   }
 }
 
@@ -732,21 +868,11 @@ function onPointerUp(event) {
   }
 
   try {
-    if (state.pickMode === 'origin') {
-      state.origin.copy(snap.point);
-      writeVectorInputs('origin', state.origin.toArray());
-    } else if (state.pickMode === 'tcp') {
-      state.tcp.copy(snap.point);
-      writeVectorInputs('tcp', state.tcp.toArray());
+    if (isMultiCircleCenterMode()) {
+      addMultiCircleCenter(snap);
+      return;
     }
-    const selectedLabel = uiText(snapTypeInfo(snap.type).label);
-    const selectedPoint = formatSnapPoint(snap.point);
-    updateHelpers();
-    setPickMode(null);
-    setStatus(`${selectedLabel} ${uiText('스냅 선택')} · ${selectedPoint}`, 'ok');
-    el.snapReadout.textContent = `${selectedLabel} · ${selectedPoint}`;
-    el.result.classList.add('hide');
-    state.centerMarker.visible = false;
+    commitSnapPoint(snap.point, uiText(snapTypeInfo(snap.type).label));
   } catch (error) {
     setStatus('좌표계 방향이 올바르지 않습니다.', 'error');
   }
@@ -846,7 +972,11 @@ async function exportStepWithToolFrame() {
       buffer,
       sourceName: state.sourceStepFile.name,
       originMm: state.origin.toArray(),
-      rotationDegrees: state.rotationDegrees.toArray()
+      rotationDegrees: state.rotationDegrees.toArray(),
+      cadParts: state.parts.map((part) => ({
+        name: part.name,
+        color: part.sourceColorHex
+      }))
     }, (message) => setStatus(message));
     downloadStepBuffer(result.buffer, result.fileName);
     setStatus(`STEP 파일 내보내기 완료 · ${result.fileName}`, 'ok');
@@ -868,6 +998,7 @@ function bindEvents() {
   el.mode.querySelectorAll('[data-pick]').forEach((button) => button.addEventListener('click', () => setPickMode(button.dataset.pick)));
   el.snapType.addEventListener('change', () => {
     state.snapType = el.snapType.value;
+    resetMultiCircleCenters();
     if (state.pickMode && state.lastPointer) showSnapMarker(findSnapAtPointer(state.lastPointer));
     else el.snapReadout.textContent = `${uiText('스냅 유형')} · ${uiText(el.snapType.selectedOptions[0].textContent)}`;
   });
@@ -878,6 +1009,11 @@ function bindEvents() {
   });
   el.gridToggle.addEventListener('click', toggleGrid);
   el.exportStep.addEventListener('click', exportStepWithToolFrame);
+  el.multiCenterApply.addEventListener('click', applyMultiCircleCenter);
+  el.multiCenterReset.addEventListener('click', () => {
+    resetMultiCircleCenters();
+    el.snapReadout.textContent = multiCenterInstruction();
+  });
   el.rotationHandlerToggle.addEventListener('change', updateRotationHandlerVisibility);
   el.mode.querySelectorAll('[data-vector]').forEach((input) => {
     const eventName = input.dataset.vector === 'rotation' ? 'input' : 'change';
@@ -896,6 +1032,7 @@ function bindEvents() {
   document.addEventListener('inorobot:languagechange', () => {
     renderParts();
     updateGridVisibility();
+    updateMultiCenterControls();
     if (state.hoverSnap) showSnapMarker(state.hoverSnap);
   });
 }
@@ -916,6 +1053,7 @@ function init() {
   updateHelpers();
   updateGridVisibility();
   updateRotationHandlerVisibility();
+  updateMultiCenterControls();
   window.ToolModeD = {
     activate() {
       requestAnimationFrame(() => {
@@ -931,6 +1069,7 @@ function init() {
         candidateCount: state.snapCandidates.length,
         gridVisible: state.gridVisible,
         pickMode: state.pickMode,
+        multiCircleCenters: state.multiCircleCenters.map((point) => point.toArray()),
         rotationDegrees: state.rotationDegrees.toArray(),
         axisDirections: {
           x: state.xDirection.toArray(),

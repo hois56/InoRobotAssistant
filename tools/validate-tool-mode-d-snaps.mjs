@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { buildStepSnapCandidates } from '../3_ToolSelector/snap-geometry.mjs';
+import { averageCircleCenters, buildStepSnapCandidates } from '../3_ToolSelector/snap-geometry.mjs';
 
 const modeDSource = readFileSync(new URL('../3_ToolSelector/mode-d.js', import.meta.url), 'utf8');
 const modeDStyles = readFileSync(new URL('../3_ToolSelector/mode-d.css', import.meta.url), 'utf8');
@@ -45,6 +45,13 @@ assert.match(modeDHtml, /data-vector="rotation" data-axis="y"/);
 assert.match(modeDHtml, /data-vector="rotation" data-axis="z"/);
 assert.doesNotMatch(modeDHtml, /data-pick="(?:x|y)"/);
 assert.match(modeDHtml, /data-axis-direction="z"/);
+assert.match(modeDHtml, />좌표계 방향 \(deg\)</);
+assert.doesNotMatch(modeDHtml, /id="cad-rotation-handler"[^>]*checked/);
+assert.match(modeDHtml, /value="multi-circle-center"/);
+assert.match(modeDHtml, /id="cad-multi-center-apply"/);
+assert.match(modeDHtml, /id="cad-multi-center-reset"/);
+assert.match(modeDSource, /requiredType\s*=\s*isMultiCircleCenterMode\(\)\s*\?\s*'circle-center'/);
+assert.match(modeDSource, /multiCircleCenters\.length\s*>=\s*4/);
 assert.match(modeDHtml, />에지 중심점</);
 assert.match(modeDHtml, />면 중심점</);
 assert.match(modeDHtml, />원\/호 중심점</);
@@ -52,6 +59,13 @@ assert.match(modeDHtml, />형상 중심점</);
 assert.doesNotMatch(modeDHtml, /value="surface"/);
 assert.doesNotMatch(modeDHtml, /면 위 자유점/);
 assert.doesNotMatch(modeDSource, /type:\s*'surface'/);
+
+assert.deepEqual(averageCircleCenters([[0, 0, 0], [10, 0, 0]]), [5, 0, 0]);
+assert.deepEqual(averageCircleCenters([[0, 0, 0], [12, 0, 0], [0, 12, 0]]), [4, 4, 0]);
+assert.deepEqual(averageCircleCenters([[0, 0, 0], [8, 0, 0], [8, 8, 0], [0, 8, 0]]), [4, 4, 0]);
+assert.throws(() => averageCircleCenters([[0, 0, 0]]), RangeError);
+assert.throws(() => averageCircleCenters(Array.from({ length: 5 }, () => [0, 0, 0])), RangeError);
+assert.throws(() => averageCircleCenters([[0, 0, 0], [Number.NaN, 0, 0]]), TypeError);
 
 const positions = [
   [0, 0, 0], [100, 0, 0], [100, 200, 0], [0, 200, 0],

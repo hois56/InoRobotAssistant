@@ -1,12 +1,16 @@
 import opencascade from 'https://cdn.jsdelivr.net/npm/replicad-opencascadejs@0.23.0/src/replicad_single.js';
 import {
+  cast,
   exportSTEP,
   importSTEP,
+  iterTopo,
   setOC
 } from 'https://esm.sh/replicad@0.23.0?bundle';
 import {
   buildWorldToToolTransform,
-  createStepExportFileName
+  createStepExportFileName,
+  DEFAULT_CAD_COLOR_HEX,
+  normalizeCadColorHex
 } from './step-export-transform.mjs';
 
 const OPENCASCADE_WASM_URL = 'https://cdn.jsdelivr.net/npm/replicad-opencascadejs@0.23.0/src/replicad_single.wasm';
@@ -31,10 +35,31 @@ async function ensureCadApi() {
   return cadApiReadyPromise;
 }
 
+function createColorPreservingExportItems(shape, cadParts, exportName) {
+  const parts = Array.isArray(cadParts) ? cadParts : [];
+  const normalizedParts = parts.map((part, index) => ({
+    name: String(part?.name || `Part ${index + 1}`),
+    color: normalizeCadColorHex(part?.color)
+  }));
+  const solidShapes = Array.from(iterTopo(shape.wrapped, 'solid'), (solid) => cast(solid));
+  if (solidShapes.length && solidShapes.length === normalizedParts.length) {
+    return solidShapes.map((solid, index) => ({
+      shape: solid,
+      name: normalizedParts[index].name,
+      color: normalizedParts[index].color
+    }));
+  }
+  return [{
+    shape,
+    name: exportName.replace(/\.step$/i, ''),
+    color: normalizedParts[0]?.color || DEFAULT_CAD_COLOR_HEX
+  }];
+}
+
 self.addEventListener('message', async (event) => {
   let shape = null;
   try {
-    const { buffer, sourceName, originMm, rotationDegrees } = event.data || {};
+    const { buffer, sourceName, originMm, rotationDegrees, cadParts } = event.data || {};
     if (!(buffer instanceof ArrayBuffer)) throw new Error('STEP source data is missing.');
     reportProgress('STEP 파일 내보내기 엔진을 준비하는 중입니다.');
     await ensureCadApi();
@@ -49,9 +74,8 @@ self.addEventListener('message', async (event) => {
 
     reportProgress('STEP 파일을 생성하는 중입니다.');
     const exportName = createStepExportFileName(sourceName);
-    const output = exportSTEP([
-      { shape, name: exportName.replace(/\.step$/i, '') }
-    ], { unit: 'MM', modelUnit: 'MM' });
+    const exportItems = createColorPreservingExportItems(shape, cadParts, exportName);
+    const output = exportSTEP(exportItems, { unit: 'MM', modelUnit: 'MM' });
     const outputBuffer = await output.arrayBuffer();
     self.postMessage({
       type: 'complete',

@@ -15,12 +15,9 @@ import {
     calculateDelayDuration,
     calculateCycleElapsedSeconds,
     cloneMotionProgram,
+    reorderMotionSteps,
     normalizeMotionProject
 } from '../2_3DSimulation/motion-program-core.mjs';
-import {
-    aabbOverlapDepth,
-    hasMeaningfulAabbOverlap
-} from '../2_3DSimulation/collision-core.mjs';
 
 const closeTo = (actual, expected, epsilon = 1e-9) => {
     assert.ok(Math.abs(actual - expected) <= epsilon, `${actual} is not within ${epsilon} of ${expected}`);
@@ -30,17 +27,6 @@ closeTo(smoothstep(0), 0);
 closeTo(smoothstep(0.5), 0.5);
 closeTo(smoothstep(1), 1);
 assert.ok(smoothstep(0.25) < smoothstep(0.5));
-
-const makeAabb = (min, max) => ({
-    min: { x: min[0], y: min[1], z: min[2] },
-    max: { x: max[0], y: max[1], z: max[2] }
-});
-const unitAabb = makeAabb([0, 0, 0], [10, 10, 10]);
-assert.deepEqual(aabbOverlapDepth(unitAabb, makeAabb([8, 7, 6], [18, 17, 16])), { x: 2, y: 3, z: 4 });
-assert.equal(hasMeaningfulAabbOverlap(unitAabb, makeAabb([8, 8, 8], [18, 18, 18])), true);
-assert.equal(hasMeaningfulAabbOverlap(unitAabb, makeAabb([10, 0, 0], [20, 10, 10])), false, 'Touching faces are not a collision.');
-assert.equal(hasMeaningfulAabbOverlap(unitAabb, makeAabb([11, 0, 0], [21, 10, 10])), false, 'Separated boxes are not a collision.');
-assert.equal(hasMeaningfulAabbOverlap(unitAabb, makeAabb([9.5, 0, 0], [19.5, 10, 10])), false, 'Sub-millimetre AABB noise is ignored.');
 
 const lineStart = [10, -20, 30];
 const lineTarget = [110, 180, -70];
@@ -118,7 +104,7 @@ viewerLocaleKeySets.slice(1).forEach((keys, index) => {
 
 const viewerTranslationSources = new Set([
     'Program', 'Program Panel', 'ROBOTS', 'CYCLE TIME',
-    '대기', '실행 중', '일시정지', '완료', '오류', '충돌', '정지됨',
+    '대기', '실행 중', '일시정지', '완료', '오류', '정지됨',
     '사이클 타임 측정 중', '사이클 타임',
     'Tool이 TCP에 부착되었습니다.', '설비를 불러왔습니다.',
     '자세, DELAY 또는 타이머 명령을 추가하세요.', '프로그램 가능한 로봇이 없습니다.',
@@ -266,6 +252,13 @@ assert.equal(clonedDelayProgram.steps[2].delaySeconds, 1.5);
 assert.equal(clonedDelayProgram.steps[3].motion, 'TIME_START');
 assert.equal(clonedDelayProgram.steps[4].motion, 'TIME_OUT');
 assert.equal(clonedDelayProgram.lastCycleTimeSeconds, 12.345);
+const reorderedSteps = [{ id: 'P1' }, { id: 'P2' }, { id: 'P3' }, { id: 'P4' }];
+assert.equal(reorderMotionSteps(reorderedSteps, 'P1', 'P4', true), true);
+assert.deepEqual(reorderedSteps.map((step) => step.id), ['P2', 'P3', 'P4', 'P1']);
+assert.equal(reorderMotionSteps(reorderedSteps, 'P1', 'P2', false), true);
+assert.deepEqual(reorderedSteps.map((step) => step.id), ['P1', 'P2', 'P3', 'P4']);
+assert.equal(reorderMotionSteps(reorderedSteps, 'P2', 'P1', true), false);
+assert.equal(reorderMotionSteps(reorderedSteps, 'missing', 'P1', false), false);
 assert.deepEqual(normalizeMotionProject(JSON.parse(JSON.stringify(normalized))), normalized);
 const legacyRepeatProject = structuredClone(fullProject);
 delete legacyRepeatProject.repeatCurrentRobot;
@@ -298,8 +291,6 @@ assert.throws(() => normalizeMotionProject(duplicateSteps), /Duplicate step id/)
 
 [
     'program-panel',
-    'collision-alert',
-    'collision-alert-text',
     'program-robot-list',
     'program-step-list',
     'program-add-delay',
@@ -324,10 +315,6 @@ assert.deepEqual(programControlRows, [
 ], 'Current and checked robot rows must share the Step Into, play, pause, stop and repeat layout.');
 [
     'function updateMotionSessions(',
-    'function updateRobotCollisions(',
-    'function addCollisionHighlight(',
-    'function removeCollisionHighlight(',
-    'function updateCollisionAlert(',
     'function preflightRobotMotion(',
     'function addDelayMotionStep(',
     'function addTimerMotionStep(',
@@ -374,30 +361,43 @@ assert.deepEqual(programControlRows, [
     'localStorage.setItem(MOTION_PROJECT_STORAGE_KEY',
     'window.showSaveFilePicker({',
     'await fileHandle.createWritable()',
-    "startIn: 'documents'",
-    'new OBB(',
-    'localBox: box.clone()',
-    'hasMeaningfulAabbOverlap(leftPart.aabb, rightPart.aabb)',
-    'if (!obbCollision && !fallbackCollision) continue'
+    "startIn: 'documents'"
 ].forEach((marker) => assert.ok(mainSource.includes(marker), `Missing integration marker: ${marker}`));
-const collisionSource = mainSource.slice(
-    mainSource.indexOf('function updateRobotCollisions('),
-    mainSource.indexOf('function applyFBXMaterial(')
+assert.ok(!mainSource.includes('updateRobotCollisions'), 'Approximate robot collision checks must remain removed.');
+assert.ok(!mainSource.includes('prepareRobotCollisionParts'), 'Robot links must not create box collision volumes.');
+assert.ok(!mainSource.includes('collisionHelpers'), 'Collision warning boxes must remain removed.');
+assert.ok(htmlSource.includes('main.js?v=20260717-joint-directions2'), 'Viewer cache token must load the current simulation bundle.');
+assert.ok(
+    mainSource.includes("allRobotsIncluded ? '전체 해제' : '전체 선택'")
+        && mainSource.includes('function toggleAllProgramRobots()')
+        && mainSource.includes('robots.some((robot) => !ensureMotionProgram(robot).included)'),
+    'The Program Panel select-all control must switch to deselect-all when every robot is included.'
 );
-assert.ok(!/finishRobotMotionSession|stopRobotMotions/.test(collisionSource), 'Collision warnings must not stop motion.');
-assert.ok(mainSource.includes("object.name === 'CD conduit'"), 'CD conduit must be excluded from collision OBBs.');
-assert.ok(mainSource.includes('const MOTION_COLLISION_INTERVAL = 100'), 'Collision interval must remain 100 ms.');
-assert.ok(mainSource.includes('highlighted.color?.set(0xef4444)'), 'Colliding robot links must turn red.');
-assert.ok(mainSource.includes('mesh.material = highlight.originalMaterial'), 'Collision highlighting must restore the original link material.');
-assert.ok(mainSource.includes('updateCollisionAlert(collisionPairs)'), 'Collision pairs must update the viewport alert.');
-assert.ok(mainSource.includes("./collision-core.mjs?v=20260717-collision-fallback1"), 'Collision fallback cache token must be current.');
-assert.ok(htmlSource.includes('main.js?v=20260717-base-jog-gizmo-thickness1'), 'Viewer cache token must load the emphasized Base JOG gizmo.');
 assert.ok(mainSource.includes('BASE_JOG_GIZMO_MESH_THICKNESS = 1.55'), 'Base JOG axis meshes must remain visually thicker than TCP axes.');
 assert.ok(mainSource.includes('BASE_JOG_GIZMO_STROKE_RADIUS = 0.014'), 'Base JOG line handles must use a cross-platform mesh stroke.');
+assert.ok(mainSource.includes('BASE_JOG_GIZMO_ACTIVE_STROKE_RADIUS = 0.022'), 'The selected Base JOG axis must use a thicker active stroke.');
+assert.ok(mainSource.includes('BASE_JOG_GIZMO_ACTIVE_COLOR_SCALE = 0.58'), 'The selected Base JOG axis must use a darker active color.');
 assert.ok(mainSource.includes('emphasizeBaseJogTransformControls(controls)'), 'Base JOG controls must apply the emphasized handle treatment.');
-assert.ok(htmlSource.includes('style.css?v=20260717-panel-edge-resize1'), 'Stylesheet cache token must load panel edge cursors.');
-assert.match(htmlSource, /id="collision-alert"[^>]*role="alert"[^>]*aria-live="assertive"/);
-assert.match(cssSource, /\.collision-alert\s*\{[^}]*position:\s*absolute[^}]*background:\s*rgba\(127,\s*29,\s*29,\s*0\.94\)/s);
+assert.ok(mainSource.includes('function createPolylineCurve(points, closed)'), 'Rotation handles must preserve their source polyline without spline warping.');
+assert.ok(!mainSource.includes('new THREE.CatmullRomCurve3(points'), 'Base JOG rotation strokes must not use spline interpolation.');
+assert.ok(mainSource.includes('configureBaseJogActiveStroke(activeStroke, transformControls)'), 'Base JOG handles must render an active-axis stroke.');
+assert.ok(mainSource.includes('function isNegativeBaseJogArrow(object)'), 'Base JOG controls must identify reverse arrowheads.');
+assert.ok(mainSource.includes('negativeArrowHandles.forEach((arrowHandle) => arrowHandle.removeFromParent())'), 'Base JOG controls must show arrowheads only in positive directions.');
+assert.ok(!mainSource.includes('rebaseEquipmentToFloorCenter'), 'Equipment import must not recenter the source geometry.');
+assert.ok(mainSource.includes("importedModel.userData.equipmentAnchor = 'source-origin'"), 'Equipment imports must record source-origin anchoring.');
+assert.ok(mainSource.includes('importedModel.position.set(0, 0, 0)'), 'Equipment source origin must align with the scene Base origin.');
+assert.ok(mainSource.includes('BASE_JOG_MAX_VISIBLE_LINE_SPAN = 10'), 'Base JOG controls must identify oversized guide lines.');
+assert.ok(mainSource.includes("object.tag === 'helper' || scaledSpan > BASE_JOG_MAX_VISIBLE_LINE_SPAN"), 'Base JOG helper axes must be excluded from visible strokes.');
+assert.ok(mainSource.includes('infiniteGuideHandles.forEach((guideHandle) => guideHandle.removeFromParent())'), 'Base JOG controls must remove infinite drag guides.');
+assert.ok(htmlSource.includes('style.css?v=20260717-jog-button-layout1'), 'Stylesheet cache token must load the current simulation styles.');
+assert.doesNotMatch(htmlSource, /id="collision-alert"/);
+assert.doesNotMatch(cssSource, /\.collision-alert\s*\{/);
+assert.match(htmlSource, /id="import-dialog-title">3D 모델 가져오기 방식<\/h2>/);
+assert.match(htmlSource, /<select id="import-placement"[^>]*>[\s\S]*?<option value="tcp">Tool<\/option>[\s\S]*?<option value="scene">3D 모델링<\/option>/);
+assert.doesNotMatch(htmlSource, />배치 방식<\/span>/);
+assert.match(cssSource, /\.import-dialog\s*\{[^}]*position:\s*fixed[^}]*top:\s*50%[^}]*left:\s*50%[^}]*margin:\s*0[^}]*transform:\s*translate\(-50%,\s*-50%\)/s);
+assert.ok(mainSource.includes("sceneOption.textContent = uiText('3D 모델링')")
+    && mainSource.includes("tcpOption.textContent = uiText('Tool')"), 'Import placement labels must remain Tool and 3D Model.');
 assert.match(
     mainSource,
     /if \(robot === state\.activeArticulatedModel\) syncJointControls\(robot\);\r?\n\s*updateTcpPresentation\(robot\);/,
@@ -405,11 +405,40 @@ assert.match(
 );
 assert.match(cssSource, /\.program-panel\s*\{/);
 assert.match(cssSource, /\.program-panel-content\s*\{[^}]*overflow-y:\s*auto/s);
-assert.match(cssSource, /\.program-robot-row\.collision/);
+assert.doesNotMatch(cssSource, /\.program-robot-row\.collision/);
 assert.match(cssSource, /\.program-step-row\.delay/);
 assert.match(cssSource, /\.program-step-row\.timer/);
 assert.match(cssSource, /\.program-cycle-time\s*\{/);
-assert.ok(mainSource.includes("['TIME_START', 'T.START']") && mainSource.includes("['TIME_OUT', 'T.OUT']"), 'Program rows must expose cycle timer commands.');
+assert.match(cssSource, /\.program-step-list\s*\{[^}]*grid-auto-rows:\s*42px[^}]*align-content:\s*start/s, 'Program rows must not stretch when the panel is resized.');
+assert.match(cssSource, /\.program-step-row\s*\{[^}]*height:\s*42px[^}]*min-height:\s*42px[^}]*max-height:\s*42px/s, 'Every program command row must keep a fixed height.');
+assert.ok(mainSource.includes("const row = event.target.closest('[data-program-step-id]')"), 'Program command selection must use the full row hit box.');
+assert.ok(mainSource.includes('program.selectedStepId = row.dataset.programStepId'), 'Clicking a program row must select that command.');
+assert.ok(
+    mainSource.includes("addEventListener('dragstart', handleProgramStepDragStart)")
+        && mainSource.includes("addEventListener('dragover', handleProgramStepDragOver)")
+        && mainSource.includes("addEventListener('drop', handleProgramStepDrop)")
+        && mainSource.includes('reorderMotionSteps(program?.steps, sourceStepId, target.stepId, target.placeAfter)'),
+    'Program commands must support drag-and-drop reordering.'
+);
+assert.match(cssSource, /\.program-step-drag-handle\s*\{[^}]*cursor:\s*grab/s, 'Program rows must expose a visible drag handle.');
+assert.match(cssSource, /\.program-step-row\.drag-over-before::before/s, 'Program rows must show the drag insertion position.');
+assert.ok(
+    mainSource.includes("['MOVJ', 'MovJ']")
+        && mainSource.includes("['MOVL', 'MovL']")
+        && mainSource.includes("['DELAY', 'Delay']")
+        && mainSource.includes("['TIME_START', 'T.Start']")
+        && mainSource.includes("['TIME_OUT', 'T.Out']"),
+    'Program rows must use the requested command capitalization.'
+);
+assert.doesNotMatch(htmlSource, /id="program-step-(?:up|down)"/, 'Drag reordering must replace the Program Panel up/down buttons.');
+assert.ok(!mainSource.includes('btnProgramUp:') && !mainSource.includes('btnProgramDown:'), 'Removed Program Panel arrows must not retain handlers.');
+assert.match(cssSource, /\.program-step-select\s*\{[^}]*flex:\s*0 0 48px[^}]*min-width:\s*48px/s, 'Program point names must use the compact width.');
+assert.match(cssSource, /\.program-step-speed\s*\{[^}]*width:\s*50px/s, 'Program speed inputs must use the compact width.');
+assert.match(htmlSource, /id="btn-import-3d"[^>]*>[\s\S]*?fa-cube[\s\S]*?<span>3D<\/span>/, 'The 3D import button must show a cube icon and 3D label.');
+assert.ok(
+    mainSource.includes("insertBefore(programButton, virtualButton || divider)"),
+    'The Program launcher must be inserted immediately before the Virtual launcher.'
+);
 const preflightSource = mainSource.slice(
     mainSource.indexOf('function preflightRobotMotion('),
     mainSource.indexOf('function createMotionSession(')
@@ -434,12 +463,13 @@ assert.ok(
 );
 assert.ok(!htmlSource.includes('id="program-panel-resize"'), 'Panel resizing must not require a header button.');
 assert.ok(mainSource.includes('function makePanelEdgeResizable('), 'Panels must support classic edge resizing.');
-assert.ok(mainSource.includes('[el.modelBrowserPanel, el.jogPanel, el.programPanel].forEach(makePanelEdgeResizable)'), 'Model, JOG and Program panels must all use edge resizing.');
+assert.ok(mainSource.includes('[el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.programPanel].forEach(makePanelEdgeResizable)'), 'Model, JOG, Virtual Controller and Program panels must all use edge resizing.');
 assert.ok(mainSource.includes("'model-browser-panel': { width: 260, height: 220 }")
     && mainSource.includes("'jog-panel': { width: 250, height: 300 }")
+    && mainSource.includes("'virtual-controller-panel': { width: 250, height: 230 }")
     && mainSource.includes("'program-panel': { width: 300, height: 320 }"), 'Resizable panels must preserve usable minimum sizes.');
 assert.ok(mainSource.includes("dataset.userResized === 'true'"), 'Resized panels must be constrained after viewport changes.');
 assert.match(cssSource, /\.panel-edge-resizable:is\(\[data-resize-edge="e"\], \[data-resize-edge="w"\]\)[^{]*\{[^}]*cursor:\s*ew-resize/s);
 assert.match(cssSource, /\.panel-edge-resizable:is\(\[data-resize-edge="n"\], \[data-resize-edge="s"\]\)[^{]*\{[^}]*cursor:\s*ns-resize/s);
 
-console.log(`Motion program core OK: ${models.length} robots (${scaraCount} SCARA, ${sixAxisCount} six-axis), MOVJ/MOVL/DELAY timing, cycle timers, four-robot numerical stress, JSON round trip, collision policy and schema checks`);
+console.log(`Motion program core OK: ${models.length} robots (${scaraCount} SCARA, ${sixAxisCount} six-axis), MOVJ/MOVL/DELAY timing, cycle timers, four-robot numerical stress, JSON round trip and schema checks`);

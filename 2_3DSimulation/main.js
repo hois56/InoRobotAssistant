@@ -11,8 +11,6 @@ import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { OBB } from 'three/addons/math/OBB.js';
-import { hasMeaningfulAabbOverlap } from './collision-core.mjs?v=20260717-collision-fallback1';
 import {
     MOTION_PROJECT_SCHEMA_VERSION,
     DEFAULT_MOVJ_SPEED,
@@ -30,9 +28,9 @@ import {
     calculateCycleElapsedSeconds,
     createEmptyMotionProgram,
     cloneMotionProgram,
+    reorderMotionSteps,
     normalizeMotionProject
-} from './motion-program-core.mjs?v=20260717-cycle-time-stopwatch2';
-
+} from './motion-program-core.mjs?v=20260717-program-drag-reorder1';
 function uiText(value) {
     return window.InoRobotI18n ? window.InoRobotI18n.translate(String(value)) : String(value);
 }
@@ -56,6 +54,7 @@ const state = {
     pendingNumericHistory: null,
     pendingJointHistory: null,
     pendingBaseJogHistory: null,
+    programStepDragId: null,
     pendingBaseJogGizmoHistory: null,
     pendingBaseJogNumericHistory: null,
     panelWindows: new Map(),
@@ -76,13 +75,23 @@ const state = {
     motionRepeat: false,
     motionHistoryBefore: null,
     motionSaveTimer: null,
-    collisionRobotIds: new Set(),
-    collisionHelpers: new Map(),
-    collisionHighlights: new Map(),
-    lastCollisionCheck: 0,
     lastCycleTimeDisplayUpdate: 0,
     viewerStatus: null,
     motionProgramStatus: null,
+    virtualController: {
+        core: null,
+        corePromise: null,
+        socket: null,
+        wanted: false,
+        status: 'disconnected',
+        targetRobotId: null,
+        samples: null,
+        reconnectTimer: null,
+        historyBefore: null,
+        lastAppliedAt: 0,
+        lastRateUpdateAt: 0,
+        consecutiveIkFailures: 0
+    },
     pendingImportFile: null,
     occtImporterPromise: null,
     grid: null, baseAxes: null, labels: [],
@@ -126,7 +135,6 @@ const el = {
     modelTransformPanel: document.getElementById('model-transform-panel'),
     modelNumericTransform: document.getElementById('model-numeric-transform'),
     selectedModelName: document.getElementById('selected-model-name'),
-    selectedCoordinateLabel: document.getElementById('selected-coordinate-label'),
     modelPositionInputs: {
         x: document.getElementById('model-position-x'),
         y: document.getElementById('model-position-y'),
@@ -174,8 +182,6 @@ const el = {
     btnProgramAddTimeStart: document.getElementById('program-add-time-start'),
     btnProgramAddTimeOut: document.getElementById('program-add-time-out'),
     btnProgramUpdate: document.getElementById('program-update-step'),
-    btnProgramUp: document.getElementById('program-step-up'),
-    btnProgramDown: document.getElementById('program-step-down'),
     btnProgramDelete: document.getElementById('program-delete-step'),
     btnProgramStepRobot: document.getElementById('program-step-robot'),
     btnProgramRunRobot: document.getElementById('program-run-robot'),
@@ -190,8 +196,12 @@ const el = {
     btnProgramExport: document.getElementById('program-export'),
     btnProgramImport: document.getElementById('program-import'),
     inputProgramImport: document.getElementById('program-import-file'),
-    collisionAlert: document.getElementById('collision-alert'),
-    collisionAlertText: document.getElementById('collision-alert-text'),
+    virtualControllerPanel: document.getElementById('virtual-controller-panel'),
+    virtualControllerRobot: document.getElementById('virtual-controller-robot'),
+    btnVirtualControllerConnect: document.getElementById('virtual-controller-connect'),
+    virtualControllerStatus: document.getElementById('virtual-controller-status'),
+    virtualControllerStatusDot: document.getElementById('virtual-controller-status-dot'),
+    virtualControllerRate: document.getElementById('virtual-controller-rate'),
     btnAddMode:      null 
 };
 
@@ -200,13 +210,17 @@ const IK_MAX_ITERATIONS = 120;
 const IK_DAMPING = 0.035;
 const IK_MAX_JOINT_STEP = THREE.MathUtils.degToRad(5);
 const IK_MAX_PRISMATIC_STEP = 12;
-const CONTROLLER_REVOLUTE_DIRECTION = -1;
+const REVOLUTE_DIRECTION_NEGATIVE = -1;
+const REVOLUTE_DIRECTION_POSITIVE = 1;
 const CONTROLLER_PRISMATIC_DIRECTION = 1;
 const ROBOT_BODY_COLOR = '#ece9dd';
 const AXIS_COLORS = Object.freeze({ x: '#d32f2f', y: '#388e3c', z: '#1976d2' });
 const BASE_JOG_GIZMO_SIZE = 0.82;
 const BASE_JOG_GIZMO_MESH_THICKNESS = 1.55;
 const BASE_JOG_GIZMO_STROKE_RADIUS = 0.014;
+const BASE_JOG_GIZMO_ACTIVE_STROKE_RADIUS = 0.022;
+const BASE_JOG_GIZMO_ACTIVE_COLOR_SCALE = 0.58;
+const BASE_JOG_MAX_VISIBLE_LINE_SPAN = 10;
 const SCARA_TOOL_AXES = { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] };
 const SIX_AXIS_TOOL_AXES = { x: [0, 0, 1], y: [0, -1, 0], z: [1, 0, 0] };
 const stlGeometryCache = new Map();
@@ -217,7 +231,6 @@ const Y_UP_IMPORT_EXTENSIONS = new Set(['fbx', 'glb', 'gltf']);
 const IMPORT_PLACEMENT_COLORS = { tcp: 0xf97316, scene: 0x65a30d };
 const OCCT_IMPORT_BASE_URL = 'https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/';
 const MOTION_PROJECT_STORAGE_KEY = 'inorobot.3d-simulation.motion-project.v1';
-const MOTION_COLLISION_INTERVAL = 100;
 const CYCLE_TIME_DISPLAY_INTERVAL = 50;
 const MAX_MOTION_TRANSITIONS_PER_FRAME = 256;
 const MOTION_MOVL_SAMPLE_DISTANCE = 25;
@@ -226,6 +239,7 @@ const PANEL_RESIZE_EDGE_SIZE = 8;
 const PANEL_MINIMUM_SIZES = Object.freeze({
     'model-browser-panel': { width: 260, height: 220 },
     'jog-panel': { width: 250, height: 300 },
+    'virtual-controller-panel': { width: 250, height: 230 },
     'program-panel': { width: 300, height: 320 }
 });
 
@@ -266,8 +280,9 @@ function setupUI() {
         programButton.disabled = true;
         programButton.title = uiText('모션 프로그램 표시/숨김');
         programButton.innerHTML = `<i class="fa-solid fa-list-check"></i> ${uiText('Program')}`;
+        const virtualButton = el.panelLauncher.querySelector('[data-panel-toggle="virtual-controller-panel"]');
         const divider = el.panelLauncher.querySelector('.viewer-control-divider');
-        el.panelLauncher.insertBefore(programButton, divider);
+        el.panelLauncher.insertBefore(programButton, virtualButton || divider);
     }
     
     // Update CAD download button title
@@ -295,13 +310,9 @@ function refreshLocalizedControls() {
         record.popup.document.title = getPanelWindowTitle(panelId);
     });
     renderModelTree();
-    if (state.selectedModel && el.selectedCoordinateLabel) {
-        el.selectedCoordinateLabel.textContent = uiText(
-            state.selectedModel.userData.placement === 'tcp' ? 'TOOL' : 'BASE'
-        );
-    }
     refreshJointControlLabels();
     renderMotionProgramPanel();
+    refreshVirtualControllerUi();
     refreshViewerStatus();
     refreshMotionProgramStatus();
     if (el.baseJogStatus?.dataset.sourceMessage) {
@@ -418,12 +429,20 @@ function setupBaseJogTransformControls() {
     controls.setSpace('local');
     controls.visible = false;
     controls.enabled = false;
+    controls.userData.baseJogActiveAxis = null;
     controls.addEventListener('dragging-changed', (event) => {
         state.controls.enabled = !event.value;
+        if (!event.value) controls.userData.baseJogActiveAxis = null;
+    });
+    controls.addEventListener('mouseDown', () => {
+        controls.userData.baseJogActiveAxis = controls.axis;
     });
     controls.addEventListener('mouseDown', beginBaseJogGizmoDrag);
     controls.addEventListener('objectChange', applyBaseJogGizmoTarget);
     controls.addEventListener('mouseUp', endBaseJogGizmoDrag);
+    controls.addEventListener('mouseUp', () => {
+        controls.userData.baseJogActiveAxis = null;
+    });
     removeRotationScreenHandle(controls);
     emphasizeBaseJogTransformControls(controls);
     applyTransformControlColors(controls);
@@ -520,21 +539,35 @@ function setupEventListeners() {
     el.btnRedo?.addEventListener('click', redoLastAction);
     makePanelDraggable(el.modelBrowserPanel, el.modelBrowserPanel.querySelector('.model-browser-header'));
     makePanelDraggable(el.jogPanel, el.jogPanel.querySelector('.jog-panel-header'));
+    makePanelDraggable(el.virtualControllerPanel, el.virtualControllerPanel?.querySelector('.virtual-controller-header'));
     makePanelDraggable(el.programPanel, el.programPanel?.querySelector('.program-panel-header'));
-    [el.modelBrowserPanel, el.jogPanel, el.programPanel].forEach(makePanelEdgeResizable);
+    [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.programPanel].forEach(makePanelEdgeResizable);
+
+    el.virtualControllerRobot?.addEventListener('change', () => {
+        if (isVirtualControllerActive()) return;
+        state.virtualController.targetRobotId = el.virtualControllerRobot.value || null;
+        state.virtualController.samples?.clear();
+        refreshVirtualControllerUi();
+    });
+    el.btnVirtualControllerConnect?.addEventListener('click', () => {
+        if (state.virtualController.wanted) disconnectVirtualController();
+        else void connectVirtualController();
+    });
 
     el.programRobotList?.addEventListener('click', handleProgramRobotListClick);
     el.programRobotList?.addEventListener('change', handleProgramRobotListChange);
     el.programStepList?.addEventListener('click', handleProgramStepListClick);
     el.programStepList?.addEventListener('change', handleProgramStepListChange);
-    el.btnProgramSelectAll?.addEventListener('click', selectAllProgramRobots);
+    el.programStepList?.addEventListener('dragstart', handleProgramStepDragStart);
+    el.programStepList?.addEventListener('dragover', handleProgramStepDragOver);
+    el.programStepList?.addEventListener('drop', handleProgramStepDrop);
+    el.programStepList?.addEventListener('dragend', handleProgramStepDragEnd);
+    el.btnProgramSelectAll?.addEventListener('click', toggleAllProgramRobots);
     el.btnProgramAdd?.addEventListener('click', addCurrentMotionStep);
     el.btnProgramAddDelay?.addEventListener('click', addDelayMotionStep);
     el.btnProgramAddTimeStart?.addEventListener('click', () => addTimerMotionStep('TIME_START'));
     el.btnProgramAddTimeOut?.addEventListener('click', () => addTimerMotionStep('TIME_OUT'));
     el.btnProgramUpdate?.addEventListener('click', updateSelectedMotionStep);
-    el.btnProgramUp?.addEventListener('click', () => moveSelectedMotionStep(-1));
-    el.btnProgramDown?.addEventListener('click', () => moveSelectedMotionStep(1));
     el.btnProgramDelete?.addEventListener('click', deleteSelectedMotionStep);
     el.btnProgramStepRobot?.addEventListener('click', stepIntoActiveRobot);
     el.btnProgramRunRobot?.addEventListener('click', runActiveRobotProgram);
@@ -624,6 +657,7 @@ function setupEventListeners() {
     }
 
     window.addEventListener('beforeunload', () => {
+        closeVirtualControllerSocket(false);
         saveMotionProjectNow();
         [...state.panelWindows.keys()].forEach((panelId) => restorePanelFromWindow(panelId, true));
     });
@@ -665,7 +699,41 @@ function removeRotationScreenHandle(transformControls) {
     transformControls.userData.removedScreenRotationHandles = handles.length;
 }
 
-function createBaseJogHandleStroke(lineHandle) {
+function createPolylineCurve(points, closed) {
+    const pathPoints = points.reduce((result, point) => {
+        if (!result.length || result.at(-1).distanceTo(point) > 1e-8) result.push(point.clone());
+        return result;
+    }, []);
+    if (closed && pathPoints.length > 2 && pathPoints[0].distanceTo(pathPoints.at(-1)) < 1e-8) {
+        pathPoints.pop();
+    }
+    if (closed && pathPoints.length > 2) pathPoints.push(pathPoints[0].clone());
+
+    const cumulativeLengths = [0];
+    for (let index = 1; index < pathPoints.length; index += 1) {
+        cumulativeLengths.push(
+            cumulativeLengths[index - 1] + pathPoints[index - 1].distanceTo(pathPoints[index])
+        );
+    }
+    const totalLength = cumulativeLengths.at(-1);
+    if (!Number.isFinite(totalLength) || totalLength <= Number.EPSILON) return null;
+
+    const curve = new THREE.Curve();
+    curve.getPoint = (t, target = new THREE.Vector3()) => {
+        const distance = THREE.MathUtils.clamp(t, 0, 1) * totalLength;
+        let segment = 1;
+        while (segment < cumulativeLengths.length - 1 && cumulativeLengths[segment] < distance) {
+            segment += 1;
+        }
+        const startDistance = cumulativeLengths[segment - 1];
+        const segmentLength = cumulativeLengths[segment] - startDistance;
+        const ratio = segmentLength > Number.EPSILON ? (distance - startDistance) / segmentLength : 0;
+        return target.copy(pathPoints[segment - 1]).lerp(pathPoints[segment], ratio);
+    };
+    return curve;
+}
+
+function createBaseJogHandleStroke(lineHandle, radius = BASE_JOG_GIZMO_STROKE_RADIUS) {
     const position = lineHandle.geometry?.getAttribute('position');
     if (!position || position.count < 2 || lineHandle.isLineSegments) return null;
 
@@ -684,8 +752,8 @@ function createBaseJogHandleStroke(lineHandle) {
             direction.normalize()
         );
         geometry = new THREE.CylinderGeometry(
-            BASE_JOG_GIZMO_STROKE_RADIUS,
-            BASE_JOG_GIZMO_STROKE_RADIUS,
+            radius,
+            radius,
             length,
             10
         );
@@ -699,11 +767,12 @@ function createBaseJogHandleStroke(lineHandle) {
         if (closed && points.length > 3 && points[0].distanceTo(points.at(-1)) < 1e-5) {
             points = points.slice(0, -1);
         }
-        const curve = new THREE.CatmullRomCurve3(points, closed, 'centripetal');
+        const curve = createPolylineCurve(points, closed);
+        if (!curve) return null;
         geometry = new THREE.TubeGeometry(
             curve,
             Math.max(24, points.length * 2),
-            BASE_JOG_GIZMO_STROKE_RADIUS,
+            radius,
             8,
             closed
         );
@@ -723,12 +792,42 @@ function createBaseJogHandleStroke(lineHandle) {
     stroke.name = lineHandle.name;
     stroke.renderOrder = lineHandle.renderOrder;
     stroke.userData.baseJogHandleStroke = true;
+    stroke.userData.baseJogVisibleOpacity = sourceMaterial?.opacity ?? 1;
     return stroke;
+}
+
+function configureBaseJogActiveStroke(stroke, transformControls) {
+    stroke.userData.baseJogActiveStroke = true;
+    stroke.renderOrder += 1;
+    stroke.onBeforeRender = function () {
+        const activeAxis = transformControls.userData.baseJogActiveAxis;
+        this.material.opacity = activeAxis === this.name
+            ? this.userData.baseJogVisibleOpacity
+            : 0;
+    };
+}
+
+function isNegativeBaseJogArrow(object) {
+    if (!object.isMesh || !['X', 'Y', 'Z'].includes(object.name) || !object.geometry) return false;
+    if (object.tag === 'bwd') return true;
+    if (!['CylinderGeometry', 'ConeGeometry'].includes(object.geometry.type)) return false;
+
+    object.geometry.computeBoundingBox();
+    const bounds = object.geometry.boundingBox;
+    if (!bounds) return false;
+    const size = bounds.getSize(new THREE.Vector3());
+    if (Math.max(size.x, size.y, size.z) > 0.35) return false;
+    object.updateMatrix();
+    const center = bounds.getCenter(new THREE.Vector3()).applyMatrix4(object.matrix);
+    const axisCenter = object.name === 'X' ? center.x : object.name === 'Y' ? center.y : center.z;
+    return axisCenter < 0.5;
 }
 
 function emphasizeBaseJogTransformControls(transformControls) {
     const axisNames = new Set(['X', 'Y', 'Z']);
     const lineHandles = [];
+    const infiniteGuideHandles = [];
+    const negativeArrowHandles = [];
     transformControls.setSize(BASE_JOG_GIZMO_SIZE);
 
     transformControls.traverse((object) => {
@@ -739,7 +838,24 @@ function emphasizeBaseJogTransformControls(transformControls) {
             if (material && 'linewidth' in material) material.linewidth = 3;
         });
 
+        if (isNegativeBaseJogArrow(object)) {
+            negativeArrowHandles.push(object);
+            return;
+        }
         if (object.isLine) {
+            object.geometry?.computeBoundingBox();
+            const lineSize = object.geometry?.boundingBox?.getSize(new THREE.Vector3());
+            const scaledSpan = lineSize
+                ? Math.max(
+                    lineSize.x * Math.abs(object.scale.x),
+                    lineSize.y * Math.abs(object.scale.y),
+                    lineSize.z * Math.abs(object.scale.z)
+                )
+                : 0;
+            if (object.tag === 'helper' || scaledSpan > BASE_JOG_MAX_VISIBLE_LINE_SPAN) {
+                infiniteGuideHandles.push(object);
+                return;
+            }
             lineHandles.push(object);
             return;
         }
@@ -766,9 +882,18 @@ function emphasizeBaseJogTransformControls(transformControls) {
         object.userData.baseJogHandleThickened = true;
     });
 
+    infiniteGuideHandles.forEach((guideHandle) => guideHandle.removeFromParent());
+    transformControls.userData.removedBaseJogInfiniteGuides = infiniteGuideHandles.length;
+    negativeArrowHandles.forEach((arrowHandle) => arrowHandle.removeFromParent());
+    transformControls.userData.removedBaseJogNegativeArrows = negativeArrowHandles.length;
     lineHandles.forEach((lineHandle) => {
         const stroke = createBaseJogHandleStroke(lineHandle);
         if (stroke) lineHandle.parent?.add(stroke);
+        const activeStroke = createBaseJogHandleStroke(lineHandle, BASE_JOG_GIZMO_ACTIVE_STROKE_RADIUS);
+        if (activeStroke) {
+            configureBaseJogActiveStroke(activeStroke, transformControls);
+            lineHandle.parent?.add(activeStroke);
+        }
     });
 }
 
@@ -801,7 +926,11 @@ function applyTransformControlColors(transformControls) {
         const materials = Array.isArray(object.material) ? object.material : [object.material];
         const colorize = () => {
             const colorKey = getTransformHandleColorKey(object.name, transformControls.axis) || initialColorKey;
-            materials.forEach((material) => material?.color?.set(AXIS_COLORS[colorKey]));
+            const color = new THREE.Color(AXIS_COLORS[colorKey]);
+            if (transformControls.userData.baseJogActiveAxis === object.name) {
+                color.multiplyScalar(BASE_JOG_GIZMO_ACTIVE_COLOR_SCALE);
+            }
+            materials.forEach((material) => material?.color?.copy(color));
         };
         colorize();
         const previousBeforeRender = object.onBeforeRender;
@@ -877,7 +1006,6 @@ function sceneSnapshotsEqual(a, b) {
 function applySceneSnapshot(snapshot) {
     if (!snapshot) return;
     state.historySuspended = true;
-    clearCollisionWarnings();
     setTransformHandlesEnabled(false);
     setBaseJogGizmoEnabled(false);
 
@@ -1002,6 +1130,7 @@ function getPanelElement(panelId) {
     return {
         'model-browser-panel': el.modelBrowserPanel,
         'jog-panel': el.jogPanel,
+        'virtual-controller-panel': el.virtualControllerPanel,
         'program-panel': el.programPanel
     }[panelId] || null;
 }
@@ -1011,6 +1140,7 @@ function updatePanelLauncher(panelId) {
     const button = document.querySelector(`[data-panel-toggle="${panelId}"]`);
     if (!panel || !button) return;
     const unavailable = (panelId === 'jog-panel' && !state.activeArticulatedModel)
+        || (panelId === 'virtual-controller-panel' && getArticulatedRobots().length === 0)
         || (panelId === 'program-panel' && getArticulatedRobots().length === 0);
     button.disabled = unavailable;
     button.classList.toggle('active', !unavailable && !panel.classList.contains('panel-user-hidden'));
@@ -1094,6 +1224,8 @@ function popOutPanel(panelId) {
 function getPanelWindowTitle(panelId) {
     const panelName = panelId === 'program-panel'
         ? uiText('Program Panel')
+        : panelId === 'virtual-controller-panel'
+            ? uiText('가상 컨트롤러')
         : panelId === 'model-browser-panel'
             ? uiText('모델 트리')
             : uiText('JOG Panel');
@@ -1427,13 +1559,14 @@ function selectSceneModel(model) {
 
     el.modelTransformPanel.classList.remove('hidden');
     el.selectedModelName.textContent = model.userData.motionDisplayName || model.userData.modelName || model.name || uiText('Unnamed model');
-    el.selectedCoordinateLabel.textContent = uiText(model.userData.placement === 'tcp' ? 'TOOL' : 'BASE');
     if (model.userData.tcpFrame && state.activeArticulatedModel !== model) {
         state.activeArticulatedModel = model;
         renderJogControls(model);
     }
     if (model.userData.tcpFrame) {
         state.activeProgramRobot = model;
+        state.virtualController.targetRobotId = model.userData.motionInstanceId;
+        refreshVirtualControllerUi();
         renderMotionProgramPanel();
     }
     updateSelectedModelTransformInputs();
@@ -1673,7 +1806,6 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
     toolAxesAtTcp.renderOrder = 20;
     tcpFrame.add(toolAxesAtTcp);
     robot.userData.toolAxesAtTcp = toolAxesAtTcp;
-    prepareRobotCollisionParts(robot);
 
     return robot;
 }
@@ -1711,7 +1843,7 @@ function createRobotManifest(modelDefinition) {
             kinematicVariant,
             structure: [...structure],
             secondArmDirection,
-            jointDirection: CONTROLLER_REVOLUTE_DIRECTION,
+            jointDirection: REVOLUTE_DIRECTION_POSITIVE,
             tcp: wrist,
             ikRotationAxes: ['z'],
             toolAxes: SCARA_TOOL_AXES,
@@ -1736,18 +1868,18 @@ function createRobotManifest(modelDefinition) {
         name,
         robotType,
         structure: [...structure],
-        jointDirection: CONTROLLER_REVOLUTE_DIRECTION,
+        jointDirection: REVOLUTE_DIRECTION_NEGATIVE,
         tcp,
         ikRotationAxes: ['x', 'y', 'z'],
         toolAxes: SIX_AXIS_TOOL_AXES,
         base: { name: 'P0', mesh: 'P0.stl', color: ROBOT_BODY_COLOR },
         joints: [
-            joint(0, 'P1.stl', [0, 0, 0], [0, 0, 1]),
+            joint(0, 'P1.stl', [0, 0, 0], [0, 0, 1], { direction: REVOLUTE_DIRECTION_POSITIVE }),
             joint(1, 'P2.stl', [shoulderOffset, 0, shoulderHeight], [0, 1, 0]),
             joint(2, 'P3.stl', [shoulderOffset, 0, elbowHeight], [0, 1, 0]),
-            joint(3, 'P4.stl', [shoulderOffset, 0, wristHeight], [1, 0, 0]),
+            joint(3, 'P4.stl', [shoulderOffset, 0, wristHeight], [1, 0, 0], { direction: REVOLUTE_DIRECTION_POSITIVE }),
             joint(4, 'P5.stl', [shoulderOffset + forearm, 0, wristHeight], [0, 1, 0]),
-            joint(5, 'P6.stl', tcp, [1, 0, 0])
+            joint(5, 'P6.stl', tcp, [1, 0, 0], { direction: REVOLUTE_DIRECTION_POSITIVE })
         ]
     };
 }
@@ -1798,10 +1930,13 @@ function refreshImportPlacementOptions() {
     if (!el.importPlacement) return;
     const sceneOption = el.importPlacement.querySelector('option[value="scene"]');
     const tcpOption = el.importPlacement.querySelector('option[value="tcp"]');
-    if (sceneOption) sceneOption.textContent = uiText('로봇 외부에 설치');
+    if (sceneOption) sceneOption.textContent = uiText('3D 모델링');
     if (tcpOption) {
-        tcpOption.textContent = uiText('Tool에 부착');
+        tcpOption.textContent = uiText('Tool');
         tcpOption.disabled = !getArticulatedRobotForAttachment();
+        if (tcpOption.disabled && el.importPlacement.value === 'tcp') {
+            el.importPlacement.value = 'scene';
+        }
     }
 }
 
@@ -1969,22 +2104,6 @@ function applyImportedPlacementColor(object, placement) {
     });
 }
 
-function rebaseEquipmentToFloorCenter(importedModel, content) {
-    importedModel.updateMatrixWorld(true);
-    const bounds = new THREE.Box3().setFromObject(importedModel);
-    if (bounds.isEmpty()) return;
-
-    const floorCenterWorld = new THREE.Vector3(
-        (bounds.min.x + bounds.max.x) * 0.5,
-        (bounds.min.y + bounds.max.y) * 0.5,
-        bounds.min.z
-    );
-    const floorCenterLocal = importedModel.worldToLocal(floorCenterWorld.clone());
-    content.position.sub(floorCenterLocal);
-    importedModel.userData.equipmentAnchor = 'floor-center';
-    importedModel.updateMatrixWorld(true);
-}
-
 async function handle3DImport() {
     const file = state.pendingImportFile;
     if (!file) return;
@@ -2037,7 +2156,9 @@ async function handle3DImport() {
                 renderJogControls(robot);
             }
         } else {
-            rebaseEquipmentToFloorCenter(importedModel, content);
+            // Preserve the source file origin: equipment (0, 0, 0) matches the scene Base origin.
+            importedModel.position.set(0, 0, 0);
+            importedModel.userData.equipmentAnchor = 'source-origin';
             state.scene.add(importedModel);
         }
 
@@ -2779,7 +2900,7 @@ function solveScaraIK(robot, target) {
     const rzOnlyError = quaternionErrorVector(target.quaternion, currentPose.quaternion);
     if (currentPose.position.distanceTo(target.position) < 0.01
         && Math.hypot(rzOnlyError.x, rzOnlyError.y) < THREE.MathUtils.degToRad(0.01)) {
-        const requestedJ4 = joints[3].angle - THREE.MathUtils.radToDeg(rzOnlyError.z);
+        const requestedJ4 = joints[3].angle + THREE.MathUtils.radToDeg(rzOnlyError.z);
         if (requestedJ4 >= joints[3].definition.min - 1e-7
             && requestedJ4 <= joints[3].definition.max + 1e-7) {
             setJointAngle(joints[3], requestedJ4, false);
@@ -2826,11 +2947,11 @@ function solveScaraIK(robot, target) {
                 signedArm2 * Math.sin(physicalJ2),
                 arm1 + signedArm2 * Math.cos(physicalJ2)
             );
-        const baseJ1 = -THREE.MathUtils.radToDeg(physicalJ1);
-        const baseJ2 = -THREE.MathUtils.radToDeg(physicalJ2);
+        const baseJ1 = THREE.MathUtils.radToDeg(physicalJ1);
+        const baseJ2 = THREE.MathUtils.radToDeg(physicalJ2);
         equivalentJointAngles(baseJ1, joints[0]).forEach((j1) => {
             equivalentJointAngles(baseJ2, joints[1]).forEach((j2) => {
-                const baseJ4 = -desiredYawDegrees - j1 - j2;
+                const baseJ4 = desiredYawDegrees - j1 - j2;
                 equivalentJointAngles(baseJ4, joints[3]).forEach((j4) => {
                     const candidate = [j1, j2, prismaticTarget, j4];
                     const score = candidate.reduce((sum, value, index) => sum + (value - joints[index].angle) ** 2, 0);
@@ -3028,6 +3149,361 @@ function solveLinearSystem(matrix, vector) {
     return augmented.map((row) => row[size]);
 }
 
+function getVirtualControllerTargetRobot() {
+    return findProgramRobot(state.virtualController.targetRobotId);
+}
+
+async function ensureVirtualControllerCore() {
+    const controller = state.virtualController;
+    if (controller.core) return controller.core;
+    if (!controller.corePromise) {
+        controller.corePromise = import('./virtual-controller-core.mjs?v=20260717-virtual-controller-bridge1')
+            .then((core) => {
+                controller.core = core;
+                controller.samples = new core.VirtualControllerSampleBuffer();
+                return core;
+            })
+            .catch((error) => {
+                controller.corePromise = null;
+                throw error;
+            });
+    }
+    return controller.corePromise;
+}
+
+function isVirtualControllerActive() {
+    return Boolean(state.virtualController.wanted);
+}
+
+function refreshVirtualControllerRobotOptions() {
+    if (!el.virtualControllerRobot) return;
+    const robots = getArticulatedRobots();
+    const availableIds = new Set(robots.map((robot) => robot.userData.motionInstanceId));
+    if (!availableIds.has(state.virtualController.targetRobotId)) {
+        const preferred = robots.includes(state.activeProgramRobot)
+            ? state.activeProgramRobot
+            : robots.includes(state.activeArticulatedModel)
+                ? state.activeArticulatedModel
+                : robots[0] || null;
+        state.virtualController.targetRobotId = preferred?.userData.motionInstanceId || null;
+    }
+
+    const signature = robots
+        .map((robot) => `${robot.userData.motionInstanceId}:${robot.userData.motionDisplayName}`)
+        .join('|');
+    if (el.virtualControllerRobot.dataset.robotSignature !== signature) {
+        el.virtualControllerRobot.replaceChildren();
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = uiText('로봇을 선택하세요');
+        el.virtualControllerRobot.appendChild(placeholder);
+        robots.forEach((robot) => {
+            const option = document.createElement('option');
+            option.value = robot.userData.motionInstanceId;
+            option.textContent = robot.userData.motionDisplayName;
+            el.virtualControllerRobot.appendChild(option);
+        });
+        el.virtualControllerRobot.dataset.robotSignature = signature;
+    } else if (el.virtualControllerRobot.options[0]) {
+        el.virtualControllerRobot.options[0].textContent = uiText('로봇을 선택하세요');
+    }
+    el.virtualControllerRobot.value = state.virtualController.targetRobotId || '';
+    updatePanelLauncher('virtual-controller-panel');
+}
+
+function refreshVirtualControllerUi() {
+    const controller = state.virtualController;
+    refreshVirtualControllerRobotOptions();
+    const statusLabels = {
+        disconnected: '연결 안 됨',
+        connecting: '연결 중',
+        connected: '연결됨',
+        streaming: '위치 동기화 중',
+        reconnecting: '재연결 중',
+        error: '가상 컨트롤러 연결 실패'
+    };
+    if (el.virtualControllerStatus) {
+        el.virtualControllerStatus.textContent = uiText(controller.statusMessage || statusLabels[controller.status] || '연결 안 됨');
+    }
+    if (el.virtualControllerStatusDot) {
+        el.virtualControllerStatusDot.classList.remove('connecting', 'connected', 'error');
+        if (controller.status === 'connecting' || controller.status === 'reconnecting') {
+            el.virtualControllerStatusDot.classList.add('connecting');
+        } else if (controller.status === 'connected' || controller.status === 'streaming') {
+            el.virtualControllerStatusDot.classList.add('connected');
+        } else if (controller.status === 'error') {
+            el.virtualControllerStatusDot.classList.add('error');
+        }
+    }
+    if (el.btnVirtualControllerConnect) {
+        el.btnVirtualControllerConnect.classList.toggle('active', controller.wanted);
+        el.btnVirtualControllerConnect.disabled = !controller.wanted && !controller.targetRobotId;
+        el.btnVirtualControllerConnect.innerHTML = controller.wanted
+            ? `<i class="fa-solid fa-link-slash"></i><span>${uiText('연결 해제')}</span>`
+            : `<i class="fa-solid fa-plug"></i><span>${uiText('연결')}</span>`;
+    }
+    if (el.virtualControllerRobot) el.virtualControllerRobot.disabled = controller.wanted;
+    if (el.virtualControllerRate) {
+        const rate = controller.samples?.getRateHz(performance.now()) || 0;
+        el.virtualControllerRate.textContent = rate > 0 ? `${Math.round(rate)} Hz` : '-- Hz';
+    }
+}
+
+function setVirtualControllerStatus(status, message = '') {
+    state.virtualController.status = status;
+    state.virtualController.statusMessage = message;
+    refreshVirtualControllerUi();
+    updateMotionUiLock();
+    renderMotionProgramPanel();
+}
+
+function sendVirtualControllerCommand(command) {
+    const socket = state.virtualController.socket;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return false;
+    socket.send(JSON.stringify(command));
+    return true;
+}
+
+function startVirtualControllerStream() {
+    const core = state.virtualController.core;
+    if (!core) return;
+    sendVirtualControllerCommand({
+        type: 'startStream',
+        interval: core.VIRTUAL_CONTROLLER_SAMPLE_INTERVAL_MS
+    });
+}
+
+function handleVirtualControllerMessage(raw) {
+    const controller = state.virtualController;
+    if (!controller.wanted) return;
+    if (!controller.core || !controller.samples) return;
+    const parsed = controller.core.parseVirtualControllerMessage(raw, performance.now());
+    if (parsed.kind === 'state' || parsed.kind === 'pose') {
+        controller.samples.push(parsed);
+        controller.statusMessage = '';
+        if (controller.status !== 'streaming') setVirtualControllerStatus('streaming');
+        return;
+    }
+    if (parsed.kind !== 'event') return;
+    const message = parsed.message;
+    if (parsed.type === 'connectResult') {
+        if (message.success) {
+            setVirtualControllerStatus('connected');
+            startVirtualControllerStream();
+        } else {
+            setVirtualControllerStatus('error');
+            controller.socket?.close();
+        }
+    } else if (parsed.type === 'streamStartResult') {
+        if (message.success && controller.status !== 'streaming') setVirtualControllerStatus('connected');
+        if (!message.success) setVirtualControllerStatus('error', '가상 컨트롤러 연결 실패');
+    } else if (parsed.type === 'status' && message.robotConnected && message.streamRunning) {
+        if (controller.status !== 'streaming') setVirtualControllerStatus('connected');
+    } else if (parsed.type === 'error') {
+        setVirtualControllerStatus('error');
+    }
+}
+
+function openVirtualControllerSocket(isReconnect = false) {
+    const controller = state.virtualController;
+    if (!controller.wanted) return;
+    if (controller.reconnectTimer) {
+        clearTimeout(controller.reconnectTimer);
+        controller.reconnectTimer = null;
+    }
+    if (controller.socket && [WebSocket.CONNECTING, WebSocket.OPEN].includes(controller.socket.readyState)) return;
+
+    setVirtualControllerStatus(isReconnect ? 'reconnecting' : 'connecting');
+    const core = controller.core;
+    if (!core) return;
+    let socket;
+    try {
+        socket = new WebSocket(core.VIRTUAL_CONTROLLER_BRIDGE_URL);
+    } catch (error) {
+        console.error('Virtual controller socket initialization failed:', error);
+        setVirtualControllerStatus('error', '전용 브리지를 실행해 주세요.');
+        return;
+    }
+    controller.socket = socket;
+    socket.addEventListener('open', () => {
+        if (controller.socket !== socket || !controller.wanted) return;
+        sendVirtualControllerCommand({ type: 'connect', ip: core.VIRTUAL_CONTROLLER_HOST });
+    });
+    socket.addEventListener('message', (event) => {
+        if (controller.socket === socket) handleVirtualControllerMessage(event.data);
+    });
+    socket.addEventListener('close', () => {
+        if (controller.socket === socket) controller.socket = null;
+        controller.samples?.clear();
+        controller.lastAppliedAt = 0;
+        if (!controller.wanted) {
+            setVirtualControllerStatus('disconnected');
+            return;
+        }
+        setVirtualControllerStatus('reconnecting');
+        controller.reconnectTimer = window.setTimeout(() => {
+            controller.reconnectTimer = null;
+            openVirtualControllerSocket(true);
+        }, 1000);
+    });
+    socket.addEventListener('error', () => {
+        if (controller.socket === socket && controller.wanted) {
+            setVirtualControllerStatus('error', '전용 브리지를 실행해 주세요.');
+        }
+    });
+}
+
+async function connectVirtualController() {
+    const controller = state.virtualController;
+    if (isMotionActive()) return;
+    refreshVirtualControllerRobotOptions();
+    if (!getVirtualControllerTargetRobot()) {
+        setVirtualControllerStatus('error', '로봇을 선택하세요');
+        return;
+    }
+    try {
+        await ensureVirtualControllerCore();
+    } catch (error) {
+        console.error('Virtual controller support failed to load:', error);
+        setVirtualControllerStatus('error', '가상 컨트롤러 기능을 불러올 수 없습니다.');
+        return;
+    }
+    commitAllPendingHistories();
+    controller.historyBefore = captureSceneSnapshot();
+    controller.wanted = true;
+    controller.samples?.clear();
+    controller.lastAppliedAt = 0;
+    controller.lastRateUpdateAt = 0;
+    controller.consecutiveIkFailures = 0;
+    openVirtualControllerSocket(false);
+}
+
+function closeVirtualControllerSocket(notifyBridge = true) {
+    const controller = state.virtualController;
+    if (controller.reconnectTimer) {
+        clearTimeout(controller.reconnectTimer);
+        controller.reconnectTimer = null;
+    }
+    const socket = controller.socket;
+    controller.socket = null;
+    if (!socket) return;
+    if (notifyBridge && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'stopStream' }));
+        socket.send(JSON.stringify({ type: 'disconnect' }));
+    }
+    try { socket.close(1000, '3D simulation disconnected'); } catch { /* Already closed. */ }
+}
+
+function disconnectVirtualController() {
+    const controller = state.virtualController;
+    const historyBefore = controller.historyBefore;
+    controller.historyBefore = null;
+    controller.wanted = false;
+    closeVirtualControllerSocket(true);
+    controller.samples?.clear();
+    controller.lastAppliedAt = 0;
+    controller.consecutiveIkFailures = 0;
+    setVirtualControllerStatus('disconnected');
+    if (historyBefore) recordHistory('가상 컨트롤러 동기화', historyBefore, captureSceneSnapshot());
+}
+
+function sampleQuaternionForRobot(sample, robot) {
+    const [a, b, c] = sample.rotation.map((value) => THREE.MathUtils.degToRad(value));
+    if (robot.userData.manifest?.robotType === 'scara') {
+        return new THREE.Quaternion()
+            .setFromAxisAngle(new THREE.Vector3(0, 0, 1), c)
+            .multiply(robot.userData.toolHomeQuaternion.clone())
+            .normalize();
+    }
+    return new THREE.Quaternion().setFromEuler(new THREE.Euler(a, b, c, 'XYZ')).normalize();
+}
+
+function applyVirtualControllerFrame(timestamp) {
+    const controller = state.virtualController;
+    if (!controller.wanted || !controller.samples || !controller.core) return;
+    const robot = getVirtualControllerTargetRobot();
+    const window = controller.samples.getWindow(timestamp - controller.core.VIRTUAL_CONTROLLER_RENDER_DELAY_MS);
+    if (!robot || !window) return;
+    if (timestamp - controller.lastRateUpdateAt >= 250) {
+        controller.lastRateUpdateAt = timestamp;
+        refreshVirtualControllerUi();
+    }
+    const frameTime = THREE.MathUtils.lerp(window.previous.receivedAt, window.next.receivedAt, window.alpha);
+    if (frameTime <= controller.lastAppliedAt + 0.0001) return;
+    controller.lastAppliedAt = frameTime;
+
+    const joints = robot.userData.joints || [];
+    const previousJoints = window.previous.joints;
+    const nextJoints = window.next.joints;
+    if (Array.isArray(previousJoints) && Array.isArray(nextJoints)
+        && previousJoints.length >= joints.length && nextJoints.length >= joints.length) {
+        const interpolatedJoints = controller.core.interpolateVirtualControllerJoints(
+            previousJoints,
+            nextJoints,
+            window.alpha,
+            joints.map((joint) => joint.definition.type || 'revolute')
+        );
+        joints.forEach((joint, index) => {
+            setJointAngle(joint, interpolatedJoints[index], false);
+        });
+        robot.updateMatrixWorld(true);
+        controller.consecutiveIkFailures = 0;
+        controller.statusMessage = '';
+        const pose = getCurrentTcpPoseBase(robot);
+        if (pose) {
+            robot.userData.baseJogTarget = {
+                position: pose.position.clone(),
+                quaternion: pose.quaternion.clone()
+            };
+            if (robot === state.activeArticulatedModel) {
+                syncJointControls(robot);
+                updateTcpPresentation(robot, pose);
+                if (!el.baseJogView?.classList.contains('hidden')) syncBaseJogGizmoFromRobot(robot, pose);
+            }
+        }
+        return;
+    }
+
+    if (!window.previous.position || !window.previous.rotation
+        || !window.next.position || !window.next.rotation) return;
+
+    const target = {
+        position: new THREE.Vector3(
+            THREE.MathUtils.lerp(window.previous.position[0], window.next.position[0], window.alpha),
+            THREE.MathUtils.lerp(window.previous.position[1], window.next.position[1], window.alpha),
+            THREE.MathUtils.lerp(window.previous.position[2], window.next.position[2], window.alpha)
+        ),
+        quaternion: sampleQuaternionForRobot(window.previous, robot)
+            .slerp(sampleQuaternionForRobot(window.next, robot), window.alpha)
+            .normalize()
+    };
+    const previousAngles = (robot.userData.joints || []).map((joint) => joint.angle);
+    const result = solveRobotIK(robot, target);
+    if (!result.success) {
+        previousAngles.forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle, false));
+        robot.updateMatrixWorld(true);
+        controller.consecutiveIkFailures += 1;
+        if (controller.consecutiveIkFailures === 8) {
+            controller.statusMessage = '가상 컨트롤러 위치를 적용할 수 없습니다.';
+            refreshVirtualControllerUi();
+        }
+        return;
+    }
+
+    controller.consecutiveIkFailures = 0;
+    controller.statusMessage = '';
+    robot.userData.baseJogTarget = {
+        position: target.position.clone(),
+        quaternion: target.quaternion.clone()
+    };
+    robot.updateMatrixWorld(true);
+    if (robot === state.activeArticulatedModel) {
+        syncJointControls(robot);
+        updateTcpPresentation(robot);
+        if (!el.baseJogView?.classList.contains('hidden')) syncBaseJogGizmoFromRobot(robot);
+    }
+}
+
 function getArticulatedRobots() {
     return state.models.filter((model) => Array.isArray(model.userData.joints) && model.userData.tcpFrame);
 }
@@ -3077,12 +3553,10 @@ function getMotionSession(robot) {
 }
 
 function isMotionActive() {
-    return state.motionSessions.size > 0;
+    return state.motionSessions.size > 0 || isVirtualControllerActive();
 }
 
 function getMotionStatus(robot) {
-    const id = robot.userData.motionInstanceId;
-    if (state.collisionRobotIds.has(id)) return 'collision';
     return getMotionSession(robot)?.status || ensureMotionProgram(robot)?.status || 'idle';
 }
 
@@ -3093,7 +3567,6 @@ function motionStatusLabel(status) {
         paused: '일시정지',
         completed: '완료',
         error: '오류',
-        collision: '충돌',
         stopped: '정지됨'
     })[status] || status);
 }
@@ -3156,6 +3629,13 @@ function updateCycleTimeReadout(timestamp = performance.now(), force = false) {
 function renderMotionProgramPanel() {
     if (!el.programRobotList || !el.programStepList) return;
     const robots = getArticulatedRobots();
+    const allRobotsIncluded = robots.length > 0
+        && robots.every((robot) => ensureMotionProgram(robot).included);
+    if (el.btnProgramSelectAll) {
+        el.btnProgramSelectAll.textContent = uiText(allRobotsIncluded ? '전체 해제' : '전체 선택');
+        el.btnProgramSelectAll.setAttribute('aria-pressed', String(allRobotsIncluded));
+    }
+    refreshVirtualControllerRobotOptions();
     if (!robots.includes(state.activeProgramRobot)) {
         state.activeProgramRobot = robots.includes(state.activeArticulatedModel)
             ? state.activeArticulatedModel
@@ -3166,7 +3646,7 @@ function renderMotionProgramPanel() {
         const program = ensureMotionProgram(robot);
         const status = getMotionStatus(robot);
         const row = document.createElement('div');
-        row.className = `program-robot-row${robot === state.activeProgramRobot ? ' active' : ''}${status === 'collision' ? ' collision' : ''}`;
+        row.className = `program-robot-row${robot === state.activeProgramRobot ? ' active' : ''}`;
         row.dataset.robotInstanceId = robot.userData.motionInstanceId;
 
         const included = document.createElement('input');
@@ -3212,6 +3692,16 @@ function renderMotionProgramPanel() {
             row.className = `program-step-row${isSelected ? ' active' : ''}${isRunning ? ' running' : ''}${step.motion === 'DELAY' ? ' delay' : ''}${isTimer ? ' timer' : ''}`;
             row.dataset.programStepId = step.id;
 
+            const dragHandle = document.createElement('button');
+            dragHandle.type = 'button';
+            dragHandle.className = 'program-step-drag-handle';
+            dragHandle.draggable = true;
+            dragHandle.dataset.programStepDrag = step.id;
+            dragHandle.dataset.programEdit = '';
+            dragHandle.title = uiText('드래그하여 순서 변경');
+            dragHandle.setAttribute('aria-label', `${step.name || `P${String(index + 1).padStart(3, '0')}`} ${uiText('드래그하여 순서 변경')}`);
+            dragHandle.innerHTML = '<i class="fa-solid fa-grip-vertical"></i>';
+
             const select = document.createElement('button');
             select.type = 'button';
             select.className = 'program-step-select';
@@ -3222,11 +3712,11 @@ function renderMotionProgramPanel() {
             motion.dataset.programStepMotion = step.id;
             motion.dataset.programEdit = '';
             [
-                ['MOVJ', 'MOVJ'],
-                ['MOVL', 'MOVL'],
-                ['DELAY', 'DELAY'],
-                ['TIME_START', 'T.START'],
-                ['TIME_OUT', 'T.OUT']
+                ['MOVJ', 'MovJ'],
+                ['MOVL', 'MovL'],
+                ['DELAY', 'Delay'],
+                ['TIME_START', 'T.Start'],
+                ['TIME_OUT', 'T.Out']
             ].forEach(([value, label]) => {
                 const option = document.createElement('option');
                 option.value = value;
@@ -3255,7 +3745,7 @@ function renderMotionProgramPanel() {
             const pose = document.createElement('span');
             pose.className = 'program-step-pose';
             pose.textContent = formatMotionStepPose(step);
-            row.append(select, motion, speed, unit, pose);
+            row.append(dragHandle, select, motion, speed, unit, pose);
             el.programStepList.appendChild(row);
         });
     }
@@ -3264,16 +3754,14 @@ function renderMotionProgramPanel() {
     if (el.btnProgramUpdate) el.btnProgramUpdate.disabled = !selected
         || !['MOVJ', 'MOVL'].includes(selected.motion)
         || isMotionActive();
-    if (el.btnProgramUp) el.btnProgramUp.disabled = !selected || program.steps[0] === selected || isMotionActive();
-    if (el.btnProgramDown) el.btnProgramDown.disabled = !selected || program.steps.at(-1) === selected || isMotionActive();
     if (el.btnProgramDelete) el.btnProgramDelete.disabled = !selected || isMotionActive();
     if (el.btnProgramStepRobot) el.btnProgramStepRobot.disabled = !program?.steps.length || isMotionActive();
-    if (el.btnProgramRunRobot) el.btnProgramRunRobot.disabled = !program?.steps.length;
+    if (el.btnProgramRunRobot) el.btnProgramRunRobot.disabled = !program?.steps.length || isVirtualControllerActive();
     if (el.btnProgramStepGroup) el.btnProgramStepGroup.disabled = isMotionActive() || !robots.some((candidate) => {
         const candidateProgram = ensureMotionProgram(candidate);
         return candidateProgram.included && candidateProgram.steps.length;
     });
-    if (el.btnProgramRunGroup) el.btnProgramRunGroup.disabled = !robots.some((candidate) => {
+    if (el.btnProgramRunGroup) el.btnProgramRunGroup.disabled = isVirtualControllerActive() || !robots.some((candidate) => {
         const candidateProgram = ensureMotionProgram(candidate);
         return candidateProgram.included && candidateProgram.steps.length;
     });
@@ -3307,11 +3795,12 @@ function handleProgramRobotListChange(event) {
 }
 
 function handleProgramStepListClick(event) {
-    const button = event.target.closest('[data-program-step-select]');
-    if (!button || isMotionActive()) return;
+    const row = event.target.closest('[data-program-step-id]');
+    if (!row || !el.programStepList.contains(row) || isMotionActive()) return;
+    if (event.target.closest('select, input')) return;
     const program = ensureMotionProgram(state.activeProgramRobot);
     if (!program) return;
-    program.selectedStepId = button.dataset.programStepSelect;
+    program.selectedStepId = row.dataset.programStepId;
     renderMotionProgramPanel();
 }
 
@@ -3352,14 +3841,96 @@ function handleProgramStepListChange(event) {
     renderMotionProgramPanel();
 }
 
-function selectAllProgramRobots() {
+function clearProgramStepDropIndicators() {
+    el.programStepList?.querySelectorAll('.dragging, .drag-over-before, .drag-over-after')
+        .forEach((row) => row.classList.remove('dragging', 'drag-over-before', 'drag-over-after'));
+}
+
+function getProgramStepDropTarget(event) {
+    const rows = [...(el.programStepList?.querySelectorAll('[data-program-step-id]') || [])];
+    if (!rows.length) return null;
+    const directRow = event.target.closest?.('[data-program-step-id]');
+    if (directRow && el.programStepList.contains(directRow)) {
+        const bounds = directRow.getBoundingClientRect();
+        return {
+            row: directRow,
+            stepId: directRow.dataset.programStepId,
+            placeAfter: event.clientY >= bounds.top + bounds.height / 2
+        };
+    }
+    const nextRow = rows.find((row) => {
+        const bounds = row.getBoundingClientRect();
+        return event.clientY < bounds.top + bounds.height / 2;
+    });
+    const row = nextRow || rows.at(-1);
+    return {
+        row,
+        stepId: row.dataset.programStepId,
+        placeAfter: !nextRow
+    };
+}
+
+function handleProgramStepDragStart(event) {
+    const handle = event.target.closest?.('[data-program-step-drag]');
+    const row = handle?.closest('[data-program-step-id]');
+    if (!handle || !row || isMotionActive()) {
+        event.preventDefault();
+        return;
+    }
+    state.programStepDragId = handle.dataset.programStepDrag;
+    row.classList.add('dragging');
+    if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', state.programStepDragId);
+    }
+}
+
+function handleProgramStepDragOver(event) {
+    if (!state.programStepDragId || isMotionActive()) return;
+    const target = getProgramStepDropTarget(event);
+    if (!target) return;
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+    el.programStepList.querySelectorAll('.drag-over-before, .drag-over-after').forEach((row) => {
+        row.classList.remove('drag-over-before', 'drag-over-after');
+    });
+    target.row.classList.add(target.placeAfter ? 'drag-over-after' : 'drag-over-before');
+}
+
+function handleProgramStepDrop(event) {
+    if (!state.programStepDragId || isMotionActive()) return;
+    const target = getProgramStepDropTarget(event);
+    if (!target) return;
+    event.preventDefault();
+    const sourceStepId = state.programStepDragId;
+    const program = ensureMotionProgram(state.activeProgramRobot);
+    const before = captureSceneSnapshot();
+    const changed = reorderMotionSteps(program?.steps, sourceStepId, target.stepId, target.placeAfter);
+    state.programStepDragId = null;
+    clearProgramStepDropIndicators();
+    if (!changed) return;
+    program.selectedStepId = sourceStepId;
+    recordHistory('모션 포인트 순서 변경', before, captureSceneSnapshot());
+    renderMotionProgramPanel();
+}
+
+function handleProgramStepDragEnd() {
+    state.programStepDragId = null;
+    clearProgramStepDropIndicators();
+}
+
+function toggleAllProgramRobots() {
     if (isMotionActive()) return;
     const robots = getArticulatedRobots();
     if (!robots.length) return;
     const before = captureSceneSnapshot();
     const shouldSelect = robots.some((robot) => !ensureMotionProgram(robot).included);
     robots.forEach((robot) => { ensureMotionProgram(robot).included = shouldSelect; });
-    recordHistory('동시 실행 로봇 전체 선택', before, captureSceneSnapshot());
+    recordHistory(
+        shouldSelect ? '동시 실행 로봇 전체 선택' : '동시 실행 로봇 전체 해제',
+        before,
+        captureSceneSnapshot()
+    );
     renderMotionProgramPanel();
 }
 
@@ -3439,18 +4010,6 @@ function updateSelectedMotionStep() {
     const before = captureSceneSnapshot();
     program.steps[index] = captureRobotMotionStep(state.activeProgramRobot, program.steps[index]);
     recordHistory('모션 포인트 덮어쓰기', before, captureSceneSnapshot());
-    renderMotionProgramPanel();
-}
-
-function moveSelectedMotionStep(direction) {
-    if (isMotionActive()) return;
-    const program = ensureMotionProgram(state.activeProgramRobot);
-    const index = program?.steps.findIndex((step) => step.id === program.selectedStepId) ?? -1;
-    const nextIndex = index + direction;
-    if (index < 0 || nextIndex < 0 || nextIndex >= program.steps.length) return;
-    const before = captureSceneSnapshot();
-    [program.steps[index], program.steps[nextIndex]] = [program.steps[nextIndex], program.steps[index]];
-    recordHistory('모션 포인트 순서 변경', before, captureSceneSnapshot());
     renderMotionProgramPanel();
 }
 
@@ -3575,18 +4134,6 @@ function findMotionModelDefinition(robotProject) {
     )) || null;
 }
 
-function clearCollisionWarnings() {
-    state.collisionHelpers.forEach((helper) => {
-        helper.removeFromParent();
-        helper.geometry?.dispose();
-        helper.material?.dispose();
-    });
-    state.collisionHelpers.clear();
-    [...state.collisionHighlights.keys()].forEach(removeCollisionHighlight);
-    state.collisionRobotIds.clear();
-    updateCollisionAlert([]);
-}
-
 async function restoreMotionProjectData(input) {
     if (isMotionActive()) throw new Error('Stop all robot motions before loading a project.');
     const project = normalizeMotionProject(input);
@@ -3601,7 +4148,6 @@ async function restoreMotionProjectData(input) {
 
     setTransformHandlesEnabled(false);
     setBaseJogGizmoEnabled(false);
-    clearCollisionWarnings();
     const replacedRobots = new Set(getArticulatedRobots());
     const removedModels = new Set([
         ...replacedRobots,
@@ -4212,156 +4758,6 @@ function updateMotionSessions(timestamp) {
     });
 }
 
-function prepareRobotCollisionParts(robot) {
-    const parts = [];
-    robot.traverse((object) => {
-        if (!object.isMesh || object.name === 'CD conduit' || !object.geometry) return;
-        object.geometry.computeBoundingBox();
-        const box = object.geometry.boundingBox;
-        if (!box || box.isEmpty()) return;
-        const center = box.getCenter(new THREE.Vector3());
-        const halfSize = box.getSize(new THREE.Vector3()).multiplyScalar(0.5);
-        parts.push({
-            mesh: object,
-            localBox: box.clone(),
-            localObb: new OBB(center, halfSize, new THREE.Matrix3())
-        });
-    });
-    robot.userData.collisionParts = parts;
-}
-
-function addCollisionWarningBox(mesh) {
-    if (state.collisionHelpers.has(mesh)) {
-        state.collisionHelpers.get(mesh).update();
-        return;
-    }
-    const helper = new THREE.BoxHelper(mesh, 0xef4444);
-    helper.name = 'Robot collision warning';
-    helper.material.depthTest = false;
-    helper.material.transparent = true;
-    helper.material.opacity = 0.95;
-    helper.renderOrder = 100;
-    state.scene.add(helper);
-    state.collisionHelpers.set(mesh, helper);
-}
-
-function removeCollisionWarningBox(mesh) {
-    const helper = state.collisionHelpers.get(mesh);
-    if (!helper) return;
-    helper.removeFromParent();
-    helper.geometry?.dispose();
-    helper.material?.dispose();
-    state.collisionHelpers.delete(mesh);
-}
-
-function addCollisionHighlight(mesh) {
-    if (state.collisionHighlights.has(mesh)) return;
-    const originalMaterial = mesh.material;
-    const sourceMaterials = Array.isArray(originalMaterial) ? originalMaterial : [originalMaterial];
-    const highlightedMaterials = sourceMaterials.map((material) => {
-        const highlighted = material.clone();
-        highlighted.color?.set(0xef4444);
-        highlighted.emissive?.set(0x7f1d1d);
-        if ('emissiveIntensity' in highlighted) highlighted.emissiveIntensity = 1.25;
-        highlighted.needsUpdate = true;
-        return highlighted;
-    });
-    mesh.material = Array.isArray(originalMaterial) ? highlightedMaterials : highlightedMaterials[0];
-    state.collisionHighlights.set(mesh, { originalMaterial, highlightedMaterials });
-}
-
-function removeCollisionHighlight(mesh) {
-    const highlight = state.collisionHighlights.get(mesh);
-    if (!highlight) return;
-    mesh.material = highlight.originalMaterial;
-    highlight.highlightedMaterials.forEach((material) => material.dispose());
-    state.collisionHighlights.delete(mesh);
-}
-
-function updateCollisionAlert(collisionPairs) {
-    if (!el.collisionAlert || !el.collisionAlertText) return;
-    if (!collisionPairs.length) {
-        el.collisionAlert.classList.add('hidden');
-        el.collisionAlertText.textContent = uiText('로봇 충돌이 감지되었습니다.');
-        return;
-    }
-    el.collisionAlertText.textContent = collisionPairs
-        .map(([leftRobot, rightRobot]) => `${leftRobot.userData.motionDisplayName} ↔ ${rightRobot.userData.motionDisplayName}`)
-        .join(' · ');
-    el.collisionAlert.classList.remove('hidden');
-}
-
-function collisionSetsEqual(left, right) {
-    return left.size === right.size && [...left].every((value) => right.has(value));
-}
-
-function updateRobotCollisions(timestamp) {
-    if (timestamp - state.lastCollisionCheck < MOTION_COLLISION_INTERVAL) return;
-    state.lastCollisionCheck = timestamp;
-    const previous = new Set(state.collisionRobotIds);
-    const nextCollisionRobotIds = new Set();
-    const robots = getArticulatedRobots();
-    const collisionMeshes = new Set();
-    const collisionPairs = [];
-    robots.forEach((robot) => robot.updateMatrixWorld(true));
-    const worldParts = new Map(robots.map((robot) => [
-        robot,
-        (robot.userData.collisionParts || []).map((part) => ({
-            mesh: part.mesh,
-            aabb: part.localBox.clone().applyMatrix4(part.mesh.matrixWorld),
-            obb: part.localObb.clone().applyMatrix4(part.mesh.matrixWorld)
-        }))
-    ]));
-    for (let leftIndex = 0; leftIndex < robots.length; leftIndex += 1) {
-        const leftRobot = robots[leftIndex];
-        const leftParts = worldParts.get(leftRobot);
-        for (let rightIndex = leftIndex + 1; rightIndex < robots.length; rightIndex += 1) {
-            const rightRobot = robots[rightIndex];
-            const rightParts = worldParts.get(rightRobot);
-            let pairCollision = false;
-            for (const leftPart of leftParts) {
-                for (const rightPart of rightParts) {
-                    const obbCollision = leftPart.obb.intersectsOBB(rightPart.obb);
-                    const fallbackCollision = hasMeaningfulAabbOverlap(leftPart.aabb, rightPart.aabb);
-                    if (!obbCollision && !fallbackCollision) continue;
-                    pairCollision = true;
-                    collisionMeshes.add(leftPart.mesh);
-                    collisionMeshes.add(rightPart.mesh);
-                }
-            }
-            if (pairCollision) {
-                nextCollisionRobotIds.add(leftRobot.userData.motionInstanceId);
-                nextCollisionRobotIds.add(rightRobot.userData.motionInstanceId);
-                collisionPairs.push([leftRobot, rightRobot]);
-            }
-        }
-    }
-    [...state.collisionHelpers.keys()].forEach((mesh) => {
-        if (!collisionMeshes.has(mesh)) removeCollisionWarningBox(mesh);
-    });
-    [...state.collisionHighlights.keys()].forEach((mesh) => {
-        if (!collisionMeshes.has(mesh)) removeCollisionHighlight(mesh);
-    });
-    collisionMeshes.forEach((mesh) => {
-        addCollisionWarningBox(mesh);
-        addCollisionHighlight(mesh);
-    });
-    updateCollisionAlert(collisionPairs);
-    state.collisionRobotIds = nextCollisionRobotIds;
-    if (!collisionSetsEqual(previous, state.collisionRobotIds)) {
-        if (state.collisionRobotIds.size) {
-            const names = [...state.collisionRobotIds]
-                .map((id) => findProgramRobot(id)?.userData.motionDisplayName)
-                .filter(Boolean)
-                .join(', ');
-            setMotionProgramStatus('충돌 감지: {names}', 'error', { names });
-        } else if (previous.size) {
-            setMotionProgramStatus('충돌이 해제되었습니다.');
-        }
-        renderMotionProgramPanel();
-    }
-}
-
 function applyFBXMaterial(fbx) {
     fbx.traverse(c => {
         if (!c.isMesh) return;
@@ -4407,7 +4803,6 @@ function disposeObjectResources(object, disposed = null) {
 
 function cleanupScene() {
     setBaseJogGizmoEnabled(false);
-    clearCollisionWarnings();
     state.transformControls.detach();
     const models = [...state.models];
     models.forEach((model) => {
@@ -4586,9 +4981,9 @@ async function handleCADDownload() {
 function animate() {
     requestAnimationFrame(animate);
     const timestamp = performance.now();
+    applyVirtualControllerFrame(timestamp);
     updateMotionSessions(timestamp);
     updateCycleTimeReadout(timestamp);
-    updateRobotCollisions(timestamp);
     state.controls.update();
     state.renderer.render(state.scene, state.camera);
 }
@@ -4598,7 +4993,7 @@ function onResize() {
     state.camera.aspect = w / h;
     state.camera.updateProjectionMatrix();
     state.renderer.setSize(w, h);
-    [el.modelBrowserPanel, el.jogPanel, el.programPanel].forEach((panel) => {
+    [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.programPanel].forEach((panel) => {
         if (panel?.dataset.userResized === 'true') normalizePanelResizeBox(panel);
     });
 }

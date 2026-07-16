@@ -20,6 +20,7 @@
       "mesh": "P1.stl",
       "pivot": [0, 0, 201],
       "axis": [0, 0, 1],
+      "direction": 1,
       "min": -170,
       "max": 170,
       "color": "#d7dce3"
@@ -47,6 +48,7 @@
       "mesh": "P4.stl",
       "pivot": [137, 0, 830],
       "axis": [1, 0, 0],
+      "direction": 1,
       "min": -190,
       "max": 190,
       "color": "#f0f2f5"
@@ -65,6 +67,7 @@
       "mesh": "P6.stl",
       "pivot": [548, 0, 830],
       "axis": [1, 0, 0],
+      "direction": 1,
       "min": -360,
       "max": 360,
       "color": "#1d6fd6"
