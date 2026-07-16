@@ -246,7 +246,6 @@ assert.throws(() => normalizeMotionProject(duplicateSteps), /Duplicate step id/)
 
 [
     'program-panel',
-    'program-panel-resize',
     'collision-alert',
     'collision-alert-text',
     'program-robot-list',
@@ -340,7 +339,8 @@ assert.ok(mainSource.includes('highlighted.color?.set(0xef4444)'), 'Colliding ro
 assert.ok(mainSource.includes('mesh.material = highlight.originalMaterial'), 'Collision highlighting must restore the original link material.');
 assert.ok(mainSource.includes('updateCollisionAlert(collisionPairs)'), 'Collision pairs must update the viewport alert.');
 assert.ok(mainSource.includes("./collision-core.mjs?v=20260717-collision-fallback1"), 'Collision fallback cache token must be current.');
-assert.ok(htmlSource.includes('main.js?v=20260717-cycle-time-stopwatch2'), 'Viewer cache token must load the live cycle stopwatch.');
+assert.ok(htmlSource.includes('main.js?v=20260717-panel-edge-resize1'), 'Viewer cache token must load classic panel edge resizing.');
+assert.ok(htmlSource.includes('style.css?v=20260717-panel-edge-resize1'), 'Stylesheet cache token must load panel edge cursors.');
 assert.match(htmlSource, /id="collision-alert"[^>]*role="alert"[^>]*aria-live="assertive"/);
 assert.match(cssSource, /\.collision-alert\s*\{[^}]*position:\s*absolute[^}]*background:\s*rgba\(127,\s*29,\s*29,\s*0\.94\)/s);
 assert.ok(
@@ -348,7 +348,6 @@ assert.ok(
     'Every animated robot must update its TCP visual, while only the active robot updates JOG controls.'
 );
 assert.match(cssSource, /\.program-panel\s*\{/);
-assert.match(cssSource, /\.program-panel-resize\s*\{[^}]*cursor:\s*nesw-resize/s);
 assert.match(cssSource, /\.program-panel-content\s*\{[^}]*overflow-y:\s*auto/s);
 assert.match(cssSource, /\.program-robot-row\.collision/);
 assert.match(cssSource, /\.program-step-row\.delay/);
@@ -377,8 +376,14 @@ assert.ok(
         && mainSource.includes("querySelectorAll('[data-panel-action]')"),
     'Panel window controls must remain available while motion editing is locked.'
 );
-assert.ok(mainSource.includes('function makeProgramPanelResizable('), 'Program Panel must support pointer and keyboard resizing.');
-assert.ok(mainSource.includes('PROGRAM_PANEL_MIN_WIDTH = 300'), 'Program Panel resizing must preserve a usable minimum width.');
-assert.ok(mainSource.includes("dataset.userResized === 'true'"), 'A resized Program Panel must be constrained after viewport changes.');
+assert.ok(!htmlSource.includes('id="program-panel-resize"'), 'Panel resizing must not require a header button.');
+assert.ok(mainSource.includes('function makePanelEdgeResizable('), 'Panels must support classic edge resizing.');
+assert.ok(mainSource.includes('[el.modelBrowserPanel, el.jogPanel, el.programPanel].forEach(makePanelEdgeResizable)'), 'Model, JOG and Program panels must all use edge resizing.');
+assert.ok(mainSource.includes("'model-browser-panel': { width: 260, height: 220 }")
+    && mainSource.includes("'jog-panel': { width: 250, height: 300 }")
+    && mainSource.includes("'program-panel': { width: 300, height: 320 }"), 'Resizable panels must preserve usable minimum sizes.');
+assert.ok(mainSource.includes("dataset.userResized === 'true'"), 'Resized panels must be constrained after viewport changes.');
+assert.match(cssSource, /\.panel-edge-resizable:is\(\[data-resize-edge="e"\], \[data-resize-edge="w"\]\)[^{]*\{[^}]*cursor:\s*ew-resize/s);
+assert.match(cssSource, /\.panel-edge-resizable:is\(\[data-resize-edge="n"\], \[data-resize-edge="s"\]\)[^{]*\{[^}]*cursor:\s*ns-resize/s);
 
 console.log(`Motion program core OK: ${models.length} robots (${scaraCount} SCARA, ${sixAxisCount} six-axis), MOVJ/MOVL/DELAY timing, cycle timers, four-robot numerical stress, JSON round trip, collision policy and schema checks`);
