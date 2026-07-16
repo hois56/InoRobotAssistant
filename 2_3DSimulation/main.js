@@ -37,6 +37,12 @@ function uiText(value) {
     return window.InoRobotI18n ? window.InoRobotI18n.translate(String(value)) : String(value);
 }
 
+function uiFormat(value, replacements = {}) {
+    return uiText(value).replace(/\{([A-Za-z0-9_]+)\}/g, (match, key) => (
+        Object.prototype.hasOwnProperty.call(replacements, key) ? String(replacements[key]) : match
+    ));
+}
+
 const state = {
     scene: null, camera: null, renderer: null,
     controls: null, transformControls: null,
@@ -75,6 +81,8 @@ const state = {
     collisionHighlights: new Map(),
     lastCollisionCheck: 0,
     lastCycleTimeDisplayUpdate: 0,
+    viewerStatus: null,
+    motionProgramStatus: null,
     pendingImportFile: null,
     occtImporterPromise: null,
     grid: null, baseAxes: null, labels: [],
@@ -231,7 +239,7 @@ async function init() {
         setStatus('Ready', '#22c55e');
     } catch (err) {
         console.error("Initialization Failed:", err);
-        setStatus(`Init Error: ${err.message}`, '#ef4444');
+        setStatus('초기화 중 오류가 발생했습니다.', '#ef4444');
     }
 }
 
@@ -253,8 +261,8 @@ function setupUI() {
         programButton.type = 'button';
         programButton.dataset.panelToggle = 'program-panel';
         programButton.disabled = true;
-        programButton.title = '모션 프로그램 표시/숨김';
-        programButton.innerHTML = '<i class="fa-solid fa-list-check"></i> Program';
+        programButton.title = uiText('모션 프로그램 표시/숨김');
+        programButton.innerHTML = `<i class="fa-solid fa-list-check"></i> ${uiText('Program')}`;
         const divider = el.panelLauncher.querySelector('.viewer-control-divider');
         el.panelLauncher.insertBefore(programButton, divider);
     }
@@ -273,14 +281,26 @@ function refreshLocalizedControls() {
     if (btnDown) btnDown.title = uiText('현재 열린 모든 모델 CAD 다운로드');
     const placeholder = el.modelSelect?.querySelector('option[value=""]');
     if (placeholder) placeholder.textContent = uiText('-- 로봇 모델을 선택하세요 --');
+    const programButton = el.panelLauncher?.querySelector('[data-panel-toggle="program-panel"]');
+    if (programButton) {
+        programButton.title = uiText('모션 프로그램 표시/숨김');
+        programButton.innerHTML = `<i class="fa-solid fa-list-check"></i> ${uiText('Program')}`;
+    }
     refreshImportPlacementOptions();
     state.panelWindows.forEach((record, panelId) => {
         window.InoRobotI18n?.refresh?.(record.panel);
         record.popup.document.title = getPanelWindowTitle(panelId);
     });
     renderModelTree();
+    if (state.selectedModel && el.selectedCoordinateLabel) {
+        el.selectedCoordinateLabel.textContent = uiText(
+            state.selectedModel.userData.placement === 'tcp' ? 'TOOL' : 'BASE'
+        );
+    }
     refreshJointControlLabels();
     renderMotionProgramPanel();
+    refreshViewerStatus();
+    refreshMotionProgramStatus();
     if (el.baseJogStatus?.dataset.sourceMessage) {
         el.baseJogStatus.textContent = uiText(el.baseJogStatus.dataset.sourceMessage);
     }
@@ -805,14 +825,18 @@ function updateHistoryButtons() {
     if (el.btnUndo) {
         el.btnUndo.disabled = locked || state.undoStack.length === 0;
         el.btnUndo.title = state.undoStack.length
-            ? `되돌리기: ${state.undoStack[state.undoStack.length - 1].label} (Ctrl+Z)`
-            : '되돌리기 (Ctrl+Z)';
+            ? uiFormat('되돌리기: {action} (Ctrl+Z)', {
+                action: uiText(state.undoStack[state.undoStack.length - 1].label)
+            })
+            : uiText('되돌리기 (Ctrl+Z)');
     }
     if (el.btnRedo) {
         el.btnRedo.disabled = locked || state.redoStack.length === 0;
         el.btnRedo.title = state.redoStack.length
-            ? `다시 실행: ${state.redoStack[state.redoStack.length - 1].label} (Ctrl+Y)`
-            : '다시 실행 (Ctrl+Y)';
+            ? uiFormat('다시 실행: {action} (Ctrl+Y)', {
+                action: uiText(state.redoStack[state.redoStack.length - 1].label)
+            })
+            : uiText('다시 실행 (Ctrl+Y)');
     }
 }
 
@@ -850,7 +874,7 @@ function undoLastAction() {
     applySceneSnapshot(entry.before);
     state.redoStack.push(entry);
     updateHistoryButtons();
-    setStatus(`Undo: ${entry.label}`, '#60a5fa');
+    setStatus('되돌리기: {action}', '#60a5fa', { action: uiText(entry.label) });
 }
 
 function redoLastAction() {
@@ -861,7 +885,7 @@ function redoLastAction() {
     applySceneSnapshot(entry.after);
     state.undoStack.push(entry);
     updateHistoryButtons();
-    setStatus(`Redo: ${entry.label}`, '#60a5fa');
+    setStatus('다시 실행: {action}', '#60a5fa', { action: uiText(entry.label) });
 }
 
 function getPanelElement(panelId) {
@@ -926,7 +950,7 @@ function popOutPanel(panelId) {
 
     const popup = window.open('', `InoRobot-${panelId}`, 'popup=yes,width=380,height=760,resizable=yes');
     if (!popup) {
-        setStatus('Popup blocked: allow popups to detach panels', '#ef4444');
+        setStatus('팝업이 차단되었습니다. 패널 분리를 위해 팝업을 허용하세요.', '#ef4444');
         return;
     }
 
@@ -958,8 +982,11 @@ function popOutPanel(panelId) {
 }
 
 function getPanelWindowTitle(panelId) {
-    if (panelId === 'program-panel') return '3D Simulation - Program Panel';
-    const panelName = panelId === 'model-browser-panel' ? uiText('모델 트리') : uiText('JOG Panel');
+    const panelName = panelId === 'program-panel'
+        ? uiText('Program Panel')
+        : panelId === 'model-browser-panel'
+            ? uiText('모델 트리')
+            : uiText('JOG Panel');
     return `3D Simulation - ${panelName}`;
 }
 
@@ -1290,7 +1317,7 @@ function selectSceneModel(model) {
 
     el.modelTransformPanel.classList.remove('hidden');
     el.selectedModelName.textContent = model.userData.motionDisplayName || model.userData.modelName || model.name || uiText('Unnamed model');
-    el.selectedCoordinateLabel.textContent = model.userData.placement === 'tcp' ? 'TOOL' : 'BASE';
+    el.selectedCoordinateLabel.textContent = uiText(model.userData.placement === 'tcp' ? 'TOOL' : 'BASE');
     if (model.userData.tcpFrame && state.activeArticulatedModel !== model) {
         state.activeArticulatedModel = model;
         renderJogControls(model);
@@ -1331,7 +1358,7 @@ function applySelectedModelNumericTransform(event) {
     );
     model.updateMatrixWorld(true);
     setSelectedTransformMode(event?.currentTarget?.id.includes('rotation') ? 'rotate' : 'translate');
-    setStatus('Model transform updated', '#22c55e');
+    setStatus('모델 변환이 적용되었습니다.', '#22c55e');
 }
 
 async function loadModelFromServer(modelDefinition) {
@@ -1341,8 +1368,8 @@ async function loadModelFromServer(modelDefinition) {
     setBaseJogGizmoEnabled(false);
     commitAllPendingHistories();
     const historyBefore = captureSceneSnapshot();
-    showLoading(true, `Loading ${name}...`);
-    setStatus('Loading', '#f59e0b');
+    showLoading(true, uiFormat('{name} 불러오는 중...', { name }));
+    setStatus('불러오는 중', '#f59e0b');
     const isAddMode = el.btnAddMode && el.btnAddMode.checked;
 
     // If not in Add Mode, clean up previous models
@@ -1352,8 +1379,8 @@ async function loadModelFromServer(modelDefinition) {
 
     try {
         const model = type === 'articulated-stl'
-            ? await loadArticulatedRobot(modelDefinition, (p) => showLoading(true, `Robot links: ${p}%`))
-            : await loadFBX(`./models/${file}`, (p) => showLoading(true, `Model: ${p}%`));
+            ? await loadArticulatedRobot(modelDefinition, (p) => showLoading(true, uiFormat('로봇 링크: {progress}%', { progress: p })))
+            : await loadFBX(`./models/${file}`, (p) => showLoading(true, uiFormat('모델: {progress}%', { progress: p })));
 
         if (type !== 'articulated-stl') {
             const rotFix = MODEL_ROTATION_FIX[name];
@@ -1418,7 +1445,7 @@ async function loadModelFromServer(modelDefinition) {
     } catch (err) {
         console.error('Load failed:', err);
         applySceneSnapshot(historyBefore);
-        setStatus('Error', '#ef4444');
+        setStatus('오류', '#ef4444');
         showLoading(false);
     }
 }
@@ -1640,7 +1667,7 @@ function getArticulatedRobotForAttachment() {
 function openImportDialog(file) {
     const extension = getFileExtension(file.name);
     if (!SUPPORTED_IMPORT_EXTENSIONS.has(extension)) {
-        alert('지원하지 않는 형식입니다. STL, FBX, OBJ, GLB, GLTF, STP, STEP 파일을 선택해주세요.');
+        alert(uiText('지원하지 않는 형식입니다. STL, FBX, OBJ, GLB, GLTF, STP, STEP 파일을 선택해 주세요.'));
         return;
     }
 
@@ -1860,15 +1887,15 @@ async function handle3DImport() {
     const placement = el.importPlacement.value;
     const robot = placement === 'tcp' ? getArticulatedRobotForAttachment() : null;
     if (placement === 'tcp' && !robot) {
-        alert('TCP에 장착할 로봇을 먼저 불러와주세요.');
+        alert(uiText('TCP에 장착할 로봇을 먼저 불러와 주세요.'));
         return;
     }
 
     const upAxis = getAutomaticSourceUpAxis(extension);
     el.btnConfirmImport.disabled = true;
     if (el.importDialog.open) el.importDialog.close();
-    showLoading(true, `Importing ${file.name}...`);
-    setStatus('Importing', '#f59e0b');
+    showLoading(true, uiFormat('{name} 가져오는 중...', { name: file.name }));
+    setStatus('가져오는 중', '#f59e0b');
 
     let importedModel = null;
     try {
@@ -1915,14 +1942,14 @@ async function handle3DImport() {
         selectSceneModel(importedModel);
         recordHistory(placement === 'tcp' ? 'TCP 툴 불러오기' : '설비 불러오기', historyBefore, captureSceneSnapshot());
         fitCamera();
-        setStatus(placement === 'tcp' ? 'Tool attached to TCP' : 'Equipment imported', '#22c55e');
+        setStatus(placement === 'tcp' ? 'Tool이 TCP에 부착되었습니다.' : '설비를 불러왔습니다.', '#22c55e');
     } catch (error) {
         console.error('3D import failed:', error);
         importedModel?.removeFromParent();
         if (importedModel) disposeObjectResources(importedModel);
         applySceneSnapshot(historyBefore);
-        setStatus('Import Error', '#ef4444');
-        alert(`3D 파일을 불러오지 못했습니다.\n${error.message}\n\n외부 파일을 참조하는 GLTF는 GLB로 변환해서 사용해주세요.`);
+        setStatus('가져오기 오류', '#ef4444');
+        alert(uiText('3D 파일을 불러오지 못했습니다.\n외부 파일을 참조하는 GLTF는 GLB로 변환해서 사용해 주세요.'));
     } finally {
         state.pendingImportFile = null;
         el.btnConfirmImport.disabled = false;
@@ -2950,15 +2977,15 @@ function getMotionStatus(robot) {
 }
 
 function motionStatusLabel(status) {
-    return ({
-        idle: 'Waiting',
-        running: 'Running',
-        paused: 'Paused',
-        completed: 'Completed',
-        error: 'Error',
-        collision: 'Collision',
-        stopped: 'Stopped'
-    })[status] || status;
+    return uiText(({
+        idle: '대기',
+        running: '실행 중',
+        paused: '일시정지',
+        completed: '완료',
+        error: '오류',
+        collision: '충돌',
+        stopped: '정지됨'
+    })[status] || status);
 }
 
 function showMotionProgramPanel() {
@@ -2971,17 +2998,26 @@ function showMotionProgramPanel() {
     updatePanelLauncher('program-panel');
 }
 
-function setMotionProgramStatus(message, type = '') {
-    if (!el.programStatus) return;
-    el.programStatus.textContent = message;
+function refreshMotionProgramStatus() {
+    if (!el.programStatus || !state.motionProgramStatus) return;
+    const { message, type, replacements } = state.motionProgramStatus;
+    el.programStatus.textContent = uiFormat(message, replacements);
     el.programStatus.classList.toggle('error', type === 'error');
     el.programStatus.classList.toggle('working', type === 'working');
 }
 
+function setMotionProgramStatus(message, type = '', replacements = {}) {
+    if (!el.programStatus) return;
+    state.motionProgramStatus = { message, type, replacements };
+    refreshMotionProgramStatus();
+}
+
 function formatMotionStepPose(step) {
-    if (step.motion === 'DELAY') return `WAIT ${Number(step.delaySeconds).toFixed(1)} s`;
-    if (step.motion === 'TIME_START') return 'TIMER START';
-    if (step.motion === 'TIME_OUT') return 'TIMER OUT';
+    if (step.motion === 'DELAY') return uiFormat('대기 {seconds} s', {
+        seconds: Number(step.delaySeconds).toFixed(1)
+    });
+    if (step.motion === 'TIME_START') return uiText('타이머 시작');
+    if (step.motion === 'TIME_OUT') return uiText('타이머 종료');
     const p = step.tcp.position.map((value) => Number(value).toFixed(1)).join(', ');
     return `TCP ${p}`;
 }
@@ -3004,7 +3040,7 @@ function updateCycleTimeReadout(timestamp = performance.now(), force = false) {
             ? `${program.lastCycleTimeSeconds.toFixed(3)} s`
             : '-- s';
     el.programCycleTime.classList.toggle('measuring', measuring);
-    el.programCycleTime.setAttribute('aria-label', measuring ? 'Cycle time measuring' : 'Cycle time');
+    el.programCycleTime.setAttribute('aria-label', uiText(measuring ? '사이클 타임 측정 중' : '사이클 타임'));
 }
 
 function renderMotionProgramPanel() {
@@ -3027,7 +3063,9 @@ function renderMotionProgramPanel() {
         included.type = 'checkbox';
         included.checked = program.included;
         included.dataset.programRobotInclude = robot.userData.motionInstanceId;
-        included.setAttribute('aria-label', `${robot.userData.motionDisplayName} simultaneous run`);
+        included.setAttribute('aria-label', uiFormat('{name} 동시 실행 대상', {
+            name: robot.userData.motionDisplayName
+        }));
 
         const select = document.createElement('button');
         select.type = 'button';
@@ -3044,13 +3082,15 @@ function renderMotionProgramPanel() {
 
     const robot = state.activeProgramRobot;
     const program = robot ? ensureMotionProgram(robot) : null;
-    el.programRobotName.textContent = robot?.userData.motionDisplayName || 'Select a robot';
+    el.programRobotName.textContent = robot?.userData.motionDisplayName || uiText('로봇을 선택하세요');
     updateCycleTimeReadout(performance.now(), true);
     el.programStepList.replaceChildren();
     if (!program || program.steps.length === 0) {
         const empty = document.createElement('p');
         empty.className = 'program-step-empty';
-        empty.textContent = robot ? 'Add a pose, DELAY or timer command.' : 'No programmable robot is loaded.';
+        empty.textContent = uiText(robot
+            ? '자세, DELAY 또는 타이머 명령을 추가하세요.'
+            : '프로그램 가능한 로봇이 없습니다.');
         el.programStepList.appendChild(empty);
     } else {
         program.steps.forEach((step, index) => {
@@ -3152,7 +3192,7 @@ function handleProgramRobotListChange(event) {
     if (!robot) return;
     const before = captureSceneSnapshot();
     ensureMotionProgram(robot).included = checkbox.checked;
-    recordHistory('Change simultaneous run selection', before, captureSceneSnapshot());
+    recordHistory('동시 실행 대상 변경', before, captureSceneSnapshot());
     renderMotionProgramPanel();
 }
 
@@ -3198,7 +3238,7 @@ function handleProgramStepListChange(event) {
         const maximum = step.motion === 'MOVJ' ? 100 : MAX_MOVL_SPEED;
         step.speed = THREE.MathUtils.clamp(Number(speedControl.value) || 1, 1, maximum);
     }
-    recordHistory('Edit motion point', before, captureSceneSnapshot());
+    recordHistory('모션 명령 편집', before, captureSceneSnapshot());
     renderMotionProgramPanel();
 }
 
@@ -3209,7 +3249,7 @@ function selectAllProgramRobots() {
     const before = captureSceneSnapshot();
     const shouldSelect = robots.some((robot) => !ensureMotionProgram(robot).included);
     robots.forEach((robot) => { ensureMotionProgram(robot).included = shouldSelect; });
-    recordHistory('Select all simultaneous robots', before, captureSceneSnapshot());
+    recordHistory('동시 실행 로봇 전체 선택', before, captureSceneSnapshot());
     renderMotionProgramPanel();
 }
 
@@ -3244,7 +3284,7 @@ function addCurrentMotionStep() {
     if (!step) return;
     program.steps.push(step);
     program.selectedStepId = step.id;
-    recordHistory('Add motion point', before, captureSceneSnapshot());
+    recordHistory('모션 포인트 추가', before, captureSceneSnapshot());
     renderMotionProgramPanel();
 }
 
@@ -3260,7 +3300,7 @@ function addDelayMotionStep() {
     step.delaySeconds = DEFAULT_DELAY_SECONDS;
     program.steps.push(step);
     program.selectedStepId = step.id;
-    recordHistory('Add delay command', before, captureSceneSnapshot());
+    recordHistory('딜레이 명령 추가', before, captureSceneSnapshot());
     renderMotionProgramPanel();
 }
 
@@ -3277,7 +3317,7 @@ function addTimerMotionStep(motion) {
     delete step.delaySeconds;
     program.steps.push(step);
     program.selectedStepId = step.id;
-    recordHistory(`Add ${motion.replace('_', ' ')} command`, before, captureSceneSnapshot());
+    recordHistory(motion === 'TIME_START' ? 'TIME START 명령 추가' : 'TIME OUT 명령 추가', before, captureSceneSnapshot());
     renderMotionProgramPanel();
 }
 
@@ -3288,7 +3328,7 @@ function updateSelectedMotionStep() {
     if (index < 0) return;
     const before = captureSceneSnapshot();
     program.steps[index] = captureRobotMotionStep(state.activeProgramRobot, program.steps[index]);
-    recordHistory('Overwrite motion point', before, captureSceneSnapshot());
+    recordHistory('모션 포인트 덮어쓰기', before, captureSceneSnapshot());
     renderMotionProgramPanel();
 }
 
@@ -3300,7 +3340,7 @@ function moveSelectedMotionStep(direction) {
     if (index < 0 || nextIndex < 0 || nextIndex >= program.steps.length) return;
     const before = captureSceneSnapshot();
     [program.steps[index], program.steps[nextIndex]] = [program.steps[nextIndex], program.steps[index]];
-    recordHistory('Reorder motion point', before, captureSceneSnapshot());
+    recordHistory('모션 포인트 순서 변경', before, captureSceneSnapshot());
     renderMotionProgramPanel();
 }
 
@@ -3312,7 +3352,7 @@ function deleteSelectedMotionStep() {
     const before = captureSceneSnapshot();
     program.steps.splice(index, 1);
     program.selectedStepId = program.steps[Math.min(index, program.steps.length - 1)]?.id || null;
-    recordHistory('Delete motion point', before, captureSceneSnapshot());
+    recordHistory('모션 포인트 삭제', before, captureSceneSnapshot());
     renderMotionProgramPanel();
 }
 
@@ -3325,7 +3365,7 @@ function updateMotionRepeat(event) {
         if (!session.stepIntoStepId && session.controlScope === scope) session.repeat = state[stateKey];
     });
     syncMotionRepeatControl();
-    if (before) recordHistory('Change motion repeat', before, captureSceneSnapshot());
+    if (before) recordHistory('반복 실행 변경', before, captureSceneSnapshot());
     else scheduleMotionProjectSave();
     renderMotionProgramPanel();
 }
@@ -3337,7 +3377,7 @@ function syncMotionRepeatControl() {
             : state.motionRepeat;
         button.classList.toggle('active', enabled);
         button.setAttribute('aria-pressed', String(enabled));
-        button.title = enabled ? '반복 실행 켜짐' : '반복 실행 꺼짐';
+        button.title = uiText(enabled ? '반복 실행 켜짐' : '반복 실행 꺼짐');
     });
 }
 
@@ -3466,9 +3506,12 @@ async function restoreMotionProjectData(input) {
     for (let index = 0; index < project.robots.length; index += 1) {
         const robotProject = project.robots[index];
         const definition = definitions[index];
-        showLoading(true, `Loading ${robotProject.displayName}...`);
+        showLoading(true, uiFormat('{name} 불러오는 중...', { name: robotProject.displayName }));
         const robot = await loadArticulatedRobot(definition, (progress) => {
-            showLoading(true, `${robotProject.displayName}: ${progress}%`);
+            showLoading(true, uiFormat('{name}: {progress}%', {
+                name: robotProject.displayName,
+                progress
+            }));
         });
         robot.userData.modelName = definition.name;
         assignRobotInstanceMetadata(robot, definition, {
@@ -3526,11 +3569,11 @@ async function restoreMotionProjectFromStorage() {
     }
     try {
         await restoreMotionProjectData(JSON.parse(raw));
-        setMotionProgramStatus('Autosaved project restored.');
+        setMotionProgramStatus('자동 저장된 프로젝트를 복원했습니다.');
     } catch (error) {
         console.error('Motion project restore failed:', error);
         showLoading(false);
-        setMotionProgramStatus(error.message || 'Project restore failed.', 'error');
+        setMotionProgramStatus('프로젝트 복원에 실패했습니다.', 'error');
     }
 }
 
@@ -3553,17 +3596,17 @@ async function exportMotionProject() {
             const writable = await fileHandle.createWritable();
             await writable.write(blob);
             await writable.close();
-            setMotionProgramStatus(`Project saved: ${fileHandle.name}`);
+            setMotionProgramStatus('프로젝트 저장됨: {name}', '', { name: fileHandle.name });
         } else {
             saveAs(blob, suggestedName);
-            setMotionProgramStatus('Project downloaded. Folder selection is unavailable in this browser.');
+            setMotionProgramStatus('프로젝트를 다운로드했습니다. 이 브라우저에서는 폴더를 선택할 수 없습니다.');
         }
     } catch (error) {
         if (error?.name === 'AbortError') {
-            setMotionProgramStatus('Project save canceled.');
+            setMotionProgramStatus('프로젝트 저장을 취소했습니다.');
             return;
         }
-        setMotionProgramStatus(error.message || 'Project export failed.', 'error');
+        setMotionProgramStatus('프로젝트 내보내기에 실패했습니다.', 'error');
     }
 }
 
@@ -3575,12 +3618,12 @@ async function handleMotionProjectImport() {
     try {
         const project = JSON.parse(await file.text());
         await restoreMotionProjectData(project);
-        recordHistory('Load motion project', before, captureSceneSnapshot());
-        setMotionProgramStatus(`Loaded ${file.name}.`);
+        recordHistory('모션 프로젝트 불러오기', before, captureSceneSnapshot());
+        setMotionProgramStatus('{name}을(를) 불러왔습니다.', '', { name: file.name });
     } catch (error) {
         applySceneSnapshot(before);
         showLoading(false);
-        setMotionProgramStatus(error.message || 'Project import failed.', 'error');
+        setMotionProgramStatus('프로젝트 불러오기에 실패했습니다.', 'error');
     }
 }
 
@@ -3715,7 +3758,7 @@ function startRobotMotionPlans(plans) {
     try {
         plans.forEach(({ robot, steps }) => preflightRobotMotion(robot, steps));
     } catch (error) {
-        setMotionProgramStatus(error.message || 'Motion path validation failed.', 'error');
+        setMotionProgramStatus('모션 경로 검증에 실패했습니다.', 'error');
         return;
     }
     commitAllPendingHistories();
@@ -3731,7 +3774,7 @@ function startRobotMotionPlans(plans) {
             stepIntoStepId
         }));
     });
-    setMotionProgramStatus(`${plans.length} robot motion${plans.length === 1 ? '' : 's'} started.`, 'working');
+    setMotionProgramStatus('{count}대의 로봇 모션을 시작했습니다.', 'working', { count: plans.length });
     updateMotionUiLock();
     renderMotionProgramPanel();
 }
@@ -3815,7 +3858,7 @@ function pauseRobotMotions(robots) {
     if (!sessions.length) return false;
     const now = performance.now();
     sessions.forEach((session) => setMotionSessionPaused(session, true, now));
-    setMotionProgramStatus('Motion paused.', 'working');
+    setMotionProgramStatus('모션이 일시정지되었습니다.', 'working');
     renderMotionProgramPanel();
     return true;
 }
@@ -3825,7 +3868,7 @@ function resumePausedRobotMotions(robots) {
     if (!sessions.length) return false;
     const now = performance.now();
     sessions.forEach((session) => setMotionSessionPaused(session, false, now));
-    setMotionProgramStatus('Motion resumed.', 'working');
+    setMotionProgramStatus('모션을 재개했습니다.', 'working');
     renderMotionProgramPanel();
     return true;
 }
@@ -3842,13 +3885,13 @@ function finalizeMotionHistoryIfIdle() {
     if (isMotionActive()) return;
     const before = state.motionHistoryBefore;
     state.motionHistoryBefore = null;
-    if (before) recordHistory('Multi-robot motion', before, captureSceneSnapshot());
+    if (before) recordHistory('멀티 로봇 모션', before, captureSceneSnapshot());
     updateMotionUiLock();
     renderMotionProgramPanel();
     scheduleMotionProjectSave();
 }
 
-function finishRobotMotionSession(session, status, message = '') {
+function finishRobotMotionSession(session, status, message = '', replacements = {}) {
     const robot = session.robot;
     state.motionSessions.delete(robot.userData.motionInstanceId);
     const program = ensureMotionProgram(robot);
@@ -3866,7 +3909,7 @@ function finishRobotMotionSession(session, status, message = '') {
     }
     syncJointControls(robot);
     if (robot === state.activeArticulatedModel) captureCurrentTcpTarget(robot);
-    if (message) setMotionProgramStatus(message, status === 'error' ? 'error' : '');
+    if (message) setMotionProgramStatus(message, status === 'error' ? 'error' : '', replacements);
     renderMotionProgramPanel();
     finalizeMotionHistoryIfIdle();
 }
@@ -3882,7 +3925,7 @@ function stopRobotMotions(robots) {
         program.cycleTimerStartedAt = null;
         stopped += 1;
     });
-    if (stopped) setMotionProgramStatus(`${stopped} robot motion${stopped === 1 ? '' : 's'} stopped.`);
+    if (stopped) setMotionProgramStatus('{count}대의 로봇 모션을 정지했습니다.', '', { count: stopped });
     finalizeMotionHistoryIfIdle();
     renderMotionProgramPanel();
 }
@@ -3958,7 +4001,12 @@ function advanceMotionSegment(session, timestamp) {
             program.lastCycleTimeSeconds = calculateCycleElapsedSeconds(program.cycleTimerStartedAt, markerTime);
             program.cycleTimerStartedAt = null;
             setMotionProgramStatus(
-                `${robot.userData.motionDisplayName} cycle time: ${program.lastCycleTimeSeconds.toFixed(3)} s`
+                '{name} 사이클 타임: {seconds} s',
+                '',
+                {
+                    name: robot.userData.motionDisplayName,
+                    seconds: program.lastCycleTimeSeconds.toFixed(3)
+                }
             );
         }
         program.progress = (session.cursor + 1) / session.steps.length;
@@ -4033,7 +4081,9 @@ function updateMotionSessions(timestamp) {
                         ensureMotionProgram(session.robot).progress = 0;
                         break;
                     }
-                    finishRobotMotionSession(session, 'completed', `${session.robot.userData.motionDisplayName} completed.`);
+                    finishRobotMotionSession(session, 'completed', '{name} 완료.', {
+                        name: session.robot.userData.motionDisplayName
+                    });
                     return;
                 }
             }
@@ -4042,7 +4092,11 @@ function updateMotionSessions(timestamp) {
             finishRobotMotionSession(
                 session,
                 'error',
-                `${session.robot.userData.motionDisplayName}: ${error.message || 'motion failed.'}`
+                '{name}: {message}',
+                {
+                    name: session.robot.userData.motionDisplayName,
+                    message: uiText('모션 실행에 실패했습니다.')
+                }
             );
         }
     });
@@ -4118,7 +4172,7 @@ function updateCollisionAlert(collisionPairs) {
     if (!el.collisionAlert || !el.collisionAlertText) return;
     if (!collisionPairs.length) {
         el.collisionAlert.classList.add('hidden');
-        el.collisionAlertText.textContent = 'Robot collision detected';
+        el.collisionAlertText.textContent = uiText('로봇 충돌이 감지되었습니다.');
         return;
     }
     el.collisionAlertText.textContent = collisionPairs
@@ -4190,9 +4244,9 @@ function updateRobotCollisions(timestamp) {
                 .map((id) => findProgramRobot(id)?.userData.motionDisplayName)
                 .filter(Boolean)
                 .join(', ');
-            setMotionProgramStatus(`Collision detected: ${names}`, 'error');
+            setMotionProgramStatus('충돌 감지: {names}', 'error', { names });
         } else if (previous.size) {
-            setMotionProgramStatus('Collision cleared.');
+            setMotionProgramStatus('충돌이 해제되었습니다.');
         }
         renderMotionProgramPanel();
     }
@@ -4476,14 +4530,20 @@ async function populateModelList() {
     } catch (e) { console.error('Failed to load model list:', e); }
 }
 
-function showLoading(show, text = 'Loading...') {
+function showLoading(show, text = uiText('불러오는 중...')) {
     el.loadingOverlay.classList.toggle('hidden', !show);
     el.loadingText.textContent = text;
 }
 
-function setStatus(text, color) {
-    el.statStatus.textContent = text;
-    el.statusDot.style.color = color;
+function refreshViewerStatus() {
+    if (!el.statStatus || !state.viewerStatus) return;
+    el.statStatus.textContent = uiFormat(state.viewerStatus.text, state.viewerStatus.replacements);
+    el.statusDot.style.color = state.viewerStatus.color;
+}
+
+function setStatus(text, color, replacements = {}) {
+    state.viewerStatus = { text, color, replacements };
+    refreshViewerStatus();
 }
 
 init();

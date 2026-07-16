@@ -75,6 +75,17 @@
   .info-tip p{font-size:14px;color:#cbd5e1;line-height:1.6;margin:14px 0 0}
   .info-tip.wide{width:1040px}
 </style>
+    <link rel="stylesheet" href="./mode-d.css">
+    <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/occt-import-js.js"></script>
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://esm.sh/three@0.156.1",
+        "three/addons/": "https://esm.sh/three@0.156.1/examples/jsm/"
+      }
+    }
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/Language/runtime/i18n.css">
     <script src="/Language/runtime/locales-data.js" defer></script>
@@ -109,6 +120,7 @@
     <div class="tab active" data-mode="direct">모드 A · 값을 이미 알고 있음</div>
     <div class="tab" data-mode="calc">모드 B · 재질·치수로부터 계산</div>
     <div class="tab" data-mode="shape">모드 C · Tool 관성모멘트 계산</div>
+    <div class="tab" data-mode="cad">모드 D · STEP CAD 물성 계산</div>
   </div>
 
   <div id="mode-direct">
@@ -149,7 +161,128 @@
     </div>
   </div>
 
-  <button class="btn" onclick="calculate()">계산하기</button>
+  <div id="mode-cad" class="hide">
+    <div class="card cad-card cad-top-grid">
+      <section class="cad-top-section cad-parts-section">
+        <h2>부품 및 재질</h2>
+        <div class="cad-parts-head"><span>포함</span><span>부품</span><span>재질 / 밀도</span></div>
+        <div id="cad-parts-list" class="cad-parts-list"></div>
+      </section>
+
+      <section class="cad-top-section cad-import-section">
+        <h2>STEP CAD 설정</h2>
+        <div class="cad-import-bar">
+          <div class="cad-import-actions">
+            <label class="btn cad-file-button" for="cad-step-file">STEP 파일 불러오기</label>
+            <button id="cad-export-step" class="btn cad-export-button" type="button" aria-describedby="cad-export-note" disabled>좌표계 적용 STEP 내보내기</button>
+          </div>
+          <input id="cad-step-file" type="file" accept=".step,.stp" hidden>
+          <span id="cad-file-name" class="cad-file-name">STEP/STP 파일만 지원합니다.</span>
+          <span id="cad-export-note" class="cad-export-note">불러온 전체 STEP 형상에 Tool 원점과 좌표계 방향을 적용합니다.</span>
+          <span id="cad-status" class="cad-status">CAD 파일을 먼저 불러오세요.</span>
+        </div>
+      </section>
+    </div>
+
+    <div class="cad-workspace">
+      <section class="cad-viewport-shell">
+        <div id="cad-viewport"></div>
+        <button id="cad-grid-toggle" class="cad-grid-toggle" type="button" aria-pressed="false">그리드 OFF</button>
+        <div class="cad-marker-legend" aria-label="3D marker legend">
+          <span><i class="cad-legend-tcp"></i>TCP</span>
+          <span><i class="cad-legend-cog"></i>CoG</span>
+        </div>
+        <div id="cad-snap-marker" class="cad-snap-marker" hidden><span id="cad-snap-symbol"></span><b id="cad-snap-label"></b></div>
+        <div class="cad-viewport-hint">회전: 왼쪽 드래그 · 이동: 오른쪽 드래그 · 확대/축소: 휠 · 점 찍기: 스냅 후보 클릭</div>
+      </section>
+
+      <section class="cad-panel">
+        <h3>좌표 설정</h3>
+
+        <div class="cad-snap-controls">
+          <label>
+            <span>스냅 유형</span>
+            <select id="cad-snap-type">
+              <option value="auto">자동 스냅</option>
+              <option value="vertex">꼭짓점</option>
+              <option value="endpoint">끝점</option>
+              <option value="edge-midpoint">에지 중심점</option>
+              <option value="face-center">면 중심점</option>
+              <option value="circle-center">원/호 중심점</option>
+              <option value="shape-center">형상 중심점</option>
+              <option value="virtual-intersection">가상 교점</option>
+            </select>
+          </label>
+          <label>
+            <span>스냅 반경 <output id="cad-snap-radius-value">16 px</output></span>
+            <input id="cad-snap-radius" type="range" min="8" max="32" value="16" step="1">
+          </label>
+        </div>
+        <div id="cad-snap-readout" class="cad-snap-readout" aria-live="polite">점 찍기를 누른 뒤 CAD 형상 위로 포인터를 이동하세요.</div>
+
+        <div class="cad-vector-block">
+          <div class="cad-vector-title"><span>Tool 원점 (mm)</span><button type="button" class="cad-pick-button" data-pick="origin">점 찍기</button></div>
+          <div class="cad-vector">
+            <label><span>X</span><input type="number" data-vector="origin" data-axis="x" step="0.1"></label>
+            <label><span>Y</span><input type="number" data-vector="origin" data-axis="y" step="0.1"></label>
+            <label><span>Z</span><input type="number" data-vector="origin" data-axis="z" step="0.1"></label>
+          </div>
+        </div>
+
+        <div class="cad-vector-block cad-orientation-block">
+          <div class="cad-vector-title">
+            <span>좌표계 회전각 (deg)</span>
+            <label class="cad-handler-toggle"><input id="cad-rotation-handler" type="checkbox" checked> 3D 회전 핸들</label>
+          </div>
+          <div class="cad-vector">
+            <label><span>Rx</span><input type="number" data-vector="rotation" data-axis="x" value="0" step="0.1"></label>
+            <label><span>Ry</span><input type="number" data-vector="rotation" data-axis="y" value="0" step="0.1"></label>
+            <label><span>Rz</span><input type="number" data-vector="rotation" data-axis="z" value="0" step="0.1"></label>
+          </div>
+          <div id="cad-axis-directions" class="cad-axis-directions">
+            <div><b>X</b><output data-axis-direction="x">1.000, 0.000, 0.000</output></div>
+            <div><b>Y</b><output data-axis-direction="y">0.000, 1.000, 0.000</output></div>
+            <div><b>Z</b><output data-axis-direction="z">0.000, 0.000, 1.000</output></div>
+          </div>
+        </div>
+
+        <div class="cad-vector-block">
+          <div class="cad-vector-title"><span>TCP 위치 (mm)</span><button type="button" class="cad-pick-button" data-pick="tcp">점 찍기</button></div>
+          <div class="cad-vector">
+            <label><span>X</span><input type="number" data-vector="tcp" data-axis="x" step="0.1"></label>
+            <label><span>Y</span><input type="number" data-vector="tcp" data-axis="y" step="0.1"></label>
+            <label><span>Z</span><input type="number" data-vector="tcp" data-axis="z" step="0.1"></label>
+          </div>
+        </div>
+
+        <button id="cad-calculate" class="btn cad-calculate" type="button" disabled>질량 특성 계산</button>
+      </section>
+    </div>
+
+    <div id="cad-result" class="card hide" style="margin-top:20px">
+      <h2>STEP 계산 결과</h2>
+      <div class="cad-result-grid">
+        <section class="cad-result-section">
+          <h3>총 질량</h3>
+          <div id="cad-result-mass" class="cad-result-value">0 kg</div>
+        </section>
+        <section class="cad-result-section">
+          <h3>무게중심 (Tool 원점 기준)</h3>
+          <div id="cad-result-center" class="cad-result-values"></div>
+        </section>
+        <section class="cad-result-section wide">
+          <h3>Tool 원점 기준 관성모멘트</h3>
+          <div id="cad-result-origin-inertia" class="cad-result-values"></div>
+        </section>
+        <section class="cad-result-section wide">
+          <h3>부하중심 기준 관성모멘트</h3>
+          <div id="cad-result-center-inertia" class="cad-result-values"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <button id="main-calculate" class="btn" onclick="calculate()">계산하기</button>
 
   <div id="result" class="card hide" style="margin-top:20px">
     <h2>판정 결과</h2>
@@ -166,7 +299,7 @@
 const ROBOTS=[{type:"cobot",name:"R4",load:4,t5:8.86,t6:4.9,i5:.20,i6:.067,j5:70},{type:"cobot",name:"R4H",load:4,t5:8.86,t6:4.9,i5:.20,i6:.067,j5:75},{type:"cobot",name:"R7H",load:7,t5:16.9,t6:9.4,i5:.49,i6:.150,j5:78},{type:"cobot",name:"R10-110",load:10,t5:18.59,t6:9.8,i5:.60,i6:.200,j5:80},{type:"cobot",name:"R10-140",load:10,t5:22.0,t6:9.8,i5:.63,i6:.200,j5:107.7},{type:"cobot",name:"R10H",load:10,t5:18.59,t6:9.8,i5:.60,i6:.200,j5:78},{type:"cobot",name:"R11",load:11,t5:20.45,t6:10.8,i5:.60,i6:.200,j5:80},{type:"cobot",name:"R15H",load:15,t5:26.5,t6:12.0,i5:.90,i6:.300,j5:86},{type:"cobot",name:"R16",load:16,t5:25.0,t6:12.0,i5:.78,i6:.300,j5:123},{type:"cobot",name:"R20H",load:20,t5:35.0,t6:20.0,i5:1.0,i6:.400,j5:86},{type:"cobot",name:"R25",load:25,t5:50.0,t6:30.0,i5:2.20,i6:1.500,j5:123},{type:"scara",name:"S4",load:4,rated:2,i4r:.005,i4:.05},{type:"scara",name:"S7",load:7,rated:3,i4r:.01,i4:.12},{type:"scara",name:"S10",load:10,rated:5,i4r:.02,i4:.30},{type:"scara",name:"S25",load:25,rated:10,i4r:.5,i4:1.2},{type:"scara",name:"S35",load:35,rated:20,i4r:.6,i4:1.2},{type:"scara",name:"S60",load:60,rated:30,i4r:1.2,i4:2.45},{type:"scara",name:"TS4",load:4,rated:2,i4r:.005,i4:.01},{type:"scara",name:"TS5",load:5,rated:2,i4r:.05,i4:.12}];
 const G=9.8;
 const uiText=value=>window.InoRobotI18n?window.InoRobotI18n.translate(String(value)):String(value);
-document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');const m=t.dataset.mode;document.getElementById('mode-direct').classList.toggle('hide',m!=='direct');document.getElementById('mode-calc').classList.toggle('hide',m!=='calc');document.getElementById('mode-shape').classList.toggle('hide',m!=='shape');document.getElementById('robot-card').classList.toggle('hide',m==='shape');document.getElementById('result').classList.add('hide');});
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');const m=t.dataset.mode;document.getElementById('mode-direct').classList.toggle('hide',m!=='direct');document.getElementById('mode-calc').classList.toggle('hide',m!=='calc');document.getElementById('mode-shape').classList.toggle('hide',m!=='shape');document.getElementById('mode-cad').classList.toggle('hide',m!=='cad');document.getElementById('robot-card').classList.toggle('hide',m==='shape'||m==='cad');document.getElementById('main-calculate').classList.toggle('hide',m==='cad');document.getElementById('result').classList.add('hide');if(m==='cad')window.ToolModeD?.activate();});
 const sel=document.getElementById('robot');
 const gCobot=document.createElement('optgroup');gCobot.label=uiText('다관절로봇');
 const gScara=document.createElement('optgroup');gScara.label='SCARA';
@@ -204,5 +337,6 @@ function refreshDynamicLanguage(){gCobot.label=uiText('다관절로봇');showSpe
 document.addEventListener('inorobot:i18nready',refreshDynamicLanguage);
 document.addEventListener('inorobot:languagechange',refreshDynamicLanguage);
 </script>
+<script type="module" src="./mode-d.js"></script>
 </body>
 </html>

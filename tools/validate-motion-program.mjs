@@ -96,13 +96,65 @@ for (let frame = 0; frame <= 10000; frame += 1) {
     });
 }
 
-const [catalogText, mainSource, htmlSource, cssSource] = await Promise.all([
+const [catalogText, mainSource, htmlSource, cssSource, ...viewerLocaleTexts] = await Promise.all([
     readFile(new URL('../2_3DSimulation/models/models.json', import.meta.url), 'utf8'),
     readFile(new URL('../2_3DSimulation/main.js', import.meta.url), 'utf8'),
     readFile(new URL('../2_3DSimulation/index.html', import.meta.url), 'utf8'),
-    readFile(new URL('../2_3DSimulation/style.css', import.meta.url), 'utf8')
+    readFile(new URL('../2_3DSimulation/style.css', import.meta.url), 'utf8'),
+    ...['ko', 'en', 'zh-CN', 'vi'].map((locale) => (
+        readFile(new URL(`../Language/${locale}/robot-3d-viewer.json`, import.meta.url), 'utf8')
+    ))
 ]);
 const catalog = JSON.parse(catalogText);
+const viewerLocaleCodes = ['ko', 'en', 'zh-CN', 'vi'];
+const viewerLocales = Object.fromEntries(viewerLocaleCodes.map((locale, index) => [
+    locale,
+    JSON.parse(viewerLocaleTexts[index]).legacy
+]));
+const viewerLocaleKeySets = viewerLocaleCodes.map((locale) => Object.keys(viewerLocales[locale]).sort());
+viewerLocaleKeySets.slice(1).forEach((keys, index) => {
+    assert.deepEqual(keys, viewerLocaleKeySets[0], `${viewerLocaleCodes[index + 1]} viewer locale keys must match Korean.`);
+});
+
+const viewerTranslationSources = new Set([
+    'Program', 'Program Panel', 'ROBOTS', 'CYCLE TIME',
+    '대기', '실행 중', '일시정지', '완료', '오류', '충돌', '정지됨',
+    '사이클 타임 측정 중', '사이클 타임',
+    'Tool이 TCP에 부착되었습니다.', '설비를 불러왔습니다.',
+    '자세, DELAY 또는 타이머 명령을 추가하세요.', '프로그램 가능한 로봇이 없습니다.',
+    '반복 실행 켜짐', '반복 실행 꺼짐',
+    '프로젝트 복원에 실패했습니다.', '프로젝트 내보내기에 실패했습니다.',
+    '프로젝트 불러오기에 실패했습니다.', '모션 경로 검증에 실패했습니다.',
+    'TIME START 명령 추가', 'TIME OUT 명령 추가'
+]);
+for (const match of htmlSource.matchAll(/>([^<>]+)</g)) {
+    const source = match[1].replace(/\s+/g, ' ').trim();
+    if (/[가-힣]/.test(source)) viewerTranslationSources.add(source);
+}
+for (const match of htmlSource.matchAll(/(?:title|aria-label|placeholder|alt)=["']([^"']+)["']/g)) {
+    if (/[가-힣]/.test(match[1])) viewerTranslationSources.add(match[1].trim());
+}
+[
+    /(?:uiText|uiFormat|setStatus|setMotionProgramStatus)\(\s*["']([^"']+)["']/g,
+    /recordHistory\(\s*["']([^"']+)["']/g
+].forEach((expression) => {
+    for (const match of mainSource.matchAll(expression)) {
+        const source = match[1].replace(/\\n/g, '\n');
+        if (/[가-힣]/.test(source)) viewerTranslationSources.add(source);
+    }
+});
+viewerLocaleCodes.forEach((locale) => {
+    viewerTranslationSources.forEach((source) => {
+        assert.ok(Object.prototype.hasOwnProperty.call(viewerLocales[locale], source), `${locale} is missing viewer translation: ${source}`);
+        const sourcePlaceholders = [...source.matchAll(/\{([A-Za-z0-9_]+)\}/g)].map((match) => match[1]).sort();
+        const targetPlaceholders = [...String(viewerLocales[locale][source]).matchAll(/\{([A-Za-z0-9_]+)\}/g)]
+            .map((match) => match[1]).sort();
+        assert.deepEqual(targetPlaceholders, sourcePlaceholders, `${locale} changes placeholders for: ${source}`);
+        if (locale !== 'ko' && /[가-힣]/.test(source)) {
+            assert.doesNotMatch(viewerLocales[locale][source], /[가-힣]/, `${locale} leaves Korean viewer text untranslated: ${source}`);
+        }
+    });
+});
 const models = catalog.filter((entry) => entry.type === 'articulated-stl');
 const scaraCount = models.filter((entry) => entry.robotType === 'scara').length;
 const sixAxisCount = models.filter((entry) => entry.robotType === 'six-axis').length;
@@ -339,7 +391,7 @@ assert.ok(mainSource.includes('highlighted.color?.set(0xef4444)'), 'Colliding ro
 assert.ok(mainSource.includes('mesh.material = highlight.originalMaterial'), 'Collision highlighting must restore the original link material.');
 assert.ok(mainSource.includes('updateCollisionAlert(collisionPairs)'), 'Collision pairs must update the viewport alert.');
 assert.ok(mainSource.includes("./collision-core.mjs?v=20260717-collision-fallback1"), 'Collision fallback cache token must be current.');
-assert.ok(htmlSource.includes('main.js?v=20260717-panel-edge-resize1'), 'Viewer cache token must load classic panel edge resizing.');
+assert.ok(htmlSource.includes('main.js?v=20260717-i18n-complete1'), 'Viewer cache token must load complete four-language support.');
 assert.ok(htmlSource.includes('style.css?v=20260717-panel-edge-resize1'), 'Stylesheet cache token must load panel edge cursors.');
 assert.match(htmlSource, /id="collision-alert"[^>]*role="alert"[^>]*aria-live="assertive"/);
 assert.match(cssSource, /\.collision-alert\s*\{[^}]*position:\s*absolute[^}]*background:\s*rgba\(127,\s*29,\s*29,\s*0\.94\)/s);

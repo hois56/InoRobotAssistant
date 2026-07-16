@@ -243,7 +243,7 @@ function ensureRuntimeReferences(html) {
 function integrateSubpages() {
     const htmlFiles = [
         '1_RobotModelSelect/index.html',
-        '2_Robot3DViewer/index.html',
+        '2_3DSimulation/index.html',
         '3_ToolSelector/index.html',
         '4_ProjectGenerator/index.html',
         '5_Software/index.html',

@@ -3,7 +3,7 @@
 
     const cardHeadings = {
         robotSelect: 'Robot Model Select',
-        robot3dViewer: 'Robot 3D Viewer',
+        robot3dViewer: '3D Simulation',
         toolSelector: 'Robot Tool Selector',
         projectGenerator: 'Project Generator',
         software: 'Software',

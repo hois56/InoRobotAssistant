@@ -9,7 +9,7 @@
     "InoRobot Assistant는 INOVANCE Robot을 설계부터 프로그래밍, 시운전까지 지원하는 유용한 협업 도구입니다.": "InoRobot Assistant hỗ trợ mọi giai đoạn làm việc với robot INOVANCE, từ thiết kế, lập trình đến chạy thử.",
     "필요한 도구를 선택하여 작업을 시작하세요.": "Chọn công cụ cần thiết để bắt đầu.",
     "INOVANCE 로봇의 라인업을 확인하세요. 선택한 모델과 옵션 구성을 PDF로 저장하여 발주에 활용할 수 있습니다. 또한 2D, 3D CAD 파일을 다운로드 받을 수 있습니다.": "Khám phá dòng robot INOVANCE. Lưu model và tùy chọn đã chọn thành PDF để đặt hàng, đồng thời tải tệp CAD 2D và 3D.",
-    "INOVANCE 로봇 3D 모델링을 웹 브라우저에서 확인하고, CAD 파일을 다운로드 받으세요.": "Xem model 3D robot INOVANCE trên trình duyệt và tải tệp CAD.",
+    "INOVANCE 로봇의 관절 및 Base JOG, Tool·설비 배치와 3D 모델 시뮬레이션을 지원합니다.": "Hỗ trợ mô phỏng robot INOVANCE với JOG khớp và Base, bố trí Tool/thiết bị và model 3D nhập vào.",
     "로봇 Tool 부하 조건에 따른 모델 적합성을 판정합니다. 관련 모멘트 및 허용 하중을 계산하여 최적의 모델을 선택하세요.": "Đánh giá độ phù hợp của robot theo tải Tool. Tính mô-men và tải cho phép để chọn model tối ưu.",
     "로봇 모델과 공정 구성을 선택하면, 컨트롤러에 바로 적용 가능한 프로젝트 파일 구조를 자동으로 생성합니다. 번거로운 초기 설정 없이 몇 번의 선택만으로 프로그래밍을 바로 완성해보세요.": "Chọn model robot và cấu hình quy trình để tự động tạo cấu trúc dự án dùng trực tiếp trên bộ điều khiển.",
     "로봇 제어 및 설정을 위한 최신 소프트웨어를 다운로드할 수 있습니다.": "Tải phần mềm mới nhất để điều khiển và cài đặt robot.",
@@ -39,7 +39,7 @@
     "로봇 Tool 부하 조건에 따른 모델 적합성을 판정합니다. 관성 모멘트 및 허용 하중을 계산하여 최적의 모델을 선택하세요.": "Đánh giá mức phù hợp của robot theo tải Tool. Tính mômen quán tính và tải cho phép để chọn model tối ưu.",
     "로봇 모델과 공정 구성을 선택하면, 컨트롤러에 바로 적용 가능한 프로젝트 파일 구조를 자동으로 생성합니다. 번거로운 초기 설정 없이 티칭 수정만으로 프로그램을 바로 완성해보세요.": "Chọn model robot và cấu hình công đoạn để tự động tạo cấu trúc dự án dùng ngay trên bộ điều khiển. Chỉ cần điều chỉnh phần teaching để hoàn tất chương trình.",
     "Robot Model Select 버전 기록 보기": "Mở lịch sử phiên bản Robot Model Select",
-    "Robot 3D Viewer 버전 기록 보기": "Mở lịch sử phiên bản Robot 3D Viewer",
+    "3D Simulation 버전 기록 보기": "Mở lịch sử phiên bản 3D Simulation",
     "Robot Tool Selector 버전 기록 보기": "Mở lịch sử phiên bản Robot Tool Selector",
     "Project Generator 버전 기록 보기": "Mở lịch sử phiên bản Project Generator",
     "Software 버전 기록 보기": "Mở lịch sử phiên bản Software",
@@ -165,43 +165,26 @@
           }
         ]
       },
-      {
-        "title": "Robot 3D Viewer",
-        "versions": [
-          {
-            "title": "Ver 26.07.12.01",
+    {
+      "title": "3D Simulation",
+      "versions": [
+        {
+          "title": "Ver 26.07.17.01",
+          "items": [
+            "**[Mới]** Đã thêm Program Panel đa robot để xây dựng chương trình điểm độc lập cho từng robot và chạy riêng lẻ hoặc đồng thời.",
+            "**[Hỗ trợ]** Hỗ trợ MOVJ, MOVL, Step Into, tạm dừng, tiếp tục, dừng và chạy lặp.",
+            "**[Thêm]** Đã thêm lệnh DELAY, TIME START, TIME OUT và đo cycle time theo thời gian thực.",
+            "**[Thêm]** Hỗ trợ tự động lưu project chuyển động, nhập/xuất JSON và hoàn tác/làm lại kết quả chạy.",
+            "**[Thêm]** Đã thêm cảnh báo va chạm trực quan, hiển thị vị trí va chạm và robot liên quan."
+          ]
+        },
+        {
+          "title": "Ver 26.07.16.01",
             "items": [
-              "**[Sửa]** Sửa kích thước hiển thị quá nhỏ của R16 và R25."
-            ]
-          },
-          {
-            "title": "Ver 26.06.02.01",
-            "items": [
-              "**[Thay đổi]** Đổi IR-R15H-145S-INT thành IR-R15H-145S-K-INT.",
-              "**[Thay đổi]** Đổi IR-R20H-120S-INT thành IR-R20H-120S-K-INT.",
-              "**[Sửa]** Khôi phục tra cứu tệp CAD -S-INT khi chọn mẫu -S-K-INT."
-            ]
-          },
-          {
-            "title": "Ver 26.05.29.01",
-            "items": [
-              "**[Sửa]** Đưa các tệp CAD lưu dạng _CN hoặc _3D_CN của R16, R25 và mẫu liên quan vào ZIP.",
-              "**[Sửa]** Khi không có _2D.dwg, hệ thống tải _3D_CN.dwg thay thế."
-            ]
-          },
-          {
-            "title": "Ver 26.04.17.01",
-            "items": [
-              "**[Mới]** Thêm mô hình 3D IR-S25-120Z42S-INT và IR-S35-120Z42S-INT.",
-              "**[Sửa]** Sửa hướng hiển thị bị đảo của IR-S25-120 và IR-S35-120.",
-              "**[Sửa]** Sửa giá trị xoay ban đầu nhận từ Robot Model Select."
-            ]
-          },
-          {
-            "title": "Ver 26.03.31.01",
-            "items": [
-              "**[Mới]** Thêm xóa từng mô hình bằng Delete hoặc Backspace.",
-              "**[Mới]** Thêm điều khiển hiện hoặc ẩn tay nắm di chuyển, xoay và thay đổi kích thước."
+              "**[Phát hành]** Hỗ trợ JOG khớp và JOG TCP theo tọa độ Base cho mọi model robot được cung cấp.",
+              "**[Hỗ trợ]** Cung cấp nhập 3D Tool/thiết bị, bố trí theo cây model, biến đổi số và tay nắm 3D.",
+              "**[Hỗ trợ]** Hỗ trợ STL, FBX, OBJ, GLB, GLTF, STEP, STP cùng hoàn tác và làm lại.",
+              "**[Thiết kế lại]** Đổi tên và cải tổ thành 3D Simulation với panel có thể di chuyển, tách, ẩn và giao diện đa ngôn ngữ."
             ]
           }
         ]
@@ -209,6 +192,18 @@
       {
         "title": "Robot Tool Selector",
         "versions": [
+          {
+            "title": "Ver 26.07.17.01",
+            "items": [
+              "**[Mới]** Thêm Mode D để tính đặc tính khối lượng từ tệp CAD STEP/STP.",
+              "**[Thêm]** Cho phép đặt trạng thái tham gia tính toán, vật liệu và mật độ cho từng chi tiết; đồng thời tính tổng khối lượng, CoG và Ixx, Iyy, Izz theo gốc Tool/tâm tải.",
+              "**[Thêm]** Có thể đặt gốc Tool và TCP bằng bắt dính đỉnh, điểm cuối, điểm tâm và giao điểm ảo.",
+              "**[Thêm]** Có thể đặt hướng hệ tọa độ bằng tay cầm xoay 3D hoặc giá trị Rx, Ry và Rz.",
+              "**[Thêm]** TCP và CoG được hiển thị bằng màu sắc, hình dạng riêng và có chú giải trong trình xem 3D.",
+              "**[Thêm]** Thêm nút ON/OFF lưới cho trình xem 3D với trạng thái mặc định là OFF.",
+              "**[Thêm]** Có thể xuất lại tệp STEP theo gốc Tool và hướng hệ tọa độ đã chọn."
+            ]
+          },
           {
             "title": "Ver 26.04.26.01",
             "items": [

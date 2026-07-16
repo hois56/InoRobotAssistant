@@ -264,7 +264,7 @@
         if (pathname.includes('/7_debuggingtool/') || pathname.includes('/debuggingsupport/')) return 'debugging';
         if (pathname.includes('/4_projectgenerator/') || pathname.includes('/inorobotprojectgen/')) return 'projectGenerator';
         if (pathname.includes('/3_toolselector/') || pathname.includes('/inorobottoolselect/')) return 'toolSelector';
-        if (pathname.includes('/2_robot3dviewer/') || pathname.includes('/inorobot3dview/')) return 'robot3dViewer';
+        if (pathname.includes('/2_3dsimulation/') || pathname.includes('/2_robot3dviewer/') || pathname.includes('/inorobot3dview/')) return 'robot3dViewer';
         if (pathname.includes('/1_robotmodelselect/') || pathname.includes('/inorobotselect/')) return 'robotSelect';
         if (pathname.includes('/6_document/') || pathname.includes('/manual/')) return 'manual';
         if (pathname.includes('/5_software/') || pathname.includes('/software/')) return 'software';
@@ -500,6 +500,11 @@
         apply: function (root) {
             stopObserver();
             walkAndTranslate(root || document.body, true);
+            startObserver();
+        },
+        refresh: function (root) {
+            stopObserver();
+            walkAndTranslate(root || document.body, false);
             startObserver();
         },
         get locale() {
