@@ -1461,17 +1461,17 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
     parent.add(tcpFrame);
     robot.userData.tcpFrame = tcpFrame;
 
-    const baseAxesAtTcp = new THREE.AxesHelper(110);
-    baseAxesAtTcp.name = 'Base axes at TCP';
-    applyAxesHelperColors(baseAxesAtTcp);
-    const axesMaterials = Array.isArray(baseAxesAtTcp.material) ? baseAxesAtTcp.material : [baseAxesAtTcp.material];
+    const toolAxesAtTcp = new THREE.AxesHelper(110);
+    toolAxesAtTcp.name = 'Tool axes at TCP';
+    applyAxesHelperColors(toolAxesAtTcp);
+    const axesMaterials = Array.isArray(toolAxesAtTcp.material) ? toolAxesAtTcp.material : [toolAxesAtTcp.material];
     axesMaterials.forEach((material) => {
         material.depthTest = false;
         material.transparent = true;
     });
-    baseAxesAtTcp.renderOrder = 20;
-    robot.add(baseAxesAtTcp);
-    robot.userData.baseAxesAtTcp = baseAxesAtTcp;
+    toolAxesAtTcp.renderOrder = 20;
+    tcpFrame.add(toolAxesAtTcp);
+    robot.userData.toolAxesAtTcp = toolAxesAtTcp;
     prepareRobotCollisionParts(robot);
 
     return robot;
@@ -2332,9 +2332,10 @@ function getTcpRotationDegrees(robot, pose) {
 }
 
 function syncTcpVisualAtPose(robot, pose) {
-    const axes = robot.userData.baseAxesAtTcp;
+    const axes = robot.userData.toolAxesAtTcp;
     if (!axes || !pose) return;
-    axes.position.copy(pose.position);
+    axes.position.set(0, 0, 0);
+    axes.quaternion.identity();
     axes.updateMatrix();
     axes.matrixWorldNeedsUpdate = true;
 }

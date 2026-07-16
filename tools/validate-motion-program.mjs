@@ -185,6 +185,8 @@ assert.deepEqual(programControlRows, [
     'function restoreMotionProjectData(',
     'function finalizeMotionHistoryIfIdle(',
     'function syncTcpVisualAtPose(',
+    'tcpFrame.add(toolAxesAtTcp)',
+    'robot.userData.toolAxesAtTcp = toolAxesAtTcp',
     'maxSpeed: jointSpeeds[index]',
     'Robot joint speeds are invalid for',
     'if (robot !== state.activeArticulatedModel) return;',
