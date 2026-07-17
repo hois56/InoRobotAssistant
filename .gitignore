@@ -8,3 +8,4 @@
 # Local .NET build intermediates.
 **/bin/
 **/obj/
+# Retry GitHub Pages deployment
