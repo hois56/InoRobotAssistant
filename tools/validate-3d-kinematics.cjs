@@ -281,6 +281,10 @@ for (const model of robots) {
         const home = forwardScara(model, [0, 0, 0, 0]);
         const rzOnly = forwardScara(model, [0, 0, 0, 30]);
         assert(Math.hypot(home.x - rzOnly.x, home.y - rzOnly.y, home.z - rzOnly.z) < 1e-9, `${model.name}: Rz-only motion changes XYZ`);
+        const singularHomeAngles = solveScaraPose(model, home);
+        assert(singularHomeAngles, `${model.name}: analytic SCARA IK rejected the fully extended singular pose`);
+        const solvedSingularHome = forwardScara(model, singularHomeAngles);
+        assert(Math.hypot(home.x - solvedSingularHome.x, home.y - solvedSingularHome.y) < 1e-6, `${model.name}: singular home pose was not reproduced`);
 
         const sampleAngles = [15, -20, (model.limits[2][0] + model.limits[2][1]) / 2, 25];
         const target = forwardScara(model, sampleAngles);

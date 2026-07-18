@@ -631,7 +631,7 @@ assert.match(motionCoreSource, /t \* t \* t \* \(10 \+ t \* \(-15 \+ 6 \* t\)\)/
 assert.ok(mainSource.includes('maxAcceleration: jointAccelerations[index]'), 'Robot manifests must expose per-axis acceleration limits.');
 assert.ok(mainSource.includes('maxDeceleration: jointDecelerations[index]'), 'Robot manifests must expose per-axis deceleration limits.');
 assert.ok(mainSource.includes('robot.userData.manifest.cartesianMotion'), 'MOVL must use the selected robot Cartesian limits.');
-assert.ok(htmlSource.includes('main.js?v=20260719-euler-321-11'), 'Viewer cache token must load the current simulation bundle.');
+assert.ok(htmlSource.includes('main.js?v=20260719-singularity-1'), 'Viewer cache token must load the current simulation bundle.');
 assert.ok(htmlSource.includes('id="btn-fullscreen-mode"'), 'Viewer must expose the fullscreen UI mode button.');
 assert.ok(mainSource.includes('function setFullscreenUiMode(enabled)') && mainSource.includes('function handleFullscreenUiPointerMove(event)'), 'Fullscreen UI mode must hide and reveal bars from pointer proximity.');
 assert.ok(mainSource.includes("revealFullscreenBar('top')") && mainSource.includes("revealFullscreenBar('bottom')"), 'Fullscreen UI mode must reveal the top and bottom bars independently.');
@@ -745,6 +745,14 @@ assert.match(htmlSource, /jog-mode-tabs[\s\S]*?id="btn-jog-joint-mode"[\s\S]*?id
 assert.match(htmlSource, /id="program-update-step"[^>]*>[\s\S]*?program-point-overwrite-mark[\s\S]*?fa-rotate/, 'Position overwrite must use the P refresh icon.');
 assert.ok(mainSource.includes('const available = !isMotionActive();') && !mainSource.includes('if (!getSimulationSnapModels().length)'), 'Snap Move must be activatable without a selected robot or imported 3D model.');
 assert.ok(mainSource.includes('const baseSeedOffset = polarDelta * jointDirection;') && mainSource.includes('const baseSeedOffsets = ['), 'IK must add J1-oriented seeds for targets that require base rotation.');
+assert.ok(mainSource.includes('const IK_MAX_ITERATIONS = 320;')
+    && mainSource.includes('const IK_MIN_DAMPING = 0.00001;')
+    && mainSource.includes('function calculateIkDamping(')
+    && mainSource.includes('normal[index][index] += damping * damping;'), 'IK must reduce damping near precise singular targets instead of rejecting them.');
+assert.ok(mainSource.includes('const singularityEscapeSeeds = joints.length >= 6')
+    && mainSource.includes('[[1, 5], [2, -5]]')
+    && mainSource.includes('[[3, 12], [5, -12]]'), 'IK must seed both arm and wrist configurations so it can enter and leave singular poses.');
+assert.ok(!mainSource.includes('near a singularity') && !mainSource.includes('특이점에 가깝습니다'), 'Reachable singular poses must not be reported as errors.');
 assert.ok(mainSource.includes('function showProgramPointOverwriteFeedback(step)') && mainSource.includes("icon?.classList.replace('fa-rotate', 'fa-check')"), 'Point overwrite must provide a successful completion indicator.');
 assert.ok(mainSource.includes('function clearJogModeSelectionForSnap()') && mainSource.includes('clearJogModeSelectionForSnap();'), 'Snap Move must behave as a mutually exclusive JOG mode.');
 assert.ok(mainSource.includes('}, 700);'), 'Point overwrite completion feedback must clear quickly.');
