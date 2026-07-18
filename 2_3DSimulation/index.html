@@ -6,7 +6,7 @@
     <title>3D Simulation</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=20260717-jog-button-layout1">
+    <link rel="stylesheet" href="style.css?v=20260719-euler-321-11">
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/occt-import-js.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -22,7 +22,7 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/Language/runtime/i18n.css">
-    <script src="/Language/runtime/locales-data.js?v=20260717-program-ui-compact1" defer></script>
+    <script src="/Language/runtime/locales-data.js?v=20260718-cycle-time-notice1" defer></script>
     <script src="/Language/runtime/i18n.js" defer></script>
     <script src="/Language/runtime/icon-fallback.js" defer></script>
 </head>
@@ -45,13 +45,17 @@
             </div>
         </div>
         <div class="topbar-right">
+            <button id="btn-fullscreen-mode" class="ui-btn" type="button" title="전체 화면 모드" aria-label="전체 화면 모드" aria-pressed="false">
+                <i class="fa-solid fa-expand"></i>
+            </button>
             <button id="btn-import-3d" class="ui-btn" title="3D 파일 불러오기" aria-label="3D 파일 불러오기">
-                <i class="fa-solid fa-cube"></i>
                 <span>3D</span>
+                <i class="fa-solid fa-upload" aria-hidden="true"></i>
             </button>
             <input id="input-import-3d" class="hidden" type="file" accept=".stl,.fbx,.obj,.glb,.gltf,.stp,.step">
             <button id="btn-download-cad" class="ui-btn" title="Download CAD files">
-                <i class="fa-solid fa-download"></i>
+                <span>CAD</span>
+                <i class="fa-solid fa-download" aria-hidden="true"></i>
             </button>
             <div class="viewer-language-row" data-i18n-language-slot></div>
         </div>
@@ -79,8 +83,65 @@
         </div>
     </dialog>
 
+    <dialog id="position-value-dialog" class="position-value-dialog" aria-labelledby="position-value-dialog-title">
+        <form method="dialog">
+            <div class="position-value-dialog-header">
+                <div>
+                    <span>POSITION POINT</span>
+                    <h2 id="position-value-dialog-title">위치 값 확인</h2>
+                </div>
+                <strong id="position-value-point-name">P[0]</strong>
+                <button id="btn-close-position-value" type="button" aria-label="닫기"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <section class="position-value-section">
+                <h3>TCP 위치 / 회전</h3>
+                <div class="position-value-grid pose-grid">
+                    <label><span>X</span><input type="number" step="0.000001" data-position-value="x"><small>mm</small></label>
+                    <label><span>Y</span><input type="number" step="0.000001" data-position-value="y"><small>mm</small></label>
+                    <label><span>Z</span><input type="number" step="0.000001" data-position-value="z"><small>mm</small></label>
+                    <label><span>A</span><input type="number" step="0.000001" data-position-value="a"><small>deg</small></label>
+                    <label><span>B</span><input type="number" step="0.000001" data-position-value="b"><small>deg</small></label>
+                    <label><span>C</span><input type="number" step="0.000001" data-position-value="c"><small>deg</small></label>
+                </div>
+            </section>
+            <section class="position-value-section">
+                <h3>Arm 파라미터</h3>
+                <div class="position-value-grid arm-grid">
+                    <label><span>Arm 0</span><input type="number" step="1" data-position-arm="0"></label>
+                    <label><span>Arm 1</span><input type="number" step="1" data-position-arm="1"></label>
+                    <label><span>Arm 2</span><input type="number" step="1" data-position-arm="2"></label>
+                    <label><span>Arm 3</span><input type="number" step="1" data-position-arm="3"></label>
+                </div>
+            </section>
+            <section class="position-value-section">
+                <h3>외부 축</h3>
+                <div class="position-value-grid external-grid">
+                    <label><span>E1</span><input type="number" step="0.000001" data-position-external="0"></label>
+                    <label><span>E2</span><input type="number" step="0.000001" data-position-external="1"></label>
+                    <label><span>E3</span><input type="number" step="0.000001" data-position-external="2"></label>
+                    <label><span>E4</span><input type="number" step="0.000001" data-position-external="3"></label>
+                    <label><span>E5</span><input type="number" step="0.000001" data-position-external="4"></label>
+                    <label><span>E6</span><input type="number" step="0.000001" data-position-external="5"></label>
+                </div>
+            </section>
+            <label class="position-value-label">
+                <span>라벨</span>
+                <input id="position-value-label" type="text" maxlength="19" placeholder="Point1" autocomplete="off">
+                <small>영문자로 시작하며 영문, 숫자, 밑줄만 사용 (19자 이하)</small>
+            </label>
+            <p id="position-value-error" class="position-value-error" role="alert"></p>
+            <div class="position-value-dialog-actions">
+                <button id="btn-cancel-position-value" type="button" class="secondary">취소</button>
+                <button id="btn-apply-position-value" type="button" class="primary">위치 값 적용</button>
+            </div>
+        </form>
+    </dialog>
+
     <main id="main-content">
         <div id="canvas-container">
+            <div id="simulation-snap-marker" class="simulation-snap-marker hidden" aria-hidden="true">
+                <span></span><strong id="simulation-snap-label">스냅</strong>
+            </div>
             <aside id="model-browser-panel" class="model-browser-panel" aria-label="장면 모델 트리와 위치 편집기">
                 <div class="model-browser-header">
                     <div>
@@ -88,6 +149,7 @@
                     </div>
                     <div class="panel-header-actions">
                         <span id="model-tree-count" class="model-tree-count">0</span>
+                        <button id="btn-toggle-transform" type="button" title="선택 모델 변환 핸들 표시/숨김" aria-label="선택 모델 변환 핸들 표시/숨김" aria-pressed="false"><i class="fa-solid fa-up-down-left-right"></i></button>
                         <button type="button" data-panel-action="popout" data-panel-id="model-browser-panel" title="별도 창으로 분리" aria-label="모델 트리를 별도 창으로 분리"><i class="fa-solid fa-up-right-from-square"></i></button>
                         <button type="button" data-panel-action="hide" data-panel-id="model-browser-panel" title="숨기기" aria-label="모델 트리 숨기기"><i class="fa-solid fa-eye-slash"></i></button>
                     </div>
@@ -103,14 +165,14 @@
                         </div>
                     </div>
                     <div class="transform-mode-buttons" aria-label="변환 모드">
-                        <button type="button" data-transform-mode="translate" class="active" title="이동 (W)"><i class="fa-solid fa-up-down-left-right"></i> 이동</button>
-                        <button type="button" data-transform-mode="rotate" title="회전 (E)"><i class="fa-solid fa-rotate"></i> 회전</button>
-                        <button type="button" data-transform-mode="scale" title="크기 (R)"><i class="fa-solid fa-expand"></i> 크기</button>
+                        <button type="button" data-transform-mode="translate" title="이동 (W)" aria-pressed="false"><i class="fa-solid fa-up-down-left-right"></i> 이동</button>
+                        <button type="button" data-transform-mode="rotate" title="회전 (E)" aria-pressed="false"><i class="fa-solid fa-rotate"></i> 회전</button>
+                        <button type="button" data-transform-mode="scale" title="크기 (R)" aria-pressed="false"><i class="fa-solid fa-expand"></i> 크기</button>
                     </div>
                     <div id="model-numeric-transform" class="numeric-position-editor">
                         <div class="numeric-position-title">
-                            <span>POSITION</span>
-                            <small>mm</small>
+                            <span id="model-numeric-transform-title">POSITION</span>
+                            <small id="model-numeric-transform-unit">mm</small>
                         </div>
                         <div class="numeric-position-grid">
                             <label class="axis-x"><span>X</span><input id="model-position-x" type="number" step="0.5" value="0"></label>
@@ -127,7 +189,7 @@
                             <label class="axis-z"><span>RZ</span><input id="model-rotation-z" type="number" step="0.5" value="0"></label>
                         </div>
                     </div>
-                    <p class="model-transform-help">트리에서 선택한 모델만 조정됩니다. 패널 제목을 끌어 이동하고, <i class="fa-solid fa-up-right-from-square"></i> 버튼으로 별도 창에 분리할 수 있습니다.</p>
+                    <p class="model-transform-help">트리에서 선택한 모델만 조정됩니다. 패널의 빈 영역을 끌어 이동하고, <i class="fa-solid fa-up-right-from-square"></i> 버튼으로 별도 창에 분리할 수 있습니다.</p>
                 </section>
             </aside>
             <div id="empty-state">
@@ -157,9 +219,10 @@
                         <button type="button" data-panel-action="hide" data-panel-id="jog-panel" title="숨기기" aria-label="JOG 패널 숨기기"><i class="fa-solid fa-eye-slash"></i></button>
                     </div>
                 </div>
-                <div class="jog-mode-tabs" role="tablist" aria-label="JOG coordinate mode">
-                    <button id="btn-jog-joint-mode" type="button" class="jog-mode-btn active" role="tab" aria-selected="true">JOINT</button>
-                    <button id="btn-jog-base-mode" type="button" class="jog-mode-btn" role="tab" aria-selected="false">BASE</button>
+                <div class="jog-mode-tabs" role="group" aria-label="JOG coordinate mode">
+                    <button id="btn-jog-joint-mode" type="button" class="jog-mode-btn active" aria-pressed="true">JOINT</button>
+                    <button id="btn-jog-base-mode" type="button" class="jog-mode-btn" aria-pressed="false">BASE</button>
+                    <button id="btn-snap-move" type="button" class="jog-mode-btn jog-snap-move" title="스냅 이동" aria-label="스냅 이동" aria-pressed="false">스냅 이동</button>
                 </div>
                 <div id="joint-jog-view" class="jog-view" role="tabpanel">
                     <div id="jog-controls" class="jog-controls"></div>
@@ -170,7 +233,7 @@
                             <i class="fa-solid fa-up-down-left-right"></i> X · Y · Z
                         </button>
                         <button id="btn-base-gizmo-rotate" type="button" title="RX/RY/RZ rotate handle">
-                            <i class="fa-solid fa-rotate"></i> <span id="base-gizmo-rotate-label">RX · RY · RZ</span>
+                            <i class="fa-solid fa-rotate"></i> <span id="base-gizmo-rotate-label">RZ · RY · RX</span>
                         </button>
                     </div>
                     <div class="base-step-settings">
@@ -188,9 +251,9 @@
                     <div class="base-jog-section">
                         <span class="base-jog-title">TCP ROTATION / BASE</span>
                         <div class="base-jog-grid">
-                            <div class="base-jog-row" data-base-rotation-row="x"><strong>RX</strong><div class="base-jog-buttons"><button type="button" data-base-jog="rotate" data-axis="x" data-direction="-1">−</button><button type="button" data-base-jog="rotate" data-axis="x" data-direction="1">+</button></div><label class="base-jog-value"><input id="tcp-rx" type="number" step="0.5" value="0.00" aria-label="TCP RX (deg)"><span>deg</span></label></div>
-                            <div class="base-jog-row" data-base-rotation-row="y"><strong>RY</strong><div class="base-jog-buttons"><button type="button" data-base-jog="rotate" data-axis="y" data-direction="-1">−</button><button type="button" data-base-jog="rotate" data-axis="y" data-direction="1">+</button></div><label class="base-jog-value"><input id="tcp-ry" type="number" step="0.5" value="0.00" aria-label="TCP RY (deg)"><span>deg</span></label></div>
                             <div class="base-jog-row" data-base-rotation-row="z"><strong>RZ</strong><div class="base-jog-buttons"><button type="button" data-base-jog="rotate" data-axis="z" data-direction="-1">−</button><button type="button" data-base-jog="rotate" data-axis="z" data-direction="1">+</button></div><label class="base-jog-value"><input id="tcp-rz" type="number" step="0.5" value="0.00" aria-label="TCP RZ (deg)"><span>deg</span></label></div>
+                            <div class="base-jog-row" data-base-rotation-row="y"><strong>RY</strong><div class="base-jog-buttons"><button type="button" data-base-jog="rotate" data-axis="y" data-direction="-1">−</button><button type="button" data-base-jog="rotate" data-axis="y" data-direction="1">+</button></div><label class="base-jog-value"><input id="tcp-ry" type="number" step="0.5" value="0.00" aria-label="TCP RY (deg)"><span>deg</span></label></div>
+                            <div class="base-jog-row" data-base-rotation-row="x"><strong>RX</strong><div class="base-jog-buttons"><button type="button" data-base-jog="rotate" data-axis="x" data-direction="-1">−</button><button type="button" data-base-jog="rotate" data-axis="x" data-direction="1">+</button></div><label class="base-jog-value"><input id="tcp-rx" type="number" step="0.5" value="0.00" aria-label="TCP RX (deg)"><span>deg</span></label></div>
                         </div>
                     </div>
                     <p id="base-jog-status" class="base-jog-status hidden"></p>
@@ -198,7 +261,7 @@
             </aside>
             <aside id="virtual-controller-panel" class="virtual-controller-panel panel-user-hidden" aria-label="가상 컨트롤러">
                 <div class="virtual-controller-header">
-                    <h2>가상 컨트롤러</h2>
+                    <h2><i id="virtual-controller-antenna" class="fa-solid fa-tower-broadcast virtual-controller-antenna disconnected" aria-hidden="true"></i> 가상 컨트롤러</h2>
                     <div class="panel-header-actions">
                         <button type="button" data-panel-action="popout" data-panel-id="virtual-controller-panel" title="별도 창으로 분리" aria-label="가상 컨트롤러 패널을 별도 창으로 분리"><i class="fa-solid fa-up-right-from-square"></i></button>
                         <button type="button" data-panel-action="hide" data-panel-id="virtual-controller-panel" title="숨기기" aria-label="가상 컨트롤러 패널 숨기기"><i class="fa-solid fa-eye-slash"></i></button>
@@ -206,12 +269,31 @@
                 </div>
                 <div class="virtual-controller-content">
                     <div class="virtual-controller-endpoint">
-                        <span><i class="fa-solid fa-network-wired"></i> 127.0.0.1:2222</span>
+                        <span id="virtual-controller-endpoint"><i class="fa-solid fa-network-wired"></i> 전용 브리지 · 127.0.0.1:5055</span>
                         <strong>4 ms</strong>
                     </div>
-                    <a class="virtual-controller-bridge-download" href="./bridge/InoRobotVirtualControllerBridge.exe" download>
-                        <i class="fa-solid fa-download"></i>
-                        <span>전용 브리지 다운로드</span>
+                    <label class="virtual-controller-target">
+                        <span>연결 방식</span>
+                        <select id="virtual-controller-source" aria-label="가상 컨트롤러 연결 방식">
+                            <option value="bridge">전용 브리지 (직접 연결)</option>
+                            <option value="trace">Trace 도구 연결</option>
+                        </select>
+                    </label>
+                    <div class="virtual-controller-bridge-actions" data-virtual-controller-source="bridge">
+                        <a class="virtual-controller-bridge-download" href="./bridge/InoRobotVirtualControllerBridge.exe" download>
+                            <i class="fa-solid fa-download"></i>
+                            <span>브리지 다운로드</span>
+                        </a>
+                        <button id="virtual-controller-bridge-start" type="button" title="설치된 전용 브리지 실행">
+                            <i class="fa-solid fa-play"></i><span>실행</span>
+                        </button>
+                        <button id="virtual-controller-bridge-stop" type="button" title="실행 중인 전용 브리지 종료">
+                            <i class="fa-solid fa-stop"></i><span>종료</span>
+                        </button>
+                    </div>
+                    <a class="virtual-controller-trace-download" data-virtual-controller-source="trace" href="../7_DebuggingTool/Trace/InoRobotTrace_V1.4.zip" download>
+                        <i class="fa-solid fa-chart-line"></i>
+                        <span>Trace 도구 다운로드 및 실행</span>
                     </a>
                     <label class="virtual-controller-target">
                         <span>대상 로봇</span>
@@ -250,14 +332,14 @@
                         <strong id="program-robot-name">로봇을 선택하세요</strong>
                         <div class="program-point-actions">
                             <button id="program-add-step" type="button" data-program-edit title="현재 자세 추가"><i class="fa-solid fa-plus"></i></button>
+                            <button id="program-update-step" type="button" data-program-edit title="선택 포인트 덮어쓰기" aria-label="선택 포인트 덮어쓰기"><span class="program-point-overwrite-mark" aria-hidden="true">P</span><i class="fa-solid fa-rotate" aria-hidden="true"></i></button>
                             <button id="program-add-delay" type="button" data-program-edit title="딜레이 추가"><i class="fa-solid fa-hourglass-half"></i></button>
                             <button id="program-add-time-start" type="button" data-program-edit title="TIME START 추가"><i class="fa-solid fa-stopwatch"></i></button>
                             <button id="program-add-time-out" type="button" data-program-edit title="TIME OUT 추가"><i class="fa-solid fa-flag-checkered"></i></button>
-                            <button id="program-update-step" type="button" data-program-edit title="선택 포인트 덮어쓰기"><i class="fa-solid fa-camera-rotate"></i></button>
                             <button id="program-delete-step" type="button" data-program-edit title="포인트 삭제"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
-                    <div id="program-step-list" class="program-step-list"></div>
+                    <div id="program-step-list" class="program-step-list" data-panel-drag-ignore></div>
                 </div>
                 <div class="program-playback">
                     <div class="program-control-row">
@@ -278,12 +360,13 @@
                     </div>
                 </div>
                 <div class="program-cycle-time" role="status" aria-live="polite">
-                    <span><i class="fa-solid fa-stopwatch"></i> CYCLE TIME</span>
+                    <span><i class="fa-solid fa-stopwatch"></i> 사이클 타임 (실제와 다름)</span>
                     <strong id="program-cycle-time">-- s</strong>
                 </div>
                 <div class="program-file-row">
                     <button id="program-export" type="button" title="파일명과 저장 위치 선택"><i class="fa-solid fa-file-export"></i> 프로젝트 저장</button>
                     <button id="program-import" type="button" data-program-edit><i class="fa-solid fa-file-import"></i> 프로젝트 불러오기</button>
+                    <button id="btn-position-export" type="button" title="P파일 내보내기" aria-label="P파일 내보내기"><i class="fa-solid fa-file-export" aria-hidden="true"></i> P파일 내보내기</button>
                     <input id="program-import-file" type="file" accept="application/json,.json" hidden>
                 </div>
                 <p id="program-status" class="program-status">Ready</p>
@@ -291,6 +374,13 @@
             </aside>
         </div>
     </main>
+
+    <div id="program-step-context-menu" class="program-step-context-menu hidden" role="menu">
+        <button id="program-show-position-value" type="button" role="menuitem">
+            <i class="fa-solid fa-location-crosshairs"></i>
+            위치 값 확인
+        </button>
+    </div>
 
     <footer id="stats-bar">
         <div class="stat-item">
@@ -307,17 +397,16 @@
         <div id="panel-launcher" class="viewer-control-dock" aria-label="뷰어 제어 도크">
             <button type="button" data-panel-toggle="model-browser-panel" class="active" title="모델 트리 표시/숨김"><i class="fa-solid fa-list-ul"></i> 모델</button>
             <button type="button" data-panel-toggle="jog-panel" disabled title="로봇 JOG 패널 표시/숨김"><i class="fa-solid fa-gamepad"></i> JOG</button>
-            <button type="button" data-panel-toggle="virtual-controller-panel" disabled title="가상 컨트롤러 표시/숨김"><i class="fa-solid fa-tower-broadcast"></i> Virtual</button>
+            <button type="button" data-panel-toggle="virtual-controller-panel" disabled title="가상 컨트롤러 표시/숨김"><i id="virtual-controller-launcher-antenna" class="fa-solid fa-tower-broadcast virtual-controller-antenna disconnected"></i> Virtual</button>
             <span class="viewer-control-divider"></span>
             <button id="btn-undo" type="button" disabled title="되돌리기 (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
             <button id="btn-redo" type="button" disabled title="다시 실행 (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i></button>
             <span class="viewer-control-divider"></span>
             <button id="btn-reset-view" type="button" title="뷰 초기화" aria-label="뷰 초기화"><i class="fa-solid fa-arrows-rotate"></i></button>
-            <button id="btn-toggle-transform" type="button" title="선택 모델 변환 핸들 표시/숨김" aria-label="선택 모델 변환 핸들 표시/숨김"><i class="fa-solid fa-up-down-left-right"></i></button>
             <button id="btn-toggle-grid" type="button" class="active" title="그리드 표시/숨김" aria-label="그리드 표시/숨김"><i class="fa-solid fa-border-all"></i></button>
         </div>
     </footer>
 
-    <script type="module" src="main.js?v=20260717-joint-directions2"></script>
+    <script type="module" src="main.js?v=20260719-euler-321-11"></script>
 </body>
 </html>

@@ -169,17 +169,12 @@
       "title": "3D Simulation",
       "versions": [
         {
-          "title": "Ver 26.07.17",
+          "title": "Ver 26.07.18",
           "items": [
-            "**[Release]** Rebuilt the legacy 3D Viewer as 3D Simulation for configuring and validating multi-robot workcells.",
-            "**[Support]** Supports joint JOG, Base-coordinate TCP JOG, Tool-coordinate visualization, numeric entry, and 3D handles for 29 provided SCARA and six-axis robots.",
-            "**[Support]** Multiple identical or different robots can be placed and their programs run individually or simultaneously.",
-            "**[Support]** Supports MOVJ, MOVL, DELAY, TIME START, TIME OUT, Step Into, pause, resume, stop, repeat, and live cycle-time measurement.",
-            "**[Support]** Tool and equipment 3D models can be attached to a TCP or placed in the scene, then positioned and rotated through the model tree, numeric entry, or 3D handles.",
-            "**[Support]** Imports 3D models in STL, FBX, OBJ, GLB, GLTF, STEP, and STP formats.",
-              "**[Support]** Provides motion-project autosave, JSON import/export, and undo/redo.",
-              "**[Support]** Model Tree, JOG, and Program panels can be moved, resized, or hidden, with Korean, English, Chinese, and Vietnamese interfaces.",
-              "**[Support]** 3D Simulation supports a Virtual Controller. (Program installation required)"
+            "**[Revamp]** The existing 3D Viewer has been comprehensively rebuilt as 3D Simulation, enabling robot simulation.",
+            "**[Support]** All robot models can be moved, and robot motion paths can be set through programming.",
+            "**[Support]** Supports importing 3D models and attaching imported files to a robot Tool.",
+            "**[Support]** Can connect to and use the InoRobotLab Virtual Controller. (Requires the dedicated bridge or Trace tool.)"
           ]
         }
         ]
@@ -188,17 +183,13 @@
         "title": "Robot Tool Selector",
         "versions": [
           {
-            "title": "Ver 26.07.17",
+            "title": "Ver 26.07.18",
             "items": [
-              "**[New]** Added Mode D for calculating mass properties from STEP/STP CAD files.",
-              "**[Added]** Added per-part inclusion, material, and density settings with total mass, CoG, and Tool-origin/load-center Ixx, Iyy, and Izz calculations.",
-              "**[Added]** Tool origin and TCP can be set with vertex, endpoint, center-point, and virtual-intersection snapping.",
-              "**[Added]** Coordinate orientation can be set with a 3D rotation handle or Rx, Ry, and Rz values.",
-              "**[Added]** TCP and CoG use distinct colors and shapes with a legend in the 3D viewer.",
-              "**[Added]** Added a 3D viewer grid ON/OFF button with OFF as the default.",
-              "**[Added]** The imported CAD can be exported as a STEP file using the selected Tool origin and coordinate orientation.",
-              "**[Added]** Added multiple-circle-center snapping, which calculates the average center from 2 to 4 selected circle/arc centers.",
-              "**[Changed]** Original CAD colors are preserved when changing material or density settings and when exporting STEP with the selected coordinate system."
+              "**[Added]** Added Mode D for importing 3D CAD files and calculating model mass properties.",
+              "**[Support]** Set the material and density of an imported model to calculate mass, center of gravity, and moments of inertia.",
+              "**[Support]** Modify the imported model origin and coordinate direction before exporting the file.",
+              "**[Support]** Select imported model parts and export only the selected parts.",
+              "**[Support]** Use snapping to quickly check the TCP position."
             ]
           },
           {
@@ -399,6 +390,16 @@
       {
         "title": "Debugging Tool",
         "versions": [
+          {
+            "title": "Ver 26.07.18.01",
+            "items": [
+              "**[Updated]** Updated InoRobot Trace from V1.3 to V1.4.",
+              "**[Added]** Added a virtual-controller integration server for 3D Simulation.",
+              "**[Added]** Added real-time monitoring items for Joint position values.",
+              "**[Added]** Added a button to open or close the measurement-item panel.",
+              "**[Fixed]** Fixed an issue that prevented items from being displayed when the Trace window was narrower than a certain width."
+            ]
+          },
           {
             "title": "Ver 26.07.15.01",
             "items": [

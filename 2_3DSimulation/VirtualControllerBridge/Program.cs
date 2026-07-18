@@ -1,6 +1,7 @@
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Hosting;
 
 namespace InoRobotVirtualControllerBridge;
 
@@ -10,19 +11,26 @@ internal static class Program
     private const int DefaultSampleIntervalMs = 4;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
+    [STAThread]
     public static async Task Main(string[] args)
     {
         using Mutex singleInstance = new(true, "Local\\InoRobotVirtualControllerBridge", out bool ownsMutex);
         if (!ownsMutex)
             return;
 
+        BridgeProtocolRegistrar.RegisterForCurrentUser();
         NativeRobotClient.PrepareNativeLibrary();
         WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
         builder.Logging.ClearProviders();
         builder.WebHost.UseUrls($"http://127.0.0.1:{BridgePort}");
         builder.Services.AddSingleton<NativeRobotClient>();
 
-        WebApplication app = builder.Build();
+        await using WebApplication app = builder.Build();
+        app.Use(async (context, next) =>
+        {
+            context.Response.Headers.AccessControlAllowOrigin = "*";
+            await next();
+        });
         app.UseWebSockets(new WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(15) });
         app.MapGet("/api/health", (NativeRobotClient robot) => Results.Json(new
         {
@@ -30,11 +38,33 @@ internal static class Program
             connected = robot.IsConnected,
             sampleIntervalMs = DefaultSampleIntervalMs
         }, JsonOptions));
-        app.Map("/ws", HandleWebSocketAsync);
-        await app.RunAsync();
+        app.Map("/ws", context => HandleWebSocketAsync(context, app.Lifetime));
+
+        try
+        {
+            await app.StartAsync();
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(
+                $"전용 브리지를 시작할 수 없습니다.\n\n{exception.Message}",
+                "InoRobot Virtual Controller Bridge",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+            return;
+        }
+
+        ApplicationConfiguration.Initialize();
+        using BridgeWindow bridgeWindow = new();
+        using CancellationTokenRegistration stoppingRegistration =
+            app.Lifetime.ApplicationStopping.Register(bridgeWindow.RequestClose);
+        Application.Run(bridgeWindow);
+        await app.StopAsync();
     }
 
-    private static async Task HandleWebSocketAsync(HttpContext context)
+    private static async Task HandleWebSocketAsync(
+        HttpContext context,
+        IHostApplicationLifetime applicationLifetime)
     {
         if (!context.WebSockets.IsWebSocketRequest)
         {
@@ -49,6 +79,7 @@ internal static class Program
         using SemaphoreSlim sendLock = new(1, 1);
         int streaming = 0;
         int sampleIntervalMs = DefaultSampleIntervalMs;
+        bool robotConnectedByThisSession = false;
 
         async Task SendAsync(object payload)
         {
@@ -95,6 +126,7 @@ internal static class Program
                             ? ipElement.GetString() ?? "127.0.0.1"
                             : "127.0.0.1";
                         (bool success, string message) = robot.Connect(ip);
+                        robotConnectedByThisSession = success;
                         await SendAsync(new { type = "connectResult", success, message });
                     }
                     else if (type is "startStream" or "startTrace")
@@ -121,7 +153,17 @@ internal static class Program
                     {
                         Interlocked.Exchange(ref streaming, 0);
                         robot.Disconnect();
+                        robotConnectedByThisSession = false;
                         await SendAsync(new { type = "disconnectResult", success = true });
+                    }
+                    else if (type == "shutdown")
+                    {
+                        Interlocked.Exchange(ref streaming, 0);
+                        robot.Disconnect();
+                        robotConnectedByThisSession = false;
+                        await SendAsync(new { type = "shutdownResult", success = true });
+                        applicationLifetime.StopApplication();
+                        break;
                     }
                     else if (type == "status")
                     {
@@ -180,7 +222,8 @@ internal static class Program
         {
             sessionCancellation.Cancel();
             Interlocked.Exchange(ref streaming, 0);
-            robot.Disconnect();
+            if (robotConnectedByThisSession)
+                robot.Disconnect();
             if (socket.State == WebSocketState.Open)
             {
                 try

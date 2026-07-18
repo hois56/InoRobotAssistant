@@ -1,22 +1,28 @@
 export const MOTION_PROJECT_SCHEMA_VERSION = 1;
-export const DEFAULT_MOVJ_SPEED = 20;
+export const DEFAULT_MOVJ_SPEED = 100;
 export const DEFAULT_MOVL_SPEED = 100;
-export const MAX_MOVL_SPEED = 1500;
+export const MAX_MOVL_SPEED = 2500;
 export const DEFAULT_DELAY_SECONDS = 1;
 export const MIN_DELAY_SECONDS = 0.1;
 export const MAX_DELAY_SECONDS = 3600;
 export const MOVJ_REVOLUTE_RATE = 180;
 export const MOVJ_PRISMATIC_RATE = 500;
-export const MOVJ_EASING_PEAK_SLOPE = 1.5;
 export const MOVL_ROTATION_RATE = 90;
+export const S_CURVE_PEAK_VELOCITY = 15 / 8;
+export const S_CURVE_PEAK_ACCELERATION = 10 / Math.sqrt(3);
+export const MOTION_SETTLING_DELAY_SECONDS = 0.02;
+export const MIN_POINT_INDEX = 0;
+export const MAX_POINT_INDEX = 9999;
+export const MAX_POINT_LABEL_LENGTH = 19;
+export const POINT_LABEL_PATTERN = /^[A-Za-z][A-Za-z0-9_]{0,18}$/;
 
 export function clamp(value, minimum, maximum) {
     return Math.min(maximum, Math.max(minimum, value));
 }
 
-export function smoothstep(value) {
+export function sCurveProgress(value) {
     const t = clamp(Number(value) || 0, 0, 1);
-    return t * t * (3 - 2 * t);
+    return t * t * t * (10 + t * (-15 + 6 * t));
 }
 
 export function interpolateLinearPosition(start, target, progress) {
@@ -58,24 +64,65 @@ export function calculateMovjDuration(startAngles, targetAngles, joints, speedPe
     const speedScale = clamp(Number(speedPercent) || DEFAULT_MOVJ_SPEED, 1, 100) / 100;
     const durations = targetAngles.map((target, index) => {
         const start = Number(startAngles[index]) || 0;
+        const distance = Math.abs(Number(target) - start);
         const configuredRate = Number(joints[index]?.definition?.maxSpeed);
+        const configuredAcceleration = Number(joints[index]?.definition?.maxAcceleration);
+        const configuredDeceleration = Number(joints[index]?.definition?.maxDeceleration);
         const fallbackRate = joints[index]?.definition?.type === 'prismatic'
             ? MOVJ_PRISMATIC_RATE
             : MOVJ_REVOLUTE_RATE;
         const rate = Number.isFinite(configuredRate) && configuredRate > 0
             ? configuredRate
             : fallbackRate;
-        return Math.abs(Number(target) - start) * MOVJ_EASING_PEAK_SLOPE / (rate * speedScale);
+        const speedLimitedDuration = distance * S_CURVE_PEAK_VELOCITY / (rate * speedScale);
+        const accelerationLimit = [configuredAcceleration, configuredDeceleration]
+            .filter((value) => Number.isFinite(value) && value > 0)
+            .reduce((minimum, value) => Math.min(minimum, value), Infinity);
+        const accelerationLimitedDuration = Number.isFinite(accelerationLimit)
+            ? Math.sqrt(distance * S_CURVE_PEAK_ACCELERATION / accelerationLimit)
+            : 0;
+        return Math.max(speedLimitedDuration, accelerationLimitedDuration);
     });
     return Math.max(0.1, ...durations);
 }
 
-export function calculateMovlDuration(distanceMillimeters, rotationDegrees, speedMillimetersPerSecond) {
-    const speed = clamp(Number(speedMillimetersPerSecond) || DEFAULT_MOVL_SPEED, 1, MAX_MOVL_SPEED);
+export function calculateMovlDuration(
+    distanceMillimeters,
+    rotationDegrees,
+    speedMillimetersPerSecond,
+    cartesianMotion = {}
+) {
+    const configuredMaxSpeed = Number(cartesianMotion.maxSpeed);
+    const maximumSpeed = Number.isFinite(configuredMaxSpeed) && configuredMaxSpeed > 0
+        ? Math.min(configuredMaxSpeed, MAX_MOVL_SPEED)
+        : MAX_MOVL_SPEED;
+    const speed = clamp(Number(speedMillimetersPerSecond) || DEFAULT_MOVL_SPEED, 1, maximumSpeed);
+    const distance = Math.max(0, Number(distanceMillimeters) || 0);
+    const rotation = Math.max(0, Number(rotationDegrees) || 0);
+    const linearAccelerationLimit = [
+        Number(cartesianMotion.maxAcceleration),
+        Number(cartesianMotion.stopDeceleration)
+    ].filter((value) => Number.isFinite(value) && value > 0)
+        .reduce((minimum, value) => Math.min(minimum, value), Infinity);
+    const configuredRotationSpeed = Number(cartesianMotion.maxRotationSpeed);
+    const rotationSpeed = Number.isFinite(configuredRotationSpeed) && configuredRotationSpeed > 0
+        ? configuredRotationSpeed
+        : MOVL_ROTATION_RATE;
+    const rotationAccelerationLimit = [
+        Number(cartesianMotion.maxRotationAcceleration),
+        Number(cartesianMotion.rotationStopDeceleration)
+    ].filter((value) => Number.isFinite(value) && value > 0)
+        .reduce((minimum, value) => Math.min(minimum, value), Infinity);
     return Math.max(
         0.1,
-        Math.max(0, Number(distanceMillimeters) || 0) / speed,
-        Math.max(0, Number(rotationDegrees) || 0) / MOVL_ROTATION_RATE
+        distance * S_CURVE_PEAK_VELOCITY / speed,
+        Number.isFinite(linearAccelerationLimit)
+            ? Math.sqrt(distance * S_CURVE_PEAK_ACCELERATION / linearAccelerationLimit)
+            : 0,
+        rotation * S_CURVE_PEAK_VELOCITY / rotationSpeed,
+        Number.isFinite(rotationAccelerationLimit)
+            ? Math.sqrt(rotation * S_CURVE_PEAK_ACCELERATION / rotationAccelerationLimit)
+            : 0
     );
 }
 
@@ -100,7 +147,94 @@ export function createEmptyMotionProgram(included = true) {
     };
 }
 
+export function isMotionPointMotion(motion) {
+    return motion === 'MOVJ' || motion === 'MOVL';
+}
+
+export function formatMotionPointName(pointIndex) {
+    return `P[${pointIndex}]`;
+}
+
+export function isValidMotionPointLabel(label) {
+    return label === '' || (
+        typeof label === 'string'
+        && label.length <= MAX_POINT_LABEL_LENGTH
+        && POINT_LABEL_PATTERN.test(label)
+    );
+}
+
+function formatPositionPointValue(value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) throw new Error('Position point values must be finite numbers.');
+    return (Object.is(numeric, -0) ? 0 : numeric).toFixed(6);
+}
+
+export function formatPositionPointRecordLine({
+    pointIndex,
+    coordinates,
+    armParameters,
+    externalAxes,
+    label = ''
+}) {
+    if (!Number.isInteger(pointIndex) || pointIndex < MIN_POINT_INDEX || pointIndex > MAX_POINT_INDEX) {
+        throw new Error(`Position point index must be between ${MIN_POINT_INDEX} and ${MAX_POINT_INDEX}.`);
+    }
+    if (!Array.isArray(coordinates) || coordinates.length !== 6) {
+        throw new Error('Position point coordinates must contain six values.');
+    }
+    if (!Array.isArray(armParameters) || armParameters.length !== 4) {
+        throw new Error('Position point arm parameters must contain four values.');
+    }
+    if (!Array.isArray(externalAxes) || externalAxes.length !== 6) {
+        throw new Error('Position point external axes must contain six values.');
+    }
+    const normalizedLabel = String(label || '').trim();
+    if (!isValidMotionPointLabel(normalizedLabel)) {
+        throw new Error('Position point label is invalid.');
+    }
+    const coordinateText = coordinates.map(formatPositionPointValue).join(', ');
+    const armText = armParameters.map((value) => {
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric)) throw new Error('Position point arm parameters must be finite numbers.');
+        return String(Math.trunc(numeric));
+    }).join(', ');
+    const externalText = externalAxes.map(formatPositionPointValue).join(', ');
+    const labelText = normalizedLabel ? ` Name=${normalizedLabel};` : '';
+    return `${formatMotionPointName(pointIndex)} = ${coordinateText}; ${armText};${externalText};${labelText}`;
+}
+
+function parsePointIndex(step, fallback = 0) {
+    const direct = Number(step?.pointIndex);
+    if (Number.isInteger(direct) && direct >= MIN_POINT_INDEX && direct <= MAX_POINT_INDEX) return direct;
+    const legacyMatch = String(step?.name || '').trim().match(/^P(?:\[(\d+)\]|(\d+))$/i);
+    const bracketed = Number(legacyMatch?.[1]);
+    if (Number.isInteger(bracketed) && bracketed >= MIN_POINT_INDEX && bracketed <= MAX_POINT_INDEX) {
+        return bracketed;
+    }
+    const oldOneBased = Number(legacyMatch?.[2]);
+    const legacy = Number.isInteger(oldOneBased) ? Math.max(MIN_POINT_INDEX, oldOneBased - 1) : NaN;
+    if (Number.isInteger(legacy) && legacy >= MIN_POINT_INDEX && legacy <= MAX_POINT_INDEX) return legacy;
+    return fallback;
+}
+
+function clonePointMetadata(step, fallbackPointIndex) {
+    const pointIndex = parsePointIndex(step, fallbackPointIndex);
+    const label = typeof step?.label === 'string' ? step.label.trim() : '';
+    return {
+        pointIndex,
+        name: formatMotionPointName(pointIndex),
+        label: isValidMotionPointLabel(label) ? label : '',
+        armParameters: Array.isArray(step?.armParameters) && step.armParameters.length === 4
+            ? step.armParameters.map((value) => Number(value) || 0)
+            : [0, 0, 0, 1],
+        externalAxes: Array.isArray(step?.externalAxes) && step.externalAxes.length === 6
+            ? step.externalAxes.map((value) => Number(value) || 0)
+            : [0, 0, 0, 0, 0, 0]
+    };
+}
+
 export function cloneMotionProgram(program) {
+    let fallbackPointIndex = 0;
     return {
         included: Boolean(program?.included),
         selectedStepId: typeof program?.selectedStepId === 'string' ? program.selectedStepId : null,
@@ -120,10 +254,18 @@ export function cloneMotionProgram(program) {
                         : step.motion === 'MOVL'
                             ? 'MOVL'
                             : 'MOVJ';
+            const pointMetadata = isMotionPointMotion(motion)
+                ? clonePointMetadata(step, fallbackPointIndex++)
+                : null;
             return {
                 id: String(step.id),
-                name: String(step.name),
+                name: pointMetadata?.name || (motion === 'DELAY'
+                    ? 'Delay'
+                    : motion === 'TIME_START'
+                        ? 'Time Start'
+                        : 'Time Out'),
                 motion,
+                ...(pointMetadata || {}),
                 ...(motion === 'DELAY'
                     ? { delaySeconds: Number(step.delaySeconds) }
                     : motion === 'MOVJ' || motion === 'MOVL'
@@ -171,7 +313,7 @@ function normalizedQuaternion(value, label) {
     return quaternion.map((component) => component / length);
 }
 
-function normalizeStep(step, jointCount, index) {
+function normalizeStep(step, jointCount, index, fallbackPointIndex) {
     const motion = step?.motion === 'TIME_START'
         ? 'TIME_START'
         : step?.motion === 'TIME_OUT'
@@ -197,10 +339,41 @@ function normalizeStep(step, jointCount, index) {
         }
     }
     const quaternion = normalizedQuaternion(step.tcp?.quaternion, `Step ${index + 1} TCP quaternion`);
+    let pointMetadata = null;
+    if (isMotionPointMotion(motion)) {
+        const pointIndex = parsePointIndex(step, fallbackPointIndex);
+        if (!Number.isInteger(pointIndex) || pointIndex < MIN_POINT_INDEX || pointIndex > MAX_POINT_INDEX) {
+            throw new Error(`Step ${index + 1} point index must be ${MIN_POINT_INDEX} to ${MAX_POINT_INDEX}.`);
+        }
+        const label = typeof step.label === 'string' ? step.label.trim() : '';
+        if (!isValidMotionPointLabel(label)) {
+            throw new Error(`Step ${index + 1} label must start with a letter and use fewer than 20 letters, numbers, or underscores.`);
+        }
+        const armParameters = step.armParameters === undefined
+            ? [0, 0, 0, 1]
+            : finiteArray(step.armParameters, 4, `Step ${index + 1} arm parameters`);
+        if (!armParameters.every(Number.isInteger)) {
+            throw new Error(`Step ${index + 1} arm parameters must be integers.`);
+        }
+        pointMetadata = {
+            pointIndex,
+            name: formatMotionPointName(pointIndex),
+            label,
+            armParameters,
+            externalAxes: step.externalAxes === undefined
+                ? [0, 0, 0, 0, 0, 0]
+                : finiteArray(step.externalAxes, 6, `Step ${index + 1} external axes`)
+        };
+    }
     return {
         id: requiredString(step.id, `Step ${index + 1} id`),
-        name: requiredString(step.name, `Step ${index + 1} name`),
+        name: pointMetadata?.name || (motion === 'DELAY'
+            ? 'Delay'
+            : motion === 'TIME_START'
+                ? 'Time Start'
+                : 'Time Out'),
         motion,
+        ...(pointMetadata || {}),
         ...(motion === 'DELAY'
             ? { delaySeconds }
             : motion === 'MOVJ' || motion === 'MOVL'
@@ -235,11 +408,23 @@ export function normalizeMotionProject(input) {
                 ? 'six-axis'
                 : null;
         if (!robotType) throw new Error(`Robot ${index + 1} has an invalid robot type.`);
-        const steps = (robot.steps || []).map((step, stepIndex) => normalizeStep(step, jointCount, stepIndex));
+        let fallbackPointIndex = 0;
+        const steps = (robot.steps || []).map((step, stepIndex) => {
+            const normalized = normalizeStep(step, jointCount, stepIndex, fallbackPointIndex);
+            if (isMotionPointMotion(normalized.motion)) fallbackPointIndex += 1;
+            return normalized;
+        });
         const stepIds = new Set();
+        const pointIndices = new Set();
         steps.forEach((step) => {
             if (stepIds.has(step.id)) throw new Error(`Duplicate step id for ${instanceId}: ${step.id}`);
             stepIds.add(step.id);
+            if (isMotionPointMotion(step.motion)) {
+                if (pointIndices.has(step.pointIndex)) {
+                    throw new Error(`Duplicate point index for ${instanceId}: P[${step.pointIndex}]`);
+                }
+                pointIndices.add(step.pointIndex);
+            }
         });
         const baseScale = finiteArray(robot.baseTransform?.scale, 3, `Robot ${index + 1} base scale`);
         if (baseScale.some((value) => value <= 0)) throw new Error(`Robot ${index + 1} base scale must be positive.`);

@@ -1,18 +1,41 @@
 export const VIRTUAL_CONTROLLER_HOST = '127.0.0.1';
 export const VIRTUAL_CONTROLLER_BRIDGE_URL = 'ws://127.0.0.1:5055/ws';
+export const VIRTUAL_CONTROLLER_BRIDGE_HEALTH_URL = 'http://127.0.0.1:5055/api/health';
+export const VIRTUAL_CONTROLLER_TRACE_URL = 'ws://127.0.0.1:5000/ws';
 export const VIRTUAL_CONTROLLER_SAMPLE_INTERVAL_MS = 4;
-export const VIRTUAL_CONTROLLER_RENDER_DELAY_MS = 12;
 
-const TRACE_POSITION_KEYS = [
-    ['pos_x', 'posX', 'PosX'],
-    ['pos_y', 'posY', 'PosY'],
-    ['pos_z', 'posZ', 'PosZ']
-];
-const TRACE_ROTATION_KEYS = [
-    ['pos_a', 'posA', 'PosA'],
-    ['pos_b', 'posB', 'PosB'],
-    ['pos_c', 'posC', 'PosC']
-];
+export const VIRTUAL_CONTROLLER_SOURCES = Object.freeze({
+    bridge: Object.freeze({
+        id: 'bridge',
+        label: '전용 브리지',
+        socketUrl: VIRTUAL_CONTROLLER_BRIDGE_URL,
+        healthUrl: VIRTUAL_CONTROLLER_BRIDGE_HEALTH_URL,
+        startCommand: 'startStream',
+        stopCommand: 'stopStream'
+    }),
+    trace: Object.freeze({
+        id: 'trace',
+        label: 'Trace 도구',
+        socketUrl: VIRTUAL_CONTROLLER_TRACE_URL,
+        startCommand: 'startTrace',
+        stopCommand: 'stopTrace'
+    })
+});
+
+export function getVirtualControllerSource(sourceId) {
+    return VIRTUAL_CONTROLLER_SOURCES[sourceId] || VIRTUAL_CONTROLLER_SOURCES.bridge;
+}
+
+const TRACE_JOINT_KEYS = Array.from({ length: 6 }, (_, index) => {
+    const jointNumber = index + 1;
+    return [
+        `joint_pos_j${jointNumber}`,
+        `joint_position_j${jointNumber}`,
+        `joint_${jointNumber}`,
+        `joint${jointNumber}`,
+        `j${jointNumber}`
+    ];
+});
 
 function readFiniteNumber(source, keys) {
     for (const key of keys) {
@@ -23,23 +46,16 @@ function readFiniteNumber(source, keys) {
     return null;
 }
 
-function normalizeSignedDegrees(value) {
-    return ((value + 180) % 360 + 360) % 360 - 180;
-}
+function readTraceJoints(data) {
+    const packed = [data?.joints, data?.jointPositions, data?.joint_positions]
+        .find((candidate) => Array.isArray(candidate));
+    if (packed) {
+        const joints = packed.map(Number);
+        if (joints.length >= 4 && joints.every(Number.isFinite)) return joints;
+    }
 
-export function interpolateVirtualControllerJoints(previous, next, alpha, jointTypes = []) {
-    if (!Array.isArray(previous) || !Array.isArray(next)) return [];
-    const length = Math.min(previous.length, next.length);
-    const amount = Math.min(1, Math.max(0, Number(alpha) || 0));
-    return Array.from({ length }, (_, index) => {
-        const start = Number(previous[index]);
-        const end = Number(next[index]);
-        if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
-        const delta = jointTypes[index] === 'prismatic'
-            ? end - start
-            : normalizeSignedDegrees(end - start);
-        return start + delta * amount;
-    });
+    const joints = TRACE_JOINT_KEYS.map((keys) => readFiniteNumber(data, keys));
+    return joints.every((value) => value !== null) ? joints : null;
 }
 
 export function parseVirtualControllerMessage(raw, receivedAt = 0) {
@@ -76,43 +92,40 @@ export function parseVirtualControllerMessage(raw, receivedAt = 0) {
 
     const data = message.data;
     if (!data || typeof data !== 'object') return { kind: 'invalid', reason: 'data' };
-    const position = TRACE_POSITION_KEYS.map((keys) => readFiniteNumber(data, keys));
-    const rotation = TRACE_ROTATION_KEYS.map((keys) => readFiniteNumber(data, keys));
-    if ([...position, ...rotation].some((value) => value === null)) {
-        return { kind: 'invalid', reason: 'pose' };
-    }
+    const joints = readTraceJoints(data);
+    if (!joints) return { kind: 'invalid', reason: 'trace-joints' };
 
     return {
-        kind: 'pose',
+        kind: 'state',
         receivedAt: Number.isFinite(receivedAt) ? receivedAt : 0,
         controllerTime: readFiniteNumber(data, ['time', 'Time']),
-        position,
-        rotation
+        joints,
+        position: null,
+        rotation: null
     };
 }
 
 export class VirtualControllerSampleBuffer {
-    constructor(maxSamples = 64) {
-        this.maxSamples = Math.max(2, Math.floor(maxSamples));
-        this.samples = [];
+    constructor() {
+        this.latestSample = null;
         this.recentReceiveTimes = [];
+        this.nextSampleId = 1;
     }
 
     clear() {
-        this.samples.length = 0;
+        this.latestSample = null;
         this.recentReceiveTimes.length = 0;
+        this.nextSampleId = 1;
     }
 
     push(sample) {
-        if (!sample || !['pose', 'state'].includes(sample.kind) || !Number.isFinite(sample.receivedAt)) return false;
-        const last = this.samples.at(-1);
+        if (!sample || sample.kind !== 'state' || !Number.isFinite(sample.receivedAt)) return false;
+        const last = this.latestSample;
         const timestamp = last && sample.receivedAt <= last.receivedAt
             ? last.receivedAt + 0.001
             : sample.receivedAt;
-        this.samples.push({ ...sample, receivedAt: timestamp });
-        if (this.samples.length > this.maxSamples) {
-            this.samples.splice(0, this.samples.length - this.maxSamples);
-        }
+        this.latestSample = { ...sample, receivedAt: timestamp, sampleId: this.nextSampleId };
+        this.nextSampleId += 1;
         this.recentReceiveTimes.push(timestamp);
         const cutoff = timestamp - 1000;
         while (this.recentReceiveTimes.length && this.recentReceiveTimes[0] < cutoff) {
@@ -121,18 +134,8 @@ export class VirtualControllerSampleBuffer {
         return true;
     }
 
-    getWindow(renderAt) {
-        if (!this.samples.length) return null;
-        while (this.samples.length > 2 && this.samples[1].receivedAt <= renderAt) {
-            this.samples.shift();
-        }
-        const previous = this.samples[0];
-        const next = this.samples[1] || previous;
-        const span = next.receivedAt - previous.receivedAt;
-        const alpha = span > 0
-            ? Math.min(1, Math.max(0, (renderAt - previous.receivedAt) / span))
-            : 1;
-        return { previous, next, alpha };
+    getLatest() {
+        return this.latestSample;
     }
 
     getRateHz(now = this.recentReceiveTimes.at(-1) ?? 0) {

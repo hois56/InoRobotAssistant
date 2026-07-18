@@ -19,9 +19,9 @@ const normalize = (v) => {
 const midpoint = (a, b) => scale(add(a, b), 0.5);
 const edgeKey = (a, b) => a < b ? `${a}:${b}` : `${b}:${a}`;
 
-export function averageCircleCenters(points) {
+export function averagePoints(points) {
   if (!Array.isArray(points) || points.length < 2 || points.length > 4) {
-    throw new RangeError('Circle center count must be between 2 and 4.');
+    throw new RangeError('Point count must be between 2 and 4.');
   }
   const normalized = points.map((point) => Array.from(point || [], Number));
   if (normalized.some((point) => point.length !== 3 || !point.every(Number.isFinite))) {

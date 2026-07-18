@@ -2,12 +2,22 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import {
     MOTION_PROJECT_SCHEMA_VERSION,
-    MOVJ_EASING_PEAK_SLOPE,
+    S_CURVE_PEAK_VELOCITY,
+    S_CURVE_PEAK_ACCELERATION,
+    MOTION_SETTLING_DELAY_SECONDS,
     MAX_MOVL_SPEED,
+    DEFAULT_MOVJ_SPEED,
     DEFAULT_DELAY_SECONDS,
     MIN_DELAY_SECONDS,
     MAX_DELAY_SECONDS,
-    smoothstep,
+    MIN_POINT_INDEX,
+    MAX_POINT_INDEX,
+    MAX_POINT_LABEL_LENGTH,
+    formatMotionPointName,
+    formatPositionPointRecordLine,
+    isMotionPointMotion,
+    isValidMotionPointLabel,
+    sCurveProgress,
     interpolateLinearPosition,
     slerpQuaternion,
     calculateMovjDuration,
@@ -23,10 +33,11 @@ const closeTo = (actual, expected, epsilon = 1e-9) => {
     assert.ok(Math.abs(actual - expected) <= epsilon, `${actual} is not within ${epsilon} of ${expected}`);
 };
 
-closeTo(smoothstep(0), 0);
-closeTo(smoothstep(0.5), 0.5);
-closeTo(smoothstep(1), 1);
-assert.ok(smoothstep(0.25) < smoothstep(0.5));
+closeTo(sCurveProgress(0), 0);
+closeTo(sCurveProgress(0.5), 0.5);
+closeTo(sCurveProgress(1), 1);
+closeTo(sCurveProgress(0.25), 0.103515625);
+closeTo(sCurveProgress(0.25), 1 - sCurveProgress(0.75));
 
 const lineStart = [10, -20, 30];
 const lineTarget = [110, 180, -70];
@@ -44,19 +55,51 @@ closeTo(Math.hypot(...halfwayRotation), 1, 1e-12);
 closeTo(Math.abs(halfwayRotation[2]), Math.SQRT1_2, 1e-12);
 closeTo(Math.abs(halfwayRotation[3]), Math.SQRT1_2, 1e-12);
 
-const revolute = { definition: { type: 'revolute', maxSpeed: 360 } };
+const revolute = { definition: { type: 'revolute', maxSpeed: 360, maxAcceleration: 720 } };
 const prismatic = { definition: { type: 'prismatic', maxSpeed: 1000 } };
-closeTo(calculateMovjDuration([0], [180], [revolute], 100), 0.75);
-closeTo(calculateMovjDuration([0], [250], [prismatic], 50), 0.75);
-closeTo(calculateMovjDuration([0, 0], [90, 250], [revolute, prismatic], 100), 0.375);
-closeTo(calculateMovjDuration([0], [180], [{ definition: { type: 'revolute' } }], 100), 1.5);
-closeTo(MOVJ_EASING_PEAK_SLOPE, 1.5);
-closeTo(calculateMovlDuration(100, 0, 100), 1);
-closeTo(calculateMovlDuration(0, 180, 1000), 2);
+closeTo(S_CURVE_PEAK_VELOCITY, 1.875);
+closeTo(S_CURVE_PEAK_ACCELERATION, 10 / Math.sqrt(3));
+closeTo(MOTION_SETTLING_DELAY_SECONDS, 0.02);
+closeTo(calculateMovjDuration([0], [180], [revolute], 100), Math.sqrt(180 * S_CURVE_PEAK_ACCELERATION / 720));
+closeTo(calculateMovjDuration([0], [250], [prismatic], 50), 250 * S_CURVE_PEAK_VELOCITY / 500);
+closeTo(
+    calculateMovjDuration([0, 0], [90, 250], [revolute, prismatic], 100),
+    Math.sqrt(90 * S_CURVE_PEAK_ACCELERATION / 720)
+);
+closeTo(calculateMovjDuration([0], [180], [{ definition: { type: 'revolute' } }], 100), 1.875);
+closeTo(calculateMovlDuration(100, 0, 100), 1.875);
+closeTo(calculateMovlDuration(0, 180, 1000), 3.75);
 closeTo(calculateMovlDuration(0, 0, 100), 0.1);
-closeTo(MAX_MOVL_SPEED, 1500);
-closeTo(calculateMovlDuration(1500, 0, MAX_MOVL_SPEED), 1);
-closeTo(calculateMovlDuration(1500, 0, 2000), 1);
+closeTo(MAX_MOVL_SPEED, 2500);
+assert.equal(DEFAULT_MOVJ_SPEED, 100, 'New movement commands must start at 100% speed.');
+closeTo(calculateMovlDuration(1500, 0, MAX_MOVL_SPEED), 1.125);
+closeTo(calculateMovlDuration(1500, 0, 3000), 1.125);
+const asymmetricJoint = {
+    definition: { type: 'revolute', maxSpeed: 1000, maxAcceleration: 720, maxDeceleration: 180 }
+};
+closeTo(
+    calculateMovjDuration([0], [180], [asymmetricJoint], 100),
+    Math.sqrt(180 * S_CURVE_PEAK_ACCELERATION / 180)
+);
+const cartesianMotion = {
+    maxSpeed: 2500,
+    maxAcceleration: 5000,
+    maxRotationSpeed: 600,
+    maxRotationAcceleration: 4000,
+    stopDeceleration: 5000,
+    rotationStopDeceleration: 4000
+};
+closeTo(calculateMovlDuration(2500, 0, 4000, cartesianMotion), 1.875);
+closeTo(calculateMovlDuration(0, 600, 100, cartesianMotion), 1.875);
+const decelerationLimitedCartesian = {
+    ...cartesianMotion,
+    maxAcceleration: 10000,
+    stopDeceleration: 1000
+};
+closeTo(
+    calculateMovlDuration(100, 0, 2500, decelerationLimitedCartesian),
+    Math.sqrt(100 * S_CURVE_PEAK_ACCELERATION / 1000)
+);
 closeTo(calculateDelayDuration(2.5), 2.5);
 closeTo(calculateDelayDuration(MIN_DELAY_SECONDS), MIN_DELAY_SECONDS);
 closeTo(calculateDelayDuration(MAX_DELAY_SECONDS), MAX_DELAY_SECONDS);
@@ -64,6 +107,43 @@ closeTo(calculateDelayDuration(undefined), DEFAULT_DELAY_SECONDS);
 closeTo(calculateCycleElapsedSeconds(1000, 2345), 1.345);
 closeTo(calculateCycleElapsedSeconds(2345, 1000), 0);
 assert.equal(calculateCycleElapsedSeconds(null, 1000), null);
+assert.equal(MIN_POINT_INDEX, 0);
+assert.equal(MAX_POINT_INDEX, 9999);
+assert.equal(MAX_POINT_LABEL_LENGTH, 19);
+assert.equal(formatMotionPointName(0), 'P[0]');
+assert.equal(isMotionPointMotion('MOVJ'), true);
+assert.equal(isMotionPointMotion('MOVL'), true);
+assert.equal(isMotionPointMotion('DELAY'), false);
+assert.equal(isValidMotionPointLabel('Pickup_01'), true);
+assert.equal(isValidMotionPointLabel(''), true);
+assert.equal(isValidMotionPointLabel('1Pickup'), false);
+assert.equal(isValidMotionPointLabel('Pickup-01'), false);
+assert.equal(isValidMotionPointLabel('A'.repeat(20)), false);
+assert.equal(
+    formatPositionPointRecordLine({
+        pointIndex: 0,
+        coordinates: [850, 600, 750, -0.000002, 0, 180],
+        armParameters: [0, 0, 0, 1],
+        externalAxes: [0, 0, 0, 0, 0, 0],
+        label: 'Point1'
+    }),
+    'P[0] = 850.000000, 600.000000, 750.000000, -0.000002, 0.000000, 180.000000; 0, 0, 0, 1;0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000; Name=Point1;'
+);
+assert.equal(
+    formatPositionPointRecordLine({
+        pointIndex: 1,
+        coordinates: [850.000009, 600, 800, -0.000004, 0.000002, 180],
+        armParameters: [0, 0, 0, 1],
+        externalAxes: [0, 0, 0, 0, 0, 0]
+    }),
+    'P[1] = 850.000009, 600.000000, 800.000000, -0.000004, 0.000002, 180.000000; 0, 0, 0, 1;0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000;'
+);
+assert.throws(() => formatPositionPointRecordLine({
+    pointIndex: 10000,
+    coordinates: [0, 0, 0, 0, 0, 0],
+    armParameters: [0, 0, 0, 1],
+    externalAxes: [0, 0, 0, 0, 0, 0]
+}));
 
 const stressDurations = [
     calculateMovjDuration([0], [45], [revolute], 20),
@@ -76,22 +156,25 @@ const completionTimes = stressDurations.map((duration) => synchronizedStart + du
 assert.equal(new Set(completionTimes).size, 4, 'Four synchronized robots must complete independently.');
 for (let frame = 0; frame <= 10000; frame += 1) {
     stressDurations.forEach((duration, robotIndex) => {
-        const progress = smoothstep(Math.min(1, frame / (duration * 1000)));
+        const progress = sCurveProgress(Math.min(1, frame / (duration * 1000)));
         const position = interpolateLinearPosition([0, robotIndex, 0], [100, robotIndex, 50], progress);
         assert.ok(position.every(Number.isFinite));
     });
 }
 
-const [catalogText, mainSource, htmlSource, cssSource, ...viewerLocaleTexts] = await Promise.all([
+const [catalogText, mainSource, motionCoreSource, htmlSource, cssSource, gs60SourceText, ...viewerLocaleTexts] = await Promise.all([
     readFile(new URL('../2_3DSimulation/models/models.json', import.meta.url), 'utf8'),
     readFile(new URL('../2_3DSimulation/main.js', import.meta.url), 'utf8'),
+    readFile(new URL('../2_3DSimulation/motion-program-core.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../2_3DSimulation/index.html', import.meta.url), 'utf8'),
     readFile(new URL('../2_3DSimulation/style.css', import.meta.url), 'utf8'),
+    readFile(new URL('../2_3DSimulation/새 폴더/IR-GS60-120Z40S5-C1LNSX-INT_01741178.json', import.meta.url), 'utf8'),
     ...['ko', 'en', 'zh-CN', 'vi'].map((locale) => (
         readFile(new URL(`../Language/${locale}/robot-3d-viewer.json`, import.meta.url), 'utf8')
     ))
 ]);
 const catalog = JSON.parse(catalogText);
+const gs60Source = JSON.parse(gs60SourceText.replace(/^\uFEFF/, ''));
 const viewerLocaleCodes = ['ko', 'en', 'zh-CN', 'vi'];
 const viewerLocales = Object.fromEntries(viewerLocaleCodes.map((locale, index) => [
     locale,
@@ -106,7 +189,7 @@ const viewerTranslationSources = new Set([
     'Program', 'Program Panel', 'ROBOTS', 'CYCLE TIME',
     '대기', '실행 중', '일시정지', '완료', '오류', '정지됨',
     '사이클 타임 측정 중', '사이클 타임',
-    'Tool이 TCP에 부착되었습니다.', '설비를 불러왔습니다.',
+    'Tool이 TCP에 부착되었습니다.', '3D 모델링 불러오기 완료',
     '자세, DELAY 또는 타이머 명령을 추가하세요.', '프로그램 가능한 로봇이 없습니다.',
     '반복 실행 켜짐', '반복 실행 꺼짐',
     '프로젝트 복원에 실패했습니다.', '프로젝트 내보내기에 실패했습니다.',
@@ -149,28 +232,181 @@ assert.equal(sixAxisCount, 12);
 models.forEach((model) => {
     assert.equal(model.jointSpeeds.length, model.limits.length, `${model.name} must define one speed per joint.`);
     assert.ok(model.jointSpeeds.every((speed) => Number.isFinite(speed) && speed > 0), `${model.name} joint speeds must be positive.`);
+    assert.equal(model.jointAccelerations.length, model.limits.length, `${model.name} must define one acceleration per joint.`);
+    assert.ok(model.jointAccelerations.every((value) => Number.isFinite(value) && value > 0), `${model.name} joint accelerations must be positive.`);
+    assert.equal(model.jointDecelerations.length, model.limits.length, `${model.name} must define one deceleration per joint.`);
+    assert.ok(model.jointDecelerations.every((value) => Number.isFinite(value) && value > 0), `${model.name} joint decelerations must be positive.`);
+    [
+        'maxSpeed',
+        'maxAcceleration',
+        'maxRotationSpeed',
+        'maxRotationAcceleration',
+        'stopDeceleration',
+        'rotationStopDeceleration'
+    ].forEach((field) => assert.ok(
+        Number.isFinite(model.cartesianMotion?.[field]) && model.cartesianMotion[field] > 0,
+        `${model.name} Cartesian ${field} must be positive.`
+    ));
 });
 assert.ok(new Set(models.map((model) => model.jointSpeeds.join(','))).size > 10, 'Joint speed profiles must vary by robot model.');
 const r7h90 = models.find((model) => model.folder === 'IR-R7H-90');
 const s4 = models.find((model) => model.folder === 'IR-S4-40Z15');
+const gs60 = models.find((model) => model.folder === 'IR-GS60-120Z40');
+const r15h = models.find((model) => model.folder === 'IR-R15H-145');
 assert.deepEqual(r7h90.jointSpeeds, [336, 280, 390, 550, 438, 764.7]);
-assert.deepEqual(s4.jointSpeeds, [705.9, 747.1, 1300, 2600]);
+assert.deepEqual(s4.jointSpeeds, [705.9, 747.1, 1325.955556, 2600]);
+const gs60JointSource = gs60Source.stMotion.stPlayback.stJoint;
+const gs60CartesianSource = gs60Source.stMotion.stPlayback.stCartesian;
+const gs60JointScale = [1, 1, gs60.structure[3] / 360, 1];
+[
+    ['jointSpeeds', 'dMaxVel'],
+    ['jointAccelerations', 'dMaxAcc'],
+    ['jointDecelerations', 'dStopDec']
+].forEach(([catalogField, sourceField]) => {
+    gs60[catalogField].forEach((value, index) => closeTo(
+        value,
+        gs60JointSource[sourceField][index] * gs60JointScale[index],
+        1e-6
+    ));
+});
+[
+    ['maxSpeed', 'dMaxVel'],
+    ['maxAcceleration', 'dMaxAcc'],
+    ['maxRotationSpeed', 'dMaxRVel'],
+    ['maxRotationAcceleration', 'dMaxRAcc'],
+    ['stopDeceleration', 'dStopDec'],
+    ['rotationStopDeceleration', 'dRStopDec']
+].forEach(([catalogField, sourceField]) => closeTo(
+    gs60.cartesianMotion[catalogField],
+    gs60CartesianSource[sourceField]
+));
+assert.deepEqual(r15h.jointAccelerations, [600, 800, 1000, 1500, 2500, 1800]);
 closeTo(calculateMovjDuration(
     [0, 0, 0, 0, 0, 0],
     [0, 280, 0, 0, 0, 0],
     r7h90.jointSpeeds.map((maxSpeed) => ({ definition: { type: 'revolute', maxSpeed } })),
     100
-), 1.5);
+), 1.875);
 closeTo(calculateMovjDuration(
     [0, 0, 0, 0],
     [0, 0, 150, 0],
     s4.jointSpeeds.map((maxSpeed, index) => ({ definition: { type: index === 2 ? 'prismatic' : 'revolute', maxSpeed } })),
     100
-), 150 * MOVJ_EASING_PEAK_SLOPE / 1300);
+), 150 * S_CURVE_PEAK_VELOCITY / s4.jointSpeeds[2]);
+closeTo(calculateMovjDuration(
+    [0, 0, 0, 0, 0, 0],
+    [90, 90, 90, 90, 90, 90],
+    r15h.jointSpeeds.map((maxSpeed, index) => ({
+        definition: {
+            type: 'revolute',
+            maxSpeed,
+            maxAcceleration: r15h.jointAccelerations[index]
+        }
+    })),
+    100
+), Math.sqrt(90 * S_CURVE_PEAK_ACCELERATION / 600));
+
+const r15hJoints = r15h.jointSpeeds.map((maxSpeed, index) => ({
+    definition: {
+        type: 'revolute',
+        maxSpeed,
+        maxAcceleration: r15h.jointAccelerations[index]
+    }
+}));
+for (const speedPercent of [20, 50, 100]) {
+    const speedScale = speedPercent / 100;
+    const distances = [12, 35, 70, 110, 160, 240];
+    const duration = calculateMovjDuration(
+        Array(6).fill(0),
+        distances,
+        r15hJoints,
+        speedPercent
+    );
+    for (let sample = 0; sample <= 1000; sample += 1) {
+        const timeScale = sample / 1000;
+        const normalizedVelocity = 30 * timeScale ** 2 * (1 - timeScale) ** 2;
+        const normalizedAcceleration = 60 * timeScale - 180 * timeScale ** 2 + 120 * timeScale ** 3;
+        distances.forEach((distance, index) => {
+            const velocity = distance * normalizedVelocity / duration;
+            const acceleration = Math.abs(distance * normalizedAcceleration / duration ** 2);
+            assert.ok(velocity <= r15h.jointSpeeds[index] * speedScale + 1e-8, `R15H J${index + 1} exceeds its speed limit.`);
+            assert.ok(acceleration <= r15h.jointAccelerations[index] + 1e-8, `R15H J${index + 1} exceeds its acceleration limit.`);
+        });
+    }
+}
+
+models.forEach((model) => {
+    const joints = model.jointSpeeds.map((maxSpeed, index) => ({
+        definition: {
+            type: model.robotType === 'scara' && index === 2 ? 'prismatic' : 'revolute',
+            maxSpeed,
+            maxAcceleration: model.jointAccelerations[index],
+            maxDeceleration: model.jointDecelerations[index]
+        }
+    }));
+    const distances = model.limits.map(([minimum, maximum]) => Math.abs(maximum - minimum) * 0.6);
+    [20, 100].forEach((speedPercent) => {
+        const duration = calculateMovjDuration(
+            Array(model.limits.length).fill(0),
+            distances,
+            joints,
+            speedPercent
+        );
+        for (let sample = 0; sample <= 1000; sample += 1) {
+            const timeScale = sample / 1000;
+            const normalizedVelocity = 30 * timeScale ** 2 * (1 - timeScale) ** 2;
+            const normalizedAcceleration = Math.abs(60 * timeScale - 180 * timeScale ** 2 + 120 * timeScale ** 3);
+            distances.forEach((distance, index) => {
+                const velocity = distance * normalizedVelocity / duration;
+                const acceleration = distance * normalizedAcceleration / duration ** 2;
+                assert.ok(
+                    velocity <= model.jointSpeeds[index] * speedPercent / 100 + 1e-8,
+                    `${model.name} J${index + 1} exceeds its speed limit.`
+                );
+                assert.ok(
+                    acceleration <= model.jointAccelerations[index] + 1e-8,
+                    `${model.name} J${index + 1} exceeds its acceleration limit.`
+                );
+                assert.ok(
+                    acceleration <= model.jointDecelerations[index] + 1e-8,
+                    `${model.name} J${index + 1} exceeds its deceleration limit.`
+                );
+            });
+        }
+    });
+
+    const linearDistance = 1200;
+    const rotationDistance = 180;
+    const duration = calculateMovlDuration(
+        linearDistance,
+        rotationDistance,
+        model.cartesianMotion.maxSpeed,
+        model.cartesianMotion
+    );
+    for (let sample = 0; sample <= 1000; sample += 1) {
+        const timeScale = sample / 1000;
+        const normalizedVelocity = 30 * timeScale ** 2 * (1 - timeScale) ** 2;
+        const normalizedAcceleration = Math.abs(60 * timeScale - 180 * timeScale ** 2 + 120 * timeScale ** 3);
+        const linearVelocity = linearDistance * normalizedVelocity / duration;
+        const linearAcceleration = linearDistance * normalizedAcceleration / duration ** 2;
+        const rotationVelocity = rotationDistance * normalizedVelocity / duration;
+        const rotationAcceleration = rotationDistance * normalizedAcceleration / duration ** 2;
+        assert.ok(linearVelocity <= model.cartesianMotion.maxSpeed + 1e-8, `${model.name} MOVL exceeds its linear speed limit.`);
+        assert.ok(linearAcceleration <= model.cartesianMotion.maxAcceleration + 1e-8, `${model.name} MOVL exceeds its linear acceleration limit.`);
+        assert.ok(linearAcceleration <= model.cartesianMotion.stopDeceleration + 1e-8, `${model.name} MOVL exceeds its linear deceleration limit.`);
+        assert.ok(rotationVelocity <= model.cartesianMotion.maxRotationSpeed + 1e-8, `${model.name} MOVL exceeds its rotation speed limit.`);
+        assert.ok(rotationAcceleration <= model.cartesianMotion.maxRotationAcceleration + 1e-8, `${model.name} MOVL exceeds its rotation acceleration limit.`);
+        assert.ok(rotationAcceleration <= model.cartesianMotion.rotationStopDeceleration + 1e-8, `${model.name} MOVL exceeds its rotation deceleration limit.`);
+    }
+});
 
 const makeStep = (model, modelIndex, motion, speed) => ({
     id: `${model.folder}-${motion}`,
-    name: motion === 'MOVJ' ? 'P001' : 'P002',
+    name: motion === 'MOVJ' ? 'P[0]' : 'P[1]',
+    pointIndex: motion === 'MOVJ' ? 0 : 1,
+    label: motion === 'MOVJ' ? 'Pickup_01' : '',
+    armParameters: [0, 0, 0, 1],
+    externalAxes: [0, 0, 0, 0, 0, 0],
     motion,
     speed,
     joints: model.limits.map(([minimum, maximum], jointIndex) => (
@@ -236,8 +472,14 @@ assert.equal(normalized.robots.length, 29);
 assert.equal(normalized.robots.filter((robot) => robot.included).length, 4);
 assert.equal(normalized.repeatCurrentRobot, false);
 assert.equal(normalized.repeat, true);
+assert.equal(normalized.robots[0].steps[0].name, 'P[0]');
+assert.equal(normalized.robots[0].steps[0].pointIndex, 0);
+assert.equal(normalized.robots[0].steps[0].label, 'Pickup_01');
+assert.deepEqual(normalized.robots[0].steps[0].armParameters, [0, 0, 0, 1]);
+assert.deepEqual(normalized.robots[0].steps[0].externalAxes, [0, 0, 0, 0, 0, 0]);
 assert.equal(normalized.robots[0].steps[2].motion, 'DELAY');
 assert.equal(normalized.robots[0].steps[2].delaySeconds, 1.5);
+assert.ok(!('pointIndex' in normalized.robots[0].steps[2]), 'Non-motion commands must not receive P[n] metadata.');
 assert.equal(normalized.robots[0].steps[3].motion, 'TIME_START');
 assert.equal(normalized.robots[0].steps[4].motion, 'TIME_OUT');
 assert.ok(!('speed' in normalized.robots[0].steps[3]) && !('delaySeconds' in normalized.robots[0].steps[4]));
@@ -252,6 +494,12 @@ assert.equal(clonedDelayProgram.steps[2].delaySeconds, 1.5);
 assert.equal(clonedDelayProgram.steps[3].motion, 'TIME_START');
 assert.equal(clonedDelayProgram.steps[4].motion, 'TIME_OUT');
 assert.equal(clonedDelayProgram.lastCycleTimeSeconds, 12.345);
+const legacyPointStep = structuredClone(normalized.robots[0].steps[0]);
+legacyPointStep.name = 'P001';
+delete legacyPointStep.pointIndex;
+const migratedLegacyProgram = cloneMotionProgram({ included: true, steps: [legacyPointStep] });
+assert.equal(migratedLegacyProgram.steps[0].pointIndex, 0, 'Legacy P001 must migrate to P[0].');
+assert.equal(migratedLegacyProgram.steps[0].name, 'P[0]');
 const reorderedSteps = [{ id: 'P1' }, { id: 'P2' }, { id: 'P3' }, { id: 'P4' }];
 assert.equal(reorderMotionSteps(reorderedSteps, 'P1', 'P4', true), true);
 assert.deepEqual(reorderedSteps.map((step) => step.id), ['P2', 'P3', 'P4', 'P1']);
@@ -277,7 +525,7 @@ assert.throws(() => normalizeMotionProject(invalidSpeed), /speed is outside/);
 
 const maximumMovlSpeed = structuredClone(fullProject);
 maximumMovlSpeed.robots[0].steps[1].speed = MAX_MOVL_SPEED;
-assert.equal(normalizeMotionProject(maximumMovlSpeed).robots[0].steps[1].speed, 1500);
+assert.equal(normalizeMotionProject(maximumMovlSpeed).robots[0].steps[1].speed, 2500);
 maximumMovlSpeed.robots[0].steps[1].speed = MAX_MOVL_SPEED + 1;
 assert.throws(() => normalizeMotionProject(maximumMovlSpeed), /speed is outside/);
 
@@ -288,6 +536,14 @@ assert.throws(() => normalizeMotionProject(invalidDelay), /delay is outside/);
 const duplicateSteps = structuredClone(fullProject);
 duplicateSteps.robots[0].steps[1].id = duplicateSteps.robots[0].steps[0].id;
 assert.throws(() => normalizeMotionProject(duplicateSteps), /Duplicate step id/);
+
+const duplicatePoints = structuredClone(fullProject);
+duplicatePoints.robots[0].steps[1].pointIndex = duplicatePoints.robots[0].steps[0].pointIndex;
+assert.throws(() => normalizeMotionProject(duplicatePoints), /Duplicate point index/);
+
+const invalidPointLabel = structuredClone(fullProject);
+invalidPointLabel.robots[0].steps[0].label = '1-invalid';
+assert.throws(() => normalizeMotionProject(invalidPointLabel), /label must start with a letter/);
 
 [
     'program-panel',
@@ -324,6 +580,8 @@ assert.deepEqual(programControlRows, [
     'tcpFrame.add(toolAxesAtTcp)',
     'robot.userData.toolAxesAtTcp = toolAxesAtTcp',
     'maxSpeed: jointSpeeds[index]',
+    'maxDeceleration: jointDecelerations[index]',
+    'cartesianMotion: normalizedCartesianMotion',
     'Robot joint speeds are invalid for',
     'if (robot !== state.activeArticulatedModel) return;',
     'function resumePausedRobotMotions(',
@@ -340,13 +598,15 @@ assert.deepEqual(programControlRows, [
     'if (resumePausedRobotMotions(robots)) return;',
     'const startAt = performance.now() + 40',
     'slerpQuaternion(',
-    'smoothstep(linearProgress)',
+    'sCurveProgress(linearProgress)',
+    'duration: motionDuration + MOTION_SETTLING_DELAY_SECONDS * 1000',
+    'return elapsed >= segment.duration',
     "if (step.motion === 'DELAY')",
     "type: 'DELAY'",
     "type: step.motion",
     'duration: calculateDelayDuration(step.delaySeconds) * 1000',
     'delaySeconds: step.delaySeconds',
-    'step.motion === \'MOVJ\' ? 100 : MAX_MOVL_SPEED',
+    'robot.userData.manifest.cartesianMotion.maxSpeed',
     "segment.type === 'TIME_START' || segment.type === 'TIME_OUT'",
     'program.lastCycleTimeSeconds.toFixed(3)',
     'program.cycleTimerStartedAt += delay',
@@ -366,7 +626,25 @@ assert.deepEqual(programControlRows, [
 assert.ok(!mainSource.includes('updateRobotCollisions'), 'Approximate robot collision checks must remain removed.');
 assert.ok(!mainSource.includes('prepareRobotCollisionParts'), 'Robot links must not create box collision volumes.');
 assert.ok(!mainSource.includes('collisionHelpers'), 'Collision warning boxes must remain removed.');
-assert.ok(htmlSource.includes('main.js?v=20260717-joint-directions2'), 'Viewer cache token must load the current simulation bundle.');
+assert.doesNotMatch(motionCoreSource, /SIMULATION_MOTION_DURATION_SCALE|MOVJ_EASING_PEAK_SLOPE/, 'The former fixed motion-time correction must stay removed.');
+assert.match(motionCoreSource, /t \* t \* t \* \(10 \+ t \* \(-15 \+ 6 \* t\)\)/, 'Motion interpolation must use the fifth-order S-curve.');
+assert.ok(mainSource.includes('maxAcceleration: jointAccelerations[index]'), 'Robot manifests must expose per-axis acceleration limits.');
+assert.ok(mainSource.includes('maxDeceleration: jointDecelerations[index]'), 'Robot manifests must expose per-axis deceleration limits.');
+assert.ok(mainSource.includes('robot.userData.manifest.cartesianMotion'), 'MOVL must use the selected robot Cartesian limits.');
+assert.ok(htmlSource.includes('main.js?v=20260719-euler-321-11'), 'Viewer cache token must load the current simulation bundle.');
+assert.ok(htmlSource.includes('id="btn-fullscreen-mode"'), 'Viewer must expose the fullscreen UI mode button.');
+assert.ok(mainSource.includes('function setFullscreenUiMode(enabled)') && mainSource.includes('function handleFullscreenUiPointerMove(event)'), 'Fullscreen UI mode must hide and reveal bars from pointer proximity.');
+assert.ok(mainSource.includes("revealFullscreenBar('top')") && mainSource.includes("revealFullscreenBar('bottom')"), 'Fullscreen UI mode must reveal the top and bottom bars independently.');
+assert.ok(mainSource.includes('function attachPendingToolModels(robot)') && mainSource.includes('model.userData.pendingToolAttachment'), 'Tool-attached 3D models must transfer to a replacement robot TCP.');
+assert.match(mainSource, /else if \(positionEntry\) \{\s*model\.position\[axis\] = value;/, 'Numeric model editing must change only the edited position axis.');
+assert.ok(mainSource.includes("const isScaleMode = state.transformControls?.mode === 'scale';") && mainSource.includes("model.scale[axis] = value;"), 'Scale mode must use the numeric X/Y/Z inputs as scale multipliers.');
+assert.ok(mainSource.includes('function toggleSelectedTransformMode(mode)') && mainSource.includes('setTransformHandlesEnabled(true);'), 'Selecting a transform mode must reveal its transform handles.');
+assert.ok(mainSource.includes('state.transformControls.enabled && state.transformControls.mode === mode') && mainSource.includes('setTransformHandlesEnabled(false);'), 'Selecting the active transform mode must hide its transform handles.');
+assert.match(htmlSource, /model-browser-header[\s\S]*?id="btn-toggle-transform"/, 'The transform handle toggle must be placed in the Model Tree panel.');
+assert.doesNotMatch(htmlSource, /viewer-control-dock[\s\S]*?id="btn-toggle-transform"/, 'The transform handle toggle must not remain in the bottom viewer dock.');
+assert.ok(mainSource.includes('const PANEL_DRAG_EXCLUDED_SELECTOR') && mainSource.includes('panel.classList.add(\'panel-drag-anywhere\')'), 'Panels must support dragging from non-interactive areas.');
+assert.ok(mainSource.includes('target.position[editedKey] = editedValue;') && mainSource.includes('positionTolerance: 0.001') && mainSource.includes('updateTcpPresentation(robot, target);'), 'Numeric Base JOG input must preserve other axes and use stable sub-0.01 mm precision.');
+assert.ok(mainSource.includes('function jogTcpInBase(robot, kind, axisName, direction)') && mainSource.includes('const currentTarget = robot.userData.baseJogTarget;') && mainSource.includes('robot.userData.baseJogTarget = target;'), 'Base JOG buttons must preserve exact non-edited target axes.');
 assert.ok(
     mainSource.includes("allRobotsIncluded ? '전체 해제' : '전체 선택'")
         && mainSource.includes('function toggleAllProgramRobots()')
@@ -383,13 +661,14 @@ assert.ok(!mainSource.includes('new THREE.CatmullRomCurve3(points'), 'Base JOG r
 assert.ok(mainSource.includes('configureBaseJogActiveStroke(activeStroke, transformControls)'), 'Base JOG handles must render an active-axis stroke.');
 assert.ok(mainSource.includes('function isNegativeBaseJogArrow(object)'), 'Base JOG controls must identify reverse arrowheads.');
 assert.ok(mainSource.includes('negativeArrowHandles.forEach((arrowHandle) => arrowHandle.removeFromParent())'), 'Base JOG controls must show arrowheads only in positive directions.');
-assert.ok(!mainSource.includes('rebaseEquipmentToFloorCenter'), 'Equipment import must not recenter the source geometry.');
-assert.ok(mainSource.includes("importedModel.userData.equipmentAnchor = 'source-origin'"), 'Equipment imports must record source-origin anchoring.');
-assert.ok(mainSource.includes('importedModel.position.set(0, 0, 0)'), 'Equipment source origin must align with the scene Base origin.');
+assert.ok(!mainSource.includes('rebaseEquipmentToFloorCenter'), '3D model import must not recenter the source geometry.');
+assert.ok(mainSource.includes("importedModel.userData.sceneModelAnchor = 'source-origin'"), '3D model imports must record source-origin anchoring.');
+assert.ok(mainSource.includes('importedModel.position.set(0, 0, 0)'), '3D model source origin must align with the scene Base origin.');
 assert.ok(mainSource.includes('BASE_JOG_MAX_VISIBLE_LINE_SPAN = 10'), 'Base JOG controls must identify oversized guide lines.');
 assert.ok(mainSource.includes("object.tag === 'helper' || scaledSpan > BASE_JOG_MAX_VISIBLE_LINE_SPAN"), 'Base JOG helper axes must be excluded from visible strokes.');
 assert.ok(mainSource.includes('infiniteGuideHandles.forEach((guideHandle) => guideHandle.removeFromParent())'), 'Base JOG controls must remove infinite drag guides.');
-assert.ok(htmlSource.includes('style.css?v=20260717-jog-button-layout1'), 'Stylesheet cache token must load the current simulation styles.');
+assert.ok(htmlSource.includes('style.css?v=20260719-euler-321-11'), 'Stylesheet cache token must load the current simulation styles.');
+assert.match(cssSource, /body\.fullscreen-ui-mode #main-content\s*\{[^}]*top:\s*0[^}]*bottom:\s*0/s, 'Fullscreen UI mode must expand the 3D viewport.');
 assert.doesNotMatch(htmlSource, /id="collision-alert"/);
 assert.doesNotMatch(cssSource, /\.collision-alert\s*\{/);
 assert.match(htmlSource, /id="import-dialog-title">3D 모델 가져오기 방식<\/h2>/);
@@ -413,6 +692,8 @@ assert.match(cssSource, /\.program-step-list\s*\{[^}]*grid-auto-rows:\s*42px[^}]
 assert.match(cssSource, /\.program-step-row\s*\{[^}]*height:\s*42px[^}]*min-height:\s*42px[^}]*max-height:\s*42px/s, 'Every program command row must keep a fixed height.');
 assert.ok(mainSource.includes("const row = event.target.closest('[data-program-step-id]')"), 'Program command selection must use the full row hit box.');
 assert.ok(mainSource.includes('program.selectedStepId = row.dataset.programStepId'), 'Clicking a program row must select that command.');
+assert.match(htmlSource, /id="program-step-list"[^>]*data-panel-drag-ignore/, 'The program command list must never initiate panel dragging.');
+assert.ok(mainSource.includes('function insertMotionStepAfterSelected(program, step)'), 'New commands must be inserted relative to the selected row.');
 assert.ok(
     mainSource.includes("addEventListener('dragstart', handleProgramStepDragStart)")
         && mainSource.includes("addEventListener('dragover', handleProgramStepDragOver)")
@@ -432,9 +713,50 @@ assert.ok(
 );
 assert.doesNotMatch(htmlSource, /id="program-step-(?:up|down)"/, 'Drag reordering must replace the Program Panel up/down buttons.');
 assert.ok(!mainSource.includes('btnProgramUp:') && !mainSource.includes('btnProgramDown:'), 'Removed Program Panel arrows must not retain handlers.');
-assert.match(cssSource, /\.program-step-select\s*\{[^}]*flex:\s*0 0 48px[^}]*min-width:\s*48px/s, 'Program point names must use the compact width.');
-assert.match(cssSource, /\.program-step-speed\s*\{[^}]*width:\s*50px/s, 'Program speed inputs must use the compact width.');
-assert.match(htmlSource, /id="btn-import-3d"[^>]*>[\s\S]*?fa-cube[\s\S]*?<span>3D<\/span>/, 'The 3D import button must show a cube icon and 3D label.');
+assert.match(mainSource, /pointIndexInput\.type = 'number';[\s\S]*?pointIndexInput\.dataset\.programStepPointIndex = step\.id;/, 'Only the numeric value inside P[n] may be edited.');
+assert.ok(mainSource.includes("recordHistory('프로그램 포인트 번호 변경'")
+    && mainSource.includes("recordHistory('프로그램 포인트 라벨 변경'"), 'Program point number and label changes must be undoable.');
+assert.match(cssSource, /\.program-step-select\s*\{[^}]*flex:\s*0 0 48px[^}]*min-width:\s*48px/s, 'Program point references must use the compact width.');
+assert.match(cssSource, /\.program-point-index\s*\{[^}]*gap:\s*0[^}]*padding:\s*0/s, 'P[n] references must not add internal padding.');
+assert.match(cssSource, /\.program-step-label\s*\{[^}]*flex:\s*0 1 82px[^}]*width:\s*82px/s, 'Program point labels must fit the default panel width.');
+assert.ok(!mainSource.includes('program-step-pose') && !cssSource.includes('.program-step-pose'), 'Program rows must not display TCP coordinates.');
+assert.match(cssSource, /\.program-step-speed\s*\{[^}]*width:\s*42px/s, 'Program speed inputs must use the compact width.');
+assert.ok(htmlSource.includes('id="btn-position-export"') && htmlSource.includes('id="btn-snap-move"'), 'The simulation must expose position export and Mode D snap movement.');
+assert.ok(htmlSource.includes('id="program-step-context-menu"')
+    && htmlSource.includes('id="program-show-position-value"')
+    && htmlSource.includes('id="position-value-dialog"'), 'Movement points must expose the position-value context dialog.');
+assert.equal((htmlSource.match(/data-position-arm=/g) || []).length, 4, 'The position dialog must expose four arm parameters.');
+assert.equal((htmlSource.match(/data-position-external=/g) || []).length, 6, 'The position dialog must expose six external axes.');
+assert.ok(mainSource.includes("import { buildStepSnapCandidates } from '../3_ToolSelector/snap-geometry.mjs")
+    && mainSource.includes('function moveRobotTcpToSimulationSnap(snap)')
+    && mainSource.includes('position: robot.worldToLocal(snap.worldPoint.clone())')
+    && mainSource.includes('positionTolerance: 0.001'), 'Simulation snap movement must reuse Mode D candidates and solve the selected point in robot Base coordinates.');
+assert.ok(mainSource.includes('formatPositionPointRecordLine({')
+    && mainSource.includes("suggestedName: 'Point_export.txt'")
+    && mainSource.includes("saveAs(blob, 'Point_export.txt')"), 'Position export must use the verified record formatter and Point_export.txt fallback download.');
+assert.match(htmlSource, /id="btn-import-3d"[^>]*>[\s\S]*?<span>3D<\/span>[\s\S]*?fa-upload/, 'The 3D import button must show a 3D upload tray icon.');
+assert.match(htmlSource, /program-file-row[\s\S]*?id="program-export"[\s\S]*?id="program-import"[\s\S]*?id="btn-position-export"/, 'Program files must provide save, load, and point export controls in order.');
+assert.ok(
+    htmlSource.indexOf('id="btn-position-export"') > htmlSource.indexOf('id="program-export"'),
+    'Position export must not remain in the top toolbar.'
+);
+assert.match(htmlSource, /id="btn-download-cad"[^>]*>[\s\S]*?<span>CAD<\/span>[\s\S]*?fa-download/, 'CAD download must use a labeled download tray icon.');
+assert.match(htmlSource, /jog-mode-tabs[\s\S]*?id="btn-jog-joint-mode"[\s\S]*?id="btn-jog-base-mode"[\s\S]*?id="btn-snap-move"/, 'JOG must group Joint, Base, and Snap Move controls.');
+assert.match(htmlSource, /id="program-update-step"[^>]*>[\s\S]*?program-point-overwrite-mark[\s\S]*?fa-rotate/, 'Position overwrite must use the P refresh icon.');
+assert.ok(mainSource.includes('const available = !isMotionActive();') && !mainSource.includes('if (!getSimulationSnapModels().length)'), 'Snap Move must be activatable without a selected robot or imported 3D model.');
+assert.ok(mainSource.includes('const baseSeedOffset = polarDelta * jointDirection;') && mainSource.includes('const baseSeedOffsets = ['), 'IK must add J1-oriented seeds for targets that require base rotation.');
+assert.ok(mainSource.includes('function showProgramPointOverwriteFeedback(step)') && mainSource.includes("icon?.classList.replace('fa-rotate', 'fa-check')"), 'Point overwrite must provide a successful completion indicator.');
+assert.ok(mainSource.includes('function clearJogModeSelectionForSnap()') && mainSource.includes('clearJogModeSelectionForSnap();'), 'Snap Move must behave as a mutually exclusive JOG mode.');
+assert.ok(mainSource.includes('}, 700);'), 'Point overwrite completion feedback must clear quickly.');
+assert.match(htmlSource, /data-position-value="a"[^>]*><small>deg<\/small><\/label>\s*<label><span>B<\/span><input[^>]*data-position-value="b"[^>]*><small>deg<\/small><\/label>\s*<label><span>C<\/span><input[^>]*data-position-value="c"/, 'Point rotation values must be ordered A/B/C.');
+assert.ok(mainSource.includes('a: rotation.rz') && mainSource.includes('c: rotation.rx') && mainSource.includes('quaternionFromPointRotation(robot, values.c, values.b, values.a)'), 'Point rotation editing must map A/B/C to Rz/Ry/Rx.');
+assert.match(mainSource, /coordinates:\s*\[\s*pose\.position\.x,\s*pose\.position\.y,\s*pose\.position\.z,\s*rotation\.rz,\s*rotation\.ry,\s*rotation\.rx/s, 'Point export must use X/Y/Z/A/B/C order.');
+assert.match(htmlSource, /data-base-rotation-row="z"[\s\S]*?data-base-rotation-row="y"[\s\S]*?data-base-rotation-row="x"/, 'Base JOG rotations must be ordered RZ, RY, RX.');
+assert.ok(mainSource.includes('const SIX_AXIS_POSITION_HOME_QUATERNION')
+    && mainSource.includes("new THREE.Euler(-Math.PI, -Math.PI / 2, 0, 'ZYX')")
+    && mainSource.includes("setFromQuaternion(positionRotation, 'ZYX')")
+    && mainSource.includes("THREE.MathUtils.degToRad(rz),\n        'ZYX'"), 'Six-axis position values must use 3-2-1 (RZ-RY-RX) Euler angles.');
+assert.ok(!mainSource.includes('usesNegativeJ5RotationBranch'), '3-2-1 Euler conversion must determine the J5 branch without a manual sign override.');
 assert.ok(
     mainSource.includes("insertBefore(programButton, virtualButton || divider)"),
     'The Program launcher must be inserted immediately before the Virtual launcher.'
@@ -448,6 +770,7 @@ assert.ok(preflightSource.includes("if (step.motion === 'TIME_START')")
     && preflightSource.includes("if (step.motion === 'TIME_OUT')")
     && preflightSource.includes('TIME START must run before TIME OUT'), 'TIME OUT must require an active TIME START marker.');
 assert.ok(cssSource.includes('width: min(340px, calc(100% - 32px))'), 'Program Panel compact width must remain 340px.');
+assert.match(cssSource, /\.program-panel\s*\{[^}]*top:\s*0[^}]*left:\s*320px[^}]*transform:\s*none/s, 'Program Panel must initially appear beside the model tree.');
 assert.ok(htmlSource.includes('id="program-repeat" class="program-repeat-toggle"'), 'Repeat must be an icon toggle button.');
 assert.ok(htmlSource.includes('id="program-repeat-robot" class="program-repeat-toggle"'), 'Current robot repeat must be an icon toggle button.');
 assert.equal((htmlSource.match(/data-program-repeat(?=[\s>])/g) || []).length, 2, 'Both playback rows must expose a repeat control.');
