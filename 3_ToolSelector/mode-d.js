@@ -1,13 +1,14 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import {
   combineStepParts,
   createCoordinateFrame,
   integrateStepMesh,
   pointInFrame
 } from './mass-properties.mjs';
-import { averageCircleCenters, buildStepSnapCandidates } from './snap-geometry.mjs';
+import { averagePoints, buildStepSnapCandidates } from './snap-geometry.mjs';
 import { cadColorToHex } from './step-export-transform.mjs';
 
 const OCCT_IMPORT_BASE_URL = 'https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/';
@@ -62,15 +63,20 @@ const state = {
   snapType: 'auto',
   snapRadiusPx: 16,
   hoverSnap: null,
-  multiCircleCenters: [],
+  multiPoints: [],
   occtPromise: null,
   sourceStepFile: null,
+  sourceCadFormat: null,
   exportingStep: false
 };
 
 const el = {};
 const uiText = (value) => window.InoRobotI18n ? window.InoRobotI18n.translate(String(value)) : String(value);
 const flatten = (value) => Array.isArray(value?.[0]) ? value.flat() : Array.from(value || []);
+
+function preventMiddleButtonAutoscroll(event) {
+  if (event.button === 1) event.preventDefault();
+}
 
 function setStatus(message, kind = '') {
   el.status.textContent = uiText(message);
@@ -158,6 +164,7 @@ function setupScene() {
 
   const resizeObserver = new ResizeObserver(resizeRenderer);
   resizeObserver.observe(el.viewport);
+  state.renderer.domElement.addEventListener('mousedown', preventMiddleButtonAutoscroll, { capture: true });
   state.renderer.domElement.addEventListener('pointerdown', onPointerDown);
   state.renderer.domElement.addEventListener('pointerup', onPointerUp);
   state.renderer.domElement.addEventListener('pointermove', onPointerMove);
@@ -274,12 +281,12 @@ function createCenterOfMassMarker(size) {
   return group;
 }
 
-function isMultiCircleCenterMode() {
-  return state.snapType === 'multi-circle-center';
+function isMultiPointCenterMode() {
+  return state.snapType === 'multi-point-center';
 }
 
-function getMultiCircleCenter() {
-  return new THREE.Vector3(...averageCircleCenters(state.multiCircleCenters.map((point) => point.toArray())));
+function getMultiPointCenter() {
+  return new THREE.Vector3(...averagePoints(state.multiPoints.map((point) => point.toArray())));
 }
 
 function removeMultiCenterHelper() {
@@ -291,12 +298,12 @@ function removeMultiCenterHelper() {
 
 function updateMultiCenterHelper() {
   removeMultiCenterHelper();
-  if (!state.multiCircleCenters.length || !state.scene) return;
+  if (!state.multiPoints.length || !state.scene) return;
 
   const group = new THREE.Group();
-  group.name = 'Multiple circle center selection';
+  group.name = 'Multiple point center selection';
   const selectedSize = Math.max(state.helperScale * 0.025, 1);
-  state.multiCircleCenters.forEach((point) => {
+  state.multiPoints.forEach((point) => {
     const marker = new THREE.Mesh(
       new THREE.SphereGeometry(selectedSize, 16, 12),
       new THREE.MeshBasicMaterial({ color: 0xf472b6, depthTest: false })
@@ -306,9 +313,9 @@ function updateMultiCenterHelper() {
     group.add(marker);
   });
 
-  if (state.multiCircleCenters.length >= 2) {
-    const center = getMultiCircleCenter();
-    const linePoints = state.multiCircleCenters.flatMap((point) => [point, center]);
+  if (state.multiPoints.length >= 2) {
+    const center = getMultiPointCenter();
+    const linePoints = state.multiPoints.flatMap((point) => [point, center]);
     const lines = new THREE.LineSegments(
       new THREE.BufferGeometry().setFromPoints(linePoints),
       new THREE.LineBasicMaterial({ color: 0x67e8f9, transparent: true, opacity: 0.72, depthTest: false })
@@ -330,19 +337,19 @@ function updateMultiCenterHelper() {
 
 function updateMultiCenterControls() {
   if (!el.multiCenterControls) return;
-  const count = state.multiCircleCenters.length;
-  el.multiCenterControls.hidden = !isMultiCircleCenterMode();
-  el.multiCenterCount.textContent = `${uiText('원의 중심점 선택')} ${count}/4`;
+  const count = state.multiPoints.length;
+  el.multiCenterControls.hidden = !isMultiPointCenterMode();
+  el.multiCenterCount.textContent = `${uiText('다중 점 선택')} ${count}/4`;
   el.multiCenterApply.disabled = count < 2 || count > 4 || !state.pickMode;
   el.multiCenterReset.disabled = count === 0;
 }
 
 function multiCenterInstruction() {
-  return `${uiText('원의 중심점 선택')} ${state.multiCircleCenters.length}/4 · ${uiText('원/호 중심점 2~4개를 선택하세요.')}`;
+  return `${uiText('다중 점 선택')} ${state.multiPoints.length}/4 · ${uiText('스냅 점 2~4개를 선택하세요.')}`;
 }
 
-function resetMultiCircleCenters() {
-  state.multiCircleCenters = [];
+function resetMultiPoints() {
+  state.multiPoints = [];
   removeMultiCenterHelper();
   updateMultiCenterControls();
 }
@@ -486,13 +493,29 @@ function clearParts() {
   state.parts = [];
   state.snapCandidates = [];
   state.hoverSnap = null;
-  resetMultiCircleCenters();
+  resetMultiPoints();
   hideSnapMarker();
   state.centerMarker.visible = false;
   state.sourceStepFile = null;
+  state.sourceCadFormat = null;
   if (el.exportStep) el.exportStep.disabled = true;
   el.result.classList.add('hide');
   renderParts();
+}
+
+function resetCoordinateValues() {
+  state.origin.set(0, 0, 0);
+  state.rotationDegrees.set(0, 0, 0);
+  state.tcp.set(0, 0, 0);
+  state.xDirection.set(1, 0, 0);
+  state.yDirection.set(0, 1, 0);
+  state.zDirection.set(0, 0, 1);
+  writeVectorInputs('origin', [0, 0, 0]);
+  writeVectorInputs('rotation', [0, 0, 0]);
+  writeVectorInputs('tcp', [0, 0, 0]);
+  applyRotationDegrees([0, 0, 0]);
+  setPickMode(null);
+  updateHelpers();
 }
 
 function getDisplayColor(color) {
@@ -513,29 +536,52 @@ function createThreeGeometry(meshDefinition) {
   return geometry;
 }
 
-async function loadStepFile(file) {
+async function createStlMeshDefinition(file) {
+  const sourceGeometry = new STLLoader().parse(await file.arrayBuffer());
+  const position = sourceGeometry.getAttribute('position');
+  if (!position) throw new Error('STL file has no vertex data.');
+  const normal = sourceGeometry.getAttribute('normal');
+  const index = sourceGeometry.getIndex();
+  return {
+    name: file.name.replace(/\.[^.]+$/, '') || 'STL Part',
+    attributes: {
+      position: { array: position.array },
+      ...(normal ? { normal: { array: normal.array } } : {})
+    },
+    ...(index ? { index: { array: index.array } } : {})
+  };
+}
+
+async function loadCadFile(file) {
   const extension = file.name.split('.').pop()?.toLowerCase();
-  if (!['step', 'stp'].includes(extension)) {
-    setStatus('STEP/STP 파일만 선택할 수 있습니다.', 'error');
+  if (!['step', 'stp', 'stl'].includes(extension)) {
+    setStatus('STEP/STP/STL 파일만 선택할 수 있습니다.', 'error');
     el.fileInput.value = '';
     return;
   }
 
-  setStatus('STEP 파일을 불러오는 중입니다.');
+  const sourceFormat = extension === 'stl' ? 'STL' : 'STEP';
+  setStatus(`${sourceFormat} 파일을 불러오는 중입니다.`);
   el.fileName.textContent = file.name;
   el.calculate.disabled = true;
   clearParts();
+  resetCoordinateValues();
 
   try {
-    const occt = await getOcctImporter();
-    const fileBytes = new Uint8Array(await file.arrayBuffer());
-    const result = occt.ReadStepFile(fileBytes, {
-      linearUnit: 'millimeter',
-      linearDeflectionType: 'bounding_box_ratio',
-      linearDeflection: 0.00025,
-      angularDeflection: 0.25
-    });
-    if (!result?.success || !Array.isArray(result.meshes)) throw new Error('OpenCascade could not read the STEP file.');
+    let result;
+    if (extension === 'stl') {
+      result = { success: true, meshes: [await createStlMeshDefinition(file)] };
+    } else {
+      const occt = await getOcctImporter();
+      const fileBytes = new Uint8Array(await file.arrayBuffer());
+      result = occt.ReadStepFile(fileBytes, {
+        linearUnit: 'millimeter',
+        linearDeflectionType: 'bounding_box_ratio',
+        linearDeflection: 0.00025,
+        angularDeflection: 0.25
+      });
+    }
+    if (!result?.success || !Array.isArray(result.meshes)) throw new Error('CAD file could not be read.');
 
     result.meshes.forEach((meshDefinition, index) => {
       try {
@@ -558,8 +604,8 @@ async function loadStepFile(file) {
           geometry: geometryProperties,
           snapStats: snapData.stats,
           sourceColorHex: cadColorToHex(meshDefinition.color),
-          materialKey: 'steel',
-          densityKgPerMm3: MATERIALS.steel.density,
+          materialKey: 'aluminum',
+          densityKgPerMm3: MATERIALS.aluminum.density,
           enabled: true
         });
         state.snapCandidates.push(...snapData.candidates.map((candidate) => ({
@@ -568,22 +614,23 @@ async function loadStepFile(file) {
           partIndex
         })));
       } catch (error) {
-        console.warn(`Skipped non-solid STEP mesh ${index + 1}:`, error);
+        console.warn(`Skipped non-solid ${sourceFormat} mesh ${index + 1}:`, error);
       }
     });
 
     if (!state.parts.length) throw new Error(uiText('계산 가능한 솔리드가 없습니다.'));
-    state.sourceStepFile = file;
+    state.sourceStepFile = extension === 'stl' ? null : file;
+    state.sourceCadFormat = sourceFormat;
     renderParts();
     fitCameraToModel();
     el.calculate.disabled = false;
-    el.exportStep.disabled = false;
+    el.exportStep.disabled = extension === 'stl';
     el.snapReadout.textContent = `${uiText('스냅 후보')} ${state.snapCandidates.length.toLocaleString()}${uiText('개가 준비되었습니다.')}`;
-    setStatus(`${uiText('STEP 파일 분석 완료')} · ${uiText('스냅 후보')} ${state.snapCandidates.length.toLocaleString()}`, 'ok');
+    setStatus(`${sourceFormat} 파일 분석 완료 · ${uiText('스냅 후보')} ${state.snapCandidates.length.toLocaleString()}`, 'ok');
   } catch (error) {
     console.error('STEP import failed:', error);
     clearParts();
-    setStatus(`${uiText('STEP 파일을 해석할 수 없습니다.')} ${error.message}`, 'error');
+    setStatus(`${sourceFormat} 파일을 해석할 수 없습니다. ${error.message}`, 'error');
   }
 }
 
@@ -711,7 +758,7 @@ function findSnapAtPointer(pointerEvent) {
   const pointerX = pointerEvent.clientX - bounds.left;
   const pointerY = pointerEvent.clientY - bounds.top;
   const enabledMeshes = state.parts.filter((part) => part.enabled).map((part) => part.mesh);
-  const requiredType = isMultiCircleCenterMode() ? 'circle-center' : state.snapType;
+  const requiredType = isMultiPointCenterMode() ? 'auto' : state.snapType;
 
   let best = null;
   const nearbyCandidates = [];
@@ -746,7 +793,7 @@ function showSnapMarker(snap) {
   if (!snap) {
     hideSnapMarker();
     if (state.pickMode) {
-      el.snapReadout.textContent = isMultiCircleCenterMode()
+      el.snapReadout.textContent = isMultiPointCenterMode()
         ? multiCenterInstruction()
         : uiText('현재 위치에 선택 가능한 스냅 후보가 없습니다.');
     }
@@ -770,7 +817,7 @@ function showSnapMarker(snap) {
 
 function setPickMode(mode) {
   const nextPickMode = state.pickMode === mode ? null : mode;
-  if (nextPickMode !== state.pickMode) resetMultiCircleCenters();
+  if (nextPickMode !== state.pickMode) resetMultiPoints();
   state.pickMode = nextPickMode;
   el.mode.querySelectorAll('[data-pick]').forEach((button) => button.classList.toggle('active', button.dataset.pick === state.pickMode));
   el.viewport.classList.toggle('is-picking', Boolean(state.pickMode));
@@ -782,12 +829,12 @@ function setPickMode(mode) {
   updateMultiCenterControls();
   if (state.pickMode) {
     setStatus(messages[state.pickMode]);
-    el.snapReadout.textContent = isMultiCircleCenterMode()
+    el.snapReadout.textContent = isMultiPointCenterMode()
       ? multiCenterInstruction()
       : uiText('CAD 형상 위로 이동하면 스냅 후보가 표시됩니다.');
   } else {
     hideSnapMarker();
-    if (state.parts.length) setStatus('STEP 파일 분석 완료', 'ok');
+    if (state.parts.length) setStatus(`${state.sourceCadFormat || 'CAD'} 파일 분석 완료`, 'ok');
   }
 }
 
@@ -808,34 +855,34 @@ function commitSnapPoint(point, selectedLabel) {
   state.centerMarker.visible = false;
 }
 
-function addMultiCircleCenter(snap) {
-  if (state.multiCircleCenters.length >= 4) {
+function addMultiPoint(snap) {
+  if (state.multiPoints.length >= 4) {
     setStatus('최대 4개까지 선택할 수 있습니다.', 'error');
     return;
   }
   const duplicateTolerance = Math.max(state.helperScale * 1e-5, 1e-4);
-  if (state.multiCircleCenters.some((point) => point.distanceTo(snap.point) <= duplicateTolerance)) {
-    setStatus('중복된 원/호 중심점입니다.', 'error');
+  if (state.multiPoints.some((point) => point.distanceTo(snap.point) <= duplicateTolerance)) {
+    setStatus('중복된 스냅 점입니다.', 'error');
     return;
   }
-  state.multiCircleCenters.push(snap.point.clone());
+  state.multiPoints.push(snap.point.clone());
   updateMultiCenterHelper();
   updateMultiCenterControls();
-  const countLabel = `${uiText('원의 중심점 선택')} ${state.multiCircleCenters.length}/4`;
-  if (state.multiCircleCenters.length >= 2) {
-    el.snapReadout.textContent = `${countLabel} · ${uiText('다중 원 중심점')} ${formatSnapPoint(getMultiCircleCenter())}`;
+  const countLabel = `${uiText('다중 점 선택')} ${state.multiPoints.length}/4`;
+  if (state.multiPoints.length >= 2) {
+    el.snapReadout.textContent = `${countLabel} · ${uiText('다중 점 중심점')} ${formatSnapPoint(getMultiPointCenter())}`;
   } else {
-    el.snapReadout.textContent = `${countLabel} · ${uiText('원/호 중심점 2~4개를 선택하세요.')}`;
+    el.snapReadout.textContent = `${countLabel} · ${uiText('스냅 점 2~4개를 선택하세요.')}`;
   }
   setStatus(countLabel, 'ok');
 }
 
-function applyMultiCircleCenter() {
-  if (!state.pickMode || state.multiCircleCenters.length < 2 || state.multiCircleCenters.length > 4) return;
+function applyMultiPointCenter() {
+  if (!state.pickMode || state.multiPoints.length < 2 || state.multiPoints.length > 4) return;
   try {
-    commitSnapPoint(getMultiCircleCenter(), uiText('다중 원 중심점'));
+    commitSnapPoint(getMultiPointCenter(), uiText('다중 점 중심점'));
   } catch {
-    setStatus('원/호 중심점 2~4개를 선택하세요.', 'error');
+    setStatus('스냅 점 2~4개를 선택하세요.', 'error');
   }
 }
 
@@ -868,8 +915,8 @@ function onPointerUp(event) {
   }
 
   try {
-    if (isMultiCircleCenterMode()) {
-      addMultiCircleCenter(snap);
+    if (isMultiPointCenterMode()) {
+      addMultiPoint(snap);
       return;
     }
     commitSnapPoint(snap.point, uiText(snapTypeInfo(snap.type).label));
@@ -964,6 +1011,8 @@ async function exportStepWithToolFrame() {
   if (!state.sourceStepFile || state.exportingStep) return;
   try {
     readCoordinateInputs();
+    const selectedPartCount = state.parts.filter((part) => part.enabled).length;
+    if (!selectedPartCount) throw new Error(uiText('내보낼 부품을 하나 이상 선택하세요.'));
     state.exportingStep = true;
     el.exportStep.disabled = true;
     setStatus('STEP 파일 내보내기 엔진을 준비하는 중입니다.');
@@ -975,11 +1024,12 @@ async function exportStepWithToolFrame() {
       rotationDegrees: state.rotationDegrees.toArray(),
       cadParts: state.parts.map((part) => ({
         name: part.name,
-        color: part.sourceColorHex
+        color: part.sourceColorHex,
+        enabled: part.enabled
       }))
     }, (message) => setStatus(message));
     downloadStepBuffer(result.buffer, result.fileName);
-    setStatus(`STEP 파일 내보내기 완료 · ${result.fileName}`, 'ok');
+    setStatus(`STEP 파일 내보내기 완료 · ${selectedPartCount}개 부품 · ${result.fileName}`, 'ok');
   } catch (error) {
     console.error('STEP export failed:', error);
     setStatus(`${uiText('STEP 파일을 내보낼 수 없습니다.')} ${error.message || ''}`.trim(), 'error');
@@ -992,13 +1042,13 @@ async function exportStepWithToolFrame() {
 function bindEvents() {
   el.fileInput.addEventListener('change', () => {
     const [file] = el.fileInput.files;
-    if (file) loadStepFile(file);
+    if (file) loadCadFile(file);
   });
   el.parts.addEventListener('change', (event) => updatePartFromControl(event.target));
   el.mode.querySelectorAll('[data-pick]').forEach((button) => button.addEventListener('click', () => setPickMode(button.dataset.pick)));
   el.snapType.addEventListener('change', () => {
     state.snapType = el.snapType.value;
-    resetMultiCircleCenters();
+    resetMultiPoints();
     if (state.pickMode && state.lastPointer) showSnapMarker(findSnapAtPointer(state.lastPointer));
     else el.snapReadout.textContent = `${uiText('스냅 유형')} · ${uiText(el.snapType.selectedOptions[0].textContent)}`;
   });
@@ -1009,9 +1059,9 @@ function bindEvents() {
   });
   el.gridToggle.addEventListener('click', toggleGrid);
   el.exportStep.addEventListener('click', exportStepWithToolFrame);
-  el.multiCenterApply.addEventListener('click', applyMultiCircleCenter);
+  el.multiCenterApply.addEventListener('click', applyMultiPointCenter);
   el.multiCenterReset.addEventListener('click', () => {
-    resetMultiCircleCenters();
+    resetMultiPoints();
     el.snapReadout.textContent = multiCenterInstruction();
   });
   el.rotationHandlerToggle.addEventListener('change', updateRotationHandlerVisibility);
@@ -1069,7 +1119,7 @@ function init() {
         candidateCount: state.snapCandidates.length,
         gridVisible: state.gridVisible,
         pickMode: state.pickMode,
-        multiCircleCenters: state.multiCircleCenters.map((point) => point.toArray()),
+        multiPoints: state.multiPoints.map((point) => point.toArray()),
         rotationDegrees: state.rotationDegrees.toArray(),
         axisDirections: {
           x: state.xDirection.toArray(),

@@ -170,15 +170,15 @@
       </section>
 
       <section class="cad-top-section cad-import-section">
-        <h2>STEP CAD 설정</h2>
+        <h2>CAD 설정</h2>
         <div class="cad-import-bar">
           <div class="cad-import-actions">
-            <label class="btn cad-file-button" for="cad-step-file">STEP 파일 불러오기</label>
-            <button id="cad-export-step" class="btn cad-export-button" type="button" aria-describedby="cad-export-note" disabled>좌표계 적용 STEP 내보내기</button>
+            <label class="btn cad-file-button" for="cad-step-file">불러오기</label>
+            <button id="cad-export-step" class="btn cad-export-button" type="button" aria-describedby="cad-export-note" disabled>내보내기</button>
           </div>
-          <input id="cad-step-file" type="file" accept=".step,.stp" hidden>
-          <span id="cad-file-name" class="cad-file-name">STEP/STP 파일만 지원합니다.</span>
-          <span id="cad-export-note" class="cad-export-note">불러온 전체 STEP 형상에 Tool 원점과 좌표계 방향을 적용합니다.</span>
+          <input id="cad-step-file" type="file" accept=".step,.stp,.stl" hidden>
+          <span id="cad-file-name" class="cad-file-name">STEP/STP/STL 파일을 지원합니다.</span>
+          <span id="cad-export-note" class="cad-export-note">STEP 파일은 체크한 부품만 Tool 원점과 좌표계 방향을 적용해 내보냅니다. STL은 계산과 스냅만 지원합니다.</span>
           <span id="cad-status" class="cad-status">CAD 파일을 먼저 불러오세요.</span>
         </div>
       </section>
@@ -209,7 +209,7 @@
               <option value="edge-midpoint">에지 중심점</option>
               <option value="face-center">면 중심점</option>
               <option value="circle-center">원/호 중심점</option>
-              <option value="multi-circle-center">다중 원 중심점</option>
+              <option value="multi-point-center">다중 점 중심점</option>
               <option value="shape-center">형상 중심점</option>
               <option value="virtual-intersection">가상 교점</option>
             </select>
@@ -221,7 +221,7 @@
         </div>
         <div id="cad-snap-readout" class="cad-snap-readout" aria-live="polite">점 찍기를 누른 뒤 CAD 형상 위로 포인터를 이동하세요.</div>
         <div id="cad-multi-center-controls" class="cad-multi-center-controls" hidden>
-          <span id="cad-multi-center-count">원의 중심점 선택</span>
+          <span id="cad-multi-center-count">다중 점 선택</span>
           <button id="cad-multi-center-apply" type="button" disabled>계산 중심 적용</button>
           <button id="cad-multi-center-reset" type="button" disabled>선택 초기화</button>
         </div>

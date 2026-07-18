@@ -283,8 +283,8 @@ expectedToolFolders.forEach(folder => {
     assert(!fs.existsSync(path.join(root, oldPath)), 'Obsolete root path still exists: ' + oldPath + '.');
 });
 assert(!fs.existsSync(path.join(root, 'index.html')), 'The generated Korean index must live under Language/ko.');
-const preservedDebugExe = path.join(root, '7_DebuggingTool', 'Trace', 'InoRobotTrace_V1.3.exe');
-assert(fs.existsSync(preservedDebugExe) && fs.statSync(preservedDebugExe).size > 0, 'The preserved extracted debugging EXE is missing.');
+const traceDownloadArchive = path.join(root, '7_DebuggingTool', 'Trace', 'InoRobotTrace_V1.4.zip');
+assert(fs.existsSync(traceDownloadArchive) && fs.statSync(traceDownloadArchive).size > 0, 'The current Trace download archive is missing.');
 assert(!fs.existsSync(path.join(root, '4_ProjectGenerator', 'CNAME')), 'The duplicate Project Generator CNAME was not removed.');
 
 const routes = [

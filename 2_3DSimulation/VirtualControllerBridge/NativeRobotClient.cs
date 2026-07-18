@@ -98,16 +98,20 @@ internal sealed class NativeRobotClient : IDisposable
             if (jointResult < 0)
                 return null;
 
+            // Joint feedback is sufficient for 3D synchronization. Some controller
+            // configurations can report joint feedback before TCP feedback is available,
+            // so keep streaming the usable joint state instead of dropping the frame.
+            double[] tcp = Array.Empty<double>();
             RobPosition tcpPosition = CreateTcpPosition();
             int tcpResult = NativeApi.IMC100_Get_RobPosHere(ref tcpPosition, CommunicationId);
-            if (tcpResult < 0)
-                return null;
+            if (tcpResult >= 0)
+                tcp = tcpPosition.RobotPositionData.ToArray();
 
             return new RobotState(
                 sequence,
                 timestamp,
                 jointPosition.JointData.ToArray(),
-                tcpPosition.RobotPositionData.ToArray());
+                tcp);
         }
     }
 

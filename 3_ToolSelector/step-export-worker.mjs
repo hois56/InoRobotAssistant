@@ -9,7 +9,6 @@ import {
 import {
   buildWorldToToolTransform,
   createStepExportFileName,
-  DEFAULT_CAD_COLOR_HEX,
   normalizeCadColorHex
 } from './step-export-transform.mjs';
 
@@ -35,25 +34,28 @@ async function ensureCadApi() {
   return cadApiReadyPromise;
 }
 
-function createColorPreservingExportItems(shape, cadParts, exportName) {
+function createColorPreservingExportItems(shape, cadParts) {
   const parts = Array.isArray(cadParts) ? cadParts : [];
   const normalizedParts = parts.map((part, index) => ({
     name: String(part?.name || `Part ${index + 1}`),
-    color: normalizeCadColorHex(part?.color)
+    color: normalizeCadColorHex(part?.color),
+    enabled: part?.enabled === true
   }));
   const solidShapes = Array.from(iterTopo(shape.wrapped, 'solid'), (solid) => cast(solid));
   if (solidShapes.length && solidShapes.length === normalizedParts.length) {
-    return solidShapes.map((solid, index) => ({
-      shape: solid,
-      name: normalizedParts[index].name,
-      color: normalizedParts[index].color
-    }));
+    const exportItems = solidShapes.flatMap((solid, index) => {
+      const part = normalizedParts[index];
+      if (!part.enabled) return [];
+      return [{
+        shape: solid,
+        name: part.name,
+        color: part.color
+      }];
+    });
+    if (exportItems.length) return exportItems;
+    throw new Error('No STEP parts selected for export.');
   }
-  return [{
-    shape,
-    name: exportName.replace(/\.step$/i, ''),
-    color: normalizedParts[0]?.color || DEFAULT_CAD_COLOR_HEX
-  }];
+  throw new Error('Could not match STEP solids to the selected parts.');
 }
 
 self.addEventListener('message', async (event) => {
@@ -74,7 +76,7 @@ self.addEventListener('message', async (event) => {
 
     reportProgress('STEP 파일을 생성하는 중입니다.');
     const exportName = createStepExportFileName(sourceName);
-    const exportItems = createColorPreservingExportItems(shape, cadParts, exportName);
+    const exportItems = createColorPreservingExportItems(shape, cadParts);
     const output = exportSTEP(exportItems, { unit: 'MM', modelUnit: 'MM' });
     const outputBuffer = await output.arrayBuffer();
     self.postMessage({
