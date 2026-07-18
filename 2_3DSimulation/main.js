@@ -259,8 +259,10 @@ const el = {
 };
 
 const IK_POSITION_SCALE = 400;
-const IK_MAX_ITERATIONS = 120;
+const IK_MAX_ITERATIONS = 320;
 const IK_DAMPING = 0.035;
+const IK_MIN_DAMPING = 0.00001;
+const IK_DAMPING_TRANSITION_ERROR = 0.08;
 const IK_MAX_JOINT_STEP = THREE.MathUtils.degToRad(5);
 const IK_MAX_PRISMATIC_STEP = 12;
 const REVOLUTE_DIRECTION_NEGATIVE = -1;
@@ -3054,7 +3056,7 @@ function applyBaseJogGizmoTarget() {
             robot.updateMatrixWorld(true);
             syncJointControls(robot);
             updateTcpPresentation(robot);
-            setBaseJogStatus('Target is unreachable or near a singularity.', 'error');
+            setBaseJogStatus('Target is outside the reachable range or joint limits.', 'error');
         } else {
             robot.userData.baseJogTarget = desired;
             syncJointControls(robot);
@@ -3211,7 +3213,7 @@ function applyBaseJogNumericTarget(event) {
         robot.updateMatrixWorld(true);
         syncJointControls(robot);
         updateTcpPresentation(robot);
-        setBaseJogStatus('Target is unreachable or near a singularity.', 'error');
+        setBaseJogStatus('Target is outside the reachable range or joint limits.', 'error');
         return;
     }
 
@@ -3362,7 +3364,7 @@ function jogTcpInBase(robot, kind, axisName, direction) {
         syncJointControls(robot);
         updateTcpPresentation(robot, previousTarget);
         syncBaseJogGizmoFromRobot(robot);
-        setBaseJogStatus('Target is unreachable or near a singularity.', 'error');
+        setBaseJogStatus('Target is outside the reachable range or joint limits.', 'error');
         return false;
     }
 
@@ -3525,11 +3527,20 @@ function solveRobotIK(robot, target, precision = {}) {
             }
         });
     }
-    const escapeJointIndices = joints.length >= 6 ? [3, 4] : [1, 0];
-    escapeJointIndices.forEach((index) => {
-        seedOffsets.push(makeSeed(index, 5), makeSeed(index, -5));
-    });
+    const singularityEscapeSeeds = joints.length >= 6
+        ? [
+            [[1, 3]], [[1, -3]],
+            [[2, 3]], [[2, -3]],
+            [[1, 5], [2, -5]], [[1, -5], [2, 5]],
+            [[4, 5]], [[4, -5]],
+            [[3, 12], [5, -12]], [[3, -12], [5, 12]]
+        ]
+        : [[[1, 3]], [[1, -3]], [[0, 3]], [[0, -3]]];
+    singularityEscapeSeeds.forEach(addSeed);
     let lastResult = { success: false, positionError: Infinity, rotationError: Infinity };
+    let bestResult = null;
+    let bestAngles = startingAngles;
+    let bestScore = Infinity;
 
     for (let attempt = 0; attempt < seedOffsets.length; attempt += 1) {
         joints.forEach((joint, index) => {
@@ -3537,12 +3548,29 @@ function solveRobotIK(robot, target, precision = {}) {
         });
         robot.updateMatrixWorld(true);
         lastResult = solveRobotIKAttempt(robot, target, tolerance);
+        const score = Math.max(
+            lastResult.positionError / tolerance.finalPosition,
+            lastResult.rotationError / tolerance.finalRotation
+        );
+        if (Number.isFinite(score) && score < bestScore) {
+            bestScore = score;
+            bestResult = { ...lastResult };
+            bestAngles = joints.map((joint) => joint.angle);
+        }
         if (lastResult.success) {
             lastResult.usedSingularityEscape = attempt > 0;
             return lastResult;
         }
     }
-    return lastResult;
+    bestAngles.forEach((angle, index) => setJointAngle(joints[index], angle, false));
+    robot.updateMatrixWorld(true);
+    return bestResult || lastResult;
+}
+
+function calculateIkDamping(positionErrorLength, rotationErrorLength) {
+    const normalizedError = Math.max(positionErrorLength / IK_POSITION_SCALE, rotationErrorLength);
+    const ratio = THREE.MathUtils.clamp(normalizedError / IK_DAMPING_TRANSITION_ERROR, 0, 1);
+    return THREE.MathUtils.lerp(IK_MIN_DAMPING, IK_DAMPING, ratio * ratio);
 }
 
 function solveRobotIKAttempt(robot, target, tolerance) {
@@ -3621,8 +3649,9 @@ function solveRobotIKAttempt(robot, target, tolerance) {
                 }
             }
         }
+        const damping = calculateIkDamping(positionErrorLength, rotationErrorLength);
         for (let index = 0; index < joints.length; index += 1) {
-            normal[index][index] += IK_DAMPING * IK_DAMPING;
+            normal[index][index] += damping * damping;
         }
 
         const deltas = solveLinearSystem(normal, rhs);
@@ -4744,7 +4773,7 @@ function applyPositionValueDialog() {
     });
     if (!result.success) {
         restoreRobotJointAngles(robot, originalAngles);
-        showPositionValueError('입력한 위치가 도달 범위를 벗어나거나 특이점에 가깝습니다.');
+        showPositionValueError('입력한 위치가 로봇의 도달 범위 또는 관절 제한을 벗어났습니다.');
         return;
     }
     const solvedAngles = robot.userData.joints.map((joint) => joint.angle);
@@ -5548,7 +5577,7 @@ function solveMovlSamples(robot, target, label) {
         const result = solveRobotIK(robot, pose);
         if (!result.success) {
             restoreRobotJointAngles(robot, previousAngles);
-            throw new Error(`${label}: unreachable, singular, or outside joint limits.`);
+            throw new Error(`${label}: unreachable or outside joint limits.`);
         }
     }
 }
