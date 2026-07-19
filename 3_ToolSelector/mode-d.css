@@ -148,15 +148,103 @@ input[type="number"]::-webkit-outer-spin-button {
   padding-right: 6px;
 }
 
+.cad-model-tree-root {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 8px 9px;
+  border: 1px solid rgba(96,165,250,.22);
+  border-radius: 9px;
+  background: rgba(37,99,235,.1);
+  color: #dbeafe;
+}
+
+.cad-model-tree-root-icon,
+.cad-part-tree-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 6px;
+  background: rgba(96,165,250,.14);
+  color: #60a5fa;
+}
+
+.cad-model-tree-root-icon {
+  width: 25px;
+  height: 25px;
+  font-size: 12px;
+}
+
+.cad-model-tree-root-name,
+.cad-part-name > span:last-child {
+  min-width: 0;
+}
+
+.cad-model-tree-root-name b,
+.cad-model-tree-root-name small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cad-model-tree-root-name b {
+  font-size: 11px;
+}
+
+.cad-model-tree-root-name small {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .06em;
+}
+
+.cad-model-tree-children {
+  margin: 5px 0 0 13px;
+  padding-left: 10px;
+  border-left: 1px solid rgba(148,163,184,.26);
+}
+
 .cad-part-row {
   padding: 9px 0;
   border-top: 1px solid rgba(255,255,255,.05);
 }
 
+.cad-part-row.active {
+  border-radius: 8px;
+  background: rgba(34,211,238,.08);
+  box-shadow: inset 2px 0 0 #22d3ee;
+}
+
 .cad-part-name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   min-width: 0;
+  padding: 4px 5px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
   color: #cbd5e1;
   font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cad-part-name:hover,
+.cad-part-name.active {
+  border-color: rgba(34,211,238,.36);
+  background: rgba(34,211,238,.1);
+  color: #ecfeff;
+}
+
+.cad-part-tree-icon {
+  width: 21px;
+  height: 21px;
+  color: #67e8f9;
+  font-size: 10px;
 }
 
 .cad-part-name b,
