@@ -5,17 +5,39 @@ import { averagePoints, buildStepSnapCandidates } from '../3_ToolSelector/snap-g
 const modeDSource = readFileSync(new URL('../3_ToolSelector/mode-d.js', import.meta.url), 'utf8');
 const modeDStyles = readFileSync(new URL('../3_ToolSelector/mode-d.css', import.meta.url), 'utf8');
 const modeDHtml = readFileSync(new URL('../3_ToolSelector/index.html', import.meta.url), 'utf8');
+const multiPointTranslations = {
+  en: ['Multiple point center', 'Multiple point selection'],
+  'zh-CN': ['多点中心', '多点选择'],
+  vi: ['Tâm đa điểm', 'Chọn nhiều điểm']
+};
+for (const [locale, [centerLabel, selectionLabel]] of Object.entries(multiPointTranslations)) {
+  const localeData = JSON.parse(readFileSync(new URL(`../Language/${locale}/tool-selector.json`, import.meta.url), 'utf8'));
+  assert.equal(localeData.legacy['다중 점 중심점'], centerLabel);
+  assert.equal(localeData.legacy['다중 점 선택'], selectionLabel);
+  assert.notEqual(localeData.legacy['스냅 선택'], '스냅 선택');
+}
+assert.match(modeDSource, /new OrbitControls\(state\.camera, state\.renderer\.domElement\)/);
 assert.match(modeDSource, /state\.controls\.enableDamping\s*=\s*false/);
-assert.doesNotMatch(modeDSource, /state\.controls\.dampingFactor\s*=/);
+assert.match(modeDSource, /state\.controls\?\.handleResize\?\.\(\)/);
 assert.match(modeDSource, /KG_PER_MM3_PER_G_PER_CM3\s*=\s*1e-6/);
 assert.match(modeDSource, />g\/cm³</);
 assert.doesNotMatch(modeDSource, />kg\/mm³</);
 assert.match(modeDSource, /markerParent\.clientLeft/);
 assert.match(modeDSource, /markerParent\.clientTop/);
 assert.match(modeDSource, /function isSnapCandidateVisible/);
+assert.match(modeDSource, /function findSnapAtPointer\(pointerEvent\)\s*\{\s*if \(!state\.parts\.length[\s\S]*?\) return null;\s*state\.camera\.updateMatrixWorld\(true\);\s*state\.scene\.updateMatrixWorld\(true\);/s);
 assert.match(modeDSource, /visibilityRaycaster\.intersectObjects\(enabledMeshes, false\)/);
 assert.match(modeDSource, /candidateDistance\s*<=\s*frontHit\.distance\s*\+\s*depthTolerance/);
-assert.match(modeDStyles, /\.cad-snap-marker\s*\{[^}]*width:\s*22px;[^}]*height:\s*22px;/s);
+assert.match(modeDStyles, /\.cad-snap-marker\s*\{[^}]*width:\s*14px;[^}]*height:\s*14px;/s);
+assert.match(modeDStyles, /\.cad-snap-marker\s*\{[^}]*color:\s*#f59e0b;/s);
+assert.match(modeDStyles, /\.cad-snap-marker > span\s*\{[^}]*width:\s*14px;[^}]*height:\s*14px;[^}]*border:\s*1\.25px solid currentColor;/s);
+assert.match(modeDStyles, /\.cad-snap-marker > span\s*\{[^}]*background:\s*transparent;[^}]*font-size:\s*0;/s);
+assert.doesNotMatch(modeDStyles, /\.cad-snap-marker::(?:before|after)/);
+assert.match(modeDStyles, /data-snap-type="circle-center"[^}]*> span,[\s\S]*?border-radius:\s*50%/);
+assert.match(modeDStyles, /data-snap-type="rectangle-center"[^}]*> span\s*\{[^}]*background:\s*radial-gradient\(circle at center,/);
+assert.match(modeDStyles, /transform:\s*scale\(var\(--cad-snap-camera-scale\)\)/);
+assert.match(modeDStyles, /filter:\s*drop-shadow\(0 0 2px/);
+assert.match(modeDStyles, /data-snap-type="endpoint"[^}]*> span\s*\{[^}]*background:\s*radial-gradient\(circle at center,/s);
 assert.match(modeDStyles, /\.cad-snap-marker b\s*\{[^}]*position:\s*absolute;/s);
 assert.match(modeDSource, /new TransformControls\(state\.camera, state\.renderer\.domElement\)/);
 assert.match(modeDSource, /state\.rotationHandler\.setMode\('rotate'\)/);
@@ -28,17 +50,34 @@ assert.match(modeDSource, /new THREE\.CylinderGeometry\(shaftRadius, shaftRadius
 assert.match(modeDSource, /function createTcpTargetMarker/);
 assert.match(modeDSource, /new THREE\.OctahedronGeometry\(size, 0\)/);
 assert.match(modeDSource, /targetColor\s*=\s*0x22d3ee/);
+assert.match(modeDSource, /function keepHelperAtScreenSize/);
+assert.match(modeDSource, /function updateCameraScaledHelpers/);
+assert.match(modeDSource, /worldUnitsPerPixel\s*=\s*\(cameraDepth \* fovScale\) \/ \(viewportHeight \* cameraZoom\)/);
+assert.match(modeDSource, /updateCameraScaledHelpers\(\);\s*\r?\n\s*updateSnapMarkerCameraScale\(\);\s*\r?\n\s*state\.renderer\.render/);
+assert.match(modeDSource, /function updateSnapMarkerCameraScale\(\)/);
+assert.match(modeDSource, /Math\.sqrt\(cameraDistance \/ referenceDistance\)/);
+assert.match(modeDSource, /SNAP_MARKER_CAMERA_SCALE\.min/);
+assert.match(modeDSource, /HELPER_SCREEN_PIXELS\.tcp/);
+assert.match(modeDSource, /HELPER_SCREEN_PIXELS\.selectedSnap/);
 assert.match(modeDSource, /function createCenterOfMassMarker/);
 assert.match(modeDSource, /color:\s*0xfacc15/);
 assert.match(modeDHtml, /cad-legend-tcp/);
 assert.match(modeDHtml, /cad-legend-cog/);
 assert.match(modeDHtml, /id="cad-grid-toggle"[^>]*aria-pressed="false"[^>]*>그리드 OFF</);
+assert.match(modeDHtml, /id="cad-outline-toggle"[^>]*aria-pressed="false"/);
 assert.match(modeDSource, /gridVisible:\s*false/);
+assert.match(modeDSource, /outlineMode:\s*false/);
 assert.match(modeDSource, /state\.gridHelper\.visible\s*=\s*state\.gridVisible/);
 assert.match(modeDSource, /function toggleGrid\(\)/);
+assert.match(modeDSource, /function syncPartOutlines\(\)/);
+assert.match(modeDSource, /function setOutlineMode\(enabled\)/);
+assert.match(modeDSource, /new THREE\.EdgesGeometry\(mesh\.geometry, 28\)/);
+assert.match(modeDSource, /new THREE\.LineSegments\(/);
 assert.match(modeDSource, /el\.gridToggle\.setAttribute\('aria-pressed', String\(state\.gridVisible\)\)/);
 assert.match(modeDStyles, /\.cad-grid-toggle\s*\{/);
 assert.match(modeDStyles, /\.cad-grid-toggle\.is-active\s*\{/);
+assert.match(modeDStyles, /\.cad-outline-toggle\s*\{/);
+assert.match(modeDStyles, /\.cad-outline-toggle\.is-active\s*\{/);
 assert.match(modeDSource, /function syncOrientationFromHandler/);
 assert.match(modeDHtml, /data-vector="rotation" data-axis="x"/);
 assert.match(modeDHtml, /data-vector="rotation" data-axis="y"/);
@@ -54,9 +93,16 @@ assert.match(modeDHtml, /id="cad-multi-center-reset"/);
 assert.match(modeDSource, /requiredType\s*=\s*isMultiPointCenterMode\(\)\s*\?\s*'auto'/);
 assert.match(modeDSource, /multiPoints\.length\s*>=\s*4/);
 assert.doesNotMatch(modeDSource, /isMultiPointCenterMode\(\)\s*\?\s*'circle-center'/);
+assert.match(modeDSource, /addEventListener\('inorobot:i18nready', refreshDynamicLanguage\)/);
+assert.match(modeDSource, /addEventListener\('inorobot:languagechange', refreshDynamicLanguage\)/);
+assert.match(modeDSource, /function snapTypeLabelKey\(type\)/);
+assert.match(modeDSource, /function setSnapReadout\(message\)/);
+assert.match(modeDSource, /function refreshDynamicLanguage\(\)[\s\S]*?renderStatus\(\);[\s\S]*?renderSnapReadout\(\);/);
+assert.match(modeDSource, /commitSnapPoint\(getMultiPointCenter\(\), '다중 점 중심점'\)/);
 assert.match(modeDHtml, />에지 중심점</);
 assert.match(modeDHtml, />면 중심점</);
 assert.match(modeDHtml, />원\/호 중심점</);
+assert.match(modeDHtml, />사각형 중심점</);
 assert.match(modeDHtml, />형상 중심점</);
 assert.doesNotMatch(modeDHtml, /value="surface"/);
 assert.doesNotMatch(modeDHtml, /면 위 자유점/);
@@ -101,11 +147,13 @@ assert.equal(byType('vertex').length, 8);
 assert.equal(byType('endpoint').length, 8);
 assert.equal(byType('edge-midpoint').length, 12);
 assert.equal(byType('face-center').length, 6);
+assert.equal(byType('rectangle-center').length, 6);
 assert.equal(byType('shape-center').length, 1);
 assert.ok(hasPoint(byType('vertex'), [100, 200, 300]));
 assert.ok(hasPoint(byType('endpoint'), [100, 200, 300]));
 assert.ok(hasPoint(byType('edge-midpoint'), [50, 0, 0]));
 assert.ok(hasPoint(byType('face-center'), [50, 100, 300]));
+assert.ok(hasPoint(byType('rectangle-center'), [50, 100, 300]));
 assert.ok(hasPoint(byType('shape-center'), [50, 100, 150]));
 
 const virtualMesh = {

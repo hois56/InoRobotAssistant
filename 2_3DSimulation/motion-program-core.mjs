@@ -313,6 +313,29 @@ function normalizedQuaternion(value, label) {
     return quaternion.map((component) => component / length);
 }
 
+function normalizeTcpProfiles(value, robotIndex) {
+    if (value === undefined) {
+        return Array.from({ length: 3 }, () => ({
+            position: [0, 0, 0],
+            quaternion: [0, 0, 0, 1]
+        }));
+    }
+    if (!Array.isArray(value) || value.length !== 3) {
+        throw new Error(`Robot ${robotIndex + 1} TCP profiles must contain exactly 3 entries.`);
+    }
+    return value.map((profile, profileIndex) => ({
+        position: finiteArray(
+            profile?.position,
+            3,
+            `Robot ${robotIndex + 1} TCP ${profileIndex + 1} position`
+        ),
+        quaternion: normalizedQuaternion(
+            profile?.quaternion,
+            `Robot ${robotIndex + 1} TCP ${profileIndex + 1} quaternion`
+        )
+    }));
+}
+
 function normalizeStep(step, jointCount, index, fallbackPointIndex) {
     const motion = step?.motion === 'TIME_START'
         ? 'TIME_START'
@@ -428,6 +451,15 @@ export function normalizeMotionProject(input) {
         });
         const baseScale = finiteArray(robot.baseTransform?.scale, 3, `Robot ${index + 1} base scale`);
         if (baseScale.some((value) => value <= 0)) throw new Error(`Robot ${index + 1} base scale must be positive.`);
+        const tcpProfiles = normalizeTcpProfiles(robot.tcpProfiles, index);
+        const activeTcpProfileIndex = robot.activeTcpProfileIndex === undefined
+            ? 0
+            : Number(robot.activeTcpProfileIndex);
+        if (!Number.isInteger(activeTcpProfileIndex)
+            || activeTcpProfileIndex < 0
+            || activeTcpProfileIndex >= tcpProfiles.length) {
+            throw new Error(`Robot ${index + 1} active TCP index is invalid.`);
+        }
         return {
             instanceId,
             modelFolder: requiredString(robot.modelFolder, `Robot ${index + 1} modelFolder`),
@@ -440,6 +472,8 @@ export function normalizeMotionProject(input) {
                 quaternion: normalizedQuaternion(robot.baseTransform?.quaternion, `Robot ${index + 1} base quaternion`),
                 scale: baseScale
             },
+            tcpProfiles,
+            activeTcpProfileIndex,
             steps
         };
     });

@@ -75,14 +75,12 @@
   .info-tip p{font-size:14px;color:#cbd5e1;line-height:1.6;margin:14px 0 0}
   .info-tip.wide{width:1040px}
 </style>
-    <link rel="stylesheet" href="./mode-d.css">
-    <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/occt-import-js.js"></script>
+    <link rel="stylesheet" href="./mode-d.css?v=20260719-snap-size-14-1">
     <script type="importmap">
     {
       "imports": {
-        "three": "https://esm.sh/three@0.156.1",
-        "three/addons/": "https://esm.sh/three@0.156.1/examples/jsm/"
+        "three": "./vendor/three/three.module.js",
+        "three/addons/": "./vendor/three/examples/jsm/"
       }
     }
     </script>
@@ -138,7 +136,7 @@
 
   <div id="mode-shape" class="hide">
     <div class="card">
-      <h2>블록 정보 <span class="info-wrap"><span class="info-icon">i</span><span class="info-tip wide"><span class="img-row"><img src="tool_coord_ref.png" alt="Tool coordinate"><img src="block_ref.png" alt="Block example"></span><p>X·Y·Z 치수는 Tool 좌표계 방향(빨강=X, 초록=Y, 파랑=Z)을 기준으로 입력합니다. Tool 전체를 여러 직육면체 블록으로 분할해 각 블록의 무게와 치수를 입력하세요.</p></span></span></h2>
+      <h2>블록 정보 <span class="info-wrap"><span class="info-icon">i</span><span class="info-tip wide"><span class="img-row"><img src="tool_coord_ref.png" alt="Tool coordinate"><img src="block_ref.png" data-localized-help-image="block-ref" alt="Block example"></span><p>X·Y·Z 치수는 Tool 좌표계 방향(빨강=X, 초록=Y, 파랑=Z)을 기준으로 입력합니다. Tool 전체를 여러 직육면체 블록으로 분할해 각 블록의 무게와 치수를 입력하세요.</p></span></span></h2>
       <div class="grid3" style="grid-template-columns:60px 1fr 1fr 1fr 1fr 40px"><span class="hd">블록</span><span class="hd">무게(kg)</span><span class="hd">X(mm)</span><span class="hd">Y(mm)</span><span class="hd">Z(mm)</span><span class="hd"></span></div>
       <div id="sblocks"></div>
       <button class="btn sec" onclick="addSBlock()" style="margin-top:8px;font-size:12px;padding:8px 14px">+ 블록 추가</button>
@@ -148,14 +146,14 @@
 
   <div id="mode-calc" class="hide">
     <div class="card">
-      <h2>1. Tool 블록 치수 <span class="info-wrap"><span class="info-icon">i</span><span class="info-tip wide"><span class="img-row"><img src="tool_coord_ref.png" alt="Tool coordinate"><img src="block_ref.png" alt="Block example"></span><p>각 블록의 X·Y·Z 치수는 Tool 좌표계 방향(빨강=X, 초록=Y, 파랑=Z)을 기준으로 입력합니다. Tool 전체를 여러 개의 직육면체 블록으로 분할해 각 블록의 재질과 치수를 입력하세요.</p></span></span></h2>
+      <h2>1. Tool 블록 치수 <span class="info-wrap"><span class="info-icon">i</span><span class="info-tip wide"><span class="img-row"><img src="tool_coord_ref.png" alt="Tool coordinate"><img src="block_ref.png" data-localized-help-image="block-ref" alt="Block example"></span><p>각 블록의 X·Y·Z 치수는 Tool 좌표계 방향(빨강=X, 초록=Y, 파랑=Z)을 기준으로 입력합니다. Tool 전체를 여러 개의 직육면체 블록으로 분할해 각 블록의 재질과 치수를 입력하세요.</p></span></span></h2>
       <div class="grid3" style="grid-template-columns:60px 140px repeat(3,1fr) 40px"><span class="hd">블록</span><span class="hd">재질</span><span class="hd">X(mm)</span><span class="hd">Y(mm)</span><span class="hd">Z(mm)</span><span class="hd"></span></div>
       <div id="blocks"></div>
       <button class="btn sec" onclick="addBlock()" style="margin-top:8px;font-size:12px;padding:8px 14px">+ 블록 추가</button>
       <div class="hint">알루미늄 합금 ≈ 2.7 · 강철 ≈ 7.87 · 스테인리스 ≈ 7.93 · 황동 ≈ 8.5 g/cm³</div>
     </div>
     <div class="card">
-      <h2>2. 끝단 플랜지 → 각 블록 무게중심 거리 <span class="info-wrap"><span class="info-icon">i</span><span class="info-tip"><img src="tool_coord_ref.png" alt="Tool coordinate"><p>각 블록 무게중심의 위치를 <b>끝단 플랜지 원점으로부터의 거리(mm)</b>로 Tool 좌표계 기준 입력합니다. 빨강=X, 초록=Y, 파랑=Z. 끝단 바깥쪽(+)·안쪽(−) 부호를 유지하세요.</p></span></span><span class="info-wrap" style="margin-left:6px"><span class="info-icon">i</span><span class="info-tip"><img src="Tool_Block_CoG.png" alt="Tool Block CoG"><p>블록 무게중심 위치 참조용 도면</p></span></span></h2>
+      <h2>2. 끝단 플랜지 → 각 블록 무게중심 거리 <span class="info-wrap"><span class="info-icon">i</span><span class="info-tip"><img src="tool_coord_ref.png" alt="Tool coordinate"><p>각 블록 무게중심의 위치를 <b>끝단 플랜지 원점으로부터의 거리(mm)</b>로 Tool 좌표계 기준 입력합니다. 빨강=X, 초록=Y, 파랑=Z. 끝단 바깥쪽(+)·안쪽(−) 부호를 유지하세요.</p></span></span><span class="info-wrap" style="margin-left:6px"><span class="info-icon">i</span><span class="info-tip"><img src="Tool_Block_CoG.png" data-localized-help-image="tool-block-cog" alt="Tool Block CoG"><p>블록 무게중심 위치 참조용 도면</p></span></span></h2>
       <div class="grid3" style="grid-template-columns:60px 140px repeat(3,1fr) 40px"><span class="hd">블록</span><span class="hd"></span><span class="hd">Dx (mm)</span><span class="hd">Dy (mm)</span><span class="hd">Dz (mm)</span><span class="hd"></span></div>
       <div id="coms"></div>
     </div>
@@ -187,6 +185,7 @@
     <div class="cad-workspace">
       <section class="cad-viewport-shell">
         <div id="cad-viewport"></div>
+        <button id="cad-outline-toggle" class="cad-outline-toggle" type="button" aria-pressed="false" title="외곽선 켜기"><i class="fa-solid fa-pen-nib"></i><span>외곽선 OFF</span></button>
         <button id="cad-grid-toggle" class="cad-grid-toggle" type="button" aria-pressed="false">그리드 OFF</button>
         <div class="cad-marker-legend" aria-label="3D marker legend">
           <span><i class="cad-legend-tcp"></i>TCP</span>
@@ -209,6 +208,7 @@
               <option value="edge-midpoint">에지 중심점</option>
               <option value="face-center">면 중심점</option>
               <option value="circle-center">원/호 중심점</option>
+              <option value="rectangle-center">사각형 중심점</option>
               <option value="multi-point-center">다중 점 중심점</option>
               <option value="shape-center">형상 중심점</option>
               <option value="virtual-intersection">가상 교점</option>
@@ -305,6 +305,18 @@
 const ROBOTS=[{type:"cobot",name:"R4",load:4,t5:8.86,t6:4.9,i5:.20,i6:.067,j5:70},{type:"cobot",name:"R4H",load:4,t5:8.86,t6:4.9,i5:.20,i6:.067,j5:75},{type:"cobot",name:"R7H",load:7,t5:16.9,t6:9.4,i5:.49,i6:.150,j5:78},{type:"cobot",name:"R10-110",load:10,t5:18.59,t6:9.8,i5:.60,i6:.200,j5:80},{type:"cobot",name:"R10-140",load:10,t5:22.0,t6:9.8,i5:.63,i6:.200,j5:107.7},{type:"cobot",name:"R10H",load:10,t5:18.59,t6:9.8,i5:.60,i6:.200,j5:78},{type:"cobot",name:"R11",load:11,t5:20.45,t6:10.8,i5:.60,i6:.200,j5:80},{type:"cobot",name:"R15H",load:15,t5:26.5,t6:12.0,i5:.90,i6:.300,j5:86},{type:"cobot",name:"R16",load:16,t5:25.0,t6:12.0,i5:.78,i6:.300,j5:123},{type:"cobot",name:"R20H",load:20,t5:35.0,t6:20.0,i5:1.0,i6:.400,j5:86},{type:"cobot",name:"R25",load:25,t5:50.0,t6:30.0,i5:2.20,i6:1.500,j5:123},{type:"scara",name:"S4",load:4,rated:2,i4r:.005,i4:.05},{type:"scara",name:"S7",load:7,rated:3,i4r:.01,i4:.12},{type:"scara",name:"S10",load:10,rated:5,i4r:.02,i4:.30},{type:"scara",name:"S25",load:25,rated:10,i4r:.5,i4:1.2},{type:"scara",name:"S35",load:35,rated:20,i4r:.6,i4:1.2},{type:"scara",name:"S60",load:60,rated:30,i4r:1.2,i4:2.45},{type:"scara",name:"TS4",load:4,rated:2,i4r:.005,i4:.01},{type:"scara",name:"TS5",load:5,rated:2,i4r:.05,i4:.12}];
 const G=9.8;
 const uiText=value=>window.InoRobotI18n?window.InoRobotI18n.translate(String(value)):String(value);
+const LOCALIZED_HELP_IMAGES={
+  'block-ref':{ko:'block_ref.png',en:'block_ref.en.png','zh-CN':'block_ref.zh-CN.png',vi:'block_ref.vi.png'},
+  'tool-block-cog':{ko:'Tool_Block_CoG.png',en:'Tool_Block_CoG.en.png','zh-CN':'Tool_Block_CoG.zh-CN.png',vi:'Tool_Block_CoG.vi.png'}
+};
+function refreshLocalizedHelpImages(locale){
+  const selectedLocale=locale||window.InoRobotI18n?.locale||document.documentElement.dataset.locale||'ko';
+  document.querySelectorAll('[data-localized-help-image]').forEach(image=>{
+    const sources=LOCALIZED_HELP_IMAGES[image.dataset.localizedHelpImage];
+    const nextSource=sources?.[selectedLocale]||sources?.ko;
+    if(nextSource&&image.getAttribute('src')!==nextSource)image.setAttribute('src',nextSource);
+  });
+}
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');const m=t.dataset.mode;document.getElementById('mode-direct').classList.toggle('hide',m!=='direct');document.getElementById('mode-calc').classList.toggle('hide',m!=='calc');document.getElementById('mode-shape').classList.toggle('hide',m!=='shape');document.getElementById('mode-cad').classList.toggle('hide',m!=='cad');document.getElementById('robot-card').classList.toggle('hide',m==='shape'||m==='cad');document.getElementById('main-calculate').classList.toggle('hide',m==='cad');document.getElementById('result').classList.add('hide');if(m==='cad')window.ToolModeD?.activate();});
 const sel=document.getElementById('robot');
 const gCobot=document.createElement('optgroup');gCobot.label=uiText('다관절로봇');
@@ -339,10 +351,10 @@ rows.forEach(([name,val,lim,u])=>{const margin=(1-val/lim)*100;const ok=val<=lim
 document.getElementById('summary').innerHTML=isScara?`<div>${uiText('총 질량')}<b>${M.toFixed(3)} kg</b></div><div>${uiText('CoG 반경 (XY)')}<b>${(rJ6*1000).toFixed(1)} mm</b></div><div>${uiText('J4 관성')}<b>${Izz.toFixed(3)} kgm²</b></div>`:`<div>${uiText('총 질량')}<b>${M.toFixed(3)} kg</b></div><div>${uiText('J5→CoG')}<b>${(rJ5*1000).toFixed(1)} mm</b></div><div>${uiText('J6→CoG')}<b>${(rJ6*1000).toFixed(1)} mm</b></div>`;if(mode==='calc'&&f){document.getElementById('summary').innerHTML+=`<div style="grid-column: span 3; font-size:12px; font-weight:700; color:#94a3b8; border-top:1px dashed rgba(255,255,255,0.1); padding-top:14px; margin-top:8px">${uiText('부하 무게중심 기준 관성모멘트 산출값')}</div><div>Ixx<b>${f.Ixx.toFixed(3)} kgm²</b></div><div>Iyy<b>${f.Iyy.toFixed(3)} kgm²</b></div><div>Izz<b>${f.Izz.toFixed(3)} kgm²</b></div>`;}
 const ov=document.getElementById('overall');if(anyNG){ov.className='overall ng';ov.textContent=`❌ ${uiText('부적합 — 상위 모델 또는 Tool 재설계 필요')}`;}else if(anyTight){ov.className='overall ng';ov.style.background='rgba(245,158,11,.1)';ov.style.borderColor='rgba(245,158,11,.3)';ov.style.color='#fbbf24';ov.textContent=`⚠️ ${uiText('적합하나 마진 부족')}`;}else{ov.className='overall ok';ov.textContent=`✅ ${uiText('적합 — 설치 가능')}`;}
 document.getElementById('result').classList.remove('hide');document.getElementById('result').scrollIntoView({behavior:'smooth'});}
-function refreshDynamicLanguage(){gCobot.label=uiText('다관절로봇');showSpec(true);readBlocks();renderBlocks();readSBlocks();renderSBlocks();if(!document.getElementById('result').classList.contains('hide'))calculate();}
+function refreshDynamicLanguage(event){refreshLocalizedHelpImages(event?.detail?.locale);gCobot.label=uiText('다관절로봇');showSpec(true);readBlocks();renderBlocks();readSBlocks();renderSBlocks();if(!document.getElementById('result').classList.contains('hide'))calculate();}
 document.addEventListener('inorobot:i18nready',refreshDynamicLanguage);
 document.addEventListener('inorobot:languagechange',refreshDynamicLanguage);
 </script>
-<script type="module" src="./mode-d.js"></script>
+<script type="module" src="./mode-d.js?v=20260720-orbit-controls-1"></script>
 </body>
 </html>

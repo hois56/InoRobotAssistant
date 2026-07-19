@@ -1,6 +1,10 @@
 const EPSILON = 1e-12;
 
-const flatten = (value) => Array.isArray(value?.[0]) ? value.flat() : Array.from(value || []);
+const flatten = (value) => {
+  if (!value) return [];
+  if (ArrayBuffer.isView(value)) return value;
+  return Array.isArray(value[0]) ? value.flat() : Array.from(value);
+};
 const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const scale = (v, s) => [v[0] * s, v[1] * s, v[2] * s];
@@ -189,6 +193,73 @@ function straightLineForChain(chain, points, tolerance) {
   return { a, b, direction, length: span };
 }
 
+function rectangleProperties(ids, points, tolerance, modelDiagonal) {
+  if (!Array.isArray(ids) || ids.length !== 4) return null;
+  const vertices = ids.map((id) => points[id]);
+  if (vertices.some((point) => !point)) return null;
+  const edges = vertices.map((point, index) => sub(vertices[(index + 1) % 4], point));
+  const lengths = edges.map(length);
+  const minimumSide = Math.max(tolerance * 10, modelDiagonal * 1e-8);
+  if (lengths.some((side) => side <= minimumSide)) return null;
+
+  const normalVector = cross(edges[0], edges[1]);
+  const normalLength = length(normalVector);
+  if (normalLength <= minimumSide * minimumSide) return null;
+  const normal = scale(normalVector, 1 / normalLength);
+  const planeTolerance = Math.max(tolerance * 20, modelDiagonal * 1e-5);
+  if (vertices.slice(2).some((point) => Math.abs(dot(sub(point, vertices[0]), normal)) > planeTolerance)) return null;
+
+  const orthogonalTolerance = 0.06;
+  for (let index = 0; index < 4; index += 1) {
+    const current = normalize(edges[index]);
+    const next = normalize(edges[(index + 1) % 4]);
+    if (Math.abs(dot(current, next)) > orthogonalTolerance) return null;
+  }
+  const sideTolerance = Math.max(tolerance * 50, Math.max(...lengths) * 0.02);
+  if (Math.abs(lengths[0] - lengths[2]) > sideTolerance || Math.abs(lengths[1] - lengths[3]) > sideTolerance) return null;
+  if (Math.abs(Math.abs(dot(normalize(edges[0]), normalize(edges[2]))) - 1) > orthogonalTolerance
+      || Math.abs(Math.abs(dot(normalize(edges[1]), normalize(edges[3]))) - 1) > orthogonalTolerance) return null;
+
+  const diagonalMidpointA = midpoint(vertices[0], vertices[2]);
+  const diagonalMidpointB = midpoint(vertices[1], vertices[3]);
+  if (distance(diagonalMidpointA, diagonalMidpointB) > planeTolerance) return null;
+  return {
+    center: midpoint(diagonalMidpointA, diagonalMidpointB),
+    vertexIds: [...ids]
+  };
+}
+
+function findRectangleCenters(graph, points, tolerance, modelDiagonal, maxCandidates = 1000) {
+  const centers = [];
+  const seen = new Set();
+  let testedCycles = 0;
+  const maxCycles = Math.max(maxCandidates * 32, 1000);
+  const visit = (start, path) => {
+    if (centers.length >= maxCandidates || testedCycles >= maxCycles) return;
+    const current = path[path.length - 1];
+    if (path.length === 4) {
+      if (!(graph.get(current) || new Set()).has(start)) return;
+      testedCycles += 1;
+      const key = [...path].sort((left, right) => left - right).join(':');
+      if (seen.has(key)) return;
+      seen.add(key);
+      const rectangle = rectangleProperties(path, points, tolerance, modelDiagonal);
+      if (rectangle) centers.push({ point: rectangle.center, source: { vertexIds: rectangle.vertexIds } });
+      return;
+    }
+    (graph.get(current) || []).forEach((next) => {
+      if (next === start || path.includes(next)) return;
+      visit(start, [...path, next]);
+    });
+  };
+
+  [...graph.keys()].forEach((start) => {
+    if (centers.length >= maxCandidates || testedCycles >= maxCycles) return;
+    visit(start, [start]);
+  });
+  return centers;
+}
+
 function closestLineIntersection(first, second, tolerance, extensionRatio) {
   const offset = sub(first.a, second.a);
   const directionDot = dot(first.direction, second.direction);
@@ -300,6 +371,13 @@ export function buildStepSnapCandidates(meshDefinition, options = {}) {
   });
   const nodeSet = new Set([...endpointIds, ...vertexIds]);
   const chains = buildFeatureChains(featureEdges, graph, nodeSet);
+  const rectangleCenters = findRectangleCenters(
+    graph,
+    positions,
+    weldTolerance,
+    rawBounds.diagonal,
+    options.maxRectangleCandidates || 1000
+  );
   const chainEndpointIds = new Set(endpointIds);
   chains.forEach((chain) => {
     if (chain.closed || chain.path.length < 2) return;
@@ -323,6 +401,7 @@ export function buildStepSnapCandidates(meshDefinition, options = {}) {
   chainEndpointIds.forEach((id) => addCandidate({ type: 'endpoint', point: positions[id], source: { vertexId: id } }));
   vertexIds.forEach((id) => addCandidate({ type: 'vertex', point: positions[id], source: { vertexId: id } }));
   faceCenters.forEach(addCandidate);
+  rectangleCenters.forEach(({ point, source }) => addCandidate({ type: 'rectangle-center', point, source }));
 
   const straightLines = [];
   chains.forEach((chain, chainIndex) => {
@@ -364,6 +443,7 @@ export function buildStepSnapCandidates(meshDefinition, options = {}) {
     'edge-midpoint': 10000,
     'face-center': 5000,
     'circle-center': 2000,
+    'rectangle-center': 2000,
     'shape-center': 20,
     'virtual-intersection': maxVirtualCandidates,
     ...(options.maxPerType || {})
