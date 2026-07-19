@@ -2,6 +2,7 @@ const EPSILON = 1e-9;
 
 function flattenNumericArray(value) {
   if (!value) return [];
+  if (ArrayBuffer.isView(value)) return value;
   return Array.isArray(value[0]) ? value.flat() : Array.from(value);
 }
 
@@ -78,26 +79,6 @@ function parallelAxisMatrix(massOrVolume, offset) {
   ];
 }
 
-function secondMomentSameAxis(a, b, c, axis) {
-  const av = a[axis];
-  const bv = b[axis];
-  const cv = c[axis];
-  return av * av + bv * bv + cv * cv + av * bv + av * cv + bv * cv;
-}
-
-function secondMomentCrossAxis(a, b, c, firstAxis, secondAxis) {
-  const sameVertex = 2 * (
-    a[firstAxis] * a[secondAxis]
-    + b[firstAxis] * b[secondAxis]
-    + c[firstAxis] * c[secondAxis]
-  );
-  const crossVertex =
-    a[firstAxis] * b[secondAxis] + b[firstAxis] * a[secondAxis]
-    + a[firstAxis] * c[secondAxis] + c[firstAxis] * a[secondAxis]
-    + b[firstAxis] * c[secondAxis] + c[firstAxis] * b[secondAxis];
-  return sameVertex + crossVertex;
-}
-
 /**
  * Integrates a closed, consistently oriented STEP tessellation.
  * Coordinates are millimetres. The returned inertia values use unit density
@@ -106,11 +87,12 @@ function secondMomentCrossAxis(a, b, c, firstAxis, secondAxis) {
 export function integrateStepMesh(meshDefinition) {
   const positions = flattenNumericArray(meshDefinition?.attributes?.position?.array);
   const sourceIndices = flattenNumericArray(meshDefinition?.index?.array);
-  const vertexCount = positions.length / 3;
-  const indices = sourceIndices.length ? sourceIndices : Array.from({ length: vertexCount }, (_, index) => index);
+  const hasIndices = sourceIndices.length > 0;
+  const indices = sourceIndices;
+  const indexCount = hasIndices ? indices.length : positions.length / 3;
 
   if (positions.length < 9 || positions.length % 3 !== 0) throw new Error('STEP mesh has invalid vertex data.');
-  if (indices.length < 3 || indices.length % 3 !== 0) throw new Error('STEP mesh has invalid triangle data.');
+  if (indexCount < 3 || indexCount % 3 !== 0) throw new Error('STEP mesh has invalid triangle data.');
 
   let volume = 0;
   const firstMoment = [0, 0, 0];
@@ -121,25 +103,47 @@ export function integrateStepMesh(meshDefinition) {
   let integralXZ = 0;
   let integralYZ = 0;
 
-  const vertex = (index) => [positions[index * 3], positions[index * 3 + 1], positions[index * 3 + 2]];
+  for (let triangle = 0; triangle < indexCount; triangle += 3) {
+    const aIndex = hasIndices ? indices[triangle] : triangle;
+    const bIndex = hasIndices ? indices[triangle + 1] : triangle + 1;
+    const cIndex = hasIndices ? indices[triangle + 2] : triangle + 2;
+    const ax = positions[aIndex * 3];
+    const ay = positions[aIndex * 3 + 1];
+    const az = positions[aIndex * 3 + 2];
+    const bx = positions[bIndex * 3];
+    const by = positions[bIndex * 3 + 1];
+    const bz = positions[bIndex * 3 + 2];
+    const cx = positions[cIndex * 3];
+    const cy = positions[cIndex * 3 + 1];
+    const cz = positions[cIndex * 3 + 2];
+    if (![ax, ay, az, bx, by, bz, cx, cy, cz].every(Number.isFinite)) {
+      throw new Error('STEP mesh contains a non-finite coordinate.');
+    }
 
-  for (let triangle = 0; triangle < indices.length; triangle += 3) {
-    const a = vertex(indices[triangle]);
-    const b = vertex(indices[triangle + 1]);
-    const c = vertex(indices[triangle + 2]);
-    if (![...a, ...b, ...c].every(Number.isFinite)) throw new Error('STEP mesh contains a non-finite coordinate.');
-
-    const tetraVolume = dot(a, cross(b, c)) / 6;
+    const tetraVolume = (
+      ax * (by * cz - bz * cy)
+      + ay * (bz * cx - bx * cz)
+      + az * (bx * cy - by * cx)
+    ) / 6;
     volume += tetraVolume;
-    firstMoment[0] += tetraVolume * (a[0] + b[0] + c[0]) / 4;
-    firstMoment[1] += tetraVolume * (a[1] + b[1] + c[1]) / 4;
-    firstMoment[2] += tetraVolume * (a[2] + b[2] + c[2]) / 4;
-    integralX2 += tetraVolume * secondMomentSameAxis(a, b, c, 0) / 10;
-    integralY2 += tetraVolume * secondMomentSameAxis(a, b, c, 1) / 10;
-    integralZ2 += tetraVolume * secondMomentSameAxis(a, b, c, 2) / 10;
-    integralXY += tetraVolume * secondMomentCrossAxis(a, b, c, 0, 1) / 20;
-    integralXZ += tetraVolume * secondMomentCrossAxis(a, b, c, 0, 2) / 20;
-    integralYZ += tetraVolume * secondMomentCrossAxis(a, b, c, 1, 2) / 20;
+    firstMoment[0] += tetraVolume * (ax + bx + cx) / 4;
+    firstMoment[1] += tetraVolume * (ay + by + cy) / 4;
+    firstMoment[2] += tetraVolume * (az + bz + cz) / 4;
+    integralX2 += tetraVolume * (ax * ax + bx * bx + cx * cx + ax * bx + ax * cx + bx * cx) / 10;
+    integralY2 += tetraVolume * (ay * ay + by * by + cy * cy + ay * by + ay * cy + by * cy) / 10;
+    integralZ2 += tetraVolume * (az * az + bz * bz + cz * cz + az * bz + az * cz + bz * cz) / 10;
+    integralXY += tetraVolume * (
+      2 * (ax * ay + bx * by + cx * cy)
+      + ax * by + bx * ay + ax * cy + cx * ay + bx * cy + cx * by
+    ) / 20;
+    integralXZ += tetraVolume * (
+      2 * (ax * az + bx * bz + cx * cz)
+      + ax * bz + bx * az + ax * cz + cx * az + bx * cz + cx * bz
+    ) / 20;
+    integralYZ += tetraVolume * (
+      2 * (ay * az + by * bz + cy * cz)
+      + ay * bz + by * az + ay * cz + cy * az + by * cz + cy * bz
+    ) / 20;
   }
 
   if (!Number.isFinite(volume) || Math.abs(volume) <= EPSILON) throw new Error('STEP solid has zero or invalid volume.');

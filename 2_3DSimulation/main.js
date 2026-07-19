@@ -10,7 +10,7 @@ import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { enableContinuousTransformRotation } from '../3_ToolSelector/continuous-transform-rotation.mjs?v=20260719-1';
 import { buildStepSnapCandidates } from '../3_ToolSelector/snap-geometry.mjs?v=20260719-euler-321-11';
 import {
     MOTION_PROJECT_SCHEMA_VERSION,
@@ -38,7 +38,7 @@ import {
     cloneMotionProgram,
     reorderMotionSteps,
     normalizeMotionProject
-} from './motion-program-core.mjs?v=20260719-euler-321-11';
+} from './motion-program-core.mjs?v=20260719-tcp-profiles-1';
 function uiText(value) {
     return window.InoRobotI18n ? window.InoRobotI18n.translate(String(value)) : String(value);
 }
@@ -54,7 +54,28 @@ const state = {
     controls: null, transformControls: null,
     models: [], // List of loaded models { group, name, type }
     selectedModel: null,
+    selectedModelPart: null,
+    zeroPointEdit: {
+        active: false,
+        model: null,
+        origin: new THREE.Vector3(),
+        rotationDegrees: new THREE.Vector3(),
+        baseWorldQuaternion: new THREE.Quaternion(),
+        snapMode: false,
+        snapType: 'auto',
+        snapRadiusPx: 16,
+        snapPoints: [],
+        frame: null,
+        axes: null,
+        transformControls: null,
+        marker: null,
+        baseModelState: null,
+        historyBefore: null,
+        handlerVisible: false,
+        snapReadoutMessage: '스냅 위치 선택을 누른 뒤 모델 형상 위로 포인터를 이동하세요.'
+    },
     modelTreeIdCounter: 0,
+    modelPartIdCounter: 0,
     undoStack: [],
     redoStack: [],
     historySuspended: false,
@@ -115,12 +136,32 @@ const state = {
         streamWatchdogTimer: null
     },
     pendingImportFile: null,
-    occtImporterPromise: null,
+    stepImportWorkerSession: null,
+    stepImportRequestId: 0,
+    stepImportCacheDbPromise: null,
     snapMoveMode: false,
+    tcpSnapMode: false,
+    tcpSnapType: 'auto',
+    tcpSnapRadiusPx: 16,
+    tcpSnapPoints: [],
+    tcpSnapReadoutMessage: '3D 모델링의 스냅 지점을 클릭하세요.',
     snapCandidates: [],
     snapCandidateModelsSignature: '',
+    snapCandidateBuildSignature: '',
+    snapCandidateBuildPromise: null,
+    snapCandidatesReady: false,
+    snapScreenIndex: null,
+    snapScreenIndexSignature: '',
+    snapLazyReadyMeshes: new Set(),
+    snapLazyBuildPromises: new Map(),
     snapHover: null,
+    snapMarkerReferenceDistance: null,
+    snapPointerMoveFrame: null,
+    snapLastPointerEvent: null,
     snapVisibilityRaycaster: new THREE.Raycaster(),
+    largeModelPerformanceMode: false,
+    lastPerformanceRenderAt: 0,
+    outlineMode: false,
     grid: null, baseAxes: null, labels: [],
     addMode: false
 };
@@ -148,6 +189,7 @@ const el = {
     statusDot:       document.getElementById('status-dot'),
     canvasContainer: document.getElementById('canvas-container'),
     btnResetView:    document.getElementById('btn-reset-view'),
+    btnToggleOutline: document.getElementById('btn-toggle-outline'),
     btnToggleGrid:   document.getElementById('btn-toggle-grid'),
     btnToggleTransform: document.getElementById('btn-toggle-transform'),
     btnFullscreenMode: document.getElementById('btn-fullscreen-mode'),
@@ -160,7 +202,12 @@ const el = {
     modelTree:       document.getElementById('model-tree'),
     modelTreeCount:  document.getElementById('model-tree-count'),
     modelBrowserPanel: document.getElementById('model-browser-panel'),
+    modelContextMenu: document.getElementById('model-context-menu'),
+    modelChangeZeroPoint: document.getElementById('model-change-zero-point'),
+    modelColorPicker: document.getElementById('model-color-picker'),
     jogPanel:        document.getElementById('jog-panel'),
+    tcpProfilePanel: document.getElementById('tcp-profile-panel'),
+    tcpLauncherLabel: document.getElementById('tcp-launcher-label'),
     panelLauncher:   document.getElementById('panel-launcher'),
     modelTransformPanel: document.getElementById('model-transform-panel'),
     modelNumericTransform: document.getElementById('model-numeric-transform'),
@@ -177,6 +224,24 @@ const el = {
         y: document.getElementById('model-rotation-y'),
         z: document.getElementById('model-rotation-z')
     },
+    zeroPointEditor: document.getElementById('model-zero-point-editor'),
+    btnCloseZeroPointEditor: document.getElementById('btn-close-zero-point-editor'),
+    btnCancelZeroPoint: document.getElementById('btn-cancel-zero-point'),
+    btnApplyZeroPoint: document.getElementById('btn-apply-zero-point'),
+    btnZeroPointSnap: document.getElementById('btn-model-zero-snap'),
+    zeroPointSnapType: document.getElementById('model-zero-snap-type'),
+    zeroPointSnapRadius: document.getElementById('model-zero-snap-radius'),
+    zeroPointSnapRadiusValue: document.getElementById('model-zero-snap-radius-value'),
+    zeroPointSnapReadout: document.getElementById('model-zero-snap-readout'),
+    zeroPointMultiCenterControls: document.getElementById('model-zero-multi-center-controls'),
+    zeroPointMultiCenterCount: document.getElementById('model-zero-multi-center-count'),
+    btnZeroPointMultiCenterApply: document.getElementById('model-zero-multi-center-apply'),
+    btnZeroPointMultiCenterReset: document.getElementById('model-zero-multi-center-reset'),
+    zeroPointOriginInputs: Object.fromEntries([...document.querySelectorAll('[data-zero-origin-axis]')]
+        .map((input) => [input.dataset.zeroOriginAxis, input])),
+    zeroPointRotationInputs: Object.fromEntries([...document.querySelectorAll('[data-zero-rotation-axis]')]
+        .map((input) => [input.dataset.zeroRotationAxis, input])),
+    zeroPointAxisDirections: document.getElementById('model-zero-axis-directions'),
     transformModeButtons: [...document.querySelectorAll('[data-transform-mode]')],
     btnUndo:         document.getElementById('btn-undo'),
     btnRedo:         document.getElementById('btn-redo'),
@@ -185,6 +250,24 @@ const el = {
     btnConfirmImport: document.getElementById('btn-confirm-import'),
     jogControls:     document.getElementById('jog-controls'),
     btnResetJoints:  document.getElementById('btn-reset-joints'),
+    tcpProfileManager: document.getElementById('tcp-profile-manager'),
+    tcpProfileEditor: document.getElementById('tcp-profile-editor'),
+    activeTcpProfileLabel: document.getElementById('active-tcp-profile-label'),
+    btnApplyTcpProfile: document.getElementById('btn-apply-tcp-profile'),
+    btnResetTcpProfile: document.getElementById('btn-reset-tcp-profile'),
+    tcpProfileStatus: document.getElementById('tcp-profile-status'),
+    btnTcpSnap: document.getElementById('btn-tcp-snap'),
+    tcpSnapType: document.getElementById('tcp-snap-type'),
+    tcpSnapRadius: document.getElementById('tcp-snap-radius'),
+    tcpSnapRadiusValue: document.getElementById('tcp-snap-radius-value'),
+    tcpSnapReadout: document.getElementById('tcp-snap-readout'),
+    tcpMultiCenterControls: document.getElementById('tcp-multi-center-controls'),
+    tcpMultiCenterCount: document.getElementById('tcp-multi-center-count'),
+    btnTcpMultiCenterApply: document.getElementById('tcp-multi-center-apply'),
+    btnTcpMultiCenterReset: document.getElementById('tcp-multi-center-reset'),
+    tcpProfileButtons: [...document.querySelectorAll('[data-tcp-profile]')],
+    tcpOffsetInputs: Object.fromEntries([...document.querySelectorAll('[data-tcp-offset]')]
+        .map((input) => [input.dataset.tcpOffset, input])),
     jointJogView:    document.getElementById('joint-jog-view'),
     baseJogView:     document.getElementById('base-jog-view'),
     btnJogJointMode: document.getElementById('btn-jog-joint-mode'),
@@ -258,6 +341,8 @@ const el = {
     btnAddMode:      null 
 };
 
+const MODEL_PART_SELECTION_COLOR = 0x22d3ee;
+
 const IK_POSITION_SCALE = 400;
 const IK_MAX_ITERATIONS = 320;
 const IK_DAMPING = 0.035;
@@ -284,32 +369,63 @@ const SIX_AXIS_POSITION_HOME_QUATERNION = new THREE.Quaternion().setFromEuler(
 const stlGeometryCache = new Map();
 const BASE_JOG_HOLD_DELAY = 250;
 const BASE_JOG_REPEAT_INTERVAL = 30;
+const TCP_PROFILE_COUNT = 3;
 const TRACE_SOURCE_LIVENESS_TIMEOUT_MS = 2500;
 const VIRTUAL_CONTROLLER_STREAM_STALL_MS = 750;
 const VIRTUAL_CONTROLLER_STREAM_WATCHDOG_MS = 250;
 const SUPPORTED_IMPORT_EXTENSIONS = new Set(['stl', 'fbx', 'obj', 'glb', 'gltf', 'stp', 'step']);
 const Y_UP_IMPORT_EXTENSIONS = new Set(['fbx', 'glb', 'gltf']);
 const IMPORT_PLACEMENT_COLORS = { tcp: 0xf97316, scene: 0x65a30d };
-const OCCT_IMPORT_BASE_URL = 'https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/';
 const MOTION_PROJECT_STORAGE_KEY = 'inorobot.3d-simulation.motion-project.v1';
 const CYCLE_TIME_DISPLAY_INTERVAL = 50;
 const MAX_MOTION_TRANSITIONS_PER_FRAME = 256;
 const MOTION_MOVL_SAMPLE_DISTANCE = 25;
 const MOTION_MOVL_SAMPLE_ANGLE = 5;
 const SNAP_RADIUS_PX = 16;
+const SNAP_SCREEN_INDEX_CELL_PX = 48;
+const SNAP_MARKER_CAMERA_SCALE = Object.freeze({ min: 0.55, max: 1.25 });
+const MEBIBYTE = 1024 * 1024;
+const STEP_IMPORT_CACHE_DB_NAME = 'inorobot-3d-step-cache';
+const STEP_IMPORT_CACHE_STORE_NAME = 'models';
+const STEP_IMPORT_CACHE_VERSION = 3;
+const STEP_IMPORT_CACHE_MAX_ENTRIES = 4;
+const STEP_IMPORT_CACHE_MAX_SOURCE_BYTES = 32 * MEBIBYTE;
+const STEP_LARGE_FILE_ENGINE_MIN_BYTES = 64 * MEBIBYTE;
+const LARGE_MODEL_PERFORMANCE_MIN_BYTES = 100 * MEBIBYTE;
+const LARGE_MODEL_RENDER_FPS = 60;
+const SIMULATION_SNAP_OVERLAP_TOLERANCE_PX = 7;
+// Endpoints stay exhaustive; pointer lookup is bounded by the screen-space index below.
+const SIMULATION_SNAP_MAX_PER_TYPE = Object.freeze({
+    endpoint: Infinity,
+    vertex: 12000,
+    'edge-midpoint': 12000,
+    'face-center': 5000,
+    'circle-center': 4000,
+    'rectangle-center': 2000,
+    'shape-center': 100,
+    'virtual-intersection': 500
+});
+const TCP_AXES_LOCAL_SIZE = 110;
+const TCP_AXES_SCREEN_PIXELS = 40;
+const tcpAxesWorldPosition = new THREE.Vector3();
+const tcpAxesCameraPosition = new THREE.Vector3();
+const tcpAxesParentScale = new THREE.Vector3();
 const SNAP_TYPES = Object.freeze({
-    endpoint: { label: '끝점', symbol: '◇', priority: 0 },
-    vertex: { label: '꼭짓점', symbol: '□', priority: 1 },
-    'circle-center': { label: '원/호 중심점', symbol: '⊙', priority: 2 },
+    // Specific geometric centers must win when they overlap generic topology snaps.
+    'circle-center': { label: '원/호 중심점', symbol: '⊙', priority: 0 },
+    'rectangle-center': { label: '사각형 중심점', symbol: '▣', priority: 0 },
+    'face-center': { label: '면 중심점', symbol: '○', priority: 1 },
+    endpoint: { label: '끝점', symbol: '◇', priority: 2 },
+    vertex: { label: '꼭짓점', symbol: '□', priority: 2 },
     'edge-midpoint': { label: '에지 중심점', symbol: '△', priority: 3 },
-    'face-center': { label: '면 중심점', symbol: '○', priority: 4 },
-    'shape-center': { label: '형상 중심점', symbol: '⌖', priority: 5 },
-    'virtual-intersection': { label: '가상 교점', symbol: '×', priority: 6 }
+    'shape-center': { label: '형상 중심점', symbol: '⌖', priority: 4 },
+    'virtual-intersection': { label: '가상 교점', symbol: '×', priority: 5 }
 });
 const PANEL_RESIZE_EDGE_SIZE = 8;
 const PANEL_MINIMUM_SIZES = Object.freeze({
     'model-browser-panel': { width: 260, height: 220 },
     'jog-panel': { width: 250, height: 300 },
+    'tcp-profile-panel': { width: 280, height: 360 },
     'virtual-controller-panel': { width: 250, height: 230 },
     'program-panel': { width: 300, height: 320 }
 });
@@ -327,6 +443,7 @@ async function init() {
         setupControls();
         setupEventListeners();
         animate();
+        scheduleStepImportWorkerWarmup();
         await populateModelList();
         await restoreMotionProjectFromStorage();
         setStatus('Ready', '#22c55e');
@@ -395,6 +512,20 @@ function refreshLocalizedControls() {
     if (el.baseJogStatus?.dataset.sourceMessage) {
         el.baseJogStatus.textContent = uiText(el.baseJogStatus.dataset.sourceMessage);
     }
+    if (el.tcpProfileStatus?.dataset.sourceMessage) {
+        el.tcpProfileStatus.textContent = uiText(el.tcpProfileStatus.dataset.sourceMessage);
+    }
+    if (el.tcpSnapReadout?.dataset.sourceMessage) {
+        el.tcpSnapReadout.textContent = uiText(el.tcpSnapReadout.dataset.sourceMessage);
+    }
+    if (el.zeroPointSnapReadout?.dataset.sourceMessage) {
+        el.zeroPointSnapReadout.textContent = uiText(el.zeroPointSnapReadout.dataset.sourceMessage);
+    }
+    if (state.zeroPointEdit.active) updateZeroPointCurrentMarker();
+    updateTcpMultiCenterControls();
+    updateZeroPointMultiCenterControls();
+    refreshTcpProfileUi();
+    updateOutlineToggleUi();
 }
 
 function setupScene() {
@@ -434,60 +565,379 @@ function preventMiddleButtonAutoscroll(event) {
     if (event.button === 1) event.preventDefault();
 }
 
-function getSimulationSnapModels() {
+function updateLargeModelPerformanceMode() {
+    const enabled = state.models.some((model) => (
+        model.userData.uploaded && model.userData.largeModelMode && model.visible !== false
+    ));
+    if (state.largeModelPerformanceMode === enabled || !state.renderer) return;
+    state.largeModelPerformanceMode = enabled;
+    state.lastPerformanceRenderAt = 0;
+    state.renderer.shadowMap.enabled = !enabled;
+    state.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, enabled ? 1 : 2));
+    state.renderer.setSize(el.canvasContainer.clientWidth, el.canvasContainer.clientHeight);
+}
+
+function isLazySimulationSnapMesh(mesh) {
+    return Boolean(mesh?.userData.largeModelMode && mesh.userData.largeModelChunk);
+}
+
+function getSimulationSnapModels(scope = 'scene') {
+    if (scope === 'zero') {
+        const model = state.zeroPointEdit.model;
+        return model?.userData.uploaded && model.visible !== false ? [model] : [];
+    }
+    const placement = scope === 'tool' ? 'tcp' : 'scene';
     return state.models.filter((model) => model.userData.uploaded
-        && model.userData.placement === 'scene'
+        && model.userData.placement === placement
         && model.visible !== false);
 }
 
-function getSimulationSnapMeshes() {
+function getSimulationSnapMeshes(scope = 'scene') {
     const meshes = [];
-    getSimulationSnapModels().forEach((model) => model.traverse((child) => {
+    getSimulationSnapModels(scope).forEach((model) => model.traverse((child) => {
         if (child.isMesh && child.visible !== false && child.geometry?.getAttribute('position')) meshes.push(child);
     }));
     return meshes;
 }
 
-function buildSimulationSnapCandidates() {
-    const meshes = getSimulationSnapMeshes();
-    const signature = meshes.map((mesh) => `${mesh.uuid}:${mesh.geometry.uuid}`).join('|');
-    if (signature === state.snapCandidateModelsSignature && state.snapCandidates.length) return meshes;
-    state.snapCandidateModelsSignature = signature;
-    state.snapCandidates = [];
-    meshes.forEach((mesh) => {
-        try {
-            const result = buildStepSnapCandidates(mesh.geometry, {
-                maxVirtualPairs: 6000,
-                maxVirtualCandidates: 160,
-                maxPerType: {
-                    endpoint: 2500,
-                    vertex: 4000,
-                    'edge-midpoint': 4000,
-                    'face-center': 1200,
-                    'circle-center': 1000,
-                    'shape-center': 10,
-                    'virtual-intersection': 160
-                }
-            });
-            result.candidates.forEach((candidate) => state.snapCandidates.push({
-                type: candidate.type,
-                mesh,
-                localPoint: new THREE.Vector3().fromArray(candidate.point)
-            }));
-        } catch (error) {
-            console.warn('Snap candidate generation failed:', mesh.name, error);
+function getSimulationSnapScope() {
+    if (state.zeroPointEdit.active && state.zeroPointEdit.snapMode) return 'zero';
+    return state.tcpSnapMode ? 'tool' : 'scene';
+}
+
+function yieldToAnimationFrame() {
+    return new Promise((resolve) => requestAnimationFrame(resolve));
+}
+
+function buildSimulationSnapResultForMesh(mesh, lazyChunk = false) {
+    const stepBrepFaces = mesh.userData.stepBrepFaces;
+    const snapGeometry = Array.isArray(stepBrepFaces) && stepBrepFaces.length
+        ? {
+            attributes: mesh.geometry.attributes,
+            index: mesh.geometry.index,
+            brep_faces: stepBrepFaces
+        }
+        : mesh.geometry;
+    return buildStepSnapCandidates(snapGeometry, {
+        maxVirtualPairs: lazyChunk ? 2000 : 6000,
+        maxVirtualCandidates: lazyChunk ? 80 : 160,
+        maxPerType: {
+            endpoint: Infinity,
+            vertex: lazyChunk ? 2500 : 4000,
+            'edge-midpoint': lazyChunk ? 2500 : 4000,
+            'face-center': lazyChunk ? 800 : 1200,
+            'circle-center': lazyChunk ? 600 : 1000,
+            'rectangle-center': lazyChunk ? 600 : 1000,
+            'shape-center': lazyChunk ? 2 : 10,
+            'virtual-intersection': lazyChunk ? 80 : 160
         }
     });
+}
+
+async function buildSimulationSnapCandidates(scope = getSimulationSnapScope()) {
+    if (!isSimulationSnapPicking()) return [];
+    const meshes = getSimulationSnapMeshes(scope);
+    const signature = `${scope}:${meshes.map((mesh) => `${mesh.uuid}:${mesh.geometry.uuid}`).join('|')}`;
+    if (signature === state.snapCandidateModelsSignature && state.snapCandidatesReady) return meshes;
+    if (signature === state.snapCandidateBuildSignature && state.snapCandidateBuildPromise) {
+        await state.snapCandidateBuildPromise;
+        return getSimulationSnapMeshes(scope);
+    }
+
+    state.snapCandidateBuildSignature = signature;
+    state.snapCandidatesReady = false;
+    state.snapScreenIndex = null;
+    state.snapScreenIndexSignature = '';
+    state.snapLazyReadyMeshes.clear();
+    state.snapLazyBuildPromises.clear();
+    const nextCandidates = [];
+    const nextCandidateCounts = {};
+    const buildPromise = (async () => {
+        await yieldToAnimationFrame();
+        for (let meshIndex = 0; meshIndex < meshes.length; meshIndex += 1) {
+            if (state.snapCandidateBuildSignature !== signature || !isSimulationSnapPicking()) return;
+            const mesh = meshes[meshIndex];
+            if (isLazySimulationSnapMesh(mesh)) continue;
+            try {
+                const result = buildSimulationSnapResultForMesh(mesh);
+                result.candidates.forEach((candidate) => {
+                    const count = nextCandidateCounts[candidate.type] || 0;
+                    const limit = SIMULATION_SNAP_MAX_PER_TYPE[candidate.type] || Infinity;
+                    if (count >= limit) return;
+                    nextCandidateCounts[candidate.type] = count + 1;
+                    nextCandidates.push({
+                        type: candidate.type,
+                        mesh,
+                        localPoint: new THREE.Vector3().fromArray(candidate.point)
+                    });
+                });
+            } catch (error) {
+                console.warn('Snap candidate generation failed:', mesh.name, error);
+            }
+            if (meshIndex + 1 < meshes.length) await yieldToAnimationFrame();
+        }
+        if (state.snapCandidateBuildSignature !== signature || !isSimulationSnapPicking()) return;
+        state.snapCandidates = nextCandidates;
+        state.snapCandidateModelsSignature = signature;
+        state.snapCandidatesReady = true;
+        state.snapScreenIndex = null;
+        state.snapScreenIndexSignature = '';
+    })();
+    state.snapCandidateBuildPromise = buildPromise;
+    try {
+        await buildPromise;
+    } finally {
+        if (state.snapCandidateBuildPromise === buildPromise) state.snapCandidateBuildPromise = null;
+    }
+    return getSimulationSnapMeshes(scope);
+}
+
+function getPreparedSimulationSnapMeshes(scope = getSimulationSnapScope()) {
+    const meshes = getSimulationSnapMeshes(scope);
+    const signature = `${scope}:${meshes.map((mesh) => `${mesh.uuid}:${mesh.geometry.uuid}`).join('|')}`;
+    if (signature !== state.snapCandidateModelsSignature || !state.snapCandidatesReady) return [];
     return meshes;
+}
+
+/*
+ * Candidate generation intentionally runs outside pointer events. Large STEP files
+ * are split into several render meshes, allowing a frame between expensive chunks.
+ */
+function invalidateSimulationSnapCandidates() {
+    state.snapCandidateBuildSignature = '';
+    state.snapCandidateModelsSignature = '';
+    state.snapCandidatesReady = false;
+    state.snapCandidates = [];
+    state.snapScreenIndex = null;
+    state.snapScreenIndexSignature = '';
+    state.snapLazyReadyMeshes.clear();
+    state.snapLazyBuildPromises.clear();
 }
 
 function snapTypeInfo(type) {
     return SNAP_TYPES[type] || SNAP_TYPES.vertex;
 }
 
+function compareSimulationSnapCandidates(left, right) {
+    const pixelDifference = left.pixelDistance - right.pixelDistance;
+    const priorityDifference = snapTypeInfo(left.type).priority - snapTypeInfo(right.type).priority;
+    if (priorityDifference && Math.abs(pixelDifference) <= SIMULATION_SNAP_OVERLAP_TOLERANCE_PX) {
+        return priorityDifference;
+    }
+    return pixelDifference || priorityDifference || left.cameraDistance - right.cameraDistance;
+}
+
+function isSimulationSnapPicking() {
+    return state.snapMoveMode || state.tcpSnapMode || (
+        state.zeroPointEdit.active && state.zeroPointEdit.snapMode
+    );
+}
+
+function isTcpMultiPointSnapMode() {
+    return state.tcpSnapMode && state.tcpSnapType === 'multi-point-center';
+}
+
+function setTcpSnapReadout(message) {
+    state.tcpSnapReadoutMessage = message;
+    if (!el.tcpSnapReadout) return;
+    el.tcpSnapReadout.dataset.sourceMessage = message;
+    el.tcpSnapReadout.textContent = uiText(message);
+}
+
+function formatSimulationSnapPoint(point) {
+    return `X ${point.x.toFixed(3)} · Y ${point.y.toFixed(3)} · Z ${point.z.toFixed(3)} mm`;
+}
+
+function resetTcpSnapPoints() {
+    state.tcpSnapPoints = [];
+    updateTcpMultiCenterControls();
+}
+
+function getTcpSnapCenter() {
+    if (!state.tcpSnapPoints.length) return null;
+    const center = new THREE.Vector3();
+    state.tcpSnapPoints.forEach((point) => center.add(point));
+    return center.multiplyScalar(1 / state.tcpSnapPoints.length);
+}
+
+function updateTcpMultiCenterControls() {
+    const multi = isTcpMultiPointSnapMode();
+    const count = state.tcpSnapPoints.length;
+    if (el.tcpMultiCenterControls) el.tcpMultiCenterControls.classList.toggle('hidden', !multi);
+    if (el.tcpMultiCenterCount) {
+        el.tcpMultiCenterCount.textContent = `${uiText('다중 점 선택')} ${count}/4`;
+    }
+    if (el.btnTcpMultiCenterApply) el.btnTcpMultiCenterApply.disabled = !multi || count < 2 || count > 4;
+    if (el.btnTcpMultiCenterReset) el.btnTcpMultiCenterReset.disabled = !multi || count === 0;
+}
+
+function updateTcpSnapUi() {
+    const available = Boolean(state.activeArticulatedModel?.userData?.tcpFrame) && !isMotionActive();
+    if (!available && state.tcpSnapMode) {
+        state.tcpSnapMode = false;
+        invalidateSimulationSnapCandidates();
+        resetTcpSnapPoints();
+        hideSimulationSnapMarker();
+        resetSimulationSnapMarkerCameraScale();
+    }
+    if (el.btnTcpSnap) {
+        el.btnTcpSnap.disabled = !available;
+        el.btnTcpSnap.classList.toggle('active', state.tcpSnapMode);
+        el.btnTcpSnap.setAttribute('aria-pressed', String(state.tcpSnapMode));
+        el.btnTcpSnap.title = uiText(state.tcpSnapMode ? 'TCP 위치 스냅 종료' : 'TCP 위치 스냅');
+    }
+    if (el.tcpSnapType) el.tcpSnapType.disabled = !available;
+    if (el.tcpSnapRadius) el.tcpSnapRadius.disabled = !available;
+    el.canvasContainer?.classList.toggle('tcp-snap-picking', state.tcpSnapMode);
+    updateTcpMultiCenterControls();
+}
+
+function setTcpSnapMode(enabled) {
+    state.tcpSnapMode = Boolean(enabled);
+    if (state.tcpSnapMode) {
+        state.snapMoveMode = false;
+        state.snapLastPointerEvent = null;
+        resetTcpSnapPoints();
+        captureSimulationSnapMarkerReferenceDistance();
+        setStatus('스냅 후보를 계산하는 중입니다...', '#f59e0b');
+        updateSimulationSnapButton();
+        updateTcpSnapUi();
+        void buildSimulationSnapCandidates('tool')
+            .then(() => {
+                if (state.tcpSnapMode) {
+                    setTcpSnapReadout('3D 모델링의 스냅 지점을 클릭하세요.');
+                    setStatus('3D 모델링의 스냅 지점을 클릭하세요.', '#60a5fa');
+                }
+            })
+            .catch((error) => {
+                console.warn('TCP snap candidate generation failed:', error);
+                if (state.tcpSnapMode) {
+                    setTcpSnapMode(false);
+                    setStatus('선택 가능한 스냅 지점을 가리켜 주세요.', '#ef4444');
+                }
+            });
+    } else {
+        invalidateSimulationSnapCandidates();
+        resetTcpSnapPoints();
+        hideSimulationSnapMarker();
+        resetSimulationSnapMarkerCameraScale();
+        setTcpSnapReadout('3D 모델링의 스냅 지점을 클릭하세요.');
+        updateTcpSnapUi();
+    }
+}
+
+function toggleTcpSnapMode() {
+    if (isMotionActive()) return;
+    if (!state.activeArticulatedModel?.userData?.tcpFrame) {
+        setStatus('스냅 이동할 로봇을 먼저 선택하세요.', '#ef4444');
+        return;
+    }
+    if (!state.tcpSnapMode && getSimulationSnapMeshes('tool').length === 0) {
+        setStatus('TCP 스냅할 Tool 모델을 먼저 지정하세요.', '#f59e0b');
+        return;
+    }
+    setTcpSnapMode(!state.tcpSnapMode);
+}
+
 function hideSimulationSnapMarker() {
     state.snapHover = null;
+    state.snapLastPointerEvent = null;
+    if (state.snapPointerMoveFrame !== null) {
+        cancelAnimationFrame(state.snapPointerMoveFrame);
+        state.snapPointerMoveFrame = null;
+    }
     el.snapMarker?.classList.add('hidden');
+}
+
+function updateSimulationSnapMarkerCameraScale() {
+    if (!isSimulationSnapPicking()) return;
+    if (!el.snapMarker || !state.camera || !state.controls) return;
+    const cameraZoom = Math.max(state.camera.zoom || 1, Number.EPSILON);
+    const cameraDistance = state.camera.position.distanceTo(state.controls.target) / cameraZoom;
+    const referenceDistance = state.snapMarkerReferenceDistance;
+    if (!Number.isFinite(cameraDistance) || !Number.isFinite(referenceDistance) || referenceDistance <= 0) return;
+
+    const scale = THREE.MathUtils.clamp(
+        Math.sqrt(cameraDistance / referenceDistance),
+        SNAP_MARKER_CAMERA_SCALE.min,
+        SNAP_MARKER_CAMERA_SCALE.max
+    );
+    el.snapMarker.style.setProperty('--simulation-snap-camera-scale', scale.toFixed(3));
+}
+
+function captureSimulationSnapMarkerReferenceDistance() {
+    if (!state.camera || !state.controls) return;
+    state.snapMarkerReferenceDistance = state.camera.position.distanceTo(state.controls.target)
+        / Math.max(state.camera.zoom || 1, Number.EPSILON);
+    updateSimulationSnapMarkerCameraScale();
+}
+
+function resetSimulationSnapMarkerCameraScale() {
+    state.snapMarkerReferenceDistance = null;
+    el.snapMarker?.style.setProperty('--simulation-snap-camera-scale', '1');
+}
+
+function simulationSnapMeshKey(mesh) {
+    return `${mesh.uuid}:${mesh.geometry.uuid}`;
+}
+
+function scheduleLazySimulationSnapBuild(mesh) {
+    const key = simulationSnapMeshKey(mesh);
+    if (state.snapLazyReadyMeshes.has(key) || state.snapLazyBuildPromises.has(key)) return;
+    const buildSignature = state.snapCandidateModelsSignature;
+    const promise = (async () => {
+        await yieldToAnimationFrame();
+        if (state.snapCandidateModelsSignature !== buildSignature || !isSimulationSnapPicking()) return;
+        const result = buildSimulationSnapResultForMesh(mesh, true);
+        if (state.snapCandidateModelsSignature !== buildSignature) return;
+        const counts = {};
+        state.snapCandidates.forEach((candidate) => {
+            counts[candidate.type] = (counts[candidate.type] || 0) + 1;
+        });
+        result.candidates.forEach((candidate) => {
+            const count = counts[candidate.type] || 0;
+            const limit = SIMULATION_SNAP_MAX_PER_TYPE[candidate.type] || Infinity;
+            if (count >= limit) return;
+            counts[candidate.type] = count + 1;
+            state.snapCandidates.push({
+                type: candidate.type,
+                mesh,
+                localPoint: new THREE.Vector3().fromArray(candidate.point)
+            });
+        });
+        state.snapLazyReadyMeshes.add(key);
+        state.snapScreenIndex = null;
+        state.snapScreenIndexSignature = '';
+        const pointerEvent = state.snapLastPointerEvent;
+        if (pointerEvent && isSimulationSnapPicking()) {
+            requestAnimationFrame(() => {
+                if (isSimulationSnapPicking()) {
+                    showSimulationSnapMarker(findSimulationSnapAtPointer(pointerEvent));
+                }
+            });
+        }
+    })().catch((error) => {
+        if (state.snapCandidateModelsSignature === buildSignature) {
+            state.snapLazyReadyMeshes.add(key);
+        }
+        console.warn('Large-model snap chunk generation failed:', mesh.name, error);
+    }).finally(() => {
+        if (state.snapLazyBuildPromises.get(key) === promise) {
+            state.snapLazyBuildPromises.delete(key);
+        }
+    });
+    state.snapLazyBuildPromises.set(key, promise);
+}
+
+function getLazySimulationSnapMeshAtPointer(pointerX, pointerY, bounds, meshes) {
+    const lazyMeshes = meshes.filter(isLazySimulationSnapMesh);
+    if (!lazyMeshes.length || bounds.width <= 0 || bounds.height <= 0) return null;
+    const pointer = new THREE.Vector2(
+        (pointerX / bounds.width) * 2 - 1,
+        -(pointerY / bounds.height) * 2 + 1
+    );
+    state.snapVisibilityRaycaster.setFromCamera(pointer, state.camera);
+    return state.snapVisibilityRaycaster.intersectObjects(lazyMeshes, false)[0]?.object || null;
 }
 
 function isSimulationSnapCandidateVisible(candidate, projected, meshes) {
@@ -502,23 +952,111 @@ function isSimulationSnapCandidateVisible(candidate, projected, meshes) {
     return candidateDistance <= frontHit.distance + Math.max(worldUnitsPerPixel * 2.5, 0.001);
 }
 
+function simulationSnapMatrixSignature(matrix) {
+    return matrix.elements.join(',');
+}
+
+function getSimulationSnapScreenIndex(meshes, bounds) {
+    const signature = [
+        state.snapCandidateModelsSignature,
+        `${bounds.width}x${bounds.height}`,
+        simulationSnapMatrixSignature(state.camera.projectionMatrix),
+        simulationSnapMatrixSignature(state.camera.matrixWorldInverse),
+        ...meshes.map((mesh) => `${mesh.uuid}:${simulationSnapMatrixSignature(mesh.matrixWorld)}`)
+    ].join('|');
+    if (state.snapScreenIndex && state.snapScreenIndexSignature === signature) {
+        return state.snapScreenIndex;
+    }
+
+    const buckets = new Map();
+    const worldPoint = new THREE.Vector3();
+    const projected = new THREE.Vector3();
+    const viewportMargin = Math.max(
+        SNAP_RADIUS_PX,
+        Number(el.tcpSnapRadius?.max) || state.tcpSnapRadiusPx
+    );
+    state.snapCandidates.forEach((candidate) => {
+        if (!candidate.mesh.visible) return;
+        worldPoint.copy(candidate.localPoint).applyMatrix4(candidate.mesh.matrixWorld);
+        projected.copy(worldPoint).project(state.camera);
+        if (projected.z < -1 || projected.z > 1) return;
+        const screenX = (projected.x * 0.5 + 0.5) * bounds.width;
+        const screenY = (-projected.y * 0.5 + 0.5) * bounds.height;
+        if (screenX < -viewportMargin || screenX > bounds.width + viewportMargin
+            || screenY < -viewportMargin || screenY > bounds.height + viewportMargin) return;
+        const cellX = Math.floor(screenX / SNAP_SCREEN_INDEX_CELL_PX);
+        const cellY = Math.floor(screenY / SNAP_SCREEN_INDEX_CELL_PX);
+        const key = `${cellX}:${cellY}`;
+        if (!buckets.has(key)) buckets.set(key, []);
+        buckets.get(key).push(candidate);
+    });
+
+    state.snapScreenIndex = buckets;
+    state.snapScreenIndexSignature = signature;
+    return buckets;
+}
+
+function getSimulationSnapCandidatesNearPointer(meshes, bounds, pointerX, pointerY, radius) {
+    const buckets = getSimulationSnapScreenIndex(meshes, bounds);
+    const minCellX = Math.floor((pointerX - radius) / SNAP_SCREEN_INDEX_CELL_PX);
+    const maxCellX = Math.floor((pointerX + radius) / SNAP_SCREEN_INDEX_CELL_PX);
+    const minCellY = Math.floor((pointerY - radius) / SNAP_SCREEN_INDEX_CELL_PX);
+    const maxCellY = Math.floor((pointerY + radius) / SNAP_SCREEN_INDEX_CELL_PX);
+    const nearby = [];
+    for (let cellX = minCellX; cellX <= maxCellX; cellX += 1) {
+        for (let cellY = minCellY; cellY <= maxCellY; cellY += 1) {
+            const bucket = buckets.get(`${cellX}:${cellY}`);
+            if (bucket) bucket.forEach((candidate) => nearby.push(candidate));
+        }
+    }
+    return nearby;
+}
+
 function findSimulationSnapAtPointer(pointerEvent) {
-    const meshes = buildSimulationSnapCandidates();
-    if (!meshes.length || !state.snapCandidates.length) return null;
+    const meshes = getPreparedSimulationSnapMeshes();
+    if (!meshes.length) return null;
+    state.camera.updateMatrixWorld(true);
     state.scene.updateMatrixWorld(true);
     const bounds = state.renderer.domElement.getBoundingClientRect();
     const pointerX = pointerEvent.clientX - bounds.left;
     const pointerY = pointerEvent.clientY - bounds.top;
+    const lazyMesh = getLazySimulationSnapMeshAtPointer(pointerX, pointerY, bounds, meshes);
+    if (lazyMesh) {
+        const lazyKey = simulationSnapMeshKey(lazyMesh);
+        if (!state.snapLazyReadyMeshes.has(lazyKey)) {
+            scheduleLazySimulationSnapBuild(lazyMesh);
+            return null;
+        }
+    }
+    if (!state.snapCandidates.length) return null;
+    const tcpPicking = state.tcpSnapMode;
+    const zeroPointPicking = state.zeroPointEdit.active && state.zeroPointEdit.snapMode;
+    const requestedType = zeroPointPicking ? state.zeroPointEdit.snapType : state.tcpSnapType;
+    const requiredType = (tcpPicking || zeroPointPicking)
+        && requestedType !== 'auto' && requestedType !== 'multi-point-center'
+        ? requestedType
+        : null;
+    const snapRadius = zeroPointPicking
+        ? state.zeroPointEdit.snapRadiusPx
+        : tcpPicking ? state.tcpSnapRadiusPx : SNAP_RADIUS_PX;
     const nearby = [];
-    state.snapCandidates.forEach((candidate) => {
+    const candidatesNearPointer = getSimulationSnapCandidatesNearPointer(
+        meshes,
+        bounds,
+        pointerX,
+        pointerY,
+        snapRadius
+    );
+    candidatesNearPointer.forEach((candidate) => {
         if (!candidate.mesh.visible) return;
+        if (requiredType && candidate.type !== requiredType) return;
         const worldPoint = candidate.localPoint.clone().applyMatrix4(candidate.mesh.matrixWorld);
         const projected = worldPoint.clone().project(state.camera);
         if (projected.z < -1 || projected.z > 1) return;
         const screenX = (projected.x * 0.5 + 0.5) * bounds.width;
         const screenY = (-projected.y * 0.5 + 0.5) * bounds.height;
         const pixelDistance = Math.hypot(screenX - pointerX, screenY - pointerY);
-        if (pixelDistance > SNAP_RADIUS_PX) return;
+        if (pixelDistance > snapRadius) return;
         nearby.push({
             ...candidate,
             worldPoint,
@@ -526,11 +1064,12 @@ function findSimulationSnapAtPointer(pointerEvent) {
             screenX,
             screenY,
             pixelDistance,
-            cameraDistance: state.camera.position.distanceTo(worldPoint),
-            score: pixelDistance + snapTypeInfo(candidate.type).priority * 0.08
+            cameraDistance: state.camera.position.distanceTo(worldPoint)
         });
     });
-    nearby.sort((left, right) => left.score - right.score || left.cameraDistance - right.cameraDistance);
+    nearby.sort(requiredType
+        ? (left, right) => left.pixelDistance - right.pixelDistance || left.cameraDistance - right.cameraDistance
+        : compareSimulationSnapCandidates);
     return nearby.find((candidate) => isSimulationSnapCandidateVisible(candidate, candidate.projected, meshes)) || null;
 }
 
@@ -544,6 +1083,7 @@ function showSimulationSnapMarker(snap) {
     el.snapMarker.style.left = `${snap.screenX}px`;
     el.snapMarker.style.top = `${snap.screenY}px`;
     el.snapMarker.classList.toggle('label-left', snap.screenX > el.canvasContainer.clientWidth - 190);
+    el.snapMarker.dataset.snapType = snap.type;
     const symbol = el.snapMarker.querySelector('span');
     if (symbol) symbol.textContent = info.symbol;
     if (el.snapLabel) {
@@ -553,8 +1093,332 @@ function showSimulationSnapMarker(snap) {
 }
 
 function handleSimulationSnapPointerMove(event) {
-    if (!state.snapMoveMode) return;
-    showSimulationSnapMarker(findSimulationSnapAtPointer(event));
+    if (!isSimulationSnapPicking()) return;
+    state.snapLastPointerEvent = { clientX: event.clientX, clientY: event.clientY };
+    if (state.snapPointerMoveFrame !== null) return;
+    state.snapPointerMoveFrame = requestAnimationFrame(() => {
+        state.snapPointerMoveFrame = null;
+        const pointerEvent = state.snapLastPointerEvent;
+        if (pointerEvent && isSimulationSnapPicking()) {
+            showSimulationSnapMarker(findSimulationSnapAtPointer(pointerEvent));
+        }
+    });
+}
+
+function applyTcpSnapPoint(worldPoint, selectedLabelKey = '스냅') {
+    const robot = state.activeArticulatedModel;
+    const flangeFrame = getRobotToolMountFrame(robot);
+    if (!robot?.userData?.tcpFrame || !flangeFrame) return false;
+    const localPoint = flangeFrame.worldToLocal(worldPoint.clone());
+    ['x', 'y', 'z'].forEach((axis) => {
+        const input = el.tcpOffsetInputs[axis];
+        if (input) input.value = Number(localPoint[axis].toFixed(3));
+    });
+    updateTcpProfileLive();
+    setTcpSnapMode(false);
+    setTcpProfileStatus('TCP 위치를 스냅했습니다. 적용을 눌러 저장하세요.', 'success');
+    setStatus(`${uiText(selectedLabelKey)} ${uiText('TCP 위치 스냅')}`, '#22c55e');
+    return true;
+}
+
+function handleTcpSnapSelection(snap) {
+    if (!snap) return false;
+    if (!isTcpMultiPointSnapMode()) {
+        return applyTcpSnapPoint(snap.worldPoint, snapTypeInfo(snap.type).label);
+    }
+    if (state.tcpSnapPoints.length >= 4) {
+        setStatus('최대 4개까지 선택할 수 있습니다.', '#f59e0b');
+        return false;
+    }
+    const duplicateTolerance = 1e-4;
+    if (state.tcpSnapPoints.some((point) => point.distanceTo(snap.worldPoint) <= duplicateTolerance)) {
+        setStatus('중복된 스냅 점입니다.', '#f59e0b');
+        return false;
+    }
+    state.tcpSnapPoints.push(snap.worldPoint.clone());
+    updateTcpMultiCenterControls();
+    const center = getTcpSnapCenter();
+    setTcpSnapReadout(center && state.tcpSnapPoints.length >= 2
+        ? `${uiText('다중 점 중심점')} · ${formatSimulationSnapPoint(center)}`
+        : `${uiText('다중 점 선택')} ${state.tcpSnapPoints.length}/4 · ${uiText('스냅 점 2~4개를 선택하세요.')}`);
+    setStatus(`${uiText('다중 점 선택')} ${state.tcpSnapPoints.length}/4`, '#60a5fa');
+    return true;
+}
+
+function applyTcpMultiPointCenter() {
+    if (!isTcpMultiPointSnapMode() || state.tcpSnapPoints.length < 2) return;
+    const center = getTcpSnapCenter();
+    if (center) applyTcpSnapPoint(center, '다중 점 중심점');
+}
+
+function isZeroPointMultiPointSnapMode() {
+    return state.zeroPointEdit.active && state.zeroPointEdit.snapType === 'multi-point-center';
+}
+
+function readZeroPointSnapType() {
+    return el.zeroPointSnapType?.selectedOptions?.[0]?.dataset.zeroSnapType
+        || state.zeroPointEdit.snapType
+        || 'auto';
+}
+
+function setZeroPointSnapReadout(message) {
+    state.zeroPointEdit.snapReadoutMessage = message;
+    if (!el.zeroPointSnapReadout) return;
+    el.zeroPointSnapReadout.dataset.sourceMessage = message;
+    el.zeroPointSnapReadout.textContent = uiText(message);
+}
+
+function resetZeroPointSnapPoints() {
+    state.zeroPointEdit.snapPoints = [];
+    updateZeroPointMultiCenterControls();
+}
+
+function updateZeroPointMultiCenterControls() {
+    const multi = isZeroPointMultiPointSnapMode();
+    const count = state.zeroPointEdit.snapPoints.length;
+    el.zeroPointMultiCenterControls?.classList.toggle('hidden', !multi);
+    if (el.zeroPointMultiCenterCount) {
+        el.zeroPointMultiCenterCount.textContent = `${uiText('다중 점 선택')} ${count}/4`;
+    }
+    if (el.btnZeroPointMultiCenterApply) {
+        el.btnZeroPointMultiCenterApply.disabled = !multi || count < 2 || count > 4;
+    }
+    if (el.btnZeroPointMultiCenterReset) {
+        el.btnZeroPointMultiCenterReset.disabled = !multi || count === 0;
+    }
+}
+
+function getZeroPointSnapCenter() {
+    if (!state.zeroPointEdit.snapPoints.length) return null;
+    const center = new THREE.Vector3();
+    state.zeroPointEdit.snapPoints.forEach((point) => center.add(point));
+    return center.multiplyScalar(1 / state.zeroPointEdit.snapPoints.length);
+}
+
+function getZeroPointRotationQuaternion() {
+    return new THREE.Quaternion().setFromEuler(new THREE.Euler(
+        THREE.MathUtils.degToRad(state.zeroPointEdit.rotationDegrees.x),
+        THREE.MathUtils.degToRad(state.zeroPointEdit.rotationDegrees.y),
+        THREE.MathUtils.degToRad(state.zeroPointEdit.rotationDegrees.z),
+        'XYZ'
+    )).normalize();
+}
+
+function updateZeroPointEditorInputs() {
+    const { origin, rotationDegrees } = state.zeroPointEdit;
+    ['x', 'y', 'z'].forEach((axis) => {
+        const originInput = el.zeroPointOriginInputs[axis];
+        const rotationInput = el.zeroPointRotationInputs[axis];
+        if (originInput && originInput !== document.activeElement) {
+            originInput.value = formatTransformNumber(origin[axis]);
+        }
+        if (rotationInput && rotationInput !== document.activeElement) {
+            rotationInput.value = formatTransformNumber(normalizeDegrees(rotationDegrees[axis]));
+        }
+    });
+}
+
+function updateZeroPointAxisDirections() {
+    const quaternion = state.zeroPointEdit.frame?.quaternion || new THREE.Quaternion();
+    const directions = {
+        x: new THREE.Vector3(1, 0, 0).applyQuaternion(quaternion),
+        y: new THREE.Vector3(0, 1, 0).applyQuaternion(quaternion),
+        z: new THREE.Vector3(0, 0, 1).applyQuaternion(quaternion)
+    };
+    Object.entries(directions).forEach(([axis, direction]) => {
+        const output = el.zeroPointAxisDirections?.querySelector(`[data-zero-axis-direction="${axis}"]`);
+        if (output) output.textContent = direction.toArray().map((value) => value.toFixed(3)).join(', ');
+    });
+}
+
+function captureZeroPointModelState(model) {
+    if (!model) return null;
+    if (model.matrixAutoUpdate !== false) model.updateMatrix();
+    return {
+        position: model.position.clone(),
+        quaternion: model.quaternion.clone(),
+        scale: model.scale.clone(),
+        matrix: model.matrix.toArray(),
+        matrixAutoUpdate: model.matrixAutoUpdate !== false,
+        childTransforms: [...model.children].map((child) => {
+            if (child.matrixAutoUpdate !== false) child.updateMatrix();
+            return {
+                child,
+                matrix: child.matrix.toArray(),
+                matrixAutoUpdate: child.matrixAutoUpdate !== false
+            };
+        })
+    };
+}
+
+function restoreZeroPointModelState(model, snapshot, invalidate = true) {
+    if (!model || !snapshot) return;
+    model.position.copy(snapshot.position);
+    model.quaternion.copy(snapshot.quaternion);
+    model.scale.copy(snapshot.scale);
+    model.matrixAutoUpdate = snapshot.matrixAutoUpdate !== false;
+    if (model.matrixAutoUpdate) model.updateMatrix();
+    else model.matrix.fromArray(snapshot.matrix);
+    snapshot.childTransforms.forEach(({ child, matrix, matrixAutoUpdate }) => {
+        if (!child || !model.children.includes(child)) return;
+        child.matrix.fromArray(matrix);
+        if (matrixAutoUpdate === false) {
+            child.matrixAutoUpdate = false;
+            child.matrixWorldNeedsUpdate = true;
+        } else {
+            child.matrix.decompose(child.position, child.quaternion, child.scale);
+            child.matrixAutoUpdate = true;
+        }
+    });
+    model.updateMatrixWorld(true);
+    if (invalidate) invalidateSimulationSnapCandidates();
+}
+
+function applyZeroPointModelPreview() {
+    const edit = state.zeroPointEdit;
+    if (!edit.active || !edit.model || !edit.baseModelState) return;
+    restoreZeroPointModelState(edit.model, edit.baseModelState, false);
+    applyModelZeroPointFrame(edit.model, edit.origin, edit.rotationDegrees);
+}
+
+function updateZeroPointCurrentReadout(worldPosition) {
+    if (!el.zeroPointCurrentReadout || !worldPosition) return;
+    el.zeroPointCurrentReadout.textContent = `${uiText('현재 영점')} · X ${worldPosition.x.toFixed(3)}, Y ${worldPosition.y.toFixed(3)}, Z ${worldPosition.z.toFixed(3)} mm`;
+}
+
+function updateZeroPointCurrentMarker() {
+    const marker = state.zeroPointEdit.marker;
+    const model = state.zeroPointEdit.active ? state.zeroPointEdit.model : null;
+    if (!marker || !model?.userData?.uploaded || model.visible === false || !state.models.includes(model)) {
+        if (marker) marker.visible = false;
+        return;
+    }
+    model.updateMatrixWorld(true);
+    marker.position.copy(model.getWorldPosition(new THREE.Vector3()));
+    marker.visible = true;
+    if (state.zeroPointEdit.active) updateZeroPointCurrentReadout(marker.position);
+}
+
+function refreshZeroPointSnapCandidates() {
+    const edit = state.zeroPointEdit;
+    if (!edit.active || !edit.snapMode) return;
+    void buildSimulationSnapCandidates('zero')
+        .then(() => {
+            if (!edit.active || !edit.snapMode || !state.snapLastPointerEvent) return;
+            showSimulationSnapMarker(findSimulationSnapAtPointer(state.snapLastPointerEvent));
+        })
+        .catch((error) => console.warn('Zero point snap candidate refresh failed:', error));
+}
+
+function updateZeroPointFrameFromState() {
+    const edit = state.zeroPointEdit;
+    if (!edit.active || !edit.model || !edit.frame) return;
+    applyZeroPointModelPreview();
+    edit.model.updateMatrixWorld(true);
+    const rootPosition = edit.model.getWorldPosition(new THREE.Vector3());
+    const rootQuaternion = edit.model.getWorldQuaternion(new THREE.Quaternion());
+    edit.frame.position.copy(rootPosition);
+    edit.frame.quaternion.copy(rootQuaternion).multiply(getZeroPointRotationQuaternion()).normalize();
+    edit.frame.updateMatrixWorld(true);
+    edit.axes?.updateMatrixWorld(true);
+    updateZeroPointAxisDirections();
+    updateZeroPointCurrentReadout(rootPosition);
+    updateZeroPointCurrentMarker();
+    refreshZeroPointSnapCandidates();
+}
+
+function setZeroPointSnapMode(enabled) {
+    const edit = state.zeroPointEdit;
+    if (!edit.active || !edit.model) return;
+    edit.snapMode = Boolean(enabled);
+    if (edit.snapMode) {
+        state.snapMoveMode = false;
+        if (state.tcpSnapMode) setTcpSnapMode(false);
+        state.snapLastPointerEvent = null;
+        resetZeroPointSnapPoints();
+        captureSimulationSnapMarkerReferenceDistance();
+        setStatus('영점 스냅 후보를 계산하는 중입니다...', '#f59e0b');
+        if (el.btnZeroPointSnap) {
+            el.btnZeroPointSnap.classList.add('active');
+            el.btnZeroPointSnap.setAttribute('aria-pressed', 'true');
+        }
+        void buildSimulationSnapCandidates('zero')
+            .then(() => {
+                if (!edit.active || !edit.snapMode) return;
+                setZeroPointSnapReadout(isZeroPointMultiPointSnapMode()
+                    ? '스냅 점 2~4개를 선택하세요.'
+                    : '모델 형상 위로 이동하면 스냅 후보가 표시됩니다.');
+                setStatus('영점으로 지정할 모델 스냅 위치를 선택하세요.', '#60a5fa');
+            })
+            .catch((error) => {
+                console.warn('Zero point snap candidate generation failed:', error);
+                if (edit.active && edit.snapMode) {
+                    setZeroPointSnapMode(false);
+                    setStatus('선택 가능한 스냅 지점을 계산하지 못했습니다.', '#ef4444');
+                }
+            });
+    } else {
+        invalidateSimulationSnapCandidates();
+        resetZeroPointSnapPoints();
+        hideSimulationSnapMarker();
+        resetSimulationSnapMarkerCameraScale();
+        setZeroPointSnapReadout('스냅 위치 선택을 누른 뒤 모델 형상 위로 포인터를 이동하세요.');
+        if (el.btnZeroPointSnap) {
+            el.btnZeroPointSnap.classList.remove('active');
+            el.btnZeroPointSnap.setAttribute('aria-pressed', 'false');
+        }
+    }
+}
+
+function getZeroPointBaselineLocalPoint(worldPoint) {
+    const edit = state.zeroPointEdit;
+    if (!edit.model) return null;
+    const currentLocalPoint = edit.model.worldToLocal(worldPoint.clone());
+    return currentLocalPoint.applyQuaternion(getZeroPointRotationQuaternion()).add(edit.origin);
+}
+
+function commitZeroPointSnapPoint(worldPoint, selectedLabelKey = '스냅') {
+    const edit = state.zeroPointEdit;
+    if (!edit.model) return false;
+    const localPoint = getZeroPointBaselineLocalPoint(worldPoint);
+    if (!localPoint) return false;
+    edit.origin.copy(localPoint);
+    updateZeroPointEditorInputs();
+    updateZeroPointFrameFromState();
+    setZeroPointSnapMode(false);
+    setStatus(`${uiText(selectedLabelKey)} ${uiText('영점 위치에 적용되었습니다.')}`, '#22c55e');
+    setZeroPointSnapReadout(`${uiText(selectedLabelKey)} · X ${localPoint.x.toFixed(3)}, Y ${localPoint.y.toFixed(3)}, Z ${localPoint.z.toFixed(3)} mm`);
+    return true;
+}
+
+function handleZeroPointSnapSelection(snap) {
+    if (!snap || !state.zeroPointEdit.active) return false;
+    if (!isZeroPointMultiPointSnapMode()) {
+        return commitZeroPointSnapPoint(snap.worldPoint, snapTypeInfo(snap.type).label);
+    }
+    const edit = state.zeroPointEdit;
+    if (edit.snapPoints.length >= 4) {
+        setStatus('최대 4개까지 선택할 수 있습니다.', '#f59e0b');
+        return false;
+    }
+    if (edit.snapPoints.some((point) => point.distanceTo(snap.worldPoint) <= 1e-4)) {
+        setStatus('중복된 스냅 점입니다.', '#f59e0b');
+        return false;
+    }
+    edit.snapPoints.push(snap.worldPoint.clone());
+    updateZeroPointMultiCenterControls();
+    const center = getZeroPointSnapCenter();
+    setZeroPointSnapReadout(center && edit.snapPoints.length >= 2
+        ? `${uiText('다중 점 중심점')} · X ${center.x.toFixed(3)}, Y ${center.y.toFixed(3)}, Z ${center.z.toFixed(3)} mm`
+        : `${uiText('다중 점 선택')} ${edit.snapPoints.length}/4 · ${uiText('스냅 점 2~4개를 선택하세요.')}`);
+    setStatus(`${uiText('다중 점 선택')} ${edit.snapPoints.length}/4`, '#60a5fa');
+    return true;
+}
+
+function applyZeroPointMultiCenter() {
+    if (!isZeroPointMultiPointSnapMode() || state.zeroPointEdit.snapPoints.length < 2) return;
+    const center = getZeroPointSnapCenter();
+    if (center) commitZeroPointSnapPoint(center, '다중 점 중심점');
 }
 
 function moveRobotTcpToSimulationSnap(snap) {
@@ -602,7 +1466,7 @@ function moveRobotTcpToSimulationSnap(snap) {
 }
 
 function handleSimulationSnapClick(event) {
-    if (!state.snapMoveMode || event.button !== 0) return;
+    if (!isSimulationSnapPicking() || event.button !== 0) return;
     const snap = findSimulationSnapAtPointer(event);
     if (!snap) {
         setStatus('선택 가능한 스냅 지점을 가리켜 주세요.', '#f59e0b');
@@ -610,7 +1474,13 @@ function handleSimulationSnapClick(event) {
     }
     event.preventDefault();
     event.stopPropagation();
-    if (moveRobotTcpToSimulationSnap(snap)) showSimulationSnapMarker(snap);
+    if (state.zeroPointEdit.active && state.zeroPointEdit.snapMode) {
+        handleZeroPointSnapSelection(snap);
+    } else if (state.tcpSnapMode) {
+        handleTcpSnapSelection(snap);
+    } else if (moveRobotTcpToSimulationSnap(snap)) {
+        showSimulationSnapMarker(snap);
+    }
 }
 
 function updateSimulationSnapButton() {
@@ -618,7 +1488,9 @@ function updateSimulationSnapButton() {
     const available = !isMotionActive();
     if (!available && state.snapMoveMode) {
         state.snapMoveMode = false;
+        invalidateSimulationSnapCandidates();
         hideSimulationSnapMarker();
+        resetSimulationSnapMarkerCameraScale();
     }
     el.btnSnapMove.disabled = !available;
     el.btnSnapMove.classList.toggle('active', state.snapMoveMode);
@@ -626,18 +1498,25 @@ function updateSimulationSnapButton() {
     el.btnSnapMove.title = uiText(state.snapMoveMode ? '스냅 이동 종료' : '스냅 이동');
 }
 
-function toggleSimulationSnapMoveMode() {
+async function toggleSimulationSnapMoveMode() {
     if (isMotionActive()) return;
     state.snapMoveMode = !state.snapMoveMode;
     if (state.snapMoveMode) {
+        if (state.tcpSnapMode) setTcpSnapMode(false);
         clearJogModeSelectionForSnap();
-        buildSimulationSnapCandidates();
-        setStatus('3D 모델링의 스냅 지점을 클릭하세요.', '#60a5fa');
+        captureSimulationSnapMarkerReferenceDistance();
+        setStatus('스냅 후보를 계산하는 중입니다...', '#f59e0b');
+        updateSimulationSnapButton();
+        await buildSimulationSnapCandidates();
+        if (state.snapMoveMode) setStatus('3D 모델링의 스냅 지점을 클릭하세요.', '#60a5fa');
     } else {
+        invalidateSimulationSnapCandidates();
         hideSimulationSnapMarker();
+        resetSimulationSnapMarkerCameraScale();
         setStatus('스냅 이동을 종료했습니다.', '#22c55e');
     }
     updateSimulationSnapButton();
+    updateTcpSnapUi();
 }
 
 function addGridLabels() {
@@ -686,6 +1565,7 @@ function setupControls() {
     state.controls.enableDamping = false;
 
     state.transformControls = new TransformControls(state.camera, state.renderer.domElement);
+    enableContinuousTransformRotation(state.transformControls, THREE);
     state.transformControls.addEventListener('dragging-changed', (event) => {
         state.controls.enabled = !event.value;
     });
@@ -704,6 +1584,60 @@ function setupControls() {
     state.transformControls.enabled = false;
     state.scene.add(state.transformControls);
 
+    const zeroPointEdit = state.zeroPointEdit;
+    zeroPointEdit.frame = new THREE.Object3D();
+    zeroPointEdit.frame.name = 'Model zero point frame';
+    zeroPointEdit.axes = new THREE.AxesHelper(1);
+    applyAxesHelperColors(zeroPointEdit.axes);
+    zeroPointEdit.axes.renderOrder = 25;
+    zeroPointEdit.frame.add(zeroPointEdit.axes);
+    zeroPointEdit.frame.visible = false;
+    state.scene.add(zeroPointEdit.frame);
+
+    zeroPointEdit.marker = new THREE.Mesh(
+        new THREE.SphereGeometry(1, 16, 10),
+        new THREE.MeshBasicMaterial({
+            color: 0xfacc15,
+            depthTest: false,
+            depthWrite: false,
+            transparent: true,
+            opacity: 0.96
+        })
+    );
+    zeroPointEdit.marker.name = 'Current model zero point';
+    zeroPointEdit.marker.renderOrder = 26;
+    zeroPointEdit.marker.scale.setScalar(5);
+    zeroPointEdit.marker.visible = false;
+    state.scene.add(zeroPointEdit.marker);
+
+    zeroPointEdit.transformControls = new TransformControls(state.camera, state.renderer.domElement);
+    zeroPointEdit.transformControls.setMode('rotate');
+    zeroPointEdit.transformControls.setSpace('local');
+    zeroPointEdit.transformControls.setSize(0.82);
+    enableContinuousTransformRotation(zeroPointEdit.transformControls, THREE);
+    removeRotationScreenHandle(zeroPointEdit.transformControls);
+    applyTransformControlColors(zeroPointEdit.transformControls);
+    zeroPointEdit.transformControls.visible = false;
+    zeroPointEdit.transformControls.enabled = false;
+    zeroPointEdit.transformControls.addEventListener('dragging-changed', (event) => {
+        state.controls.enabled = !event.value;
+    });
+    zeroPointEdit.transformControls.addEventListener('objectChange', () => {
+        if (!zeroPointEdit.active || !zeroPointEdit.frame) return;
+        const deltaQuaternion = zeroPointEdit.baseWorldQuaternion.clone().invert()
+            .multiply(zeroPointEdit.frame.getWorldQuaternion(new THREE.Quaternion()))
+            .normalize();
+        const euler = new THREE.Euler().setFromQuaternion(deltaQuaternion, 'XYZ');
+        zeroPointEdit.rotationDegrees.set(
+            THREE.MathUtils.radToDeg(euler.x),
+            THREE.MathUtils.radToDeg(euler.y),
+            THREE.MathUtils.radToDeg(euler.z)
+        );
+        updateZeroPointEditorInputs();
+        updateZeroPointFrameFromState();
+    });
+    state.scene.add(zeroPointEdit.transformControls);
+
     setupBaseJogTransformControls();
 }
 
@@ -713,6 +1647,7 @@ function setupBaseJogTransformControls() {
     state.baseJogGizmoTarget = target;
 
     const controls = new TransformControls(state.camera, state.renderer.domElement);
+    enableContinuousTransformRotation(controls, THREE);
     controls.setMode(state.baseJogGizmoMode);
     controls.setSpace('local');
     controls.visible = false;
@@ -762,6 +1697,14 @@ function enableHalfStepWheel(input, onStart = null, onEnd = null) {
 }
 
 function setupEventListeners() {
+    state.tcpSnapType = el.tcpSnapType?.value || state.tcpSnapType;
+    state.tcpSnapRadiusPx = Number(el.tcpSnapRadius?.value) || state.tcpSnapRadiusPx;
+    if (el.tcpSnapRadiusValue) el.tcpSnapRadiusValue.textContent = `${state.tcpSnapRadiusPx} px`;
+    state.zeroPointEdit.snapType = readZeroPointSnapType();
+    state.zeroPointEdit.snapRadiusPx = Number(el.zeroPointSnapRadius?.value) || state.zeroPointEdit.snapRadiusPx;
+    if (el.zeroPointSnapRadiusValue) {
+        el.zeroPointSnapRadiusValue.textContent = `${state.zeroPointEdit.snapRadiusPx} px`;
+    }
     window.addEventListener('resize', onResize);
     document.addEventListener('pointermove', handleFullscreenUiPointerMove);
     document.addEventListener('inorobot:i18nready', refreshLocalizedControls);
@@ -776,6 +1719,32 @@ function setupEventListeners() {
     el.btnFullscreenMode?.addEventListener('click', () => setFullscreenUiMode(!state.fullscreenUiMode));
     el.btnPositionExport?.addEventListener('click', exportPositionPoints);
     el.btnSnapMove?.addEventListener('click', toggleSimulationSnapMoveMode);
+    el.btnTcpSnap?.addEventListener('click', toggleTcpSnapMode);
+    el.tcpSnapType?.addEventListener('change', () => {
+        state.tcpSnapType = el.tcpSnapType.value || 'auto';
+        resetTcpSnapPoints();
+        updateTcpMultiCenterControls();
+        if (state.tcpSnapMode && state.tcpSnapType === 'multi-point-center') {
+            setTcpSnapReadout('스냅 점 2~4개를 선택하세요.');
+        } else if (state.tcpSnapMode) {
+            setTcpSnapReadout('3D 모델링의 스냅 지점을 클릭하세요.');
+        }
+        if (state.tcpSnapMode && state.snapLastPointerEvent) {
+            showSimulationSnapMarker(findSimulationSnapAtPointer(state.snapLastPointerEvent));
+        }
+    });
+    el.tcpSnapRadius?.addEventListener('input', () => {
+        state.tcpSnapRadiusPx = Number(el.tcpSnapRadius.value) || 16;
+        if (el.tcpSnapRadiusValue) el.tcpSnapRadiusValue.textContent = `${state.tcpSnapRadiusPx} px`;
+        if (state.tcpSnapMode && state.snapLastPointerEvent) {
+            showSimulationSnapMarker(findSimulationSnapAtPointer(state.snapLastPointerEvent));
+        }
+    });
+    el.btnTcpMultiCenterApply?.addEventListener('click', applyTcpMultiPointCenter);
+    el.btnTcpMultiCenterReset?.addEventListener('click', () => {
+        resetTcpSnapPoints();
+        if (state.tcpSnapMode) setTcpSnapReadout('스냅 점 2~4개를 선택하세요.');
+    });
     state.renderer.domElement.addEventListener('pointermove', handleSimulationSnapPointerMove);
     state.renderer.domElement.addEventListener('pointerleave', hideSimulationSnapMarker);
     state.renderer.domElement.addEventListener('click', handleSimulationSnapClick);
@@ -794,11 +1763,54 @@ function setupEventListeners() {
     });
 
     el.modelTree?.addEventListener('click', (event) => {
+        const partButton = event.target.closest('[data-model-part-id]');
+        if (partButton) {
+            const match = findImportedModelPart(partButton.dataset.modelPartId);
+            if (match) {
+                commitPendingHistory('수치 모델 변환', 'pendingNumericHistory');
+                selectSceneModelPart(match.model, match.part);
+            }
+            return;
+        }
         const button = event.target.closest('[data-model-tree-id]');
         if (!button) return;
         commitPendingHistory('수치 모델 변환', 'pendingNumericHistory');
         const model = state.models.find((candidate) => candidate.userData.modelTreeId === button.dataset.modelTreeId);
         if (model) selectSceneModel(model);
+    });
+    el.modelTree?.addEventListener('change', (event) => {
+        const checkbox = event.target.closest('[data-model-part-visibility]');
+        if (!checkbox) return;
+        const match = findImportedModelPart(checkbox.dataset.modelPartVisibility);
+        if (match) setModelPartVisibility(match.model, match.part, checkbox.checked);
+    });
+    el.modelTree?.addEventListener('contextmenu', (event) => {
+        if (isMotionActive()) return;
+        const partButton = event.target.closest('[data-model-part-id]');
+        const partVisibility = event.target.closest('[data-model-part-visibility]');
+        const partId = partButton?.dataset.modelPartId || partVisibility?.dataset.modelPartVisibility;
+        const partMatch = partId ? findImportedModelPart(partId) : null;
+        if (partId && !partMatch) return;
+        const button = event.target.closest('[data-model-tree-id]');
+        const model = partMatch?.model || state.models.find((candidate) => candidate.userData.modelTreeId === button?.dataset.modelTreeId);
+        if (!model?.userData?.uploaded) return;
+        event.preventDefault();
+        commitPendingHistory('수치 모델 변환', 'pendingNumericHistory');
+        if (partMatch) selectSceneModelPart(partMatch.model, partMatch.part);
+        else selectSceneModel(model);
+        openModelContextMenu(event, model, partMatch?.part || null);
+    });
+    el.modelChangeZeroPoint?.addEventListener('click', () => {
+        const target = getModelContextTarget();
+        closeModelContextMenu();
+        if (target?.model && !target.part) openZeroPointEditor(target.model);
+    });
+    el.modelColorPicker?.addEventListener('input', () => {
+        const target = getModelContextTarget();
+        if (target) applyImportedModelColor(target.model, target.part, el.modelColorPicker.value);
+    });
+    el.modelColorPicker?.addEventListener('change', () => {
+        closeModelContextMenu();
     });
     el.transformModeButtons.forEach((button) => {
         button.addEventListener('click', () => toggleSelectedTransformMode(button.dataset.transformMode));
@@ -823,6 +1835,48 @@ function setupEventListeners() {
         commitPendingHistory('수치 모델 변환', 'pendingNumericHistory');
         updateSelectedModelTransformInputs();
     });
+    el.btnZeroPointSnap?.addEventListener('click', () => {
+        if (!state.zeroPointEdit.active) return;
+        setZeroPointSnapMode(!state.zeroPointEdit.snapMode);
+    });
+    el.zeroPointSnapType?.addEventListener('change', () => {
+        state.zeroPointEdit.snapType = readZeroPointSnapType();
+        resetZeroPointSnapPoints();
+        if (state.zeroPointEdit.snapMode) {
+            setZeroPointSnapReadout(isZeroPointMultiPointSnapMode()
+                ? '스냅 점 2~4개를 선택하세요.'
+                : '모델 형상 위로 이동하면 스냅 후보가 표시됩니다.');
+            if (state.snapLastPointerEvent) {
+                showSimulationSnapMarker(findSimulationSnapAtPointer(state.snapLastPointerEvent));
+            }
+        }
+    });
+    el.zeroPointSnapRadius?.addEventListener('input', () => {
+        state.zeroPointEdit.snapRadiusPx = Number(el.zeroPointSnapRadius.value) || 16;
+        if (el.zeroPointSnapRadiusValue) {
+            el.zeroPointSnapRadiusValue.textContent = `${state.zeroPointEdit.snapRadiusPx} px`;
+        }
+        if (state.zeroPointEdit.snapMode && state.snapLastPointerEvent) {
+            showSimulationSnapMarker(findSimulationSnapAtPointer(state.snapLastPointerEvent));
+        }
+    });
+    el.btnZeroPointMultiCenterApply?.addEventListener('click', applyZeroPointMultiCenter);
+    el.btnZeroPointMultiCenterReset?.addEventListener('click', () => {
+        resetZeroPointSnapPoints();
+        if (state.zeroPointEdit.snapMode) setZeroPointSnapReadout('스냅 점 2~4개를 선택하세요.');
+    });
+    [...Object.values(el.zeroPointOriginInputs), ...Object.values(el.zeroPointRotationInputs)].forEach((input) => {
+        input?.addEventListener('input', applyZeroPointEditorInput);
+        input?.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            event.currentTarget.blur();
+        });
+        enableHalfStepWheel(input);
+    });
+    el.btnApplyZeroPoint?.addEventListener('click', applyZeroPointEditor);
+    el.btnCancelZeroPoint?.addEventListener('click', exitZeroPointEditor);
+    el.btnCloseZeroPointEditor?.addEventListener('click', exitZeroPointEditor);
 
     document.querySelectorAll('[data-panel-action]').forEach((button) => {
         button.addEventListener('click', () => handlePanelAction(button.dataset.panelAction, button.dataset.panelId));
@@ -833,7 +1887,9 @@ function setupEventListeners() {
     el.btnUndo?.addEventListener('click', undoLastAction);
     el.btnRedo?.addEventListener('click', redoLastAction);
     [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.programPanel].forEach(makePanelDraggable);
+    [el.tcpProfilePanel].forEach(makePanelDraggable);
     [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.programPanel].forEach(makePanelEdgeResizable);
+    [el.tcpProfilePanel].forEach(makePanelEdgeResizable);
 
     el.virtualControllerRobot?.addEventListener('change', () => {
         if (isVirtualControllerActive()) return;
@@ -891,8 +1947,10 @@ function setupEventListeners() {
         closePositionValueDialog();
     });
     document.addEventListener('pointerdown', (event) => {
-        if (!el.programStepContextMenu || el.programStepContextMenu.classList.contains('hidden')) return;
-        if (!el.programStepContextMenu.contains(event.target)) closeProgramStepContextMenu();
+        if (el.programStepContextMenu && !el.programStepContextMenu.classList.contains('hidden')
+            && !el.programStepContextMenu.contains(event.target)) closeProgramStepContextMenu();
+        if (el.modelContextMenu && !el.modelContextMenu.classList.contains('hidden')
+            && !el.modelContextMenu.contains(event.target)) closeModelContextMenu();
     });
 
     el.btnResetJoints?.addEventListener('click', () => {
@@ -902,6 +1960,21 @@ function setupEventListeners() {
             resetArticulatedJoints(state.activeArticulatedModel);
             recordHistory('관절 원점 복귀', before, captureSceneSnapshot());
         }
+    });
+
+    el.tcpProfileButtons.forEach((button) => {
+        button.addEventListener('click', () => selectTcpProfile(Number(button.dataset.tcpProfile)));
+    });
+    el.btnApplyTcpProfile?.addEventListener('click', applyTcpProfileEditor);
+    el.btnResetTcpProfile?.addEventListener('click', resetActiveTcpProfile);
+    Object.values(el.tcpOffsetInputs).forEach((input) => {
+        input?.addEventListener('input', updateTcpProfileLive);
+        input?.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            applyTcpProfileEditor();
+        });
+        enableHalfStepWheel(input);
     });
 
     el.btnJogJointMode?.addEventListener('click', () => {
@@ -950,16 +2023,23 @@ function setupEventListeners() {
     window.addEventListener('blur', () => stopBaseJogHold());
     
     el.btnResetView.addEventListener('click', fitCamera);
+    el.btnToggleOutline?.addEventListener('click', () => {
+        setModelOutlineMode(!state.outlineMode);
+    });
     el.btnToggleGrid.addEventListener('click', () => {
         state.grid.visible = !state.grid.visible;
         state.baseAxes.visible = state.grid.visible;
         state.labels.forEach(l => l.visible = state.grid.visible);
         el.btnToggleGrid.classList.toggle('active', state.grid.visible);
     });
+    updateOutlineToggleUi();
 
     el.btnToggleTransform?.addEventListener('click', () => {
         if (isMotionActive()) return;
-        setTransformHandlesEnabled(!state.transformControls.enabled);
+        const isEnabled = state.zeroPointEdit.active
+            ? state.zeroPointEdit.handlerVisible
+            : state.transformControls.enabled;
+        setTransformHandlesEnabled(!isEnabled);
     });
 
     window.addEventListener('keydown', handleGlobalKeyDown);
@@ -1326,13 +2406,27 @@ function captureSceneSnapshot() {
             host: currentModels.has(model.userData.attachmentHost) ? model.userData.attachmentHost : null,
             position: model.position.toArray(),
             quaternion: model.quaternion.toArray(),
-            scale: model.scale.toArray()
+            scale: model.scale.toArray(),
+            childTransforms: model.userData.uploaded ? model.children.map((child) => {
+                if (child.matrixAutoUpdate !== false) child.updateMatrix();
+                return {
+                    child,
+                    matrix: child.matrix.toArray(),
+                    matrixAutoUpdate: child.matrixAutoUpdate !== false
+                };
+            }) : [],
+            partVisibility: getImportedModelParts(model).map((part) => ({
+                part,
+                visible: part.visible !== false
+            }))
         })),
         joints: state.models
             .filter((model) => model.userData.joints)
             .map((robot) => ({
                 robot,
-                angles: robot.userData.joints.map((joint) => joint.angle)
+                angles: robot.userData.joints.map((joint) => joint.angle),
+                tcpProfiles: serializeRobotTcpProfiles(robot),
+                activeTcpProfileIndex: robot.userData.activeTcpProfileIndex
             })),
         selectedModel: currentModels.has(state.selectedModel) ? state.selectedModel : null,
         activeArticulatedModel: currentModels.has(state.activeArticulatedModel) ? state.activeArticulatedModel : null,
@@ -1359,10 +2453,34 @@ function sceneSnapshotsEqual(a, b) {
         if (!numberArraysEqual(left.position, right.position)
             || !numberArraysEqual(left.quaternion, right.quaternion)
             || !numberArraysEqual(left.scale, right.scale)) return false;
+        const leftChildren = left.childTransforms || [];
+        const rightChildren = right.childTransforms || [];
+        if (leftChildren.length !== rightChildren.length) return false;
+        for (let childIndex = 0; childIndex < leftChildren.length; childIndex += 1) {
+            if (leftChildren[childIndex].child !== rightChildren[childIndex].child
+                || !numberArraysEqual(leftChildren[childIndex].matrix, rightChildren[childIndex].matrix)) return false;
+        }
+        const leftParts = left.partVisibility || [];
+        const rightParts = right.partVisibility || [];
+        if (leftParts.length !== rightParts.length) return false;
+        for (let partIndex = 0; partIndex < leftParts.length; partIndex += 1) {
+            if (leftParts[partIndex].part !== rightParts[partIndex].part
+                || Boolean(leftParts[partIndex].visible) !== Boolean(rightParts[partIndex].visible)) return false;
+        }
     }
     for (let index = 0; index < a.joints.length; index += 1) {
         if (a.joints[index].robot !== b.joints[index].robot
             || !numberArraysEqual(a.joints[index].angles, b.joints[index].angles)) return false;
+        if (a.joints[index].activeTcpProfileIndex !== b.joints[index].activeTcpProfileIndex) return false;
+        const leftProfiles = a.joints[index].tcpProfiles || [];
+        const rightProfiles = b.joints[index].tcpProfiles || [];
+        if (leftProfiles.length !== rightProfiles.length) return false;
+        for (let profileIndex = 0; profileIndex < leftProfiles.length; profileIndex += 1) {
+            if (!numberArraysEqual(leftProfiles[profileIndex].position, rightProfiles[profileIndex].position)
+                || !numberArraysEqual(leftProfiles[profileIndex].quaternion, rightProfiles[profileIndex].quaternion)) {
+                return false;
+            }
+        }
     }
     if (a.selectedModel !== b.selectedModel
         || a.activeArticulatedModel !== b.activeArticulatedModel
@@ -1382,6 +2500,7 @@ function sceneSnapshotsEqual(a, b) {
 
 function applySceneSnapshot(snapshot) {
     if (!snapshot) return;
+    if (state.zeroPointEdit.active) exitZeroPointEditor();
     state.historySuspended = true;
     setTransformHandlesEnabled(false);
     setBaseJogGizmoEnabled(false);
@@ -1390,22 +2509,43 @@ function applySceneSnapshot(snapshot) {
         ...state.models,
         ...snapshot.models.map((entry) => entry.model)
     ]);
-    allModels.forEach((model) => model.removeFromParent());
+    const snapshotModels = new Set(snapshot.models.map((entry) => entry.model));
+    allModels.forEach((model) => {
+        if (!snapshotModels.has(model)) disposeModelOutlines(model);
+        model.removeFromParent();
+    });
 
     state.models = snapshot.models.map((entry) => entry.model);
     snapshot.models.forEach((entry) => {
         entry.model.position.fromArray(entry.position);
         entry.model.quaternion.fromArray(entry.quaternion);
         entry.model.scale.fromArray(entry.scale);
-        if (entry.host?.userData.tcpFrame && state.models.includes(entry.host)) {
-            entry.host.userData.tcpFrame.add(entry.model);
+        (entry.childTransforms || []).forEach(({ child, matrix, matrixAutoUpdate }) => {
+            if (!child || !entry.model.children.includes(child)) return;
+            child.matrix.fromArray(matrix);
+            if (matrixAutoUpdate === false) {
+                child.matrixAutoUpdate = false;
+                child.matrixWorldNeedsUpdate = true;
+            } else {
+                child.matrix.decompose(child.position, child.quaternion, child.scale);
+                child.matrixAutoUpdate = true;
+            }
+        });
+        (entry.partVisibility || []).forEach(({ part, visible }) => {
+            part.visible = visible !== false;
+        });
+        const toolMountFrame = getRobotToolMountFrame(entry.host);
+        if (toolMountFrame && state.models.includes(entry.host)) {
+            toolMountFrame.add(entry.model);
             entry.model.userData.attachmentHost = entry.host;
+            entry.model.userData.attachmentFrame = 'flange';
         } else {
             state.scene.add(entry.model);
         }
     });
 
-    snapshot.joints.forEach(({ robot, angles }) => {
+    snapshot.joints.forEach(({ robot, angles, tcpProfiles, activeTcpProfileIndex }) => {
+        restoreRobotTcpProfiles(robot, tcpProfiles, activeTcpProfileIndex);
         angles.forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle, false));
         syncJointControls(robot);
         robot.updateMatrixWorld(true);
@@ -1426,7 +2566,10 @@ function applySceneSnapshot(snapshot) {
         : state.activeArticulatedModel;
     syncMotionRepeatControl();
     if (state.activeArticulatedModel) renderJogControls(state.activeArticulatedModel);
-    else hideJogPanel();
+    else {
+        hideJogPanel();
+        refreshTcpProfileUi(null);
+    }
 
     updateUIStatus();
     selectSceneModel(state.models.includes(snapshot.selectedModel) ? snapshot.selectedModel : null);
@@ -1507,6 +2650,7 @@ function getPanelElement(panelId) {
     return {
         'model-browser-panel': el.modelBrowserPanel,
         'jog-panel': el.jogPanel,
+        'tcp-profile-panel': el.tcpProfilePanel,
         'virtual-controller-panel': el.virtualControllerPanel,
         'program-panel': el.programPanel
     }[panelId] || null;
@@ -1517,6 +2661,7 @@ function updatePanelLauncher(panelId) {
     const button = document.querySelector(`[data-panel-toggle="${panelId}"]`);
     if (!panel || !button) return;
     const unavailable = (panelId === 'jog-panel' && !state.activeArticulatedModel)
+        || (panelId === 'tcp-profile-panel' && getArticulatedRobots().length === 0)
         || (panelId === 'virtual-controller-panel' && getArticulatedRobots().length === 0)
         || (panelId === 'program-panel' && getArticulatedRobots().length === 0);
     button.disabled = unavailable;
@@ -1539,6 +2684,9 @@ function togglePanelVisibility(panelId) {
         const isHidden = panel.classList.contains('panel-user-hidden');
         setBaseJogGizmoEnabled(!isHidden && !el.baseJogView?.classList.contains('hidden'));
     }
+    if (panelId === 'tcp-profile-panel' && panel.classList.contains('panel-user-hidden')) {
+        setTcpSnapMode(false);
+    }
     updatePanelLauncher(panelId);
     if (panelId === 'virtual-controller-panel' && !panel.classList.contains('panel-user-hidden')) {
         monitorVirtualControllerBridgeHealth(true);
@@ -1555,6 +2703,7 @@ function handlePanelAction(action, panelId) {
         panel.classList.add('panel-user-hidden');
         if (panelId === 'model-browser-panel') setTransformHandlesEnabled(false);
         if (panelId === 'jog-panel') setBaseJogGizmoEnabled(false);
+        if (panelId === 'tcp-profile-panel') setTcpSnapMode(false);
         updatePanelLauncher(panelId);
     }
 }
@@ -1604,6 +2753,8 @@ function popOutPanel(panelId) {
 function getPanelWindowTitle(panelId) {
     const panelName = panelId === 'program-panel'
         ? uiText('Program Panel')
+        : panelId === 'tcp-profile-panel'
+            ? uiText('TCP 설정')
         : panelId === 'virtual-controller-panel'
             ? uiText('가상 컨트롤러')
         : panelId === 'model-browser-panel'
@@ -1820,6 +2971,42 @@ function formatRobotPanelName(name) {
     return match ? `#${match[2]} ${match[1].trim()}` : value;
 }
 
+function createModelTreePartNode(model, part) {
+    const item = document.createElement('li');
+    item.className = 'model-tree-part-node';
+    item.setAttribute('role', 'treeitem');
+    item.setAttribute('aria-selected', String(part === state.selectedModelPart));
+
+    const row = document.createElement('div');
+    row.className = 'model-tree-part-row';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'model-tree-part-visibility';
+    checkbox.checked = part.visible !== false;
+    checkbox.dataset.modelPartVisibility = part.userData.modelPartId;
+    checkbox.setAttribute('aria-label', part.userData.modelPartName || 'PART');
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `model-tree-part-button${part === state.selectedModelPart ? ' active' : ''}`;
+    button.dataset.modelPartId = part.userData.modelPartId;
+    button.title = `${part.userData.modelPartName || uiText('PART')} ${uiText('선택')}`;
+
+    const icon = document.createElement('span');
+    icon.className = 'model-tree-part-icon';
+    icon.innerHTML = '<i class="fa-solid fa-cube"></i>';
+
+    const name = document.createElement('span');
+    name.className = 'model-tree-part-name';
+    name.textContent = part.userData.modelPartName || uiText('PART');
+
+    button.append(icon, name);
+    row.append(checkbox, button);
+    item.appendChild(row);
+    return item;
+}
+
 function createModelTreeNode(model) {
     const treeId = ensureModelTreeId(model);
     const meta = getModelTreeMeta(model);
@@ -1852,11 +3039,13 @@ function createModelTreeNode(model) {
     item.appendChild(button);
 
     const children = state.models.filter((candidate) => candidate.userData.attachmentHost === model);
-    if (children.length > 0) {
+    const parts = getImportedModelParts(model);
+    if (children.length > 0 || parts.length > 0) {
         const childList = document.createElement('ul');
         childList.className = 'model-tree-children';
         childList.setAttribute('role', 'group');
         children.forEach((child) => childList.appendChild(createModelTreeNode(child)));
+        parts.forEach((part) => childList.appendChild(createModelTreePartNode(model, part)));
         item.appendChild(childList);
     }
     return item;
@@ -1893,7 +3082,10 @@ function formatTransformNumber(value) {
 
 function updateSelectedModelTransformInputs() {
     const model = state.selectedModel;
-    if (!model) return;
+    if (!model) {
+        updateZeroPointCurrentMarker();
+        return;
+    }
     const isScaleMode = state.transformControls?.mode === 'scale';
     if (el.modelNumericTransformTitle) el.modelNumericTransformTitle.textContent = uiText(isScaleMode ? 'SCALE' : 'POSITION');
     if (el.modelNumericTransformUnit) el.modelNumericTransformUnit.textContent = isScaleMode ? '×' : 'mm';
@@ -1906,6 +3098,7 @@ function updateSelectedModelTransformInputs() {
             normalizeDegrees(THREE.MathUtils.radToDeg(model.rotation[axis]))
         );
     });
+    updateZeroPointCurrentMarker();
 }
 
 function updateTransformModeButtons(mode = state.transformControls?.mode || 'translate') {
@@ -1928,7 +3121,21 @@ function attachTransformControlsToSelectedModel() {
 }
 
 function setTransformHandlesEnabled(enabled) {
-    const shouldEnable = Boolean(enabled && state.selectedModel);
+    if (state.zeroPointEdit.active) {
+        const shouldEnableZeroPoint = Boolean(enabled);
+        state.transformControls.visible = false;
+        state.transformControls.enabled = false;
+        state.transformControls.detach();
+        state.zeroPointEdit.handlerVisible = shouldEnableZeroPoint;
+        state.zeroPointEdit.transformControls.visible = shouldEnableZeroPoint;
+        state.zeroPointEdit.transformControls.enabled = shouldEnableZeroPoint;
+        state.zeroPointEdit.axes.visible = shouldEnableZeroPoint;
+        el.btnToggleTransform?.classList.toggle('active', shouldEnableZeroPoint);
+        el.btnToggleTransform?.setAttribute('aria-pressed', String(shouldEnableZeroPoint));
+        updateTransformModeButtons();
+        return;
+    }
+    const shouldEnable = Boolean(enabled && state.selectedModel && !state.zeroPointEdit.active);
     if (shouldEnable) setBaseJogGizmoEnabled(false);
     state.transformControls.visible = shouldEnable;
     state.transformControls.enabled = shouldEnable;
@@ -1957,9 +3164,265 @@ function toggleSelectedTransformMode(mode) {
     setTransformHandlesEnabled(true);
 }
 
-function selectSceneModel(model) {
+function setZeroPointEditorVisibility(visible) {
+    el.modelBrowserPanel?.classList.toggle('zero-point-editing', visible);
+    const defaultControls = [
+        el.modelTransformPanel?.querySelector('.transform-mode-buttons'),
+        el.modelNumericTransform,
+        el.modelTransformPanel?.querySelector('.model-transform-help')
+    ].filter(Boolean);
+    defaultControls.forEach((control) => control.classList.toggle('hidden', visible));
+    el.zeroPointEditor?.classList.toggle('hidden', !visible);
+}
+
+function updateZeroPointFrameScale(model) {
+    if (!model || !state.zeroPointEdit.axes) return;
+    const bounds = new THREE.Box3().setFromObject(model);
+    const size = bounds.getSize(new THREE.Vector3());
+    const length = size.length();
+    const scale = THREE.MathUtils.clamp(Number.isFinite(length) && length > 0 ? length * 0.14 : 80, 25, 420);
+    state.zeroPointEdit.axes.scale.setScalar(scale);
+    state.zeroPointEdit.marker?.scale.setScalar(THREE.MathUtils.clamp(scale * 0.035, 3.5, 16));
+    state.zeroPointEdit.transformControls?.setSize(THREE.MathUtils.clamp(scale / 125, 0.65, 1.35));
+}
+
+function readZeroPointEditorValues() {
+    const origin = Object.fromEntries(['x', 'y', 'z'].map((axis) => [
+        axis,
+        el.zeroPointOriginInputs[axis]?.value.trim() === '' ? NaN : Number(el.zeroPointOriginInputs[axis]?.value)
+    ]));
+    const rotation = Object.fromEntries(['x', 'y', 'z'].map((axis) => [
+        axis,
+        el.zeroPointRotationInputs[axis]?.value.trim() === '' ? NaN : Number(el.zeroPointRotationInputs[axis]?.value)
+    ]));
+    return [...Object.values(origin), ...Object.values(rotation)].every(Number.isFinite)
+        ? { origin, rotation }
+        : null;
+}
+
+function applyZeroPointEditorInput(event) {
+    const edit = state.zeroPointEdit;
+    if (!edit.active || !edit.model) return;
+    const originEntry = Object.entries(el.zeroPointOriginInputs).find(([, input]) => input === event.currentTarget);
+    const rotationEntry = Object.entries(el.zeroPointRotationInputs).find(([, input]) => input === event.currentTarget);
+    const entry = originEntry || rotationEntry;
+    if (!entry || event.currentTarget.value.trim() === '') return;
+    const value = Number(event.currentTarget.value);
+    if (!Number.isFinite(value)) return;
+    if (originEntry) edit.origin[entry[0]] = value;
+    else edit.rotationDegrees[entry[0]] = value;
+    updateZeroPointFrameFromState();
+}
+
+function applyModelZeroPointFrame(model, origin, rotationDegrees) {
+    if (!model || !origin || !rotationDegrees) return false;
+    const rotationQuaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+        THREE.MathUtils.degToRad(rotationDegrees.x),
+        THREE.MathUtils.degToRad(rotationDegrees.y),
+        THREE.MathUtils.degToRad(rotationDegrees.z),
+        'XYZ'
+    )).normalize();
+    const inverseFrameOffset = new THREE.Matrix4().compose(
+        origin.clone(),
+        rotationQuaternion,
+        new THREE.Vector3(1, 1, 1)
+    ).invert();
+    const oldChildMatrices = new Map([...model.children].map((child) => {
+        if (child.matrixAutoUpdate !== false) child.updateMatrix();
+        return [child, child.matrix.clone()];
+    }));
+    oldChildMatrices.forEach((oldChildMatrix, child) => {
+        child.matrix.copy(inverseFrameOffset).multiply(oldChildMatrix);
+        child.matrixAutoUpdate = false;
+        child.matrixWorldNeedsUpdate = true;
+    });
+    model.updateMatrixWorld(true);
+    invalidateSimulationSnapCandidates();
+    return true;
+}
+
+function getModelContextTarget() {
+    const menu = el.modelContextMenu;
+    const modelId = menu?.dataset.modelTreeId;
+    const model = state.models.find((candidate) => candidate.userData.modelTreeId === modelId);
+    if (!model?.userData?.uploaded) return null;
+    const partId = menu?.dataset.modelPartId;
+    const part = partId ? getImportedModelParts(model).find((candidate) => candidate.userData.modelPartId === partId) : null;
+    if (partId && !part) return null;
+    return { model, part: part || null };
+}
+
+function getImportedObjectColorHex(object) {
+    let colorHex = null;
+    object?.traverse?.((child) => {
+        if (colorHex || !child.isMesh) return;
+        const material = getMeshMaterials(child).find((candidate) => candidate?.color);
+        if (material?.color) colorHex = `#${material.color.getHexString()}`;
+    });
+    return colorHex || '#bfc7d5';
+}
+
+function applyImportedModelColor(model, part, colorValue) {
+    if (!model?.userData?.uploaded || !colorValue) return false;
+    const target = part || model;
+    const color = new THREE.Color(colorValue);
+    const highlightedPart = state.selectedModelPart
+        && (!part || state.selectedModelPart === part)
+        && getImportedModelParts(model).includes(state.selectedModelPart)
+        ? state.selectedModelPart
+        : null;
+    if (highlightedPart) setModelPartHighlight(highlightedPart, false);
+    target.traverse((child) => {
+        if (!child.isMesh) return;
+        ensureModelPartMaterialIsolation(child);
+        getMeshMaterials(child).forEach((material) => {
+            if (!material?.color) return;
+            material.color.copy(color);
+            material.needsUpdate = true;
+            child.userData.modelPartMaterials?.forEach((entry) => {
+                if (entry.material === material && entry.color) entry.color.copy(color);
+            });
+        });
+    });
+    if (highlightedPart) setModelPartHighlight(highlightedPart, true);
+    return true;
+}
+
+function openModelContextMenu(event, model, part = null) {
+    const menu = el.modelContextMenu;
+    if (!menu || !model?.userData?.uploaded) return;
+    closeModelContextMenu();
+    menu.dataset.modelTreeId = model.userData.modelTreeId;
+    if (part) menu.dataset.modelPartId = part.userData.modelPartId;
+    else delete menu.dataset.modelPartId;
+    if (el.modelChangeZeroPoint) el.modelChangeZeroPoint.hidden = Boolean(part);
+    if (el.modelColorPicker) el.modelColorPicker.value = getImportedObjectColorHex(part || model);
+    menu.classList.remove('hidden');
+    menu.style.left = '0px';
+    menu.style.top = '0px';
+    const bounds = menu.getBoundingClientRect();
+    menu.style.left = `${Math.max(8, Math.min(event.clientX, window.innerWidth - bounds.width - 8))}px`;
+    menu.style.top = `${Math.max(8, Math.min(event.clientY, window.innerHeight - bounds.height - 8))}px`;
+}
+
+function closeModelContextMenu() {
+    if (!el.modelContextMenu) return;
+    el.modelContextMenu.classList.add('hidden');
+    delete el.modelContextMenu.dataset.modelTreeId;
+    delete el.modelContextMenu.dataset.modelPartId;
+    if (el.modelChangeZeroPoint) el.modelChangeZeroPoint.hidden = false;
+}
+
+function exitZeroPointEditor({ restoreModel = true } = {}) {
+    const edit = state.zeroPointEdit;
+    if (edit.snapMode) setZeroPointSnapMode(false);
+    if (restoreModel && edit.model && edit.baseModelState) {
+        restoreZeroPointModelState(edit.model, edit.baseModelState);
+    }
+    edit.transformControls?.detach();
+    if (edit.transformControls) {
+        edit.transformControls.visible = false;
+        edit.transformControls.enabled = false;
+    }
+    if (edit.axes) edit.axes.visible = false;
+    if (edit.frame) edit.frame.visible = false;
+    edit.handlerVisible = false;
+    edit.active = false;
+    edit.model = null;
+    edit.baseModelState = null;
+    edit.historyBefore = null;
+    edit.snapPoints = [];
+    state.transformControls.visible = false;
+    state.transformControls.enabled = false;
+    state.transformControls.detach();
+    setZeroPointEditorVisibility(false);
+    updateZeroPointCurrentMarker();
+    updateZeroPointMultiCenterControls();
+    updateTransformModeButtons();
+}
+
+function openZeroPointEditor(model) {
+    if (isMotionActive() || !model?.userData?.uploaded) return;
+    closeModelContextMenu();
+    if (state.snapMoveMode) {
+        state.snapMoveMode = false;
+        invalidateSimulationSnapCandidates();
+        hideSimulationSnapMarker();
+        resetSimulationSnapMarkerCameraScale();
+        updateSimulationSnapButton();
+    }
+    if (state.tcpSnapMode) setTcpSnapMode(false);
+    if (state.zeroPointEdit.active) exitZeroPointEditor();
+    commitPendingHistory('수치 모델 변환', 'pendingNumericHistory');
+    selectSceneModel(model);
+
+    const edit = state.zeroPointEdit;
+    edit.historyBefore = captureSceneSnapshot();
+    model.updateMatrixWorld(true);
+    edit.active = true;
+    edit.model = model;
+    edit.baseModelState = captureZeroPointModelState(model);
+    edit.origin.set(0, 0, 0);
+    edit.rotationDegrees.set(0, 0, 0);
+    model.getWorldQuaternion(edit.baseWorldQuaternion);
+    edit.snapType = readZeroPointSnapType();
+    edit.snapRadiusPx = Number(el.zeroPointSnapRadius?.value) || 16;
+    edit.snapMode = false;
+    edit.handlerVisible = false;
+    edit.frame.visible = true;
+    edit.transformControls.attach(edit.frame);
+    edit.transformControls.visible = false;
+    edit.transformControls.enabled = false;
+    updateZeroPointFrameScale(model);
+    updateZeroPointEditorInputs();
+    updateZeroPointFrameFromState();
+    setZeroPointEditorVisibility(true);
+    setTransformHandlesEnabled(false);
+    updateZeroPointMultiCenterControls();
+    setZeroPointSnapReadout('스냅 위치 선택을 누른 뒤 모델 형상 위로 포인터를 이동하세요.');
+    setStatus('영점 변경 중입니다. 모델 영점과 좌표계 방향을 설정하세요.', '#60a5fa');
+}
+
+function applyZeroPointEditor() {
+    const edit = state.zeroPointEdit;
+    if (!edit.active || !edit.model) return;
+    const values = readZeroPointEditorValues();
+    if (!values) {
+        setStatus('영점 좌표와 회전값을 확인하세요.', '#ef4444');
+        return;
+    }
+    edit.origin.set(values.origin.x, values.origin.y, values.origin.z);
+    edit.rotationDegrees.set(values.rotation.x, values.rotation.y, values.rotation.z);
+    commitAllPendingHistories();
+    const before = edit.historyBefore || captureSceneSnapshot();
+    const target = edit.model;
+    restoreZeroPointModelState(target, edit.baseModelState, false);
+    applyModelZeroPointFrame(target, edit.origin, edit.rotationDegrees);
+    const after = captureSceneSnapshot();
+    recordHistory('모델 영점 변경', before, after);
+    exitZeroPointEditor({ restoreModel: false });
+    updateSelectedModelTransformInputs();
+    renderModelTree();
+    setStatus('모델 영점과 좌표계 방향을 적용했습니다.', '#22c55e');
+}
+
+function selectSceneModelPart(model, part) {
+    if (!model || !part || !getImportedModelParts(model).includes(part)) return;
+    selectSceneModel(model, { preservePart: true });
+    setSelectedModelPart(part);
+}
+
+function selectSceneModel(model, options = {}) {
     if (isMotionActive()) return;
     if (model && !state.models.includes(model)) return;
+    if (state.zeroPointEdit.active && model !== state.zeroPointEdit.model) {
+        exitZeroPointEditor();
+    }
+    const preservePart = Boolean(options.preservePart);
+    const currentPartBelongsToModel = state.selectedModelPart
+        && model
+        && getImportedModelParts(model).includes(state.selectedModelPart);
+    if (!preservePart || !currentPartBelongsToModel) setSelectedModelPart(null);
     state.selectedModel = model || null;
     renderModelTree();
 
@@ -2025,6 +3488,7 @@ function applySelectedModelNumericTransform(event) {
 
 async function loadModelFromServer(modelDefinition) {
     if (isMotionActive()) return;
+    if (state.zeroPointEdit.active) exitZeroPointEditor();
     const { file, folder, name, type = 'fbx' } = modelDefinition;
     setTransformHandlesEnabled(false);
     setBaseJogGizmoEnabled(false);
@@ -2189,9 +3653,9 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
     });
 
     const tcpPosition = new THREE.Vector3().fromArray(manifest.tcp || parentPivot.toArray());
-    const tcpFrame = new THREE.Group();
-    tcpFrame.name = 'TCP';
-    tcpFrame.position.copy(tcpPosition).sub(parentPivot);
+    const flangeFrame = new THREE.Group();
+    flangeFrame.name = 'Tool flange';
+    flangeFrame.position.copy(tcpPosition).sub(parentPivot);
 
     if (manifest.toolAxes) {
         const toolX = new THREE.Vector3().fromArray(manifest.toolAxes.x).normalize();
@@ -2206,16 +3670,23 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
         if (orthogonality > 1e-5 || handedness < 0.99999) {
             throw new Error('Robot toolAxes must define an orthogonal right-handed coordinate system.');
         }
-        tcpFrame.quaternion.setFromRotationMatrix(
+        flangeFrame.quaternion.setFromRotationMatrix(
             new THREE.Matrix4().makeBasis(toolX, toolY, toolZ)
         );
     }
-    robot.userData.toolHomeQuaternion = tcpFrame.quaternion.clone();
+    robot.userData.toolHomeQuaternion = flangeFrame.quaternion.clone();
 
-    parent.add(tcpFrame);
+    parent.add(flangeFrame);
+    robot.userData.flangeFrame = flangeFrame;
+
+    const tcpFrame = new THREE.Group();
+    tcpFrame.name = 'Active TCP';
+    flangeFrame.add(tcpFrame);
     robot.userData.tcpFrame = tcpFrame;
+    robot.userData.tcpProfiles = Array.from({ length: TCP_PROFILE_COUNT }, createDefaultTcpProfile);
+    robot.userData.activeTcpProfileIndex = 0;
 
-    const toolAxesAtTcp = new THREE.AxesHelper(110);
+    const toolAxesAtTcp = new THREE.AxesHelper(TCP_AXES_LOCAL_SIZE);
     toolAxesAtTcp.name = 'Tool axes at TCP';
     applyAxesHelperColors(toolAxesAtTcp);
     const axesMaterials = Array.isArray(toolAxesAtTcp.material) ? toolAxesAtTcp.material : [toolAxesAtTcp.material];
@@ -2224,6 +3695,10 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
         material.transparent = true;
     });
     toolAxesAtTcp.renderOrder = 20;
+    toolAxesAtTcp.userData.cameraScaledSize = {
+        localSize: TCP_AXES_LOCAL_SIZE,
+        pixelSize: TCP_AXES_SCREEN_PIXELS
+    };
     tcpFrame.add(toolAxesAtTcp);
     robot.userData.toolAxesAtTcp = toolAxesAtTcp;
 
@@ -2367,6 +3842,29 @@ function getArticulatedRobotForAttachment() {
     return [...state.models].reverse().find((model) => model.userData.tcpFrame) || null;
 }
 
+function getRobotToolMountFrame(robot) {
+    return robot?.userData.flangeFrame || robot?.userData.tcpFrame || null;
+}
+
+function mountToolModelAtActiveTcp(robot, model) {
+    const tcpFrame = robot?.userData.tcpFrame;
+    const mountFrame = getRobotToolMountFrame(robot);
+    if (!tcpFrame || !mountFrame || !model) return false;
+
+    // Align the file origin with the active TCP once. The physical tool then
+    // stays fixed to the flange when the selected TCP profile changes.
+    tcpFrame.add(model);
+    model.position.set(0, 0, 0);
+    model.quaternion.identity();
+    model.scale.set(1, 1, 1);
+    if (mountFrame !== tcpFrame) mountFrame.attach(model);
+    model.userData.attachmentHost = robot;
+    model.userData.attachmentFrame = 'flange';
+    model.userData.placement = 'tcp';
+    model.updateMatrixWorld(true);
+    return true;
+}
+
 function openImportDialog(file) {
     const extension = getFileExtension(file.name);
     if (!SUPPORTED_IMPORT_EXTENSIONS.has(extension)) {
@@ -2405,96 +3903,367 @@ function getAutomaticSourceUpAxis(extension) {
     return Y_UP_IMPORT_EXTENSIONS.has(extension) ? 'y' : 'z';
 }
 
-async function getOcctImporter() {
-    if (typeof window.occtimportjs !== 'function') {
-        throw new Error('OpenCascade STEP converter is not loaded.');
+function getStepTessellationParameters(fileSizeBytes) {
+    if (fileSizeBytes >= 150 * MEBIBYTE) {
+        return { linearDeflection: 0.003, angularDeflection: 0.85 };
     }
-    if (!state.occtImporterPromise) {
-        state.occtImporterPromise = window.occtimportjs({
-            locateFile: (fileName) => `${OCCT_IMPORT_BASE_URL}${fileName}`
-        }).catch((error) => {
-            state.occtImporterPromise = null;
-            throw error;
+    if (fileSizeBytes >= 50 * MEBIBYTE) {
+        return { linearDeflection: 0.002, angularDeflection: 0.7 };
+    }
+    if (fileSizeBytes >= 20 * MEBIBYTE) {
+        return { linearDeflection: 0.0015, angularDeflection: 0.6 };
+    }
+    return { linearDeflection: 0.001, angularDeflection: 0.5 };
+}
+
+function getLargeStepTessellationParameters(fileSizeBytes) {
+    if (fileSizeBytes >= 512 * MEBIBYTE) {
+        return { linearDeflectionAbsolute: 8, angularDeflection: 1.15 };
+    }
+    if (fileSizeBytes >= 256 * MEBIBYTE) {
+        return { linearDeflectionAbsolute: 5, angularDeflection: 1.1 };
+    }
+    if (fileSizeBytes >= 128 * MEBIBYTE) {
+        return { linearDeflectionAbsolute: 3, angularDeflection: 1.05 };
+    }
+    if (fileSizeBytes >= LARGE_MODEL_PERFORMANCE_MIN_BYTES) {
+        return { linearDeflectionAbsolute: 2, angularDeflection: 1 };
+    }
+    return { linearDeflectionAbsolute: 1, angularDeflection: 0.8 };
+}
+
+function getStepImportCacheKey(file, parameters) {
+    return [
+        'step-mesh-v3-cad-hierarchy',
+        file.name,
+        file.size,
+        file.lastModified || 0,
+        parameters.linearDeflection,
+        parameters.angularDeflection
+    ].join('|');
+}
+
+function openStepImportCacheDb() {
+    if (!('indexedDB' in window)) return Promise.resolve(null);
+    if (state.stepImportCacheDbPromise) return state.stepImportCacheDbPromise;
+    state.stepImportCacheDbPromise = new Promise((resolve) => {
+        const request = window.indexedDB.open(STEP_IMPORT_CACHE_DB_NAME, STEP_IMPORT_CACHE_VERSION);
+        request.addEventListener('upgradeneeded', () => {
+            const db = request.result;
+            const store = db.objectStoreNames.contains(STEP_IMPORT_CACHE_STORE_NAME)
+                ? request.transaction.objectStore(STEP_IMPORT_CACHE_STORE_NAME)
+                : db.createObjectStore(STEP_IMPORT_CACHE_STORE_NAME, { keyPath: 'key' });
+            if (!store.indexNames.contains('savedAt')) store.createIndex('savedAt', 'savedAt');
         });
-    }
-    return state.occtImporterPromise;
+        request.addEventListener('success', () => resolve(request.result));
+        request.addEventListener('error', () => resolve(null));
+        request.addEventListener('blocked', () => resolve(null));
+    });
+    return state.stepImportCacheDbPromise;
 }
 
-function flattenOcctArray(array) {
-    if (!array) return [];
-    return Array.isArray(array[0]) ? array.flat() : array;
-}
-
-function occtColorToThree(color) {
-    if (!Array.isArray(color) || color.length < 3) return new THREE.Color(0xbfc7d5);
-    const divisor = Math.max(color[0], color[1], color[2]) > 1 ? 255 : 1;
-    return new THREE.Color(color[0] / divisor, color[1] / divisor, color[2] / divisor);
-}
-
-function createObjectFromOcctResult(result) {
-    if (!result?.success || !Array.isArray(result.meshes)) {
-        throw new Error('OpenCascade could not convert this STEP file.');
-    }
-
-    const group = new THREE.Group();
-    group.name = result.root?.name || 'STEP Assembly';
-    const geometryBuckets = new Map();
-    result.meshes.forEach((meshDefinition) => {
-        const positions = flattenOcctArray(meshDefinition.attributes?.position?.array);
-        const indices = flattenOcctArray(meshDefinition.index?.array);
-        if (positions.length < 9 || indices.length < 3) return;
-
-        const geometry = new THREE.BufferGeometry();
-        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-        geometry.setIndex(indices);
-        const normals = flattenOcctArray(meshDefinition.attributes?.normal?.array);
-        if (normals.length === positions.length) {
-            geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
-        } else {
-            geometry.computeVertexNormals();
+async function readStepImportCache(key) {
+    const db = await openStepImportCacheDb();
+    if (!db) return null;
+    return new Promise((resolve) => {
+        try {
+            const transaction = db.transaction(STEP_IMPORT_CACHE_STORE_NAME, 'readonly');
+            const request = transaction.objectStore(STEP_IMPORT_CACHE_STORE_NAME).get(key);
+            request.addEventListener('success', () => resolve(request.result || null));
+            request.addEventListener('error', () => resolve(null));
+        } catch (_) {
+            resolve(null);
         }
-        const color = occtColorToThree(meshDefinition.color);
-        const colorKey = `${color.r.toFixed(5)},${color.g.toFixed(5)},${color.b.toFixed(5)}`;
-        if (!geometryBuckets.has(colorKey)) geometryBuckets.set(colorKey, { color, geometries: [] });
-        geometryBuckets.get(colorKey).geometries.push(geometry);
     });
+}
 
-    [...geometryBuckets.values()].forEach((bucket, index) => {
-        const geometry = bucket.geometries.length === 1
-            ? bucket.geometries[0]
-            : mergeGeometries(bucket.geometries, false);
-        if (!geometry) throw new Error('Failed to merge STEP mesh geometry.');
-        if (bucket.geometries.length > 1) bucket.geometries.forEach((source) => source.dispose());
-        geometry.computeBoundingBox();
-        geometry.computeBoundingSphere();
+async function deleteStepImportCache(key) {
+    const db = await openStepImportCacheDb();
+    if (!db) return;
+    try {
+        db.transaction(STEP_IMPORT_CACHE_STORE_NAME, 'readwrite')
+            .objectStore(STEP_IMPORT_CACHE_STORE_NAME)
+            .delete(key);
+    } catch (_) {
+        // Cache cleanup must never block importing the original STEP file.
+    }
+}
 
-        const material = new THREE.MeshStandardMaterial({
-            color: bucket.color,
-            roughness: 0.58,
-            metalness: 0.16
+async function writeStepImportCache(record) {
+    const db = await openStepImportCacheDb();
+    if (!db) return;
+    try {
+        const transaction = db.transaction(STEP_IMPORT_CACHE_STORE_NAME, 'readwrite');
+        const store = transaction.objectStore(STEP_IMPORT_CACHE_STORE_NAME);
+        store.put(record);
+        const countRequest = store.count();
+        countRequest.addEventListener('success', () => {
+            let entriesToDelete = Math.max(countRequest.result - STEP_IMPORT_CACHE_MAX_ENTRIES, 0);
+            if (!entriesToDelete) return;
+            const cursorRequest = store.index('savedAt').openCursor();
+            cursorRequest.addEventListener('success', () => {
+                const cursor = cursorRequest.result;
+                if (!cursor || entriesToDelete <= 0) return;
+                cursor.delete();
+                entriesToDelete -= 1;
+                cursor.continue();
+            });
         });
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.name = `STEP Surface ${index + 1}`;
-        group.add(mesh);
-    });
-
-    if (group.children.length === 0) throw new Error('The STEP file contains no triangulated mesh.');
-    return group;
+    } catch (error) {
+        console.warn('STEP cache write failed:', error);
+    }
 }
 
-async function parseStepFile(file) {
-    const occt = await getOcctImporter();
-    const fileBuffer = new Uint8Array(await file.arrayBuffer());
-    const result = occt.ReadStepFile(fileBuffer, {
-        linearUnit: 'millimeter',
-        linearDeflectionType: 'bounding_box_ratio',
-        linearDeflection: 0.001,
-        angularDeflection: 0.5
-    });
-    return createObjectFromOcctResult(result);
+function scheduleStepImportCacheWrite(record) {
+    const write = () => { void writeStepImportCache(record); };
+    if ('requestIdleCallback' in window) window.requestIdleCallback(write, { timeout: 3000 });
+    else window.setTimeout(write, 500);
 }
 
-async function parseUploaded3DFile(file, extension) {
+function resetStepImportWorkerSession(session = state.stepImportWorkerSession) {
+    if (!session) return;
+    if (state.stepImportWorkerSession === session) state.stepImportWorkerSession = null;
+    session.worker.terminate();
+}
+
+function getStepImportWorkerSession() {
+    if (state.stepImportWorkerSession) return state.stepImportWorkerSession;
+
+    const workerUrl = new URL('./step-import-worker.js?v=20260719-large-step-chunked-snap-cad-hierarchy-1', import.meta.url);
+    const worker = new Worker(workerUrl);
+    let readySettled = false;
+    let resolveReady;
+    let rejectReady;
+    const readyPromise = new Promise((resolve, reject) => {
+        resolveReady = resolve;
+        rejectReady = reject;
+    });
+    const session = { worker, readyPromise };
+    state.stepImportWorkerSession = session;
+
+    const finishReady = (error = null) => {
+        if (readySettled) return;
+        readySettled = true;
+        worker.removeEventListener('message', handleReadyMessage);
+        worker.removeEventListener('error', handleReadyError);
+        if (error) {
+            resetStepImportWorkerSession(session);
+            rejectReady(error);
+        } else {
+            resolveReady(session);
+        }
+    };
+    const handleReadyMessage = (event) => {
+        const payload = event.data || {};
+        if (payload.type === 'ready') finishReady();
+        else if (payload.type === 'error' && payload.requestId == null) {
+            finishReady(new Error(payload.message || 'STEP worker initialization failed.'));
+        }
+    };
+    const handleReadyError = (event) => {
+        event.preventDefault();
+        finishReady(new Error(event.message || 'STEP worker initialization failed.'));
+    };
+    worker.addEventListener('message', handleReadyMessage);
+    worker.addEventListener('error', handleReadyError);
+    worker.postMessage({ type: 'init' });
+    return session;
+}
+
+function warmStepImportWorker() {
+    getStepImportWorkerSession().readyPromise.catch((error) => {
+        console.warn('STEP worker warm-up failed:', error);
+    });
+}
+
+function scheduleStepImportWorkerWarmup() {
+    if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(warmStepImportWorker, { timeout: 2000 });
+    } else {
+        window.setTimeout(warmStepImportWorker, 750);
+    }
+}
+
+function createStepMeshFromWorker(meshDefinition, index, placement, performanceMode = false) {
+    const positions = meshDefinition?.positions;
+    const indices = meshDefinition?.indices;
+    if (!(positions instanceof Float32Array) || positions.length < 9
+        || !ArrayBuffer.isView(indices) || indices.length < 3) {
+        throw new Error('The STEP worker returned invalid mesh data.');
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+    if (meshDefinition.normals instanceof Float32Array
+        && meshDefinition.normals.length === positions.length) {
+        geometry.setAttribute('normal', new THREE.BufferAttribute(meshDefinition.normals, 3));
+    } else {
+        geometry.computeVertexNormals();
+    }
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+
+    const material = createImportedPlacementMaterial(placement, null, performanceMode);
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.name = meshDefinition.partName || meshDefinition.name || `STEP Surface ${index + 1}`;
+    mesh.userData.importColorRole = placement;
+    mesh.userData.cadPartKey = meshDefinition.partId || `cad-mesh-${index}`;
+    mesh.userData.cadPartName = meshDefinition.partName || meshDefinition.name || mesh.name;
+    mesh.userData.largeModelMode = performanceMode;
+    mesh.userData.largeModelChunk = Boolean(performanceMode && meshDefinition.largeModelChunk);
+    mesh.userData.largeModelChunkIndex = Number(meshDefinition.chunkIndex) || 0;
+    mesh.userData.largeModelChunkCount = Number(meshDefinition.chunkCount) || 1;
+    if (Array.isArray(meshDefinition.brepFaces) && meshDefinition.brepFaces.length) {
+        mesh.userData.stepBrepFaces = meshDefinition.brepFaces;
+    }
+    return mesh;
+}
+
+async function parseStepBufferInWorker(fileBuffer, parameters, engine, fileName, onMesh, onProgress) {
+    onProgress?.({ phase: 'engine' });
+    const session = getStepImportWorkerSession();
+    await session.readyPromise;
+    if (state.stepImportWorkerSession !== session) {
+        throw new Error('STEP worker restarted before the import began.');
+    }
+
+    return new Promise((resolve, reject) => {
+        const { worker } = session;
+        const requestId = ++state.stepImportRequestId;
+        let settled = false;
+
+        const finish = (callback, value, resetWorker = false) => {
+            if (settled) return;
+            settled = true;
+            worker.removeEventListener('message', handleMessage);
+            worker.removeEventListener('error', handleError);
+            if (resetWorker) resetStepImportWorkerSession(session);
+            callback(value);
+        };
+
+        const handleMessage = (event) => {
+            const payload = event.data || {};
+            if (payload.requestId !== requestId) return;
+            if (payload.type === 'mesh') {
+                try {
+                    onMesh(payload.mesh);
+                } catch (error) {
+                    finish(reject, error, true);
+                }
+                return;
+            }
+            if (payload.type === 'progress') {
+                onProgress?.(payload);
+                return;
+            }
+            if (payload.type === 'done') {
+                finish(resolve, payload, true);
+                return;
+            }
+            if (payload.type === 'error') {
+                finish(reject, new Error(payload.message || 'STEP worker stopped unexpectedly.'), true);
+            }
+        };
+        const handleError = (event) => {
+            event.preventDefault();
+            finish(reject, new Error(event.message || 'STEP worker stopped unexpectedly.'), true);
+        };
+        worker.addEventListener('message', handleMessage);
+        worker.addEventListener('error', handleError);
+
+        worker.postMessage({
+            type: 'parse',
+            requestId,
+            fileBuffer,
+            engine,
+            fileName,
+            parameters: {
+                linearUnit: 'millimeter',
+                linearDeflectionType: 'bounding_box_ratio',
+                ...parameters
+            }
+        }, [fileBuffer]);
+    });
+}
+
+async function parseStepFile(file, placement) {
+    const group = new THREE.Group();
+    group.name = 'STEP Assembly';
+    try {
+        const useLargeFileEngine = file.size >= STEP_LARGE_FILE_ENGINE_MIN_BYTES;
+        const performanceMode = file.size >= LARGE_MODEL_PERFORMANCE_MIN_BYTES;
+        group.userData.largeModelMode = performanceMode;
+        const parameters = useLargeFileEngine
+            ? getLargeStepTessellationParameters(file.size)
+            : getStepTessellationParameters(file.size);
+        const cacheEnabled = file.size <= STEP_IMPORT_CACHE_MAX_SOURCE_BYTES;
+        const cacheKey = cacheEnabled ? getStepImportCacheKey(file, parameters) : null;
+        const cached = cacheEnabled ? await readStepImportCache(cacheKey) : null;
+        if (cached?.meshes?.length) {
+            try {
+                showLoading(true, `${file.name} · STEP Cache`);
+                for (let index = 0; index < cached.meshes.length; index += 1) {
+                    group.add(createStepMeshFromWorker(cached.meshes[index], index, placement, performanceMode));
+                    if (index > 0 && index % 4 === 0) await yieldToAnimationFrame();
+                }
+                group.name = cached.rootName || group.name;
+                return group;
+            } catch (error) {
+                disposeObjectResources(group);
+                group.clear();
+                await deleteStepImportCache(cacheKey);
+                console.warn('Discarded invalid STEP cache entry:', error);
+            }
+        }
+
+        const fileBuffer = await file.arrayBuffer();
+        const cacheMeshes = cacheEnabled ? [] : null;
+        const result = await parseStepBufferInWorker(
+            fileBuffer,
+            parameters,
+            useLargeFileEngine ? 'large' : 'standard',
+            file.name,
+            (meshDefinition) => {
+                cacheMeshes?.push(meshDefinition);
+                group.add(createStepMeshFromWorker(
+                    meshDefinition,
+                    group.children.length,
+                    placement,
+                    performanceMode
+                ));
+            },
+            ({ phase, sourceMeshCount }) => {
+                const phaseLabel = phase === 'engine'
+                    ? 'STEP Engine'
+                    : phase === 'reading'
+                        ? 'STEP Reading'
+                    : phase === 'packing'
+                        ? `STEP Mesh ${sourceMeshCount || ''}`.trim()
+                        : 'STEP Tessellation';
+                showLoading(true, `${file.name} · ${phaseLabel}`);
+            }
+        );
+        group.name = result.rootName || group.name;
+        if (group.children.length === 0) {
+            throw new Error('The STEP file contains no triangulated mesh.');
+        }
+        if (cacheEnabled) {
+            scheduleStepImportCacheWrite({
+                key: cacheKey,
+                savedAt: Date.now(),
+                rootName: group.name,
+                meshes: cacheMeshes
+            });
+        }
+        return group;
+    } catch (error) {
+        disposeObjectResources(group);
+        throw error;
+    }
+}
+
+async function parseUploaded3DFile(file, extension, placement) {
     if (extension === 'stl') {
         const geometry = new STLLoader().parse(await file.arrayBuffer());
         if (!geometry.getAttribute('normal')) geometry.computeVertexNormals();
@@ -2517,16 +4286,17 @@ async function parseUploaded3DFile(file, extension) {
         });
     }
     if (extension === 'stp' || extension === 'step') {
-        return parseStepFile(file);
+        return parseStepFile(file, placement);
     }
     throw new Error(`Unsupported file extension: ${extension}`);
 }
 
-function prepareImportedObject(object) {
+function prepareImportedObject(object, performanceMode = false) {
     let meshCount = 0;
     object.traverse((child) => {
         if (!child.isMesh) return;
         meshCount += 1;
+        child.userData.largeModelMode = performanceMode;
         if (!child.geometry.getAttribute('normal')) child.geometry.computeVertexNormals();
         if (!child.material) {
             child.material = new THREE.MeshStandardMaterial({
@@ -2535,8 +4305,8 @@ function prepareImportedObject(object) {
                 metalness: 0.15
             });
         }
-        child.castShadow = true;
-        child.receiveShadow = true;
+        child.castShadow = !performanceMode;
+        child.receiveShadow = !performanceMode;
         const materials = Array.isArray(child.material) ? child.material : [child.material];
         materials.forEach((material) => {
             if (material) material.needsUpdate = true;
@@ -2545,35 +4315,235 @@ function prepareImportedObject(object) {
     return meshCount;
 }
 
-function applyImportedPlacementColor(object, placement) {
+function createImportedPlacementMaterial(placement, source = null, performanceMode = false) {
     const color = IMPORT_PLACEMENT_COLORS[placement] ?? IMPORT_PLACEMENT_COLORS.scene;
+    const MaterialClass = performanceMode ? THREE.MeshLambertMaterial : THREE.MeshStandardMaterial;
+    return new MaterialClass({
+        color,
+        ...(performanceMode ? {} : {
+            roughness: placement === 'tcp' ? 0.48 : 0.64,
+            metalness: placement === 'tcp' ? 0.18 : 0.06
+        }),
+        side: source?.side ?? THREE.FrontSide,
+        transparent: Boolean(source?.transparent || (source?.opacity ?? 1) < 1),
+        opacity: source?.opacity ?? 1,
+        depthTest: source?.depthTest ?? true,
+        depthWrite: source?.depthWrite ?? true
+    });
+}
+
+function applyImportedPlacementColor(object, placement, performanceMode = false) {
     object.traverse((child) => {
         if (!child.isMesh) return;
         const sourceMaterials = Array.isArray(child.material) ? child.material : [child.material];
-        const materials = sourceMaterials.map((source) => new THREE.MeshStandardMaterial({
-            color,
-            roughness: placement === 'tcp' ? 0.48 : 0.64,
-            metalness: placement === 'tcp' ? 0.18 : 0.06,
-            side: source?.side ?? THREE.FrontSide,
-            transparent: Boolean(source?.transparent || (source?.opacity ?? 1) < 1),
-            opacity: source?.opacity ?? 1,
-            depthTest: source?.depthTest ?? true,
-            depthWrite: source?.depthWrite ?? true
-        }));
+        const materials = sourceMaterials.map((source) => (
+            createImportedPlacementMaterial(placement, source, performanceMode)
+        ));
         child.material = Array.isArray(child.material) ? materials : materials[0];
         child.userData.importColorRole = placement;
     });
 }
 
+function getMeshMaterials(mesh) {
+    return Array.isArray(mesh?.material) ? mesh.material : [mesh?.material];
+}
+
+function ensureModelPartMaterialIsolation(mesh) {
+    if (!mesh?.isMesh || mesh.userData.modelPartMaterials) return;
+    const sourceMaterials = getMeshMaterials(mesh);
+    const isolatedMaterials = sourceMaterials.map((material) => material?.clone?.() || material);
+    mesh.material = Array.isArray(mesh.material) ? isolatedMaterials : isolatedMaterials[0];
+    mesh.userData.modelPartMaterials = isolatedMaterials.map((material) => ({
+        material,
+        color: material?.color?.clone?.() || null,
+        emissive: material?.emissive?.clone?.() || null,
+        emissiveIntensity: Number.isFinite(material?.emissiveIntensity) ? material.emissiveIntensity : null
+    }));
+}
+
+function setModelPartHighlight(part, highlighted) {
+    if (!part) return;
+    part.traverse((child) => {
+        if (!child.isMesh) return;
+        ensureModelPartMaterialIsolation(child);
+        child.userData.modelPartMaterials?.forEach(({ material, color, emissive, emissiveIntensity }) => {
+            if (!material) return;
+            if (highlighted) {
+                if (material.emissive) {
+                    material.emissive.setHex(MODEL_PART_SELECTION_COLOR);
+                    material.emissiveIntensity = Math.max(emissiveIntensity ?? 0, 0.72);
+                } else if (material.color) {
+                    material.color.setHex(MODEL_PART_SELECTION_COLOR);
+                }
+            } else {
+                if (color && material.color) material.color.copy(color);
+                if (emissive && material.emissive) material.emissive.copy(emissive);
+                if (emissiveIntensity !== null && 'emissiveIntensity' in material) {
+                    material.emissiveIntensity = emissiveIntensity;
+                }
+            }
+            material.needsUpdate = true;
+        });
+    });
+}
+
+function getImportedModelParts(model) {
+    return Array.isArray(model?.userData?.importedParts) ? model.userData.importedParts : [];
+}
+
+const IMPORT_PART_GENERIC_NAME_PATTERN = /^(?:scene|root|rootnode|model|group|object|mesh|node|geometry|default)$/i;
+const IMPORT_PART_BODY_NAME_PATTERN = /^body(?:[_ -]?\d+)?$/i;
+const IMPORT_PART_CAD_NAME_PATTERN = /^(?:base|j\d+|cable(?:[_ -]?\d+)?|screw(?:[_ -]?\d+)?|working[_ -]?range(?:[_ -]?\d+)?|workspace(?:[_ -]?\d+)?|tool|flange)(?:[_ -]?\d+)?$/i;
+
+function getImportedHierarchyPartRoot(mesh, content) {
+    let fallback = null;
+    let current = mesh?.parent || null;
+    while (current && current !== content) {
+        const name = String(current.name || '').trim();
+        if (name && !IMPORT_PART_BODY_NAME_PATTERN.test(name)
+            && !IMPORT_PART_GENERIC_NAME_PATTERN.test(name)) {
+            if (!fallback) fallback = current;
+            if (IMPORT_PART_CAD_NAME_PATTERN.test(name)) return current;
+        }
+        current = current.parent;
+    }
+    return fallback;
+}
+
+function registerImportedModelParts(model, content, performanceMode = false) {
+    const meshList = [];
+    content?.traverse?.((child) => {
+        if (child.isMesh) meshList.push(child);
+    });
+    const groups = new Map();
+    meshList.forEach((mesh, index) => {
+        const hierarchyRoot = mesh.userData.cadPartKey
+            ? null
+            : getImportedHierarchyPartRoot(mesh, content);
+        const cadPartKey = mesh.userData.cadPartKey
+            || (hierarchyRoot ? `hierarchy-${hierarchyRoot.uuid}` : `mesh-${mesh.uuid}`);
+        let group = groups.get(cadPartKey);
+        if (!group) {
+            group = {
+                key: cadPartKey,
+                name: hierarchyRoot?.name || mesh.userData.cadPartName || mesh.name || uiFormat('Part {index}', { index: index + 1 }),
+                sourceNode: hierarchyRoot,
+                meshes: []
+            };
+            groups.set(cadPartKey, group);
+        }
+        group.meshes.push(mesh);
+    });
+
+    const parts = [];
+    const nameCounts = new Map();
+    groups.forEach((group) => {
+        const count = (nameCounts.get(group.name) || 0) + 1;
+        nameCounts.set(group.name, count);
+        const displayName = count > 1 ? `${group.name} #${count}` : group.name;
+        // Keep the loader's CAD group in place so its original transforms and
+        // hierarchy remain intact; only STEP mesh buckets need a new wrapper.
+        const sourceNode = group.sourceNode && group.sourceNode !== content
+            ? group.sourceNode
+            : null;
+        const part = sourceNode || (group.meshes.length === 1 ? group.meshes[0] : new THREE.Group());
+        if (!sourceNode && part !== group.meshes[0]) {
+            part.name = displayName;
+            content.add(part);
+            group.meshes.forEach((mesh) => part.add(mesh));
+        }
+        if (sourceNode) sourceNode.name = displayName;
+        state.modelPartIdCounter += 1;
+        part.userData.modelPartId = `scene-model-part-${state.modelPartIdCounter}`;
+        part.userData.modelPartName = displayName;
+        part.userData.cadPartKey = group.key;
+        if (!performanceMode) {
+            group.meshes.forEach((mesh) => ensureModelPartMaterialIsolation(mesh));
+        }
+        parts.push(part);
+    });
+    model.userData.importedParts = parts;
+    return parts;
+}
+
+function findImportedModelPart(partId) {
+    if (!partId) return null;
+    for (const model of state.models) {
+        const part = getImportedModelParts(model).find((candidate) => candidate.userData.modelPartId === partId);
+        if (part) return { model, part };
+    }
+    return null;
+}
+
+function setSelectedModelPart(part) {
+    if (state.selectedModelPart === part) return;
+    setModelPartHighlight(state.selectedModelPart, false);
+    state.selectedModelPart = part || null;
+    setModelPartHighlight(state.selectedModelPart, true);
+    renderModelTree();
+}
+
+function setModelPartVisibility(model, part, visible, recordHistoryChange = true) {
+    if (!model || !part || !getImportedModelParts(model).includes(part)) return;
+    const nextVisible = Boolean(visible);
+    if (part.visible === nextVisible) return;
+    const historyBefore = recordHistoryChange && !state.historySuspended ? captureSceneSnapshot() : null;
+    part.visible = nextVisible;
+    if (!nextVisible && state.selectedModelPart === part) setSelectedModelPart(null);
+    invalidateSimulationSnapCandidates();
+    renderModelTree();
+    if (historyBefore) recordHistory('모델 변환', historyBefore, captureSceneSnapshot());
+}
+
+function getImportErrorDetail(error, extension) {
+    const message = String(error?.message || '').trim();
+    if (extension === 'stp' || extension === 'step') {
+        if (/memory|allocation|array buffer|worker stopped|out of bounds|abort/i.test(message)) {
+            return uiText('브라우저 메모리가 부족하거나 STEP 형상이 너무 복잡합니다.');
+        }
+        if (/no triangulated mesh|no renderable mesh/i.test(message)) {
+            return uiText('STEP 파일에 표시 가능한 메시가 없습니다.');
+        }
+        if (/opencascade|could not convert|could not be read/i.test(message)) {
+            return uiText('STEP 형상을 해석하지 못했습니다.');
+        }
+        if (/failed to fetch|importscripts|parser is unavailable|networkerror/i.test(message)) {
+            return uiText('STEP 변환 엔진을 불러오지 못했습니다. 네트워크 연결을 확인해 주세요.');
+        }
+    }
+    return message || uiText('알 수 없는 오류가 발생했습니다.');
+}
+
+function getImportErrorMessage(error, extension) {
+    const message = getImportErrorDetail(error, extension);
+    if (extension === 'gltf') {
+        return uiFormat('3D 파일을 불러오지 못했습니다.\n{message}\n\n외부 파일을 참조하는 GLTF는 GLB로 변환해서 사용해 주세요.', { message });
+    }
+    if (extension === 'stp' || extension === 'step') {
+        return uiFormat('STEP 파일을 불러오지 못했습니다.\n{message}\n\n파일이 매우 크거나 형상이 복잡한 경우 CAD에서 불필요한 부품을 제거하거나 GLB/STL로 내보낸 뒤 다시 시도해 주세요.', { message });
+    }
+    return uiFormat('3D 파일을 불러오지 못했습니다.\n{message}', { message });
+}
+
 async function handle3DImport() {
     const file = state.pendingImportFile;
     if (!file) return;
+    if (state.zeroPointEdit.active) exitZeroPointEditor();
+    invalidateSimulationSnapCandidates();
+    if (state.snapMoveMode) {
+        state.snapMoveMode = false;
+        invalidateSimulationSnapCandidates();
+        hideSimulationSnapMarker();
+        resetSimulationSnapMarkerCameraScale();
+        updateSimulationSnapButton();
+    }
     setTransformHandlesEnabled(false);
     setBaseJogGizmoEnabled(false);
     commitAllPendingHistories();
     const historyBefore = captureSceneSnapshot();
 
     const extension = getFileExtension(file.name);
+    const performanceMode = file.size >= LARGE_MODEL_PERFORMANCE_MIN_BYTES;
     const placement = el.importPlacement.value;
     const robot = placement === 'tcp' ? getArticulatedRobotForAttachment() : null;
     if (placement === 'tcp' && !robot) {
@@ -2589,11 +4559,13 @@ async function handle3DImport() {
 
     let importedModel = null;
     try {
-        const content = await parseUploaded3DFile(file, extension);
+        const content = await parseUploaded3DFile(file, extension, placement);
         if (extension === 'fbx') applyFBXMaterial(content);
-        const meshCount = prepareImportedObject(content);
+        const meshCount = prepareImportedObject(content, performanceMode);
         if (meshCount === 0) throw new Error('The file contains no renderable mesh.');
-        applyImportedPlacementColor(content, placement);
+        if (extension !== 'stp' && extension !== 'step') {
+            applyImportedPlacementColor(content, placement, performanceMode);
+        }
 
         importedModel = new THREE.Group();
         importedModel.name = `Imported: ${file.name}`;
@@ -2604,14 +4576,15 @@ async function handle3DImport() {
         importedModel.userData.sourceUnit = 'mm';
         importedModel.userData.sourceUpAxis = placement === 'tcp' ? 'tool' : upAxis;
         importedModel.userData.placement = placement;
+        importedModel.userData.sourceFileSize = file.size;
+        importedModel.userData.largeModelMode = performanceMode;
 
         // Only free-standing 3D models are normalized into the viewer's Z-Up axes.
         // TCP tools preserve file XYZ and inherit the robot's Tool XYZ frame 1:1.
         if (placement === 'scene' && upAxis === 'y') importedModel.rotateX(Math.PI / 2);
 
         if (placement === 'tcp') {
-            robot.userData.tcpFrame.add(importedModel);
-            importedModel.userData.attachmentHost = robot;
+            mountToolModelAtActiveTcp(robot, importedModel);
             if (state.activeArticulatedModel !== robot) {
                 state.activeArticulatedModel = robot;
                 renderJogControls(robot);
@@ -2629,19 +4602,24 @@ async function handle3DImport() {
 
         state.models.push(importedModel);
         ensureModelTreeId(importedModel);
+        registerImportedModelParts(importedModel, content, performanceMode);
 
         updateUIStatus();
         selectSceneModel(importedModel);
         recordHistory(placement === 'tcp' ? 'TCP 툴 불러오기' : '3D 모델링 불러오기', historyBefore, captureSceneSnapshot());
         fitCamera();
-        setStatus(placement === 'tcp' ? 'Tool이 TCP에 부착되었습니다.' : '3D 모델링 불러오기 완료', '#22c55e');
+        setStatus(placement === 'tcp'
+            ? 'Tool이 TCP에 부착되었습니다.'
+            : performanceMode
+                ? '3D 모델링 불러오기 완료 · 대용량 성능 모드'
+                : '3D 모델링 불러오기 완료', '#22c55e');
     } catch (error) {
         console.error('3D import failed:', error);
         importedModel?.removeFromParent();
         if (importedModel) disposeObjectResources(importedModel);
         applySceneSnapshot(historyBefore);
         setStatus('가져오기 오류', '#ef4444');
-        alert(uiText('3D 파일을 불러오지 못했습니다.\n외부 파일을 참조하는 GLTF는 GLB로 변환해서 사용해 주세요.'));
+        alert(getImportErrorMessage(error, extension));
     } finally {
         state.pendingImportFile = null;
         el.btnConfirmImport.disabled = false;
@@ -2741,6 +4719,246 @@ function updateScaraTube(robot) {
     normal.needsUpdate = true;
 }
 
+function createDefaultTcpProfile() {
+    return {
+        position: new THREE.Vector3(),
+        quaternion: new THREE.Quaternion()
+    };
+}
+
+function normalizeTcpProfile(profile) {
+    const normalized = createDefaultTcpProfile();
+    const position = profile?.position;
+    const quaternion = profile?.quaternion;
+    if (position?.isVector3) normalized.position.copy(position);
+    else if (Array.isArray(position) && position.length === 3 && position.every(Number.isFinite)) {
+        normalized.position.fromArray(position);
+    }
+    if (quaternion?.isQuaternion) normalized.quaternion.copy(quaternion).normalize();
+    else if (Array.isArray(quaternion) && quaternion.length === 4 && quaternion.every(Number.isFinite)) {
+        normalized.quaternion.fromArray(quaternion);
+        if (normalized.quaternion.lengthSq() < 1e-12) normalized.quaternion.identity();
+        else normalized.quaternion.normalize();
+    }
+    return normalized;
+}
+
+function ensureRobotTcpProfiles(robot) {
+    if (!robot) return [];
+    const source = Array.isArray(robot.userData.tcpProfiles) ? robot.userData.tcpProfiles : [];
+    robot.userData.tcpProfiles = Array.from({ length: TCP_PROFILE_COUNT }, (_, index) => (
+        normalizeTcpProfile(source[index])
+    ));
+    const activeIndex = Number(robot.userData.activeTcpProfileIndex);
+    robot.userData.activeTcpProfileIndex = Number.isInteger(activeIndex)
+        ? THREE.MathUtils.clamp(activeIndex, 0, TCP_PROFILE_COUNT - 1)
+        : 0;
+    return robot.userData.tcpProfiles;
+}
+
+function serializeRobotTcpProfiles(robot) {
+    return ensureRobotTcpProfiles(robot).map((profile) => ({
+        position: profile.position.toArray(),
+        quaternion: profile.quaternion.toArray()
+    }));
+}
+
+function syncActiveTcpFrame(robot, profileOverride = null) {
+    const tcpFrame = robot?.userData.tcpFrame;
+    if (!tcpFrame) return;
+    const profiles = ensureRobotTcpProfiles(robot);
+    const profile = profileOverride
+        || robot.userData.tcpLiveProfile
+        || profiles[robot.userData.activeTcpProfileIndex];
+    tcpFrame.position.copy(profile.position);
+    tcpFrame.quaternion.copy(profile.quaternion);
+    tcpFrame.scale.set(1, 1, 1);
+    tcpFrame.updateMatrix();
+    robot.updateMatrixWorld(true);
+}
+
+function restoreRobotTcpProfiles(robot, profiles, activeIndex = 0) {
+    if (!robot?.userData.tcpFrame) return;
+    delete robot.userData.tcpLiveProfile;
+    robot.userData.tcpProfiles = Array.from({ length: TCP_PROFILE_COUNT }, (_, index) => (
+        normalizeTcpProfile(profiles?.[index])
+    ));
+    const index = Number(activeIndex);
+    robot.userData.activeTcpProfileIndex = Number.isInteger(index)
+        ? THREE.MathUtils.clamp(index, 0, TCP_PROFILE_COUNT - 1)
+        : 0;
+    syncActiveTcpFrame(robot);
+}
+
+function getTcpProfileRotationDegrees(profile) {
+    const euler = new THREE.Euler().setFromQuaternion(profile.quaternion, 'ZYX');
+    return {
+        rx: normalizeDegrees(THREE.MathUtils.radToDeg(euler.x)),
+        ry: normalizeDegrees(THREE.MathUtils.radToDeg(euler.y)),
+        rz: normalizeDegrees(THREE.MathUtils.radToDeg(euler.z))
+    };
+}
+
+function getTcpProfileEditorValues(profile) {
+    const rotation = getTcpProfileRotationDegrees(profile);
+    return {
+        x: profile.position.x,
+        y: profile.position.y,
+        z: profile.position.z,
+        ...rotation
+    };
+}
+
+function clearTcpProfileLive(robot, refresh = false) {
+    if (!robot?.userData.tcpLiveProfile) return false;
+    delete robot.userData.tcpLiveProfile;
+    syncActiveTcpFrame(robot);
+    captureCurrentTcpTarget(robot);
+    if (refresh) refreshTcpProfileUi(robot);
+    return true;
+}
+
+function setTcpProfileStatus(message, type = '') {
+    if (!el.tcpProfileStatus) return;
+    el.tcpProfileStatus.dataset.sourceMessage = message;
+    el.tcpProfileStatus.textContent = uiText(message);
+    el.tcpProfileStatus.classList.toggle('success', type === 'success');
+    el.tcpProfileStatus.classList.toggle('error', type === 'error');
+}
+
+function refreshTcpProfileUi(robot = state.activeArticulatedModel) {
+    const available = Boolean(robot?.userData.tcpFrame);
+    const profiles = available ? ensureRobotTcpProfiles(robot) : [];
+    const activeIndex = available ? robot.userData.activeTcpProfileIndex : 0;
+    if (el.activeTcpProfileLabel) el.activeTcpProfileLabel.textContent = `TCP ${activeIndex + 1}`;
+    if (el.tcpLauncherLabel) el.tcpLauncherLabel.textContent = `TCP ${activeIndex + 1}`;
+    el.tcpProfileButtons.forEach((button) => {
+        const selected = Number(button.dataset.tcpProfile) === activeIndex;
+        button.classList.toggle('active', selected);
+        button.setAttribute('aria-pressed', String(selected));
+        button.disabled = !available || isMotionActive();
+        button.title = uiFormat('TCP {number} 선택', { number: Number(button.dataset.tcpProfile) + 1 });
+    });
+    Object.values(el.tcpOffsetInputs).forEach((input) => { input.disabled = !available || isMotionActive(); });
+    if (el.btnApplyTcpProfile) el.btnApplyTcpProfile.disabled = !available || isMotionActive();
+    if (el.btnResetTcpProfile) el.btnResetTcpProfile.disabled = !available || isMotionActive();
+    if (!available) el.tcpProfilePanel?.classList.add('panel-user-hidden');
+    updatePanelLauncher('tcp-profile-panel');
+    updateTcpSnapUi();
+    if (!available) return;
+
+    const profile = robot.userData.tcpLiveProfile || profiles[activeIndex];
+    const values = getTcpProfileEditorValues(profile);
+    Object.entries(values).forEach(([key, value]) => {
+        const input = el.tcpOffsetInputs[key];
+        if (input && input !== document.activeElement) input.value = String(Number(value.toFixed(3)));
+    });
+}
+
+function selectTcpProfile(index) {
+    const robot = state.activeArticulatedModel;
+    if (isMotionActive() || !robot?.userData.tcpFrame || !Number.isInteger(index)
+        || index < 0 || index >= TCP_PROFILE_COUNT) return;
+    ensureRobotTcpProfiles(robot);
+    if (robot.userData.activeTcpProfileIndex === index) {
+        refreshTcpProfileUi(robot);
+        return;
+    }
+    commitAllPendingHistories();
+    clearTcpProfileLive(robot);
+    const before = captureSceneSnapshot();
+    robot.userData.activeTcpProfileIndex = index;
+    syncActiveTcpFrame(robot);
+    captureCurrentTcpTarget(robot);
+    refreshTcpProfileUi(robot);
+    setTcpProfileStatus('선택한 TCP가 활성화되었습니다.', 'success');
+    setStatus('TCP {number} 활성화', '#f97316', { number: index + 1 });
+    recordHistory('TCP 선택', before, captureSceneSnapshot());
+}
+
+function readTcpProfileEditorValues() {
+    const values = Object.fromEntries(Object.entries(el.tcpOffsetInputs).map(([key, input]) => [
+        key,
+        input?.value.trim() === '' ? NaN : Number(input?.value)
+    ]));
+    const valid = Object.entries(values).every(([key, value]) => {
+        if (!Number.isFinite(value)) return false;
+        const limit = ['x', 'y', 'z'].includes(key) ? 10000 : 360;
+        return Math.abs(value) <= limit;
+    });
+    return valid ? values : null;
+}
+
+function applyTcpProfileEditor() {
+    const robot = state.activeArticulatedModel;
+    if (isMotionActive() || !robot?.userData.tcpFrame) return;
+    const values = readTcpProfileEditorValues();
+    if (!values) {
+        setTcpProfileStatus('TCP 오프셋 입력값을 확인하세요.', 'error');
+        setStatus('TCP 오프셋 입력값을 확인하세요.', '#ef4444');
+        return;
+    }
+    commitAllPendingHistories();
+    const before = captureSceneSnapshot();
+    delete robot.userData.tcpLiveProfile;
+    const profiles = ensureRobotTcpProfiles(robot);
+    const profile = profiles[robot.userData.activeTcpProfileIndex];
+    profile.position.set(values.x, values.y, values.z);
+    profile.quaternion.setFromEuler(new THREE.Euler(
+        THREE.MathUtils.degToRad(values.rx),
+        THREE.MathUtils.degToRad(values.ry),
+        THREE.MathUtils.degToRad(values.rz),
+        'ZYX'
+    )).normalize();
+    syncActiveTcpFrame(robot);
+    captureCurrentTcpTarget(robot);
+    refreshTcpProfileUi(robot);
+    setTcpProfileStatus('TCP 오프셋을 적용했습니다.', 'success');
+    setStatus('TCP {number} 오프셋 적용', '#22c55e', {
+        number: robot.userData.activeTcpProfileIndex + 1
+    });
+    recordHistory('TCP 오프셋 설정', before, captureSceneSnapshot());
+}
+
+function resetActiveTcpProfile() {
+    const robot = state.activeArticulatedModel;
+    if (isMotionActive() || !robot?.userData.tcpFrame) return;
+    commitAllPendingHistories();
+    const before = captureSceneSnapshot();
+    delete robot.userData.tcpLiveProfile;
+    const profiles = ensureRobotTcpProfiles(robot);
+    const profile = profiles[robot.userData.activeTcpProfileIndex];
+    profile.position.set(0, 0, 0);
+    profile.quaternion.identity();
+    syncActiveTcpFrame(robot);
+    captureCurrentTcpTarget(robot);
+    refreshTcpProfileUi(robot);
+    setTcpProfileStatus('TCP 오프셋을 초기화했습니다.', 'success');
+    recordHistory('TCP 오프셋 초기화', before, captureSceneSnapshot());
+}
+
+function updateTcpProfileLive() {
+    const robot = state.activeArticulatedModel;
+    if (isMotionActive() || !robot?.userData.tcpFrame) return;
+    const values = readTcpProfileEditorValues();
+    if (!values) {
+        clearTcpProfileLive(robot);
+        setTcpProfileStatus('TCP 오프셋 입력값을 확인하세요.', 'error');
+        return;
+    }
+    const liveProfile = createDefaultTcpProfile();
+    liveProfile.position.set(values.x, values.y, values.z);
+    liveProfile.quaternion.setFromEuler(new THREE.Euler(
+        THREE.MathUtils.degToRad(values.rx),
+        THREE.MathUtils.degToRad(values.ry),
+        THREE.MathUtils.degToRad(values.rz),
+        'ZYX'
+    )).normalize();
+    robot.userData.tcpLiveProfile = liveProfile;
+    syncActiveTcpFrame(robot, liveProfile);
+    captureCurrentTcpTarget(robot);
+}
+
 function renderJogControls(robot) {
     const joints = robot.userData.joints || [];
     el.jogControls.replaceChildren();
@@ -2812,6 +5030,8 @@ function renderJogControls(robot) {
 
     el.jogPanel.classList.remove('hidden');
     updatePanelLauncher('jog-panel');
+    refreshTcpProfileUi(robot);
+    setTcpProfileStatus('선택한 TCP는 로봇별로 저장됩니다.');
     updateBaseJogCapabilities(robot);
     setJogMode('joint');
     captureCurrentTcpTarget(robot);
@@ -2842,6 +5062,7 @@ function hideJogPanel() {
     setBaseJogGizmoEnabled(false);
     el.jogPanel.classList.add('hidden');
     el.jogControls.replaceChildren();
+    refreshTcpProfileUi(null);
     updatePanelLauncher('jog-panel');
 }
 
@@ -2876,7 +5097,9 @@ function syncJointControls(robot) {
 function setJogMode(mode) {
     if (state.snapMoveMode) {
         state.snapMoveMode = false;
+        invalidateSimulationSnapCandidates();
         hideSimulationSnapMarker();
+        resetSimulationSnapMarkerCameraScale();
         updateSimulationSnapButton();
     }
     const isBase = mode === 'base';
@@ -3135,6 +5358,40 @@ function syncTcpVisualAtPose(robot, pose) {
     axes.matrixWorldNeedsUpdate = true;
 }
 
+function updateCameraScaledTcpAxes() {
+    const viewportHeight = state.renderer?.domElement.clientHeight || 0;
+    if (!state.camera || !state.scene || viewportHeight <= 0) return;
+
+    state.camera.updateMatrixWorld(true);
+    state.scene.updateMatrixWorld(true);
+    const fovScale = 2 * Math.tan(THREE.MathUtils.degToRad(state.camera.fov * 0.5));
+    const cameraZoom = Math.max(state.camera.zoom || 1, Number.EPSILON);
+
+    state.models.forEach((robot) => {
+        const axes = robot.userData.toolAxesAtTcp;
+        const sizing = axes?.userData.cameraScaledSize;
+        if (!axes || !sizing || !axes.visible) return;
+
+        axes.getWorldPosition(tcpAxesWorldPosition);
+        tcpAxesCameraPosition.copy(tcpAxesWorldPosition).applyMatrix4(state.camera.matrixWorldInverse);
+        const cameraDepth = -tcpAxesCameraPosition.z;
+        if (cameraDepth <= 0) return;
+
+        const worldUnitsPerPixel = (cameraDepth * fovScale) / (viewportHeight * cameraZoom);
+        const parentWorldScale = axes.parent
+            ? axes.parent.getWorldScale(tcpAxesParentScale)
+            : tcpAxesParentScale.set(1, 1, 1);
+        const inheritedScale = Math.max(
+            Math.abs(parentWorldScale.x),
+            Math.abs(parentWorldScale.y),
+            Math.abs(parentWorldScale.z),
+            Number.EPSILON
+        );
+        const localScale = (worldUnitsPerPixel * sizing.pixelSize) / (sizing.localSize * inheritedScale);
+        axes.scale.setScalar(localScale);
+    });
+}
+
 function updateTcpPresentation(robot, pose = getCurrentTcpPoseBase(robot)) {
     if (!pose) return;
     syncTcpVisualAtPose(robot, pose);
@@ -3391,13 +5648,22 @@ function solveScaraIK(robot, target) {
     const joints = robot.userData.joints || [];
     const manifest = robot.userData.manifest;
     const homeQuaternion = robot.userData.toolHomeQuaternion;
-    if (joints.length !== 4 || !homeQuaternion || !Array.isArray(manifest?.structure)) {
+    const tcpFrame = robot.userData.tcpFrame;
+    if (joints.length !== 4 || !homeQuaternion || !tcpFrame || !Array.isArray(manifest?.structure)) {
         return { success: false, positionError: Infinity, rotationError: Infinity };
     }
+
+    const targetFlangeQuaternion = target.quaternion.clone()
+        .multiply(tcpFrame.quaternion.clone().invert())
+        .normalize();
+    const targetFlangePosition = target.position.clone().sub(
+        tcpFrame.position.clone().applyQuaternion(targetFlangeQuaternion)
+    );
 
     const currentPose = getCurrentTcpPoseBase(robot);
     const rzOnlyError = quaternionErrorVector(target.quaternion, currentPose.quaternion);
     if (currentPose.position.distanceTo(target.position) < 0.01
+        && Math.hypot(tcpFrame.position.x, tcpFrame.position.y) < 1e-9
         && Math.hypot(rzOnlyError.x, rzOnlyError.y) < THREE.MathUtils.degToRad(0.01)) {
         const requestedJ4 = joints[3].angle + THREE.MathUtils.radToDeg(rzOnlyError.z);
         if (requestedJ4 >= joints[3].definition.min - 1e-7
@@ -3419,11 +5685,11 @@ function solveScaraIK(robot, target) {
 
     const [arm1, arm2] = manifest.structure;
     const signedArm2 = (manifest.secondArmDirection || 1) * arm2;
-    const radiusSquared = target.position.x ** 2 + target.position.y ** 2;
+    const radiusSquared = targetFlangePosition.x ** 2 + targetFlangePosition.y ** 2;
     const denominator = 2 * arm1 * signedArm2;
     const rawCosine = (radiusSquared - arm1 ** 2 - signedArm2 ** 2) / denominator;
-    const prismaticTarget = target.position.z - (manifest.tcp?.[2] || 0);
-    const targetRotation = quaternionErrorVector(target.quaternion, homeQuaternion);
+    const prismaticTarget = targetFlangePosition.z - (manifest.tcp?.[2] || 0);
+    const targetRotation = quaternionErrorVector(targetFlangeQuaternion, homeQuaternion);
     const orientationIsRzOnly = Math.hypot(targetRotation.x, targetRotation.y) < THREE.MathUtils.degToRad(0.01);
 
     if (!Number.isFinite(rawCosine)
@@ -3441,7 +5707,7 @@ function solveScaraIK(robot, target) {
     let best = null;
 
     elbowSolutions.forEach((physicalJ2) => {
-        const physicalJ1 = Math.atan2(target.position.y, target.position.x)
+        const physicalJ1 = Math.atan2(targetFlangePosition.y, targetFlangePosition.x)
             - Math.atan2(
                 signedArm2 * Math.sin(physicalJ2),
                 arm1 + signedArm2 * Math.cos(physicalJ2)
@@ -5213,6 +7479,10 @@ function updateMotionUiLock() {
         .forEach((control) => { control.disabled = locked; });
     el.jogPanel?.querySelectorAll('[data-panel-action]')
         .forEach((control) => { control.disabled = false; });
+    el.tcpProfilePanel?.querySelectorAll('button:not([data-panel-action]), input, select')
+        .forEach((control) => { control.disabled = locked; });
+    el.tcpProfilePanel?.querySelectorAll('[data-panel-action]')
+        .forEach((control) => { control.disabled = false; });
     el.modelTransformPanel?.querySelectorAll('button, input').forEach((control) => { control.disabled = locked; });
     el.programPanel?.querySelectorAll('[data-program-edit], [data-program-robot-include], [data-program-step-select], [data-program-robot-select]')
         .forEach((control) => { control.disabled = locked; });
@@ -5221,6 +7491,8 @@ function updateMotionUiLock() {
         setTransformHandlesEnabled(false);
         setBaseJogGizmoEnabled(false);
     }
+    refreshTcpProfileUi();
+    updateTcpSnapUi();
     updateSimulationSnapButton();
     updateHistoryButtons();
 }
@@ -5244,6 +7516,8 @@ function serializeMotionProject() {
                     quaternion: robot.quaternion.toArray(),
                     scale: robot.scale.toArray()
                 },
+                tcpProfiles: serializeRobotTcpProfiles(robot),
+                activeTcpProfileIndex: robot.userData.activeTcpProfileIndex,
                 steps: program.steps.map((step) => ({
                     id: step.id,
                     name: step.name,
@@ -5312,7 +7586,10 @@ async function restoreMotionProjectData(input) {
         ...replacedRobots,
         ...state.models.filter((model) => replacedRobots.has(model.userData.attachmentHost))
     ]);
-    removedModels.forEach((model) => model.removeFromParent());
+    removedModels.forEach((model) => {
+        disposeModelOutlines(model);
+        model.removeFromParent();
+    });
     state.models = state.models.filter((model) => !removedModels.has(model));
     state.motionPrograms.clear();
     state.activeArticulatedModel = null;
@@ -5335,6 +7612,11 @@ async function restoreMotionProjectData(input) {
             modelFolder: robotProject.modelFolder,
             robotType: robotProject.robotType
         });
+        restoreRobotTcpProfiles(
+            robot,
+            robotProject.tcpProfiles,
+            robotProject.activeTcpProfileIndex
+        );
         robot.position.fromArray(robotProject.baseTransform.position);
         robot.quaternion.fromArray(robotProject.baseTransform.quaternion);
         robot.scale.fromArray(robotProject.baseTransform.scale);
@@ -6033,6 +8315,75 @@ function applyFBXMaterial(fbx) {
     });
 }
 
+function isOutlineMesh(mesh) {
+    return Boolean(mesh?.isMesh
+        && mesh.geometry?.getAttribute?.('position')
+        && mesh.geometry.getAttribute('position').count > 0
+        && !mesh.userData?.outlineSource
+        && !mesh.userData?.excludeFromOutline);
+}
+
+function disposeModelOutlines(model) {
+    const outlineLines = [];
+    model?.traverse?.((object) => {
+        if (object.userData?.outlineSource) outlineLines.push(object);
+    });
+    outlineLines.forEach((line) => {
+        if (line.parent?.userData) delete line.parent.userData.outlineLine;
+        line.removeFromParent();
+        line.geometry?.dispose();
+        const materials = Array.isArray(line.material) ? line.material : [line.material];
+        materials.forEach((material) => material?.dispose());
+    });
+}
+
+function removeModelOutlines() {
+    state.models.forEach(disposeModelOutlines);
+}
+
+function syncModelOutlines() {
+    if (!state.outlineMode) {
+        removeModelOutlines();
+        return;
+    }
+    state.models.forEach((model) => {
+        model.traverse((mesh) => {
+            if (!isOutlineMesh(mesh) || mesh.userData.outlineLine) return;
+            const edgeGeometry = new THREE.EdgesGeometry(mesh.geometry, 28);
+            const lineMaterial = new THREE.LineBasicMaterial({
+                color: 0x000000,
+                transparent: true,
+                opacity: 0.95,
+                depthTest: true,
+                depthWrite: false,
+                toneMapped: false
+            });
+            const line = new THREE.LineSegments(edgeGeometry, lineMaterial);
+            line.name = 'Cartoon Outline';
+            line.renderOrder = 30;
+            line.frustumCulled = false;
+            line.userData.outlineSource = true;
+            mesh.add(line);
+            mesh.userData.outlineLine = line;
+        });
+    });
+}
+
+function updateOutlineToggleUi() {
+    const button = el.btnToggleOutline;
+    if (!button) return;
+    button.classList.toggle('active', state.outlineMode);
+    button.setAttribute('aria-pressed', String(state.outlineMode));
+    button.title = uiText(state.outlineMode ? '외곽선 끄기' : '외곽선 켜기');
+    button.setAttribute('aria-label', uiText('외곽선 표시/숨김'));
+}
+
+function setModelOutlineMode(enabled) {
+    state.outlineMode = Boolean(enabled);
+    syncModelOutlines();
+    updateOutlineToggleUi();
+}
+
 function disposeObjectResources(object, disposed = null) {
     const cache = disposed || {
         geometries: new Set(),
@@ -6061,16 +8412,17 @@ function disposeObjectResources(object, disposed = null) {
 }
 
 function attachPendingToolModels(robot) {
-    const tcpFrame = robot?.userData.tcpFrame;
-    if (!tcpFrame) return;
+    const mountFrame = getRobotToolMountFrame(robot);
+    if (!mountFrame) return;
     state.models.forEach((model) => {
         const transform = model.userData.pendingToolAttachment;
         if (!transform) return;
-        tcpFrame.add(model);
+        mountFrame.add(model);
         model.position.fromArray(transform.position);
         model.quaternion.fromArray(transform.quaternion);
         model.scale.fromArray(transform.scale);
         model.userData.attachmentHost = robot;
+        model.userData.attachmentFrame = 'flange';
         model.userData.placement = 'tcp';
         delete model.userData.pendingToolAttachment;
         model.updateMatrixWorld(true);
@@ -6078,12 +8430,15 @@ function attachPendingToolModels(robot) {
 }
 
 function cleanupScene() {
+    if (state.zeroPointEdit.active) exitZeroPointEditor();
+    invalidateSimulationSnapCandidates();
     setBaseJogGizmoEnabled(false);
     state.transformControls.detach();
     const models = [...state.models];
     const preservedImportedModels = models.filter((model) => model.userData.uploaded);
     preservedImportedModels.forEach((model) => {
-        const toolHost = model.userData.placement === 'tcp' && model.userData.attachmentHost?.userData.tcpFrame;
+        const toolHost = model.userData.placement === 'tcp'
+            && getRobotToolMountFrame(model.userData.attachmentHost);
         if (toolHost) {
             model.userData.pendingToolAttachment = {
                 position: model.position.toArray(),
@@ -6094,10 +8449,12 @@ function cleanupScene() {
         model.updateMatrixWorld(true);
         state.scene.attach(model);
         model.userData.attachmentHost = null;
+        model.userData.attachmentFrame = null;
         model.userData.placement = 'scene';
     });
     models.filter((model) => !preservedImportedModels.includes(model)).forEach((model) => {
         if (model.userData.motionInstanceId) state.motionPrograms.delete(model.userData.motionInstanceId);
+        disposeModelOutlines(model);
         model.removeFromParent();
     });
     state.models = preservedImportedModels;
@@ -6114,6 +8471,8 @@ function deleteSelectedModel() {
     if (isMotionActive()) return;
     const model = state.selectedModel;
     if (!model) return;
+    if (state.zeroPointEdit.active) exitZeroPointEditor();
+    invalidateSimulationSnapCandidates();
     commitAllPendingHistories();
     setBaseJogGizmoEnabled(false);
     const historyBefore = captureSceneSnapshot();
@@ -6123,6 +8482,7 @@ function deleteSelectedModel() {
     state.transformControls.detach();
     modelsToDelete.forEach((item) => {
         if (item.userData.motionInstanceId) state.motionPrograms.delete(item.userData.motionInstanceId);
+        disposeModelOutlines(item);
         item.removeFromParent();
         const index = state.models.indexOf(item);
         if (index > -1) state.models.splice(index, 1);
@@ -6146,6 +8506,8 @@ function deleteSelectedModel() {
 }
 
 function updateUIStatus() {
+    updateLargeModelPerformanceMode();
+    syncModelOutlines();
     const names = state.models.map(m => m.userData.modelName);
     el.statName.textContent = names.length > 1 ? `${names[0]} (+${names.length-1})` : (names[0] || '-');
     el.emptyState.classList.toggle('hidden', state.models.length > 0);
@@ -6276,7 +8638,13 @@ function animate() {
     updateMotionSessions(timestamp);
     updateCycleTimeReadout(timestamp);
     state.controls.update();
+    const renderInterval = state.largeModelPerformanceMode ? 1000 / LARGE_MODEL_RENDER_FPS : 0;
+    if (renderInterval && timestamp - state.lastPerformanceRenderAt < renderInterval) return;
+    state.lastPerformanceRenderAt = timestamp;
+    updateCameraScaledTcpAxes();
+    updateSimulationSnapMarkerCameraScale();
     state.renderer.render(state.scene, state.camera);
+    updateZeroPointCurrentMarker();
 }
 
 function onResize() {
@@ -6284,7 +8652,7 @@ function onResize() {
     state.camera.aspect = w / h;
     state.camera.updateProjectionMatrix();
     state.renderer.setSize(w, h);
-    [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.programPanel].forEach((panel) => {
+    [el.modelBrowserPanel, el.jogPanel, el.tcpProfilePanel, el.virtualControllerPanel, el.programPanel].forEach((panel) => {
         if (panel?.dataset.userResized === 'true') normalizePanelResizeBox(panel);
     });
 }
@@ -6300,6 +8668,7 @@ function fitCamera() {
     state.camera.position.set(center.x + dist * 0.8, center.y - dist * 0.8, center.z + dist * 0.5);
     state.camera.lookAt(center.x, center.y, center.z);
     state.controls.target.set(center.x, center.y, center.z);
+    if (state.snapMoveMode) captureSimulationSnapMarkerReferenceDistance();
 }
 
 async function populateModelList() {

@@ -483,6 +483,23 @@ assert.ok(!('pointIndex' in normalized.robots[0].steps[2]), 'Non-motion commands
 assert.equal(normalized.robots[0].steps[3].motion, 'TIME_START');
 assert.equal(normalized.robots[0].steps[4].motion, 'TIME_OUT');
 assert.ok(!('speed' in normalized.robots[0].steps[3]) && !('delaySeconds' in normalized.robots[0].steps[4]));
+assert.equal(normalized.robots[0].tcpProfiles.length, 3);
+assert.deepEqual(normalized.robots[0].tcpProfiles[0], {
+    position: [0, 0, 0],
+    quaternion: [0, 0, 0, 1]
+});
+assert.equal(normalized.robots[0].activeTcpProfileIndex, 0);
+const configuredTcpProject = structuredClone(fullProject);
+configuredTcpProject.robots[0].tcpProfiles = [
+    { position: [0, 0, 120], quaternion: [0, 0, 0, 1] },
+    { position: [30, -15, 245], quaternion: [0, 0, Math.SQRT1_2, Math.SQRT1_2] },
+    { position: [0, 0, 0], quaternion: [0, 0, 0, 2] }
+];
+configuredTcpProject.robots[0].activeTcpProfileIndex = 1;
+const configuredTcp = normalizeMotionProject(configuredTcpProject).robots[0];
+assert.deepEqual(configuredTcp.tcpProfiles[1].position, [30, -15, 245]);
+assert.ok(Math.abs(configuredTcp.tcpProfiles[1].quaternion[2] - Math.SQRT1_2) < 1e-12);
+assert.equal(configuredTcp.activeTcpProfileIndex, 1);
 const clonedDelayProgram = cloneMotionProgram({
     included: true,
     selectedStepId: normalized.robots[0].steps[2].id,
@@ -545,6 +562,14 @@ const invalidPointLabel = structuredClone(fullProject);
 invalidPointLabel.robots[0].steps[0].label = '1-invalid';
 assert.throws(() => normalizeMotionProject(invalidPointLabel), /label must start with a letter/);
 
+const invalidTcpCount = structuredClone(fullProject);
+invalidTcpCount.robots[0].tcpProfiles = [];
+assert.throws(() => normalizeMotionProject(invalidTcpCount), /TCP profiles must contain exactly 3 entries/);
+
+const invalidActiveTcp = structuredClone(configuredTcpProject);
+invalidActiveTcp.robots[0].activeTcpProfileIndex = 3;
+assert.throws(() => normalizeMotionProject(invalidActiveTcp), /active TCP index is invalid/);
+
 [
     'program-panel',
     'program-robot-list',
@@ -561,6 +586,31 @@ assert.throws(() => normalizeMotionProject(invalidPointLabel), /label must start
     'program-repeat',
     'program-import-file'
 ].forEach((id) => assert.match(htmlSource, new RegExp(`id=["']${id}["']`)));
+[
+    'tcp-profile-manager',
+    'tcp-profile-editor',
+    'tcp-profile-panel',
+    'tcp-launcher-label',
+    'model-context-menu',
+    'model-change-color',
+    'model-color-picker',
+    'btn-apply-tcp-profile',
+    'btn-reset-tcp-profile',
+    'tcp-snap-type',
+    'tcp-snap-radius',
+    'btn-tcp-snap',
+    'tcp-snap-readout',
+    'tcp-multi-center-controls',
+    'btn-toggle-outline'
+].forEach((id) => assert.match(htmlSource, new RegExp(`id=["']${id}["']`)));
+assert.equal((htmlSource.match(/data-tcp-profile=/g) || []).length, 3, 'Viewer must expose exactly three TCP slots.');
+assert.ok(mainSource.includes('function applyImportedModelColor(')
+    && mainSource.includes('findImportedModelPart(partId)')
+    && mainSource.includes('modelColorPicker?.addEventListener'), 'Imported model and part colors must be editable from the model tree context menu.');
+assert.equal((htmlSource.match(/<option value="(?:auto|vertex|endpoint|edge-midpoint|face-center|circle-center|rectangle-center|multi-point-center|shape-center|virtual-intersection)"/g) || []).length, 10, 'TCP snap type selector must expose all CAD snap types.');
+assert.equal((htmlSource.match(/data-panel-toggle="tcp-profile-panel"/g) || []).length, 1, 'Viewer must expose one TCP panel launcher.');
+assert.ok(htmlSource.indexOf('id="btn-toggle-outline"') < htmlSource.indexOf('id="btn-reset-view"'), 'The outline toggle must be placed before the view reset button.');
+assert.equal((htmlSource.match(/data-tcp-preview-axis=/g) || []).length, 0, 'Viewer must not expose TCP preview rulers.');
 const htmlIds = [...htmlSource.matchAll(/\sid=["']([^"']+)["']/g)].map((match) => match[1]);
 assert.equal(new Set(htmlIds).size, htmlIds.length, 'HTML ids must be unique.');
 const programControlRows = [...htmlSource.matchAll(/<div class="program-control-row(?: program-group-row)?">([\s\S]*?)<\/div>/g)]
@@ -577,6 +627,23 @@ assert.deepEqual(programControlRows, [
     'function restoreMotionProjectData(',
     'function finalizeMotionHistoryIfIdle(',
     'function syncTcpVisualAtPose(',
+    'function syncActiveTcpFrame(',
+    'function selectTcpProfile(',
+    'function applyTcpProfileEditor(',
+    'function updateTcpProfileLive(',
+    'function setModelOutlineMode(',
+    'function syncModelOutlines(',
+    'new THREE.EdgesGeometry(',
+    'new THREE.LineSegments(',
+    'function toggleTcpSnapMode(',
+    'function applyTcpSnapPoint(',
+    'function handleTcpSnapSelection(',
+    'tcpSnapRadiusPx',
+    'tcpSnapType',
+    'tcpLiveProfile',
+    'tcpProfiles: serializeRobotTcpProfiles(robot)',
+    'activeTcpProfileIndex: robot.userData.activeTcpProfileIndex',
+    'function updateCameraScaledTcpAxes()',
     'tcpFrame.add(toolAxesAtTcp)',
     'robot.userData.toolAxesAtTcp = toolAxesAtTcp',
     'maxSpeed: jointSpeeds[index]',
@@ -631,11 +698,25 @@ assert.match(motionCoreSource, /t \* t \* t \* \(10 \+ t \* \(-15 \+ 6 \* t\)\)/
 assert.ok(mainSource.includes('maxAcceleration: jointAccelerations[index]'), 'Robot manifests must expose per-axis acceleration limits.');
 assert.ok(mainSource.includes('maxDeceleration: jointDecelerations[index]'), 'Robot manifests must expose per-axis deceleration limits.');
 assert.ok(mainSource.includes('robot.userData.manifest.cartesianMotion'), 'MOVL must use the selected robot Cartesian limits.');
-assert.ok(htmlSource.includes('main.js?v=20260719-singularity-1'), 'Viewer cache token must load the current simulation bundle.');
+assert.match(htmlSource, /main\.js\?v=[^"'\s]*large-model-performance/, 'Viewer cache token must load the current simulation bundle.');
 assert.ok(htmlSource.includes('id="btn-fullscreen-mode"'), 'Viewer must expose the fullscreen UI mode button.');
 assert.ok(mainSource.includes('function setFullscreenUiMode(enabled)') && mainSource.includes('function handleFullscreenUiPointerMove(event)'), 'Fullscreen UI mode must hide and reveal bars from pointer proximity.');
 assert.ok(mainSource.includes("revealFullscreenBar('top')") && mainSource.includes("revealFullscreenBar('bottom')"), 'Fullscreen UI mode must reveal the top and bottom bars independently.');
-assert.ok(mainSource.includes('function attachPendingToolModels(robot)') && mainSource.includes('model.userData.pendingToolAttachment'), 'Tool-attached 3D models must transfer to a replacement robot TCP.');
+assert.ok(mainSource.includes('function attachPendingToolModels(robot)')
+    && mainSource.includes('const mountFrame = getRobotToolMountFrame(robot)')
+    && mainSource.includes('model.userData.pendingToolAttachment'),
+'Tool-attached 3D models must transfer to a replacement robot flange.');
+assert.ok(mainSource.includes('function mountToolModelAtActiveTcp(robot, model)')
+    && mainSource.includes('if (mountFrame !== tcpFrame) mountFrame.attach(model)')
+    && mainSource.includes("model.userData.attachmentFrame = 'flange'"),
+'Imported tools must align to the active TCP once and remain physically attached to the flange.');
+const tcpProfileSyncSource = mainSource.slice(
+    mainSource.indexOf('function syncActiveTcpFrame('),
+    mainSource.indexOf('function restoreRobotTcpProfiles(')
+);
+assert.ok(tcpProfileSyncSource.includes('tcpFrame.position.copy(profile.position)')
+    && !tcpProfileSyncSource.includes('attachmentHost'),
+'Changing a TCP profile must move only the TCP frame, not attached tool models.');
 assert.match(mainSource, /else if \(positionEntry\) \{\s*model\.position\[axis\] = value;/, 'Numeric model editing must change only the edited position axis.');
 assert.ok(mainSource.includes("const isScaleMode = state.transformControls?.mode === 'scale';") && mainSource.includes("model.scale[axis] = value;"), 'Scale mode must use the numeric X/Y/Z inputs as scale multipliers.');
 assert.ok(mainSource.includes('function toggleSelectedTransformMode(mode)') && mainSource.includes('setTransformHandlesEnabled(true);'), 'Selecting a transform mode must reveal its transform handles.');
@@ -652,6 +733,14 @@ assert.ok(
     'The Program Panel select-all control must switch to deselect-all when every robot is included.'
 );
 assert.ok(mainSource.includes('BASE_JOG_GIZMO_MESH_THICKNESS = 1.55'), 'Base JOG axis meshes must remain visually thicker than TCP axes.');
+assert.ok(mainSource.includes('TCP_AXES_SCREEN_PIXELS = 40')
+    && mainSource.includes('updateCameraScaledTcpAxes();'), 'TCP axes must stay compact at every camera zoom level.');
+assert.ok(mainSource.includes('el.snapMarker.dataset.snapType = snap.type;')
+    && /\.simulation-snap-marker > span\s*\{[^}]*width:\s*14px;[^}]*height:\s*14px;/s.test(cssSource), 'Simulation snap markers must use compact CAD-style symbols.');
+assert.ok(mainSource.includes('function updateSimulationSnapMarkerCameraScale()')
+    && mainSource.includes('Math.sqrt(cameraDistance / referenceDistance)')
+    && mainSource.includes('SNAP_MARKER_CAMERA_SCALE.min')
+    && mainSource.includes('updateSimulationSnapMarkerCameraScale();'), 'Simulation snap symbols must shrink as the camera moves closer.');
 assert.ok(mainSource.includes('BASE_JOG_GIZMO_STROKE_RADIUS = 0.014'), 'Base JOG line handles must use a cross-platform mesh stroke.');
 assert.ok(mainSource.includes('BASE_JOG_GIZMO_ACTIVE_STROKE_RADIUS = 0.022'), 'The selected Base JOG axis must use a thicker active stroke.');
 assert.ok(mainSource.includes('BASE_JOG_GIZMO_ACTIVE_COLOR_SCALE = 0.58'), 'The selected Base JOG axis must use a darker active color.');
@@ -667,7 +756,7 @@ assert.ok(mainSource.includes('importedModel.position.set(0, 0, 0)'), '3D model 
 assert.ok(mainSource.includes('BASE_JOG_MAX_VISIBLE_LINE_SPAN = 10'), 'Base JOG controls must identify oversized guide lines.');
 assert.ok(mainSource.includes("object.tag === 'helper' || scaledSpan > BASE_JOG_MAX_VISIBLE_LINE_SPAN"), 'Base JOG helper axes must be excluded from visible strokes.');
 assert.ok(mainSource.includes('infiniteGuideHandles.forEach((guideHandle) => guideHandle.removeFromParent())'), 'Base JOG controls must remove infinite drag guides.');
-assert.ok(htmlSource.includes('style.css?v=20260719-euler-321-11'), 'Stylesheet cache token must load the current simulation styles.');
+assert.match(htmlSource, /style\.css\?v=[^"'\s]*zero-point/, 'Stylesheet cache token must load the current simulation styles.');
 assert.match(cssSource, /body\.fullscreen-ui-mode #main-content\s*\{[^}]*top:\s*0[^}]*bottom:\s*0/s, 'Fullscreen UI mode must expand the 3D viewport.');
 assert.doesNotMatch(htmlSource, /id="collision-alert"/);
 assert.doesNotMatch(cssSource, /\.collision-alert\s*\{/);

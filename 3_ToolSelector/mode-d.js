@@ -1,7 +1,8 @@
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { TransformControls } from 'three/addons/controls/TransformControls.js';
-import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+import * as THREE from './vendor/three/three.module.js';
+import { OrbitControls } from './vendor/three/examples/jsm/controls/OrbitControls.js';
+import { TransformControls } from './vendor/three/examples/jsm/controls/TransformControls.js';
+import { STLLoader } from './vendor/three/examples/jsm/loaders/STLLoader.js';
+import { enableContinuousTransformRotation } from './continuous-transform-rotation.mjs?v=20260719-1';
 import {
   combineStepParts,
   createCoordinateFrame,
@@ -9,11 +10,21 @@ import {
   pointInFrame
 } from './mass-properties.mjs';
 import { averagePoints, buildStepSnapCandidates } from './snap-geometry.mjs';
-import { cadColorToHex } from './step-export-transform.mjs';
+import { cadColorToHex } from './step-export-transform.mjs?v=20260719-ry-trackball-1';
 
-const OCCT_IMPORT_BASE_URL = 'https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/';
+const OCCT_IMPORT_BASE_URL = './vendor/occt/';
+const OCCT_IMPORT_SCRIPT_URL = `${OCCT_IMPORT_BASE_URL}occt-import-js.js`;
 const KG_PER_MM3_PER_G_PER_CM3 = 1e-6;
+const MAX_DETAILED_SNAP_TRIANGLES = 200000;
 const AXIS_COLORS = Object.freeze({ x: '#d32f2f', y: '#388e3c', z: '#1976d2' });
+const HELPER_SCREEN_PIXELS = Object.freeze({
+  axes: 72,
+  tcp: 18,
+  centerOfMass: 16,
+  selectedSnap: 10,
+  multiPointCenter: 14
+});
+const SNAP_MARKER_CAMERA_SCALE = Object.freeze({ min: 0.55, max: 1.25 });
 const MATERIALS = {
   aluminum: { name: '알루미늄 합금', density: 2.70e-6, color: 0xa8b7c4 },
   steel: { name: '강철', density: 7.85e-6, color: 0x64748b },
@@ -28,6 +39,7 @@ const SNAP_TYPES = {
   'edge-midpoint': { label: '에지 중심점', symbol: '△', priority: 3 },
   'face-center': { label: '면 중심점', symbol: '○', priority: 4 },
   'circle-center': { label: '원/호 중심점', symbol: '⊙', priority: 2 },
+  'rectangle-center': { label: '사각형 중심점', symbol: '▣', priority: 4 },
   'shape-center': { label: '형상 중심점', symbol: '⌖', priority: 5 },
   'virtual-intersection': { label: '가상 교점', symbol: '×', priority: 6 }
 };
@@ -41,6 +53,7 @@ const state = {
   frameObject: null,
   gridHelper: null,
   gridVisible: false,
+  outlineMode: false,
   visibilityRaycaster: new THREE.Raycaster(),
   modelGroup: new THREE.Group(),
   parts: [],
@@ -54,6 +67,7 @@ const state = {
   tcpMarker: null,
   centerMarker: null,
   multiCenterHelper: null,
+  cameraScaledHelpers: new Set(),
   helperScale: 100,
   pickMode: null,
   pointerDown: null,
@@ -62,8 +76,13 @@ const state = {
   snapCandidates: [],
   snapType: 'auto',
   snapRadiusPx: 16,
+  snapMarkerReferenceDistance: null,
   hoverSnap: null,
   multiPoints: [],
+  statusRenderer: null,
+  statusKind: '',
+  snapReadoutRenderer: null,
+  occtScriptPromise: null,
   occtPromise: null,
   sourceStepFile: null,
   sourceCadFormat: null,
@@ -72,15 +91,38 @@ const state = {
 
 const el = {};
 const uiText = (value) => window.InoRobotI18n ? window.InoRobotI18n.translate(String(value)) : String(value);
-const flatten = (value) => Array.isArray(value?.[0]) ? value.flat() : Array.from(value || []);
+const flatten = (value) => {
+  if (!value) return [];
+  if (ArrayBuffer.isView(value)) return value;
+  return Array.isArray(value[0]) ? value.flat() : Array.from(value);
+};
+const helperWorldPosition = new THREE.Vector3();
+const helperCameraPosition = new THREE.Vector3();
+const helperParentScale = new THREE.Vector3();
 
 function preventMiddleButtonAutoscroll(event) {
   if (event.button === 1) event.preventDefault();
 }
 
+function renderStatus() {
+  if (!state.statusRenderer) return;
+  el.status.textContent = state.statusRenderer();
+  el.status.className = `cad-status ${state.statusKind}`.trim();
+}
+
 function setStatus(message, kind = '') {
-  el.status.textContent = uiText(message);
-  el.status.className = `cad-status ${kind}`.trim();
+  state.statusRenderer = typeof message === 'function' ? message : () => uiText(message);
+  state.statusKind = kind;
+  renderStatus();
+}
+
+function renderSnapReadout() {
+  if (state.snapReadoutRenderer) el.snapReadout.textContent = state.snapReadoutRenderer();
+}
+
+function setSnapReadout(message) {
+  state.snapReadoutRenderer = typeof message === 'function' ? message : () => uiText(message);
+  renderSnapReadout();
 }
 
 function cacheElements() {
@@ -108,6 +150,7 @@ function cacheElements() {
     multiCenterCount: document.getElementById('cad-multi-center-count'),
     multiCenterApply: document.getElementById('cad-multi-center-apply'),
     multiCenterReset: document.getElementById('cad-multi-center-reset'),
+    outlineToggle: document.getElementById('cad-outline-toggle'),
     gridToggle: document.getElementById('cad-grid-toggle'),
     exportStep: document.getElementById('cad-export-step'),
     rotationHandlerToggle: document.getElementById('cad-rotation-handler'),
@@ -124,29 +167,9 @@ function setupScene() {
   state.camera.up.set(0, 0, 1);
   state.camera.position.set(700, -700, 550);
 
-  state.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-  state.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  state.renderer.outputColorSpace = THREE.SRGBColorSpace;
-  el.viewport.appendChild(state.renderer.domElement);
-
-  state.controls = new OrbitControls(state.camera, state.renderer.domElement);
-  state.controls.enableDamping = false;
-
   state.frameObject = new THREE.Object3D();
   state.frameObject.name = 'Tool coordinate frame';
   state.scene.add(state.frameObject);
-  state.rotationHandler = new TransformControls(state.camera, state.renderer.domElement);
-  state.rotationHandler.setMode('rotate');
-  state.rotationHandler.setSpace('local');
-  state.rotationHandler.setSize(0.78);
-  removeRotationScreenHandle(state.rotationHandler);
-  applyTransformControlColors(state.rotationHandler);
-  state.rotationHandler.attach(state.frameObject);
-  state.rotationHandler.addEventListener('dragging-changed', (event) => {
-    state.controls.enabled = !event.value;
-  });
-  state.rotationHandler.addEventListener('objectChange', syncOrientationFromHandler);
-  state.scene.add(state.rotationHandler);
 
   state.scene.add(new THREE.HemisphereLight(0xffffff, 0x172033, 1.15));
   const keyLight = new THREE.DirectionalLight(0xffffff, 1.45);
@@ -162,14 +185,51 @@ function setupScene() {
   state.scene.add(state.gridHelper);
   createHelpers();
 
-  const resizeObserver = new ResizeObserver(resizeRenderer);
-  resizeObserver.observe(el.viewport);
-  state.renderer.domElement.addEventListener('mousedown', preventMiddleButtonAutoscroll, { capture: true });
-  state.renderer.domElement.addEventListener('pointerdown', onPointerDown);
-  state.renderer.domElement.addEventListener('pointerup', onPointerUp);
-  state.renderer.domElement.addEventListener('pointermove', onPointerMove);
-  state.renderer.domElement.addEventListener('pointerleave', hideSnapMarker);
-  animate();
+  // Embedded browsers may not expose WebGL. The CAD input/calculation path
+  // must still be usable when only the 3D preview cannot be initialized.
+  try {
+    state.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    state.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    state.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    el.viewport.appendChild(state.renderer.domElement);
+
+    // Match the 3D Simulation camera interaction exactly: left drag rotates,
+    // the wheel zooms, and right drag pans with OrbitControls defaults.
+    state.controls = new OrbitControls(state.camera, state.renderer.domElement);
+    state.controls.enableDamping = false;
+    state.rotationHandler = new TransformControls(state.camera, state.renderer.domElement);
+    enableContinuousTransformRotation(state.rotationHandler, THREE);
+    state.rotationHandler.setMode('rotate');
+    state.rotationHandler.setSpace('local');
+    state.rotationHandler.setSize(0.78);
+    removeRotationScreenHandle(state.rotationHandler);
+    applyTransformControlColors(state.rotationHandler);
+    state.rotationHandler.attach(state.frameObject);
+    state.rotationHandler.addEventListener('dragging-changed', (event) => {
+      state.controls.enabled = !event.value;
+    });
+    state.rotationHandler.addEventListener('objectChange', syncOrientationFromHandler);
+    state.scene.add(state.rotationHandler);
+
+    const resizeObserver = new ResizeObserver(resizeRenderer);
+    resizeObserver.observe(el.viewport);
+    state.renderer.domElement.addEventListener('mousedown', preventMiddleButtonAutoscroll, { capture: true });
+    state.renderer.domElement.addEventListener('pointerdown', onPointerDown);
+    state.renderer.domElement.addEventListener('pointerup', onPointerUp);
+    state.renderer.domElement.addEventListener('pointermove', onPointerMove);
+    state.renderer.domElement.addEventListener('pointerleave', hideSnapMarker);
+    animate();
+    return true;
+  } catch (error) {
+    console.warn('3D preview unavailable; CAD import will continue without WebGL.', error);
+    state.renderer?.dispose?.();
+    state.renderer?.domElement?.remove?.();
+    state.renderer = null;
+    state.controls = null;
+    state.rotationHandler?.removeFromParent?.();
+    state.rotationHandler = null;
+    return false;
+  }
 }
 
 function removeRotationScreenHandle(transformControls) {
@@ -239,10 +299,65 @@ function createThickAxesHelper(size) {
 
 function disposeHelper(helper) {
   helper?.traverse((object) => {
+    state.cameraScaledHelpers.delete(object);
     object.geometry?.dispose?.();
     if (Array.isArray(object.material)) object.material.forEach((material) => material?.dispose?.());
     else object.material?.dispose?.();
   });
+}
+
+function keepHelperAtScreenSize(helper, localSize, pixelSize) {
+  helper.userData.cameraScaledSize = { localSize, pixelSize };
+  state.cameraScaledHelpers.add(helper);
+  return helper;
+}
+
+function updateCameraScaledHelpers() {
+  const viewportHeight = state.renderer?.domElement.clientHeight || 0;
+  if (!state.camera || !state.scene || viewportHeight <= 0) return;
+
+  state.camera.updateMatrixWorld(true);
+  state.scene.updateMatrixWorld(true);
+  const fovScale = 2 * Math.tan(THREE.MathUtils.degToRad(state.camera.fov * 0.5));
+  const cameraZoom = Math.max(state.camera.zoom || 1, Number.EPSILON);
+
+  state.cameraScaledHelpers.forEach((helper) => {
+    const sizing = helper.userData.cameraScaledSize;
+    if (!sizing || !helper.parent || !helper.visible) return;
+
+    helper.getWorldPosition(helperWorldPosition);
+    helperCameraPosition.copy(helperWorldPosition).applyMatrix4(state.camera.matrixWorldInverse);
+    const cameraDepth = -helperCameraPosition.z;
+    if (cameraDepth <= 0) return;
+
+    const worldUnitsPerPixel = (cameraDepth * fovScale) / (viewportHeight * cameraZoom);
+    const parentWorldScale = helper.parent
+      ? helper.parent.getWorldScale(helperParentScale)
+      : helperParentScale.set(1, 1, 1);
+    const inheritedScale = Math.max(
+      Math.abs(parentWorldScale.x),
+      Math.abs(parentWorldScale.y),
+      Math.abs(parentWorldScale.z),
+      Number.EPSILON
+    );
+    const localScale = (worldUnitsPerPixel * sizing.pixelSize) / (sizing.localSize * inheritedScale);
+    helper.scale.setScalar(localScale);
+  });
+}
+
+function updateSnapMarkerCameraScale() {
+  if (!el.snapMarker || !state.camera || !state.controls) return;
+  const cameraZoom = Math.max(state.camera.zoom || 1, Number.EPSILON);
+  const cameraDistance = state.camera.position.distanceTo(state.controls.target) / cameraZoom;
+  const referenceDistance = state.snapMarkerReferenceDistance;
+  if (!Number.isFinite(cameraDistance) || !Number.isFinite(referenceDistance) || referenceDistance <= 0) return;
+
+  const scale = THREE.MathUtils.clamp(
+    Math.sqrt(cameraDistance / referenceDistance),
+    SNAP_MARKER_CAMERA_SCALE.min,
+    SNAP_MARKER_CAMERA_SCALE.max
+  );
+  el.snapMarker.style.setProperty('--cad-snap-camera-scale', scale.toFixed(3));
 }
 
 function createTcpTargetMarker(size) {
@@ -308,6 +423,7 @@ function updateMultiCenterHelper() {
       new THREE.SphereGeometry(selectedSize, 16, 12),
       new THREE.MeshBasicMaterial({ color: 0xf472b6, depthTest: false })
     );
+    keepHelperAtScreenSize(marker, selectedSize * 2, HELPER_SCREEN_PIXELS.selectedSnap);
     marker.position.copy(point);
     marker.renderOrder = 20;
     group.add(marker);
@@ -322,10 +438,12 @@ function updateMultiCenterHelper() {
     );
     lines.renderOrder = 19;
     group.add(lines);
+    const centerMarkerSize = Math.max(state.helperScale * 0.045, 1.8);
     const centerMarker = new THREE.Mesh(
-      new THREE.OctahedronGeometry(Math.max(state.helperScale * 0.045, 1.8), 0),
+      new THREE.OctahedronGeometry(centerMarkerSize, 0),
       new THREE.MeshBasicMaterial({ color: 0x22d3ee, depthTest: false })
     );
+    keepHelperAtScreenSize(centerMarker, centerMarkerSize * 2, HELPER_SCREEN_PIXELS.multiPointCenter);
     centerMarker.position.copy(center);
     centerMarker.renderOrder = 21;
     group.add(centerMarker);
@@ -368,23 +486,41 @@ function createHelpers() {
     disposeHelper(state.centerMarker);
   }
 
-  state.axesHelper = createThickAxesHelper(state.helperScale);
+  state.axesHelper = keepHelperAtScreenSize(
+    createThickAxesHelper(state.helperScale),
+    state.helperScale,
+    HELPER_SCREEN_PIXELS.axes
+  );
   state.scene.add(state.axesHelper);
 
-  state.tcpMarker = createTcpTargetMarker(Math.max(state.helperScale * 0.055, 2));
+  const tcpMarkerSize = Math.max(state.helperScale * 0.055, 2);
+  state.tcpMarker = keepHelperAtScreenSize(
+    createTcpTargetMarker(tcpMarkerSize),
+    tcpMarkerSize * 3.52,
+    HELPER_SCREEN_PIXELS.tcp
+  );
   state.scene.add(state.tcpMarker);
 
-  state.centerMarker = createCenterOfMassMarker(Math.max(state.helperScale * 0.065, 2.5));
+  const centerMarkerSize = Math.max(state.helperScale * 0.065, 2.5);
+  state.centerMarker = keepHelperAtScreenSize(
+    createCenterOfMassMarker(centerMarkerSize),
+    centerMarkerSize * 2.36,
+    HELPER_SCREEN_PIXELS.centerOfMass
+  );
   state.centerMarker.visible = false;
   state.scene.add(state.centerMarker);
   updateHelpers();
 }
 
 function updateHelpers() {
-  state.axesHelper.position.copy(state.origin);
-  state.axesHelper.quaternion.copy(state.frameObject.quaternion);
+  if (!state.frameObject) {
+    renderAxisDirections();
+    return;
+  }
+  state.axesHelper?.position.copy(state.origin);
+  state.axesHelper?.quaternion.copy(state.frameObject.quaternion);
   state.frameObject.position.copy(state.origin);
-  state.tcpMarker.position.copy(state.tcp);
+  state.tcpMarker?.position.copy(state.tcp);
   renderAxisDirections();
 }
 
@@ -405,6 +541,12 @@ function renderAxisDirections() {
 
 function applyRotationDegrees(rotationDegrees) {
   state.rotationDegrees.fromArray(rotationDegrees);
+  if (!state.frameObject) {
+    state.xDirection.set(1, 0, 0);
+    state.yDirection.set(0, 1, 0);
+    state.zDirection.set(0, 0, 1);
+    return;
+  }
   state.frameObject.rotation.set(
     THREE.MathUtils.degToRad(state.rotationDegrees.x),
     THREE.MathUtils.degToRad(state.rotationDegrees.y),
@@ -416,6 +558,7 @@ function applyRotationDegrees(rotationDegrees) {
 }
 
 function syncOrientationFromHandler() {
+  if (!state.frameObject) return;
   const euler = new THREE.Euler().setFromQuaternion(state.frameObject.quaternion, 'XYZ');
   state.rotationDegrees.set(
     THREE.MathUtils.radToDeg(euler.x),
@@ -426,7 +569,7 @@ function syncOrientationFromHandler() {
   writeVectorInputs('rotation', state.rotationDegrees.toArray());
   updateHelpers();
   el.result.classList.add('hide');
-  state.centerMarker.visible = false;
+  if (state.centerMarker) state.centerMarker.visible = false;
 }
 
 function updateRotationHandlerVisibility() {
@@ -452,15 +595,19 @@ function toggleGrid() {
 function resizeRenderer() {
   const width = el.viewport.clientWidth;
   const height = el.viewport.clientHeight;
-  if (!width || !height) return;
+  if (!width || !height || !state.renderer || !state.camera) return;
   state.renderer.setSize(width, height, false);
   state.camera.aspect = width / height;
   state.camera.updateProjectionMatrix();
+  state.controls?.handleResize?.();
 }
 
 function animate() {
+  if (!state.renderer) return;
   requestAnimationFrame(animate);
-  state.controls.update();
+  state.controls?.update?.();
+  updateCameraScaledHelpers();
+  updateSnapMarkerCameraScale();
   state.renderer.render(state.scene, state.camera);
 }
 
@@ -472,19 +619,68 @@ function getFrame() {
   );
 }
 
-async function getOcctImporter() {
-  if (typeof window.occtimportjs !== 'function') throw new Error('OpenCascade STEP parser is unavailable.');
-  if (!state.occtPromise) {
-    state.occtPromise = window.occtimportjs({ locateFile: (fileName) => `${OCCT_IMPORT_BASE_URL}${fileName}` })
-      .catch((error) => {
-        state.occtPromise = null;
-        throw error;
-      });
+function disposePartOutlines() {
+  const outlineLines = [];
+  state.parts.forEach((part) => {
+    part.mesh?.traverse?.((object) => {
+      if (object.userData?.outlineSource) outlineLines.push(object);
+    });
+  });
+  outlineLines.forEach((line) => {
+    if (line.parent?.userData) delete line.parent.userData.outlineLine;
+    line.removeFromParent();
+    line.geometry?.dispose?.();
+    const materials = Array.isArray(line.material) ? line.material : [line.material];
+    materials.forEach((material) => material?.dispose?.());
+  });
+}
+
+function syncPartOutlines() {
+  if (!state.outlineMode) {
+    disposePartOutlines();
+    return;
   }
-  return state.occtPromise;
+  state.parts.forEach((part) => {
+    const mesh = part.mesh;
+    if (!mesh?.geometry?.getAttribute?.('position') || mesh.userData.outlineLine) return;
+    const line = new THREE.LineSegments(
+      new THREE.EdgesGeometry(mesh.geometry, 28),
+      new THREE.LineBasicMaterial({
+        color: 0x000000,
+        transparent: true,
+        opacity: 0.95,
+        depthTest: true,
+        depthWrite: false,
+        toneMapped: false
+      })
+    );
+    line.name = 'Cartoon Outline';
+    line.renderOrder = 30;
+    line.frustumCulled = false;
+    line.userData.outlineSource = true;
+    mesh.add(line);
+    mesh.userData.outlineLine = line;
+  });
+}
+
+function updateOutlineToggleUi() {
+  if (!el.outlineToggle) return;
+  el.outlineToggle.classList.toggle('is-active', state.outlineMode);
+  el.outlineToggle.setAttribute('aria-pressed', String(state.outlineMode));
+  el.outlineToggle.title = uiText(state.outlineMode ? '외곽선 끄기' : '외곽선 켜기');
+  el.outlineToggle.setAttribute('aria-label', uiText('외곽선 표시/숨김'));
+  const label = state.outlineMode ? '외곽선 ON' : '외곽선 OFF';
+  el.outlineToggle.innerHTML = `<i class="fa-solid fa-pen-nib"></i><span>${uiText(label)}</span>`;
+}
+
+function setOutlineMode(enabled) {
+  state.outlineMode = Boolean(enabled);
+  syncPartOutlines();
+  updateOutlineToggleUi();
 }
 
 function clearParts() {
+  disposePartOutlines();
   state.parts.forEach((part) => {
     part.mesh.geometry.dispose();
     part.mesh.material.dispose();
@@ -492,10 +688,12 @@ function clearParts() {
   });
   state.parts = [];
   state.snapCandidates = [];
+  state.snapMarkerReferenceDistance = null;
+  el.snapMarker?.style.setProperty('--cad-snap-camera-scale', '1');
   state.hoverSnap = null;
   resetMultiPoints();
   hideSnapMarker();
-  state.centerMarker.visible = false;
+  if (state.centerMarker) state.centerMarker.visible = false;
   state.sourceStepFile = null;
   state.sourceCadFormat = null;
   if (el.exportStep) el.exportStep.disabled = true;
@@ -526,10 +724,20 @@ function createThreeGeometry(meshDefinition) {
   const positions = flatten(meshDefinition.attributes?.position?.array);
   const indices = flatten(meshDefinition.index?.array);
   const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  if (indices.length) geometry.setIndex(indices);
+  const positionAttribute = positions instanceof Float32Array
+    ? new THREE.BufferAttribute(positions, 3)
+    : new THREE.Float32BufferAttribute(positions, 3);
+  geometry.setAttribute('position', positionAttribute);
+  if (indices.length) {
+    geometry.setIndex(ArrayBuffer.isView(indices) ? new THREE.BufferAttribute(indices, 1) : indices);
+  }
   const normals = flatten(meshDefinition.attributes?.normal?.array);
-  if (normals.length === positions.length) geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  if (normals.length === positions.length) {
+    const normalAttribute = normals instanceof Float32Array
+      ? new THREE.BufferAttribute(normals, 3)
+      : new THREE.Float32BufferAttribute(normals, 3);
+    geometry.setAttribute('normal', normalAttribute);
+  }
   else geometry.computeVertexNormals();
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
@@ -552,6 +760,134 @@ async function createStlMeshDefinition(file) {
   };
 }
 
+function importStepInWorker(buffer, onProgress) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL('./step-import-worker.js', import.meta.url));
+    const finish = (callback, value) => {
+      worker.terminate();
+      callback(value);
+    };
+    worker.addEventListener('message', (event) => {
+      if (event.data?.type === 'progress') {
+        onProgress?.(event.data.message);
+        return;
+      }
+      if (event.data?.type === 'complete') {
+        finish(resolve, event.data.result);
+        return;
+      }
+      if (event.data?.type === 'error') {
+        finish(reject, new Error(event.data.message || 'STEP import worker failed.'));
+      }
+    });
+    worker.addEventListener('error', (event) => {
+      finish(reject, new Error(event.message || 'STEP import worker failed.'));
+    });
+    worker.postMessage({
+      buffer,
+      options: {
+        linearUnit: 'millimeter',
+        linearDeflectionType: 'bounding_box_ratio',
+        linearDeflection: 0.00025,
+        angularDeflection: 0.25
+      }
+    }, [buffer]);
+  });
+}
+
+function ensureOcctScript() {
+  if (typeof window.occtimportjs === 'function') return Promise.resolve();
+  if (!state.occtScriptPromise) {
+    state.occtScriptPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = OCCT_IMPORT_SCRIPT_URL;
+      script.async = true;
+      script.onload = () => {
+        if (typeof window.occtimportjs === 'function') resolve();
+        else reject(new Error('OpenCascade STEP parser is unavailable.'));
+      };
+      script.onerror = () => reject(new Error('OpenCascade STEP parser could not be loaded.'));
+      document.head.appendChild(script);
+    }).catch((error) => {
+      state.occtScriptPromise = null;
+      throw error;
+    });
+  }
+  return state.occtScriptPromise;
+}
+
+async function getOcctImporter() {
+  await ensureOcctScript();
+  if (!state.occtPromise) {
+    state.occtPromise = window.occtimportjs({
+      locateFile: (fileName) => `${OCCT_IMPORT_BASE_URL}${fileName}`
+    }).catch((error) => {
+      state.occtPromise = null;
+      throw error;
+    });
+  }
+  return state.occtPromise;
+}
+
+async function importStepOnMainThread(buffer, onProgress) {
+  if (!(buffer instanceof ArrayBuffer)) throw new Error('STEP source data is missing.');
+  onProgress?.('STEP 파일 해석 엔진을 준비하는 중입니다.');
+  const occt = await getOcctImporter();
+  const result = occt.ReadStepFile(new Uint8Array(buffer), {
+    linearUnit: 'millimeter',
+    linearDeflectionType: 'bounding_box_ratio',
+    linearDeflection: 0.00025,
+    angularDeflection: 0.25
+  });
+  if (!result?.success || !Array.isArray(result.meshes)) throw new Error('CAD file could not be read.');
+  return result;
+}
+
+async function importStepWithFallback(buffer, onProgress) {
+  try {
+    return await importStepInWorker(buffer, onProgress);
+  } catch (workerError) {
+    console.warn('STEP worker import failed; retrying with the main-thread parser.', workerError);
+    onProgress?.('STEP 파일을 다시 해석하는 중입니다.');
+    return importStepOnMainThread(buffer, onProgress);
+  }
+}
+
+function meshTriangleCount(meshDefinition) {
+  const indices = flatten(meshDefinition.index?.array);
+  if (indices.length) return Math.floor(indices.length / 3);
+  return Math.floor(flatten(meshDefinition.attributes?.position?.array).length / 9);
+}
+
+function createCenterOnlySnapData(geometryProperties, triangleCount, reason = '') {
+  return {
+    candidates: [{
+      type: 'shape-center',
+      point: Array.from(geometryProperties.centroidMm),
+      source: { kind: 'solid-centroid' }
+    }],
+    stats: {
+      triangleCount,
+      candidateCount: 1,
+      simplified: true,
+      reason
+    }
+  };
+}
+
+function buildMemoryAwareSnapData(meshDefinition, geometryProperties, remainingDetailedTriangles) {
+  const triangleCount = meshTriangleCount(meshDefinition);
+  if (triangleCount > remainingDetailedTriangles) {
+    return createCenterOnlySnapData(geometryProperties, triangleCount, 'triangle-budget');
+  }
+  try {
+    return buildStepSnapCandidates(meshDefinition, { solidCenter: geometryProperties.centroidMm });
+  } catch (error) {
+    console.warn('Detailed snap analysis failed; using the solid center only.', error);
+    return createCenterOnlySnapData(geometryProperties, triangleCount, error?.message || 'snap-analysis-failed');
+  }
+}
+
 async function loadCadFile(file) {
   const extension = file.name.split('.').pop()?.toLowerCase();
   if (!['step', 'stp', 'stl'].includes(extension)) {
@@ -572,21 +908,20 @@ async function loadCadFile(file) {
     if (extension === 'stl') {
       result = { success: true, meshes: [await createStlMeshDefinition(file)] };
     } else {
-      const occt = await getOcctImporter();
-      const fileBytes = new Uint8Array(await file.arrayBuffer());
-      result = occt.ReadStepFile(fileBytes, {
-        linearUnit: 'millimeter',
-        linearDeflectionType: 'bounding_box_ratio',
-        linearDeflection: 0.00025,
-        angularDeflection: 0.25
-      });
+      const buffer = await file.arrayBuffer();
+      result = await importStepWithFallback(buffer, (message) => setStatus(message));
     }
     if (!result?.success || !Array.isArray(result.meshes)) throw new Error('CAD file could not be read.');
 
-    result.meshes.forEach((meshDefinition, index) => {
+    let remainingDetailedTriangles = MAX_DETAILED_SNAP_TRIANGLES;
+    let simplifiedSnapPartCount = 0;
+    for (let index = 0; index < result.meshes.length; index += 1) {
+      const meshDefinition = result.meshes[index];
       try {
         const geometryProperties = integrateStepMesh(meshDefinition);
-        const snapData = buildStepSnapCandidates(meshDefinition, { solidCenter: geometryProperties.centroidMm });
+        const snapData = buildMemoryAwareSnapData(meshDefinition, geometryProperties, remainingDetailedTriangles);
+        if (snapData.stats.simplified) simplifiedSnapPartCount += 1;
+        else remainingDetailedTriangles = Math.max(remainingDetailedTriangles - (snapData.stats.triangleCount || 0), 0);
         const geometry = createThreeGeometry(meshDefinition);
         const material = new THREE.MeshStandardMaterial({
           color: getDisplayColor(meshDefinition.color),
@@ -616,17 +951,25 @@ async function loadCadFile(file) {
       } catch (error) {
         console.warn(`Skipped non-solid ${sourceFormat} mesh ${index + 1}:`, error);
       }
-    });
+      if (index > 0 && index % 20 === 0) {
+        setStatus(`${sourceFormat} 파일을 불러오는 중입니다. (${index + 1}/${result.meshes.length})`);
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      }
+    }
 
     if (!state.parts.length) throw new Error(uiText('계산 가능한 솔리드가 없습니다.'));
     state.sourceStepFile = extension === 'stl' ? null : file;
     state.sourceCadFormat = sourceFormat;
     renderParts();
+    syncPartOutlines();
     fitCameraToModel();
     el.calculate.disabled = false;
     el.exportStep.disabled = extension === 'stl';
-    el.snapReadout.textContent = `${uiText('스냅 후보')} ${state.snapCandidates.length.toLocaleString()}${uiText('개가 준비되었습니다.')}`;
-    setStatus(`${sourceFormat} 파일 분석 완료 · ${uiText('스냅 후보')} ${state.snapCandidates.length.toLocaleString()}`, 'ok');
+    setSnapReadout(() => `${uiText('스냅 후보')} ${state.snapCandidates.length.toLocaleString()}${uiText('개가 준비되었습니다.')}`);
+    const simplifiedNote = simplifiedSnapPartCount
+      ? ` · 대용량 최적화 ${simplifiedSnapPartCount.toLocaleString()}개 부품`
+      : '';
+    setStatus(`${sourceFormat} 파일 분석 완료 · ${uiText('스냅 후보')} ${state.snapCandidates.length.toLocaleString()}${simplifiedNote}`, 'ok');
   } catch (error) {
     console.error('STEP import failed:', error);
     clearParts();
@@ -642,12 +985,19 @@ function fitCameraToModel() {
   const maxDimension = Math.max(size.x, size.y, size.z, 10);
   state.helperScale = Math.max(maxDimension * 0.22, 20);
   createHelpers();
+  if (!state.controls || !state.camera) {
+    updateHelpers();
+    return;
+  }
   state.controls.target.copy(center);
   state.camera.position.copy(center).add(new THREE.Vector3(maxDimension * 1.3, -maxDimension * 1.3, maxDimension * 0.95));
   state.camera.near = Math.max(maxDimension / 10000, 0.01);
   state.camera.far = maxDimension * 100;
   state.camera.updateProjectionMatrix();
   state.controls.update();
+  state.snapMarkerReferenceDistance = state.camera.position.distanceTo(state.controls.target)
+    / Math.max(state.camera.zoom || 1, Number.EPSILON);
+  updateSnapMarkerCameraScale();
 }
 
 function materialOptions(selectedKey) {
@@ -701,7 +1051,7 @@ function updatePartFromControl(control) {
     row.querySelector('[data-part-material]').value = 'custom';
   }
   el.result.classList.add('hide');
-  state.centerMarker.visible = false;
+  if (state.centerMarker) state.centerMarker.visible = false;
 }
 
 function readVectorInputs(group) {
@@ -729,6 +1079,12 @@ function snapTypeInfo(type) {
   return SNAP_TYPES[type] || SNAP_TYPES.vertex;
 }
 
+function snapTypeLabelKey(type) {
+  if (type === 'auto') return '자동 스냅';
+  if (type === 'multi-point-center') return '다중 점 중심점';
+  return snapTypeInfo(type).label;
+}
+
 function hideSnapMarker() {
   state.hoverSnap = null;
   if (el.snapMarker) el.snapMarker.hidden = true;
@@ -739,6 +1095,7 @@ function formatSnapPoint(point) {
 }
 
 function isSnapCandidateVisible(candidate, projected, enabledMeshes) {
+  if (!state.camera || !state.renderer) return false;
   state.visibilityRaycaster.setFromCamera(new THREE.Vector2(projected.x, projected.y), state.camera);
   const frontHit = state.visibilityRaycaster.intersectObjects(enabledMeshes, false)[0] || null;
   if (!frontHit) return true;
@@ -753,7 +1110,9 @@ function isSnapCandidateVisible(candidate, projected, enabledMeshes) {
 }
 
 function findSnapAtPointer(pointerEvent) {
-  if (!state.parts.length) return null;
+  if (!state.parts.length || !state.camera || !state.renderer || !state.scene) return null;
+  state.camera.updateMatrixWorld(true);
+  state.scene.updateMatrixWorld(true);
   const bounds = state.renderer.domElement.getBoundingClientRect();
   const pointerX = pointerEvent.clientX - bounds.left;
   const pointerY = pointerEvent.clientY - bounds.top;
@@ -793,9 +1152,9 @@ function showSnapMarker(snap) {
   if (!snap) {
     hideSnapMarker();
     if (state.pickMode) {
-      el.snapReadout.textContent = isMultiPointCenterMode()
-        ? multiCenterInstruction()
-        : uiText('현재 위치에 선택 가능한 스냅 후보가 없습니다.');
+      setSnapReadout(isMultiPointCenterMode()
+        ? multiCenterInstruction
+        : '현재 위치에 선택 가능한 스냅 후보가 없습니다.');
     }
     return;
   }
@@ -812,7 +1171,7 @@ function showSnapMarker(snap) {
   el.snapSymbol.textContent = info.symbol;
   el.snapLabel.textContent = uiText(info.label);
   el.snapMarker.hidden = false;
-  el.snapReadout.textContent = `${uiText(info.label)} · ${formatSnapPoint(snap.point)}`;
+  setSnapReadout(() => `${uiText(info.label)} · ${formatSnapPoint(snap.point)}`);
 }
 
 function setPickMode(mode) {
@@ -829,16 +1188,16 @@ function setPickMode(mode) {
   updateMultiCenterControls();
   if (state.pickMode) {
     setStatus(messages[state.pickMode]);
-    el.snapReadout.textContent = isMultiPointCenterMode()
-      ? multiCenterInstruction()
-      : uiText('CAD 형상 위로 이동하면 스냅 후보가 표시됩니다.');
+    setSnapReadout(isMultiPointCenterMode()
+      ? multiCenterInstruction
+      : 'CAD 형상 위로 이동하면 스냅 후보가 표시됩니다.');
   } else {
     hideSnapMarker();
     if (state.parts.length) setStatus(`${state.sourceCadFormat || 'CAD'} 파일 분석 완료`, 'ok');
   }
 }
 
-function commitSnapPoint(point, selectedLabel) {
+function commitSnapPoint(point, selectedLabelKey) {
   if (state.pickMode === 'origin') {
     state.origin.copy(point);
     writeVectorInputs('origin', state.origin.toArray());
@@ -849,10 +1208,10 @@ function commitSnapPoint(point, selectedLabel) {
   const selectedPoint = formatSnapPoint(point);
   updateHelpers();
   setPickMode(null);
-  setStatus(`${selectedLabel} ${uiText('스냅 선택')} · ${selectedPoint}`, 'ok');
-  el.snapReadout.textContent = `${selectedLabel} · ${selectedPoint}`;
+  setStatus(() => `${uiText(selectedLabelKey)} ${uiText('스냅 선택')} · ${selectedPoint}`, 'ok');
+  setSnapReadout(() => `${uiText(selectedLabelKey)} · ${selectedPoint}`);
   el.result.classList.add('hide');
-  state.centerMarker.visible = false;
+  if (state.centerMarker) state.centerMarker.visible = false;
 }
 
 function addMultiPoint(snap) {
@@ -868,11 +1227,11 @@ function addMultiPoint(snap) {
   state.multiPoints.push(snap.point.clone());
   updateMultiCenterHelper();
   updateMultiCenterControls();
-  const countLabel = `${uiText('다중 점 선택')} ${state.multiPoints.length}/4`;
+  const countLabel = () => `${uiText('다중 점 선택')} ${state.multiPoints.length}/4`;
   if (state.multiPoints.length >= 2) {
-    el.snapReadout.textContent = `${countLabel} · ${uiText('다중 점 중심점')} ${formatSnapPoint(getMultiPointCenter())}`;
+    setSnapReadout(() => `${countLabel()} · ${uiText('다중 점 중심점')} ${formatSnapPoint(getMultiPointCenter())}`);
   } else {
-    el.snapReadout.textContent = `${countLabel} · ${uiText('스냅 점 2~4개를 선택하세요.')}`;
+    setSnapReadout(() => `${countLabel()} · ${uiText('스냅 점 2~4개를 선택하세요.')}`);
   }
   setStatus(countLabel, 'ok');
 }
@@ -880,7 +1239,7 @@ function addMultiPoint(snap) {
 function applyMultiPointCenter() {
   if (!state.pickMode || state.multiPoints.length < 2 || state.multiPoints.length > 4) return;
   try {
-    commitSnapPoint(getMultiPointCenter(), uiText('다중 점 중심점'));
+    commitSnapPoint(getMultiPointCenter(), '다중 점 중심점');
   } catch {
     setStatus('스냅 점 2~4개를 선택하세요.', 'error');
   }
@@ -919,7 +1278,7 @@ function onPointerUp(event) {
       addMultiPoint(snap);
       return;
     }
-    commitSnapPoint(snap.point, uiText(snapTypeInfo(snap.type).label));
+    commitSnapPoint(snap.point, snapTypeInfo(snap.type).label);
   } catch (error) {
     setStatus('좌표계 방향이 올바르지 않습니다.', 'error');
   }
@@ -955,9 +1314,11 @@ function calculateMassProperties() {
       'kg·m²',
       6
     );
-    state.centerMarker.position.fromArray(result.centerOfMassCadMm);
-    state.centerMarker.visible = true;
-    state.tcpMarker.userData.toolCoordinatesMm = tcpTool;
+    if (state.centerMarker) {
+      state.centerMarker.position.fromArray(result.centerOfMassCadMm);
+      state.centerMarker.visible = true;
+    }
+    if (state.tcpMarker) state.tcpMarker.userData.toolCoordinatesMm = tcpTool;
     el.result.classList.remove('hide');
     setStatus('계산이 완료되었습니다.', 'ok');
     el.result.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1042,6 +1403,7 @@ async function exportStepWithToolFrame() {
 function bindEvents() {
   el.fileInput.addEventListener('change', () => {
     const [file] = el.fileInput.files;
+    el.fileInput.value = '';
     if (file) loadCadFile(file);
   });
   el.parts.addEventListener('change', (event) => updatePartFromControl(event.target));
@@ -1050,19 +1412,20 @@ function bindEvents() {
     state.snapType = el.snapType.value;
     resetMultiPoints();
     if (state.pickMode && state.lastPointer) showSnapMarker(findSnapAtPointer(state.lastPointer));
-    else el.snapReadout.textContent = `${uiText('스냅 유형')} · ${uiText(el.snapType.selectedOptions[0].textContent)}`;
+    else setSnapReadout(() => `${uiText('스냅 유형')} · ${uiText(snapTypeLabelKey(state.snapType))}`);
   });
   el.snapRadius.addEventListener('input', () => {
     state.snapRadiusPx = Number(el.snapRadius.value);
     el.snapRadiusValue.textContent = `${state.snapRadiusPx} px`;
     if (state.pickMode && state.lastPointer) showSnapMarker(findSnapAtPointer(state.lastPointer));
   });
+  el.outlineToggle.addEventListener('click', () => setOutlineMode(!state.outlineMode));
   el.gridToggle.addEventListener('click', toggleGrid);
   el.exportStep.addEventListener('click', exportStepWithToolFrame);
   el.multiCenterApply.addEventListener('click', applyMultiPointCenter);
   el.multiCenterReset.addEventListener('click', () => {
     resetMultiPoints();
-    el.snapReadout.textContent = multiCenterInstruction();
+    setSnapReadout(multiCenterInstruction);
   });
   el.rotationHandlerToggle.addEventListener('change', updateRotationHandlerVisibility);
   el.mode.querySelectorAll('[data-vector]').forEach((input) => {
@@ -1072,25 +1435,31 @@ function bindEvents() {
       try {
         readCoordinateInputs();
         el.result.classList.add('hide');
-        state.centerMarker.visible = false;
+        if (state.centerMarker) state.centerMarker.visible = false;
       } catch {
         setStatus('좌표계 방향이 올바르지 않습니다.', 'error');
       }
     });
   });
   el.calculate.addEventListener('click', calculateMassProperties);
-  document.addEventListener('inorobot:languagechange', () => {
-    renderParts();
-    updateGridVisibility();
-    updateMultiCenterControls();
-    if (state.hoverSnap) showSnapMarker(state.hoverSnap);
-  });
+  document.addEventListener('inorobot:i18nready', refreshDynamicLanguage);
+  document.addEventListener('inorobot:languagechange', refreshDynamicLanguage);
+}
+
+function refreshDynamicLanguage() {
+  renderParts();
+  updateOutlineToggleUi();
+  updateGridVisibility();
+  updateMultiCenterControls();
+  renderStatus();
+  renderSnapReadout();
+  if (state.hoverSnap) el.snapLabel.textContent = uiText(snapTypeInfo(state.hoverSnap.type).label);
 }
 
 function init() {
   cacheElements();
   if (!el.mode || !el.viewport) return;
-  setupScene();
+  const previewReady = setupScene();
   bindEvents();
   renderParts();
   state.snapType = el.snapType.value;
@@ -1101,9 +1470,13 @@ function init() {
   writeVectorInputs('tcp', state.tcp.toArray());
   applyRotationDegrees(state.rotationDegrees.toArray());
   updateHelpers();
+  updateOutlineToggleUi();
   updateGridVisibility();
   updateRotationHandlerVisibility();
   updateMultiCenterControls();
+  if (!previewReady) {
+    setStatus('3D 미리보기를 사용할 수 없지만 CAD 불러오기와 계산은 계속할 수 있습니다.', 'error');
+  }
   window.ToolModeD = {
     activate() {
       requestAnimationFrame(() => {
@@ -1118,6 +1491,7 @@ function init() {
         radiusPx: state.snapRadiusPx,
         candidateCount: state.snapCandidates.length,
         gridVisible: state.gridVisible,
+        outlineMode: state.outlineMode,
         pickMode: state.pickMode,
         multiPoints: state.multiPoints.map((point) => point.toArray()),
         rotationDegrees: state.rotationDegrees.toArray(),

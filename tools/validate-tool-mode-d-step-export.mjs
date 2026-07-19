@@ -37,7 +37,7 @@ assert.match(html, /체크한 부품만 Tool 원점과 좌표계 방향을 적�
 assert.match(source, /new Worker\(new URL\('\.\/step-export-worker\.mjs', import\.meta\.url\), \{ type: 'module' \}\)/);
 assert.match(source, /renderer\.domElement\.addEventListener\('mousedown', preventMiddleButtonAutoscroll, \{ capture: true \}\)/);
 assert.match(source, /if \(event\.button === 1\) event\.preventDefault\(\)/);
-assert.match(source, /import \{ STLLoader \} from 'three\/addons\/loaders\/STLLoader\.js'/);
+assert.match(source, /import \{ STLLoader \} from '\.\/vendor\/three\/examples\/jsm\/loaders\/STLLoader\.js'/);
 assert.match(source, /new STLLoader\(\)\.parse\(await file\.arrayBuffer\(\)\)/);
 assert.match(source, /\['step', 'stp', 'stl'\]\.includes\(extension\)/);
 assert.match(source, /state\.sourceStepFile\s*=\s*extension === 'stl' \? null : file/);

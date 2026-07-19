@@ -199,6 +199,9 @@ assert(viewerSource.includes('toolAxes: SCARA_TOOL_AXES') && viewerSource.includ
 assert(viewerSource.includes("toolAxesAtTcp.name = 'Tool axes at TCP'"), 'TCP axes must be identified as the Tool coordinate system');
 assert(viewerSource.includes('tcpFrame.add(toolAxesAtTcp)'), 'TCP axes must inherit the live Tool frame pose');
 assert(viewerSource.includes('robot.userData.toolAxesAtTcp = toolAxesAtTcp'), 'Robot state must retain the Tool axes helper');
+assert(viewerSource.includes('TCP_AXES_SCREEN_PIXELS = 40'), 'TCP axes must use a compact target size on screen');
+assert(viewerSource.includes('function updateCameraScaledTcpAxes()'), 'TCP axes must respond to camera distance and zoom');
+assert(/updateCameraScaledTcpAxes\(\);\s*\r?\n\s*updateSimulationSnapMarkerCameraScale\(\);\s*\r?\n\s*state\.renderer\.render/.test(viewerSource), 'TCP axes must be resized immediately before each render');
 assert(!viewerSource.includes('Base axes at TCP') && !viewerSource.includes('baseAxesAtTcp'), 'TCP axes must not remain fixed to the Base frame');
 const tcpVisualSource = viewerSource.slice(
     viewerSource.indexOf('function syncTcpVisualAtPose('),
@@ -212,6 +215,9 @@ assert(viewerSource.includes("tube: kinematicVariant === 'ceiling-scara'"), 'Onl
 assert(viewerSource.includes('function createScaraTubeMesh(') && viewerSource.includes('function updateScaraTube('), 'Viewer must create and deform the SCARA CD conduit');
 assert(/joint\.definition\.name\s*===\s*['"]J1['"]\)\s*updateScaraTube\(joint\.robot\)/.test(viewerSource), 'SCARA CD conduit deformation must follow J1');
 assert(viewerSource.includes("if (robot.userData.manifest?.robotType === 'scara') return solveScaraIK(robot, target);"), 'SCARA must use analytic IK');
+assert(viewerSource.includes('const targetFlangeQuaternion = target.quaternion.clone()')
+    && viewerSource.includes('const targetFlangePosition = target.position.clone().sub('),
+'SCARA analytic IK must remove the active TCP offset before solving the flange target');
 assert(viewerSource.includes("Math.max(0, -(geometries[0].boundingBox?.min.z || 0))"), 'Floor-mounted SCARA bases must align to their STL mounting surface');
 assert((viewerHtml.match(/data-base-rotation-row=/g) || []).length === 3, 'BASE JOG must expose three filterable rotation rows');
 assert((viewerHtml.match(/id="tcp-(?:x|y|z|rx|ry|rz)" type="number"/g) || []).length === 6, 'TCP readouts must be directly editable');

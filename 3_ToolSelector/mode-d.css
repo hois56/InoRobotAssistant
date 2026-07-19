@@ -249,6 +249,36 @@ input[type="number"]::-webkit-outer-spin-button {
   color: #67e8f9;
 }
 
+.cad-outline-toggle {
+  position: absolute;
+  z-index: 3;
+  top: 52px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 88px;
+  padding: 7px 11px;
+  border: 1px solid rgba(148,163,184,.28);
+  border-radius: 9px;
+  background: rgba(2,6,23,.78);
+  color: #94a3b8;
+  font: 700 10px 'Outfit', sans-serif;
+  letter-spacing: .04em;
+  cursor: pointer;
+}
+
+.cad-outline-toggle:hover {
+  border-color: rgba(96,165,250,.55);
+  color: #e2e8f0;
+}
+
+.cad-outline-toggle.is-active {
+  border-color: rgba(96,165,250,.62);
+  background: rgba(37,99,235,.18);
+  color: #bfdbfe;
+}
+
 .cad-marker-legend {
   position: absolute;
   z-index: 3;
@@ -303,15 +333,16 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .cad-snap-marker {
+  --cad-snap-camera-scale: 1;
   position: absolute;
   z-index: 4;
   display: block;
-  width: 22px;
-  height: 22px;
+  width: 14px;
+  height: 14px;
   transform: translate(-50%, -50%);
   pointer-events: none;
-  color: #fbbf24;
-  filter: drop-shadow(0 1px 4px rgba(0,0,0,.85));
+  color: #f59e0b;
+  filter: drop-shadow(0 0 2px rgba(0,0,0,.9));
 }
 
 .cad-snap-marker[hidden] { display: none; }
@@ -320,42 +351,41 @@ input[type="number"]::-webkit-outer-spin-button {
   position: absolute;
   inset: 0;
   z-index: 2;
-  display: grid;
-  place-items: center;
   box-sizing: border-box;
-  width: 22px;
-  height: 22px;
-  border: 1px solid rgba(251,191,36,.72);
+  width: 14px;
+  height: 14px;
+  overflow: hidden;
+  border: 1.25px solid currentColor;
+  border-radius: 1px;
+  background: transparent;
+  font-size: 0;
+  transform: scale(var(--cad-snap-camera-scale));
+  transform-origin: center;
+}
+
+.cad-snap-marker[data-snap-type="endpoint"] > span {
+  background: radial-gradient(circle at center, currentColor 0 1.25px, transparent 1.75px);
+}
+
+.cad-snap-marker[data-snap-type="edge-midpoint"] > span,
+.cad-snap-marker[data-snap-type="virtual-intersection"] > span {
+  transform: rotate(45deg) scale(calc(var(--cad-snap-camera-scale) * .78));
+}
+
+.cad-snap-marker[data-snap-type="face-center"] > span,
+.cad-snap-marker[data-snap-type="circle-center"] > span,
+.cad-snap-marker[data-snap-type="shape-center"] > span {
   border-radius: 50%;
-  background: rgba(2,6,23,.78);
-  color: #fbbf24;
-  font: 800 18px/1 'Outfit', sans-serif;
 }
 
-.cad-snap-marker::before,
-.cad-snap-marker::after {
-  content: '';
-  position: absolute;
-  z-index: 1;
-  left: 50%;
-  top: 50%;
-  background: rgba(251,191,36,.9);
-  transform: translate(-50%, -50%);
-}
-
-.cad-snap-marker::before {
-  width: 30px;
-  height: 1px;
-}
-
-.cad-snap-marker::after {
-  width: 1px;
-  height: 30px;
+.cad-snap-marker[data-snap-type="rectangle-center"] > span {
+  border-radius: 2px;
+  background: radial-gradient(circle at center, currentColor 0 1.25px, transparent 1.75px);
 }
 
 .cad-snap-marker b {
   position: absolute;
-  left: 29px;
+  left: 18px;
   top: 50%;
   padding: 4px 7px;
   border: 1px solid rgba(251,191,36,.35);
@@ -368,7 +398,7 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .cad-snap-marker.label-left b {
-  right: 29px;
+  right: 18px;
   left: auto;
 }
 

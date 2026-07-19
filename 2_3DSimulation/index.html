@@ -6,9 +6,8 @@
     <title>3D Simulation</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=20260719-euler-321-11">
+    <link rel="stylesheet" href="style.css?v=20260719-zero-point-1">
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/occt-import-js.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     
@@ -190,6 +189,70 @@
                         </div>
                     </div>
                     <p class="model-transform-help">트리에서 선택한 모델만 조정됩니다. 패널의 빈 영역을 끌어 이동하고, <i class="fa-solid fa-up-right-from-square"></i> 버튼으로 별도 창에 분리할 수 있습니다.</p>
+                    <section id="model-zero-point-editor" class="model-zero-point-editor hidden" aria-label="모델 영점 변경">
+                        <div class="zero-point-editor-heading">
+                            <div>
+                                <span>ZERO POINT</span>
+                                <strong>영점 변경</strong>
+                            </div>
+                            <button id="btn-close-zero-point-editor" type="button" class="zero-point-close" title="영점 변경 닫기" aria-label="영점 변경 닫기"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <p class="zero-point-editor-help">입력하거나 스냅한 영점 기준으로 모델 형상이 실시간 이동합니다. 취소하면 이전 상태로 복원됩니다.</p>
+                        <div id="model-zero-current-readout" class="zero-point-current-readout" aria-live="polite">X 0.000, Y 0.000, Z 0.000 mm</div>
+                        <div class="zero-point-snap-controls">
+                            <label>
+                                <span>스냅 유형</span>
+                                <select id="model-zero-snap-type">
+                                    <option value="" data-zero-snap-type="auto">자동 스냅</option>
+                                    <option value="" data-zero-snap-type="vertex">꼭짓점</option>
+                                    <option value="" data-zero-snap-type="endpoint">끝점</option>
+                                    <option value="" data-zero-snap-type="edge-midpoint">모서리 중점</option>
+                                    <option value="" data-zero-snap-type="face-center">면 중심점</option>
+                                    <option value="" data-zero-snap-type="circle-center">원 중심점</option>
+                                    <option value="" data-zero-snap-type="rectangle-center">직사각형 중심점</option>
+                                    <option value="" data-zero-snap-type="multi-point-center">다중 점 중심점</option>
+                                    <option value="" data-zero-snap-type="shape-center">형상 중심점</option>
+                                    <option value="" data-zero-snap-type="virtual-intersection">가상 교차점</option>
+                                </select>
+                            </label>
+                            <label>
+                                <span>스냅 반경 <output id="model-zero-snap-radius-value">16 px</output></span>
+                                <input id="model-zero-snap-radius" type="range" min="8" max="32" value="16" step="1">
+                            </label>
+                        </div>
+                        <div id="model-zero-snap-readout" class="zero-point-snap-readout" aria-live="polite">스냅 위치 선택을 누른 뒤 모델 형상 위로 포인터를 이동하세요.</div>
+                        <div id="model-zero-multi-center-controls" class="zero-point-multi-center-controls hidden">
+                            <span id="model-zero-multi-center-count">다중 점 선택 0/4</span>
+                            <button id="model-zero-multi-center-apply" type="button" disabled>중심 적용</button>
+                            <button id="model-zero-multi-center-reset" type="button" disabled>초기화</button>
+                        </div>
+                        <button id="btn-model-zero-snap" type="button" class="zero-point-snap-button" aria-pressed="false"><i class="fa-solid fa-crosshairs"></i> 스냅 위치 선택</button>
+                        <div class="zero-point-vector-block">
+                            <div class="zero-point-vector-title"><span>모델 영점 (mm)</span></div>
+                            <div class="numeric-position-grid">
+                                <label class="axis-x"><span>X</span><input type="number" data-zero-origin-axis="x" step="0.1" value="0"></label>
+                                <label class="axis-y"><span>Y</span><input type="number" data-zero-origin-axis="y" step="0.1" value="0"></label>
+                                <label class="axis-z"><span>Z</span><input type="number" data-zero-origin-axis="z" step="0.1" value="0"></label>
+                            </div>
+                        </div>
+                        <div class="zero-point-vector-block">
+                            <div class="zero-point-vector-title"><span>좌표계 방향 (deg)</span><small>회전 핸들은 로컬 축 기준</small></div>
+                            <div class="numeric-position-grid">
+                                <label class="axis-x"><span>RX</span><input type="number" data-zero-rotation-axis="x" step="0.1" value="0"></label>
+                                <label class="axis-y"><span>RY</span><input type="number" data-zero-rotation-axis="y" step="0.1" value="0"></label>
+                                <label class="axis-z"><span>RZ</span><input type="number" data-zero-rotation-axis="z" step="0.1" value="0"></label>
+                            </div>
+                            <div id="model-zero-axis-directions" class="zero-point-axis-directions">
+                                <div><b>X</b><output data-zero-axis-direction="x">1.000, 0.000, 0.000</output></div>
+                                <div><b>Y</b><output data-zero-axis-direction="y">0.000, 1.000, 0.000</output></div>
+                                <div><b>Z</b><output data-zero-axis-direction="z">0.000, 0.000, 1.000</output></div>
+                            </div>
+                        </div>
+                        <div class="zero-point-editor-actions">
+                            <button id="btn-cancel-zero-point" type="button">취소</button>
+                            <button id="btn-apply-zero-point" type="button" class="primary"><i class="fa-solid fa-check"></i> 영점 적용</button>
+                        </div>
+                    </section>
                 </section>
             </aside>
             <div id="empty-state">
@@ -258,6 +321,74 @@
                     </div>
                     <p id="base-jog-status" class="base-jog-status hidden"></p>
                 </div>
+            </aside>
+            <aside id="tcp-profile-panel" class="tcp-profile-panel panel-user-hidden" aria-label="TCP 설정">
+                <div class="tcp-profile-panel-header">
+                    <h2><i class="fa-solid fa-crosshairs"></i> TCP 설정</h2>
+                    <div class="panel-header-actions">
+                        <button type="button" data-panel-action="popout" data-panel-id="tcp-profile-panel" title="별도 창으로 분리" aria-label="TCP 설정"><i class="fa-solid fa-up-right-from-square"></i></button>
+                        <button type="button" data-panel-action="hide" data-panel-id="tcp-profile-panel" title="숨기기" aria-label="숨기기"><i class="fa-solid fa-eye-slash"></i></button>
+                    </div>
+                </div>
+                <section id="tcp-profile-manager" class="tcp-profile-manager" aria-label="TCP 설정">
+                    <div class="tcp-profile-heading">
+                        <div>
+                            <span>활성 툴</span>
+                            <strong id="active-tcp-profile-label">TCP 1</strong>
+                        </div>
+                    </div>
+                    <div class="tcp-profile-tabs" role="group" aria-label="활성 TCP 선택">
+                        <button type="button" class="active" data-tcp-profile="0" aria-pressed="true">TCP 1</button>
+                        <button type="button" data-tcp-profile="1" aria-pressed="false">TCP 2</button>
+                        <button type="button" data-tcp-profile="2" aria-pressed="false">TCP 3</button>
+                    </div>
+                    <div class="tcp-snap-controls">
+                        <label>
+                            <span>스냅 유형</span>
+                            <select id="tcp-snap-type">
+                                <option value="auto">자동 스냅</option>
+                                <option value="vertex">꼭짓점</option>
+                                <option value="endpoint">끝점</option>
+                                <option value="edge-midpoint">에지 중심점</option>
+                                <option value="face-center">면 중심점</option>
+                                <option value="circle-center">원/호 중심점</option>
+                                <option value="rectangle-center">사각형 중심점</option>
+                                <option value="multi-point-center">다중 점 중심점</option>
+                                <option value="shape-center">형상 중심점</option>
+                                <option value="virtual-intersection">가상 교점</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span>스냅 반경 <output id="tcp-snap-radius-value">16 px</output></span>
+                            <input id="tcp-snap-radius" type="range" min="8" max="32" value="16" step="1">
+                        </label>
+                    </div>
+                    <div id="tcp-snap-readout" class="tcp-snap-readout" aria-live="polite">3D 모델링의 스냅 지점을 클릭하세요.</div>
+                    <div id="tcp-multi-center-controls" class="tcp-multi-center-controls hidden">
+                        <span id="tcp-multi-center-count">다중 점 선택</span>
+                        <button id="tcp-multi-center-apply" type="button" disabled>계산 중심 적용</button>
+                        <button id="tcp-multi-center-reset" type="button" disabled>선택 초기화</button>
+                    </div>
+                    <button id="btn-tcp-snap" type="button" class="tcp-snap-button" aria-pressed="false"><i class="fa-solid fa-crosshairs"></i> TCP 위치 스냅</button>
+                    <div id="tcp-profile-editor" class="tcp-profile-editor">
+                        <div class="tcp-profile-editor-title">
+                            <strong>플랜지 기준 오프셋</strong>
+                        </div>
+                        <div class="tcp-profile-fields">
+                            <label><span>X</span><input type="number" min="-10000" max="10000" step="0.5" value="0" data-tcp-offset="x"><small>mm</small></label>
+                            <label><span>Y</span><input type="number" min="-10000" max="10000" step="0.5" value="0" data-tcp-offset="y"><small>mm</small></label>
+                            <label><span>Z</span><input type="number" min="-10000" max="10000" step="0.5" value="0" data-tcp-offset="z"><small>mm</small></label>
+                            <label><span>RX <small class="tcp-axis-alias">C</small></span><input type="number" min="-360" max="360" step="0.5" value="0" data-tcp-offset="rx"><small>deg</small></label>
+                            <label><span>RY <small class="tcp-axis-alias">B</small></span><input type="number" min="-360" max="360" step="0.5" value="0" data-tcp-offset="ry"><small>deg</small></label>
+                            <label><span>RZ <small class="tcp-axis-alias">A</small></span><input type="number" min="-360" max="360" step="0.5" value="0" data-tcp-offset="rz"><small>deg</small></label>
+                        </div>
+                        <div class="tcp-profile-actions">
+                            <button id="btn-reset-tcp-profile" type="button"><i class="fa-solid fa-rotate-left"></i> 초기화</button>
+                            <button id="btn-apply-tcp-profile" type="button" class="primary"><i class="fa-solid fa-check"></i> 적용</button>
+                        </div>
+                        <p id="tcp-profile-status" class="tcp-profile-status" aria-live="polite">선택한 TCP는 로봇별로 저장됩니다.</p>
+                    </div>
+                </section>
             </aside>
             <aside id="virtual-controller-panel" class="virtual-controller-panel panel-user-hidden" aria-label="가상 컨트롤러">
                 <div class="virtual-controller-header">
@@ -381,6 +512,17 @@
             위치 값 확인
         </button>
     </div>
+    <div id="model-context-menu" class="program-step-context-menu hidden" role="menu">
+        <button id="model-change-zero-point" type="button" role="menuitem">
+            <i class="fa-solid fa-crosshairs"></i>
+            영점 변경
+        </button>
+        <label id="model-change-color" class="model-context-color-control" role="menuitem">
+            <i class="fa-solid fa-palette"></i>
+            <span>색상 변경</span>
+            <input id="model-color-picker" type="color" value="#bfc7d5" aria-label="색상 변경">
+        </label>
+    </div>
 
     <footer id="stats-bar">
         <div class="stat-item">
@@ -397,16 +539,18 @@
         <div id="panel-launcher" class="viewer-control-dock" aria-label="뷰어 제어 도크">
             <button type="button" data-panel-toggle="model-browser-panel" class="active" title="모델 트리 표시/숨김"><i class="fa-solid fa-list-ul"></i> 모델</button>
             <button type="button" data-panel-toggle="jog-panel" disabled title="로봇 JOG 패널 표시/숨김"><i class="fa-solid fa-gamepad"></i> JOG</button>
+            <button type="button" data-panel-toggle="tcp-profile-panel" disabled title="TCP 오프셋 설정"><i class="fa-solid fa-crosshairs"></i> <span id="tcp-launcher-label">TCP 1</span></button>
             <button type="button" data-panel-toggle="virtual-controller-panel" disabled title="가상 컨트롤러 표시/숨김"><i id="virtual-controller-launcher-antenna" class="fa-solid fa-tower-broadcast virtual-controller-antenna disconnected"></i> Virtual</button>
             <span class="viewer-control-divider"></span>
             <button id="btn-undo" type="button" disabled title="되돌리기 (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
             <button id="btn-redo" type="button" disabled title="다시 실행 (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i></button>
             <span class="viewer-control-divider"></span>
+            <button id="btn-toggle-outline" type="button" title="외곽선 켜기" aria-label="외곽선 표시/숨김" aria-pressed="false"><i class="fa-solid fa-pen-nib"></i></button>
             <button id="btn-reset-view" type="button" title="뷰 초기화" aria-label="뷰 초기화"><i class="fa-solid fa-arrows-rotate"></i></button>
             <button id="btn-toggle-grid" type="button" class="active" title="그리드 표시/숨김" aria-label="그리드 표시/숨김"><i class="fa-solid fa-border-all"></i></button>
         </div>
     </footer>
 
-    <script type="module" src="main.js?v=20260719-singularity-1"></script>
+    <script type="module" src="main.js?v=20260719-large-model-performance-cad-parts-2-20260720-snap-center-priority-2"></script>
 </body>
 </html>
