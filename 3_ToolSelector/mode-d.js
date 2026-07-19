@@ -86,6 +86,7 @@ const state = {
   occtPromise: null,
   sourceStepFile: null,
   sourceCadFormat: null,
+  selectedPartIndex: null,
   exportingStep: false
 };
 
@@ -687,6 +688,7 @@ function clearParts() {
     part.mesh.removeFromParent();
   });
   state.parts = [];
+  state.selectedPartIndex = null;
   state.snapCandidates = [];
   state.snapMarkerReferenceDistance = null;
   el.snapMarker?.style.setProperty('--cad-snap-camera-scale', '1');
@@ -1017,20 +1019,50 @@ function renderParts() {
     el.parts.innerHTML = `<div class="cad-empty">${uiText('CAD 파일을 먼저 불러오세요.')}</div>`;
     return;
   }
-  el.parts.innerHTML = state.parts.map((part, index) => `
-    <div class="cad-part-row" data-part-index="${index}">
-      <input type="checkbox" data-part-enabled ${part.enabled ? 'checked' : ''} title="${uiText('포함')}">
-      <div class="cad-part-name">
-        <b title="${escapeHtml(part.name)}">${escapeHtml(part.name)}</b>
-        <small>${part.geometry.volumeMm3.toFixed(1)} mm³</small>
+  const modelName = state.sourceStepFile?.name || `${state.sourceCadFormat || 'CAD'} model`;
+  el.parts.innerHTML = `
+    <div class="cad-model-tree" role="tree">
+      <div class="cad-model-tree-root" role="treeitem" aria-level="1">
+        <span class="cad-model-tree-root-icon"><i class="fa-solid fa-cube"></i></span>
+        <span class="cad-model-tree-root-name">
+          <b title="${escapeHtml(modelName)}">${escapeHtml(modelName)}</b>
+          <small>${escapeHtml(state.sourceCadFormat || 'CAD')}</small>
+        </span>
       </div>
-      <div class="cad-part-material">
-        <select data-part-material>${materialOptions(part.materialKey)}</select>
-        <input type="number" data-part-density value="${Number((part.densityKgPerMm3 / KG_PER_MM3_PER_G_PER_CM3).toFixed(6))}" step="0.01" min="0">
-        <span class="cad-density-unit">g/cm³</span>
+      <div class="cad-model-tree-children" role="group">
+        ${state.parts.map((part, index) => `
+          <div class="cad-part-row${state.selectedPartIndex === index ? ' active' : ''}" data-part-index="${index}" role="treeitem" aria-level="2" aria-selected="${state.selectedPartIndex === index}">
+            <input type="checkbox" data-part-enabled ${part.enabled ? 'checked' : ''} title="${uiText('포함')}" aria-label="${escapeHtml(part.name)} ${uiText('포함')}">
+            <button type="button" class="cad-part-name${state.selectedPartIndex === index ? ' active' : ''}" data-part-select aria-pressed="${state.selectedPartIndex === index}">
+              <span class="cad-part-tree-icon"><i class="fa-solid fa-cube"></i></span>
+              <span>
+                <b title="${escapeHtml(part.name)}">${escapeHtml(part.name)}</b>
+                <small>${part.geometry.volumeMm3.toFixed(1)} mm³</small>
+              </span>
+            </button>
+            <div class="cad-part-material">
+              <select data-part-material aria-label="${escapeHtml(part.name)} ${uiText('재질')}">${materialOptions(part.materialKey)}</select>
+              <input type="number" data-part-density value="${Number((part.densityKgPerMm3 / KG_PER_MM3_PER_G_PER_CM3).toFixed(6))}" step="0.01" min="0" aria-label="${escapeHtml(part.name)} ${uiText('밀도')}">
+              <span class="cad-density-unit">g/cm³</span>
+            </div>
+          </div>
+        `).join('')}
       </div>
     </div>
-  `).join('');
+  `;
+}
+
+function selectPart(index) {
+  if (!Number.isInteger(index) || !state.parts[index]) return;
+  state.selectedPartIndex = index;
+  el.parts.querySelectorAll('[data-part-index]').forEach((row, rowIndex) => {
+    const selected = rowIndex === index;
+    row.classList.toggle('active', selected);
+    row.setAttribute('aria-selected', String(selected));
+    const button = row.querySelector('[data-part-select]');
+    button?.classList.toggle('active', selected);
+    button?.setAttribute('aria-pressed', String(selected));
+  });
 }
 
 function updatePartFromControl(control) {
@@ -1405,6 +1437,12 @@ function bindEvents() {
     const [file] = el.fileInput.files;
     el.fileInput.value = '';
     if (file) loadCadFile(file);
+  });
+  el.parts.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-part-select]');
+    if (!button) return;
+    const row = button.closest('[data-part-index]');
+    selectPart(Number(row?.dataset.partIndex));
   });
   el.parts.addEventListener('change', (event) => updatePartFromControl(event.target));
   el.mode.querySelectorAll('[data-pick]').forEach((button) => button.addEventListener('click', () => setPickMode(button.dataset.pick)));
