@@ -995,7 +995,7 @@ const productsData = [
             "Customer Air": "Φ8 mm × 1 (0.59Mpa)",
             "Cable Length": "Stand:5m\n(Option:3/10/15m)",
             "Weight (kg)": "260",
-            "Controller": "IRCB501-6FD-INT",
+            "Controller": "IRCB501-6ND-INT",
             "Mounting mode": "Floor",
             "Certification": "Kcs, KC, CE, cSGSus, FCC, Safety"
         }
@@ -3802,7 +3802,7 @@ const productsData = [
             "Max motion range J3 (mm)": "400",
             "Max motion range J4 (°)": "±360",
             "Standard cycle time (s)": "0.84",
-            "Controller": "IRCB501-4MD-INT",
+            "Controller": "IRCB501-4ED-INT",
             "Certification": "CE, cSGSus, FCC, Safety",
             "IP rating": "IP20"
         }
