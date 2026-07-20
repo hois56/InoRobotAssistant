@@ -393,11 +393,7 @@
           {
             "title": "Ver 26.07.18.01",
             "items": [
-              "**[Updated]** Updated InoRobot Trace from V1.3 to V1.4.",
-              "**[Added]** Added a virtual-controller integration server for 3D Simulation.",
-              "**[Added]** Added real-time monitoring items for Joint position values.",
-              "**[Added]** Added a button to open or close the measurement-item panel.",
-              "**[Fixed]** Fixed an issue that prevented items from being displayed when the Trace window was narrower than a certain width."
+              "**[Updated]** Updated InoRobot Trace from V1.3 to V1.4."
             ]
           },
           {
@@ -552,6 +548,15 @@
       {
         "title": "trace",
         "versions": [
+          {
+            "title": "Ver 1.4 (2026.07.18)",
+            "items": [
+              "**[Added]** Added a virtual-controller integration server for 3D Simulation.",
+              "**[Added]** Added real-time monitoring items for Joint position values.",
+              "**[Added]** Added a button to open or close the measurement-item panel.",
+              "**[Fixed]** Fixed an issue that prevented items from being displayed when the Trace window was narrower than a certain width."
+            ]
+          },
           {
             "title": "Ver 1.3 (2026.07.15)",
             "items": [
