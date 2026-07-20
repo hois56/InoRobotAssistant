@@ -737,6 +737,34 @@ document.addEventListener('DOMContentLoaded', () => {
         return null;
     }
 
+    const controllerTypeByModel = {
+        'IRCB501-4AD-INT': 'Standard',
+        'IRCB501-4CD-INT': 'Standard',
+        'IRCB501-6LD-INT': 'Standard',
+        'IRCB501-4ED-INT': 'High Power',
+        'IRCB501-4MD-INT': 'High Power',
+        'IRCB501-6FD-INT': 'High Power',
+        'IRCB501-6KD-INT': 'High Power',
+        'IRCB501-6ND-INT': 'High Protection'
+    };
+
+    function getCompatibleController(product) {
+        const name = String(product?.name || '').toUpperCase();
+        let model = String(product?.detailSpecs?.Controller || '').trim();
+
+        // The selection guide and the robot introduction training material
+        // specify the R10-140, R16 and R25 families as High Protection.
+        if (name.includes('R10-140') || name.includes('R16') || name.includes('R25')) {
+            model = 'IRCB501-6ND-INT';
+        }
+
+        let type = controllerTypeByModel[model];
+        // GS60 uses the 4MD controller model number but belongs to the
+        // High Protection robot/controller category.
+        if (name.includes('IR-GS60')) type = 'High Protection';
+        return model && type ? `${model} (${type})` : '-';
+    }
+
     function getRobotBodyOptions(product) {
         if (!product || !product.specs || product.specs.Type !== '6-Axis') return [];
 
@@ -1126,6 +1154,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${isScara ? `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>Z축 길이</strong></td><td colspan="2" style="text-align:right;">${product.specs['Z axis Length(mm)'] || '-'} mm</td></tr>` : ''}
                     ${is6Axis ? `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>중공형(Hollow Wrist)</strong></td><td colspan="2" style="text-align:right;">${product.specs['Hollow Wrist'] || '-'}</td></tr>` : ''}
                     <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>클린 타입</strong></td><td colspan="2" style="text-align:right;">${getCleanTypeDisplay(product)}</td></tr>
+                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>${uiText('호환 컨트롤러')}</strong></td><td colspan="2" style="text-align:right; white-space:nowrap;">${getCompatibleController(product)}</td></tr>
                     <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>방수 방진 등급</strong></td><td colspan="2" style="text-align:right;">${ipRating}</td></tr>
                     <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>중량</strong></td><td colspan="2" style="text-align:right;">${formatWeight(weight)}</td></tr>
                     ${extraRows}
