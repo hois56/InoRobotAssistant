@@ -19,7 +19,7 @@ assert.match(stepWorkerSource, /first:\s*first \+ triangleOffset/);
 assert.match(stepWorkerSource, /last:\s*last \+ triangleOffset/);
 assert.match(stepWorkerSource, /STEP_MESH_CHUNK_TARGET_BYTES\s*=\s*6 \* 1024 \* 1024/);
 assert.match(stepWorkerSource, /LARGE_STEP_MESH_CHUNK_TARGET_BYTES\s*=\s*4 \* 1024 \* 1024/);
-assert.match(stepWorkerSource, /function postLargeMeshChunks\(mesh, message, requestId\)/);
+assert.match(stepWorkerSource, /function postLargeMeshChunks\(mesh, message, requestId, partMeta = \{\}\)/);
 assert.match(stepWorkerSource, /occt-wasm@3\.7\.0\/dist\/index\.js/);
 assert.match(stepWorkerSource, /async function parseLargeStepFile\(message, requestId\)/);
 assert.match(stepWorkerSource, /kernel\.meshShape\(shape/);
@@ -30,7 +30,17 @@ assert.match(stepWorkerSource, /type:\s*'ready'/);
 assert.match(simulationSource, /function warmStepImportWorker\(\)/);
 assert.match(simulationSource, /function scheduleStepImportWorkerWarmup\(\)/);
 assert.match(simulationSource, /scheduleStepImportWorkerWarmup\(\);/);
-assert.match(simulationSource, /getStepTessellationParameters\(file\.size\)/);
+assert.match(simulationHtml, /id="import-quality"/);
+assert.match(simulationHtml, /value="lightweight"/);
+assert.match(simulationHtml, /value="standard"/);
+assert.match(simulationHtml, /value="high"/);
+assert.match(simulationSource, /STEP_IMPORT_QUALITY_PRESETS/);
+assert.match(simulationSource, /function getSelectedStepImportQuality\(\)/);
+assert.match(simulationSource, /function refreshImportQualityOptions\(/);
+assert.match(simulationSource, /getStepTessellationParameters\(file\.size, qualityKey\)/);
+assert.match(simulationSource, /getLargeStepTessellationParameters\(file\.size, qualityKey\)/);
+assert.match(simulationSource, /getStepImportCacheKey\(file, parameters, qualityKey\)/);
+assert.match(simulationSource, /parseUploaded3DFile\(file, extension, placement, importQuality\.key\)/);
 assert.match(simulationSource, /function readStepImportCache\(key\)/);
 assert.match(simulationSource, /function scheduleStepImportCacheWrite\(record\)/);
 assert.match(simulationSource, /cached\?\.meshes\?\.length/);
@@ -43,10 +53,28 @@ assert.match(simulationSource, /await yieldToAnimationFrame\(\)/);
 assert.match(simulationSource, /getPreparedSimulationSnapMeshes\(\)/);
 assert.match(simulationSource, /function getSimulationSnapModels\(scope = 'scene'\)/);
 assert.match(simulationSource, /const placement = scope === 'tool' \? 'tcp' : 'scene'/);
+const getSimulationSnapMeshesFunction = simulationSource.match(
+  /function getSimulationSnapMeshes\(scope = 'scene'\)[\s\S]*?(?=\r?\nfunction cloneSimulationSnapFaceSelection)/
+ )?.[0] || '';
+assert.match(simulationSource, /function getAllSimulationSnapMeshes\(scope = 'scene', \{ includeHidden = false \} = \{\}\)/);
+assert.match(getSimulationSnapMeshesFunction, /getAllSimulationSnapMeshes\(scope, \{ includeHidden: true \}\)/);
+assert.match(getSimulationSnapMeshesFunction, /return \[\];/);
+assert.doesNotMatch(getSimulationSnapMeshesFunction, /clearSimulationSnapFaceSelection/);
+assert.match(simulationSource, /function cloneSimulationSnapFaceSelections\(/);
+assert.match(simulationSource, /\? cloneSimulationSnapFaceSelections\(\) : \[\]/);
+assert.match(simulationSource, /buildSimulationCombinedSnapCandidates\(nextCandidates, faceSelections\)/);
+assert.match(simulationSource, /Selected face snap candidate generation failed:[\s\S]*?invalidateSimulationSnapCandidates\(\);[\s\S]*?면 선택은 유지됩니다/);
+const selectSimulationSnapFaceFunction = simulationSource.match(
+  /function selectSimulationSnapFace\(selection, \{ additive = false \} = \{\}\)[\s\S]*?(?=\r?\nfunction snapTypeInfo)/
+ )?.[0] || '';
+assert.doesNotMatch(selectSimulationSnapFaceFunction, /catch \([\s\S]*?clearSimulationSnapFaceSelection\(\)/);
 assert.match(simulationSource, /buildSimulationSnapCandidates\('tool'\)/);
 assert.match(simulationSource, /getSimulationSnapMeshes\('tool'\)/);
 assert.match(findSimulationSnapFunction, /state\.camera\.updateMatrixWorld\(true\);/);
 assert.doesNotMatch(findSimulationSnapFunction, /state\.scene\.updateMatrixWorld\(true\);/);
+assert.match(simulationSource, /function updateSimulationSnapCandidateMarkers\(\)[\s\S]*?if \(state\.viewNavigationActive\) return;/);
+assert.match(simulationSource, /function updateSimulationSnapCandidateMarkers\(\)[\s\S]*?state\.camera\.updateMatrixWorld\(true\);/);
+assert.match(simulationSource, /function hideSimulationSnapCandidateMarkersForNavigation\(\)/);
 assert.match(simulationSource, /snapPointerMoveFrame = requestAnimationFrame/);
 assert.match(simulationSource, /function isSimulationSnapInteractionActive\(\)[\s\S]*?!state\.viewNavigationActive/);
 assert.match(simulationSource, /function beginSimulationViewNavigation\(\)[\s\S]*?hideSimulationSnapMarker\(\);/);
@@ -87,6 +115,9 @@ assert.match(simulationHtml, /main\.js\?v=[^"'\s]*large-model-performance/);
 assert.match(simulationHtml, /main\.js\?v=[^"'\s]*snap-center-priority/);
 assert.match(simulationSource, /step-import-worker\.js\?v=[^"'\s]*large-step-chunked-snap/);
 assert.match(simulationSource, /STEP_LARGE_FILE_ENGINE_MIN_BYTES\s*=\s*64 \* MEBIBYTE/);
+assert.match(simulationSource, /MAX_MODEL_IMPORT_SIZE_BYTES\s*=\s*500 \* MEBIBYTE/);
+assert.match(simulationSource, /file\.size > MAX_MODEL_IMPORT_SIZE_BYTES/);
+assert.match(simulationSource, /function rejectOversizedModelImport\(file\)/);
 assert.match(simulationSource, /LARGE_MODEL_PERFORMANCE_MIN_BYTES\s*=\s*100 \* MEBIBYTE/);
 assert.match(simulationSource, /LARGE_MODEL_RENDER_FPS\s*=\s*60/);
 assert.match(simulationSource, /state\.renderer\.shadowMap\.enabled\s*=\s*!enabled/);
@@ -102,6 +133,24 @@ const workerContext = {
 };
 runInNewContext(stepWorkerSource, workerContext);
 const workerBucket = workerContext.createBucket([0.5, 0.5, 0.5]);
+assert.deepEqual(
+  JSON.parse(JSON.stringify(workerContext.modernFaceRanges(
+    new Uint32Array([0, 6, 0, 6, 9, 1])
+  ))),
+  [{ first: 0, last: 1 }, { first: 2, last: 4 }]
+);
+assert.deepEqual(
+  JSON.parse(JSON.stringify(workerContext.modernFaceRanges([
+    { first: 0, last: 1 }, { start: 2, count: 3 }
+  ]))),
+  [{ first: 0, last: 1 }, { first: 2, last: 4 }]
+);
+assert.deepEqual(
+  JSON.parse(JSON.stringify(workerContext.modernFaceRanges([
+    [0, 3, 0], [3, 6, 1]
+  ]))),
+  [{ first: 0, last: 0 }, { first: 1, last: 2 }]
+);
 const createWorkerEntry = (brepFaces) => ({
   positions: new Float32Array(18),
   indices: new Uint16Array(6),
@@ -133,7 +182,7 @@ const chunkSourceMesh = {
     0, 0, 1,
     0, 0, 1
   ]),
-  faceGroups: runInNewContext('new Int32Array([0, 1, 0, 1, 1, 0])', workerContext)
+  faceGroups: runInNewContext('new Int32Array([0, 3, 0, 3, 3, 0])', workerContext)
 };
 const chunkGrouping = workerContext.groupLargeMeshTriangleRanges(chunkSourceMesh);
 assert.equal(chunkGrouping.preservesFaces, true);
@@ -205,11 +254,16 @@ const withCadFaces = buildStepSnapCandidates({
   index: bufferGeometryLike.index,
   brep_faces: preservedBrepFaces
 });
+const selectedRightFace = buildStepSnapCandidates(bufferGeometryLike, {
+  triangleRanges: [{ first: 6, last: 7 }]
+});
 
 assert.equal(withoutCadFaces.stats.faceCount, 0);
 assert.equal(withCadFaces.stats.faceCount, 6);
 assert.equal(withoutCadFaces.candidates.filter(({ type }) => type === 'face-center').length, 0);
 assert.equal(withCadFaces.candidates.filter(({ type }) => type === 'face-center').length, 6);
+assert.ok(selectedRightFace.candidates.length > 0);
+assert.ok(selectedRightFace.candidates.every(({ point }) => Math.abs(point[0] - 100) < 1e-6));
 
 const largeEndpointPositions = [];
 const largeEndpointIndices = [];

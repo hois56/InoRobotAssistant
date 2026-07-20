@@ -165,11 +165,19 @@
           }
         ]
       },
-    {
-      "title": "3D Simulation",
-      "versions": [
         {
-          "title": "Ver 26.07.18",
+          "title": "3D Simulation",
+          "versions": [
+            {
+              "title": "Ver 26.07.21.01",
+              "items": [
+                "**[Thêm]** Thêm lựa chọn chất lượng Tự động, Nhẹ, Tiêu chuẩn và Cao cho việc nhập mô hình 3D lớn.",
+                "**[Thay đổi]** Mô hình STL, FBX và STEP lớn được xử lý nền theo từng khối, đồng thời giữ cấu trúc và màu của chi tiết STEP.",
+                "**[Sửa]** Ổn định phản hồi bắt dính cho mặt đã chọn, tâm nhiều điểm và các ứng viên khi duyệt mô hình."
+              ]
+            },
+            {
+              "title": "Ver 26.07.18",
           "items": [
             "**[Cải tổ]** Đã cải tổ toàn diện 3D Viewer hiện có thành 3D Simulation có thể mô phỏng robot.",
             "**[Hỗ trợ]** Có thể di chuyển tất cả các mẫu robot và thiết lập đường đi của robot thông qua lập trình.",
@@ -179,11 +187,19 @@
         }
         ]
       },
-      {
-        "title": "Robot Tool Selector",
-        "versions": [
-          {
-            "title": "Ver 26.07.18",
+        {
+          "title": "Robot Tool Selector",
+          "versions": [
+            {
+              "title": "Ver 26.07.21.01",
+              "items": [
+                "**[Thêm]** Thêm lựa chọn chất lượng Mặc định và Siêu nhẹ cho việc nhập tệp STEP lớn.",
+                "**[Thay đổi]** Nhập STEP/XCAF lớn giữ cấu trúc và màu gốc của các chi tiết.",
+                "**[Sửa]** Sửa tính liên tục của tay cầm xoay qua ranh giới 180° và tính toán bắt dính mặt/cung/tâm tròn."
+              ]
+            },
+            {
+              "title": "Ver 26.07.18",
             "items": [
               "**[Thêm]** Đã thêm Mode D để nhập tệp CAD 3D và tính đặc tính khối lượng của mô hình.",
               "**[Hỗ trợ]** Có thể thiết lập vật liệu và mật độ của mô hình đã nhập để tính khối lượng, trọng tâm và mômen quán tính.",

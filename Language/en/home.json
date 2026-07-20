@@ -165,11 +165,19 @@
           }
         ]
       },
-    {
-      "title": "3D Simulation",
-      "versions": [
         {
-          "title": "Ver 26.07.18",
+          "title": "3D Simulation",
+          "versions": [
+            {
+              "title": "Ver 26.07.21.01",
+              "items": [
+                "**[Added]** Added Auto, Lightweight, Standard, and High quality choices for large 3D model imports.",
+                "**[Changed]** Large STL, FBX, and STEP models are processed in the background and chunks, while STEP part structure and colors are preserved.",
+                "**[Fixed]** Stabilized selected-face, multi-point-center, and candidate snap feedback while navigating the model."
+              ]
+            },
+            {
+              "title": "Ver 26.07.18",
           "items": [
             "**[Revamp]** The existing 3D Viewer has been comprehensively rebuilt as 3D Simulation, enabling robot simulation.",
             "**[Support]** All robot models can be moved, and robot motion paths can be set through programming.",
@@ -179,11 +187,19 @@
         }
         ]
       },
-      {
-        "title": "Robot Tool Selector",
-        "versions": [
-          {
-            "title": "Ver 26.07.18",
+        {
+          "title": "Robot Tool Selector",
+          "versions": [
+            {
+              "title": "Ver 26.07.21.01",
+              "items": [
+                "**[Added]** Added Default and Ultra-light import quality choices for large STEP files.",
+                "**[Changed]** Large STEP/XCAF imports now preserve part structure and source colors.",
+                "**[Fixed]** Fixed rotation-handle continuity across 180° boundaries and face/arc/circle snap calculations."
+              ]
+            },
+            {
+              "title": "Ver 26.07.18",
             "items": [
               "**[Added]** Added Mode D for importing 3D CAD files and calculating model mass properties.",
               "**[Support]** Set the material and density of an imported model to calculate mass, center of gravity, and moments of inertia.",

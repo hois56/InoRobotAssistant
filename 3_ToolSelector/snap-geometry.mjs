@@ -149,30 +149,104 @@ function buildFeatureChains(featureEdges, graph, nodeSet) {
 function fitCircle(path, points, tolerance, modelDiagonal) {
   const ids = path[path.length - 1] === path[0] ? path.slice(0, -1) : path;
   if (ids.length < 3) return null;
-  const a = points[ids[0]];
-  const b = points[ids[Math.floor(ids.length / 2)]];
-  const c = points[ids[ids.length - 1]];
-  const ab = sub(b, a);
-  const ac = sub(c, a);
-  const normalVector = cross(ab, ac);
-  const normalSquared = dot(normalVector, normalVector);
-  if (normalSquared <= tolerance * tolerance) return null;
 
-  const offset = scale(add(
-    scale(cross(ac, normalVector), dot(ab, ab)),
-    scale(cross(normalVector, ab), dot(ac, ac))
-  ), 1 / (2 * normalSquared));
-  const center = add(a, offset);
-  const radius = distance(center, a);
-  if (!Number.isFinite(radius) || radius <= tolerance || radius > Math.max(modelDiagonal * 10, tolerance * 100)) return null;
+  // A three-point circumcenter is very sensitive to coarse tessellation and
+  // to a slightly imperfect middle vertex. Pick a stable plane from several
+  // well-spread samples, then fit the circle to every vertex in that plane.
+  const sampleIndices = [...new Set([
+    0,
+    Math.floor((ids.length - 1) * 0.25),
+    Math.floor((ids.length - 1) * 0.5),
+    Math.floor((ids.length - 1) * 0.75),
+    ids.length - 1
+  ])];
+  let basis = null;
+  let largestNormalSquared = 0;
+  for (let first = 0; first < sampleIndices.length - 2; first += 1) {
+    for (let second = first + 1; second < sampleIndices.length - 1; second += 1) {
+      for (let third = second + 1; third < sampleIndices.length; third += 1) {
+        const a = points[ids[sampleIndices[first]]];
+        const b = points[ids[sampleIndices[second]]];
+        const c = points[ids[sampleIndices[third]]];
+        const normalVector = cross(sub(b, a), sub(c, a));
+        const normalSquared = dot(normalVector, normalVector);
+        if (normalSquared <= largestNormalSquared) continue;
+        largestNormalSquared = normalSquared;
+        basis = { origin: a, axis: normalize(sub(b, a)), normal: normalize(normalVector) };
+      }
+    }
+  }
+  if (!basis || largestNormalSquared <= tolerance * tolerance) return null;
+  basis.otherAxis = normalize(cross(basis.normal, basis.axis));
 
-  const normal = normalize(normalVector);
-  const radialTolerance = Math.max(tolerance * 20, radius * 0.012);
-  const planeTolerance = Math.max(tolerance * 20, modelDiagonal * 1e-5);
+  const projected = [];
+  const normalMatrix = [
+    [0, 0, 0],
+    [0, 0, 0],
+    [0, 0, 0]
+  ];
+  const rightHandSide = [0, 0, 0];
+  for (const id of ids) {
+    const relative = sub(points[id], basis.origin);
+    const axis = dot(relative, basis.axis);
+    const otherAxis = dot(relative, basis.otherAxis);
+    const squaredRadius = axis * axis + otherAxis * otherAxis;
+    const row = [2 * axis, 2 * otherAxis, 1];
+    projected.push({ axis, otherAxis });
+    for (let rowIndex = 0; rowIndex < 3; rowIndex += 1) {
+      rightHandSide[rowIndex] += row[rowIndex] * squaredRadius;
+      for (let columnIndex = 0; columnIndex < 3; columnIndex += 1) {
+        normalMatrix[rowIndex][columnIndex] += row[rowIndex] * row[columnIndex];
+      }
+    }
+  }
+
+  // Solve the least-squares circle equation
+  // 2*x*cx + 2*y*cy + constant = x*x + y*y.
+  for (let pivot = 0; pivot < 3; pivot += 1) {
+    let pivotRow = pivot;
+    for (let row = pivot + 1; row < 3; row += 1) {
+      if (Math.abs(normalMatrix[row][pivot]) > Math.abs(normalMatrix[pivotRow][pivot])) pivotRow = row;
+    }
+    if (Math.abs(normalMatrix[pivotRow][pivot]) <= EPSILON) return null;
+    if (pivotRow !== pivot) {
+      [normalMatrix[pivot], normalMatrix[pivotRow]] = [normalMatrix[pivotRow], normalMatrix[pivot]];
+      [rightHandSide[pivot], rightHandSide[pivotRow]] = [rightHandSide[pivotRow], rightHandSide[pivot]];
+    }
+    const divisor = normalMatrix[pivot][pivot];
+    for (let column = pivot; column < 3; column += 1) normalMatrix[pivot][column] /= divisor;
+    rightHandSide[pivot] /= divisor;
+    for (let row = 0; row < 3; row += 1) {
+      if (row === pivot) continue;
+      const factor = normalMatrix[row][pivot];
+      for (let column = pivot; column < 3; column += 1) normalMatrix[row][column] -= factor * normalMatrix[pivot][column];
+      rightHandSide[row] -= factor * rightHandSide[pivot];
+    }
+  }
+  const centerAxis = rightHandSide[0];
+  const centerOtherAxis = rightHandSide[1];
+  const radiusSquared = centerAxis * centerAxis + centerOtherAxis * centerOtherAxis + rightHandSide[2];
+  if (!Number.isFinite(radiusSquared) || radiusSquared <= 0) return null;
+  const center = add(
+    basis.origin,
+    add(scale(basis.axis, centerAxis), scale(basis.otherAxis, centerOtherAxis))
+  );
+  const radius = Math.sqrt(radiusSquared);
+  const radialDistances = projected.map(({ axis, otherAxis }) => Math.hypot(axis - centerAxis, otherAxis - centerOtherAxis));
+  let maximumPlaneError = 0;
   for (const id of ids) {
     const delta = sub(points[id], center);
-    if (Math.abs(dot(delta, normal)) > planeTolerance || Math.abs(length(delta) - radius) > radialTolerance) return null;
+    maximumPlaneError = Math.max(maximumPlaneError, Math.abs(dot(delta, basis.normal)));
   }
+  if (!Number.isFinite(radius) || radius <= tolerance || radius > Math.max(modelDiagonal * 10, tolerance * 100)) return null;
+
+  // STEP tessellation can carry small export noise or a deliberately
+  // approximated arc. Keep the candidate when the whole chain remains a
+  // reasonably circular, planar feature instead of requiring 1.2% accuracy.
+  const radialTolerance = Math.max(tolerance * 20, radius * 0.025);
+  const planeTolerance = Math.max(tolerance * 20, modelDiagonal * 1e-5);
+  const maximumRadialError = Math.max(...radialDistances.map((value) => Math.abs(value - radius)));
+  if (maximumPlaneError > planeTolerance || maximumRadialError > radialTolerance) return null;
   return { center, radius };
 }
 
@@ -281,24 +355,71 @@ function closestLineIntersection(first, second, tolerance, extensionRatio) {
 
 export function buildStepSnapCandidates(meshDefinition, options = {}) {
   const disabledTypes = new Set(Array.isArray(options.disabledTypes) ? options.disabledTypes : []);
+  const triangleRanges = Array.isArray(options.triangleRanges)
+    ? options.triangleRanges
+        .map((range) => ({ first: Number(range?.first), last: Number(range?.last) }))
+        .filter((range) => Number.isInteger(range.first)
+          && Number.isInteger(range.last)
+          && range.first >= 0
+          && range.last >= range.first)
+    : null;
   const flatPositions = flatten(meshDefinition.attributes?.position?.array);
   if (flatPositions.length < 9 || flatPositions.length % 3 !== 0) return { candidates: [], stats: {} };
-  const rawPositions = [];
-  for (let index = 0; index < flatPositions.length; index += 3) {
-    rawPositions.push([flatPositions[index], flatPositions[index + 1], flatPositions[index + 2]]);
+  const flatIndices = flatten(meshDefinition.index?.array);
+  const sourceIndices = flatIndices.length
+    ? flatIndices
+    : Array.from({ length: flatPositions.length / 3 }, (_, index) => index);
+  const selectedSourceIds = triangleRanges?.length ? new Set() : null;
+  if (selectedSourceIds) {
+    triangleRanges.forEach((range) => {
+      for (let triangleIndex = range.first; triangleIndex <= range.last; triangleIndex += 1) {
+        const index = triangleIndex * 3;
+        if (index + 2 >= sourceIndices.length) continue;
+        selectedSourceIds.add(sourceIndices[index]);
+        selectedSourceIds.add(sourceIndices[index + 1]);
+        selectedSourceIds.add(sourceIndices[index + 2]);
+      }
+    });
   }
+  const sourceVertexIds = selectedSourceIds
+    ? [...selectedSourceIds]
+    : Array.from({ length: flatPositions.length / 3 }, (_, index) => index);
+  const rawPositions = sourceVertexIds.map((sourceIndex) => [
+    flatPositions[sourceIndex * 3],
+    flatPositions[sourceIndex * 3 + 1],
+    flatPositions[sourceIndex * 3 + 2]
+  ]);
+  if (rawPositions.length < 3) return { candidates: [], stats: {} };
   const rawBounds = boundsOf(rawPositions);
   const weldTolerance = options.weldTolerance || Math.max(rawBounds.diagonal * 1e-7, 1e-6);
-  const { positions, sourceToWelded } = weldPositions(rawPositions, weldTolerance);
-  const flatIndices = flatten(meshDefinition.index?.array);
-  const sourceIndices = flatIndices.length ? flatIndices : rawPositions.map((_, index) => index);
+  const { positions, sourceToWelded: weldedSourceToWelded } = weldPositions(rawPositions, weldTolerance);
+  const sourceToWelded = selectedSourceIds
+    ? new Map(sourceVertexIds.map((sourceIndex, index) => [sourceIndex, weldedSourceToWelded[index]]))
+    : weldedSourceToWelded;
   const triangles = [];
-  for (let index = 0; index + 2 < sourceIndices.length; index += 3) {
-    const ids = [sourceToWelded[sourceIndices[index]], sourceToWelded[sourceIndices[index + 1]], sourceToWelded[sourceIndices[index + 2]]];
-    if (new Set(ids).size < 3) continue;
+  const addTriangle = (sourceTriangleIndex) => {
+    const index = sourceTriangleIndex * 3;
+    if (index + 2 >= sourceIndices.length) return;
+    const ids = [
+      sourceToWelded instanceof Map ? sourceToWelded.get(sourceIndices[index]) : sourceToWelded[sourceIndices[index]],
+      sourceToWelded instanceof Map ? sourceToWelded.get(sourceIndices[index + 1]) : sourceToWelded[sourceIndices[index + 1]],
+      sourceToWelded instanceof Map ? sourceToWelded.get(sourceIndices[index + 2]) : sourceToWelded[sourceIndices[index + 2]]
+    ];
+    if (new Set(ids).size < 3) return;
     const properties = triangleProperties(positions[ids[0]], positions[ids[1]], positions[ids[2]]);
-    if (properties.area <= EPSILON) continue;
-    triangles.push({ ids, sourceIndex: Math.floor(index / 3), ...properties });
+    if (properties.area <= EPSILON) return;
+    triangles.push({ ids, sourceIndex: sourceTriangleIndex, ...properties });
+  };
+  if (triangleRanges?.length) {
+    triangleRanges.forEach((range) => {
+      for (let triangleIndex = range.first; triangleIndex <= range.last; triangleIndex += 1) {
+        addTriangle(triangleIndex);
+      }
+    });
+  } else {
+    for (let index = 0; index + 2 < sourceIndices.length; index += 3) {
+      addTriangle(Math.floor(index / 3));
+    }
   }
 
   const featureEdgeMap = new Map();
@@ -372,6 +493,22 @@ export function buildStepSnapCandidates(meshDefinition, options = {}) {
   });
   const nodeSet = new Set([...endpointIds, ...vertexIds]);
   const chains = buildFeatureChains(featureEdges, graph, nodeSet);
+  // Keep the normal chain segmentation for reliable vertex/edge snaps, but
+  // use a more tolerant chain only while fitting circles. This lets a coarse
+  // tessellated arc remain continuous without hiding real sharp vertices.
+  const arcCornerCosine = -Math.cos((options.arcCornerAngleDegrees || 65) * Math.PI / 180);
+  const arcNodeSet = new Set(endpointIds);
+  graph.forEach((neighbors, id) => {
+    if (neighbors.size !== 2) {
+      arcNodeSet.add(id);
+      return;
+    }
+    const [first, second] = [...neighbors];
+    const firstDirection = normalize(sub(positions[first], positions[id]));
+    const secondDirection = normalize(sub(positions[second], positions[id]));
+    if (dot(firstDirection, secondDirection) > arcCornerCosine) arcNodeSet.add(id);
+  });
+  const circleChains = buildFeatureChains(featureEdges, graph, arcNodeSet);
   const rectangleCenters = disabledTypes.has('rectangle-center')
     ? []
     : findRectangleCenters(
@@ -410,10 +547,12 @@ export function buildStepSnapCandidates(meshDefinition, options = {}) {
   const straightLines = [];
   chains.forEach((chain, chainIndex) => {
     if (!chain.closed) addCandidate({ type: 'edge-midpoint', point: polylineMidpoint(chain.path, positions), source: { chainIndex } });
-    const circle = fitCircle(chain.path, positions, weldTolerance, rawBounds.diagonal);
-    if (circle) addCandidate({ type: 'circle-center', point: circle.center, source: { chainIndex, radiusMm: circle.radius } });
     const line = straightLineForChain(chain, positions, weldTolerance);
     if (line && straightLines.length < (options.maxStraightLines || 500)) straightLines.push(line);
+  });
+  circleChains.forEach((chain, chainIndex) => {
+    const circle = fitCircle(chain.path, positions, weldTolerance, rawBounds.diagonal);
+    if (circle) addCandidate({ type: 'circle-center', point: circle.center, source: { chainIndex, radiusMm: circle.radius } });
   });
 
   addCandidate({ type: 'shape-center', point: rawBounds.center, source: { kind: 'bounding-box' } });
