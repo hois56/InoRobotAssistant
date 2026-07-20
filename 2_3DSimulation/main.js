@@ -105,6 +105,8 @@ const state = {
     motionRepeatRobot: false,
     motionRepeat: false,
     motionHistoryBefore: null,
+    viewPresets: Array.from({ length: 4 }, () => null),
+    activeViewSlot: null,
     motionSaveTimer: null,
     lastCycleTimeDisplayUpdate: 0,
     fullscreenUiMode: false,
@@ -150,17 +152,18 @@ const state = {
     snapCandidateBuildSignature: '',
     snapCandidateBuildPromise: null,
     snapCandidatesReady: false,
-    snapScreenIndex: null,
-    snapScreenIndexSignature: '',
+    snapWorldIndex: null,
+    snapWorldIndexSignature: '',
     snapLazyReadyMeshes: new Set(),
     snapLazyBuildPromises: new Map(),
     snapHover: null,
     snapMarkerReferenceDistance: null,
     snapPointerMoveFrame: null,
     snapLastPointerEvent: null,
+    viewNavigationActive: false,
     snapVisibilityRaycaster: new THREE.Raycaster(),
     largeModelPerformanceMode: false,
-    lastPerformanceRenderAt: 0,
+    renderFramePending: false,
     outlineMode: false,
     grid: null, baseAxes: null, labels: [],
     addMode: false
@@ -311,6 +314,7 @@ const el = {
     btnProgramAddDelay: document.getElementById('program-add-delay'),
     btnProgramAddTimeStart: document.getElementById('program-add-time-start'),
     btnProgramAddTimeOut: document.getElementById('program-add-time-out'),
+    btnProgramAddView: document.getElementById('program-add-view'),
     btnProgramUpdate: document.getElementById('program-update-step'),
     btnProgramDelete: document.getElementById('program-delete-step'),
     btnProgramStepRobot: document.getElementById('program-step-robot'),
@@ -327,6 +331,8 @@ const el = {
     btnProgramImport: document.getElementById('program-import'),
     inputProgramImport: document.getElementById('program-import-file'),
     virtualControllerPanel: document.getElementById('virtual-controller-panel'),
+    viewPresetsPanel: document.getElementById('view-presets-panel'),
+    viewPresetsList: document.getElementById('view-presets-list'),
     virtualControllerSource: document.getElementById('virtual-controller-source'),
     virtualControllerEndpoint: document.getElementById('virtual-controller-endpoint'),
     virtualControllerRobot: document.getElementById('virtual-controller-robot'),
@@ -377,12 +383,15 @@ const SUPPORTED_IMPORT_EXTENSIONS = new Set(['stl', 'fbx', 'obj', 'glb', 'gltf',
 const Y_UP_IMPORT_EXTENSIONS = new Set(['fbx', 'glb', 'gltf']);
 const IMPORT_PLACEMENT_COLORS = { tcp: 0xf97316, scene: 0x65a30d };
 const MOTION_PROJECT_STORAGE_KEY = 'inorobot.3d-simulation.motion-project.v1';
+const VIEW_PRESETS_STORAGE_KEY = 'inorobot.3d-simulation.view-presets.v1';
+const VIEW_PRESET_COUNT = 4;
 const CYCLE_TIME_DISPLAY_INTERVAL = 50;
 const MAX_MOTION_TRANSITIONS_PER_FRAME = 256;
 const MOTION_MOVL_SAMPLE_DISTANCE = 25;
 const MOTION_MOVL_SAMPLE_ANGLE = 5;
 const SNAP_RADIUS_PX = 16;
-const SNAP_SCREEN_INDEX_CELL_PX = 48;
+const SNAP_WORLD_INDEX_LEAF_SIZE = 48;
+const SNAP_WORLD_INDEX_MAX_DEPTH = 14;
 const SNAP_MARKER_CAMERA_SCALE = Object.freeze({ min: 0.55, max: 1.25 });
 const MEBIBYTE = 1024 * 1024;
 const STEP_IMPORT_CACHE_DB_NAME = 'inorobot-3d-step-cache';
@@ -392,19 +401,23 @@ const STEP_IMPORT_CACHE_MAX_ENTRIES = 4;
 const STEP_IMPORT_CACHE_MAX_SOURCE_BYTES = 32 * MEBIBYTE;
 const STEP_LARGE_FILE_ENGINE_MIN_BYTES = 64 * MEBIBYTE;
 const LARGE_MODEL_PERFORMANCE_MIN_BYTES = 100 * MEBIBYTE;
+// Motion rendering stays on the display-refresh path; never throttle large models to 30 Hz.
 const LARGE_MODEL_RENDER_FPS = 60;
+const LARGE_MODEL_PERFORMANCE_MIN_TRIANGLES = 200000;
 const SIMULATION_SNAP_OVERLAP_TOLERANCE_PX = 7;
 // Endpoints stay exhaustive; pointer lookup is bounded by the screen-space index below.
 const SIMULATION_SNAP_MAX_PER_TYPE = Object.freeze({
     endpoint: Infinity,
     vertex: 12000,
     'edge-midpoint': 12000,
-    'face-center': 5000,
     'circle-center': 4000,
-    'rectangle-center': 2000,
-    'shape-center': 100,
-    'virtual-intersection': 500
+    'rectangle-center': 2000
 });
+const SIMULATION_SNAP_DISABLED_TYPES = Object.freeze([
+    'face-center',
+    'shape-center',
+    'virtual-intersection'
+]);
 const TCP_AXES_LOCAL_SIZE = 110;
 const TCP_AXES_SCREEN_PIXELS = 40;
 const tcpAxesWorldPosition = new THREE.Vector3();
@@ -414,12 +427,9 @@ const SNAP_TYPES = Object.freeze({
     // Specific geometric centers must win when they overlap generic topology snaps.
     'circle-center': { label: '원/호 중심점', symbol: '⊙', priority: 0 },
     'rectangle-center': { label: '사각형 중심점', symbol: '▣', priority: 0 },
-    'face-center': { label: '면 중심점', symbol: '○', priority: 1 },
     endpoint: { label: '끝점', symbol: '◇', priority: 2 },
     vertex: { label: '꼭짓점', symbol: '□', priority: 2 },
-    'edge-midpoint': { label: '에지 중심점', symbol: '△', priority: 3 },
-    'shape-center': { label: '형상 중심점', symbol: '⌖', priority: 4 },
-    'virtual-intersection': { label: '가상 교점', symbol: '×', priority: 5 }
+    'edge-midpoint': { label: '에지 중심점', symbol: '△', priority: 3 }
 });
 const PANEL_RESIZE_EDGE_SIZE = 8;
 const PANEL_MINIMUM_SIZES = Object.freeze({
@@ -427,6 +437,7 @@ const PANEL_MINIMUM_SIZES = Object.freeze({
     'jog-panel': { width: 250, height: 300 },
     'tcp-profile-panel': { width: 280, height: 360 },
     'virtual-controller-panel': { width: 250, height: 230 },
+    'view-presets-panel': { width: 280, height: 260 },
     'program-panel': { width: 300, height: 320 }
 });
 const PANEL_DRAG_EXCLUDED_SELECTOR = [
@@ -454,6 +465,7 @@ async function init() {
 }
 
 function setupUI() {
+    loadViewConfiguration();
     const wrapper = document.querySelector('.select-wrapper');
     if (!wrapper) return;
 
@@ -483,6 +495,157 @@ function setupUI() {
     if(btnDown) btnDown.title = uiText('현재 열린 모든 모델 CAD 다운로드');
 }
 
+function getDefaultViewPresetName(slot) {
+    return `View ${slot + 1}`;
+}
+
+function isValidViewPreset(value) {
+    return Boolean(value?.camera
+        && Array.isArray(value.camera.position) && value.camera.position.length === 3
+        && value.camera.position.every(Number.isFinite)
+        && Array.isArray(value.camera.target) && value.camera.target.length === 3
+        && value.camera.target.every(Number.isFinite)
+        && Array.isArray(value.camera.up) && value.camera.up.length === 3
+        && value.camera.up.every(Number.isFinite));
+}
+
+function serializeViewConfiguration() {
+    return {
+        viewPresets: state.viewPresets.map((preset) => preset && {
+            name: preset.name,
+            camera: {
+                position: [...preset.camera.position],
+                target: [...preset.camera.target],
+                up: [...preset.camera.up],
+                zoom: Number.isFinite(preset.camera.zoom) ? preset.camera.zoom : 1
+            }
+        })
+    };
+}
+
+function saveViewConfiguration() {
+    try {
+        localStorage.setItem(VIEW_PRESETS_STORAGE_KEY, JSON.stringify(serializeViewConfiguration()));
+    } catch (error) {
+        console.warn('Unable to save view presets:', error);
+    }
+}
+
+function loadViewConfiguration() {
+    state.viewPresets = Array.from({ length: VIEW_PRESET_COUNT }, () => null);
+    try {
+        const raw = JSON.parse(localStorage.getItem(VIEW_PRESETS_STORAGE_KEY) || 'null');
+        const presets = Array.isArray(raw) ? raw : raw?.viewPresets;
+        if (Array.isArray(presets)) {
+            presets.slice(0, VIEW_PRESET_COUNT).forEach((preset, slot) => {
+                if (!isValidViewPreset(preset)) return;
+                state.viewPresets[slot] = {
+                    name: String(preset.name || getDefaultViewPresetName(slot)).slice(0, 24),
+                    camera: {
+                        position: preset.camera.position.map(Number),
+                        target: preset.camera.target.map(Number),
+                        up: preset.camera.up.map(Number),
+                        zoom: Number.isFinite(Number(preset.camera.zoom)) ? Number(preset.camera.zoom) : 1
+                    }
+                };
+            });
+        }
+    } catch (error) {
+        console.warn('Unable to load view presets:', error);
+    }
+    refreshViewPresetsUi();
+}
+
+function captureViewPreset(slot, name = '') {
+    if (!state.camera || !state.controls) return null;
+    return {
+        name: String(name || getDefaultViewPresetName(slot)).trim().slice(0, 24) || getDefaultViewPresetName(slot),
+        camera: {
+            position: state.camera.position.toArray(),
+            target: state.controls.target.toArray(),
+            up: state.camera.up.toArray(),
+            zoom: Number.isFinite(state.camera.zoom) ? state.camera.zoom : 1
+        }
+    };
+}
+
+function getViewPreset(slot) {
+    const index = Number(slot);
+    return Number.isInteger(index) && index >= 0 && index < VIEW_PRESET_COUNT
+        ? state.viewPresets[index]
+        : null;
+}
+
+function applyViewPreset(slot, { announce = true } = {}) {
+    const index = Number(slot);
+    const preset = getViewPreset(index);
+    if (!preset || !isValidViewPreset(preset) || !state.camera || !state.controls) return false;
+    state.camera.position.fromArray(preset.camera.position);
+    state.camera.up.fromArray(preset.camera.up);
+    state.camera.zoom = Number.isFinite(preset.camera.zoom) && preset.camera.zoom > 0
+        ? preset.camera.zoom
+        : 1;
+    state.camera.updateProjectionMatrix();
+    state.controls.target.fromArray(preset.camera.target);
+    state.camera.lookAt(state.controls.target);
+    state.controls.update();
+    state.activeViewSlot = index;
+    if (state.snapMoveMode) captureSimulationSnapMarkerReferenceDistance();
+    refreshViewPresetsUi();
+    requestRender();
+    if (announce) setStatus(`뷰 ${index + 1}: ${preset.name}`, '#60a5fa');
+    return true;
+}
+
+function saveViewPreset(slot) {
+    const row = el.viewPresetsList?.querySelector(`[data-view-slot="${slot}"]`);
+    if (!row) return;
+    const name = row.querySelector('[data-view-name]')?.value || getDefaultViewPresetName(slot);
+    const preset = captureViewPreset(slot, name);
+    if (!preset) return;
+    state.viewPresets[slot] = preset;
+    state.activeViewSlot = slot;
+    saveViewConfiguration();
+    refreshViewPresetsUi();
+    setStatus(`뷰 ${slot + 1}을 저장했습니다.`, '#22c55e');
+}
+
+function refreshViewPresetsUi() {
+    if (!el.viewPresetsList) return;
+    el.viewPresetsList.querySelectorAll('[data-view-slot]').forEach((row) => {
+        const slot = Number(row.dataset.viewSlot);
+        const preset = getViewPreset(slot);
+        const nameInput = row.querySelector('[data-view-name]');
+        const applyButton = row.querySelector('[data-view-apply]');
+        if (nameInput && document.activeElement !== nameInput) {
+            nameInput.value = preset?.name || nameInput.value || getDefaultViewPresetName(slot);
+        }
+        if (applyButton) {
+            applyButton.disabled = !preset;
+            applyButton.setAttribute('aria-label', `${preset?.name || getDefaultViewPresetName(slot)} 적용`);
+        }
+        row.classList.toggle('active', state.activeViewSlot === slot && Boolean(preset));
+    });
+}
+
+function handleViewPresetListClick(event) {
+    const row = event.target.closest('[data-view-slot]');
+    if (!row || !el.viewPresetsList.contains(row)) return;
+    const slot = Number(row.dataset.viewSlot);
+    if (event.target.closest('[data-view-save]')) saveViewPreset(slot);
+    else if (event.target.closest('[data-view-apply]')) applyViewPreset(slot);
+}
+
+function handleViewPresetListInput(event) {
+    const nameInput = event.target.closest('[data-view-name]');
+    if (!nameInput) return;
+    const row = nameInput.closest('[data-view-slot]');
+    const preset = getViewPreset(Number(row?.dataset.viewSlot));
+    if (!preset) return;
+    preset.name = nameInput.value.trim().slice(0, 24) || getDefaultViewPresetName(Number(row.dataset.viewSlot));
+    saveViewConfiguration();
+}
+
 function refreshLocalizedControls() {
     const addModeLabel = document.querySelector('.add-mode-toggle span');
     if (addModeLabel) {
@@ -507,6 +670,7 @@ function refreshLocalizedControls() {
     refreshJointControlLabels();
     renderMotionProgramPanel();
     refreshVirtualControllerUi();
+    refreshViewPresetsUi();
     refreshViewerStatus();
     refreshMotionProgramStatus();
     if (el.baseJogStatus?.dataset.sourceMessage) {
@@ -565,13 +729,29 @@ function preventMiddleButtonAutoscroll(event) {
     if (event.button === 1) event.preventDefault();
 }
 
+function updateModelRenderComplexity(model) {
+    let triangleCount = 0;
+    model.traverse((child) => {
+        if (!child.isMesh) return;
+        const position = child.geometry?.getAttribute('position');
+        const elementCount = child.geometry?.index?.count ?? position?.count ?? 0;
+        triangleCount += Math.floor(elementCount / 3);
+    });
+
+    model.userData.renderTriangleCount = triangleCount;
+    model.userData.largeModelMode = Boolean(
+        model.userData.largeModelMode
+        || Number(model.userData.sourceFileSize) >= LARGE_MODEL_PERFORMANCE_MIN_BYTES
+        || triangleCount >= LARGE_MODEL_PERFORMANCE_MIN_TRIANGLES
+    );
+}
+
 function updateLargeModelPerformanceMode() {
     const enabled = state.models.some((model) => (
-        model.userData.uploaded && model.userData.largeModelMode && model.visible !== false
+        model.userData.largeModelMode && model.visible !== false
     ));
     if (state.largeModelPerformanceMode === enabled || !state.renderer) return;
     state.largeModelPerformanceMode = enabled;
-    state.lastPerformanceRenderAt = 0;
     state.renderer.shadowMap.enabled = !enabled;
     state.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, enabled ? 1 : 2));
     state.renderer.setSize(el.canvasContainer.clientWidth, el.canvasContainer.clientHeight);
@@ -625,17 +805,15 @@ function buildSimulationSnapResultForMesh(mesh, lazyChunk = false) {
             endpoint: Infinity,
             vertex: lazyChunk ? 2500 : 4000,
             'edge-midpoint': lazyChunk ? 2500 : 4000,
-            'face-center': lazyChunk ? 800 : 1200,
             'circle-center': lazyChunk ? 600 : 1000,
-            'rectangle-center': lazyChunk ? 600 : 1000,
-            'shape-center': lazyChunk ? 2 : 10,
-            'virtual-intersection': lazyChunk ? 80 : 160
-        }
+            'rectangle-center': lazyChunk ? 600 : 1000
+        },
+        disabledTypes: SIMULATION_SNAP_DISABLED_TYPES
     });
 }
 
 async function buildSimulationSnapCandidates(scope = getSimulationSnapScope()) {
-    if (!isSimulationSnapPicking()) return [];
+    if (!isSimulationSnapInteractionActive()) return [];
     const meshes = getSimulationSnapMeshes(scope);
     const signature = `${scope}:${meshes.map((mesh) => `${mesh.uuid}:${mesh.geometry.uuid}`).join('|')}`;
     if (signature === state.snapCandidateModelsSignature && state.snapCandidatesReady) return meshes;
@@ -646,8 +824,8 @@ async function buildSimulationSnapCandidates(scope = getSimulationSnapScope()) {
 
     state.snapCandidateBuildSignature = signature;
     state.snapCandidatesReady = false;
-    state.snapScreenIndex = null;
-    state.snapScreenIndexSignature = '';
+    state.snapWorldIndex = null;
+    state.snapWorldIndexSignature = '';
     state.snapLazyReadyMeshes.clear();
     state.snapLazyBuildPromises.clear();
     const nextCandidates = [];
@@ -655,7 +833,7 @@ async function buildSimulationSnapCandidates(scope = getSimulationSnapScope()) {
     const buildPromise = (async () => {
         await yieldToAnimationFrame();
         for (let meshIndex = 0; meshIndex < meshes.length; meshIndex += 1) {
-            if (state.snapCandidateBuildSignature !== signature || !isSimulationSnapPicking()) return;
+            if (state.snapCandidateBuildSignature !== signature || !isSimulationSnapInteractionActive()) return;
             const mesh = meshes[meshIndex];
             if (isLazySimulationSnapMesh(mesh)) continue;
             try {
@@ -676,12 +854,12 @@ async function buildSimulationSnapCandidates(scope = getSimulationSnapScope()) {
             }
             if (meshIndex + 1 < meshes.length) await yieldToAnimationFrame();
         }
-        if (state.snapCandidateBuildSignature !== signature || !isSimulationSnapPicking()) return;
+        if (state.snapCandidateBuildSignature !== signature || !isSimulationSnapInteractionActive()) return;
         state.snapCandidates = nextCandidates;
         state.snapCandidateModelsSignature = signature;
         state.snapCandidatesReady = true;
-        state.snapScreenIndex = null;
-        state.snapScreenIndexSignature = '';
+        state.snapWorldIndex = null;
+        state.snapWorldIndexSignature = '';
     })();
     state.snapCandidateBuildPromise = buildPromise;
     try {
@@ -708,8 +886,8 @@ function invalidateSimulationSnapCandidates() {
     state.snapCandidateModelsSignature = '';
     state.snapCandidatesReady = false;
     state.snapCandidates = [];
-    state.snapScreenIndex = null;
-    state.snapScreenIndexSignature = '';
+    state.snapWorldIndex = null;
+    state.snapWorldIndexSignature = '';
     state.snapLazyReadyMeshes.clear();
     state.snapLazyBuildPromises.clear();
 }
@@ -731,6 +909,31 @@ function isSimulationSnapPicking() {
     return state.snapMoveMode || state.tcpSnapMode || (
         state.zeroPointEdit.active && state.zeroPointEdit.snapMode
     );
+}
+
+function isSimulationSnapInteractionActive() {
+    return isSimulationSnapPicking() && !state.viewNavigationActive;
+}
+
+function beginSimulationViewNavigation() {
+    if (state.viewNavigationActive) return;
+    state.viewNavigationActive = true;
+    // Camera movement can generate a pointermove for every orbit/pan step.
+    // Cancel any pending snap work before those events reach the snap picker.
+    state.snapCandidateBuildSignature = '';
+    hideSimulationSnapMarker();
+}
+
+function endSimulationViewNavigation() {
+    if (!state.viewNavigationActive) return;
+    state.viewNavigationActive = false;
+    if (!isSimulationSnapPicking() || state.snapCandidatesReady) return;
+
+    // If navigation interrupted candidate preparation, resume it after the
+    // controls release without doing any work inside the camera gesture.
+    void buildSimulationSnapCandidates(getSimulationSnapScope()).catch((error) => {
+        console.warn('Snap candidate generation resume failed:', error);
+    });
 }
 
 function isTcpMultiPointSnapMode() {
@@ -850,7 +1053,7 @@ function hideSimulationSnapMarker() {
 }
 
 function updateSimulationSnapMarkerCameraScale() {
-    if (!isSimulationSnapPicking()) return;
+    if (!isSimulationSnapInteractionActive()) return;
     if (!el.snapMarker || !state.camera || !state.controls) return;
     const cameraZoom = Math.max(state.camera.zoom || 1, Number.EPSILON);
     const cameraDistance = state.camera.position.distanceTo(state.controls.target) / cameraZoom;
@@ -887,7 +1090,7 @@ function scheduleLazySimulationSnapBuild(mesh) {
     const buildSignature = state.snapCandidateModelsSignature;
     const promise = (async () => {
         await yieldToAnimationFrame();
-        if (state.snapCandidateModelsSignature !== buildSignature || !isSimulationSnapPicking()) return;
+        if (state.snapCandidateModelsSignature !== buildSignature || !isSimulationSnapInteractionActive()) return;
         const result = buildSimulationSnapResultForMesh(mesh, true);
         if (state.snapCandidateModelsSignature !== buildSignature) return;
         const counts = {};
@@ -906,12 +1109,12 @@ function scheduleLazySimulationSnapBuild(mesh) {
             });
         });
         state.snapLazyReadyMeshes.add(key);
-        state.snapScreenIndex = null;
-        state.snapScreenIndexSignature = '';
+        state.snapWorldIndex = null;
+        state.snapWorldIndexSignature = '';
         const pointerEvent = state.snapLastPointerEvent;
-        if (pointerEvent && isSimulationSnapPicking()) {
+        if (pointerEvent && isSimulationSnapInteractionActive()) {
             requestAnimationFrame(() => {
-                if (isSimulationSnapPicking()) {
+                if (isSimulationSnapInteractionActive()) {
                     showSimulationSnapMarker(findSimulationSnapAtPointer(pointerEvent));
                 }
             });
@@ -956,67 +1159,137 @@ function simulationSnapMatrixSignature(matrix) {
     return matrix.elements.join(',');
 }
 
-function getSimulationSnapScreenIndex(meshes, bounds) {
-    const signature = [
+function getSimulationSnapWorldIndexSignature(meshes) {
+    return [
         state.snapCandidateModelsSignature,
-        `${bounds.width}x${bounds.height}`,
-        simulationSnapMatrixSignature(state.camera.projectionMatrix),
-        simulationSnapMatrixSignature(state.camera.matrixWorldInverse),
         ...meshes.map((mesh) => `${mesh.uuid}:${simulationSnapMatrixSignature(mesh.matrixWorld)}`)
     ].join('|');
-    if (state.snapScreenIndex && state.snapScreenIndexSignature === signature) {
-        return state.snapScreenIndex;
+}
+
+function buildSimulationSnapWorldOctree(candidates, depth = 0) {
+    const bounds = new THREE.Box3();
+    candidates.forEach((candidate) => bounds.expandByPoint(candidate.snapWorldPoint));
+    const sphere = new THREE.Sphere();
+    bounds.getBoundingSphere(sphere);
+
+    if (candidates.length <= SNAP_WORLD_INDEX_LEAF_SIZE || depth >= SNAP_WORLD_INDEX_MAX_DEPTH) {
+        return {
+            bounds,
+            center: sphere.center,
+            radius: sphere.radius,
+            candidates,
+            children: null
+        };
     }
 
-    const buckets = new Map();
-    const worldPoint = new THREE.Vector3();
-    const projected = new THREE.Vector3();
-    const viewportMargin = Math.max(
-        SNAP_RADIUS_PX,
-        Number(el.tcpSnapRadius?.max) || state.tcpSnapRadiusPx
-    );
+    const center = sphere.center;
+    const buckets = Array.from({ length: 8 }, () => []);
+    candidates.forEach((candidate) => {
+        const point = candidate.snapWorldPoint;
+        const bucketIndex = (point.x >= center.x ? 1 : 0)
+            | (point.y >= center.y ? 2 : 0)
+            | (point.z >= center.z ? 4 : 0);
+        buckets[bucketIndex].push(candidate);
+    });
+    const nonEmptyBuckets = buckets.filter((bucket) => bucket.length > 0);
+    if (nonEmptyBuckets.length <= 1) {
+        return {
+            bounds,
+            center: sphere.center,
+            radius: sphere.radius,
+            candidates,
+            children: null
+        };
+    }
+
+    return {
+        bounds,
+        center: sphere.center,
+        radius: sphere.radius,
+        candidates: null,
+        children: nonEmptyBuckets.map((bucket) => buildSimulationSnapWorldOctree(bucket, depth + 1))
+    };
+}
+
+function getSimulationSnapWorldIndex(meshes) {
+    const signature = getSimulationSnapWorldIndexSignature(meshes);
+    if (state.snapWorldIndex && state.snapWorldIndexSignature === signature) {
+        return state.snapWorldIndex;
+    }
+
+    const candidates = [];
     state.snapCandidates.forEach((candidate) => {
         if (!candidate.mesh.visible) return;
-        worldPoint.copy(candidate.localPoint).applyMatrix4(candidate.mesh.matrixWorld);
-        projected.copy(worldPoint).project(state.camera);
-        if (projected.z < -1 || projected.z > 1) return;
-        const screenX = (projected.x * 0.5 + 0.5) * bounds.width;
-        const screenY = (-projected.y * 0.5 + 0.5) * bounds.height;
-        if (screenX < -viewportMargin || screenX > bounds.width + viewportMargin
-            || screenY < -viewportMargin || screenY > bounds.height + viewportMargin) return;
-        const cellX = Math.floor(screenX / SNAP_SCREEN_INDEX_CELL_PX);
-        const cellY = Math.floor(screenY / SNAP_SCREEN_INDEX_CELL_PX);
-        const key = `${cellX}:${cellY}`;
-        if (!buckets.has(key)) buckets.set(key, []);
-        buckets.get(key).push(candidate);
+        candidate.snapWorldPoint = (candidate.snapWorldPoint || new THREE.Vector3())
+            .copy(candidate.localPoint)
+            .applyMatrix4(candidate.mesh.matrixWorld);
+        candidates.push(candidate);
     });
 
-    state.snapScreenIndex = buckets;
-    state.snapScreenIndexSignature = signature;
-    return buckets;
+    state.snapWorldIndex = {
+        signature,
+        root: candidates.length ? buildSimulationSnapWorldOctree(candidates) : null
+    };
+    state.snapWorldIndexSignature = signature;
+    return state.snapWorldIndex;
+}
+
+function isSimulationSnapOctreeNodeNearPointer(node, bounds, pointerX, pointerY, radius) {
+    const cameraPoint = node.center.clone().applyMatrix4(state.camera.matrixWorldInverse);
+    const depth = -cameraPoint.z;
+    if (depth + node.radius <= state.camera.near || depth - node.radius >= state.camera.far) return false;
+    if (depth <= node.radius) return true;
+
+    const projected = node.center.clone().project(state.camera);
+    if (!Number.isFinite(projected.x) || !Number.isFinite(projected.y) || !Number.isFinite(projected.z)) return true;
+    const focalPixels = bounds.height * Math.max(state.camera.zoom || 1, Number.EPSILON)
+        / (2 * Math.tan(THREE.MathUtils.degToRad(state.camera.fov * 0.5)));
+    const screenRadius = node.radius * focalPixels
+        / Math.max(depth - node.radius, Number.EPSILON) + radius;
+    const screenX = (projected.x * 0.5 + 0.5) * bounds.width;
+    const screenY = (-projected.y * 0.5 + 0.5) * bounds.height;
+    return screenX >= pointerX - screenRadius
+        && screenX <= pointerX + screenRadius
+        && screenY >= pointerY - screenRadius
+        && screenY <= pointerY + screenRadius;
+}
+
+// Kept as the old entry point for callers/tests; the index is now camera-independent.
+function getSimulationSnapScreenIndex(meshes, bounds) {
+    return getSimulationSnapWorldIndex(meshes);
 }
 
 function getSimulationSnapCandidatesNearPointer(meshes, bounds, pointerX, pointerY, radius) {
-    const buckets = getSimulationSnapScreenIndex(meshes, bounds);
-    const minCellX = Math.floor((pointerX - radius) / SNAP_SCREEN_INDEX_CELL_PX);
-    const maxCellX = Math.floor((pointerX + radius) / SNAP_SCREEN_INDEX_CELL_PX);
-    const minCellY = Math.floor((pointerY - radius) / SNAP_SCREEN_INDEX_CELL_PX);
-    const maxCellY = Math.floor((pointerY + radius) / SNAP_SCREEN_INDEX_CELL_PX);
     const nearby = [];
-    for (let cellX = minCellX; cellX <= maxCellX; cellX += 1) {
-        for (let cellY = minCellY; cellY <= maxCellY; cellY += 1) {
-            const bucket = buckets.get(`${cellX}:${cellY}`);
-            if (bucket) bucket.forEach((candidate) => nearby.push(candidate));
+    const index = getSimulationSnapScreenIndex(meshes, bounds);
+    if (!index.root) return nearby;
+
+    const projected = new THREE.Vector3();
+    const visit = (node) => {
+        if (!isSimulationSnapOctreeNodeNearPointer(node, bounds, pointerX, pointerY, radius)) return;
+        if (node.children) {
+            node.children.forEach(visit);
+            return;
         }
-    }
+        node.candidates.forEach((candidate) => {
+            if (!candidate.mesh.visible || !candidate.snapWorldPoint) return;
+            projected.copy(candidate.snapWorldPoint).project(state.camera);
+            if (projected.z < -1 || projected.z > 1) return;
+            const screenX = (projected.x * 0.5 + 0.5) * bounds.width;
+            const screenY = (-projected.y * 0.5 + 0.5) * bounds.height;
+            const pixelDistance = Math.hypot(screenX - pointerX, screenY - pointerY);
+            if (pixelDistance <= radius) nearby.push(candidate);
+        });
+    };
+    visit(index.root);
     return nearby;
 }
 
 function findSimulationSnapAtPointer(pointerEvent) {
+    if (!isSimulationSnapInteractionActive()) return null;
     const meshes = getPreparedSimulationSnapMeshes();
     if (!meshes.length) return null;
     state.camera.updateMatrixWorld(true);
-    state.scene.updateMatrixWorld(true);
     const bounds = state.renderer.domElement.getBoundingClientRect();
     const pointerX = pointerEvent.clientX - bounds.left;
     const pointerY = pointerEvent.clientY - bounds.top;
@@ -1050,7 +1323,9 @@ function findSimulationSnapAtPointer(pointerEvent) {
     candidatesNearPointer.forEach((candidate) => {
         if (!candidate.mesh.visible) return;
         if (requiredType && candidate.type !== requiredType) return;
-        const worldPoint = candidate.localPoint.clone().applyMatrix4(candidate.mesh.matrixWorld);
+        const worldPoint = candidate.snapWorldPoint
+            ? candidate.snapWorldPoint.clone()
+            : candidate.localPoint.clone().applyMatrix4(candidate.mesh.matrixWorld);
         const projected = worldPoint.clone().project(state.camera);
         if (projected.z < -1 || projected.z > 1) return;
         const screenX = (projected.x * 0.5 + 0.5) * bounds.width;
@@ -1074,7 +1349,7 @@ function findSimulationSnapAtPointer(pointerEvent) {
 }
 
 function showSimulationSnapMarker(snap) {
-    if (!snap || !el.snapMarker) {
+    if (!snap || !el.snapMarker || !isSimulationSnapInteractionActive()) {
         hideSimulationSnapMarker();
         return;
     }
@@ -1093,13 +1368,13 @@ function showSimulationSnapMarker(snap) {
 }
 
 function handleSimulationSnapPointerMove(event) {
-    if (!isSimulationSnapPicking()) return;
+    if (!isSimulationSnapInteractionActive()) return;
     state.snapLastPointerEvent = { clientX: event.clientX, clientY: event.clientY };
     if (state.snapPointerMoveFrame !== null) return;
     state.snapPointerMoveFrame = requestAnimationFrame(() => {
         state.snapPointerMoveFrame = null;
         const pointerEvent = state.snapLastPointerEvent;
-        if (pointerEvent && isSimulationSnapPicking()) {
+        if (pointerEvent && isSimulationSnapInteractionActive()) {
             showSimulationSnapMarker(findSimulationSnapAtPointer(pointerEvent));
         }
     });
@@ -1466,7 +1741,7 @@ function moveRobotTcpToSimulationSnap(snap) {
 }
 
 function handleSimulationSnapClick(event) {
-    if (!isSimulationSnapPicking() || event.button !== 0) return;
+    if (!isSimulationSnapInteractionActive() || event.button !== 0) return;
     const snap = findSimulationSnapAtPointer(event);
     if (!snap) {
         setStatus('선택 가능한 스냅 지점을 가리켜 주세요.', '#f59e0b');
@@ -1563,6 +1838,9 @@ function setupLights() {
 function setupControls() {
     state.controls = new OrbitControls(state.camera, state.renderer.domElement);
     state.controls.enableDamping = false;
+    state.controls.addEventListener('change', requestRender);
+    state.controls.addEventListener('start', beginSimulationViewNavigation);
+    state.controls.addEventListener('end', endSimulationViewNavigation);
 
     state.transformControls = new TransformControls(state.camera, state.renderer.domElement);
     enableContinuousTransformRotation(state.transformControls, THREE);
@@ -1578,6 +1856,7 @@ function setupControls() {
         commitPendingHistory('모델 변환', 'pendingTransformHistory');
     });
     state.transformControls.addEventListener('objectChange', updateSelectedModelTransformInputs);
+    state.transformControls.addEventListener('objectChange', requestRender);
     removeRotationScreenHandle(state.transformControls);
     applyTransformControlColors(state.transformControls);
     state.transformControls.visible = false;
@@ -1636,6 +1915,7 @@ function setupControls() {
         updateZeroPointEditorInputs();
         updateZeroPointFrameFromState();
     });
+    zeroPointEdit.transformControls.addEventListener('objectChange', requestRender);
     state.scene.add(zeroPointEdit.transformControls);
 
     setupBaseJogTransformControls();
@@ -1662,6 +1942,7 @@ function setupBaseJogTransformControls() {
     });
     controls.addEventListener('mouseDown', beginBaseJogGizmoDrag);
     controls.addEventListener('objectChange', applyBaseJogGizmoTarget);
+    controls.addEventListener('objectChange', requestRender);
     controls.addEventListener('mouseUp', endBaseJogGizmoDrag);
     controls.addEventListener('mouseUp', () => {
         controls.userData.baseJogActiveAxis = null;
@@ -1707,6 +1988,12 @@ function setupEventListeners() {
     }
     window.addEventListener('resize', onResize);
     document.addEventListener('pointermove', handleFullscreenUiPointerMove);
+    document.addEventListener('click', requestRender);
+    document.addEventListener('input', requestRender);
+    document.addEventListener('change', requestRender);
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) requestRender();
+    });
     document.addEventListener('inorobot:i18nready', refreshLocalizedControls);
     document.addEventListener('inorobot:languagechange', refreshLocalizedControls);
     el.modelSelect.addEventListener('change', async (e) => {
@@ -1745,8 +2032,11 @@ function setupEventListeners() {
         resetTcpSnapPoints();
         if (state.tcpSnapMode) setTcpSnapReadout('스냅 점 2~4개를 선택하세요.');
     });
+    state.renderer.domElement.addEventListener('pointerdown', requestRender, { passive: true });
     state.renderer.domElement.addEventListener('pointermove', handleSimulationSnapPointerMove);
+    state.renderer.domElement.addEventListener('pointermove', requestRender, { passive: true });
     state.renderer.domElement.addEventListener('pointerleave', hideSimulationSnapMarker);
+    state.renderer.domElement.addEventListener('pointerleave', requestRender);
     state.renderer.domElement.addEventListener('click', handleSimulationSnapClick);
     el.btnImport3D?.addEventListener('click', () => el.inputImport3D?.click());
     el.inputImport3D?.addEventListener('change', () => {
@@ -1886,10 +2176,13 @@ function setupEventListeners() {
     });
     el.btnUndo?.addEventListener('click', undoLastAction);
     el.btnRedo?.addEventListener('click', redoLastAction);
-    [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.programPanel].forEach(makePanelDraggable);
+    [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.viewPresetsPanel, el.programPanel].forEach(makePanelDraggable);
     [el.tcpProfilePanel].forEach(makePanelDraggable);
-    [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.programPanel].forEach(makePanelEdgeResizable);
+    [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.viewPresetsPanel, el.programPanel].forEach(makePanelEdgeResizable);
     [el.tcpProfilePanel].forEach(makePanelEdgeResizable);
+
+    el.viewPresetsList?.addEventListener('click', handleViewPresetListClick);
+    el.viewPresetsList?.addEventListener('input', handleViewPresetListInput);
 
     el.virtualControllerRobot?.addEventListener('change', () => {
         if (isVirtualControllerActive()) return;
@@ -1924,6 +2217,7 @@ function setupEventListeners() {
     el.btnProgramAddDelay?.addEventListener('click', addDelayMotionStep);
     el.btnProgramAddTimeStart?.addEventListener('click', () => addTimerMotionStep('TIME_START'));
     el.btnProgramAddTimeOut?.addEventListener('click', () => addTimerMotionStep('TIME_OUT'));
+    el.btnProgramAddView?.addEventListener('click', addViewMotionStep);
     el.btnProgramUpdate?.addEventListener('click', updateSelectedMotionStep);
     el.btnProgramDelete?.addEventListener('click', deleteSelectedMotionStep);
     el.btnProgramStepRobot?.addEventListener('click', stepIntoActiveRobot);
@@ -2652,6 +2946,7 @@ function getPanelElement(panelId) {
         'jog-panel': el.jogPanel,
         'tcp-profile-panel': el.tcpProfilePanel,
         'virtual-controller-panel': el.virtualControllerPanel,
+        'view-presets-panel': el.viewPresetsPanel,
         'program-panel': el.programPanel
     }[panelId] || null;
 }
@@ -2757,6 +3052,8 @@ function getPanelWindowTitle(panelId) {
             ? uiText('TCP 설정')
         : panelId === 'virtual-controller-panel'
             ? uiText('가상 컨트롤러')
+        : panelId === 'view-presets-panel'
+            ? uiText('사용자 뷰')
         : panelId === 'model-browser-panel'
             ? uiText('모델 트리')
             : uiText('JOG Panel');
@@ -3537,6 +3834,7 @@ async function loadModelFromServer(modelDefinition) {
 
         // Name it for CAD download mapping later
         model.userData.modelName = model.userData.robotName || name;
+        updateModelRenderComplexity(model);
 
         // Spread models a bit if adding
         if (isAddMode && state.models.length > 0) {
@@ -4599,6 +4897,7 @@ async function handle3DImport() {
         importedModel.updateMatrixWorld(true);
         const bounds = new THREE.Box3().setFromObject(importedModel);
         if (bounds.isEmpty()) throw new Error('The imported mesh has invalid bounds.');
+        updateModelRenderComplexity(importedModel);
 
         state.models.push(importedModel);
         ensureModelTreeId(importedModel);
@@ -4674,6 +4973,8 @@ function createScaraTubeMesh(sourceGeometry, definition) {
     mesh.userData.originalPositions = originalPositions;
     mesh.userData.originalNormals = originalNormals;
     mesh.userData.weightBuckets = weightBuckets;
+    mesh.userData.scaraCosines = new Float32Array(256);
+    mesh.userData.scaraSines = new Float32Array(256);
     return mesh;
 }
 
@@ -4683,8 +4984,10 @@ function updateScaraTube(robot) {
     if (!tube || !j1) return;
 
     const physicalAngle = THREE.MathUtils.degToRad(j1.angle) * Math.sign(j1.axis.z || 1);
-    const cosines = new Float32Array(256);
-    const sines = new Float32Array(256);
+    const cosines = tube.userData.scaraCosines
+        || (tube.userData.scaraCosines = new Float32Array(256));
+    const sines = tube.userData.scaraSines
+        || (tube.userData.scaraSines = new Float32Array(256));
     for (let bucket = 0; bucket < 256; bucket += 1) {
         const angle = physicalAngle * bucket / 255;
         cosines[bucket] = Math.cos(angle);
@@ -5083,6 +5386,7 @@ function setJointAngle(joint, rawValue, syncControl = true) {
         joint.control.range.value = String(value);
         joint.control.number.value = String(Number(value.toFixed(3)));
     }
+    requestRender();
     return value;
 }
 
@@ -5363,7 +5667,6 @@ function updateCameraScaledTcpAxes() {
     if (!state.camera || !state.scene || viewportHeight <= 0) return;
 
     state.camera.updateMatrixWorld(true);
-    state.scene.updateMatrixWorld(true);
     const fovScale = 2 * Math.tan(THREE.MathUtils.degToRad(state.camera.fov * 0.5));
     const cameraZoom = Math.max(state.camera.zoom || 1, Number.EPSILON);
 
@@ -5993,7 +6296,7 @@ async function ensureVirtualControllerCore() {
     const controller = state.virtualController;
     if (controller.core) return controller.core;
     if (!controller.corePromise) {
-        controller.corePromise = import('./virtual-controller-core.mjs?v=20260718-trace-joint-required1')
+        controller.corePromise = import('./virtual-controller-core.mjs?v=20260720-view-presets-only-1')
             .then((core) => {
                 controller.core = core;
                 controller.samples = new core.VirtualControllerSampleBuffer();
@@ -6304,6 +6607,7 @@ function endVirtualControllerSessionForSourceExit(source) {
         ? 'Trace 도구 연결이 종료되어 3D 동기화를 해제했습니다.'
         : '전용 브리지가 종료되어 3D 동기화를 해제했습니다.';
     setVirtualControllerStatus('disconnected', message);
+    refreshViewPresetsUi();
     if (historyBefore) recordHistory('가상 컨트롤러 동기화', historyBefore, captureSceneSnapshot());
 }
 
@@ -6332,6 +6636,7 @@ async function connectVirtualController() {
     controller.lastSampleAt = 0;
     controller.lastStreamStartAt = 0;
     openVirtualControllerSocket(false);
+    requestRender();
 }
 
 function clearVirtualControllerBridgeHealthMonitor() {
@@ -6529,6 +6834,7 @@ function disconnectVirtualController() {
     controller.lastStreamStartAt = 0;
     clearVirtualControllerStreamWatchdog();
     setVirtualControllerStatus('disconnected');
+    refreshViewPresetsUi();
     if (historyBefore) recordHistory('가상 컨트롤러 동기화', historyBefore, captureSceneSnapshot());
 }
 
@@ -6672,6 +6978,7 @@ function setMotionProgramStatus(message, type = '', replacements = {}) {
 
 function programCommandName(step) {
     if (isMotionPointMotion(step.motion)) return formatMotionPointName(step.pointIndex);
+    if (step.motion === 'VIEW') return `View ${Math.min(4, Math.max(1, Number(step.viewSlot) + 1 || 1))}`;
     return ({ DELAY: 'Delay', TIME_START: 'Time Start', TIME_OUT: 'Time Out' })[step.motion] || step.motion;
 }
 
@@ -6762,7 +7069,7 @@ function renderMotionProgramPanel() {
         const empty = document.createElement('p');
         empty.className = 'program-step-empty';
         empty.textContent = uiText(robot
-            ? '자세, DELAY 또는 타이머 명령을 추가하세요.'
+            ? '자세, 뷰, DELAY 또는 타이머 명령을 추가하세요.'
             : '프로그램 가능한 로봇이 없습니다.');
         el.programStepList.appendChild(empty);
     } else {
@@ -6830,7 +7137,8 @@ function renderMotionProgramPanel() {
                 ['MOVL', 'MovL'],
                 ['DELAY', 'Delay'],
                 ['TIME_START', 'T.Start'],
-                ['TIME_OUT', 'T.Out']
+                ['TIME_OUT', 'T.Out'],
+                ['VIEW', 'View']
             ].forEach(([value, label]) => {
                 const option = document.createElement('option');
                 option.value = value;
@@ -6840,26 +7148,41 @@ function renderMotionProgramPanel() {
             motion.value = step.motion;
             motion.title = step.motion.replace('_', ' ');
 
-            const speed = document.createElement('input');
+            const isView = step.motion === 'VIEW';
+            const speed = isView ? document.createElement('select') : document.createElement('input');
             const isDelay = step.motion === 'DELAY';
-            speed.type = 'number';
             speed.className = 'program-step-speed';
-            speed.disabled = isTimer;
-            speed.placeholder = isTimer ? '—' : '';
-            speed.min = String(isDelay ? MIN_DELAY_SECONDS : 1);
-            speed.max = String(isDelay
-                ? MAX_DELAY_SECONDS
-                : step.motion === 'MOVJ'
-                    ? 100
-                    : robot.userData.manifest.cartesianMotion.maxSpeed);
-            speed.step = isDelay ? '0.1' : '1';
-            speed.value = isTimer ? '' : String(isDelay ? step.delaySeconds : step.speed);
-            if (!isTimer) speed.dataset.programStepSpeed = step.id;
+            if (isView) {
+                speed.dataset.programStepViewSlot = step.id;
+                speed.dataset.programEdit = '';
+                for (let slot = 0; slot < VIEW_PRESET_COUNT; slot += 1) {
+                    const option = document.createElement('option');
+                    option.value = String(slot);
+                    option.textContent = `V${slot + 1}`;
+                    speed.appendChild(option);
+                }
+                speed.value = String(Math.min(VIEW_PRESET_COUNT - 1, Math.max(0, Number(step.viewSlot) || 0)));
+                speed.title = uiText('전환할 화면 뷰');
+                speed.setAttribute('aria-label', uiText('전환할 화면 뷰'));
+            } else {
+                speed.type = 'number';
+                speed.disabled = isTimer;
+                speed.placeholder = isTimer ? '—' : '';
+                speed.min = String(isDelay ? MIN_DELAY_SECONDS : 1);
+                speed.max = String(isDelay
+                    ? MAX_DELAY_SECONDS
+                    : step.motion === 'MOVJ'
+                        ? 100
+                        : robot.userData.manifest.cartesianMotion.maxSpeed);
+                speed.step = isDelay ? '0.1' : '1';
+                speed.value = isTimer ? '' : String(isDelay ? step.delaySeconds : step.speed);
+                if (!isTimer) speed.dataset.programStepSpeed = step.id;
+            }
             speed.dataset.programEdit = '';
 
             const unit = document.createElement('span');
             unit.className = 'program-step-unit';
-            unit.textContent = isTimer ? '' : isDelay ? 's' : step.motion === 'MOVJ' ? '%' : 'mm/s';
+            unit.textContent = isTimer || isView ? '' : isDelay ? 's' : step.motion === 'MOVJ' ? '%' : 'mm/s';
             row.append(dragHandle, pointControl, motion, speed, unit);
             if (labelControl) row.appendChild(labelControl);
             el.programStepList.appendChild(row);
@@ -7066,10 +7389,12 @@ function handleProgramStepListChange(event) {
     const pointIndexControl = event.target.closest('[data-program-step-point-index]');
     const labelControl = event.target.closest('[data-program-step-label]');
     const motionControl = event.target.closest('[data-program-step-motion]');
+    const viewSlotControl = event.target.closest('[data-program-step-view-slot]');
     const speedControl = event.target.closest('[data-program-step-speed]');
     const stepId = pointIndexControl?.dataset.programStepPointIndex
         || labelControl?.dataset.programStepLabel
         || motionControl?.dataset.programStepMotion
+        || viewSlotControl?.dataset.programStepViewSlot
         || speedControl?.dataset.programStepSpeed;
     const robot = state.activeProgramRobot;
     const program = ensureMotionProgram(robot);
@@ -7112,10 +7437,24 @@ function handleProgramStepListChange(event) {
         renderMotionProgramPanel();
         return;
     }
+    if (viewSlotControl) {
+        const viewSlot = Number(viewSlotControl.value);
+        if (!Number.isInteger(viewSlot) || viewSlot < 0 || viewSlot >= VIEW_PRESET_COUNT) {
+            renderMotionProgramPanel();
+            return;
+        }
+        if (step.motion !== 'VIEW' || step.viewSlot === viewSlot) return;
+        const before = captureSceneSnapshot();
+        step.viewSlot = viewSlot;
+        step.name = programCommandName(step);
+        recordHistory('화면 뷰 전환 대상 변경', before, captureSceneSnapshot());
+        renderMotionProgramPanel();
+        return;
+    }
     const before = captureSceneSnapshot();
     if (motionControl) {
         const wasPoint = isMotionPointMotion(step.motion);
-        const nextMotion = ['MOVJ', 'MOVL', 'DELAY', 'TIME_START', 'TIME_OUT'].includes(motionControl.value)
+        const nextMotion = ['MOVJ', 'MOVL', 'DELAY', 'TIME_START', 'TIME_OUT', 'VIEW'].includes(motionControl.value)
             ? motionControl.value
             : 'MOVJ';
         const isPoint = isMotionPointMotion(nextMotion);
@@ -7139,17 +7478,33 @@ function handleProgramStepListChange(event) {
             delete step.label;
             delete step.armParameters;
             delete step.externalAxes;
-            step.name = step.motion === 'DELAY' ? 'Delay' : step.motion === 'TIME_START' ? 'Time Start' : 'Time Out';
+            step.name = step.motion === 'DELAY'
+                ? 'Delay'
+                : step.motion === 'TIME_START'
+                    ? 'Time Start'
+                    : step.motion === 'TIME_OUT'
+                        ? 'Time Out'
+                        : 'View 1';
         }
         if (step.motion === 'DELAY') {
             delete step.speed;
+            delete step.viewSlot;
             step.delaySeconds = DEFAULT_DELAY_SECONDS;
         } else if (step.motion === 'MOVJ' || step.motion === 'MOVL') {
             delete step.delaySeconds;
+            delete step.viewSlot;
             step.speed = step.motion === 'MOVJ' ? DEFAULT_MOVJ_SPEED : DEFAULT_MOVL_SPEED;
+        } else if (step.motion === 'VIEW') {
+            delete step.delaySeconds;
+            delete step.speed;
+            step.viewSlot = Number.isInteger(step.viewSlot)
+                ? THREE.MathUtils.clamp(step.viewSlot, 0, VIEW_PRESET_COUNT - 1)
+                : 0;
+            step.name = programCommandName(step);
         } else {
             delete step.speed;
             delete step.delaySeconds;
+            delete step.viewSlot;
         }
     } else if (step.motion === 'DELAY') {
         step.delaySeconds = THREE.MathUtils.clamp(
@@ -7325,7 +7680,9 @@ function captureRobotMotionStep(robot, existing = null) {
                 ? 'Delay'
                 : motion === 'TIME_START'
                     ? 'Time Start'
-                    : 'Time Out',
+                    : motion === 'TIME_OUT'
+                        ? 'Time Out'
+                        : `View ${(Number.isInteger(existing?.viewSlot) ? existing.viewSlot : 0) + 1}`,
         motion,
         ...(isPoint ? {
             pointIndex,
@@ -7339,6 +7696,10 @@ function captureRobotMotionStep(robot, existing = null) {
             ? { delaySeconds: existing?.delaySeconds ?? DEFAULT_DELAY_SECONDS }
             : motion === 'MOVJ' || motion === 'MOVL'
                 ? { speed: existing?.speed ?? DEFAULT_MOVJ_SPEED }
+                : motion === 'VIEW'
+                    ? { viewSlot: Number.isInteger(existing?.viewSlot)
+                        ? THREE.MathUtils.clamp(existing.viewSlot, 0, VIEW_PRESET_COUNT - 1)
+                        : 0 }
                 : {}),
         joints,
         tcp: {
@@ -7397,6 +7758,27 @@ function addTimerMotionStep(motion) {
     insertMotionStepAfterSelected(program, step);
     program.selectedStepId = step.id;
     recordHistory(motion === 'TIME_START' ? 'TIME START 명령 추가' : 'TIME OUT 명령 추가', before, captureSceneSnapshot());
+    renderMotionProgramPanel();
+}
+
+function addViewMotionStep() {
+    if (isMotionActive() || !state.activeProgramRobot) return;
+    const before = captureSceneSnapshot();
+    const program = ensureMotionProgram(state.activeProgramRobot);
+    const step = captureRobotMotionStep(state.activeProgramRobot);
+    if (!step) return;
+    step.name = 'View 1';
+    step.motion = 'VIEW';
+    step.viewSlot = 0;
+    delete step.pointIndex;
+    delete step.label;
+    delete step.armParameters;
+    delete step.externalAxes;
+    delete step.speed;
+    delete step.delaySeconds;
+    insertMotionStepAfterSelected(program, step);
+    program.selectedStepId = step.id;
+    recordHistory('화면 뷰 전환 명령 추가', before, captureSceneSnapshot());
     renderMotionProgramPanel();
 }
 
@@ -7621,6 +8003,7 @@ async function restoreMotionProjectData(input) {
         robot.quaternion.fromArray(robotProject.baseTransform.quaternion);
         robot.scale.fromArray(robotProject.baseTransform.scale);
         robot.updateMatrixWorld(true);
+        updateModelRenderComplexity(robot);
         state.models.push(robot);
         state.scene.add(robot);
         ensureModelTreeId(robot);
@@ -7890,6 +8273,12 @@ function preflightRobotMotion(robot, steps) {
                 }
                 return;
             }
+            if (step.motion === 'VIEW') {
+                if (!getViewPreset(step.viewSlot)) {
+                    throw new Error(`${step.name}: 저장된 뷰가 없습니다.`);
+                }
+                return;
+            }
             if (step.motion === 'MOVJ') {
                 validateMovjTarget(robot, step);
                 step.joints.forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle, false));
@@ -7960,6 +8349,7 @@ function startRobotMotionPlans(plans) {
     setMotionProgramStatus('{count}대의 로봇 모션을 시작했습니다.', 'working', { count: plans.length });
     updateMotionUiLock();
     renderMotionProgramPanel();
+    requestRender();
 }
 
 function createStepIntoPlan(robot) {
@@ -8053,6 +8443,7 @@ function resumePausedRobotMotions(robots) {
     sessions.forEach((session) => setMotionSessionPaused(session, false, now));
     setMotionProgramStatus('모션을 재개했습니다.', 'working');
     renderMotionProgramPanel();
+    requestRender();
     return true;
 }
 
@@ -8111,6 +8502,7 @@ function stopRobotMotions(robots) {
     if (stopped) setMotionProgramStatus('{count}대의 로봇 모션을 정지했습니다.', '', { count: stopped });
     finalizeMotionHistoryIfIdle();
     renderMotionProgramPanel();
+    requestRender();
 }
 
 function stopActiveRobotMotion() {
@@ -8139,6 +8531,14 @@ function createMotionSegment(session, timestamp) {
             step,
             startTime: timestamp,
             duration: calculateDelayDuration(step.delaySeconds) * 1000
+        };
+    }
+    if (step.motion === 'VIEW') {
+        return {
+            type: 'VIEW',
+            step,
+            startTime: timestamp,
+            duration: 0
         };
     }
     if (step.motion === 'MOVJ') {
@@ -8202,6 +8602,12 @@ function advanceMotionSegment(session, timestamp) {
                 }
             );
         }
+        program.progress = (session.cursor + 1) / session.steps.length;
+        return true;
+    }
+    if (segment.type === 'VIEW') {
+        applyViewPreset(segment.step.viewSlot, { announce: false });
+        const program = ensureMotionProgram(robot);
         program.progress = (session.cursor + 1) / session.steps.length;
         return true;
     }
@@ -8513,6 +8919,7 @@ function updateUIStatus() {
     el.emptyState.classList.toggle('hidden', state.models.length > 0);
     renderModelTree();
     setStatus('Ready', '#22c55e');
+    requestRender();
 }
 
 /**
@@ -8631,20 +9038,28 @@ async function handleCADDownload() {
     btnDown.innerHTML = oldHtml;
 }
 
-function animate() {
+function requiresContinuousRendering() {
+    return isVirtualControllerActive()
+        || [...state.motionSessions.values()].some((session) => session.status === 'running');
+}
+
+function requestRender() {
+    if (!state.renderer || state.renderFramePending) return;
+    state.renderFramePending = true;
     requestAnimationFrame(animate);
-    const timestamp = performance.now();
+}
+
+function animate(timestamp = performance.now()) {
+    state.renderFramePending = false;
     applyVirtualControllerFrame(timestamp);
     updateMotionSessions(timestamp);
     updateCycleTimeReadout(timestamp);
     state.controls.update();
-    const renderInterval = state.largeModelPerformanceMode ? 1000 / LARGE_MODEL_RENDER_FPS : 0;
-    if (renderInterval && timestamp - state.lastPerformanceRenderAt < renderInterval) return;
-    state.lastPerformanceRenderAt = timestamp;
     updateCameraScaledTcpAxes();
     updateSimulationSnapMarkerCameraScale();
     state.renderer.render(state.scene, state.camera);
     updateZeroPointCurrentMarker();
+    if (requiresContinuousRendering()) requestRender();
 }
 
 function onResize() {
@@ -8652,9 +9067,10 @@ function onResize() {
     state.camera.aspect = w / h;
     state.camera.updateProjectionMatrix();
     state.renderer.setSize(w, h);
-    [el.modelBrowserPanel, el.jogPanel, el.tcpProfilePanel, el.virtualControllerPanel, el.programPanel].forEach((panel) => {
+    [el.modelBrowserPanel, el.jogPanel, el.tcpProfilePanel, el.virtualControllerPanel, el.viewPresetsPanel, el.programPanel].forEach((panel) => {
         if (panel?.dataset.userResized === 'true') normalizePanelResizeBox(panel);
     });
+    requestRender();
 }
 
 function fitCamera() {

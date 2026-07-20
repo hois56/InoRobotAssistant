@@ -1,0 +1,157 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@11.12.1
+2 info using node@v24.15.0
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:D:\04_made_C#\InoRobotAssistant\tmp\vendor\.npmrc
+5 silly config load:file:C:\Users\JCLEE\.npmrc
+6 silly config load:file:C:\Users\JCLEE\AppData\Roaming\npm\etc\npmrc
+7 verbose title npm pack occt-import-js@0.0.23
+8 verbose argv "pack" "occt-import-js@0.0.23"
+9 verbose logfile logs-max:10 dir:D:\04_made_C#\InoRobotAssistant\tmp\npm-cache\_logs\2026-07-19T12_44_44_346Z-
+10 verbose logfile D:\04_made_C#\InoRobotAssistant\tmp\npm-cache\_logs\2026-07-19T12_44_44_346Z-debug-0.log
+11 silly logfile done cleaning log files
+12 http fetch GET 200 https://registry.npmjs.org/occt-import-js 230ms (cache miss)
+13 http fetch GET 200 https://registry.npmjs.org/occt-import-js 29ms (cache revalidated)
+14 http fetch GET 200 https://registry.npmjs.org/occt-import-js/-/occt-import-js-0.0.23.tgz 190ms (cache miss)
+15 notice
+16 notice package: occt-import-js@0.0.23
+17 notice Tarball Contents
+18 notice 826B .github/FUNDING.yml
+18 notice 1.8kB .github/workflows/native_build.yml
+18 notice 407B .github/workflows/npm_publish.yml
+18 notice 598B .github/workflows/wasm_build.yml
+18 notice 89B .gitmodules
+18 notice 10.3kB CMakeLists.txt
+18 notice 27.0kB LICENSE.md
+18 notice 5.7kB README.md
+18 notice 27.0kB dist/license.occt-import-js.txt
+18 notice 26.9kB dist/license.occt.txt
+18 notice 318B dist/occt-import-js-worker.js
+18 notice 96.9kB dist/occt-import-js.js
+18 notice 7.6MB dist/occt-import-js.wasm
+18 notice 946B examples/browser_step_worker.html
+18 notice 771B examples/browser_step.html
+18 notice 411B examples/node_step.js
+18 notice 3.0kB examples/stp_to_obj.js
+18 notice 6.4kB examples/three_viewer.html
+18 notice 2.8kB occt-import-js/.editorconfig
+18 notice 4.5kB occt-import-js/example/main.cpp
+18 notice 3.9kB occt-import-js/src/importer-brep.cpp
+18 notice 355B occt-import-js/src/importer-brep.hpp
+18 notice 1.2kB occt-import-js/src/importer-iges.cpp
+18 notice 234B occt-import-js/src/importer-iges.hpp
+18 notice 888B occt-import-js/src/importer-step.cpp
+18 notice 234B occt-import-js/src/importer-step.hpp
+18 notice 4.9kB occt-import-js/src/importer-utils.cpp
+18 notice 1.2kB occt-import-js/src/importer-utils.hpp
+18 notice 12.1kB occt-import-js/src/importer-xcaf.cpp
+18 notice 645B occt-import-js/src/importer-xcaf.hpp
+18 notice 1.1kB occt-import-js/src/importer.cpp
+18 notice 2.3kB occt-import-js/src/importer.hpp
+18 notice 10.5kB occt-import-js/src/js-interface.cpp
+18 notice 62B occt-import-js/src/js-interface.hpp
+18 notice 539B package.json
+18 notice 11B start_server.bat
+18 notice 13.7kB test/test.js
+18 notice 42.2kB test/testfiles/cax-if-brep/as1_pe_203.brep
+18 notice 139.8kB test/testfiles/cax-if/as1_pe_203.stp
+18 notice 442.0kB test/testfiles/cax-if/as1-oc-214.stp
+18 notice 442.0kB test/testfiles/cax-if/as1-oc-214/as1-oc-214.stp
+18 notice 142.1kB test/testfiles/cax-if/as1-tu-203.stp
+18 notice 87.6kB test/testfiles/cax-if/dm1-id-214.stp
+18 notice 226.3kB test/testfiles/cax-if/dm1-oc-214.stp
+18 notice 78.9kB test/testfiles/cax-if/dm1-pe-214.stp
+18 notice 42.7kB test/testfiles/cax-if/io1-cm-214.stp
+18 notice 78.9kB test/testfiles/cax-if/io1-tu-203.stp
+18 notice 12.9kB test/testfiles/cax-if/s1_pe_214/foot_asm.stp
+18 notice 16.6kB test/testfiles/cax-if/s1_pe_214/foot_back_prt.stp
+18 notice 24.1kB test/testfiles/cax-if/s1_pe_214/foot_front_prt.stp
+18 notice 12.8kB test/testfiles/cax-if/s1_pe_214/head_asm.stp
+18 notice 21.1kB test/testfiles/cax-if/s1_pe_214/head_back_prt.stp
+18 notice 12.5kB test/testfiles/cax-if/s1_pe_214/head_front_prt.stp
+18 notice 45.0kB test/testfiles/cax-if/s1_pe_214/main_body_back_prt.stp
+18 notice 55.4kB test/testfiles/cax-if/s1_pe_214/main_body_front_prt.stp
+18 notice 13.1kB test/testfiles/cax-if/s1_pe_214/mainbody_asm.stp
+18 notice 22.8kB test/testfiles/cax-if/s1_pe_214/s1_pe_214.stp
+18 notice 15.0kB test/testfiles/cax-if/s1_pe_214/tail_asm.stp
+18 notice 40.1kB test/testfiles/cax-if/s1_pe_214/tail_middle_part_prt.stp
+18 notice 44.6kB test/testfiles/cax-if/s1_pe_214/tail_turbine_prt.stp
+18 notice 26.7kB test/testfiles/cax-if/s1-c5-214/FOOT_BACK_000.stp
+18 notice 481B test/testfiles/cax-if/s1-c5-214/FOOT_BACK_000.stp.log
+18 notice 26.6kB test/testfiles/cax-if/s1-c5-214/FOOT_FRONT_000.stp
+18 notice 484B test/testfiles/cax-if/s1-c5-214/FOOT_FRONT_000.stp.log
+18 notice 6.8kB test/testfiles/cax-if/s1-c5-214/FOOT.stp
+18 notice 2.0kB test/testfiles/cax-if/s1-c5-214/FOOT.stp.log
+18 notice 46.9kB test/testfiles/cax-if/s1-c5-214/HEAD_BACK.stp
+18 notice 474B test/testfiles/cax-if/s1-c5-214/HEAD_BACK.stp.log
+18 notice 15.9kB test/testfiles/cax-if/s1-c5-214/HEAD_FRONT.stp
+18 notice 476B test/testfiles/cax-if/s1-c5-214/HEAD_FRONT.stp.log
+18 notice 6.7kB test/testfiles/cax-if/s1-c5-214/HEAD.stp
+18 notice 2.0kB test/testfiles/cax-if/s1-c5-214/HEAD.stp.log
+18 notice 115.3kB test/testfiles/cax-if/s1-c5-214/MAINBODY_BACK.stp
+18 notice 484B test/testfiles/cax-if/s1-c5-214/MAINBODY_BACK.stp.log
+18 notice 87.5kB test/testfiles/cax-if/s1-c5-214/MAINBODY_FRONT.stp
+18 notice 486B test/testfiles/cax-if/s1-c5-214/MAINBODY_FRONT.stp.log
+18 notice 6.8kB test/testfiles/cax-if/s1-c5-214/MAINBODY.stp
+18 notice 2.0kB test/testfiles/cax-if/s1-c5-214/MAINBODY.stp.log
+18 notice 12.4kB test/testfiles/cax-if/s1-c5-214/s1-c5-214.stp
+18 notice 3.3kB test/testfiles/cax-if/s1-c5-214/s1-c5-214.stp.log
+18 notice 38.8kB test/testfiles/cax-if/s1-c5-214/TAIL_MIDDLE_PART.stp
+18 notice 488B test/testfiles/cax-if/s1-c5-214/TAIL_MIDDLE_PART.stp.log
+18 notice 40.4kB test/testfiles/cax-if/s1-c5-214/TAIL_TURBINE.stp
+18 notice 480B test/testfiles/cax-if/s1-c5-214/TAIL_TURBINE.stp.log
+18 notice 7.6kB test/testfiles/cax-if/s1-c5-214/TAIL.stp
+18 notice 2.0kB test/testfiles/cax-if/s1-c5-214/TAIL.stp.log
+18 notice 26.6kB test/testfiles/cax-if/s1-tu-203/footback.stp
+18 notice 32.1kB test/testfiles/cax-if/s1-tu-203/footfront.stp
+18 notice 37.5kB test/testfiles/cax-if/s1-tu-203/headback.stp
+18 notice 18.2kB test/testfiles/cax-if/s1-tu-203/headfront.stp
+18 notice 45.4kB test/testfiles/cax-if/s1-tu-203/mainbodyback.stp
+18 notice 74.9kB test/testfiles/cax-if/s1-tu-203/mainbodyfront.stp
+18 notice 47.5kB test/testfiles/cax-if/s1-tu-203/s1-tu-203.stp
+18 notice 30.6kB test/testfiles/cax-if/s1-tu-203/tailmiddlepart.stp
+18 notice 61.4kB test/testfiles/cax-if/s1-tu-203/tailturbine.stp
+18 notice 23.8kB test/testfiles/cax-if/sg1-c5-214.stp
+18 notice 44B test/testfiles/cax-if/source.txt
+18 notice 9.6kB test/testfiles/conical-surface/conical-surface.step
+18 notice 11.6kB test/testfiles/cube-10x10mm/Cube 10x10.igs
+18 notice 88.1kB test/testfiles/cube-10x10mm/Cube 10x10.ipt
+18 notice 547.0kB test/testfiles/cube-10x10mm/Cube 10x10.png
+18 notice 684B test/testfiles/cube-10x10mm/Cube 10x10.stl
+18 notice 9.4kB test/testfiles/cube-10x10mm/Cube 10x10.stp
+18 notice 47B test/testfiles/cube-10x10mm/source.txt
+18 notice 5.3kB test/testfiles/cube-fcstd/cube.FCStd
+18 notice 17.5kB test/testfiles/cube-fcstd/cube.step
+18 notice 5.4kB test/testfiles/cube-fcstd/cube2.FCStd
+18 notice 18.6kB test/testfiles/cube-fcstd/cube2.step
+18 notice 5.4kB test/testfiles/cube-fcstd/cube3.FCStd
+18 notice 17.1kB test/testfiles/cube-fcstd/cube3.step
+18 notice 19.0kB test/testfiles/cube-units/cube-in.step
+18 notice 17.9kB test/testfiles/cube-units/cube-m.step
+18 notice 18.1kB test/testfiles/cube-units/cube-mm.step
+18 notice 5.3kB test/testfiles/cube-units/cube.FCStd
+18 notice 21.1kB test/testfiles/rounded-cube/rounded-cube.step
+18 notice 8.2kB test/testfiles/simple-basic-cube/cube.stp
+18 notice 47B test/testfiles/simple-basic-cube/source.txt
+18 notice 243B tools/build_native_win_debug.bat
+18 notice 252B tools/build_native_win_release.bat
+18 notice 572B tools/build_wasm_win_dist.bat
+18 notice 61B tools/build_wasm_win_release.bat
+18 notice 377B tools/build_wasm_win.bat
+18 notice 288B tools/setup_emscripten_win.bat
+19 notice Tarball Details
+20 notice name: occt-import-js
+21 notice version: 0.0.23
+22 notice filename: occt-import-js-0.0.23.tgz
+23 notice package size: 4.4 MB
+24 notice unpacked size: 11.6 MB
+25 notice shasum: 1916aacd5b228e92da5de631ae048ca152281778
+26 notice integrity: sha512-RFfYQXYFX5C1m[...]htf1dlewoZYCQ==
+27 notice total files: 123
+28 notice
+29 verbose cwd D:\04_made_C#\InoRobotAssistant\tmp\vendor
+30 verbose os Windows_NT 10.0.26200
+31 verbose node v24.15.0
+32 verbose npm  v11.12.1
+33 verbose exit 0
+34 info ok

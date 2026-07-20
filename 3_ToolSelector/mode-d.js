@@ -842,6 +842,41 @@ async function importStepOnMainThread(buffer, onProgress) {
     angularDeflection: 0.25
   });
   if (!result?.success || !Array.isArray(result.meshes)) throw new Error('CAD file could not be read.');
+  return annotateStepHierarchy(result);
+}
+
+function annotateStepHierarchy(result) {
+  if (!result?.root || !Array.isArray(result.meshes)) return result;
+  const partByMeshIndex = new Map();
+  let fallbackPartIndex = 0;
+
+  const visit = (node, path = [], isRoot = false) => {
+    if (!node || typeof node !== 'object') return;
+    const rawName = String(node.name || '').trim();
+    const partName = rawName || `Part ${fallbackPartIndex + 1}`;
+    const partId = isRoot ? null : `cad-part-${path.join('-') || fallbackPartIndex++}`;
+    if (!isRoot && Array.isArray(node.meshes)) {
+      node.meshes.forEach((meshIndex) => {
+        const index = Number(meshIndex);
+        if (Number.isInteger(index) && index >= 0) {
+          partByMeshIndex.set(index, { partId, partName });
+        }
+      });
+    }
+    const children = Array.isArray(node.children) ? node.children : [];
+    children.forEach((child, childIndex) => visit(child, [...path, childIndex], false));
+  };
+
+  visit(result.root, [], true);
+  result.meshes.forEach((mesh, index) => {
+    const partMeta = partByMeshIndex.get(index) || {
+      partId: `cad-mesh-${index}`,
+      partName: mesh?.name || `Part ${index + 1}`
+    };
+    mesh.partId ||= partMeta.partId;
+    mesh.partName ||= partMeta.partName;
+  });
+  result.rootName ||= result.root.name || 'STEP Assembly';
   return result;
 }
 
@@ -932,11 +967,13 @@ async function loadCadFile(file) {
           side: THREE.DoubleSide
         });
         const mesh = new THREE.Mesh(geometry, material);
-        mesh.name = meshDefinition.name || `Part ${index + 1}`;
+        mesh.name = meshDefinition.partName || meshDefinition.name || `Part ${index + 1}`;
         state.modelGroup.add(mesh);
         const partIndex = state.parts.length;
         state.parts.push({
           name: mesh.name,
+          cadPartKey: meshDefinition.partId || `cad-mesh-${index}`,
+          cadPartName: meshDefinition.partName || mesh.name,
           mesh,
           geometry: geometryProperties,
           snapStats: snapData.stats,
@@ -1014,12 +1051,47 @@ function escapeHtml(value) {
   })[character]);
 }
 
+function getPartGroups() {
+  const groups = new Map();
+  state.parts.forEach((part, partIndex) => {
+    const key = part.cadPartKey || `cad-mesh-${partIndex}`;
+    let group = groups.get(key);
+    if (!group) {
+      group = {
+        key,
+        name: part.cadPartName || part.name || `Part ${partIndex + 1}`,
+        parts: []
+      };
+      groups.set(key, group);
+    }
+    group.parts.push({ part, partIndex });
+  });
+
+  const nameCounts = new Map();
+  return [...groups.values()].map((group) => {
+    const count = (nameCounts.get(group.name) || 0) + 1;
+    nameCounts.set(group.name, count);
+    group.displayName = count > 1 ? `${group.name} #${count}` : group.name;
+    group.volumeMm3 = group.parts.reduce((sum, entry) => sum + Number(entry.part.geometry?.volumeMm3 || 0), 0);
+    group.name = group.displayName;
+    group.geometry = { volumeMm3: group.volumeMm3 };
+    group.enabled = group.parts.every((entry) => entry.part.enabled !== false);
+    const firstPart = group.parts[0]?.part;
+    const hasUniformMaterial = group.parts.every((entry) => entry.part.materialKey === firstPart?.materialKey);
+    const hasUniformDensity = group.parts.every((entry) => entry.part.densityKgPerMm3 === firstPart?.densityKgPerMm3);
+    group.materialKey = hasUniformMaterial ? firstPart?.materialKey || 'custom' : 'custom';
+    group.densityKgPerMm3 = hasUniformDensity ? firstPart?.densityKgPerMm3 || 0 : 0;
+    return group;
+  });
+}
+
 function renderParts() {
   if (!state.parts.length) {
     el.parts.innerHTML = `<div class="cad-empty">${uiText('CAD 파일을 먼저 불러오세요.')}</div>`;
     return;
   }
   const modelName = state.sourceStepFile?.name || `${state.sourceCadFormat || 'CAD'} model`;
+  const groups = getPartGroups();
   el.parts.innerHTML = `
     <div class="cad-model-tree" role="tree">
       <div class="cad-model-tree-root" role="treeitem" aria-level="1">
@@ -1030,7 +1102,7 @@ function renderParts() {
         </span>
       </div>
       <div class="cad-model-tree-children" role="group">
-        ${state.parts.map((part, index) => `
+        ${groups.map((part, index) => `
           <div class="cad-part-row${state.selectedPartIndex === index ? ' active' : ''}" data-part-index="${index}" role="treeitem" aria-level="2" aria-selected="${state.selectedPartIndex === index}">
             <input type="checkbox" data-part-enabled ${part.enabled ? 'checked' : ''} title="${uiText('포함')}" aria-label="${escapeHtml(part.name)} ${uiText('포함')}">
             <button type="button" class="cad-part-name${state.selectedPartIndex === index ? ' active' : ''}" data-part-select aria-pressed="${state.selectedPartIndex === index}">
@@ -1053,7 +1125,7 @@ function renderParts() {
 }
 
 function selectPart(index) {
-  if (!Number.isInteger(index) || !state.parts[index]) return;
+  if (!Number.isInteger(index) || !getPartGroups()[index]) return;
   state.selectedPartIndex = index;
   el.parts.querySelectorAll('[data-part-index]').forEach((row, rowIndex) => {
     const selected = rowIndex === index;
@@ -1067,19 +1139,27 @@ function selectPart(index) {
 
 function updatePartFromControl(control) {
   const row = control.closest('[data-part-index]');
-  const part = state.parts[Number(row.dataset.partIndex)];
-  if (!part) return;
+  const group = getPartGroups()[Number(row?.dataset.partIndex)];
+  if (!group) return;
 
   if (control.matches('[data-part-enabled]')) {
-    part.enabled = control.checked;
-    part.mesh.visible = part.enabled;
+    group.parts.forEach(({ part }) => {
+      part.enabled = control.checked;
+      part.mesh.visible = part.enabled;
+    });
   } else if (control.matches('[data-part-material]')) {
-    part.materialKey = control.value;
-    part.densityKgPerMm3 = MATERIALS[control.value].density;
-    row.querySelector('[data-part-density]').value = Number((part.densityKgPerMm3 / KG_PER_MM3_PER_G_PER_CM3).toFixed(6));
+    const density = MATERIALS[control.value].density;
+    group.parts.forEach(({ part }) => {
+      part.materialKey = control.value;
+      part.densityKgPerMm3 = density;
+    });
+    row.querySelector('[data-part-density]').value = Number((density / KG_PER_MM3_PER_G_PER_CM3).toFixed(6));
   } else if (control.matches('[data-part-density]')) {
-    part.densityKgPerMm3 = Number(control.value) * KG_PER_MM3_PER_G_PER_CM3;
-    part.materialKey = 'custom';
+    const density = Number(control.value) * KG_PER_MM3_PER_G_PER_CM3;
+    group.parts.forEach(({ part }) => {
+      part.densityKgPerMm3 = density;
+      part.materialKey = 'custom';
+    });
     row.querySelector('[data-part-material]').value = 'custom';
   }
   el.result.classList.add('hide');

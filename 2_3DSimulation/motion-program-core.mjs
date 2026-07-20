@@ -251,25 +251,34 @@ export function cloneMotionProgram(program) {
                     ? 'TIME_OUT'
                     : step.motion === 'DELAY'
                         ? 'DELAY'
+                        : step.motion === 'VIEW'
+                            ? 'VIEW'
                         : step.motion === 'MOVL'
                             ? 'MOVL'
                             : 'MOVJ';
             const pointMetadata = isMotionPointMotion(motion)
                 ? clonePointMetadata(step, fallbackPointIndex++)
                 : null;
+            const viewSlot = motion === 'VIEW' && Number.isInteger(Number(step.viewSlot))
+                ? Math.min(3, Math.max(0, Number(step.viewSlot)))
+                : 0;
             return {
                 id: String(step.id),
                 name: pointMetadata?.name || (motion === 'DELAY'
                     ? 'Delay'
                     : motion === 'TIME_START'
                         ? 'Time Start'
-                        : 'Time Out'),
+                        : motion === 'TIME_OUT'
+                            ? 'Time Out'
+                            : `View ${viewSlot + 1}`),
                 motion,
                 ...(pointMetadata || {}),
                 ...(motion === 'DELAY'
                     ? { delaySeconds: Number(step.delaySeconds) }
                     : motion === 'MOVJ' || motion === 'MOVL'
                         ? { speed: Number(step.speed) }
+                        : motion === 'VIEW'
+                            ? { viewSlot }
                         : {}),
                 joints: [...step.joints],
                 tcp: {
@@ -343,6 +352,8 @@ function normalizeStep(step, jointCount, index, fallbackPointIndex) {
             ? 'TIME_OUT'
             : step?.motion === 'DELAY'
                 ? 'DELAY'
+                : step?.motion === 'VIEW'
+                    ? 'VIEW'
                 : step?.motion === 'MOVL'
                     ? 'MOVL'
                     : step?.motion === 'MOVJ'
@@ -351,6 +362,7 @@ function normalizeStep(step, jointCount, index, fallbackPointIndex) {
     if (!motion) throw new Error(`Step ${index + 1} has an unsupported motion type.`);
     const delaySeconds = motion === 'DELAY' ? Number(step.delaySeconds) : null;
     const speed = motion === 'MOVJ' || motion === 'MOVL' ? Number(step.speed) : null;
+    const viewSlot = motion === 'VIEW' ? Number(step.viewSlot) : null;
     if (motion === 'DELAY') {
         if (!Number.isFinite(delaySeconds) || delaySeconds < MIN_DELAY_SECONDS || delaySeconds > MAX_DELAY_SECONDS) {
             throw new Error(`Step ${index + 1} delay is outside the supported seconds range.`);
@@ -360,6 +372,8 @@ function normalizeStep(step, jointCount, index, fallbackPointIndex) {
         if (!Number.isFinite(speed) || speed < 1 || speed > maximumSpeed) {
             throw new Error(`Step ${index + 1} speed is outside the ${motion} range.`);
         }
+    } else if (motion === 'VIEW' && (!Number.isInteger(viewSlot) || viewSlot < 0 || viewSlot > 3)) {
+        throw new Error(`Step ${index + 1} view slot must be 0 to 3.`);
     }
     const quaternion = normalizedQuaternion(step.tcp?.quaternion, `Step ${index + 1} TCP quaternion`);
     let pointMetadata = null;
@@ -394,13 +408,17 @@ function normalizeStep(step, jointCount, index, fallbackPointIndex) {
             ? 'Delay'
             : motion === 'TIME_START'
                 ? 'Time Start'
-                : 'Time Out'),
+                : motion === 'TIME_OUT'
+                    ? 'Time Out'
+                    : `View ${viewSlot + 1}`),
         motion,
         ...(pointMetadata || {}),
         ...(motion === 'DELAY'
             ? { delaySeconds }
             : motion === 'MOVJ' || motion === 'MOVL'
                 ? { speed }
+                : motion === 'VIEW'
+                    ? { viewSlot }
                 : {}),
         joints: finiteArray(step.joints, jointCount, `Step ${index + 1} joints`),
         tcp: {

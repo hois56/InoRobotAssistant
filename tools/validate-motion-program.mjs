@@ -483,6 +483,25 @@ assert.ok(!('pointIndex' in normalized.robots[0].steps[2]), 'Non-motion commands
 assert.equal(normalized.robots[0].steps[3].motion, 'TIME_START');
 assert.equal(normalized.robots[0].steps[4].motion, 'TIME_OUT');
 assert.ok(!('speed' in normalized.robots[0].steps[3]) && !('delaySeconds' in normalized.robots[0].steps[4]));
+const viewProject = structuredClone(fullProject);
+viewProject.robots[0].steps.push({
+    id: 'robot-1-VIEW',
+    name: 'View 3',
+    motion: 'VIEW',
+    viewSlot: 2,
+    joints: models[0].limits.map(() => 0),
+    tcp: { position: [0, 0, 0], quaternion: [0, 0, 0, 1] }
+});
+const normalizedViewProject = normalizeMotionProject(viewProject);
+assert.equal(normalizedViewProject.robots[0].steps[5].motion, 'VIEW');
+assert.equal(normalizedViewProject.robots[0].steps[5].viewSlot, 2);
+assert.equal(normalizedViewProject.robots[0].steps[5].name, 'View 3');
+assert.throws(() => normalizeMotionProject({
+    ...viewProject,
+    robots: viewProject.robots.map((robot, index) => index === 0
+        ? { ...robot, steps: robot.steps.map((step, stepIndex) => stepIndex === 5 ? { ...step, viewSlot: 4 } : step) }
+        : robot)
+}), /view slot must be 0 to 3/);
 assert.equal(normalized.robots[0].tcpProfiles.length, 3);
 assert.deepEqual(normalized.robots[0].tcpProfiles[0], {
     position: [0, 0, 0],
@@ -607,7 +626,7 @@ assert.equal((htmlSource.match(/data-tcp-profile=/g) || []).length, 3, 'Viewer m
 assert.ok(mainSource.includes('function applyImportedModelColor(')
     && mainSource.includes('findImportedModelPart(partId)')
     && mainSource.includes('modelColorPicker?.addEventListener'), 'Imported model and part colors must be editable from the model tree context menu.');
-assert.equal((htmlSource.match(/<option value="(?:auto|vertex|endpoint|edge-midpoint|face-center|circle-center|rectangle-center|multi-point-center|shape-center|virtual-intersection)"/g) || []).length, 10, 'TCP snap type selector must expose all CAD snap types.');
+assert.equal((htmlSource.match(/<option value="(?:auto|vertex|endpoint|edge-midpoint|circle-center|rectangle-center|multi-point-center)"/g) || []).length, 7, 'TCP snap type selector must expose the supported CAD snap types.');
 assert.equal((htmlSource.match(/data-panel-toggle="tcp-profile-panel"/g) || []).length, 1, 'Viewer must expose one TCP panel launcher.');
 assert.ok(htmlSource.indexOf('id="btn-toggle-outline"') < htmlSource.indexOf('id="btn-reset-view"'), 'The outline toggle must be placed before the view reset button.');
 assert.equal((htmlSource.match(/data-tcp-preview-axis=/g) || []).length, 0, 'Viewer must not expose TCP preview rulers.');
@@ -883,7 +902,7 @@ assert.ok(
 );
 assert.ok(!htmlSource.includes('id="program-panel-resize"'), 'Panel resizing must not require a header button.');
 assert.ok(mainSource.includes('function makePanelEdgeResizable('), 'Panels must support classic edge resizing.');
-assert.ok(mainSource.includes('[el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.programPanel].forEach(makePanelEdgeResizable)'), 'Model, JOG, Virtual Controller and Program panels must all use edge resizing.');
+assert.ok(mainSource.includes('[el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.viewPresetsPanel, el.programPanel].forEach(makePanelEdgeResizable)'), 'Model, JOG, Virtual Controller, Saved Views and Program panels must all use edge resizing.');
 assert.ok(mainSource.includes("'model-browser-panel': { width: 260, height: 220 }")
     && mainSource.includes("'jog-panel': { width: 250, height: 300 }")
     && mainSource.includes("'virtual-controller-panel': { width: 250, height: 230 }")

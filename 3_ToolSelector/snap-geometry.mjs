@@ -280,6 +280,7 @@ function closestLineIntersection(first, second, tolerance, extensionRatio) {
 }
 
 export function buildStepSnapCandidates(meshDefinition, options = {}) {
+  const disabledTypes = new Set(Array.isArray(options.disabledTypes) ? options.disabledTypes : []);
   const flatPositions = flatten(meshDefinition.attributes?.position?.array);
   if (flatPositions.length < 9 || flatPositions.length % 3 !== 0) return { candidates: [], stats: {} };
   const rawPositions = [];
@@ -371,13 +372,15 @@ export function buildStepSnapCandidates(meshDefinition, options = {}) {
   });
   const nodeSet = new Set([...endpointIds, ...vertexIds]);
   const chains = buildFeatureChains(featureEdges, graph, nodeSet);
-  const rectangleCenters = findRectangleCenters(
-    graph,
-    positions,
-    weldTolerance,
-    rawBounds.diagonal,
-    options.maxRectangleCandidates || 1000
-  );
+  const rectangleCenters = disabledTypes.has('rectangle-center')
+    ? []
+    : findRectangleCenters(
+      graph,
+      positions,
+      weldTolerance,
+      rawBounds.diagonal,
+      options.maxRectangleCandidates || 1000
+    );
   const chainEndpointIds = new Set(endpointIds);
   chains.forEach((chain) => {
     if (chain.closed || chain.path.length < 2) return;
@@ -389,6 +392,7 @@ export function buildStepSnapCandidates(meshDefinition, options = {}) {
   const dedupeMaps = new Map();
   const dedupeTolerance = Math.max(rawBounds.diagonal * 1e-6, weldTolerance * 2);
   const addCandidate = (candidate) => {
+    if (disabledTypes.has(candidate?.type)) return;
     if (!candidate?.point?.every(Number.isFinite)) return;
     const inverse = 1 / dedupeTolerance;
     const key = `${Math.round(candidate.point[0] * inverse)}:${Math.round(candidate.point[1] * inverse)}:${Math.round(candidate.point[2] * inverse)}`;
@@ -417,24 +421,26 @@ export function buildStepSnapCandidates(meshDefinition, options = {}) {
     addCandidate({ type: 'shape-center', point: options.solidCenter.map(Number), source: { kind: 'solid-centroid' } });
   }
 
-  const virtualTolerance = Math.max(rawBounds.diagonal * 1e-5, weldTolerance * 50);
-  const maxVirtualPairs = options.maxVirtualPairs || 20000;
   const maxVirtualCandidates = options.maxVirtualCandidates || 400;
-  const physicalSnapPoints = candidates.map((candidate) => candidate.point);
-  let testedPairs = 0;
-  let virtualCount = 0;
-  for (let firstIndex = 0; firstIndex < straightLines.length && virtualCount < maxVirtualCandidates; firstIndex += 1) {
-    for (let secondIndex = firstIndex + 1; secondIndex < straightLines.length && virtualCount < maxVirtualCandidates; secondIndex += 1) {
-      testedPairs += 1;
+  if (!disabledTypes.has('virtual-intersection')) {
+    const virtualTolerance = Math.max(rawBounds.diagonal * 1e-5, weldTolerance * 50);
+    const maxVirtualPairs = options.maxVirtualPairs || 20000;
+    const physicalSnapPoints = candidates.map((candidate) => candidate.point);
+    let testedPairs = 0;
+    let virtualCount = 0;
+    for (let firstIndex = 0; firstIndex < straightLines.length && virtualCount < maxVirtualCandidates; firstIndex += 1) {
+      for (let secondIndex = firstIndex + 1; secondIndex < straightLines.length && virtualCount < maxVirtualCandidates; secondIndex += 1) {
+        testedPairs += 1;
+        if (testedPairs > maxVirtualPairs) break;
+        const point = closestLineIntersection(straightLines[firstIndex], straightLines[secondIndex], virtualTolerance, options.virtualExtensionRatio || 1.5);
+        if (!point) continue;
+        if (physicalSnapPoints.some((physicalPoint) => distance(physicalPoint, point) <= dedupeTolerance * 2)) continue;
+        const before = candidates.length;
+        addCandidate({ type: 'virtual-intersection', point, source: { firstLine: firstIndex, secondLine: secondIndex } });
+        if (candidates.length > before) virtualCount += 1;
+      }
       if (testedPairs > maxVirtualPairs) break;
-      const point = closestLineIntersection(straightLines[firstIndex], straightLines[secondIndex], virtualTolerance, options.virtualExtensionRatio || 1.5);
-      if (!point) continue;
-      if (physicalSnapPoints.some((physicalPoint) => distance(physicalPoint, point) <= dedupeTolerance * 2)) continue;
-      const before = candidates.length;
-      addCandidate({ type: 'virtual-intersection', point, source: { firstLine: firstIndex, secondLine: secondIndex } });
-      if (candidates.length > before) virtualCount += 1;
     }
-    if (testedPairs > maxVirtualPairs) break;
   }
 
   const maxPerType = {

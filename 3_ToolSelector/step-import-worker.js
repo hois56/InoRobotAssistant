@@ -18,6 +18,31 @@ function ensureOcctImporter() {
   return occtPromise;
 }
 
+function indexStepHierarchy(root) {
+  const partByMeshIndex = new Map();
+  let fallbackPartIndex = 0;
+
+  const visit = (node, path = [], isRoot = false) => {
+    if (!node || typeof node !== 'object') return;
+    const rawName = String(node.name || '').trim();
+    const partName = rawName || `Part ${fallbackPartIndex + 1}`;
+    const partId = isRoot ? null : `cad-part-${path.join('-') || fallbackPartIndex++}`;
+    if (!isRoot && Array.isArray(node.meshes)) {
+      node.meshes.forEach((meshIndex) => {
+        const index = Number(meshIndex);
+        if (Number.isInteger(index) && index >= 0) {
+          partByMeshIndex.set(index, { partId, partName });
+        }
+      });
+    }
+    const children = Array.isArray(node.children) ? node.children : [];
+    children.forEach((child, childIndex) => visit(child, [...path, childIndex], false));
+  };
+
+  visit(root, [], true);
+  return partByMeshIndex;
+}
+
 function toTypedArray(value, ArrayType) {
   if (!value) return new ArrayType();
   if (value instanceof ArrayType) return value;
@@ -35,7 +60,7 @@ function toTypedArray(value, ArrayType) {
   return result;
 }
 
-function compactMesh(mesh, transferables) {
+function compactMesh(mesh, partMeta, transferables) {
   const positions = toTypedArray(mesh?.attributes?.position?.array, Float32Array);
   const normals = toTypedArray(mesh?.attributes?.normal?.array, Float32Array);
   const indices = toTypedArray(mesh?.index?.array, Uint32Array);
@@ -44,6 +69,8 @@ function compactMesh(mesh, transferables) {
 
   return {
     name: mesh?.name || '',
+    partId: partMeta?.partId || null,
+    partName: partMeta?.partName || mesh?.name || '',
     color: mesh?.color || null,
     brep_faces: Array.isArray(mesh?.brep_faces) ? mesh.brep_faces : [],
     attributes: {
@@ -66,9 +93,18 @@ self.addEventListener('message', async (event) => {
 
     reportProgress('STEP 파일을 불러오는 중입니다.');
     const transferables = [];
+    const partByMeshIndex = indexStepHierarchy(result.root);
     const compactResult = {
       success: true,
-      meshes: result.meshes.map((mesh) => compactMesh(mesh, transferables))
+      rootName: result.root?.name || 'STEP Assembly',
+      meshes: result.meshes.map((mesh, index) => compactMesh(
+        mesh,
+        partByMeshIndex.get(index) || {
+          partId: `cad-mesh-${index}`,
+          partName: mesh?.name || `Part ${index + 1}`
+        },
+        transferables
+      ))
     };
     self.postMessage({ type: 'complete', result: compactResult }, transferables);
   } catch (error) {
