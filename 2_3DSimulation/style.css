@@ -501,7 +501,23 @@ input[type="number"]::-webkit-outer-spin-button {
 
 .import-settings-grid {
     display: grid;
+    gap: 0.75rem;
     margin-top: 1rem;
+}
+
+.import-setting {
+    display: grid;
+    gap: 0.35rem;
+    color: #94a3b8;
+    font: 700 0.66rem 'Outfit', sans-serif;
+    letter-spacing: 0.03em;
+}
+
+.import-setting small {
+    color: #64748b;
+    font: 500 0.6rem 'Inter', sans-serif;
+    line-height: 1.35;
+    letter-spacing: 0;
 }
 
 .import-settings-grid select {
@@ -1374,29 +1390,85 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
 #loading-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(11,14,20,0.8);
-    backdrop-filter: blur(8px);
+    /* Loading must never intercept the viewer canvas. The scene underneath
+       remains available while assets are being fetched or parsed. */
+    pointer-events: none;
+    background: transparent;
+    backdrop-filter: none;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: flex-end;
+    justify-content: flex-end;
+    padding: 1.25rem;
     z-index: 500;
     transition: opacity 0.4s var(--ease);
 }
 
+/* Model selection is intentionally non-blocking. The current scene remains
+   interactive while the next robot is fetched and parsed in a Worker. */
+.background-loading-indicator {
+    position: absolute;
+    right: 1.25rem;
+    bottom: 1.25rem;
+    z-index: 520;
+    pointer-events: none;
+    width: min(320px, calc(100% - 2.5rem));
+    padding: 0.75rem 0.85rem;
+    border: 1px solid rgba(96, 165, 250, 0.45);
+    border-radius: 0.65rem;
+    background: rgba(15, 23, 42, 0.82);
+    color: #dbeafe;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+    font-size: 0.78rem;
+    white-space: normal;
+}
+
+.background-loading-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.background-loading-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.background-loading-header strong {
+    flex: 0 0 auto;
+    color: #93c5fd;
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.background-loading-track {
+    width: 100%;
+    height: 0.32rem;
+    margin-top: 0.55rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(147, 197, 253, 0.2);
+}
+
+.background-loading-track span {
+    display: block;
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #3b82f6, #67e8f9);
+    transition: width 0.18s ease;
+}
+
 .loader-content {
-    text-align: center;
+    min-width: 220px;
+    padding: 0.75rem 0.85rem;
+    border: 1px solid rgba(96, 165, 250, 0.45);
+    border-radius: 0.65rem;
+    background: rgba(15, 23, 42, 0.82);
+    color: #dbeafe;
+    text-align: left;
 }
-
-.spinner {
-    width: 44px; height: 44px;
-    border: 3px solid rgba(0,122,255,0.1);
-    border-top: 3px solid var(--accent);
-    border-radius: 50%;
-    margin: 0 auto 1.5rem;
-    animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
 
 #empty-state {
     position: absolute;
@@ -1560,8 +1632,9 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
 /* TCP settings */
 .tcp-profile-panel {
     position: absolute;
-    top: 0;
+    top: auto;
     right: 292px;
+    bottom: 0;
     z-index: 67;
     width: 300px;
     max-height: 100%;
@@ -1613,11 +1686,16 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
     cursor: crosshair;
 }
 
+#canvas-container.simulation-snap-picking canvas {
+    cursor: crosshair;
+}
+
 /* Virtual controller */
 .virtual-controller-panel {
     position: absolute;
-    top: 0;
-    right: 292px;
+    top: auto;
+    right: 0;
+    bottom: 0;
     z-index: 66;
     width: 280px;
     max-height: 100%;
@@ -2397,6 +2475,14 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
     pointer-events: none;
 }
 
+.simulation-snap-candidate-marker {
+    z-index: 112;
+}
+
+.simulation-snap-candidate-marker > span {
+    opacity: 0.82;
+}
+
 .simulation-snap-marker > span {
     display: grid;
     width: 14px;
@@ -2428,6 +2514,11 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
 
 .simulation-snap-marker[data-snap-type="rectangle-center"] > span {
     border-radius: 2px;
+    background: radial-gradient(circle at center, currentColor 0 1.25px, transparent 1.75px);
+}
+
+.simulation-snap-marker[data-snap-type="multi-point-center"] > span {
+    border-radius: 50%;
     background: radial-gradient(circle at center, currentColor 0 1.25px, transparent 1.75px);
 }
 
@@ -3186,6 +3277,7 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
     .virtual-controller-panel {
         top: 12px;
         right: 12px;
+        bottom: auto;
         left: 12px;
         width: auto;
         max-height: 48%;

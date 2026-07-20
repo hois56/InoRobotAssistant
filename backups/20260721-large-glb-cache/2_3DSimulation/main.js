@@ -140,10 +140,6 @@ const state = {
     pendingImportFile: null,
     stepImportWorkerSession: null,
     stepImportRequestId: 0,
-    modelImportWorkerSession: null,
-    modelImportRequestId: 0,
-    backgroundModelLoads: new Map(),
-    modelLoadRequestId: 0,
     stepImportCacheDbPromise: null,
     snapMoveMode: false,
     tcpSnapMode: false,
@@ -161,12 +157,9 @@ const state = {
     snapLazyReadyMeshes: new Set(),
     snapLazyBuildPromises: new Map(),
     snapHover: null,
-    snapFaceSelections: [],
     snapFaceSelection: null,
-    snapFaceOverlays: [],
     snapFaceOverlay: null,
     snapCandidateMarkers: [],
-    snapDisplayedCandidates: [],
     snapMarkerReferenceDistance: null,
     snapPointerMoveFrame: null,
     snapLastPointerEvent: null,
@@ -212,8 +205,6 @@ const el = {
     inputImport3D:   document.getElementById('input-import-3d'),
     importDialog:    document.getElementById('import-3d-dialog'),
     importPlacement: document.getElementById('import-placement'),
-    importQuality:   document.getElementById('import-quality'),
-    importQualityNote: document.getElementById('import-quality-note'),
     modelTree:       document.getElementById('model-tree'),
     modelTreeCount:  document.getElementById('model-tree-count'),
     modelBrowserPanel: document.getElementById('model-browser-panel'),
@@ -407,7 +398,6 @@ const SNAP_WORLD_INDEX_MAX_DEPTH = 14;
 const SNAP_MARKER_CAMERA_SCALE = Object.freeze({ min: 0.55, max: 1.25 });
 const MAX_VISIBLE_SIMULATION_SNAP_MARKERS = 256;
 const MEBIBYTE = 1024 * 1024;
-const MAX_MODEL_IMPORT_SIZE_BYTES = 500 * MEBIBYTE;
 const STEP_IMPORT_CACHE_DB_NAME = 'inorobot-3d-step-cache';
 const STEP_IMPORT_CACHE_STORE_NAME = 'models';
 const STEP_IMPORT_CACHE_VERSION = 3;
@@ -415,12 +405,6 @@ const STEP_IMPORT_CACHE_MAX_ENTRIES = 4;
 const STEP_IMPORT_CACHE_MAX_SOURCE_BYTES = 32 * MEBIBYTE;
 const STEP_LARGE_FILE_ENGINE_MIN_BYTES = 64 * MEBIBYTE;
 const LARGE_MODEL_PERFORMANCE_MIN_BYTES = 100 * MEBIBYTE;
-const STEP_IMPORT_QUALITY_PRESETS = Object.freeze({
-    auto: Object.freeze({ key: 'auto', label: '자동 (권장)' }),
-    lightweight: Object.freeze({ key: 'lightweight', label: '경량 (빠른 가져오기)' }),
-    standard: Object.freeze({ key: 'standard', label: '표준' }),
-    high: Object.freeze({ key: 'high', label: '고품질 (느림)' })
-});
 // Motion rendering stays on the display-refresh path; never throttle large models to 30 Hz.
 const LARGE_MODEL_RENDER_FPS = 60;
 const LARGE_MODEL_PERFORMANCE_MIN_TRIANGLES = 200000;
@@ -431,8 +415,7 @@ const SIMULATION_SNAP_MAX_PER_TYPE = Object.freeze({
     vertex: 12000,
     'edge-midpoint': 12000,
     'circle-center': 4000,
-    'rectangle-center': 2000,
-    'multi-point-center': 2000
+    'rectangle-center': 2000
 });
 const SIMULATION_SNAP_DISABLED_TYPES = Object.freeze([
     'face-center',
@@ -450,8 +433,7 @@ const SNAP_TYPES = Object.freeze({
     'rectangle-center': { label: '사각형 중심점', symbol: '▣', priority: 0 },
     endpoint: { label: '끝점', symbol: '◇', priority: 2 },
     vertex: { label: '꼭짓점', symbol: '□', priority: 2 },
-    'edge-midpoint': { label: '에지 중심점', symbol: '△', priority: 3 },
-    'multi-point-center': { label: '다중 점 중심점', symbol: '⊕', priority: 1 }
+    'edge-midpoint': { label: '에지 중심점', symbol: '△', priority: 3 }
 });
 const PANEL_RESIZE_EDGE_SIZE = 8;
 const PANEL_MINIMUM_SIZES = Object.freeze({
@@ -795,67 +777,23 @@ function getSimulationSnapModels(scope = 'scene') {
         && model.visible !== false);
 }
 
-function isLargeModelSnapPerformanceMode(scope = 'scene') {
-    return getSimulationSnapModels(scope).some((model) => (
-        model.userData.largeModelMode
-        || Number(model.userData.sourceFileSize) >= STEP_LARGE_FILE_ENGINE_MIN_BYTES
-    ));
-}
-
-function getAllSimulationSnapMeshes(scope = 'scene', { includeHidden = false } = {}) {
+function getAllSimulationSnapMeshes(scope = 'scene') {
     const meshes = [];
     getSimulationSnapModels(scope).forEach((model) => model.traverse((child) => {
         if (child.isMesh && !child.userData.simulationSnapFaceOverlay
-            && (includeHidden || child.visible !== false)
-            && child.geometry?.getAttribute('position')) meshes.push(child);
+            && child.visible !== false && child.geometry?.getAttribute('position')) meshes.push(child);
     }));
     return meshes;
 }
 
-function getSimulationSnapFaceSelections() {
-    return Array.isArray(state.snapFaceSelections) && state.snapFaceSelections.length
-        ? state.snapFaceSelections
-        : (state.snapFaceSelection ? [state.snapFaceSelection] : []);
-}
-
-function getSimulationSnapFaceSelectionSignature(selections = getSimulationSnapFaceSelections()) {
-    return selections.map((selection) => (
-        `${selection.key}:${selection.triangleRanges.map((range) => `${range.first}-${range.last}`).join(',')}`
-    )).join('|');
-}
-
 function getSimulationSnapMeshes(scope = 'scene') {
-    const selections = getSimulationSnapFaceSelections();
-    if (scope === 'scene' && state.snapMoveMode && selections.length) {
-        const selectedMeshes = [...new Set(selections.map((selection) => selection.mesh))];
-        // A selected mesh can be temporarily hidden while a large-model chunk
-        // or a render update is being applied. Membership must be checked
-        // without visibility filtering; otherwise the selection is cleared
-        // and this function falls back to every scene mesh.
-        const loadedMeshes = getAllSimulationSnapMeshes(scope, { includeHidden: true });
-        if (selectedMeshes.every((mesh) => loadedMeshes.includes(mesh))) return selectedMeshes;
-        // Never fall back to the complete scene while face picking is active.
-        // An unavailable selected mesh means there are no valid snap targets,
-        // not that all other faces should become eligible.
-        return [];
+    if (scope === 'scene' && state.snapMoveMode && state.snapFaceSelection) {
+        const selectedMesh = state.snapFaceSelection.mesh;
+        const selectedMeshStillLoaded = getAllSimulationSnapMeshes(scope).includes(selectedMesh);
+        if (selectedMeshStillLoaded) return [selectedMesh];
+        clearSimulationSnapFaceSelection();
     }
     return getAllSimulationSnapMeshes(scope);
-}
-
-function cloneSimulationSnapFaceSelection(selection) {
-    if (!selection?.mesh || !Array.isArray(selection.triangleRanges)) return null;
-    return {
-        ...selection,
-        point: selection.point?.clone ? selection.point.clone() : selection.point,
-        triangleRanges: selection.triangleRanges.map((range) => ({
-            first: Number(range.first),
-            last: Number(range.last)
-        }))
-    };
-}
-
-function cloneSimulationSnapFaceSelections(selections = getSimulationSnapFaceSelections()) {
-    return selections.map(cloneSimulationSnapFaceSelection).filter(Boolean);
 }
 
 function getSimulationSnapScope() {
@@ -867,31 +805,9 @@ function yieldToAnimationFrame() {
     return new Promise((resolve) => requestAnimationFrame(resolve));
 }
 
-function getValidatedStepBrepFaces(mesh) {
-    const rawFaces = mesh?.userData?.stepBrepFaces;
-    const triangleCount = Math.floor((mesh?.geometry?.index?.count
-        ?? mesh?.geometry?.getAttribute?.('position')?.count
-        ?? 0) / 3);
-    if (!Array.isArray(rawFaces) || !rawFaces.length || triangleCount <= 0) return null;
-
-    const faces = [];
-    let expectedFirst = 0;
-    for (const rawFace of rawFaces) {
-        const first = Number(rawFace?.first);
-        const last = Number(rawFace?.last);
-        if (!Number.isInteger(first) || !Number.isInteger(last)
-            || first !== expectedFirst || first < 0 || last < first || last >= triangleCount) {
-            return null;
-        }
-        faces.push({ first, last });
-        expectedFirst = last + 1;
-    }
-    return expectedFirst === triangleCount ? faces : null;
-}
-
 function buildSimulationSnapResultForMesh(mesh, lazyChunk = false, faceSelection = null) {
-    const stepBrepFaces = getValidatedStepBrepFaces(mesh);
-    const snapGeometry = stepBrepFaces
+    const stepBrepFaces = mesh.userData.stepBrepFaces;
+    const snapGeometry = Array.isArray(stepBrepFaces) && stepBrepFaces.length
         ? {
             attributes: mesh.geometry.attributes,
             index: mesh.geometry.index,
@@ -916,74 +832,20 @@ function buildSimulationSnapResultForMesh(mesh, lazyChunk = false, faceSelection
     });
 }
 
-function buildSimulationCombinedSnapCandidates(candidates, selections = getSimulationSnapFaceSelections()) {
-    if (selections.length < 2) return [];
-
-    const centerCandidates = candidates.filter((candidate) => (
-        candidate.type === 'rectangle-center' || candidate.type === 'circle-center'
-    ));
-    const boundaryCandidates = candidates.filter((candidate) => (
-        candidate.type === 'vertex' || candidate.type === 'endpoint'
-    ));
-    const result = [];
-    const seen = new Set();
-    const toWorldPoint = (candidate) => candidate.localPoint.clone().applyMatrix4(candidate.mesh.matrixWorld);
-    const addCandidate = (worldPoint, sourceKind) => {
-        if (!worldPoint || !worldPoint.isVector3
-            || !Number.isFinite(worldPoint.x) || !Number.isFinite(worldPoint.y)
-            || !Number.isFinite(worldPoint.z)) return;
-        const key = `${sourceKind}:${worldPoint.x.toFixed(5)},${worldPoint.y.toFixed(5)},${worldPoint.z.toFixed(5)}`;
-        if (seen.has(key)) return;
-        seen.add(key);
-        const mesh = candidates[0]?.mesh;
-        if (!mesh) return;
-        mesh.updateMatrixWorld(true);
-        const localPoint = worldPoint.clone().applyMatrix4(mesh.matrixWorld.clone().invert());
-        result.push({ type: 'multi-point-center', mesh, localPoint, sourceKind });
-    };
-
-    for (let leftIndex = 0; leftIndex < centerCandidates.length; leftIndex += 1) {
-        for (let rightIndex = leftIndex + 1; rightIndex < centerCandidates.length; rightIndex += 1) {
-            const left = toWorldPoint(centerCandidates[leftIndex]);
-            const right = toWorldPoint(centerCandidates[right]);
-            addCandidate(left.clone().add(right).multiplyScalar(0.5), 'center-midpoint');
-        }
-    }
-
-    const uniqueBoundaryPoints = [];
-    const boundaryKeys = new Set();
-    boundaryCandidates.forEach((candidate) => {
-        const point = toWorldPoint(candidate);
-        const key = `${point.x.toFixed(5)},${point.y.toFixed(5)},${point.z.toFixed(5)}`;
-        if (boundaryKeys.has(key)) return;
-        boundaryKeys.add(key);
-        uniqueBoundaryPoints.push(point);
-    });
-    if (uniqueBoundaryPoints.length >= 4) {
-        const bounds = new THREE.Box3();
-        uniqueBoundaryPoints.forEach((point) => bounds.expandByPoint(point));
-        addCandidate(bounds.getCenter(new THREE.Vector3()), 'boundary-center');
-    }
-    return result;
-}
-
 async function buildSimulationSnapCandidates(scope = getSimulationSnapScope()) {
     if (!isSimulationSnapInteractionActive()) return [];
-    const faceSelections = scope === 'scene' && state.snapMoveMode
-        ? cloneSimulationSnapFaceSelections() : [];
-    if (scope === 'scene' && state.snapMoveMode && !faceSelections.length) {
+    if (scope === 'scene' && state.snapMoveMode && !state.snapFaceSelection) {
         state.snapCandidates = [];
         state.snapCandidatesReady = false;
         return [];
     }
     const meshes = getSimulationSnapMeshes(scope);
-    const faceSelectionsByMesh = new Map();
-    faceSelections.forEach((selection) => {
-        const selectionsForMesh = faceSelectionsByMesh.get(selection.mesh.uuid) || [];
-        selectionsForMesh.push(selection);
-        faceSelectionsByMesh.set(selection.mesh.uuid, selectionsForMesh);
-    });
-    const faceSignature = getSimulationSnapFaceSelectionSignature(faceSelections);
+    const faceSelection = scope === 'scene' && state.snapMoveMode
+        ? state.snapFaceSelection
+        : null;
+    const faceSignature = faceSelection
+        ? `${faceSelection.key}:${faceSelection.triangleRanges.map((range) => `${range.first}-${range.last}`).join(',')}`
+        : '';
     const signature = `${scope}:${meshes.map((mesh) => `${mesh.uuid}:${mesh.geometry.uuid}`).join('|')}:${faceSignature}`;
     if (signature === state.snapCandidateModelsSignature && state.snapCandidatesReady) return meshes;
     if (signature === state.snapCandidateBuildSignature && state.snapCandidateBuildPromise) {
@@ -1004,14 +866,10 @@ async function buildSimulationSnapCandidates(scope = getSimulationSnapScope()) {
         for (let meshIndex = 0; meshIndex < meshes.length; meshIndex += 1) {
             if (state.snapCandidateBuildSignature !== signature || !isSimulationSnapInteractionActive()) return;
             const mesh = meshes[meshIndex];
-            if (!faceSelections.length) {
+            if (!faceSelection) {
                 if (isLazySimulationSnapMesh(mesh)) continue;
             }
             try {
-                const meshFaceSelections = faceSelectionsByMesh.get(mesh.uuid) || [];
-                const faceSelection = meshFaceSelections.length
-                    ? { triangleRanges: meshFaceSelections.flatMap((selection) => selection.triangleRanges) }
-                    : null;
                 const result = buildSimulationSnapResultForMesh(mesh, false, faceSelection);
                 result.candidates.forEach((candidate) => {
                     const count = nextCandidateCounts[candidate.type] || 0;
@@ -1030,14 +888,6 @@ async function buildSimulationSnapCandidates(scope = getSimulationSnapScope()) {
             if (meshIndex + 1 < meshes.length) await yieldToAnimationFrame();
         }
         if (state.snapCandidateBuildSignature !== signature || !isSimulationSnapInteractionActive()) return;
-        const combinedCandidates = buildSimulationCombinedSnapCandidates(nextCandidates, faceSelections);
-        combinedCandidates.forEach((candidate) => {
-            const count = nextCandidateCounts[candidate.type] || 0;
-            const limit = SIMULATION_SNAP_MAX_PER_TYPE[candidate.type] || Infinity;
-            if (count >= limit) return;
-            nextCandidateCounts[candidate.type] = count + 1;
-            nextCandidates.push(candidate);
-        });
         state.snapCandidates = nextCandidates;
         state.snapCandidateModelsSignature = signature;
         state.snapCandidatesReady = true;
@@ -1056,9 +906,12 @@ async function buildSimulationSnapCandidates(scope = getSimulationSnapScope()) {
 
 function getPreparedSimulationSnapMeshes(scope = getSimulationSnapScope()) {
     const meshes = getSimulationSnapMeshes(scope);
-    const faceSelections = scope === 'scene' && state.snapMoveMode
-        ? getSimulationSnapFaceSelections() : [];
-    const faceSignature = getSimulationSnapFaceSelectionSignature(faceSelections);
+    const faceSelection = scope === 'scene' && state.snapMoveMode
+        ? state.snapFaceSelection
+        : null;
+    const faceSignature = faceSelection
+        ? `${faceSelection.key}:${faceSelection.triangleRanges.map((range) => `${range.first}-${range.last}`).join(',')}`
+        : '';
     const signature = `${scope}:${meshes.map((mesh) => `${mesh.uuid}:${mesh.geometry.uuid}`).join('|')}:${faceSignature}`;
     if (signature !== state.snapCandidateModelsSignature || !state.snapCandidatesReady) return [];
     return meshes;
@@ -1091,8 +944,8 @@ function getSimulationSnapTriangleVertexIndices(geometry, triangleIndex) {
 }
 
 function getSimulationSnapFaceTriangleRanges(mesh, triangleIndex) {
-    const brepFaces = getValidatedStepBrepFaces(mesh);
-    if (brepFaces) {
+    const brepFaces = mesh.userData.stepBrepFaces;
+    if (Array.isArray(brepFaces) && brepFaces.length) {
         const faceIndex = brepFaces.findIndex((face) => (
             triangleIndex >= Number(face.first) && triangleIndex <= Number(face.last)
         ));
@@ -1147,17 +1000,13 @@ function createSimulationSnapFaceOverlay(selection) {
 }
 
 function clearSimulationSnapFaceSelection({ invalidate = true } = {}) {
-    const overlays = state.snapFaceOverlays.length
-        ? state.snapFaceOverlays
-        : (state.snapFaceOverlay ? [state.snapFaceOverlay] : []);
-    overlays.forEach((overlay) => {
+    const overlay = state.snapFaceOverlay;
+    if (overlay) {
         overlay.removeFromParent();
         overlay.geometry?.dispose();
         overlay.material?.dispose();
-    });
-    state.snapFaceOverlays = [];
+    }
     state.snapFaceOverlay = null;
-    state.snapFaceSelections = [];
     state.snapFaceSelection = null;
     clearSimulationSnapCandidateMarkers();
     if (invalidate) invalidateSimulationSnapCandidates();
@@ -1166,21 +1015,6 @@ function clearSimulationSnapFaceSelection({ invalidate = true } = {}) {
 function clearSimulationSnapCandidateMarkers() {
     state.snapCandidateMarkers.forEach((marker) => marker.remove());
     state.snapCandidateMarkers = [];
-    state.snapDisplayedCandidates = [];
-}
-
-function setSimulationSnapFaceOverlaysVisible(visible) {
-    state.snapFaceOverlays.forEach((overlay) => {
-        overlay.visible = visible;
-    });
-}
-
-function hideSimulationSnapCandidateMarkersForNavigation() {
-    // Keep the DOM nodes so the next settled frame can reuse them, but do not
-    // let the marker layer participate in layout/painting while OrbitControls
-    // is producing camera-change events.
-    state.snapCandidateMarkers.forEach((marker) => marker.classList.add('hidden'));
-    state.snapDisplayedCandidates = [];
 }
 
 function createSimulationSnapCandidateMarker() {
@@ -1193,11 +1027,7 @@ function createSimulationSnapCandidateMarker() {
 }
 
 function updateSimulationSnapCandidateMarkers() {
-    // Projecting every candidate and doing depth tests while the camera is
-    // moving was the main source of the large-model orbit/pan hitch. The
-    // selected face remains intact; markers are rebuilt once navigation ends.
-    if (state.viewNavigationActive) return;
-    if (!state.snapMoveMode || !getSimulationSnapFaceSelections().length || !state.snapCandidatesReady
+    if (!state.snapMoveMode || !state.snapFaceSelection || !state.snapCandidatesReady
         || !el.canvasContainer || !state.renderer || !state.camera) {
         clearSimulationSnapCandidateMarkers();
         return;
@@ -1208,18 +1038,8 @@ function updateSimulationSnapCandidateMarkers() {
         clearSimulationSnapCandidateMarkers();
         return;
     }
-    state.camera.updateMatrixWorld(true);
     getSimulationSnapWorldIndex(meshes);
-    const visibilityMeshes = isLargeModelSnapPerformanceMode('scene')
-        ? null
-        : getAllSimulationSnapMeshes('scene');
     const candidates = [];
-    const markerCells = new Map();
-    const markerSpacing = state.largeModelPerformanceMode ? 12 : 7;
-    const getMarkerCellKey = (x, y) => `${Math.floor(x / markerSpacing)}:${Math.floor(y / markerSpacing)}`;
-    const isBetterMarker = (next, current) => (
-        snapTypeInfo(next.candidate.type).priority < snapTypeInfo(current.candidate.type).priority
-    );
     const projected = new THREE.Vector3();
     for (const candidate of state.snapCandidates) {
         if (!candidate.mesh.visible || !candidate.snapWorldPoint) continue;
@@ -1229,42 +1049,9 @@ function updateSimulationSnapCandidateMarkers() {
         const screenY = (-projected.y * 0.5 + 0.5) * bounds.height;
         if (screenX < -12 || screenX > bounds.width + 12
             || screenY < -12 || screenY > bounds.height + 12) continue;
-        if (visibilityMeshes) {
-            const visibilityCandidate = {
-                ...candidate,
-                worldPoint: candidate.snapWorldPoint
-            };
-            if (!isSimulationSnapCandidateVisible(visibilityCandidate, projected, visibilityMeshes)) continue;
-        }
-        const item = { candidate, screenX, screenY };
-        const cellX = Math.floor(screenX / markerSpacing);
-        const cellY = Math.floor(screenY / markerSpacing);
-        let duplicateIndex = -1;
-        for (let offsetX = -1; offsetX <= 1 && duplicateIndex < 0; offsetX += 1) {
-            for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
-                const cell = markerCells.get(`${cellX + offsetX}:${cellY + offsetY}`) || [];
-                const match = cell.find((index) => (
-                    Math.hypot(candidates[index].screenX - screenX, candidates[index].screenY - screenY)
-                    <= markerSpacing
-                ));
-                if (match !== undefined) {
-                    duplicateIndex = match;
-                    break;
-                }
-            }
-        }
-        if (duplicateIndex >= 0) {
-            if (isBetterMarker(item, candidates[duplicateIndex])) candidates[duplicateIndex] = item;
-            continue;
-        }
-        const cellKey = getMarkerCellKey(screenX, screenY);
-        const cell = markerCells.get(cellKey) || [];
-        cell.push(candidates.length);
-        markerCells.set(cellKey, cell);
-        candidates.push(item);
+        candidates.push({ candidate, screenX, screenY });
         if (candidates.length >= MAX_VISIBLE_SIMULATION_SNAP_MARKERS) break;
     }
-    state.snapDisplayedCandidates = candidates.map(({ candidate }) => candidate);
     while (state.snapCandidateMarkers.length < candidates.length) {
         state.snapCandidateMarkers.push(createSimulationSnapCandidateMarker());
     }
@@ -1310,20 +1097,7 @@ function pickSimulationSnapFaceAtPointer(pointerEvent) {
 }
 
 function handleSimulationSnapMoveClick(event) {
-    const selectedFaces = getSimulationSnapFaceSelections();
-    if (event.shiftKey) {
-        const selection = pickSimulationSnapFaceAtPointer(event);
-        if (!selection) {
-            setStatus('스냅할 3D 모델의 면을 클릭하세요.', '#f59e0b');
-            return;
-        }
-        event.preventDefault();
-        event.stopPropagation();
-        selectSimulationSnapFace(selection, { additive: true });
-        return;
-    }
-
-    const snap = selectedFaces.length ? findSimulationSnapAtPointer(event) : null;
+    const snap = state.snapFaceSelection ? findSimulationSnapAtPointer(event) : null;
     if (snap) {
         event.preventDefault();
         event.stopPropagation();
@@ -1332,7 +1106,7 @@ function handleSimulationSnapMoveClick(event) {
     }
 
     const selection = pickSimulationSnapFaceAtPointer(event);
-    if (selection && !selectedFaces.some((face) => face.key === selection.key)) {
+    if (selection && (!state.snapFaceSelection || selection.key !== state.snapFaceSelection.key)) {
         event.preventDefault();
         event.stopPropagation();
         selectSimulationSnapFace(selection);
@@ -1344,42 +1118,22 @@ function handleSimulationSnapMoveClick(event) {
     );
 }
 
-function selectSimulationSnapFace(selection, { additive = false } = {}) {
-    const nextSelection = cloneSimulationSnapFaceSelection(selection);
-    if (!nextSelection) return false;
-    const currentSelections = cloneSimulationSnapFaceSelections();
-    const nextSelections = additive ? currentSelections : [];
-    const existingIndex = nextSelections.findIndex((face) => face.key === nextSelection.key);
-    if (additive && existingIndex >= 0) nextSelections.splice(existingIndex, 1);
-    else nextSelections.push(nextSelection);
-    if (!nextSelections.length) {
-        clearSimulationSnapFaceSelection();
-        setStatus('스냅할 3D 모델의 면을 클릭하세요.', '#60a5fa');
-        return false;
-    }
-
+function selectSimulationSnapFace(selection) {
+    if (!selection?.mesh) return false;
     clearSimulationSnapFaceSelection({ invalidate: false });
-    state.snapFaceSelections = nextSelections;
-    state.snapFaceSelection = nextSelections[nextSelections.length - 1];
-    state.snapFaceOverlays = nextSelections
-        .map((face) => createSimulationSnapFaceOverlay(face))
-        .filter(Boolean);
-    state.snapFaceOverlay = state.snapFaceOverlays[0] || null;
+    state.snapFaceSelection = selection;
+    state.snapFaceOverlay = createSimulationSnapFaceOverlay(selection);
     invalidateSimulationSnapCandidates();
     hideSimulationSnapMarker();
     setStatus('면을 선택했습니다. 선택된 면의 스냅 후보를 계산하는 중입니다...', '#f59e0b');
-    const selectionSignature = getSimulationSnapFaceSelectionSignature(nextSelections);
     void buildSimulationSnapCandidates('scene').then(() => {
-        if (!state.snapMoveMode || getSimulationSnapFaceSelectionSignature() !== selectionSignature) return;
+        if (!state.snapMoveMode || state.snapFaceSelection?.key !== selection.key) return;
         setStatus('선택한 면의 스냅 후보를 클릭하세요.', '#60a5fa');
     }).catch((error) => {
         console.warn('Selected face snap candidate generation failed:', error);
-        if (getSimulationSnapFaceSelectionSignature() === selectionSignature) {
-            // Candidate generation is asynchronous. A transient failure or a
-            // stale mesh must not erase the user's face selection; keep the
-            // overlays and allow a later rebuild after the scene settles.
-            invalidateSimulationSnapCandidates();
-            setStatus('선택한 면의 스냅 후보를 다시 계산해야 합니다. 면 선택은 유지됩니다.', '#f59e0b');
+        if (state.snapFaceSelection?.key === selection.key) {
+            clearSimulationSnapFaceSelection();
+            setStatus('선택한 면의 스냅 후보를 계산하지 못했습니다.', '#ef4444');
         }
     });
     return true;
@@ -1415,17 +1169,13 @@ function beginSimulationViewNavigation() {
     // Cancel any pending snap work before those events reach the snap picker.
     state.snapCandidateBuildSignature = '';
     hideSimulationSnapMarker();
-    hideSimulationSnapCandidateMarkersForNavigation();
-    setSimulationSnapFaceOverlaysVisible(false);
 }
 
 function endSimulationViewNavigation() {
     if (!state.viewNavigationActive) return;
     state.viewNavigationActive = false;
-    setSimulationSnapFaceOverlaysVisible(true);
     if (!isSimulationSnapPicking()) return;
     if (state.snapCandidatesReady) {
-        requestRender();
         scheduleSimulationSnapPreview();
         return;
     }
@@ -1433,7 +1183,6 @@ function endSimulationViewNavigation() {
     // If navigation interrupted candidate preparation, resume it after the
     // controls release without doing any work inside the camera gesture.
     void buildSimulationSnapCandidates(getSimulationSnapScope()).then(() => {
-        requestRender();
         scheduleSimulationSnapPreview();
     }).catch((error) => {
         console.warn('Snap candidate generation resume failed:', error);
@@ -1719,7 +1468,6 @@ function buildSimulationSnapWorldOctree(candidates, depth = 0) {
 }
 
 function getSimulationSnapWorldIndex(meshes) {
-    meshes.forEach((mesh) => mesh.updateWorldMatrix?.(true, false));
     const signature = getSimulationSnapWorldIndexSignature(meshes);
     if (state.snapWorldIndex && state.snapWorldIndexSignature === signature) {
         return state.snapWorldIndex;
@@ -1845,7 +1593,6 @@ function findSimulationSnapAtPointer(pointerEvent) {
         if (pixelDistance > snapRadius) return;
         nearby.push({
             ...candidate,
-            sourceCandidate: candidate,
             worldPoint,
             projected,
             screenX,
@@ -1857,17 +1604,6 @@ function findSimulationSnapAtPointer(pointerEvent) {
     nearby.sort(requiredType
         ? (left, right) => left.pixelDistance - right.pixelDistance || left.cameraDistance - right.cameraDistance
         : compareSimulationSnapCandidates);
-    if (state.snapMoveMode) {
-        const displayedCandidate = nearby.find((candidate) => (
-            state.snapDisplayedCandidates.includes(candidate.sourceCandidate)
-        ));
-        if (displayedCandidate) return displayedCandidate;
-        // A candidate that was not persistently visible can still become the
-        // active snap when the pointer is directly over its projected point.
-        // showSimulationSnapMarker() then makes the priority explicit before
-        // the user clicks, even when another model is in front of it.
-        return nearby[0] || null;
-    }
     return nearby.find((candidate) => isSimulationSnapCandidateVisible(
         candidate,
         candidate.projected,
@@ -2547,11 +2283,11 @@ function setupEventListeners() {
     });
     document.addEventListener('inorobot:i18nready', refreshLocalizedControls);
     document.addEventListener('inorobot:languagechange', refreshLocalizedControls);
-    el.modelSelect.addEventListener('change', (e) => {
+    el.modelSelect.addEventListener('change', async (e) => {
         const file = e.target.value;
         if (!file) return;
         const model = state.catalog.get(file);
-        if (model) void loadModelFromServer(model);
+        if (model) await loadModelFromServer(model);
     });
 
     el.btnFullscreenMode?.addEventListener('click', () => setFullscreenUiMode(!state.fullscreenUiMode));
@@ -2964,7 +2700,7 @@ function handleGlobalKeyDown(event) {
         setFullscreenUiMode(false);
         return;
     }
-    if (event.key === 'Escape' && state.snapMoveMode && getSimulationSnapFaceSelections().length) {
+    if (event.key === 'Escape' && state.snapMoveMode && state.snapFaceSelection) {
         event.preventDefault();
         clearSimulationSnapFaceSelection();
         setStatus('스냅할 3D 모델의 면을 클릭하세요.', '#60a5fa');
@@ -4341,113 +4077,27 @@ function applySelectedModelNumericTransform(event) {
     setStatus('모델 변환이 적용되었습니다.', '#22c55e');
 }
 
-function refreshBackgroundModelLoading() {
-    let indicator = el.canvasContainer?.querySelector('.background-loading-indicator');
-    const activeLoads = [...state.backgroundModelLoads.values()];
-    if (activeLoads.length === 0) {
-        indicator?.remove();
-        return;
-    }
-    if (!indicator) {
-        indicator = document.createElement('div');
-        indicator.className = 'background-loading-indicator';
-        indicator.innerHTML = `
-            <div class="background-loading-header">
-                <div class="background-loading-label" data-background-loading-label></div>
-                <strong data-background-loading-percent>0% · 남은 100%</strong>
-            </div>
-            <div class="background-loading-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-                <span data-background-loading-progress></span>
-            </div>`;
-        el.canvasContainer?.appendChild(indicator);
-    }
-    const currentLoad = activeLoads.at(-1) || { text: uiText('불러오는 중...'), progress: 0 };
-    const label = indicator.querySelector('[data-background-loading-label]');
-    const percentLabel = indicator.querySelector('[data-background-loading-percent]');
-    const progressBar = indicator.querySelector('[data-background-loading-progress]');
-    const progressTrack = indicator.querySelector('.background-loading-track');
-    const progress = Math.max(0, Math.min(100, Number(currentLoad.progress) || 0));
-    if (label) label.textContent = currentLoad.text;
-    if (percentLabel) percentLabel.textContent = `${progress}% · 남은 ${100 - progress}%`;
-    if (progressBar) progressBar.style.width = `${progress}%`;
-    if (progressTrack) progressTrack.setAttribute('aria-valuenow', String(progress));
-}
-
-function beginBackgroundModelLoading(requestId, text) {
-    state.backgroundModelLoads.set(requestId, { text, progress: 0 });
-    refreshBackgroundModelLoading();
-}
-
-function updateBackgroundModelLoading(requestId, text, progress = null) {
-    if (!state.backgroundModelLoads.has(requestId)) return;
-    const previous = state.backgroundModelLoads.get(requestId);
-    state.backgroundModelLoads.set(requestId, {
-        text,
-        progress: Number.isFinite(Number(progress)) ? Number(progress) : previous?.progress || 0
-    });
-    refreshBackgroundModelLoading();
-}
-
-function finishBackgroundModelLoading(requestId) {
-    state.backgroundModelLoads.delete(requestId);
-    refreshBackgroundModelLoading();
-}
-
-function discardUncommittedModel(model, type) {
-    if (!model) return;
-    model.removeFromParent();
-    // Articulated STL geometry is shared by the worker-backed cache. Do not
-    // dispose it here, otherwise a later load would reuse disposed buffers.
-    if (type !== 'articulated-stl') disposeObjectResources(model);
-}
-
 async function loadModelFromServer(modelDefinition) {
-    const isAddMode = Boolean(el.btnAddMode?.checked);
-    if (isMotionActive() && !isAddMode) {
-        setStatus('시뮬레이션 실행 중에는 Add Mode에서만 모델을 추가할 수 있습니다.', '#f59e0b');
-        return;
-    }
-
+    if (isMotionActive()) return;
+    if (state.zeroPointEdit.active) exitZeroPointEditor();
     const { file, folder, name, type = 'fbx' } = modelDefinition;
-    const requestId = ++state.modelLoadRequestId;
-    const loadLabel = uiFormat('{name} 불러오는 중...', { name });
-    beginBackgroundModelLoading(requestId, loadLabel);
-    setStatus(loadLabel, '#f59e0b');
+    setTransformHandlesEnabled(false);
+    setBaseJogGizmoEnabled(false);
+    commitAllPendingHistories();
+    const historyBefore = captureSceneSnapshot();
+    showLoading(true, uiFormat('{name} 불러오는 중...', { name }));
+    setStatus('불러오는 중', '#f59e0b');
+    const isAddMode = el.btnAddMode && el.btnAddMode.checked;
+
+    // If not in Add Mode, clean up previous models
+    if (!isAddMode) {
+        cleanupScene();
+    }
 
     try {
         const model = type === 'articulated-stl'
-            ? await loadArticulatedRobot(modelDefinition, (p) => {
-                updateBackgroundModelLoading(requestId, uiFormat('{name}: 로봇 링크', { name }), p);
-            })
-            : await loadFBX(`./models/${file}`, (p) => updateBackgroundModelLoading(
-                requestId,
-                uiFormat('{name}: 모델', { name }),
-                p
-            ));
-
-        // A later replacement request wins. Add Mode requests are independent
-        // and can finish in any order.
-        if (!isAddMode && requestId !== state.modelLoadRequestId) {
-            discardUncommittedModel(model, type);
-            return;
-        }
-
-        const motionWasActive = isMotionActive();
-        if (motionWasActive && !isAddMode) {
-            discardUncommittedModel(model, type);
-            setStatus('시뮬레이션이 시작되어 모델 교체를 취소했습니다.', '#f59e0b');
-            return;
-        }
-
-        if (state.zeroPointEdit.active) exitZeroPointEditor();
-        setTransformHandlesEnabled(false);
-        setBaseJogGizmoEnabled(false);
-        commitAllPendingHistories();
-        const historyBefore = captureSceneSnapshot();
-
-        // If not in Add Mode, clean up previous models only after the new
-        // model has finished loading, so the current simulation stays usable.
-        if (!isAddMode) cleanupScene();
+            ? await loadArticulatedRobot(modelDefinition, (p) => showLoading(true, uiFormat('로봇 링크: {progress}%', { progress: p })))
+            : await loadFBX(`./models/${file}`, (p) => showLoading(true, uiFormat('모델: {progress}%', { progress: p })));
 
         if (type !== 'articulated-stl') {
             const rotFix = MODEL_ROTATION_FIX[name];
@@ -4495,7 +4145,7 @@ async function loadModelFromServer(modelDefinition) {
         if (type === 'articulated-stl') attachPendingToolModels(model);
         ensureModelTreeId(model);
 
-        if (type === 'articulated-stl' && !motionWasActive) {
+        if (type === 'articulated-stl') {
             state.activeArticulatedModel = model;
             state.activeProgramRobot = model;
             renderJogControls(model);
@@ -4509,25 +4159,21 @@ async function loadModelFromServer(modelDefinition) {
         selectSceneModel(model);
         renderMotionProgramPanel();
         recordHistory('모델 불러오기', historyBefore, captureSceneSnapshot());
+        showLoading(false);
         if(!isAddMode) fitCamera();
-        setStatus(isAddMode ? `${name} 추가 완료` : `${name} 불러오기 완료`, '#22c55e');
     } catch (err) {
         console.error('Load failed:', err);
-        setStatus(`${name} 불러오기 실패`, '#ef4444');
-    } finally {
-        finishBackgroundModelLoading(requestId);
+        applySceneSnapshot(historyBefore);
+        setStatus('오류', '#ef4444');
+        showLoading(false);
     }
 }
 
 function loadFBX(url, onProgress) {
-    return loadFBXInWorker(url, onProgress).catch((workerError) => {
-        // Keep compatibility with browsers that cannot start module workers.
-        console.warn('FBX worker unavailable; falling back to main-thread loading:', workerError);
-        return new Promise((resolve, reject) => {
-            new FBXLoader().load(url, resolve,
-                (xhr) => { if (xhr.total > 0 && onProgress) onProgress(Math.round(xhr.loaded / xhr.total * 100)); },
-                reject);
-        });
+    return new Promise((resolve, reject) => {
+        new FBXLoader().load(url, resolve,
+            (xhr) => { if (xhr.total > 0 && onProgress) onProgress(Math.round(xhr.loaded / xhr.total * 100)); },
+            reject);
     });
 }
 
@@ -4766,127 +4412,10 @@ function createRobotManifest(modelDefinition) {
     };
 }
 
-function resetModelImportWorkerSession(session = state.modelImportWorkerSession, error = null) {
-    if (!session) return;
-    if (state.modelImportWorkerSession === session) state.modelImportWorkerSession = null;
-    session.worker.terminate();
-    if (error) {
-        session.pending.forEach(({ reject }) => reject(error));
-    }
-    session.pending.clear();
-}
-
-function getModelImportWorkerSession() {
-    if (state.modelImportWorkerSession) return state.modelImportWorkerSession;
-
-    const workerUrl = new URL('./model-load-worker.js?v=20260721-background-model-2', import.meta.url);
-    const worker = new Worker(workerUrl, { type: 'module' });
-    const session = { worker, pending: new Map() };
-    state.modelImportWorkerSession = session;
-
-    worker.addEventListener('message', (event) => {
-        const payload = event.data || {};
-        const pending = session.pending.get(payload.requestId);
-        if (!pending) return;
-        if (payload.type === 'progress') {
-            pending.onProgress?.(payload.progress);
-            return;
-        }
-        session.pending.delete(payload.requestId);
-        if (payload.type === 'done') pending.resolve(payload);
-        else pending.reject(new Error(payload.message || 'Model worker failed.'));
-    });
-    worker.addEventListener('error', (event) => {
-        event.preventDefault();
-        resetModelImportWorkerSession(session, new Error(event.message || 'STL worker stopped unexpectedly.'));
-    });
-    return session;
-}
-
-function createSTLGeometryFromWorker(serialized) {
-    if (!serialized?.attributes?.position?.array) {
-        throw new Error('The STL worker returned invalid geometry data.');
-    }
-    const geometry = new THREE.BufferGeometry();
-    Object.entries(serialized.attributes).forEach(([name, attribute]) => {
-        if (!ArrayBuffer.isView(attribute.array)) return;
-        geometry.setAttribute(
-            name,
-            new THREE.BufferAttribute(attribute.array, attribute.itemSize, attribute.normalized)
-        );
-    });
-    if (ArrayBuffer.isView(serialized.index)) {
-        geometry.setIndex(new THREE.BufferAttribute(serialized.index, 1));
-    }
-    geometry.computeBoundingBox();
-    geometry.computeBoundingSphere();
-    return geometry;
-}
-
-function loadSTLInWorker(url) {
-    const session = getModelImportWorkerSession();
-    const requestId = ++state.modelImportRequestId;
-    return new Promise((resolve, reject) => {
-        session.pending.set(requestId, { resolve, reject });
-        session.worker.postMessage({ type: 'parse-stl', requestId, url });
-    }).then((payload) => createSTLGeometryFromWorker(payload.geometry));
-}
-
-function createWorkerMaterial(definition = {}) {
-    return new THREE.MeshStandardMaterial({
-        color: Number.isInteger(definition.color) ? definition.color : 0xcccccc,
-        roughness: Number.isFinite(definition.roughness) ? definition.roughness : 0.66,
-        metalness: Number.isFinite(definition.metalness) ? definition.metalness : 0.06,
-        transparent: Boolean(definition.transparent),
-        opacity: Number.isFinite(definition.opacity) ? definition.opacity : 1,
-        side: Number.isInteger(definition.side) ? definition.side : THREE.FrontSide
-    });
-}
-
-function createFBXObjectFromWorker(serialized) {
-    if (!serialized?.root || !Array.isArray(serialized.geometries)) {
-        throw new Error('The FBX worker returned invalid model data.');
-    }
-    const geometries = serialized.geometries.map(createSTLGeometryFromWorker);
-    const createNode = (definition) => {
-        const geometry = Number.isInteger(definition.geometryId)
-            ? geometries[definition.geometryId]
-            : null;
-        const materials = Array.isArray(definition.materials) && definition.materials.length
-            ? definition.materials.map(createWorkerMaterial)
-            : [createWorkerMaterial()];
-        const object = definition.type === 'mesh' && geometry
-            ? new THREE.Mesh(geometry, materials.length === 1 ? materials[0] : materials)
-            : new THREE.Group();
-        object.name = definition.name || '';
-        if (Array.isArray(definition.position)) object.position.fromArray(definition.position);
-        if (Array.isArray(definition.quaternion)) object.quaternion.fromArray(definition.quaternion);
-        if (Array.isArray(definition.scale)) object.scale.fromArray(definition.scale);
-        object.visible = definition.visible !== false;
-        (definition.children || []).forEach((child) => object.add(createNode(child)));
-        return object;
-    };
-    return createNode(serialized.root);
-}
-
-function loadFBXInWorker(url, onProgress) {
-    const session = getModelImportWorkerSession();
-    const requestId = ++state.modelImportRequestId;
-    return new Promise((resolve, reject) => {
-        session.pending.set(requestId, { resolve, reject, onProgress });
-        session.worker.postMessage({ type: 'parse-fbx', requestId, url });
-    }).then((payload) => createFBXObjectFromWorker(payload.model));
-}
-
 function loadSTL(url) {
     if (!stlGeometryCache.has(url)) {
-        const request = loadSTLInWorker(url).catch((workerError) => {
-            // Keep the viewer usable if a browser blocks module workers or the
-            // worker CDN is unavailable. The fallback remains asynchronous.
-            console.warn('STL worker unavailable; falling back to main-thread loading:', workerError);
-            return new Promise((resolve, reject) => {
-                new STLLoader().load(url, resolve, undefined, reject);
-            });
+        const request = new Promise((resolve, reject) => {
+            new STLLoader().load(url, resolve, undefined, reject);
         }).catch((error) => {
             stlGeometryCache.delete(url);
             throw error;
@@ -4928,29 +4457,6 @@ function mountToolModelAtActiveTcp(robot, model) {
     return true;
 }
 
-function isModelImportFileTooLarge(file) {
-    return Number.isFinite(file?.size) && file.size > MAX_MODEL_IMPORT_SIZE_BYTES;
-}
-
-function formatModelImportFileSize(bytes) {
-    const megabytes = Math.ceil(Number(bytes) / MEBIBYTE);
-    return `${Number.isFinite(megabytes) ? megabytes : 0}MB`;
-}
-
-function rejectOversizedModelImport(file) {
-    if (!isModelImportFileTooLarge(file)) return false;
-    state.pendingImportFile = null;
-    if (el.importDialog?.open) el.importDialog.close();
-    alert(uiFormat(
-        '3D 모델 파일은 최대 {limit}까지 불러올 수 있습니다.\n선택한 파일: {size}',
-        {
-            limit: `${MAX_MODEL_IMPORT_SIZE_BYTES / MEBIBYTE}MB`,
-            size: formatModelImportFileSize(file.size)
-        }
-    ));
-    return true;
-}
-
 function openImportDialog(file) {
     const extension = getFileExtension(file.name);
     if (!SUPPORTED_IMPORT_EXTENSIONS.has(extension)) {
@@ -4958,12 +4464,9 @@ function openImportDialog(file) {
         return;
     }
 
-    if (rejectOversizedModelImport(file)) return;
-
     state.pendingImportFile = file;
     el.importPlacement.value = 'scene';
     refreshImportPlacementOptions();
-    refreshImportQualityOptions(extension);
 
     if (el.importDialog.open) el.importDialog.close();
     el.importDialog.showModal();
@@ -4988,36 +4491,11 @@ function refreshImportPlacementOptions() {
     }
 }
 
-function getSelectedStepImportQuality() {
-    return STEP_IMPORT_QUALITY_PRESETS[el.importQuality?.value] || STEP_IMPORT_QUALITY_PRESETS.auto;
-}
-
-function refreshImportQualityOptions(extension = getFileExtension(state.pendingImportFile?.name || '')) {
-    if (!el.importQuality) return;
-    const isStep = extension === 'stp' || extension === 'step';
-    el.importQuality.disabled = !isStep;
-    if (!isStep) el.importQuality.value = 'auto';
-    if (el.importQualityNote) {
-        el.importQualityNote.textContent = isStep
-            ? uiText('STEP/STP의 메시 정밀도와 처리 속도를 조절합니다.')
-            : uiText('STEP/STP 가져오기에만 적용됩니다.')
-    }
-}
-
 function getAutomaticSourceUpAxis(extension) {
     return Y_UP_IMPORT_EXTENSIONS.has(extension) ? 'y' : 'z';
 }
 
-function getStepTessellationParameters(fileSizeBytes, qualityKey = 'auto') {
-    if (qualityKey === 'lightweight') {
-        return { linearDeflection: 0.004, angularDeflection: 1.0 };
-    }
-    if (qualityKey === 'standard') {
-        return { linearDeflection: 0.001, angularDeflection: 0.5 };
-    }
-    if (qualityKey === 'high') {
-        return { linearDeflection: 0.00025, angularDeflection: 0.25 };
-    }
+function getStepTessellationParameters(fileSizeBytes) {
     if (fileSizeBytes >= 150 * MEBIBYTE) {
         return { linearDeflection: 0.003, angularDeflection: 0.85 };
     }
@@ -5030,26 +4508,8 @@ function getStepTessellationParameters(fileSizeBytes, qualityKey = 'auto') {
     return { linearDeflection: 0.001, angularDeflection: 0.5 };
 }
 
-function getLargeStepTessellationParameters(fileSizeBytes, qualityKey = 'auto') {
-    if (qualityKey === 'lightweight') {
-        if (fileSizeBytes >= 400 * MEBIBYTE) return { linearDeflectionAbsolute: 16, angularDeflection: 1.4 };
-        if (fileSizeBytes >= 256 * MEBIBYTE) return { linearDeflectionAbsolute: 12, angularDeflection: 1.35 };
-        if (fileSizeBytes >= 128 * MEBIBYTE) return { linearDeflectionAbsolute: 8, angularDeflection: 1.3 };
-        return { linearDeflectionAbsolute: 6, angularDeflection: 1.25 };
-    }
-    if (qualityKey === 'standard') {
-        if (fileSizeBytes >= 400 * MEBIBYTE) return { linearDeflectionAbsolute: 8, angularDeflection: 1.15 };
-        if (fileSizeBytes >= 256 * MEBIBYTE) return { linearDeflectionAbsolute: 5, angularDeflection: 1.1 };
-        if (fileSizeBytes >= 128 * MEBIBYTE) return { linearDeflectionAbsolute: 3, angularDeflection: 1.05 };
-        return { linearDeflectionAbsolute: 2, angularDeflection: 1 };
-    }
-    if (qualityKey === 'high') {
-        if (fileSizeBytes >= 400 * MEBIBYTE) return { linearDeflectionAbsolute: 4, angularDeflection: 0.8 };
-        if (fileSizeBytes >= 256 * MEBIBYTE) return { linearDeflectionAbsolute: 3, angularDeflection: 0.75 };
-        if (fileSizeBytes >= 128 * MEBIBYTE) return { linearDeflectionAbsolute: 2, angularDeflection: 0.7 };
-        return { linearDeflectionAbsolute: 1, angularDeflection: 0.6 };
-    }
-    if (fileSizeBytes >= 400 * MEBIBYTE) {
+function getLargeStepTessellationParameters(fileSizeBytes) {
+    if (fileSizeBytes >= 512 * MEBIBYTE) {
         return { linearDeflectionAbsolute: 8, angularDeflection: 1.15 };
     }
     if (fileSizeBytes >= 256 * MEBIBYTE) {
@@ -5064,14 +4524,13 @@ function getLargeStepTessellationParameters(fileSizeBytes, qualityKey = 'auto') 
     return { linearDeflectionAbsolute: 1, angularDeflection: 0.8 };
 }
 
-function getStepImportCacheKey(file, parameters, qualityKey = 'auto') {
+function getStepImportCacheKey(file, parameters) {
     return [
         'step-mesh-v3-cad-hierarchy',
         file.name,
         file.size,
         file.lastModified || 0,
-        qualityKey,
-        parameters.linearDeflectionAbsolute ?? parameters.linearDeflection,
+        parameters.linearDeflection,
         parameters.angularDeflection
     ].join('|');
 }
@@ -5162,7 +4621,7 @@ function resetStepImportWorkerSession(session = state.stepImportWorkerSession) {
 function getStepImportWorkerSession() {
     if (state.stepImportWorkerSession) return state.stepImportWorkerSession;
 
-    const workerUrl = new URL('./step-import-worker.js?v=20260721-large-step-chunked-snap-face-groups-3-navigation-snap-1', import.meta.url);
+    const workerUrl = new URL('./step-import-worker.js?v=20260719-large-step-chunked-snap-cad-hierarchy-1', import.meta.url);
     const worker = new Worker(workerUrl);
     let readySettled = false;
     let resolveReady;
@@ -5248,10 +4707,7 @@ function createStepMeshFromWorker(meshDefinition, index, placement, performanceM
     mesh.userData.largeModelChunkIndex = Number(meshDefinition.chunkIndex) || 0;
     mesh.userData.largeModelChunkCount = Number(meshDefinition.chunkCount) || 1;
     if (Array.isArray(meshDefinition.brepFaces) && meshDefinition.brepFaces.length) {
-        // A malformed range must never turn a face click into a whole-chunk
-        // snap search. Invalid data falls back to the hit triangle.
         mesh.userData.stepBrepFaces = meshDefinition.brepFaces;
-        if (!getValidatedStepBrepFaces(mesh)) mesh.userData.stepBrepFaces = null;
     }
     return mesh;
 }
@@ -5323,7 +4779,7 @@ async function parseStepBufferInWorker(fileBuffer, parameters, engine, fileName,
     });
 }
 
-async function parseStepFile(file, placement, qualityKey = 'auto') {
+async function parseStepFile(file, placement) {
     const group = new THREE.Group();
     group.name = 'STEP Assembly';
     try {
@@ -5331,10 +4787,10 @@ async function parseStepFile(file, placement, qualityKey = 'auto') {
         const performanceMode = file.size >= LARGE_MODEL_PERFORMANCE_MIN_BYTES;
         group.userData.largeModelMode = performanceMode;
         const parameters = useLargeFileEngine
-            ? getLargeStepTessellationParameters(file.size, qualityKey)
-            : getStepTessellationParameters(file.size, qualityKey);
+            ? getLargeStepTessellationParameters(file.size)
+            : getStepTessellationParameters(file.size);
         const cacheEnabled = file.size <= STEP_IMPORT_CACHE_MAX_SOURCE_BYTES;
-        const cacheKey = cacheEnabled ? getStepImportCacheKey(file, parameters, qualityKey) : null;
+        const cacheKey = cacheEnabled ? getStepImportCacheKey(file, parameters) : null;
         const cached = cacheEnabled ? await readStepImportCache(cacheKey) : null;
         if (cached?.meshes?.length) {
             try {
@@ -5399,10 +4855,7 @@ async function parseStepFile(file, placement, qualityKey = 'auto') {
     }
 }
 
-async function parseUploaded3DFile(file, extension, placement, qualityKey = 'auto') {
-    if (isModelImportFileTooLarge(file)) {
-        throw new Error('The model file exceeds the 500 MB import limit.');
-    }
+async function parseUploaded3DFile(file, extension, placement) {
     if (extension === 'stl') {
         const geometry = new STLLoader().parse(await file.arrayBuffer());
         if (!geometry.getAttribute('normal')) geometry.computeVertexNormals();
@@ -5425,7 +4878,7 @@ async function parseUploaded3DFile(file, extension, placement, qualityKey = 'aut
         });
     }
     if (extension === 'stp' || extension === 'step') {
-        return parseStepFile(file, placement, qualityKey);
+        return parseStepFile(file, placement);
     }
     throw new Error(`Unsupported file extension: ${extension}`);
 }
@@ -5667,7 +5120,6 @@ function getImportErrorMessage(error, extension) {
 async function handle3DImport() {
     const file = state.pendingImportFile;
     if (!file) return;
-    if (rejectOversizedModelImport(file)) return;
     if (state.zeroPointEdit.active) exitZeroPointEditor();
     invalidateSimulationSnapCandidates();
     if (state.snapMoveMode) {
@@ -5686,7 +5138,6 @@ async function handle3DImport() {
     const extension = getFileExtension(file.name);
     const performanceMode = file.size >= LARGE_MODEL_PERFORMANCE_MIN_BYTES;
     const placement = el.importPlacement.value;
-    const importQuality = getSelectedStepImportQuality();
     const robot = placement === 'tcp' ? getArticulatedRobotForAttachment() : null;
     if (placement === 'tcp' && !robot) {
         alert(uiText('TCP에 장착할 로봇을 먼저 불러와 주세요.'));
@@ -5701,7 +5152,7 @@ async function handle3DImport() {
 
     let importedModel = null;
     try {
-        const content = await parseUploaded3DFile(file, extension, placement, importQuality.key);
+        const content = await parseUploaded3DFile(file, extension, placement);
         if (extension === 'fbx') applyFBXMaterial(content);
         const meshCount = prepareImportedObject(content, performanceMode);
         if (meshCount === 0) throw new Error('The file contains no renderable mesh.');
@@ -5720,7 +5171,6 @@ async function handle3DImport() {
         importedModel.userData.placement = placement;
         importedModel.userData.sourceFileSize = file.size;
         importedModel.userData.largeModelMode = performanceMode;
-        importedModel.userData.importQuality = importQuality.key;
 
         // Only free-standing 3D models are normalized into the viewer's Z-Up axes.
         // TCP tools preserve file XYZ and inherit the robot's Tool XYZ frame 1:1.
@@ -5755,15 +5205,14 @@ async function handle3DImport() {
         setStatus(placement === 'tcp'
             ? 'Tool이 TCP에 부착되었습니다.'
             : performanceMode
-                ? `3D 모델링 불러오기 완료 · ${importQuality.label}`
+                ? '3D 모델링 불러오기 완료 · 대용량 성능 모드'
                 : '3D 모델링 불러오기 완료', '#22c55e');
     } catch (error) {
         console.error('3D import failed:', error);
         importedModel?.removeFromParent();
         if (importedModel) disposeObjectResources(importedModel);
         applySceneSnapshot(historyBefore);
-        const errorDetail = getImportErrorDetail(error, extension);
-        setStatus(errorDetail ? `가져오기 오류: ${errorDetail}` : '가져오기 오류', '#ef4444');
+        setStatus('가져오기 오류', '#ef4444');
         alert(getImportErrorMessage(error, extension));
     } finally {
         state.pendingImportFile = null;
@@ -8699,13 +8148,10 @@ function syncMotionRepeatControl() {
 
 function updateMotionUiLock() {
     const locked = isMotionActive();
-    // Model selection stays available while motion is running so Add Mode can
-    // load another robot in the background. Replacing the active scene is
-    // still rejected by loadModelFromServer.
-    if (el.modelSelect) el.modelSelect.disabled = false;
+    if (el.modelSelect) el.modelSelect.disabled = locked;
     if (el.btnImport3D) el.btnImport3D.disabled = locked;
     if (el.btnToggleTransform) el.btnToggleTransform.disabled = locked;
-    if (el.btnAddMode) el.btnAddMode.disabled = false;
+    if (el.btnAddMode) el.btnAddMode.disabled = locked;
     if (el.modelTree) el.modelTree.classList.toggle('motion-locked', locked);
     el.jogPanel?.querySelectorAll('button:not([data-panel-action]), input')
         .forEach((control) => { control.disabled = locked; });

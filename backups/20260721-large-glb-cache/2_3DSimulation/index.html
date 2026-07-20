@@ -6,7 +6,7 @@
     <title>3D Simulation</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=20260719-zero-point-1-20260720-view-presets-only-1-face-first-simulation-snap-2-import-quality-1">
+    <link rel="stylesheet" href="style.css?v=20260719-zero-point-1-20260720-view-presets-only-1-face-first-simulation-snap-2">
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -68,23 +68,10 @@
             </button>
         </div>
         <div class="import-settings-grid">
-            <label class="import-setting" for="import-placement">
-                <span>가져오기 위치</span>
-                <select id="import-placement" aria-label="3D 모델 가져오기 위치">
-                    <option value="tcp">Tool</option>
-                    <option value="scene">3D 모델링</option>
-                </select>
-            </label>
-            <label class="import-setting" for="import-quality">
-                <span>모델 품질</span>
-                <select id="import-quality" aria-label="가져올 3D 모델 품질">
-                    <option value="auto" selected>자동 (권장)</option>
-                    <option value="lightweight">경량 (빠른 가져오기)</option>
-                    <option value="standard">표준</option>
-                    <option value="high">고품질 (느림)</option>
-                </select>
-                <small id="import-quality-note">STEP/STP의 메시 정밀도와 처리 속도를 조절합니다.</small>
-            </label>
+            <select id="import-placement" aria-label="3D 모델 가져오기 방식">
+                <option value="tcp">Tool</option>
+                <option value="scene">3D 모델링</option>
+            </select>
         </div>
         <div class="import-dialog-actions">
             <button id="btn-cancel-import" type="button" class="import-secondary-btn">취소</button>
@@ -277,6 +264,7 @@
             </div>
             <div id="loading-overlay" class="hidden">
                 <div class="loader-content">
+                    <div class="spinner"></div>
                     <p id="loading-text">Loading model...</p>
                 </div>
             </div>
@@ -595,6 +583,6 @@
         </div>
     </footer>
 
-<script type="module" src="main.js?v=20260721-large-model-performance-snap-center-priority-large-step-chunked-snap-face-groups-3-navigation-snap-face-selection-stability-1"></script>
+    <script type="module" src="main.js?v=20260720-large-model-performance-snap-center-priority-view-presets-only-1-disabled-snap-types-1-face-first-simulation-snap-3"></script>
 </body>
 </html>

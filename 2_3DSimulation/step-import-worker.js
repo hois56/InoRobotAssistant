@@ -148,15 +148,20 @@ function appendEntry(bucket, entry) {
         bucket.hasCompleteBrepFaces = false;
         return;
     }
+    const entryTriangleCount = Math.floor(entry.indexLength / 3);
+    let expectedFirst = 0;
     entry.brepFaces.forEach((face) => {
         const first = Number(face.first);
         const last = Number(face.last);
-        if (!Number.isInteger(first) || !Number.isInteger(last) || first < 0 || last < first) {
+        if (!Number.isInteger(first) || !Number.isInteger(last)
+            || first !== expectedFirst || first < 0 || last < first || last >= entryTriangleCount) {
             bucket.hasCompleteBrepFaces = false;
             return;
         }
         bucket.brepFaces.push({ first: first + triangleOffset, last: last + triangleOffset });
+        expectedFirst = last + 1;
     });
+    if (expectedFirst !== entryTriangleCount) bucket.hasCompleteBrepFaces = false;
 }
 
 function packBucket(bucket) {
@@ -204,13 +209,50 @@ function errorMessage(error) {
 }
 
 function modernFaceRanges(faceGroups) {
-    if (!(faceGroups instanceof Int32Array) || faceGroups.length < 3) return null;
+    if (Array.isArray(faceGroups) && faceGroups.length
+        && faceGroups.every((face) => Array.isArray(face))) {
+        const ranges = faceGroups.map((face) => {
+            // Some builds expose the native [indexStart, indexCount, hash]
+            // tuples as nested arrays instead of one typed array.
+            const indexStart = Number(face[0]);
+            const indexCount = Number(face[1]);
+            if (!Number.isInteger(indexStart) || !Number.isInteger(indexCount)
+                || indexStart < 0 || indexCount < 3
+                || indexStart % 3 !== 0 || indexCount % 3 !== 0) return null;
+            return {
+                first: indexStart / 3,
+                last: indexStart / 3 + indexCount / 3 - 1
+            };
+        }).filter(Boolean);
+        return ranges.length ? ranges : null;
+    }
+    if (Array.isArray(faceGroups) && faceGroups.length
+        && faceGroups.every((face) => face && typeof face === 'object')) {
+        const ranges = faceGroups.map((face) => {
+            const first = Number(face.first ?? face.start);
+            const last = face.last != null
+                ? Number(face.last)
+                : first + Number(face.count) - 1;
+            return { first, last };
+        }).filter((range) => Number.isInteger(range.first)
+            && Number.isInteger(range.last)
+            && range.first >= 0
+            && range.last >= range.first);
+        return ranges.length ? ranges : null;
+    }
+    if (!(Array.isArray(faceGroups) || ArrayBuffer.isView(faceGroups)) || faceGroups.length < 3) return null;
     const ranges = [];
     for (let index = 0; index + 2 < faceGroups.length; index += 3) {
-        const first = Number(faceGroups[index]);
-        const triangleCount = Number(faceGroups[index + 1]);
-        if (!Number.isInteger(first) || !Number.isInteger(triangleCount)
-            || first < 0 || triangleCount < 1) continue;
+        // occt-wasm 3.7 returns [indexStart, indexCount, faceHash].
+        // The snap pipeline works with triangle ranges, so convert the
+        // index-based values before the mesh is split into large chunks.
+        const indexStart = Number(faceGroups[index]);
+        const indexCount = Number(faceGroups[index + 1]);
+        if (!Number.isInteger(indexStart) || !Number.isInteger(indexCount)
+            || indexStart < 0 || indexCount < 3
+            || indexStart % 3 !== 0 || indexCount % 3 !== 0) continue;
+        const first = indexStart / 3;
+        const triangleCount = indexCount / 3;
         ranges.push({ first, last: first + triangleCount - 1 });
     }
     return ranges.length ? ranges : null;
@@ -307,14 +349,16 @@ function createLargeMeshChunk(mesh, triangleRanges, preservesFaces = true) {
     return { positions, indices, normals, brepFaces: preservesFaces ? brepFaces : null };
 }
 
-function postLargeMeshChunks(mesh, message, requestId) {
+function postLargeMeshChunks(mesh, message, requestId, partMeta = {}) {
     const { groups, preservesFaces } = groupLargeMeshTriangleRanges(mesh);
     groups.forEach((triangleRanges, chunkIndex) => {
         const workerMesh = {
             ...createLargeMeshChunk(mesh, triangleRanges, preservesFaces),
-            color: DEFAULT_COLOR,
-            partId: 'cad-large-whole',
-            partName: message.fileName || 'STEP Assembly',
+            color: Array.isArray(partMeta.color) && partMeta.color.length === 3
+                ? partMeta.color.map(Number)
+                : DEFAULT_COLOR,
+            partId: partMeta.partId || 'cad-large-whole',
+            partName: partMeta.partName || message.fileName || 'STEP Assembly',
             largeModelChunk: true,
             chunkIndex,
             chunkCount: groups.length
@@ -326,15 +370,122 @@ function postLargeMeshChunks(mesh, message, requestId) {
     return groups.length;
 }
 
+function collectXcafParts(document) {
+    const parts = [];
+    const visit = (label, path) => {
+        const info = document.getLabelInfo(label);
+        const children = document.getChildren(label);
+        const partName = String(info.name || '').trim() || `Part ${parts.length + 1}`;
+        const partId = `cad-xcaf-${path.join('-') || parts.length}`;
+        if (children.length) {
+            const partCountBeforeChildren = parts.length;
+            children.forEach((child, childIndex) => visit(child, [...path, childIndex]));
+            if (parts.length === partCountBeforeChildren && info.shapeHandle != null) {
+                parts.push({
+                    partId,
+                    partName,
+                    shapeHandle: info.shapeHandle,
+                    color: info.hasColor ? info.color : DEFAULT_COLOR
+                });
+            }
+            return;
+        }
+        if (info.shapeHandle != null) {
+            parts.push({
+                partId,
+                partName,
+                shapeHandle: info.shapeHandle,
+                color: info.hasColor ? info.color : DEFAULT_COLOR
+            });
+        }
+    };
+
+    document.getRoots().forEach((label, rootIndex) => visit(label, [rootIndex]));
+    return parts;
+}
+
 async function parseLargeStepFile(message, requestId) {
     const { OcctKernel } = await ensureLargeOcctModule();
     const kernel = await OcctKernel.init({ wasm: LARGE_OCCT_WASM_URL });
     let shape = null;
+    let document = null;
+    let sourceBuffer = message.fileBuffer;
     try {
         self.postMessage({ type: 'progress', requestId, phase: 'reading' });
-        let sourceBuffer = message.fileBuffer;
-        shape = kernel.importStep(sourceBuffer);
-        sourceBuffer = null;
+        // Keep the original transferred buffer. Decoding a large STEP file to
+        // a JavaScript string here creates another ~2x-sized representation and
+        // makes otherwise valid 100-500 MB files fail before OCCT can read them.
+        message.fileBuffer = null;
+
+        // The single-shape import is the lowest-memory large-file path. Try it
+        // before XCAF so a successful import never keeps both an assembly
+        // document and a second STEP representation alive at once.
+        let directImportError = null;
+        try {
+            shape = kernel.importStep(sourceBuffer);
+            sourceBuffer = null;
+        } catch (error) {
+            directImportError = error;
+        }
+
+        // XCAF preserves the STEP assembly tree. It remains a fallback for
+        // files that the direct importer rejects before producing a shape.
+        if (shape == null) {
+            try {
+                if (typeof kernel.importXCAFFromSTEP === 'function') {
+                    document = kernel.importXCAFFromSTEP(sourceBuffer);
+                    const parts = collectXcafParts(document);
+                    if (parts.length) {
+                        let meshCount = 0;
+                        let failedPartCount = 0;
+                        for (let index = 0; index < parts.length; index += 1) {
+                            const part = parts[index];
+                            self.postMessage({
+                                type: 'progress',
+                                requestId,
+                                phase: 'tessellating',
+                                partIndex: index,
+                                partCount: parts.length,
+                                partName: part.partName
+                            });
+                            try {
+                                const mesh = kernel.meshShape(part.shapeHandle, {
+                                    linearDeflection: Number(message.parameters?.linearDeflectionAbsolute) || 1,
+                                    angularDeflection: Number(message.parameters?.angularDeflection) || 0.8
+                                });
+                                meshCount += postLargeMeshChunks(mesh, message, requestId, part);
+                            } catch (error) {
+                                failedPartCount += 1;
+                                console.warn('Skipped XCAF STEP part:', part.partName, error);
+                            } finally {
+                                kernel.release(part.shapeHandle);
+                            }
+                        }
+                        if (meshCount > 0) {
+                            self.postMessage({
+                                type: 'done',
+                                requestId,
+                                rootName: message.fileName || 'STEP Assembly',
+                                meshCount,
+                                partCount: parts.length,
+                                failedPartCount,
+                                segmented: true
+                            });
+                            return;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.warn('XCAF STEP hierarchy import failed after direct import.', error);
+            } finally {
+                document?.close();
+                document = null;
+            }
+        }
+
+        if (shape == null) {
+            throw directImportError || new Error('The STEP file could not be imported.');
+        }
 
         self.postMessage({ type: 'progress', requestId, phase: 'tessellating' });
         const mesh = kernel.meshShape(shape, {
@@ -359,6 +510,8 @@ async function parseLargeStepFile(message, requestId) {
         });
     } finally {
         if (shape != null) kernel.release(shape);
+        document?.close();
+        sourceBuffer = null;
         kernel[Symbol.dispose]?.();
     }
 }

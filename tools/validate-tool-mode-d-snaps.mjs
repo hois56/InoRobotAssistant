@@ -171,4 +171,34 @@ const virtualMesh = {
 const virtualResult = buildStepSnapCandidates(virtualMesh, { virtualExtensionRatio: 1.5 });
 assert.ok(hasPoint(virtualResult.candidates.filter((candidate) => candidate.type === 'virtual-intersection'), [2, 0, 0]));
 
+function createArcFan(angleDegrees, segmentCount, radius = 50, radialScale = () => 1) {
+  const positions = [0, 0, 0];
+  const indices = [];
+  for (let segment = 0; segment <= segmentCount; segment += 1) {
+    const angle = (-angleDegrees / 2 + angleDegrees * segment / segmentCount) * Math.PI / 180;
+    const scaledRadius = radius * radialScale(segment);
+    positions.push(Math.cos(angle) * scaledRadius, Math.sin(angle) * scaledRadius, 0);
+  }
+  for (let segment = 0; segment < segmentCount; segment += 1) indices.push(0, segment + 1, segment + 2);
+  return {
+    attributes: { position: { array: positions } },
+    index: { array: indices },
+    brep_faces: [{ first: 0, last: segmentCount - 1 }]
+  };
+}
+
+const coarseArcResult = buildStepSnapCandidates(createArcFan(120, 4));
+assert.ok(coarseArcResult.candidates
+  .filter(({ type }) => type === 'circle-center')
+  .some(({ point }) => Math.hypot(...point) < 1e-5));
+const imperfectArcResult = buildStepSnapCandidates(createArcFan(
+  180,
+  12,
+  50,
+  (segment) => (segment === 4 ? 1.02 : segment === 8 ? 0.985 : 1)
+));
+assert.ok(imperfectArcResult.candidates
+  .filter(({ type }) => type === 'circle-center')
+  .some(({ point }) => Math.hypot(...point) < 1));
+
 console.log('Tool Mode D snap validation passed.');

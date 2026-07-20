@@ -2,7 +2,7 @@ import * as THREE from './vendor/three/three.module.js';
 import { OrbitControls } from './vendor/three/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from './vendor/three/examples/jsm/controls/TransformControls.js';
 import { STLLoader } from './vendor/three/examples/jsm/loaders/STLLoader.js';
-import { enableContinuousTransformRotation } from './continuous-transform-rotation.mjs?v=20260719-1';
+import { enableContinuousTransformRotation } from './continuous-transform-rotation.mjs?v=20260720-rx-continuous-1';
 import {
   combineStepParts,
   createCoordinateFrame,
@@ -16,6 +16,33 @@ const OCCT_IMPORT_BASE_URL = './vendor/occt/';
 const OCCT_IMPORT_SCRIPT_URL = `${OCCT_IMPORT_BASE_URL}occt-import-js.js`;
 const KG_PER_MM3_PER_G_PER_CM3 = 1e-6;
 const MAX_DETAILED_SNAP_TRIANGLES = 200000;
+const LARGE_STEP_ENGINE_MIN_BYTES = 100 * 1024 * 1024;
+const LARGE_STEP_ENGINE_WORKER_URL = '../2_3DSimulation/step-import-worker.js?v=20260720-large-xcaf-quality-1';
+const DEFAULT_STEP_IMPORT_OPTIONS = Object.freeze({
+  linearUnit: 'millimeter',
+  linearDeflectionType: 'bounding_box_ratio',
+  linearDeflection: 0.00025,
+  angularDeflection: 0.25
+});
+const STEP_IMPORT_QUALITY_PRESETS = Object.freeze({
+  default: Object.freeze({
+    key: 'default',
+    label: '기본',
+    snapTriangleBudget: MAX_DETAILED_SNAP_TRIANGLES,
+    importOptions: DEFAULT_STEP_IMPORT_OPTIONS
+  }),
+  'ultra-light': Object.freeze({
+    key: 'ultra-light',
+    label: '초경량',
+    snapTriangleBudget: 25000,
+    importOptions: Object.freeze({
+      linearUnit: 'millimeter',
+      linearDeflectionType: 'absolute_value',
+      linearDeflection: 5,
+      angularDeflection: 1.2
+    })
+  })
+});
 const AXIS_COLORS = Object.freeze({ x: '#d32f2f', y: '#388e3c', z: '#1976d2' });
 const HELPER_SCREEN_PIXELS = Object.freeze({
   axes: 72,
@@ -131,6 +158,7 @@ function cacheElements() {
     mode: document.getElementById('mode-cad'),
     viewport: document.getElementById('cad-viewport'),
     fileInput: document.getElementById('cad-step-file'),
+    importQuality: document.getElementById('cad-import-quality'),
     fileName: document.getElementById('cad-file-name'),
     status: document.getElementById('cad-status'),
     parts: document.getElementById('cad-parts-list'),
@@ -198,6 +226,7 @@ function setupScene() {
     // the wheel zooms, and right drag pans with OrbitControls defaults.
     state.controls = new OrbitControls(state.camera, state.renderer.domElement);
     state.controls.enableDamping = false;
+    state.controls.addEventListener('change', scheduleSnapPreview);
     state.rotationHandler = new TransformControls(state.camera, state.renderer.domElement);
     enableContinuousTransformRotation(state.rotationHandler, THREE);
     state.rotationHandler.setMode('rotate');
@@ -561,11 +590,16 @@ function applyRotationDegrees(rotationDegrees) {
 function syncOrientationFromHandler() {
   if (!state.frameObject) return;
   const euler = new THREE.Euler().setFromQuaternion(state.frameObject.quaternion, 'XYZ');
-  state.rotationDegrees.set(
-    THREE.MathUtils.radToDeg(euler.x),
-    THREE.MathUtils.radToDeg(euler.y),
-    THREE.MathUtils.radToDeg(euler.z)
-  );
+  const rawDegrees = [euler.x, euler.y, euler.z].map((value) => THREE.MathUtils.radToDeg(value));
+  const continuousDegrees = rawDegrees.map((value, index) => {
+    const previous = state.rotationDegrees.getComponent(index);
+    if (!Number.isFinite(previous)) return value;
+    // Euler extraction intentionally returns a principal angle. Choose the
+    // equivalent 360-degree turn nearest to the value already shown so a
+    // handle drag can continue through 180, 360, 540, ... degrees.
+    return value + Math.round((previous - value) / 360) * 360;
+  });
+  state.rotationDegrees.fromArray(continuousDegrees);
   setDirectionsFromFrameObject();
   writeVectorInputs('rotation', state.rotationDegrees.toArray());
   updateHelpers();
@@ -746,6 +780,52 @@ function createThreeGeometry(meshDefinition) {
   return geometry;
 }
 
+function getSelectedStepImportQuality() {
+  return STEP_IMPORT_QUALITY_PRESETS[el.importQuality?.value] || STEP_IMPORT_QUALITY_PRESETS.default;
+}
+
+function getLargeStepTessellationParameters(fileSizeBytes, qualityKey = 'default') {
+  if (qualityKey === 'ultra-light') {
+    if (fileSizeBytes >= 512 * 1024 * 1024) return { linearDeflectionAbsolute: 16, angularDeflection: 1.4 };
+    if (fileSizeBytes >= 256 * 1024 * 1024) return { linearDeflectionAbsolute: 12, angularDeflection: 1.35 };
+    if (fileSizeBytes >= 128 * 1024 * 1024) return { linearDeflectionAbsolute: 8, angularDeflection: 1.3 };
+    return { linearDeflectionAbsolute: 6, angularDeflection: 1.25 };
+  }
+  if (fileSizeBytes >= 512 * 1024 * 1024) return { linearDeflectionAbsolute: 8, angularDeflection: 1.15 };
+  if (fileSizeBytes >= 256 * 1024 * 1024) return { linearDeflectionAbsolute: 5, angularDeflection: 1.1 };
+  if (fileSizeBytes >= 128 * 1024 * 1024) return { linearDeflectionAbsolute: 3, angularDeflection: 1.05 };
+  return { linearDeflectionAbsolute: 2, angularDeflection: 1 };
+}
+
+function normalizeLargeWorkerMesh(meshDefinition, sourceFile) {
+  const positions = meshDefinition?.positions;
+  const indices = meshDefinition?.indices;
+  const normals = meshDefinition?.normals;
+  if (!(positions instanceof Float32Array) || positions.length < 9
+    || !ArrayBuffer.isView(indices) || indices.length < 3) {
+    throw new Error('Large STEP engine returned invalid mesh data.');
+  }
+  return {
+    name: meshDefinition.partName || sourceFile.name || 'STEP Assembly',
+    partId: meshDefinition.partId || 'cad-large-whole',
+    partName: meshDefinition.partName || sourceFile.name || 'STEP Assembly',
+    color: Array.isArray(meshDefinition.color) && meshDefinition.color.length === 3
+      ? meshDefinition.color
+      : null,
+    attributes: {
+      position: { array: positions },
+      ...(normals instanceof Float32Array && normals.length === positions.length
+        ? { normal: { array: normals } }
+        : {})
+    },
+    index: { array: indices },
+    brep_faces: Array.isArray(meshDefinition.brepFaces) ? meshDefinition.brepFaces : [],
+    largeModelChunk: Boolean(meshDefinition.largeModelChunk),
+    chunkIndex: Number(meshDefinition.chunkIndex) || 0,
+    chunkCount: Number(meshDefinition.chunkCount) || 1
+  };
+}
+
 async function createStlMeshDefinition(file) {
   const sourceGeometry = new STLLoader().parse(await file.arrayBuffer());
   const position = sourceGeometry.getAttribute('position');
@@ -762,9 +842,10 @@ async function createStlMeshDefinition(file) {
   };
 }
 
-function importStepInWorker(buffer, onProgress) {
+function importStepInWorker(buffer, onProgress, importOptions = DEFAULT_STEP_IMPORT_OPTIONS) {
   return new Promise((resolve, reject) => {
-    const worker = new Worker(new URL('./step-import-worker.js', import.meta.url));
+    const worker = new Worker(new URL('./step-import-worker.js?v=20260720-exact-small-1', import.meta.url));
+    const workerBuffer = buffer.slice(0);
     const finish = (callback, value) => {
       worker.terminate();
       callback(value);
@@ -786,13 +867,68 @@ function importStepInWorker(buffer, onProgress) {
       finish(reject, new Error(event.message || 'STEP import worker failed.'));
     });
     worker.postMessage({
-      buffer,
-      options: {
-        linearUnit: 'millimeter',
-        linearDeflectionType: 'bounding_box_ratio',
-        linearDeflection: 0.00025,
-        angularDeflection: 0.25
+      buffer: workerBuffer,
+      options: importOptions,
+      fileName: state.sourceStepFile?.name || ''
+    }, [workerBuffer]);
+  });
+}
+
+function importLargeStepInWorker(buffer, sourceFile, qualityKey, onMesh, onProgress) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL(LARGE_STEP_ENGINE_WORKER_URL, import.meta.url));
+    const requestId = `tool-mode-d-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    let settled = false;
+    const finish = (callback, value) => {
+      if (settled) return;
+      settled = true;
+      worker.terminate();
+      callback(value);
+    };
+    const handleMessage = (event) => {
+      const payload = event.data || {};
+      if (payload.requestId !== requestId) return;
+      if (payload.type === 'progress') {
+        const phase = payload.phase;
+        const message = phase === 'reading'
+          ? '대용량 STEP 실제 형상을 읽는 중입니다.'
+          : phase === 'tessellating'
+            ? '대용량 STEP 실제 형상을 저해상도로 메싱하는 중입니다.'
+            : phase === 'packing'
+              ? '대용량 STEP 메시를 화면용 청크로 나누는 중입니다.'
+              : '대용량 STEP 엔진을 준비하는 중입니다.';
+        onProgress?.(message);
+        return;
       }
+      if (payload.type === 'mesh') {
+        try {
+          onMesh(normalizeLargeWorkerMesh(payload.mesh, sourceFile));
+        } catch (error) {
+          finish(reject, error);
+        }
+        return;
+      }
+      if (payload.type === 'done') {
+        finish(resolve, { success: true, meshCount: Number(payload.meshCount) || 0 });
+        return;
+      }
+      if (payload.type === 'error') {
+        finish(reject, new Error(payload.message || 'Large STEP engine failed.'));
+      }
+    };
+    const handleError = (event) => {
+      event.preventDefault();
+      finish(reject, new Error(event.message || 'Large STEP engine failed.'));
+    };
+    worker.addEventListener('message', handleMessage);
+    worker.addEventListener('error', handleError);
+    worker.postMessage({
+      type: 'parse',
+      requestId,
+      engine: 'large',
+      fileBuffer: buffer,
+      fileName: sourceFile.name,
+      parameters: getLargeStepTessellationParameters(sourceFile.size, qualityKey)
     }, [buffer]);
   });
 }
@@ -831,16 +967,11 @@ async function getOcctImporter() {
   return state.occtPromise;
 }
 
-async function importStepOnMainThread(buffer, onProgress) {
+async function importStepOnMainThread(buffer, onProgress, importOptions = DEFAULT_STEP_IMPORT_OPTIONS) {
   if (!(buffer instanceof ArrayBuffer)) throw new Error('STEP source data is missing.');
   onProgress?.('STEP 파일 해석 엔진을 준비하는 중입니다.');
   const occt = await getOcctImporter();
-  const result = occt.ReadStepFile(new Uint8Array(buffer), {
-    linearUnit: 'millimeter',
-    linearDeflectionType: 'bounding_box_ratio',
-    linearDeflection: 0.00025,
-    angularDeflection: 0.25
-  });
+  const result = occt.ReadStepFile(new Uint8Array(buffer), importOptions);
   if (!result?.success || !Array.isArray(result.meshes)) throw new Error('CAD file could not be read.');
   return annotateStepHierarchy(result);
 }
@@ -880,13 +1011,13 @@ function annotateStepHierarchy(result) {
   return result;
 }
 
-async function importStepWithFallback(buffer, onProgress) {
+async function importStepWithFallback(buffer, onProgress, importOptions = DEFAULT_STEP_IMPORT_OPTIONS) {
   try {
-    return await importStepInWorker(buffer, onProgress);
+    return await importStepInWorker(buffer, onProgress, importOptions);
   } catch (workerError) {
     console.warn('STEP worker import failed; retrying with the main-thread parser.', workerError);
     onProgress?.('STEP 파일을 다시 해석하는 중입니다.');
-    return importStepOnMainThread(buffer, onProgress);
+    return importStepOnMainThread(buffer, onProgress, importOptions);
   }
 }
 
@@ -925,6 +1056,56 @@ function buildMemoryAwareSnapData(meshDefinition, geometryProperties, remainingD
   }
 }
 
+function appendImportedStepMesh(meshDefinition, index, sourceFormat, context) {
+  const geometryProperties = integrateStepMesh(meshDefinition);
+  const snapData = buildMemoryAwareSnapData(
+    meshDefinition,
+    geometryProperties,
+    context.remainingDetailedTriangles
+  );
+  if (snapData.stats.simplified) context.simplifiedSnapPartCount += 1;
+  else context.remainingDetailedTriangles = Math.max(
+    context.remainingDetailedTriangles - (snapData.stats.triangleCount || 0),
+    0
+  );
+
+  const geometry = createThreeGeometry(meshDefinition);
+  const MaterialClass = context.largeModel ? THREE.MeshLambertMaterial : THREE.MeshStandardMaterial;
+  const material = new MaterialClass({
+    color: getDisplayColor(meshDefinition.color),
+    ...(context.largeModel ? {} : { roughness: 0.58, metalness: 0.18 }),
+    side: THREE.DoubleSide
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = meshDefinition.partName || meshDefinition.name || `Part ${index + 1}`;
+  mesh.userData.largeModelMode = Boolean(context.largeModel);
+  mesh.userData.largeModelChunk = Boolean(meshDefinition.largeModelChunk);
+  mesh.userData.largeModelChunkIndex = Number(meshDefinition.chunkIndex) || 0;
+  mesh.userData.largeModelChunkCount = Number(meshDefinition.chunkCount) || 1;
+  state.modelGroup.add(mesh);
+
+  const partIndex = state.parts.length;
+  state.parts.push({
+    name: mesh.name,
+    cadPartKey: meshDefinition.partId || `cad-mesh-${index}`,
+    cadPartName: meshDefinition.partName || mesh.name,
+    mesh,
+    geometry: geometryProperties,
+    snapStats: snapData.stats,
+    sourceColorHex: cadColorToHex(meshDefinition.color),
+    materialKey: 'aluminum',
+    densityKgPerMm3: MATERIALS.aluminum.density,
+    enabled: true
+  });
+  state.snapCandidates.push(...snapData.candidates.map((candidate) => ({
+    ...candidate,
+    point: new THREE.Vector3(...candidate.point),
+    partIndex
+  })));
+  if (context.largeModel && state.parts.length === 1) fitCameraToModel();
+  return partIndex;
+}
+
 async function loadCadFile(file) {
   const extension = file.name.split('.').pop()?.toLowerCase();
   if (!['step', 'stp', 'stl'].includes(extension)) {
@@ -934,25 +1115,55 @@ async function loadCadFile(file) {
   }
 
   const sourceFormat = extension === 'stl' ? 'STL' : 'STEP';
-  setStatus(`${sourceFormat} 파일을 불러오는 중입니다.`);
+  const importQuality = getSelectedStepImportQuality();
+  const useLargeStepEngine = sourceFormat === 'STEP' && file.size >= LARGE_STEP_ENGINE_MIN_BYTES;
+  setStatus(`${sourceFormat} ${importQuality.label} 품질로 불러오는 중입니다.`);
   el.fileName.textContent = file.name;
   el.calculate.disabled = true;
   clearParts();
   resetCoordinateValues();
+  state.sourceStepFile = file;
+  state.sourceCadFormat = sourceFormat;
 
   try {
     let result;
+    const importContext = {
+      remainingDetailedTriangles: importQuality.snapTriangleBudget,
+      simplifiedSnapPartCount: 0,
+      largeModel: useLargeStepEngine,
+      importQuality: importQuality.key
+    };
     if (extension === 'stl') {
       result = { success: true, meshes: [await createStlMeshDefinition(file)] };
     } else {
       const buffer = await file.arrayBuffer();
-      result = await importStepWithFallback(buffer, (message) => setStatus(message));
+      if (useLargeStepEngine) {
+        let meshIndex = 0;
+        result = await importLargeStepInWorker(
+          buffer,
+          file,
+          importQuality.key,
+          (meshDefinition) => {
+            appendImportedStepMesh(meshDefinition, meshIndex, sourceFormat, importContext);
+            meshIndex += 1;
+          },
+          (message) => setStatus(message)
+        );
+      } else {
+        result = await importStepWithFallback(
+          buffer,
+          (message) => setStatus(message),
+          importQuality.importOptions
+        );
+      }
     }
-    if (!result?.success || !Array.isArray(result.meshes)) throw new Error('CAD file could not be read.');
+    if (!result?.success || (sourceFormat === 'STEP' && !useLargeStepEngine && !Array.isArray(result.meshes))) {
+      throw new Error('CAD file could not be read.');
+    }
 
-    let remainingDetailedTriangles = MAX_DETAILED_SNAP_TRIANGLES;
-    let simplifiedSnapPartCount = 0;
-    for (let index = 0; index < result.meshes.length; index += 1) {
+    let remainingDetailedTriangles = importContext.remainingDetailedTriangles;
+    let simplifiedSnapPartCount = importContext.simplifiedSnapPartCount;
+    for (let index = 0; index < (result.meshes?.length || 0); index += 1) {
       const meshDefinition = result.meshes[index];
       try {
         const geometryProperties = integrateStepMesh(meshDefinition);
@@ -1212,7 +1423,9 @@ function isSnapCandidateVisible(candidate, projected, enabledMeshes) {
   const frontHit = state.visibilityRaycaster.intersectObjects(enabledMeshes, false)[0] || null;
   if (!frontHit) return true;
 
-  const candidateDistance = state.camera.position.distanceTo(candidate.point);
+  const candidateOffset = candidate.point.clone().sub(state.visibilityRaycaster.ray.origin);
+  const candidateDistance = candidateOffset.dot(state.visibilityRaycaster.ray.direction);
+  if (!Number.isFinite(candidateDistance) || candidateDistance <= 0) return false;
   const viewportHeight = Math.max(state.renderer.domElement.clientHeight, 1);
   const worldUnitsPerPixel = (
     2 * candidateDistance * Math.tan(THREE.MathUtils.degToRad(state.camera.fov * 0.5))
@@ -1258,6 +1471,14 @@ function findSnapAtPointer(pointerEvent) {
   nearbyCandidates.sort((first, second) => first.score - second.score || first.cameraDistance - second.cameraDistance);
   best = nearbyCandidates.find((candidate) => isSnapCandidateVisible(candidate, candidate.projected, enabledMeshes)) || null;
   return best;
+}
+
+function scheduleSnapPreview() {
+  if (!state.pickMode || !state.parts.length || !state.lastPointer || state.pointerMoveFrame) return;
+  state.pointerMoveFrame = requestAnimationFrame(() => {
+    state.pointerMoveFrame = null;
+    if (state.pickMode && state.lastPointer) showSnapMarker(findSnapAtPointer(state.lastPointer));
+  });
 }
 
 function showSnapMarker(snap) {
@@ -1367,11 +1588,7 @@ function onPointerMove(event) {
     return;
   }
   state.lastPointer = { clientX: event.clientX, clientY: event.clientY };
-  if (state.pointerMoveFrame) return;
-  state.pointerMoveFrame = requestAnimationFrame(() => {
-    state.pointerMoveFrame = null;
-    showSnapMarker(findSnapAtPointer(state.lastPointer));
-  });
+  scheduleSnapPreview();
 }
 
 function onPointerUp(event) {

@@ -29,6 +29,35 @@ function projectedPoint(THREE, point, camera) {
   return new THREE.Vector2(projected.x, projected.y);
 }
 
+function createLinearFallback(controls, THREE, centerWorld, worldAxis, radius) {
+  const distance = controls.worldPositionStart.distanceTo(controls.cameraPosition);
+  if (!Number.isFinite(distance) || distance < 1e-9) return null;
+
+  // When the rotation ring is edge-on, its ellipse collapses to a line and
+  // there is no reliable polar angle to read. The stock TransformControls
+  // calculation still has a stable tangent in that case, so keep that
+  // calculation but accumulate the pointer movement instead of recomputing
+  // the angle from the original mouse-down point.
+  const tangentWorld = worldAxis.clone().cross(controls.eye);
+  if (tangentWorld.lengthSq() < 1e-12) return null;
+  tangentWorld.normalize();
+
+  const center = projectedPoint(THREE, centerWorld, controls.camera);
+  const tangentPoint = projectedPoint(
+    THREE,
+    centerWorld.clone().addScaledVector(tangentWorld, Math.max(radius, 1)),
+    controls.camera
+  );
+  const tangentScreen = tangentPoint.sub(center);
+  const tangentScreenLength = tangentScreen.length();
+  if (!Number.isFinite(tangentScreenLength) || tangentScreenLength < 1e-9) return null;
+
+  return {
+    tangentScreen: tangentScreen.multiplyScalar(1 / tangentScreenLength),
+    anglePerNdc: (Math.max(radius, 1) / tangentScreenLength) * (20 / distance)
+  };
+}
+
 function gizmoWorldRadius(controls) {
   const camera = controls.camera;
   const size = Number.isFinite(controls.size) ? controls.size : 1;
@@ -88,7 +117,7 @@ function createRotationSession(controls, THREE) {
     controls.camera
   );
   const startAngle = projectedRingAngle(startPoint, center, basisU, basisV, 0.08);
-  if (startAngle === null) return null;
+  const linearFallback = createLinearFallback(controls, THREE, centerWorld, worldAxis, radius);
 
   return {
     object: controls.object,
@@ -100,6 +129,9 @@ function createRotationSession(controls, THREE) {
     basisU,
     basisV,
     lastAngle: startAngle,
+    lastPointer: startPoint.clone(),
+    usingLinearFallback: startAngle === null,
+    linearFallback,
     accumulatedAngle: 0,
     quaternionStart: controls._quaternionStart.clone(),
     parentQuaternionInv: controls._parentQuaternionInv.clone()
@@ -108,10 +140,27 @@ function createRotationSession(controls, THREE) {
 
 function applyRotationSession(controls, session, pointer, THREE) {
   const angle = projectedRingAngle(pointer, session.center, session.basisU, session.basisV, 0.08);
-  if (angle === null) return;
-
-  session.accumulatedAngle += wrapRotationDelta(angle - session.lastAngle);
-  session.lastAngle = angle;
+  if (angle !== null && !session.usingLinearFallback) {
+    session.accumulatedAngle += wrapRotationDelta(angle - session.lastAngle);
+    session.lastAngle = angle;
+    session.lastPointer.set(pointer.x, pointer.y);
+  } else if (angle !== null && session.usingLinearFallback) {
+    // Re-entering the projected ring after the linear fallback must not add
+    // the stale angle difference accumulated while the ring was edge-on.
+    session.lastAngle = angle;
+    session.lastPointer.set(pointer.x, pointer.y);
+    session.usingLinearFallback = false;
+  } else if (session.linearFallback) {
+    const pointerDeltaX = pointer.x - session.lastPointer.x;
+    const pointerDeltaY = pointer.y - session.lastPointer.y;
+    const pointerDelta = pointerDeltaX * session.linearFallback.tangentScreen.x
+      + pointerDeltaY * session.linearFallback.tangentScreen.y;
+    session.accumulatedAngle += pointerDelta * session.linearFallback.anglePerNdc;
+    session.lastPointer.set(pointer.x, pointer.y);
+    session.usingLinearFallback = true;
+  } else {
+    return;
+  }
 
   const appliedAngle = controls.rotationSnap
     ? Math.round(session.accumulatedAngle / controls.rotationSnap) * controls.rotationSnap
@@ -135,8 +184,8 @@ function applyRotationSession(controls, session, pointer, THREE) {
 
 /**
  * Keeps TransformControls axis rotation continuous through the +/-180 degree
- * screen-angle boundary. The stock linear drag remains active when the ring is
- * nearly edge-on, where its projected ellipse cannot provide a stable angle.
+ * screen-angle boundary. If the projected ring becomes edge-on, an accumulated
+ * tangent drag keeps the same session alive until the ring is readable again.
  */
 export function enableContinuousTransformRotation(controls, THREE) {
   if (!controls || controls.userData?.continuousRotationEnabled) return controls;

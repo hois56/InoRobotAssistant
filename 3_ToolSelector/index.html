@@ -175,6 +175,14 @@
             <button id="cad-export-step" class="btn cad-export-button" type="button" aria-describedby="cad-export-note" disabled>내보내기</button>
           </div>
           <input id="cad-step-file" type="file" accept=".step,.stp,.stl" hidden>
+          <div class="cad-import-quality">
+            <label for="cad-import-quality">불러오기 품질</label>
+            <select id="cad-import-quality">
+              <option value="default" selected>기본</option>
+              <option value="ultra-light">초경량</option>
+            </select>
+            <small>대용량 STEP의 메시 품질과 처리 속도를 조절합니다.</small>
+          </div>
           <span id="cad-file-name" class="cad-file-name">STEP/STP/STL 파일을 지원합니다.</span>
           <span id="cad-export-note" class="cad-export-note">STEP 파일은 체크한 부품만 Tool 원점과 좌표계 방향을 적용해 내보냅니다. STL은 계산과 스냅만 지원합니다.</span>
           <span id="cad-status" class="cad-status">CAD 파일을 먼저 불러오세요.</span>
@@ -355,6 +363,6 @@ function refreshDynamicLanguage(event){refreshLocalizedHelpImages(event?.detail?
 document.addEventListener('inorobot:i18nready',refreshDynamicLanguage);
 document.addEventListener('inorobot:languagechange',refreshDynamicLanguage);
 </script>
-<script type="module" src="./mode-d.js?v=20260720-orbit-controls-1"></script>
+  <script type="module" src="./mode-d.js?v=20260720-large-xcaf-quality-1"></script>
 </body>
 </html>
