@@ -1,0 +1,19 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@11.12.1
+2 info using node@v24.15.0
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:D:\04_made_C#\InoRobotAssistant\.npmrc
+5 silly config load:file:C:\Users\JCLEE\.npmrc
+6 silly config load:file:C:\Users\JCLEE\AppData\Roaming\npm\etc\npmrc
+7 verbose title npm view occt-import-js@0.0.23 version dist.tarball
+8 verbose argv "view" "occt-import-js@0.0.23" "version" "dist.tarball"
+9 verbose logfile logs-max:10 dir:D:\04_made_C#\InoRobotAssistant\tmp\npm-cache\_logs\2026-07-19T12_44_34_248Z-
+10 verbose logfile D:\04_made_C#\InoRobotAssistant\tmp\npm-cache\_logs\2026-07-19T12_44_34_248Z-debug-0.log
+11 silly logfile done cleaning log files
+12 http fetch GET 200 https://registry.npmjs.org/occt-import-js 94ms (cache miss)
+13 verbose cwd D:\04_made_C#\InoRobotAssistant
+14 verbose os Windows_NT 10.0.26200
+15 verbose node v24.15.0
+16 verbose npm  v11.12.1
+17 verbose exit 0
+18 info ok

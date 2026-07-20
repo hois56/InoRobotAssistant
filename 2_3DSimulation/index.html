@@ -6,7 +6,7 @@
     <title>3D Simulation</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=20260719-zero-point-1">
+    <link rel="stylesheet" href="style.css?v=20260719-zero-point-1-20260720-view-presets-only-1">
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -207,12 +207,9 @@
                                     <option value="" data-zero-snap-type="vertex">꼭짓점</option>
                                     <option value="" data-zero-snap-type="endpoint">끝점</option>
                                     <option value="" data-zero-snap-type="edge-midpoint">모서리 중점</option>
-                                    <option value="" data-zero-snap-type="face-center">면 중심점</option>
                                     <option value="" data-zero-snap-type="circle-center">원 중심점</option>
                                     <option value="" data-zero-snap-type="rectangle-center">직사각형 중심점</option>
                                     <option value="" data-zero-snap-type="multi-point-center">다중 점 중심점</option>
-                                    <option value="" data-zero-snap-type="shape-center">형상 중심점</option>
-                                    <option value="" data-zero-snap-type="virtual-intersection">가상 교차점</option>
                                 </select>
                             </label>
                             <label>
@@ -350,12 +347,9 @@
                                 <option value="vertex">꼭짓점</option>
                                 <option value="endpoint">끝점</option>
                                 <option value="edge-midpoint">에지 중심점</option>
-                                <option value="face-center">면 중심점</option>
                                 <option value="circle-center">원/호 중심점</option>
                                 <option value="rectangle-center">사각형 중심점</option>
                                 <option value="multi-point-center">다중 점 중심점</option>
-                                <option value="shape-center">형상 중심점</option>
-                                <option value="virtual-intersection">가상 교점</option>
                             </select>
                         </label>
                         <label>
@@ -442,6 +436,44 @@
                     </div>
                 </div>
             </aside>
+            <aside id="view-presets-panel" class="view-presets-panel panel-user-hidden" aria-label="사용자 뷰 저장">
+                <div class="view-presets-header">
+                    <h2><i class="fa-solid fa-camera"></i> 사용자 뷰</h2>
+                    <div class="panel-header-actions">
+                        <button type="button" data-panel-action="popout" data-panel-id="view-presets-panel" title="별도 창으로 분리" aria-label="사용자 뷰 창을 별도로 분리"><i class="fa-solid fa-up-right-from-square"></i></button>
+                        <button type="button" data-panel-action="hide" data-panel-id="view-presets-panel" title="숨기기" aria-label="사용자 뷰 창 숨기기"><i class="fa-solid fa-eye-slash"></i></button>
+                    </div>
+                </div>
+                <div class="view-presets-content">
+                    <p class="view-presets-help">카메라를 원하는 위치로 조정한 뒤 슬롯의 저장 버튼을 누르세요.</p>
+                    <div id="view-presets-list" class="view-presets-list">
+                        <div class="view-preset-row" data-view-slot="0">
+                            <span class="view-preset-index">1</span>
+                            <input type="text" data-view-name value="View 1" maxlength="24" aria-label="뷰 1 이름">
+                            <button type="button" data-view-save title="현재 뷰 저장" aria-label="뷰 1에 현재 뷰 저장"><i class="fa-solid fa-floppy-disk"></i></button>
+                            <button type="button" data-view-apply title="뷰 적용" aria-label="뷰 1 적용" disabled><i class="fa-solid fa-eye"></i></button>
+                        </div>
+                        <div class="view-preset-row" data-view-slot="1">
+                            <span class="view-preset-index">2</span>
+                            <input type="text" data-view-name value="View 2" maxlength="24" aria-label="뷰 2 이름">
+                            <button type="button" data-view-save title="현재 뷰 저장" aria-label="뷰 2에 현재 뷰 저장"><i class="fa-solid fa-floppy-disk"></i></button>
+                            <button type="button" data-view-apply title="뷰 적용" aria-label="뷰 2 적용" disabled><i class="fa-solid fa-eye"></i></button>
+                        </div>
+                        <div class="view-preset-row" data-view-slot="2">
+                            <span class="view-preset-index">3</span>
+                            <input type="text" data-view-name value="View 3" maxlength="24" aria-label="뷰 3 이름">
+                            <button type="button" data-view-save title="현재 뷰 저장" aria-label="뷰 3에 현재 뷰 저장"><i class="fa-solid fa-floppy-disk"></i></button>
+                            <button type="button" data-view-apply title="뷰 적용" aria-label="뷰 3 적용" disabled><i class="fa-solid fa-eye"></i></button>
+                        </div>
+                        <div class="view-preset-row" data-view-slot="3">
+                            <span class="view-preset-index">4</span>
+                            <input type="text" data-view-name value="View 4" maxlength="24" aria-label="뷰 4 이름">
+                            <button type="button" data-view-save title="현재 뷰 저장" aria-label="뷰 4에 현재 뷰 저장"><i class="fa-solid fa-floppy-disk"></i></button>
+                            <button type="button" data-view-apply title="뷰 적용" aria-label="뷰 4 적용" disabled><i class="fa-solid fa-eye"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </aside>
             <aside id="program-panel" class="program-panel hidden" aria-label="Program Panel">
                 <div class="program-panel-header">
                     <h2>Program Panel</h2>
@@ -467,6 +499,7 @@
                             <button id="program-add-delay" type="button" data-program-edit title="딜레이 추가"><i class="fa-solid fa-hourglass-half"></i></button>
                             <button id="program-add-time-start" type="button" data-program-edit title="TIME START 추가"><i class="fa-solid fa-stopwatch"></i></button>
                             <button id="program-add-time-out" type="button" data-program-edit title="TIME OUT 추가"><i class="fa-solid fa-flag-checkered"></i></button>
+                            <button id="program-add-view" type="button" data-program-edit title="화면 뷰 전환 추가"><i class="fa-solid fa-camera"></i></button>
                             <button id="program-delete-step" type="button" data-program-edit title="포인트 삭제"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
@@ -474,7 +507,6 @@
                 </div>
                 <div class="program-playback">
                     <div class="program-control-row">
-                        <span>현재 로봇</span>
                         <button id="program-step-robot" type="button" title="현재 로봇 Step Into" aria-label="현재 로봇 다음 명령 한 스텝 실행"><i class="fa-solid fa-forward-step"></i></button>
                         <button id="program-run-robot" type="button" title="현재 로봇 시작"><i class="fa-solid fa-play"></i></button>
                         <button id="program-pause-robot" type="button" title="현재 로봇 일시정지"><i class="fa-solid fa-pause"></i></button>
@@ -482,7 +514,6 @@
                         <button id="program-repeat-robot" class="program-repeat-toggle" data-program-repeat data-program-repeat-scope="robot" type="button" title="반복 실행" aria-label="현재 로봇 반복 실행" aria-pressed="false"><i class="fa-solid fa-repeat"></i></button>
                     </div>
                     <div class="program-control-row program-group-row">
-                        <span>체크 로봇</span>
                         <button id="program-step-group" type="button" title="체크 로봇 Step Into" aria-label="체크 로봇 다음 명령 동시 한 스텝 실행"><i class="fa-solid fa-forward-step"></i></button>
                         <button id="program-run-group" type="button" title="체크 로봇 동시 시작" aria-label="체크 로봇 동시 시작"><i class="fa-solid fa-play"></i></button>
                         <button id="program-pause-group" type="button" title="체크 로봇 일시정지"><i class="fa-solid fa-pause"></i></button>
@@ -541,6 +572,7 @@
             <button type="button" data-panel-toggle="jog-panel" disabled title="로봇 JOG 패널 표시/숨김"><i class="fa-solid fa-gamepad"></i> JOG</button>
             <button type="button" data-panel-toggle="tcp-profile-panel" disabled title="TCP 오프셋 설정"><i class="fa-solid fa-crosshairs"></i> <span id="tcp-launcher-label">TCP 1</span></button>
             <button type="button" data-panel-toggle="virtual-controller-panel" disabled title="가상 컨트롤러 표시/숨김"><i id="virtual-controller-launcher-antenna" class="fa-solid fa-tower-broadcast virtual-controller-antenna disconnected"></i> Virtual</button>
+            <button type="button" data-panel-toggle="view-presets-panel" title="사용자 뷰 표시/숨김"><i class="fa-solid fa-camera"></i> 뷰</button>
             <span class="viewer-control-divider"></span>
             <button id="btn-undo" type="button" disabled title="되돌리기 (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
             <button id="btn-redo" type="button" disabled title="다시 실행 (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i></button>
@@ -551,6 +583,6 @@
         </div>
     </footer>
 
-    <script type="module" src="main.js?v=20260719-large-model-performance-cad-parts-2-20260720-snap-center-priority-2"></script>
+    <script type="module" src="main.js?v=20260720-large-model-performance-snap-center-priority-view-presets-only-1-disabled-snap-types-1"></script>
 </body>
 </html>

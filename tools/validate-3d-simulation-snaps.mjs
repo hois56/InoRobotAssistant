@@ -7,6 +7,9 @@ const simulationSource = readFileSync(new URL('../2_3DSimulation/main.js', impor
 const simulationStyles = readFileSync(new URL('../2_3DSimulation/style.css', import.meta.url), 'utf8');
 const simulationHtml = readFileSync(new URL('../2_3DSimulation/index.html', import.meta.url), 'utf8');
 const stepWorkerSource = readFileSync(new URL('../2_3DSimulation/step-import-worker.js', import.meta.url), 'utf8');
+const findSimulationSnapFunction = simulationSource.match(
+  /function findSimulationSnapAtPointer\(pointerEvent\)[\s\S]*?(?=\r?\nfunction showSimulationSnapMarker)/
+ )?.[0] || '';
 
 assert.match(simulationSource, /mesh\.userData\.stepBrepFaces/);
 assert.match(simulationSource, /brep_faces:\s*stepBrepFaces/);
@@ -42,11 +45,24 @@ assert.match(simulationSource, /function getSimulationSnapModels\(scope = 'scene
 assert.match(simulationSource, /const placement = scope === 'tool' \? 'tcp' : 'scene'/);
 assert.match(simulationSource, /buildSimulationSnapCandidates\('tool'\)/);
 assert.match(simulationSource, /getSimulationSnapMeshes\('tool'\)/);
-assert.match(simulationSource, /function findSimulationSnapAtPointer\(pointerEvent\)[\s\S]*?state\.camera\.updateMatrixWorld\(true\);[\s\S]*?state\.scene\.updateMatrixWorld\(true\);/);
+assert.match(findSimulationSnapFunction, /state\.camera\.updateMatrixWorld\(true\);/);
+assert.doesNotMatch(findSimulationSnapFunction, /state\.scene\.updateMatrixWorld\(true\);/);
 assert.match(simulationSource, /snapPointerMoveFrame = requestAnimationFrame/);
+assert.match(simulationSource, /function isSimulationSnapInteractionActive\(\)[\s\S]*?!state\.viewNavigationActive/);
+assert.match(simulationSource, /function beginSimulationViewNavigation\(\)[\s\S]*?hideSimulationSnapMarker\(\);/);
+assert.match(simulationSource, /state\.controls\.addEventListener\('start', beginSimulationViewNavigation\)/);
+assert.match(simulationSource, /state\.controls\.addEventListener\('end', endSimulationViewNavigation\)/);
+assert.match(simulationSource, /function handleSimulationSnapPointerMove\(event\)[\s\S]*?isSimulationSnapInteractionActive\(\)/);
 assert.match(simulationSource, /SIMULATION_SNAP_MAX_PER_TYPE\s*=\s*Object\.freeze\(\{[\s\S]*?endpoint:\s*Infinity/);
+assert.match(simulationSource, /SIMULATION_SNAP_DISABLED_TYPES\s*=\s*Object\.freeze\(\[[\s\S]*?'face-center'[\s\S]*?'shape-center'[\s\S]*?'virtual-intersection'/);
+assert.match(simulationSource, /disabledTypes:\s*SIMULATION_SNAP_DISABLED_TYPES/);
+assert.doesNotMatch(simulationHtml, /data-zero-snap-type="(?:face-center|shape-center|virtual-intersection)"/);
+assert.doesNotMatch(simulationHtml, /<option value="(?:face-center|shape-center|virtual-intersection)"/);
 assert.match(simulationSource, /maxPerType:\s*\{[\s\S]*?endpoint:\s*Infinity/);
 assert.match(simulationSource, /function getSimulationSnapScreenIndex\(meshes, bounds\)/);
+assert.match(simulationSource, /function getSimulationSnapWorldIndex\(meshes\)/);
+assert.match(simulationSource, /function buildSimulationSnapWorldOctree\(candidates, depth = 0\)/);
+assert.match(simulationSource, /candidate\.snapWorldPoint/);
 assert.match(simulationSource, /getSimulationSnapCandidatesNearPointer\([\s\S]*?candidatesNearPointer\.forEach\(\(candidate\)/);
 assert.match(simulationSource, /SIMULATION_SNAP_OVERLAP_TOLERANCE_PX\s*=\s*7/);
 assert.match(simulationSource, /'circle-center':\s*\{\s*label:\s*'원\/호 중심점',[^}]*priority:\s*0\s*\}/);
@@ -62,6 +78,7 @@ assert.match(simulationSource, /getLazySimulationSnapMeshAtPointer\(pointerX, po
 assert.match(simulationStyles, /data-snap-type="endpoint"[^}]*> span\s*\{[^}]*background:\s*radial-gradient\(circle at center,/s);
 assert.match(simulationStyles, /\.simulation-snap-marker > span\s*\{[^}]*width:\s*14px;[^}]*height:\s*14px;[^}]*border:\s*1\.25px solid #f59e0b;[^}]*color:\s*#f59e0b;/s);
 assert.match(simulationStyles, /\.simulation-snap-marker > span\s*\{[^}]*box-shadow:\s*0 0 6px rgba\(217, 119, 6, 0\.68\);/s);
+assert.doesNotMatch(simulationStyles, /data-snap-type="(?:face-center|shape-center|virtual-intersection)"/);
 assert.match(simulationStyles, /\.simulation-snap-marker\s*\{[^}]*transform:\s*translate\(-7px,\s*-50%\);/s);
 assert.match(simulationStyles, /\.simulation-snap-marker\.label-left\s*\{[^}]*transform:\s*translate\(calc\(-100% \+ 7px\),\s*-50%\);/s);
 assert.doesNotMatch(simulationStyles, /\.simulation-snap-marker(?:\.label-left)?\s*\{[^}]*transform:[^;}]*,\s*-6px\)/s);
@@ -74,7 +91,10 @@ assert.match(simulationSource, /LARGE_MODEL_PERFORMANCE_MIN_BYTES\s*=\s*100 \* M
 assert.match(simulationSource, /LARGE_MODEL_RENDER_FPS\s*=\s*60/);
 assert.match(simulationSource, /state\.renderer\.shadowMap\.enabled\s*=\s*!enabled/);
 assert.match(simulationSource, /enabled \? 1 : 2/);
-assert.match(simulationSource, /1000 \/ LARGE_MODEL_RENDER_FPS/);
+assert.match(simulationSource, /function requiresContinuousRendering\(\)/);
+assert.match(simulationSource, /if \(requiresContinuousRendering\(\)\) requestRender\(\);/);
+assert.doesNotMatch(simulationSource, /1000 \/ LARGE_MODEL_RENDER_FPS/);
+assert.doesNotMatch(simulationSource, /function updateCameraScaledTcpAxes\(\)[\s\S]*?state\.scene\.updateMatrixWorld\(true\);/);
 assert.match(simulationSource, /useLargeFileEngine \? 'large' : 'standard'/);
 
 const workerContext = {
