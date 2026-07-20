@@ -393,11 +393,7 @@
           {
             "title": "Ver 26.07.18.01",
             "items": [
-              "**[Cập nhật]** Đã cập nhật InoRobot Trace từ V1.3 lên V1.4.",
-              "**[Thêm]** Đã thêm máy chủ liên kết bộ điều khiển ảo cho 3D Simulation.",
-              "**[Thêm]** Đã thêm mục giám sát thời gian thực giá trị vị trí Joint.",
-              "**[Thêm]** Đã thêm nút mở hoặc đóng cửa sổ các mục đo lường.",
-              "**[Sửa]** Đã khắc phục lỗi các mục không hiển thị khi cửa sổ Trace nhỏ hơn một độ rộng nhất định."
+              "**[Cập nhật]** Đã cập nhật InoRobot Trace từ V1.3 lên V1.4."
             ]
           },
           {
@@ -552,6 +548,15 @@
       {
         "title": "trace",
         "versions": [
+          {
+            "title": "Ver 1.4 (2026.07.18)",
+            "items": [
+              "**[Thêm]** Đã thêm máy chủ liên kết bộ điều khiển ảo cho 3D Simulation.",
+              "**[Thêm]** Đã thêm mục giám sát thời gian thực giá trị vị trí Joint.",
+              "**[Thêm]** Đã thêm nút mở hoặc đóng cửa sổ các mục đo lường.",
+              "**[Sửa]** Đã khắc phục lỗi các mục không hiển thị khi cửa sổ Trace nhỏ hơn một độ rộng nhất định."
+            ]
+          },
           {
             "title": "Ver 1.3 (2026.07.15)",
             "items": [
