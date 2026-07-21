@@ -313,7 +313,8 @@ routes.forEach(route => {
     assert(html.includes("const routes = { ko: '/', en: '/en/', 'zh-CN': '/cn/', vi: '/vn/' }") && html.includes('window.location.assign(target)'), route.file + ' is missing the standalone route switch handler.');
     validateStandaloneLanguageSwitch(html, route.file);
     assert(html.includes('<option value="' + route.locale + '" selected>'), route.file + ' does not preselect its route language.');
-    assert(/<h2[^>]*data-i18n-skip[^>]*>\s*Debugging Tool\s*<\/h2>/.test(html), route.file + ' translates the Debugging Tool card name.');
+    const debuggingCardTitle = locales[route.locale].sources['home.json'].legacy['Debugging Tool'];
+    assert(new RegExp('<h2[^>]*>\\s*' + escapeRegExp(debuggingCardTitle) + '\\s*<\\/h2>').test(html), route.file + ' has an incorrect Debugging Tool card name.');
     Object.entries(siteCardVersions).forEach(([key, version]) => {
         const pattern = new RegExp('data-site-card-version=["\']' + escapeRegExp(key) + '["\'][^>]*>\\s*Ver ' + escapeRegExp(formatCardVersion(version)) + '\\s*<\\/span>');
         assert(pattern.test(html), route.file + ' does not show the current ' + key + ' version.');
