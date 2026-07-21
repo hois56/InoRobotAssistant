@@ -406,6 +406,20 @@ const SNAP_WORLD_INDEX_LEAF_SIZE = 48;
 const SNAP_WORLD_INDEX_MAX_DEPTH = 14;
 const SNAP_MARKER_CAMERA_SCALE = Object.freeze({ min: 0.55, max: 1.25 });
 const MAX_VISIBLE_SIMULATION_SNAP_MARKERS = 256;
+const MAX_VISIBLE_SIMULATION_SNAP_CENTER_MARKERS = 96;
+const SIMULATION_SNAP_CENTER_MARKER_TYPES = new Set([
+    'multi-point-center',
+    'rectangle-center',
+    'circle-center'
+]);
+const SIMULATION_SNAP_MARKER_TYPE_ORDER = Object.freeze([
+    'multi-point-center',
+    'rectangle-center',
+    'circle-center',
+    'endpoint',
+    'vertex',
+    'edge-midpoint'
+]);
 const MEBIBYTE = 1024 * 1024;
 const MAX_MODEL_IMPORT_SIZE_BYTES = 500 * MEBIBYTE;
 const STEP_IMPORT_CACHE_DB_NAME = 'inorobot-3d-step-cache';
@@ -916,53 +930,94 @@ function buildSimulationSnapResultForMesh(mesh, lazyChunk = false, faceSelection
     });
 }
 
-function buildSimulationCombinedSnapCandidates(candidates, selections = getSimulationSnapFaceSelections()) {
-    if (selections.length < 2) return [];
+function buildSimulationCombinedSnapCandidates(candidateGroups, selections = getSimulationSnapFaceSelections()) {
+    const groups = Array.isArray(candidateGroups)
+        ? candidateGroups.filter((group) => Array.isArray(group?.candidates) && group.candidates.length)
+        : [];
+    if (selections.length < 2 || groups.length < 2) return [];
 
-    const centerCandidates = candidates.filter((candidate) => (
-        candidate.type === 'rectangle-center' || candidate.type === 'circle-center'
-    ));
-    const boundaryCandidates = candidates.filter((candidate) => (
-        candidate.type === 'vertex' || candidate.type === 'endpoint'
-    ));
     const result = [];
     const seen = new Set();
-    const toWorldPoint = (candidate) => candidate.localPoint.clone().applyMatrix4(candidate.mesh.matrixWorld);
-    const addCandidate = (worldPoint, sourceKind) => {
+    const toWorldPoint = (candidate) => {
+        if (!candidate?.localPoint?.clone || !candidate.mesh?.matrixWorld) return null;
+        candidate.mesh.updateWorldMatrix?.(true, false);
+        const point = candidate.localPoint.clone().applyMatrix4(candidate.mesh.matrixWorld);
+        return point.isVector3 && Number.isFinite(point.x) && Number.isFinite(point.y)
+            && Number.isFinite(point.z) ? point : null;
+    };
+    const addCandidate = (worldPoint, sourceKind, anchorCandidate) => {
         if (!worldPoint || !worldPoint.isVector3
             || !Number.isFinite(worldPoint.x) || !Number.isFinite(worldPoint.y)
             || !Number.isFinite(worldPoint.z)) return;
         const key = `${sourceKind}:${worldPoint.x.toFixed(5)},${worldPoint.y.toFixed(5)},${worldPoint.z.toFixed(5)}`;
         if (seen.has(key)) return;
         seen.add(key);
-        const mesh = candidates[0]?.mesh;
-        if (!mesh) return;
-        mesh.updateMatrixWorld(true);
+        const mesh = anchorCandidate?.mesh || groups[0]?.candidates?.[0]?.mesh;
+        if (!mesh?.matrixWorld) return;
+        mesh.updateWorldMatrix?.(true, false);
         const localPoint = worldPoint.clone().applyMatrix4(mesh.matrixWorld.clone().invert());
-        result.push({ type: 'multi-point-center', mesh, localPoint, sourceKind });
+        if (!Number.isFinite(localPoint.x) || !Number.isFinite(localPoint.y)
+            || !Number.isFinite(localPoint.z)) return;
+        // Keep the combined point ready for the persistent marker layer. The
+        // pointer picker can derive this from localPoint, but the settled
+        // marker pass must not depend on a hover event to create worldPoint.
+        result.push({
+            type: 'multi-point-center',
+            mesh,
+            localPoint,
+            snapWorldPoint: worldPoint.clone(),
+            sourceKind
+        });
     };
 
-    for (let leftIndex = 0; leftIndex < centerCandidates.length; leftIndex += 1) {
-        for (let rightIndex = leftIndex + 1; rightIndex < centerCandidates.length; rightIndex += 1) {
-            const left = toWorldPoint(centerCandidates[leftIndex]);
-            const right = toWorldPoint(centerCandidates[right]);
-            addCandidate(left.clone().add(right).multiplyScalar(0.5), 'center-midpoint');
+    const centerGroups = groups.map((group) => group.candidates.filter((candidate) => (
+        candidate.type === 'rectangle-center' || candidate.type === 'circle-center'
+    )));
+    let centerPairCount = 0;
+    for (let leftGroupIndex = 0; leftGroupIndex < centerGroups.length; leftGroupIndex += 1) {
+        for (let rightGroupIndex = leftGroupIndex + 1; rightGroupIndex < centerGroups.length; rightGroupIndex += 1) {
+            for (const leftCandidate of centerGroups[leftGroupIndex]) {
+                for (const rightCandidate of centerGroups[rightGroupIndex]) {
+                    centerPairCount += 1;
+                    if (centerPairCount > 4000) break;
+                    const left = toWorldPoint(leftCandidate);
+                    const right = toWorldPoint(rightCandidate);
+                    if (!left || !right) continue;
+                    addCandidate(
+                        left.clone().add(right).multiplyScalar(0.5),
+                        'center-midpoint',
+                        leftCandidate
+                    );
+                }
+                if (centerPairCount > 4000) break;
+            }
         }
     }
 
-    const uniqueBoundaryPoints = [];
-    const boundaryKeys = new Set();
-    boundaryCandidates.forEach((candidate) => {
-        const point = toWorldPoint(candidate);
-        const key = `${point.x.toFixed(5)},${point.y.toFixed(5)},${point.z.toFixed(5)}`;
-        if (boundaryKeys.has(key)) return;
-        boundaryKeys.add(key);
-        uniqueBoundaryPoints.push(point);
-    });
-    if (uniqueBoundaryPoints.length >= 4) {
-        const bounds = new THREE.Box3();
-        uniqueBoundaryPoints.forEach((point) => bounds.expandByPoint(point));
-        addCandidate(bounds.getCenter(new THREE.Vector3()), 'boundary-center');
+    for (let leftGroupIndex = 0; leftGroupIndex < groups.length; leftGroupIndex += 1) {
+        for (let rightGroupIndex = leftGroupIndex + 1; rightGroupIndex < groups.length; rightGroupIndex += 1) {
+            const boundaryCandidates = [
+                ...groups[leftGroupIndex].candidates,
+                ...groups[rightGroupIndex].candidates
+            ].filter((candidate) => candidate.type === 'vertex' || candidate.type === 'endpoint');
+            const uniqueBoundaryPoints = [];
+            const boundaryKeys = new Set();
+            let anchorCandidate = null;
+            boundaryCandidates.forEach((candidate) => {
+                const point = toWorldPoint(candidate);
+                if (!point) return;
+                const key = `${point.x.toFixed(5)},${point.y.toFixed(5)},${point.z.toFixed(5)}`;
+                if (boundaryKeys.has(key)) return;
+                boundaryKeys.add(key);
+                uniqueBoundaryPoints.push(point);
+                anchorCandidate ||= candidate;
+            });
+            if (uniqueBoundaryPoints.length >= 4) {
+                const bounds = new THREE.Box3();
+                uniqueBoundaryPoints.forEach((point) => bounds.expandByPoint(point));
+                addCandidate(bounds.getCenter(new THREE.Vector3()), 'boundary-center', anchorCandidate);
+            }
+        }
     }
     return result;
 }
@@ -999,6 +1054,31 @@ async function buildSimulationSnapCandidates(scope = getSimulationSnapScope()) {
     state.snapLazyBuildPromises.clear();
     const nextCandidates = [];
     const nextCandidateCounts = {};
+    const candidateGroups = faceSelections.map((selection) => ({
+        selectionKey: selection.key,
+        candidates: []
+    }));
+    const candidateGroupsByKey = new Map(
+        candidateGroups.map((group) => [group.selectionKey, group])
+    );
+    const appendMeshCandidates = (result, mesh, candidateGroup = null) => {
+        result.candidates.forEach((candidate) => {
+            const count = nextCandidateCounts[candidate.type] || 0;
+            const limit = SIMULATION_SNAP_MAX_PER_TYPE[candidate.type] || Infinity;
+            if (count >= limit) return;
+            const localPoint = new THREE.Vector3().fromArray(candidate.point);
+            if (!Number.isFinite(localPoint.x) || !Number.isFinite(localPoint.y)
+                || !Number.isFinite(localPoint.z)) return;
+            nextCandidateCounts[candidate.type] = count + 1;
+            const preparedCandidate = {
+                type: candidate.type,
+                mesh,
+                localPoint
+            };
+            nextCandidates.push(preparedCandidate);
+            candidateGroup?.candidates.push(preparedCandidate);
+        });
+    };
     const buildPromise = (async () => {
         await yieldToAnimationFrame();
         for (let meshIndex = 0; meshIndex < meshes.length; meshIndex += 1) {
@@ -1009,41 +1089,61 @@ async function buildSimulationSnapCandidates(scope = getSimulationSnapScope()) {
             }
             try {
                 const meshFaceSelections = faceSelectionsByMesh.get(mesh.uuid) || [];
-                const faceSelection = meshFaceSelections.length
-                    ? { triangleRanges: meshFaceSelections.flatMap((selection) => selection.triangleRanges) }
-                    : null;
-                const result = buildSimulationSnapResultForMesh(mesh, false, faceSelection);
-                result.candidates.forEach((candidate) => {
-                    const count = nextCandidateCounts[candidate.type] || 0;
-                    const limit = SIMULATION_SNAP_MAX_PER_TYPE[candidate.type] || Infinity;
-                    if (count >= limit) return;
-                    nextCandidateCounts[candidate.type] = count + 1;
-                    nextCandidates.push({
-                        type: candidate.type,
-                        mesh,
-                        localPoint: new THREE.Vector3().fromArray(candidate.point)
+                if (meshFaceSelections.length) {
+                    // Build each selected face independently. This preserves
+                    // the normal one-face candidates before adding any
+                    // multi-face combination candidates.
+                    meshFaceSelections.forEach((selection) => {
+                        try {
+                            const result = buildSimulationSnapResultForMesh(mesh, false, {
+                                triangleRanges: selection.triangleRanges
+                            });
+                            appendMeshCandidates(
+                                result,
+                                mesh,
+                                candidateGroupsByKey.get(selection.key) || null
+                            );
+                        } catch (error) {
+                            console.warn('Selected face snap candidate generation failed:', mesh.name, error);
+                        }
                     });
-                });
+                } else if (!faceSelections.length) {
+                    const result = buildSimulationSnapResultForMesh(mesh, false);
+                    appendMeshCandidates(result, mesh);
+                }
             } catch (error) {
                 console.warn('Snap candidate generation failed:', mesh.name, error);
             }
             if (meshIndex + 1 < meshes.length) await yieldToAnimationFrame();
         }
         if (state.snapCandidateBuildSignature !== signature || !isSimulationSnapInteractionActive()) return;
-        const combinedCandidates = buildSimulationCombinedSnapCandidates(nextCandidates, faceSelections);
-        combinedCandidates.forEach((candidate) => {
-            const count = nextCandidateCounts[candidate.type] || 0;
-            const limit = SIMULATION_SNAP_MAX_PER_TYPE[candidate.type] || Infinity;
-            if (count >= limit) return;
-            nextCandidateCounts[candidate.type] = count + 1;
-            nextCandidates.push(candidate);
-        });
+        try {
+            const combinedCandidates = buildSimulationCombinedSnapCandidates(candidateGroups, faceSelections);
+            combinedCandidates.forEach((candidate) => {
+                const count = nextCandidateCounts[candidate.type] || 0;
+                const limit = SIMULATION_SNAP_MAX_PER_TYPE[candidate.type] || Infinity;
+                if (count >= limit) return;
+                nextCandidateCounts[candidate.type] = count + 1;
+                nextCandidates.push(candidate);
+            });
+        } catch (error) {
+            // Combination snaps are additive. A malformed pair must not
+            // remove valid endpoint/vertex/center candidates from either face.
+            console.warn('Multi-face snap combination skipped:', error);
+        }
         state.snapCandidates = nextCandidates;
         state.snapCandidateModelsSignature = signature;
         state.snapCandidatesReady = true;
         state.snapWorldIndex = null;
         state.snapWorldIndexSignature = '';
-        updateSimulationSnapCandidateMarkers();
+        try {
+            updateSimulationSnapCandidateMarkers();
+        } catch (error) {
+            // Keep the prepared candidates usable for pointer snapping even
+            // when the DOM marker layer cannot be refreshed in this frame.
+            clearSimulationSnapCandidateMarkers();
+            console.warn('Snap candidate marker refresh skipped:', error);
+        }
     })();
     state.snapCandidateBuildPromise = buildPromise;
     try {
@@ -1210,7 +1310,10 @@ function updateSimulationSnapCandidateMarkers() {
     }
     state.camera.updateMatrixWorld(true);
     getSimulationSnapWorldIndex(meshes);
-    const visibilityMeshes = isLargeModelSnapPerformanceMode('scene')
+    // Selected-face candidates are intentional snap targets. Do not let the
+    // model's depth occlusion hide them while snap-move mode is active; the
+    // marker layer must keep priority over geometry behind the selected face.
+    const visibilityMeshes = state.snapMoveMode || isLargeModelSnapPerformanceMode('scene')
         ? null
         : getAllSimulationSnapMeshes('scene');
     const candidates = [];
@@ -1221,8 +1324,30 @@ function updateSimulationSnapCandidateMarkers() {
         snapTypeInfo(next.candidate.type).priority < snapTypeInfo(current.candidate.type).priority
     );
     const projected = new THREE.Vector3();
-    for (const candidate of state.snapCandidates) {
+    // Candidate generation follows geometry/topology order, which can put
+    // thousands of endpoints ahead of the useful center candidates. Grouping
+    // and ordering here makes centers visible on the settled frame instead of
+    // waiting for the pointer to hover over their screen position.
+    const candidatesByType = new Map();
+    state.snapCandidates.forEach((candidate) => {
+        const candidatesForType = candidatesByType.get(candidate.type) || [];
+        candidatesForType.push(candidate);
+        candidatesByType.set(candidate.type, candidatesForType);
+    });
+    const orderedCandidates = [];
+    const orderedTypes = new Set();
+    SIMULATION_SNAP_MARKER_TYPE_ORDER.forEach((type) => {
+        orderedTypes.add(type);
+        orderedCandidates.push(...(candidatesByType.get(type) || []));
+    });
+    candidatesByType.forEach((candidatesForType, type) => {
+        if (!orderedTypes.has(type)) orderedCandidates.push(...candidatesForType);
+    });
+    let centerMarkerCount = 0;
+    for (const candidate of orderedCandidates) {
         if (!candidate.mesh.visible || !candidate.snapWorldPoint) continue;
+        const isCenterMarker = SIMULATION_SNAP_CENTER_MARKER_TYPES.has(candidate.type);
+        if (isCenterMarker && centerMarkerCount >= MAX_VISIBLE_SIMULATION_SNAP_CENTER_MARKERS) continue;
         projected.copy(candidate.snapWorldPoint).project(state.camera);
         if (projected.z < -1 || projected.z > 1) continue;
         const screenX = (projected.x * 0.5 + 0.5) * bounds.width;
@@ -1262,6 +1387,7 @@ function updateSimulationSnapCandidateMarkers() {
         cell.push(candidates.length);
         markerCells.set(cellKey, cell);
         candidates.push(item);
+        if (isCenterMarker) centerMarkerCount += 1;
         if (candidates.length >= MAX_VISIBLE_SIMULATION_SNAP_MARKERS) break;
     }
     state.snapDisplayedCandidates = candidates.map(({ candidate }) => candidate);
