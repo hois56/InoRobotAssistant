@@ -62,7 +62,10 @@ assert.match(getSimulationSnapMeshesFunction, /return \[\];/);
 assert.doesNotMatch(getSimulationSnapMeshesFunction, /clearSimulationSnapFaceSelection/);
 assert.match(simulationSource, /function cloneSimulationSnapFaceSelections\(/);
 assert.match(simulationSource, /\? cloneSimulationSnapFaceSelections\(\) : \[\]/);
-assert.match(simulationSource, /buildSimulationCombinedSnapCandidates\(nextCandidates, faceSelections\)/);
+assert.match(simulationSource, /buildSimulationCombinedSnapCandidates\(candidateGroups, faceSelections\)/);
+assert.match(simulationSource, /Build each selected face independently/);
+assert.match(simulationSource, /Multi-face snap combination skipped/);
+assert.match(simulationSource, /Snap candidate marker refresh skipped/);
 assert.match(simulationSource, /Selected face snap candidate generation failed:[\s\S]*?invalidateSimulationSnapCandidates\(\);[\s\S]*?면 선택은 유지됩니다/);
 const selectSimulationSnapFaceFunction = simulationSource.match(
   /function selectSimulationSnapFace\(selection, \{ additive = false \} = \{\}\)[\s\S]*?(?=\r?\nfunction snapTypeInfo)/

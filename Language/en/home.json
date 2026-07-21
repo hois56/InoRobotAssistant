@@ -77,6 +77,19 @@
         "title": "Robot Model Select",
         "versions": [
           {
+            "title": "Ver 26.07.20",
+            "items": [
+              "**[Changed]** Added compatible controller model numbers to the model selection screen."
+            ]
+          },
+          {
+            "title": "Ver 26.07.18",
+            "items": [
+              "**[Added]** Korean, English, Chinese, and Vietnamese are now supported, and all items previously displayed in English in certain Korean views have been translated into Korean.",
+              "**[Changed]** The version-labeling convention has been changed to record the date only."
+            ]
+          },
+          {
             "title": "Ver 26.06.19.01",
             "items": [
               "**[New]** Added the IR-TP200 teach pendant with an emergency-stop protective cover.",
@@ -166,10 +179,10 @@
         ]
       },
         {
-          "title": "3D Simulation",
+        "title": "3D Simulation",
           "versions": [
             {
-              "title": "Ver 26.07.21.01",
+            "title": "Ver 26.07.21",
               "items": [
                 "**[Added]** Added Auto, Lightweight, Standard, and High quality choices for large 3D model imports.",
                 "**[Changed]** Large STL, FBX, and STEP models are processed in the background and chunks, while STEP part structure and colors are preserved.",
@@ -178,24 +191,26 @@
             },
             {
               "title": "Ver 26.07.18",
-          "items": [
-            "**[Revamp]** The existing 3D Viewer has been comprehensively rebuilt as 3D Simulation, enabling robot simulation.",
-            "**[Support]** All robot models can be moved, and robot motion paths can be set through programming.",
-            "**[Support]** Supports importing 3D models and attaching imported files to a robot Tool.",
-            "**[Support]** Can connect to and use the InoRobotLab Virtual Controller. (Requires the dedicated bridge or Trace tool.)"
+            "items": [
+              "**[Revamp]** The existing 3D Viewer has been comprehensively rebuilt as 3D Simulation, enabling robot simulation.",
+              "**[Support]** All robot models can be moved, and robot motion paths can be set through programming.",
+              "**[Support]** Supports importing 3D models and attaching imported files to a robot Tool.",
+              "**[Support]** Can connect to and use the InoRobotLab Virtual Controller. (Requires the dedicated bridge or Trace tool.)",
+              "**[Added]** Korean, English, Chinese, and Vietnamese are now supported, and all items previously displayed in English in certain Korean views have been translated into Korean.",
+              "**[Changed]** The version-labeling convention has been changed to record the date only."
           ]
         }
         ]
       },
         {
-          "title": "Robot Tool Selector",
+        "title": "Robot Tool Selector",
           "versions": [
             {
-              "title": "Ver 26.07.21.01",
+            "title": "Ver 26.07.21",
               "items": [
                 "**[Added]** Added Default and Ultra-light import quality choices for large STEP files.",
                 "**[Changed]** Large STEP/XCAF imports now preserve part structure and source colors.",
-                "**[Fixed]** Fixed rotation-handle continuity across 180° boundaries and face/arc/circle snap calculations."
+              "**[Fixed]** Fixed rotation-handle continuity across 180° boundaries and face/arc/circle snap calculations."
               ]
             },
             {
@@ -205,7 +220,9 @@
               "**[Support]** Set the material and density of an imported model to calculate mass, center of gravity, and moments of inertia.",
               "**[Support]** Modify the imported model origin and coordinate direction before exporting the file.",
               "**[Support]** Select imported model parts and export only the selected parts.",
-              "**[Support]** Use snapping to quickly check the TCP position."
+              "**[Support]** Use snapping to quickly check the TCP position.",
+              "**[Added]** Korean, English, Chinese, and Vietnamese are now supported, and all items previously displayed in English in certain Korean views have been translated into Korean.",
+              "**[Changed]** The version-labeling convention has been changed to record the date only."
             ]
           },
           {
@@ -226,6 +243,13 @@
       {
         "title": "Project Generator",
         "versions": [
+          {
+            "title": "Ver 26.07.18",
+            "items": [
+              "**[Added]** Korean, English, Chinese, and Vietnamese are now supported, and all items previously displayed in English in certain Korean views have been translated into Korean.",
+              "**[Changed]** The version-labeling convention has been changed to record the date only."
+            ]
+          },
           {
             "title": "Ver 26.07.12.01",
             "items": [
@@ -291,6 +315,13 @@
         "title": "Software",
         "versions": [
           {
+            "title": "Ver 26.07.18",
+            "items": [
+              "**[Added]** Korean, English, Chinese, and Vietnamese are now supported, and all items previously displayed in English in certain Korean views have been translated into Korean.",
+              "**[Changed]** The version-labeling convention has been changed to record the date only."
+            ]
+          },
+          {
             "title": "Ver 26.06.19.01",
             "items": [
               "**[Updated]** Updated InoRobotLab from V4R24C4SPC18 to V4R24C4SPC21.",
@@ -326,6 +357,19 @@
       {
         "title": "Document",
         "versions": [
+          {
+            "title": "Ver 26.07.20",
+            "items": [
+              "**[Fixed]** Fixed an issue that prevented the Selection Guide manual from being downloaded."
+            ]
+          },
+          {
+            "title": "Ver 26.07.18",
+            "items": [
+              "**[Added]** Korean, English, Chinese, and Vietnamese are now supported, and all items previously displayed in English in certain Korean views have been translated into Korean.",
+              "**[Changed]** The version-labeling convention has been changed to record the date only."
+            ]
+          },
           {
             "title": "Ver 26.07.15",
             "items": [
@@ -409,7 +453,9 @@
           {
             "title": "Ver 26.07.18.01",
             "items": [
-              "**[Updated]** Updated InoRobot Trace from V1.3 to V1.4."
+              "**[Updated]** Updated InoRobot Trace from V1.3 to V1.4.",
+              "**[Added]** Korean, English, Chinese, and Vietnamese are now supported, and all items previously displayed in English in certain Korean views have been translated into Korean.",
+              "**[Changed]** The version-labeling convention has been changed to record the date only."
             ]
           },
           {
