@@ -20,6 +20,11 @@
 
     if (!modal || !dialog || !title || !currentVersion || !body || !closeButton) return;
 
+    function getLocalizedCardHeading(cardKey) {
+        const heading = cardHeadings[cardKey];
+        return window.InoRobotI18n?.translate(heading) || heading;
+    }
+
     let historyMarkdownPromise = null;
     let lastFocusedElement = null;
     let previousBodyOverflow = '';
@@ -181,7 +186,7 @@
 
         activeCardKey = cardKey;
         lastFocusedElement = trigger;
-        title.textContent = heading;
+        title.textContent = getLocalizedCardHeading(cardKey);
 
         const version = window.SITE_CARD_VERSIONS?.[cardKey];
         currentVersion.textContent = version ? `Current Ver ${version}` : '';
@@ -220,7 +225,7 @@
         historyMarkdownPromise = null;
         if (!activeCardKey || !modal.classList.contains('is-open')) return;
         const heading = cardHeadings[activeCardKey];
-        title.textContent = heading;
+        title.textContent = getLocalizedCardHeading(activeCardKey);
         renderMessage('버전 기록을 불러오는 중입니다.');
         try {
             const markdown = await loadHistoryMarkdown();
