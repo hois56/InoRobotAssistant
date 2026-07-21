@@ -272,6 +272,7 @@ input[type="number"]::-webkit-outer-spin-button {
     transform: translate(-50%, -50%);
 }
 
+#btn-test-model,
 #btn-import-3d,
 #btn-download-cad {
     width: auto;
@@ -3295,8 +3296,10 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
         grid-template-columns: 1fr;
     }
 
+    #btn-test-model span,
     #btn-import-3d span,
     #btn-download-cad span { display: none; }
+    #btn-test-model,
     #btn-import-3d,
     #btn-download-cad { min-width: 44px; width: 44px; padding: 0; }
 
