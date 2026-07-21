@@ -206,6 +206,7 @@ const el = {
     btnToggleGrid:   document.getElementById('btn-toggle-grid'),
     btnToggleTransform: document.getElementById('btn-toggle-transform'),
     btnFullscreenMode: document.getElementById('btn-fullscreen-mode'),
+    btnTestModel:    document.getElementById('btn-test-model'),
     btnPositionExport: document.getElementById('btn-position-export'),
     btnSnapMove: document.getElementById('btn-snap-move'),
     btnImport3D:     document.getElementById('btn-import-3d'),
@@ -393,6 +394,14 @@ const VIRTUAL_CONTROLLER_STREAM_STALL_MS = 750;
 const VIRTUAL_CONTROLLER_STREAM_WATCHDOG_MS = 250;
 const SUPPORTED_IMPORT_EXTENSIONS = new Set(['stl', 'fbx', 'obj', 'glb', 'gltf', 'stp', 'step']);
 const Y_UP_IMPORT_EXTENSIONS = new Set(['fbx', 'glb', 'gltf']);
+const TEST_MODEL_ASSET_PATHS = Object.freeze({
+    scene: './test-assets/Test_Equipment_CAD.step',
+    tcp: './test-assets/Vacuum_Tool_X200mm.stl'
+});
+const TEST_MODEL_FILE_NAMES = new Set([
+    'Test_Equipment_CAD.step',
+    'Vacuum_Tool_X200mm.stl'
+]);
 const IMPORT_PLACEMENT_COLORS = { tcp: 0xf97316, scene: 0x65a30d };
 const MOTION_PROJECT_STORAGE_KEY = 'inorobot.3d-simulation.motion-project.v1';
 const VIEW_PRESETS_STORAGE_KEY = 'inorobot.3d-simulation.view-presets.v1';
@@ -2715,6 +2724,7 @@ function setupEventListeners() {
     state.renderer.domElement.addEventListener('pointerleave', hideSimulationSnapMarker);
     state.renderer.domElement.addEventListener('pointerleave', requestRender);
     state.renderer.domElement.addEventListener('click', handleSimulationSnapClick);
+    el.btnTestModel?.addEventListener('click', handleTestModelImport);
     el.btnImport3D?.addEventListener('click', () => el.inputImport3D?.click());
     el.inputImport3D?.addEventListener('change', () => {
         const file = el.inputImport3D.files?.[0];
@@ -5790,10 +5800,10 @@ function getImportErrorMessage(error, extension) {
     return uiFormat('3D 파일을 불러오지 못했습니다.\n{message}', { message });
 }
 
-async function handle3DImport() {
+async function handle3DImport(options = {}) {
     const file = state.pendingImportFile;
-    if (!file) return;
-    if (rejectOversizedModelImport(file)) return;
+    if (!file) return null;
+    if (rejectOversizedModelImport(file)) return null;
     if (state.zeroPointEdit.active) exitZeroPointEditor();
     invalidateSimulationSnapCandidates();
     if (state.snapMoveMode) {
@@ -5816,7 +5826,7 @@ async function handle3DImport() {
     const robot = placement === 'tcp' ? getArticulatedRobotForAttachment() : null;
     if (placement === 'tcp' && !robot) {
         alert(uiText('TCP에 장착할 로봇을 먼저 불러와 주세요.'));
-        return;
+        return null;
     }
 
     const upAxis = getAutomaticSourceUpAxis(extension);
@@ -5847,6 +5857,7 @@ async function handle3DImport() {
         importedModel.userData.sourceFileSize = file.size;
         importedModel.userData.largeModelMode = performanceMode;
         importedModel.userData.importQuality = importQuality.key;
+        if (options.testModel) importedModel.userData.testModel = true;
 
         // Only free-standing 3D models are normalized into the viewer's Z-Up axes.
         // TCP tools preserve file XYZ and inherit the robot's Tool XYZ frame 1:1.
@@ -5854,6 +5865,10 @@ async function handle3DImport() {
 
         if (placement === 'tcp') {
             mountToolModelAtActiveTcp(robot, importedModel);
+            if (options.testToolPositionZero) importedModel.position.set(0, 0, 0);
+            if (options.testToolRotationX && robot.userData.manifest?.robotType === 'scara') {
+                importedModel.rotateX(Math.PI);
+            }
             if (state.activeArticulatedModel !== robot) {
                 state.activeArticulatedModel = robot;
                 renderJogControls(robot);
@@ -5883,6 +5898,7 @@ async function handle3DImport() {
             : performanceMode
                 ? `3D 모델링 불러오기 완료 · ${importQuality.label}`
                 : '3D 모델링 불러오기 완료', '#22c55e');
+        return importedModel;
     } catch (error) {
         console.error('3D import failed:', error);
         importedModel?.removeFromParent();
@@ -5890,11 +5906,136 @@ async function handle3DImport() {
         applySceneSnapshot(historyBefore);
         const errorDetail = getImportErrorDetail(error, extension);
         setStatus(errorDetail ? `가져오기 오류: ${errorDetail}` : '가져오기 오류', '#ef4444');
-        alert(getImportErrorMessage(error, extension));
+        if (!options.suppressErrorAlert) alert(getImportErrorMessage(error, extension));
+        return null;
     } finally {
         state.pendingImportFile = null;
         el.btnConfirmImport.disabled = false;
         showLoading(false);
+    }
+}
+
+function isTestModel(model) {
+    return Boolean(model?.userData?.testModel)
+        || TEST_MODEL_FILE_NAMES.has(model?.userData?.modelName);
+}
+
+function removeExistingTestModels() {
+    const testModels = state.models.filter(isTestModel);
+    if (!testModels.length) return false;
+
+    if (state.zeroPointEdit.active && testModels.includes(state.zeroPointEdit.model)) {
+        exitZeroPointEditor();
+    }
+    invalidateSimulationSnapCandidates();
+    setBaseJogGizmoEnabled(false);
+    state.transformControls.detach();
+    closeModelContextMenu();
+
+    const removedSelectedModel = testModels.includes(state.selectedModel);
+    testModels.forEach((model) => {
+        if (model.userData.motionInstanceId) state.motionPrograms.delete(model.userData.motionInstanceId);
+        disposeModelOutlines(model);
+        model.removeFromParent();
+        disposeObjectResources(model);
+    });
+    state.models = state.models.filter((model) => !testModels.includes(model));
+    if (removedSelectedModel) {
+        state.selectedModel = null;
+        state.selectedModelPart = null;
+    }
+
+    updateUIStatus();
+    if (!state.selectedModel) {
+        selectSceneModel(state.activeArticulatedModel || state.models.at(-1) || null);
+    }
+    return true;
+}
+
+function applyTestTcpProfile(robot) {
+    if (!robot?.userData?.tcpFrame) return false;
+    if (state.activeArticulatedModel !== robot) {
+        state.activeArticulatedModel = robot;
+        renderJogControls(robot);
+    }
+    commitAllPendingHistories();
+    const before = captureSceneSnapshot();
+    clearTcpProfileLive(robot);
+    const profiles = ensureRobotTcpProfiles(robot);
+    const profile = profiles[0];
+    robot.userData.activeTcpProfileIndex = 0;
+    const isScara = robot.userData.manifest?.robotType === 'scara';
+    profile.position.set(200, 0, isScara ? -33 : 33);
+    profile.quaternion.identity();
+    syncActiveTcpFrame(robot);
+    captureCurrentTcpTarget(robot);
+    refreshTcpProfileUi(robot);
+    setTcpProfileStatus('Test TCP 1 값을 적용했습니다.', 'success');
+    recordHistory('Test TCP 1 설정', before, captureSceneSnapshot());
+    return true;
+}
+
+async function loadTestModelAssetFile(assetPath) {
+    const response = await fetch(assetPath, { cache: 'no-store' });
+    if (!response.ok) {
+        throw new Error(`Test asset request failed (${response.status}): ${assetPath}`);
+    }
+    const blob = await response.blob();
+    const name = assetPath.split('/').pop() || 'test-model';
+    return new File([blob], name, { type: blob.type || 'application/octet-stream' });
+}
+
+async function importTestModelFile(file, placement, options = {}) {
+    state.pendingImportFile = file;
+    if (el.importPlacement) el.importPlacement.value = placement;
+    if (el.importQuality) el.importQuality.value = 'auto';
+    return handle3DImport({ ...options, suppressErrorAlert: true });
+}
+
+async function handleTestModelImport() {
+    if (isMotionActive()) {
+        setStatus('모션 실행 중에는 테스트 모델을 적용할 수 없습니다.', '#f59e0b');
+        return;
+    }
+    if (!window.confirm('테스트용 모델링을 적용하시겠습니까?\nTCP 1번은 Test 값으로 덮어쓰기됩니다.')) return;
+
+    const robot = getArticulatedRobotForAttachment();
+    if (!robot) {
+        alert('Tool을 장착할 로봇을 먼저 불러와 주세요.');
+        return;
+    }
+
+    el.btnTestModel.disabled = true;
+    try {
+        const [equipmentFile, toolFile] = await Promise.all([
+            loadTestModelAssetFile(TEST_MODEL_ASSET_PATHS.scene),
+            loadTestModelAssetFile(TEST_MODEL_ASSET_PATHS.tcp)
+        ]);
+        const replacementBefore = captureSceneSnapshot();
+        if (removeExistingTestModels()) {
+            recordHistory('기존 Test 모델 삭제', replacementBefore, captureSceneSnapshot());
+        }
+        if (!applyTestTcpProfile(robot)) throw new Error('TCP 1 is not available.');
+
+        const equipment = await importTestModelFile(equipmentFile, 'scene', {
+            testModel: true
+        });
+        if (!equipment) throw new Error('Test equipment import failed.');
+        const tool = await importTestModelFile(toolFile, 'tcp', {
+            testModel: true,
+            testToolPositionZero: true,
+            testToolRotationX: robot.userData.manifest?.robotType === 'scara'
+        });
+        if (!tool) throw new Error('Vacuum tool import failed.');
+
+        setStatus('Test 모델과 Tool 적용 완료', '#22c55e');
+    } catch (error) {
+        console.error('Test model import failed:', error);
+        setStatus('Test 모델 적용 오류', '#ef4444');
+        alert(`테스트 모델을 불러오지 못했습니다.\n${error.message || error}`);
+    } finally {
+        state.pendingImportFile = null;
+        el.btnTestModel.disabled = false;
     }
 }
 
