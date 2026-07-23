@@ -1813,6 +1813,15 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
     justify-content: center;
 }
 
+.virtual-controller-bridge-network {
+    display: grid;
+    gap: 0.7rem;
+    padding: 0.65rem;
+    border: 1px solid rgba(96, 165, 250, 0.2);
+    border-radius: 10px;
+    background: rgba(37, 99, 235, 0.08);
+}
+
 [data-virtual-controller-source][hidden] {
     display: none;
 }
@@ -1825,7 +1834,8 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
     font-weight: 600;
 }
 
-.virtual-controller-target select {
+.virtual-controller-target select,
+.virtual-controller-target input {
     width: 100%;
     min-width: 0;
     height: 34px;
@@ -1839,8 +1849,26 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
     font-size: 0.68rem;
 }
 
-.virtual-controller-target select:focus {
+.virtual-controller-target input {
+    padding: 0 0.6rem;
+}
+
+.virtual-controller-target select:focus,
+.virtual-controller-target input:focus {
     border-color: var(--accent);
+}
+
+.virtual-controller-fixed-port strong {
+    display: flex;
+    align-items: center;
+    min-height: 34px;
+    padding: 0 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.035);
+    color: #93c5fd;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.7rem;
 }
 
 .virtual-controller-connect {
@@ -1912,7 +1940,8 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
 }
 
 .virtual-controller-panel button:disabled,
-.virtual-controller-panel select:disabled {
+.virtual-controller-panel select:disabled,
+.virtual-controller-panel input:disabled {
     opacity: 0.38;
     cursor: default;
 }

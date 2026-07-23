@@ -421,7 +421,7 @@
                         </select>
                     </label>
                     <div class="virtual-controller-bridge-actions" data-virtual-controller-source="bridge">
-                        <a class="virtual-controller-bridge-download" href="./bridge/InoRobotVirtualControllerBridge.exe" download>
+                        <a class="virtual-controller-bridge-download" href="./bridge/InoRobotVirtualControllerBridge.zip" download>
                             <i class="fa-solid fa-download"></i>
                             <span>브리지 다운로드</span>
                         </a>
@@ -436,6 +436,16 @@
                         <i class="fa-solid fa-chart-line"></i>
                         <span>Trace 도구 다운로드 및 실행</span>
                     </a>
+                    <div class="virtual-controller-bridge-network" data-virtual-controller-source="bridge">
+                        <label class="virtual-controller-target">
+                            <span>컨트롤러 IP</span>
+                            <input id="virtual-controller-ip" type="text" inputmode="decimal" autocomplete="off" value="127.0.0.1" placeholder="예: 192.168.0.10" aria-label="컨트롤러 IP 주소">
+                        </label>
+                        <div class="virtual-controller-target virtual-controller-fixed-port">
+                            <span>컨트롤러 포트</span>
+                            <strong>3333 (고정)</strong>
+                        </div>
+                    </div>
                     <label class="virtual-controller-target">
                         <span>대상 로봇</span>
                         <select id="virtual-controller-robot" aria-label="가상 컨트롤러 대상 로봇">
@@ -599,6 +609,6 @@
         </div>
     </footer>
 
-<script type="module" src="main.js?v=20260721-test-model-2"></script>
+<script type="module" src="main.js?v=20260723-scara-tcp-j3-vc-ip-1"></script>
 </body>
 </html>

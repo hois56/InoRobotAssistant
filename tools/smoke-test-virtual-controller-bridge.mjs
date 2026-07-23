@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 
+const CONTROLLER_PORT = 3333;
+
 const result = await new Promise((resolve, reject) => {
     const socket = new WebSocket('ws://127.0.0.1:5055/ws');
     const timeout = setTimeout(() => {
@@ -10,7 +12,7 @@ const result = await new Promise((resolve, reject) => {
     socket.addEventListener('message', (event) => {
         const message = JSON.parse(String(event.data));
         if (message.type === 'bridgeReady') {
-            socket.send(JSON.stringify({ type: 'connect', ip: '127.0.0.1' }));
+            socket.send(JSON.stringify({ type: 'connect', ip: '127.0.0.1', port: CONTROLLER_PORT }));
         } else if (message.type === 'connectResult') {
             if (!message.success) {
                 clearTimeout(timeout);

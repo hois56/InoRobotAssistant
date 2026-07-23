@@ -43,7 +43,7 @@ internal sealed class NativeRobotClient : IDisposable
                 : IntPtr.Zero);
     }
 
-    public (bool Success, string Message) Connect(string ipAddress = "127.0.0.1", int port = 2222, int timeoutMs = 1000)
+    public (bool Success, string Message) Connect(string ipAddress = "127.0.0.1", int port = 3333, int timeoutMs = 1000)
     {
         lock (_sync)
         {

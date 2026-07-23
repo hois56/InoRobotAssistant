@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import {
     VIRTUAL_CONTROLLER_BRIDGE_URL,
     VIRTUAL_CONTROLLER_BRIDGE_HEALTH_URL,
+    VIRTUAL_CONTROLLER_TARGET_PORT,
     VIRTUAL_CONTROLLER_TRACE_URL,
     VIRTUAL_CONTROLLER_SAMPLE_INTERVAL_MS,
     VIRTUAL_CONTROLLER_SOURCES,
@@ -13,6 +14,7 @@ import {
 
 assert.equal(VIRTUAL_CONTROLLER_BRIDGE_URL, 'ws://127.0.0.1:5055/ws');
 assert.equal(VIRTUAL_CONTROLLER_BRIDGE_HEALTH_URL, 'http://127.0.0.1:5055/api/health');
+assert.equal(VIRTUAL_CONTROLLER_TARGET_PORT, 3333);
 assert.equal(VIRTUAL_CONTROLLER_TRACE_URL, 'ws://127.0.0.1:5000/ws');
 assert.equal(VIRTUAL_CONTROLLER_SAMPLE_INTERVAL_MS, 4);
 assert.equal(VIRTUAL_CONTROLLER_SOURCES.trace.startCommand, 'startTrace');
@@ -117,8 +119,10 @@ const bridge = await readFile(new URL('../2_3DSimulation/VirtualControllerBridge
 const nativeClient = await readFile(new URL('../2_3DSimulation/VirtualControllerBridge/NativeRobotClient.cs', import.meta.url), 'utf8');
 assert.match(html, /id="virtual-controller-panel"/);
 assert.match(html, /data-panel-toggle="virtual-controller-panel"/);
-assert.match(html, /bridge\/InoRobotVirtualControllerBridge\.exe/);
+assert.match(html, /bridge\/InoRobotVirtualControllerBridge\.zip/);
 assert.match(html, /id="virtual-controller-source"/);
+assert.match(html, /id="virtual-controller-ip"/);
+assert.match(html, /3333 \(고정\)/);
 assert.match(html, /id="virtual-controller-bridge-start"/);
 assert.match(html, /id="view-presets-panel"/);
 assert.match(html, /data-panel-toggle="view-presets-panel"/);
@@ -129,7 +133,7 @@ assert.doesNotMatch(html, /<span>체크 로봇<\/span>/);
 assert.match(html, /InoRobotTrace_V1\.4\.zip/);
 assert.doesNotMatch(main, /from\s+['"]\.\/virtual-controller-core\.mjs/);
 assert.match(main, /ensureVirtualControllerCore\(\)/);
-assert.match(main, /virtual-controller-core\.mjs\?v=20260720-view-presets-only-1/);
+assert.match(main, /virtual-controller-core\.mjs\?v=20260723-vc-ip-port-1/);
 assert.match(main, /source\.startCommand/);
 assert.match(main, /startVirtualControllerStream/);
 assert.match(main, /stopVirtualControllerBridge/);
@@ -145,18 +149,21 @@ assert.match(main, /VIRTUAL_CONTROLLER_STREAM_STALL_MS = 750/);
 assert.match(main, /const sample = controller\.samples\.getLatest\(\)/);
 assert.match(main, /sample\.sampleId <= controller\.lastAppliedSampleId/);
 assert.match(main, /sample\.joints\.length < joints\.length/);
-assert.match(main, /setJointAngle\(joint, sample\.joints\[index\], false\)/);
+assert.match(main, /setJointAngle\(joint, (?:sample\.joints\[index\]|value), false\)/);
 assert.match(main, /function addViewMotionStep\(\)/);
 assert.match(main, /step\.motion === 'VIEW'/);
 assert.match(main, /Trace에서 관절 위치\(J1~J6\)를 가져올 수 없습니다\./);
 assert.doesNotMatch(main, /sampleQuaternionForRobot|isTraceIkSolutionContinuous|TRACE_POSE_FALLBACK_STATUS/);
 assert.match(bridge, /BridgePort = 5055/);
+assert.match(bridge, /ControllerPort = 3333/);
+assert.match(bridge, /robot\.Connect\(ip, ControllerPort\)/);
 assert.match(bridge, /type = "robotState"/);
 assert.match(bridge, /type == "shutdown"/);
 assert.match(bridge, /BridgeProtocolRegistrar\.RegisterForCurrentUser/);
 assert.match(bridge, /Application\.Run\(bridgeWindow\)/);
 assert.match(bridge, /AccessControlAllowOrigin = "\*"/);
 assert.match(nativeClient, /IMC100_Get_RobJPosHere/);
+assert.match(nativeClient, /int port = 3333/);
 assert.match(nativeClient, /double\[\] tcp = Array\.Empty<double>\(\)/);
 assert.match(nativeClient, /if \(tcpResult >= 0\)/);
 
