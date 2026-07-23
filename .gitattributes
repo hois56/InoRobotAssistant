@@ -1,3 +1,4 @@
 *.exe filter=lfs diff=lfs merge=lfs -text
 *.zip filter=lfs diff=lfs merge=lfs -text
 7_DebuggingTool/**/*.zip !filter !diff !merge
+2_3DSimulation/bridge/*.zip !filter !diff !merge
