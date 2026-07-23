@@ -121,6 +121,7 @@ const state = {
         wanted: false,
         status: 'disconnected',
         source: 'bridge',
+        ipAddress: '127.0.0.1',
         bridgeStopInProgress: false,
         bridgeStartInProgress: false,
         bridgeRunning: false,
@@ -348,6 +349,7 @@ const el = {
     viewPresetsList: document.getElementById('view-presets-list'),
     virtualControllerSource: document.getElementById('virtual-controller-source'),
     virtualControllerEndpoint: document.getElementById('virtual-controller-endpoint'),
+    virtualControllerIp: document.getElementById('virtual-controller-ip'),
     virtualControllerRobot: document.getElementById('virtual-controller-robot'),
     btnVirtualControllerConnect: document.getElementById('virtual-controller-connect'),
     btnVirtualControllerBridgeStart: document.getElementById('virtual-controller-bridge-start'),
@@ -2882,6 +2884,9 @@ function setupEventListeners() {
         state.virtualController.source = el.virtualControllerSource.value === 'trace' ? 'trace' : 'bridge';
         state.virtualController.samples?.clear();
         refreshVirtualControllerUi();
+    });
+    el.virtualControllerIp?.addEventListener('input', () => {
+        state.virtualController.ipAddress = el.virtualControllerIp.value.trim();
     });
     el.btnVirtualControllerConnect?.addEventListener('click', () => {
         if (state.virtualController.wanted) disconnectVirtualController();
@@ -7410,7 +7415,7 @@ async function ensureVirtualControllerCore() {
     const controller = state.virtualController;
     if (controller.core) return controller.core;
     if (!controller.corePromise) {
-        controller.corePromise = import('./virtual-controller-core.mjs?v=20260720-view-presets-only-1')
+        controller.corePromise = import('./virtual-controller-core.mjs?v=20260723-vc-ip-port-1')
             .then((core) => {
                 controller.core = core;
                 controller.samples = new core.VirtualControllerSampleBuffer();
@@ -7500,6 +7505,10 @@ function refreshVirtualControllerUi() {
     });
     if (el.virtualControllerEndpoint) {
         el.virtualControllerEndpoint.innerHTML = `<i class="fa-solid fa-network-wired"></i> ${uiText(source.label)} · ${source.socketUrl.replace(/^ws:\/\//, '')}`;
+    }
+    if (el.virtualControllerIp) {
+        el.virtualControllerIp.value = controller.ipAddress || '127.0.0.1';
+        el.virtualControllerIp.disabled = controller.wanted;
     }
     const statusLabels = {
         disconnected: '연결 안 됨',
@@ -7680,7 +7689,12 @@ function openVirtualControllerSocket(isReconnect = false) {
             refreshVirtualControllerUi();
         }
         controller.sourceConnectedAt = performance.now();
-        sendVirtualControllerCommand({ type: 'connect', ip: core.VIRTUAL_CONTROLLER_HOST });
+        const connectCommand = {
+            type: 'connect',
+            ip: controller.ipAddress || core.VIRTUAL_CONTROLLER_HOST
+        };
+        if (source.id === 'bridge') connectCommand.port = core.VIRTUAL_CONTROLLER_TARGET_PORT;
+        sendVirtualControllerCommand(connectCommand);
     });
     socket.addEventListener('message', (event) => {
         if (controller.socket === socket) handleVirtualControllerMessage(event.data);
@@ -7729,6 +7743,13 @@ async function connectVirtualController() {
     const controller = state.virtualController;
     if (isMotionActive()) return;
     refreshVirtualControllerRobotOptions();
+    const ipAddress = el.virtualControllerIp?.value.trim() || '';
+    if (getVirtualControllerSourceConfig().id === 'bridge' && !ipAddress) {
+        setVirtualControllerStatus('error', '컨트롤러 IP를 입력해 주세요.');
+        el.virtualControllerIp?.focus();
+        return;
+    }
+    controller.ipAddress = ipAddress || '127.0.0.1';
     if (!getVirtualControllerTargetRobot()) {
         setVirtualControllerStatus('error', '로봇을 선택하세요');
         return;
@@ -7979,7 +8000,20 @@ function applyVirtualControllerFrame(timestamp) {
         setVirtualControllerStatus('error', '가상 컨트롤러의 관절 위치를 가져올 수 없습니다.');
         return;
     }
-    joints.forEach((joint, index) => setJointAngle(joint, sample.joints[index], false));
+    joints.forEach((joint, index) => {
+        let value = sample.joints[index];
+        // The controller can report the SCARA vertical axis as a motor/encoder
+        // angle, while the simulator's J3 is prismatic and expects millimeters.
+        // TCP Z is already in the Cartesian unit expected by the simulator, so
+        // use it only for SCARA J3 and keep the remaining axes on joint feedback.
+        if (index === 2
+            && robot.userData.manifest?.robotType === 'scara'
+            && Number.isFinite(sample.position?.[2])) {
+            const tcpOffsetZ = Number(robot.userData.tcpFrame?.position?.z) || 0;
+            value = sample.position[2] - tcpOffsetZ;
+        }
+        setJointAngle(joint, value, false);
+    });
     robot.updateMatrixWorld(true);
     controller.statusMessage = '';
     const pose = getCurrentTcpPoseBase(robot);

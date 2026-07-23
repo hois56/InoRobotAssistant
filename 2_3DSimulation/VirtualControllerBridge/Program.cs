@@ -8,6 +8,7 @@ namespace InoRobotVirtualControllerBridge;
 internal static class Program
 {
     private const int BridgePort = 5055;
+    private const int ControllerPort = 3333;
     private const int DefaultSampleIntervalMs = 4;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -36,6 +37,7 @@ internal static class Program
         {
             service = "InoRobotVirtualControllerBridge",
             connected = robot.IsConnected,
+            controllerPort = ControllerPort,
             sampleIntervalMs = DefaultSampleIntervalMs
         }, JsonOptions));
         app.Map("/ws", context => HandleWebSocketAsync(context, app.Lifetime));
@@ -125,7 +127,7 @@ internal static class Program
                         string ip = root.TryGetProperty("ip", out JsonElement ipElement)
                             ? ipElement.GetString() ?? "127.0.0.1"
                             : "127.0.0.1";
-                        (bool success, string message) = robot.Connect(ip);
+                        (bool success, string message) = robot.Connect(ip, ControllerPort);
                         robotConnectedByThisSession = success;
                         await SendAsync(new { type = "connectResult", success, message });
                     }
