@@ -433,6 +433,8 @@ permalink: /kr/
     <link rel="stylesheet" href="/Language/runtime/i18n.css">
     <script src="/Language/runtime/locales-data.js?v=20260721-5" defer></script>
     <script src="/Language/runtime/i18n.js" defer></script>
+    <script src="/analytics-config.js"></script>
+    <script src="/analytics.js" defer></script>
     <script src="/Language/runtime/icon-fallback.js" defer></script>
     <!-- I18N-SEO:START -->
     <link rel="canonical" href="https://inovancerobot.com/">
@@ -720,10 +722,10 @@ permalink: /kr/
             <p class="text-[11px] font-medium text-slate-500">
                 Designed & Developed by <span class="text-sky-400/80">Jeongchan Lee</span>
             </p>
-            <p class="text-[9px] font-mono text-slate-600 mt-2 uppercase tracking-widest">
-                SYS ID:
-                <span id="visit-count"
-                    class="inline-flex align-middle ml-2 rounded border border-white/10 bg-slate-900/60 px-2 py-0.5 text-slate-400">visits 721</span>
+            <p class="text-[11px] font-medium text-slate-500">
+                <a href="/privacy/" class="text-sky-400/80 hover:text-sky-300 underline underline-offset-4">
+                    Privacy Policy
+                </a>
             </p>
         </div>
     </footer>
@@ -765,37 +767,6 @@ permalink: /kr/
                 badge.textContent = `Ver ${displayVersion}`;
             }
         });
-
-        const visitCounterStart = 721;
-        const visitCounterUrl = 'https://ino-robot-display-auth.hois56.workers.dev/visit';
-        const visitCounter = document.getElementById('visit-count');
-
-        function renderVisitCount(total) {
-            const count = Math.max(visitCounterStart, Number(total) || visitCounterStart);
-            visitCounter.textContent = `visits ${count.toLocaleString('en-US')}`;
-        }
-
-        renderVisitCount(visitCounterStart);
-
-        fetch(visitCounterUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                page_path: window.location.pathname,
-                page_title: document.title,
-                referrer: document.referrer
-            }),
-            cache: 'no-store'
-        })
-            .then(res => res.ok ? res.json() : null)
-            .then(data => {
-                if (data && data.ok) {
-                    renderVisitCount(data.total);
-                }
-            })
-            .catch(() => {
-                renderVisitCount(visitCounterStart);
-            });
 
         // Initialize Icons, or retain the local text fallback when the CDN is unavailable.
         if (window.lucide) {
