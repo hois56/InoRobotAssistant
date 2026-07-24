@@ -659,6 +659,12 @@
         "title": "trace",
         "versions": [
           {
+            "title": "Ver 1.5 (2026.07.24)",
+            "items": [
+              "Đã xóa: Đã xóa mục giám sát mức sử dụng pin."
+            ]
+          },
+          {
             "title": "Ver 1.4 (2026.07.18)",
             "items": [
               "**[Thêm]** Đã thêm máy chủ liên kết bộ điều khiển ảo cho 3D Simulation.",

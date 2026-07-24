@@ -8,8 +8,8 @@
   "legacy": {
     "안내": "Info",
     "Download": "Download",
-    "Download (Install)": "Download Installer",
-    "Download (Portable)": "Download Portable",
+    "Download Install": "Download Installer",
+    "Download Portable": "Download Portable",
     "다운로드": "Download",
     "메인 페이지로": "Go to home page",
     "전체보기": "View All",
