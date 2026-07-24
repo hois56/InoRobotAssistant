@@ -4207,7 +4207,7 @@ const accessoriesList = [
     },
     {
         "code": "01441075",
-        "type": "Expansion Card",
+        "type": "Remote Coupler",
         "name": "GL20-4AD-INT ",
         "description": "4 channel analog input module (Resolution 16 bits, sampling time 250 μs)",
         "spec": "ECAT remote IO",
@@ -4215,7 +4215,7 @@ const accessoriesList = [
     },
     {
         "code": "01441089",
-        "type": "Expansion Card",
+        "type": "Remote Coupler",
         "name": "GL20-4DA-INT",
         "description": "4 channel analog output module (Resolution 16 bits, sampling time 250 μs)",
         "spec": "ECAT remote IO",
@@ -4223,7 +4223,7 @@ const accessoriesList = [
     },
     {
         "code": "01441063",
-        "type": "Expansion Card",
+        "type": "Remote Coupler",
         "name": "GL20-0016ETN-INT",
         "description": "16 channel digital output module (NPN)",
         "spec": "ECAT remote IO",
@@ -4231,7 +4231,7 @@ const accessoriesList = [
     },
     {
         "code": "01441069",
-        "type": "Expansion Card",
+        "type": "Remote Coupler",
         "name": "GL20-0016ETP-INT",
         "description": "16 channel digital output module (PNP)",
         "spec": "ECAT remote IO",
@@ -4239,7 +4239,7 @@ const accessoriesList = [
     },
     {
         "code": "01441085",
-        "type": "Expansion Card",
+        "type": "Remote Coupler",
         "name": "GL20-1600END-INT",
         "description": "16 channel digital input module (NPN/PNP)",
         "spec": "ECAT remote IO",
@@ -4247,7 +4247,7 @@ const accessoriesList = [
     },
     {
         "code": "01441093",
-        "type": "Expansion Card",
+        "type": "Remote Coupler",
         "name": "GL20-RTU-ECT32-INT",
         "description": "GL20 series EtherCAT remote module",
         "spec": "ECAT remote IO",

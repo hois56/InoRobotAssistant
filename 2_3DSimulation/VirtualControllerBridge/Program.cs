@@ -8,7 +8,7 @@ namespace InoRobotVirtualControllerBridge;
 internal static class Program
 {
     private const int BridgePort = 5055;
-    private const int ControllerPort = 3333;
+    private const int ControllerPort = 2222;
     private const int DefaultSampleIntervalMs = 4;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 

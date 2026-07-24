@@ -14,7 +14,7 @@ import {
 
 assert.equal(VIRTUAL_CONTROLLER_BRIDGE_URL, 'ws://127.0.0.1:5055/ws');
 assert.equal(VIRTUAL_CONTROLLER_BRIDGE_HEALTH_URL, 'http://127.0.0.1:5055/api/health');
-assert.equal(VIRTUAL_CONTROLLER_TARGET_PORT, 3333);
+assert.equal(VIRTUAL_CONTROLLER_TARGET_PORT, 2222);
 assert.equal(VIRTUAL_CONTROLLER_TRACE_URL, 'ws://127.0.0.1:5000/ws');
 assert.equal(VIRTUAL_CONTROLLER_SAMPLE_INTERVAL_MS, 4);
 assert.equal(VIRTUAL_CONTROLLER_SOURCES.trace.startCommand, 'startTrace');
@@ -136,7 +136,7 @@ assert.doesNotMatch(html, /<span>체크 로봇<\/span>/);
 assert.match(html, /InoRobotTrace_V1\.4\.zip/);
 assert.doesNotMatch(main, /from\s+['"]\.\/virtual-controller-core\.mjs/);
 assert.match(main, /ensureVirtualControllerCore\(\)/);
-assert.match(main, /virtual-controller-core\.mjs\?v=20260723-vc-ip-port-1/);
+assert.match(main, /virtual-controller-core\.mjs\?v=20260725-vc-port-1/);
 assert.match(main, /source\.startCommand/);
 assert.match(main, /startVirtualControllerStream/);
 assert.match(main, /stopVirtualControllerBridge/);
@@ -158,7 +158,7 @@ assert.match(main, /step\.motion === 'VIEW'/);
 assert.match(main, /Trace에서 관절 위치\(J1~J6\)를 가져올 수 없습니다\./);
 assert.doesNotMatch(main, /sampleQuaternionForRobot|isTraceIkSolutionContinuous|TRACE_POSE_FALLBACK_STATUS/);
 assert.match(bridge, /BridgePort = 5055/);
-assert.match(bridge, /ControllerPort = 3333/);
+assert.match(bridge, /ControllerPort = 2222/);
 assert.match(bridge, /robot\.Connect\(ip, ControllerPort\)/);
 assert.match(bridge, /type = "robotState"/);
 assert.match(bridge, /type == "shutdown"/);
@@ -166,7 +166,7 @@ assert.match(bridge, /BridgeProtocolRegistrar\.RegisterForCurrentUser/);
 assert.match(bridge, /Application\.Run\(bridgeWindow\)/);
 assert.match(bridge, /AccessControlAllowOrigin = "\*"/);
 assert.match(nativeClient, /IMC100_Get_RobJPosHere/);
-assert.match(nativeClient, /int port = 3333/);
+assert.match(nativeClient, /int port = 2222/);
 assert.match(nativeClient, /double\[\] tcp = Array\.Empty<double>\(\)/);
 assert.match(nativeClient, /if \(tcpResult >= 0\)/);
 

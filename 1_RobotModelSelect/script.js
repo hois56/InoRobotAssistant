@@ -28,6 +28,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentActiveProduct = null;
 
+    function formatPinCount(pin) {
+        const match = String(pin).match(/^(\d+)핀$/);
+        return match ? `${match[1]} ${uiText('핀')}` : uiText(pin);
+    }
+
     let state = {
         filters: JSON.parse(JSON.stringify(filtersData)),
         products: JSON.parse(JSON.stringify(productsData)),
@@ -1243,6 +1248,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <label id="header-expansion" style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">컨트롤러 확장 카드 옵션</label>
                 <div id="expansion-cards-container" style="display:flex; flex-direction:column; gap:8px;"></div>
             </div>
+
+            <div style="margin-bottom:20px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
+                <label id="header-remote-coupler" style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">리모트 커플러 옵션</label>
+                <div id="remote-couplers-container" style="display:flex; flex-direction:column; gap:8px;"></div>
+            </div>
         `;
         rightCol.innerHTML = infoHtml;
 
@@ -1412,6 +1422,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
             }
+
+            // Remote Coupler
+            const remoteCouplerHeader = rightCol.querySelector('#header-remote-coupler');
+            if (remoteCouplerHeader) {
+                const checkedRemoteCouplers = Array.from(rightCol.querySelectorAll('input[name="remoteCouplerSelection"]:checked'));
+                const selectedCodes = checkedRemoteCouplers.map(cb => cb.value);
+                const codeBadgeHtml = selectedCodes.length > 0 ? selectedCodes.map(c => `<span class="code-badge">${c}</span>`).join('') : '';
+                remoteCouplerHeader.innerHTML = `${uiText('리모트 커플러 옵션')} ${codeBadgeHtml}`;
+
+                rightCol.querySelectorAll('input[name="remoteCouplerSelection"]').forEach(cb => {
+                    const codeSpan = cb.parentElement.querySelector('.remote-coupler-code-inline');
+                    if (codeSpan) {
+                        codeSpan.style.display = cb.checked ? 'inline' : 'none';
+                    }
+                });
+            }
         }
 
         // Function to update dynamic code display
@@ -1537,11 +1563,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return match ? match[1] + '핀' : null;
         }
 
-        function formatPinCount(pin) {
-            const match = String(pin).match(/^(\d+)핀$/);
-            return match ? `${match[1]} ${uiText('핀')}` : uiText(pin);
-        }
-
         // 2. Arm / Body Cable Logic (Requirement 4)
         if (product.specs.Type === '6-Axis') {
             // Group Arm I/O by pins
@@ -1627,7 +1648,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (a.type === 'Software' && a.name.includes('Simulation')) return false;
             if (a.description.includes('1.0 TP Connector')) return false; 
             if (a.description.includes('TP2.0 adapter to old version')) return false;
-            if (a.type === 'Expansion Card') return false;
+            if (a.type === 'Expansion Card' || a.type === 'Remote Coupler') return false;
             if (isFixedBodySpecModel(prodName) && a.name === 'Handheld motor break release box') return false;
             return isModelMatch(a.target_models, prodName);
         });
@@ -1672,6 +1693,29 @@ document.addEventListener('DOMContentLoaded', () => {
             expContainer.addEventListener('change', updateHeaderCodes);
         } else {
             expContainer.innerHTML = `<span style="color:#999; font-size:13px;">${uiText('확장 카드 옵션이 없습니다.')}</span>`;
+        }
+
+        // 5. Remote Coupler Logic
+        const remoteCouplerContainer = rightCol.querySelector('#remote-couplers-container');
+        const remoteCouplerOptions = accs.filter(a => a.type === 'Remote Coupler');
+
+        if (remoteCouplerOptions.length > 0) {
+            remoteCouplerOptions.forEach(acc => {
+                const lbl = document.createElement('label');
+                lbl.style.display = "flex"; lbl.style.alignItems = "start"; lbl.style.gap = "8px"; lbl.style.fontSize = "14px"; lbl.style.cursor = "pointer";
+                lbl.innerHTML = `
+                    <input type="checkbox" name="remoteCouplerSelection" value="${acc.code}" data-desc="${acc.name} - ${acc.description}" data-spec="${acc.spec || ''}" style="margin-top:3px;">
+                    <div style="flex:1;">
+                        <strong>${uiText(acc.name)}</strong>
+                        <span class="remote-coupler-code-inline code-badge" style="display:none; margin-left:8px;">${acc.code}</span>
+                        <br><span style="color:#888; font-size:13px;">${uiText(acc.description)}</span>
+                    </div>
+                `;
+                remoteCouplerContainer.appendChild(lbl);
+            });
+            remoteCouplerContainer.addEventListener('change', updateHeaderCodes);
+        } else {
+            remoteCouplerContainer.innerHTML = `<span style="color:#999; font-size:13px;">${uiText('리모트 커플러 옵션이 없습니다.')}</span>`;
         }
 
         rightCol.querySelector('#comm-radios').addEventListener('change', updateHeaderCodes);
@@ -1833,6 +1877,25 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('input[name="expSelection"]:checked').forEach(cb => {
             const fullDesc = cb.getAttribute('data-desc') || "";
             let namePart = "확장 카드";
+            let detailPart = fullDesc;
+
+            if (fullDesc.includes(' - ')) {
+                const parts = fullDesc.split(' - ');
+                namePart = parts[0];
+                detailPart = parts.slice(1).join(' - ');
+            }
+
+            selectedAccs.push({
+                name: uiText(namePart),
+                details: uiText(detailPart),
+                code: cb.value
+            });
+        });
+
+        // Remote Couplers
+        document.querySelectorAll('input[name="remoteCouplerSelection"]:checked').forEach(cb => {
+            const fullDesc = cb.getAttribute('data-desc') || "";
+            let namePart = "리모트 커플러";
             let detailPart = fullDesc;
 
             if (fullDesc.includes(' - ')) {

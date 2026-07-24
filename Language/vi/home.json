@@ -81,10 +81,17 @@
     "intro": "Tệp này ghi lại các tính năng, tài liệu, thay đổi hiển thị và bản sửa lỗi mà người dùng có thể thấy trên từng thẻ ở trang chủ.",
     "sections": [
       {
-        "title": "Robot Model Select",
-        "versions": [
-          {
-            "title": "Ver 26.07.20",
+      "title": "Robot Model Select",
+      "versions": [
+        {
+          "title": "Ver 26.07.25",
+          "items": [
+            "**[Thêm]** Tách 6 module dòng GL20 khỏi card mở rộng bộ điều khiển và thêm chúng vào Tùy chọn bộ ghép nối từ xa.",
+            "**[Thay đổi]** Hoàn thiện hiển thị đa ngôn ngữ cho nhãn số chân cáp và kết quả cấu hình tùy chọn, đồng thời hiển thị mã đặt hàng trong nhóm mới."
+          ]
+        },
+        {
+          "title": "Ver 26.07.20",
             "items": [
               "**[Thay đổi]** Thêm mã model bộ điều khiển tương thích vào màn hình chọn model."
             ]
@@ -186,10 +193,17 @@
         ]
       },
         {
-        "title": "3D Simulation",
-          "versions": [
-            {
-            "title": "Ver 26.07.24",
+      "title": "3D Simulation",
+      "versions": [
+        {
+          "title": "Ver 26.07.25",
+          "items": [
+            "**[Cải tiến]** Model STL lớn giờ đây sử dụng proxy va chạm riêng để cải thiện đồng thời chi tiết hiển thị và hiệu năng kiểm tra va chạm.",
+            "**[Sửa]** Đổi cổng đích của bộ điều khiển ảo từ 3333 thành 2222 và thêm đường dẫn dự phòng có quyền ghi khi tải thư viện native."
+          ]
+        },
+        {
+          "title": "Ver 26.07.24",
               "items": [
                 "**[Thêm]** Đã thêm phát hiện va chạm theo hình dạng thực giữa các khâu robot, Tool và mô hình thiết bị; các mô hình va chạm được hiển thị màu đỏ.",
                 "**[Thêm]** Đã thêm thiết lập vùng can thiệp để tạo vùng ảo tại vị trí mong muốn.",

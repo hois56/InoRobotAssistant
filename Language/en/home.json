@@ -81,10 +81,17 @@
     "intro": "This file records user-visible feature additions, content updates, display changes, and fixes for each card on the home page.",
     "sections": [
       {
-        "title": "Robot Model Select",
-        "versions": [
-          {
-            "title": "Ver 26.07.20",
+      "title": "Robot Model Select",
+      "versions": [
+        {
+          "title": "Ver 26.07.25",
+          "items": [
+            "**[Added]** Separated six GL20 series modules from controller expansion cards and added them under Remote Coupler Options.",
+            "**[Changed]** Localized cable pin labels and option configuration output, including order-code display for the new group."
+          ]
+        },
+        {
+          "title": "Ver 26.07.20",
             "items": [
               "**[Changed]** Added compatible controller model numbers to the model selection screen."
             ]
@@ -186,10 +193,17 @@
         ]
       },
         {
-        "title": "3D Simulation",
-          "versions": [
-            {
-            "title": "Ver 26.07.24",
+      "title": "3D Simulation",
+      "versions": [
+        {
+          "title": "Ver 26.07.25",
+          "items": [
+            "**[Improved]** Large STL models now use a separate collision proxy so visual detail and collision-check performance can be improved together.",
+            "**[Fixed]** Changed the virtual-controller target port from 3333 to 2222 and added a writable fallback path for native-library loading."
+          ]
+        },
+        {
+          "title": "Ver 26.07.24",
               "items": [
                 "**[Added]** Added mesh-accurate collision detection among robot links, Tools, and equipment models, highlighting colliding models in red.",
                 "**[Added]** Added interference-zone settings for defining virtual zones at desired locations.",

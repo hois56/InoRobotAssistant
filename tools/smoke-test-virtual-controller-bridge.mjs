@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-const CONTROLLER_PORT = 3333;
+const CONTROLLER_PORT = 2222;
 
 const result = await new Promise((resolve, reject) => {
     const socket = new WebSocket('ws://127.0.0.1:5055/ws');
