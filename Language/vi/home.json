@@ -486,6 +486,12 @@
       "title": "Debugging Tool",
       "versions": [
         {
+        "title": "Ver 26.07.25.01",
+          "items": [
+            "**[Cập nhật]** Đã cập nhật InoRobot Trace từ V1.4 lên V1.5."
+          ]
+        },
+        {
         "title": "Ver 26.07.24.01",
           "items": [
             "**[Cập nhật]** Đã cập nhật Communication Tester từ V2.6 lên V2.7."
@@ -659,9 +665,9 @@
         "title": "trace",
         "versions": [
           {
-            "title": "Ver 1.5 (2026.07.24)",
+            "title": "Ver 1.5 (2026.07.25)",
             "items": [
-              "Đã xóa: Đã xóa mục giám sát mức sử dụng pin."
+              "**[Sửa]** Đã xóa mục giám sát mức sử dụng pin."
             ]
           },
           {

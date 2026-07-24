@@ -486,6 +486,12 @@
       "title": "Debugging Tool",
       "versions": [
         {
+        "title": "Ver 26.07.25.01",
+          "items": [
+            "`[업데이트]` InoRobot Trace를 `V1.4 → V1.5`로 업데이트했습니다."
+          ]
+        },
+        {
         "title": "Ver 26.07.24.01",
           "items": [
             "`[업데이트]` Communication Tester를 `V2.6 → V2.7`로 업데이트했습니다."
@@ -659,9 +665,9 @@
         "title": "trace",
         "versions": [
           {
-            "title": "Ver 1.5 (2026.07.24)",
+            "title": "Ver 1.5 (2026.07.25)",
             "items": [
-              "제거 : 베터리 사용량 모니터링 항목을 제거했습니다."
+              "`[수정]` 베터리 사용량 모니터링 항목을 제거했습니다."
             ]
           },
           {

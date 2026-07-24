@@ -486,6 +486,12 @@
       "title": "Debugging Tool",
       "versions": [
         {
+        "title": "Ver 26.07.25.01",
+          "items": [
+            "**[Updated]** Updated InoRobot Trace from V1.4 to V1.5."
+          ]
+        },
+        {
         "title": "Ver 26.07.24.01",
           "items": [
             "**[Updated]** Updated Communication Tester from V2.6 to V2.7."
@@ -659,9 +665,9 @@
         "title": "trace",
         "versions": [
           {
-            "title": "Ver 1.5 (2026.07.24)",
+            "title": "Ver 1.5 (2026.07.25)",
             "items": [
-              "Removed: Removed the battery-usage monitoring item."
+              "**[Fixed]** Removed the battery-usage monitoring item."
             ]
           },
           {
