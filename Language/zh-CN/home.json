@@ -486,6 +486,12 @@
       "title": "Debugging Tool",
       "versions": [
         {
+        "title": "Ver 26.07.25.01",
+          "items": [
+            "**[更新]** InoRobot Trace 已从 V1.4 更新至 V1.5。"
+          ]
+        },
+        {
         "title": "Ver 26.07.24.01",
           "items": [
             "**[更新]** Communication Tester 已从 V2.6 更新至 V2.7。"
@@ -659,9 +665,9 @@
         "title": "trace",
         "versions": [
           {
-            "title": "Ver 1.5 (2026.07.24)",
+            "title": "Ver 1.5 (2026.07.25)",
             "items": [
-              "移除：已移除电池使用量监控项目。"
+              "**[修复]** 已移除电池使用量监控项目。"
             ]
           },
           {
