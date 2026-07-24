@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 
-// Mesh collision for the simulator.  The render geometry is used directly;
-// no box-shaped proxy is introduced.  A small local BVH keeps the expensive
-// triangle tests limited to the parts that are actually close together.
+// Mesh collision for the simulator. Render meshes may provide a separate
+// userData.collisionGeometry so high-resolution CAD can keep its visual detail
+// without forcing the collision BVH to index every render triangle.
 
 const DEFAULT_LEAF_SIZE = 16;
 const DEFAULT_EPSILON = 1e-5;
@@ -609,10 +609,11 @@ export class MeshCollisionSystem {
                     || child.userData.collisionDisabled
                     || isAttachedModelDescendant(child, root)
                     || !isVisibleInHierarchy(child)) return;
-                const localBounds = this.getGeometryBounds(child.geometry);
+                const collisionGeometry = child.userData?.collisionGeometry || child.geometry;
+                const localBounds = this.getGeometryBounds(collisionGeometry);
                 if (localBounds) cachedMeshes.push({
                     mesh: child,
-                    geometry: child.geometry,
+                    geometry: collisionGeometry,
                     localBounds
                 });
             });
@@ -623,8 +624,9 @@ export class MeshCollisionSystem {
                 isDescendantOf(mesh, root) && isVisibleInHierarchy(mesh) && localBounds
             ))
             .map((collider) => {
-                if (collider.geometry !== collider.mesh.geometry) {
-                    collider.geometry = collider.mesh.geometry;
+                const collisionGeometry = collider.mesh.userData?.collisionGeometry || collider.mesh.geometry;
+                if (collider.geometry !== collisionGeometry) {
+                    collider.geometry = collisionGeometry;
                     collider.localBounds = this.getGeometryBounds(collider.geometry);
                     collider.nodeBounds = null;
                     collider.nodeBoundsBvh = null;

@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -17,11 +18,7 @@ internal sealed class NativeRobotClient : IDisposable
 
     public static void PrepareNativeLibrary()
     {
-        string directory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Inovance",
-            "3DSimulationBridge");
-        Directory.CreateDirectory(directory);
+        string directory = GetWritableNativeLibraryDirectory();
         string nativePath = Path.Combine(directory, NativeLibraryName);
 
         using Stream? resource = Assembly.GetExecutingAssembly().GetManifestResourceStream(EmbeddedLibraryName);
@@ -38,12 +35,76 @@ internal sealed class NativeRobotClient : IDisposable
         }
 
         NativeLibrary.SetDllImportResolver(typeof(NativeRobotClient).Assembly, (libraryName, _, _) =>
-            string.Equals(libraryName, NativeLibraryName, StringComparison.OrdinalIgnoreCase)
-                ? NativeLibrary.Load(nativePath)
-                : IntPtr.Zero);
+        {
+            // The single-file host can normalize a DllImport name before it
+            // reaches the resolver (for example, dropping the .dll suffix).
+            // Match by file name so the embedded API is loaded in both the
+            // framework-dependent and published bridge builds.
+            string requestedName = Path.GetFileNameWithoutExtension(libraryName);
+            string expectedName = Path.GetFileNameWithoutExtension(NativeLibraryName);
+            if (!string.Equals(requestedName, expectedName, StringComparison.OrdinalIgnoreCase))
+                return IntPtr.Zero;
+
+            // IMC100API.dll is an older native Windows library. On some
+            // systems NativeLibrary.Load uses a LoadLibraryEx search policy
+            // that makes this library fail with E_ACCESSDENIED even though
+            // the same file loads normally. Use the explicit Win32 loader so
+            // the embedded dependency is resolved from its absolute path.
+            IntPtr handle = LoadLibrary(nativePath);
+            if (handle == IntPtr.Zero)
+            {
+                int error = Marshal.GetLastWin32Error();
+                throw new DllNotFoundException(
+                    $"Unable to load {nativePath}: {new Win32Exception(error).Message} (0x{error:X8}).");
+            }
+
+            return handle;
+        });
     }
 
-    public (bool Success, string Message) Connect(string ipAddress = "127.0.0.1", int port = 3333, int timeoutMs = 1000)
+    private static string GetWritableNativeLibraryDirectory()
+    {
+        string preferredDirectory = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Inovance",
+            "3DSimulationBridge");
+        string fallbackDirectory = Path.Combine(
+            Path.GetTempPath(),
+            "InoRobotVirtualControllerBridge",
+            Environment.UserName);
+
+        foreach (string directory in new[] { preferredDirectory, fallbackDirectory })
+        {
+            try
+            {
+                Directory.CreateDirectory(directory);
+                string nativePath = Path.Combine(directory, NativeLibraryName);
+                using FileStream probe = new(
+                    nativePath,
+                    FileMode.OpenOrCreate,
+                    FileAccess.ReadWrite,
+                    FileShare.Read);
+                return directory;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // A previous elevated installation can leave the preferred
+                // cache unreadable. Continue with the per-user temp cache.
+            }
+            catch (IOException)
+            {
+                // The cache may be locked by another installation. Continue
+                // with the fallback location instead of breaking the bridge.
+            }
+        }
+
+        throw new InvalidOperationException("A writable directory for IMC100API.dll could not be created.");
+    }
+
+    [DllImport("kernel32.dll", EntryPoint = "LoadLibraryW", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr LoadLibrary(string fileName);
+
+    public (bool Success, string Message) Connect(string ipAddress = "127.0.0.1", int port = 2222, int timeoutMs = 1000)
     {
         lock (_sync)
         {

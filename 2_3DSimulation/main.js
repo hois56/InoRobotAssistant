@@ -12,7 +12,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { enableContinuousTransformRotation } from '../3_ToolSelector/continuous-transform-rotation.mjs?v=20260720-rx-continuous-1';
 import { buildStepSnapCandidates } from '../3_ToolSelector/snap-geometry.mjs?v=20260721-face-filter-1';
-import { MeshCollisionSystem } from './collision-system.mjs?v=20260724-mesh-collision-12';
+import { MeshCollisionSystem } from './collision-system.mjs?v=20260725-stl-proxy-1';
 import {
     MOTION_PROJECT_SCHEMA_VERSION,
     DEFAULT_MOVJ_SPEED,
@@ -7362,7 +7362,7 @@ function resetModelImportWorkerSession(session = state.modelImportWorkerSession,
 function getModelImportWorkerSession() {
     if (state.modelImportWorkerSession) return state.modelImportWorkerSession;
 
-    const workerUrl = new URL('./model-load-worker.js?v=20260721-background-model-2', import.meta.url);
+    const workerUrl = new URL('./model-load-worker.js?v=20260725-stl-proxy-1', import.meta.url);
     const worker = new Worker(workerUrl, { type: 'module' });
     const session = { worker, pending: new Map() };
     state.modelImportWorkerSession = session;
@@ -7406,6 +7406,15 @@ function createSTLGeometryFromWorker(serialized) {
     return geometry;
 }
 
+function createSTLResultFromWorker(payload) {
+    return {
+        geometry: createSTLGeometryFromWorker(payload.geometry),
+        collisionGeometry: payload.collisionGeometry
+            ? createSTLGeometryFromWorker(payload.collisionGeometry)
+            : null
+    };
+}
+
 function loadSTLInWorker(url) {
     const session = getModelImportWorkerSession();
     const requestId = ++state.modelImportRequestId;
@@ -7413,6 +7422,20 @@ function loadSTLInWorker(url) {
         session.pending.set(requestId, { resolve, reject });
         session.worker.postMessage({ type: 'parse-stl', requestId, url });
     }).then((payload) => createSTLGeometryFromWorker(payload.geometry));
+}
+
+function loadSTLBufferInWorker(buffer) {
+    const session = getModelImportWorkerSession();
+    const requestId = ++state.modelImportRequestId;
+    return new Promise((resolve, reject) => {
+        session.pending.set(requestId, { resolve, reject });
+        session.worker.postMessage({
+            type: 'parse-stl-buffer',
+            requestId,
+            buffer,
+            includeCollisionProxy: true
+        }, [buffer]);
+    }).then(createSTLResultFromWorker);
 }
 
 function createWorkerMaterial(definition = {}) {
@@ -7987,13 +8010,27 @@ async function parseUploaded3DFile(file, extension, placement, qualityKey = 'aut
         throw new Error('The model file exceeds the 500 MB import limit.');
     }
     if (extension === 'stl') {
-        const geometry = new STLLoader().parse(await file.arrayBuffer());
+        const sourceBuffer = await file.arrayBuffer();
+        let geometry;
+        let collisionGeometry = null;
+        try {
+            // Keep a copy for the synchronous fallback because the worker
+            // transfer detaches the ArrayBuffer passed to postMessage().
+            const workerResult = await loadSTLBufferInWorker(sourceBuffer.slice(0));
+            geometry = workerResult.geometry;
+            collisionGeometry = workerResult.collisionGeometry;
+        } catch (workerError) {
+            console.warn('STL worker unavailable; falling back to main-thread loading:', workerError);
+            geometry = new STLLoader().parse(sourceBuffer);
+        }
         if (!geometry.getAttribute('normal')) geometry.computeVertexNormals();
-        return new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
+        const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
             color: 0xbfc7d5,
             roughness: 0.6,
             metalness: 0.15
         }));
+        if (collisionGeometry) mesh.userData.collisionGeometry = collisionGeometry;
+        return mesh;
     }
     if (extension === 'fbx') {
         return new FBXLoader().parse(await file.arrayBuffer(), '');
@@ -9919,7 +9956,7 @@ async function ensureVirtualControllerCore() {
     const controller = state.virtualController;
     if (controller.core) return controller.core;
     if (!controller.corePromise) {
-        controller.corePromise = import('./virtual-controller-core.mjs?v=20260723-vc-ip-port-1')
+        controller.corePromise = import('./virtual-controller-core.mjs?v=20260725-vc-port-1')
             .then((core) => {
                 controller.core = core;
                 controller.samples = new core.VirtualControllerSampleBuffer();
@@ -12525,6 +12562,11 @@ function disposeObjectResources(object, disposed = null) {
         if (child.geometry && !cache.geometries.has(child.geometry)) {
             cache.geometries.add(child.geometry);
             child.geometry.dispose();
+        }
+        const collisionGeometry = child.userData?.collisionGeometry;
+        if (collisionGeometry && !cache.geometries.has(collisionGeometry)) {
+            cache.geometries.add(collisionGeometry);
+            collisionGeometry.dispose();
         }
         const materials = Array.isArray(child.material) ? child.material : [child.material];
         materials.forEach((material) => {

@@ -123,6 +123,21 @@ assert.equal(
     'The representative hit must avoid redundant precise checks against the remaining CAD sub-meshes.'
 );
 
+const proxyVisual = new THREE.Mesh(
+    new THREE.BoxGeometry(0.1, 0.1, 0.1),
+    new THREE.MeshBasicMaterial()
+);
+proxyVisual.userData.collisionGeometry = new THREE.BoxGeometry(2, 2, 2);
+const proxyObstacle = createBoxRoot(0.75);
+[proxyVisual, proxyObstacle].forEach((root) => root.updateMatrixWorld(true));
+const proxyHit = new MeshCollisionSystem().check([proxyVisual, proxyObstacle]);
+assert.ok(proxyHit, 'A separate collision proxy must participate in collision checks.');
+assert.equal(
+    proxyHit.meshA === proxyVisual || proxyHit.meshB === proxyVisual,
+    true,
+    'Collision results must retain the render mesh for highlighting when a proxy is used.'
+);
+
 const openShell = new THREE.Group();
 const openShellGeometry = new THREE.BufferGeometry();
 openShellGeometry.setAttribute('position', new THREE.Float32BufferAttribute([
