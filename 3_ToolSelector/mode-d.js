@@ -119,6 +119,9 @@ const state = {
 
 const el = {};
 const uiText = (value) => window.InoRobotI18n ? window.InoRobotI18n.translate(String(value)) : String(value);
+const uiFormat = (value, replacements = {}) => uiText(value).replace(/\{([A-Za-z0-9_]+)\}/g, (match, key) => (
+  Object.prototype.hasOwnProperty.call(replacements, key) ? String(replacements[key]) : match
+));
 const flatten = (value) => {
   if (!value) return [];
   if (ArrayBuffer.isView(value)) return value;
@@ -1117,7 +1120,10 @@ async function loadCadFile(file) {
   const sourceFormat = extension === 'stl' ? 'STL' : 'STEP';
   const importQuality = getSelectedStepImportQuality();
   const useLargeStepEngine = sourceFormat === 'STEP' && file.size >= LARGE_STEP_ENGINE_MIN_BYTES;
-  setStatus(`${sourceFormat} ${importQuality.label} 품질로 불러오는 중입니다.`);
+  setStatus(() => uiFormat('{format} {quality} 품질로 불러오는 중입니다.', {
+    format: sourceFormat,
+    quality: uiText(importQuality.label)
+  }));
   el.fileName.textContent = file.name;
   el.calculate.disabled = true;
   clearParts();
@@ -1202,7 +1208,11 @@ async function loadCadFile(file) {
         console.warn(`Skipped non-solid ${sourceFormat} mesh ${index + 1}:`, error);
       }
       if (index > 0 && index % 20 === 0) {
-        setStatus(`${sourceFormat} 파일을 불러오는 중입니다. (${index + 1}/${result.meshes.length})`);
+        setStatus(() => uiFormat('{format} 파일을 불러오는 중입니다. ({index}/{total})', {
+          format: sourceFormat,
+          index: index + 1,
+          total: result.meshes.length
+        }));
         await new Promise((resolve) => requestAnimationFrame(resolve));
       }
     }
@@ -1217,13 +1227,21 @@ async function loadCadFile(file) {
     el.exportStep.disabled = extension === 'stl';
     setSnapReadout(() => `${uiText('스냅 후보')} ${state.snapCandidates.length.toLocaleString()}${uiText('개가 준비되었습니다.')}`);
     const simplifiedNote = simplifiedSnapPartCount
-      ? ` · 대용량 최적화 ${simplifiedSnapPartCount.toLocaleString()}개 부품`
+      ? uiFormat(' · 대용량 최적화 {count}개 부품', { count: simplifiedSnapPartCount.toLocaleString() })
       : '';
-    setStatus(`${sourceFormat} 파일 분석 완료 · ${uiText('스냅 후보')} ${state.snapCandidates.length.toLocaleString()}${simplifiedNote}`, 'ok');
+    setStatus(() => uiFormat('{format} 파일 분석 완료 · {label} {count}{note}', {
+      format: sourceFormat,
+      label: uiText('스냅 후보'),
+      count: state.snapCandidates.length.toLocaleString(),
+      note: simplifiedNote
+    }), 'ok');
   } catch (error) {
     console.error('STEP import failed:', error);
     clearParts();
-    setStatus(`${sourceFormat} 파일을 해석할 수 없습니다. ${error.message}`, 'error');
+    setStatus(() => uiFormat('{format} 파일을 해석할 수 없습니다. {message}', {
+      format: sourceFormat,
+      message: error.message
+    }), 'error');
   }
 }
 
@@ -1526,7 +1544,9 @@ function setPickMode(mode) {
       : 'CAD 형상 위로 이동하면 스냅 후보가 표시됩니다.');
   } else {
     hideSnapMarker();
-    if (state.parts.length) setStatus(`${state.sourceCadFormat || 'CAD'} 파일 분석 완료`, 'ok');
+    if (state.parts.length) setStatus(() => uiFormat('{format} 파일 분석 완료', {
+      format: state.sourceCadFormat || 'CAD'
+    }), 'ok');
   }
 }
 
@@ -1719,7 +1739,10 @@ async function exportStepWithToolFrame() {
       }))
     }, (message) => setStatus(message));
     downloadStepBuffer(result.buffer, result.fileName);
-    setStatus(`STEP 파일 내보내기 완료 · ${selectedPartCount}개 부품 · ${result.fileName}`, 'ok');
+    setStatus(() => uiFormat('STEP 파일 내보내기 완료 · {count}개 부품 · {name}', {
+      count: selectedPartCount,
+      name: result.fileName
+    }), 'ok');
   } catch (error) {
     console.error('STEP export failed:', error);
     setStatus(`${uiText('STEP 파일을 내보낼 수 없습니다.')} ${error.message || ''}`.trim(), 'error');

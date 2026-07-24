@@ -175,7 +175,25 @@
     "STEP 형상을 변환하는 중입니다.": "Đang biến đổi hình học STEP.",
     "STEP 파일을 생성하는 중입니다.": "Đang tạo tệp STEP.",
     "STEP 파일 내보내기 완료": "Xuất STEP hoàn tất",
-    "STEP 파일을 내보낼 수 없습니다.": "Không thể xuất tệp STEP."
+    "STEP 파일을 내보낼 수 없습니다.": "Không thể xuất tệp STEP.",
+    "불러오기 품질": "Chất lượng nhập",
+    "기본": "Mặc định",
+    "초경량": "Siêu nhẹ",
+    "대용량 STEP의 메시 품질과 처리 속도를 조절합니다.": "Điều chỉnh chất lượng lưới và tốc độ xử lý của STEP lớn.",
+    "STEP/STP/STL 파일만 선택할 수 있습니다.": "Chỉ có thể chọn tệp STEP/STP/STL.",
+    "대용량 STEP 실제 형상을 읽는 중입니다.": "Đang đọc hình học thực của STEP lớn.",
+    "대용량 STEP 실제 형상을 저해상도로 메싱하는 중입니다.": "Đang tạo lưới độ phân giải thấp cho hình học thực của STEP lớn.",
+    "대용량 STEP 메시를 화면용 청크로 나누는 중입니다.": "Đang chia lưới STEP lớn thành các khối để hiển thị.",
+    "대용량 STEP 엔진을 준비하는 중입니다.": "Đang chuẩn bị bộ máy STEP lớn.",
+    "STEP 파일 해석 엔진을 준비하는 중입니다.": "Đang chuẩn bị bộ máy phân tích STEP.",
+    "STEP 파일을 다시 해석하는 중입니다.": "Đang phân tích lại tệp STEP.",
+    "{format} {quality} 품질로 불러오는 중입니다.": "Đang nhập tệp {format} với chất lượng {quality}.",
+    "{format} 파일을 불러오는 중입니다. ({index}/{total})": "Đang tải tệp {format}. ({index}/{total})",
+    " · 대용량 최적화 {count}개 부품": " · Tối ưu tệp lớn: {count} bộ phận",
+    "{format} 파일 분석 완료 · {label} {count}{note}": "Đã phân tích tệp {format} · {label} {count}{note}",
+    "{format} 파일을 해석할 수 없습니다. {message}": "Không thể phân tích tệp {format}. {message}",
+    "{format} 파일 분석 완료": "Đã phân tích tệp {format}",
+    "STEP 파일 내보내기 완료 · {count}개 부품 · {name}": "Đã xuất STEP · {count} bộ phận · {name}"
   },
   "patterns": []
 }
