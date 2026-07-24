@@ -455,10 +455,16 @@
         ]
       },
       {
-        "title": "Debugging Tool",
-        "versions": [
-          {
-            "title": "Ver 26.07.18.01",
+      "title": "Debugging Tool",
+      "versions": [
+        {
+        "title": "Ver 26.07.24.01",
+          "items": [
+            "**[Cập nhật]** Đã cập nhật Communication Tester từ V2.6 lên V2.7."
+          ]
+        },
+        {
+        "title": "Ver 26.07.18.01",
             "items": [
               "**[Cập nhật]** Đã cập nhật InoRobot Trace từ V1.3 lên V1.4.",
               "**[Thêm]** Đã bổ sung hỗ trợ tiếng Hàn, tiếng Anh, tiếng Trung và tiếng Việt; đồng thời dịch sang tiếng Hàn tất cả mục trước đây hiển thị bằng tiếng Anh trong một số giao diện tiếng Hàn.",
@@ -518,10 +524,17 @@
     "intro": "",
     "sections": [
       {
-        "title": "communicationTester",
-        "versions": [
-          {
-            "title": "Ver 2.6 (2026.06.15)",
+      "title": "communicationTester",
+      "versions": [
+        {
+        "title": "Ver 2.7 (2026.07.24)",
+          "items": [
+            "**[Thêm]** Thêm ghi mã lỗi vào nhật ký khi xảy ra lỗi.",
+            "**[Sửa]** Khắc phục lỗi không thể kết nối lại khi giao tiếp Socket."
+          ]
+        },
+        {
+        "title": "Ver 2.6 (2026.06.15)",
             "items": [
               "**[Thay đổi]** Thiết kế lại màn hình HMI mặc định theo chương trình chuẩn hóa.",
               "**[Thay đổi]** Nhúng HMI mặc định mới nhất vào chương trình, không cần tệp riêng.",

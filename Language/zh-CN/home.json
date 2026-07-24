@@ -455,10 +455,16 @@
         ]
       },
       {
-        "title": "Debugging Tool",
-        "versions": [
-          {
-            "title": "Ver 26.07.18.01",
+      "title": "Debugging Tool",
+      "versions": [
+        {
+        "title": "Ver 26.07.24.01",
+          "items": [
+            "**[更新]** Communication Tester 已从 V2.6 更新至 V2.7。"
+          ]
+        },
+        {
+        "title": "Ver 26.07.18.01",
             "items": [
               "InoRobot Trace 已从 V1.3 更新至 V1.4。",
               "**[新增]** 现已支持韩语、英语、中文和越南语，并已将部分韩语版本中以英语显示的项目全部翻译为韩语。",
@@ -518,10 +524,17 @@
     "intro": "",
     "sections": [
       {
-        "title": "communicationTester",
-        "versions": [
-          {
-            "title": "Ver 2.6 (2026.06.15)",
+      "title": "communicationTester",
+      "versions": [
+        {
+        "title": "Ver 2.7 (2026.07.24)",
+          "items": [
+            "**[新增]** 新增发生错误时将错误代码记录到日志的功能。",
+            "**[修复]** 修复 Socket 通信时无法重新连接的问题。"
+          ]
+        },
+        {
+        "title": "Ver 2.6 (2026.06.15)",
             "items": [
               "根据标准化程序变更重新设计默认 HMI 画面。",
               "将最新默认 HMI 内置到程序中，无需单独文件。",
