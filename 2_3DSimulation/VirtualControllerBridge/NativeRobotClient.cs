@@ -115,6 +115,135 @@ internal sealed class NativeRobotClient : IDisposable
         }
     }
 
+    public InterferenceZoneReadResult ReadInterferenceZone(int zoneNumber)
+    {
+        lock (_sync)
+        {
+            if (!IsConnected)
+                return InterferenceZoneReadResult.Disconnected(zoneNumber);
+
+            if (zoneNumber is < 0 or >= 16)
+            {
+                return InterferenceZoneReadResult.Failure(
+                    zoneNumber,
+                    $"간섭영역 번호가 유효하지 않습니다 (zone={zoneNumber})");
+            }
+
+            try
+            {
+                var zone = new InterferenceZone
+                {
+                    Diagonal = new float[6],
+                    PointL = new float[6]
+                };
+
+                int returnCode = NativeApi.IMC100_Get_InterferZonePara(
+                    zoneNumber,
+                    ref zone,
+                    CommunicationId);
+
+                if (returnCode < 0)
+                {
+                    return InterferenceZoneReadResult.Failure(
+                        zoneNumber,
+                        $"간섭영역 조회 실패 (ret={returnCode})",
+                        returnCode);
+                }
+
+                return InterferenceZoneReadResult.Successful(
+                    zoneNumber,
+                    returnCode,
+                    new InterferenceZoneReadValues
+                    {
+                        Input = zone.Input,
+                        Output = zone.Output,
+                        Scope = zone.Scope,
+                        IsAlert = zone.IsAlert,
+                        SafeL = zone.SafeL,
+                        WobjNum = zone.WobjNum,
+                        SetType = zone.SetType,
+                        Diagonal = zone.Diagonal ?? Array.Empty<float>(),
+                        PointL = zone.PointL ?? Array.Empty<float>()
+                    });
+            }
+            catch (Exception ex)
+            {
+                return InterferenceZoneReadResult.Failure(
+                    zoneNumber,
+                    $"간섭영역 조회 중 예외가 발생했습니다: {ex.Message}");
+            }
+        }
+    }
+
+    public InterferenceToolReadResult ReadInterferenceTool(int toolNumber)
+    {
+        lock (_sync)
+        {
+            if (!IsConnected)
+                return InterferenceToolReadResult.Disconnected(toolNumber);
+
+            if (toolNumber is < 0 or >= 16)
+            {
+                return InterferenceToolReadResult.Failure(
+                    toolNumber,
+                    $"Interference Tool number is out of range (tool={toolNumber})");
+            }
+
+            try
+            {
+                var tool = new InterferenceTool
+                {
+                    MTcpBox = new InterferenceTcpBox
+                    {
+                        IsUse = new ushort[4],
+                        ToolNum = new ushort[4]
+                    },
+                    SquareBox = new InterferenceSquareBox
+                    {
+                        Diagonal = new float[6],
+                        PointL = new float[6],
+                        PointH = new float[13]
+                    }
+                };
+
+                int returnCode = NativeApi.IMC100_Get_InterferToolPara(
+                    toolNumber,
+                    ref tool,
+                    CommunicationId);
+
+                if (returnCode < 0)
+                {
+                    return InterferenceToolReadResult.Failure(
+                        toolNumber,
+                        $"Interference Tool parameter read failed (ret={returnCode})",
+                        returnCode);
+                }
+
+                return InterferenceToolReadResult.Successful(
+                    toolNumber,
+                    returnCode,
+                    new InterferenceToolReadValues
+                    {
+                        Type = tool.Type,
+                        IsUse = tool.MTcpBox.IsUse ?? Array.Empty<ushort>(),
+                        ToolNum = tool.MTcpBox.ToolNum ?? Array.Empty<ushort>(),
+                        ZPos = tool.BallBox.ZPos,
+                        BallR = tool.BallBox.BallR,
+                        SetType = tool.SquareBox.SetType,
+                        Diagonal = tool.SquareBox.Diagonal ?? Array.Empty<float>(),
+                        PointL = tool.SquareBox.PointL ?? Array.Empty<float>(),
+                        PointH = tool.SquareBox.PointH ?? Array.Empty<float>()
+                    });
+            }
+            catch (Exception ex)
+            {
+                return InterferenceToolReadResult.Failure(
+                    toolNumber,
+                    $"Interference Tool parameter read threw an exception: {ex.Message}");
+            }
+        }
+    }
+
     public void Disconnect()
     {
         lock (_sync)
@@ -180,6 +309,65 @@ internal sealed class NativeRobotClient : IDisposable
         public double[] ExternalPositionData;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    private struct InterferenceZone
+    {
+        public int Input;
+        public int Output;
+        public ushort Scope;
+        public ushort IsAlert;
+        public int SafeL;
+        public ushort WobjNum;
+        public ushort SetType;
+
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 6)]
+        public float[] Diagonal;
+
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 6)]
+        public float[] PointL;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct InterferenceTcpBox
+    {
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
+        public ushort[] IsUse;
+
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
+        public ushort[] ToolNum;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct InterferenceBallBox
+    {
+        public float ZPos;
+        public float BallR;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct InterferenceSquareBox
+    {
+        public ushort SetType;
+
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 6)]
+        public float[] Diagonal;
+
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 6)]
+        public float[] PointL;
+
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 13)]
+        public float[] PointH;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
+    private struct InterferenceTool
+    {
+        public ushort Type;
+        public InterferenceTcpBox MTcpBox;
+        public InterferenceBallBox BallBox;
+        public InterferenceSquareBox SquareBox;
+    }
+
     private static class NativeApi
     {
         [DllImport(NativeLibraryName, EntryPoint = "IMC100_Init_ETH")]
@@ -194,9 +382,119 @@ internal sealed class NativeRobotClient : IDisposable
         [DllImport(NativeLibraryName, EntryPoint = "IMC100_Get_RobJPosHere")]
         public static extern int IMC100_Get_RobJPosHere(ref RobJointPosition position, int communicationId);
 
+        [DllImport(NativeLibraryName, EntryPoint = "IMC100_Get_InterferZonePara")]
+        public static extern int IMC100_Get_InterferZonePara(
+            int zoneNumber,
+            ref InterferenceZone zone,
+            int communicationId);
+
+        [DllImport(NativeLibraryName, EntryPoint = "IMC100_Get_InterferToolPara")]
+        public static extern int IMC100_Get_InterferToolPara(
+            int toolNumber,
+            ref InterferenceTool tool,
+            int communicationId);
+
         [DllImport(NativeLibraryName, EntryPoint = "IMC100_RemovePermit")]
         public static extern int IMC100_RemovePermit(int communicationId);
     }
 }
 
 internal sealed record RobotState(long Sequence, long Timestamp, double[] Joints, double[] Tcp);
+
+internal sealed class InterferenceZoneReadResult
+{
+    public bool Success { get; init; }
+    public string Message { get; init; } = string.Empty;
+    public int ZoneNumber { get; init; }
+    public int ReadReturnCode { get; init; }
+    public InterferenceZoneReadValues? Zone { get; init; }
+
+    public static InterferenceZoneReadResult Successful(
+        int zoneNumber,
+        int returnCode,
+        InterferenceZoneReadValues zone) => new()
+        {
+            Success = true,
+            Message = "간섭영역 조회 성공",
+            ZoneNumber = zoneNumber,
+            ReadReturnCode = returnCode,
+            Zone = zone
+        };
+
+    public static InterferenceZoneReadResult Disconnected(int zoneNumber) => Failure(
+        zoneNumber,
+        "실제 컨트롤러에 연결되어 있지 않습니다");
+
+    public static InterferenceZoneReadResult Failure(
+        int zoneNumber,
+        string message,
+        int returnCode = 0) => new()
+        {
+            Success = false,
+            Message = message,
+            ZoneNumber = zoneNumber,
+            ReadReturnCode = returnCode
+        };
+}
+
+internal sealed class InterferenceZoneReadValues
+{
+    public int Input { get; init; }
+    public int Output { get; init; }
+    public ushort Scope { get; init; }
+    public ushort IsAlert { get; init; }
+    public int SafeL { get; init; }
+    public ushort WobjNum { get; init; }
+    public ushort SetType { get; init; }
+    public float[] Diagonal { get; init; } = Array.Empty<float>();
+    public float[] PointL { get; init; } = Array.Empty<float>();
+}
+
+internal sealed class InterferenceToolReadResult
+{
+    public bool Success { get; init; }
+    public string Message { get; init; } = string.Empty;
+    public int ToolNumber { get; init; }
+    public int ReadReturnCode { get; init; }
+    public InterferenceToolReadValues? Tool { get; init; }
+
+    public static InterferenceToolReadResult Successful(
+        int toolNumber,
+        int returnCode,
+        InterferenceToolReadValues tool) => new()
+        {
+            Success = true,
+            Message = "Interference Tool parameters read successfully",
+            ToolNumber = toolNumber,
+            ReadReturnCode = returnCode,
+            Tool = tool
+        };
+
+    public static InterferenceToolReadResult Disconnected(int toolNumber) => Failure(
+        toolNumber,
+        "The real controller is not connected");
+
+    public static InterferenceToolReadResult Failure(
+        int toolNumber,
+        string message,
+        int returnCode = 0) => new()
+        {
+            Success = false,
+            Message = message,
+            ToolNumber = toolNumber,
+            ReadReturnCode = returnCode
+        };
+}
+
+internal sealed class InterferenceToolReadValues
+{
+    public ushort Type { get; init; }
+    public ushort[] IsUse { get; init; } = Array.Empty<ushort>();
+    public ushort[] ToolNum { get; init; } = Array.Empty<ushort>();
+    public float ZPos { get; init; }
+    public float BallR { get; init; }
+    public ushort SetType { get; init; }
+    public float[] Diagonal { get; init; } = Array.Empty<float>();
+    public float[] PointL { get; init; } = Array.Empty<float>();
+    public float[] PointH { get; init; } = Array.Empty<float>();
+}

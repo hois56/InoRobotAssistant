@@ -58,6 +58,7 @@ import {
     END_MONITORING_COORDINATE_MAX,
     END_MONITORING_RADIUS_MAX,
     END_MONITORING_HEIGHT_MAX,
+    END_MONITORING_MTPC_TOOL_IDS,
     cloneEndMonitoringObjects,
     normalizeEndMonitoringObjects,
     getEndMonitoringCuboidTransform,
@@ -156,7 +157,7 @@ const state = {
     },
     viewPresets: Array.from({ length: 4 }, () => null),
     activeViewSlot: null,
-    viewMonitor: null,
+    viewWindow: null,
     motionSaveTimer: null,
     lastCycleTimeDisplayUpdate: 0,
     fullscreenUiMode: false,
@@ -179,6 +180,8 @@ const state = {
         bridgeHealthDeadline: 0,
         bridgeHealthTimer: null,
         targetRobotId: null,
+        pendingInterferenceReads: new Set(),
+        pendingInterferenceToolReads: new Set(),
         samples: null,
         reconnectTimer: null,
         historyBefore: null,
@@ -979,7 +982,7 @@ function renderEndMonitoringList() {
         row.className = 'end-monitoring-row';
         row.dataset.endMonitoringRow = String(object.id);
         const type = object.type === 'sphere' ? 'Sphere' : object.type === 'cuboid' ? 'Cuboid' : 'MTCP';
-        row.innerHTML = `<strong>${object.id}</strong><span></span><em>${uiText(type)}</em><button type="button" data-end-monitoring-edit>${uiText('Edit')}</button>`;
+        row.innerHTML = `<strong>${object.id}</strong><span></span><em>${uiText(type)}</em><button type="button" class="end-monitoring-read" data-end-monitoring-read title="실제 컨트롤러에서 Tool 설정 가져오기">가져오기</button><button type="button" data-end-monitoring-edit>${uiText('Edit')}</button>`;
         row.querySelector('span').textContent = object.remarks || '-';
         return row;
     }));
@@ -1198,6 +1201,7 @@ function renderInterferenceZonePanel() {
             <strong class="interference-zone-number">${zone.id}</strong>
             <span class="interference-zone-remarks"></span>
             <span class="interference-zone-state">${interferenceZoneStatusLabel(status)}</span>
+            <button type="button" class="interference-zone-read" data-interference-zone-read title="실제 컨트롤러에서 설정 가져오기">가져오기</button>
             <button type="button" class="interference-zone-edit" data-interference-zone-edit>Edit</button>
         `;
         row.querySelector('.interference-zone-remarks').textContent = zone.remarks || '-';
@@ -1206,6 +1210,174 @@ function renderInterferenceZonePanel() {
     renderEndMonitoringList();
     renderInterferenceZoneIo();
     updateInterferenceZoneLauncherState();
+}
+
+function canReadInterferenceZoneFromController() {
+    const controller = state.virtualController;
+    return controller.controllerKind === 'real'
+        && controller.wanted
+        && ['connected', 'streaming'].includes(controller.status)
+        && controller.socket?.readyState === WebSocket.OPEN;
+}
+
+function readInterferenceZoneFromController(zoneId) {
+    const controller = state.virtualController;
+    if (!Number.isInteger(zoneId) || zoneId < 0 || zoneId >= INTERFERENCE_ZONE_COUNT) return;
+    if (!canReadInterferenceZoneFromController()) {
+        setStatus('실제 컨트롤러에 연결한 후 간섭영역 설정을 가져올 수 있습니다.', '#f59e0b');
+        return;
+    }
+    if (controller.pendingInterferenceReads.has(zoneId)) return;
+    controller.pendingInterferenceReads.add(zoneId);
+    refreshVirtualControllerUi();
+    if (sendVirtualControllerCommand({ type: 'readInterferenceZone', zoneNumber: zoneId })) return;
+    controller.pendingInterferenceReads.delete(zoneId);
+    refreshVirtualControllerUi();
+    setStatus('간섭영역 설정 요청을 전송하지 못했습니다.', '#ef4444');
+}
+
+function applyInterferenceZoneControllerResult(result) {
+    const controller = state.virtualController;
+    const zoneId = Number(result?.zoneNumber);
+    if (Number.isInteger(zoneId)) controller.pendingInterferenceReads.delete(zoneId);
+    refreshVirtualControllerUi();
+    if (!result?.success) {
+        setStatus(result?.message || '간섭영역 설정을 가져오지 못했습니다.', '#f59e0b');
+        return;
+    }
+    if (!Number.isInteger(zoneId) || zoneId < 0 || zoneId >= INTERFERENCE_ZONE_COUNT || !result.zone) {
+        setStatus('컨트롤러 간섭영역 응답 형식이 올바르지 않습니다.', '#ef4444');
+        return;
+    }
+
+    const source = result.zone;
+    const current = state.interferenceZones[zoneId];
+    if (!current) return;
+    const before = captureSceneSnapshot();
+    const diagonal = Array.isArray(source.diagonal) ? source.diagonal.map(Number) : [];
+    const pointL = Array.isArray(source.pointL) ? source.pointL.map(Number) : [];
+    const geometry = { ...current.geometry };
+    if (Number(source.setType) === 1) {
+        geometry.method = 'datumOffset';
+        if (pointL.length >= 6) {
+            geometry.datum = pointL.slice(0, 3);
+            geometry.offset = pointL.slice(3, 6);
+        }
+    } else {
+        geometry.method = 'diagonal';
+        if (diagonal.length >= 6) {
+            geometry.p1 = diagonal.slice(0, 3);
+            geometry.p2 = diagonal.slice(3, 6);
+        }
+    }
+    state.interferenceZones[zoneId] = normalizeInterferenceZones([{
+        ...current,
+        inSignal: Number(source.input),
+        outSignal: Number(source.output),
+        insideOutside: Number(source.scope) === 0 ? 'inside' : 'outside',
+        triggerAlarmAndStop: Number(source.isAlert) !== 0,
+        safetyDistance: Number(source.safeL),
+        geometry
+    }])[0];
+    resetInterferenceZoneRuntime(zoneId);
+    updateInterferenceZoneVisuals();
+    renderInterferenceZonePanel();
+    recordHistory('컨트롤러 간섭영역 설정 가져오기', before, captureSceneSnapshot());
+    setStatus('간섭영역 {id} 설정을 컨트롤러에서 가져왔습니다.', '#22c55e', { id: zoneId });
+}
+
+function readInterferenceToolFromController(toolId) {
+    const controller = state.virtualController;
+    if (!Number.isInteger(toolId) || toolId < 0 || toolId >= END_MONITORING_OBJECT_COUNT) return;
+    if (!canReadInterferenceZoneFromController()) {
+        setStatus('실제 컨트롤러에 연결된 경우에만 TCP 감지 범위 설정을 가져올 수 있습니다.', '#f59e0b');
+        return;
+    }
+    if (controller.pendingInterferenceToolReads.has(toolId)) return;
+    controller.pendingInterferenceToolReads.add(toolId);
+    refreshVirtualControllerUi();
+    if (sendVirtualControllerCommand({ type: 'readInterferenceTool', toolNumber: toolId })) return;
+    controller.pendingInterferenceToolReads.delete(toolId);
+    refreshVirtualControllerUi();
+    setStatus('TCP 감지 범위 설정 요청을 전송하지 못했습니다.', '#ef4444');
+}
+
+function getInterferenceToolObjectType(typeValue) {
+    // The controller's Tool type follows the native Tool enum ordering:
+    // 0 = MTCP, 1 = sphere, 2 = square/cuboid.
+    const type = Number(typeValue);
+    if (type === 0) return 'mtcp';
+    if (type === 1) return 'sphere';
+    if (type === 2) return 'cuboid';
+    return null;
+}
+
+function applyInterferenceToolControllerResult(result) {
+    const controller = state.virtualController;
+    const toolId = Number(result?.toolNumber);
+    if (Number.isInteger(toolId)) controller.pendingInterferenceToolReads.delete(toolId);
+    refreshVirtualControllerUi();
+    if (!result?.success) {
+        setStatus(result?.message || 'TCP 감지 범위 설정을 가져오지 못했습니다.', '#f59e0b');
+        return;
+    }
+    if (!Number.isInteger(toolId) || toolId < 0 || toolId >= END_MONITORING_OBJECT_COUNT || !result.tool) {
+        setStatus('컨트롤러 TCP 감지 범위 응답 형식이 올바르지 않습니다.', '#ef4444');
+        return;
+    }
+
+    const source = result.tool;
+    const objectType = getInterferenceToolObjectType(source.type);
+    const current = state.endMonitoringObjects[toolId];
+    if (!objectType || !current) {
+        setStatus(`지원하지 않는 컨트롤러 Tool 형식입니다 (type=${source.type}).`, '#ef4444');
+        return;
+    }
+
+    const before = captureSceneSnapshot();
+    const diagonal = Array.isArray(source.diagonal) ? source.diagonal.map(Number) : [];
+    const pointL = Array.isArray(source.pointL) ? source.pointL.map(Number) : [];
+    const pointH = Array.isArray(source.pointH) ? source.pointH.map(Number) : [];
+    const isUse = Array.isArray(source.isUse) ? source.isUse.map(Number) : [];
+    const cuboid = { ...current.cuboid };
+    const squareSetType = Number(source.setType);
+    if (squareSetType === 1) {
+        cuboid.method = 'datumOffset';
+        if (pointL.length >= 6) {
+            cuboid.datum = pointL.slice(0, 3);
+            cuboid.offset = pointL.slice(3, 6);
+        }
+    } else if (squareSetType === 2) {
+        cuboid.method = 'fourPointsHeight';
+        if (pointH.length >= 13) {
+            cuboid.points = Array.from({ length: 4 }, (_, index) => pointH.slice(index * 3, index * 3 + 3));
+            cuboid.height = pointH[12];
+        }
+    } else {
+        cuboid.method = 'diagonal';
+        if (diagonal.length >= 6) {
+            cuboid.p1 = diagonal.slice(0, 3);
+            cuboid.p2 = diagonal.slice(3, 6);
+        }
+    }
+
+    state.endMonitoringObjects[toolId] = normalizeEndMonitoringObjects([{
+        ...current,
+        type: objectType,
+        mtcpToolIds: END_MONITORING_MTPC_TOOL_IDS.filter((_, index) => Number(isUse[index]) !== 0),
+        sphere: {
+            ...current.sphere,
+            centerZ: Number(source.zPos),
+            radius: Number(source.ballR)
+        },
+        cuboid
+    }])[0];
+    resetAllInterferenceZoneRuntime();
+    refreshInterferenceZoneMonitoringObjectOptions();
+    renderInterferenceZonePanel();
+    updateEndMonitoringVisuals();
+    recordHistory('컨트롤러 TCP 감지 범위 설정 가져오기', before, captureSceneSnapshot());
+    setStatus('TCP 감지 범위 {id} 설정을 컨트롤러에서 가져왔습니다.', '#22c55e', { id: toolId });
 }
 
 function updateInterferenceZoneStatusUi() {
@@ -1859,7 +2031,7 @@ function updateEndMonitoringVisuals() {
 }
 
 function updateEndMonitoringVisualState() {
-    state.endMonitoringVisuals.forEach(({ group, materials, cameraFacingOutlines, zoneIds }) => {
+    state.endMonitoringVisuals.forEach(({ materials, zoneIds }) => {
         const hasDanger = [...zoneIds].some((zoneId) => {
             const status = getInterferenceZoneStatus(zoneId);
             return status === 'danger' || status === 'stopped';
@@ -1868,13 +2040,22 @@ function updateEndMonitoringVisualState() {
             material.color.setHex(hasDanger ? 0xef4444 : 0x14b8a6);
             material.emissive?.setHex(hasDanger ? 0x7f1d1d : 0x0f766e);
         });
-        if (state.camera && cameraFacingOutlines?.length) {
-            group.updateWorldMatrix(true, false);
-            const groupQuaternion = group.getWorldQuaternion(new THREE.Quaternion());
-            const cameraQuaternion = state.camera.getWorldQuaternion(new THREE.Quaternion());
-            const localCameraQuaternion = groupQuaternion.invert().multiply(cameraQuaternion);
-            cameraFacingOutlines.forEach((outline) => outline.quaternion.copy(localCameraQuaternion));
-        }
+    });
+    orientEndMonitoringOutlinesToCamera(state.camera);
+}
+
+function orientEndMonitoringOutlinesToCamera(camera) {
+    if (!camera) return;
+    camera.updateWorldMatrix(true, false);
+    const cameraQuaternion = camera.getWorldQuaternion(new THREE.Quaternion());
+    const groupQuaternion = new THREE.Quaternion();
+    const localCameraQuaternion = new THREE.Quaternion();
+    state.endMonitoringVisuals.forEach(({ group, cameraFacingOutlines }) => {
+        if (!cameraFacingOutlines?.length) return;
+        group.updateWorldMatrix(true, false);
+        group.getWorldQuaternion(groupQuaternion);
+        localCameraQuaternion.copy(groupQuaternion).invert().multiply(cameraQuaternion);
+        cameraFacingOutlines.forEach((outline) => outline.quaternion.copy(localCameraQuaternion));
     });
 }
 
@@ -2032,101 +2213,96 @@ function getViewPreset(slot) {
         : null;
 }
 
-function isViewMonitorOpen() {
-    const monitor = state.viewMonitor;
-    if (!monitor) return false;
-    if (monitor.popup && !monitor.popup.closed) return true;
-    closeViewMonitor(false);
+function setCameraUpFromPreset(camera, up) {
+    camera.up.fromArray(up);
+    if (camera.up.lengthSq() <= Number.EPSILON) camera.up.set(0, 0, 1);
+    else camera.up.normalize();
+}
+
+function isViewWindowOpen() {
+    if (getOpenViewWindow()) return true;
     return false;
 }
 
-function updateViewMonitorLabel() {
-    const monitor = state.viewMonitor;
-    const preset = getViewPreset(monitor?.slot);
-    if (!monitor || !preset) return;
-    const label = uiFormat('고정 뷰 · {name}', { name: preset.name });
-    if (monitor.label) monitor.label.textContent = label;
-    if (monitor.popup && !monitor.popup.closed) {
-        monitor.popup.document.title = `3D Simulation - ${label}`;
-    }
+function getOpenViewWindow() {
+    const viewWindow = state.viewWindow;
+    if (!viewWindow) return null;
+    if (viewWindow.popup && !viewWindow.popup.closed) return viewWindow;
+    closeViewWindow(false);
+    return null;
 }
 
-function applyViewMonitorPreset(slot) {
-    const monitor = state.viewMonitor;
+function updateViewWindowHeader() {
+    const viewWindow = state.viewWindow;
+    if (!viewWindow?.popup || viewWindow.popup.closed) return;
+    const count = viewWindow.cells.size;
+    if (viewWindow.grid) viewWindow.grid.dataset.count = String(count);
+}
+
+function applyViewWindowPreset(slot) {
+    const viewWindow = state.viewWindow;
     const preset = getViewPreset(slot);
-    if (!monitor?.camera || !preset || !isValidViewPreset(preset)) return false;
-    monitor.slot = Number(slot);
-    monitor.camera.position.fromArray(preset.camera.position);
-    monitor.camera.up.fromArray(preset.camera.up);
-    monitor.camera.zoom = Number.isFinite(preset.camera.zoom) && preset.camera.zoom > 0
+    const cell = viewWindow?.cells?.get(Number(slot));
+    if (!cell?.camera || !cell.controls || !preset || !isValidViewPreset(preset)) return false;
+    cell.camera.position.fromArray(preset.camera.position);
+    setCameraUpFromPreset(cell.camera, preset.camera.up);
+    cell.camera.zoom = Number.isFinite(preset.camera.zoom) && preset.camera.zoom > 0
         ? preset.camera.zoom
         : 1;
-    monitor.camera.updateProjectionMatrix();
-    monitor.camera.lookAt(new THREE.Vector3().fromArray(preset.camera.target));
-    updateViewMonitorLabel();
+    cell.camera.updateProjectionMatrix();
+    cell.controls.target.fromArray(preset.camera.target);
+    cell.camera.lookAt(cell.controls.target);
+    cell.controls.update();
+    if (cell.canvas) cell.canvas.setAttribute('aria-label', preset.name);
     requestRender();
     return true;
 }
 
-function resizeViewMonitor() {
-    const monitor = state.viewMonitor;
-    if (!monitor?.popup || monitor.popup.closed || !monitor.renderer || !monitor.camera) return;
-    const width = Math.max(1, monitor.popup.innerWidth || monitor.canvas.clientWidth || 1);
-    const height = Math.max(1, monitor.popup.innerHeight || monitor.canvas.clientHeight || 1);
-    monitor.renderer.setPixelRatio(Math.min(monitor.popup.devicePixelRatio || window.devicePixelRatio || 1, 2));
-    monitor.renderer.setSize(width, height, false);
-    monitor.camera.aspect = width / height;
-    monitor.camera.updateProjectionMatrix();
+function resizeViewWindow() {
+    const viewWindow = getOpenViewWindow();
+    if (!viewWindow?.popup || !viewWindow.grid) return;
+    const pixelRatio = Math.min(viewWindow.popup.devicePixelRatio || window.devicePixelRatio || 1, 2);
+    viewWindow.cells.forEach((cell) => {
+        const width = Math.max(1, cell.element.clientWidth);
+        const height = Math.max(1, cell.element.clientHeight);
+        cell.renderer.setPixelRatio(pixelRatio);
+        cell.renderer.setSize(width, height, false);
+        cell.camera.aspect = width / height;
+        cell.camera.updateProjectionMatrix();
+    });
     requestRender();
 }
 
-function renderViewMonitor() {
-    const monitor = state.viewMonitor;
-    if (!isViewMonitorOpen() || !state.scene || !monitor.renderer || !monitor.camera) return;
-    monitor.renderer.render(state.scene, monitor.camera);
+function renderViewWindow() {
+    const viewWindow = getOpenViewWindow();
+    if (!state.scene || !viewWindow) return;
+    viewWindow.cells.forEach((cell) => {
+        orientEndMonitoringOutlinesToCamera(cell.camera);
+        cell.renderer.render(state.scene, cell.camera);
+    });
+    orientEndMonitoringOutlinesToCamera(state.camera);
 }
 
-function closeViewMonitor(closePopup = true) {
-    const monitor = state.viewMonitor;
-    if (!monitor) return;
-    state.viewMonitor = null;
-    monitor.popup?.removeEventListener('resize', monitor.handleResize);
-    monitor.renderer?.dispose();
-    if (closePopup && monitor.popup && !monitor.popup.closed) monitor.popup.close();
-}
+function createViewWindowCell(slot) {
+    const viewWindow = state.viewWindow;
+    const preset = getViewPreset(slot);
+    if (!viewWindow?.popup || !viewWindow.grid || !preset || !isValidViewPreset(preset)) return null;
+    const element = viewWindow.popup.document.createElement('article');
+    element.className = 'view-window-cell';
+    element.dataset.slot = String(slot);
 
-function openViewMonitor(slot) {
-    const index = Number(slot);
-    const preset = getViewPreset(index);
-    if (!preset || !isValidViewPreset(preset) || !state.camera || !state.scene) return;
+    const label = viewWindow.popup.document.createElement('span');
+    label.className = 'view-window-label';
+    label.textContent = String(Number(slot) + 1);
+    label.setAttribute('aria-hidden', 'true');
+    element.append(label);
 
-    if (isViewMonitorOpen()) {
-        applyViewMonitorPreset(index);
-        state.viewMonitor.popup.focus();
-        return;
-    }
+    const canvas = viewWindow.popup.document.createElement('canvas');
+    canvas.className = 'view-window-canvas';
+    canvas.setAttribute('aria-label', preset.name);
+    element.append(canvas);
+    viewWindow.grid.appendChild(element);
 
-    const popup = window.open('', 'InoRobot-fixed-view-camera', 'popup=yes,width=960,height=720,resizable=yes');
-    if (!popup) {
-        setStatus('팝업이 차단되었습니다. 고정 카메라 창을 열려면 팝업을 허용하세요.', '#ef4444');
-        return;
-    }
-
-    const monitorTitle = uiText('고정 뷰 카메라');
-    popup.document.open();
-    popup.document.write(`<!doctype html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>3D Simulation - ${monitorTitle}</title><style>
-        :root { color-scheme: dark; }
-        html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #0b0e14; }
-        body { font-family: Inter, "Noto Sans KR", sans-serif; }
-        canvas { display: block; width: 100%; height: 100%; }
-        .view-monitor-label { position: fixed; top: 12px; left: 14px; z-index: 2; padding: 7px 11px; border: 1px solid rgba(96,165,250,.36); border-radius: 8px; color: #dbeafe; background: rgba(15,23,42,.78); box-shadow: 0 8px 24px rgba(2,6,23,.35); font-size: 12px; font-weight: 700; pointer-events: none; }
-    </style></head><body><div class="view-monitor-label"></div></body></html>`);
-    popup.document.close();
-
-    const canvas = popup.document.createElement('canvas');
-    canvas.setAttribute('aria-label', monitorTitle);
-    popup.document.body.appendChild(canvas);
-    const label = popup.document.querySelector('.view-monitor-label');
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     renderer.shadowMap.enabled = state.renderer?.shadowMap.enabled ?? true;
     renderer.toneMapping = state.renderer?.toneMapping ?? THREE.NoToneMapping;
@@ -2134,28 +2310,108 @@ function openViewMonitor(slot) {
     if ('outputColorSpace' in renderer && state.renderer?.outputColorSpace) {
         renderer.outputColorSpace = state.renderer.outputColorSpace;
     }
-    const camera = new THREE.PerspectiveCamera(
-        state.camera.fov,
-        1,
-        state.camera.near,
-        state.camera.far
-    );
-    state.viewMonitor = {
+    const camera = new THREE.PerspectiveCamera(state.camera.fov, 1, state.camera.near, state.camera.far);
+    // OrbitControls captures object.up when it is constructed. The simulation is
+    // Z-up, so the saved up axis must be applied before creating the controls.
+    setCameraUpFromPreset(camera, preset.camera.up);
+    const controls = new OrbitControls(camera, canvas);
+    controls.enableDamping = false;
+    controls.enablePan = true;
+    controls.screenSpacePanning = true;
+    controls.rotateSpeed = 1;
+    if ('zoomToCursor' in controls) controls.zoomToCursor = false;
+    controls.addEventListener('change', requestRender);
+    controls.addEventListener('start', requestRender);
+    controls.addEventListener('end', requestRender);
+    const cell = { slot: Number(slot), element, canvas, renderer, camera, controls };
+    viewWindow.cells.set(Number(slot), cell);
+    viewWindow.resizeObserver?.observe(element);
+    return cell;
+}
+
+function closeViewWindow(closePopup = true) {
+    const viewWindow = state.viewWindow;
+    if (!viewWindow) return;
+    state.viewWindow = null;
+    viewWindow.resizeObserver?.disconnect();
+    viewWindow.cells.forEach((cell) => {
+        cell.controls.dispose();
+        cell.renderer.dispose();
+    });
+    viewWindow.popup?.removeEventListener('resize', viewWindow.handleResize);
+    if (closePopup && viewWindow.popup && !viewWindow.popup.closed) viewWindow.popup.close();
+}
+
+function openViewWindow(slot) {
+    const index = Number(slot);
+    const preset = getViewPreset(index);
+    if (!preset || !isValidViewPreset(preset) || !state.camera || !state.scene) return;
+
+    if (isViewWindowOpen()) {
+        const viewWindow = state.viewWindow;
+        if (!viewWindow.cells.has(index)) createViewWindowCell(index);
+        updateViewWindowHeader();
+        resizeViewWindow();
+        applyViewWindowPreset(index);
+        viewWindow.popup.focus();
+        return;
+    }
+
+    const popup = window.open('', 'InoRobot-fixed-view-camera', 'popup=yes,width=1100,height=780,resizable=yes');
+    if (!popup) {
+        setStatus('팝업이 차단되었습니다. 고정 뷰 창을 열려면 팝업을 허용하세요.', '#ef4444');
+        return;
+    }
+
+    popup.document.open();
+    popup.document.write(`<!doctype html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>3D Simulation</title><style>
+        :root { color-scheme: dark; }
+        * { box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #080b12; }
+        body { display: flex; color: #dbeafe; font-family: Inter, "Noto Sans KR", sans-serif; }
+        #view-window-grid { width: 100%; height: 100%; display: grid; gap: 0; padding: 0; }
+        #view-window-grid[data-count="1"] { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+        #view-window-grid[data-count="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr); }
+        #view-window-grid[data-count="3"], #view-window-grid[data-count="4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); }
+        #view-window-grid[data-count="3"] .view-window-cell:last-child { grid-column: 1 / -1; }
+        .view-window-cell { position: relative; min-width: 0; min-height: 0; overflow: hidden; border-right: 1px solid rgba(148,163,184,.7); border-bottom: 1px solid rgba(148,163,184,.7); background: #0b0e14; }
+        #view-window-grid[data-count="1"] .view-window-cell,
+        #view-window-grid[data-count="2"] .view-window-cell:last-child,
+        #view-window-grid[data-count="3"] .view-window-cell:last-child,
+        #view-window-grid[data-count="4"] .view-window-cell:nth-child(2n) { border-right: 0; }
+        #view-window-grid[data-count="1"] .view-window-cell,
+        #view-window-grid[data-count="2"] .view-window-cell,
+        #view-window-grid[data-count="3"] .view-window-cell:last-child,
+        #view-window-grid[data-count="4"] .view-window-cell:nth-child(n + 3) { border-bottom: 0; }
+        .view-window-label { position: absolute; top: 8px; left: 10px; z-index: 2; color: rgba(226,232,240,.9); font: 600 14px/1 Inter, "Noto Sans KR", sans-serif; pointer-events: none; text-shadow: 0 1px 3px rgba(0,0,0,.85); }
+        .view-window-canvas { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+        .view-window-canvas:active { cursor: grabbing; }
+    </style></head><body><main id="view-window-grid" data-count="0"></main></body></html>`);
+    popup.document.close();
+
+    const grid = popup.document.getElementById('view-window-grid');
+    state.viewWindow = {
         popup,
-        canvas,
-        label,
-        renderer,
-        camera,
-        slot: index,
-        handleResize: null
+        grid,
+        cells: new Map(),
+        handleResize: null,
+        resizeObserver: null
     };
-    const handleResize = () => resizeViewMonitor();
-    state.viewMonitor.handleResize = handleResize;
+    const handleResize = () => resizeViewWindow();
+    state.viewWindow.handleResize = handleResize;
     popup.addEventListener('resize', handleResize);
-    popup.addEventListener('beforeunload', () => closeViewMonitor(false), { once: true });
-    popup.document.title = `3D Simulation - ${monitorTitle}`;
-    applyViewMonitorPreset(index);
-    resizeViewMonitor();
+    popup.addEventListener('beforeunload', () => closeViewWindow(false), { once: true });
+    if (typeof popup.ResizeObserver === 'function') {
+        state.viewWindow.resizeObserver = new popup.ResizeObserver(handleResize);
+        state.viewWindow.resizeObserver.observe(grid);
+    }
+    createViewWindowCell(index);
+    updateViewWindowHeader();
+    resizeViewWindow();
+    applyViewWindowPreset(index);
+    // The parent simulation loop renders every popup cell while the window is open.
+    // A second popup RAF loop would render the shared scene concurrently and make
+    // layout changes and camera switching visibly unstable.
     popup.focus();
 }
 
@@ -2164,7 +2420,7 @@ function applyViewPreset(slot, { announce = true } = {}) {
     const preset = getViewPreset(index);
     if (!preset || !isValidViewPreset(preset) || !state.camera || !state.controls) return false;
     state.camera.position.fromArray(preset.camera.position);
-    state.camera.up.fromArray(preset.camera.up);
+    setCameraUpFromPreset(state.camera, preset.camera.up);
     state.camera.zoom = Number.isFinite(preset.camera.zoom) && preset.camera.zoom > 0
         ? preset.camera.zoom
         : 1;
@@ -2192,7 +2448,7 @@ function saveViewPreset(slot) {
     state.viewPresets[slot] = preset;
     state.activeViewSlot = slot;
     saveViewConfiguration();
-    if (state.viewMonitor?.slot === slot) applyViewMonitorPreset(slot);
+    if (state.viewWindow?.cells.has(slot)) applyViewWindowPreset(slot);
     refreshViewPresetsUi();
     setStatus('뷰 {number}을 저장했습니다.', '#22c55e', { number: slot + 1 });
 }
@@ -2216,13 +2472,13 @@ function refreshViewPresetsUi() {
         }
         if (monitorButton) {
             monitorButton.disabled = !preset;
-            monitorButton.setAttribute('aria-label', uiFormat('{name} 고정 카메라로 보기', {
+            monitorButton.title = uiText('고정 뷰 창에 보기');
+            monitorButton.setAttribute('aria-label', uiFormat('{name}을 고정 뷰 창에 보기', {
                 name: preset?.name || getDefaultViewPresetName(slot)
             }));
         }
         row.classList.toggle('active', state.activeViewSlot === slot && Boolean(preset));
     });
-    updateViewMonitorLabel();
 }
 
 function handleViewPresetListClick(event) {
@@ -2231,7 +2487,7 @@ function handleViewPresetListClick(event) {
     const slot = Number(row.dataset.viewSlot);
     if (event.target.closest('[data-view-save]')) saveViewPreset(slot);
     else if (event.target.closest('[data-view-apply]')) applyViewPreset(slot);
-    else if (event.target.closest('[data-view-monitor]')) openViewMonitor(slot);
+    else if (event.target.closest('[data-view-monitor]')) openViewWindow(slot);
 }
 
 function handleViewPresetListInput(event) {
@@ -2242,7 +2498,9 @@ function handleViewPresetListInput(event) {
     if (!preset) return;
     preset.name = nameInput.value.trim().slice(0, 24) || getDefaultViewPresetName(Number(row.dataset.viewSlot));
     saveViewConfiguration();
-    if (state.viewMonitor?.slot === Number(row.dataset.viewSlot)) updateViewMonitorLabel();
+    if (state.viewWindow?.cells.has(Number(row.dataset.viewSlot))) {
+        applyViewWindowPreset(Number(row.dataset.viewSlot));
+    }
 }
 
 function refreshLocalizedControls() {
@@ -4856,6 +5114,10 @@ function setupEventListeners() {
         const row = event.target.closest('[data-interference-zone-row]');
         if (!row) return;
         const zoneId = Number(row.dataset.interferenceZoneRow);
+        if (event.target.closest('[data-interference-zone-read]')) {
+            readInterferenceZoneFromController(zoneId);
+            return;
+        }
         if (event.target.closest('[data-interference-zone-edit]')) openInterferenceZoneEditor(zoneId);
     });
     el.interferenceZoneList?.addEventListener('change', (event) => {
@@ -4866,8 +5128,13 @@ function setupEventListeners() {
     });
     el.endMonitoringList?.addEventListener('click', (event) => {
         const row = event.target.closest('[data-end-monitoring-row]');
-        if (!row || !event.target.closest('[data-end-monitoring-edit]')) return;
-        openEndMonitoringEditor(Number(row.dataset.endMonitoringRow));
+        if (!row) return;
+        const objectId = Number(row.dataset.endMonitoringRow);
+        if (event.target.closest('[data-end-monitoring-read]')) {
+            readInterferenceToolFromController(objectId);
+            return;
+        }
+        if (event.target.closest('[data-end-monitoring-edit]')) openEndMonitoringEditor(objectId);
     });
     el.interferenceInputList?.addEventListener('change', (event) => {
         const input = event.target.closest('[data-interference-input]');
@@ -5086,7 +5353,7 @@ function setupEventListeners() {
     window.addEventListener('beforeunload', () => {
         closeVirtualControllerSocket(false);
         if (!state.resetInProgress) saveMotionProjectNow();
-        closeViewMonitor(true);
+        closeViewWindow();
         [...state.panelWindows.keys()].forEach((panelId) => restorePanelFromWindow(panelId, true));
     });
 }
@@ -9802,6 +10069,19 @@ function refreshVirtualControllerUi() {
         const rate = controller.samples?.getRateHz(performance.now()) || 0;
         el.virtualControllerRate.textContent = rate > 0 ? `${Math.round(rate)} Hz` : '-- Hz';
     }
+    const canReadInterferenceZone = canReadInterferenceZoneFromController();
+    el.interferenceZoneList?.querySelectorAll('[data-interference-zone-read]').forEach((button) => {
+        const zoneId = Number(button.closest('[data-interference-zone-row]')?.dataset.interferenceZoneRow);
+        const pending = controller.pendingInterferenceReads.has(zoneId);
+        button.disabled = !canReadInterferenceZone || pending;
+        button.textContent = pending ? '읽는 중' : '가져오기';
+    });
+    el.endMonitoringList?.querySelectorAll('[data-end-monitoring-read]').forEach((button) => {
+        const toolId = Number(button.closest('[data-end-monitoring-row]')?.dataset.endMonitoringRow);
+        const pending = controller.pendingInterferenceToolReads.has(toolId);
+        button.disabled = !canReadInterferenceZone || pending;
+        button.textContent = pending ? '읽는 중' : '가져오기';
+    });
 }
 
 function setVirtualControllerStatus(status, message = '') {
@@ -9883,7 +10163,11 @@ function handleVirtualControllerMessage(raw) {
     }
     if (parsed.kind !== 'event') return;
     const message = parsed.message;
-    if (parsed.type === 'connectResult') {
+    if (parsed.type === 'interferenceZoneReadResult') {
+        applyInterferenceZoneControllerResult(message.result);
+    } else if (parsed.type === 'interferenceToolReadResult') {
+        applyInterferenceToolControllerResult(message.result);
+    } else if (parsed.type === 'connectResult') {
         if (message.success) {
             controller.sourceConnectedAt = performance.now();
             setVirtualControllerStatus('connected');
@@ -9936,7 +10220,8 @@ function openVirtualControllerSocket(isReconnect = false) {
         controller.sourceConnectedAt = performance.now();
         const connectCommand = {
             type: 'connect',
-            ip: controller.ipAddress || core.VIRTUAL_CONTROLLER_HOST
+            ip: controller.ipAddress || core.VIRTUAL_CONTROLLER_HOST,
+            controllerKind: controller.controllerKind
         };
         if (source.id === 'bridge') connectCommand.port = core.VIRTUAL_CONTROLLER_TARGET_PORT;
         sendVirtualControllerCommand(connectCommand);
@@ -9946,6 +10231,8 @@ function openVirtualControllerSocket(isReconnect = false) {
     });
     socket.addEventListener('close', () => {
         if (controller.socket === socket) controller.socket = null;
+        controller.pendingInterferenceReads.clear();
+        controller.pendingInterferenceToolReads.clear();
         if (source.id === 'bridge') controller.bridgeRunning = false;
         controller.samples?.clear();
         controller.lastAppliedSampleId = 0;
@@ -9970,6 +10257,8 @@ function endVirtualControllerSessionForSourceExit(source) {
     controller.historyBefore = null;
     controller.wanted = false;
     controller.socket = null;
+    controller.pendingInterferenceReads.clear();
+    controller.pendingInterferenceToolReads.clear();
     controller.samples?.clear();
     controller.lastAppliedSampleId = 0;
     controller.sourceConnectedAt = 0;
@@ -12485,7 +12774,7 @@ async function handleCADDownload() {
 }
 
 function requiresContinuousRendering() {
-    return isViewMonitorOpen()
+    return isViewWindowOpen()
         || isVirtualControllerActive()
         || [...state.motionSessions.values()].some((session) => session.status === 'running');
 }
@@ -12525,8 +12814,9 @@ function animate(timestamp = performance.now()) {
     updateCameraScaledTcpAxes();
     updateSimulationSnapMarkerCameraScale();
     updateSimulationSnapCandidateMarkers();
+    orientEndMonitoringOutlinesToCamera(state.camera);
     state.renderer.render(state.scene, state.camera);
-    renderViewMonitor();
+    renderViewWindow();
     updateZeroPointCurrentMarker();
     if (requiresContinuousRendering()) requestRender();
 }
@@ -12539,6 +12829,7 @@ function onResize() {
     [el.modelBrowserPanel, el.jogPanel, el.tcpProfilePanel, el.virtualControllerPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.programPanel].forEach((panel) => {
         if (panel?.dataset.userResized === 'true') normalizePanelResizeBox(panel);
     });
+    resizeViewWindow();
     requestRender();
 }
 

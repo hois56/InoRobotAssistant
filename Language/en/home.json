@@ -195,7 +195,8 @@
                 "**[Added]** Added interference-zone settings for defining virtual zones at desired locations.",
                 "**[Fixed]** Applied SCARA J3 controller angle limits by model so the simulator's linear axis (mm) matches the controller display (°).",
                 "**[Added]** Added a feature to reset saved settings and placed models in bulk.",
-                "**[Added]** Added real-controller connection support."
+                "**[Added]** Added real-controller connection support.",
+                "**[Added]** Added multi-view support for opening saved camera views in a separate window and monitoring multiple split-screen views at once."
               ]
             },
             {

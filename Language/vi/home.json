@@ -195,7 +195,8 @@
                 "**[Thêm]** Đã thêm thiết lập vùng can thiệp để tạo vùng ảo tại vị trí mong muốn.",
                 "**[Sửa]** Áp dụng giới hạn góc bộ điều khiển SCARA J3 theo từng model để trục thẳng của mô phỏng (mm) khớp với giá trị hiển thị của bộ điều khiển (°).",
                 "**[Thêm]** Đã thêm chức năng khởi tạo hàng loạt cài đặt đã lưu và các model đã bố trí.",
-                "**[Thêm]** Đã thêm chức năng kết nối bộ điều khiển thực."
+                "**[Thêm]** Đã thêm chức năng kết nối bộ điều khiển thực.",
+                "**[Thêm]** Đã thêm chức năng đa chế độ xem, cho phép mở các góc camera đã lưu trong cửa sổ riêng và theo dõi đồng thời nhiều chế độ xem trên màn hình chia."
               ]
             },
             {

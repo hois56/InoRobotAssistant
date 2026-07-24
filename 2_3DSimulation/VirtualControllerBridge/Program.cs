@@ -82,6 +82,7 @@ internal static class Program
         int streaming = 0;
         int sampleIntervalMs = DefaultSampleIntervalMs;
         bool robotConnectedByThisSession = false;
+        bool realControllerByThisSession = false;
 
         async Task SendAsync(object payload)
         {
@@ -127,9 +128,34 @@ internal static class Program
                         string ip = root.TryGetProperty("ip", out JsonElement ipElement)
                             ? ipElement.GetString() ?? "127.0.0.1"
                             : "127.0.0.1";
+                        bool requestedRealController = root.TryGetProperty("controllerKind", out JsonElement kindElement)
+                            && string.Equals(kindElement.GetString(), "real", StringComparison.OrdinalIgnoreCase);
                         (bool success, string message) = robot.Connect(ip, ControllerPort);
                         robotConnectedByThisSession = success;
+                        realControllerByThisSession = success && requestedRealController;
                         await SendAsync(new { type = "connectResult", success, message });
+                    }
+                    else if (type == "readInterferenceZone")
+                    {
+                        int zoneNumber = root.TryGetProperty("zoneNumber", out JsonElement zoneElement)
+                            && zoneElement.TryGetInt32(out int parsedZone)
+                                ? parsedZone
+                                : -1;
+                        InterferenceZoneReadResult readResult = realControllerByThisSession
+                            ? robot.ReadInterferenceZone(zoneNumber)
+                            : InterferenceZoneReadResult.Disconnected(zoneNumber);
+                        await SendAsync(new { type = "interferenceZoneReadResult", result = readResult });
+                    }
+                    else if (type == "readInterferenceTool")
+                    {
+                        int toolNumber = root.TryGetProperty("toolNumber", out JsonElement toolElement)
+                            && toolElement.TryGetInt32(out int parsedTool)
+                                ? parsedTool
+                                : -1;
+                        InterferenceToolReadResult readResult = realControllerByThisSession
+                            ? robot.ReadInterferenceTool(toolNumber)
+                            : InterferenceToolReadResult.Disconnected(toolNumber);
+                        await SendAsync(new { type = "interferenceToolReadResult", result = readResult });
                     }
                     else if (type is "startStream" or "startTrace")
                     {
@@ -156,6 +182,7 @@ internal static class Program
                         Interlocked.Exchange(ref streaming, 0);
                         robot.Disconnect();
                         robotConnectedByThisSession = false;
+                        realControllerByThisSession = false;
                         await SendAsync(new { type = "disconnectResult", success = true });
                     }
                     else if (type == "shutdown")
@@ -163,6 +190,7 @@ internal static class Program
                         Interlocked.Exchange(ref streaming, 0);
                         robot.Disconnect();
                         robotConnectedByThisSession = false;
+                        realControllerByThisSession = false;
                         await SendAsync(new { type = "shutdownResult", success = true });
                         applicationLifetime.StopApplication();
                         break;

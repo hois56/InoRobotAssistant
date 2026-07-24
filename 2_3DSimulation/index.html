@@ -6,7 +6,7 @@
     <title>3D Simulation</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=20260724-simulation-reset-1-add-mode-centered-1-scrollbar-theme-1">
+    <link rel="stylesheet" href="style.css?v=20260724-simulation-reset-1-add-mode-centered-1-scrollbar-theme-1-interference-controller-read-1-interference-tool-read-1">
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -507,31 +507,35 @@
                     </div>
                 </div>
                 <div class="view-presets-content">
-                    <p class="view-presets-help">카메라를 원하는 위치로 조정한 뒤 슬롯의 저장 버튼을 누르세요.</p>
+                    <p class="view-presets-help">카메라를 원하는 위치로 조정한 뒤 슬롯의 저장 버튼을 누르세요. 화면 버튼을 누르면 저장된 뷰가 새 창으로 열리고, 다른 뷰를 누르면 같은 창에 분할되어 추가됩니다.</p>
                     <div id="view-presets-list" class="view-presets-list">
                         <div class="view-preset-row" data-view-slot="0">
                             <span class="view-preset-index">1</span>
                             <input type="text" data-view-name value="View 1" maxlength="24" aria-label="뷰 1 이름">
                             <button type="button" data-view-save title="현재 뷰 저장" aria-label="뷰 1에 현재 뷰 저장"><i class="fa-solid fa-floppy-disk"></i></button>
                             <button type="button" data-view-apply title="뷰 적용" aria-label="뷰 1 적용" disabled><i class="fa-solid fa-eye"></i></button>
+                            <button type="button" data-view-monitor title="고정 뷰 창에 보기" aria-label="뷰 1을 고정 뷰 창에 보기" disabled><i class="fa-solid fa-display"></i></button>
                         </div>
                         <div class="view-preset-row" data-view-slot="1">
                             <span class="view-preset-index">2</span>
                             <input type="text" data-view-name value="View 2" maxlength="24" aria-label="뷰 2 이름">
                             <button type="button" data-view-save title="현재 뷰 저장" aria-label="뷰 2에 현재 뷰 저장"><i class="fa-solid fa-floppy-disk"></i></button>
                             <button type="button" data-view-apply title="뷰 적용" aria-label="뷰 2 적용" disabled><i class="fa-solid fa-eye"></i></button>
+                            <button type="button" data-view-monitor title="고정 뷰 창에 보기" aria-label="뷰 2를 고정 뷰 창에 보기" disabled><i class="fa-solid fa-display"></i></button>
                         </div>
                         <div class="view-preset-row" data-view-slot="2">
                             <span class="view-preset-index">3</span>
                             <input type="text" data-view-name value="View 3" maxlength="24" aria-label="뷰 3 이름">
                             <button type="button" data-view-save title="현재 뷰 저장" aria-label="뷰 3에 현재 뷰 저장"><i class="fa-solid fa-floppy-disk"></i></button>
                             <button type="button" data-view-apply title="뷰 적용" aria-label="뷰 3 적용" disabled><i class="fa-solid fa-eye"></i></button>
+                            <button type="button" data-view-monitor title="고정 뷰 창에 보기" aria-label="뷰 3을 고정 뷰 창에 보기" disabled><i class="fa-solid fa-display"></i></button>
                         </div>
                         <div class="view-preset-row" data-view-slot="3">
                             <span class="view-preset-index">4</span>
                             <input type="text" data-view-name value="View 4" maxlength="24" aria-label="뷰 4 이름">
                             <button type="button" data-view-save title="현재 뷰 저장" aria-label="뷰 4에 현재 뷰 저장"><i class="fa-solid fa-floppy-disk"></i></button>
                             <button type="button" data-view-apply title="뷰 적용" aria-label="뷰 4 적용" disabled><i class="fa-solid fa-eye"></i></button>
+                            <button type="button" data-view-monitor title="고정 뷰 창에 보기" aria-label="뷰 4를 고정 뷰 창에 보기" disabled><i class="fa-solid fa-display"></i></button>
                         </div>
                     </div>
                 </div>
@@ -725,6 +729,6 @@
         </div>
     </footer>
 
-<script type="module" src="main.js?v=20260724-controller-collision-feedback-only-default-on"></script>
+<script type="module" src="main.js?v=20260724-fixed-view-camera-pan-1-interference-controller-read-1-interference-tool-read-1-view-outline-1"></script>
 </body>
 </html>
