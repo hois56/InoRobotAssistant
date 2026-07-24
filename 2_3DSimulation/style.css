@@ -2170,7 +2170,7 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
 
 .view-preset-row {
     display: grid;
-    grid-template-columns: 24px minmax(0, 1fr) 30px 30px;
+    grid-template-columns: 24px minmax(0, 1fr) repeat(3, 30px);
     align-items: center;
     gap: 0.35rem;
 }
@@ -3599,12 +3599,14 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
 .interference-zone-list { display: grid; gap: 4px; }
 .end-monitoring-section { margin-top: 15px; padding-top: 12px; border-top: 1px solid rgba(148, 163, 184, 0.2); }
 .end-monitoring-list { display: grid; gap: 4px; }
-.end-monitoring-row { display: grid; grid-template-columns: 28px minmax(70px, 1fr) 78px 46px; align-items: center; gap: 5px; min-height: 32px; padding: 3px 6px; border-radius: 7px; background: rgba(30, 41, 59, 0.72); font-size: 11px; }
+.end-monitoring-row { display: grid; grid-template-columns: 28px minmax(55px, 1fr) 70px 58px 46px; align-items: center; gap: 5px; min-height: 32px; padding: 3px 6px; border-radius: 7px; background: rgba(30, 41, 59, 0.72); font-size: 11px; }
 .end-monitoring-row:nth-child(even) { background: rgba(51, 65, 85, 0.5); }
 .end-monitoring-row strong { color: #cbd5e1; text-align: center; }
 .end-monitoring-row span { overflow: hidden; color: #94a3b8; text-overflow: ellipsis; white-space: nowrap; }
 .end-monitoring-row em { color: #60a5fa; font-style: normal; text-align: center; }
 .end-monitoring-row button { padding: 5px 4px; color: #93c5fd; background: transparent; border: 0; cursor: pointer; }
+.end-monitoring-read { color: #86efac !important; font-size: 10px; }
+.end-monitoring-read:disabled { color: #64748b !important; cursor: not-allowed; }
 .end-monitoring-type-fields { margin-top: 14px; }
 .end-monitoring-tcp-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 12px; border-radius: 8px; background: rgba(30, 41, 59, 0.72); color: #cbd5e1; font-size: 12px; }
 .end-monitoring-tcp-grid input { accent-color: #2563eb; }
@@ -3615,7 +3617,7 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
 .end-monitoring-height { display: grid; grid-template-columns: 1fr minmax(90px, 160px) auto; align-items: center; gap: 7px; color: #cbd5e1; font-size: 11px; }
 .end-monitoring-height input { min-width: 0; padding: 8px; color: #e2e8f0; background: #1e293b; border: 1px solid #475569; border-radius: 6px; }
 .end-monitoring-height small { color: #64748b; }
-.interference-zone-row { display: grid; grid-template-columns: 28px 30px minmax(70px, 1fr) 52px 46px; align-items: center; gap: 5px; min-height: 34px; padding: 3px 6px; border: 1px solid transparent; border-radius: 7px; background: rgba(30, 41, 59, 0.72); font-size: 12px; }
+.interference-zone-row { display: grid; grid-template-columns: 28px 30px minmax(55px, 1fr) 52px 58px 46px; align-items: center; gap: 5px; min-height: 34px; padding: 3px 6px; border: 1px solid transparent; border-radius: 7px; background: rgba(30, 41, 59, 0.72); font-size: 12px; }
 .interference-zone-row:nth-child(even) { background: rgba(51, 65, 85, 0.5); }
 .interference-zone-row.status-active { border-color: rgba(37, 99, 235, 0.3); }
 .interference-zone-row.status-danger { border-color: rgba(245, 158, 11, 0.75); background: rgba(120, 53, 15, 0.35); }
@@ -3625,6 +3627,8 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
 .interference-zone-state { color: #60a5fa; font-size: 11px; text-align: center; }
 .status-danger .interference-zone-state { color: #fbbf24; }
 .status-stopped .interference-zone-state { color: #fca5a5; }
+.interference-zone-read { padding: 5px 3px !important; color: #86efac !important; background: transparent !important; border: 0 !important; cursor: pointer; font-size: 10px; }
+.interference-zone-read:disabled { color: #64748b !important; cursor: not-allowed; }
 .interference-zone-edit { padding: 5px 4px !important; color: #93c5fd !important; background: transparent !important; border: 0 !important; }
 .interference-zone-activate { display: flex; justify-content: center; cursor: pointer; }
 .interference-zone-activate input { accent-color: #2563eb; }
