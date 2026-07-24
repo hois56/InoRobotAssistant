@@ -792,12 +792,13 @@ function setupFilters() {
     btns.forEach(btn => {
         btn.addEventListener('click', () => {
             const parent = btn.parentElement;
-            parent.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            const filterGroup = btn.closest('#certFilters') || parent;
+            filterGroup.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
 
             const groupIds = ['typeFilters', 'catFilters', 'eduFilters', 'profileFilters', 'certFilters'];
             groupIds.forEach(gid => {
-                if (gid !== parent.id) {
+                if (gid !== filterGroup.id) {
                     const group = document.getElementById(gid);
                     if (group) {
                         group.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));

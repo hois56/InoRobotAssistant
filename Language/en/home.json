@@ -383,6 +383,15 @@
         "title": "Document",
         "versions": [
           {
+            "title": "Ver 26.07.24",
+            "items": [
+              "**[Improved]** Reduced the height and spacing of the left document filters, so large filter lists require less scrolling.",
+              "**[Improved]** Changed main document category headings, such as Hardware Manual, to white for better readability on dark backgrounds.",
+              "**[Improved]** Selecting a detailed filter now automatically scrolls to the start of the matching document list.",
+              "**[Changed]** Reorganized certificate filters in this order: `KC → CE → cSGSus → Clean → FCC → Safety → MTBF`; KC and CE related certificates are consolidated within their respective tabs."
+            ]
+          },
+          {
             "title": "Ver 26.07.20",
             "items": [
               "**[Fixed]** Fixed an issue that prevented the Selection Guide manual from being downloaded."
