@@ -306,6 +306,10 @@
 
 ## Debugging Tool
 
+### Ver 26.07.24.01
+
+- `[업데이트]` Communication Tester를 `V2.6 → V2.7`로 업데이트했습니다.
+
 ### Ver 26.07.18.01
 
 - `[업데이트]` InoRobot Trace를 `V1.3 → V1.4`로 업데이트했습니다.

@@ -455,10 +455,16 @@
         ]
       },
       {
-        "title": "Debugging Tool",
-        "versions": [
-          {
-            "title": "Ver 26.07.18.01",
+      "title": "Debugging Tool",
+      "versions": [
+        {
+        "title": "Ver 26.07.24.01",
+          "items": [
+            "**[Updated]** Updated Communication Tester from V2.6 to V2.7."
+          ]
+        },
+        {
+        "title": "Ver 26.07.18.01",
             "items": [
               "**[Updated]** Updated InoRobot Trace from V1.3 to V1.4.",
               "**[Added]** Korean, English, Chinese, and Vietnamese are now supported, and all items previously displayed in English in certain Korean views have been translated into Korean.",
@@ -518,10 +524,17 @@
     "intro": "",
     "sections": [
       {
-        "title": "communicationTester",
-        "versions": [
-          {
-            "title": "Ver 2.6 (2026.06.15)",
+      "title": "communicationTester",
+      "versions": [
+        {
+        "title": "Ver 2.7 (2026.07.24)",
+          "items": [
+            "**[Added]** Added error-code logging when an error occurs.",
+            "**[Fixed]** Fixed an issue that prevented Socket communication from reconnecting."
+          ]
+        },
+        {
+        "title": "Ver 2.6 (2026.06.15)",
             "items": [
               "**[Changed]** Redesigned the default HMI screen for the standardized program changes.",
               "**[Changed]** Embedded the latest default HMI so no separate file is required.",

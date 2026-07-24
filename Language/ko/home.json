@@ -455,10 +455,16 @@
         ]
       },
       {
-        "title": "Debugging Tool",
-        "versions": [
-          {
-            "title": "Ver 26.07.18.01",
+      "title": "Debugging Tool",
+      "versions": [
+        {
+        "title": "Ver 26.07.24.01",
+          "items": [
+            "`[업데이트]` Communication Tester를 `V2.6 → V2.7`로 업데이트했습니다."
+          ]
+        },
+        {
+        "title": "Ver 26.07.18.01",
             "items": [
               "`[업데이트]` InoRobot Trace를 `V1.3 → V1.4`로 업데이트했습니다.",
               "`[추가]` 한국어·영어·중국어·베트남어를 지원하며, 일부 한국어 버전에서 영어로 표시되던 항목을 모두 한국어로 번역하였습니다.",
@@ -518,10 +524,17 @@
     "intro": "",
     "sections": [
       {
-        "title": "communicationTester",
-        "versions": [
-          {
-            "title": "Ver 2.6 (2026.06.15)",
+      "title": "communicationTester",
+      "versions": [
+        {
+        "title": "Ver 2.7 (2026.07.24)",
+          "items": [
+            "`[추가]` 에러 발생 시 에러 코드를 로그에 기록하도록 추가했습니다.",
+            "`[수정]` Socket 통신 시 재연결이 되지 않았던 문제를 해결했습니다."
+          ]
+        },
+        {
+        "title": "Ver 2.6 (2026.06.15)",
             "items": [
               "`[변경]` 표준화 프로그램 변경사항에 맞춰 기본 HMI 화면을 개편했습니다.",
               "`[변경]` 최신 기본 HMI를 프로그램에 내장하여 별도 파일 없이 사용할 수 있도록 변경했습니다.",
