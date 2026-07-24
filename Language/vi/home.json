@@ -383,6 +383,15 @@
         "title": "Document",
         "versions": [
           {
+            "title": "Ver 26.07.24",
+            "items": [
+              "**[Cải tiến]** Giảm chiều cao và khoảng cách giữa các bộ lọc tài liệu bên trái để danh sách dài cần ít thao tác cuộn hơn.",
+              "**[Cải tiến]** Đổi tiêu đề nhóm tài liệu chính như Hardware Manual sang màu trắng để dễ đọc hơn trên nền tối.",
+              "**[Cải tiến]** Khi chọn bộ lọc chi tiết, trang sẽ tự động cuộn đến đầu danh sách tài liệu phù hợp.",
+              "**[Thay đổi]** Sắp xếp lại bộ lọc chứng nhận theo thứ tự `KC → CE → cSGSus → Clean → FCC → Safety → MTBF`; các chứng nhận KC và CE liên quan được gộp trong từng tab tương ứng."
+            ]
+          },
+          {
             "title": "Ver 26.07.20",
             "items": [
               "**[Sửa]** Khắc phục lỗi không thể tải xuống tài liệu Selection Guide."

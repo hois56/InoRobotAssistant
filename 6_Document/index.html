@@ -121,7 +121,15 @@
                         <i data-lucide="badge-check" class="w-4 h-4 text-emerald-500"></i> Certificate
                     </h3>
                     <div class="space-y-1" id="certFilters">
-                        <button class="filter-btn w-full text-left" data-cat="cert-kc">KC</button>
+                        <button class="filter-btn w-full text-left" data-cat="cert-kc">KCs</button>
+                        <div class="certificate-subfilters space-y-1 ml-3 pl-3 border-l border-white/10" id="kcsFilters">
+                            <button class="filter-btn certificate-subfilter w-full text-left" data-cat="cert-kcs-6axis">6-Axis</button>
+                            <button class="filter-btn certificate-subfilter w-full text-left" data-cat="cert-kcs-6axis-high">6-Axis High Protection</button>
+                            <button class="filter-btn certificate-subfilter w-full text-left" data-cat="cert-kcs-6axis-ip67">6-Axis IP67 Option</button>
+                            <button class="filter-btn certificate-subfilter w-full text-left" data-cat="cert-kcs-6axis-sol">6-Axis Sol/VV Option</button>
+                            <button class="filter-btn certificate-subfilter w-full text-left" data-cat="cert-kcs-scara">SCARA</button>
+                            <button class="filter-btn certificate-subfilter w-full text-left" data-cat="cert-kcs-scara-high">SCARA High Protection</button>
+                        </div>
                         <button class="filter-btn w-full text-left" data-cat="cert-ce">CE</button>
                         <button class="filter-btn w-full text-left" data-cat="cert-csgsus">cSGSus</button>
                         <button class="filter-btn w-full text-left" data-cat="cert-clean">Clean</button>
@@ -170,6 +178,17 @@
             color: #94a3b8;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             text-align: left;
+        }
+
+        .certificate-subfilters {
+            margin-top: 0.25rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .filter-btn.certificate-subfilter {
+            padding: 0.375rem 0.625rem;
+            font-size: 0.75rem;
+            color: #64748b;
         }
 
         .filter-btn:hover {
@@ -253,7 +272,7 @@
             }
         }
     </style>
-    <script src="script.js?v=20260724-1"></script>
+    <script src="script.js?v=20260724-2"></script>
 </body>
 
 </html>
