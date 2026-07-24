@@ -15,8 +15,8 @@ const softwareGroups = [
                 date: "2026-07-24",
                 updates: ["시스템 안정성 개선"],
                 downloads: [
-                    { label: "Download (Install ZIP)", type: "install", size: "509MB", path: "InoRobotLab/InoRobotLabSetUp_V4R24C4SPC22_x64.zip" },
-                    { label: "Download (Portable)", type: "portable", size: "514MB", path: "InoRobotLab/InoRobotLab_V4R24C4SPC22_x64.zip" }
+                    { label: "Download Install", type: "install", size: "509MB", path: "InoRobotLab/InoRobotLabSetUp_V4R24C4SPC22_x64.zip" },
+                    { label: "Download Portable", type: "portable", size: "514MB", path: "InoRobotLab/InoRobotLab_V4R24C4SPC22_x64.zip" }
                 ]
             },
             {
@@ -26,8 +26,8 @@ const softwareGroups = [
                 isLocked: true,
                 updates: ["Display 모듈 지원"],
                 downloads: [
-                    { label: "Download (Install)", type: "install", size: "-", path: "", disabled: true },
-                    { label: "Download (Portable)", type: "portable", size: "454MB", path: "InoRobotLab/Display/InoRobotLab_V4R24C4SPC0L18F121_x64.zip" }
+                    { label: "Download Install", type: "install", size: "-", path: "", disabled: true },
+                    { label: "Download Portable", type: "portable", size: "454MB", path: "InoRobotLab/Display/InoRobotLab_V4R24C4SPC0L18F121_x64.zip" }
                 ]
             }
         ]
@@ -44,7 +44,7 @@ const softwareGroups = [
                 date: "2026-07-24",
                 updates: ["시스템 안정성 개선"],
                 downloads: [
-                    { label: "Download", type: "portable", size: "57MB", path: "InoRobotTP/InoRobotTP_win_x86_V4R24C4SPC22.zip" }
+                    { label: "Download Portable", type: "portable", size: "57MB", path: "InoRobotTP/InoRobotTP_win_x86_V4R24C4SPC22.zip" }
                 ]
             },
             {
@@ -54,7 +54,7 @@ const softwareGroups = [
                 isLocked: true,
                 updates: ["Display 최적화"],
                 downloads: [
-                    { label: "Download", type: "portable", size: "57MB", path: "InoRobotTP/Display/InoRobotTP_win_x86_V4R24C4SPC0L18F121.zip" }
+                    { label: "Download Portable", type: "portable", size: "57MB", path: "InoRobotTP/Display/InoRobotTP_win_x86_V4R24C4SPC0L18F121.zip" }
                 ]
             }
         ]
@@ -121,10 +121,12 @@ function renderSoftwareList(filterType = 'all', searchTerm = '') {
                 const buttonClass = isDisabled ? 'disabled-btn' : (ver.isLocked ? 'locked-btn' : 'download-btn');
                 const icon = isDisabled ? 'ban' : (ver.isLocked ? 'key' : 'download');
 
+                const sizeLabel = dl.size && dl.size !== '-' ? ` ${dl.size}` : '';
+
                 return `
                     <button ${clickAttr} ${disabledAttr}
                             class="px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${buttonClass}">
-                        <i data-lucide="${icon}" class="w-3.5 h-3.5"></i> ${translateUiText(dl.label)} (${dl.size})
+                        <i data-lucide="${icon}" class="w-3.5 h-3.5"></i> ${translateUiText(dl.label)}${sizeLabel}
                     </button>
                 `;
             }).join('');
