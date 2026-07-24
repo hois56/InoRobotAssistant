@@ -3,3 +3,14 @@ main = "worker.js"
 compatibility_date = "2024-01-01"
 # Required secret variable:
 # - DISPLAY_PASSWORD
+
+# Visitor counter storage:
+# Create a Cloudflare KV namespace, then bind it as VISITOR_KV before deploy.
+# Example:
+#   wrangler kv namespace create VISITOR_KV
+#   wrangler kv key put "visitor:total" "721" --binding VISITOR_KV
+#
+# Add the generated namespace id here if deploying with Wrangler:
+# [[kv_namespaces]]
+# binding = "VISITOR_KV"
+# id = "replace-with-cloudflare-kv-namespace-id"

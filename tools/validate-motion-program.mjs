@@ -740,8 +740,8 @@ assert.match(mainSource, /else if \(positionEntry\) \{\s*model\.position\[axis\]
 assert.ok(mainSource.includes("const isScaleMode = state.transformControls?.mode === 'scale';") && mainSource.includes("model.scale[axis] = value;"), 'Scale mode must use the numeric X/Y/Z inputs as scale multipliers.');
 assert.ok(mainSource.includes('function toggleSelectedTransformMode(mode)') && mainSource.includes('setTransformHandlesEnabled(true);'), 'Selecting a transform mode must reveal its transform handles.');
 assert.ok(mainSource.includes('state.transformControls.enabled && state.transformControls.mode === mode') && mainSource.includes('setTransformHandlesEnabled(false);'), 'Selecting the active transform mode must hide its transform handles.');
-assert.match(htmlSource, /model-browser-header[\s\S]*?id="btn-toggle-transform"/, 'The transform handle toggle must be placed in the Model Tree panel.');
-assert.doesNotMatch(htmlSource, /viewer-control-dock[\s\S]*?id="btn-toggle-transform"/, 'The transform handle toggle must not remain in the bottom viewer dock.');
+assert.doesNotMatch(htmlSource, /id="btn-toggle-transform"/, 'The Model Tree panel must not contain a separate transform handle toggle.');
+assert.doesNotMatch(mainSource, /const mode = \{ w: 'translate', e: 'rotate', r: 'scale' \}\[key\]/, 'Model transform W/E/R keyboard shortcuts must remain disabled.');
 assert.ok(mainSource.includes('const PANEL_DRAG_EXCLUDED_SELECTOR') && mainSource.includes('panel.classList.add(\'panel-drag-anywhere\')'), 'Panels must support dragging from non-interactive areas.');
 assert.ok(mainSource.includes('target.position[editedKey] = editedValue;') && mainSource.includes('positionTolerance: 0.001') && mainSource.includes('updateTcpPresentation(robot, target);'), 'Numeric Base JOG input must preserve other axes and use stable sub-0.01 mm precision.');
 assert.ok(mainSource.includes('function jogTcpInBase(robot, kind, axisName, direction)') && mainSource.includes('const currentTarget = robot.userData.baseJogTarget;') && mainSource.includes('robot.userData.baseJogTarget = target;'), 'Base JOG buttons must preserve exact non-edited target axes.');

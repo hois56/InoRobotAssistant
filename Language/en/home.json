@@ -189,6 +189,16 @@
         "title": "3D Simulation",
           "versions": [
             {
+            "title": "Ver 26.07.24",
+              "items": [
+                "**[Added]** Added mesh-accurate collision detection among robot links, Tools, and equipment models, highlighting colliding models in red.",
+                "**[Added]** Added interference-zone settings for defining virtual zones at desired locations.",
+                "**[Fixed]** Applied SCARA J3 controller angle limits by model so the simulator's linear axis (mm) matches the controller display (°).",
+                "**[Added]** Added a feature to reset saved settings and placed models in bulk.",
+                "**[Added]** Added real-controller connection support."
+              ]
+            },
+            {
             "title": "Ver 26.07.21",
               "items": [
                 "**[Added]** Added Auto, Lightweight, Standard, and High quality choices for large 3D model imports.",
@@ -321,6 +331,14 @@
       {
         "title": "Software",
         "versions": [
+          {
+            "title": "Ver 26.07.24",
+            "items": [
+              "**[Updated]** Updated InoRobotLab from V4R24C4SPC21 to V4R24C4SPC22.",
+              "**[Updated]** Updated InoRobotTP from V4R24C4SPC21 to V4R24C4SPC22.",
+              "**[Changed]** Updated InoRobotLab download sizes to 509MB for the install ZIP and 514MB for the portable ZIP."
+            ]
+          },
           {
             "title": "Ver 26.07.18",
             "items": [

@@ -12,6 +12,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { enableContinuousTransformRotation } from '../3_ToolSelector/continuous-transform-rotation.mjs?v=20260720-rx-continuous-1';
 import { buildStepSnapCandidates } from '../3_ToolSelector/snap-geometry.mjs?v=20260721-face-filter-1';
+import { MeshCollisionSystem } from './collision-system.mjs?v=20260724-mesh-collision-12';
 import {
     MOTION_PROJECT_SCHEMA_VERSION,
     DEFAULT_MOVJ_SPEED,
@@ -39,6 +40,29 @@ import {
     reorderMotionSteps,
     normalizeMotionProject
 } from './motion-program-core.mjs?v=20260719-tcp-profiles-1';
+import {
+    INTERFERENCE_ZONE_COUNT,
+    INTERFERENCE_COORDINATE_MIN,
+    INTERFERENCE_COORDINATE_MAX,
+    INTERFERENCE_SAFETY_DISTANCE_MAX,
+    cloneInterferenceZones,
+    normalizeInterferenceZones,
+    getInterferenceZoneBounds,
+    pointInsideBounds,
+    segmentIntersectsInterferenceRegion,
+    validateInterferenceZone
+} from './interference-zone-core.mjs?v=20260723-interference-zone-2';
+import {
+    END_MONITORING_OBJECT_COUNT,
+    END_MONITORING_COORDINATE_MIN,
+    END_MONITORING_COORDINATE_MAX,
+    END_MONITORING_RADIUS_MAX,
+    END_MONITORING_HEIGHT_MAX,
+    cloneEndMonitoringObjects,
+    normalizeEndMonitoringObjects,
+    getEndMonitoringCuboidTransform,
+    validateEndMonitoringObject
+} from './end-monitoring-core.mjs?v=20260724-end-monitoring-1';
 function uiText(value) {
     return window.InoRobotI18n ? window.InoRobotI18n.translate(String(value)) : String(value);
 }
@@ -89,6 +113,7 @@ const state = {
     pendingBaseJogGizmoHistory: null,
     pendingBaseJogNumericHistory: null,
     panelWindows: new Map(),
+    panelOpenOrder: [],
     catalog: new Map(),
     activeArticulatedModel: null,
     baseJogHold: null,
@@ -105,6 +130,30 @@ const state = {
     motionRepeatRobot: false,
     motionRepeat: false,
     motionHistoryBefore: null,
+    interferenceZones: normalizeInterferenceZones(),
+    endMonitoringObjects: normalizeEndMonitoringObjects(),
+    interferenceRuntime: Array.from({ length: INTERFERENCE_ZONE_COUNT }, () => ({
+        status: 'inactive',
+        alarmLatched: false,
+        lastViolationByRobot: new Map(),
+        lastProbeByRobot: new Map(),
+        lastMessage: ''
+    })),
+    interferenceVisuals: [],
+    endMonitoringVisuals: [],
+    interferenceEditor: {
+        zoneId: -1,
+        draft: null,
+        step: 'basic'
+    },
+    endMonitoringEditor: {
+        objectId: -1,
+        draft: null
+    },
+    simulationIo: {
+        inputs: Array.from({ length: 16 }, () => false),
+        outputs: Array.from({ length: 16 }, () => false)
+    },
     viewPresets: Array.from({ length: 4 }, () => null),
     activeViewSlot: null,
     motionSaveTimer: null,
@@ -121,6 +170,7 @@ const state = {
         wanted: false,
         status: 'disconnected',
         source: 'bridge',
+        controllerKind: 'virtual',
         ipAddress: '127.0.0.1',
         bridgeStopInProgress: false,
         bridgeStartInProgress: false,
@@ -139,6 +189,8 @@ const state = {
         streamWatchdogTimer: null
     },
     pendingImportFile: null,
+    resetInProgress: false,
+    testModelConfirmationResolver: null,
     stepImportWorkerSession: null,
     stepImportRequestId: 0,
     modelImportWorkerSession: null,
@@ -173,6 +225,26 @@ const state = {
     snapLastPointerEvent: null,
     viewNavigationActive: false,
     snapVisibilityRaycaster: new THREE.Raycaster(),
+    collision: {
+        // Collision detection is enabled by default for every new simulation session.
+        enabled: true,
+        debugVisible: false,
+        system: null,
+        minCheckIntervalMs: 80,
+        lastCheckAt: 0,
+        lastCheckSkipped: false,
+        dirty: true,
+        dirtyRoots: new Set(),
+        lastResult: null,
+        lastStatusKey: '',
+        stopNotice: null,
+        ignoredMotionCollisionKeys: new Set(),
+        jogRefreshTimer: null,
+        highlightedMaterials: new Map(),
+        debugLines: new Map(),
+        safeRobotAngles: new Map(),
+        checking: false
+    },
     largeModelPerformanceMode: false,
     renderFramePending: false,
     outlineMode: false,
@@ -195,6 +267,13 @@ const MODEL_UNIT_SCALE_FIX = {
 
 const el = {
     modelSelect:     document.getElementById('model-select'),
+    btnResetSimulation: document.getElementById('btn-reset-simulation'),
+    simulationResetDialog: document.getElementById('simulation-reset-dialog'),
+    btnCancelSimulationReset: document.getElementById('btn-cancel-simulation-reset'),
+    btnConfirmSimulationReset: document.getElementById('btn-confirm-simulation-reset'),
+    testModelDialog: document.getElementById('test-model-dialog'),
+    btnCancelTestModel: document.getElementById('btn-cancel-test-model'),
+    btnConfirmTestModel: document.getElementById('btn-confirm-test-model'),
     loadingOverlay:  document.getElementById('loading-overlay'),
     loadingText:     document.getElementById('loading-text'),
     emptyState:      document.getElementById('empty-state'),
@@ -205,9 +284,9 @@ const el = {
     btnResetView:    document.getElementById('btn-reset-view'),
     btnToggleOutline: document.getElementById('btn-toggle-outline'),
     btnToggleGrid:   document.getElementById('btn-toggle-grid'),
-    btnToggleTransform: document.getElementById('btn-toggle-transform'),
     btnFullscreenMode: document.getElementById('btn-fullscreen-mode'),
     btnTestModel:    document.getElementById('btn-test-model'),
+    btnToggleCollision: document.getElementById('btn-toggle-collision'),
     btnPositionExport: document.getElementById('btn-position-export'),
     btnSnapMove: document.getElementById('btn-snap-move'),
     btnImport3D:     document.getElementById('btn-import-3d'),
@@ -322,6 +401,7 @@ const el = {
     btnApplyPositionValue: document.getElementById('btn-apply-position-value'),
     snapMarker: document.getElementById('simulation-snap-marker'),
     snapLabel: document.getElementById('simulation-snap-label'),
+    collisionStatus: document.getElementById('collision-status'),
     programStatus: document.getElementById('program-status'),
     btnProgramSelectAll: document.getElementById('program-select-all'),
     btnProgramAdd: document.getElementById('program-add-step'),
@@ -345,10 +425,52 @@ const el = {
     btnProgramImport: document.getElementById('program-import'),
     inputProgramImport: document.getElementById('program-import-file'),
     virtualControllerPanel: document.getElementById('virtual-controller-panel'),
+    interferenceZonePanel: document.getElementById('interference-zone-panel'),
+    interferenceZoneList: document.getElementById('interference-zone-list'),
+    interferenceZoneActiveCount: document.getElementById('interference-zone-active-count'),
+    endMonitoringList: document.getElementById('end-monitoring-list'),
+    interferenceInputList: document.getElementById('interference-input-list'),
+    interferenceOutputList: document.getElementById('interference-output-list'),
+    interferenceZoneDialog: document.getElementById('interference-zone-dialog'),
+    interferenceZoneDialogTitle: document.getElementById('interference-zone-dialog-title'),
+    interferenceZoneClose: document.getElementById('interference-zone-close'),
+    interferenceZoneRemarks: document.getElementById('interference-zone-remarks'),
+    interferenceZoneTargetRobot: document.getElementById('interference-zone-target-robot'),
+    interferenceZoneMonitoringObject: document.getElementById('interference-zone-monitoring-object'),
+    interferenceZoneInsideOutside: document.getElementById('interference-zone-inside-outside'),
+    interferenceZoneTrigger: document.getElementById('interference-zone-trigger'),
+    interferenceZoneSafety: document.getElementById('interference-zone-safety'),
+    interferenceZoneInEnabled: document.getElementById('interference-zone-in-enabled'),
+    interferenceZoneInSignal: document.getElementById('interference-zone-in-signal'),
+    interferenceZoneOutEnabled: document.getElementById('interference-zone-out-enabled'),
+    interferenceZoneOutSignal: document.getElementById('interference-zone-out-signal'),
+    interferenceZoneMethod: document.getElementById('interference-zone-method'),
+    interferenceZoneDiagonalFields: document.getElementById('interference-zone-diagonal-fields'),
+    interferenceZoneDatumFields: document.getElementById('interference-zone-datum-fields'),
+    interferenceZoneValidation: document.getElementById('interference-zone-validation'),
+    interferenceZonePrevious: document.getElementById('interference-zone-previous'),
+    interferenceZoneNext: document.getElementById('interference-zone-next'),
+    interferenceZoneDone: document.getElementById('interference-zone-done'),
+    endMonitoringDialog: document.getElementById('end-monitoring-dialog'),
+    endMonitoringDialogTitle: document.getElementById('end-monitoring-dialog-title'),
+    endMonitoringClose: document.getElementById('end-monitoring-close'),
+    endMonitoringRemarks: document.getElementById('end-monitoring-remarks'),
+    endMonitoringType: document.getElementById('end-monitoring-type'),
+    endMonitoringMtcpFields: document.getElementById('end-monitoring-mtcp-fields'),
+    endMonitoringSphereFields: document.getElementById('end-monitoring-sphere-fields'),
+    endMonitoringCuboidFields: document.getElementById('end-monitoring-cuboid-fields'),
+    endMonitoringSphereCenterZ: document.getElementById('end-monitoring-sphere-center-z'),
+    endMonitoringSphereRadius: document.getElementById('end-monitoring-sphere-radius'),
+    endMonitoringCuboidMethod: document.getElementById('end-monitoring-cuboid-method'),
+    endMonitoringCuboidDiagonal: document.getElementById('end-monitoring-cuboid-diagonal'),
+    endMonitoringCuboidDatum: document.getElementById('end-monitoring-cuboid-datum'),
+    endMonitoringCuboidFourPoint: document.getElementById('end-monitoring-cuboid-four-point'),
+    endMonitoringValidation: document.getElementById('end-monitoring-validation'),
+    endMonitoringDone: document.getElementById('end-monitoring-done'),
     viewPresetsPanel: document.getElementById('view-presets-panel'),
     viewPresetsList: document.getElementById('view-presets-list'),
     virtualControllerSource: document.getElementById('virtual-controller-source'),
-    virtualControllerEndpoint: document.getElementById('virtual-controller-endpoint'),
+    virtualControllerKind: document.getElementById('virtual-controller-kind'),
     virtualControllerIp: document.getElementById('virtual-controller-ip'),
     virtualControllerRobot: document.getElementById('virtual-controller-robot'),
     btnVirtualControllerConnect: document.getElementById('virtual-controller-connect'),
@@ -407,6 +529,7 @@ const TEST_MODEL_FILE_NAMES = new Set([
 const IMPORT_PLACEMENT_COLORS = { tcp: 0xf97316, scene: 0x65a30d };
 const MOTION_PROJECT_STORAGE_KEY = 'inorobot.3d-simulation.motion-project.v1';
 const VIEW_PRESETS_STORAGE_KEY = 'inorobot.3d-simulation.view-presets.v1';
+const SIMULATION_STORAGE_KEY_PREFIX = 'inorobot.3d-simulation.';
 const VIEW_PRESET_COUNT = 4;
 const CYCLE_TIME_DISPLAY_INTERVAL = 50;
 const MAX_MOTION_TRANSITIONS_PER_FRAME = 256;
@@ -485,13 +608,120 @@ const PANEL_MINIMUM_SIZES = Object.freeze({
     'tcp-profile-panel': { width: 280, height: 360 },
     'virtual-controller-panel': { width: 250, height: 230 },
     'view-presets-panel': { width: 280, height: 260 },
-    'program-panel': { width: 300, height: 320 }
+    'program-panel': { width: 300, height: 320 },
+    'interference-zone-panel': { width: 350, height: 420 }
 });
+const PANEL_STACK_BASE_Z_INDEX = 70;
+const PANEL_IDS = Object.freeze(Object.keys(PANEL_MINIMUM_SIZES));
+const PANEL_STACK_IDS = Object.freeze([...PANEL_IDS, 'interference-zone-dialog']);
 const PANEL_DRAG_EXCLUDED_SELECTOR = [
     'button', 'input', 'select', 'textarea', 'a', 'label', 'option',
     '[contenteditable="true"]', '[role="button"]', '[role="treeitem"]',
     '[data-panel-drag-ignore]'
 ].join(', ');
+
+function endMonitoringCoordinateInputs(pointKey) {
+    return ['X', 'Y', 'Z'].map((axis, index) => (
+        `<label>${axis}<input data-end-monitoring-point="${pointKey}" data-axis="${index}" type="number" min="-10000" max="10000" step="0.001"></label>`
+    )).join('');
+}
+
+function ensureEndMonitoringUi() {
+    if (!el.interferenceZoneMonitoringObject && el.interferenceZoneTargetRobot) {
+        const field = document.createElement('label');
+        field.innerHTML = '<span>감지 대상</span><select id="interference-zone-monitoring-object"></select>';
+        el.interferenceZoneTargetRobot.closest('label')?.insertAdjacentElement('afterend', field);
+        el.interferenceZoneMonitoringObject = field.querySelector('select');
+    }
+    if (el.endMonitoringDialog) return;
+
+    const diagonal = `
+        <div id="end-monitoring-cuboid-diagonal" class="end-monitoring-cuboid-method">
+            <div class="interference-point-block">
+                <div class="interference-point-heading"><strong>Point 1 (mm)</strong><button type="button" data-end-monitoring-get-point="p1">Get point</button></div>
+                <div class="interference-coordinate-grid">${endMonitoringCoordinateInputs('p1')}</div>
+                <div class="interference-point-heading"><strong>Point 2 (mm)</strong><button type="button" data-end-monitoring-get-point="p2">Get point</button></div>
+                <div class="interference-coordinate-grid">${endMonitoringCoordinateInputs('p2')}</div>
+            </div>
+        </div>`;
+    const datum = `
+        <div id="end-monitoring-cuboid-datum" class="end-monitoring-cuboid-method hidden">
+            <div class="interference-point-block">
+                <div class="interference-point-heading"><strong>Datum point (mm)</strong><button type="button" data-end-monitoring-get-point="datum">Get datum point</button></div>
+                <div class="interference-coordinate-grid">${endMonitoringCoordinateInputs('datum')}</div>
+                <div class="interference-point-heading"><strong>Offset (mm)</strong></div>
+                <div class="interference-coordinate-grid">${endMonitoringCoordinateInputs('offset')}</div>
+            </div>
+        </div>`;
+    const fourPoints = Array.from({ length: 4 }, (_, index) => `
+        <div><strong>P${index + 1}</strong><button type="button" data-end-monitoring-get-point="point${index}">Get</button>
+            <div class="interference-coordinate-grid">${endMonitoringCoordinateInputs(`point${index}`)}</div>
+        </div>`).join('');
+    const dialog = document.createElement('dialog');
+    dialog.id = 'end-monitoring-dialog';
+    dialog.className = 'interference-zone-dialog end-monitoring-dialog';
+    dialog.setAttribute('aria-labelledby', 'end-monitoring-dialog-title');
+    dialog.innerHTML = `
+        <form method="dialog">
+            <div class="interference-zone-dialog-header">
+                <div><span>END MONITORING OBJECT</span><h2 id="end-monitoring-dialog-title">TCP 감지 범위 설정</h2></div>
+                <button id="end-monitoring-close" type="button" aria-label="닫기"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <section class="interference-zone-step">
+                <div class="interference-zone-field-grid">
+                    <label class="wide"><span>Remarks</span><input id="end-monitoring-remarks" type="text" maxlength="120" autocomplete="off"></label>
+                    <label class="wide"><span>감지 타입</span><select id="end-monitoring-type"><option value="mtcp">MTCP</option><option value="sphere">Sphere</option><option value="cuboid">Cuboid bounding box</option></select></label>
+                </div>
+                <div id="end-monitoring-mtcp-fields" class="end-monitoring-type-fields">
+                    <p class="interference-zone-note">선택한 TCP 중 하나라도 간섭영역 조건에 도달하면 감지합니다.</p>
+                    <div class="end-monitoring-tcp-grid">
+                        <label><input type="checkbox" data-end-monitoring-mtcp="tool0"> Tool0</label>
+                        <label><input type="checkbox" data-end-monitoring-mtcp="tcp0"> TCP 1</label>
+                        <label><input type="checkbox" data-end-monitoring-mtcp="tcp1"> TCP 2</label>
+                        <label><input type="checkbox" data-end-monitoring-mtcp="tcp2"> TCP 3</label>
+                    </div>
+                </div>
+                <div id="end-monitoring-sphere-fields" class="end-monitoring-type-fields hidden">
+                    <div class="interference-zone-field-grid">
+                        <label><span>Center Z</span><input id="end-monitoring-sphere-center-z" type="number" min="-10000" max="10000" step="0.001"><small>mm</small></label>
+                        <label><span>Radius R</span><input id="end-monitoring-sphere-radius" type="number" min="0" max="10000" step="0.001"><small>mm</small></label>
+                    </div>
+                    <p class="interference-zone-note">구 중심은 Tool0의 로컬 Z 방향으로 오프셋됩니다.</p>
+                </div>
+                <div id="end-monitoring-cuboid-fields" class="end-monitoring-type-fields hidden">
+                    <label class="interference-zone-method"><span>Type</span><select id="end-monitoring-cuboid-method"><option value="diagonal">Diagonal point</option><option value="datumOffset">Datum point + offset</option><option value="fourPointsHeight">Four points + height</option></select></label>
+                    ${diagonal}
+                    ${datum}
+                    <div id="end-monitoring-cuboid-four-point" class="end-monitoring-cuboid-method hidden"><div class="interference-point-block">
+                        <div class="interference-point-heading"><strong>Bottom points (mm)</strong><span>Tool0 기준</span></div>
+                        <div class="end-monitoring-four-point-grid">${fourPoints}</div>
+                        <label class="end-monitoring-height"><span>Height (Tool0 Z)</span><input data-end-monitoring-height type="number" min="0.001" max="10000" step="0.001"><small>mm</small></label>
+                    </div></div>
+                </div>
+                <p id="end-monitoring-validation" class="interference-zone-validation" role="alert"></p>
+            </section>
+            <div class="interference-zone-dialog-actions"><button id="end-monitoring-done" type="button" class="primary">Done</button></div>
+        </form>`;
+    document.body.append(dialog);
+    Object.assign(el, {
+        endMonitoringDialog: dialog,
+        endMonitoringDialogTitle: dialog.querySelector('#end-monitoring-dialog-title'),
+        endMonitoringClose: dialog.querySelector('#end-monitoring-close'),
+        endMonitoringRemarks: dialog.querySelector('#end-monitoring-remarks'),
+        endMonitoringType: dialog.querySelector('#end-monitoring-type'),
+        endMonitoringMtcpFields: dialog.querySelector('#end-monitoring-mtcp-fields'),
+        endMonitoringSphereFields: dialog.querySelector('#end-monitoring-sphere-fields'),
+        endMonitoringCuboidFields: dialog.querySelector('#end-monitoring-cuboid-fields'),
+        endMonitoringSphereCenterZ: dialog.querySelector('#end-monitoring-sphere-center-z'),
+        endMonitoringSphereRadius: dialog.querySelector('#end-monitoring-sphere-radius'),
+        endMonitoringCuboidMethod: dialog.querySelector('#end-monitoring-cuboid-method'),
+        endMonitoringCuboidDiagonal: dialog.querySelector('#end-monitoring-cuboid-diagonal'),
+        endMonitoringCuboidDatum: dialog.querySelector('#end-monitoring-cuboid-datum'),
+        endMonitoringCuboidFourPoint: dialog.querySelector('#end-monitoring-cuboid-four-point'),
+        endMonitoringValidation: dialog.querySelector('#end-monitoring-validation'),
+        endMonitoringDone: dialog.querySelector('#end-monitoring-done')
+    });
+}
 
 async function init() {
     try {
@@ -512,6 +742,7 @@ async function init() {
 }
 
 function setupUI() {
+    ensureEndMonitoringUi();
     loadViewConfiguration();
     const wrapper = document.querySelector('.select-wrapper');
     if (!wrapper) return;
@@ -537,10 +768,1182 @@ function setupUI() {
         const divider = el.panelLauncher.querySelector('.viewer-control-divider');
         el.panelLauncher.insertBefore(programButton, tcpButton || virtualButton || divider);
     }
+    if (el.panelLauncher && !el.panelLauncher.querySelector('[data-panel-toggle="interference-zone-panel"]')) {
+        const zoneButton = document.createElement('button');
+        zoneButton.type = 'button';
+        zoneButton.dataset.panelToggle = 'interference-zone-panel';
+        zoneButton.title = uiText('간섭영역 설정 표시/숨기기');
+        zoneButton.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${uiText('간섭영역')}`;
+        const viewButton = el.panelLauncher.querySelector('[data-panel-toggle="view-presets-panel"]');
+        el.panelLauncher.insertBefore(zoneButton, viewButton || divider);
+    }
+    renderInterferenceZonePanel();
+    refreshInterferenceZoneDialogRobotOptions();
+    updateInterferenceZoneVisuals();
     
     // Update CAD download button title
     const btnDown = document.getElementById('btn-download-cad');
     if(btnDown) btnDown.title = uiText('현재 열린 모든 모델 CAD 다운로드');
+    updateCollisionUi();
+}
+
+const SIMULATION_RESET_MESSAGE = '모든 설정 및 모델이 초기화됩니다. 정말로 진행하시겠습니까?';
+const TEST_MODEL_CONFIRMATION_MESSAGE = '테스트용 모델링을 적용하시겠습니까?\nTCP 1번은 Test 값으로 덮어쓰기됩니다.';
+
+function closeSimulationResetDialog() {
+    if (el.simulationResetDialog?.open) el.simulationResetDialog.close();
+}
+
+function openSimulationResetDialog() {
+    if (state.resetInProgress) return;
+    if (typeof el.simulationResetDialog?.showModal === 'function') {
+        el.simulationResetDialog.showModal();
+        return;
+    }
+    if (window.confirm(uiText(SIMULATION_RESET_MESSAGE))) void resetSimulation();
+}
+
+function resolveTestModelConfirmation(confirmed) {
+    const resolve = state.testModelConfirmationResolver;
+    state.testModelConfirmationResolver = null;
+    if (el.testModelDialog?.open) el.testModelDialog.close();
+    resolve?.(Boolean(confirmed));
+}
+
+function requestTestModelConfirmation() {
+    if (typeof el.testModelDialog?.showModal !== 'function') {
+        return Promise.resolve(window.confirm(uiText(TEST_MODEL_CONFIRMATION_MESSAGE)));
+    }
+    return new Promise((resolve) => {
+        state.testModelConfirmationResolver = resolve;
+        el.testModelDialog.showModal();
+    });
+}
+
+function clearSimulationStorage() {
+    try {
+        const keys = [];
+        for (let index = 0; index < localStorage.length; index += 1) {
+            const key = localStorage.key(index);
+            if (key?.startsWith(SIMULATION_STORAGE_KEY_PREFIX)) keys.push(key);
+        }
+        keys.forEach((key) => localStorage.removeItem(key));
+    } catch (error) {
+        console.warn('Unable to clear simulation storage:', error);
+    }
+}
+
+async function deleteStepImportCacheDatabase() {
+    if (!('indexedDB' in window)) return;
+    try {
+        const db = await state.stepImportCacheDbPromise;
+        db?.close();
+    } catch (error) {
+        console.warn('Unable to close STEP import cache:', error);
+    }
+    state.stepImportCacheDbPromise = null;
+    await new Promise((resolve) => {
+        let settled = false;
+        const finish = () => {
+            if (settled) return;
+            settled = true;
+            resolve();
+        };
+        try {
+            const request = window.indexedDB.deleteDatabase(STEP_IMPORT_CACHE_DB_NAME);
+            request.addEventListener('success', finish, { once: true });
+            request.addEventListener('error', finish, { once: true });
+            request.addEventListener('blocked', () => {
+                console.warn('STEP import cache deletion was blocked by another tab.');
+                finish();
+            }, { once: true });
+        } catch (error) {
+            console.warn('Unable to delete STEP import cache:', error);
+            finish();
+        }
+    });
+}
+
+async function resetSimulation() {
+    if (state.resetInProgress) return;
+    state.resetInProgress = true;
+    closeSimulationResetDialog();
+    if (el.btnResetSimulation) el.btnResetSimulation.disabled = true;
+    if (el.btnConfirmSimulationReset) el.btnConfirmSimulationReset.disabled = true;
+    window.clearTimeout(state.motionSaveTimer);
+    state.motionSaveTimer = null;
+
+    try {
+        clearSimulationStorage();
+        await deleteStepImportCacheDatabase();
+    } finally {
+        // beforeunload must not recreate the project that was just deleted.
+        window.location.reload();
+    }
+}
+
+function getInterferenceZoneRuntime(zoneId) {
+    return state.interferenceRuntime[zoneId] || null;
+}
+
+function getInterferenceZoneTargets(zone) {
+    const robots = getArticulatedRobots();
+    if (!zone || zone.targetRobotId === 'all') return robots;
+    return robots.filter((robot) => robot.userData.motionInstanceId === zone.targetRobotId);
+}
+
+function getInterferenceZoneRobotLabel(robotId) {
+    if (robotId === 'all') return uiText('전체 로봇');
+    const robot = getArticulatedRobots().find((candidate) => candidate.userData.motionInstanceId === robotId);
+    return robot?.userData.motionDisplayName || robot?.userData.modelName || robotId || uiText('알 수 없음');
+}
+
+function isInterferenceZoneInputDisabled(zone) {
+    return Number.isInteger(zone?.inSignal)
+        && zone.inSignal >= 0
+        && state.simulationIo.inputs[zone.inSignal] === true;
+}
+
+function isInterferenceZoneEnabled(zone) {
+    return Boolean(zone?.activate) && !isInterferenceZoneInputDisabled(zone);
+}
+
+function getInterferenceZoneStatus(zoneId) {
+    const zone = state.interferenceZones[zoneId];
+    const runtime = getInterferenceZoneRuntime(zoneId);
+    if (!zone?.activate || isInterferenceZoneInputDisabled(zone)) return 'inactive';
+    if (runtime?.alarmLatched) return 'stopped';
+    if (runtime?.status === 'danger') return 'danger';
+    return 'active';
+}
+
+function interferenceZoneStatusLabel(status) {
+    return uiText(({ inactive: '비활성화', active: '활성화', danger: '간섭', stopped: '정지' })[status] || status);
+}
+
+function refreshInterferenceZoneDialogRobotOptions() {
+    if (!el.interferenceZoneTargetRobot) return;
+    const selected = state.interferenceEditor.draft?.targetRobotId
+        || el.interferenceZoneTargetRobot.value || 'all';
+    const options = [
+        { value: 'all', label: uiText('전체 로봇') },
+        ...getArticulatedRobots().map((robot) => ({
+            value: robot.userData.motionInstanceId,
+            label: robot.userData.motionDisplayName || robot.userData.modelName || uiText('ROBOT')
+        }))
+    ];
+    el.interferenceZoneTargetRobot.replaceChildren(...options.map(({ value, label }) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        return option;
+    }));
+    el.interferenceZoneTargetRobot.value = options.some(({ value }) => value === selected) ? selected : 'all';
+    refreshInterferenceZoneMonitoringObjectOptions();
+}
+
+function endMonitoringObjectLabel(object) {
+    const type = object.type === 'sphere' ? 'Sphere' : object.type === 'cuboid' ? 'Cuboid' : 'MTCP';
+    return `#${object.id} ${object.remarks || type}`;
+}
+
+function refreshInterferenceZoneMonitoringObjectOptions() {
+    if (!el.interferenceZoneMonitoringObject) return;
+    const selected = state.interferenceEditor.draft?.monitoringObjectId
+        ?? el.interferenceZoneMonitoringObject.value
+        ?? 'currentTcp';
+    const options = [
+        { value: 'currentTcp', label: '현재 TCP (점)' },
+        ...state.endMonitoringObjects.map((object) => ({
+            value: String(object.id),
+            label: endMonitoringObjectLabel(object)
+        }))
+    ];
+    el.interferenceZoneMonitoringObject.replaceChildren(...options.map(({ value, label }) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        return option;
+    }));
+    el.interferenceZoneMonitoringObject.value = options.some(({ value }) => value === String(selected))
+        ? String(selected)
+        : 'currentTcp';
+}
+
+function renderEndMonitoringList() {
+    if (!el.endMonitoringList) return;
+    el.endMonitoringList.replaceChildren(...state.endMonitoringObjects.map((object) => {
+        const row = document.createElement('div');
+        row.className = 'end-monitoring-row';
+        row.dataset.endMonitoringRow = String(object.id);
+        const type = object.type === 'sphere' ? 'Sphere' : object.type === 'cuboid' ? 'Cuboid' : 'MTCP';
+        row.innerHTML = `<strong>${object.id}</strong><span></span><em>${type}</em><button type="button" data-end-monitoring-edit>Edit</button>`;
+        row.querySelector('span').textContent = object.remarks || '-';
+        return row;
+    }));
+}
+
+function updateEndMonitoringTypeFields() {
+    const type = el.endMonitoringType?.value || 'mtcp';
+    el.endMonitoringMtcpFields?.classList.toggle('hidden', type !== 'mtcp');
+    el.endMonitoringSphereFields?.classList.toggle('hidden', type !== 'sphere');
+    el.endMonitoringCuboidFields?.classList.toggle('hidden', type !== 'cuboid');
+    const method = el.endMonitoringCuboidMethod?.value || 'diagonal';
+    el.endMonitoringCuboidDiagonal?.classList.toggle('hidden', method !== 'diagonal');
+    el.endMonitoringCuboidDatum?.classList.toggle('hidden', method !== 'datumOffset');
+    el.endMonitoringCuboidFourPoint?.classList.toggle('hidden', method !== 'fourPointsHeight');
+}
+
+function readEndMonitoringDraft() {
+    const draft = state.endMonitoringEditor.draft;
+    if (!draft) return null;
+    draft.remarks = el.endMonitoringRemarks?.value || '';
+    draft.type = el.endMonitoringType?.value === 'sphere'
+        ? 'sphere'
+        : el.endMonitoringType?.value === 'cuboid' ? 'cuboid' : 'mtcp';
+    draft.mtcpToolIds = [...el.endMonitoringDialog.querySelectorAll('[data-end-monitoring-mtcp]:checked')]
+        .map((input) => input.dataset.endMonitoringMtcp);
+    draft.sphere.centerZ = Number(el.endMonitoringSphereCenterZ?.value);
+    draft.sphere.radius = Number(el.endMonitoringSphereRadius?.value);
+    draft.cuboid.method = el.endMonitoringCuboidMethod?.value === 'datumOffset'
+        ? 'datumOffset'
+        : el.endMonitoringCuboidMethod?.value === 'fourPointsHeight' ? 'fourPointsHeight' : 'diagonal';
+    el.endMonitoringDialog.querySelectorAll('[data-end-monitoring-point]').forEach((input) => {
+        const key = input.dataset.endMonitoringPoint;
+        const axis = Number(input.dataset.axis);
+        const pointIndex = /^point(\d)$/.exec(key || '');
+        if (pointIndex) draft.cuboid.points[Number(pointIndex[1])][axis] = Number(input.value);
+        else if (draft.cuboid[key] && Number.isInteger(axis)) draft.cuboid[key][axis] = Number(input.value);
+    });
+    const height = el.endMonitoringDialog.querySelector('[data-end-monitoring-height]');
+    draft.cuboid.height = Number(height?.value);
+    return draft;
+}
+
+function writeEndMonitoringDraft() {
+    const draft = state.endMonitoringEditor.draft;
+    if (!draft || !el.endMonitoringDialog) return;
+    if (el.endMonitoringDialogTitle) el.endMonitoringDialogTitle.textContent = `TCP 감지 범위 ${draft.id} 설정`;
+    if (el.endMonitoringRemarks) el.endMonitoringRemarks.value = draft.remarks;
+    if (el.endMonitoringType) el.endMonitoringType.value = draft.type;
+    if (el.endMonitoringSphereCenterZ) el.endMonitoringSphereCenterZ.value = String(draft.sphere.centerZ);
+    if (el.endMonitoringSphereRadius) el.endMonitoringSphereRadius.value = String(draft.sphere.radius);
+    if (el.endMonitoringCuboidMethod) el.endMonitoringCuboidMethod.value = draft.cuboid.method;
+    el.endMonitoringDialog.querySelectorAll('[data-end-monitoring-mtcp]').forEach((input) => {
+        input.checked = draft.mtcpToolIds.includes(input.dataset.endMonitoringMtcp);
+    });
+    el.endMonitoringDialog.querySelectorAll('[data-end-monitoring-point]').forEach((input) => {
+        const key = input.dataset.endMonitoringPoint;
+        const axis = Number(input.dataset.axis);
+        const pointIndex = /^point(\d)$/.exec(key || '');
+        const values = pointIndex ? draft.cuboid.points[Number(pointIndex[1])] : draft.cuboid[key];
+        if (values && Number.isInteger(axis)) input.value = String(values[axis]);
+    });
+    const height = el.endMonitoringDialog.querySelector('[data-end-monitoring-height]');
+    if (height) height.value = String(draft.cuboid.height);
+    if (el.endMonitoringValidation) {
+        el.endMonitoringValidation.textContent = '';
+        el.endMonitoringValidation.classList.remove('visible');
+    }
+    updateEndMonitoringTypeFields();
+}
+
+function openEndMonitoringEditor(objectId) {
+    if (isMotionActive() || !el.endMonitoringDialog) return;
+    const source = state.endMonitoringObjects[objectId];
+    if (!source) return;
+    state.endMonitoringEditor.objectId = objectId;
+    state.endMonitoringEditor.draft = cloneEndMonitoringObjects([source])[0];
+    writeEndMonitoringDraft();
+    if (!el.endMonitoringDialog.open) el.endMonitoringDialog.showModal();
+}
+
+function closeEndMonitoringEditor() {
+    state.endMonitoringEditor.objectId = -1;
+    state.endMonitoringEditor.draft = null;
+    if (el.endMonitoringDialog?.open) el.endMonitoringDialog.close();
+}
+
+function validateEndMonitoringDraft() {
+    const draft = readEndMonitoringDraft();
+    if (!draft) return { valid: false, errors: ['설정값이 없습니다.'] };
+    const result = validateEndMonitoringObject(draft);
+    const allCoordinates = [
+        draft.cuboid.p1, draft.cuboid.p2, draft.cuboid.datum, draft.cuboid.offset,
+        ...draft.cuboid.points
+    ];
+    if (!allCoordinates.every((point) => point.every((value) => Number.isFinite(value)
+        && value >= END_MONITORING_COORDINATE_MIN && value <= END_MONITORING_COORDINATE_MAX))) {
+        result.errors.push(`좌표는 ${END_MONITORING_COORDINATE_MIN}~${END_MONITORING_COORDINATE_MAX} mm 범위여야 합니다.`);
+    }
+    if (!Number.isFinite(draft.sphere.centerZ)
+        || draft.sphere.centerZ < END_MONITORING_COORDINATE_MIN
+        || draft.sphere.centerZ > END_MONITORING_COORDINATE_MAX) {
+        result.errors.push('Sphere center Z 범위가 올바르지 않습니다.');
+    }
+    if (!Number.isFinite(draft.sphere.radius) || draft.sphere.radius < 0 || draft.sphere.radius > END_MONITORING_RADIUS_MAX) {
+        result.errors.push(`Sphere radius는 0~${END_MONITORING_RADIUS_MAX} mm 범위여야 합니다.`);
+    }
+    if (!Number.isFinite(draft.cuboid.height) || draft.cuboid.height < 0 || draft.cuboid.height > END_MONITORING_HEIGHT_MAX) {
+        result.errors.push(`Height는 0~${END_MONITORING_HEIGHT_MAX} mm 범위여야 합니다.`);
+    }
+    if (el.endMonitoringValidation) {
+        el.endMonitoringValidation.textContent = result.errors.join(' ');
+        el.endMonitoringValidation.classList.toggle('visible', result.errors.length > 0);
+    }
+    return result;
+}
+
+function commitEndMonitoringDraft() {
+    if (isMotionActive()) return;
+    const result = validateEndMonitoringDraft();
+    if (!result.valid) return;
+    const objectId = state.endMonitoringEditor.objectId;
+    const before = captureSceneSnapshot();
+    state.endMonitoringObjects[objectId] = normalizeEndMonitoringObjects([result.object])[0];
+    resetAllInterferenceZoneRuntime();
+    refreshInterferenceZoneMonitoringObjectOptions();
+    renderInterferenceZonePanel();
+    updateEndMonitoringVisuals();
+    closeEndMonitoringEditor();
+    recordHistory('TCP 감지 범위 설정', before, captureSceneSnapshot());
+    setStatus(`TCP 감지 범위 ${objectId} 설정을 저장했습니다.`, '#22c55e');
+}
+
+function getActiveRobotToolLocalPoint() {
+    const robot = state.activeArticulatedModel;
+    const toolFrame = getRobotToolMountFrame(robot);
+    const tcpFrame = robot?.userData?.tcpFrame;
+    if (!robot || !toolFrame || !tcpFrame) return null;
+    robot.updateMatrixWorld(true);
+    return toolFrame.worldToLocal(tcpFrame.getWorldPosition(new THREE.Vector3())).toArray();
+}
+
+function setEndMonitoringDialogPoint(key) {
+    const point = getActiveRobotToolLocalPoint();
+    const draft = state.endMonitoringEditor.draft;
+    if (!point || !draft) {
+        setStatus('현재 TCP를 가진 로봇을 선택하세요.', '#f59e0b');
+        return;
+    }
+    const rounded = point.map((value) => Number(value.toFixed(3)));
+    const match = /^point(\d)$/.exec(key || '');
+    if (match) draft.cuboid.points[Number(match[1])] = rounded;
+    else if (draft.cuboid[key]) draft.cuboid[key] = rounded;
+    writeEndMonitoringDraft();
+}
+
+function renderInterferenceZoneIo() {
+    if (el.interferenceInputList) {
+        const inputNodes = [...el.interferenceInputList.querySelectorAll('[data-interference-input]')];
+        if (inputNodes.length !== state.simulationIo.inputs.length) {
+            el.interferenceInputList.replaceChildren(...state.simulationIo.inputs.map((value, index) => {
+                const label = document.createElement('label');
+                label.className = 'interference-io-chip';
+                label.innerHTML = `<input type="checkbox" data-interference-input="${index}"><span>IN${index}</span>`;
+                label.querySelector('input').checked = value === true;
+                return label;
+            }));
+        } else {
+            inputNodes.forEach((input) => {
+                input.checked = state.simulationIo.inputs[Number(input.dataset.interferenceInput)] === true;
+            });
+        }
+    }
+    if (el.interferenceOutputList) {
+        const outputNodes = [...el.interferenceOutputList.querySelectorAll('[data-interference-output]')];
+        if (outputNodes.length !== state.simulationIo.outputs.length) {
+            el.interferenceOutputList.replaceChildren(...state.simulationIo.outputs.map((value, index) => {
+                const label = document.createElement('span');
+                label.dataset.interferenceOutput = String(index);
+                label.dataset.interferenceOutputValue = value ? '1' : '0';
+                label.className = `interference-io-chip output ${value ? 'on' : 'off'}`;
+                label.innerHTML = `<span>OUT${index}</span><strong>${value ? 'ON' : 'OFF'}</strong>`;
+                return label;
+            }));
+        } else {
+            outputNodes.forEach((node) => {
+                const index = Number(node.dataset.interferenceOutput);
+                const value = state.simulationIo.outputs[index] === true;
+                if (node.dataset.interferenceOutputValue === (value ? '1' : '0')) return;
+                node.dataset.interferenceOutputValue = value ? '1' : '0';
+                node.className = `interference-io-chip output ${value ? 'on' : 'off'}`;
+                const label = node.querySelector('strong');
+                if (label) label.textContent = value ? 'ON' : 'OFF';
+            });
+        }
+    }
+}
+
+function renderInterferenceZonePanel() {
+    if (!el.interferenceZoneList) return;
+    if (el.interferenceZoneActiveCount) {
+        el.interferenceZoneActiveCount.textContent = uiFormat('{count} / {total} 활성', {
+            count: state.interferenceZones.filter((zone) => zone.activate).length,
+            total: INTERFERENCE_ZONE_COUNT
+        });
+    }
+    el.interferenceZoneList.replaceChildren(...state.interferenceZones.map((zone) => {
+        const status = getInterferenceZoneStatus(zone.id);
+        const row = document.createElement('div');
+        row.className = `interference-zone-row status-${status}`;
+        row.dataset.interferenceZoneRow = String(zone.id);
+        row.innerHTML = `
+            <label class="interference-zone-activate"><input type="checkbox" data-interference-zone-activate ${zone.activate ? 'checked' : ''}><span></span></label>
+            <strong class="interference-zone-number">${zone.id}</strong>
+            <span class="interference-zone-remarks"></span>
+            <span class="interference-zone-state">${interferenceZoneStatusLabel(status)}</span>
+            <button type="button" class="interference-zone-edit" data-interference-zone-edit>Edit</button>
+        `;
+        row.querySelector('.interference-zone-remarks').textContent = zone.remarks || '-';
+        return row;
+    }));
+    renderEndMonitoringList();
+    renderInterferenceZoneIo();
+    updateInterferenceZoneLauncherState();
+}
+
+function updateInterferenceZoneStatusUi() {
+    if (!el.interferenceZoneList) return;
+    state.interferenceZones.forEach((zone) => {
+        const row = el.interferenceZoneList.querySelector(`[data-interference-zone-row="${zone.id}"]`);
+        if (!row) return;
+        const status = getInterferenceZoneStatus(zone.id);
+        row.className = `interference-zone-row status-${status}`;
+        const stateLabel = row.querySelector('.interference-zone-state');
+        if (stateLabel) stateLabel.textContent = interferenceZoneStatusLabel(status);
+    });
+    if (el.interferenceZoneActiveCount) {
+        el.interferenceZoneActiveCount.textContent = uiFormat('{count} / {total} 활성', {
+            count: state.interferenceZones.filter((zone) => zone.activate).length,
+            total: INTERFERENCE_ZONE_COUNT
+        });
+    }
+    updateInterferenceZoneLauncherState();
+}
+
+function updateInterferenceZoneLauncherState() {
+    const button = el.panelLauncher?.querySelector('[data-panel-toggle="interference-zone-panel"]');
+    if (!button) return;
+    const hasActivatedZone = state.interferenceZones.some((zone) => zone.activate);
+    const hasInterference = state.interferenceZones.some((zone) => {
+        if (!zone.activate) return false;
+        const runtime = getInterferenceZoneRuntime(zone.id);
+        return runtime?.status === 'danger' || runtime?.alarmLatched === true;
+    });
+    button.classList.toggle('interference-zone-launcher-active', hasActivatedZone && !hasInterference);
+    button.classList.toggle('interference-zone-launcher-alert', hasInterference);
+    button.dataset.interferenceZoneState = hasInterference
+        ? 'alert'
+        : hasActivatedZone
+            ? 'active'
+            : 'inactive';
+}
+
+function readInterferenceZoneDialogDraft() {
+    const draft = state.interferenceEditor.draft;
+    if (!draft) return null;
+    draft.remarks = el.interferenceZoneRemarks?.value || '';
+    draft.targetRobotId = el.interferenceZoneTargetRobot?.value || 'all';
+    draft.monitoringObjectId = el.interferenceZoneMonitoringObject?.value === 'currentTcp'
+        ? 'currentTcp'
+        : Number(el.interferenceZoneMonitoringObject?.value);
+    draft.insideOutside = el.interferenceZoneInsideOutside?.value === 'outside' ? 'outside' : 'inside';
+    draft.triggerAlarmAndStop = el.interferenceZoneTrigger?.value !== 'no';
+    draft.safetyDistance = Number(el.interferenceZoneSafety?.value);
+    draft.inSignal = el.interferenceZoneInEnabled?.checked ? Number(el.interferenceZoneInSignal?.value) : -1;
+    draft.outSignal = el.interferenceZoneOutEnabled?.checked ? Number(el.interferenceZoneOutSignal?.value) : -1;
+    draft.geometry.method = el.interferenceZoneMethod?.value === 'datumOffset' ? 'datumOffset' : 'diagonal';
+    el.interferenceZoneDialog?.querySelectorAll('[data-interference-point]').forEach((input) => {
+        const key = input.dataset.interferencePoint;
+        const axis = Number(input.dataset.axis);
+        if (draft.geometry[key] && Number.isInteger(axis)) draft.geometry[key][axis] = Number(input.value);
+    });
+    return draft;
+}
+
+function writeInterferenceZoneDialogDraft() {
+    const draft = state.interferenceEditor.draft;
+    if (!draft) return;
+    if (el.interferenceZoneDialogTitle) {
+        el.interferenceZoneDialogTitle.textContent = uiFormat('간섭영역 {id} 설정', { id: draft.id });
+    }
+    if (el.interferenceZoneRemarks) el.interferenceZoneRemarks.value = draft.remarks;
+    refreshInterferenceZoneDialogRobotOptions();
+    if (el.interferenceZoneTargetRobot) el.interferenceZoneTargetRobot.value = draft.targetRobotId;
+    if (el.interferenceZoneMonitoringObject) {
+        el.interferenceZoneMonitoringObject.value = draft.monitoringObjectId === 'currentTcp'
+            ? 'currentTcp'
+            : String(draft.monitoringObjectId);
+    }
+    if (el.interferenceZoneInsideOutside) el.interferenceZoneInsideOutside.value = draft.insideOutside;
+    if (el.interferenceZoneTrigger) el.interferenceZoneTrigger.value = draft.triggerAlarmAndStop ? 'yes' : 'no';
+    if (el.interferenceZoneSafety) el.interferenceZoneSafety.value = String(draft.safetyDistance);
+    if (el.interferenceZoneInEnabled) el.interferenceZoneInEnabled.checked = draft.inSignal >= 0;
+    if (el.interferenceZoneInSignal) el.interferenceZoneInSignal.value = String(Math.max(0, draft.inSignal));
+    if (el.interferenceZoneOutEnabled) el.interferenceZoneOutEnabled.checked = draft.outSignal >= 0;
+    if (el.interferenceZoneOutSignal) el.interferenceZoneOutSignal.value = String(Math.max(0, draft.outSignal));
+    if (el.interferenceZoneMethod) el.interferenceZoneMethod.value = draft.geometry.method;
+    el.interferenceZoneDialog?.querySelectorAll('[data-interference-point]').forEach((input) => {
+        const values = draft.geometry[input.dataset.interferencePoint];
+        const axis = Number(input.dataset.axis);
+        if (values && Number.isInteger(axis)) input.value = String(values[axis]);
+    });
+    updateInterferenceZoneGeometryFields();
+}
+
+function updateInterferenceZoneGeometryFields() {
+    const datum = el.interferenceZoneMethod?.value === 'datumOffset';
+    el.interferenceZoneDiagonalFields?.classList.toggle('hidden', datum);
+    el.interferenceZoneDatumFields?.classList.toggle('hidden', !datum);
+}
+
+function setInterferenceZoneDialogStep(step) {
+    state.interferenceEditor.step = step === 'geometry' ? 'geometry' : 'basic';
+    el.interferenceZoneDialog?.querySelectorAll('[data-interference-step]').forEach((section) => {
+        section.classList.toggle('hidden', section.dataset.interferenceStep !== state.interferenceEditor.step);
+    });
+    el.interferenceZoneDialog?.querySelectorAll('[data-interference-step-indicator]').forEach((indicator) => {
+        indicator.classList.toggle('active', indicator.dataset.interferenceStepIndicator === state.interferenceEditor.step);
+    });
+    el.interferenceZonePrevious?.classList.toggle('hidden', state.interferenceEditor.step !== 'geometry');
+    el.interferenceZoneNext?.classList.toggle('hidden', state.interferenceEditor.step !== 'basic');
+    el.interferenceZoneDone?.classList.toggle('hidden', state.interferenceEditor.step !== 'geometry');
+}
+
+function openInterferenceZoneEditor(zoneId) {
+    if (isMotionActive()) return;
+    const zone = state.interferenceZones[zoneId];
+    if (!zone) return;
+    state.interferenceEditor.zoneId = zoneId;
+    state.interferenceEditor.draft = cloneInterferenceZones([zone])[0];
+    writeInterferenceZoneDialogDraft();
+    setInterferenceZoneDialogStep('basic');
+    // This editor must stay non-modal: the user needs to operate JOG/VC and
+    // move the robot while collecting P1/P2 or datum coordinates.
+    if (el.interferenceZoneDialog?.show) {
+        el.interferenceZoneDialog.show();
+        bringPanelToFront('interference-zone-dialog');
+    }
+}
+
+function closeInterferenceZoneEditor() {
+    state.interferenceEditor.zoneId = -1;
+    state.interferenceEditor.draft = null;
+    if (el.interferenceZoneDialog?.open) el.interferenceZoneDialog.close();
+    updatePanelStack();
+}
+
+function getActiveRobotWorldTcpPoint() {
+    const robot = state.activeArticulatedModel;
+    const tcpFrame = robot?.userData?.tcpFrame;
+    if (!robot || !tcpFrame) return null;
+    robot.updateMatrixWorld(true);
+    return tcpFrame.getWorldPosition(new THREE.Vector3()).toArray();
+}
+
+function setInterferenceDialogPoint(pointKey) {
+    const point = getActiveRobotWorldTcpPoint();
+    if (!point || !state.interferenceEditor.draft) {
+        setStatus('현재 TCP를 읽을 로봇을 선택하세요.', '#f59e0b');
+        return;
+    }
+    state.interferenceEditor.draft.geometry[pointKey] = point.map((value) => Number(value.toFixed(3)));
+    writeInterferenceZoneDialogDraft();
+}
+
+function validateInterferenceZoneDraft() {
+    const draft = readInterferenceZoneDialogDraft();
+    if (!draft) return { valid: false, errors: [uiText('설정값이 없습니다.')] };
+    const result = validateInterferenceZone(draft);
+    const geometryKeys = draft.geometry.method === 'datumOffset' ? ['datum', 'offset'] : ['p1', 'p2'];
+    const geometryInputsValid = geometryKeys.every((key) => (
+        draft.geometry[key].every((value) => Number.isFinite(value)
+            && value >= INTERFERENCE_COORDINATE_MIN
+            && value <= INTERFERENCE_COORDINATE_MAX)
+    ));
+    if (!geometryInputsValid) {
+        result.errors.push(uiFormat('좌표는 {min}~{max} mm 범위의 숫자여야 합니다.', {
+            min: INTERFERENCE_COORDINATE_MIN,
+            max: INTERFERENCE_COORDINATE_MAX
+        }));
+    }
+    const signalsValid = [draft.inSignal, draft.outSignal].every((value) => Number.isInteger(value) && value >= -1 && value <= 255);
+    if (!signalsValid) result.errors.push(uiText('I/O 신호 번호는 -1 또는 0~255여야 합니다.'));
+    if (!Number.isFinite(draft.safetyDistance) || draft.safetyDistance < 0 || draft.safetyDistance > INTERFERENCE_SAFETY_DISTANCE_MAX) {
+        result.errors.push(uiFormat('Safety distance는 0~{max} mm여야 합니다.', { max: INTERFERENCE_SAFETY_DISTANCE_MAX }));
+    }
+    if (el.interferenceZoneValidation) {
+        el.interferenceZoneValidation.textContent = result.errors.join(' ');
+        el.interferenceZoneValidation.classList.toggle('visible', result.errors.length > 0);
+    }
+    return result;
+}
+
+function commitInterferenceZoneDraft() {
+    if (isMotionActive()) return;
+    const result = validateInterferenceZoneDraft();
+    if (!result.valid) return;
+    const zoneId = state.interferenceEditor.zoneId;
+    const before = captureSceneSnapshot();
+    state.interferenceZones[zoneId] = normalizeInterferenceZones([result.zone])[0];
+    resetInterferenceZoneRuntime(zoneId);
+    updateInterferenceZoneVisuals();
+    renderInterferenceZonePanel();
+    scheduleMotionProjectSave();
+    closeInterferenceZoneEditor();
+    recordHistory('간섭영역 설정', before, captureSceneSnapshot());
+    setStatus('간섭영역 {id} 설정을 저장했습니다.', '#22c55e', { id: zoneId });
+}
+
+function setInterferenceZoneActivate(zoneId, activate) {
+    if (isMotionActive()) return;
+    const zone = state.interferenceZones[zoneId];
+    if (!zone) return;
+    const before = captureSceneSnapshot();
+    zone.activate = Boolean(activate);
+    resetInterferenceZoneRuntime(zoneId);
+    updateInterferenceZoneVisuals();
+    renderInterferenceZonePanel();
+    recordHistory('간섭영역 활성화 변경', before, captureSceneSnapshot());
+    scheduleMotionProjectSave();
+}
+
+function clearInterferenceRobotStopLatch(robot, zoneId) {
+    if (!robot?.userData) return;
+    const stopZones = robot.userData.interferenceStopZones;
+    if (stopZones instanceof Set) {
+        stopZones.delete(zoneId);
+        if (stopZones.size > 0) return;
+        delete robot.userData.interferenceStopZones;
+    }
+    delete robot.userData.interferenceStopLatched;
+}
+
+function resetInterferenceZoneRuntime(zoneId) {
+    const runtime = state.interferenceRuntime[zoneId];
+    if (!runtime) return;
+    runtime.status = 'inactive';
+    runtime.alarmLatched = false;
+    runtime.lastViolationByRobot.clear();
+    runtime.lastProbeByRobot.clear();
+    runtime.lastMessage = '';
+    getArticulatedRobots().forEach((robot) => clearInterferenceRobotStopLatch(robot, zoneId));
+}
+
+function resetAllInterferenceZoneRuntime() {
+    state.interferenceRuntime.forEach((runtime, index) => {
+        if (runtime) resetInterferenceZoneRuntime(index);
+    });
+}
+
+function getRobotWorldTcpPoint(robot) {
+    const tcpFrame = robot?.userData?.tcpFrame;
+    if (!tcpFrame) return null;
+    robot.updateMatrixWorld(true);
+    return tcpFrame.getWorldPosition(new THREE.Vector3()).toArray();
+}
+
+function getRobotToolWorldTransform(robot) {
+    const toolFrame = getRobotToolMountFrame(robot);
+    if (!toolFrame) return null;
+    robot.updateMatrixWorld(true);
+    return {
+        position: toolFrame.getWorldPosition(new THREE.Vector3()),
+        quaternion: toolFrame.getWorldQuaternion(new THREE.Quaternion())
+    };
+}
+
+function createPointProbe(point) {
+    return { kind: 'point', center: point.clone(), radius: 0 };
+}
+
+function getMtcpProfileWorldPoint(robot, toolTransform, profileIndex) {
+    const profiles = ensureRobotTcpProfiles(robot);
+    const profile = profileIndex === robot.userData.activeTcpProfileIndex && robot.userData.tcpLiveProfile
+        ? robot.userData.tcpLiveProfile
+        : profiles[profileIndex];
+    if (!profile) return null;
+    return profile.position.clone().applyQuaternion(toolTransform.quaternion).add(toolTransform.position);
+}
+
+function getInterferenceZoneProbes(zone, robot) {
+    const currentTcp = getRobotWorldTcpPoint(robot);
+    if (!currentTcp) return [];
+    const objectId = zone?.monitoringObjectId;
+    if (objectId === 'currentTcp' || !Number.isInteger(objectId)) {
+        return [createPointProbe(new THREE.Vector3().fromArray(currentTcp))];
+    }
+    const monitoring = state.endMonitoringObjects[objectId];
+    const toolTransform = getRobotToolWorldTransform(robot);
+    if (!monitoring || !toolTransform) return [createPointProbe(new THREE.Vector3().fromArray(currentTcp))];
+    if (monitoring.type === 'mtcp') {
+        return monitoring.mtcpToolIds.map((toolId) => {
+            if (toolId === 'tool0') return createPointProbe(toolTransform.position);
+            const profileIndex = Number(toolId.slice(3));
+            const point = Number.isInteger(profileIndex)
+                ? getMtcpProfileWorldPoint(robot, toolTransform, profileIndex)
+                : null;
+            return point ? createPointProbe(point) : null;
+        }).filter(Boolean);
+    }
+    if (monitoring.type === 'sphere') {
+        const center = new THREE.Vector3(0, 0, monitoring.sphere.centerZ)
+            .applyQuaternion(toolTransform.quaternion)
+            .add(toolTransform.position);
+        return [{ kind: 'sphere', center, radius: monitoring.sphere.radius }];
+    }
+    const cuboid = getEndMonitoringCuboidTransform(monitoring);
+    const center = new THREE.Vector3().fromArray(cuboid.center)
+        .applyQuaternion(toolTransform.quaternion).add(toolTransform.position);
+    const halfSizes = cuboid.halfSizes;
+    return [{
+        kind: 'box',
+        center,
+        halfSizes,
+        axes: cuboid.axes.map((axis) => new THREE.Vector3().fromArray(axis).applyQuaternion(toolTransform.quaternion)),
+        radius: Math.hypot(...halfSizes)
+    }];
+}
+
+function sphereIntersectsBounds(center, radius, bounds) {
+    const distanceSquared = bounds.min.reduce((sum, minimum, index) => {
+        const value = center.getComponent(index);
+        const maximum = bounds.max[index];
+        const delta = value < minimum ? minimum - value : value > maximum ? value - maximum : 0;
+        return sum + delta * delta;
+    }, 0);
+    return distanceSquared <= radius * radius + 1e-9;
+}
+
+function obbIntersectsBounds(probe, bounds) {
+    const aHalf = bounds.max.map((value, index) => (value - bounds.min[index]) / 2);
+    if (aHalf.some((value) => value < 0)) return false;
+    const aCenter = bounds.min.map((value, index) => (value + bounds.max[index]) / 2);
+    const t = probe.center.toArray().map((value, index) => value - aCenter[index]);
+    const rotation = Array.from({ length: 3 }, (_, row) => probe.axes.map((axis) => axis.getComponent(row)));
+    const absRotation = rotation.map((row) => row.map((value) => Math.abs(value) + 1e-9));
+
+    for (let axis = 0; axis < 3; axis += 1) {
+        const radiusB = probe.halfSizes.reduce((sum, value, index) => sum + value * absRotation[axis][index], 0);
+        if (Math.abs(t[axis]) > aHalf[axis] + radiusB) return false;
+    }
+    for (let axis = 0; axis < 3; axis += 1) {
+        const radiusA = aHalf.reduce((sum, value, index) => sum + value * absRotation[index][axis], 0);
+        const projection = t.reduce((sum, value, index) => sum + value * rotation[index][axis], 0);
+        if (Math.abs(projection) > radiusA + probe.halfSizes[axis]) return false;
+    }
+    for (let axisA = 0; axisA < 3; axisA += 1) {
+        const nextA = (axisA + 1) % 3;
+        const lastA = (axisA + 2) % 3;
+        for (let axisB = 0; axisB < 3; axisB += 1) {
+            const nextB = (axisB + 1) % 3;
+            const lastB = (axisB + 2) % 3;
+            const radiusA = aHalf[nextA] * absRotation[lastA][axisB]
+                + aHalf[lastA] * absRotation[nextA][axisB];
+            const radiusB = probe.halfSizes[nextB] * absRotation[axisA][lastB]
+                + probe.halfSizes[lastB] * absRotation[axisA][nextB];
+            const projection = Math.abs(t[lastA] * rotation[nextA][axisB]
+                - t[nextA] * rotation[lastA][axisB]);
+            if (projection > radiusA + radiusB) return false;
+        }
+    }
+    return true;
+}
+
+function boxContainedInBounds(probe, bounds) {
+    for (const sx of [-1, 1]) {
+        for (const sy of [-1, 1]) {
+            for (const sz of [-1, 1]) {
+                const corner = probe.center.clone()
+                    .addScaledVector(probe.axes[0], probe.halfSizes[0] * sx)
+                    .addScaledVector(probe.axes[1], probe.halfSizes[1] * sy)
+                    .addScaledVector(probe.axes[2], probe.halfSizes[2] * sz);
+                if (!pointInsideBounds(corner.toArray(), bounds)) return false;
+            }
+        }
+    }
+    return true;
+}
+
+function probeIntersectsBounds(probe, bounds) {
+    if (probe.kind === 'sphere') return sphereIntersectsBounds(probe.center, probe.radius, bounds);
+    if (probe.kind === 'box') return obbIntersectsBounds(probe, bounds);
+    return pointInsideBounds(probe.center.toArray(), bounds);
+}
+
+function probeInsideBounds(probe, bounds) {
+    if (probe.kind === 'sphere') {
+        return bounds.min.every((minimum, index) => probe.center.getComponent(index) - probe.radius >= minimum - 1e-9
+            && probe.center.getComponent(index) + probe.radius <= bounds.max[index] + 1e-9);
+    }
+    if (probe.kind === 'box') return boxContainedInBounds(probe, bounds);
+    return pointInsideBounds(probe.center.toArray(), bounds);
+}
+
+function probeInInterferenceRegion(probe, zone) {
+    const bounds = getInterferenceZoneBounds(zone, true);
+    if (bounds.min.some((value, index) => value > bounds.max[index])) return zone.insideOutside === 'outside';
+    return zone.insideOutside === 'outside'
+        ? !probeInsideBounds(probe, bounds)
+        : probeIntersectsBounds(probe, bounds);
+}
+
+function serializeInterferenceProbe(probe) {
+    return { kind: probe.kind, center: probe.center.toArray(), radius: Number(probe.radius) || 0 };
+}
+
+function pointDistanceSquaredToBounds(point, bounds) {
+    return bounds.min.reduce((sum, minimum, index) => {
+        const maximum = bounds.max[index];
+        const value = point[index];
+        const delta = value < minimum ? minimum - value : value > maximum ? value - maximum : 0;
+        return sum + delta * delta;
+    }, 0);
+}
+
+function segmentDistanceSquaredToBounds(start, end, bounds) {
+    const delta = end.map((value, index) => value - start[index]);
+    const distanceAt = (t) => pointDistanceSquaredToBounds(
+        start.map((value, index) => value + delta[index] * t),
+        bounds
+    );
+    let low = 0;
+    let high = 1;
+    // The squared distance between a segment and a convex AABB is convex.
+    // Ternary minimisation avoids replacing a sphere with a square during a sweep.
+    for (let index = 0; index < 48; index += 1) {
+        const left = (low * 2 + high) / 3;
+        const right = (low + high * 2) / 3;
+        if (distanceAt(left) <= distanceAt(right)) high = right;
+        else low = left;
+    }
+    return Math.min(distanceAt(0), distanceAt(1), distanceAt((low + high) / 2));
+}
+
+function sweptProbeInInterferenceRegion(previous, current, zone) {
+    if (!previous || !current) return false;
+    if (current.kind === 'sphere' && previous.kind === 'sphere') {
+        // Outside mode is a containment requirement. If both endpoints are
+        // contained, the straight centre path is contained as well because an
+        // AABB is convex; endpoint evaluation already handles violations.
+        if (zone.insideOutside === 'outside') return false;
+        const bounds = getInterferenceZoneBounds(zone, true);
+        if (bounds.min.some((value, index) => value > bounds.max[index])) return false;
+        const radius = Math.max(Number(previous.radius) || 0, Number(current.radius) || 0);
+        return segmentDistanceSquaredToBounds(previous.center, current.center.toArray(), bounds)
+            <= radius * radius + 1e-9;
+    }
+    const sweepZone = {
+        ...zone,
+        safetyDistance: Math.min(INTERFERENCE_SAFETY_DISTANCE_MAX,
+            Number(zone.safetyDistance || 0) + Math.max(Number(previous.radius) || 0, Number(current.radius) || 0))
+    };
+    return segmentIntersectsInterferenceRegion(previous.center, current.center.toArray(), sweepZone);
+}
+
+function recomputeInterferenceOutputs() {
+    const nextOutputs = Array.from({ length: state.simulationIo.outputs.length }, () => true);
+    state.interferenceZones.forEach((zone) => {
+        if (zone.outSignal < 0 || zone.outSignal >= nextOutputs.length || !isInterferenceZoneEnabled(zone)) return;
+        const hasViolation = getInterferenceZoneTargets(zone).some((robot) => (
+            getInterferenceZoneProbes(zone, robot).some((probe) => probeInInterferenceRegion(probe, zone))
+        ));
+        if (hasViolation) nextOutputs[zone.outSignal] = false;
+    });
+    state.simulationIo.outputs = nextOutputs;
+    renderInterferenceZoneIo();
+}
+
+function triggerInterferenceZoneAlarm(zone, robot) {
+    const runtime = getInterferenceZoneRuntime(zone.id);
+    if (!runtime || runtime.alarmLatched) return;
+    runtime.alarmLatched = true;
+    runtime.status = 'stopped';
+    runtime.lastMessage = `${zone.id}:${robot.userData.motionInstanceId}`;
+    if (!(robot.userData.interferenceStopZones instanceof Set)) {
+        robot.userData.interferenceStopZones = new Set();
+    }
+    robot.userData.interferenceStopZones.add(zone.id);
+    robot.userData.interferenceStopLatched = true;
+    stopRobotMotions([robot]);
+    const robotLabel = getInterferenceZoneRobotLabel(robot.userData.motionInstanceId);
+    setMotionProgramStatus('간섭영역 {id} 진입으로 {robot}를 정지했습니다.', 'error', {
+        id: zone.id,
+        robot: robotLabel
+    });
+    setStatus('간섭영역 {id} 알람: {robot}', '#ef4444', { id: zone.id, robot: robotLabel });
+}
+
+function evaluateInterferenceZones() {
+    state.interferenceZones.forEach((zone) => {
+        const runtime = getInterferenceZoneRuntime(zone.id);
+        if (!runtime) return;
+        if (!isInterferenceZoneEnabled(zone)) {
+            runtime.status = 'inactive';
+            runtime.lastViolationByRobot.clear();
+            runtime.lastProbeByRobot.clear();
+            getArticulatedRobots().forEach((robot) => clearInterferenceRobotStopLatch(robot, zone.id));
+            runtime.alarmLatched = false;
+            runtime.lastMessage = '';
+            return;
+        }
+        let anyViolation = false;
+        getInterferenceZoneTargets(zone).forEach((robot) => {
+            const robotId = robot.userData.motionInstanceId;
+            const probes = getInterferenceZoneProbes(zone, robot);
+            if (!probes.length) return;
+            const previous = runtime.lastProbeByRobot.get(robotId) || [];
+            const currentViolation = probes.some((probe) => probeInInterferenceRegion(probe, zone));
+            const sweptViolation = probes.some((probe, index) => sweptProbeInInterferenceRegion(previous[index], probe, zone));
+            const violation = Boolean(currentViolation || sweptViolation);
+            const wasViolation = runtime.lastViolationByRobot.get(robotId) === true;
+            runtime.lastProbeByRobot.set(robotId, probes.map(serializeInterferenceProbe));
+            runtime.lastViolationByRobot.set(robotId, violation);
+            if (!violation) {
+                // Leaving the monitored condition automatically clears this
+                // zone's stop latch. Other zones remain latched independently.
+                clearInterferenceRobotStopLatch(robot, zone.id);
+                return;
+            }
+            anyViolation = true;
+            if (zone.triggerAlarmAndStop && !wasViolation) triggerInterferenceZoneAlarm(zone, robot);
+        });
+        if (!anyViolation && runtime.alarmLatched) {
+            runtime.alarmLatched = false;
+            runtime.lastMessage = '';
+        }
+        runtime.status = runtime.alarmLatched ? 'stopped' : anyViolation ? 'danger' : 'active';
+    });
+    recomputeInterferenceOutputs();
+    updateInterferenceZoneStatusUi();
+    updateInterferenceZoneVisualState();
+}
+
+function updateInterferenceZoneVisualState() {
+    state.interferenceVisuals.forEach(({ zoneId, fill, outline, safetyOutline }) => {
+        const status = getInterferenceZoneStatus(zoneId);
+        const color = status === 'stopped' || status === 'danger' ? 0xef4444 : status === 'active' ? 0x2563eb : 0x64748b;
+        fill.material.color.setHex(color);
+        outline.material.color.setHex(color);
+        if (safetyOutline) safetyOutline.material.color.setHex(color);
+        fill.material.opacity = status === 'inactive' ? 0.04 : status === 'danger' || status === 'stopped' ? 0.18 : 0.08;
+    });
+    updateEndMonitoringVisualState();
+}
+
+function disposeEndMonitoringVisuals() {
+    state.endMonitoringVisuals.forEach(({ group }) => {
+        group.traverse((item) => {
+            item.geometry?.dispose?.();
+            const materials = Array.isArray(item.material) ? item.material : [item.material];
+            materials.forEach((material) => material?.dispose?.());
+        });
+        group.removeFromParent();
+    });
+    state.endMonitoringVisuals = [];
+}
+
+function createEndMonitoringWireframe(geometry) {
+    const fill = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
+        color: 0x14b8a6, transparent: true, opacity: 0.12, depthWrite: false
+    }));
+    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geometry), new THREE.LineBasicMaterial({
+        color: 0x14b8a6, transparent: true, opacity: 0.9, depthTest: false
+    }));
+    edges.renderOrder = 31;
+    return { fill, edges };
+}
+
+function createSphereSilhouette(radius) {
+    const points = Array.from({ length: 128 }, (_, index) => {
+        const angle = (Math.PI * 2 * index) / 128;
+        return new THREE.Vector3(Math.cos(angle) * radius, Math.sin(angle) * radius, 0);
+    });
+    const outline = new THREE.LineLoop(
+        new THREE.BufferGeometry().setFromPoints(points),
+        new THREE.LineBasicMaterial({ color: 0x5eead4, transparent: true, opacity: 1, depthTest: false })
+    );
+    outline.renderOrder = 32;
+    return outline;
+}
+
+function updateEndMonitoringVisuals() {
+    disposeEndMonitoringVisuals();
+    const visualGroups = new Map();
+    state.interferenceZones.forEach((zone) => {
+        if (!zone.activate || !Number.isInteger(zone.monitoringObjectId)) return;
+        const monitoring = state.endMonitoringObjects[zone.monitoringObjectId];
+        if (!monitoring) return;
+        getInterferenceZoneTargets(zone).forEach((robot) => {
+            const toolFrame = getRobotToolMountFrame(robot);
+            if (!toolFrame) return;
+            const key = `${zone.monitoringObjectId}:${robot.userData.motionInstanceId}`;
+            if (visualGroups.has(key)) {
+                visualGroups.get(key).zoneIds.add(zone.id);
+                return;
+            }
+            const group = new THREE.Group();
+            group.name = `End monitoring ${monitoring.id}`;
+            group.renderOrder = 31;
+            const materials = [];
+            const cameraFacingOutlines = [];
+            if (monitoring.type === 'sphere') {
+                const sphere = new THREE.Mesh(
+                    new THREE.SphereGeometry(Math.max(0.001, monitoring.sphere.radius), 64, 48),
+                    new THREE.MeshPhongMaterial({
+                        color: 0x14b8a6,
+                        emissive: 0x0f766e,
+                        emissiveIntensity: 0.22,
+                        transparent: true,
+                        opacity: 0.24,
+                        shininess: 72,
+                        side: THREE.DoubleSide,
+                        depthWrite: false,
+                        depthTest: false
+                    })
+                );
+                sphere.position.z = monitoring.sphere.centerZ;
+                sphere.renderOrder = 31;
+                const silhouette = createSphereSilhouette(Math.max(0.001, monitoring.sphere.radius) * 1.002);
+                silhouette.position.z = monitoring.sphere.centerZ;
+                group.add(sphere, silhouette);
+                materials.push(sphere.material, silhouette.material);
+                cameraFacingOutlines.push(silhouette);
+            } else if (monitoring.type === 'cuboid') {
+                const cuboid = getEndMonitoringCuboidTransform(monitoring);
+                const size = cuboid.halfSizes.map((value) => value * 2);
+                if (size.every((value) => value > 0)) {
+                    const visual = createEndMonitoringWireframe(new THREE.BoxGeometry(size[0], size[1], size[2]));
+                    const center = new THREE.Vector3().fromArray(cuboid.center);
+                    const rotation = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(
+                        new THREE.Vector3().fromArray(cuboid.axes[0]),
+                        new THREE.Vector3().fromArray(cuboid.axes[1]),
+                        new THREE.Vector3().fromArray(cuboid.axes[2])
+                    ));
+                    visual.fill.position.copy(center);
+                    visual.edges.position.copy(center);
+                    visual.fill.quaternion.copy(rotation);
+                    visual.edges.quaternion.copy(rotation);
+                    group.add(visual.fill, visual.edges);
+                    materials.push(visual.fill.material, visual.edges.material);
+                }
+            } else {
+                const profiles = ensureRobotTcpProfiles(robot);
+                monitoring.mtcpToolIds.forEach((toolId) => {
+                    const marker = new THREE.Mesh(new THREE.SphereGeometry(10, 12, 8), new THREE.MeshBasicMaterial({
+                        color: 0x14b8a6, transparent: true, opacity: 0.78, depthTest: false
+                    }));
+                    if (toolId !== 'tool0') {
+                        const index = Number(toolId.slice(3));
+                        if (profiles[index]) marker.position.copy(profiles[index].position);
+                    }
+                    marker.renderOrder = 31;
+                    group.add(marker);
+                    materials.push(marker.material);
+                });
+            }
+            if (!group.children.length) return;
+            toolFrame.add(group);
+            const entry = { group, materials, cameraFacingOutlines, zoneIds: new Set([zone.id]) };
+            visualGroups.set(key, entry);
+            state.endMonitoringVisuals.push(entry);
+        });
+    });
+    updateEndMonitoringVisualState();
+}
+
+function updateEndMonitoringVisualState() {
+    state.endMonitoringVisuals.forEach(({ group, materials, cameraFacingOutlines, zoneIds }) => {
+        const hasDanger = [...zoneIds].some((zoneId) => {
+            const status = getInterferenceZoneStatus(zoneId);
+            return status === 'danger' || status === 'stopped';
+        });
+        materials.forEach((material) => {
+            material.color.setHex(hasDanger ? 0xef4444 : 0x14b8a6);
+            material.emissive?.setHex(hasDanger ? 0x7f1d1d : 0x0f766e);
+        });
+        if (state.camera && cameraFacingOutlines?.length) {
+            group.updateWorldMatrix(true, false);
+            const groupQuaternion = group.getWorldQuaternion(new THREE.Quaternion());
+            const cameraQuaternion = state.camera.getWorldQuaternion(new THREE.Quaternion());
+            const localCameraQuaternion = groupQuaternion.invert().multiply(cameraQuaternion);
+            cameraFacingOutlines.forEach((outline) => outline.quaternion.copy(localCameraQuaternion));
+        }
+    });
+}
+
+function disposeInterferenceZoneVisuals() {
+    state.interferenceVisuals.forEach(({ group, fill, outline, safetyOutline }) => {
+        group.removeFromParent();
+        fill.geometry.dispose();
+        fill.material.dispose();
+        outline.geometry.dispose();
+        outline.material.dispose();
+        if (safetyOutline) {
+            safetyOutline.geometry.dispose();
+            safetyOutline.material.dispose();
+        }
+    });
+    state.interferenceVisuals = [];
+}
+
+function updateInterferenceZoneVisuals() {
+    if (!state.scene) return;
+    disposeInterferenceZoneVisuals();
+    state.interferenceZones.forEach((zone) => {
+        if (!zone.activate) return;
+        const rawBounds = getInterferenceZoneBounds(zone, false);
+        const safetyBounds = getInterferenceZoneBounds(zone, true);
+        const rawSize = rawBounds.max.map((value, index) => value - rawBounds.min[index]);
+        const safetySize = safetyBounds.max.map((value, index) => value - safetyBounds.min[index]);
+        if (rawSize.some((value) => !(value > 0)) || safetySize.some((value) => !(value > 0))) return;
+        const group = new THREE.Group();
+        group.name = `Interference Zone ${zone.id}`;
+        const fill = new THREE.Mesh(new THREE.BoxGeometry(safetySize[0], safetySize[1], safetySize[2]), new THREE.MeshBasicMaterial({
+            color: 0x2563eb, transparent: true, opacity: 0.08, depthWrite: false
+        }));
+        fill.position.set(
+            (safetyBounds.min[0] + safetyBounds.max[0]) / 2,
+            (safetyBounds.min[1] + safetyBounds.max[1]) / 2,
+            (safetyBounds.min[2] + safetyBounds.max[2]) / 2
+        );
+        const createBoxOutline = (bounds, size, material) => {
+            const boxGeometry = new THREE.BoxGeometry(size[0], size[1], size[2]);
+            const edges = new THREE.EdgesGeometry(boxGeometry);
+            boxGeometry.dispose();
+            const lines = new THREE.LineSegments(edges, material);
+            lines.position.set(
+                (bounds.min[0] + bounds.max[0]) / 2,
+                (bounds.min[1] + bounds.max[1]) / 2,
+                (bounds.min[2] + bounds.max[2]) / 2
+            );
+            lines.renderOrder = 30;
+            if (material.isLineDashedMaterial) lines.computeLineDistances();
+            return lines;
+        };
+        const outline = createBoxOutline(rawBounds, rawSize, new THREE.LineBasicMaterial({
+            color: 0x2563eb, transparent: true, opacity: 0.9, depthTest: false
+        }));
+        const hasSafetyOffset = zone.safetyDistance > 0
+            && rawSize.some((value, index) => Math.abs(value - safetySize[index]) > 1e-6);
+        const safetyOutline = hasSafetyOffset
+            ? createBoxOutline(safetyBounds, safetySize, new THREE.LineDashedMaterial({
+                color: 0x2563eb,
+                transparent: true,
+                opacity: 0.92,
+                depthTest: false,
+                dashSize: 8,
+                gapSize: 5
+            }))
+            : null;
+        group.add(fill, outline);
+        if (safetyOutline) group.add(safetyOutline);
+        state.scene.add(group);
+        state.interferenceVisuals.push({ zoneId: zone.id, group, fill, outline, safetyOutline });
+    });
+    updateInterferenceZoneVisualState();
+    updateEndMonitoringVisuals();
 }
 
 function getDefaultViewPresetName(slot) {
@@ -641,7 +2044,10 @@ function applyViewPreset(slot, { announce = true } = {}) {
     if (state.snapMoveMode) captureSimulationSnapMarkerReferenceDistance();
     refreshViewPresetsUi();
     requestRender();
-    if (announce) setStatus(`뷰 ${index + 1}: ${preset.name}`, '#60a5fa');
+    if (announce) setStatus('뷰 {number}: {name}', '#60a5fa', {
+        number: index + 1,
+        name: preset.name
+    });
     return true;
 }
 
@@ -655,7 +2061,7 @@ function saveViewPreset(slot) {
     state.activeViewSlot = slot;
     saveViewConfiguration();
     refreshViewPresetsUi();
-    setStatus(`뷰 ${slot + 1}을 저장했습니다.`, '#22c55e');
+    setStatus('뷰 {number}을 저장했습니다.', '#22c55e', { number: slot + 1 });
 }
 
 function refreshViewPresetsUi() {
@@ -670,7 +2076,9 @@ function refreshViewPresetsUi() {
         }
         if (applyButton) {
             applyButton.disabled = !preset;
-            applyButton.setAttribute('aria-label', `${preset?.name || getDefaultViewPresetName(slot)} 적용`);
+            applyButton.setAttribute('aria-label', uiFormat('{name} 적용', {
+                name: preset?.name || getDefaultViewPresetName(slot)
+            }));
         }
         row.classList.toggle('active', state.activeViewSlot === slot && Boolean(preset));
     });
@@ -708,6 +2116,11 @@ function refreshLocalizedControls() {
         programButton.title = uiText('모션 프로그램 표시/숨김');
         programButton.innerHTML = `<i class="fa-solid fa-list-check"></i> ${uiText('Program')}`;
     }
+    const interferenceButton = el.panelLauncher?.querySelector('[data-panel-toggle="interference-zone-panel"]');
+    if (interferenceButton) {
+        interferenceButton.title = uiText('간섭영역 설정 표시/숨기기');
+        interferenceButton.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${uiText('간섭영역')}`;
+    }
     refreshImportPlacementOptions();
     updateFullscreenModeButton();
     state.panelWindows.forEach((record, panelId) => {
@@ -719,6 +2132,8 @@ function refreshLocalizedControls() {
     renderMotionProgramPanel();
     refreshVirtualControllerUi();
     refreshViewPresetsUi();
+    renderInterferenceZonePanel();
+    if (state.collision.lastResult) updateCollisionStatus(state.collision.lastResult);
     refreshViewerStatus();
     refreshMotionProgramStatus();
     if (el.baseJogStatus?.dataset.sourceMessage) {
@@ -738,6 +2153,7 @@ function refreshLocalizedControls() {
     updateZeroPointMultiCenterControls();
     refreshTcpProfileUi();
     updateOutlineToggleUi();
+    updateCollisionUi();
 }
 
 function setupScene() {
@@ -771,6 +2187,13 @@ function setupScene() {
     state.baseAxes.renderOrder = 20;
     state.scene.add(state.baseAxes);
     addGridLabels();
+    state.collision.system = new MeshCollisionSystem({
+        // The imported coordinates are millimetres.  This tolerance is small
+        // enough for STL contact while avoiding floating point chatter.
+        epsilon: 1e-4,
+        leafSize: 16
+    });
+    updateInterferenceZoneVisuals();
 }
 
 function preventMiddleButtonAutoscroll(event) {
@@ -803,6 +2226,392 @@ function updateLargeModelPerformanceMode() {
     state.renderer.shadowMap.enabled = !enabled;
     state.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, enabled ? 1 : 2));
     state.renderer.setSize(el.canvasContainer.clientWidth, el.canvasContainer.clientHeight);
+}
+
+function collisionModelLabel(model) {
+    return model?.userData?.motionDisplayName
+        || model?.userData?.modelName
+        || model?.name
+        || '3D Model';
+}
+
+function getCollisionMaterials(mesh) {
+    if (!mesh?.isMesh) return [];
+    return Array.isArray(mesh.material) ? mesh.material.filter(Boolean) : mesh.material ? [mesh.material] : [];
+}
+
+function setCollisionMeshHighlight(mesh, enabled) {
+    getCollisionMaterials(mesh).forEach((material) => {
+        if (!state.collision.highlightedMaterials.has(material)) {
+            state.collision.highlightedMaterials.set(material, {
+                color: material.color?.clone?.() || null,
+                emissive: material.emissive?.clone?.() || null,
+                emissiveIntensity: Number.isFinite(material.emissiveIntensity)
+                    ? material.emissiveIntensity
+                    : null
+            });
+        }
+        const snapshot = state.collision.highlightedMaterials.get(material);
+        if (enabled) {
+            material.color?.setHex(0xef4444);
+            material.emissive?.setHex(0x7f1d1d);
+            if ('emissiveIntensity' in material) material.emissiveIntensity = 0.9;
+        } else {
+            if (snapshot.color && material.color) material.color.copy(snapshot.color);
+            if (snapshot.emissive && material.emissive) material.emissive.copy(snapshot.emissive);
+            if (snapshot.emissiveIntensity !== null && 'emissiveIntensity' in material) {
+                material.emissiveIntensity = snapshot.emissiveIntensity;
+            }
+            state.collision.highlightedMaterials.delete(material);
+        }
+        material.needsUpdate = true;
+    });
+}
+
+function setAttachedToolCollisionHighlight(model, enabled) {
+    // A Tool import often contains several independently coloured meshes.
+    // checkAll() intentionally retains one precise contact per robot link for
+    // motion performance, so colouring only that representative mesh can
+    // leave another visibly colliding Tool part green. Once a Tool is part of
+    // a collision pair, show the complete Tool assembly in red without adding
+    // another expensive mesh-pair scan.
+    if (!model?.userData?.attachmentHost) return;
+    model.traverse((child) => {
+        if (child.isMesh && !child.userData?.collisionDisabled) {
+            setCollisionMeshHighlight(child, enabled);
+        }
+    });
+}
+
+function clearCollisionHighlight() {
+    [...state.collision.highlightedMaterials.keys()].forEach((material) => {
+        const snapshot = state.collision.highlightedMaterials.get(material);
+        if (snapshot?.color && material.color) material.color.copy(snapshot.color);
+        if (snapshot?.emissive && material.emissive) material.emissive.copy(snapshot.emissive);
+        if (snapshot?.emissiveIntensity !== null && snapshot?.emissiveIntensity !== undefined
+            && 'emissiveIntensity' in material) {
+            material.emissiveIntensity = snapshot.emissiveIntensity;
+        }
+        material.needsUpdate = true;
+    });
+    state.collision.highlightedMaterials.clear();
+}
+
+function setCollisionDebugForModel(model, enabled) {
+    if (!model) return;
+    const meshes = [];
+    model.traverse((child) => {
+        if (child.isMesh && !child.userData.collisionDebugMesh && !child.userData.collisionDisabled) {
+            meshes.push(child);
+        }
+    });
+    meshes.forEach((mesh) => {
+        const existing = state.collision.debugLines.get(mesh);
+        if (enabled) {
+            if (existing || !mesh.geometry) return;
+            const material = new THREE.LineBasicMaterial({
+                color: 0x38bdf8,
+                transparent: true,
+                opacity: 0.28,
+                depthTest: false,
+                depthWrite: false
+            });
+            const line = new THREE.LineSegments(new THREE.WireframeGeometry(mesh.geometry), material);
+            line.name = `${mesh.name || 'Mesh'} collision wireframe`;
+            line.userData.collisionDebugMesh = true;
+            line.renderOrder = 19;
+            line.frustumCulled = false;
+            // Parent the visualizer to the actual mesh so all local transforms,
+            // joint rotations and TCP attachment transforms are inherited.
+            mesh.add(line);
+            state.collision.debugLines.set(mesh, line);
+        } else if (existing) {
+            existing.removeFromParent();
+            existing.geometry?.dispose?.();
+            existing.material?.dispose?.();
+            state.collision.debugLines.delete(mesh);
+        }
+    });
+}
+
+function refreshCollisionDebugOverlays() {
+    state.models.forEach((model) => setCollisionDebugForModel(model, state.collision.debugVisible));
+}
+
+function disposeCollisionDebugForModel(model) {
+    state.collision.safeRobotAngles.delete(model);
+    model?.traverse?.((child) => {
+        const line = state.collision.debugLines.get(child);
+        if (!line) return;
+        line.removeFromParent();
+        line.geometry?.dispose?.();
+        line.material?.dispose?.();
+        state.collision.debugLines.delete(child);
+    });
+}
+
+function updateCollisionUi() {
+    const enabledButton = el.btnToggleCollision;
+    if (enabledButton) {
+        enabledButton.classList.toggle('active', state.collision.enabled);
+        enabledButton.setAttribute('aria-pressed', String(state.collision.enabled));
+        enabledButton.title = uiText(state.collision.enabled ? '충돌 감지 끄기' : '충돌 감지 켜기');
+    }
+}
+
+function collisionResultKey(result) {
+    if (!result?.meshA?.uuid || !result?.meshB?.uuid) return '';
+    return [result.meshA.uuid, result.meshB.uuid].sort().join(':');
+}
+
+function asCollisionResults(result) {
+    if (Array.isArray(result)) return result.filter(Boolean);
+    return result ? [result] : [];
+}
+
+function collisionResultsKey(result) {
+    return asCollisionResults(result)
+        .map(collisionResultKey)
+        .filter(Boolean)
+        .sort()
+        .join('|');
+}
+
+function updateCollisionStatus(result = null) {
+    const results = asCollisionResults(result);
+    const status = el.collisionStatus;
+    if (!results.length) {
+        // A stopped program remains at its collision pose. Keep every active
+        // collision highlighted until the user moves away or restarts motion
+        // from that breakpoint.
+        const stopResults = asCollisionResults(state.collision.stopNotice?.result);
+        if (stopResults.length) {
+            if (collisionResultsKey(state.collision.lastResult) !== collisionResultsKey(stopResults)) {
+                updateCollisionStatus(stopResults);
+            }
+            return;
+        }
+        if (status) {
+            status.classList.add('hidden');
+            const label = status.querySelector('span');
+            if (label) label.textContent = '';
+        }
+        clearCollisionHighlight();
+        const currentText = String(state.viewerStatus?.text || '');
+        if (state.viewerStatus?.color === '#ef4444' && currentText.includes('충돌')) {
+            setStatus('Ready', '#22c55e');
+        }
+        state.collision.lastResult = null;
+        state.collision.lastStatusKey = '';
+        return;
+    }
+
+    const primary = results[0];
+    const leftName = collisionModelLabel(primary.objectA);
+    const rightName = collisionModelLabel(primary.objectB);
+    const statusKey = collisionResultsKey(results);
+    const sameCollision = state.collision.lastStatusKey === statusKey;
+    if (!sameCollision) {
+        clearCollisionHighlight();
+        results.forEach((hit) => {
+            setCollisionMeshHighlight(hit.meshA, true);
+            setCollisionMeshHighlight(hit.meshB, true);
+            setAttachedToolCollisionHighlight(hit.objectA, true);
+            setAttachedToolCollisionHighlight(hit.objectB, true);
+        });
+    }
+    state.collision.lastResult = results;
+    const collisionMessage = '충돌 감지: {left} ↔ {right}';
+    const collisionReplacements = {
+        left: leftName,
+        right: rightName
+    };
+    if (status) {
+        status.classList.remove('hidden');
+        const label = status.querySelector('span');
+        if (label) label.textContent = uiFormat(collisionMessage, collisionReplacements);
+    }
+    const viewerAlreadyShowsCollision = state.viewerStatus?.color === '#ef4444'
+        && String(state.viewerStatus.text || '').includes('충돌');
+    // Import/model-load success messages can arrive after the collision pair
+    // was already cached. Restore the red viewer state even for the same pair.
+    // A latched stop uses its more specific "motion stopped" message below.
+    if (state.collision.lastStatusKey !== statusKey
+        || (!viewerAlreadyShowsCollision && !state.collision.stopNotice)) {
+        state.collision.lastStatusKey = statusKey;
+        setStatus(collisionMessage, '#ef4444', collisionReplacements);
+    }
+}
+
+function latchCollisionStopNotice(result, message) {
+    const results = asCollisionResults(result);
+    if (!results.length) return;
+    state.collision.stopNotice = { result: results, message };
+    updateCollisionStatus(results);
+    setStatus(message, '#ef4444');
+}
+
+function clearCollisionStopNotice({ resetViewerStatus = true } = {}) {
+    state.collision.stopNotice = null;
+    state.collision.ignoredMotionCollisionKeys.clear();
+    const currentText = String(state.viewerStatus?.text || '');
+    if (resetViewerStatus && state.viewerStatus?.color === '#ef4444' && currentText.includes('충돌')) {
+        setStatus('Ready', '#22c55e');
+    }
+}
+
+function clearJogCollisionLock() {
+    // JOG is an interactive simulation control. It may enter a collision pose,
+    // but collision detection must never reject or roll back that pose.
+    // Release a previous program-stop latch without clearing the visible
+    // collision state. The next fresh scan decides whether the collision is
+    // gone; if it is still present, the same red alert remains latched.
+    clearCollisionStopNotice({ resetViewerStatus: false });
+
+    // Queue a normal pass immediately, then guarantee one fresh pass after the
+    // throttling window. Do not force a triangle scan for every slider/pointer
+    // event; the trailing pass coalesces rapid input without reintroducing the
+    // JOG lag.
+    requestRender();
+    if (state.collision.jogRefreshTimer !== null) {
+        clearTimeout(state.collision.jogRefreshTimer);
+    }
+    const refreshDelay = Math.max(16, Number(state.collision.minCheckIntervalMs) + 16);
+    state.collision.jogRefreshTimer = setTimeout(() => {
+        state.collision.jogRefreshTimer = null;
+        requestRender();
+    }, refreshDelay);
+}
+
+function getCollisionModels() {
+    // MeshCollisionSystem records one representative collision per left mesh
+    // and model pair. Put articulated links and their Tool first so every
+    // colliding robot part retains red feedback without repeatedly testing
+    // against each CAD sub-mesh of the same obstacle.
+    const priority = (model) => {
+        if (model?.userData?.tcpFrame) return 0;
+        if (model?.userData?.attachmentHost) return 1;
+        return 2;
+    };
+    return state.models
+        .filter((model) => model.visible !== false && model.userData?.collisionEnabled !== false)
+        .sort((left, right) => priority(left) - priority(right));
+}
+
+function markSceneCollisionDirty(model = null) {
+    const collision = state.collision;
+    collision.dirty = true;
+    if (!model) {
+        // No root was supplied when the scene structure changed. The next
+        // pass must therefore refresh every model pair.
+        collision.dirtyRoots.clear();
+        return;
+    }
+
+    collision.dirtyRoots.add(model);
+    const hostRobot = model.userData?.attachmentHost || (model.userData?.tcpFrame ? model : null);
+    if (!hostRobot) return;
+    collision.dirtyRoots.add(hostRobot);
+    // TCP-mounted Tools have their own collision roots but inherit every
+    // joint pose from the robot. Mark them with the robot so their cached
+    // root-pair results cannot survive a JOG or program move.
+    state.models.forEach((candidate) => {
+        if (candidate.userData?.attachmentHost === hostRobot) collision.dirtyRoots.add(candidate);
+    });
+}
+
+function collisionInvolvesRobot(result, robot) {
+    if (!robot) return false;
+    return asCollisionResults(result).some((hit) => (
+        [hit.objectA, hit.objectB].some((object) => (
+            object === robot || object?.userData?.attachmentHost === robot
+        ))
+    ));
+}
+
+function releaseClearedMotionCollisionIgnores(result) {
+    const activeKeys = new Set(asCollisionResults(result).map(collisionResultKey).filter(Boolean));
+    state.collision.ignoredMotionCollisionKeys.forEach((key) => {
+        if (!activeKeys.has(key)) state.collision.ignoredMotionCollisionKeys.delete(key);
+    });
+}
+
+function getBlockingMotionCollision(result) {
+    return asCollisionResults(result).find((hit) => (
+        !state.collision.ignoredMotionCollisionKeys.has(collisionResultKey(hit))
+    )) || null;
+}
+
+function checkSceneCollisions({ force = false } = {}) {
+    if (!state.collision.enabled || !state.collision.system || state.collision.checking) {
+        if (!state.collision.enabled) {
+            state.collision.lastCheckSkipped = true;
+            updateCollisionStatus(null);
+        }
+        return null;
+    }
+    if (!force && !state.collision.dirty) {
+        state.collision.lastCheckSkipped = true;
+        return state.collision.lastResult;
+    }
+    const now = performance.now();
+    if (!force
+        && state.collision.lastCheckAt > 0
+        && now - state.collision.lastCheckAt < state.collision.minCheckIntervalMs) {
+        state.collision.lastCheckSkipped = true;
+        return state.collision.lastResult;
+    }
+    state.collision.checking = true;
+    state.collision.lastCheckSkipped = false;
+    state.collision.lastCheckAt = now;
+    try {
+        state.scene?.updateMatrixWorld(true);
+        const collisionModels = getCollisionModels();
+        const changedRoots = new Set(
+            [...state.collision.dirtyRoots].filter((root) => collisionModels.includes(root))
+        );
+        const result = force || changedRoots.size === 0
+            ? state.collision.system.checkAll(getCollisionModels(), { allowWarmHitReuse: false })
+            : state.collision.system.checkAll(collisionModels, { changedRoots, allowWarmHitReuse: true });
+        state.collision.dirty = false;
+        state.collision.dirtyRoots.clear();
+        updateCollisionStatus(result);
+        return result;
+    } catch (error) {
+        console.warn('Mesh collision check failed:', error);
+        state.collision.dirty = false;
+        state.collision.dirtyRoots.clear();
+        const wasReported = state.collision.lastStatusKey === 'error';
+        updateCollisionStatus(null);
+        if (!wasReported) {
+            state.collision.lastStatusKey = 'error';
+            setStatus('충돌 검사 오류', '#f59e0b');
+        }
+        return null;
+    } finally {
+        state.collision.checking = false;
+    }
+}
+
+function captureCollisionSafeRobotPoses() {
+    if (!state.collision.enabled) return;
+    getArticulatedRobots().forEach((robot) => {
+        state.collision.safeRobotAngles.set(robot, robot.userData.joints.map((joint) => joint.angle));
+    });
+}
+
+function restoreCollisionSafeRobotPoses(robots = getArticulatedRobots()) {
+    robots.forEach((robot) => {
+        const safeAngles = state.collision.safeRobotAngles.get(robot);
+        if (!safeAngles || !robot.userData?.joints) return;
+        safeAngles.forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle, false));
+        robot.updateMatrixWorld(true);
+        if (robot === state.activeArticulatedModel) {
+            syncJointControls(robot);
+            captureCurrentTcpTarget(robot);
+            updateTcpPresentation(robot);
+        }
+    });
 }
 
 function isLazySimulationSnapMesh(mesh) {
@@ -2062,7 +3871,9 @@ function applyTcpSnapPoint(worldPoint, selectedLabelKey = '스냅') {
     updateTcpProfileLive();
     setTcpSnapMode(false);
     setTcpProfileStatus('TCP 위치를 스냅했습니다. 적용을 눌러 저장하세요.', 'success');
-    setStatus(`${uiText(selectedLabelKey)} ${uiText('TCP 위치 스냅')}`, '#22c55e');
+    setStatus('{label} TCP 위치 스냅', '#22c55e', {
+        label: uiText(selectedLabelKey)
+    });
     return true;
 }
 
@@ -2086,7 +3897,9 @@ function handleTcpSnapSelection(snap) {
     setTcpSnapReadout(center && state.tcpSnapPoints.length >= 2
         ? `${uiText('다중 점 중심점')} · ${formatSimulationSnapPoint(center)}`
         : `${uiText('다중 점 선택')} ${state.tcpSnapPoints.length}/4 · ${uiText('스냅 점 2~4개를 선택하세요.')}`);
-    setStatus(`${uiText('다중 점 선택')} ${state.tcpSnapPoints.length}/4`, '#60a5fa');
+    setStatus('{count} 다중 점 선택', '#60a5fa', {
+        count: `${state.tcpSnapPoints.length}/4`
+    });
     return true;
 }
 
@@ -2332,7 +4145,9 @@ function commitZeroPointSnapPoint(worldPoint, selectedLabelKey = '스냅') {
     updateZeroPointEditorInputs();
     updateZeroPointFrameFromState();
     setZeroPointSnapMode(false);
-    setStatus(`${uiText(selectedLabelKey)} ${uiText('영점 위치에 적용되었습니다.')}`, '#22c55e');
+    setStatus('{label} 영점 위치에 적용되었습니다.', '#22c55e', {
+        label: uiText(selectedLabelKey)
+    });
     setZeroPointSnapReadout(`${uiText(selectedLabelKey)} · X ${localPoint.x.toFixed(3)}, Y ${localPoint.y.toFixed(3)}, Z ${localPoint.z.toFixed(3)} mm`);
     return true;
 }
@@ -2357,7 +4172,9 @@ function handleZeroPointSnapSelection(snap) {
     setZeroPointSnapReadout(center && edit.snapPoints.length >= 2
         ? `${uiText('다중 점 중심점')} · X ${center.x.toFixed(3)}, Y ${center.y.toFixed(3)}, Z ${center.z.toFixed(3)} mm`
         : `${uiText('다중 점 선택')} ${edit.snapPoints.length}/4 · ${uiText('스냅 점 2~4개를 선택하세요.')}`);
-    setStatus(`${uiText('다중 점 선택')} ${edit.snapPoints.length}/4`, '#60a5fa');
+    setStatus('{count} 다중 점 선택', '#60a5fa', {
+        count: `${edit.snapPoints.length}/4`
+    });
     return true;
 }
 
@@ -2543,7 +4360,10 @@ function setupControls() {
     state.transformControls.addEventListener('mouseUp', () => {
         commitPendingHistory('모델 변환', 'pendingTransformHistory');
     });
-    state.transformControls.addEventListener('objectChange', updateSelectedModelTransformInputs);
+    state.transformControls.addEventListener('objectChange', () => {
+        markSceneCollisionDirty(state.transformControls.object);
+        updateSelectedModelTransformInputs();
+    });
     state.transformControls.addEventListener('objectChange', requestRender);
     removeRotationScreenHandle(state.transformControls);
     applyTransformControlColors(state.transformControls);
@@ -2690,6 +4510,19 @@ function setupEventListeners() {
         const model = state.catalog.get(file);
         if (model) void loadModelFromServer(model);
     });
+    el.btnResetSimulation?.addEventListener('click', openSimulationResetDialog);
+    el.btnCancelSimulationReset?.addEventListener('click', closeSimulationResetDialog);
+    el.btnConfirmSimulationReset?.addEventListener('click', () => void resetSimulation());
+    el.simulationResetDialog?.addEventListener('cancel', (event) => {
+        event.preventDefault();
+        closeSimulationResetDialog();
+    });
+    el.btnCancelTestModel?.addEventListener('click', () => resolveTestModelConfirmation(false));
+    el.btnConfirmTestModel?.addEventListener('click', () => resolveTestModelConfirmation(true));
+    el.testModelDialog?.addEventListener('cancel', (event) => {
+        event.preventDefault();
+        resolveTestModelConfirmation(false);
+    });
 
     el.btnFullscreenMode?.addEventListener('click', () => setFullscreenUiMode(!state.fullscreenUiMode));
     el.btnPositionExport?.addEventListener('click', exportPositionPoints);
@@ -2727,6 +4560,19 @@ function setupEventListeners() {
     state.renderer.domElement.addEventListener('pointerleave', requestRender);
     state.renderer.domElement.addEventListener('click', handleSimulationSnapClick);
     el.btnTestModel?.addEventListener('click', handleTestModelImport);
+    el.btnToggleCollision?.addEventListener('click', () => {
+        state.collision.enabled = !state.collision.enabled;
+        clearCollisionStopNotice();
+        if (!state.collision.enabled) {
+            updateCollisionStatus(null);
+            setStatus('충돌 감지 끄기', '#f59e0b');
+        } else {
+            setStatus('충돌 감지 켜기', '#22c55e');
+            checkSceneCollisions({ force: true });
+        }
+        updateCollisionUi();
+        requestRender();
+    });
     el.btnImport3D?.addEventListener('click', () => el.inputImport3D?.click());
     el.inputImport3D?.addEventListener('change', () => {
         const file = el.inputImport3D.files?.[0];
@@ -2863,12 +4709,67 @@ function setupEventListeners() {
     document.querySelectorAll('[data-panel-toggle]').forEach((button) => {
         button.addEventListener('click', () => togglePanelVisibility(button.dataset.panelToggle));
     });
+    el.interferenceZoneList?.addEventListener('click', (event) => {
+        const row = event.target.closest('[data-interference-zone-row]');
+        if (!row) return;
+        const zoneId = Number(row.dataset.interferenceZoneRow);
+        if (event.target.closest('[data-interference-zone-edit]')) openInterferenceZoneEditor(zoneId);
+    });
+    el.interferenceZoneList?.addEventListener('change', (event) => {
+        const row = event.target.closest('[data-interference-zone-row]');
+        if (!row) return;
+        const activate = event.target.closest('[data-interference-zone-activate]');
+        if (activate) setInterferenceZoneActivate(Number(row.dataset.interferenceZoneRow), activate.checked);
+    });
+    el.endMonitoringList?.addEventListener('click', (event) => {
+        const row = event.target.closest('[data-end-monitoring-row]');
+        if (!row || !event.target.closest('[data-end-monitoring-edit]')) return;
+        openEndMonitoringEditor(Number(row.dataset.endMonitoringRow));
+    });
+    el.interferenceInputList?.addEventListener('change', (event) => {
+        const input = event.target.closest('[data-interference-input]');
+        if (!input) return;
+        const index = Number(input.dataset.interferenceInput);
+        if (!Number.isInteger(index) || index < 0 || index >= state.simulationIo.inputs.length) return;
+        state.simulationIo.inputs[index] = input.checked;
+        evaluateInterferenceZones(performance.now());
+    });
+    el.interferenceZoneClose?.addEventListener('click', closeInterferenceZoneEditor);
+    el.interferenceZoneDialog?.addEventListener('cancel', (event) => {
+        event.preventDefault();
+        closeInterferenceZoneEditor();
+    });
+    el.interferenceZoneMethod?.addEventListener('change', updateInterferenceZoneGeometryFields);
+    el.interferenceZoneNext?.addEventListener('click', () => {
+        if (validateInterferenceZoneDraft().valid) setInterferenceZoneDialogStep('geometry');
+    });
+    el.interferenceZonePrevious?.addEventListener('click', () => {
+        readInterferenceZoneDialogDraft();
+        setInterferenceZoneDialogStep('basic');
+    });
+    el.interferenceZoneDone?.addEventListener('click', commitInterferenceZoneDraft);
+    el.interferenceZoneDialog?.querySelectorAll('[data-interference-get-point]').forEach((button) => {
+        button.addEventListener('click', () => setInterferenceDialogPoint(button.dataset.interferenceGetPoint));
+    });
+    el.endMonitoringClose?.addEventListener('click', closeEndMonitoringEditor);
+    el.endMonitoringDialog?.addEventListener('cancel', (event) => {
+        event.preventDefault();
+        closeEndMonitoringEditor();
+    });
+    el.endMonitoringType?.addEventListener('change', updateEndMonitoringTypeFields);
+    el.endMonitoringCuboidMethod?.addEventListener('change', updateEndMonitoringTypeFields);
+    el.endMonitoringDone?.addEventListener('click', commitEndMonitoringDraft);
+    el.endMonitoringDialog?.querySelectorAll('[data-end-monitoring-get-point]').forEach((button) => {
+        button.addEventListener('click', () => setEndMonitoringDialogPoint(button.dataset.endMonitoringGetPoint));
+    });
     el.btnUndo?.addEventListener('click', undoLastAction);
     el.btnRedo?.addEventListener('click', redoLastAction);
-    [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.viewPresetsPanel, el.programPanel].forEach(makePanelDraggable);
+    [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.programPanel].forEach(makePanelDraggable);
     [el.tcpProfilePanel].forEach(makePanelDraggable);
-    [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.viewPresetsPanel, el.programPanel].forEach(makePanelEdgeResizable);
+    [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.programPanel].forEach(makePanelEdgeResizable);
     [el.tcpProfilePanel].forEach(makePanelEdgeResizable);
+    setupInterferenceZoneDialogDragging();
+    initializePanelStack();
 
     el.viewPresetsList?.addEventListener('click', handleViewPresetListClick);
     el.viewPresetsList?.addEventListener('input', handleViewPresetListInput);
@@ -2885,7 +4786,19 @@ function setupEventListeners() {
         state.virtualController.samples?.clear();
         refreshVirtualControllerUi();
     });
+    el.virtualControllerKind?.addEventListener('change', () => {
+        if (isVirtualControllerActive()) return;
+        const controller = state.virtualController;
+        controller.controllerKind = el.virtualControllerKind.value === 'real' ? 'real' : 'virtual';
+        if (controller.controllerKind === 'virtual') {
+            controller.ipAddress = '127.0.0.1';
+        } else if (controller.ipAddress === '127.0.0.1') {
+            controller.ipAddress = '';
+        }
+        refreshVirtualControllerUi();
+    });
     el.virtualControllerIp?.addEventListener('input', () => {
+        if (state.virtualController.controllerKind !== 'real') return;
         state.virtualController.ipAddress = el.virtualControllerIp.value.trim();
     });
     el.btnVirtualControllerConnect?.addEventListener('click', () => {
@@ -3020,14 +4933,6 @@ function setupEventListeners() {
     });
     updateOutlineToggleUi();
 
-    el.btnToggleTransform?.addEventListener('click', () => {
-        if (isMotionActive()) return;
-        const isEnabled = state.zeroPointEdit.active
-            ? state.zeroPointEdit.handlerVisible
-            : state.transformControls.enabled;
-        setTransformHandlesEnabled(!isEnabled);
-    });
-
     window.addEventListener('keydown', handleGlobalKeyDown);
 
     const btnDown = document.getElementById('btn-download-cad');
@@ -3037,7 +4942,7 @@ function setupEventListeners() {
 
     window.addEventListener('beforeunload', () => {
         closeVirtualControllerSocket(false);
-        saveMotionProjectNow();
+        if (!state.resetInProgress) saveMotionProjectNow();
         [...state.panelWindows.keys()].forEach((panelId) => restorePanelFromWindow(panelId, true));
     });
 }
@@ -3123,12 +5028,6 @@ function handleGlobalKeyDown(event) {
     if (isEditing || el.importDialog?.open) return;
     if (isMotionActive()) return;
 
-    const mode = { w: 'translate', e: 'rotate', r: 'scale' }[key];
-    if (mode && state.selectedModel) {
-        event.preventDefault();
-        toggleSelectedTransformMode(mode);
-        return;
-    }
     if ((event.key === 'Delete' || event.key === 'Backspace') && state.selectedModel) {
         event.preventDefault();
         deleteSelectedModel();
@@ -3425,6 +5324,8 @@ function captureSceneSnapshot() {
         activeProgramRobot: currentModels.has(state.activeProgramRobot) ? state.activeProgramRobot : null,
         motionRepeatRobot: state.motionRepeatRobot,
         motionRepeat: state.motionRepeat,
+        interferenceZones: cloneInterferenceZones(state.interferenceZones),
+        endMonitoringObjects: cloneEndMonitoringObjects(state.endMonitoringObjects),
         motionPrograms: getArticulatedRobots().map((robot) => ({
             robot,
             program: cloneMotionProgram(ensureMotionProgram(robot))
@@ -3479,6 +5380,8 @@ function sceneSnapshotsEqual(a, b) {
         || a.activeProgramRobot !== b.activeProgramRobot
         || Boolean(a.motionRepeatRobot) !== Boolean(b.motionRepeatRobot)
         || Boolean(a.motionRepeat) !== Boolean(b.motionRepeat)) return false;
+    if (JSON.stringify(a.interferenceZones || []) !== JSON.stringify(b.interferenceZones || [])) return false;
+    if (JSON.stringify(a.endMonitoringObjects || []) !== JSON.stringify(b.endMonitoringObjects || [])) return false;
     const leftPrograms = (a.motionPrograms || []).map(({ robot, program }) => ({
         instanceId: robot.userData.motionInstanceId,
         program
@@ -3508,6 +5411,7 @@ function applySceneSnapshot(snapshot) {
     });
 
     state.models = snapshot.models.map((entry) => entry.model);
+    markSceneCollisionDirty();
     snapshot.models.forEach((entry) => {
         entry.model.position.fromArray(entry.position);
         entry.model.quaternion.fromArray(entry.quaternion);
@@ -3553,6 +5457,14 @@ function applySceneSnapshot(snapshot) {
     getArticulatedRobots().forEach((robot) => ensureMotionProgram(robot));
     state.motionRepeatRobot = Boolean(snapshot.motionRepeatRobot);
     state.motionRepeat = Boolean(snapshot.motionRepeat);
+    state.interferenceZones = normalizeInterferenceZones(snapshot.interferenceZones);
+    state.endMonitoringObjects = normalizeEndMonitoringObjects(snapshot.endMonitoringObjects);
+    state.interferenceRuntime.forEach((runtime, index) => {
+        if (!runtime) return;
+        resetInterferenceZoneRuntime(index);
+    });
+    updateInterferenceZoneVisuals();
+    renderInterferenceZonePanel();
     state.activeProgramRobot = state.models.includes(snapshot.activeProgramRobot)
         ? snapshot.activeProgramRobot
         : state.activeArticulatedModel;
@@ -3567,6 +5479,8 @@ function applySceneSnapshot(snapshot) {
     selectSceneModel(state.models.includes(snapshot.selectedModel) ? snapshot.selectedModel : null);
     renderMotionProgramPanel();
     scheduleMotionProjectSave();
+    refreshCollisionDebugOverlays();
+    checkSceneCollisions({ force: true });
     state.historySuspended = false;
 }
 
@@ -3645,8 +5559,41 @@ function getPanelElement(panelId) {
         'tcp-profile-panel': el.tcpProfilePanel,
         'virtual-controller-panel': el.virtualControllerPanel,
         'view-presets-panel': el.viewPresetsPanel,
-        'program-panel': el.programPanel
+        'program-panel': el.programPanel,
+        'interference-zone-panel': el.interferenceZonePanel,
+        'interference-zone-dialog': el.interferenceZoneDialog
     }[panelId] || null;
+}
+
+function isPanelOpenInDocument(panel) {
+    if (!panel || panel.ownerDocument !== document) return false;
+    if (panel.id === 'interference-zone-dialog') return panel.open;
+    return !panel.classList.contains('panel-user-hidden')
+        && !panel.classList.contains('hidden');
+}
+
+function updatePanelStack() {
+    state.panelOpenOrder = state.panelOpenOrder.filter((panelId) => {
+        const panel = getPanelElement(panelId);
+        return isPanelOpenInDocument(panel);
+    });
+    state.panelOpenOrder.forEach((panelId, index) => {
+        const panel = getPanelElement(panelId);
+        if (panel) panel.style.zIndex = String(PANEL_STACK_BASE_Z_INDEX + index);
+    });
+}
+
+function bringPanelToFront(panelId) {
+    const panel = getPanelElement(panelId);
+    if (!panel || panel.ownerDocument !== document) return;
+    state.panelOpenOrder = state.panelOpenOrder.filter((openPanelId) => openPanelId !== panelId);
+    state.panelOpenOrder.push(panelId);
+    updatePanelStack();
+}
+
+function initializePanelStack() {
+    state.panelOpenOrder = PANEL_STACK_IDS.filter((panelId) => isPanelOpenInDocument(getPanelElement(panelId)));
+    updatePanelStack();
 }
 
 function updatePanelLauncher(panelId) {
@@ -3670,6 +5617,7 @@ function togglePanelVisibility(panelId) {
         return;
     }
     panel.classList.toggle('panel-user-hidden');
+    const isVisible = !panel.classList.contains('panel-user-hidden');
     if (panelId === 'model-browser-panel' && panel.classList.contains('panel-user-hidden')) {
         setTransformHandlesEnabled(false);
     }
@@ -3681,7 +5629,9 @@ function togglePanelVisibility(panelId) {
         setTcpSnapMode(false);
     }
     updatePanelLauncher(panelId);
-    if (panelId === 'virtual-controller-panel' && !panel.classList.contains('panel-user-hidden')) {
+    if (isVisible) bringPanelToFront(panelId);
+    else updatePanelStack();
+    if (panelId === 'virtual-controller-panel' && isVisible) {
         monitorVirtualControllerBridgeHealth(true);
     }
 }
@@ -3698,6 +5648,7 @@ function handlePanelAction(action, panelId) {
         if (panelId === 'jog-panel') setBaseJogGizmoEnabled(false);
         if (panelId === 'tcp-profile-panel') setTcpSnapMode(false);
         updatePanelLauncher(panelId);
+        updatePanelStack();
     }
 }
 
@@ -3740,6 +5691,7 @@ function popOutPanel(panelId) {
     const record = { popup, panel, placeholder, savedStyle, restoring: false };
     state.panelWindows.set(panelId, record);
     popup.addEventListener('beforeunload', () => restorePanelFromWindow(panelId, false));
+    updatePanelStack();
     updatePanelLauncher(panelId);
 }
 
@@ -3747,11 +5699,13 @@ function getPanelWindowTitle(panelId) {
     const panelName = panelId === 'program-panel'
         ? uiText('Program Panel')
         : panelId === 'tcp-profile-panel'
-            ? uiText('TCP 설정')
+        ? uiText('TCP 설정')
         : panelId === 'virtual-controller-panel'
-            ? uiText('가상 컨트롤러')
+            ? uiText('컨트롤러 연결')
         : panelId === 'view-presets-panel'
             ? uiText('사용자 뷰')
+        : panelId === 'interference-zone-panel'
+            ? uiText('간섭영역 설정')
         : panelId === 'model-browser-panel'
             ? uiText('모델 트리')
             : uiText('JOG Panel');
@@ -3773,7 +5727,45 @@ function restorePanelFromWindow(panelId, closePopup = false) {
     else record.panel.removeAttribute('style');
 
     if (closePopup && !record.popup.closed) record.popup.close();
+    bringPanelToFront(panelId);
     updatePanelLauncher(panelId);
+}
+
+function setupInterferenceZoneDialogDragging() {
+    const dialog = el.interferenceZoneDialog;
+    const header = dialog?.querySelector('.interference-zone-dialog-header');
+    if (!dialog || !header) return;
+    let drag = null;
+    header.addEventListener('pointerdown', (event) => {
+        if (event.button !== 0 || event.target.closest('button, input, select, textarea, a')) return;
+        const rect = dialog.getBoundingClientRect();
+        drag = {
+            pointerId: event.pointerId,
+            offsetX: event.clientX - rect.left,
+            offsetY: event.clientY - rect.top
+        };
+        dialog.classList.add('interference-zone-is-dragging');
+        header.setPointerCapture(event.pointerId);
+        event.preventDefault();
+    });
+    header.addEventListener('pointermove', (event) => {
+        if (!drag || drag.pointerId !== event.pointerId) return;
+        const maxLeft = Math.max(0, window.innerWidth - dialog.offsetWidth);
+        const maxTop = Math.max(0, window.innerHeight - dialog.offsetHeight);
+        const left = THREE.MathUtils.clamp(event.clientX - drag.offsetX, 0, maxLeft);
+        const top = THREE.MathUtils.clamp(event.clientY - drag.offsetY, 0, maxTop);
+        dialog.style.left = `${left}px`;
+        dialog.style.top = `${top}px`;
+        dialog.style.transform = 'none';
+    });
+    const stopDrag = (event) => {
+        if (!drag || (event.pointerId !== undefined && drag.pointerId !== event.pointerId)) return;
+        drag = null;
+        dialog.classList.remove('interference-zone-is-dragging');
+    };
+    header.addEventListener('pointerup', stopDrag);
+    header.addEventListener('pointercancel', stopDrag);
+    header.addEventListener('lostpointercapture', stopDrag);
 }
 
 function makePanelDraggable(panel) {
@@ -4125,8 +6117,6 @@ function setTransformHandlesEnabled(enabled) {
         state.zeroPointEdit.transformControls.visible = shouldEnableZeroPoint;
         state.zeroPointEdit.transformControls.enabled = shouldEnableZeroPoint;
         state.zeroPointEdit.axes.visible = shouldEnableZeroPoint;
-        el.btnToggleTransform?.classList.toggle('active', shouldEnableZeroPoint);
-        el.btnToggleTransform?.setAttribute('aria-pressed', String(shouldEnableZeroPoint));
         updateTransformModeButtons();
         return;
     }
@@ -4136,8 +6126,6 @@ function setTransformHandlesEnabled(enabled) {
     state.transformControls.enabled = shouldEnable;
     if (shouldEnable) attachTransformControlsToSelectedModel();
     else state.transformControls.detach();
-    el.btnToggleTransform?.classList.toggle('active', shouldEnable);
-    el.btnToggleTransform?.setAttribute('aria-pressed', String(shouldEnable));
     updateTransformModeButtons();
 }
 
@@ -4397,6 +6385,7 @@ function applyZeroPointEditor() {
     const after = captureSceneSnapshot();
     recordHistory('모델 영점 변경', before, after);
     exitZeroPointEditor({ restoreModel: false });
+    markSceneCollisionDirty(target);
     updateSelectedModelTransformInputs();
     renderModelTree();
     setStatus('모델 영점과 좌표계 방향을 적용했습니다.', '#22c55e');
@@ -4478,6 +6467,7 @@ function applySelectedModelNumericTransform(event) {
         model.rotation[axis] = THREE.MathUtils.degToRad(value);
     }
     model.updateMatrixWorld(true);
+    markSceneCollisionDirty(model);
     setSelectedTransformMode(rotationEntry ? 'rotate' : isScaleMode ? 'scale' : 'translate', false);
     setStatus('모델 변환이 적용되었습니다.', '#22c55e');
 }
@@ -4495,7 +6485,7 @@ function refreshBackgroundModelLoading() {
         indicator.innerHTML = `
             <div class="background-loading-header">
                 <div class="background-loading-label" data-background-loading-label></div>
-                <strong data-background-loading-percent>0% · 남은 100%</strong>
+            <strong data-background-loading-percent>0% · 남은 100%</strong>
             </div>
             <div class="background-loading-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
                 <span data-background-loading-progress></span>
@@ -4509,7 +6499,10 @@ function refreshBackgroundModelLoading() {
     const progressTrack = indicator.querySelector('.background-loading-track');
     const progress = Math.max(0, Math.min(100, Number(currentLoad.progress) || 0));
     if (label) label.textContent = currentLoad.text;
-    if (percentLabel) percentLabel.textContent = `${progress}% · 남은 ${100 - progress}%`;
+    if (percentLabel) percentLabel.textContent = uiFormat('{progress}% · 남은 {remaining}%', {
+        progress,
+        remaining: 100 - progress
+    });
     if (progressBar) progressBar.style.width = `${progress}%`;
     if (progressTrack) progressTrack.setAttribute('aria-valuenow', String(progress));
 }
@@ -4551,9 +6544,9 @@ async function loadModelFromServer(modelDefinition) {
 
     const { file, folder, name, type = 'fbx' } = modelDefinition;
     const requestId = ++state.modelLoadRequestId;
-    const loadLabel = uiFormat('{name} 불러오는 중...', { name });
-    beginBackgroundModelLoading(requestId, loadLabel);
-    setStatus(loadLabel, '#f59e0b');
+    const loadLabel = '{name} 불러오는 중...';
+    beginBackgroundModelLoading(requestId, uiFormat(loadLabel, { name }));
+    setStatus(loadLabel, '#f59e0b', { name });
 
     try {
         const model = type === 'articulated-stl'
@@ -4633,6 +6626,8 @@ async function loadModelFromServer(modelDefinition) {
 
         state.models.push(model);
         state.scene.add(model);
+        markSceneCollisionDirty();
+        refreshCollisionDebugOverlays();
         if (type === 'articulated-stl') attachPendingToolModels(model);
         ensureModelTreeId(model);
 
@@ -4651,10 +6646,10 @@ async function loadModelFromServer(modelDefinition) {
         renderMotionProgramPanel();
         recordHistory('모델 불러오기', historyBefore, captureSceneSnapshot());
         if(!isAddMode) fitCamera();
-        setStatus(isAddMode ? `${name} 추가 완료` : `${name} 불러오기 완료`, '#22c55e');
+        setStatus(isAddMode ? '{name} 추가 완료' : '{name} 불러오기 완료', '#22c55e', { name });
     } catch (err) {
         console.error('Load failed:', err);
-        setStatus(`${name} 불러오기 실패`, '#ef4444');
+        setStatus('{name} 불러오기 실패', '#ef4444', { name });
     } finally {
         finishBackgroundModelLoading(requestId);
     }
@@ -4692,6 +6687,10 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
     robot.userData.joints = [];
 
     const baseMesh = createSTLMesh(geometries[0], manifest.base);
+    // P0 is the fixed mounting/base plate below J1. It is assembled to the
+    // equipment in the real installation, so it must not report a collision.
+    baseMesh.userData.collisionDisabled = true;
+    baseMesh.userData.collisionRole = 'robot-mounted-base';
     robot.add(baseMesh);
     if (manifest.tube) {
         const tubeGeometry = geometries[manifest.joints.length + 1];
@@ -4721,6 +6720,14 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
         if (geometry) {
             const linkMesh = createSTLMesh(geometry, jointDefinition);
             linkMesh.position.copy(pivot).multiplyScalar(-1);
+            // The final kinematic link is the Tool mounting link (J6 on a
+            // 6-axis robot, J4 on SCARA). SCARA models that expose a J3 mesh
+            // use it for the vertical ballscrew/mount assembly, which is also
+            // mechanically occupied by the attached Tool. Exclude only these
+            // attached Tool/mount contacts; other Tool-to-body checks stay on.
+            const isAttachedToolMountAssembly = index === manifest.joints.length - 1
+                || (manifest.robotType === 'scara' && jointDefinition.name === 'J3');
+            linkMesh.userData.collisionIgnoreAttachedToolContact = isAttachedToolMountAssembly;
             jointGroup.add(linkMesh);
         }
 
@@ -4803,11 +6810,33 @@ function createRobotManifest(modelDefinition) {
         jointAccelerations,
         jointDecelerations,
         cartesianMotion,
-        j3Mesh = false
+        j3Mesh = false,
+        j3ControllerLimits = null
     } = modelDefinition;
     if (!Array.isArray(structure) || !Array.isArray(limits) || !Array.isArray(jointSpeeds)) {
         throw new Error(`Robot kinematics are missing for ${name}.`);
     }
+    // SCARA structure[3] stores the J3 ballscrew lead in mm/rev. The
+    // simulator keeps the prismatic joint internally in millimeters, while
+    // the controller/Joint display uses the equivalent output angle.
+    const j3ScrewLeadMmPerRev = robotType === 'scara' ? Number(structure[3]) : null;
+    if (robotType === 'scara' && (!Number.isFinite(j3ScrewLeadMmPerRev) || j3ScrewLeadMmPerRev <= 0)) {
+        throw new Error(`SCARA J3 screw lead is invalid for ${name}.`);
+    }
+    const normalizedJ3ControllerLimits = robotType === 'scara' && Array.isArray(j3ControllerLimits)
+        ? j3ControllerLimits.map(Number)
+        : null;
+    if (normalizedJ3ControllerLimits
+        && (normalizedJ3ControllerLimits.length !== 2
+            || normalizedJ3ControllerLimits.some((limit) => !Number.isFinite(limit))
+            || normalizedJ3ControllerLimits[0] >= normalizedJ3ControllerLimits[1])) {
+        throw new Error(`SCARA J3 controller limits are invalid for ${name}.`);
+    }
+    const robotJointLimits = limits.map((limit, index) => (
+        robotType === 'scara' && index === 2 && normalizedJ3ControllerLimits
+            ? normalizedJ3ControllerLimits.map((angle) => angle * j3ScrewLeadMmPerRev / 360)
+            : limit
+    ));
     if (jointSpeeds.length !== limits.length || jointSpeeds.some((speed) => !Number.isFinite(speed) || speed <= 0)) {
         throw new Error(`Robot joint speeds are invalid for ${name}.`);
     }
@@ -4843,8 +6872,8 @@ function createRobotManifest(modelDefinition) {
         mesh,
         pivot,
         axis,
-        min: limits[index][0],
-        max: limits[index][1],
+        min: robotJointLimits[index][0],
+        max: robotJointLimits[index][1],
         maxSpeed: jointSpeeds[index],
         maxAcceleration: jointAccelerations[index],
         maxDeceleration: jointDecelerations[index],
@@ -4863,6 +6892,8 @@ function createRobotManifest(modelDefinition) {
             robotType,
             kinematicVariant,
             structure: [...structure],
+            j3ScrewLeadMmPerRev,
+            j3ControllerLimits: normalizedJ3ControllerLimits,
             secondArmDirection,
             jointDirection: REVOLUTE_DIRECTION_POSITIVE,
             cartesianMotion: normalizedCartesianMotion,
@@ -5769,6 +7800,7 @@ function setModelPartVisibility(model, part, visible, recordHistoryChange = true
     if (part.visible === nextVisible) return;
     const historyBefore = recordHistoryChange && !state.historySuspended ? captureSceneSnapshot() : null;
     part.visible = nextVisible;
+    markSceneCollisionDirty(model);
     if (!nextVisible && state.selectedModelPart === part) setSelectedModelPart(null);
     invalidateSimulationSnapCandidates();
     renderModelTree();
@@ -5891,6 +7923,8 @@ async function handle3DImport(options = {}) {
         updateModelRenderComplexity(importedModel);
 
         state.models.push(importedModel);
+        markSceneCollisionDirty();
+        refreshCollisionDebugOverlays();
         ensureModelTreeId(importedModel);
         registerImportedModelParts(importedModel, content, performanceMode);
 
@@ -5898,11 +7932,15 @@ async function handle3DImport(options = {}) {
         selectSceneModel(importedModel);
         recordHistory(placement === 'tcp' ? 'TCP 툴 불러오기' : '3D 모델링 불러오기', historyBefore, captureSceneSnapshot());
         fitCamera();
-        setStatus(placement === 'tcp'
-            ? 'Tool이 TCP에 부착되었습니다.'
-            : performanceMode
-                ? `3D 모델링 불러오기 완료 · ${importQuality.label}`
-                : '3D 모델링 불러오기 완료', '#22c55e');
+        if (placement === 'tcp') {
+            setStatus('Tool이 TCP에 부착되었습니다.', '#22c55e');
+        } else if (performanceMode) {
+            setStatus('3D 모델링 불러오기 완료 · {quality}', '#22c55e', {
+                quality: uiText(importQuality.label)
+            });
+        } else {
+            setStatus('3D 모델링 불러오기 완료', '#22c55e');
+        }
         return importedModel;
     } catch (error) {
         console.error('3D import failed:', error);
@@ -5910,7 +7948,11 @@ async function handle3DImport(options = {}) {
         if (importedModel) disposeObjectResources(importedModel);
         applySceneSnapshot(historyBefore);
         const errorDetail = getImportErrorDetail(error, extension);
-        setStatus(errorDetail ? `가져오기 오류: ${errorDetail}` : '가져오기 오류', '#ef4444');
+        if (errorDetail) {
+            setStatus('가져오기 오류: {message}', '#ef4444', { message: errorDetail });
+        } else {
+            setStatus('가져오기 오류', '#ef4444');
+        }
         if (!options.suppressErrorAlert) alert(getImportErrorMessage(error, extension));
         return null;
     } finally {
@@ -5940,11 +7982,13 @@ function removeExistingTestModels() {
     const removedSelectedModel = testModels.includes(state.selectedModel);
     testModels.forEach((model) => {
         if (model.userData.motionInstanceId) state.motionPrograms.delete(model.userData.motionInstanceId);
+        disposeCollisionDebugForModel(model);
         disposeModelOutlines(model);
         model.removeFromParent();
         disposeObjectResources(model);
     });
     state.models = state.models.filter((model) => !testModels.includes(model));
+    markSceneCollisionDirty();
     if (removedSelectedModel) {
         state.selectedModel = null;
         state.selectedModelPart = null;
@@ -6002,11 +8046,11 @@ async function handleTestModelImport() {
         setStatus('모션 실행 중에는 테스트 모델을 적용할 수 없습니다.', '#f59e0b');
         return;
     }
-    if (!window.confirm('테스트용 모델링을 적용하시겠습니까?\nTCP 1번은 Test 값으로 덮어쓰기됩니다.')) return;
+    if (!await requestTestModelConfirmation()) return;
 
     const robot = getArticulatedRobotForAttachment();
     if (!robot) {
-        alert('Tool을 장착할 로봇을 먼저 불러와 주세요.');
+        alert(uiText('Tool을 장착할 로봇을 먼저 불러와 주세요.'));
         return;
     }
 
@@ -6032,12 +8076,14 @@ async function handleTestModelImport() {
             testToolRotationX: robot.userData.manifest?.robotType === 'scara'
         });
         if (!tool) throw new Error('Vacuum tool import failed.');
-
         setStatus('Test 모델과 Tool 적용 완료', '#22c55e');
+        checkSceneCollisions({ force: true });
     } catch (error) {
         console.error('Test model import failed:', error);
         setStatus('Test 모델 적용 오류', '#ef4444');
-        alert(`테스트 모델을 불러오지 못했습니다.\n${error.message || error}`);
+        alert(uiFormat('테스트 모델을 불러오지 못했습니다.\n{message}', {
+            message: error.message || error
+        }));
     } finally {
         state.pendingImportFile = null;
         el.btnTestModel.disabled = false;
@@ -6385,37 +8431,39 @@ function renderJogControls(robot) {
     el.jogControls.replaceChildren();
 
     joints.forEach((joint) => {
-        const { name, min, max } = joint.definition;
-        const isPrismatic = joint.definition.type === 'prismatic';
-        const unit = isPrismatic ? 'mm' : '°';
+        const { name } = joint.definition;
+        const display = getJointJogDisplaySpec(joint);
+        const unit = display.unit;
+        const isPositionDisplay = unit === 'mm';
         const row = document.createElement('div');
         row.className = 'jog-row';
 
         const heading = document.createElement('div');
         heading.className = 'jog-row-heading';
-        heading.innerHTML = `<strong>${name}</strong><span>${min}${unit} / ${max}${unit}</span>`;
+        heading.innerHTML = `<strong>${name}</strong><span>${formatJogValue(display.min)}${unit} / ${formatJogValue(display.max)}${unit}</span>`;
 
         const range = document.createElement('input');
         range.type = 'range';
-        range.min = min;
-        range.max = max;
+        range.min = display.min;
+        range.max = display.max;
         range.step = '0.1';
-        range.value = '0';
-        range.setAttribute('aria-label', `${name} ${uiText(isPrismatic ? '관절 위치' : '관절 각도')}`);
+        range.value = formatJogValue(display.toDisplay(0));
+        range.setAttribute('aria-label', `${name} ${uiText(isPositionDisplay ? '관절 위치' : '관절 각도')}`);
 
         const valueWrap = document.createElement('label');
         valueWrap.className = 'jog-value';
         const number = document.createElement('input');
         number.type = 'number';
-        number.min = min;
-        number.max = max;
+        number.min = display.min;
+        number.max = display.max;
         number.step = '0.5';
-        number.value = '0';
-        number.setAttribute('aria-label', `${name} ${uiText(isPrismatic ? '관절 위치(mm)' : '관절 각도(도)')}`);
+        number.value = formatJogValue(display.toDisplay(0));
+        number.setAttribute('aria-label', `${name} ${uiText(isPositionDisplay ? '관절 위치(mm)' : '관절 각도(도)')}`);
         valueWrap.append(number, document.createTextNode(unit));
 
         const applyFromControl = (rawValue) => {
-            setJointAngle(joint, rawValue);
+            clearJogCollisionLock();
+            setJointAngle(joint, display.fromDisplay(Number(rawValue)));
             captureCurrentTcpTarget(robot);
         };
 
@@ -6443,7 +8491,7 @@ function renderJogControls(robot) {
         });
         number.addEventListener('blur', finishJointHistory);
         enableHalfStepWheel(number, beginJointHistory, finishJointHistory);
-        joint.control = { range, number };
+        joint.control = { range, number, display };
 
         row.append(heading, range, valueWrap);
         el.jogControls.appendChild(row);
@@ -6463,13 +8511,14 @@ function refreshJointControlLabels() {
     if (!robot) return;
     (robot.userData.joints || []).forEach((joint) => {
         const name = joint.definition.name;
-        const isPrismatic = joint.definition.type === 'prismatic';
-        joint.control?.range?.setAttribute('aria-label', `${name} ${uiText(isPrismatic ? '관절 위치' : '관절 각도')}`);
-        joint.control?.number?.setAttribute('aria-label', `${name} ${uiText(isPrismatic ? '관절 위치(mm)' : '관절 각도(도)')}`);
+        const isPositionDisplay = getJointJogDisplaySpec(joint).unit === 'mm';
+        joint.control?.range?.setAttribute('aria-label', `${name} ${uiText(isPositionDisplay ? '관절 위치' : '관절 각도')}`);
+        joint.control?.number?.setAttribute('aria-label', `${name} ${uiText(isPositionDisplay ? '관절 위치(mm)' : '관절 각도(도)')}`);
     });
 }
 
 function resetArticulatedJoints(robot) {
+    clearJogCollisionLock();
     (robot.userData.joints || []).forEach((joint) => {
         setJointAngle(joint, 0, false);
     });
@@ -6487,10 +8536,46 @@ function hideJogPanel() {
     updatePanelLauncher('jog-panel');
 }
 
+function formatJogValue(value) {
+    return String(Number(Number(value).toFixed(3)));
+}
+
+function getJointJogDisplaySpec(joint) {
+    const definition = joint.definition;
+    const isScaraJ3 = definition.name === 'J3'
+        && definition.type === 'prismatic'
+        && joint.robot?.userData?.manifest?.robotType === 'scara';
+    if (!isScaraJ3) {
+        return {
+            unit: definition.type === 'prismatic' ? 'mm' : '°',
+            min: definition.min,
+            max: definition.max,
+            fromDisplay: (value) => value,
+            toDisplay: (value) => value
+        };
+    }
+
+    const lead = Number(joint.robot.userData.manifest.j3ScrewLeadMmPerRev);
+    const degreesPerMillimeter = 360 / lead;
+    const controllerLimits = joint.robot.userData.manifest.j3ControllerLimits;
+    return {
+        unit: '°',
+        min: Array.isArray(controllerLimits)
+            ? controllerLimits[0]
+            : definition.min * degreesPerMillimeter,
+        max: Array.isArray(controllerLimits)
+            ? controllerLimits[1]
+            : definition.max * degreesPerMillimeter,
+        fromDisplay: (value) => value / degreesPerMillimeter,
+        toDisplay: (value) => value * degreesPerMillimeter
+    };
+}
+
 function setJointAngle(joint, rawValue, syncControl = true) {
     const { min, max } = joint.definition;
     const parsed = Number(rawValue);
     const value = THREE.MathUtils.clamp(Number.isFinite(parsed) ? parsed : 0, min, max);
+    const changed = !Number.isFinite(joint.angle) || Math.abs(joint.angle - value) > 1e-9;
     joint.angle = value;
     if (joint.definition.type === 'prismatic') {
         joint.group.quaternion.identity();
@@ -6501,9 +8586,12 @@ function setJointAngle(joint, rawValue, syncControl = true) {
     }
     if (joint.definition.name === 'J1') updateScaraTube(joint.robot);
     if (syncControl && joint.control) {
-        joint.control.range.value = String(value);
-        joint.control.number.value = String(Number(value.toFixed(3)));
+        const display = joint.control.display || getJointJogDisplaySpec(joint);
+        const displayValue = display.toDisplay(value);
+        joint.control.range.value = formatJogValue(displayValue);
+        joint.control.number.value = formatJogValue(displayValue);
     }
+    if (changed) markSceneCollisionDirty(joint.robot);
     requestRender();
     return value;
 }
@@ -6511,8 +8599,10 @@ function setJointAngle(joint, rawValue, syncControl = true) {
 function syncJointControls(robot) {
     (robot.userData.joints || []).forEach((joint) => {
         if (!joint.control) return;
-        joint.control.range.value = String(joint.angle);
-        joint.control.number.value = String(Number(joint.angle.toFixed(3)));
+        const display = joint.control.display || getJointJogDisplaySpec(joint);
+        const displayValue = display.toDisplay(joint.angle);
+        joint.control.range.value = formatJogValue(displayValue);
+        joint.control.number.value = formatJogValue(displayValue);
     });
 }
 
@@ -6708,6 +8798,7 @@ function applyBaseJogGizmoTarget() {
             syncJointControls(robot);
             updateTcpPresentation(robot);
             setBaseJogStatus('');
+            clearJogCollisionLock();
         }
     } finally {
         state.baseJogGizmoApplying = false;
@@ -6901,6 +8992,7 @@ function applyBaseJogNumericTarget(event) {
     updateTcpPresentation(robot, target);
     syncBaseJogGizmoFromRobot(robot);
     setBaseJogStatus('');
+    clearJogCollisionLock();
 }
 
 function finishBaseJogNumericHistory() {
@@ -7052,6 +9144,7 @@ function jogTcpInBase(robot, kind, axisName, direction) {
     updateTcpPresentation(robot, target);
     syncBaseJogGizmoFromRobot(robot);
     setBaseJogStatus('');
+    clearJogCollisionLock();
     return true;
 }
 
@@ -7503,12 +9596,20 @@ function refreshVirtualControllerUi() {
     document.querySelectorAll('[data-virtual-controller-source]').forEach((element) => {
         element.hidden = element.dataset.virtualControllerSource !== source.id;
     });
-    if (el.virtualControllerEndpoint) {
-        el.virtualControllerEndpoint.innerHTML = `<i class="fa-solid fa-network-wired"></i> ${uiText(source.label)} · ${source.socketUrl.replace(/^ws:\/\//, '')}`;
+    const isRealController = controller.controllerKind === 'real';
+    if (el.virtualControllerKind) {
+        el.virtualControllerKind.value = isRealController ? 'real' : 'virtual';
+        el.virtualControllerKind.disabled = controller.wanted;
     }
     if (el.virtualControllerIp) {
-        el.virtualControllerIp.value = controller.ipAddress || '127.0.0.1';
-        el.virtualControllerIp.disabled = controller.wanted;
+        if (!isRealController) {
+            controller.ipAddress = '127.0.0.1';
+            el.virtualControllerIp.value = controller.ipAddress;
+        } else {
+            el.virtualControllerIp.value = controller.ipAddress || '';
+        }
+        el.virtualControllerIp.disabled = controller.wanted || !isRealController;
+        el.virtualControllerIp.readOnly = !isRealController;
     }
     const statusLabels = {
         disconnected: '연결 안 됨',
@@ -7743,13 +9844,14 @@ async function connectVirtualController() {
     const controller = state.virtualController;
     if (isMotionActive()) return;
     refreshVirtualControllerRobotOptions();
-    const ipAddress = el.virtualControllerIp?.value.trim() || '';
-    if (getVirtualControllerSourceConfig().id === 'bridge' && !ipAddress) {
+    const isRealController = controller.controllerKind === 'real';
+    const ipAddress = isRealController ? (el.virtualControllerIp?.value.trim() || '') : '127.0.0.1';
+    if (getVirtualControllerSourceConfig().id === 'bridge' && isRealController && !ipAddress) {
         setVirtualControllerStatus('error', '컨트롤러 IP를 입력해 주세요.');
         el.virtualControllerIp?.focus();
         return;
     }
-    controller.ipAddress = ipAddress || '127.0.0.1';
+    controller.ipAddress = ipAddress;
     if (!getVirtualControllerTargetRobot()) {
         setVirtualControllerStatus('error', '로봇을 선택하세요');
         return;
@@ -7990,6 +10092,7 @@ function applyVirtualControllerFrame(timestamp) {
     const robot = getVirtualControllerTargetRobot();
     const sample = controller.samples.getLatest();
     if (!robot || !sample || sample.sampleId <= controller.lastAppliedSampleId) return;
+    if (robot.userData.interferenceStopLatched) return;
     if (timestamp - controller.lastRateUpdateAt >= 250) {
         controller.lastRateUpdateAt = timestamp;
         refreshVirtualControllerUi();
@@ -8004,13 +10107,16 @@ function applyVirtualControllerFrame(timestamp) {
         let value = sample.joints[index];
         // The controller can report the SCARA vertical axis as a motor/encoder
         // angle, while the simulator's J3 is prismatic and expects millimeters.
-        // TCP Z is already in the Cartesian unit expected by the simulator, so
-        // use it only for SCARA J3 and keep the remaining axes on joint feedback.
+        // TCP Z is already in the Cartesian unit expected by the simulator. If
+        // TCP feedback is unavailable (for example Trace), convert the raw
+        // controller Joint angle back to the simulator's millimeter coordinate.
         if (index === 2
             && robot.userData.manifest?.robotType === 'scara'
             && Number.isFinite(sample.position?.[2])) {
             const tcpOffsetZ = Number(robot.userData.tcpFrame?.position?.z) || 0;
             value = sample.position[2] - tcpOffsetZ;
+        } else if (index === 2 && robot.userData.manifest?.robotType === 'scara') {
+            value = getJointJogDisplaySpec(joint).fromDisplay(value);
         }
         setJointAngle(joint, value, false);
     });
@@ -8102,10 +10208,15 @@ function motionStatusLabel(status) {
 
 function showMotionProgramPanel() {
     if (!el.programPanel) return;
+    const wasHidden = el.programPanel.classList.contains('hidden')
+        || el.programPanel.classList.contains('panel-user-hidden');
     el.programPanel.classList.remove('hidden');
     if (!el.programPanel.dataset.motionPanelInitialized) {
         el.programPanel.classList.remove('panel-user-hidden');
         el.programPanel.dataset.motionPanelInitialized = 'true';
+    }
+    if (wasHidden && !el.programPanel.classList.contains('panel-user-hidden')) {
+        bringPanelToFront('program-panel');
     }
     updatePanelLauncher('program-panel');
 }
@@ -9005,7 +11116,6 @@ function updateMotionUiLock() {
     // still rejected by loadModelFromServer.
     if (el.modelSelect) el.modelSelect.disabled = false;
     if (el.btnImport3D) el.btnImport3D.disabled = locked;
-    if (el.btnToggleTransform) el.btnToggleTransform.disabled = locked;
     if (el.btnAddMode) el.btnAddMode.disabled = false;
     if (el.modelTree) el.modelTree.classList.toggle('motion-locked', locked);
     el.jogPanel?.querySelectorAll('button:not([data-panel-action]), input')
@@ -9018,6 +11128,12 @@ function updateMotionUiLock() {
         .forEach((control) => { control.disabled = false; });
     el.modelTransformPanel?.querySelectorAll('button, input').forEach((control) => { control.disabled = locked; });
     el.programPanel?.querySelectorAll('[data-program-edit], [data-program-robot-include], [data-program-step-select], [data-program-robot-select]')
+        .forEach((control) => { control.disabled = locked; });
+    el.interferenceZonePanel?.querySelectorAll('[data-interference-zone-activate], [data-interference-zone-edit]')
+        .forEach((control) => { control.disabled = locked; });
+    el.endMonitoringList?.querySelectorAll('[data-end-monitoring-edit]')
+        .forEach((control) => { control.disabled = locked; });
+    el.endMonitoringDialog?.querySelectorAll('input, select, button:not(#end-monitoring-close)')
         .forEach((control) => { control.disabled = locked; });
     el.programRepeatButtons.forEach((button) => { button.disabled = false; });
     if (locked) {
@@ -9035,6 +11151,8 @@ function serializeMotionProject() {
         schemaVersion: MOTION_PROJECT_SCHEMA_VERSION,
         repeatCurrentRobot: state.motionRepeatRobot,
         repeat: state.motionRepeat,
+        interferenceZones: cloneInterferenceZones(state.interferenceZones),
+        endMonitoringObjects: cloneEndMonitoringObjects(state.endMonitoringObjects),
         robots: getArticulatedRobots().map((robot) => {
             const program = ensureMotionProgram(robot);
             return {
@@ -9103,6 +11221,12 @@ function findMotionModelDefinition(robotProject) {
 async function restoreMotionProjectData(input) {
     if (isMotionActive()) throw new Error('Stop all robot motions before loading a project.');
     const project = normalizeMotionProject(input);
+    state.interferenceZones = normalizeInterferenceZones(input.interferenceZones);
+    state.endMonitoringObjects = normalizeEndMonitoringObjects(input.endMonitoringObjects);
+    state.interferenceRuntime.forEach((runtime, index) => {
+        if (!runtime) return;
+        resetInterferenceZoneRuntime(index);
+    });
     const definitions = project.robots.map((robotProject) => {
         const definition = findMotionModelDefinition(robotProject);
         if (!definition) throw new Error(`Robot model is unavailable: ${robotProject.modelFolder}`);
@@ -9124,6 +11248,7 @@ async function restoreMotionProjectData(input) {
         model.removeFromParent();
     });
     state.models = state.models.filter((model) => !removedModels.has(model));
+    markSceneCollisionDirty();
     state.motionPrograms.clear();
     state.activeArticulatedModel = null;
     state.activeProgramRobot = null;
@@ -9157,6 +11282,8 @@ async function restoreMotionProjectData(input) {
         updateModelRenderComplexity(robot);
         state.models.push(robot);
         state.scene.add(robot);
+        markSceneCollisionDirty();
+        refreshCollisionDebugOverlays();
         ensureModelTreeId(robot);
         const program = cloneMotionProgram({
             included: robotProject.included,
@@ -9293,7 +11420,11 @@ async function exportPositionPoints() {
 async function exportMotionProject() {
     const suggestedName = `3D-Simulation-Motion-Project-${new Date().toISOString().slice(0, 10)}.json`;
     try {
-        const project = normalizeMotionProject(serializeMotionProject());
+        const rawProject = serializeMotionProject();
+        const project = {
+            ...normalizeMotionProject(rawProject),
+            interferenceZones: normalizeInterferenceZones(rawProject.interferenceZones)
+        };
         const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json;charset=utf-8' });
         if (typeof window.showSaveFilePicker === 'function') {
             const fileHandle = await window.showSaveFilePicker({
@@ -9484,6 +11615,16 @@ function startRobotMotionPlans(plans) {
         setMotionProgramStatus('모션 경로 검증에 실패했습니다.', 'error');
         return;
     }
+    // A collision is a breakpoint, not an interlock.  Restarting is allowed
+    // from the currently colliding pose; only a newly encountered mesh pair
+    // stops motion again.  Every pair already present is tracked separately
+    // so a multi-link/Tool collision can resume as one visible breakpoint.
+    const currentCollisionResults = checkSceneCollisions({ force: true });
+    const restartCollisionKeys = asCollisionResults(
+        currentCollisionResults?.length ? currentCollisionResults : state.collision.stopNotice?.result
+    ).map(collisionResultKey).filter(Boolean);
+    clearCollisionStopNotice({ resetViewerStatus: false });
+    state.collision.ignoredMotionCollisionKeys = new Set(restartCollisionKeys);
     commitAllPendingHistories();
     state.motionHistoryBefore = captureSceneSnapshot();
     const startAt = performance.now() + 40;
@@ -10011,10 +12152,12 @@ function cleanupScene() {
     });
     models.filter((model) => !preservedImportedModels.includes(model)).forEach((model) => {
         if (model.userData.motionInstanceId) state.motionPrograms.delete(model.userData.motionInstanceId);
+        disposeCollisionDebugForModel(model);
         disposeModelOutlines(model);
         model.removeFromParent();
     });
     state.models = preservedImportedModels;
+    markSceneCollisionDirty();
     state.selectedModel = preservedImportedModels.includes(state.selectedModel) ? state.selectedModel : null;
     state.activeArticulatedModel = null;
     state.activeProgramRobot = null;
@@ -10022,6 +12165,8 @@ function cleanupScene() {
     renderModelTree();
     el.modelTransformPanel.classList.add('hidden');
     renderMotionProgramPanel();
+    refreshCollisionDebugOverlays();
+    checkSceneCollisions({ force: true });
 }
 
 function deleteSelectedModel() {
@@ -10039,11 +12184,13 @@ function deleteSelectedModel() {
     state.transformControls.detach();
     modelsToDelete.forEach((item) => {
         if (item.userData.motionInstanceId) state.motionPrograms.delete(item.userData.motionInstanceId);
+        disposeCollisionDebugForModel(item);
         disposeModelOutlines(item);
         item.removeFromParent();
         const index = state.models.indexOf(item);
         if (index > -1) state.models.splice(index, 1);
     });
+    markSceneCollisionDirty();
 
     if (state.activeArticulatedModel === model) {
         state.activeArticulatedModel = [...state.models].reverse().find((item) => item.userData.tcpFrame) || null;
@@ -10069,6 +12216,10 @@ function updateUIStatus() {
     el.statName.textContent = names.length > 1 ? `${names[0]} (+${names.length-1})` : (names[0] || '-');
     el.emptyState.classList.toggle('hidden', state.models.length > 0);
     renderModelTree();
+    refreshInterferenceZoneDialogRobotOptions();
+    renderInterferenceZonePanel();
+    updateInterferenceZoneVisuals();
+    evaluateInterferenceZones(performance.now());
     setStatus('Ready', '#22c55e');
     requestRender();
 }
@@ -10202,9 +12353,29 @@ function requestRender() {
 
 function animate(timestamp = performance.now()) {
     state.renderFramePending = false;
+    if (!state.collision.lastCheckSkipped) captureCollisionSafeRobotPoses();
     applyVirtualControllerFrame(timestamp);
     updateMotionSessions(timestamp);
     updateCycleTimeReadout(timestamp);
+    const collision = checkSceneCollisions();
+    const collisionFresh = !state.collision.lastCheckSkipped;
+    if (collisionFresh) releaseClearedMotionCollisionIgnores(collision);
+    const blockingMotionCollision = getBlockingMotionCollision(collision);
+    // Controller input (virtual or real) is simulation-only feedback. A
+    // collision must not reject/restore the received pose or alter the
+    // controller connection; updateCollisionStatus() above already keeps the
+    // visual collision result red.
+    if (collisionFresh && blockingMotionCollision && state.motionSessions.size > 0) {
+        const movingRobots = [...state.motionSessions.values()].map((session) => session.robot);
+        stopRobotMotions(movingRobots);
+        latchCollisionStopNotice(collision, '충돌이 감지되어 모션을 정지했습니다.');
+        updateCollisionStatus(collision);
+        setMotionProgramStatus('충돌이 감지되어 모션을 정지했습니다.', 'error');
+        setStatus('충돌이 감지되어 모션을 정지했습니다.', '#ef4444');
+    } else if (collisionFresh && !asCollisionResults(collision).length) {
+        captureCollisionSafeRobotPoses();
+    }
+    evaluateInterferenceZones(timestamp);
     state.controls.update();
     updateCameraScaledTcpAxes();
     updateSimulationSnapMarkerCameraScale();
@@ -10219,7 +12390,7 @@ function onResize() {
     state.camera.aspect = w / h;
     state.camera.updateProjectionMatrix();
     state.renderer.setSize(w, h);
-    [el.modelBrowserPanel, el.jogPanel, el.tcpProfilePanel, el.virtualControllerPanel, el.viewPresetsPanel, el.programPanel].forEach((panel) => {
+    [el.modelBrowserPanel, el.jogPanel, el.tcpProfilePanel, el.virtualControllerPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.programPanel].forEach((panel) => {
         if (panel?.dataset.userResized === 'true') normalizePanelResizeBox(panel);
     });
     requestRender();
@@ -10241,7 +12412,7 @@ function fitCamera() {
 
 async function populateModelList() {
     try {
-        const res = await fetch('./models/models.json?v=20260718-model-motion2');
+        const res = await fetch('./models/models.json?v=20260724-j3-angle-display-1');
         const list = await res.json();
         state.catalog.clear();
         el.modelSelect.innerHTML = `<option value="" disabled selected>${uiText('-- 로봇 모델을 선택하세요 --')}</option>`;

@@ -6,7 +6,7 @@
     <title>3D Simulation</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=20260721-test-model-2">
+    <link rel="stylesheet" href="style.css?v=20260724-simulation-reset-1-add-mode-centered-1-scrollbar-theme-1">
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -37,6 +37,10 @@
             <h1 class="app-title">3D Simulation</h1>
         </div>
         <div class="topbar-center">
+            <button id="btn-reset-simulation" class="simulation-reset-btn" type="button" title="모든 설정 및 모델 초기화" aria-label="모든 설정 및 모델 초기화">
+                <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                <span>초기화</span>
+            </button>
             <div class="select-wrapper">
                 <i class="fa-solid fa-cube select-icon"></i>
                 <select id="model-select">
@@ -65,6 +69,34 @@
             <div class="viewer-language-row" data-i18n-language-slot></div>
         </div>
     </header>
+
+    <dialog id="simulation-reset-dialog" class="simulation-reset-dialog" aria-labelledby="simulation-reset-dialog-title">
+        <form method="dialog">
+            <div class="simulation-reset-dialog-header">
+                <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                <h2 id="simulation-reset-dialog-title">시뮬레이션 초기화</h2>
+            </div>
+            <p>모든 설정 및 모델이 초기화됩니다. 정말로 진행하시겠습니까?</p>
+            <div class="simulation-reset-dialog-actions">
+                <button id="btn-cancel-simulation-reset" type="button" class="secondary">아니오</button>
+                <button id="btn-confirm-simulation-reset" type="button" class="primary">예</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="test-model-dialog" class="simulation-reset-dialog" aria-labelledby="test-model-dialog-title">
+        <form method="dialog">
+            <div class="simulation-reset-dialog-header">
+                <i class="fa-solid fa-flask" aria-hidden="true"></i>
+                <h2 id="test-model-dialog-title">테스트 모델링 불러오기</h2>
+            </div>
+            <p>테스트용 모델링을 적용하시겠습니까?<br>TCP 1번은 Test 값으로 덮어쓰기됩니다.</p>
+            <div class="simulation-reset-dialog-actions">
+                <button id="btn-cancel-test-model" type="button" class="secondary">아니오</button>
+                <button id="btn-confirm-test-model" type="button" class="primary">예</button>
+            </div>
+        </form>
+    </dialog>
 
     <dialog id="import-3d-dialog" class="import-dialog" aria-labelledby="import-dialog-title">
         <div class="import-dialog-header">
@@ -157,6 +189,10 @@
 
     <main id="main-content">
         <div id="canvas-container">
+            <div id="collision-status" class="collision-status hidden" role="status" aria-live="polite">
+                <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                <span></span>
+            </div>
             <div id="simulation-snap-marker" class="simulation-snap-marker hidden" aria-hidden="true">
                 <span></span><strong id="simulation-snap-label">스냅</strong>
             </div>
@@ -167,7 +203,6 @@
                     </div>
                     <div class="panel-header-actions">
                         <span id="model-tree-count" class="model-tree-count">0</span>
-                        <button id="btn-toggle-transform" type="button" title="선택 모델 변환 핸들 표시/숨김" aria-label="선택 모델 변환 핸들 표시/숨김" aria-pressed="false"><i class="fa-solid fa-up-down-left-right"></i></button>
                         <button type="button" data-panel-action="popout" data-panel-id="model-browser-panel" title="별도 창으로 분리" aria-label="모델 트리를 별도 창으로 분리"><i class="fa-solid fa-up-right-from-square"></i></button>
                         <button type="button" data-panel-action="hide" data-panel-id="model-browser-panel" title="숨기기" aria-label="모델 트리 숨기기"><i class="fa-solid fa-eye-slash"></i></button>
                     </div>
@@ -183,9 +218,9 @@
                         </div>
                     </div>
                     <div class="transform-mode-buttons" aria-label="변환 모드">
-                        <button type="button" data-transform-mode="translate" title="이동 (W)" aria-pressed="false"><i class="fa-solid fa-up-down-left-right"></i> 이동</button>
-                        <button type="button" data-transform-mode="rotate" title="회전 (E)" aria-pressed="false"><i class="fa-solid fa-rotate"></i> 회전</button>
-                        <button type="button" data-transform-mode="scale" title="크기 (R)" aria-pressed="false"><i class="fa-solid fa-expand"></i> 크기</button>
+                        <button type="button" data-transform-mode="translate" title="이동" aria-pressed="false"><i class="fa-solid fa-up-down-left-right"></i> 이동</button>
+                        <button type="button" data-transform-mode="rotate" title="회전" aria-pressed="false"><i class="fa-solid fa-rotate"></i> 회전</button>
+                        <button type="button" data-transform-mode="scale" title="크기" aria-pressed="false"><i class="fa-solid fa-expand"></i> 크기</button>
                     </div>
                     <div id="model-numeric-transform" class="numeric-position-editor">
                         <div class="numeric-position-title">
@@ -292,7 +327,7 @@
                         <h2>JOG Panel</h2>
                     </div>
                     <div class="panel-header-actions">
-                        <button id="btn-reset-joints" type="button" class="jog-reset-btn" title="Reset all joints to 0 degrees"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+                        <button id="btn-reset-joints" type="button" class="jog-reset-btn" title="Reset all joints to 0 degrees"><i class="fa-solid fa-rotate-left"></i> ZERO POINT</button>
                         <button type="button" data-panel-action="popout" data-panel-id="jog-panel" title="별도 창으로 분리" aria-label="JOG 패널을 별도 창으로 분리"><i class="fa-solid fa-up-right-from-square"></i></button>
                         <button type="button" data-panel-action="hide" data-panel-id="jog-panel" title="숨기기" aria-label="JOG 패널 숨기기"><i class="fa-solid fa-eye-slash"></i></button>
                     </div>
@@ -402,19 +437,15 @@
                     </div>
                 </section>
             </aside>
-            <aside id="virtual-controller-panel" class="virtual-controller-panel panel-user-hidden" aria-label="가상 컨트롤러">
+            <aside id="virtual-controller-panel" class="virtual-controller-panel panel-user-hidden" aria-label="컨트롤러 연결">
                 <div class="virtual-controller-header">
-                    <h2><i id="virtual-controller-antenna" class="fa-solid fa-tower-broadcast virtual-controller-antenna disconnected" aria-hidden="true"></i> 가상 컨트롤러</h2>
+                    <h2><i id="virtual-controller-antenna" class="fa-solid fa-tower-broadcast virtual-controller-antenna disconnected" aria-hidden="true"></i> 컨트롤러 연결</h2>
                     <div class="panel-header-actions">
-                        <button type="button" data-panel-action="popout" data-panel-id="virtual-controller-panel" title="별도 창으로 분리" aria-label="가상 컨트롤러 패널을 별도 창으로 분리"><i class="fa-solid fa-up-right-from-square"></i></button>
-                        <button type="button" data-panel-action="hide" data-panel-id="virtual-controller-panel" title="숨기기" aria-label="가상 컨트롤러 패널 숨기기"><i class="fa-solid fa-eye-slash"></i></button>
+                        <button type="button" data-panel-action="popout" data-panel-id="virtual-controller-panel" title="별도 창으로 분리" aria-label="컨트롤러 연결 패널을 별도 창으로 분리"><i class="fa-solid fa-up-right-from-square"></i></button>
+                        <button type="button" data-panel-action="hide" data-panel-id="virtual-controller-panel" title="숨기기" aria-label="컨트롤러 연결 패널 숨기기"><i class="fa-solid fa-eye-slash"></i></button>
                     </div>
                 </div>
                 <div class="virtual-controller-content">
-                    <div class="virtual-controller-endpoint">
-                        <span id="virtual-controller-endpoint"><i class="fa-solid fa-network-wired"></i> 전용 브리지 · 127.0.0.1:5055</span>
-                        <strong>4 ms</strong>
-                    </div>
                     <label class="virtual-controller-target">
                         <span>연결 방식</span>
                         <select id="virtual-controller-source" aria-label="가상 컨트롤러 연결 방식">
@@ -438,15 +469,18 @@
                         <i class="fa-solid fa-chart-line"></i>
                         <span>Trace 도구 다운로드 및 실행</span>
                     </a>
-                    <div class="virtual-controller-bridge-network" data-virtual-controller-source="bridge">
+                    <div class="virtual-controller-controller-settings">
+                        <label class="virtual-controller-target">
+                            <span>컨트롤러 종류</span>
+                            <select id="virtual-controller-kind" aria-label="컨트롤러 종류">
+                                <option value="virtual">가상 컨트롤러</option>
+                                <option value="real">실제 컨트롤러</option>
+                            </select>
+                        </label>
                         <label class="virtual-controller-target">
                             <span>컨트롤러 IP</span>
                             <input id="virtual-controller-ip" type="text" inputmode="decimal" autocomplete="off" value="127.0.0.1" placeholder="예: 192.168.0.10" aria-label="컨트롤러 IP 주소">
                         </label>
-                        <div class="virtual-controller-target virtual-controller-fixed-port">
-                            <span>컨트롤러 포트</span>
-                            <strong>3333 (고정)</strong>
-                        </div>
                     </div>
                     <label class="virtual-controller-target">
                         <span>대상 로봇</span>
@@ -500,6 +534,31 @@
                             <button type="button" data-view-apply title="뷰 적용" aria-label="뷰 4 적용" disabled><i class="fa-solid fa-eye"></i></button>
                         </div>
                     </div>
+                </div>
+            </aside>
+            <aside id="interference-zone-panel" class="interference-zone-panel panel-user-hidden" aria-label="간섭영역 설정">
+                <div class="interference-zone-header">
+                    <h2><i class="fa-solid fa-triangle-exclamation"></i> 간섭영역 설정</h2>
+                    <div class="panel-header-actions">
+                        <button type="button" data-panel-action="popout" data-panel-id="interference-zone-panel" title="별도 창으로 분리" aria-label="간섭영역 설정을 별도 창으로 분리"><i class="fa-solid fa-up-right-from-square"></i></button>
+                        <button type="button" data-panel-action="hide" data-panel-id="interference-zone-panel" title="숨기기" aria-label="간섭영역 설정 숨기기"><i class="fa-solid fa-eye-slash"></i></button>
+                    </div>
+                </div>
+                <div class="interference-zone-content">
+                    <p class="interference-zone-help">World 좌표계(Wobj[0] 대체)에서 TCP 기준으로 간섭영역을 설정합니다.</p>
+                    <div class="interference-zone-toolbar">
+                        <strong id="interference-zone-active-count">0 / 16 활성</strong>
+                    </div>
+                    <div id="interference-zone-list" class="interference-zone-list"></div>
+                    <section class="end-monitoring-section" aria-label="TCP detection range">
+                        <div class="interference-io-heading"><strong>TCP 감지 범위</strong><span>도구에 부착된 감지 체적을 설정합니다.</span></div>
+                        <div id="end-monitoring-list" class="end-monitoring-list"></div>
+                    </section>
+                    <section class="interference-io-section" aria-label="Simulation I/O">
+                        <div class="interference-io-heading"><strong>Simulation I/O</strong><span>IN 신호를 시험하려면 토글하세요.</span></div>
+                        <div id="interference-input-list" class="interference-io-list"></div>
+                        <div id="interference-output-list" class="interference-io-list"></div>
+                    </section>
                 </div>
             </aside>
             <aside id="program-panel" class="program-panel hidden" aria-label="Program Panel">
@@ -565,6 +624,57 @@
         </div>
     </main>
 
+    <dialog id="interference-zone-dialog" class="interference-zone-dialog" aria-labelledby="interference-zone-dialog-title">
+        <form method="dialog" id="interference-zone-form">
+            <div class="interference-zone-dialog-header">
+                <div>
+                    <span>INTERFERENCE ZONE</span>
+                    <h2 id="interference-zone-dialog-title">간섭영역 0 설정</h2>
+                </div>
+                <button id="interference-zone-close" type="button" aria-label="닫기"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="interference-zone-step-tabs">
+                <span class="active" data-interference-step-indicator="basic">1 기본 설정</span>
+                <span data-interference-step-indicator="geometry">2 영역 형상</span>
+            </div>
+            <section class="interference-zone-step" data-interference-step="basic">
+                <div class="interference-zone-field-grid">
+                    <label class="wide"><span>Remarks</span><input id="interference-zone-remarks" type="text" maxlength="120" autocomplete="off"></label>
+                    <label><span>적용 로봇</span><select id="interference-zone-target-robot"></select></label>
+                    <label><span>Inside and outside</span><select id="interference-zone-inside-outside"><option value="inside">Inside</option><option value="outside">Outside</option></select></label>
+                    <label><span>Trigger alarm and stop</span><select id="interference-zone-trigger"><option value="yes">YES</option><option value="no">NO</option></select></label>
+                    <label><span>Safety distance</span><input id="interference-zone-safety" type="number" min="0" max="10000" step="0.001"><small>mm</small></label>
+                </div>
+                <div class="interference-signal-grid">
+                    <label class="interference-signal-row"><input id="interference-zone-in-enabled" type="checkbox"><span>IN</span><input id="interference-zone-in-signal" type="number" min="0" max="255" step="1" value="0"><small>-1: OFF</small></label>
+                    <label class="interference-signal-row"><input id="interference-zone-out-enabled" type="checkbox"><span>OUT</span><input id="interference-zone-out-signal" type="number" min="0" max="255" step="1" value="0"><small>-1: OFF</small></label>
+                </div>
+                <p class="interference-zone-note">IN이 ON이면 해당 영역은 비활성화됩니다. OUT은 영역 밖에서 ON, 영역 안에서 OFF입니다.</p>
+            </section>
+            <section class="interference-zone-step hidden" data-interference-step="geometry">
+                <label class="interference-zone-method"><span>Setting method</span><select id="interference-zone-method"><option value="diagonal">Diagonal point</option><option value="datumOffset">Datum point + offset</option></select></label>
+                <div id="interference-zone-diagonal-fields" class="interference-point-block">
+                    <div class="interference-point-heading"><strong>P1 (mm)</strong><button type="button" data-interference-get-point="p1">Get current point</button></div>
+                    <div class="interference-coordinate-grid"><label>X<input data-interference-point="p1" data-axis="0" type="number" min="-10000" max="10000" step="0.001"></label><label>Y<input data-interference-point="p1" data-axis="1" type="number" min="-10000" max="10000" step="0.001"></label><label>Z<input data-interference-point="p1" data-axis="2" type="number" min="-10000" max="10000" step="0.001"></label></div>
+                    <div class="interference-point-heading"><strong>P2 (mm)</strong><button type="button" data-interference-get-point="p2">Get current point</button></div>
+                    <div class="interference-coordinate-grid"><label>X<input data-interference-point="p2" data-axis="0" type="number" min="-10000" max="10000" step="0.001"></label><label>Y<input data-interference-point="p2" data-axis="1" type="number" min="-10000" max="10000" step="0.001"></label><label>Z<input data-interference-point="p2" data-axis="2" type="number" min="-10000" max="10000" step="0.001"></label></div>
+                </div>
+                <div id="interference-zone-datum-fields" class="interference-point-block hidden">
+                    <div class="interference-point-heading"><strong>Datum point (mm)</strong><button type="button" data-interference-get-point="datum">Get datum point</button></div>
+                    <div class="interference-coordinate-grid"><label>X<input data-interference-point="datum" data-axis="0" type="number" min="-10000" max="10000" step="0.001"></label><label>Y<input data-interference-point="datum" data-axis="1" type="number" min="-10000" max="10000" step="0.001"></label><label>Z<input data-interference-point="datum" data-axis="2" type="number" min="-10000" max="10000" step="0.001"></label></div>
+                    <div class="interference-point-heading"><strong>Offset (mm)</strong></div>
+                    <div class="interference-coordinate-grid"><label>Lx<input data-interference-point="offset" data-axis="0" type="number" min="-10000" max="10000" step="0.001"></label><label>Ly<input data-interference-point="offset" data-axis="1" type="number" min="-10000" max="10000" step="0.001"></label><label>Lz<input data-interference-point="offset" data-axis="2" type="number" min="-10000" max="10000" step="0.001"></label></div>
+                </div>
+                <p id="interference-zone-validation" class="interference-zone-validation" role="alert"></p>
+            </section>
+            <div class="interference-zone-dialog-actions">
+                <button id="interference-zone-previous" type="button" class="secondary hidden">Previous</button>
+                <button id="interference-zone-next" type="button" class="primary">Next</button>
+                <button id="interference-zone-done" type="button" class="primary hidden">Done</button>
+            </div>
+        </form>
+    </dialog>
+
     <div id="program-step-context-menu" class="program-step-context-menu hidden" role="menu">
         <button id="program-show-position-value" type="button" role="menuitem">
             <i class="fa-solid fa-location-crosshairs"></i>
@@ -599,18 +709,22 @@
             <button type="button" data-panel-toggle="model-browser-panel" class="active" title="모델 트리 표시/숨김"><i class="fa-solid fa-list-ul"></i> 모델</button>
             <button type="button" data-panel-toggle="jog-panel" disabled title="로봇 JOG 패널 표시/숨김"><i class="fa-solid fa-gamepad"></i> JOG</button>
             <button type="button" data-panel-toggle="tcp-profile-panel" disabled title="TCP 오프셋 설정"><i class="fa-solid fa-crosshairs"></i> <span id="tcp-launcher-label">TCP 1</span></button>
-            <button type="button" data-panel-toggle="virtual-controller-panel" disabled title="가상 컨트롤러 표시/숨김"><i id="virtual-controller-launcher-antenna" class="fa-solid fa-tower-broadcast virtual-controller-antenna disconnected"></i> Virtual</button>
             <button type="button" data-panel-toggle="view-presets-panel" title="사용자 뷰 표시/숨김"><i class="fa-solid fa-camera"></i> 뷰</button>
+            <button type="button" data-panel-toggle="virtual-controller-panel" disabled title="컨트롤러 연결 표시/숨김" aria-label="컨트롤러 연결 표시/숨김"><i id="virtual-controller-launcher-antenna" class="fa-solid fa-tower-broadcast virtual-controller-antenna disconnected"></i> 컨트롤러 연결</button>
             <span class="viewer-control-divider"></span>
             <button id="btn-undo" type="button" disabled title="되돌리기 (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
             <button id="btn-redo" type="button" disabled title="다시 실행 (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i></button>
             <span class="viewer-control-divider"></span>
+            <button id="btn-toggle-collision" class="active" type="button" title="충돌 감지 끄기" aria-label="충돌 감지 끄기" aria-pressed="true">
+                <span>Collision</span>
+                <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+            </button>
             <button id="btn-toggle-outline" type="button" title="외곽선 켜기" aria-label="외곽선 표시/숨김" aria-pressed="false"><i class="fa-solid fa-pen-nib"></i></button>
             <button id="btn-reset-view" type="button" title="뷰 초기화" aria-label="뷰 초기화"><i class="fa-solid fa-arrows-rotate"></i></button>
             <button id="btn-toggle-grid" type="button" class="active" title="그리드 표시/숨김" aria-label="그리드 표시/숨김"><i class="fa-solid fa-border-all"></i></button>
         </div>
     </footer>
 
-<script type="module" src="main.js?v=20260723-scara-tcp-j3-vc-ip-1"></script>
+<script type="module" src="main.js?v=20260724-controller-collision-feedback-only-default-on"></script>
 </body>
 </html>

@@ -189,6 +189,16 @@
         "title": "3D Simulation",
           "versions": [
             {
+            "title": "Ver 26.07.24",
+              "items": [
+                "**[Thêm]** Đã thêm phát hiện va chạm theo hình dạng thực giữa các khâu robot, Tool và mô hình thiết bị; các mô hình va chạm được hiển thị màu đỏ.",
+                "**[Thêm]** Đã thêm thiết lập vùng can thiệp để tạo vùng ảo tại vị trí mong muốn.",
+                "**[Sửa]** Áp dụng giới hạn góc bộ điều khiển SCARA J3 theo từng model để trục thẳng của mô phỏng (mm) khớp với giá trị hiển thị của bộ điều khiển (°).",
+                "**[Thêm]** Đã thêm chức năng khởi tạo hàng loạt cài đặt đã lưu và các model đã bố trí.",
+                "**[Thêm]** Đã thêm chức năng kết nối bộ điều khiển thực."
+              ]
+            },
+            {
             "title": "Ver 26.07.21",
               "items": [
                 "**[Thêm]** Thêm lựa chọn chất lượng Tự động, Nhẹ, Tiêu chuẩn và Cao cho việc nhập mô hình 3D lớn.",
@@ -321,6 +331,14 @@
       {
         "title": "Software",
         "versions": [
+          {
+            "title": "Ver 26.07.24",
+            "items": [
+              "**[Cập nhật]** Đã cập nhật InoRobotLab từ V4R24C4SPC21 lên V4R24C4SPC22.",
+              "**[Cập nhật]** Đã cập nhật InoRobotTP từ V4R24C4SPC21 lên V4R24C4SPC22.",
+              "**[Thay đổi]** Cập nhật kích thước tải xuống InoRobotLab thành 509MB cho ZIP cài đặt và 514MB cho ZIP portable."
+            ]
+          },
           {
             "title": "Ver 26.07.18",
             "items": [

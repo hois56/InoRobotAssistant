@@ -514,7 +514,20 @@ const certificateCategoryLabels = {
     "cert-kcs-6axis-sol": "KCs 6-Axis Sol/VV Option",
     "cert-kcs-scara": "KCs SCARA",
     "cert-kcs-scara-high": "KCs SCARA High Protection",
-    "cert-lifetime": "Lifetime"
+    "cert-lifetime": "MTBF"
+};
+
+const certificateFilterGroups = {
+    "cert-ce-doc": "cert-ce",
+    "cert-ce-emc": "cert-ce",
+    "cert-ce-md": "cert-ce",
+    "cert-kcs-6axis": "cert-kc",
+    "cert-kcs-6axis-high": "cert-kc",
+    "cert-kcs-6axis-ip67": "cert-kc",
+    "cert-kcs-6axis-sol": "cert-kc",
+    "cert-kcs-scara": "cert-kc",
+    "cert-kcs-scara-high": "cert-kc",
+    "cert-lifetime": "cert-mtbf"
 };
 
 const certificateFiles = [
@@ -607,7 +620,7 @@ const certificateData = certificateFiles.map(([category, path]) => ({
     id: `cert_${path.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')}`,
     title: path.split('/').pop(),
     robotType: "certificate",
-    category: ["certificate", category],
+    category: ["certificate", category, certificateFilterGroups[category]].filter(Boolean),
     date: "2026-06-15",
     lang: "PDF",
     path,
@@ -795,7 +808,23 @@ function setupFilters() {
             });
 
             renderManuals();
+            requestAnimationFrame(scrollToManualList);
         });
+    });
+}
+
+function scrollToManualList() {
+    const list = document.getElementById('manualList');
+    const header = document.querySelector('header');
+    if (!list) return;
+
+    const headerHeight = header ? header.getBoundingClientRect().height : 0;
+    const top = window.scrollY + list.getBoundingClientRect().top - headerHeight - 16;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    window.scrollTo({
+        top: Math.max(0, top),
+        behavior: reduceMotion ? 'auto' : 'smooth'
     });
 }
 

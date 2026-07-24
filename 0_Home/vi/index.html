@@ -435,6 +435,7 @@ permalink: /vn/
     <script src="/Language/runtime/i18n.js" defer></script>
     <script src="/analytics-config.js"></script>
     <script src="/analytics.js" defer></script>
+    <script src="/visitor-counter.js" defer></script>
     <script src="/Language/runtime/icon-fallback.js" defer></script>
     <!-- I18N-SEO:START -->
     <link rel="canonical" href="https://inovancerobot.com/vn/">
@@ -548,7 +549,7 @@ permalink: /vn/
                 </p>
                 <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
                     <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20"
-                        data-site-card-version="robot3dViewer">Ver 26.07.21</span>
+                        data-site-card-version="robot3dViewer">Ver 26.07.24</span>
                     <button type="button" class="history-button" data-history-card="robot3dViewer"
                         aria-label="Mở lịch sử phiên bản 3D Simulation">
                         <i data-lucide="history" class="w-3.5 h-3.5"></i>
@@ -623,7 +624,7 @@ permalink: /vn/
                 </p>
                 <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
                     <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20"
-                        data-site-card-version="software">Ver 26.07.18</span>
+                        data-site-card-version="software">Ver 26.07.24</span>
                     <button type="button" class="history-button" data-history-card="software"
                         aria-label="Mở lịch sử phiên bản Software">
                         <i data-lucide="history" class="w-3.5 h-3.5"></i>
@@ -647,7 +648,7 @@ permalink: /vn/
                 </p>
                 <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
                     <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20"
-                        data-site-card-version="manual">Ver 26.07.20</span>
+                        data-site-card-version="manual">Ver 26.07.24</span>
                     <button type="button" class="history-button" data-history-card="manual"
                         aria-label="Mở lịch sử phiên bản Document">
                         <i data-lucide="history" class="w-3.5 h-3.5"></i>
@@ -722,10 +723,12 @@ permalink: /vn/
             <p class="text-[11px] font-medium text-slate-500">
                 Designed & Developed by <span class="text-sky-400/80">Jeongchan Lee</span>
             </p>
-            <p class="text-[11px] font-medium text-slate-500">
-                <a href="/privacy/" class="text-sky-400/80 hover:text-sky-300 underline underline-offset-4">
-                    Privacy Policy
-                </a>
+            <p class="text-[9px] font-mono text-slate-600 mt-2 uppercase tracking-widest">
+                SYS ID:
+                <span id="visit-count"
+                    class="inline-flex align-middle ml-2 rounded border border-white/10 bg-slate-900/60 px-2 py-0.5 text-slate-400">visits 721</span>
+                <span class="mx-1">·</span>
+                <a href="/privacy/" class="text-sky-400/80 hover:text-sky-300 underline underline-offset-4">Privacy Policy</a>
             </p>
         </div>
     </footer>
@@ -754,9 +757,9 @@ permalink: /vn/
         }
     </style>
 
-    <script src="/0_Home/site-card-versions.js?v=20260724-1"></script>
-    <script src="/0_Home/site-card-history-data.js?v=20260724-1"></script>
-    <script src="/0_Home/site-card-history.js?v=20260724-1"></script>
+    <script src="/0_Home/site-card-versions.js?v=20260724-2"></script>
+    <script src="/0_Home/site-card-history-data.js?v=20260724-2"></script>
+    <script src="/0_Home/site-card-history.js?v=20260724-2"></script>
     <script>
         // Keep the main-site card versions in one place.
         const siteCardVersions = window.SITE_CARD_VERSIONS || {};
