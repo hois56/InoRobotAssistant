@@ -175,7 +175,25 @@
     "STEP 형상을 변환하는 중입니다.": "Transforming the STEP geometry.",
     "STEP 파일을 생성하는 중입니다.": "Generating the STEP file.",
     "STEP 파일 내보내기 완료": "STEP export complete",
-    "STEP 파일을 내보낼 수 없습니다.": "The STEP file could not be exported."
+    "STEP 파일을 내보낼 수 없습니다.": "The STEP file could not be exported.",
+    "불러오기 품질": "Import quality",
+    "기본": "Default",
+    "초경량": "Ultra-light",
+    "대용량 STEP의 메시 품질과 처리 속도를 조절합니다.": "Adjusts mesh quality and processing speed for large STEP files.",
+    "STEP/STP/STL 파일만 선택할 수 있습니다.": "Only STEP/STP/STL files can be selected.",
+    "대용량 STEP 실제 형상을 읽는 중입니다.": "Reading the actual large STEP geometry.",
+    "대용량 STEP 실제 형상을 저해상도로 메싱하는 중입니다.": "Meshing the actual large STEP geometry at low resolution.",
+    "대용량 STEP 메시를 화면용 청크로 나누는 중입니다.": "Splitting the large STEP mesh into display chunks.",
+    "대용량 STEP 엔진을 준비하는 중입니다.": "Preparing the large STEP engine.",
+    "STEP 파일 해석 엔진을 준비하는 중입니다.": "Preparing the STEP parsing engine.",
+    "STEP 파일을 다시 해석하는 중입니다.": "Parsing the STEP file again.",
+    "{format} {quality} 품질로 불러오는 중입니다.": "Importing the {format} file at {quality} quality.",
+    "{format} 파일을 불러오는 중입니다. ({index}/{total})": "Loading the {format} file. ({index}/{total})",
+    " · 대용량 최적화 {count}개 부품": " · Large-file optimization: {count} parts",
+    "{format} 파일 분석 완료 · {label} {count}{note}": "{format} file analysis complete · {label} {count}{note}",
+    "{format} 파일을 해석할 수 없습니다. {message}": "Could not parse the {format} file. {message}",
+    "{format} 파일 분석 완료": "{format} file analysis complete",
+    "STEP 파일 내보내기 완료 · {count}개 부품 · {name}": "STEP export complete · {count} parts · {name}"
   },
   "patterns": []
 }

@@ -156,6 +156,7 @@ const state = {
     },
     viewPresets: Array.from({ length: 4 }, () => null),
     activeViewSlot: null,
+    viewMonitor: null,
     motionSaveTimer: null,
     lastCycleTimeDisplayUpdate: 0,
     fullscreenUiMode: false,
@@ -629,7 +630,7 @@ function endMonitoringCoordinateInputs(pointKey) {
 function ensureEndMonitoringUi() {
     if (!el.interferenceZoneMonitoringObject && el.interferenceZoneTargetRobot) {
         const field = document.createElement('label');
-        field.innerHTML = '<span>감지 대상</span><select id="interference-zone-monitoring-object"></select>';
+        field.innerHTML = `<span>${uiText('감지 대상')}</span><select id="interference-zone-monitoring-object"></select>`;
         el.interferenceZoneTargetRobot.closest('label')?.insertAdjacentElement('afterend', field);
         el.interferenceZoneMonitoringObject = field.querySelector('select');
     }
@@ -638,23 +639,23 @@ function ensureEndMonitoringUi() {
     const diagonal = `
         <div id="end-monitoring-cuboid-diagonal" class="end-monitoring-cuboid-method">
             <div class="interference-point-block">
-                <div class="interference-point-heading"><strong>Point 1 (mm)</strong><button type="button" data-end-monitoring-get-point="p1">Get point</button></div>
+                <div class="interference-point-heading"><strong>${uiText('Point 1 (mm)')}</strong><button type="button" data-end-monitoring-get-point="p1">${uiText('Get point')}</button></div>
                 <div class="interference-coordinate-grid">${endMonitoringCoordinateInputs('p1')}</div>
-                <div class="interference-point-heading"><strong>Point 2 (mm)</strong><button type="button" data-end-monitoring-get-point="p2">Get point</button></div>
+                <div class="interference-point-heading"><strong>${uiText('Point 2 (mm)')}</strong><button type="button" data-end-monitoring-get-point="p2">${uiText('Get point')}</button></div>
                 <div class="interference-coordinate-grid">${endMonitoringCoordinateInputs('p2')}</div>
             </div>
         </div>`;
     const datum = `
         <div id="end-monitoring-cuboid-datum" class="end-monitoring-cuboid-method hidden">
             <div class="interference-point-block">
-                <div class="interference-point-heading"><strong>Datum point (mm)</strong><button type="button" data-end-monitoring-get-point="datum">Get datum point</button></div>
+                <div class="interference-point-heading"><strong>${uiText('Datum point (mm)')}</strong><button type="button" data-end-monitoring-get-point="datum">${uiText('Get datum point')}</button></div>
                 <div class="interference-coordinate-grid">${endMonitoringCoordinateInputs('datum')}</div>
-                <div class="interference-point-heading"><strong>Offset (mm)</strong></div>
+                <div class="interference-point-heading"><strong>${uiText('Offset (mm)')}</strong></div>
                 <div class="interference-coordinate-grid">${endMonitoringCoordinateInputs('offset')}</div>
             </div>
         </div>`;
     const fourPoints = Array.from({ length: 4 }, (_, index) => `
-        <div><strong>P${index + 1}</strong><button type="button" data-end-monitoring-get-point="point${index}">Get</button>
+        <div><strong>P${index + 1}</strong><button type="button" data-end-monitoring-get-point="point${index}">${uiText('Get')}</button>
             <div class="interference-coordinate-grid">${endMonitoringCoordinateInputs(`point${index}`)}</div>
         </div>`).join('');
     const dialog = document.createElement('dialog');
@@ -664,45 +665,46 @@ function ensureEndMonitoringUi() {
     dialog.innerHTML = `
         <form method="dialog">
             <div class="interference-zone-dialog-header">
-                <div><span>END MONITORING OBJECT</span><h2 id="end-monitoring-dialog-title">TCP 감지 범위 설정</h2></div>
-                <button id="end-monitoring-close" type="button" aria-label="닫기"><i class="fa-solid fa-xmark"></i></button>
+                <div><span>${uiText('END MONITORING OBJECT')}</span><h2 id="end-monitoring-dialog-title">${uiText('TCP 감지 범위 설정')}</h2></div>
+                <button id="end-monitoring-close" type="button" aria-label="${uiText('닫기')}"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <section class="interference-zone-step">
                 <div class="interference-zone-field-grid">
-                    <label class="wide"><span>Remarks</span><input id="end-monitoring-remarks" type="text" maxlength="120" autocomplete="off"></label>
-                    <label class="wide"><span>감지 타입</span><select id="end-monitoring-type"><option value="mtcp">MTCP</option><option value="sphere">Sphere</option><option value="cuboid">Cuboid bounding box</option></select></label>
+                    <label class="wide"><span>${uiText('Remarks')}</span><input id="end-monitoring-remarks" type="text" maxlength="120" autocomplete="off"></label>
+                    <label class="wide"><span>${uiText('감지 타입')}</span><select id="end-monitoring-type"><option value="mtcp">MTCP</option><option value="sphere">${uiText('Sphere')}</option><option value="cuboid">${uiText('Cuboid bounding box')}</option></select></label>
                 </div>
                 <div id="end-monitoring-mtcp-fields" class="end-monitoring-type-fields">
-                    <p class="interference-zone-note">선택한 TCP 중 하나라도 간섭영역 조건에 도달하면 감지합니다.</p>
+                    <p class="interference-zone-note">${uiText('선택한 TCP 중 하나라도 간섭영역 조건에 도달하면 감지합니다.')}</p>
                     <div class="end-monitoring-tcp-grid">
                         <label><input type="checkbox" data-end-monitoring-mtcp="tool0"> Tool0</label>
-                        <label><input type="checkbox" data-end-monitoring-mtcp="tcp0"> TCP 1</label>
-                        <label><input type="checkbox" data-end-monitoring-mtcp="tcp1"> TCP 2</label>
-                        <label><input type="checkbox" data-end-monitoring-mtcp="tcp2"> TCP 3</label>
+                        <label><input type="checkbox" data-end-monitoring-mtcp="tcp0"> ${uiText('TCP 1')}</label>
+                        <label><input type="checkbox" data-end-monitoring-mtcp="tcp1"> ${uiText('TCP 2')}</label>
+                        <label><input type="checkbox" data-end-monitoring-mtcp="tcp2"> ${uiText('TCP 3')}</label>
                     </div>
                 </div>
                 <div id="end-monitoring-sphere-fields" class="end-monitoring-type-fields hidden">
                     <div class="interference-zone-field-grid">
-                        <label><span>Center Z</span><input id="end-monitoring-sphere-center-z" type="number" min="-10000" max="10000" step="0.001"><small>mm</small></label>
-                        <label><span>Radius R</span><input id="end-monitoring-sphere-radius" type="number" min="0" max="10000" step="0.001"><small>mm</small></label>
+                        <label><span>${uiText('Center Z')}</span><input id="end-monitoring-sphere-center-z" type="number" min="-10000" max="10000" step="0.001"><small>mm</small></label>
+                        <label><span>${uiText('Radius R')}</span><input id="end-monitoring-sphere-radius" type="number" min="0" max="10000" step="0.001"><small>mm</small></label>
                     </div>
-                    <p class="interference-zone-note">구 중심은 Tool0의 로컬 Z 방향으로 오프셋됩니다.</p>
+                    <p class="interference-zone-note">${uiText('구 중심은 Tool0의 로컬 Z 방향으로 오프셋됩니다.')}</p>
                 </div>
                 <div id="end-monitoring-cuboid-fields" class="end-monitoring-type-fields hidden">
-                    <label class="interference-zone-method"><span>Type</span><select id="end-monitoring-cuboid-method"><option value="diagonal">Diagonal point</option><option value="datumOffset">Datum point + offset</option><option value="fourPointsHeight">Four points + height</option></select></label>
+                    <label class="interference-zone-method"><span>${uiText('Type')}</span><select id="end-monitoring-cuboid-method"><option value="diagonal">${uiText('Diagonal point')}</option><option value="datumOffset">${uiText('Datum point + offset')}</option><option value="fourPointsHeight">${uiText('Four points + height')}</option></select></label>
                     ${diagonal}
                     ${datum}
                     <div id="end-monitoring-cuboid-four-point" class="end-monitoring-cuboid-method hidden"><div class="interference-point-block">
-                        <div class="interference-point-heading"><strong>Bottom points (mm)</strong><span>Tool0 기준</span></div>
+                        <div class="interference-point-heading"><strong>${uiText('Bottom points (mm)')}</strong><span>${uiText('Tool0 기준')}</span></div>
                         <div class="end-monitoring-four-point-grid">${fourPoints}</div>
-                        <label class="end-monitoring-height"><span>Height (Tool0 Z)</span><input data-end-monitoring-height type="number" min="0.001" max="10000" step="0.001"><small>mm</small></label>
+                        <label class="end-monitoring-height"><span>${uiText('Height (Tool0 Z)')}</span><input data-end-monitoring-height type="number" min="0.001" max="10000" step="0.001"><small>mm</small></label>
                     </div></div>
                 </div>
                 <p id="end-monitoring-validation" class="interference-zone-validation" role="alert"></p>
             </section>
-            <div class="interference-zone-dialog-actions"><button id="end-monitoring-done" type="button" class="primary">Done</button></div>
+            <div class="interference-zone-dialog-actions"><button id="end-monitoring-done" type="button" class="primary">${uiText('Done')}</button></div>
         </form>`;
     document.body.append(dialog);
+    window.InoRobotI18n?.apply(dialog);
     Object.assign(el, {
         endMonitoringDialog: dialog,
         endMonitoringDialogTitle: dialog.querySelector('#end-monitoring-dialog-title'),
@@ -953,7 +955,7 @@ function refreshInterferenceZoneMonitoringObjectOptions() {
         ?? el.interferenceZoneMonitoringObject.value
         ?? 'currentTcp';
     const options = [
-        { value: 'currentTcp', label: '현재 TCP (점)' },
+        { value: 'currentTcp', label: uiText('현재 TCP (점)') },
         ...state.endMonitoringObjects.map((object) => ({
             value: String(object.id),
             label: endMonitoringObjectLabel(object)
@@ -977,7 +979,7 @@ function renderEndMonitoringList() {
         row.className = 'end-monitoring-row';
         row.dataset.endMonitoringRow = String(object.id);
         const type = object.type === 'sphere' ? 'Sphere' : object.type === 'cuboid' ? 'Cuboid' : 'MTCP';
-        row.innerHTML = `<strong>${object.id}</strong><span></span><em>${type}</em><button type="button" data-end-monitoring-edit>Edit</button>`;
+        row.innerHTML = `<strong>${object.id}</strong><span></span><em>${uiText(type)}</em><button type="button" data-end-monitoring-edit>${uiText('Edit')}</button>`;
         row.querySelector('span').textContent = object.remarks || '-';
         return row;
     }));
@@ -1023,7 +1025,7 @@ function readEndMonitoringDraft() {
 function writeEndMonitoringDraft() {
     const draft = state.endMonitoringEditor.draft;
     if (!draft || !el.endMonitoringDialog) return;
-    if (el.endMonitoringDialogTitle) el.endMonitoringDialogTitle.textContent = `TCP 감지 범위 ${draft.id} 설정`;
+    if (el.endMonitoringDialogTitle) el.endMonitoringDialogTitle.textContent = uiFormat('TCP 감지 범위 {id} 설정', { id: draft.id });
     if (el.endMonitoringRemarks) el.endMonitoringRemarks.value = draft.remarks;
     if (el.endMonitoringType) el.endMonitoringType.value = draft.type;
     if (el.endMonitoringSphereCenterZ) el.endMonitoringSphereCenterZ.value = String(draft.sphere.centerZ);
@@ -1074,18 +1076,21 @@ function validateEndMonitoringDraft() {
     ];
     if (!allCoordinates.every((point) => point.every((value) => Number.isFinite(value)
         && value >= END_MONITORING_COORDINATE_MIN && value <= END_MONITORING_COORDINATE_MAX))) {
-        result.errors.push(`좌표는 ${END_MONITORING_COORDINATE_MIN}~${END_MONITORING_COORDINATE_MAX} mm 범위여야 합니다.`);
+        result.errors.push(uiFormat('좌표는 {min}~{max} mm 범위여야 합니다.', {
+            min: END_MONITORING_COORDINATE_MIN,
+            max: END_MONITORING_COORDINATE_MAX
+        }));
     }
     if (!Number.isFinite(draft.sphere.centerZ)
         || draft.sphere.centerZ < END_MONITORING_COORDINATE_MIN
         || draft.sphere.centerZ > END_MONITORING_COORDINATE_MAX) {
-        result.errors.push('Sphere center Z 범위가 올바르지 않습니다.');
+        result.errors.push(uiText('Sphere center Z 범위가 올바르지 않습니다.'));
     }
     if (!Number.isFinite(draft.sphere.radius) || draft.sphere.radius < 0 || draft.sphere.radius > END_MONITORING_RADIUS_MAX) {
-        result.errors.push(`Sphere radius는 0~${END_MONITORING_RADIUS_MAX} mm 범위여야 합니다.`);
+        result.errors.push(uiFormat('Sphere radius는 0~{max} mm 범위여야 합니다.', { max: END_MONITORING_RADIUS_MAX }));
     }
     if (!Number.isFinite(draft.cuboid.height) || draft.cuboid.height < 0 || draft.cuboid.height > END_MONITORING_HEIGHT_MAX) {
-        result.errors.push(`Height는 0~${END_MONITORING_HEIGHT_MAX} mm 범위여야 합니다.`);
+        result.errors.push(uiFormat('Height는 0~{max} mm 범위여야 합니다.', { max: END_MONITORING_HEIGHT_MAX }));
     }
     if (el.endMonitoringValidation) {
         el.endMonitoringValidation.textContent = result.errors.join(' ');
@@ -1107,7 +1112,7 @@ function commitEndMonitoringDraft() {
     updateEndMonitoringVisuals();
     closeEndMonitoringEditor();
     recordHistory('TCP 감지 범위 설정', before, captureSceneSnapshot());
-    setStatus(`TCP 감지 범위 ${objectId} 설정을 저장했습니다.`, '#22c55e');
+    setStatus('TCP 감지 범위 {id} 설정을 저장했습니다.', '#22c55e', { id: objectId });
 }
 
 function getActiveRobotToolLocalPoint() {
@@ -2027,6 +2032,133 @@ function getViewPreset(slot) {
         : null;
 }
 
+function isViewMonitorOpen() {
+    const monitor = state.viewMonitor;
+    if (!monitor) return false;
+    if (monitor.popup && !monitor.popup.closed) return true;
+    closeViewMonitor(false);
+    return false;
+}
+
+function updateViewMonitorLabel() {
+    const monitor = state.viewMonitor;
+    const preset = getViewPreset(monitor?.slot);
+    if (!monitor || !preset) return;
+    const label = uiFormat('고정 뷰 · {name}', { name: preset.name });
+    if (monitor.label) monitor.label.textContent = label;
+    if (monitor.popup && !monitor.popup.closed) {
+        monitor.popup.document.title = `3D Simulation - ${label}`;
+    }
+}
+
+function applyViewMonitorPreset(slot) {
+    const monitor = state.viewMonitor;
+    const preset = getViewPreset(slot);
+    if (!monitor?.camera || !preset || !isValidViewPreset(preset)) return false;
+    monitor.slot = Number(slot);
+    monitor.camera.position.fromArray(preset.camera.position);
+    monitor.camera.up.fromArray(preset.camera.up);
+    monitor.camera.zoom = Number.isFinite(preset.camera.zoom) && preset.camera.zoom > 0
+        ? preset.camera.zoom
+        : 1;
+    monitor.camera.updateProjectionMatrix();
+    monitor.camera.lookAt(new THREE.Vector3().fromArray(preset.camera.target));
+    updateViewMonitorLabel();
+    requestRender();
+    return true;
+}
+
+function resizeViewMonitor() {
+    const monitor = state.viewMonitor;
+    if (!monitor?.popup || monitor.popup.closed || !monitor.renderer || !monitor.camera) return;
+    const width = Math.max(1, monitor.popup.innerWidth || monitor.canvas.clientWidth || 1);
+    const height = Math.max(1, monitor.popup.innerHeight || monitor.canvas.clientHeight || 1);
+    monitor.renderer.setPixelRatio(Math.min(monitor.popup.devicePixelRatio || window.devicePixelRatio || 1, 2));
+    monitor.renderer.setSize(width, height, false);
+    monitor.camera.aspect = width / height;
+    monitor.camera.updateProjectionMatrix();
+    requestRender();
+}
+
+function renderViewMonitor() {
+    const monitor = state.viewMonitor;
+    if (!isViewMonitorOpen() || !state.scene || !monitor.renderer || !monitor.camera) return;
+    monitor.renderer.render(state.scene, monitor.camera);
+}
+
+function closeViewMonitor(closePopup = true) {
+    const monitor = state.viewMonitor;
+    if (!monitor) return;
+    state.viewMonitor = null;
+    monitor.popup?.removeEventListener('resize', monitor.handleResize);
+    monitor.renderer?.dispose();
+    if (closePopup && monitor.popup && !monitor.popup.closed) monitor.popup.close();
+}
+
+function openViewMonitor(slot) {
+    const index = Number(slot);
+    const preset = getViewPreset(index);
+    if (!preset || !isValidViewPreset(preset) || !state.camera || !state.scene) return;
+
+    if (isViewMonitorOpen()) {
+        applyViewMonitorPreset(index);
+        state.viewMonitor.popup.focus();
+        return;
+    }
+
+    const popup = window.open('', 'InoRobot-fixed-view-camera', 'popup=yes,width=960,height=720,resizable=yes');
+    if (!popup) {
+        setStatus('팝업이 차단되었습니다. 고정 카메라 창을 열려면 팝업을 허용하세요.', '#ef4444');
+        return;
+    }
+
+    const monitorTitle = uiText('고정 뷰 카메라');
+    popup.document.open();
+    popup.document.write(`<!doctype html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>3D Simulation - ${monitorTitle}</title><style>
+        :root { color-scheme: dark; }
+        html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #0b0e14; }
+        body { font-family: Inter, "Noto Sans KR", sans-serif; }
+        canvas { display: block; width: 100%; height: 100%; }
+        .view-monitor-label { position: fixed; top: 12px; left: 14px; z-index: 2; padding: 7px 11px; border: 1px solid rgba(96,165,250,.36); border-radius: 8px; color: #dbeafe; background: rgba(15,23,42,.78); box-shadow: 0 8px 24px rgba(2,6,23,.35); font-size: 12px; font-weight: 700; pointer-events: none; }
+    </style></head><body><div class="view-monitor-label"></div></body></html>`);
+    popup.document.close();
+
+    const canvas = popup.document.createElement('canvas');
+    canvas.setAttribute('aria-label', monitorTitle);
+    popup.document.body.appendChild(canvas);
+    const label = popup.document.querySelector('.view-monitor-label');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.shadowMap.enabled = state.renderer?.shadowMap.enabled ?? true;
+    renderer.toneMapping = state.renderer?.toneMapping ?? THREE.NoToneMapping;
+    renderer.toneMappingExposure = state.renderer?.toneMappingExposure ?? 1;
+    if ('outputColorSpace' in renderer && state.renderer?.outputColorSpace) {
+        renderer.outputColorSpace = state.renderer.outputColorSpace;
+    }
+    const camera = new THREE.PerspectiveCamera(
+        state.camera.fov,
+        1,
+        state.camera.near,
+        state.camera.far
+    );
+    state.viewMonitor = {
+        popup,
+        canvas,
+        label,
+        renderer,
+        camera,
+        slot: index,
+        handleResize: null
+    };
+    const handleResize = () => resizeViewMonitor();
+    state.viewMonitor.handleResize = handleResize;
+    popup.addEventListener('resize', handleResize);
+    popup.addEventListener('beforeunload', () => closeViewMonitor(false), { once: true });
+    popup.document.title = `3D Simulation - ${monitorTitle}`;
+    applyViewMonitorPreset(index);
+    resizeViewMonitor();
+    popup.focus();
+}
+
 function applyViewPreset(slot, { announce = true } = {}) {
     const index = Number(slot);
     const preset = getViewPreset(index);
@@ -2060,6 +2192,7 @@ function saveViewPreset(slot) {
     state.viewPresets[slot] = preset;
     state.activeViewSlot = slot;
     saveViewConfiguration();
+    if (state.viewMonitor?.slot === slot) applyViewMonitorPreset(slot);
     refreshViewPresetsUi();
     setStatus('뷰 {number}을 저장했습니다.', '#22c55e', { number: slot + 1 });
 }
@@ -2071,6 +2204,7 @@ function refreshViewPresetsUi() {
         const preset = getViewPreset(slot);
         const nameInput = row.querySelector('[data-view-name]');
         const applyButton = row.querySelector('[data-view-apply]');
+        const monitorButton = row.querySelector('[data-view-monitor]');
         if (nameInput && document.activeElement !== nameInput) {
             nameInput.value = preset?.name || nameInput.value || getDefaultViewPresetName(slot);
         }
@@ -2080,8 +2214,15 @@ function refreshViewPresetsUi() {
                 name: preset?.name || getDefaultViewPresetName(slot)
             }));
         }
+        if (monitorButton) {
+            monitorButton.disabled = !preset;
+            monitorButton.setAttribute('aria-label', uiFormat('{name} 고정 카메라로 보기', {
+                name: preset?.name || getDefaultViewPresetName(slot)
+            }));
+        }
         row.classList.toggle('active', state.activeViewSlot === slot && Boolean(preset));
     });
+    updateViewMonitorLabel();
 }
 
 function handleViewPresetListClick(event) {
@@ -2090,6 +2231,7 @@ function handleViewPresetListClick(event) {
     const slot = Number(row.dataset.viewSlot);
     if (event.target.closest('[data-view-save]')) saveViewPreset(slot);
     else if (event.target.closest('[data-view-apply]')) applyViewPreset(slot);
+    else if (event.target.closest('[data-view-monitor]')) openViewMonitor(slot);
 }
 
 function handleViewPresetListInput(event) {
@@ -2100,6 +2242,7 @@ function handleViewPresetListInput(event) {
     if (!preset) return;
     preset.name = nameInput.value.trim().slice(0, 24) || getDefaultViewPresetName(Number(row.dataset.viewSlot));
     saveViewConfiguration();
+    if (state.viewMonitor?.slot === Number(row.dataset.viewSlot)) updateViewMonitorLabel();
 }
 
 function refreshLocalizedControls() {
@@ -4943,6 +5086,7 @@ function setupEventListeners() {
     window.addEventListener('beforeunload', () => {
         closeVirtualControllerSocket(false);
         if (!state.resetInProgress) saveMotionProjectNow();
+        closeViewMonitor(true);
         [...state.panelWindows.keys()].forEach((panelId) => restorePanelFromWindow(panelId, true));
     });
 }
@@ -12341,7 +12485,8 @@ async function handleCADDownload() {
 }
 
 function requiresContinuousRendering() {
-    return isVirtualControllerActive()
+    return isViewMonitorOpen()
+        || isVirtualControllerActive()
         || [...state.motionSessions.values()].some((session) => session.status === 'running');
 }
 
@@ -12381,6 +12526,7 @@ function animate(timestamp = performance.now()) {
     updateSimulationSnapMarkerCameraScale();
     updateSimulationSnapCandidateMarkers();
     state.renderer.render(state.scene, state.camera);
+    renderViewMonitor();
     updateZeroPointCurrentMarker();
     if (requiresContinuousRendering()) requestRender();
 }
