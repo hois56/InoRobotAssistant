@@ -8,4 +8,5 @@
 # Local .NET build intermediates.
 **/bin/
 **/obj/
+/.dotnet_home/
 # Retry GitHub Pages deployment

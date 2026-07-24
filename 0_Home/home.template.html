@@ -425,10 +425,11 @@
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/Language/runtime/i18n.css">
-    <script src="/Language/runtime/locales-data.js?v=20260721-5" defer></script>
+    <script src="/Language/runtime/locales-data.js?v=20260724-1" defer></script>
     <script src="/Language/runtime/i18n.js" defer></script>
     <script src="/analytics-config.js"></script>
     <script src="/analytics.js" defer></script>
+    <script src="/visitor-counter.js" defer></script>
 </head>
 
 <body class="relative flex flex-col items-center justify-center min-h-screen p-6">
@@ -707,10 +708,12 @@
             <p class="text-[11px] font-medium text-slate-500">
                 Designed & Developed by <span class="text-sky-400/80">Jeongchan Lee</span>
             </p>
-            <p class="text-[11px] font-medium text-slate-500">
-                <a href="/privacy/" class="text-sky-400/80 hover:text-sky-300 underline underline-offset-4">
-                    Privacy Policy
-                </a>
+            <p class="text-[9px] font-mono text-slate-600 mt-2 uppercase tracking-widest">
+                SYS ID:
+                <span id="visit-count"
+                    class="inline-flex align-middle ml-2 rounded border border-white/10 bg-slate-900/60 px-2 py-0.5 text-slate-400">visits 721</span>
+                <span class="mx-1">·</span>
+                <a href="/privacy/" class="text-sky-400/80 hover:text-sky-300 underline underline-offset-4">Privacy Policy</a>
             </p>
         </div>
     </footer>
@@ -739,9 +742,9 @@
         }
     </style>
 
-    <script src="/0_Home/site-card-versions.js?v=20260721-3"></script>
-    <script src="/0_Home/site-card-history-data.js?v=20260721-5"></script>
-    <script src="/0_Home/site-card-history.js"></script>
+    <script src="/0_Home/site-card-versions.js?v=20260724-2"></script>
+    <script src="/0_Home/site-card-history-data.js?v=20260724-2"></script>
+    <script src="/0_Home/site-card-history.js?v=20260724-2"></script>
     <script>
         // Keep the main-site card versions in one place.
         const siteCardVersions = window.SITE_CARD_VERSIONS || {};
