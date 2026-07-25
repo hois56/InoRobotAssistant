@@ -199,7 +199,7 @@
           "title": "Ver 26.07.25",
           "items": [
             "**[Cải tiến]** Model STL lớn giờ đây sử dụng proxy va chạm riêng để cải thiện đồng thời chi tiết hiển thị và hiệu năng kiểm tra va chạm.",
-            "**[Sửa]** Đổi cổng đích của bộ điều khiển ảo từ 3333 thành 2222 và thêm đường dẫn dự phòng có quyền ghi khi tải thư viện native."
+            "**[Sửa]** Khắc phục sự cố không thể kết nối bộ điều khiển ảo."
           ]
         },
         {
