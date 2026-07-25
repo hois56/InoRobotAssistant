@@ -34,8 +34,8 @@
 
 ### Ver 26.06.19.01
 
-- `[신규]` 비상정지 보호커버가 장착된 IR-TP200 티치펜던트를 추가했습니다.
-- `[신규]` 보호커버형 펜던트 구매 코드를 추가했습니다: 5m `01640069`, 10m `01640072`, 15m `01640073`.
+- `[추가]` 비상정지 보호커버가 장착된 IR-TP200 티치펜던트를 추가했습니다.
+- `[추가]` 보호커버형 펜던트 구매 코드를 추가했습니다: 5m `01640069`, 10m `01640072`, 15m `01640073`.
 - `[변경]` 펜던트 선택 방식을 `미선택 / 보호커버 없음 / 보호커버 있음`으로 개편했습니다.
 - `[변경]` 선택한 펜던트의 보호커버 유무·길이·구매 코드가 결과와 PDF에 표시됩니다.
 
@@ -63,7 +63,7 @@
 
 ### Ver 26.05.29.01
 
-- `[신규]` 6축 로봇에 표준형·클린형·IP67형 바디 옵션을 추가했습니다.
+- `[추가]` 6축 로봇에 표준형·클린형·IP67형 바디 옵션을 추가했습니다.
 - `[변경]` R10-140·R16·R25는 고정 사양 `Body IP65 / Wrist IP67`만 표시하도록 변경했습니다.
 - `[변경]` R15H·R20H 클린형은 `ISO Class 4`, 나머지 6축 클린형은 `ISO Class 3`으로 표시합니다.
 - `[변경]` 바디 옵션 선택 시 모델명의 `S/C/P` 코드와 PDF 파일명이 함께 변경됩니다.
@@ -71,8 +71,8 @@
 - `[수정]` 축 속도와 가동 범위에서 `°`, `°/s`, `mm`, `mm/s` 단위가 누락되던 문제를 수정했습니다.
 - `[수정]` 상세 정보와 PDF에서 중량 `kg`, 반복정밀도 `mm` 단위가 누락되던 문제를 수정했습니다.
 - `[수정]` IR-S35-80Z42S-INT에 잘못 표시되던 KC·KCs 인증을 제거했습니다.
-- `[정리]` 미출시 IR-CS 모델을 필터와 검색 결과에서 제외했습니다.
-- `[정리]` R10-140·R16·R25에서 사용할 수 없는 Handheld Motor Brake Release Box 옵션을 숨겼습니다.
+- `[삭제]` 미출시 IR-CS 모델을 필터와 검색 결과에서 제외했습니다.
+- `[삭제]` R10-140·R16·R25에서 사용할 수 없는 Handheld Motor Brake Release Box 옵션을 숨겼습니다.
 
 ### Ver 26.05.22.01
 
@@ -91,7 +91,7 @@
 
 ### Ver 26.04.12.01
 
-- `[신규]` 모델 상세 정보에 권장 차단기 용량을 추가했습니다.
+- `[추가]` 모델 상세 정보에 권장 차단기 용량을 추가했습니다.
 - `[변경]` R4·R7H 10A, R10·R11 15A, R10-140 20A, R16·R25 30A, S25 15A, S35·S60 20A로 표시합니다.
 
 ### Ver 26.03.31.02
@@ -125,10 +125,10 @@
 
 ### Ver 26.07.18
 
-- `[개편]` 기존 3D 뷰어에서 더 나아가 로봇을 시뮬레이션할 수 있는 3D Simulation으로 전면 개편했습니다.
-- `[지원]` 모든 모델의 로봇을 이동할 수 있으며 프로그래밍을 통해 로봇의 이동 경로를 설정할 수 있습니다.
-- `[지원]` 3D 모델링 가져오기를 지원하며, 가져온 파일을 로봇 Tool에 부착할 수 있습니다.
-- `[지원]` InoRobotLab의 가상컨트롤러와 연결하여 사용할 수 있습니다. (전용 브리지 or 트레이스 툴 사용 필요)
+- `[변경]` 기존 3D 뷰어에서 더 나아가 로봇을 시뮬레이션할 수 있는 3D Simulation으로 전면 개편했습니다.
+- `[추가]` 모든 모델의 로봇을 이동할 수 있으며 프로그래밍을 통해 로봇의 이동 경로를 설정할 수 있습니다.
+- `[추가]` 3D 모델링 가져오기를 지원하며, 가져온 파일을 로봇 Tool에 부착할 수 있습니다.
+- `[추가]` InoRobotLab의 가상컨트롤러와 연결하여 사용할 수 있습니다. (전용 브리지 or 트레이스 툴 사용 필요)
 - `[추가]` 한국어·영어·중국어·베트남어를 지원하며, 일부 한국어 버전에서 영어로 표시되던 항목을 모두 한국어로 번역하였습니다.
 - `[변경]` 버전 표기법을 날짜만 기록하는 것으로 변경하였습니다.
 
@@ -144,7 +144,7 @@
 
 ### Ver 26.07.18
 
-- `[신규]` STEP/STP CAD 파일의 질량 특성을 계산하는 Mode D를 추가했습니다.
+- `[추가]` STEP/STP CAD 파일의 질량 특성을 계산하는 Mode D를 추가했습니다.
 - `[추가]` 부품별 포함 여부·재질·밀도를 설정하고 총 질량, CoG, Tool 원점 및 부하중심 기준 Ixx·Iyy·Izz를 계산합니다.
 - `[추가]` Tool 원점과 TCP를 꼭짓점·끝점·중심점·가상 교점 스냅으로 지정할 수 있습니다.
 - `[추가]` 좌표계 방향을 3D 회전 핸들과 Rx·Ry·Rz 수치로 설정할 수 있습니다.
@@ -165,7 +165,7 @@
 - `[수정]` 총중량이 0kg일 때 계산 결과가 NaN으로 표시되던 문제를 수정했습니다.
 - `[변경]` CoM·COM 표기를 `CoG`로 통일했습니다.
 - `[변경]` 관성모멘트 계산 결과를 소수점 셋째 자리까지 표시합니다.
-- `[신규]` Tool Block CoG 입력 위치를 설명하는 참고 이미지를 추가했습니다.
+- `[추가]` Tool Block CoG 입력 위치를 설명하는 참고 이미지를 추가했습니다.
 
 ---
 
@@ -187,14 +187,14 @@
 ### Ver 26.06.15.01
 
 - `[변경]` Teaching Mode·Wait Position·Process Busy 옵션을 기본 활성화 상태로 변경했습니다.
-- `[신규]` Teaching Mode에 다음 위치 이동·이전 위치 이동·Offset 위치 이동·현재 위치 저장 기능을 추가했습니다.
+- `[추가]` Teaching Mode에 다음 위치 이동·이전 위치 이동·Offset 위치 이동·현재 위치 저장 기능을 추가했습니다.
 - `[변경]` Wait Position과 Work Position의 시작·완료·Busy 상태를 각각 구분하도록 변경했습니다.
 - `[수정]` Vision Offset과 Process Offset을 함께 사용할 때 적용 순서가 뒤바뀌던 문제를 수정했습니다.
 - `[수정]` Vision Offset과 Process Offset이 중복 적용되던 문제를 수정했습니다.
 - `[수정]` 다른 공정에서 Wait 또는 Work 위치로 복귀할 때 잘못된 경로로 이동하던 문제를 수정했습니다.
 - `[수정]` SCARA 프로젝트에 존재하지 않는 J5·J6 토크 항목이 생성되던 문제를 수정했습니다.
-- `[업데이트]` 프로젝트에 포함되는 IO Map을 `InoRobot_IO_Map_0614.xlsx`로 교체했습니다.
-- `[업데이트]` Remote IO Mapping을 최신 Process Wait·Work·Busy·Teaching 구성으로 변경했습니다.
+- `[변경]` 프로젝트에 포함되는 IO Map을 `InoRobot_IO_Map_0614.xlsx`로 교체했습니다.
+- `[변경]` Remote IO Mapping을 최신 Process Wait·Work·Busy·Teaching 구성으로 변경했습니다.
 - `[수정]` Multi Recipe 설명에 잘못 표시된 Point File 전환 주소를 수정했습니다.
 - `[변경]` 옵션 도움말과 타이밍 차트의 신호명을 실제 생성 결과와 동일하게 변경했습니다.
 
@@ -208,16 +208,16 @@
 
 ### Ver 26.04.07
 
-- `[신규]` 프로젝트 옵션별 상세 설명 버튼과 툴팁을 추가했습니다.
-- `[신규]` IO 타이밍 차트가 포함된 사용 가이드를 추가했습니다.
+- `[추가]` 프로젝트 옵션별 상세 설명 버튼과 툴팁을 추가했습니다.
+- `[추가]` IO 타이밍 차트가 포함된 사용 가이드를 추가했습니다.
 - `[수정]` Vision Offset 툴팁이 테이블 아래에 가려지던 문제를 수정했습니다.
 - `[수정]` Teaching Mode 타이밍 차트의 신호와 파형 위치가 맞지 않던 문제를 수정했습니다.
 - `[변경]` 타이밍 차트 헤더·라벨·파형 간격을 정렬하고 신호 변화 표현을 세로선으로 통일했습니다.
 
 ### Ver 26.04.02
 
-- `[신규]` Labels·Remote IO·P.pts·User Warning 파일을 표 형식으로 미리보는 기능을 추가했습니다.
-- `[신규]` Labels·User Warning·P.pts 데이터를 화면에서 직접 수정할 수 있습니다.
+- `[추가]` Labels·Remote IO·P.pts·User Warning 파일을 표 형식으로 미리보는 기능을 추가했습니다.
+- `[추가]` Labels·User Warning·P.pts 데이터를 화면에서 직접 수정할 수 있습니다.
 - `[변경]` Labels에서 수정한 이름이 모든 프로그램 미리보기에 반영됩니다.
 - `[변경]` 파일 선택 목록을 Main·Static Task·Sub Program·Process·Data File 그룹으로 분류했습니다.
 
@@ -227,8 +227,8 @@
 
 ### Ver 26.07.24
 
-- `[업데이트]` InoRobotLab을 `V4R24C4SPC21 → V4R24C4SPC22`로 업데이트했습니다.
-- `[업데이트]` InoRobotTP를 `V4R24C4SPC21 → V4R24C4SPC22`로 업데이트했습니다.
+- `[변경]` InoRobotLab을 `V4R24C4SPC21 → V4R24C4SPC22`로 업데이트했습니다.
+- `[변경]` InoRobotTP를 `V4R24C4SPC21 → V4R24C4SPC22`로 업데이트했습니다.
 - `[변경]` InoRobotLab 다운로드 용량을 설치형 509MB, 포터블 514MB로 갱신했습니다.
 
 ### Ver 26.07.18
@@ -238,19 +238,19 @@
 
 ### Ver 26.06.19.01
 
-- `[업데이트]` InoRobotLab을 `V4R24C4SPC18 → V4R24C4SPC21`로 업데이트했습니다.
-- `[업데이트]` InoRobotTP를 `V4R24C4SPC18 → V4R24C4SPC21`로 업데이트했습니다.
+- `[변경]` InoRobotLab을 `V4R24C4SPC18 → V4R24C4SPC21`로 업데이트했습니다.
+- `[변경]` InoRobotTP를 `V4R24C4SPC18 → V4R24C4SPC21`로 업데이트했습니다.
 - `[변경]` InoRobotLab 다운로드 용량을 설치형 470MB, 포터블 473MB로 갱신했습니다.
 
 ### Ver 26.06.06.01
 
-- `[업데이트]` InoRobotLab을 `V4R24C4SPC17 → V4R24C4SPC18`로 업데이트했습니다.
-- `[업데이트]` InoRobotTP를 `V4R24C4SPC17 → V4R24C4SPC18`로 업데이트했습니다.
-- `[정리]` 기존 SPC15·SPC17 다운로드를 제거하고 SPC18 버전만 표시하도록 변경했습니다.
+- `[변경]` InoRobotLab을 `V4R24C4SPC17 → V4R24C4SPC18`로 업데이트했습니다.
+- `[변경]` InoRobotTP를 `V4R24C4SPC17 → V4R24C4SPC18`로 업데이트했습니다.
+- `[삭제]` 기존 SPC15·SPC17 다운로드를 제거하고 SPC18 버전만 표시하도록 변경했습니다.
 
 ### Ver 26.05.14.01
 
-- `[업데이트]` Display용 InoRobotLab·InoRobotTP를 `V4R24C4SPC0L18F121`로 교체했습니다.
+- `[변경]` Display용 InoRobotLab·InoRobotTP를 `V4R24C4SPC0L18F121`로 교체했습니다.
 - `[변경]` 제공되지 않는 Display용 InoRobotLab 설치형 버튼을 비활성 상태로 변경했습니다.
 - `[추가]` Display용 InoRobotLab 포터블 454MB와 InoRobotTP 57MB 다운로드를 추가했습니다.
 
@@ -281,7 +281,7 @@
 
 ### Ver 26.07.15
 
-- `[업데이트]` EtherCAT 통신 프로파일 `V1.01`을 `IRCB50X_SERIES_ECAT_V1.05.xml`로 교체했습니다.
+- `[변경]` EtherCAT 통신 프로파일 `V1.01`을 `IRCB50X_SERIES_ECAT_V1.05.xml`로 교체했습니다.
 - `[추가]` Display용 EtherCAT 통신 프로파일 `IRCB50X_SERIES_ECAT_V1.07.xml`을 추가했습니다.
 - `[변경]` `Remote Ethernet Control Function User Guide.pdf`의 표시를 `Common`에서 `API`로 변경했습니다.
 - `[변경]` `Remote IO Control Function User Guide.pdf`와 `Remote_IO_List.xlsx`의 표시를 `Common`에서 `Remote IO`로 변경했습니다.
@@ -291,7 +291,7 @@
 
 - `[추가]` 하드웨어 매뉴얼에 `Safety Function` 탭을 추가했습니다.
 - `[추가]` `Robot System Safety Function Guide.PDF`를 Safety Function 매뉴얼로 등록했습니다.
-- `[업데이트]` `INOVANCE ROBOT Selection Guide.pdf`와 `INOVANCE ROBOT Selection Leaflet.pdf`를 최신 파일로 교체했습니다.
+- `[변경]` `INOVANCE ROBOT Selection Guide.pdf`와 `INOVANCE ROBOT Selection Leaflet.pdf`를 최신 파일로 교체했습니다.
 
 ### Ver 26.06.19.01
 
@@ -300,88 +300,93 @@
 
 ### Ver 26.06.15.01
 
-- `[신규]` EtherCAT `v1.0.1`, PROFINET `V2.35`, EtherNet/IP `V4.5` 통신 프로파일을 추가했습니다.
-- `[신규]` CE 10개·Clean 4개·cSGSus 4개·FCC 2개·Functional Safety 2개·KCs 59개·MTBF 2개 등 총 83개의 인증서를 추가했습니다.
-- `[신규]` 인증서 필터를 CE·Clean·cSGSus·FCC·Functional Safety·KCs·MTBF로 분류했습니다.
+- `[추가]` EtherCAT `v1.0.1`, PROFINET `V2.35`, EtherNet/IP `V4.5` 통신 프로파일을 추가했습니다.
+- `[추가]` CE 10개·Clean 4개·cSGSus 4개·FCC 2개·Functional Safety 2개·KCs 59개·MTBF 2개 등 총 83개의 인증서를 추가했습니다.
+- `[추가]` 인증서 필터를 CE·Clean·cSGSus·FCC·Functional Safety·KCs·MTBF로 분류했습니다.
 - `[변경]` 문서 검색 시 제목과 설명뿐만 아니라 실제 파일명과 경로까지 검색합니다.
 
 ### Ver 26.06.01.01
 
-- `[업데이트]` 입문과정 `2. 로봇 기초` INT 및 Display 교육자료를 최신 PDF로 교체했습니다.
+- `[변경]` 입문과정 `2. 로봇 기초` INT 및 Display 교육자료를 최신 PDF로 교체했습니다.
 
 ### Ver 26.05.14.01
 
 - `[추가]` IR-S25&S35, IR-S60&GS60, IR-R15H&R20H 사용자 매뉴얼을 추가했습니다.
 - `[추가]` Input IO·NPN Output IO·Encoder·Functional Safety·IR-LINK·PROFINET 확장카드 매뉴얼을 추가했습니다.
-- `[신규]` 문서 필터에 `Expansion Card`와 `Selection Guide` 항목을 추가했습니다.
+- `[추가]` 문서 필터에 `Expansion Card`와 `Selection Guide` 항목을 추가했습니다.
 
 ### Ver 26.04.26.01
 
-- `[업데이트]` R25/R16 매뉴얼 파일명을 `IR-R25&R16 → IR-R25&16`으로 변경하고 최신 PDF로 교체했습니다.
+- `[변경]` R25/R16 매뉴얼 파일명을 `IR-R25&R16 → IR-R25&16`으로 변경하고 최신 PDF로 교체했습니다.
 
 ### Ver 26.04.12.01
 
-- `[업데이트]` 입문과정 `1. 로봇 소개` INT 및 Display 교육자료를 최신 PDF로 교체했습니다.
+- `[변경]` 입문과정 `1. 로봇 소개` INT 및 Display 교육자료를 최신 PDF로 교체했습니다.
 
 ### Ver 26.04.10.01
 
-- `[신규]` 교육자료에 `Application Level` 분류를 추가했습니다.
+- `[추가]` 교육자료에 `Application Level` 분류를 추가했습니다.
 - `[추가]` API 교육자료 PDF와 실습용 API.zip을 추가했습니다.
 
 ### Ver 26.04.07.01
 
 - `[추가]` InoRobotLab·변수·주요 명령어·주요 설정·Socket 통신·Fieldbus 통신 초급과정 자료를 추가했습니다.
-- `[신규]` Display 교육자료 전용 `For Display` 필터를 추가했습니다.
+- `[추가]` Display 교육자료 전용 `For Display` 필터를 추가했습니다.
 - `[변경]` 문서 버튼을 `미리보기`와 `다운로드`로 분리했습니다.
 
 ---
 
 ## Debugging Tool
 
+### Ver 26.07.25.01
+
+- `[변경]` InoRobot Trace를 `V1.4 → V1.5`로 업데이트했습니다.
+- `[삭제]` InoRobot Trace에서 배터리 사용량 모니터링 항목을 제거했습니다.
+
 ### Ver 26.07.24.01
 
-- `[업데이트]` Communication Tester를 `V2.6 → V2.7`로 업데이트했습니다.
+- `[변경]` Communication Tester를 `V2.6 → V2.7`로 업데이트했습니다.
 
 ### Ver 26.07.18.01
 
-- `[업데이트]` InoRobot Trace를 `V1.3 → V1.4`로 업데이트했습니다.
+- `[변경]` InoRobot Trace를 `V1.3 → V1.4`로 업데이트했습니다.
 - `[추가]` 한국어·영어·중국어·베트남어를 지원하며, 일부 한국어 버전에서 영어로 표시되던 항목을 모두 한국어로 번역하였습니다.
 - `[변경]` 버전 표기법을 날짜만 기록하는 것으로 변경하였습니다.
 
 ### Ver 26.07.15.01
 
-- `[업데이트]` InoRobot Trace를 `V1.2 → V1.3`으로 업데이트했습니다.
+- `[변경]` InoRobot Trace를 `V1.2 → V1.3`으로 업데이트했습니다.
 - `[추가]` Trace에 Joint Speed J1~J6 채널을 추가했습니다.
 - `[수정]` InoRobot Trace에서 가상 컨트롤러 연결 시 Joint Speed 채널이 비활성화되던 문제를 수정했습니다.
 
 ### Ver 26.06.19.01
 
-- `[업데이트]` InoRobot Label Generator를 `V2.0 → V2.1`로 업데이트했습니다.
+- `[변경]` InoRobot Label Generator를 `V2.0 → V2.1`로 업데이트했습니다.
 
 ### Ver 26.06.15.01
 
-- `[업데이트]` Communication Tester를 `V2.5 → V2.6`으로 업데이트했습니다.
-- `[업데이트]` InoRobot Trace를 `V1.1 → V1.2`로 업데이트했습니다.
+- `[변경]` Communication Tester를 `V2.5 → V2.6`으로 업데이트했습니다.
+- `[변경]` InoRobot Trace를 `V1.1 → V1.2`로 업데이트했습니다.
 
 ### Ver 26.06.10.01
 
-- `[업데이트]` Communication Tester를 `V2.4 → V2.5`로 업데이트했습니다.
-- `[정리]` 기존 Communication Tester V2.3 실행 파일과 ZIP 파일을 제거했습니다.
+- `[변경]` Communication Tester를 `V2.4 → V2.5`로 업데이트했습니다.
+- `[삭제]` 기존 Communication Tester V2.3 실행 파일과 ZIP 파일을 제거했습니다.
 
 ### Ver 26.05.18.01
 
-- `[업데이트]` InoRobot Trace를 `V1.0 → V1.1`로 업데이트했습니다.
+- `[변경]` InoRobot Trace를 `V1.0 → V1.1`로 업데이트했습니다.
 
 ### Ver 26.04.26.01
 
-- `[업데이트]` Communication Tester를 `V2.3 → V2.4`로 업데이트했습니다.
-- `[신규]` InoRobot Trace V1.0 다운로드를 추가했습니다.
-- `[신규]` InoRobot Label Generator V2.0 다운로드를 추가했습니다.
-- `[업데이트]` Project Compare를 `V2.0 → V2.1`로 업데이트했습니다.
+- `[변경]` Communication Tester를 `V2.3 → V2.4`로 업데이트했습니다.
+- `[추가]` InoRobot Trace V1.0 다운로드를 추가했습니다.
+- `[추가]` InoRobot Label Generator V2.0 다운로드를 추가했습니다.
+- `[변경]` Project Compare를 `V2.0 → V2.1`로 업데이트했습니다.
 
 ### Ver 26.04.13.01
 
-- `[업데이트]` Communication Tester를 `V2.2 → V2.3`으로 업데이트했습니다.
+- `[변경]` Communication Tester를 `V2.2 → V2.3`으로 업데이트했습니다.
 - `[수정]` ZIP 파일 대신 Git LFS 정보 파일이 다운로드되던 문제를 수정했습니다.
 
 ### Ver 26.04.07.01
@@ -390,5 +395,5 @@
 
 ### Ver 26.04.02
 
-- `[신규]` Communication Tester V2.2 다운로드를 추가했습니다.
-- `[신규]` Project Compare V2.0 다운로드를 추가했습니다.
+- `[추가]` Communication Tester V2.2 다운로드를 추가했습니다.
+- `[추가]` Project Compare V2.0 다운로드를 추가했습니다.
