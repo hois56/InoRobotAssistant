@@ -199,7 +199,7 @@
           "title": "Ver 26.07.25",
           "items": [
             "**[Improved]** Large STL models now use a separate collision proxy so visual detail and collision-check performance can be improved together.",
-            "**[Fixed]** Changed the virtual-controller target port from 3333 to 2222 and added a writable fallback path for native-library loading."
+            "**[Fixed]** Fixed an issue that prevented the virtual controller from connecting."
           ]
         },
         {
