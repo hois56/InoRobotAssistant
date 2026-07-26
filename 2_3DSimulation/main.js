@@ -12,7 +12,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { enableContinuousTransformRotation } from '../3_ToolSelector/continuous-transform-rotation.mjs?v=20260720-rx-continuous-1';
 import { buildStepSnapCandidates } from '../3_ToolSelector/snap-geometry.mjs?v=20260721-face-filter-1';
-import { MeshCollisionSystem } from './collision-system.mjs?v=20260725-stl-proxy-1';
+import { MeshCollisionSystem } from './collision-system.mjs?v=20260726-collision-smooth-2';
 import {
     MOTION_PROJECT_SCHEMA_VERSION,
     DEFAULT_MOVJ_SPEED,
@@ -64,6 +64,22 @@ import {
     getEndMonitoringCuboidTransform,
     validateEndMonitoringObject
 } from './end-monitoring-core.mjs?v=20260724-end-monitoring-1';
+import {
+    buildOlpProjectFromFiles,
+    getOlpEditableFiles,
+    resolveOlpPoint,
+    updateOlpFileText
+} from './olp-project-core.mjs?v=20260726-olp-point-table-1';
+import {
+    BIT_COUNT as OLP_BIT_COUNT,
+    BIT_START as OLP_BIT_START,
+    WORD_COUNT as OLP_WORD_COUNT,
+    WORD_START as OLP_WORD_START,
+    OLP_RUNTIME_BUILD,
+    OlpRuntime,
+    clampWord,
+    normalizeAddress as normalizeOlpAddress
+} from './olp-runtime.mjs?v=20260726-olp-runtime-29';
 function uiText(value) {
     return window.InoRobotI18n ? window.InoRobotI18n.translate(String(value)) : String(value);
 }
@@ -192,6 +208,78 @@ const state = {
         lastStreamStartAt: 0,
         streamWatchdogTimer: null
     },
+    olp: {
+        enabled: false,
+        project: null,
+        runtime: null,
+        socket: null,
+        status: 'disconnected',
+        selectedFile: '',
+        importInProgress: false,
+        projectEditTimer: null,
+        inputWords: new Uint16Array(OLP_WORD_COUNT),
+        outputWords: new Uint16Array(OLP_WORD_COUNT),
+        inputExtended: new Map(),
+        outputExtended: new Map(),
+        positionCommandValues: new Map(),
+        // These are display-only pointers to the last real Virtual Bus input
+        // observed by OLP.  They never alter the bus or program input state.
+        lastRawInputBitAddress: '',
+        lastRawInputWordAddress: '',
+        outputTimer: null,
+        lastOutputSignature: '',
+        reconnectTimer: null,
+        busMonitorTimer: null,
+        busHandshakeTimer: null,
+        ioRenderTimer: null,
+        ioRenderAt: 0,
+        runtimeViewTimer: null,
+        runtimeViewPending: null,
+        virtualBusWanted: false,
+        remoteCommandValues: new Map(),
+        remoteCommandBusy: false,
+        resetCursorOnStop: false,
+        workOriginBusy: false,
+        manualMoveBusy: false,
+        pointContextTarget: null,
+        editorHiddenProgramInfo: new Map(),
+        editorLineOffsets: new Map(),
+        consoleLines: [],
+        consoleEntries: [],
+        busStatus: 'Virtual Bus disconnected',
+        // Transport-open and tester/master handshake are separate states.
+        // A browser socket to the local broker is not a connected Virtual Bus
+        // until the tester sends the master ready message.
+        busConnected: false,
+        // Incremented whenever the OLP transport is replaced or invalidated.
+        // WebSocket events can arrive after close()/goodbye(); stale events
+        // must never be allowed to turn the indicator green again.
+        busSocketGeneration: 0,
+        busPhase: 'off',
+        busLastPacketAt: 0,
+        lastIoEvent: 'No Virtual Bus packet received.',
+        lastIoSource: 'No Virtual Bus packet received.',
+        lastIoReplacements: {},
+        lastInputAt: 0,
+        lastOutputAt: 0,
+        lastMotion: 'No OLP motion command executed yet.',
+        lastMotionSource: 'No OLP motion command executed yet.',
+        lastMotionReplacements: {},
+        lastInputSignature: '',
+        modelAdaptationNotices: new Set(),
+        execution: {
+            phase: 'ready',
+            running: false,
+            paused: false,
+            filePath: null,
+            lineNumber: 0,
+            lineText: '',
+            command: '',
+            waitCondition: '',
+            callStack: [],
+            alarm: null
+        }
+    },
     pendingImportFile: null,
     resetInProgress: false,
     testModelConfirmationResolver: null,
@@ -240,6 +328,9 @@ const state = {
         dirty: true,
         dirtyRoots: new Set(),
         lastResult: null,
+        lastVisualResult: null,
+        lastVisualHitAt: 0,
+        visualClearTimer: null,
         lastStatusKey: '',
         stopNotice: null,
         ignoredMotionCollisionKeys: new Set(),
@@ -389,6 +480,45 @@ const el = {
     programPanel: document.getElementById('program-panel'),
     programRobotList: document.getElementById('program-robot-list'),
     programRobotName: document.getElementById('program-robot-name'),
+    olpModeButton: document.getElementById('olp-mode-button'),
+    olpRobotControlSlot: document.getElementById('olp-robot-control-slot'),
+    olpInlineCursor: document.getElementById('olp-inline-cursor'),
+    olpWorkspace: document.getElementById('olp-workspace'),
+    olpWorkspaceTitle: document.getElementById('olp-workspace-title'),
+    olpProjectName: document.getElementById('olp-project-name'),
+    olpRunNote: document.getElementById('olp-run-note'),
+    olpStatusDot: document.getElementById('olp-status-dot'),
+    olpBusIndicator: document.getElementById('olp-bus-indicator'),
+    olpImportFolderInput: document.getElementById('olp-import-folder-input'),
+    olpFileSelect: document.getElementById('olp-file-select'),
+    olpFileGutter: document.getElementById('olp-file-gutter'),
+    olpFileEditor: document.getElementById('olp-file-editor'),
+    olpFileHighlight: document.getElementById('olp-file-highlight'),
+    olpPointTable: document.getElementById('olp-point-table'),
+    olpPointContextMenu: document.getElementById('olp-point-context-menu'),
+    olpPointWriteCurrent: document.getElementById('olp-point-write-current'),
+    olpPointMoveTarget: document.getElementById('olp-point-move-target'),
+    olpModelNote: document.getElementById('olp-model-note'),
+    olpBusStatus: document.getElementById('olp-bus-status'),
+    olpIoNote: document.getElementById('olp-io-note'),
+    olpIoInBitAddress: document.getElementById('olp-io-in-bit-address'),
+    olpIoOutBitAddress: document.getElementById('olp-io-out-bit-address'),
+    olpIoInWordAddress: document.getElementById('olp-io-in-word-address'),
+    olpIoOutWordAddress: document.getElementById('olp-io-out-word-address'),
+    olpIoInBit: document.getElementById('olp-io-in-bit'),
+    olpIoOutBit: document.getElementById('olp-io-out-bit'),
+    olpIoInWord: document.getElementById('olp-io-in-word'),
+    olpIoOutWord: document.getElementById('olp-io-out-word'),
+    olpIoLast: document.getElementById('olp-io-last'),
+    olpMotionLast: document.getElementById('olp-motion-last'),
+    olpRuntimeBadge: document.getElementById('olp-runtime-badge'),
+    olpRuntimeState: document.getElementById('olp-runtime-state'),
+    olpRuntimeCursor: document.getElementById('olp-runtime-cursor'),
+    olpRuntimeLine: document.getElementById('olp-runtime-line'),
+    olpRuntimeStack: document.getElementById('olp-runtime-stack'),
+    olpConsole: document.getElementById('olp-console'),
+    programPointSection: document.getElementById('program-point-section'),
+    programPointActions: document.getElementById('program-point-actions'),
     programStepList: document.getElementById('program-step-list'),
     programStepContextMenu: document.getElementById('program-step-context-menu'),
     btnProgramShowPositionValue: document.getElementById('program-show-position-value'),
@@ -419,11 +549,16 @@ const el = {
     btnProgramRunRobot: document.getElementById('program-run-robot'),
     btnProgramPauseRobot: document.getElementById('program-pause-robot'),
     btnProgramStopRobot: document.getElementById('program-stop-robot'),
+    btnProgramWorkOriginRobot: document.getElementById('program-work-origin-robot'),
+    programControlRobot: document.getElementById('program-control-robot'),
+    programPlayback: document.getElementById('program-playback'),
     btnProgramStepGroup: document.getElementById('program-step-group'),
     btnProgramRunGroup: document.getElementById('program-run-group'),
     btnProgramPauseGroup: document.getElementById('program-pause-group'),
     btnProgramStopGroup: document.getElementById('program-stop-group'),
+    programControlGroup: document.getElementById('program-control-group'),
     programRepeatButtons: [...document.querySelectorAll('[data-program-repeat]')],
+    programCycleTimePanel: document.getElementById('program-cycle-time-panel'),
     programCycleTime: document.getElementById('program-cycle-time'),
     btnProgramExport: document.getElementById('program-export'),
     btnProgramImport: document.getElementById('program-import'),
@@ -473,6 +608,12 @@ const el = {
     endMonitoringDone: document.getElementById('end-monitoring-done'),
     viewPresetsPanel: document.getElementById('view-presets-panel'),
     viewPresetsList: document.getElementById('view-presets-list'),
+    viewWindow: document.getElementById('view-window'),
+    viewWindowTitle: document.getElementById('view-window-title'),
+    viewWindowCount: document.getElementById('view-window-count'),
+    viewWindowPopout: document.getElementById('view-window-popout'),
+    viewWindowHide: document.getElementById('view-window-hide'),
+    viewWindowGrid: document.getElementById('view-window-grid'),
     virtualControllerSource: document.getElementById('virtual-controller-source'),
     virtualControllerKind: document.getElementById('virtual-controller-kind'),
     virtualControllerIp: document.getElementById('virtual-controller-ip'),
@@ -516,6 +657,7 @@ const SIX_AXIS_POSITION_HOME_QUATERNION = new THREE.Quaternion().setFromEuler(
 const stlGeometryCache = new Map();
 const BASE_JOG_HOLD_DELAY = 250;
 const BASE_JOG_REPEAT_INTERVAL = 30;
+const COLLISION_VISUAL_CLEAR_DELAY_MS = 180;
 const TCP_PROFILE_COUNT = 3;
 const TRACE_SOURCE_LIVENESS_TIMEOUT_MS = 2500;
 const VIRTUAL_CONTROLLER_STREAM_STALL_MS = 750;
@@ -612,6 +754,7 @@ const PANEL_MINIMUM_SIZES = Object.freeze({
     'tcp-profile-panel': { width: 280, height: 360 },
     'virtual-controller-panel': { width: 250, height: 230 },
     'view-presets-panel': { width: 280, height: 260 },
+    'view-window': { width: 360, height: 220 },
     'program-panel': { width: 300, height: 320 },
     'interference-zone-panel': { width: 350, height: 420 }
 });
@@ -2224,19 +2367,35 @@ function isViewWindowOpen() {
     return false;
 }
 
-function getOpenViewWindow() {
+function getViewWindowRecord() {
     const viewWindow = state.viewWindow;
     if (!viewWindow) return null;
-    if (viewWindow.popup && !viewWindow.popup.closed) return viewWindow;
-    closeViewWindow(false);
+    if (viewWindow.root?.isConnected) return viewWindow;
+    closeViewWindow();
     return null;
+}
+
+function getOpenViewWindow() {
+    const viewWindow = getViewWindowRecord();
+    return viewWindow && !viewWindow.root.classList.contains('hidden')
+        ? viewWindow
+        : null;
+}
+
+function bringViewWindowToFront() {
+    if (!el.viewWindow || el.viewWindow.classList.contains('hidden')) return;
+    el.viewWindow.style.zIndex = String(PANEL_STACK_BASE_Z_INDEX + PANEL_IDS.length + 10);
 }
 
 function updateViewWindowHeader() {
     const viewWindow = state.viewWindow;
-    if (!viewWindow?.popup || viewWindow.popup.closed) return;
+    if (!viewWindow?.root?.isConnected) return;
     const count = viewWindow.cells.size;
     if (viewWindow.grid) viewWindow.grid.dataset.count = String(count);
+    if (el.viewWindowCount) el.viewWindowCount.textContent = String(count);
+    if (el.viewWindowTitle) {
+        el.viewWindowTitle.setAttribute('aria-label', uiFormat('고정 뷰 {count}개', { count }));
+    }
 }
 
 function applyViewWindowPreset(slot) {
@@ -2260,8 +2419,9 @@ function applyViewWindowPreset(slot) {
 
 function resizeViewWindow() {
     const viewWindow = getOpenViewWindow();
-    if (!viewWindow?.popup || !viewWindow.grid) return;
-    const pixelRatio = Math.min(viewWindow.popup.devicePixelRatio || window.devicePixelRatio || 1, 2);
+    if (!viewWindow?.root || !viewWindow.grid) return;
+    const ownerWindow = viewWindow.root.ownerDocument?.defaultView || window;
+    const pixelRatio = Math.min(ownerWindow.devicePixelRatio || 1, 2);
     viewWindow.cells.forEach((cell) => {
         const width = Math.max(1, cell.element.clientWidth);
         const height = Math.max(1, cell.element.clientHeight);
@@ -2286,18 +2446,19 @@ function renderViewWindow() {
 function createViewWindowCell(slot) {
     const viewWindow = state.viewWindow;
     const preset = getViewPreset(slot);
-    if (!viewWindow?.popup || !viewWindow.grid || !preset || !isValidViewPreset(preset)) return null;
-    const element = viewWindow.popup.document.createElement('article');
+    if (!viewWindow?.root || !viewWindow.grid || !preset || !isValidViewPreset(preset)) return null;
+    const ownerDocument = viewWindow.root.ownerDocument || document;
+    const element = ownerDocument.createElement('article');
     element.className = 'view-window-cell';
     element.dataset.slot = String(slot);
 
-    const label = viewWindow.popup.document.createElement('span');
+    const label = ownerDocument.createElement('span');
     label.className = 'view-window-label';
     label.textContent = String(Number(slot) + 1);
     label.setAttribute('aria-hidden', 'true');
     element.append(label);
 
-    const canvas = viewWindow.popup.document.createElement('canvas');
+    const canvas = ownerDocument.createElement('canvas');
     canvas.className = 'view-window-canvas';
     canvas.setAttribute('aria-label', preset.name);
     element.append(canvas);
@@ -2329,17 +2490,88 @@ function createViewWindowCell(slot) {
     return cell;
 }
 
-function closeViewWindow(closePopup = true) {
+function restoreViewWindowFromPopup(closePopup = false) {
+    const viewWindow = state.viewWindow;
+    if (!viewWindow?.popup) return;
+    const popup = viewWindow.popup;
+    viewWindow.popup = null;
+    popup.removeEventListener('resize', viewWindow.handleResize);
+    if (viewWindow.placeholder?.parentNode) {
+        viewWindow.placeholder.parentNode.insertBefore(viewWindow.root, viewWindow.placeholder);
+        viewWindow.placeholder.remove();
+    }
+    viewWindow.placeholder = null;
+    viewWindow.root.classList.remove('panel-popout');
+    if (viewWindow.savedStyle) viewWindow.root.setAttribute('style', viewWindow.savedStyle);
+    else viewWindow.root.removeAttribute('style');
+    viewWindow.savedStyle = '';
+    if (closePopup && !popup.closed) popup.close();
+}
+
+function closeViewWindow() {
     const viewWindow = state.viewWindow;
     if (!viewWindow) return;
+    restoreViewWindowFromPopup(true);
     state.viewWindow = null;
     viewWindow.resizeObserver?.disconnect();
     viewWindow.cells.forEach((cell) => {
         cell.controls.dispose();
         cell.renderer.dispose();
     });
-    viewWindow.popup?.removeEventListener('resize', viewWindow.handleResize);
-    if (closePopup && viewWindow.popup && !viewWindow.popup.closed) viewWindow.popup.close();
+    viewWindow.grid?.replaceChildren();
+    viewWindow.root?.classList.add('hidden');
+    if (el.viewWindowCount) el.viewWindowCount.textContent = '0';
+}
+
+function hideViewWindow() {
+    const viewWindow = getViewWindowRecord();
+    if (!viewWindow) return;
+    restoreViewWindowFromPopup(true);
+    viewWindow.root.classList.add('hidden');
+    requestRender();
+}
+
+function popOutViewWindow() {
+    const viewWindow = getViewWindowRecord();
+    if (!viewWindow) return;
+    if (viewWindow.popup && !viewWindow.popup.closed) {
+        viewWindow.popup.focus();
+        return;
+    }
+
+    const popup = window.open('', 'InoRobot-fixed-view-window', 'popup=yes,width=1100,height=780,resizable=yes');
+    if (!popup) {
+        setStatus('팝업이 차단되었습니다. 고정 뷰 창을 열려면 팝업을 허용하세요.', '#ef4444');
+        return;
+    }
+
+    popup.document.open();
+    popup.document.write(`<!doctype html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>3D Simulation - ${uiText('고정 뷰 창')}</title></head><body></body></html>`);
+    popup.document.close();
+    document.querySelectorAll('link[rel="stylesheet"]').forEach((source) => {
+        const link = popup.document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = source.href;
+        popup.document.head.appendChild(link);
+    });
+    popup.document.body.className = 'panel-popout-body';
+
+    const placeholder = document.createComment('view-window placeholder');
+    viewWindow.root.parentNode.insertBefore(placeholder, viewWindow.root);
+    const savedStyle = viewWindow.root.getAttribute('style') || '';
+    viewWindow.root.removeAttribute('style');
+    viewWindow.root.classList.remove('hidden');
+    viewWindow.root.classList.add('panel-popout');
+    popup.document.body.appendChild(viewWindow.root);
+
+    viewWindow.popup = popup;
+    viewWindow.placeholder = placeholder;
+    viewWindow.savedStyle = savedStyle;
+    popup.addEventListener('resize', viewWindow.handleResize);
+    popup.addEventListener('beforeunload', () => restoreViewWindowFromPopup(false), { once: true });
+    resizeViewWindow();
+    requestRender();
+    popup.focus();
 }
 
 function openViewWindow(slot) {
@@ -2347,72 +2579,46 @@ function openViewWindow(slot) {
     const preset = getViewPreset(index);
     if (!preset || !isValidViewPreset(preset) || !state.camera || !state.scene) return;
 
-    if (isViewWindowOpen()) {
-        const viewWindow = state.viewWindow;
-        if (!viewWindow.cells.has(index)) createViewWindowCell(index);
+    const existing = getViewWindowRecord();
+    if (existing) {
+        existing.root.classList.remove('hidden');
+        if (!existing.cells.has(index)) createViewWindowCell(index);
         updateViewWindowHeader();
         resizeViewWindow();
         applyViewWindowPreset(index);
-        viewWindow.popup.focus();
+        bringViewWindowToFront();
         return;
     }
 
-    const popup = window.open('', 'InoRobot-fixed-view-camera', 'popup=yes,width=1100,height=780,resizable=yes');
-    if (!popup) {
-        setStatus('팝업이 차단되었습니다. 고정 뷰 창을 열려면 팝업을 허용하세요.', '#ef4444');
+    if (!el.viewWindow || !el.viewWindowGrid) {
+        setStatus('고정 뷰 창을 표시할 수 없습니다.', '#ef4444');
         return;
     }
 
-    popup.document.open();
-    popup.document.write(`<!doctype html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>3D Simulation</title><style>
-        :root { color-scheme: dark; }
-        * { box-sizing: border-box; }
-        html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #080b12; }
-        body { display: flex; color: #dbeafe; font-family: Inter, "Noto Sans KR", sans-serif; }
-        #view-window-grid { width: 100%; height: 100%; display: grid; gap: 0; padding: 0; }
-        #view-window-grid[data-count="1"] { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
-        #view-window-grid[data-count="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr); }
-        #view-window-grid[data-count="3"], #view-window-grid[data-count="4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); }
-        #view-window-grid[data-count="3"] .view-window-cell:last-child { grid-column: 1 / -1; }
-        .view-window-cell { position: relative; min-width: 0; min-height: 0; overflow: hidden; border-right: 1px solid rgba(148,163,184,.7); border-bottom: 1px solid rgba(148,163,184,.7); background: #0b0e14; }
-        #view-window-grid[data-count="1"] .view-window-cell,
-        #view-window-grid[data-count="2"] .view-window-cell:last-child,
-        #view-window-grid[data-count="3"] .view-window-cell:last-child,
-        #view-window-grid[data-count="4"] .view-window-cell:nth-child(2n) { border-right: 0; }
-        #view-window-grid[data-count="1"] .view-window-cell,
-        #view-window-grid[data-count="2"] .view-window-cell,
-        #view-window-grid[data-count="3"] .view-window-cell:last-child,
-        #view-window-grid[data-count="4"] .view-window-cell:nth-child(n + 3) { border-bottom: 0; }
-        .view-window-label { position: absolute; top: 8px; left: 10px; z-index: 2; color: rgba(226,232,240,.9); font: 600 14px/1 Inter, "Noto Sans KR", sans-serif; pointer-events: none; text-shadow: 0 1px 3px rgba(0,0,0,.85); }
-        .view-window-canvas { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; }
-        .view-window-canvas:active { cursor: grabbing; }
-    </style></head><body><main id="view-window-grid" data-count="0"></main></body></html>`);
-    popup.document.close();
-
-    const grid = popup.document.getElementById('view-window-grid');
+    const grid = el.viewWindowGrid;
     state.viewWindow = {
-        popup,
+        root: el.viewWindow,
         grid,
         cells: new Map(),
         handleResize: null,
-        resizeObserver: null
+        resizeObserver: null,
+        popup: null,
+        placeholder: null,
+        savedStyle: ''
     };
+    el.viewWindow.classList.remove('hidden');
     const handleResize = () => resizeViewWindow();
     state.viewWindow.handleResize = handleResize;
-    popup.addEventListener('resize', handleResize);
-    popup.addEventListener('beforeunload', () => closeViewWindow(false), { once: true });
-    if (typeof popup.ResizeObserver === 'function') {
-        state.viewWindow.resizeObserver = new popup.ResizeObserver(handleResize);
+    const ownerWindow = el.viewWindow.ownerDocument?.defaultView || window;
+    if (typeof ownerWindow.ResizeObserver === 'function') {
+        state.viewWindow.resizeObserver = new ownerWindow.ResizeObserver(handleResize);
         state.viewWindow.resizeObserver.observe(grid);
     }
     createViewWindowCell(index);
     updateViewWindowHeader();
     resizeViewWindow();
     applyViewWindowPreset(index);
-    // The parent simulation loop renders every popup cell while the window is open.
-    // A second popup RAF loop would render the shared scene concurrently and make
-    // layout changes and camera switching visibly unstable.
-    popup.focus();
+    bringViewWindowToFront();
 }
 
 function applyViewPreset(slot, { announce = true } = {}) {
@@ -2472,8 +2678,8 @@ function refreshViewPresetsUi() {
         }
         if (monitorButton) {
             monitorButton.disabled = !preset;
-            monitorButton.title = uiText('고정 뷰 창에 보기');
-            monitorButton.setAttribute('aria-label', uiFormat('{name}을 고정 뷰 창에 보기', {
+            monitorButton.title = uiText('페이지 안의 고정 뷰 창에 보기');
+            monitorButton.setAttribute('aria-label', uiFormat('{name}을 페이지 안의 고정 뷰 창에 보기', {
                 name: preset?.name || getDefaultViewPresetName(slot)
             }));
         }
@@ -2523,6 +2729,7 @@ function refreshLocalizedControls() {
         interferenceButton.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${uiText('간섭영역')}`;
     }
     refreshImportPlacementOptions();
+    refreshOlpLocalizedUi();
     updateFullscreenModeButton();
     state.panelWindows.forEach((record, panelId) => {
         window.InoRobotI18n?.refresh?.(record.panel);
@@ -2534,7 +2741,9 @@ function refreshLocalizedControls() {
     refreshVirtualControllerUi();
     refreshViewPresetsUi();
     renderInterferenceZonePanel();
-    if (state.collision.lastResult) updateCollisionStatus(state.collision.lastResult);
+    if (state.collision.lastVisualResult || state.collision.lastResult) {
+        updateCollisionStatus(state.collision.lastVisualResult || state.collision.lastResult);
+    }
     refreshViewerStatus();
     refreshMotionProgramStatus();
     if (el.baseJogStatus?.dataset.sourceMessage) {
@@ -2555,6 +2764,48 @@ function refreshLocalizedControls() {
     refreshTcpProfileUi();
     updateOutlineToggleUi();
     updateCollisionUi();
+}
+
+function refreshOlpLocalizedUi() {
+    if (el.olpModeButton) el.olpModeButton.title = uiText('Open Offline Line Programming mode');
+    if (el.olpWorkspace) el.olpWorkspace.setAttribute('aria-label', uiText('OLP workspace'));
+    if (el.olpWorkspaceTitle) el.olpWorkspaceTitle.textContent = uiText('OFFLINE LINE PROGRAMMING');
+    if (el.olpFileSelect) el.olpFileSelect.setAttribute('aria-label', uiText('Project files'));
+    if (el.olpFileEditor) el.olpFileEditor.setAttribute('aria-label', uiText('Selected project file'));
+    if (el.olpPointTable) el.olpPointTable.setAttribute('aria-label', uiText('Point file table'));
+    if (el.olpRobotControlSlot) el.olpRobotControlSlot.setAttribute('aria-label', uiText('OLP robot controls'));
+    if (el.olpRunNote) el.olpRunNote.textContent = uiText('OLP 오른쪽의 제어 아이콘으로 선택 로봇의 main.pro를 제어합니다. 반복 실행은 OLP에서 사용할 수 없습니다.');
+    if (el.olpPointWriteCurrent) {
+        el.olpPointWriteCurrent.innerHTML = `<i class="fa-solid fa-location-crosshairs"></i> ${uiText('현재 위치로 수정')}`;
+    }
+    if (el.olpPointMoveTarget) {
+        el.olpPointMoveTarget.innerHTML = `<i class="fa-solid fa-person-walking"></i> ${uiText('해당 위치로 이동')}`;
+    }
+    if (el.olpInlineCursor && !state.olp.execution?.filePath) {
+        el.olpInlineCursor.textContent = `main.pro:-- · ${uiText('READY')}`;
+    }
+    if (state.olp.project) {
+        if (el.olpProjectName) {
+            el.olpProjectName.textContent = uiFormat('{name} · {count} files', {
+                name: state.olp.project.name,
+                count: state.olp.project.files.size
+            });
+        }
+        renderOlpPointTable();
+    } else if (el.olpProjectName) {
+        el.olpProjectName.textContent = uiText('No project loaded');
+    }
+    renderOlpConsole();
+    renderOlpIoMonitor();
+    if (el.olpModelNote) {
+        const robot = state.activeProgramRobot || state.activeArticulatedModel;
+        el.olpModelNote.textContent = uiFormat('Robot model: {model}', {
+            model: robot?.userData?.robotName || robot?.userData?.modelName || uiText('current selected robot')
+        });
+    }
+    updateOlpProgramPanelUi();
+    updateOlpProgramIndicator();
+    updateOlpBusIndicator();
 }
 
 function setupScene() {
@@ -2641,61 +2892,70 @@ function getCollisionMaterials(mesh) {
     return Array.isArray(mesh.material) ? mesh.material.filter(Boolean) : mesh.material ? [mesh.material] : [];
 }
 
-function setCollisionMeshHighlight(mesh, enabled) {
-    getCollisionMaterials(mesh).forEach((material) => {
-        if (!state.collision.highlightedMaterials.has(material)) {
-            state.collision.highlightedMaterials.set(material, {
-                color: material.color?.clone?.() || null,
-                emissive: material.emissive?.clone?.() || null,
-                emissiveIntensity: Number.isFinite(material.emissiveIntensity)
-                    ? material.emissiveIntensity
-                    : null
-            });
-        }
-        const snapshot = state.collision.highlightedMaterials.get(material);
-        if (enabled) {
-            material.color?.setHex(0xef4444);
-            material.emissive?.setHex(0x7f1d1d);
-            if ('emissiveIntensity' in material) material.emissiveIntensity = 0.9;
-        } else {
-            if (snapshot.color && material.color) material.color.copy(snapshot.color);
-            if (snapshot.emissive && material.emissive) material.emissive.copy(snapshot.emissive);
-            if (snapshot.emissiveIntensity !== null && 'emissiveIntensity' in material) {
-                material.emissiveIntensity = snapshot.emissiveIntensity;
-            }
-            state.collision.highlightedMaterials.delete(material);
-        }
-        material.needsUpdate = true;
-    });
+function setCollisionMaterialHighlight(material, enabled) {
+    const snapshots = state.collision.highlightedMaterials;
+    const snapshot = snapshots.get(material);
+    if (enabled) {
+        if (snapshot) return;
+        snapshots.set(material, {
+            color: material.color?.clone?.() || null,
+            emissive: material.emissive?.clone?.() || null,
+            emissiveIntensity: Number.isFinite(material.emissiveIntensity)
+                ? material.emissiveIntensity
+                : null
+        });
+        material.color?.setHex(0xef4444);
+        material.emissive?.setHex(0x7f1d1d);
+        if ('emissiveIntensity' in material) material.emissiveIntensity = 0.9;
+        return;
+    }
+    if (!snapshot) return;
+    if (snapshot.color && material.color) material.color.copy(snapshot.color);
+    if (snapshot.emissive && material.emissive) material.emissive.copy(snapshot.emissive);
+    if (snapshot.emissiveIntensity !== null && 'emissiveIntensity' in material) {
+        material.emissiveIntensity = snapshot.emissiveIntensity;
+    }
+    snapshots.delete(material);
 }
 
-function setAttachedToolCollisionHighlight(model, enabled) {
+function collectCollisionHighlightMaterials(result) {
+    const materials = new Set();
+    const attachedTools = new Set();
+    asCollisionResults(result).forEach((hit) => {
+        getCollisionMaterials(hit.meshA).forEach((material) => materials.add(material));
+        getCollisionMaterials(hit.meshB).forEach((material) => materials.add(material));
+        if (hit.objectA?.userData?.attachmentHost) attachedTools.add(hit.objectA);
+        if (hit.objectB?.userData?.attachmentHost) attachedTools.add(hit.objectB);
+    });
+
     // A Tool import often contains several independently coloured meshes.
     // checkAll() intentionally retains one precise contact per robot link for
     // motion performance, so colouring only that representative mesh can
     // leave another visibly colliding Tool part green. Once a Tool is part of
     // a collision pair, show the complete Tool assembly in red without adding
-    // another expensive mesh-pair scan.
-    if (!model?.userData?.attachmentHost) return;
-    model.traverse((child) => {
-        if (child.isMesh && !child.userData?.collisionDisabled) {
-            setCollisionMeshHighlight(child, enabled);
-        }
+    // another expensive mesh-pair scan. De-duplicate each Tool and material so
+    // a multi-link collision never traverses or updates the same assembly more
+    // than once.
+    attachedTools.forEach((model) => {
+        model.traverse((child) => {
+            if (!child.isMesh || child.userData?.collisionDisabled) return;
+            getCollisionMaterials(child).forEach((material) => materials.add(material));
+        });
     });
+    return materials;
+}
+
+function syncCollisionHighlight(result) {
+    const desiredMaterials = collectCollisionHighlightMaterials(result);
+    [...state.collision.highlightedMaterials.keys()].forEach((material) => {
+        if (!desiredMaterials.has(material)) setCollisionMaterialHighlight(material, false);
+    });
+    desiredMaterials.forEach((material) => setCollisionMaterialHighlight(material, true));
 }
 
 function clearCollisionHighlight() {
-    [...state.collision.highlightedMaterials.keys()].forEach((material) => {
-        const snapshot = state.collision.highlightedMaterials.get(material);
-        if (snapshot?.color && material.color) material.color.copy(snapshot.color);
-        if (snapshot?.emissive && material.emissive) material.emissive.copy(snapshot.emissive);
-        if (snapshot?.emissiveIntensity !== null && snapshot?.emissiveIntensity !== undefined
-            && 'emissiveIntensity' in material) {
-            material.emissiveIntensity = snapshot.emissiveIntensity;
-        }
-        material.needsUpdate = true;
-    });
-    state.collision.highlightedMaterials.clear();
+    [...state.collision.highlightedMaterials.keys()]
+        .forEach((material) => setCollisionMaterialHighlight(material, false));
 }
 
 function setCollisionDebugForModel(model, enabled) {
@@ -2770,6 +3030,53 @@ function asCollisionResults(result) {
     return result ? [result] : [];
 }
 
+function cancelCollisionVisualClearTimer() {
+    if (!state.collision.visualClearTimer) return;
+    window.clearTimeout(state.collision.visualClearTimer);
+    state.collision.visualClearTimer = null;
+}
+
+function resolveCollisionVisualResult(result, {
+    now = performance.now(),
+    immediate = false
+} = {}) {
+    const results = asCollisionResults(result);
+    if (results.length) {
+        cancelCollisionVisualClearTimer();
+        state.collision.lastVisualHitAt = now;
+        return results;
+    }
+
+    const previousResults = asCollisionResults(state.collision.lastVisualResult);
+    if (immediate || !previousResults.length || state.collision.stopNotice) {
+        cancelCollisionVisualClearTimer();
+        state.collision.lastVisualHitAt = 0;
+        return null;
+    }
+
+    const remaining = COLLISION_VISUAL_CLEAR_DELAY_MS - (now - state.collision.lastVisualHitAt);
+    if (remaining <= 0) {
+        cancelCollisionVisualClearTimer();
+        state.collision.lastVisualHitAt = 0;
+        return null;
+    }
+
+    // A single boundary miss used to flash every material back to its base
+    // colour and red again on the following scan. Keep only the visual state
+    // latched briefly; motion logic still receives the raw empty result.
+    if (!state.collision.visualClearTimer) {
+        state.collision.visualClearTimer = window.setTimeout(() => {
+            state.collision.visualClearTimer = null;
+            if (asCollisionResults(state.collision.lastResult).length || state.collision.stopNotice) return;
+            state.collision.lastVisualHitAt = 0;
+            state.collision.lastResult = null;
+            updateCollisionStatus(resolveCollisionVisualResult(null, { immediate: true }));
+            requestRender();
+        }, Math.ceil(remaining));
+    }
+    return previousResults;
+}
+
 function collisionResultsKey(result) {
     return asCollisionResults(result)
         .map(collisionResultKey)
@@ -2787,7 +3094,7 @@ function updateCollisionStatus(result = null) {
         // from that breakpoint.
         const stopResults = asCollisionResults(state.collision.stopNotice?.result);
         if (stopResults.length) {
-            if (collisionResultsKey(state.collision.lastResult) !== collisionResultsKey(stopResults)) {
+            if (collisionResultsKey(state.collision.lastVisualResult) !== collisionResultsKey(stopResults)) {
                 updateCollisionStatus(stopResults);
             }
             return;
@@ -2802,7 +3109,7 @@ function updateCollisionStatus(result = null) {
         if (state.viewerStatus?.color === '#ef4444' && currentText.includes('충돌')) {
             setStatus('Ready', '#22c55e');
         }
-        state.collision.lastResult = null;
+        state.collision.lastVisualResult = null;
         state.collision.lastStatusKey = '';
         return;
     }
@@ -2812,25 +3119,18 @@ function updateCollisionStatus(result = null) {
     const rightName = collisionModelLabel(primary.objectB);
     const statusKey = collisionResultsKey(results);
     const sameCollision = state.collision.lastStatusKey === statusKey;
-    if (!sameCollision) {
-        clearCollisionHighlight();
-        results.forEach((hit) => {
-            setCollisionMeshHighlight(hit.meshA, true);
-            setCollisionMeshHighlight(hit.meshB, true);
-            setAttachedToolCollisionHighlight(hit.objectA, true);
-            setAttachedToolCollisionHighlight(hit.objectB, true);
-        });
-    }
-    state.collision.lastResult = results;
+    if (!sameCollision) syncCollisionHighlight(results);
+    state.collision.lastVisualResult = results;
     const collisionMessage = '충돌 감지: {left} ↔ {right}';
     const collisionReplacements = {
         left: leftName,
         right: rightName
     };
     if (status) {
-        status.classList.remove('hidden');
+        if (status.classList.contains('hidden')) status.classList.remove('hidden');
         const label = status.querySelector('span');
-        if (label) label.textContent = uiFormat(collisionMessage, collisionReplacements);
+        const nextLabel = uiFormat(collisionMessage, collisionReplacements);
+        if (label && label.textContent !== nextLabel) label.textContent = nextLabel;
     }
     const viewerAlreadyShowsCollision = state.viewerStatus?.color === '#ef4444'
         && String(state.viewerStatus.text || '').includes('충돌');
@@ -2947,7 +3247,8 @@ function checkSceneCollisions({ force = false } = {}) {
     if (!state.collision.enabled || !state.collision.system || state.collision.checking) {
         if (!state.collision.enabled) {
             state.collision.lastCheckSkipped = true;
-            updateCollisionStatus(null);
+            state.collision.lastResult = null;
+            updateCollisionStatus(resolveCollisionVisualResult(null, { immediate: true }));
         }
         return null;
     }
@@ -2966,24 +3267,34 @@ function checkSceneCollisions({ force = false } = {}) {
     state.collision.lastCheckSkipped = false;
     state.collision.lastCheckAt = now;
     try {
-        state.scene?.updateMatrixWorld(true);
         const collisionModels = getCollisionModels();
         const changedRoots = new Set(
             [...state.collision.dirtyRoots].filter((root) => collisionModels.includes(root))
         );
+        if (!force && changedRoots.size > 0) {
+            changedRoots.forEach((root) => {
+                if (typeof root.updateWorldMatrix === 'function') root.updateWorldMatrix(true, true);
+                else root.updateMatrixWorld(true);
+            });
+        } else {
+            state.scene?.updateMatrixWorld(true);
+        }
+        if (force) state.collision.system.prepare(collisionModels);
         const result = force || changedRoots.size === 0
-            ? state.collision.system.checkAll(getCollisionModels(), { allowWarmHitReuse: false })
+            ? state.collision.system.checkAll(collisionModels, { allowWarmHitReuse: false })
             : state.collision.system.checkAll(collisionModels, { changedRoots, allowWarmHitReuse: true });
         state.collision.dirty = false;
         state.collision.dirtyRoots.clear();
-        updateCollisionStatus(result);
+        state.collision.lastResult = result;
+        updateCollisionStatus(resolveCollisionVisualResult(result, { now, immediate: force }));
         return result;
     } catch (error) {
         console.warn('Mesh collision check failed:', error);
         state.collision.dirty = false;
         state.collision.dirtyRoots.clear();
         const wasReported = state.collision.lastStatusKey === 'error';
-        updateCollisionStatus(null);
+        state.collision.lastResult = null;
+        updateCollisionStatus(resolveCollisionVisualResult(null, { immediate: true }));
         if (!wasReported) {
             state.collision.lastStatusKey = 'error';
             setStatus('충돌 검사 오류', '#f59e0b');
@@ -4886,6 +5197,34 @@ function enableHalfStepWheel(input, onStart = null, onEnd = null) {
     }, { passive: false });
 }
 
+function setupOlpConsoleScroll() {
+    const consoleElement = el.olpConsole;
+    if (!consoleElement) return;
+    consoleElement.addEventListener('wheel', (event) => {
+        if (event.ctrlKey || consoleElement.scrollHeight <= consoleElement.clientHeight || !event.deltaY) return;
+        const lineHeight = Number.parseFloat(getComputedStyle(consoleElement).lineHeight) || 13;
+        // Mouse wheels usually report pixels (around 100px per notch). Scale
+        // that to roughly one or two log lines; line-mode devices use their
+        // own line unit and need a smaller correction.
+        const scale = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? lineHeight * 0.5 : 0.18;
+        event.preventDefault();
+        consoleElement.scrollTop += event.deltaY * scale;
+    }, { passive: false });
+}
+
+function setupOlpEditorScroll() {
+    const editor = el.olpFileEditor;
+    if (!editor) return;
+    editor.addEventListener('wheel', (event) => {
+        if (event.ctrlKey || editor.scrollHeight <= editor.clientHeight || !event.deltaY) return;
+        const lineHeight = Number.parseFloat(getComputedStyle(editor).lineHeight) || 18;
+        // Keep code browsing to roughly one or two source lines per wheel step.
+        const scale = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? lineHeight * 0.5 : 0.18;
+        event.preventDefault();
+        editor.scrollTop += event.deltaY * scale;
+    }, { passive: false });
+}
+
 function setupEventListeners() {
     state.tcpSnapType = el.tcpSnapType?.value || state.tcpSnapType;
     state.tcpSnapRadiusPx = Number(el.tcpSnapRadius?.value) || state.tcpSnapRadiusPx;
@@ -4896,6 +5235,8 @@ function setupEventListeners() {
         el.zeroPointSnapRadiusValue.textContent = `${state.zeroPointEdit.snapRadiusPx} px`;
     }
     window.addEventListener('resize', onResize);
+    setupOlpConsoleScroll();
+    setupOlpEditorScroll();
     document.addEventListener('pointermove', handleFullscreenUiPointerMove);
     document.addEventListener('click', requestRender);
     document.addEventListener('input', requestRender);
@@ -4965,7 +5306,8 @@ function setupEventListeners() {
         state.collision.enabled = !state.collision.enabled;
         clearCollisionStopNotice();
         if (!state.collision.enabled) {
-            updateCollisionStatus(null);
+            state.collision.lastResult = null;
+            updateCollisionStatus(resolveCollisionVisualResult(null, { immediate: true }));
             setStatus('충돌 감지 끄기', '#f59e0b');
         } else {
             setStatus('충돌 감지 켜기', '#22c55e');
@@ -5174,9 +5516,11 @@ function setupEventListeners() {
     });
     el.btnUndo?.addEventListener('click', undoLastAction);
     el.btnRedo?.addEventListener('click', redoLastAction);
-    [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.programPanel].forEach(makePanelDraggable);
+    el.viewWindowPopout?.addEventListener('click', popOutViewWindow);
+    el.viewWindowHide?.addEventListener('click', hideViewWindow);
+    [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.programPanel, el.viewWindow].forEach(makePanelDraggable);
     [el.tcpProfilePanel].forEach(makePanelDraggable);
-    [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.programPanel].forEach(makePanelEdgeResizable);
+    [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.programPanel, el.viewWindow].forEach(makePanelEdgeResizable);
     [el.tcpProfilePanel].forEach(makePanelEdgeResizable);
     setupInterferenceZoneDialogDragging();
     initializePanelStack();
@@ -5235,18 +5579,43 @@ function setupEventListeners() {
     el.btnProgramAddView?.addEventListener('click', addViewMotionStep);
     el.btnProgramUpdate?.addEventListener('click', updateSelectedMotionStep);
     el.btnProgramDelete?.addEventListener('click', deleteSelectedMotionStep);
-    el.btnProgramStepRobot?.addEventListener('click', stepIntoActiveRobot);
-    el.btnProgramRunRobot?.addEventListener('click', runActiveRobotProgram);
-    el.btnProgramPauseRobot?.addEventListener('click', pauseActiveRobotMotion);
-    el.btnProgramStopRobot?.addEventListener('click', stopActiveRobotMotion);
+    el.btnProgramStepRobot?.addEventListener('click', stepActiveProgramOrOlp);
+    el.btnProgramRunRobot?.addEventListener('click', runActiveProgramOrOlp);
+    el.btnProgramPauseRobot?.addEventListener('click', pauseActiveProgramOrOlp);
+    el.btnProgramStopRobot?.addEventListener('click', stopActiveProgramOrOlp);
+    el.btnProgramWorkOriginRobot?.addEventListener('click', () => void moveOlpToWorkOrigin());
     el.btnProgramStepGroup?.addEventListener('click', stepIntoCheckedRobots);
     el.btnProgramRunGroup?.addEventListener('click', runCheckedRobotPrograms);
     el.btnProgramPauseGroup?.addEventListener('click', pauseCheckedRobotMotions);
     el.btnProgramStopGroup?.addEventListener('click', stopCheckedRobotMotions);
     el.programRepeatButtons.forEach((button) => button.addEventListener('click', updateMotionRepeat));
-    el.btnProgramExport?.addEventListener('click', exportMotionProject);
-    el.btnProgramImport?.addEventListener('click', () => el.inputProgramImport?.click());
+    el.btnProgramExport?.addEventListener('click', () => void saveActiveProject());
+    el.btnProgramImport?.addEventListener('click', importActiveProject);
     el.inputProgramImport?.addEventListener('change', handleMotionProjectImport);
+    el.olpModeButton?.addEventListener('click', () => toggleOlpWorkspace());
+    el.olpImportFolderInput?.addEventListener('change', handleOlpFolderImport);
+    el.olpFileSelect?.addEventListener('change', () => {
+        state.olp.selectedFile = el.olpFileSelect.value;
+        renderOlpSelectedFile();
+    });
+    el.olpPointTable?.addEventListener('contextmenu', handleOlpPointContextMenu);
+    el.olpPointWriteCurrent?.addEventListener('click', writeOlpPointFromCurrentRobot);
+    el.olpPointMoveTarget?.addEventListener('click', () => void moveOlpPointFromContext());
+    el.olpFileEditor?.addEventListener('input', () => {
+        renderOlpSourceHighlight(el.olpFileEditor.value);
+        if (!state.olp.project || !state.olp.selectedFile || isOlpRunning()) return;
+        if (state.olp.projectEditTimer) clearTimeout(state.olp.projectEditTimer);
+        state.olp.projectEditTimer = window.setTimeout(() => {
+            state.olp.projectEditTimer = null;
+            if (!state.olp.project || !state.olp.selectedFile || isOlpRunning()) return;
+            updateOlpFileText(
+                state.olp.project,
+                state.olp.selectedFile,
+                getOlpEditorProjectText(state.olp.selectedFile, el.olpFileEditor.value)
+            );
+        }, 250);
+    });
+    el.olpFileEditor?.addEventListener('scroll', syncOlpEditorScroll);
     el.btnProgramShowPositionValue?.addEventListener('click', openContextProgramPointPosition);
     el.btnClosePositionValue?.addEventListener('click', closePositionValueDialog);
     el.btnCancelPositionValue?.addEventListener('click', closePositionValueDialog);
@@ -5258,6 +5627,8 @@ function setupEventListeners() {
     document.addEventListener('pointerdown', (event) => {
         if (el.programStepContextMenu && !el.programStepContextMenu.classList.contains('hidden')
             && !el.programStepContextMenu.contains(event.target)) closeProgramStepContextMenu();
+        if (el.olpPointContextMenu && !el.olpPointContextMenu.classList.contains('hidden')
+            && !el.olpPointContextMenu.contains(event.target)) closeOlpPointContextMenu();
         if (el.modelContextMenu && !el.modelContextMenu.classList.contains('hidden')
             && !el.modelContextMenu.contains(event.target)) closeModelContextMenu();
     });
@@ -5352,6 +5723,13 @@ function setupEventListeners() {
 
     window.addEventListener('beforeunload', () => {
         closeVirtualControllerSocket(false);
+        const olpSocket = state.olp.socket;
+        state.olp.socket = null;
+        state.olp.busConnected = false;
+        if (olpSocket?.readyState === WebSocket.OPEN) {
+            try { olpSocket.send(JSON.stringify({ type: 'goodbye', reason: 'Simulation closed' })); } catch { }
+            try { olpSocket.close(); } catch { }
+        }
         if (!state.resetInProgress) saveMotionProjectNow();
         closeViewWindow();
         [...state.panelWindows.keys()].forEach((panelId) => restorePanelFromWindow(panelId, true));
@@ -6072,7 +6450,11 @@ function popOutPanel(panelId) {
         return;
     }
 
-    const popup = window.open('', `InoRobot-${panelId}`, 'popup=yes,width=380,height=760,resizable=yes');
+    const isOlpProgramPanel = panelId === 'program-panel' && state.olp.enabled;
+    const popupFeatures = isOlpProgramPanel
+        ? 'popup=yes,width=400,height=900,resizable=yes'
+        : 'popup=yes,width=380,height=760,resizable=yes';
+    const popup = window.open('', `InoRobot-${panelId}`, popupFeatures);
     if (!popup) {
         setStatus('팝업이 차단되었습니다. 패널 분리를 위해 팝업을 허용하세요.', '#ef4444');
         return;
@@ -6193,7 +6575,8 @@ function makePanelDraggable(panel) {
             pointerId: event.pointerId,
             offsetX: event.clientX - panelRect.left,
             offsetY: event.clientY - panelRect.top,
-            canvasRect
+            canvasRect,
+            olpPanel: panel === el.programPanel && panel.classList.contains('olp-mode-active')
         };
         panel.classList.add('panel-is-dragging');
         panel.setPointerCapture(event.pointerId);
@@ -6201,6 +6584,7 @@ function makePanelDraggable(panel) {
     });
     panel.addEventListener('pointermove', (event) => {
         if (!drag || drag.pointerId !== event.pointerId) return;
+        if (drag.olpPanel) panel.classList.add('olp-panel-positioned');
         const maxLeft = Math.max(0, drag.canvasRect.width - panel.offsetWidth);
         const maxTop = Math.max(0, drag.canvasRect.height - panel.offsetHeight);
         const left = THREE.MathUtils.clamp(event.clientX - drag.canvasRect.left - drag.offsetX, 0, maxLeft);
@@ -7035,6 +7419,7 @@ async function loadModelFromServer(modelDefinition) {
             ensureMotionProgram(model);
         }
 
+        if (state.collision.enabled) state.collision.system?.prepare([model]);
         state.models.push(model);
         state.scene.add(model);
         markSceneCollisionDirty();
@@ -8248,6 +8633,7 @@ function setModelPartVisibility(model, part, visible, recordHistoryChange = true
     if (part.visible === nextVisible) return;
     const historyBefore = recordHistoryChange && !state.historySuspended ? captureSceneSnapshot() : null;
     part.visible = nextVisible;
+    if (nextVisible && state.collision.enabled) state.collision.system?.prepare([model]);
     markSceneCollisionDirty(model);
     if (!nextVisible && state.selectedModelPart === part) setSelectedModelPart(null);
     invalidateSimulationSnapCandidates();
@@ -8370,6 +8756,7 @@ async function handle3DImport(options = {}) {
         if (bounds.isEmpty()) throw new Error('The imported mesh has invalid bounds.');
         updateModelRenderComplexity(importedModel);
 
+        if (state.collision.enabled) state.collision.system?.prepare([importedModel]);
         state.models.push(importedModel);
         markSceneCollisionDirty();
         refreshCollisionDebugOverlays();
@@ -9039,7 +9426,10 @@ function setJointAngle(joint, rawValue, syncControl = true) {
         joint.control.range.value = formatJogValue(displayValue);
         joint.control.number.value = formatJogValue(displayValue);
     }
-    if (changed) markSceneCollisionDirty(joint.robot);
+    if (changed) {
+        markSceneCollisionDirty(joint.robot);
+        syncOlpHomeStatus(joint.robot);
+    }
     requestRender();
     return value;
 }
@@ -9613,7 +10003,12 @@ function solveScaraIK(robot, target) {
     const homeQuaternion = robot.userData.toolHomeQuaternion;
     const tcpFrame = robot.userData.tcpFrame;
     if (joints.length !== 4 || !homeQuaternion || !tcpFrame || !Array.isArray(manifest?.structure)) {
-        return { success: false, positionError: Infinity, rotationError: Infinity };
+        return {
+            success: false,
+            positionError: Infinity,
+            rotationError: Infinity,
+            reason: 'SCARA kinematic data is incomplete'
+        };
     }
 
     const targetFlangeQuaternion = target.quaternion.clone()
@@ -9661,7 +10056,16 @@ function solveScaraIK(robot, target) {
         || !orientationIsRzOnly
         || prismaticTarget < joints[2].definition.min - 1e-7
         || prismaticTarget > joints[2].definition.max + 1e-7) {
-        return { success: false, positionError: Infinity, rotationError: Infinity };
+        const reason = !Number.isFinite(rawCosine)
+            ? 'XY target radius is not finite'
+            : rawCosine < -1 - 1e-7 || rawCosine > 1 + 1e-7
+                ? 'XY target is outside the SCARA arm reach'
+                : !orientationIsRzOnly
+                    ? 'target orientation contains unsupported tilt'
+                    : prismaticTarget < joints[2].definition.min - 1e-7
+                        ? 'Z target is below the SCARA lower limit'
+                        : 'Z target is above the SCARA upper limit';
+        return { success: false, positionError: Infinity, rotationError: Infinity, reason };
     }
 
     const elbowMagnitude = Math.acos(THREE.MathUtils.clamp(rawCosine, -1, 1));
@@ -9689,7 +10093,14 @@ function solveScaraIK(robot, target) {
         });
     });
 
-    if (!best) return { success: false, positionError: Infinity, rotationError: Infinity };
+    if (!best) {
+        return {
+            success: false,
+            positionError: Infinity,
+            rotationError: Infinity,
+            reason: 'no SCARA joint solution satisfies the joint limits'
+        };
+    }
     const previousAngles = joints.map((joint) => joint.angle);
     best.angles.forEach((angle, index) => setJointAngle(joints[index], angle, false));
     robot.updateMatrixWorld(true);
@@ -9701,7 +10112,13 @@ function solveScaraIK(robot, target) {
         previousAngles.forEach((angle, index) => setJointAngle(joints[index], angle, false));
         robot.updateMatrixWorld(true);
     }
-    return { success, positionError, rotationError, analytic: true };
+    return {
+        success,
+        positionError,
+        rotationError,
+        analytic: true,
+        reason: success ? '' : 'forward-kinematics verification exceeded tolerance'
+    };
 }
 
 function solveRobotIK(robot, target, precision = {}) {
@@ -10310,8 +10727,2061 @@ function endVirtualControllerSessionForSourceExit(source) {
     if (historyBefore) recordHistory('가상 컨트롤러 동기화', historyBefore, captureSceneSnapshot());
 }
 
+function isOlpRunning() {
+    const runtime = state.olp.runtime;
+    if (!runtime) return false;
+    // RUN is pressed just before OlpRuntime.run() flips its own `running`
+    // property.  Treat that startup window (and paused/waiting/stopping
+    // runtime phases) as active so a second RUN cannot be pressed and the
+    // Pause/Stop controls are available immediately.
+    if (runtime.running || state.olp.status === 'running') return true;
+    return ['starting', 'running', 'waiting', 'paused', 'stopping'].includes(String(state.olp.execution?.phase || '').toLowerCase());
+}
+
+function renderOlpConsole() {
+    const entries = Array.isArray(state.olp.consoleEntries) ? state.olp.consoleEntries : [];
+    state.olp.consoleLines = entries.map((entry) => {
+        const timestamp = new Date(entry.timestamp || Date.now()).toLocaleTimeString();
+        return `[${timestamp}] ${uiFormat(entry.source, entry.replacements || {})}`;
+    });
+    if (el.olpConsole) el.olpConsole.textContent = state.olp.consoleLines.join('\n') || uiText('OLP ready.');
+}
+
+function appendOlpConsole(message, replacements = {}) {
+    const source = String(message || '');
+    state.olp.consoleEntries = [
+        ...(Array.isArray(state.olp.consoleEntries) ? state.olp.consoleEntries : []),
+        { timestamp: Date.now(), source, replacements }
+    ].slice(-80);
+    renderOlpConsole();
+}
+
+function setOlpLastMotion(source, replacements = {}) {
+    state.olp.lastMotionSource = String(source || '');
+    state.olp.lastMotionReplacements = replacements;
+    state.olp.lastMotion = uiFormat(state.olp.lastMotionSource, replacements);
+}
+
+function getOlpLastMotionText() {
+    return state.olp.lastMotionSource
+        ? uiFormat(state.olp.lastMotionSource, state.olp.lastMotionReplacements || {})
+        : uiText(state.olp.lastMotion || 'No OLP motion command executed yet.');
+}
+
+function setOlpLastIoEvent(source, replacements = {}) {
+    state.olp.lastIoSource = String(source || '');
+    state.olp.lastIoReplacements = replacements;
+    state.olp.lastIoEvent = uiFormat(state.olp.lastIoSource, replacements);
+}
+
+function getOlpLastIoText() {
+    return state.olp.lastIoSource
+        ? uiFormat(state.olp.lastIoSource, state.olp.lastIoReplacements || {})
+        : uiText(state.olp.lastIoEvent || 'No IO packet received.');
+}
+
+function flushOlpRuntimeView(runtime, snapshot = null) {
+    if (state.olp.runtimeViewTimer) {
+        window.clearTimeout(state.olp.runtimeViewTimer);
+        state.olp.runtimeViewTimer = null;
+    }
+    state.olp.runtimeViewPending = null;
+    if (state.olp.runtime === runtime) updateOlpRuntimeView(snapshot);
+}
+
+function queueOlpRuntimeView(runtime, snapshot = null) {
+    if (state.olp.runtime !== runtime) return;
+    state.olp.runtimeViewPending = { runtime, snapshot };
+    const phase = String(snapshot?.phase || '').toLowerCase();
+    const terminal = ['completed', 'stopped', 'error', 'alarm'].includes(phase);
+    if (terminal) {
+        flushOlpRuntimeView(runtime, snapshot);
+        return;
+    }
+    if (state.olp.runtimeViewTimer) return;
+    state.olp.runtimeViewTimer = window.setTimeout(() => {
+        state.olp.runtimeViewTimer = null;
+        const pending = state.olp.runtimeViewPending;
+        state.olp.runtimeViewPending = null;
+        if (pending?.runtime === state.olp.runtime) updateOlpRuntimeView(pending.snapshot);
+    }, 80);
+}
+
+function updateOlpRuntimeView(snapshot = null) {
+    if (snapshot) state.olp.execution = { ...state.olp.execution, ...snapshot };
+    const execution = state.olp.execution || {};
+    const phase = String(execution.phase || (execution.running ? 'running' : 'ready')).toLowerCase();
+    const labels = {
+        ready: 'READY',
+        running: 'RUNNING',
+        waiting: 'WAITING',
+        paused: 'PAUSED',
+        stopping: 'STOPPING',
+        stopped: 'STOPPED',
+        completed: 'COMPLETE',
+        error: 'ERROR',
+        alarm: 'ALARM'
+    };
+    const badge = uiText(labels[phase] || phase.toUpperCase());
+    updateOlpProgramIndicator();
+    const path = String(execution.filePath || state.olp.project?.programPath || 'main.pro');
+    const shortPath = path.split('/').at(-1) || path;
+    const cursor = execution.lineNumber ? `${shortPath}:${execution.lineNumber}` : `${shortPath}:--`;
+    const stateText = execution.alarm
+        ? uiFormat(execution.alarm.easyGo ? 'Alarm {code} (EasyGo)' : 'Alarm {code}', { code: execution.alarm.code })
+        : phase === 'waiting' && execution.waitCondition
+            ? uiFormat('Waiting: {condition}', { condition: execution.waitCondition })
+        : phase === 'running' ? uiText('Program is executing')
+            : phase === 'paused' ? uiText('Program paused')
+                : phase === 'completed' ? uiText('Program cycle completed')
+                    : phase === 'stopped' || phase === 'stopping' ? uiText('Program stopped')
+                        : phase === 'error' ? uiText('Program error') : uiText('OLP ready');
+    const stack = Array.isArray(execution.callStack) && execution.callStack.length
+        ? execution.callStack.join('  >  ')
+        : '—';
+    if (el.olpRuntimeBadge) {
+        el.olpRuntimeBadge.textContent = badge;
+        el.olpRuntimeBadge.className = `olp-runtime-badge ${phase}`;
+    }
+    if (el.olpInlineCursor) el.olpInlineCursor.textContent = `${cursor} · ${badge}`;
+    if (el.olpRuntimeState) el.olpRuntimeState.textContent = stateText;
+    if (el.olpRuntimeCursor) el.olpRuntimeCursor.textContent = cursor;
+    if (el.olpRuntimeLine) el.olpRuntimeLine.textContent = execution.lineText || uiText('No program line is executing.');
+    if (el.olpRuntimeStack) el.olpRuntimeStack.textContent = uiFormat('Call stack: {stack}', { stack });
+    const activeExecution = ['running', 'waiting', 'paused', 'stopping'].includes(phase);
+    // The compact status line above the editor still shows the live file and
+    // row.  Do not change the selected file, textarea selection, or scroll
+    // position here: following every executed row makes long OLP programs
+    // painful to inspect and also makes the editor appear to jump.
+    el.olpFileEditor?.classList.toggle('olp-cursor-active', activeExecution);
+}
+
+function resetOlpProgramCursor() {
+    const project = state.olp.project;
+    if (!project) return;
+    const mainPath = project.programPath
+        || project.programFiles?.find((path) => /(^|\/)main\.pro$/i.test(path))
+        || project.programFiles?.[0]
+        || '';
+    const record = project.files?.get(mainPath);
+    if (!mainPath || !record) return;
+
+    const source = String(record.text ?? '').replace(/\r\n?/g, '\n');
+    const firstLine = source.split('\n')[0] ?? '';
+    state.olp.selectedFile = mainPath;
+    if (el.olpFileSelect) el.olpFileSelect.value = mainPath;
+    setOlpEditorText(source);
+    if (el.olpFileEditor) {
+        el.olpFileEditor.setSelectionRange(0, firstLine.length);
+        el.olpFileEditor.scrollTop = 0;
+        el.olpFileEditor.scrollLeft = 0;
+    }
+    state.olp.execution = {
+        ...state.olp.execution,
+        phase: 'stopped',
+        running: false,
+        paused: false,
+        filePath: mainPath,
+        lineNumber: 1,
+        lineText: firstLine,
+        command: '',
+        waitCondition: '',
+        callStack: [],
+        alarm: null
+    };
+    setOlpLastMotion('No OLP motion command executed yet.');
+    updateOlpRuntimeView();
+}
+
+function formatOlpMonitorTime(timestamp) {
+    return timestamp ? new Date(timestamp).toLocaleTimeString() : '--';
+}
+
+function getOlpMonitorAddress(prefix, preferredAddress = '') {
+    const labels = Object.entries(state.olp.project?.labels || {});
+    const displayPrefix = { IN: 'In', OUT: 'Out', INW: 'InW', OUTW: 'OutW' }[prefix] || prefix;
+    const entries = labels
+        .map(([label, address]) => {
+            const parsed = normalizeOlpAddress(address, state.olp.project?.labels || {});
+            return parsed?.prefix === prefix ? { label, address: `${displayPrefix}[${parsed.index}]`, parsed } : null;
+        })
+        .filter(Boolean)
+        .sort((left, right) => left.parsed.index - right.parsed.index || left.label.localeCompare(right.label));
+    const preferred = normalizeOlpAddress(preferredAddress, state.olp.project?.labels || {});
+    if (preferred?.prefix === prefix) {
+        const preferredCanonical = canonicalOlpAddress(preferred);
+        return entries.find((entry) => canonicalOlpAddress(entry.parsed) === preferredCanonical)
+            || { label: '', address: `${displayPrefix}[${preferred.index}]`, parsed: preferred };
+    }
+    return entries[0] || null;
+}
+
+function setOlpMonitorAddress(element, entry) {
+    if (!element) return;
+    element.textContent = entry?.address || '—';
+    element.title = entry?.label || '';
+}
+
+function renderOlpIoMonitorNow() {
+    const inputBit = getOlpMonitorAddress('IN', state.olp.lastRawInputBitAddress);
+    const outputBit = getOlpMonitorAddress('OUT');
+    const inputWordAddress = getOlpMonitorAddress('INW', state.olp.lastRawInputWordAddress);
+    const outputWordAddress = getOlpMonitorAddress('OUTW');
+    const inputBitValue = inputBit ? readOlpAddress(inputBit.address) : null;
+    const outputBitValue = outputBit ? readOlpAddress(outputBit.address) : null;
+    const inputWord = inputWordAddress ? readOlpAddress(inputWordAddress.address) : null;
+    const outputWord = outputWordAddress ? readOlpAddress(outputWordAddress.address) : null;
+    const labelEntries = Object.entries(state.olp.project?.labels || {});
+    const inputLabelCount = labelEntries.filter(([, address]) => normalizeOlpAddress(address, state.olp.project?.labels || {})?.prefix?.startsWith('IN')).length;
+    const outputLabelCount = labelEntries.filter(([, address]) => normalizeOlpAddress(address, state.olp.project?.labels || {})?.prefix?.startsWith('OUT')).length;
+    const remoteIoMappingCount = state.olp.project?.remoteIoMapping?.length || 0;
+    const mappedRemoteIoMappingCount = state.olp.project?.remoteIoMapping?.filter((entry) => entry?.mapped && entry?.address)?.length || 0;
+    const setText = (element, value) => { if (element) element.textContent = String(value); };
+    setText(el.olpBusStatus, uiText(state.olp.busStatus || 'Virtual Bus disconnected'));
+    setText(el.olpIoNote, state.olp.project
+        ? uiFormat('{name} · labels In {input} / Out {output} · Remote IO: {mapped}/{total} mapped', {
+            name: state.olp.project.name,
+            input: inputLabelCount,
+            output: outputLabelCount,
+            mapped: mappedRemoteIoMappingCount,
+            total: remoteIoMappingCount
+        })
+        : uiText('Virtual Bus: load an OLP project to show its mapped IO addresses'));
+    setOlpMonitorAddress(el.olpIoInBitAddress, inputBit);
+    setOlpMonitorAddress(el.olpIoOutBitAddress, outputBit);
+    setOlpMonitorAddress(el.olpIoInWordAddress, inputWordAddress);
+    setOlpMonitorAddress(el.olpIoOutWordAddress, outputWordAddress);
+    setText(el.olpIoInBit, inputBit ? (inputBitValue ? '1 / ON' : '0 / OFF') : '—');
+    setText(el.olpIoOutBit, outputBit ? (outputBitValue ? '1 / ON' : '0 / OFF') : '—');
+    setText(el.olpIoInWord, inputWord === null ? '—' : inputWord);
+    setText(el.olpIoOutWord, outputWord === null ? '—' : outputWord);
+    setText(el.olpIoLast, `${getOlpLastIoText()} · RX ${formatOlpMonitorTime(state.olp.lastInputAt)} · TX ${formatOlpMonitorTime(state.olp.lastOutputAt)}`);
+    setText(el.olpMotionLast, getOlpLastMotionText());
+    updateOlpRuntimeView();
+}
+
+function renderOlpIoMonitor() {
+    const minimumInterval = 100;
+    const now = performance.now();
+    const last = Number(state.olp.ioRenderAt || 0);
+    if (now - last >= minimumInterval && !state.olp.ioRenderTimer) {
+        state.olp.ioRenderAt = now;
+        renderOlpIoMonitorNow();
+        return;
+    }
+    if (state.olp.ioRenderTimer) return;
+    state.olp.ioRenderTimer = window.setTimeout(() => {
+        state.olp.ioRenderTimer = null;
+        state.olp.ioRenderAt = performance.now();
+        renderOlpIoMonitorNow();
+    }, Math.max(0, minimumInterval - (now - last)));
+}
+
+function updateOlpBusStatus(status, eventMessage = '') {
+    state.olp.busStatus = status;
+    if (eventMessage) setOlpLastIoEvent(eventMessage);
+    updateOlpBusIndicator();
+    renderOlpIoMonitor();
+}
+
+function getOlpProgramIndicatorState() {
+    const phase = String(state.olp.execution?.phase || '').toLowerCase();
+    const status = String(state.olp.status || '').toLowerCase();
+    if (state.olp.execution?.alarm || phase === 'alarm' || phase === 'error' || status === 'error') return 'alarm';
+    if (status === 'working') return 'loading';
+    if (phase === 'starting' || phase === 'running') return 'running';
+    if (phase === 'waiting') return 'waiting';
+    if (phase === 'paused') return 'paused';
+    if (phase === 'stopping') return 'stopping';
+    if (phase === 'stopped' || phase === 'completed') return 'stopped';
+    return state.olp.project ? 'ready' : 'stopped';
+}
+
+function updateOlpProgramIndicator() {
+    const indicator = el.olpStatusDot;
+    if (!indicator) return;
+    const stateName = getOlpProgramIndicatorState();
+    const alarmCode = state.olp.execution?.alarm?.code;
+    const labels = {
+        ready: '프로그램 대기',
+        running: '프로그램 실행 중',
+        waiting: '프로그램 대기 조건 처리 중',
+        paused: '프로그램 일시정지',
+        stopping: '프로그램 정지 중',
+        stopped: '프로그램 정지',
+        loading: '프로젝트 로딩 중',
+        alarm: alarmCode === undefined ? '프로그램 알람' : uiFormat('프로그램 알람 {code}', { code: alarmCode })
+    };
+    indicator.classList.remove('ready', 'running', 'waiting', 'paused', 'stopping', 'stopped', 'loading', 'alarm', 'error');
+    indicator.classList.add(stateName);
+    const label = uiText(labels[stateName]);
+    indicator.title = label;
+    indicator.setAttribute('aria-label', label);
+}
+
+function getOlpBusIndicatorState() {
+    const status = String(state.olp.busStatus || '').toLowerCase();
+    const socket = state.olp.socket;
+    const socketOpen = socket && typeof WebSocket !== 'undefined' && socket.readyState === WebSocket.OPEN;
+    if (state.olp.busConnected && socketOpen) return 'connected';
+    if (socket && typeof WebSocket !== 'undefined' && socket.readyState === WebSocket.CONNECTING) return 'connecting';
+    if (status.includes('connecting')) return 'connecting';
+    if (status.includes('waiting')) return 'waiting';
+    if (status.includes('unavailable') || status.includes('error')) return 'unavailable';
+    return 'disconnected';
+}
+
+function clearOlpBusHandshakeTimer() {
+    if (!state.olp.busHandshakeTimer) return;
+    clearTimeout(state.olp.busHandshakeTimer);
+    state.olp.busHandshakeTimer = null;
+}
+
+function setOlpBusPhase(phase, status, message = '') {
+    state.olp.busPhase = phase;
+    state.olp.busConnected = phase === 'connected';
+    if (phase === 'connected') state.olp.busLastPacketAt = Date.now();
+    if (phase !== 'handshaking') clearOlpBusHandshakeTimer();
+    updateOlpBusStatus(status, message);
+}
+
+function invalidateOlpBusSocket(socket, status, message = '', reconnect = true) {
+    if (socket && state.olp.socket !== socket) return;
+    clearOlpBusHandshakeTimer();
+    state.olp.busConnected = false;
+    state.olp.busPhase = state.olp.virtualBusWanted ? 'waiting' : 'off';
+    state.olp.busSocketGeneration += 1;
+    if (state.olp.socket === socket || !socket) state.olp.socket = null;
+    try { socket?.close(); } catch { }
+    updateOlpBusStatus(status, message);
+    if (reconnect) scheduleOlpVirtualBusReconnect();
+}
+
+function scheduleOlpVirtualBusReconnect() {
+    if (!state.olp.virtualBusWanted || state.virtualController.wanted || state.olp.reconnectTimer) return;
+    state.olp.reconnectTimer = window.setTimeout(() => {
+        state.olp.reconnectTimer = null;
+        if (state.olp.virtualBusWanted && state.olp.project && !state.virtualController.wanted) connectOlpVirtualBus();
+    }, 1000);
+}
+
+function refreshOlpBusTransportState() {
+    const socket = state.olp.socket;
+    const socketState = socket?.readyState;
+    if (state.olp.busConnected && state.olp.busLastPacketAt
+        && Date.now() - state.olp.busLastPacketAt > 3000) {
+        invalidateOlpBusSocket(
+            socket,
+            'Virtual Bus waiting for tester',
+            'Virtual Bus heartbeat timeout; waiting for tester reconnect.'
+        );
+        return;
+    }
+    const transportClosed = !socket
+        || socketState === WebSocket.CLOSING
+        || socketState === WebSocket.CLOSED;
+    if (transportClosed && (state.olp.busConnected || socket)) {
+        // The close event is not guaranteed to be delivered before the next
+        // paint (especially when the tester process is terminated).  Clear
+        // the state here as well so the indicator does not wait for a button
+        // click to become accurate.
+        invalidateOlpBusSocket(
+            socket,
+            state.olp.virtualBusWanted ? 'Virtual Bus waiting for tester' : 'Virtual Bus disconnected',
+            'Virtual Bus transport disconnected.'
+        );
+        return;
+    }
+    updateOlpBusIndicator();
+}
+
+function startOlpBusMonitor() {
+    if (state.olp.busMonitorTimer) return;
+    state.olp.busMonitorTimer = window.setInterval(refreshOlpBusTransportState, 150);
+    refreshOlpBusTransportState();
+}
+
+function stopOlpBusMonitor() {
+    if (state.olp.busMonitorTimer) {
+        window.clearInterval(state.olp.busMonitorTimer);
+        state.olp.busMonitorTimer = null;
+    }
+    clearOlpBusHandshakeTimer();
+}
+
+function updateOlpBusIndicator() {
+    const indicator = el.olpBusIndicator;
+    if (!indicator) return;
+    const stateName = getOlpBusIndicatorState();
+    const labels = {
+        connected: '로컬 가상 버스 연결됨 · OLP 슬레이브',
+        connecting: '로컬 가상 버스 연결 중',
+        waiting: '로컬 가상 버스 테스터 연결 대기 중',
+        unavailable: '로컬 가상 버스 사용 불가 · OLP 단독 실행 가능',
+        disconnected: '로컬 가상 버스 연결 안 됨'
+    };
+    indicator.classList.remove('connected', 'connecting', 'waiting', 'unavailable', 'disconnected');
+    indicator.classList.add(stateName);
+    const label = uiText(labels[stateName]);
+    indicator.title = label;
+    indicator.setAttribute('aria-label', label);
+}
+
+function setOlpStatus(status, message = '', replacements = {}) {
+    state.olp.status = status;
+    if (message) appendOlpConsole(message, replacements);
+    updateOlpProgramIndicator();
+    updateOlpBusIndicator();
+    const running = isOlpRunning() || state.olp.workOriginBusy || state.olp.manualMoveBusy;
+    if (el.olpFileEditor) el.olpFileEditor.disabled = !state.olp.project || running;
+    if (el.olpFileSelect) el.olpFileSelect.disabled = !state.olp.project || running;
+    if (el.olpModelNote) {
+        const robot = state.activeProgramRobot || state.activeArticulatedModel;
+        el.olpModelNote.textContent = uiFormat('Robot model: {model}', {
+            model: robot?.userData?.robotName || robot?.userData?.modelName || uiText('current selected robot')
+        });
+    }
+    updateOlpProgramPanelUi();
+    updateOlpRuntimeView();
+    renderOlpIoMonitor();
+}
+
+function updateOlpProgramPanelUi() {
+    const enabled = Boolean(state.olp.enabled);
+    const running = isOlpRunning();
+    const manualMoveBusy = Boolean(state.olp.manualMoveBusy);
+    const motionBusy = Boolean(state.olp.workOriginBusy || manualMoveBusy);
+    const phase = String(state.olp.execution?.phase || '').toLowerCase();
+    const paused = phase === 'paused' && Boolean(state.olp.runtime?.running && state.olp.runtime?.paused);
+    const stopping = phase === 'stopping';
+    const hasProject = Boolean(state.olp.project);
+    const stopAvailable = hasProject && !motionBusy
+        && (running || ['error', 'alarm', 'stopped', 'completed'].includes(phase) || state.olp.status === 'error');
+    const stepAvailable = hasProject && !motionBusy
+        && !Boolean(state.virtualController.wanted)
+        && (!state.olp.runtime || phase === 'paused');
+    const pauseAvailable = Boolean(state.olp.runtime) && !motionBusy
+        && !stopping && ['starting', 'running', 'waiting', 'paused'].includes(phase);
+
+    // The generated P[]/MovJ/Speed/Label editor belongs to the normal motion
+    // program mode.  OLP shows its source files and runtime cursor instead.
+    el.programPanel?.classList.toggle('olp-mode-active', enabled);
+    moveOlpRobotControls(enabled);
+    el.programPointActions?.classList.toggle('hidden', enabled);
+    el.programStepList?.classList.toggle('hidden', enabled);
+    el.programCycleTimePanel?.classList.toggle('hidden', enabled);
+    el.btnProgramWorkOriginRobot?.classList.toggle('hidden', !enabled);
+
+    if (enabled) {
+        if (el.btnProgramStepRobot) {
+            el.btnProgramStepRobot.disabled = !stepAvailable;
+            el.btnProgramStepRobot.title = uiText(stepAvailable
+                ? 'Execute one OLP program line'
+                : 'Single-step is available when OLP is stopped or paused');
+            el.btnProgramStepRobot.setAttribute('aria-label', uiText('Execute one OLP program line'));
+        }
+        if (el.btnProgramRunRobot) el.btnProgramRunRobot.disabled = !hasProject
+            || (running && !paused)
+            || motionBusy
+            || state.motionSessions.size > 0
+            || Boolean(state.virtualController.wanted);
+        if (el.btnProgramRunRobot) {
+            el.btnProgramRunRobot.title = uiText(paused ? 'OLP 계속 실행' : '현재 로봇 시작');
+            el.btnProgramRunRobot.setAttribute('aria-label', uiText(paused ? 'OLP 계속 실행' : '현재 로봇 시작'));
+        }
+        if (el.btnProgramPauseRobot) el.btnProgramPauseRobot.disabled = !pauseAvailable;
+        if (el.btnProgramStopRobot) {
+            el.btnProgramStopRobot.disabled = !stopAvailable || stopping;
+            el.btnProgramStopRobot.title = uiText(stopAvailable
+                ? 'Stop OLP and reset cursor to the first line of main.pro'
+                : 'Stop OLP');
+            el.btnProgramStopRobot.setAttribute('aria-label', uiText('Stop OLP'));
+        }
+        if (el.btnProgramWorkOriginRobot) {
+            const homeAvailable = hasProject && !running && !motionBusy
+                && !Boolean(state.virtualController.wanted);
+            el.btnProgramWorkOriginRobot.classList.remove('hidden');
+            el.btnProgramWorkOriginRobot.disabled = !homeAvailable;
+            el.btnProgramWorkOriginRobot.title = uiText(homeAvailable
+                ? 'Move to Work Origin 0'
+                : 'Work Origin is available when OLP is stopped');
+        }
+        if (el.programControlGroup) {
+            el.programControlGroup.querySelectorAll('button').forEach((button) => { button.disabled = true; });
+        }
+        el.programRepeatButtons.forEach((button) => {
+            button.disabled = true;
+            button.classList.remove('active');
+            button.setAttribute('aria-pressed', 'false');
+        });
+        if (el.btnProgramExport) el.btnProgramExport.disabled = !hasProject || running || manualMoveBusy;
+        if (el.btnProgramImport) el.btnProgramImport.disabled = running || manualMoveBusy;
+        el.btnProgramExport?.setAttribute('title', uiText('전체 OLP 프로젝트 ZIP 저장'));
+        el.btnProgramImport?.setAttribute('title', uiText('전체 OLP 프로젝트 폴더 불러오기'));
+        if (el.btnPositionExport) {
+            const hasPointFile = Boolean(state.olp.project?.pointFiles?.some((entry) => entry.kind === 'point'));
+            el.btnPositionExport.disabled = !hasPointFile || running || manualMoveBusy;
+        }
+        if (el.btnProgramPauseRobot) {
+            const paused = phase === 'paused';
+            el.btnProgramPauseRobot.title = uiText(paused ? 'OLP 계속 실행' : 'OLP 일시정지');
+            el.btnProgramPauseRobot.setAttribute('aria-label', uiText(paused ? 'OLP 계속 실행' : 'OLP 일시정지'));
+        }
+    } else {
+        el.btnProgramExport?.setAttribute('title', uiText('파일명과 저장 위치 선택'));
+        el.btnProgramImport?.setAttribute('title', uiText('프로젝트 불러오기'));
+    }
+}
+
+function moveOlpRobotControls(enabled) {
+    const row = el.programControlRobot;
+    const slot = el.olpRobotControlSlot;
+    const playback = el.programPlayback;
+    if (!row || !slot || !playback) return;
+
+    if (enabled) {
+        // Reuse the normal program-panel control row.  This keeps the OLP
+        // buttons on the same handlers/state machine as the non-OLP panel and
+        // avoids a second, easily desynchronised Start/Stop pair.
+        slot.classList.remove('hidden');
+        slot.insertBefore(row, el.olpInlineCursor || null);
+        playback.classList.add('hidden');
+    } else {
+        playback.insertBefore(row, el.programControlGroup || null);
+        playback.classList.remove('hidden');
+        slot.classList.add('hidden');
+    }
+}
+
+function setOlpPanelLayout(enabled) {
+    const panel = el.programPanel;
+    // A pop-out has its own document-sized layout.  Do not apply the main
+    // canvas panel geometry to that separate window.
+    if (!panel || panel.classList.contains('panel-popout')) return;
+    const properties = ['top', 'right', 'bottom', 'left', 'width', 'height', 'maxWidth', 'maxHeight', 'transform'];
+    if (enabled) {
+        if (!panel._olpLayoutSnapshot) {
+            panel._olpLayoutSnapshot = Object.fromEntries(properties.map((property) => [property, panel.style[property]]));
+            panel._olpLayoutClasses = {
+                positioned: panel.classList.contains('olp-panel-positioned'),
+                edgeResized: panel.classList.contains('panel-edge-resized'),
+                programResized: panel.classList.contains('program-panel-resized')
+            };
+        }
+        // OLP changes the panel's size, not its location.  Capture the
+        // current visual position in canvas coordinates before the OLP CSS
+        // rules are applied, otherwise the panel jumps to the OLP default
+        // corner every time the mode button is pressed.
+        const canvasRect = el.canvasContainer?.getBoundingClientRect();
+        const panelRect = panel.getBoundingClientRect();
+        const targetWidth = Math.min(480, Math.max(1, (canvasRect?.width || panelRect.width) - 32));
+        const targetHeight = Math.min(760, Math.max(1, (canvasRect?.height || panelRect.height) - 32));
+        const currentLeft = canvasRect
+            ? THREE.MathUtils.clamp(panelRect.left - canvasRect.left, 0, Math.max(0, canvasRect.width - targetWidth))
+            : 16;
+        const currentTop = canvasRect
+            ? THREE.MathUtils.clamp(panelRect.top - canvasRect.top, 0, Math.max(0, canvasRect.height - targetHeight))
+            : 16;
+        panel.classList.add('olp-panel-positioned');
+        panel.style.top = `${currentTop}px`;
+        panel.style.right = 'auto';
+        panel.style.bottom = 'auto';
+        panel.style.left = `${currentLeft}px`;
+        panel.style.width = 'min(480px, calc(100% - 32px))';
+        panel.style.height = 'min(760px, calc(100% - 32px))';
+        panel.style.maxWidth = 'calc(100% - 32px)';
+        panel.style.maxHeight = 'calc(100% - 32px)';
+        panel.style.transform = 'none';
+        return;
+    }
+    const snapshot = panel._olpLayoutSnapshot;
+    if (!snapshot) return;
+    properties.forEach((property) => { panel.style[property] = snapshot[property] || ''; });
+    if (panel._olpLayoutClasses?.positioned) panel.classList.add('olp-panel-positioned');
+    else panel.classList.remove('olp-panel-positioned');
+    if (panel._olpLayoutClasses?.edgeResized) panel.classList.add('panel-edge-resized');
+    else panel.classList.remove('panel-edge-resized');
+    if (panel._olpLayoutClasses?.programResized) panel.classList.add('program-panel-resized');
+    else panel.classList.remove('program-panel-resized');
+    delete panel._olpLayoutSnapshot;
+    delete panel._olpLayoutClasses;
+}
+
+function toggleOlpWorkspace(force = null) {
+    const enabled = force === null ? !state.olp.enabled : Boolean(force);
+    if (!enabled && (isOlpRunning() || state.olp.socket)) void stopOlpSession('OLP workspace closed', { closeBus: true });
+    state.olp.enabled = enabled;
+    state.olp.virtualBusWanted = enabled && !state.virtualController.wanted;
+    if (enabled) startOlpBusMonitor();
+    else {
+        stopOlpBusMonitor();
+        if (state.olp.reconnectTimer) {
+            clearTimeout(state.olp.reconnectTimer);
+            state.olp.reconnectTimer = null;
+        }
+        state.olp.busConnected = false;
+        state.olp.busPhase = 'off';
+        state.olp.busLastPacketAt = 0;
+        updateOlpBusStatus('Virtual Bus disconnected');
+    }
+    if (enabled) showMotionProgramPanel();
+    setOlpPanelLayout(enabled);
+    el.olpWorkspace?.classList.toggle('hidden', !enabled);
+    el.olpModeButton?.classList.toggle('active', enabled);
+    el.olpModeButton?.setAttribute('aria-pressed', String(enabled));
+    renderMotionProgramPanel();
+    updateOlpProgramPanelUi();
+    setOlpStatus(state.olp.status, enabled ? 'OLP workspace opened' : 'OLP workspace closed');
+    if (enabled && !state.virtualController.wanted) connectOlpVirtualBus();
+}
+
+const OLP_SYNTAX_ADDRESS_PATTERN = /^(?:InW|OutW|In|Out|JP|P|J|L|V|Z|Tool|Wobj|T|B|R|D)\s*\[\s*[-+]?\d+(?:\.\d+)?\s*\]$/i;
+const OLP_SYNTAX_COMMAND_PATTERN = /^(?:ABS|CALL|DELAY|ELSE|END|ENDIF|GOTO|HOME|IF|JUMP|JUMPL|LABEL|MOVABS|MOVC|MOVJ|MOVL|MOVS|OUT|PRINT|RETURN|SET|START|STOP|THEN|TIME|TIMEOUT|TIMESTART|UNTIL|VELSET|WAIT)$/i;
+const OLP_SYNTAX_TOKEN_PATTERN = /("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|(?:#|\/\/).*|(?:InW|OutW|In|Out|JP|P|J|L|V|Z|Tool|Wobj|T|B|R|D)\s*\[\s*[-+]?\d+(?:\.\d+)?\s*\]|\b(?:ABS|CALL|DELAY|ELSE|END|ENDIF|GOTO|HOME|IF|JUMP|JUMPL|LABEL|MOVABS|MOVC|MOVJ|MOVL|MOVS|OUT|PRINT|RETURN|SET|START|STOP|THEN|TIME|TIMEOUT|TIMESTART|UNTIL|VELSET|WAIT)\b|[-+]?(?:\d+(?:\.\d*)?|\.\d+)|[A-Za-z_][\w]*|[=<>!]+|[+\-*/%]|[()[\]{},;:.])/gi;
+
+function escapeOlpHtml(value) {
+    return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;');
+}
+
+function getOlpSyntaxTokenClass(token, line, index) {
+    if (/^(?:#|\/\/)/.test(token)) return 'olp-syntax-comment';
+    if (/^(?:"|')/.test(token)) return 'olp-syntax-string';
+    if (OLP_SYNTAX_ADDRESS_PATTERN.test(token)) return 'olp-syntax-address';
+    if (OLP_SYNTAX_COMMAND_PATTERN.test(token)) return 'olp-syntax-command';
+    if (/^[-+]?\d|^\.\d/.test(token)) return 'olp-syntax-number';
+    if (/^[=<>!]+$/.test(token) || /^[+\-*/%]$/.test(token)) return 'olp-syntax-operator';
+    if (/^[A-Za-z_][\w]*$/.test(token)) {
+        const remainder = line.slice(index + token.length);
+        if (/^\s*:/.test(remainder)) return 'olp-syntax-label';
+        return 'olp-syntax-identifier';
+    }
+    return 'olp-syntax-punctuation';
+}
+
+function highlightOlpSourceLine(line) {
+    let html = '';
+    let cursor = 0;
+    let match;
+    OLP_SYNTAX_TOKEN_PATTERN.lastIndex = 0;
+    while ((match = OLP_SYNTAX_TOKEN_PATTERN.exec(line))) {
+        if (match.index > cursor) html += escapeOlpHtml(line.slice(cursor, match.index));
+        const token = match[0];
+        const tokenClass = getOlpSyntaxTokenClass(token, line, match.index);
+        html += `<span class="${tokenClass}">${escapeOlpHtml(token)}</span>`;
+        cursor = match.index + token.length;
+    }
+    return html + escapeOlpHtml(line.slice(cursor));
+}
+
+function getOlpEditorPresentation(source = '') {
+    const normalized = String(source ?? '').replace(/\r\n?/g, '\n');
+    // ProgramInfo is controller metadata, not executable source.  Keep its
+    // exact prefix separately so the editor can hide it without losing it
+    // when the project is saved.
+    const header = normalized.match(/^(?:[ \t]*\n)*[ \t]*ProgramInfo\b[\s\S]*?^[ \t]*EndProgramInfo\b[^\n]*(?:\n|$)/im);
+    if (!header) return { text: normalized, hiddenPrefix: '', lineOffset: 0 };
+
+    let consumed = header[0].length;
+    while (consumed < normalized.length) {
+        const blankLines = normalized.slice(consumed).match(/^(?:[ \t]*\n)+/);
+        if (!blankLines) break;
+        consumed += blankLines[0].length;
+    }
+    const hiddenPrefix = normalized.slice(0, consumed);
+    return {
+        text: normalized.slice(consumed),
+        hiddenPrefix,
+        lineOffset: hiddenPrefix.split('\n').length - 1
+    };
+}
+
+function getOlpEditorProjectText(path, visibleText) {
+    const hiddenPrefix = state.olp.editorHiddenProgramInfo.get(path) || '';
+    return hiddenPrefix + String(visibleText ?? '');
+}
+
+function renderOlpSourceHighlight(source = '') {
+    if (!el.olpFileHighlight) return;
+    const normalized = String(source ?? '').replace(/\r\n?/g, '\n');
+    const lines = normalized.split('\n');
+    if (el.olpFileGutter) el.olpFileGutter.textContent = lines.map((_, index) => String(index + 1)).join('\n') || '1';
+    el.olpFileHighlight.innerHTML = lines.map(highlightOlpSourceLine).join('\n') || ' ';
+    syncOlpEditorScroll();
+}
+
+function syncOlpEditorScroll() {
+    if (!el.olpFileEditor || !el.olpFileHighlight) return;
+    el.olpFileHighlight.scrollTop = el.olpFileEditor.scrollTop;
+    el.olpFileHighlight.scrollLeft = el.olpFileEditor.scrollLeft;
+    if (el.olpFileGutter) el.olpFileGutter.scrollTop = el.olpFileEditor.scrollTop;
+}
+
+function setOlpEditorText(value = '') {
+    if (!el.olpFileEditor) return;
+    const presentation = getOlpEditorPresentation(value);
+    const path = state.olp.selectedFile;
+    if (path) {
+        if (presentation.hiddenPrefix) state.olp.editorHiddenProgramInfo.set(path, presentation.hiddenPrefix);
+        else state.olp.editorHiddenProgramInfo.delete(path);
+        state.olp.editorLineOffsets.set(path, presentation.lineOffset);
+    }
+    el.olpFileEditor.value = presentation.text;
+    renderOlpSourceHighlight(el.olpFileEditor.value);
+}
+
+function getOlpSelectedPointFile() {
+    const project = state.olp.project;
+    const path = state.olp.selectedFile;
+    return project?.pointFiles?.find((file) => file.path === path && file.kind === 'point') || null;
+}
+
+function formatOlpPointTableValue(value, digits = 3) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric.toFixed(digits) : '-';
+}
+
+function captureOlpPointViewState() {
+    const tableScroll = el.olpPointTable?.querySelector('.olp-point-table-scroll');
+    return {
+        fileScrollTop: el.olpFileSelect?.scrollTop || 0,
+        fileScrollLeft: el.olpFileSelect?.scrollLeft || 0,
+        tableScrollTop: tableScroll?.scrollTop || 0,
+        tableScrollLeft: tableScroll?.scrollLeft || 0
+    };
+}
+
+function restoreOlpPointViewState(viewState = {}) {
+    const apply = () => {
+        if (el.olpFileSelect) {
+            el.olpFileSelect.scrollTop = Number(viewState.fileScrollTop) || 0;
+            el.olpFileSelect.scrollLeft = Number(viewState.fileScrollLeft) || 0;
+        }
+        const tableScroll = el.olpPointTable?.querySelector('.olp-point-table-scroll');
+        if (tableScroll) {
+            tableScroll.scrollTop = Number(viewState.tableScrollTop) || 0;
+            tableScroll.scrollLeft = Number(viewState.tableScrollLeft) || 0;
+        }
+    };
+
+    apply();
+    window.requestAnimationFrame?.(() => {
+        apply();
+        window.requestAnimationFrame?.(apply);
+    });
+}
+
+function renderOlpPointTable() {
+    const tableShell = el.olpPointTable;
+    if (!tableShell) return;
+    const pointFile = getOlpSelectedPointFile();
+    const isPointFile = Boolean(pointFile);
+    tableShell.classList.toggle('hidden', !isPointFile);
+    if (!isPointFile) {
+        tableShell.replaceChildren();
+        return;
+    }
+
+    const robot = state.activeProgramRobot || state.activeArticulatedModel;
+    const isScara = robot?.userData?.manifest?.robotType === 'scara';
+    const columns = ['ID', 'Name', 'X', 'Y', 'Z', 'A', ...(isScara ? [] : ['B', 'C'])];
+    const head = columns.map((column) => `<th>${escapeOlpHtml(uiText(column))}</th>`).join('');
+    const rows = pointFile.records.map((record) => {
+        const values = Array.isArray(record.values) ? record.values : [];
+        const coordinateCells = values.slice(0, 6).map((value) => `<td>${formatOlpPointTableValue(value)}</td>`);
+        if (isScara) coordinateCells.splice(4, 2);
+        return `<tr data-olp-point-row data-olp-point-path="${escapeOlpHtml(record.path)}" data-olp-point-index="${record.index}" data-olp-point-symbol="${escapeOlpHtml(record.sourceSymbol || 'P')}">
+            <td class="olp-point-id">${escapeOlpHtml(record.index)}</td>
+            <td class="olp-point-name">${escapeOlpHtml(record.name || `${record.sourceSymbol || 'P'}${record.index}`)}</td>
+            ${coordinateCells.join('')}
+        </tr>`;
+    }).join('');
+
+    tableShell.innerHTML = `
+        <div class="olp-point-table-note">${escapeOlpHtml(uiFormat('{path} · 우클릭하여 현재 로봇 위치와 Arm 파라미터를 덮어쓸 수 있습니다.', { path: pointFile.path }))}</div>
+        <div class="olp-point-table-scroll">
+            <table>
+                <thead><tr>${head}</tr></thead>
+                <tbody>${rows || `<tr><td class="olp-point-empty" colspan="${columns.length}">${escapeOlpHtml(uiText('포인트 레코드가 없습니다.'))}</td></tr>`}</tbody>
+            </table>
+        </div>`;
+}
+
+function renderOlpSelectedFile() {
+    closeOlpPointContextMenu();
+    const project = state.olp.project;
+    const selected = project?.files?.get(state.olp.selectedFile);
+    const isPointFile = Boolean(getOlpSelectedPointFile());
+    el.olpFileGutter?.classList.toggle('hidden', isPointFile);
+    el.olpFileHighlight?.classList.toggle('hidden', isPointFile);
+    el.olpFileEditor?.classList.toggle('hidden', isPointFile);
+    if (el.olpFileEditor) {
+        setOlpEditorText(selected?.text ?? '');
+        el.olpFileEditor.disabled = !selected || isPointFile || isOlpRunning();
+    }
+    renderOlpPointTable();
+}
+
+function renderOlpFileList() {
+    const project = state.olp.project;
+    if (!el.olpFileSelect) return;
+    const files = getOlpEditableFiles(project)
+        .filter((record) => !/\.rpj$/i.test(record.path)
+            && !/(^|\/)BreakPoints\.jsn$/i.test(record.path));
+    const current = state.olp.selectedFile;
+    el.olpFileSelect.replaceChildren();
+    files.forEach((record) => {
+        const option = document.createElement('option');
+        option.value = record.path;
+        option.textContent = record.path;
+        el.olpFileSelect.appendChild(option);
+    });
+    state.olp.selectedFile = files.some((record) => record.path === current)
+        ? current
+        : files.find((record) => /(^|\/)main\.pro$/i.test(record.path))?.path || files[0]?.path || '';
+    el.olpFileSelect.value = state.olp.selectedFile;
+    renderOlpSelectedFile();
+}
+
+function renderOlpProjectUi() {
+    const project = state.olp.project;
+    if (el.olpProjectName) el.olpProjectName.textContent = project
+        ? uiFormat('{name} · {count} files', { name: project.name, count: project.files.size })
+        : uiText('No project loaded');
+    renderOlpFileList();
+    setOlpStatus(state.olp.status, '');
+}
+
+async function collectOlpDirectoryFiles(directory, prefix = '') {
+    const files = [];
+    for await (const entry of directory.values()) {
+        const relativePath = prefix ? prefix + '/' + entry.name : entry.name;
+        if (entry.kind === 'directory') {
+            files.push(...await collectOlpDirectoryFiles(entry, relativePath));
+            continue;
+        }
+        const file = await entry.getFile();
+        // Keep the folder-relative path without using a webkitdirectory
+        // upload input. This avoids the browser's multi-file upload warning.
+        files.push({
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            lastModified: file.lastModified,
+            relativePath,
+            text: () => file.text(),
+            arrayBuffer: () => file.arrayBuffer()
+        });
+    }
+    return files;
+}
+
+async function importOlpFolderFromPicker() {
+    if (typeof window.showDirectoryPicker !== 'function') {
+        el.olpImportFolderInput?.click();
+        return;
+    }
+    try {
+        const directory = await window.showDirectoryPicker({
+            id: 'inorobot-olp-project-import',
+            mode: 'read'
+        });
+        const files = await collectOlpDirectoryFiles(directory);
+        await handleOlpFolderImport(files);
+    } catch (error) {
+        if (error?.name === 'AbortError') return;
+        setOlpStatus('error', 'Project folder selection failed: {error}', { error: error.message || error });
+    }
+}
+
+async function handleOlpFolderImport(selectedFiles = null) {
+    const files = selectedFiles ?? el.olpImportFolderInput?.files;
+    if (!files?.length || state.olp.importInProgress || (isMotionActive() && !isOlpRunning())) return;
+    if (state.olp.projectEditTimer) {
+        clearTimeout(state.olp.projectEditTimer);
+        state.olp.projectEditTimer = null;
+    }
+    state.olp.importInProgress = true;
+    setOlpStatus('working', 'Loading robot project folder...');
+    try {
+        await stopOlpSession('Loading a new OLP project', { closeBus: true });
+        const project = await buildOlpProjectFromFiles(files);
+        project.programPath = project.programFiles.find((path) => /(^|\/)main\.pro$/i.test(path)) || project.programFiles[0] || null;
+        state.olp.project = project;
+        state.olp.inputWords = new Uint16Array(OLP_WORD_COUNT);
+        state.olp.outputWords = new Uint16Array(OLP_WORD_COUNT);
+        state.olp.inputExtended = new Map();
+        state.olp.outputExtended = new Map();
+        state.olp.positionCommandValues = new Map();
+        state.olp.lastRawInputBitAddress = '';
+        state.olp.lastRawInputWordAddress = '';
+        state.olp.consoleLines = [];
+        state.olp.consoleEntries = [];
+        state.olp.busStatus = 'Virtual Bus disconnected';
+        state.olp.busConnected = false;
+        state.olp.busPhase = 'off';
+        state.olp.busLastPacketAt = 0;
+        setOlpLastIoEvent('No Virtual Bus packet received.');
+        state.olp.lastInputAt = 0;
+        state.olp.lastOutputAt = 0;
+        setOlpLastMotion('No OLP motion command executed yet.');
+        state.olp.lastInputSignature = '';
+        state.olp.lastOutputSignature = '';
+        state.olp.modelAdaptationNotices = new Set();
+        state.olp.remoteCommandValues = new Map();
+        state.olp.remoteCommandBusy = false;
+        state.olp.resetCursorOnStop = false;
+        state.olp.editorHiddenProgramInfo = new Map();
+        state.olp.editorLineOffsets = new Map();
+        // Report the selected robot's actual pose as soon as the project opens,
+        // before any OLP command has been executed.
+        syncOlpHomeStatus(state.activeProgramRobot || state.activeArticulatedModel);
+        state.olp.execution = {
+            phase: 'ready', running: false, paused: false, filePath: project.programPath,
+            lineNumber: 0, lineText: '', command: '', waitCondition: '', callStack: [], alarm: null
+        };
+        state.olp.virtualBusWanted = !state.virtualController.wanted;
+        appendOlpConsole('Loaded {name}', { name: project.name });
+        appendOlpConsole('OLP runtime {build} loaded.', { build: OLP_RUNTIME_BUILD });
+        appendOlpConsole('JP.pts: {count} JointPoints', { count: project.pointFiles.filter((entry) => entry.kind === 'jointPoint').reduce((sum, entry) => sum + entry.records.length, 0) });
+        appendOlpConsole('Point files: {count}', { count: project.pointFiles.filter((entry) => entry.kind === 'point').length });
+        appendOlpConsole('Program files: {count}', { count: project.programFiles.length });
+        appendOlpConsole(project.remoteIoMapping?.length
+            ? 'Remote IO mapping: {path} ({count} entries)'
+            : 'Remote IO mapping: not found; use simulation Run/Stop controls.',
+            project.remoteIoMapping?.length
+                ? { path: project.remoteIoMappingPath, count: project.remoteIoMapping.length }
+                : {});
+        const homeStatus = getOlpHomeStatusOutput(project);
+        appendOlpConsole(homeStatus
+            ? 'Home status: {label} ({address}), pose-driven.'
+            : 'Home status: no Home_sts output label found in this project.',
+            homeStatus ? { label: homeStatus.label, address: homeStatus.address } : {});
+        renderOlpProjectUi();
+        toggleOlpWorkspace(true);
+        setOlpStatus('connected', 'Project ready. The current selected robot model will be used.');
+        connectOlpVirtualBus();
+    } catch (error) {
+        console.error('OLP project import failed:', error);
+        setOlpStatus('error', 'Project load failed: {error}', { error: error.message || error });
+    } finally {
+        state.olp.importInProgress = false;
+        if (el.olpImportFolderInput) el.olpImportFolderInput.value = '';
+    }
+}
+
+async function saveOlpProjectAsZip() {
+    const project = state.olp.project;
+    if (!project) return;
+    try {
+        const zip = new JSZip();
+        for (const record of project.files.values()) {
+            if (record.binary && record.file) zip.file(record.path, await record.file.arrayBuffer());
+            else zip.file(record.path, record.text ?? '');
+        }
+        const blob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
+        const suggestedName = `${project.name || 'InoRobotProject'}_OLP.zip`;
+        if (typeof window.showSaveFilePicker === 'function') {
+            const fileHandle = await window.showSaveFilePicker({
+                id: 'inorobot-olp-project-zip',
+                suggestedName,
+                startIn: 'downloads',
+                excludeAcceptAllOption: true,
+                types: [{
+                    description: 'InoRobot OLP project ZIP',
+                    accept: { 'application/zip': ['.zip'] }
+                }]
+            });
+            const writable = await fileHandle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+        } else {
+            // Older browsers cannot expose a save-path picker. Keep the
+            // download fallback so ZIP export remains available there.
+            saveAs(blob, suggestedName);
+        }
+        setOlpStatus('connected', 'Project saved as ZIP.');
+    } catch (error) {
+        if (error?.name === 'AbortError') return;
+        setOlpStatus('error', 'ZIP save failed: {error}', { error: error.message || error });
+    }
+}
+
+async function writeOlpFileToDirectory(directory, record) {
+    const parts = record.path.split('/').filter(Boolean);
+    const fileName = parts.pop();
+    let target = directory;
+    for (const part of parts) target = await target.getDirectoryHandle(part, { create: true });
+    const handle = await target.getFileHandle(fileName, { create: true });
+    const writable = await handle.createWritable();
+    await writable.write(record.binary && record.file ? await record.file.arrayBuffer() : (record.text ?? ''));
+    await writable.close();
+}
+
+async function saveOlpProjectAsFolder() {
+    const project = state.olp.project;
+    if (!project) return;
+    if (typeof window.showDirectoryPicker !== 'function') {
+        setOlpStatus('error', '이 브라우저는 폴더 저장을 지원하지 않습니다. Edge 또는 Chrome에서 다시 시도해 주세요.');
+        return;
+    }
+    try {
+        const directory = await window.showDirectoryPicker({ id: 'inorobot-olp-project', mode: 'readwrite' });
+        for (const record of project.files.values()) await writeOlpFileToDirectory(directory, record);
+        setOlpStatus('connected', 'Project saved to the selected folder.');
+    } catch (error) {
+        if (error?.name === 'AbortError') return;
+        setOlpStatus('error', 'Folder save failed: {error}', { error: error.message || error });
+    }
+}
+
+function canonicalOlpAddress(parsed) {
+    return `${parsed.prefix}[${parsed.index}]`;
+}
+
+function readOlpAddress(address) {
+    const parsed = normalizeOlpAddress(address, state.olp.project?.labels || {});
+    if (!parsed) return 0;
+    const key = canonicalOlpAddress(parsed);
+    if (parsed.prefix === 'IN' || parsed.prefix === 'INW') {
+        const bit = parsed.index - OLP_BIT_START;
+        if (parsed.prefix === 'IN') {
+            return bit >= 0 && bit < OLP_BIT_COUNT
+                ? ((state.olp.inputWords[Math.floor(bit / 16)] >> (bit % 16)) & 1)
+                : (state.olp.inputExtended.get(key) || 0);
+        }
+        const word = parsed.index - OLP_WORD_START;
+        return word >= 0 && word < OLP_WORD_COUNT ? state.olp.inputWords[word] : (state.olp.inputExtended.get(key) || 0);
+    }
+    if (parsed.prefix === 'OUT') {
+        const bit = parsed.index - OLP_BIT_START;
+        return bit >= 0 && bit < OLP_BIT_COUNT
+            ? ((state.olp.outputWords[Math.floor(bit / 16)] >> (bit % 16)) & 1)
+            : (state.olp.outputExtended.get(key) || 0);
+    }
+    const word = parsed.index - OLP_WORD_START;
+    return word >= 0 && word < OLP_WORD_COUNT ? state.olp.outputWords[word] : (state.olp.outputExtended.get(key) || 0);
+}
+
+function readOlpRawInputAddress(address) {
+    const parsed = normalizeOlpAddress(address, state.olp.project?.labels || {});
+    if (!parsed || !['IN', 'INW'].includes(parsed.prefix)) return 0;
+    const key = canonicalOlpAddress(parsed);
+    if (parsed.prefix === 'IN') {
+        const bit = parsed.index - OLP_BIT_START;
+        return bit >= 0 && bit < OLP_BIT_COUNT
+            ? ((state.olp.inputWords[Math.floor(bit / 16)] >> (bit % 16)) & 1)
+            : (state.olp.inputExtended.get(key) || 0);
+    }
+    const word = parsed.index - OLP_WORD_START;
+    return word >= 0 && word < OLP_WORD_COUNT ? state.olp.inputWords[word] : (state.olp.inputExtended.get(key) || 0);
+}
+
+function writeOlpAddress(address, value) {
+    const parsed = normalizeOlpAddress(address, state.olp.project?.labels || {});
+    if (!parsed || !['OUT', 'OUTW'].includes(parsed.prefix)) return;
+    const numeric = parsed.prefix === 'OUTW' ? clampWord(value) : (Number(value) ? 1 : 0);
+    const previous = readOlpAddress(parsed);
+    const key = canonicalOlpAddress(parsed);
+    if (parsed.prefix === 'OUT') {
+        const bit = parsed.index - OLP_BIT_START;
+        if (bit >= 0 && bit < OLP_BIT_COUNT) {
+            const word = Math.floor(bit / 16);
+            const mask = 1 << (bit % 16);
+            state.olp.outputWords[word] = numeric ? state.olp.outputWords[word] | mask : state.olp.outputWords[word] & ~mask;
+        } else state.olp.outputExtended.set(key, numeric);
+    } else {
+        const word = parsed.index - OLP_WORD_START;
+        if (word >= 0 && word < OLP_WORD_COUNT) state.olp.outputWords[word] = numeric;
+        else state.olp.outputExtended.set(key, numeric);
+    }
+    // Generated main.pro files scan continuously and often assign the same IO
+    // status on every pass. There is no state change to render or transmit.
+    if (previous === numeric) return;
+    state.olp.lastOutputAt = Date.now();
+    setOlpLastIoEvent('OLP → Tester: {address} = {value}', {
+        address: `${parsed.prefix}[${parsed.index}]`,
+        value: numeric
+    });
+    renderOlpIoMonitor();
+    sendOlpOutputSnapshot();
+}
+
+async function animateOlpJointMove(robot, targetAngles, speed, {
+    motion = 'MOVJ', startPose = null, targetPose = null, speedProvider = null,
+    accelerationScale = 1, zone = null, shouldStop = null, onProgress = null
+} = {}) {
+    const starts = robot.userData.joints.map((joint) => joint.angle);
+    const targets = robot.userData.joints.map((joint, index) => Number(targetAngles[index] ?? starts[index]));
+    const isLinear = motion === 'MOVL' && startPose && targetPose;
+    // Z[CP] is the controller's continuous-path zone.  The previous OLP
+    // implementation parsed it but still used the exact-stop S-curve for
+    // every segment, which made generated P1/P2 routes visibly tap between
+    // points.  Keep CP at a constant path rate so the next segment starts
+    // without the artificial stop-and-restart profile used by Z[0]/Z[n].
+    const continuousPath = String(zone || '').trim().toUpperCase() === 'CP';
+    const pathDistance = isLinear ? startPose.position.distanceTo(targetPose.position) : 0;
+    const getDuration = () => {
+        const effectiveSpeed = Number(speedProvider?.() ?? speed) || speed;
+        const durationSeconds = isLinear
+            ? calculateMovlDuration(
+                startPose.position.distanceTo(targetPose.position),
+                THREE.MathUtils.radToDeg(startPose.quaternion.angleTo(targetPose.quaternion)),
+                effectiveSpeed,
+                robot.userData.manifest?.cartesianMotion
+            )
+            : calculateMovjDuration(starts, targets, robot.userData.joints, effectiveSpeed);
+        // Preserve the controller's V[]/Velset relationship while keeping OLP
+        // responsive at intentionally low test speeds.
+        const scaledDuration = durationSeconds / Math.max(0.2, Math.min(1.2, Number(accelerationScale) || 1));
+        return Math.max(100, Math.min(8000, scaledDuration * 1000));
+    };
+    const startAt = performance.now();
+    let previousAt = startAt;
+    let distanceProgress = 0;
+    while (true) {
+        if (state.olp.runtime?.cancelled) throw new Error('OLP stopped');
+        if (shouldStop?.()) {
+            captureCurrentTcpTarget(robot);
+            return { interrupted: true, progress: distanceProgress };
+        }
+        const now = performance.now();
+        const durationMilliseconds = getDuration();
+        distanceProgress += Math.max(0, now - previousAt) / durationMilliseconds;
+        previousAt = now;
+        const progress = Math.min(1, distanceProgress);
+        const eased = continuousPath
+            ? progress
+            : progress * progress * (3 - 2 * progress);
+        targets.forEach((target, index) => setJointAngle(robot.userData.joints[index], starts[index] + (target - starts[index]) * eased, false));
+        robot.updateMatrixWorld(true);
+        syncJointControls(robot);
+        requestRender();
+        onProgress?.({
+            progress,
+            elapsedSeconds: Math.max(0, now - startAt) / 1000,
+            durationSeconds: durationMilliseconds / 1000,
+            distance: pathDistance
+        });
+        if (progress >= 1) break;
+        await new Promise((resolve) => window.setTimeout(resolve, 16));
+    }
+    captureCurrentTcpTarget(robot);
+    return { interrupted: false, progress: 1 };
+}
+
+function getOlpMotionTarget(project, pointExpression, runtime = null, options = {}) {
+    if (options?.targetOverride?.values) {
+        return {
+            kind: options.targetOverride.kind === 'jointPoint' ? 'jointPoint' : 'point',
+            values: [...options.targetOverride.values],
+            name: options.targetOverride.name || pointExpression
+        };
+    }
+    return resolveOlpPoint(project, pointExpression, runtime?.activePointFile);
+}
+
+function buildOlpCartesianTarget(robot, values) {
+    const numeric = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
+    const source = [
+        numeric(values?.[0]),
+        numeric(values?.[1]),
+        numeric(values?.[2]),
+        numeric(values?.[3]),
+        numeric(values?.[4]),
+        numeric(values?.[5])
+    ];
+    const adaptationDetails = [];
+    const position = new THREE.Vector3(source[0], source[1], source[2]);
+    let quaternion;
+
+    if (robot.userData.manifest?.robotType === 'scara') {
+        const prismaticDefinition = robot.userData.joints?.[2]?.definition;
+        if (Number.isFinite(prismaticDefinition?.min) && Number.isFinite(prismaticDefinition?.max)) {
+            const adaptedZ = THREE.MathUtils.clamp(
+                position.z,
+                prismaticDefinition.min,
+                prismaticDefinition.max
+            );
+            if (Math.abs(adaptedZ - position.z) > 0.001) {
+                adaptationDetails.push('Z ' + position.z.toFixed(3) + ' -> ' + adaptedZ.toFixed(3));
+                position.z = adaptedZ;
+            }
+        }
+
+        const structure = robot.userData.manifest?.structure || [];
+        const arm1 = numeric(structure[0], NaN);
+        const arm2 = numeric(structure[1], NaN);
+        const radius = Math.hypot(position.x, position.y);
+        if (Number.isFinite(arm1) && Number.isFinite(arm2)) {
+            const minimumRadius = Math.max(0, Math.abs(arm1 - arm2) + 0.001);
+            const maximumRadius = Math.max(minimumRadius, arm1 + arm2 - 0.001);
+            const adaptedRadius = THREE.MathUtils.clamp(radius, minimumRadius, maximumRadius);
+            if (Math.abs(adaptedRadius - radius) > 0.001) {
+                if (radius < 0.001) {
+                    position.set(adaptedRadius, 0, position.z);
+                } else {
+                    const scale = adaptedRadius / radius;
+                    position.x *= scale;
+                    position.y *= scale;
+                }
+                adaptationDetails.push('XY radius ' + radius.toFixed(3) + ' -> ' + adaptedRadius.toFixed(3));
+            }
+        }
+
+        if (Math.abs(source[4]) > 0.01 || Math.abs(source[5]) > 0.01) {
+            adaptationDetails.push('SCARA tilt axes ignored');
+        }
+        // OLP point records use Rz, Ry, Rx order after XYZ. SCARA accepts Rz
+        // only, so preserve yaw and remove the unsupported tilt axes.
+        quaternion = quaternionFromTcpRotationDegrees(robot, 0, 0, source[3]);
+    } else {
+        quaternion = quaternionFromTcpRotationDegrees(robot, source[5], source[4], source[3]);
+    }
+
+    return {
+        position,
+        quaternion,
+        adaptation: {
+            changed: adaptationDetails.length > 0,
+            details: adaptationDetails
+        }
+    };
+}
+
+function getOlpMotionCallbacks(runtime, options = {}) {
+    return {
+        shouldStop: options.until ? () => Boolean(runtime?.evaluate?.(options.until)) : null,
+        onProgress: (metrics) => runtime?.handleMotionProgress?.(options, metrics)
+    };
+}
+
+function getOlpAccelerationScale(options = {}) {
+    const acceleration = Number(options.acceleration);
+    const deceleration = Number(options.deceleration);
+    const values = [acceleration, deceleration].filter((value) => Number.isFinite(value) && value > 0);
+    if (!values.length) return 1;
+    // SetAcc/Acc/Dec values are percentages.  The S-curve duration is scaled
+    // conservatively so a lower value visibly slows the OLP motion without
+    // exceeding the model's configured acceleration limits.
+    const average = values.reduce((sum, value) => sum + value, 0) / values.length;
+    return Math.sqrt(Math.max(0.05, Math.min(1.2, average / 100)));
+}
+
+function getOlpEffectiveMotionSpeed(robot, motion, speed, runtime = null, options = {}) {
+    const speedMode = options.speedMode || 'percent';
+    const effective = Number(runtime?.getEffectiveMotionSpeed?.(speed, speedMode) ?? speed) || speed;
+    if (motion !== 'MOVL' || speedMode === 'absolute') return effective;
+    const maximum = Number(robot.userData.manifest?.cartesianMotion?.maxSpeed) || 1000;
+    return Math.max(1, maximum * Math.max(1, Math.min(100, effective)) / 100);
+}
+
+function formatOlpIkFailure(robot, point, target, solved) {
+    const manifest = robot.userData.manifest || {};
+    const modelName = robot.userData.robotName || robot.userData.modelName || manifest.name || 'selected robot';
+    const format = (value) => Number.isFinite(Number(value)) ? Number(value).toFixed(3) : 'unreachable';
+    const source = point.values || [];
+    const parts = [
+        'IK failed for ' + (point.name || 'target'),
+        'model=' + modelName + ' (' + (manifest.robotType || 'unknown') + ')',
+        'source XYZ=[' + format(source[0]) + ', ' + format(source[1]) + ', ' + format(source[2]) + ']',
+        'target XYZ=[' + format(target.position.x) + ', ' + format(target.position.y) + ', ' + format(target.position.z) + ']'
+    ];
+    const current = getCurrentTcpPoseBase(robot);
+    if (current?.position) {
+        parts.push('current XYZ=['
+            + format(current.position.x) + ', '
+            + format(current.position.y) + ', '
+            + format(current.position.z) + ']');
+    }
+    parts.push('position error=' + format(solved?.positionError) + ' mm');
+    parts.push('rotation error=' + format(Number(solved?.rotationError) * 180 / Math.PI) + ' deg');
+
+    if (manifest.robotType === 'scara') {
+        const structure = manifest.structure || [];
+        const arm1 = Number(structure[0]);
+        const arm2 = Number(structure[1]);
+        const radius = Math.hypot(target.position.x, target.position.y);
+        if (Number.isFinite(arm1) && Number.isFinite(arm2)) {
+            parts.push('SCARA reach radius=' + format(radius)
+                + ' mm (allowed ' + format(Math.abs(arm1 - arm2))
+                + '...' + format(arm1 + arm2) + ' mm)');
+        }
+        const zDefinition = robot.userData.joints?.[2]?.definition;
+        if (zDefinition) {
+            parts.push('SCARA Z range=' + format(zDefinition.min) + '...' + format(zDefinition.max) + ' mm');
+        }
+    } else {
+        parts.push('6-axis target may be outside the reachable workspace or joint limits');
+    }
+    if (target.adaptation?.details?.length) {
+        parts.push('model adaptation=' + target.adaptation.details.join(', '));
+    }
+    if (solved?.reason) parts.push('reason=' + solved.reason);
+    return parts.join('; ');
+}
+
+async function moveOlpTarget(robot, motion, point, speed, runtime = null, options = {}) {
+    const speedProvider = () => getOlpEffectiveMotionSpeed(robot, motion, speed, runtime, options);
+    const callbacks = getOlpMotionCallbacks(runtime, options);
+    const accelerationScale = getOlpAccelerationScale(options);
+    if (point.kind === 'jointPoint') {
+        return animateOlpJointMove(robot, point.values, speed, {
+            motion: 'MOVJ', speedProvider, accelerationScale, zone: options.zone, ...callbacks
+        });
+    }
+    const target = buildOlpCartesianTarget(robot, point.values);
+    if (target.adaptation?.changed) {
+        const notices = state.olp.modelAdaptationNotices || new Set();
+        state.olp.modelAdaptationNotices = notices;
+        const signature = point.name + '|' + target.adaptation.details.join('|');
+        if (!notices.has(signature)) {
+            notices.add(signature);
+            appendOlpConsole('Selected SCARA model adaptation: {name} ({details}).', {
+                name: point.name,
+                details: target.adaptation.details.join('; ')
+            });
+        }
+    }
+    const startPose = getCurrentTcpPoseBase(robot);
+    const starts = robot.userData.joints.map((joint) => joint.angle);
+    const solved = solveRobotIK(robot, target, { positionTolerance: 0.8, rotationTolerance: THREE.MathUtils.degToRad(0.5) });
+    if (!solved.success) {
+        restoreRobotJointAngles(robot, starts);
+        throw new Error(formatOlpIkFailure(robot, point, target, solved));
+    }
+    const targets = robot.userData.joints.map((joint) => joint.angle);
+    restoreRobotJointAngles(robot, starts);
+    return animateOlpJointMove(robot, targets, speed, {
+        motion: motion === 'MOVL' ? 'MOVL' : 'MOVJ',
+        startPose,
+        targetPose: target,
+        speedProvider,
+        accelerationScale,
+        zone: options.zone,
+        ...callbacks
+    });
+}
+
+async function moveOlpCartesianPose(robot, motion, target, speed, runtime = null, options = {}) {
+    const point = {
+        kind: 'point',
+        name: options.segmentName || motion,
+        values: [
+            target.position.x,
+            target.position.y,
+            target.position.z,
+            ...(() => {
+                const rotation = getTcpRotationDegrees(robot, target);
+                return [rotation.rz, rotation.ry, rotation.rx];
+            })()
+        ]
+    };
+    return moveOlpTarget(robot, motion, point, speed, runtime, options);
+}
+
+async function runOlpMove(motion, pointExpression, speed, project, runtime = null, options = {}) {
+    const robot = state.activeProgramRobot || state.activeArticulatedModel;
+    if (!robot) throw new Error('Select one robot before running OLP.');
+    if (motion === 'MOVC') {
+        const arcTargets = options.arcTargets || [];
+        const middle = arcTargets[1];
+        const end = arcTargets[2];
+        if (!middle?.targetOverride || !end?.targetOverride) throw new Error('MovC requires three valid point targets.');
+        setOlpLastMotion('MOVC {targets} started (linear arc approximation).', {
+            targets: arcTargets.map((entry) => entry.expression).join(' → ')
+        });
+        appendOlpConsole('Executing {motion}', { motion: getOlpLastMotionText() });
+        renderOlpIoMonitor();
+        const middleResult = await moveOlpTarget(robot, 'MOVL', {
+            kind: middle.targetOverride.kind === 'jointPoint' ? 'jointPoint' : 'point',
+            values: middle.targetOverride.values,
+            name: middle.targetOverride.name || middle.expression
+        }, speed, runtime, { ...options, outEvents: [] });
+        if (!middleResult?.interrupted) {
+            await moveOlpTarget(robot, 'MOVL', {
+                kind: end.targetOverride.kind === 'jointPoint' ? 'jointPoint' : 'point',
+                values: end.targetOverride.values,
+                name: end.targetOverride.name || end.expression
+            }, speed, runtime, options);
+        }
+        setOlpLastMotion('MOVC completed.');
+        renderOlpIoMonitor();
+        return;
+    }
+    const point = getOlpMotionTarget(project, pointExpression, runtime, options);
+    if (!point) throw new Error(`Point not found: ${pointExpression}`);
+    setOlpLastMotion('{motion} {point} started on selected robot.', {
+        motion: motion.toUpperCase(),
+        point: pointExpression
+    });
+    appendOlpConsole('Executing {motion}', { motion: getOlpLastMotionText() });
+    // Home status is pose-driven and project-specific.  The first changed joint
+    // during this motion will update the detected Home_sts output accordingly.
+    renderOlpIoMonitor();
+    const result = await moveOlpTarget(robot, motion, point, speed, runtime, options);
+    setOlpLastMotion(result?.interrupted
+        ? '{motion} {point} stopped by Until condition.'
+        : '{motion} {point} completed.', {
+            motion: motion.toUpperCase(),
+            point: point.name
+        });
+    renderOlpIoMonitor();
+}
+
+async function runOlpJump(motion, pointExpression, speed, project, runtime = null, options = {}) {
+    const robot = state.activeProgramRobot || state.activeArticulatedModel;
+    if (!robot) throw new Error('Select one robot before running OLP.');
+    if (robot.userData.manifest?.robotType !== 'scara') throw new Error(`${motion} is available only for SCARA robots.`);
+    const point = getOlpMotionTarget(project, pointExpression, runtime, options);
+    if (!point || point.kind === 'jointPoint') throw new Error(`${motion} requires a Cartesian P point.`);
+    const start = getCurrentTcpPoseBase(robot);
+    const target = buildOlpCartesianTarget(robot, point.values);
+    const requestedHeight = Math.max(0, Number(options.jumpHeight) || 100);
+    const highestPoseZ = Math.max(start.position.z, target.position.z);
+    const prismaticJoint = robot.userData.joints?.[2];
+    const zMin = Number(prismaticJoint?.definition?.min);
+    const zMax = Number(prismaticJoint?.definition?.max);
+    const requestedTravelZ = highestPoseZ + requestedHeight;
+    // SCARA projects use the controller's prismatic range directly for the
+    // Cartesian Z axis. In the upright model, Z=0 is already the highest
+    // reachable height, so blindly adding 100 mm creates an impossible lift
+    // and aborts the whole OLP runtime before the first real move.
+    const travelZ = Number.isFinite(zMin) && Number.isFinite(zMax)
+        ? THREE.MathUtils.clamp(requestedTravelZ, zMin, zMax)
+        : requestedTravelZ;
+    const height = Math.max(0, travelZ - highestPoseZ);
+    const lift = { position: start.position.clone(), quaternion: start.quaternion.clone() };
+    const travel = { position: target.position.clone(), quaternion: target.quaternion.clone() };
+    lift.position.z = travelZ;
+    travel.position.z = travelZ;
+    if (height + 1e-6 < requestedHeight) {
+        appendOlpConsole('JUMP clearance limited to {height} mm by the selected SCARA Z range.', { height });
+    }
+    setOlpLastMotion('{motion} {point} started (lift {height} mm).', {
+        motion,
+        point: pointExpression,
+        height
+    });
+    appendOlpConsole('Executing {motion}', { motion: getOlpLastMotionText() });
+    renderOlpIoMonitor();
+    const liftResult = await moveOlpCartesianPose(robot, 'MOVL', lift, speed, runtime, { ...options, outEvents: [], segmentName: `${motion} lift` });
+    if (liftResult?.interrupted) return;
+    const traverseResult = await moveOlpCartesianPose(robot, motion === 'JUMPL' ? 'MOVL' : 'MOVJ', travel, speed, runtime, { ...options, outEvents: [], segmentName: `${motion} traverse` });
+    if (traverseResult?.interrupted) return;
+    const descendResult = await moveOlpCartesianPose(robot, 'MOVL', target, speed, runtime, { ...options, segmentName: `${motion} descend` });
+    setOlpLastMotion(descendResult?.interrupted
+        ? '{motion} {point} stopped by Until condition.'
+        : '{motion} {point} completed.', {
+            motion,
+            point: point.name
+        });
+    renderOlpIoMonitor();
+}
+
+function getOlpCurrentPosition(kind = 'point') {
+    const robot = state.activeProgramRobot || state.activeArticulatedModel;
+    if (!robot) return null;
+    if (kind === 'jointPoint') return robot.userData.joints.map((joint) => Number(joint.angle) || 0);
+    const pose = getCurrentTcpPoseBase(robot);
+    if (!pose) return null;
+    const rotation = getTcpRotationDegrees(robot, pose);
+    return [pose.position.x, pose.position.y, pose.position.z, rotation.rz, rotation.ry, rotation.rx];
+}
+
+function handleOlpAlarm(code, easyGo) {
+    state.olp.execution = {
+        ...state.olp.execution,
+        alarm: { code, easyGo },
+        phase: easyGo ? state.olp.execution?.phase || 'running' : 'alarm'
+    };
+    appendOlpConsole(easyGo ? 'OLP Alarm[{code}] EasyGo.' : 'OLP Alarm[{code}].', { code });
+    if (!easyGo) setOlpLastMotion('Alarm[{code}] stopped OLP.', { code });
+    updateOlpProgramIndicator();
+    renderOlpIoMonitor();
+}
+
+function getOlpHomeTargetAngles(robot, homeIndex) {
+    const targets = robot.userData.joints.map(() => 0);
+    // Imported projects can use Home[0] without declaring a point.  In OLP it
+    // means the fixed Work Origin 0: zero all axes and fold J5 to -90 degrees.
+    // SCARA has its own mechanical zero convention, so it remains all zero.
+    if (Number(homeIndex) === 0 && robot.userData.manifest?.robotType !== 'scara') {
+        const j5Index = robot.userData.joints.findIndex((joint) => joint.definition?.name === 'J5');
+        if (j5Index >= 0) targets[j5Index] = -90;
+    }
+    return targets;
+}
+
+function getOlpHomeStatusOutput(project = state.olp.project) {
+    const labels = project?.labels || {};
+    const candidates = Object.entries(labels)
+        .map(([label, address]) => {
+            const parsed = normalizeOlpAddress(address, labels);
+            const compact = String(label || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+            if (parsed?.prefix !== 'OUT' || !compact.includes('home') || !/(sts|status)$/.test(compact)) return null;
+            const score = (compact === 'yrobothomests' ? 1000 : 0)
+                + (/(?:home)(?:sts|status)$/.test(compact) ? 100 : 0)
+                + (compact.includes('robot') ? 10 : 0);
+            return { label, address: canonicalOlpAddress(parsed), score };
+        })
+        .filter(Boolean)
+        .sort((left, right) => right.score - left.score || left.label.localeCompare(right.label));
+    return candidates[0] || null;
+}
+
+function syncOlpHomeStatus(robot) {
+    const homeStatus = getOlpHomeStatusOutput();
+    if (!homeStatus || !robot?.userData?.joints?.length) return;
+    const homeTargets = getOlpHomeTargetAngles(robot, 0);
+    // The simulation uses degrees for rotary joints and millimetres for a SCARA
+    // vertical axis.  A small tolerance avoids an ON/OFF flicker at the final
+    // animation frame, while still making Out[519] reflect the actual pose.
+    const atWorkOrigin0 = robot.userData.joints.every((joint, index) => (
+        Math.abs(Number(joint.angle || 0) - Number(homeTargets[index] || 0)) <= 0.05
+    ));
+    writeOlpAddress(homeStatus.address, atWorkOrigin0 ? 1 : 0);
+}
+
+async function runOlpHome(homeIndex, speed, project, runtime = null) {
+    const robot = state.activeProgramRobot || state.activeArticulatedModel;
+    if (!robot) throw new Error('Select one robot before running OLP.');
+    const isScara = robot.userData.manifest?.robotType === 'scara';
+    const originDescription = Number(homeIndex) === 0
+        ? (isScara ? 'Work Origin 0 (SCARA joint zero)' : 'Work Origin 0 (J5 = -90°)')
+        : 'joint zero';
+    setOlpLastMotion('HOME[{index}] {origin} started on selected robot.', {
+        index: homeIndex,
+        origin: originDescription
+    });
+    appendOlpConsole('Executing {motion}', { motion: getOlpLastMotionText() });
+    renderOlpIoMonitor();
+    await animateOlpJointMove(robot, getOlpHomeTargetAngles(robot, homeIndex), speed, {
+        speedProvider: () => runtime?.getEffectiveMotionSpeed?.(speed, 'percent') ?? speed
+    });
+    syncOlpHomeStatus(robot);
+    setOlpLastMotion('HOME[{index}] completed.', { index: homeIndex });
+    appendOlpConsole('OLP Home[{index}] complete.', { index: homeIndex });
+    renderOlpIoMonitor();
+}
+
+function sendOlpOutputSnapshot({ force = false } = {}) {
+    // main.pro can scan hundreds of times per second and assigns the same status
+    // values on every scan. Coalesce those assignments into one small bus update;
+    // otherwise the tester spends all of its UI time repainting duplicate IO grids.
+    if (state.olp.outputTimer) {
+        if (force) state.olp.lastOutputSignature = '';
+        return;
+    }
+    if (force) state.olp.lastOutputSignature = '';
+    state.olp.outputTimer = window.setTimeout(() => {
+        state.olp.outputTimer = null;
+        const socket = state.olp.socket;
+        if (socket?.readyState !== WebSocket.OPEN || !state.olp.busConnected) return;
+        const words = [...state.olp.outputWords];
+        const mappedValues = Object.fromEntries(state.olp.outputExtended);
+        const signature = `${words.join(',')}|${Object.entries(mappedValues).sort(([left], [right]) => left.localeCompare(right)).map(([key, value]) => `${key}:${value}`).join(',')}`;
+        if (signature === state.olp.lastOutputSignature) return;
+        state.olp.lastOutputSignature = signature;
+        socket.send(JSON.stringify({ type: 'outputSnapshot', words, mappedValues }));
+    }, 25);
+}
+
+function getOlpRemoteCommand(command) {
+    return state.olp.project?.remoteIoMapping?.find((entry) => entry?.ioType === 0 && entry?.command === command && entry?.address) || null;
+}
+
+async function resetOlpFromRemoteIo() {
+    await stopOlpSession('Remote IO program reset', { resetCursor: true });
+    state.olp.outputWords = new Uint16Array(OLP_WORD_COUNT);
+    state.olp.outputExtended = new Map();
+    state.olp.execution = { ...state.olp.execution, alarm: null };
+    state.olp.lastOutputAt = Date.now();
+        setOlpLastMotion('No OLP motion command executed yet.');
+    appendOlpConsole('Remote IO reset received; OLP is ready.');
+    renderOlpIoMonitor();
+    sendOlpOutputSnapshot();
+}
+
+function getOlpPositionCommandEntries() {
+    const labels = state.olp.project?.labels || {};
+    return Object.entries(labels)
+        .map(([label, address]) => {
+            const match = label.match(/^xP(\d+)_(wait|work)_pos_start$/i);
+            const parsed = normalizeOlpAddress(address, labels);
+            return match && parsed?.prefix === 'IN'
+                ? { label, address: canonicalOlpAddress(parsed), process: match[1], mode: match[2].toLowerCase() }
+                : null;
+        })
+        .filter(Boolean);
+}
+
+function monitorOlpPositionInputs(previousValues, rawValues = null) {
+    const entries = getOlpPositionCommandEntries();
+    const nextValues = rawValues || new Map(entries.map((entry) => [entry.address, readOlpRawInputAddress(entry.address) ? 1 : 0]));
+    for (const entry of entries) {
+        const current = nextValues.get(entry.address) || 0;
+        const previous = previousValues.get(entry.address) || 0;
+        if (current !== previous) {
+            const parsed = normalizeOlpAddress(entry.address, state.olp.project?.labels || {});
+            state.olp.lastRawInputBitAddress = entry.address;
+            if (parsed?.prefix === 'IN') {
+                const bit = parsed.index - OLP_BIT_START;
+                if (bit >= 0 && bit < OLP_BIT_COUNT) {
+                    state.olp.lastRawInputWordAddress = `INW[${OLP_WORD_START + Math.floor(bit / 16)}]`;
+                }
+            }
+            appendOlpConsole('Tester raw position input: {address}={value} ({label}).', {
+                address: entry.address,
+                value: current,
+                label: entry.label
+            });
+        }
+    }
+    state.olp.positionCommandValues = nextValues;
+}
+
+async function handleOlpRemoteIoCommands(previousValues) {
+    const mappings = ['start', 'stop', 'reset', 'clearAlarm']
+        .map((command) => ({ command, entry: getOlpRemoteCommand(command) }))
+        .filter(({ entry }) => entry);
+    if (!mappings.length || state.olp.remoteCommandBusy) return;
+    const rising = mappings.find(({ command, entry }) => (
+        readOlpAddress(entry.address) !== 0 && previousValues.get(command) !== 1
+    ));
+    if (!rising) return;
+    state.olp.remoteCommandBusy = true;
+    try {
+        if (rising.command === 'start') {
+            appendOlpConsole('Remote IO start: {address} ON', { address: rising.entry.address });
+            if (!isOlpRunning()) void startOlpSession();
+        } else if (rising.command === 'stop') {
+            appendOlpConsole('Remote IO stop: {address} ON', { address: rising.entry.address });
+            await stopOlpSession('Remote IO program stop', { resetCursor: true });
+        } else if (rising.command === 'reset') {
+            await resetOlpFromRemoteIo();
+        } else {
+            appendOlpConsole('Remote IO clear alarm: {address} ON', { address: rising.entry.address });
+            const runningAfterClear = isOlpRunning();
+            state.olp.execution = {
+                ...state.olp.execution,
+                alarm: null,
+                phase: ['alarm', 'error'].includes(String(state.olp.execution?.phase || '').toLowerCase())
+                    ? (runningAfterClear ? 'running' : 'stopped')
+                    : state.olp.execution?.phase
+            };
+            updateOlpBusStatus(state.olp.busConnected
+                ? 'Virtual Bus connected · tester master'
+                : 'Virtual Bus disconnected', 'Remote IO clear alarm received.');
+            setOlpStatus(runningAfterClear ? 'running' : 'connected');
+        }
+    } finally {
+        state.olp.remoteCommandBusy = false;
+    }
+}
+
+function connectOlpVirtualBusLegacy() {
+    // Kept as a compatibility shim for old bookmarks/tests. All runtime
+    // callers must use the session-aware implementation below.
+    return connectOlpVirtualBus();
+    /*
+    const oldSocket = state.olp.socket;
+    if (oldSocket && [WebSocket.CONNECTING, WebSocket.OPEN].includes(oldSocket.readyState)) return;
+    let socket;
+    try { socket = new WebSocket('ws://127.0.0.1:8765/virtualbus/'); }
+    catch {
+        updateOlpBusStatus('Virtual Bus unavailable', 'No tester connection.');
+        setOlpStatus(isOlpRunning() ? 'running' : 'connected');
+        return;
+    }
+    state.olp.socket = socket;
+    updateOlpBusStatus('Virtual Bus connecting; OLP runs locally');
+    socket.addEventListener('open', () => {
+        if (state.olp.socket !== socket) return;
+        updateOlpBusStatus('Virtual Bus connected · OLP slave');
+        const running = isOlpRunning();
+        updateOlpBusStatus('Virtual Bus connected · OLP slave');
+        setOlpStatus(running ? 'running' : 'connected', running
+            ? 'Virtual Bus connected as OLP slave.'
+            : 'Virtual Bus connected; waiting for OLP Run or Remote IO start.');
+        socket.send(JSON.stringify({
+            type: 'hello',
+            role: 'slave',
+            protocol: 'inorobot-virtual-bus',
+            version: 1,
+            robotName: state.activeProgramRobot?.userData?.robotName || '',
+            modelName: state.activeProgramRobot?.userData?.modelName || '',
+            labels: state.olp.project?.labels || {},
+            remoteIoMapping: state.olp.project?.remoteIoMapping || []
+        }));
+        sendOlpOutputSnapshot({ force: true });
+    });
+    socket.addEventListener('message', (event) => {
+        try {
+            const message = JSON.parse(event.data);
+            if (message.type === 'inputSnapshot' && Array.isArray(message.words)) {
+                const previousPositionValues = new Map(state.olp.positionCommandValues);
+                const nextWords = Uint16Array.from(message.words.slice(0, OLP_WORD_COUNT).map(clampWord));
+                const nextExtended = new Map();
+                if (message.mappedValues && typeof message.mappedValues === 'object') {
+                    Object.entries(message.mappedValues).forEach(([address, value]) => {
+                        const parsed = normalizeOlpAddress(address, state.olp.project?.labels || {});
+                        if (parsed?.prefix === 'IN' || parsed?.prefix === 'INW') {
+                            nextExtended.set(canonicalOlpAddress(parsed), parsed.prefix === 'INW' ? clampWord(value) : (Number(value) ? 1 : 0));
+                        }
+                    });
+                }
+                const nextSignature = `${[...nextWords].join(',')}|${[...nextExtended.entries()].sort().map(([key, value]) => `${key}:${value}`).join(',')}`;
+                const changed = nextSignature !== state.olp.lastInputSignature;
+                const previousRemoteValues = new Map(state.olp.remoteCommandValues);
+                state.olp.inputWords = nextWords;
+                state.olp.inputExtended = nextExtended;
+                state.olp.lastInputAt = Date.now();
+                state.olp.lastInputSignature = nextSignature;
+                // OLP receives raw tester IO only.  Position inputs are logged
+                // for diagnosis, but never latched, queued, or synthesized here.
+                const rawPositionValues = new Map(getOlpPositionCommandEntries()
+                    .map((entry) => [entry.address, readOlpRawInputAddress(entry.address) ? 1 : 0]));
+                monitorOlpPositionInputs(previousPositionValues, rawPositionValues);
+                const monitorInputBit = getOlpMonitorAddress('IN', state.olp.lastRawInputBitAddress);
+                const monitorInputWord = getOlpMonitorAddress('INW', state.olp.lastRawInputWordAddress);
+                const inputEvents = [
+                    monitorInputBit ? `${monitorInputBit.address}=${readOlpAddress(monitorInputBit.address) ? 1 : 0}` : null,
+                    monitorInputWord ? `${monitorInputWord.address}=${readOlpAddress(monitorInputWord.address)}` : null
+                ].filter(Boolean);
+        setOlpLastIoEvent(inputEvents.length
+            ? 'Tester → OLP: {events}'
+            : 'Tester → OLP: no mapped project input labels',
+            inputEvents.length ? { events: inputEvents.join(', ') } : {});
+                state.olp.remoteCommandValues = new Map(['start', 'stop', 'reset', 'clearAlarm']
+                    .map((command) => {
+                        const entry = getOlpRemoteCommand(command);
+                        return [command, entry ? readOlpAddress(entry.address) : 0];
+                    }));
+                if (changed) appendOlpConsole(state.olp.lastIoSource, state.olp.lastIoReplacements);
+                renderOlpIoMonitor();
+                void handleOlpRemoteIoCommands(previousRemoteValues);
+            }
+        } catch (error) { console.warn('OLP Virtual Bus message ignored:', error); }
+    });
+    socket.addEventListener('close', () => {
+        if (state.olp.socket !== socket) return;
+        state.olp.socket = null;
+        if (state.olp.virtualBusWanted && state.olp.project && !state.virtualController.wanted) {
+            updateOlpBusStatus('Virtual Bus waiting for tester');
+            setOlpStatus(isOlpRunning() ? 'running' : 'connected');
+            if (!state.olp.reconnectTimer) state.olp.reconnectTimer = window.setTimeout(() => {
+                state.olp.reconnectTimer = null;
+                if (state.olp.virtualBusWanted && state.olp.project && !state.virtualController.wanted) connectOlpVirtualBus();
+            }, 1000);
+        }
+    });
+    socket.addEventListener('error', () => {
+        updateOlpBusStatus('Virtual Bus unavailable · OLP local execution remains active');
+        if (state.olp.socket === socket && state.olp.project) setOlpStatus(isOlpRunning() ? 'running' : 'connected');
+    });
+    */
+}
+
+function getOlpVirtualBusEndpoint() {
+    // The local launcher (tools/serve-local.cjs) owns the broker endpoint.
+    // The tester connects to the same endpoint as a WebSocket master.
+    return 'ws://127.0.0.1:8765/virtualbus/';
+}
+
+function sendOlpVirtualBusHello(socket = state.olp.socket) {
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    socket.send(JSON.stringify({
+        type: 'hello',
+        role: 'slave',
+        protocol: 'inorobot-virtual-bus',
+        version: 1,
+        sessionId: String(state.olp.busSocketGeneration || 0),
+        robotName: state.activeProgramRobot?.userData?.robotName || '',
+        modelName: state.activeProgramRobot?.userData?.modelName || '',
+        labels: state.olp.project?.labels || {},
+        remoteIoMapping: state.olp.project?.remoteIoMapping || []
+    }));
+}
+
+function connectOlpVirtualBus() {
+    if (state.virtualController.wanted || !state.olp.virtualBusWanted) return;
+    startOlpBusMonitor();
+    if (state.olp.reconnectTimer) {
+        clearTimeout(state.olp.reconnectTimer);
+        state.olp.reconnectTimer = null;
+    }
+    const oldSocket = state.olp.socket;
+    if (oldSocket && oldSocket.readyState === WebSocket.OPEN) {
+        // A project can be loaded after OLP was enabled. Refresh the broker's
+        // project metadata without opening a second browser connection.
+        try { sendOlpVirtualBusHello(oldSocket); } catch { }
+        return;
+    }
+    if (oldSocket && oldSocket.readyState === WebSocket.CONNECTING) return;
+
+    let socket;
+    try { socket = new WebSocket(getOlpVirtualBusEndpoint()); }
+    catch (error) {
+        state.olp.busConnected = false;
+        state.olp.busPhase = 'unavailable';
+        state.olp.busLastPacketAt = 0;
+        updateOlpBusStatus('Virtual Bus unavailable · OLP local execution remains active', error?.message || 'connection skipped');
+        scheduleOlpVirtualBusReconnect();
+        return;
+    }
+    const socketGeneration = (state.olp.busSocketGeneration || 0) + 1;
+    state.olp.busSocketGeneration = socketGeneration;
+    const isCurrentSocket = () => state.olp.socket === socket
+        && state.olp.busSocketGeneration === socketGeneration;
+    state.olp.socket = socket;
+    state.olp.busConnected = false;
+    state.olp.busPhase = 'connecting';
+    state.olp.busLastPacketAt = 0;
+    updateOlpBusStatus('Virtual Bus connecting');
+    socket.addEventListener('open', () => {
+        if (!isCurrentSocket()) return;
+        if (state.olp.reconnectTimer) {
+            clearTimeout(state.olp.reconnectTimer);
+            state.olp.reconnectTimer = null;
+        }
+        state.olp.busConnected = false;
+        state.olp.busPhase = 'handshaking';
+        state.olp.busLastPacketAt = Date.now();
+        clearOlpBusHandshakeTimer();
+        state.olp.busHandshakeTimer = window.setTimeout(() => {
+            if (!isCurrentSocket() || state.olp.busConnected) return;
+            invalidateOlpBusSocket(
+                socket,
+                'Virtual Bus waiting for tester',
+                'Virtual Bus handshake timeout; waiting for tester reconnect.'
+            );
+        }, 3000);
+        updateOlpBusStatus('Virtual Bus waiting for tester', 'OLP local broker endpoint is open; waiting for tester Connect.');
+        try {
+            sendOlpVirtualBusHello(socket);
+        } catch (error) {
+            updateOlpBusStatus('Virtual Bus unavailable · OLP local execution remains active', error?.message || 'hello failed');
+        }
+    });
+    socket.addEventListener('message', (event) => {
+        try {
+            const message = JSON.parse(event.data);
+            if (!isCurrentSocket()) return;
+            if (message.type === 'busStatus' && message.connected === false) {
+                // Invalidate this socket before closing it.  A delayed
+                // `ready` event from the old master is then ignored by the
+                // generation guard above and cannot restore a green icon.
+                invalidateOlpBusSocket(socket, 'Virtual Bus disconnected', 'Tester master disconnected.');
+                setOlpStatus(isOlpRunning() ? 'running' : 'connected');
+                return;
+            }
+            if (message.type === 'ready' && String(message.role || '').toLowerCase() === 'master') {
+                if (String(message.protocol || '') !== 'inorobot-virtual-bus' || Number(message.version) !== 1) {
+                    invalidateOlpBusSocket(socket, 'Virtual Bus unavailable · OLP local execution remains active', 'Virtual Bus protocol mismatch.');
+                    return;
+                }
+                setOlpBusPhase('connected', 'Virtual Bus connected · tester master', 'Tester master handshake completed.');
+                setOlpStatus(isOlpRunning() ? 'running' : 'connected');
+                sendOlpOutputSnapshot({ force: true });
+                return;
+            }
+            if (message.type !== 'inputSnapshot' || !Array.isArray(message.words) || !state.olp.busConnected) return;
+            const previousPositionValues = new Map(state.olp.positionCommandValues);
+            const nextWords = Uint16Array.from(message.words.slice(0, OLP_WORD_COUNT).map(clampWord));
+            const nextExtended = new Map();
+            if (message.mappedValues && typeof message.mappedValues === 'object') {
+                Object.entries(message.mappedValues).forEach(([address, value]) => {
+                    const parsed = normalizeOlpAddress(address, state.olp.project?.labels || {});
+                    if (parsed?.prefix === 'IN' || parsed?.prefix === 'INW') {
+                        nextExtended.set(canonicalOlpAddress(parsed), parsed.prefix === 'INW' ? clampWord(value) : (Number(value) ? 1 : 0));
+                    }
+                });
+            }
+            const nextSignature = `${[...nextWords].join(',')}|${[...nextExtended.entries()].sort().map(([key, value]) => `${key}:${value}`).join(',')}`;
+            const changed = nextSignature !== state.olp.lastInputSignature;
+            const previousRemoteValues = new Map(state.olp.remoteCommandValues);
+            state.olp.inputWords = nextWords;
+            state.olp.inputExtended = nextExtended;
+            state.olp.lastInputAt = Date.now();
+            state.olp.busLastPacketAt = state.olp.lastInputAt;
+            state.olp.lastInputSignature = nextSignature;
+            const rawPositionValues = new Map(getOlpPositionCommandEntries()
+                .map((entry) => [entry.address, readOlpRawInputAddress(entry.address) ? 1 : 0]));
+            monitorOlpPositionInputs(previousPositionValues, rawPositionValues);
+            const monitorInputBit = getOlpMonitorAddress('IN', state.olp.lastRawInputBitAddress);
+            const monitorInputWord = getOlpMonitorAddress('INW', state.olp.lastRawInputWordAddress);
+            const inputEvents = [
+                monitorInputBit ? `${monitorInputBit.address}=${readOlpAddress(monitorInputBit.address) ? 1 : 0}` : null,
+                monitorInputWord ? `${monitorInputWord.address}=${readOlpAddress(monitorInputWord.address)}` : null
+            ].filter(Boolean);
+            setOlpLastIoEvent(inputEvents.length
+                ? 'Tester → OLP: {events}'
+                : 'Tester → OLP: no mapped project input labels',
+                inputEvents.length ? { events: inputEvents.join(', ') } : {});
+            state.olp.remoteCommandValues = new Map(['start', 'stop', 'reset', 'clearAlarm']
+                .map((command) => {
+                    const entry = getOlpRemoteCommand(command);
+                    return [command, entry ? readOlpAddress(entry.address) : 0];
+                }));
+            if (changed) appendOlpConsole(state.olp.lastIoSource, state.olp.lastIoReplacements);
+            renderOlpIoMonitor();
+            void handleOlpRemoteIoCommands(previousRemoteValues);
+        } catch (error) { console.warn('OLP Virtual Bus message ignored:', error); }
+    });
+    socket.addEventListener('close', () => {
+        if (!isCurrentSocket()) return;
+        clearOlpBusHandshakeTimer();
+        state.olp.socket = null;
+        state.olp.busConnected = false;
+        state.olp.busPhase = state.olp.virtualBusWanted ? 'waiting' : 'off';
+        if (state.olp.virtualBusWanted && !state.virtualController.wanted) {
+            updateOlpBusStatus('Virtual Bus waiting for tester');
+            setOlpStatus(isOlpRunning() ? 'running' : 'connected');
+            if (!state.olp.reconnectTimer) state.olp.reconnectTimer = window.setTimeout(() => {
+                state.olp.reconnectTimer = null;
+                connectOlpVirtualBus();
+            }, 1000);
+        } else {
+            updateOlpBusStatus('Virtual Bus disconnected');
+        }
+    });
+    socket.addEventListener('error', () => {
+        if (!isCurrentSocket()) return;
+        state.olp.busConnected = false;
+        state.olp.busPhase = 'unavailable';
+        updateOlpBusStatus('Virtual Bus unavailable · OLP local execution remains active');
+        scheduleOlpVirtualBusReconnect();
+    });
+}
+
+async function startOlpSession({ step = false } = {}) {
+    if (step && state.olp.runtime?.running && state.olp.runtime.paused) {
+        state.olp.runtime.stepOnce();
+        return;
+    }
+    if (!step && state.olp.runtime?.running && state.olp.runtime.paused) {
+        state.olp.runtime.togglePause();
+        setOlpStatus('running', 'OLP resumed.');
+        return;
+    }
+    const robot = state.activeProgramRobot || state.activeArticulatedModel;
+    if (isOlpRunning()) return;
+    if (!state.olp.project) { setOlpStatus('error', 'Load a robot project folder first.'); return; }
+    if (!robot) { setOlpStatus('error', 'Select one robot before running OLP.'); return; }
+    if (state.olp.workOriginBusy) { setOlpStatus('error', 'Wait until Work Origin movement is complete.'); return; }
+    if (state.olp.manualMoveBusy) { setOlpStatus('error', 'Wait until the manual point movement is complete.'); return; }
+    if (state.virtualController.wanted) { setOlpStatus('error', 'OLP is unavailable while a controller is connected.'); return; }
+    if (state.motionSessions.size) { setOlpStatus('error', 'Stop the normal motion program before running OLP.'); return; }
+    let runtime;
+    runtime = new OlpRuntime(state.olp.project, {
+        readAddress: readOlpAddress,
+        writeAddress: writeOlpAddress,
+        move: runOlpMove,
+        jump: runOlpJump,
+        home: runOlpHome,
+        getCurrentPosition: getOlpCurrentPosition,
+        alarm: handleOlpAlarm,
+        delay: (milliseconds) => new Promise((resolve) => window.setTimeout(resolve, Math.max(0, milliseconds))),
+        log: appendOlpConsole,
+        status: appendOlpConsole,
+        cursor: (snapshot) => queueOlpRuntimeView(runtime, snapshot),
+        onStopped: (snapshot) => {
+            if (state.olp.runtime === runtime) {
+                flushOlpRuntimeView(runtime, snapshot);
+                if (state.olp.resetCursorOnStop) {
+                    resetOlpProgramCursor();
+                    state.olp.resetCursorOnStop = false;
+                }
+                setOlpStatus('connected', snapshot?.phase === 'completed' ? 'OLP cycle completed.' : 'OLP stopped.');
+                updateMotionUiLock();
+                requestRender();
+            }
+        }
+    });
+    state.olp.runtime = runtime;
+    state.olp.resetCursorOnStop = false;
+    state.olp.virtualBusWanted = true;
+    state.olp.execution = { ...state.olp.execution, phase: 'starting', running: true, filePath: state.olp.project.programPath, lineNumber: 0, lineText: '', command: '', waitCondition: '', callStack: [], alarm: null };
+    writeOlpAddress('Out[512]', 1);
+    writeOlpAddress('Out[513]', 0);
+    setOlpStatus('running', 'Running {program} locally.', {
+        program: state.olp.project.programPath || 'main.pro'
+    });
+    // Start the OLP interpreter first. The tester connection is deliberately
+    // detached from program execution, so a missing Virtual Bus can never
+    // prevent main.pro from running on the selected robot.
+    const runtimePromise = step
+        ? runtime.stepOnce(state.olp.project.programPath)
+        : runtime.run(state.olp.project.programPath);
+    try { connectOlpVirtualBus(); }
+    catch (error) {
+        updateOlpBusStatus('Virtual Bus unavailable · OLP local execution remains active', error?.message || 'connection skipped');
+    }
+    try { await runtimePromise; }
+    catch (error) {
+        if (!/OLP stopped/i.test(error?.message || '')) {
+            state.olp.execution = { ...state.olp.execution, phase: 'error', running: false };
+            setOlpStatus('error', 'OLP error: {error}', { error: error.message || error });
+        }
+    }
+    if (state.olp.runtime === runtime) state.olp.runtime = null;
+    setOlpStatus(state.olp.status === 'error' ? 'error' : 'connected', state.olp.status === 'error' ? '' : 'OLP ready.');
+}
+
+async function stopOlpSession(reason = 'OLP stopped', { closeBus = false, resetCursor = false } = {}) {
+    const runtime = state.olp.runtime;
+    const wasRunning = isOlpRunning();
+    if (resetCursor) state.olp.resetCursorOnStop = true;
+    if (wasRunning) runtime?.stop();
+    // `stop()` changes the runtime phase synchronously.  Reflect it now so
+    // duplicate Pause/Stop clicks are disabled while the current command is
+    // unwinding, rather than waiting for the asynchronous stop completion.
+    if (wasRunning) setOlpStatus('running');
+    writeOlpAddress('Out[512]', 0);
+    writeOlpAddress('Out[513]', 1);
+    state.olp.virtualBusWanted = !closeBus && Boolean(state.olp.project) && !state.virtualController.wanted;
+    if (state.olp.reconnectTimer) {
+        clearTimeout(state.olp.reconnectTimer);
+        state.olp.reconnectTimer = null;
+    }
+    if (closeBus) {
+        stopOlpBusMonitor();
+        const socket = state.olp.socket;
+        state.olp.socket = null;
+        state.olp.busConnected = false;
+        if (socket && [WebSocket.OPEN, WebSocket.CONNECTING].includes(socket.readyState)) {
+            if (socket.readyState === WebSocket.OPEN) {
+                try { socket.send(JSON.stringify({ type: 'goodbye', reason })); } catch { }
+            }
+            try { socket.close(); } catch { }
+        }
+    }
+    updateOlpBusStatus(closeBus
+        ? 'Virtual Bus closed'
+        : (state.olp.busConnected ? 'Virtual Bus connected · tester master; OLP stopped' : 'Virtual Bus disconnected; OLP stopped'), reason);
+    if (runtime) appendOlpConsole(reason);
+    if (runtime?.running) {
+        const deadline = performance.now() + 1200;
+        while (runtime.running && performance.now() < deadline) await new Promise((resolve) => window.setTimeout(resolve, 20));
+    }
+    if (!runtime || !runtime.running) {
+        if (state.olp.resetCursorOnStop) {
+            resetOlpProgramCursor();
+            state.olp.resetCursorOnStop = false;
+        }
+        setOlpStatus(state.olp.project ? 'connected' : 'disconnected', reason);
+        if (!closeBus && state.olp.virtualBusWanted && !state.olp.socket) connectOlpVirtualBus();
+    }
+    updateMotionUiLock();
+}
+
 async function connectVirtualController() {
     const controller = state.virtualController;
+    if (isOlpRunning() || state.olp.socket) await stopOlpSession('Controller connection requested; OLP and Virtual Bus closed.', { closeBus: true });
     if (isMotionActive()) return;
     refreshVirtualControllerRobotOptions();
     const isRealController = controller.controllerKind === 'real';
@@ -10658,7 +13128,11 @@ function getMotionSession(robot) {
 }
 
 function isMotionActive() {
-    return state.motionSessions.size > 0 || isVirtualControllerActive();
+    return state.motionSessions.size > 0
+        || isVirtualControllerActive()
+        || isOlpRunning()
+        || Boolean(state.olp.workOriginBusy)
+        || Boolean(state.olp.manualMoveBusy);
 }
 
 function getMotionStatus(robot) {
@@ -10789,7 +13263,7 @@ function renderMotionProgramPanel() {
 
     const robot = state.activeProgramRobot;
     const program = robot ? ensureMotionProgram(robot) : null;
-    el.programRobotName.textContent = robot
+    if (el.programRobotName) el.programRobotName.textContent = robot
         ? formatRobotPanelName(robot.userData.motionDisplayName)
         : uiText('로봇을 선택하세요');
     updateCycleTimeReadout(performance.now(), true);
@@ -10938,6 +13412,7 @@ function renderMotionProgramPanel() {
             || !program?.steps.some((step) => isMotionPointMotion(step.motion));
     }
     updateMotionUiLock();
+    updateOlpProgramPanelUi();
     updatePanelLauncher('program-panel');
 }
 
@@ -10979,6 +13454,172 @@ function handleProgramStepListClick(event) {
 function closeProgramStepContextMenu() {
     state.programContextStepId = null;
     el.programStepContextMenu?.classList.add('hidden');
+}
+
+function closeOlpPointContextMenu() {
+    state.olp.pointContextTarget = null;
+    el.olpPointContextMenu?.classList.add('hidden');
+}
+
+function openOlpPointContextMenu(event, record) {
+    const menu = el.olpPointContextMenu;
+    if (!menu || !record) return;
+    closeOlpPointContextMenu();
+    state.olp.pointContextTarget = {
+        path: record.path,
+        index: record.index,
+        sourceSymbol: record.sourceSymbol || 'P'
+    };
+    menu.classList.remove('hidden');
+    menu.style.left = '0px';
+    menu.style.top = '0px';
+    const bounds = menu.getBoundingClientRect();
+    menu.style.left = `${Math.max(8, Math.min(event.clientX, window.innerWidth - bounds.width - 8))}px`;
+    menu.style.top = `${Math.max(8, Math.min(event.clientY, window.innerHeight - bounds.height - 8))}px`;
+}
+
+function handleOlpPointContextMenu(event) {
+    if (isOlpRunning() || state.olp.manualMoveBusy || state.olp.workOriginBusy || !state.olp.project) return;
+    const row = event.target.closest('[data-olp-point-row]');
+    if (!row) return;
+    const pointFile = getOlpSelectedPointFile();
+    const record = pointFile?.records?.find((candidate) => candidate.index === Number(row.dataset.olpPointIndex)
+        && (candidate.sourceSymbol || 'P').toUpperCase() === String(row.dataset.olpPointSymbol || 'P').toUpperCase());
+    if (!record) return;
+    event.preventDefault();
+    openOlpPointContextMenu(event, record);
+}
+
+function getOlpPointContextRecord(target = state.olp.pointContextTarget) {
+    if (!target || !state.olp.project) return null;
+    const pointFile = state.olp.project.pointFiles?.find((file) => file.path === target.path);
+    return pointFile?.records?.find((record) => record.index === Number(target.index)
+        && (record.sourceSymbol || 'P').toUpperCase() === String(target.sourceSymbol || 'P').toUpperCase()) || null;
+}
+
+async function moveOlpPointFromContext() {
+    const target = state.olp.pointContextTarget;
+    closeOlpPointContextMenu();
+    if (!target || !state.olp.project) return;
+    if (isOlpRunning()) {
+        setOlpStatus('error', 'Stop OLP before moving to a point.');
+        return;
+    }
+    if (state.olp.manualMoveBusy || state.olp.workOriginBusy) return;
+    if (state.virtualController.wanted) {
+        setOlpStatus('error', 'Point movement is unavailable while a controller is connected.');
+        return;
+    }
+    if (state.motionSessions.size) {
+        setOlpStatus('error', 'Stop the normal motion program before moving to a point.');
+        return;
+    }
+
+    const robot = state.activeProgramRobot || state.activeArticulatedModel;
+    const record = getOlpPointContextRecord(target);
+    if (!robot) {
+        setOlpStatus('error', 'Select one robot before moving to a point.');
+        return;
+    }
+    if (!record || !Array.isArray(record.values) || !record.values.length) {
+        setOlpStatus('error', 'Point record not found: {point}.', {
+            point: `${target.sourceSymbol || 'P'}[${target.index}]`
+        });
+        return;
+    }
+
+    const pointName = `${record.sourceSymbol || 'P'}[${record.index}]`;
+    state.olp.manualMoveBusy = true;
+    updateOlpProgramPanelUi();
+    updateMotionUiLock();
+    try {
+        setOlpLastMotion('Moving to {point}.', { point: pointName });
+        appendOlpConsole('Moving {point} from {path}.', {
+            point: pointName,
+            path: record.path
+        });
+        setOlpStatus('working');
+        await moveOlpTarget(robot, 'MOVJ', record, 100, null, {
+            segmentName: pointName,
+            armParameters: record.armParameters || []
+        });
+        setOlpLastMotion('{point} reached.', { point: pointName });
+        appendOlpConsole('{point} reached.', { point: pointName });
+        setOlpStatus('connected', 'Moved to {point}.', { point: pointName });
+    } catch (error) {
+        setOlpStatus('error', 'Point move failed: {error}', {
+            error: error?.message || error
+        });
+    } finally {
+        state.olp.manualMoveBusy = false;
+        updateOlpProgramPanelUi();
+        updateMotionUiLock();
+        requestRender();
+    }
+}
+
+function formatOlpPointSourceLine(record, coordinates, armParameters) {
+    const sourceLine = String(record?.sourceLine || '');
+    const segments = sourceLine.split(';');
+    const assignment = segments[0]?.match(/^(\s*(?:P|LP)\s*\[\s*\d+\s*\]\s*=\s*)/i);
+    if (!assignment) throw new Error('포인트 레코드 형식을 인식할 수 없습니다.');
+    const formatNumber = (value) => {
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric)) throw new Error('현재 로봇 위치값이 올바르지 않습니다.');
+        return (Object.is(numeric, -0) ? 0 : numeric).toFixed(6);
+    };
+    const coordinateText = coordinates.slice(0, 6).map(formatNumber).join(', ');
+    const armText = armParameters.slice(0, 4).map((value) => {
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric)) throw new Error('Arm 파라미터가 올바르지 않습니다.');
+        return String(Math.trunc(numeric));
+    }).join(', ');
+    segments[0] = `${assignment[1]}${coordinateText}`;
+    segments[1] = ` ${armText}`;
+    if (segments.length < 3) segments.push('0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000');
+    return segments.join(';');
+}
+
+function writeOlpPointFromCurrentRobot() {
+    const target = state.olp.pointContextTarget;
+    closeOlpPointContextMenu();
+    if (!target || isOlpRunning() || !state.olp.project) return;
+    const robot = state.activeProgramRobot || state.activeArticulatedModel;
+    const pointFile = state.olp.project.pointFiles?.find((file) => file.path === target.path && file.kind === 'point');
+    const record = pointFile?.records?.find((candidate) => candidate.index === Number(target.index)
+        && (candidate.sourceSymbol || 'P').toUpperCase() === String(target.sourceSymbol || 'P').toUpperCase());
+    if (!robot || !pointFile || !record) return;
+    const coordinates = getOlpCurrentPosition('point');
+    if (!Array.isArray(coordinates) || coordinates.length < 6) {
+        setOlpStatus('error', '현재 로봇 위치를 읽을 수 없습니다.');
+        return;
+    }
+    try {
+        const joints = (robot.userData.joints || []).map((joint) => Number(joint.angle) || 0);
+        const armParameters = calculatePointArmParameters(robot, joints);
+        const nextLine = formatOlpPointSourceLine(record, coordinates, armParameters);
+        const fileRecord = state.olp.project.files.get(target.path);
+        const sourceLines = String(fileRecord?.text || '').split(/\r?\n/);
+        let lineIndex = sourceLines.findIndex((line) => line === record.sourceLine);
+        if (lineIndex < 0) {
+            lineIndex = sourceLines.findIndex((line) => new RegExp(`^\\s*(?:P|LP)\\s*\\[\\s*${Number(target.index)}\\s*\\]\\s*=`, 'i').test(line));
+        }
+        if (lineIndex < 0) throw new Error('원본 포인트 행을 찾을 수 없습니다.');
+        sourceLines[lineIndex] = nextLine;
+        const viewState = captureOlpPointViewState();
+        updateOlpFileText(state.olp.project, target.path, sourceLines.join('\n'));
+        state.olp.selectedFile = target.path;
+        renderOlpFileList();
+        restoreOlpPointViewState(viewState);
+        appendOlpConsole('{symbol}[{index}] overwritten from current robot pose; Arm=[{arm}].', {
+            symbol: target.sourceSymbol || 'P',
+            index: target.index,
+            arm: armParameters.join(', ')
+        });
+        setOlpStatus(state.olp.status === 'error' ? 'connected' : state.olp.status, 'OLP point updated from the current robot position.');
+    } catch (error) {
+        setOlpStatus('error', '포인트 쓰기 실패: {error}', { error: error.message || error });
+    }
 }
 
 function handleProgramStepContextMenu(event) {
@@ -11555,6 +14196,7 @@ function deleteSelectedMotionStep() {
 }
 
 function updateMotionRepeat(event) {
+    if (state.olp.enabled) return;
     const scope = event.currentTarget?.dataset.programRepeatScope === 'robot' ? 'robot' : 'group';
     const stateKey = scope === 'robot' ? 'motionRepeatRobot' : 'motionRepeat';
     const before = isMotionActive() ? null : captureSceneSnapshot();
@@ -11573,8 +14215,10 @@ function syncMotionRepeatControl() {
         const enabled = button.dataset.programRepeatScope === 'robot'
             ? state.motionRepeatRobot
             : state.motionRepeat;
-        button.classList.toggle('active', enabled);
-        button.setAttribute('aria-pressed', String(enabled));
+        const available = !state.olp.enabled;
+        button.classList.toggle('active', available && enabled);
+        button.setAttribute('aria-pressed', String(available && enabled));
+        button.disabled = !available;
         button.title = uiText(enabled ? '반복 실행 켜짐' : '반복 실행 꺼짐');
     });
 }
@@ -11605,7 +14249,7 @@ function updateMotionUiLock() {
         .forEach((control) => { control.disabled = locked; });
     el.endMonitoringDialog?.querySelectorAll('input, select, button:not(#end-monitoring-close)')
         .forEach((control) => { control.disabled = locked; });
-    el.programRepeatButtons.forEach((button) => { button.disabled = false; });
+    el.programRepeatButtons.forEach((button) => { button.disabled = Boolean(state.olp.enabled); });
     if (locked) {
         setTransformHandlesEnabled(false);
         setBaseJogGizmoEnabled(false);
@@ -11750,6 +14394,7 @@ async function restoreMotionProjectData(input) {
         robot.scale.fromArray(robotProject.baseTransform.scale);
         robot.updateMatrixWorld(true);
         updateModelRenderComplexity(robot);
+        if (state.collision.enabled) state.collision.system?.prepare([robot]);
         state.models.push(robot);
         state.scene.add(robot);
         markSceneCollisionDirty();
@@ -11824,7 +14469,108 @@ function formatPositionPointRecord(robot, step) {
     });
 }
 
+function importActiveProject() {
+    if (state.olp.enabled) {
+        if (isOlpRunning()) return;
+        void importOlpFolderFromPicker();
+        return;
+    }
+    el.inputProgramImport?.click();
+}
+
+async function saveActiveProject() {
+    if (state.olp.enabled) {
+        await saveOlpProjectAsZip();
+        return;
+    }
+    await exportMotionProject();
+}
+
+async function saveStandalonePFile(content, suggestedName = 'P.pts') {
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    if (typeof window.showSaveFilePicker === 'function') {
+        const fileHandle = await window.showSaveFilePicker({
+            id: 'inorobot-position-points',
+            suggestedName,
+            startIn: 'documents',
+            excludeAcceptAllOption: true,
+            types: [{
+                description: 'InoRobot P.pts position file',
+                accept: { 'text/plain': ['.pts'] }
+            }]
+        });
+        const writable = await fileHandle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        return fileHandle.name;
+    }
+    saveAs(blob, suggestedName);
+    return suggestedName;
+}
+
+// Keep P.pts headers identical to 4_ProjectGenerator/generator.js DataPoints.
+// This is intentionally locale-independent; browser/Windows locale must not
+// change the controller's Korean 오전/오후 timestamp convention.
+function formatProjectGeneratorPFileTime(date = new Date()) {
+    const pad = (value) => String(value).padStart(2, '0');
+    const hours = date.getHours();
+    const meridiem = hours < 12 ? '오전' : '오후';
+    const hour12 = hours % 12 || 12;
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${meridiem} ${hour12}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
+function getSelectedRobotProgramName() {
+    const robot = state.activeProgramRobot || state.activeArticulatedModel;
+    return robot?.userData?.robotName
+        || robot?.userData?.modelName
+        || state.olp.project?.projectInfo?.RobotName
+        || 'SelectedRobot';
+}
+
+function normalizeExportedPFileContent(content, robotName = getSelectedRobotProgramName()) {
+    const normalized = String(content ?? '').replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+    const headerMatch = normalized.match(/^(?:[ \t]*\n)*[ \t]*ProgramInfo\b[\s\S]*?^[ \t]*EndProgramInfo\b[^\n]*(?:\n|$)/im);
+    const body = (headerMatch ? normalized.slice(headerMatch[0].length) : normalized)
+        .replace(/^\s+/, '')
+        .trimEnd();
+    const header = [
+        'ProgramInfo',
+        '    Version = "S4.24"',
+        '    VRC = "V4R24"',
+        `    Time = "${formatProjectGeneratorPFileTime()}"`,
+        `    RobotName = "${robotName}"`,
+        'EndProgramInfo'
+    ].join('\r\n');
+    // The robot controller accepts Windows text files only. Normalize both
+    // the generated header and the imported point records to CRLF so an OLP
+    // project originally stored with LF can still be exported directly.
+    return `${header}\r\n${body ? `${body.replace(/\n/g, '\r\n')}\r\n` : ''}`;
+}
+
 async function exportPositionPoints() {
+    if (state.olp.enabled && state.olp.project) {
+        const pointFile = state.olp.project.pointFiles?.find((entry) => /(^|\/)P\.pts$/i.test(entry.path))
+            || state.olp.project.pointFiles?.find((entry) => entry.kind === 'point');
+        const record = pointFile ? state.olp.project.files?.get(pointFile.path) : null;
+        if (!record || typeof record.text !== 'string') {
+            setMotionProgramStatus('OLP 프로젝트에 P.pts 파일이 없습니다.', 'error');
+            return;
+        }
+        try {
+            const name = await saveStandalonePFile(
+                normalizeExportedPFileContent(record.text),
+                'P.pts'
+            );
+            setMotionProgramStatus('P.pts 내보내기 완료: {name}', '', { name });
+            setStatus('P.pts 내보내기 완료', '#22c55e');
+        } catch (error) {
+            if (error?.name === 'AbortError') return;
+            console.error('OLP P.pts export failed:', error);
+            setMotionProgramStatus('P.pts 내보내기에 실패했습니다.', 'error');
+            setStatus('P.pts 내보내기 실패', '#ef4444');
+        }
+        return;
+    }
     const robot = state.activeProgramRobot;
     const program = ensureMotionProgram(robot);
     const points = (program?.steps || [])
@@ -11853,29 +14599,32 @@ async function exportPositionPoints() {
         used.add(step.pointIndex);
     }
 
-    const content = `${points.map((step) => formatPositionPointRecord(robot, step)).join('\r\n')}\r\n`;
+    const content = normalizeExportedPFileContent(
+        `${points.map((step) => formatPositionPointRecord(robot, step)).join('\n')}\n`,
+        getSelectedRobotProgramName()
+    );
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     try {
         if (typeof window.showSaveFilePicker === 'function') {
             const fileHandle = await window.showSaveFilePicker({
                 id: 'inorobot-position-points',
-                suggestedName: 'Point_export.txt',
+                suggestedName: 'P.pts',
                 startIn: 'documents',
                 excludeAcceptAllOption: true,
                 types: [{
-                    description: 'InoRobotLab Position Points',
-                    accept: { 'text/plain': ['.txt'] }
+                    description: 'InoRobot P.pts position file',
+                    accept: { 'text/plain': ['.pts'] }
                 }]
             });
             const writable = await fileHandle.createWritable();
             await writable.write(blob);
             await writable.close();
-            setMotionProgramStatus('위치 값 내보내기 완료: {name}', '', { name: fileHandle.name });
+            setMotionProgramStatus('P.pts 내보내기 완료: {name}', '', { name: fileHandle.name });
         } else {
-            saveAs(blob, 'Point_export.txt');
-            setMotionProgramStatus('위치 값 내보내기 완료: {name}', '', { name: 'Point_export.txt' });
+            saveAs(blob, 'P.pts');
+            setMotionProgramStatus('P.pts 내보내기 완료: {name}', '', { name: 'P.pts' });
         }
-        setStatus('위치 값 내보내기 완료', '#22c55e');
+        setStatus('P.pts 내보내기 완료', '#22c55e');
     } catch (error) {
         if (error?.name === 'AbortError') {
             setMotionProgramStatus('위치 값 내보내기를 취소했습니다.');
@@ -12140,6 +14889,87 @@ function stepIntoCheckedRobots() {
         .filter(Boolean)
         .map((plan) => ({ ...plan, controlScope: 'group' }));
     startRobotMotionPlans(plans);
+}
+
+function runActiveProgramOrOlp() {
+    if (state.olp.enabled) {
+        void startOlpSession();
+        return;
+    }
+    runActiveRobotProgram();
+}
+
+function stepActiveProgramOrOlp() {
+    if (state.olp.enabled) {
+        void startOlpSession({ step: true });
+        return;
+    }
+    stepIntoActiveRobot();
+}
+
+function pauseActiveProgramOrOlp() {
+    if (state.olp.enabled) {
+        if (!state.olp.runtime) return;
+        state.olp.runtime.togglePause();
+        // Refresh the bottom-panel control state immediately on pause/resume.
+        setOlpStatus('running');
+        return;
+    }
+    pauseActiveRobotMotion();
+}
+
+function stopActiveProgramOrOlp() {
+    if (state.olp.enabled) {
+        void stopOlpSession('OLP stopped by user', { resetCursor: true });
+        return;
+    }
+    stopActiveRobotMotion();
+}
+
+async function moveOlpToWorkOrigin() {
+    if (state.olp.workOriginBusy || state.olp.manualMoveBusy) return;
+    if (!state.olp.project) {
+        setOlpStatus('error', 'Load a robot project folder before moving to Work Origin.');
+        return;
+    }
+    if (isOlpRunning()) {
+        setOlpStatus('error', 'Stop OLP before moving to Work Origin.');
+        return;
+    }
+    if (state.virtualController.wanted) {
+        setOlpStatus('error', 'Work Origin is unavailable while a controller is connected.');
+        return;
+    }
+
+    state.olp.workOriginBusy = true;
+    updateOlpProgramPanelUi();
+    updateMotionUiLock();
+    try {
+        state.olp.execution = {
+            ...state.olp.execution,
+            phase: 'stopped',
+            running: false,
+            paused: false,
+            filePath: state.olp.project.programPath,
+            lineNumber: 1,
+            lineText: 'Work Origin 0',
+            command: 'HOME[0]',
+            waitCondition: '',
+            callStack: [],
+            alarm: null
+        };
+        setOlpStatus('connected', 'Moving to Work Origin 0.');
+        await runOlpHome(0, 100, state.olp.project, null);
+        setOlpStatus('connected', 'Work Origin 0 reached.');
+    } catch (error) {
+        state.olp.execution = { ...state.olp.execution, phase: 'error', running: false, alarm: null };
+        setOlpStatus('error', 'Work Origin move failed: {error}', { error: error?.message || error });
+    } finally {
+        state.olp.workOriginBusy = false;
+        updateOlpProgramPanelUi();
+        updateMotionUiLock();
+        requestRender();
+    }
 }
 
 function runActiveRobotProgram() {
@@ -12818,6 +15648,13 @@ async function handleCADDownload() {
 function requiresContinuousRendering() {
     return isViewWindowOpen()
         || isVirtualControllerActive()
+        // OLP itself does not need a 60 FPS scene loop while it is waiting on
+        // IO or executing non-motion lines. Motion functions call
+        // requestRender() for each animation frame, so keep continuous
+        // rendering only for active OLP motion/control work.
+        || state.olp.workOriginBusy
+        || state.olp.manualMoveBusy
+        || Boolean(state.olp.runtime?.pendingMotions?.size)
         || [...state.motionSessions.values()].some((session) => session.status === 'running');
 }
 
@@ -12845,9 +15682,7 @@ function animate(timestamp = performance.now()) {
         const movingRobots = [...state.motionSessions.values()].map((session) => session.robot);
         stopRobotMotions(movingRobots);
         latchCollisionStopNotice(collision, '충돌이 감지되어 모션을 정지했습니다.');
-        updateCollisionStatus(collision);
         setMotionProgramStatus('충돌이 감지되어 모션을 정지했습니다.', 'error');
-        setStatus('충돌이 감지되어 모션을 정지했습니다.', '#ef4444');
     } else if (collisionFresh && !asCollisionResults(collision).length) {
         captureCollisionSafeRobotPoses();
     }

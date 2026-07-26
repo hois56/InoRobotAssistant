@@ -17,6 +17,10 @@
         projectCompare: {
             title: 'Project Compare',
             markdownPath: './ProjectCompare/업데이트_기록.md'
+        },
+        cadLightweight: {
+            title: 'CAD Lightweight',
+            markdownPath: './CADLightweight/업데이트_기록.md'
         }
     };
 
@@ -51,7 +55,8 @@
         const locale = window.InoRobotI18n?.locale || 'ko';
         const localized = window.INOROBOT_LOCALES?.[locale]?.debugHistoryMarkdown;
         if (localized) {
-            return extractLocalizedToolHistory(localized, toolKey);
+            const localizedHistory = extractLocalizedToolHistory(localized, toolKey);
+            if (localizedHistory) return localizedHistory;
         }
 
         const encoded = window.DEBUGGING_HISTORY_DATA?.[toolKey];

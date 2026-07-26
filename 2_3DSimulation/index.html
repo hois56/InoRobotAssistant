@@ -6,7 +6,7 @@
     <title>3D Simulation</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=20260724-simulation-reset-1-add-mode-centered-1-scrollbar-theme-1-interference-controller-read-1-interference-tool-read-1">
+    <link rel="stylesheet" href="style.css?v=20260726-olp-point-table-1">
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -21,7 +21,7 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/Language/runtime/i18n.css">
-    <script src="/Language/runtime/locales-data.js?v=20260718-cycle-time-notice1" defer></script>
+    <script src="/Language/runtime/locales-data.js?v=20260726-olp-i18n-1" defer></script>
     <script src="/Language/runtime/i18n.js" defer></script>
     <script src="/Language/runtime/icon-fallback.js" defer></script>
     <script src="/analytics-config.js"></script>
@@ -196,6 +196,19 @@
             <div id="simulation-snap-marker" class="simulation-snap-marker hidden" aria-hidden="true">
                 <span></span><strong id="simulation-snap-label">스냅</strong>
             </div>
+            <aside id="view-window" class="view-window panel-edge-resizable hidden" aria-labelledby="view-window-title">
+                <div class="view-window-header">
+                    <div>
+                        <span class="view-window-eyebrow">SAVED VIEWS</span>
+                        <h2 id="view-window-title"><i class="fa-solid fa-display"></i> 고정 뷰 창 <strong id="view-window-count">0</strong></h2>
+                    </div>
+                    <div class="view-window-actions">
+                        <button id="view-window-popout" type="button" title="새 창으로 열기" aria-label="사용자 뷰 창을 별도로 분리"><i class="fa-solid fa-up-right-from-square"></i></button>
+                        <button id="view-window-hide" type="button" title="숨기기" aria-label="사용자 뷰 창 숨기기"><i class="fa-solid fa-eye-slash"></i></button>
+                    </div>
+                </div>
+                <main id="view-window-grid" data-count="0" data-panel-drag-ignore></main>
+            </aside>
             <aside id="model-browser-panel" class="model-browser-panel" aria-label="장면 모델 트리와 위치 편집기">
                 <div class="model-browser-header">
                     <div>
@@ -502,40 +515,40 @@
                 <div class="view-presets-header">
                     <h2><i class="fa-solid fa-camera"></i> 사용자 뷰</h2>
                     <div class="panel-header-actions">
-                        <button type="button" data-panel-action="popout" data-panel-id="view-presets-panel" title="별도 창으로 분리" aria-label="사용자 뷰 창을 별도로 분리"><i class="fa-solid fa-up-right-from-square"></i></button>
+                        <button type="button" data-panel-action="popout" data-panel-id="view-presets-panel" title="새 창으로 열기" aria-label="사용자 뷰 패널을 새 창으로 열기"><i class="fa-solid fa-up-right-from-square"></i></button>
                         <button type="button" data-panel-action="hide" data-panel-id="view-presets-panel" title="숨기기" aria-label="사용자 뷰 창 숨기기"><i class="fa-solid fa-eye-slash"></i></button>
                     </div>
                 </div>
                 <div class="view-presets-content">
-                    <p class="view-presets-help">카메라를 원하는 위치로 조정한 뒤 슬롯의 저장 버튼을 누르세요. 화면 버튼을 누르면 저장된 뷰가 새 창으로 열리고, 다른 뷰를 누르면 같은 창에 분할되어 추가됩니다.</p>
+                    <p class="view-presets-help">카메라를 원하는 위치로 조정한 뒤 슬롯의 저장 버튼을 누르세요. 뷰 버튼은 페이지 안의 고정 뷰 창으로 열리고, 다른 뷰를 누르면 같은 창에 분할되어 추가됩니다. 패널 헤더의 새 창 버튼은 패널을 화면 밖의 별도 창으로 엽니다.</p>
                     <div id="view-presets-list" class="view-presets-list">
                         <div class="view-preset-row" data-view-slot="0">
                             <span class="view-preset-index">1</span>
                             <input type="text" data-view-name value="View 1" maxlength="24" aria-label="뷰 1 이름">
                             <button type="button" data-view-save title="현재 뷰 저장" aria-label="뷰 1에 현재 뷰 저장"><i class="fa-solid fa-floppy-disk"></i></button>
                             <button type="button" data-view-apply title="뷰 적용" aria-label="뷰 1 적용" disabled><i class="fa-solid fa-eye"></i></button>
-                            <button type="button" data-view-monitor title="고정 뷰 창에 보기" aria-label="뷰 1을 고정 뷰 창에 보기" disabled><i class="fa-solid fa-display"></i></button>
+                            <button type="button" data-view-monitor title="페이지 안의 고정 뷰 창에 보기" aria-label="뷰 1을 페이지 안의 고정 뷰 창에 보기" disabled><i class="fa-solid fa-display"></i></button>
                         </div>
                         <div class="view-preset-row" data-view-slot="1">
                             <span class="view-preset-index">2</span>
                             <input type="text" data-view-name value="View 2" maxlength="24" aria-label="뷰 2 이름">
                             <button type="button" data-view-save title="현재 뷰 저장" aria-label="뷰 2에 현재 뷰 저장"><i class="fa-solid fa-floppy-disk"></i></button>
                             <button type="button" data-view-apply title="뷰 적용" aria-label="뷰 2 적용" disabled><i class="fa-solid fa-eye"></i></button>
-                            <button type="button" data-view-monitor title="고정 뷰 창에 보기" aria-label="뷰 2를 고정 뷰 창에 보기" disabled><i class="fa-solid fa-display"></i></button>
+                            <button type="button" data-view-monitor title="페이지 안의 고정 뷰 창에 보기" aria-label="뷰 2를 페이지 안의 고정 뷰 창에 보기" disabled><i class="fa-solid fa-display"></i></button>
                         </div>
                         <div class="view-preset-row" data-view-slot="2">
                             <span class="view-preset-index">3</span>
                             <input type="text" data-view-name value="View 3" maxlength="24" aria-label="뷰 3 이름">
                             <button type="button" data-view-save title="현재 뷰 저장" aria-label="뷰 3에 현재 뷰 저장"><i class="fa-solid fa-floppy-disk"></i></button>
                             <button type="button" data-view-apply title="뷰 적용" aria-label="뷰 3 적용" disabled><i class="fa-solid fa-eye"></i></button>
-                            <button type="button" data-view-monitor title="고정 뷰 창에 보기" aria-label="뷰 3을 고정 뷰 창에 보기" disabled><i class="fa-solid fa-display"></i></button>
+                            <button type="button" data-view-monitor title="페이지 안의 고정 뷰 창에 보기" aria-label="뷰 3을 페이지 안의 고정 뷰 창에 보기" disabled><i class="fa-solid fa-display"></i></button>
                         </div>
                         <div class="view-preset-row" data-view-slot="3">
                             <span class="view-preset-index">4</span>
                             <input type="text" data-view-name value="View 4" maxlength="24" aria-label="뷰 4 이름">
                             <button type="button" data-view-save title="현재 뷰 저장" aria-label="뷰 4에 현재 뷰 저장"><i class="fa-solid fa-floppy-disk"></i></button>
                             <button type="button" data-view-apply title="뷰 적용" aria-label="뷰 4 적용" disabled><i class="fa-solid fa-eye"></i></button>
-                            <button type="button" data-view-monitor title="고정 뷰 창에 보기" aria-label="뷰 4를 고정 뷰 창에 보기" disabled><i class="fa-solid fa-display"></i></button>
+                            <button type="button" data-view-monitor title="페이지 안의 고정 뷰 창에 보기" aria-label="뷰 4를 페이지 안의 고정 뷰 창에 보기" disabled><i class="fa-solid fa-display"></i></button>
                         </div>
                     </div>
                 </div>
@@ -581,10 +594,13 @@
                     </div>
                     <div id="program-robot-list" class="program-robot-list"></div>
                 </div>
-                <div class="program-point-section">
+                <div id="program-point-section" class="program-point-section">
                     <div class="program-section-title">
-                        <strong id="program-robot-name">로봇을 선택하세요</strong>
-                        <div class="program-point-actions">
+                        <button id="olp-mode-button" class="program-olp-button" type="button" title="Open Offline Line Programming mode">OLP</button>
+                        <div id="olp-robot-control-slot" class="olp-robot-control-slot hidden" aria-label="OLP robot controls">
+                            <code id="olp-inline-cursor">main.pro:-- · READY</code>
+                        </div>
+                        <div id="program-point-actions" class="program-point-actions">
                             <button id="program-add-step" type="button" data-program-edit title="현재 자세 추가"><i class="fa-solid fa-plus"></i></button>
                             <button id="program-update-step" type="button" data-program-edit title="선택 포인트 덮어쓰기" aria-label="선택 포인트 덮어쓰기"><span class="program-point-overwrite-mark" aria-hidden="true">P</span><i class="fa-solid fa-rotate" aria-hidden="true"></i></button>
                             <button id="program-add-delay" type="button" data-program-edit title="딜레이 추가"><i class="fa-solid fa-hourglass-half"></i></button>
@@ -594,17 +610,46 @@
                             <button id="program-delete-step" type="button" data-program-edit title="포인트 삭제"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
-                    <div id="program-step-list" class="program-step-list" data-panel-drag-ignore></div>
-                </div>
-                <div class="program-playback">
-                    <div class="program-control-row">
+                     <div id="program-step-list" class="program-step-list" data-panel-drag-ignore></div>
+                 </div>
+                <section id="olp-workspace" class="olp-workspace hidden" aria-label="OLP workspace">
+                    <div class="olp-workspace-header">
+                        <div>
+                            <strong id="olp-workspace-title">OFFLINE LINE PROGRAMMING</strong>
+                            <span id="olp-project-name">No project loaded</span>
+                        </div>
+                        <div class="olp-status-indicators" aria-label="OLP 상태">
+                            <span id="olp-status-dot" class="olp-status-dot ready" role="status" aria-label="프로그램 대기" title="프로그램 대기"><i class="fa-solid fa-circle" aria-hidden="true"></i></span>
+                            <span id="olp-bus-indicator" class="olp-bus-indicator disconnected" role="status" aria-label="로컬 버스 연결 안 됨" title="로컬 버스 연결 안 됨"><i class="fa-solid fa-link" aria-hidden="true"></i></span>
+                        </div>
+                    </div>
+                    <input id="olp-import-folder-input" type="file" webkitdirectory directory multiple hidden>
+                    <div class="olp-file-grid">
+                        <select id="olp-file-select" size="6" aria-label="Project files"></select>
+                        <div class="olp-editor-shell">
+                            <div id="olp-file-gutter" class="olp-file-gutter" aria-hidden="true"></div>
+                            <pre id="olp-file-highlight" class="olp-file-highlight" aria-hidden="true"></pre>
+                            <textarea id="olp-file-editor" spellcheck="false" aria-label="Selected project file"></textarea>
+                            <div id="olp-point-table" class="olp-point-table hidden" data-panel-drag-ignore aria-label="Point file table"></div>
+                        </div>
+                    </div>
+                    <div class="olp-project-meta">
+                        <span id="olp-model-note">Robot model: current selected robot</span>
+                        <span id="olp-io-note">Virtual Bus: load an OLP project to show its mapped IO addresses</span>
+                    </div>
+                    <div id="olp-run-note" class="olp-run-note">OLP 오른쪽의 제어 아이콘으로 선택 로봇의 main.pro를 제어합니다. 반복 실행은 OLP에서 사용할 수 없습니다.</div>
+                    <pre id="olp-console" class="olp-console" data-panel-drag-ignore aria-live="polite">OLP ready.</pre>
+                </section>
+                <div id="program-playback" class="program-playback">
+                    <div id="program-control-robot" class="program-control-row">
+                        <button id="program-work-origin-robot" class="program-work-origin-button hidden" type="button" title="Work origin" aria-label="Move robot to Work Origin 0"><i class="fa-solid fa-house"></i></button>
                         <button id="program-step-robot" type="button" title="현재 로봇 Step Into" aria-label="현재 로봇 다음 명령 한 스텝 실행"><i class="fa-solid fa-forward-step"></i></button>
                         <button id="program-run-robot" type="button" title="현재 로봇 시작"><i class="fa-solid fa-play"></i></button>
                         <button id="program-pause-robot" type="button" title="현재 로봇 일시정지"><i class="fa-solid fa-pause"></i></button>
                         <button id="program-stop-robot" type="button" title="현재 로봇 정지"><i class="fa-solid fa-stop"></i></button>
                         <button id="program-repeat-robot" class="program-repeat-toggle" data-program-repeat data-program-repeat-scope="robot" type="button" title="반복 실행" aria-label="현재 로봇 반복 실행" aria-pressed="false"><i class="fa-solid fa-repeat"></i></button>
                     </div>
-                    <div class="program-control-row program-group-row">
+                    <div id="program-control-group" class="program-control-row program-group-row">
                         <button id="program-step-group" type="button" title="체크 로봇 Step Into" aria-label="체크 로봇 다음 명령 동시 한 스텝 실행"><i class="fa-solid fa-forward-step"></i></button>
                         <button id="program-run-group" type="button" title="체크 로봇 동시 시작" aria-label="체크 로봇 동시 시작"><i class="fa-solid fa-play"></i></button>
                         <button id="program-pause-group" type="button" title="체크 로봇 일시정지"><i class="fa-solid fa-pause"></i></button>
@@ -612,13 +657,13 @@
                         <button id="program-repeat" class="program-repeat-toggle" data-program-repeat data-program-repeat-scope="group" type="button" title="반복 실행" aria-label="체크 로봇 반복 실행" aria-pressed="false"><i class="fa-solid fa-repeat"></i></button>
                     </div>
                 </div>
-                <div class="program-cycle-time" role="status" aria-live="polite">
+                <div id="program-cycle-time-panel" class="program-cycle-time" role="status" aria-live="polite">
                     <span><i class="fa-solid fa-stopwatch"></i> 사이클 타임 (실제와 다름)</span>
                     <strong id="program-cycle-time">-- s</strong>
                 </div>
                 <div class="program-file-row">
-                    <button id="program-export" type="button" title="파일명과 저장 위치 선택"><i class="fa-solid fa-file-export"></i> 프로젝트 저장</button>
                     <button id="program-import" type="button" data-program-edit><i class="fa-solid fa-file-import"></i> 프로젝트 불러오기</button>
+                    <button id="program-export" type="button" title="파일명과 저장 위치 선택"><i class="fa-solid fa-file-export"></i> 프로젝트 저장</button>
                     <button id="btn-position-export" type="button" title="P파일 내보내기" aria-label="P파일 내보내기"><i class="fa-solid fa-file-export" aria-hidden="true"></i> P파일 내보내기</button>
                     <input id="program-import-file" type="file" accept="application/json,.json" hidden>
                 </div>
@@ -685,6 +730,16 @@
             위치 값 확인
         </button>
     </div>
+    <div id="olp-point-context-menu" class="program-step-context-menu hidden" role="menu">
+        <button id="olp-point-write-current" type="button" role="menuitem">
+            <i class="fa-solid fa-location-crosshairs"></i>
+            현재 위치로 수정
+        </button>
+        <button id="olp-point-move-target" type="button" role="menuitem">
+            <i class="fa-solid fa-person-walking"></i>
+            해당 위치로 이동
+        </button>
+    </div>
     <div id="model-context-menu" class="program-step-context-menu hidden" role="menu">
         <button id="model-change-zero-point" type="button" role="menuitem">
             <i class="fa-solid fa-crosshairs"></i>
@@ -729,6 +784,6 @@
         </div>
     </footer>
 
-<script type="module" src="main.js?v=20260724-fixed-view-camera-pan-1-interference-controller-read-1-interference-tool-read-1-view-outline-1"></script>
+<script type="module" src="main.js?v=20260726-olp-p-crlf-1"></script>
 </body>
 </html>

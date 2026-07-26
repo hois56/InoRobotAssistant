@@ -426,12 +426,17 @@ function getWorldNodeBounds(collider, bvh, node) {
         collider.nodeBounds = new Map();
         collider.nodeBoundsBvh = bvh;
     }
-    let bounds = collider.nodeBounds.get(node);
-    if (!bounds) {
-        bounds = node.bounds.clone().applyMatrix4(collider.mesh.matrixWorld);
-        collider.nodeBounds.set(node, bounds);
+    let entry = collider.nodeBounds.get(node);
+    if (!entry) {
+        entry = { bounds: new THREE.Box3(), transformVersion: -1 };
+        collider.nodeBounds.set(node, entry);
     }
-    return bounds;
+    const transformVersion = Number(collider.nodeBoundsTransformVersion) || 0;
+    if (entry.transformVersion !== transformVersion) {
+        entry.bounds.copy(node.bounds).applyMatrix4(collider.mesh.matrixWorld);
+        entry.transformVersion = transformVersion;
+    }
+    return entry.bounds;
 }
 
 function hasMatrixWorldChanged(meshEntry) {
@@ -569,7 +574,11 @@ export class MeshCollisionSystem {
         // root-pair result so continuous JOG checks only revisit pairs that
         // include the model whose pose changed.
         this.rootPairHitCache = new Map();
-        this.lastStats = { modelPairs: 0, refreshedModelPairs: 0, warmHitReuses: 0, meshPairs: 0, triangleTests: 0, bvhCount: 0, collisionCount: 0 };
+        this.cachedTriangleA = new Float64Array(9);
+        this.cachedTriangleB = new Float64Array(9);
+        this.cachedLocalTriangleA = new Float64Array(9);
+        this.cachedLocalTriangleB = new Float64Array(9);
+        this.lastStats = { modelPairs: 0, refreshedModelPairs: 0, warmHitReuses: 0, cachedTriangleRechecks: 0, meshPairs: 0, triangleTests: 0, bvhCount: 0, collisionCount: 0 };
     }
 
     getGeometryBVH(geometry) {
@@ -598,6 +607,33 @@ export class MeshCollisionSystem {
         return bounds.bounds;
     }
 
+    // Build exact geometry BVHs while the model-loading UI is already active,
+    // instead of paying this synchronous cost on the first contact frame.
+    prepare(objects) {
+        const roots = Array.isArray(objects) ? objects.filter(Boolean) : [];
+        const geometries = new Set();
+        roots.forEach((root) => {
+            this.collectMeshes(root).forEach(({ geometry }) => {
+                if (geometry) geometries.add(geometry);
+            });
+        });
+
+        let builtGeometryCount = 0;
+        let triangleCount = 0;
+        geometries.forEach((geometry) => {
+            const key = geometry.uuid || geometry;
+            const cached = this.geometryCache.get(key);
+            triangleCount += triangleCountForGeometry(geometry);
+            if (!cached || cached.geometry !== geometry) builtGeometryCount += 1;
+            this.getGeometryBVH(geometry);
+        });
+        return {
+            geometryCount: geometries.size,
+            builtGeometryCount,
+            triangleCount
+        };
+    }
+
     collectMeshes(root) {
         if (!root || root.userData?.collisionEnabled === false || !isVisibleInHierarchy(root)) return [];
         root.updateMatrixWorld(false);
@@ -605,23 +641,22 @@ export class MeshCollisionSystem {
         if (!cachedMeshes) {
             cachedMeshes = [];
             root.traverse((child) => {
-                if (!child.isMesh
-                    || child.userData.collisionDisabled
-                    || isAttachedModelDescendant(child, root)
-                    || !isVisibleInHierarchy(child)) return;
-                const collisionGeometry = child.userData?.collisionGeometry || child.geometry;
-                const localBounds = this.getGeometryBounds(collisionGeometry);
-                if (localBounds) cachedMeshes.push({
-                    mesh: child,
-                    geometry: collisionGeometry,
-                    localBounds
-                });
+                // Cache the stable mesh structure, not its mutable collision
+                // state. Visibility, attachment and collision-disabled flags
+                // can change later without rebuilding the model hierarchy.
+                if (!child.isMesh) return;
+                // Geometry bounds stay lazy so inactive decorative or attached
+                // meshes do not add work to the collision-loading path.
+                cachedMeshes.push({ mesh: child, geometry: null, localBounds: null });
             });
             this.meshCache.set(root, cachedMeshes);
         }
         return cachedMeshes
-            .filter(({ mesh, localBounds }) => (
-                isDescendantOf(mesh, root) && isVisibleInHierarchy(mesh) && localBounds
+            .filter(({ mesh }) => (
+                isDescendantOf(mesh, root)
+                && !mesh.userData?.collisionDisabled
+                && !isAttachedModelDescendant(mesh, root)
+                && isVisibleInHierarchy(mesh)
             ))
             .map((collider) => {
                 const collisionGeometry = collider.mesh.userData?.collisionGeometry || collider.mesh.geometry;
@@ -630,15 +665,16 @@ export class MeshCollisionSystem {
                     collider.localBounds = this.getGeometryBounds(collider.geometry);
                     collider.nodeBounds = null;
                     collider.nodeBoundsBvh = null;
+                    collider.nodeBoundsTransformVersion = 0;
                 }
                 if (!collider.localBounds) return null;
                 if (hasMatrixWorldChanged(collider)) {
-                    collider.worldBounds = collider.localBounds.clone().applyMatrix4(collider.mesh.matrixWorld);
-                    // Node bounds are transformed lazily. Clear the entries
-                    // from the previous pose so a JOG move never reuses a
-                    // stale world-space branch of the BVH.
-                    collider.nodeBounds = null;
-                    collider.nodeBoundsBvh = null;
+                    if (!collider.worldBounds) collider.worldBounds = new THREE.Box3();
+                    collider.worldBounds.copy(collider.localBounds).applyMatrix4(collider.mesh.matrixWorld);
+                    // Keep the allocated node boxes and lazily refresh their
+                    // contents for this pose. Reusing them avoids a burst of
+                    // Box3/Map allocation on every moving collision check.
+                    collider.nodeBoundsTransformVersion = (Number(collider.nodeBoundsTransformVersion) || 0) + 1;
                     collider.matrixWorldSnapshot = collider.mesh.matrixWorld.elements.slice();
                 }
                 return collider;
@@ -672,6 +708,37 @@ export class MeshCollisionSystem {
         );
     }
 
+    recheckCachedSurfaceHit(leftMesh, rightMesh, hit, stats) {
+        if (hit?.kind !== 'surface'
+            || hit.meshA !== leftMesh.mesh
+            || hit.meshB !== rightMesh.mesh
+            || !Number.isInteger(hit.triangleA)
+            || !Number.isInteger(hit.triangleB)) return null;
+        const bvhA = this.getGeometryBVH(leftMesh.geometry);
+        const bvhB = this.getGeometryBVH(rightMesh.geometry);
+        if (!bvhA?.root || !bvhB?.root
+            || hit.triangleA < 0 || hit.triangleA >= bvhA.triangleCount
+            || hit.triangleB < 0 || hit.triangleB >= bvhB.triangleCount) return null;
+
+        bvhA.readTriangleWorld(
+            leftMesh.mesh,
+            hit.triangleA,
+            this.cachedTriangleA,
+            this.cachedLocalTriangleA
+        );
+        bvhB.readTriangleWorld(
+            rightMesh.mesh,
+            hit.triangleB,
+            this.cachedTriangleB,
+            this.cachedLocalTriangleB
+        );
+        stats.cachedTriangleRechecks += 1;
+        stats.triangleTests += 1;
+        return trianglesIntersect(this.cachedTriangleA, this.cachedTriangleB, this.epsilon)
+            ? hit
+            : null;
+    }
+
     checkRootPair(left, right, includeSelf, stats, {
         now = performance.now(),
         allowWarmHitReuse = true
@@ -703,6 +770,22 @@ export class MeshCollisionSystem {
                     // full triangle/BVH walk every render interval is the
                     // source of visible JOG stutter on complex CAD models.
                     hits.push({ ...cachedEntry.hit, objectA: left.root, objectB: right.root });
+                    stats.warmHitReuses += 1;
+                    reportedLeftMeshes.add(leftMesh.mesh);
+                    continue;
+                }
+                const cachedSurfaceHit = allowWarmHitReuse
+                    ? this.recheckCachedSurfaceHit(
+                        leftMesh,
+                        cachedRightMesh,
+                        cachedEntry.hit,
+                        stats
+                    )
+                    : null;
+                if (cachedSurfaceHit) {
+                    cachedEntry.hit = cachedSurfaceHit;
+                    cachedEntry.lastConfirmedAt = now;
+                    hits.push({ ...cachedSurfaceHit, objectA: left.root, objectB: right.root });
                     stats.warmHitReuses += 1;
                     reportedLeftMeshes.add(leftMesh.mesh);
                     continue;
@@ -785,6 +868,7 @@ export class MeshCollisionSystem {
             modelPairs: 0,
             refreshedModelPairs: 0,
             warmHitReuses: 0,
+            cachedTriangleRechecks: 0,
             meshPairs: 0,
             triangleTests: 0,
             bvhCount: this.geometryCache.size,
@@ -834,7 +918,7 @@ export class MeshCollisionSystem {
         this.meshCache.clear();
         this.hitMeshPairCache.clear();
         this.rootPairHitCache.clear();
-        this.lastStats = { modelPairs: 0, refreshedModelPairs: 0, warmHitReuses: 0, meshPairs: 0, triangleTests: 0, bvhCount: 0, collisionCount: 0 };
+        this.lastStats = { modelPairs: 0, refreshedModelPairs: 0, warmHitReuses: 0, cachedTriangleRechecks: 0, meshPairs: 0, triangleTests: 0, bvhCount: 0, collisionCount: 0 };
     }
 }
 

@@ -28,6 +28,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentActiveProduct = null;
 
+    function getCad3dPath(product) {
+        const entry = window.InoRobotCadManifest?.[product?.id];
+        return entry && typeof entry.threeD === 'string' ? entry.threeD : null;
+    }
+
     function formatPinCount(pin) {
         const match = String(pin).match(/^(\d+)핀$/);
         return match ? `${match[1]} ${uiText('핀')}` : uiText(pin);
@@ -959,45 +964,21 @@ document.addEventListener('DOMContentLoaded', () => {
         return [...new Set(paths)];
     }
 
-    async function hasAnyCadFile(product, fileId, ext) {
-        for (const path of getCadCandidatePaths(product, fileId, ext)) {
-            try {
-                const resp = await fetch(path, { method: 'HEAD' });
-                if (resp.ok) return true;
-            } catch (e) {}
-        }
-        return false;
-    }
-
     // Modal Logic
     function openOptionsModal(productId) {
         const product = state.products.find(p => p.id === productId);
         if (!product) return;
 
-        // CAD availability check
-        const cadBtn = document.getElementById('download-cad-btn');
-        cadBtn.disabled = true;
-        cadBtn.innerText = uiText("상태 확인 중...");
-        cadBtn.style.opacity = "0.7";
+        currentActiveProduct = product;
 
-        hasAnyCadFile(product, '3D', 'stp').then(isAvailable => {
-            if (isAvailable) {
-                cadBtn.disabled = false;
-                cadBtn.innerText = uiText("CAD 다운로드");
-                cadBtn.style.opacity = "1";
-                cadBtn.style.cursor = "pointer";
-            } else {
-                cadBtn.disabled = true;
-                cadBtn.innerText = uiText("CAD 준비 중");
-                cadBtn.style.opacity = "0.4";
-                cadBtn.style.cursor = "not-allowed";
-            }
-        }).catch(() => {
-            cadBtn.disabled = true;
-            cadBtn.innerText = uiText("CAD 준비 중");
-            cadBtn.style.opacity = "0.4";
-            cadBtn.style.cursor = "not-allowed";
-        });
+        // CAD availability is known from the static manifest, so opening the
+        // modal does not require one or more network HEAD requests.
+        const cadBtn = document.getElementById('download-cad-btn');
+        const isCadAvailable = Boolean(getCad3dPath(product));
+        cadBtn.disabled = !isCadAvailable;
+        cadBtn.innerText = uiText(isCadAvailable ? "CAD 다운로드" : "CAD 파일 없음");
+        cadBtn.style.opacity = isCadAvailable ? "1" : "0.4";
+        cadBtn.style.cursor = isCadAvailable ? "pointer" : "not-allowed";
 
         // Rename SCARA clean types for modal title
         let displayName = product.name;
@@ -1026,7 +1007,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        currentActiveProduct = product;
         document.getElementById('modal-title').textContent = `[${displayName}] ${uiText('제품 상세 및 구성')}`;
         modalBody.innerHTML = '';
 
@@ -2163,7 +2143,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Helper to fetch single file with fallback (for -INT suffix)
             async function fetchRobotFile(task) {
-                const pathsToTry = getCadCandidatePaths(product, task.id, task.ext);
+                const manifestPath = task.id === '3D' && task.ext === 'stp'
+                    ? getCad3dPath(product)
+                    : null;
+                const fallbackPaths = getCadCandidatePaths(product, task.id, task.ext);
+                const pathsToTry = manifestPath
+                    ? [manifestPath, ...fallbackPaths.filter(path => path !== manifestPath)]
+                    : fallbackPaths;
 
                 for (let p of pathsToTry) {
                     try {

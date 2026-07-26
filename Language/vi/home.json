@@ -84,6 +84,13 @@
       "title": "Robot Model Select",
       "versions": [
         {
+          "title": "Ver 26.07.26",
+          "items": [
+            "**[Cải tiến]** Loại bỏ độ trễ kiểm tra tệp của nút tải CAD bằng manifest tĩnh để xác định trạng thái ngay lập tức.",
+            "**[Thay đổi]** Model không có tệp CAD giờ đây hiển thị ngay `Không có tệp CAD`."
+          ]
+        },
+        {
           "title": "Ver 26.07.25",
           "items": [
             "**[Thêm]** Tách 6 module dòng GL20 khỏi card mở rộng bộ điều khiển và thêm chúng vào Tùy chọn bộ ghép nối từ xa.",
@@ -275,6 +282,12 @@
       {
         "title": "Project Generator",
         "versions": [
+          {
+            "title": "Ver 26.07.26",
+            "items": [
+              "**[Sửa]** Trên giao diện tiếng Hàn, `No` hiển thị là `번호`, `Process` là `프로세스`, còn tên phương thức `Get` và `Put` không được dịch."
+            ]
+          },
           {
             "title": "Ver 26.07.18",
             "items": [

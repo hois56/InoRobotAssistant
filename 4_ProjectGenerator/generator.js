@@ -1,7 +1,16 @@
 // Generator functions corresponding to C# ProjectGenerator, EasyMode, Labels.
 const TemplateHelper = {
     getNow() { return new Date().toLocaleString('sv-SE').replace('-', '-').replace('T', ' '); },
-    getNowAmPm() { return new Date().toLocaleString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }).replace(',', ''); }
+    getNowAmPm() { return new Date().toLocaleString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }).replace(',', ''); },
+    // P.pts uses the controller/project-generator convention. Do not use
+    // toLocaleString here: its language and ordering depend on the PC locale.
+    getPFileTime(date = new Date()) {
+        const pad = (value) => String(value).padStart(2, '0');
+        const hours = date.getHours();
+        const meridiem = hours < 12 ? '오전' : '오후';
+        const hour12 = hours % 12 || 12;
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${meridiem} ${hour12}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+    }
 };
 
 const Generator = {
@@ -429,7 +438,7 @@ const Generator = {
     },
 
     DataPoints(steps, options, fileName = "P.pts") {
-        let sb = Generator.Header(options.RobotName);
+        let sb = Generator.Header(options.RobotName, "getPFileTime");
         const zero = "0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000";
         const cfg = "0, 0, 0, 0";
         const includeName = fileName === "P.pts";

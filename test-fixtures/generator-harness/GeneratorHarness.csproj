@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="D:\04_made_C#\InoRobot_Proejct_Gen_for_SDC\InoRobot_Proejct_Gen_for_SDC\00_Models\ProcessStep.cs" Link="Generator\Models\ProcessStep.cs" />
+    <Compile Include="D:\04_made_C#\InoRobot_Proejct_Gen_for_SDC\InoRobot_Proejct_Gen_for_SDC\00_Models\ProjectOptions.cs" Link="Generator\Models\ProjectOptions.cs" />
+    <Compile Include="D:\04_made_C#\InoRobot_Proejct_Gen_for_SDC\InoRobot_Proejct_Gen_for_SDC\01_Data\*.cs" LinkBase="Generator\Data" />
+    <Compile Include="D:\04_made_C#\InoRobot_Proejct_Gen_for_SDC\InoRobot_Proejct_Gen_for_SDC\02_Program\*.cs" LinkBase="Generator\Programs" />
+    <Compile Include="D:\04_made_C#\InoRobot_Proejct_Gen_for_SDC\InoRobot_Proejct_Gen_for_SDC\03_Generators\ProgramGenerator.cs" Link="Generator\ProgramGenerator.cs" />
+    <Compile Include="D:\04_made_C#\InoRobot_Proejct_Gen_for_SDC\InoRobot_Proejct_Gen_for_SDC\03_Generators\DataFileGenerator.cs" Link="Generator\DataFileGenerator.cs" />
+  </ItemGroup>
+</Project>
