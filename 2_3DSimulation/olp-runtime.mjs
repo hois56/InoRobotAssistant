@@ -4,6 +4,106 @@ const BIT_START = 512;
 const BIT_COUNT = WORD_COUNT * 16;
 export const OLP_RUNTIME_BUILD = 'R28';
 
+export class OlpRuntimeError extends Error {
+    constructor(message, runtime = null) {
+        const location = runtime?.currentFilePath
+            ? `${runtime.currentFilePath}:${runtime.currentLineNumber || 0}`
+            : 'OLP';
+        const command = runtime?.currentCommand ? ` [${runtime.currentCommand}]` : '';
+        super(`${location}: ${message}${command}`);
+        this.name = 'OlpRuntimeError';
+        this.filePath = runtime?.currentFilePath || null;
+        this.lineNumber = runtime?.currentLineNumber || 0;
+        this.command = runtime?.currentCommand || '';
+    }
+}
+
+function stripOuterParentheses(value) {
+    let source = String(value || '').trim();
+    let changed = true;
+    while (changed && source.startsWith('(') && source.endsWith(')')) {
+        changed = false;
+        let depth = 0;
+        let quote = null;
+        let closesAt = -1;
+        for (let index = 0; index < source.length; index += 1) {
+            const char = source[index];
+            if (quote) {
+                if (char === '\\') index += 1;
+                else if (char === quote) quote = null;
+                continue;
+            }
+            if (char === '"' || char === "'") { quote = char; continue; }
+            if (char === '(') depth += 1;
+            else if (char === ')') {
+                depth -= 1;
+                if (depth === 0) { closesAt = index; break; }
+            }
+        }
+        if (closesAt === source.length - 1) {
+            source = source.slice(1, -1).trim();
+            changed = true;
+        }
+    }
+    return source;
+}
+
+function splitTopLevelKeyword(value, keyword) {
+    const source = String(value || '').trim();
+    const parts = [];
+    let start = 0;
+    let depth = 0;
+    let quote = null;
+    const lowerKeyword = keyword.toLowerCase();
+    for (let index = 0; index < source.length; index += 1) {
+        const char = source[index];
+        if (quote) {
+            if (char === '\\') index += 1;
+            else if (char === quote) quote = null;
+            continue;
+        }
+        if (char === '"' || char === "'") { quote = char; continue; }
+        if (char === '(' || char === '[') { depth += 1; continue; }
+        if (char === ')' || char === ']') { depth -= 1; continue; }
+        if (depth !== 0 || source.slice(index, index + keyword.length).toLowerCase() !== lowerKeyword) continue;
+        const before = source[index - 1] || ' ';
+        const after = source[index + keyword.length] || ' ';
+        if (/[A-Za-z0-9_]/.test(before) || /[A-Za-z0-9_]/.test(after)) continue;
+        parts.push(source.slice(start, index).trim());
+        start = index + keyword.length;
+        index += keyword.length - 1;
+    }
+    if (parts.length) parts.push(source.slice(start).trim());
+    return parts;
+}
+
+function findTopLevelComparison(value) {
+    const source = String(value || '').trim();
+    let depth = 0;
+    let quote = null;
+    const operators = ['==', '!=', '<>', '>=', '<=', '=', '>', '<'];
+    for (let index = 0; index < source.length; index += 1) {
+        const char = source[index];
+        if (quote) {
+            if (char === '\\') index += 1;
+            else if (char === quote) quote = null;
+            continue;
+        }
+        if (char === '"' || char === "'") { quote = char; continue; }
+        if (char === '(' || char === '[') { depth += 1; continue; }
+        if (char === ')' || char === ']') { depth -= 1; continue; }
+        if (depth !== 0) continue;
+        const operator = operators.find((candidate) => source.startsWith(candidate, index));
+        if (!operator) continue;
+        return {
+            left: source.slice(0, index).trim(),
+            operator,
+            right: source.slice(index + operator.length).trim()
+        };
+    }
+    return null;
+}
+
 function clampWord(value) {
     return Math.max(0, Math.min(0xffff, Math.trunc(Number(value) || 0)));
 }
@@ -397,6 +497,7 @@ export class OlpRuntime {
         };
         this.lastReturnValue = undefined;
         this.lastAlarm = null;
+        this.lastError = null;
         this.currentFilePath = null;
         this.currentLineNumber = 0;
         this.currentLineText = '';
@@ -434,7 +535,8 @@ export class OlpRuntime {
             waitCondition: this.waitCondition,
             velocityRate: this.velocityRate,
             velocitySet: this.velocitySet,
-            callStack: [...this.callStack]
+            callStack: [...this.callStack],
+            error: this.lastError
         };
     }
 
@@ -479,11 +581,26 @@ export class OlpRuntime {
         this.instructionCount = 0;
         this.sliceStartedAt = performance.now();
         this.phase = 'running';
+        this.lastError = null;
         this.notifyCursor();
         try {
             await this.executeFile(entry, true);
+            if (this.pendingMotions.size) {
+                this.phase = 'draining';
+                this.adapter.status?.('OLP draining pending NWait motions');
+                this.notifyCursor();
+                await this.awaitPendingMotions();
+            }
+            if (this.cancelled) return;
             this.phase = 'completed';
             this.adapter.status?.('OLP cycle completed');
+        } catch (error) {
+            const runtimeError = error instanceof OlpRuntimeError ? error : this.runtimeError(error?.message || 'OLP execution failed.');
+            this.lastError = runtimeError.message;
+            this.phase = this.cancelled ? 'stopped' : 'error';
+            this.adapter.status?.(runtimeError.message);
+            this.adapter.log?.(`OLP error: ${runtimeError.message}`);
+            throw runtimeError;
         } finally {
             if (this.cancelled) this.phase = 'stopped';
             this.notifyCursor();
@@ -519,6 +636,7 @@ export class OlpRuntime {
         this.phase = 'stopping';
         this.pulseTimers.forEach((timer) => clearTimeout(timer));
         this.pulseTimers.clear();
+        this.adapter.stopMotion?.(this);
         this.notifyCursor();
     }
 
@@ -734,22 +852,28 @@ export class OlpRuntime {
         };
     }
 
+    runtimeError(message) {
+        return new OlpRuntimeError(String(message || 'OLP execution failed.'), this);
+    }
+
     evaluate(expression) {
         let value = String(expression || '').trim().replace(/[;]$/, '');
-        value = value.replace(/\bThen\b\s*$/i, '');
-        value = value.replace(/\bAnd\b/gi, '&&').replace(/\bOr\b/gi, '||');
-        // Split logical expressions before looking for a comparison operator.
-        // A condition such as `A > 0 And B == 0` must not be parsed as one
-        // comparison whose right-hand side is `0 && B == 0`.
-        if (value.includes('||')) return value.split('||').some((part) => this.evaluate(part));
-        if (value.includes('&&')) return value.split('&&').every((part) => this.evaluate(part));
+        value = value.replace(/\bThen\b\s*$/i, '').trim();
+        if (!value) throw this.runtimeError('Empty condition.');
+        const parenthesized = stripOuterParentheses(value);
+        if (parenthesized !== value) return this.evaluate(parenthesized);
+        const orParts = splitTopLevelKeyword(value, 'Or');
+        if (orParts.length) return orParts.some((part) => this.evaluate(part));
+        const andParts = splitTopLevelKeyword(value, 'And');
+        if (andParts.length) return andParts.every((part) => this.evaluate(part));
         const not = value.match(/^Not\s+(.+)$/i) || value.match(/^!\s*(.+)$/);
         if (not) return !this.evaluate(not[1]);
-        const comparison = value.match(/^(.+?)\s*(==|=|!=|<>|>=|<=|>|<)\s*(.+)$/);
+        const comparison = findTopLevelComparison(value);
         if (comparison) {
-            const left = parseLiteral(comparison[1], this);
-            const right = parseLiteral(comparison[3], this);
-            switch (comparison[2]) {
+            if (!comparison.left || !comparison.right) throw this.runtimeError(`Invalid comparison: ${value}`);
+            const left = parseLiteral(comparison.left, this);
+            const right = parseLiteral(comparison.right, this);
+            switch (comparison.operator) {
                 case '==':
                 case '=': return left === right;
                 case '!=':
@@ -806,8 +930,7 @@ export class OlpRuntime {
             if (result?.type !== 'goto') return result;
             const target = labels.get(normalizeLabel(result.target));
             if (target === undefined) {
-                this.adapter.log?.(`Unsupported Goto target: ${result.target}`);
-                return null;
+                throw this.runtimeError(`Goto target not found: ${result.target}`);
             }
             if (jumps++ > 100000) throw new Error('OLP Goto iteration limit exceeded.');
             cursor = target;
@@ -817,6 +940,7 @@ export class OlpRuntime {
     }
 
     async executeFile(path, startBlock = false) {
+        if (!this.programLines.has(path)) throw this.runtimeError(`Program file not found: ${path}`);
         const functions = this.findFunctions(path);
         const lines = this.programLines.get(path) || [];
         const previousFilePath = this.currentFilePath;
@@ -842,7 +966,7 @@ export class OlpRuntime {
         const entry = functions.get(functionName)
             || functions.get(functionName.split('.').at(-1))
             || [...functions.entries()].find(([name]) => String(name).toLowerCase() === requested || String(name).split('.').at(-1).toLowerCase() === requested)?.[1];
-        if (!entry) return undefined;
+        if (!entry) throw this.runtimeError(`Function not found: ${fileName(path)}.${functionName}`);
         this.callStack.push(`${path}:${functionName}`);
         if (this.callStack.length > 32) throw new Error('OLP function call depth exceeded.');
         const parameterState = (entry.parameters || []).map((definition, index) => ({
@@ -915,7 +1039,10 @@ export class OlpRuntime {
         const pending = Promise.resolve(motionPromise);
         if (!nwait) return pending;
         this.pendingMotions.add(pending);
-        pending.finally(() => this.pendingMotions.delete(pending));
+        pending.then(
+            () => this.pendingMotions.delete(pending),
+            () => this.pendingMotions.delete(pending)
+        );
         this.adapter.log?.('OLP motion started with Nwait.');
         return null;
     }
@@ -939,7 +1066,7 @@ export class OlpRuntime {
             this.currentLineText = String(lines[index] || '').trim();
             this.currentCommand = line;
             this.notifyCursor();
-            if (!line || /^ProgramInfo|^EndProgramInfo|^Include\b|^Func\b|^EndFunc\b/i.test(line)) { index += 1; continue; }
+            if (!line || /^ProgramInfo|^EndProgramInfo|^Func\b|^EndFunc\b/i.test(line)) { index += 1; continue; }
             if (/^(?:EndFor|EndWhile|EndIf|EndSwitch|ElseIf|Else|Case|Default)\b/i.test(line)) { index += 1; continue; }
             if (getLabelTarget(line)) { index += 1; continue; }
 
@@ -1069,7 +1196,7 @@ export class OlpRuntime {
                         index = target;
                         continue;
                     }
-                    this.adapter.log?.(`Unsupported Wait timeout target: ${action.target}`);
+                    throw this.runtimeError(`Wait timeout target not found: ${action.target}`);
                 }
                 index += 1;
                 continue;
@@ -1088,7 +1215,7 @@ export class OlpRuntime {
                     await new Promise((resolve) => setTimeout(resolve, 0));
                     continue;
                 }
-                this.adapter.log?.(`Unsupported Goto target: ${action.target}`);
+                throw this.runtimeError(`Goto target not found: ${action.target}`);
             }
             index += 1;
         }
@@ -1101,10 +1228,10 @@ export class OlpRuntime {
             const requested = parts[0].toLowerCase();
             const file = this.project?.programFiles?.find((path) => fileName(path).replace(/\.pro$/i, '').toLowerCase() === requested);
             if (file) return this.executeFunction(file, parts.slice(1).join('.'), argumentsList);
-            this.adapter.log?.(`Unsupported OLP call target: ${target}`);
-            return undefined;
+            throw this.runtimeError(`Program module not found: ${target}`);
         }
-        return this.currentFilePath ? this.executeFunction(this.currentFilePath, target, argumentsList) : undefined;
+        if (!this.currentFilePath) throw this.runtimeError(`Function call has no active program: ${target}`);
+        return this.executeFunction(this.currentFilePath, target, argumentsList);
     }
 
     parseOutEvent(value) {
@@ -1225,9 +1352,13 @@ export class OlpRuntime {
         }
         if (motion === 'MOVC') {
             options.arcTargets = targets.map((target) => ({ expression: target, targetOverride: this.getMotionTarget(target) }));
+            if (options.arcTargets.some((entry) => !entry.targetOverride)) {
+                throw this.runtimeError('MOVC requires three valid point targets; a true circular path was not created.');
+            }
         } else if (!options.targetOverride) {
             options.targetOverride = this.getMotionTarget(targets[0]);
         }
+        if (!options.targetOverride && !options.pallet) throw this.runtimeError(`Point target not found: ${targets[0] || motion}`);
         if (motion === 'MOVABSJ' && options.targetOverride && options.targetOverride.kind !== 'jointPoint') {
             // MovAbsJ also accepts an explicit joint tuple.  A cartesian P point
             // is rejected because it would silently take a different path.
@@ -1329,6 +1460,7 @@ export class OlpRuntime {
         if (loadPoints) {
             const requested = loadPoints[1].trim();
             const matched = this.project?.pointFiles?.find((file) => fileName(file.path).toLowerCase() === fileName(requested).toLowerCase());
+            if (!matched) throw this.runtimeError(`Point file not found: ${requested}`);
             this.activePointFile = matched?.path || requested;
             this.adapter.log?.(`OLP point file selected: ${fileName(this.activePointFile)}`);
             return;
@@ -1337,19 +1469,20 @@ export class OlpRuntime {
         if (include) {
             const requested = include[1].trim();
             const present = this.project?.programFiles?.some((path) => fileName(path).toLowerCase() === fileName(requested).toLowerCase());
-            this.adapter.log?.(present
-                ? `OLP module included: ${fileName(requested)}`
-                : `OLP include not found in project: ${fileName(requested)}`);
+            if (!present) throw this.runtimeError(`Included program file not found: ${requested}`);
+            this.adapter.log?.(`OLP module included: ${fileName(requested)}`);
             return;
         }
         if (/^Open\s+Socket\b/i.test(value)) {
+            if (!this.adapter.openSocket) throw this.runtimeError(`Unsupported OLP command without socket adapter: ${value}`);
             const resultVariable = value.match(/,\s*([A-Za-z_]\w*(?:\s*\[[^\]]+\])?)\s*\)\s*;?$/i)?.[1];
+            await this.adapter.openSocket(value, this);
             if (resultVariable) this.writeSymbol(resultVariable, 1);
-            this.adapter.log?.('OLP external socket simulated as connected.');
             return;
         }
         if (/^(?:Close\s+Socket|Send\s+|SetPortBuf|WaitInPos\s*\()/i.test(value)) {
-            this.adapter.log?.(`OLP command acknowledged: ${value}`);
+            if (!this.adapter.socketCommand) throw this.runtimeError(`Unsupported OLP socket command: ${value}`);
+            await this.adapter.socketCommand(value, this);
             return;
         }
         const print = value.match(/^Print\s+(.+?)\s*;?$/i);
@@ -1381,13 +1514,12 @@ export class OlpRuntime {
         if (group) {
             const argumentsList = splitArguments(group[1]);
             const definition = String(argumentsList.shift() || '').match(/^([IO])G\s*\[\s*([^\]]+)\s*\]$/i);
-            if (definition) {
-                const direction = definition[1].toUpperCase() === 'I' ? 'IN' : 'OUT';
-                const index = Math.trunc(Number(parseLiteral(definition[2], this)) || 0);
-                const addresses = argumentsList.slice(0, 8).map((entry) => `${direction === 'IN' ? 'In' : 'Out'}[${Math.trunc(Number(parseLiteral(entry, this)) || 0)}]`);
-                this.ioGroups.set(`${direction === 'IN' ? 'IG' : 'OG'}[${index}]`, { direction, addresses });
-                this.adapter.log?.(`OLP group ${direction === 'IN' ? 'IG' : 'OG'}[${index}] configured.`);
-            }
+            if (!definition) throw this.runtimeError(`Unsupported Group declaration: ${value}`);
+            const direction = definition[1].toUpperCase() === 'I' ? 'IN' : 'OUT';
+            const index = Math.trunc(Number(parseLiteral(definition[2], this)) || 0);
+            const addresses = argumentsList.slice(0, 8).map((entry) => `${direction === 'IN' ? 'In' : 'Out'}[${Math.trunc(Number(parseLiteral(entry, this)) || 0)}]`);
+            this.ioGroups.set(`${direction === 'IN' ? 'IG' : 'OG'}[${index}]`, { direction, addresses });
+            this.adapter.log?.(`OLP group ${direction === 'IN' ? 'IG' : 'OG'}[${index}] configured.`);
             return;
         }
         const get = value.match(/^Get\s+(.+?)\s*;?$/i);
@@ -1521,7 +1653,7 @@ export class OlpRuntime {
             const homeIndex = Number(parseLiteral(home[1], this)) || 0;
             const speed = Number(parseLiteral(home[2] || '100', this)) || 100;
             if (this.adapter.home) await this.adapter.home(homeIndex, speed, this.project, this);
-            else this.adapter.log?.(`OLP Home[${homeIndex}] acknowledged.`);
+            else throw this.runtimeError(`Unsupported Home command: ${value}`);
             return;
         }
 
@@ -1559,8 +1691,9 @@ export class OlpRuntime {
             return;
         }
         if (/^(?:SetTool|SetWobj|SetFrame|SetPayload)\b/i.test(value)) {
-            this.adapter.log?.(`OLP command acknowledged: ${value}`);
+            throw this.runtimeError(`Unsupported configuration command: ${value}`);
         }
+        throw this.runtimeError(`Unsupported OLP command: ${value}`);
     }
 }
 

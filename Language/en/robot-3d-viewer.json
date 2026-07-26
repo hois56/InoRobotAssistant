@@ -717,6 +717,7 @@
     "OLP runtime {build} loaded.": "OLP runtime {build} loaded.",
     "JP.pts: {count} JointPoints": "JP.pts: {count} JointPoints",
     "Point files: {count}": "Point files: {count}",
+    "{path} · 우클릭 또는 Enter/Space로 현재 로봇 위치와 Arm 파라미터를 덮어쓸 수 있습니다.": "{path} · Right-click or press Enter/Space to overwrite with the current robot pose and Arm parameters.",
     "Program files: {count}": "Program files: {count}",
     "Remote IO mapping: {path} ({count} entries)": "Remote IO mapping: {path} ({count} entries)",
     "Remote IO mapping: not found; use simulation Run/Stop controls.": "Remote IO mapping not found; use simulation Run/Stop controls.",

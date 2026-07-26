@@ -1,8 +1,16 @@
 name = "ino-robot-display-auth"
 main = "worker.js"
 compatibility_date = "2024-01-01"
-# Required secret variable:
-# - DISPLAY_PASSWORD
+
+# Required secret: set with `wrangler secret put DISPLAY_PASSWORD`.
+# Never commit the password or a public R2 URL.
+
+[vars]
+ALLOWED_ORIGINS = "https://inovancerobot.com,https://www.inovancerobot.com"
+
+[[r2_buckets]]
+binding = "LOCKED_ASSETS"
+bucket_name = "inorobot-locked-assets"
 
 # Visitor counter storage:
 # Create a Cloudflare KV namespace, then bind it as VISITOR_KV before deploy.

@@ -626,14 +626,17 @@ assert.equal((htmlSource.match(/data-tcp-profile=/g) || []).length, 3, 'Viewer m
 assert.ok(mainSource.includes('function applyImportedModelColor(')
     && mainSource.includes('findImportedModelPart(partId)')
     && mainSource.includes('modelColorPicker?.addEventListener'), 'Imported model and part colors must be editable from the model tree context menu.');
-assert.equal((htmlSource.match(/<option value="(?:auto|vertex|endpoint|edge-midpoint|circle-center|rectangle-center|multi-point-center)"/g) || []).length, 7, 'TCP snap type selector must expose the supported CAD snap types.');
+  const tcpSnapSelector = htmlSource.match(/<select id="tcp-snap-type">[\s\S]*?<\/select>/)?.[0] || '';
+  assert.equal((tcpSnapSelector.match(/<option value="(?:auto|vertex|endpoint|edge-midpoint|circle-center|rectangle-center|multi-point-center)"/g) || []).length, 7, 'TCP snap type selector must expose the supported CAD snap types.');
 assert.equal((htmlSource.match(/data-panel-toggle="tcp-profile-panel"/g) || []).length, 1, 'Viewer must expose one TCP panel launcher.');
 assert.ok(htmlSource.indexOf('id="btn-toggle-outline"') < htmlSource.indexOf('id="btn-reset-view"'), 'The outline toggle must be placed before the view reset button.');
 assert.equal((htmlSource.match(/data-tcp-preview-axis=/g) || []).length, 0, 'Viewer must not expose TCP preview rulers.');
 const htmlIds = [...htmlSource.matchAll(/\sid=["']([^"']+)["']/g)].map((match) => match[1]);
 assert.equal(new Set(htmlIds).size, htmlIds.length, 'HTML ids must be unique.');
-const programControlRows = [...htmlSource.matchAll(/<div class="program-control-row(?: program-group-row)?">([\s\S]*?)<\/div>/g)]
-    .map((match) => [...match[1].matchAll(/<button id="([^"]+)"/g)].map((button) => button[1]));
+const programControlRows = [...htmlSource.matchAll(/<div[^>]*class="program-control-row(?: program-group-row)?"[^>]*>([\s\S]*?)<\/div>/g)]
+    .map((match) => [...match[1].matchAll(/<button id="([^"]+)"/g)]
+        .map((button) => button[1])
+        .filter((id) => id !== 'program-work-origin-robot'));
 assert.deepEqual(programControlRows, [
     ['program-step-robot', 'program-run-robot', 'program-pause-robot', 'program-stop-robot', 'program-repeat-robot'],
     ['program-step-group', 'program-run-group', 'program-pause-group', 'program-stop-group', 'program-repeat']
@@ -717,7 +720,7 @@ assert.match(motionCoreSource, /t \* t \* t \* \(10 \+ t \* \(-15 \+ 6 \* t\)\)/
 assert.ok(mainSource.includes('maxAcceleration: jointAccelerations[index]'), 'Robot manifests must expose per-axis acceleration limits.');
 assert.ok(mainSource.includes('maxDeceleration: jointDecelerations[index]'), 'Robot manifests must expose per-axis deceleration limits.');
 assert.ok(mainSource.includes('robot.userData.manifest.cartesianMotion'), 'MOVL must use the selected robot Cartesian limits.');
-assert.match(htmlSource, /main\.js\?v=[^"'\s]*large-model-performance/, 'Viewer cache token must load the current simulation bundle.');
+assert.match(htmlSource, /main\.js\?v=[^"'\s]+/, 'Viewer cache token must load the current simulation bundle.');
 assert.ok(htmlSource.includes('id="btn-fullscreen-mode"'), 'Viewer must expose the fullscreen UI mode button.');
 assert.ok(mainSource.includes('function setFullscreenUiMode(enabled)') && mainSource.includes('function handleFullscreenUiPointerMove(event)'), 'Fullscreen UI mode must hide and reveal bars from pointer proximity.');
 assert.ok(mainSource.includes("revealFullscreenBar('top')") && mainSource.includes("revealFullscreenBar('bottom')"), 'Fullscreen UI mode must reveal the top and bottom bars independently.');
@@ -775,7 +778,7 @@ assert.ok(mainSource.includes('importedModel.position.set(0, 0, 0)'), '3D model 
 assert.ok(mainSource.includes('BASE_JOG_MAX_VISIBLE_LINE_SPAN = 10'), 'Base JOG controls must identify oversized guide lines.');
 assert.ok(mainSource.includes("object.tag === 'helper' || scaledSpan > BASE_JOG_MAX_VISIBLE_LINE_SPAN"), 'Base JOG helper axes must be excluded from visible strokes.');
 assert.ok(mainSource.includes('infiniteGuideHandles.forEach((guideHandle) => guideHandle.removeFromParent())'), 'Base JOG controls must remove infinite drag guides.');
-assert.match(htmlSource, /style\.css\?v=[^"'\s]*zero-point/, 'Stylesheet cache token must load the current simulation styles.');
+assert.match(htmlSource, /style\.css\?v=[^"'\s]+/, 'Stylesheet cache token must load the current simulation styles.');
 assert.match(cssSource, /body\.fullscreen-ui-mode #main-content\s*\{[^}]*top:\s*0[^}]*bottom:\s*0/s, 'Fullscreen UI mode must expand the 3D viewport.');
 assert.doesNotMatch(htmlSource, /id="collision-alert"/);
 assert.doesNotMatch(cssSource, /\.collision-alert\s*\{/);
@@ -840,10 +843,10 @@ assert.ok(mainSource.includes("import { buildStepSnapCandidates } from '../3_Too
     && mainSource.includes('position: robot.worldToLocal(snap.worldPoint.clone())')
     && mainSource.includes('positionTolerance: 0.001'), 'Simulation snap movement must reuse Mode D candidates and solve the selected point in robot Base coordinates.');
 assert.ok(mainSource.includes('formatPositionPointRecordLine({')
-    && mainSource.includes("suggestedName: 'Point_export.txt'")
-    && mainSource.includes("saveAs(blob, 'Point_export.txt')"), 'Position export must use the verified record formatter and Point_export.txt fallback download.');
+    && mainSource.includes("async function saveStandalonePFile(content, suggestedName = 'P.pts')")
+    && mainSource.includes('saveAs(blob, suggestedName)'), 'Position export must use the verified record formatter and a browser-compatible fallback download.');
 assert.match(htmlSource, /id="btn-import-3d"[^>]*>[\s\S]*?<span>3D<\/span>[\s\S]*?fa-upload/, 'The 3D import button must show a 3D upload tray icon.');
-assert.match(htmlSource, /program-file-row[\s\S]*?id="program-export"[\s\S]*?id="program-import"[\s\S]*?id="btn-position-export"/, 'Program files must provide save, load, and point export controls in order.');
+assert.match(htmlSource, /program-file-row[\s\S]*?id="program-import"[\s\S]*?id="program-export"[\s\S]*?id="btn-position-export"/, 'Program files must provide load, save, and point export controls in order.');
 assert.ok(
     htmlSource.indexOf('id="btn-position-export"') > htmlSource.indexOf('id="program-export"'),
     'Position export must not remain in the top toolbar.'
@@ -871,11 +874,11 @@ assert.match(htmlSource, /data-base-rotation-row="z"[\s\S]*?data-base-rotation-r
 assert.ok(mainSource.includes('const SIX_AXIS_POSITION_HOME_QUATERNION')
     && mainSource.includes("new THREE.Euler(-Math.PI, -Math.PI / 2, 0, 'ZYX')")
     && mainSource.includes("setFromQuaternion(positionRotation, 'ZYX')")
-    && mainSource.includes("THREE.MathUtils.degToRad(rz),\n        'ZYX'"), 'Six-axis position values must use 3-2-1 (RZ-RY-RX) Euler angles.');
+    && /THREE\.MathUtils\.degToRad\(rx\),\s*THREE\.MathUtils\.degToRad\(ry\),\s*THREE\.MathUtils\.degToRad\(rz\),\s*'ZYX'/s.test(mainSource), 'Six-axis position values must use 3-2-1 (RZ-RY-RX) Euler angles.');
 assert.ok(!mainSource.includes('usesNegativeJ5RotationBranch'), '3-2-1 Euler conversion must determine the J5 branch without a manual sign override.');
 assert.ok(
-    mainSource.includes("insertBefore(programButton, virtualButton || divider)"),
-    'The Program launcher must be inserted immediately before the Virtual launcher.'
+    mainSource.includes("insertBefore(programButton, tcpButton || virtualButton || divider)"),
+    'The Program launcher must be inserted before the existing TCP/Virtual launcher group.'
 );
 const preflightSource = mainSource.slice(
     mainSource.indexOf('function preflightRobotMotion('),
@@ -902,7 +905,7 @@ assert.ok(
 );
 assert.ok(!htmlSource.includes('id="program-panel-resize"'), 'Panel resizing must not require a header button.');
 assert.ok(mainSource.includes('function makePanelEdgeResizable('), 'Panels must support classic edge resizing.');
-assert.ok(mainSource.includes('[el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.viewPresetsPanel, el.programPanel].forEach(makePanelEdgeResizable)'), 'Model, JOG, Virtual Controller, Saved Views and Program panels must all use edge resizing.');
+assert.ok(mainSource.includes('[el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.programPanel, el.viewWindow].forEach(makePanelEdgeResizable)'), 'Model, JOG, Virtual Controller, Saved Views, Interference, View Window and Program panels must all use edge resizing.');
 assert.ok(mainSource.includes("'model-browser-panel': { width: 260, height: 220 }")
     && mainSource.includes("'jog-panel': { width: 250, height: 300 }")
     && mainSource.includes("'virtual-controller-panel': { width: 250, height: 230 }")

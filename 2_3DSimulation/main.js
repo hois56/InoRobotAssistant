@@ -79,7 +79,7 @@ import {
     OlpRuntime,
     clampWord,
     normalizeAddress as normalizeOlpAddress
-} from './olp-runtime.mjs?v=20260726-olp-runtime-29';
+} from './olp-runtime.mjs?v=20260726-olp-runtime-30';
 function uiText(value) {
     return window.InoRobotI18n ? window.InoRobotI18n.translate(String(value)) : String(value);
 }
@@ -193,6 +193,7 @@ const state = {
         bridgeStopInProgress: false,
         bridgeStartInProgress: false,
         bridgeRunning: false,
+        bridgeToken: null,
         bridgeHealthDeadline: 0,
         bridgeHealthTimer: null,
         targetRobotId: null,
@@ -217,6 +218,7 @@ const state = {
         selectedFile: '',
         importInProgress: false,
         projectEditTimer: null,
+        projectDirty: false,
         inputWords: new Uint16Array(OLP_WORD_COUNT),
         outputWords: new Uint16Array(OLP_WORD_COUNT),
         inputExtended: new Map(),
@@ -236,6 +238,7 @@ const state = {
         runtimeViewTimer: null,
         runtimeViewPending: null,
         virtualBusWanted: false,
+        busToken: null,
         remoteCommandValues: new Map(),
         remoteCommandBusy: false,
         resetCursorOnStop: false,
@@ -486,7 +489,6 @@ const el = {
     olpWorkspace: document.getElementById('olp-workspace'),
     olpWorkspaceTitle: document.getElementById('olp-workspace-title'),
     olpProjectName: document.getElementById('olp-project-name'),
-    olpRunNote: document.getElementById('olp-run-note'),
     olpStatusDot: document.getElementById('olp-status-dot'),
     olpBusIndicator: document.getElementById('olp-bus-indicator'),
     olpImportFolderInput: document.getElementById('olp-import-folder-input'),
@@ -498,7 +500,6 @@ const el = {
     olpPointContextMenu: document.getElementById('olp-point-context-menu'),
     olpPointWriteCurrent: document.getElementById('olp-point-write-current'),
     olpPointMoveTarget: document.getElementById('olp-point-move-target'),
-    olpModelNote: document.getElementById('olp-model-note'),
     olpBusStatus: document.getElementById('olp-bus-status'),
     olpIoNote: document.getElementById('olp-io-note'),
     olpIoInBitAddress: document.getElementById('olp-io-in-bit-address'),
@@ -2774,7 +2775,6 @@ function refreshOlpLocalizedUi() {
     if (el.olpFileEditor) el.olpFileEditor.setAttribute('aria-label', uiText('Selected project file'));
     if (el.olpPointTable) el.olpPointTable.setAttribute('aria-label', uiText('Point file table'));
     if (el.olpRobotControlSlot) el.olpRobotControlSlot.setAttribute('aria-label', uiText('OLP robot controls'));
-    if (el.olpRunNote) el.olpRunNote.textContent = uiText('OLP 오른쪽의 제어 아이콘으로 선택 로봇의 main.pro를 제어합니다. 반복 실행은 OLP에서 사용할 수 없습니다.');
     if (el.olpPointWriteCurrent) {
         el.olpPointWriteCurrent.innerHTML = `<i class="fa-solid fa-location-crosshairs"></i> ${uiText('현재 위치로 수정')}`;
     }
@@ -2797,12 +2797,6 @@ function refreshOlpLocalizedUi() {
     }
     renderOlpConsole();
     renderOlpIoMonitor();
-    if (el.olpModelNote) {
-        const robot = state.activeProgramRobot || state.activeArticulatedModel;
-        el.olpModelNote.textContent = uiFormat('Robot model: {model}', {
-            model: robot?.userData?.robotName || robot?.userData?.modelName || uiText('current selected robot')
-        });
-    }
     updateOlpProgramPanelUi();
     updateOlpProgramIndicator();
     updateOlpBusIndicator();
@@ -5595,15 +5589,19 @@ function setupEventListeners() {
     el.olpModeButton?.addEventListener('click', () => toggleOlpWorkspace());
     el.olpImportFolderInput?.addEventListener('change', handleOlpFolderImport);
     el.olpFileSelect?.addEventListener('change', () => {
+        flushOlpPendingEdit();
         state.olp.selectedFile = el.olpFileSelect.value;
         renderOlpSelectedFile();
     });
     el.olpPointTable?.addEventListener('contextmenu', handleOlpPointContextMenu);
+    el.olpPointTable?.addEventListener('click', handleOlpPointTableActivate);
+    el.olpPointTable?.addEventListener('keydown', handleOlpPointTableActivate);
     el.olpPointWriteCurrent?.addEventListener('click', writeOlpPointFromCurrentRobot);
     el.olpPointMoveTarget?.addEventListener('click', () => void moveOlpPointFromContext());
     el.olpFileEditor?.addEventListener('input', () => {
         renderOlpSourceHighlight(el.olpFileEditor.value);
         if (!state.olp.project || !state.olp.selectedFile || isOlpRunning()) return;
+        state.olp.projectDirty = true;
         if (state.olp.projectEditTimer) clearTimeout(state.olp.projectEditTimer);
         state.olp.projectEditTimer = window.setTimeout(() => {
             state.olp.projectEditTimer = null;
@@ -5721,7 +5719,12 @@ function setupEventListeners() {
         btnDown.addEventListener('click', handleCADDownload);
     }
 
-    window.addEventListener('beforeunload', () => {
+    window.addEventListener('beforeunload', (event) => {
+        flushOlpPendingEdit();
+        if (state.olp.projectDirty) {
+            event.preventDefault();
+            event.returnValue = '';
+        }
         closeVirtualControllerSocket(false);
         const olpSocket = state.olp.socket;
         state.olp.socket = null;
@@ -10668,6 +10671,12 @@ function openVirtualControllerSocket(isReconnect = false) {
     socket.addEventListener('open', () => {
         if (controller.socket !== socket || !controller.wanted) return;
         if (source.id === 'bridge') {
+            if (!controller.bridgeToken) {
+                setVirtualControllerStatus('error', '브리지 인증 토큰을 확인할 수 없습니다.');
+                try { socket.close(1008, 'bridge pairing unavailable'); } catch { }
+                return;
+            }
+            socket.send(JSON.stringify({ type: 'hello', token: controller.bridgeToken }));
             controller.bridgeRunning = true;
             refreshVirtualControllerUi();
         }
@@ -10815,6 +10824,7 @@ function updateOlpRuntimeView(snapshot = null) {
         ready: 'READY',
         running: 'RUNNING',
         waiting: 'WAITING',
+        draining: 'DRAINING',
         paused: 'PAUSED',
         stopping: 'STOPPING',
         stopped: 'STOPPED',
@@ -10831,7 +10841,8 @@ function updateOlpRuntimeView(snapshot = null) {
         ? uiFormat(execution.alarm.easyGo ? 'Alarm {code} (EasyGo)' : 'Alarm {code}', { code: execution.alarm.code })
         : phase === 'waiting' && execution.waitCondition
             ? uiFormat('Waiting: {condition}', { condition: execution.waitCondition })
-        : phase === 'running' ? uiText('Program is executing')
+                    : phase === 'running' ? uiText('Program is executing')
+            : phase === 'draining' ? uiText('Waiting for pending NWait motions')
             : phase === 'paused' ? uiText('Program paused')
                 : phase === 'completed' ? uiText('Program cycle completed')
                     : phase === 'stopped' || phase === 'stopping' ? uiText('Program stopped')
@@ -11135,12 +11146,6 @@ function setOlpStatus(status, message = '', replacements = {}) {
     const running = isOlpRunning() || state.olp.workOriginBusy || state.olp.manualMoveBusy;
     if (el.olpFileEditor) el.olpFileEditor.disabled = !state.olp.project || running;
     if (el.olpFileSelect) el.olpFileSelect.disabled = !state.olp.project || running;
-    if (el.olpModelNote) {
-        const robot = state.activeProgramRobot || state.activeArticulatedModel;
-        el.olpModelNote.textContent = uiFormat('Robot model: {model}', {
-            model: robot?.userData?.robotName || robot?.userData?.modelName || uiText('current selected robot')
-        });
-    }
     updateOlpProgramPanelUi();
     updateOlpRuntimeView();
     renderOlpIoMonitor();
@@ -11404,6 +11409,21 @@ function getOlpEditorProjectText(path, visibleText) {
     return hiddenPrefix + String(visibleText ?? '');
 }
 
+function flushOlpPendingEdit() {
+    if (state.olp.projectEditTimer) {
+        clearTimeout(state.olp.projectEditTimer);
+        state.olp.projectEditTimer = null;
+    }
+    if (!state.olp.project || !state.olp.selectedFile || !el.olpFileEditor || isOlpRunning()) return false;
+    const updated = updateOlpFileText(
+        state.olp.project,
+        state.olp.selectedFile,
+        getOlpEditorProjectText(state.olp.selectedFile, el.olpFileEditor.value)
+    );
+    if (updated) state.olp.projectDirty = true;
+    return updated;
+}
+
 function renderOlpSourceHighlight(source = '') {
     if (!el.olpFileHighlight) return;
     const normalized = String(source ?? '').replace(/\r\n?/g, '\n');
@@ -11493,7 +11513,7 @@ function renderOlpPointTable() {
         const values = Array.isArray(record.values) ? record.values : [];
         const coordinateCells = values.slice(0, 6).map((value) => `<td>${formatOlpPointTableValue(value)}</td>`);
         if (isScara) coordinateCells.splice(4, 2);
-        return `<tr data-olp-point-row data-olp-point-path="${escapeOlpHtml(record.path)}" data-olp-point-index="${record.index}" data-olp-point-symbol="${escapeOlpHtml(record.sourceSymbol || 'P')}">
+        return `<tr tabindex="0" role="button" aria-label="${escapeOlpHtml(uiFormat('Point {point}', { point: record.name || `${record.sourceSymbol || 'P'}${record.index}` }))}" data-olp-point-row data-olp-point-path="${escapeOlpHtml(record.path)}" data-olp-point-index="${record.index}" data-olp-point-symbol="${escapeOlpHtml(record.sourceSymbol || 'P')}">
             <td class="olp-point-id">${escapeOlpHtml(record.index)}</td>
             <td class="olp-point-name">${escapeOlpHtml(record.name || `${record.sourceSymbol || 'P'}${record.index}`)}</td>
             ${coordinateCells.join('')}
@@ -11501,7 +11521,7 @@ function renderOlpPointTable() {
     }).join('');
 
     tableShell.innerHTML = `
-        <div class="olp-point-table-note">${escapeOlpHtml(uiFormat('{path} · 우클릭하여 현재 로봇 위치와 Arm 파라미터를 덮어쓸 수 있습니다.', { path: pointFile.path }))}</div>
+        <div class="olp-point-table-note">${escapeOlpHtml(uiFormat('{path} · 우클릭 또는 Enter/Space로 현재 로봇 위치와 Arm 파라미터를 덮어쓸 수 있습니다.', { path: pointFile.path }))}</div>
         <div class="olp-point-table-scroll">
             <table>
                 <thead><tr>${head}</tr></thead>
@@ -11555,15 +11575,21 @@ function renderOlpProjectUi() {
     setOlpStatus(state.olp.status, '');
 }
 
-async function collectOlpDirectoryFiles(directory, prefix = '') {
+const OLP_IMPORT_LIMITS = Object.freeze({ maxFiles: 512, maxDepth: 10, maxFileBytes: 32 * 1024 * 1024, maxTotalBytes: 128 * 1024 * 1024 });
+
+async function collectOlpDirectoryFiles(directory, prefix = '', depth = 0, totalBytes = { value: 0 }) {
+    if (depth > OLP_IMPORT_LIMITS.maxDepth) throw new Error(`Project folder nesting exceeds ${OLP_IMPORT_LIMITS.maxDepth} levels.`);
     const files = [];
     for await (const entry of directory.values()) {
         const relativePath = prefix ? prefix + '/' + entry.name : entry.name;
         if (entry.kind === 'directory') {
-            files.push(...await collectOlpDirectoryFiles(entry, relativePath));
+            files.push(...await collectOlpDirectoryFiles(entry, relativePath, depth + 1, totalBytes));
             continue;
         }
         const file = await entry.getFile();
+        if (file.size > OLP_IMPORT_LIMITS.maxFileBytes) throw new Error(`${relativePath} exceeds the ${OLP_IMPORT_LIMITS.maxFileBytes / 1024 / 1024} MB file limit.`);
+        totalBytes.value += file.size;
+        if (totalBytes.value > OLP_IMPORT_LIMITS.maxTotalBytes) throw new Error(`Project folder exceeds the ${OLP_IMPORT_LIMITS.maxTotalBytes / 1024 / 1024} MB total limit.`);
         // Keep the folder-relative path without using a webkitdirectory
         // upload input. This avoids the browser's multi-file upload warning.
         files.push({
@@ -11575,8 +11601,27 @@ async function collectOlpDirectoryFiles(directory, prefix = '') {
             text: () => file.text(),
             arrayBuffer: () => file.arrayBuffer()
         });
+        if (files.length > OLP_IMPORT_LIMITS.maxFiles) throw new Error(`Project folder exceeds the ${OLP_IMPORT_LIMITS.maxFiles} file limit.`);
     }
     return files;
+}
+
+function validateOlpImportFiles(files) {
+    if (files.length > OLP_IMPORT_LIMITS.maxFiles) throw new Error(`Project folder exceeds the ${OLP_IMPORT_LIMITS.maxFiles} file limit.`);
+    let totalBytes = 0;
+    const paths = new Set();
+    files.forEach((file) => {
+        const relativePath = String(file.webkitRelativePath || file.relativePath || file.name || '').replaceAll('\\', '/');
+        const parts = relativePath.split('/').filter(Boolean);
+        if (!parts.length || parts.some((part) => part === '.' || part === '..' || part.startsWith('.'))) throw new Error(`Invalid project path: ${relativePath}`);
+        if (parts.length > OLP_IMPORT_LIMITS.maxDepth + 1) throw new Error(`Project path exceeds ${OLP_IMPORT_LIMITS.maxDepth} levels: ${relativePath}`);
+        if (paths.has(relativePath)) throw new Error(`Duplicate project path: ${relativePath}`);
+        paths.add(relativePath);
+        const size = Number(file.size) || 0;
+        if (size > OLP_IMPORT_LIMITS.maxFileBytes) throw new Error(`${relativePath} exceeds the ${OLP_IMPORT_LIMITS.maxFileBytes / 1024 / 1024} MB file limit.`);
+        totalBytes += size;
+    });
+    if (totalBytes > OLP_IMPORT_LIMITS.maxTotalBytes) throw new Error(`Project folder exceeds the ${OLP_IMPORT_LIMITS.maxTotalBytes / 1024 / 1024} MB total limit.`);
 }
 
 async function importOlpFolderFromPicker() {
@@ -11600,17 +11645,20 @@ async function importOlpFolderFromPicker() {
 async function handleOlpFolderImport(selectedFiles = null) {
     const files = selectedFiles ?? el.olpImportFolderInput?.files;
     if (!files?.length || state.olp.importInProgress || (isMotionActive() && !isOlpRunning())) return;
-    if (state.olp.projectEditTimer) {
-        clearTimeout(state.olp.projectEditTimer);
-        state.olp.projectEditTimer = null;
+    if (state.olp.projectDirty && !window.confirm(uiText('Unsaved OLP edits will be discarded. Continue?'))) {
+        return;
     }
+    flushOlpPendingEdit();
+    const filesArray = [...files];
     state.olp.importInProgress = true;
     setOlpStatus('working', 'Loading robot project folder...');
     try {
+        validateOlpImportFiles(filesArray);
         await stopOlpSession('Loading a new OLP project', { closeBus: true });
-        const project = await buildOlpProjectFromFiles(files);
+        const project = await buildOlpProjectFromFiles(filesArray);
         project.programPath = project.programFiles.find((path) => /(^|\/)main\.pro$/i.test(path)) || project.programFiles[0] || null;
         state.olp.project = project;
+        state.olp.projectDirty = false;
         state.olp.inputWords = new Uint16Array(OLP_WORD_COUNT);
         state.olp.outputWords = new Uint16Array(OLP_WORD_COUNT);
         state.olp.inputExtended = new Map();
@@ -11676,11 +11724,17 @@ async function handleOlpFolderImport(selectedFiles = null) {
 async function saveOlpProjectAsZip() {
     const project = state.olp.project;
     if (!project) return;
+    flushOlpPendingEdit();
     try {
         const zip = new JSZip();
+        const archivePaths = new Set();
         for (const record of project.files.values()) {
-            if (record.binary && record.file) zip.file(record.path, await record.file.arrayBuffer());
-            else zip.file(record.path, record.text ?? '');
+            const archivePath = String(record.path || '').replaceAll('\\', '/');
+            if (!archivePath || archivePath.split('/').some((part) => !part || part === '.' || part === '..')) throw new Error(`Invalid ZIP path: ${record.path}`);
+            if (archivePaths.has(archivePath)) throw new Error(`Duplicate ZIP path: ${archivePath}`);
+            archivePaths.add(archivePath);
+            if (record.binary && record.file) zip.file(archivePath, await record.file.arrayBuffer());
+            else zip.file(archivePath, record.text ?? '');
         }
         const blob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
         const suggestedName = `${project.name || 'InoRobotProject'}_OLP.zip`;
@@ -11703,6 +11757,7 @@ async function saveOlpProjectAsZip() {
             // download fallback so ZIP export remains available there.
             saveAs(blob, suggestedName);
         }
+        state.olp.projectDirty = false;
         setOlpStatus('connected', 'Project saved as ZIP.');
     } catch (error) {
         if (error?.name === 'AbortError') return;
@@ -11724,13 +11779,16 @@ async function writeOlpFileToDirectory(directory, record) {
 async function saveOlpProjectAsFolder() {
     const project = state.olp.project;
     if (!project) return;
+    flushOlpPendingEdit();
     if (typeof window.showDirectoryPicker !== 'function') {
         setOlpStatus('error', '이 브라우저는 폴더 저장을 지원하지 않습니다. Edge 또는 Chrome에서 다시 시도해 주세요.');
         return;
     }
     try {
         const directory = await window.showDirectoryPicker({ id: 'inorobot-olp-project', mode: 'readwrite' });
+        if (!window.confirm(uiFormat('Files in {name} may be overwritten. Continue?', { name: directory.name || 'the selected folder' }))) return;
         for (const record of project.files.values()) await writeOlpFileToDirectory(directory, record);
+        state.olp.projectDirty = false;
         setOlpStatus('connected', 'Project saved to the selected folder.');
     } catch (error) {
         if (error?.name === 'AbortError') return;
@@ -12492,10 +12550,29 @@ function getOlpVirtualBusEndpoint() {
     return 'ws://127.0.0.1:8765/virtualbus/';
 }
 
-function sendOlpVirtualBusHello(socket = state.olp.socket) {
-    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+async function getOlpVirtualBusToken() {
+    if (state.olp.busToken) return state.olp.busToken;
+    try {
+        const response = await fetch('/api/virtualbus-token', { cache: 'no-store' });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || typeof data.token !== 'string' || data.token.length < 32) return null;
+        state.olp.busToken = data.token;
+        return data.token;
+    } catch {
+        return null;
+    }
+}
+
+async function sendOlpVirtualBusHello(socket = state.olp.socket) {
+    if (!socket || socket.readyState !== WebSocket.OPEN) return false;
+    const token = await getOlpVirtualBusToken();
+    if (!token || socket.readyState !== WebSocket.OPEN) {
+        updateOlpBusStatus('Virtual Bus unavailable · OLP local execution remains active', 'Local Virtual Bus pairing token is not configured.');
+        return false;
+    }
     socket.send(JSON.stringify({
         type: 'hello',
+        token,
         role: 'slave',
         protocol: 'inorobot-virtual-bus',
         version: 1,
@@ -12505,6 +12582,7 @@ function sendOlpVirtualBusHello(socket = state.olp.socket) {
         labels: state.olp.project?.labels || {},
         remoteIoMapping: state.olp.project?.remoteIoMapping || []
     }));
+    return true;
 }
 
 function connectOlpVirtualBus() {
@@ -12676,6 +12754,7 @@ async function startOlpSession({ step = false } = {}) {
     if (state.olp.manualMoveBusy) { setOlpStatus('error', 'Wait until the manual point movement is complete.'); return; }
     if (state.virtualController.wanted) { setOlpStatus('error', 'OLP is unavailable while a controller is connected.'); return; }
     if (state.motionSessions.size) { setOlpStatus('error', 'Stop the normal motion program before running OLP.'); return; }
+    flushOlpPendingEdit();
     let runtime;
     runtime = new OlpRuntime(state.olp.project, {
         readAddress: readOlpAddress,
@@ -12803,6 +12882,13 @@ async function connectVirtualController() {
         setVirtualControllerStatus('error', '가상 컨트롤러 기능을 불러올 수 없습니다.');
         return;
     }
+    if (getVirtualControllerSourceConfig().id === 'bridge' && !controller.bridgeToken) {
+        const bridgeRunning = await isVirtualControllerBridgeRunning();
+        if (!bridgeRunning || !controller.bridgeToken) {
+            setVirtualControllerStatus('error', '브리지 인증 설정이 없어 연결할 수 없습니다. 운영 Origin과 토큰을 설정해 주세요.');
+            return;
+        }
+    }
     commitAllPendingHistories();
     controller.historyBefore = captureSceneSnapshot();
     controller.wanted = true;
@@ -12827,37 +12913,22 @@ function clearVirtualControllerBridgeHealthMonitor() {
 async function isVirtualControllerBridgeRunning() {
     const controller = state.virtualController;
     const bridge = controller.core?.getVirtualControllerSource?.('bridge') || {
-        socketUrl: 'ws://127.0.0.1:5055/ws'
+        healthUrl: 'http://127.0.0.1:5055/api/health'
     };
-    if (!bridge.socketUrl) return false;
-    return new Promise((resolve) => {
-        let settled = false;
-        const finish = (running) => {
-            if (settled) return;
-            settled = true;
-            clearTimeout(timeout);
-            try { socket.close(); } catch { /* Ignore close errors. */ }
-            resolve(running);
-        };
-        const timeout = window.setTimeout(() => finish(false), 1200);
-        let socket;
-        try {
-            socket = new WebSocket(bridge.socketUrl);
-        } catch {
-            finish(false);
-            return;
-        }
-        socket.addEventListener('message', (event) => {
-            try {
-                const message = JSON.parse(String(event.data));
-                if (message?.type === 'bridgeReady') finish(true);
-            } catch {
-                // Wait for a valid bridgeReady message or timeout.
-            }
-        });
-        socket.addEventListener('error', () => finish(false));
-        socket.addEventListener('close', () => finish(false));
-    });
+    if (!bridge.healthUrl) return false;
+    try {
+        const response = await fetch(bridge.healthUrl, { cache: 'no-store' });
+        const health = await response.json().catch(() => ({}));
+        controller.bridgeToken = response.ok && typeof health.pairingToken === 'string'
+            ? health.pairingToken
+            : null;
+        return response.ok
+            && health.service === 'InoRobotVirtualControllerBridge'
+            && Boolean(controller.bridgeToken);
+    } catch {
+        controller.bridgeToken = null;
+        return false;
+    }
 }
 
 function monitorVirtualControllerBridgeHealth(silent = false) {
@@ -12947,6 +13018,9 @@ async function stopVirtualControllerBridge() {
     refreshVirtualControllerUi();
     const bridgeUrl = controller.core.getVirtualControllerSource('bridge').socketUrl;
     try {
+        if (!(await isVirtualControllerBridgeRunning()) || !controller.bridgeToken) {
+            throw new Error('Bridge pairing is not configured.');
+        }
         await new Promise((resolve, reject) => {
             const socket = new WebSocket(bridgeUrl);
             const timeout = window.setTimeout(() => {
@@ -12960,7 +13034,8 @@ async function stopVirtualControllerBridge() {
                 else resolve();
             };
             socket.addEventListener('open', () => {
-                socket.send(JSON.stringify({ type: 'shutdown' }));
+                socket.send(JSON.stringify({ type: 'hello', token: controller.bridgeToken }));
+                socket.send(JSON.stringify({ type: 'shutdown', allowShutdown: true }));
             });
             socket.addEventListener('message', (event) => {
                 const parsed = controller.core.parseVirtualControllerMessage(event.data, performance.now());
@@ -13490,6 +13565,23 @@ function handleOlpPointContextMenu(event) {
     openOlpPointContextMenu(event, record);
 }
 
+function handleOlpPointTableActivate(event) {
+    if (event.type === 'keydown' && !['Enter', ' '].includes(event.key)) return;
+    if (isOlpRunning() || state.olp.manualMoveBusy || state.olp.workOriginBusy || !state.olp.project) return;
+    const row = event.target.closest('[data-olp-point-row]');
+    if (!row) return;
+    const pointFile = getOlpSelectedPointFile();
+    const record = pointFile?.records?.find((candidate) => candidate.index === Number(row.dataset.olpPointIndex)
+        && (candidate.sourceSymbol || 'P').toUpperCase() === String(row.dataset.olpPointSymbol || 'P').toUpperCase());
+    if (!record) return;
+    if (event.type === 'keydown') event.preventDefault();
+    const bounds = row.getBoundingClientRect();
+    openOlpPointContextMenu({
+        clientX: event.clientX || bounds.left + 12,
+        clientY: event.clientY || bounds.bottom
+    }, record);
+}
+
 function getOlpPointContextRecord(target = state.olp.pointContextTarget) {
     if (!target || !state.olp.project) return null;
     const pointFile = state.olp.project.pointFiles?.find((file) => file.path === target.path);
@@ -13608,6 +13700,7 @@ function writeOlpPointFromCurrentRobot() {
         sourceLines[lineIndex] = nextLine;
         const viewState = captureOlpPointViewState();
         updateOlpFileText(state.olp.project, target.path, sourceLines.join('\n'));
+        state.olp.projectDirty = true;
         state.olp.selectedFile = target.path;
         renderOlpFileList();
         restoreOlpPointViewState(viewState);
@@ -15683,6 +15776,10 @@ function animate(timestamp = performance.now()) {
         stopRobotMotions(movingRobots);
         latchCollisionStopNotice(collision, '충돌이 감지되어 모션을 정지했습니다.');
         setMotionProgramStatus('충돌이 감지되어 모션을 정지했습니다.', 'error');
+    } else if (collisionFresh && blockingMotionCollision && state.olp.runtime?.running) {
+        state.olp.runtime.stop();
+        latchCollisionStopNotice(collision, '충돌이 감지되어 OLP 모션을 정지했습니다.');
+        setOlpStatus('error', '충돌이 감지되어 OLP 모션을 정지했습니다.');
     } else if (collisionFresh && !asCollisionResults(collision).length) {
         captureCollisionSafeRobotPoses();
     }

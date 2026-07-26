@@ -31,20 +31,18 @@
     let activeCardKey = null;
 
     function getEmbeddedHistoryMarkdown() {
-        const locale = window.InoRobotI18n?.locale || 'ko';
-        const localized = window.INOROBOT_LOCALES?.[locale]?.historyMarkdown;
-        if (localized) return localized;
-
         const encoded = window.SITE_CARD_HISTORY_MARKDOWN_BASE64;
-        if (!encoded) return null;
-
-        try {
-            const bytes = Uint8Array.from(atob(encoded), (character) => character.charCodeAt(0));
-            return new TextDecoder('utf-8').decode(bytes);
-        } catch (error) {
-            console.error('내장된 버전 기록을 읽지 못했습니다.', error);
-            return null;
+        if (encoded) {
+            try {
+                const bytes = Uint8Array.from(atob(encoded), (character) => character.charCodeAt(0));
+                return new TextDecoder('utf-8').decode(bytes);
+            } catch (error) {
+                console.error('내장된 버전 기록을 읽지 못했습니다.', error);
+            }
         }
+
+        const locale = window.InoRobotI18n?.locale || 'ko';
+        return window.INOROBOT_LOCALES?.[locale]?.historyMarkdown || null;
     }
 
     function loadHistoryMarkdown() {

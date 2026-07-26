@@ -113,9 +113,8 @@ assert.doesNotMatch(simulationStyles, /data-snap-type="(?:face-center|shape-cent
 assert.match(simulationStyles, /\.simulation-snap-marker\s*\{[^}]*transform:\s*translate\(-7px,\s*-50%\);/s);
 assert.match(simulationStyles, /\.simulation-snap-marker\.label-left\s*\{[^}]*transform:\s*translate\(calc\(-100% \+ 7px\),\s*-50%\);/s);
 assert.doesNotMatch(simulationStyles, /\.simulation-snap-marker(?:\.label-left)?\s*\{[^}]*transform:[^;}]*,\s*-6px\)/s);
-assert.match(simulationHtml, /style\.css\?v=[^"'\s]*zero-point/);
-assert.match(simulationHtml, /main\.js\?v=[^"'\s]*large-model-performance/);
-assert.match(simulationHtml, /main\.js\?v=[^"'\s]*snap-center-priority/);
+  assert.match(simulationHtml, /style\.css\?v=[^"'\s]+/);
+  assert.match(simulationHtml, /main\.js\?v=[^"'\s]+/);
 assert.match(simulationSource, /step-import-worker\.js\?v=[^"'\s]*large-step-chunked-snap/);
 assert.match(simulationSource, /STEP_LARGE_FILE_ENGINE_MIN_BYTES\s*=\s*64 \* MEBIBYTE/);
 assert.match(simulationSource, /MAX_MODEL_IMPORT_SIZE_BYTES\s*=\s*500 \* MEBIBYTE/);

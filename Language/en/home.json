@@ -203,6 +203,12 @@
       "title": "3D Simulation",
       "versions": [
         {
+          "title": "Ver 26.07.26",
+          "items": [
+            "**[Added]** Added OLP (Offline Programming) functionality to the Program panel."
+          ]
+        },
+        {
           "title": "Ver 26.07.25",
           "items": [
             "**[Improved]** Large STL models now use a separate collision proxy so visual detail and collision-check performance can be improved together.",
@@ -211,44 +217,49 @@
         },
         {
           "title": "Ver 26.07.24",
-              "items": [
-                "**[Added]** Added mesh-accurate collision detection among robot links, Tools, and equipment models, highlighting colliding models in red.",
-                "**[Added]** Added interference-zone settings for defining virtual zones at desired locations.",
-                "**[Fixed]** Applied SCARA J3 controller angle limits by model so the simulator's linear axis (mm) matches the controller display (°).",
-                "**[Added]** Added a feature to reset saved settings and placed models in bulk.",
-                "**[Added]** Added real-controller connection support.",
-                "**[Added]** Added multi-view support for opening saved camera views in a separate window and monitoring multiple split-screen views at once."
-              ]
-            },
-            {
-            "title": "Ver 26.07.21",
-              "items": [
-                "**[Added]** Added Auto, Lightweight, Standard, and High quality choices for large 3D model imports.",
-                "**[Changed]** Large STL, FBX, and STEP models are processed in the background and chunks, while STEP part structure and colors are preserved.",
-                "**[Fixed]** Stabilized selected-face, multi-point-center, and candidate snap feedback while navigating the model."
-              ]
-            },
-            {
-              "title": "Ver 26.07.18",
-            "items": [
-              "**[Revamp]** The existing 3D Viewer has been comprehensively rebuilt as 3D Simulation, enabling robot simulation.",
-              "**[Support]** All robot models can be moved, and robot motion paths can be set through programming.",
-              "**[Support]** Supports importing 3D models and attaching imported files to a robot Tool.",
-              "**[Support]** Can connect to and use the InoRobotLab Virtual Controller. (Requires the dedicated bridge or Trace tool.)",
-              "**[Added]** Korean, English, Chinese, and Vietnamese are now supported, and all items previously displayed in English in certain Korean views have been translated into Korean.",
-              "**[Changed]** The version-labeling convention has been changed to record the date only."
+          "items": [
+            "**[Added]** Added mesh-accurate collision detection among robot links, Tools, and equipment models, highlighting colliding models in red.",
+            "**[Added]** Added interference-zone settings for defining virtual zones at desired locations.",
+            "**[Fixed]** Applied SCARA J3 controller angle limits by model so the simulator's linear axis (mm) matches the controller display (°).",
+            "**[Added]** Added a feature to reset saved settings and placed models in bulk.",
+            "**[Added]** Added real-controller connection support.",
+            "**[Added]** Added multi-view support for opening saved camera views in a separate window and monitoring multiple split-screen views at once."
+          ]
+        },
+        {
+          "title": "Ver 26.07.21",
+          "items": [
+            "**[Added]** Added Auto, Lightweight, Standard, and High quality choices for large 3D model imports.",
+            "**[Changed]** Large STL, FBX, and STEP models are processed in the background and chunks, while STEP part structure and colors are preserved.",
+            "**[Fixed]** Stabilized selected-face, multi-point-center, and candidate snap feedback while navigating the model."
+          ]
+        },
+        {
+          "title": "Ver 26.07.18",
+          "items": [
+            "**[Revamp]** The existing 3D Viewer has been comprehensively rebuilt as 3D Simulation, enabling robot simulation.",
+            "**[Support]** All robot models can be moved, and robot motion paths can be set through programming.",
+            "**[Support]** Supports importing 3D models and attaching imported files to a robot Tool.",
+            "**[Support]** Can connect to and use the InoRobotLab Virtual Controller. (Requires the dedicated bridge or Trace tool.)",
+            "**[Added]** Korean, English, Chinese, and Vietnamese are now supported, and all items previously displayed in English in certain Korean views have been translated into Korean.",
+            "**[Changed]** The version-labeling convention has been changed to record the date only."
           ]
         }
-        ]
-      },
-        {
-        "title": "Robot Tool Selector",
-          "versions": [
+      ]
+    },
+    {
+      "title": "Robot Tool Selector",
+      "versions": [
+            {
+            "title": "Ver 26.07.26",
+              "items": [
+                "**[Improved]** Improved the mobile web UI layout."
+              ]
+            },
             {
             "title": "Ver 26.07.21",
               "items": [
                 "**[Added]** Added Default and Ultra-light import quality choices for large STEP files.",
-                "**[Changed]** Large STEP/XCAF imports now preserve part structure and source colors.",
               "**[Fixed]** Fixed rotation-handle continuity across 180° boundaries and face/arc/circle snap calculations."
               ]
             },
@@ -263,26 +274,13 @@
               "**[Added]** Korean, English, Chinese, and Vietnamese are now supported, and all items previously displayed in English in certain Korean views have been translated into Korean.",
               "**[Changed]** The version-labeling convention has been changed to record the date only."
             ]
-          },
-          {
-            "title": "Ver 26.04.26",
-            "items": [
-              "**[Changed]** Set all default mass, CoG, and inertia inputs to zero.",
-              "**[Fixed]** Block inertia is now calculated about the combined CoG.",
-              "**[Fixed]** Removed duplicate application of block self-inertia and the parallel-axis theorem in Mode B.",
-              "**[Fixed]** Adding or removing a block no longer resets existing inputs.",
-              "**[Fixed]** A total mass of 0 kg no longer produces NaN results.",
-              "**[Changed]** Standardized CoM and COM labels to CoG.",
-              "**[Changed]** Inertia results are displayed to three decimal places.",
-              "**[New]** Added a reference image explaining Tool Block CoG input coordinates."
-            ]
           }
         ]
       },
       {
-        "title": "Project Generator",
-        "versions": [
-          {
+      "title": "Project Generator",
+      "versions": [
+            {
             "title": "Ver 26.07.26",
             "items": [
               "**[Fixed]** In Korean screens, `No` now appears as `번호`, `Process` as `프로세스`, while the process-method names `Get` and `Put` remain untranslated."
@@ -357,8 +355,8 @@
         ]
       },
       {
-        "title": "Software",
-        "versions": [
+      "title": "Software",
+      "versions": [
           {
             "title": "Ver 26.07.24",
             "items": [
@@ -408,8 +406,8 @@
         ]
       },
       {
-        "title": "Document",
-        "versions": [
+      "title": "Document",
+      "versions": [
           {
             "title": "Ver 26.07.24",
             "items": [
@@ -513,19 +511,26 @@
       "title": "Debugging Tool",
       "versions": [
         {
-        "title": "Ver 26.07.25.01",
+          "title": "Ver 26.07.26",
           "items": [
+            "**[Changed]** Updated Communication Tester to `V2.8`."
+          ]
+        },
+        {
+        "title": "Ver 26.07.25",
+          "items": [
+            "**[Added]** Added CAD Lightweight `V1.0` for opening large STEP/STP files on a PC, inspecting parts, exporting selected parts as STEP, and changing the file origin.",
             "**[Updated]** Updated InoRobot Trace from V1.4 to V1.5."
           ]
         },
         {
-        "title": "Ver 26.07.24.01",
+        "title": "Ver 26.07.24",
           "items": [
             "**[Updated]** Updated Communication Tester from V2.6 to V2.7."
           ]
         },
         {
-        "title": "Ver 26.07.18.01",
+        "title": "Ver 26.07.18",
             "items": [
               "**[Updated]** Updated InoRobot Trace from V1.3 to V1.4.",
               "**[Added]** Korean, English, Chinese, and Vietnamese are now supported, and all items previously displayed in English in certain Korean views have been translated into Korean.",
@@ -587,6 +592,12 @@
       {
       "title": "communicationTester",
       "versions": [
+        {
+        "title": "Ver 2.8 (2026.07.26)",
+          "items": [
+            "**[Added]** Added the Virtual Bus feature. Virtual Bus can be used with OLP in 3D Simulation."
+          ]
+        },
         {
         "title": "Ver 2.7 (2026.07.24)",
           "items": [

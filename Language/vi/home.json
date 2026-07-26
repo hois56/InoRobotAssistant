@@ -203,6 +203,12 @@
       "title": "3D Simulation",
       "versions": [
         {
+          "title": "Ver 26.07.26",
+          "items": [
+            "**[Thêm]** Đã thêm chức năng OLP (Offline Programming) vào bảng chương trình."
+          ]
+        },
+        {
           "title": "Ver 26.07.25",
           "items": [
             "**[Cải tiến]** Model STL lớn giờ đây sử dụng proxy va chạm riêng để cải thiện đồng thời chi tiết hiển thị và hiệu năng kiểm tra va chạm.",
@@ -211,44 +217,49 @@
         },
         {
           "title": "Ver 26.07.24",
-              "items": [
-                "**[Thêm]** Đã thêm phát hiện va chạm theo hình dạng thực giữa các khâu robot, Tool và mô hình thiết bị; các mô hình va chạm được hiển thị màu đỏ.",
-                "**[Thêm]** Đã thêm thiết lập vùng can thiệp để tạo vùng ảo tại vị trí mong muốn.",
-                "**[Sửa]** Áp dụng giới hạn góc bộ điều khiển SCARA J3 theo từng model để trục thẳng của mô phỏng (mm) khớp với giá trị hiển thị của bộ điều khiển (°).",
-                "**[Thêm]** Đã thêm chức năng khởi tạo hàng loạt cài đặt đã lưu và các model đã bố trí.",
-                "**[Thêm]** Đã thêm chức năng kết nối bộ điều khiển thực.",
-                "**[Thêm]** Đã thêm chức năng đa chế độ xem, cho phép mở các góc camera đã lưu trong cửa sổ riêng và theo dõi đồng thời nhiều chế độ xem trên màn hình chia."
-              ]
-            },
-            {
-            "title": "Ver 26.07.21",
-              "items": [
-                "**[Thêm]** Thêm lựa chọn chất lượng Tự động, Nhẹ, Tiêu chuẩn và Cao cho việc nhập mô hình 3D lớn.",
-                "**[Thay đổi]** Mô hình STL, FBX và STEP lớn được xử lý nền theo từng khối, đồng thời giữ cấu trúc và màu của chi tiết STEP.",
-                "**[Sửa]** Ổn định phản hồi bắt dính cho mặt đã chọn, tâm nhiều điểm và các ứng viên khi duyệt mô hình."
-              ]
-            },
-            {
-              "title": "Ver 26.07.18",
-            "items": [
-              "**[Cải tổ]** Đã cải tổ toàn diện 3D Viewer hiện có thành 3D Simulation có thể mô phỏng robot.",
-              "**[Hỗ trợ]** Có thể di chuyển tất cả các mẫu robot và thiết lập đường đi của robot thông qua lập trình.",
-              "**[Hỗ trợ]** Hỗ trợ nhập mô hình 3D và gắn tệp đã nhập vào Tool của robot.",
-              "**[Hỗ trợ]** Có thể kết nối và sử dụng Bộ điều khiển ảo của InoRobotLab. (Cần dùng bridge chuyên dụng hoặc công cụ Trace.)",
-              "**[Thêm]** Đã bổ sung hỗ trợ tiếng Hàn, tiếng Anh, tiếng Trung và tiếng Việt; đồng thời dịch sang tiếng Hàn tất cả mục trước đây hiển thị bằng tiếng Anh trong một số giao diện tiếng Hàn.",
-              "**[Thay đổi]** Quy ước hiển thị phiên bản được thay đổi thành chỉ ghi ngày."
+          "items": [
+            "**[Thêm]** Đã thêm phát hiện va chạm theo hình dạng thực giữa các khâu robot, Tool và mô hình thiết bị; các mô hình va chạm được hiển thị màu đỏ.",
+            "**[Thêm]** Đã thêm thiết lập vùng can thiệp để tạo vùng ảo tại vị trí mong muốn.",
+            "**[Sửa]** Áp dụng giới hạn góc bộ điều khiển SCARA J3 theo từng model để trục thẳng của mô phỏng (mm) khớp với giá trị hiển thị của bộ điều khiển (°).",
+            "**[Thêm]** Đã thêm chức năng khởi tạo hàng loạt cài đặt đã lưu và các model đã bố trí.",
+            "**[Thêm]** Đã thêm chức năng kết nối bộ điều khiển thực.",
+            "**[Thêm]** Đã thêm chức năng đa chế độ xem, cho phép mở các góc camera đã lưu trong cửa sổ riêng và theo dõi đồng thời nhiều chế độ xem trên màn hình chia."
+          ]
+        },
+        {
+          "title": "Ver 26.07.21",
+          "items": [
+            "**[Thêm]** Thêm lựa chọn chất lượng Tự động, Nhẹ, Tiêu chuẩn và Cao cho việc nhập mô hình 3D lớn.",
+            "**[Thay đổi]** Mô hình STL, FBX và STEP lớn được xử lý nền theo từng khối, đồng thời giữ cấu trúc và màu của chi tiết STEP.",
+            "**[Sửa]** Ổn định phản hồi bắt dính cho mặt đã chọn, tâm nhiều điểm và các ứng viên khi duyệt mô hình."
+          ]
+        },
+        {
+          "title": "Ver 26.07.18",
+          "items": [
+            "**[Cải tổ]** Đã cải tổ toàn diện 3D Viewer hiện có thành 3D Simulation có thể mô phỏng robot.",
+            "**[Hỗ trợ]** Có thể di chuyển tất cả các mẫu robot và thiết lập đường đi của robot thông qua lập trình.",
+            "**[Hỗ trợ]** Hỗ trợ nhập mô hình 3D và gắn tệp đã nhập vào Tool của robot.",
+            "**[Hỗ trợ]** Có thể kết nối và sử dụng Bộ điều khiển ảo của InoRobotLab. (Cần dùng bridge chuyên dụng hoặc công cụ Trace.)",
+            "**[Thêm]** Đã bổ sung hỗ trợ tiếng Hàn, tiếng Anh, tiếng Trung và tiếng Việt; đồng thời dịch sang tiếng Hàn tất cả mục trước đây hiển thị bằng tiếng Anh trong một số giao diện tiếng Hàn.",
+            "**[Thay đổi]** Quy ước hiển thị phiên bản được thay đổi thành chỉ ghi ngày."
           ]
         }
-        ]
-      },
-        {
-        "title": "Robot Tool Selector",
-          "versions": [
+      ]
+    },
+    {
+      "title": "Robot Tool Selector",
+      "versions": [
+            {
+            "title": "Ver 26.07.26",
+              "items": [
+                "**[Cải tiến]** Cải thiện bố cục UI web trên thiết bị di động."
+              ]
+            },
             {
             "title": "Ver 26.07.21",
               "items": [
                 "**[Thêm]** Thêm lựa chọn chất lượng Mặc định và Siêu nhẹ cho việc nhập tệp STEP lớn.",
-                "**[Thay đổi]** Nhập STEP/XCAF lớn giữ cấu trúc và màu gốc của các chi tiết.",
               "**[Sửa]** Sửa tính liên tục của tay cầm xoay qua ranh giới 180° và tính toán bắt dính mặt/cung/tâm tròn."
               ]
             },
@@ -263,26 +274,13 @@
               "**[Thêm]** Đã bổ sung hỗ trợ tiếng Hàn, tiếng Anh, tiếng Trung và tiếng Việt; đồng thời dịch sang tiếng Hàn tất cả mục trước đây hiển thị bằng tiếng Anh trong một số giao diện tiếng Hàn.",
               "**[Thay đổi]** Quy ước hiển thị phiên bản được thay đổi thành chỉ ghi ngày."
             ]
-          },
-          {
-            "title": "Ver 26.04.26",
-            "items": [
-              "**[Thay đổi]** Đặt mặc định khối lượng, tọa độ CoG và mômen quán tính về 0.",
-              "**[Sửa]** Mômen quán tính của khối được tính theo CoG tổng.",
-              "**[Sửa]** Loại bỏ việc áp dụng trùng quán tính riêng và định lý trục song song trong Mode B.",
-              "**[Sửa]** Thêm hoặc xóa khối không còn đặt lại dữ liệu đã nhập.",
-              "**[Sửa]** Tổng khối lượng 0 kg không còn tạo kết quả NaN.",
-              "**[Thay đổi]** Thống nhất CoM và COM thành CoG.",
-              "**[Thay đổi]** Kết quả mômen quán tính hiển thị ba chữ số thập phân.",
-              "**[Mới]** Thêm ảnh tham khảo giải thích tọa độ nhập Tool Block CoG."
-            ]
           }
         ]
       },
       {
-        "title": "Project Generator",
-        "versions": [
-          {
+      "title": "Project Generator",
+      "versions": [
+            {
             "title": "Ver 26.07.26",
             "items": [
               "**[Sửa]** Trên giao diện tiếng Hàn, `No` hiển thị là `번호`, `Process` là `프로세스`, còn tên phương thức `Get` và `Put` không được dịch."
@@ -357,8 +355,8 @@
         ]
       },
       {
-        "title": "Software",
-        "versions": [
+      "title": "Software",
+      "versions": [
           {
             "title": "Ver 26.07.24",
             "items": [
@@ -408,8 +406,8 @@
         ]
       },
       {
-        "title": "Document",
-        "versions": [
+      "title": "Document",
+      "versions": [
           {
             "title": "Ver 26.07.24",
             "items": [
@@ -513,19 +511,26 @@
       "title": "Debugging Tool",
       "versions": [
         {
-        "title": "Ver 26.07.25.01",
+          "title": "Ver 26.07.26",
           "items": [
+            "**[Thay đổi]** Đã cập nhật Communication Tester lên `V2.8`."
+          ]
+        },
+        {
+        "title": "Ver 26.07.25",
+          "items": [
+            "**[Thêm]** Thêm CAD Lightweight `V1.0` để mở tệp STEP/STP lớn trên PC, xem từng chi tiết, xuất các chi tiết đã chọn thành STEP và sửa gốc tệp.",
             "**[Cập nhật]** Đã cập nhật InoRobot Trace từ V1.4 lên V1.5."
           ]
         },
         {
-        "title": "Ver 26.07.24.01",
+        "title": "Ver 26.07.24",
           "items": [
             "**[Cập nhật]** Đã cập nhật Communication Tester từ V2.6 lên V2.7."
           ]
         },
         {
-        "title": "Ver 26.07.18.01",
+        "title": "Ver 26.07.18",
             "items": [
               "**[Cập nhật]** Đã cập nhật InoRobot Trace từ V1.3 lên V1.4.",
               "**[Thêm]** Đã bổ sung hỗ trợ tiếng Hàn, tiếng Anh, tiếng Trung và tiếng Việt; đồng thời dịch sang tiếng Hàn tất cả mục trước đây hiển thị bằng tiếng Anh trong một số giao diện tiếng Hàn.",
@@ -587,6 +592,12 @@
       {
       "title": "communicationTester",
       "versions": [
+        {
+        "title": "Ver 2.8 (2026.07.26)",
+          "items": [
+            "**[Thêm]** Đã thêm tính năng Virtual Bus. Virtual Bus có thể được sử dụng trong chức năng OLP của 3D Simulation."
+          ]
+        },
         {
         "title": "Ver 2.7 (2026.07.24)",
           "items": [

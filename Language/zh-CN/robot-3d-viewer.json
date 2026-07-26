@@ -717,6 +717,7 @@
     "OLP runtime {build} loaded.": "已加载 OLP 运行时 {build}。",
     "JP.pts: {count} JointPoints": "JP.pts：{count} 个 JointPoint",
     "Point files: {count}": "点文件：{count}",
+    "{path} · 우클릭 또는 Enter/Space로 현재 로봇 위치와 Arm 파라미터를 덮어쓸 수 있습니다.": "{path} · 右键或按 Enter/Space 可使用当前机器人位姿和 Arm 参数覆盖。",
     "Program files: {count}": "程序文件：{count}",
     "Remote IO mapping: {path} ({count} entries)": "Remote IO 映射：{path}（{count} 项）",
     "Remote IO mapping: not found; use simulation Run/Stop controls.": "未找到 Remote IO 映射；请使用仿真的 Run/Stop 控制。",

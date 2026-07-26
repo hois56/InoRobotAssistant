@@ -26,8 +26,8 @@ const softwareGroups = [
                 isLocked: true,
                 updates: ["Display 모듈 지원"],
                 downloads: [
-                    { label: "Download Install", type: "install", size: "-", path: "", disabled: true },
-                    { label: "Download Portable", type: "portable", size: "454MB", path: "InoRobotLab/Display/InoRobotLab_V4R24C4SPC0L18F121_x64.zip" }
+                    { label: "Download Install", type: "install", size: "-", disabled: true },
+                    { label: "Download Portable", type: "portable", size: "454MB", assetId: "software.inorobotlab.display.portable" }
                 ]
             }
         ]
@@ -54,7 +54,7 @@ const softwareGroups = [
                 isLocked: true,
                 updates: ["Display 최적화"],
                 downloads: [
-                    { label: "Download Portable", type: "portable", size: "57MB", path: "InoRobotTP/Display/InoRobotTP_win_x86_V4R24C4SPC0L18F121.zip" }
+                    { label: "Download Portable", type: "portable", size: "57MB", assetId: "software.inorobottp.display.portable" }
                 ]
             }
         ]
@@ -115,8 +115,9 @@ function renderSoftwareList(filterType = 'all', searchTerm = '') {
             let verBadgeClass = ver.isLocked ? "bg-amber-500/10 text-amber-500 border-amber-500/20" : "bg-blue-600/10 text-blue-400 border-blue-500/20";
             let verIcon = ver.isLocked ? "lock" : "check-circle";
             const downloadButtons = ver.downloads.map(dl => {
-                const isDisabled = dl.disabled || !dl.path;
-                const clickAttr = isDisabled ? '' : `onclick="handleDownload('${dl.path}', ${ver.isLocked})"`;
+                const downloadKey = ver.isLocked ? dl.assetId : dl.path;
+                const isDisabled = dl.disabled || !downloadKey;
+                const clickAttr = isDisabled ? '' : `onclick="handleDownload(${JSON.stringify(downloadKey)}, ${ver.isLocked})"`;
                 const disabledAttr = isDisabled ? 'disabled aria-disabled="true"' : '';
                 const buttonClass = isDisabled ? 'disabled-btn' : (ver.isLocked ? 'locked-btn' : 'download-btn');
                 const icon = isDisabled ? 'ban' : (ver.isLocked ? 'key' : 'download');
@@ -200,10 +201,10 @@ const WORKER_URL = 'https://ino-robot-display-auth.hois56.workers.dev/';
 
 /**
  * 다운로드 핸들러
- * @param {string} path 파일 경로
+ * @param {string} downloadKey 공개 경로 또는 Worker assetId
  * @param {boolean} isLocked 잠김 여부
  */
-async function handleDownload(path, isLocked) {
+async function handleDownload(downloadKey, isLocked) {
     if (isLocked) {
         const password = prompt(translateUiText("[기능 제한 안내] 이 버전은 전용 배포판입니다. 비밀번호를 입력해 주세요:"));
         if (password === null) return;
@@ -212,29 +213,40 @@ async function handleDownload(path, isLocked) {
             const res = await fetch(WORKER_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password, path })
+                body: JSON.stringify({ password, assetId: downloadKey, mode: 'download' })
             });
-            const data = await res.json();
-
-            if (data.ok) {
-                downloadFile(data.url);
-            } else {
-                alert(translateUiText("비밀번호가 올바르지 않습니다. 관리자에게 문의하세요."));
+            if (!res.ok) {
+                alert(translateUiText("다운로드 권한을 확인할 수 없습니다. 관리자에게 문의하세요."));
+                return;
             }
+            const blob = await res.blob();
+            downloadBlob(blob, getResponseFileName(res) || 'InoRobot-download.zip');
         } catch {
             alert(translateUiText("서버 연결에 실패했습니다. 잠시 후 다시 시도해 주세요."));
         }
     } else {
-        const lfsUrl = `https://media.githubusercontent.com/media/hois56/InoRobotAssistant/main/5_Software/${path}`;
+        const lfsUrl = `https://media.githubusercontent.com/media/hois56/InoRobotAssistant/main/5_Software/${downloadKey}`;
         downloadFile(lfsUrl);
     }
 }
 
-function downloadFile(url) {
+function downloadFile(url, fileName = '') {
     const link = document.createElement('a');
     link.href = url;
-    link.download = url.split('/').pop();
+    link.download = fileName || url.split('/').pop();
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+function getResponseFileName(response) {
+    const disposition = response.headers.get('Content-Disposition') || '';
+    const encoded = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+    return encoded ? decodeURIComponent(encoded) : disposition.match(/filename="([^"]+)"/i)?.[1] || '';
+}
+
+function downloadBlob(blob, fileName) {
+    const url = URL.createObjectURL(blob);
+    downloadFile(url, fileName);
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

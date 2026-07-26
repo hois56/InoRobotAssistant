@@ -201,7 +201,7 @@ assert(viewerSource.includes('tcpFrame.add(toolAxesAtTcp)'), 'TCP axes must inhe
 assert(viewerSource.includes('robot.userData.toolAxesAtTcp = toolAxesAtTcp'), 'Robot state must retain the Tool axes helper');
 assert(viewerSource.includes('TCP_AXES_SCREEN_PIXELS = 40'), 'TCP axes must use a compact target size on screen');
 assert(viewerSource.includes('function updateCameraScaledTcpAxes()'), 'TCP axes must respond to camera distance and zoom');
-assert(/updateCameraScaledTcpAxes\(\);\s*\r?\n\s*updateSimulationSnapMarkerCameraScale\(\);\s*\r?\n\s*state\.renderer\.render/.test(viewerSource), 'TCP axes must be resized immediately before each render');
+assert(/updateCameraScaledTcpAxes\(\);[\s\S]*?updateSimulationSnapMarkerCameraScale\(\);[\s\S]*?state\.renderer\.render/.test(viewerSource), 'TCP axes must be resized immediately before each render');
 assert(!viewerSource.includes('Base axes at TCP') && !viewerSource.includes('baseAxesAtTcp'), 'TCP axes must not remain fixed to the Base frame');
 const tcpVisualSource = viewerSource.slice(
     viewerSource.indexOf('function syncTcpVisualAtPose('),

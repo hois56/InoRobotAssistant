@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 
 const CONTROLLER_PORT = 2222;
+const bridgeToken = process.env.INOROBOT_BRIDGE_TOKEN;
+if (!bridgeToken) throw new Error('INOROBOT_BRIDGE_TOKEN is required for the bridge smoke test.');
 
 const result = await new Promise((resolve, reject) => {
     const socket = new WebSocket('ws://127.0.0.1:5055/ws');
@@ -31,6 +33,9 @@ const result = await new Promise((resolve, reject) => {
             socket.close();
             resolve({ controllerOnline: true, joints: message.data.joints.slice(0, 6) });
         }
+    });
+    socket.addEventListener('open', () => {
+        socket.send(JSON.stringify({ type: 'hello', token: bridgeToken }));
     });
     socket.addEventListener('error', () => reject(new Error('Unable to open bridge WebSocket.')));
 });

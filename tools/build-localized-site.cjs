@@ -314,7 +314,20 @@ function translateHomeTemplate(template, localeCode, locales, route, versions) {
 function writeFile(relativePath, content) {
     const outputPath = path.join(root, relativePath);
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-    fs.writeFileSync(outputPath, content, 'utf8');
+    const buffer = Buffer.from(content, 'utf8');
+    let fileHandle = null;
+    try {
+        // On Windows, a watcher can reject truncate-on-open even when the file is writable.
+        // Reuse the existing file and truncate only after the handle is acquired.
+        fileHandle = fs.openSync(outputPath, 'r+');
+        fs.writeSync(fileHandle, buffer, 0, buffer.length, 0);
+        fs.ftruncateSync(fileHandle, buffer.length);
+    } catch (error) {
+        if (error.code !== 'ENOENT') throw error;
+        fs.writeFileSync(outputPath, buffer);
+    } finally {
+        if (fileHandle !== null) fs.closeSync(fileHandle);
+    }
 }
 
 function buildLandingPages(locales, versions) {
