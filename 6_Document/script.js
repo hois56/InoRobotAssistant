@@ -32,12 +32,12 @@ const manualData = [
     },
     {
         id: "scara_ts_guide",
-        title: "IR-TS Series User Guide - Manipulator.pdf",
+        title: "IR-TS Series User Guide - Mechanical.pdf",
         robotType: "scara",
         category: "hardware",
         date: "2026-03-29",
         lang: "EN",
-        path: "Hardware_manual/SCARA/IR-TS Series User Guide - Manipulator.pdf",
+        path: "Hardware_manual/SCARA/IR-TS Series User Guide - Mechanical.pdf",
         description: "User Guide"
     },
 
@@ -429,7 +429,7 @@ const manualData = [
         date: "2026-04-07",
         lang: "KR",
         isLocked: true,
-        path: "교육 자료/입문과정/Display/1.로봇 소개(Display).pdf",
+        assetId: "document.edu.display.1",
         description: "Education Item"
     },
     {
@@ -440,7 +440,7 @@ const manualData = [
         date: "2026-06-01",
         lang: "KR",
         isLocked: true,
-        path: "교육 자료/입문과정/Display/2.로봇 기초(Display).pdf",
+        assetId: "document.edu.display.2",
         description: "Education Item"
     },
     {
@@ -451,7 +451,7 @@ const manualData = [
         date: "2026-04-07",
         lang: "KR",
         isLocked: true,
-        path: "교육 자료/입문과정/Display/3.로봇 구조 및 초기 배선(Display).pdf",
+        assetId: "document.edu.display.3",
         description: "Education Item"
     }
 ];
@@ -860,20 +860,23 @@ async function handleView(id) {
 
         // 팝업 차단 방지: 사용자 제스처 시점에 미리 창 열기
         const win = window.open('', '_blank');
+        if (!win) {
+            alert(translateUiText("팝업이 차단되었습니다. 이 사이트의 팝업을 허용한 뒤 다시 시도해 주세요."));
+            return;
+        }
 
         try {
             const res = await fetch(WORKER_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password, path: man.path, folder: 'Manual', mode: 'view' })
+                body: JSON.stringify({ password, assetId: man.assetId, mode: 'view' })
             });
 
             const contentType = res.headers.get('Content-Type') || '';
 
             if (contentType.includes('application/json')) {
-                const data = await res.json();
                 win.close();
-                alert(translateUiText("비밀번호가 올바르지 않습니다."));
+                alert(translateUiText("자료를 열 수 없습니다."));
                 return;
             }
 
@@ -908,15 +911,14 @@ async function handleDownload(id) {
             const res = await fetch(WORKER_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password, path: man.path, folder: 'Manual' })
+                body: JSON.stringify({ password, assetId: man.assetId, mode: 'download' })
             });
-            const data = await res.json();
-
-            if (data.ok) {
-                downloadFile(data.url);
-            } else {
-                alert(translateUiText("비밀번호가 올바르지 않습니다."));
+            if (!res.ok) {
+                alert(translateUiText("자료를 다운로드할 수 없습니다."));
+                return;
             }
+            const blob = await res.blob();
+            downloadBlob(blob, getResponseFileName(res) || getFileName(man.title));
         } catch {
             alert(translateUiText("서버 연결에 실패했습니다."));
         }
@@ -934,6 +936,18 @@ function downloadFile(url, fileName = '') {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+function getResponseFileName(response) {
+    const disposition = response.headers.get('Content-Disposition') || '';
+    const encoded = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+    return encoded ? decodeURIComponent(encoded) : disposition.match(/filename="([^"]+)"/i)?.[1] || '';
+}
+
+function downloadBlob(blob, fileName) {
+    const url = URL.createObjectURL(blob);
+    downloadFile(url, fileName);
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 document.addEventListener('DOMContentLoaded', init);

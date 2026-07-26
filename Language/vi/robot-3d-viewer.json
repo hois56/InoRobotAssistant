@@ -717,6 +717,7 @@
     "OLP runtime {build} loaded.": "Đã tải runtime OLP {build}.",
     "JP.pts: {count} JointPoints": "JP.pts: {count} JointPoint",
     "Point files: {count}": "Tệp điểm: {count}",
+    "{path} · 우클릭 또는 Enter/Space로 현재 로봇 위치와 Arm 파라미터를 덮어쓸 수 있습니다.": "{path} · Nhấp chuột phải hoặc nhấn Enter/Space để ghi đè bằng tư thế robot hiện tại và tham số Arm.",
     "Program files: {count}": "Tệp chương trình: {count}",
     "Remote IO mapping: {path} ({count} entries)": "Ánh xạ Remote IO: {path} ({count} mục)",
     "Remote IO mapping: not found; use simulation Run/Stop controls.": "Không tìm thấy ánh xạ Remote IO; hãy dùng điều khiển Run/Stop của mô phỏng.",

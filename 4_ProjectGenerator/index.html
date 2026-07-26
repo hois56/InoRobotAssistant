@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>InoRobot Project Generator Web - Expert Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@0.468.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <link
@@ -387,7 +387,7 @@
                 </div>
 
                 <div class="flex justify-end gap-3 pt-6 border-t border-white/5">
-                    <button onclick="document.getElementById('optionsModal').classList.add('hidden')"
+                    <button id="btnCancelOptions"
                         class="px-5 py-2.5 hover:bg-slate-800 rounded-xl text-sm transition-colors text-slate-400">Cancel</button>
                     <button id="btnApplyOptions"
                         class="px-8 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-medium transition-colors shadow-lg shadow-blue-600/20">Apply</button>

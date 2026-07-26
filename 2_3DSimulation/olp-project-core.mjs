@@ -5,12 +5,13 @@ const BIT_START = 512;
 export const OLP_PROJECT_SCHEMA_VERSION = 1;
 
 export function normalizeOlpPath(value) {
-    return String(value || '')
+    const parts = String(value || '')
         .replaceAll('\\', '/')
         .replace(/^\.\//, '')
         .split('/')
-        .filter((part) => part && part !== '.')
-        .join('/');
+        .filter((part) => part && part !== '.');
+    if (parts.some((part) => part === '..')) throw new Error(`Parent traversal is not allowed in OLP path: ${value}`);
+    return parts.join('/');
 }
 
 function fileName(path) {
@@ -183,6 +184,8 @@ export async function buildOlpProjectFromFiles(inputFiles) {
     for (let index = 0; index < sourceFiles.length; index += 1) {
         const file = sourceFiles[index];
         const path = paths[index] || fileName(rawPaths[index]);
+        if (!path || path.split('/').some((part) => !part || part === '.' || part === '..')) throw new Error(`Invalid OLP project path: ${path}`);
+        if (files.has(path)) throw new Error(`Duplicate OLP project path: ${path}`);
         let text = null;
         if (isTextPath(path) || file.type?.startsWith('text/')) {
             try { text = await file.text(); } catch { text = null; }

@@ -283,8 +283,29 @@ expectedToolFolders.forEach(folder => {
     assert(!fs.existsSync(path.join(root, oldPath)), 'Obsolete root path still exists: ' + oldPath + '.');
 });
 assert(!fs.existsSync(path.join(root, 'index.html')), 'The generated Korean index must live under Language/ko.');
-const traceDownloadArchive = path.join(root, '7_DebuggingTool', 'Trace', 'InoRobotTrace_V1.4.zip');
+const traceDownloadArchive = path.join(root, '7_DebuggingTool', 'Trace', 'InoRobotTrace_V1.5.zip');
 assert(fs.existsSync(traceDownloadArchive) && fs.statSync(traceDownloadArchive).size > 0, 'The current Trace download archive is missing.');
+const traceV14Archive = path.join(root, '7_DebuggingTool', 'Trace', 'InoRobotTrace_V1.4.zip');
+assert(!fs.existsSync(traceV14Archive), 'The retired Trace V1.4 download archive is still present.');
+const releaseAssets = [
+    ['7_DebuggingTool/CommunicationTester/InoRobot_Comm_Test_V2.8.zip', 'Communication Tester V2.8'],
+    ['7_DebuggingTool/Trace/InoRobotTrace_V1.5.zip', 'Trace V1.5'],
+    ['7_DebuggingTool/CADLightweight/CAD_Lightweight.zip', 'lightweight CAD archive']
+];
+releaseAssets.forEach(([relativePath, label]) => {
+    const assetPath = path.join(root, relativePath);
+    assert(fs.existsSync(assetPath) && fs.statSync(assetPath).size > 0, label + ' release asset is missing.');
+});
+const debuggingHtml = read('7_DebuggingTool/index.html');
+assert(debuggingHtml.includes('CommunicationTester/InoRobot_Comm_Test_V2.8.zip')
+    && debuggingHtml.includes('Trace/InoRobotTrace_V1.5.zip'), 'Debugging Tool does not link the current release archives.');
+assert(!debuggingHtml.includes('InoRobot_Comm_Test_V2.7.zip') && !debuggingHtml.includes('InoRobotTrace_V1.4.zip'), 'Debugging Tool still links a retired release archive.');
+const simulationHtml = read('2_3DSimulation/index.html');
+assert(simulationHtml.includes('../7_DebuggingTool/Trace/InoRobotTrace_V1.5.zip')
+    && !simulationHtml.includes('InoRobotTrace_V1.4.zip'), '3D Simulation does not link the current Trace archive.');
+const documentScript = read('6_Document/script.js');
+assert(documentScript.includes('IR-TS Series User Guide - Mechanical.pdf')
+    && !documentScript.includes('IR-TS Series User Guide - Manipulator.pdf'), 'Document catalog contains an invalid IR-TS manual link.');
 assert(!fs.existsSync(path.join(root, '4_ProjectGenerator', 'CNAME')), 'The duplicate Project Generator CNAME was not removed.');
 
 const routes = [
@@ -439,6 +460,9 @@ if (resolveInitialLocaleSource) {
 const localServer = read('tools/serve-local.cjs');
 ['0_Home/ko/index.html', '0_Home/kr/index.html', '0_Home/en/index.html', '0_Home/zh-CN/index.html', '0_Home/vi/index.html'].forEach(file => {
     assert(localServer.includes(file), 'Local server is missing landing-page mapping for ' + file + '.');
+});
+['.git', '.wrangler', 'backups', 'publish-stability', 'tmp'].forEach(segment => {
+    assert(localServer.includes("'" + segment + "'"), 'Local server must block sensitive path segment ' + segment + '.');
 });
 const updateHomeLinksSource = extractNamedFunction(runtime, 'updateHomeLinks');
 assert(Boolean(updateHomeLinksSource), 'Runtime home-link updater cannot be tested.');

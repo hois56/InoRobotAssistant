@@ -207,16 +207,23 @@ export function pointInFrame(pointMm, frame) {
  * Inertia outputs are kg*m^2 and coordinates are mm.
  */
 export function combineStepParts(parts, frame) {
-  const activeParts = parts.filter((part) => part.enabled !== false && Number(part.densityKgPerMm3) > 0);
+  const activeParts = parts.filter((part) => part.enabled !== false);
   if (!activeParts.length) throw new Error('No active STEP solids.');
 
   const prepared = activeParts.map((part) => {
     const density = Number(part.densityKgPerMm3);
-    const massKg = part.geometry.volumeMm3 * density;
+    const volume = Number(part.geometry?.volumeMm3);
+    const centroid = part.geometry?.centroidMm;
+    const inertia = part.geometry?.inertiaCentroidMm5;
+    if (!Number.isFinite(density) || density <= 0) throw new Error('Each active STEP solid must have a positive finite density.');
+    if (!Number.isFinite(volume) || volume <= EPSILON) throw new Error('Each active STEP solid must have a positive finite volume.');
+    if (!Array.isArray(centroid) || centroid.length !== 3 || centroid.some((value) => !Number.isFinite(Number(value)))) throw new Error('STEP solid has an invalid centroid.');
+    if (!Array.isArray(inertia) || inertia.length !== 3 || inertia.some((row) => !Array.isArray(row) || row.length !== 3 || row.some((value) => !Number.isFinite(Number(value))))) throw new Error('STEP solid has invalid inertia values.');
+    const massKg = volume * density;
     return {
       massKg,
-      centroidMm: part.geometry.centroidMm,
-      inertiaCentroidKgMm2: scaleMatrix(part.geometry.inertiaCentroidMm5, density)
+      centroidMm: centroid.map(Number),
+      inertiaCentroidKgMm2: scaleMatrix(inertia, density)
     };
   });
 

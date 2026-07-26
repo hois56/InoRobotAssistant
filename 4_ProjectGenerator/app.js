@@ -2,6 +2,45 @@ const WorkTypes = ["Tray", "Stage", "MCR", "Vision", "Trash"]; // Peeling remove
 const WorkMethods = ["Get", "Put", "Check", "Calibration", "Peeling"];
 const ToolTypes = ["Vacuum", "Gripper", "PLC (IO)", "Vision (Socket)"];
 const VisionUses = ["No use", "Use - IO", "Use - Socket"];
+let processIdCounter = 0;
+
+function createProcessId() {
+    if (globalThis.crypto?.randomUUID) return `step-${globalThis.crypto.randomUUID()}`;
+    processIdCounter += 1;
+    return `step-${Date.now().toString(36)}-${processIdCounter.toString(36)}`;
+}
+
+function cloneOptions(options) {
+    return {
+        ...options,
+        VisionConfigs: Object.fromEntries(Object.entries(options.VisionConfigs || {}).map(([key, value]) => [key, { ...value }]))
+    };
+}
+
+function getOptionTarget() {
+    return state.optionsDraft || state.options;
+}
+
+function validateIdentifier(value, label = 'Name') {
+    const name = String(value || '').trim();
+    const reserved = /^(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i;
+    if (!/^[A-Za-z_][A-Za-z0-9_]{0,63}$/.test(name) || reserved.test(name)) {
+        throw new Error(`${label} must start with a letter or underscore, contain only letters/numbers/underscore, be at most 64 characters, and not be a reserved Windows name.`);
+    }
+    return name;
+}
+
+function validateVisionEndpoint(config) {
+    const port = Number(config.Port);
+    const host = String(config.IpAddress || '').trim();
+    if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Vision port must be an integer from 1 to 65535.');
+    if (!config.IsClient) return { ...config, IpAddress: host, Port: String(port) };
+    const isIp = /^(?:\d{1,3}\.){3}\d{1,3}$/.test(host)
+        && host.split('.').every((part) => Number(part) >= 0 && Number(part) <= 255);
+    const isHost = /^(?=.{1,253}$)(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)*[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$/.test(host);
+    if (!isIp && !isHost) throw new Error('Vision client host must be a valid IPv4 address or DNS host name.');
+    return { ...config, IpAddress: host, Port: String(port) };
+}
 
 function uiText(value) {
     return window.InoRobotI18n ? window.InoRobotI18n.translate(String(value)) : String(value);
@@ -9,6 +48,7 @@ function uiText(value) {
 
 class ProcessStep {
     constructor(no) {
+        this.id = createProcessId();
         this.No = no;
         this.WorkType = "Tray";
         this.WorkMethod = "Get";
@@ -42,8 +82,9 @@ const state = {
         EnableTeachingMode: true,
         EnableWaitPos: true,
         EnableProcessBusy: true,
-        VisionConfigs: {} // idx -> { IsClient, IpAddress, Port }
+        VisionConfigs: {} // stable step id -> { IsClient, IpAddress, Port }
     },
+    optionsDraft: null,
     userEdits: {}, // { filename: "edited code without ProgramInfo" }
     labelOverrides: {}, // { oldLabel: newLabel } - label renames to propagate
     editMode: false
@@ -90,7 +131,7 @@ function initApp() {
 
     // Name validation
     document.getElementById('prjName').addEventListener('input', function (e) {
-        this.value = this.value.replace(/[^a-zA-Z0-9_]/g, '').substring(0, 16);
+        this.value = this.value.replace(/[^a-zA-Z0-9_]/g, '').substring(0, 64);
         state.projectName = this.value || "InoRobot_Pro_New";
         uSelector();
     });
@@ -103,30 +144,33 @@ function initApp() {
     };
 
     document.getElementById('chkMultiRecipe').onchange = (e) => {
-        state.options.EnableMultiRecipe = e.target.checked;
+        getOptionTarget().EnableMultiRecipe = e.target.checked;
         document.getElementById('numRecipeCount').disabled = !e.target.checked;
         uSelector();
     };
 
     document.getElementById('chkToolControl').onchange = (e) => {
-        state.options.EnableToolControl = e.target.checked;
+        getOptionTarget().EnableToolControl = e.target.checked;
         document.getElementById('cmbToolControlType').disabled = !e.target.checked;
         uSelector();
     };
 
     document.getElementById('btnOption').onclick = () => {
-        document.getElementById('chkMultiRecipe').checked = state.options.EnableMultiRecipe;
-        document.getElementById('numRecipeCount').value = state.options.RecipeCount;
-        document.getElementById('numRecipeCount').disabled = !state.options.EnableMultiRecipe;
-        document.getElementById('chkTcpSpeed').checked = state.options.EnableTcpSpeed;
-        document.getElementById('chkTorque').checked = state.options.EnableTorque;
-        document.getElementById('chkToolControl').checked = state.options.EnableToolControl;
-        document.getElementById('cmbToolControlType').value = state.options.ToolControlType || "PLC_IO";
-        document.getElementById('cmbToolControlType').disabled = !state.options.EnableToolControl;
+        state.optionsDraft = cloneOptions(state.options);
+        const draft = state.optionsDraft;
+        document.getElementById('chkMultiRecipe').checked = draft.EnableMultiRecipe;
+        document.getElementById('numRecipeCount').value = draft.RecipeCount;
+        document.getElementById('numRecipeCount').disabled = !draft.EnableMultiRecipe;
+        document.getElementById('chkTcpSpeed').checked = draft.EnableTcpSpeed;
+        document.getElementById('chkTorque').checked = draft.EnableTorque;
+        document.getElementById('chkToolControl').checked = draft.EnableToolControl;
+        document.getElementById('cmbToolControlType').value = draft.ToolControlType || "PLC_IO";
+        document.getElementById('cmbToolControlType').disabled = !draft.EnableToolControl;
 
-        document.getElementById('chkTeachingMode').checked = state.options.EnableTeachingMode;
-        document.getElementById('chkWaitPos').checked = state.options.EnableWaitPos;
-        document.getElementById('chkProcessBusy').checked = state.options.EnableProcessBusy;
+        document.getElementById('chkTeachingMode').checked = draft.EnableTeachingMode;
+        document.getElementById('chkWaitPos').checked = draft.EnableWaitPos;
+        document.getElementById('chkProcessBusy').checked = draft.EnableProcessBusy;
+        document.getElementById('cmbRobotModel').value = draft.RobotName;
 
         const optionsModal = document.getElementById('optionsModal');
         optionsModal.classList.remove('hidden');
@@ -183,20 +227,28 @@ function initApp() {
     });
 
     document.getElementById('btnApplyOptions').onclick = () => {
-        state.options.EnableTcpSpeed = document.getElementById('chkTcpSpeed').checked;
-        state.options.EnableTorque = document.getElementById('chkTorque').checked;
-        state.options.EnableToolControl = document.getElementById('chkToolControl').checked;
-        state.options.ToolControlType = document.getElementById('cmbToolControlType').value;
-        state.options.EnableTeachingMode = document.getElementById('chkTeachingMode').checked;
-        state.options.EnableWaitPos = document.getElementById('chkWaitPos').checked;
-        state.options.EnableProcessBusy = document.getElementById('chkProcessBusy').checked;
-
-        let pCount = parseInt(document.getElementById('numRecipeCount').value) || 2;
-        state.options.RecipeCount = Math.min(127, Math.max(2, pCount));
-        state.options.RobotName = document.getElementById('cmbRobotModel').value;
+        const draft = state.optionsDraft || cloneOptions(state.options);
+        draft.EnableMultiRecipe = document.getElementById('chkMultiRecipe').checked;
+        draft.EnableTcpSpeed = document.getElementById('chkTcpSpeed').checked;
+        draft.EnableTorque = document.getElementById('chkTorque').checked;
+        draft.EnableToolControl = document.getElementById('chkToolControl').checked;
+        draft.ToolControlType = document.getElementById('cmbToolControlType').value;
+        draft.EnableTeachingMode = document.getElementById('chkTeachingMode').checked;
+        draft.EnableWaitPos = document.getElementById('chkWaitPos').checked;
+        draft.EnableProcessBusy = document.getElementById('chkProcessBusy').checked;
+        const pCount = Number(document.getElementById('numRecipeCount').value);
+        if (!Number.isInteger(pCount) || pCount < 2 || pCount > 127) { alert(uiText('Recipe count must be between 2 and 127.')); return; }
+        draft.RecipeCount = pCount;
+        draft.RobotName = document.getElementById('cmbRobotModel').value;
+        state.options = draft;
+        state.optionsDraft = null;
         document.getElementById('optionsModal').classList.add('hidden');
         renderSteps();
         updatePreview();
+    };
+    document.getElementById('btnCancelOptions').onclick = () => {
+        state.optionsDraft = null;
+        document.getElementById('optionsModal').classList.add('hidden');
     };
 
     // Edit mode toggle
@@ -213,12 +265,20 @@ function initApp() {
         document.getElementById('visionIpContainer').style.display = e.target.value === "true" ? "block" : "none";
     };
     document.getElementById('btnApplyVision').onclick = () => {
-        let idx = parseInt(document.getElementById('visionStepIdx').value);
-        state.options.VisionConfigs[idx] = {
+        const stepId = document.getElementById('visionStepIdx').value;
+        const step = state.steps.find((candidate) => candidate.id === stepId);
+        if (!step) { alert(uiText('Process step not found.')); return; }
+        try {
+            const config = validateVisionEndpoint({
             IsClient: document.getElementById('visionIsClient').value === "true",
             IpAddress: document.getElementById('visionIp').value,
             Port: document.getElementById('visionPort').value
-        };
+            });
+            state.options.VisionConfigs[step.id] = config;
+        } catch (error) {
+            alert(uiText(error.message));
+            return;
+        }
         document.getElementById('visionModal').classList.add('hidden');
         updatePreview();
     };
@@ -286,7 +346,7 @@ function initRobots() {
     }
 
     cmb.onchange = (e) => {
-        state.options.RobotName = e.target.value;
+        getOptionTarget().RobotName = e.target.value;
         updatePreview();
     };
 }
@@ -298,7 +358,9 @@ function addStep() {
 }
 
 function rStep(idx) {
+    const removed = state.steps[idx];
     state.steps.splice(idx, 1);
+    if (removed?.id) delete state.options.VisionConfigs[removed.id];
     state.steps.forEach((s, i) => s.No = i + 1);
     // clean vision configs if needed, but not strictly necessary
     renderSteps();
@@ -332,8 +394,10 @@ function updateRowRules(s) {
 }
 
 function openVisionModal(idx) {
-    let conf = state.options.VisionConfigs[idx] || { IsClient: true, IpAddress: "192.168.1.10", Port: "5000" };
-    document.getElementById('visionStepIdx').value = idx;
+    const step = state.steps[idx];
+    if (!step) return;
+    let conf = state.options.VisionConfigs[step.id] || { IsClient: true, IpAddress: "192.168.1.10", Port: "5000" };
+    document.getElementById('visionStepIdx').value = step.id;
     document.getElementById('visionIsClient').value = conf.IsClient ? "true" : "false";
     document.getElementById('visionIpContainer').style.display = conf.IsClient ? "block" : "none";
     document.getElementById('visionIp').value = conf.IpAddress;
@@ -381,7 +445,15 @@ window.openNameModal = function (idx) {
 document.getElementById('btnApplyName').onclick = () => {
     let idx = parseInt(document.getElementById('editNameIdx').value);
     let val = document.getElementById('editNameInput').value.trim();
-    if (val) state.steps[idx].ProcessName = val;
+    if (val) {
+        try { validateIdentifier(val, 'Process name'); }
+        catch (error) { alert(uiText(error.message)); return; }
+        if (state.steps.some((step, stepIndex) => stepIndex !== idx && step.ProcessName.toLowerCase() === val.toLowerCase())) {
+            alert(uiText('Process names must be unique.'));
+            return;
+        }
+        state.steps[idx].ProcessName = val;
+    }
     else state.steps[idx].ProcessName = null; // Revert to automation
     document.getElementById('nameModal').classList.add('hidden');
     renderSteps();
@@ -911,20 +983,51 @@ function updatePreview() {
 
 
 async function exportProj() {
-    const zip = new JSZip();
     const name = document.getElementById('prjName').value || state.projectName;
-    const root = zip.folder(name);
+    try {
+        validateIdentifier(name, 'Project name');
+        if (!state.steps.length) throw new Error('At least one process step is required.');
+        const processNames = new Set();
+        state.steps.forEach((step) => {
+            const processName = validateIdentifier(step.ProcessName, 'Process name');
+            const key = processName.toLowerCase();
+            if (processNames.has(key)) throw new Error(`Duplicate process name: ${processName}`);
+            processNames.add(key);
+            const config = state.options.VisionConfigs[step.id];
+            if (config) state.options.VisionConfigs[step.id] = validateVisionEndpoint(config);
+        });
+    } catch (error) {
+        alert(uiText(error.message));
+        return;
+    }
 
-    function addZFile(f, n) {
+    const zip = new JSZip();
+    const root = zip.folder(name);
+    const archivePaths = new Set();
+    const generatedTexts = new Map();
+
+    function registerArchivePath(prefix, fileName) {
+        const normalized = `${prefix ? `${prefix}/` : ''}${String(fileName || '').replaceAll('\\', '/')}`;
+        if (!normalized || normalized.split('/').some((part) => !part || part === '.' || part === '..')) throw new Error(`Invalid ZIP path: ${normalized}`);
+        if (archivePaths.has(normalized)) throw new Error(`Duplicate ZIP path: ${normalized}`);
+        archivePaths.add(normalized);
+        return normalized;
+    }
+
+    function addZFile(f, n, prefix = '') {
+        const archivePath = registerArchivePath(prefix, n);
         let content = getFinalFileContent(n);
         content = content.replace(/\r?\n/g, '\r\n'); // Force CRLF
         f.file(n, content);
+        generatedTexts.set(archivePath, content);
     }
 
-    function addCustomZFile(f, n, n2) {
+    function addCustomZFile(f, n, n2, prefix = '') {
+        const archivePath = registerArchivePath(prefix, n2);
         let content = getFinalFileContent(n);
         content = content.replace(/\r?\n/g, '\r\n'); // Force CRLF
         f.file(n2, content);
+        generatedTexts.set(archivePath, content);
     }
 
     try {
@@ -941,17 +1044,17 @@ async function exportProj() {
         });
 
         const data = root.folder("Data");
-        addZFile(data, "BreakPoints.jsn");
-        addZFile(data, "JP.pts");
-        addZFile(data, "MonitorGlobalVars.jsn");
-        addZFile(data, "MonitorVars.jsn");
-        addZFile(data, "Labels.jsn");
-        addZFile(data, "UserDefineWarning.jsn");
-        addZFile(data, "P.pts");
+        addZFile(data, "BreakPoints.jsn", 'Data');
+        addZFile(data, "JP.pts", 'Data');
+        addZFile(data, "MonitorGlobalVars.jsn", 'Data');
+        addZFile(data, "MonitorVars.jsn", 'Data');
+        addZFile(data, "Labels.jsn", 'Data');
+        addZFile(data, "UserDefineWarning.jsn", 'Data');
+        addZFile(data, "P.pts", 'Data');
 
         if (state.options.EnableMultiRecipe) {
             for (let i = 1; i < state.options.RecipeCount; i++) {
-                addZFile(data, `P${i.toString().padStart(2, '0')}.pts`);
+                addZFile(data, `P${i.toString().padStart(2, '0')}.pts`, 'Data');
             }
         }
 
@@ -959,14 +1062,26 @@ async function exportProj() {
         // Name changes dynamically based on input
         addCustomZFile(root, `${name}.prj`, `${name}.prj`);
 
+        registerArchivePath('', 'InoRobot_IO_Map_0614.xlsx');
         root.file("InoRobot_IO_Map_0614.xlsx", Assets.IO_Map_Excel, { base64: true });
+
+        const includePattern = /\bInclude\s+["']([^"']+)["']/gi;
+        for (const [archivePath, content] of generatedTexts.entries()) {
+            if (!archivePath.toLowerCase().endsWith('.pro')) continue;
+            let match;
+            while ((match = includePattern.exec(content))) {
+                const included = match[1].replaceAll('\\', '/');
+                if (!archivePaths.has(included)) throw new Error(`${archivePath} includes a missing program: ${included}`);
+            }
+            includePattern.lastIndex = 0;
+        }
 
         const blob = await zip.generateAsync({ type: "blob" });
         saveAs(blob, `${name}.zip`);
         alert(uiText("Project Generation Completed!"));
     } catch (e) {
         console.error(e);
-        alert(uiText("Error generating zip."));
+        alert(uiText(`Error generating zip: ${e.message || e}`));
     }
 }
 

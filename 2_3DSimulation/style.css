@@ -2511,7 +2511,7 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
     flex: 1 1 auto;
     min-height: 0;
     overflow: hidden;
-    grid-template-rows: auto minmax(0, 1fr) auto auto minmax(35px, 95px);
+    grid-template-rows: auto minmax(0, 1fr) auto minmax(35px, 95px);
 }
 
 .program-panel.olp-mode-active .program-robot-section,
@@ -3242,8 +3242,8 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
     font: 0.62rem/1.45 'JetBrains Mono', Consolas, monospace;
     letter-spacing: normal;
     tab-size: 4;
-    white-space: pre-wrap;
-    overflow-wrap: break-word;
+    white-space: pre;
+    overflow-wrap: normal;
 }
 .olp-file-highlight {
     z-index: 0;
@@ -3362,7 +3362,6 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
 .olp-io-monitor-cell code { color: #bfdbfe; font: 600 0.56rem 'JetBrains Mono', Consolas, monospace; }
 .olp-io-monitor-cell b { color: #f8fafc; font: 700 0.62rem 'JetBrains Mono', Consolas, monospace; }
 .olp-io-monitor-last { overflow: hidden; color: var(--text-2); font: 0.5rem/1.3 'JetBrains Mono', Consolas, monospace; text-overflow: ellipsis; white-space: nowrap; }
-.olp-run-note { color: #93c5fd; font-size: 0.56rem; line-height: 1.4; }
 .olp-console { max-height: 95px; min-height: 35px; margin: 0; padding: 0.4rem; overflow: auto; color: #bfdbfe; background: rgba(2, 6, 23, 0.65); border: 1px solid var(--border); border-radius: 6px; cursor: text; font: 0.58rem/1.4 'JetBrains Mono', Consolas, monospace; user-select: text; white-space: pre-wrap; }
 
 /* OLP can be resized independently of the viewport.  Container queries keep
@@ -3401,7 +3400,6 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
 
     .program-panel.olp-mode-active .olp-workspace-header > div > span,
     .program-panel.olp-mode-active .olp-project-meta span,
-    .program-panel.olp-mode-active .olp-run-note,
     .program-panel.olp-mode-active .olp-io-monitor-heading span,
     .program-panel.olp-mode-active .olp-io-monitor-last {
         white-space: normal;

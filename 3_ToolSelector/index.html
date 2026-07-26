@@ -74,6 +74,7 @@
   .info-tip .img-row img + img{margin-top:0}
   .info-tip p{font-size:14px;color:#cbd5e1;line-height:1.6;margin:14px 0 0}
   .info-tip.wide{width:1040px}
+  @media (max-width:600px){#topbar{height:auto;min-height:64px;padding:8px 12px}.topbar-left{gap:.75rem}.logo{height:46px}.app-title{font-size:1rem;padding-left:.75rem}.wrap{padding:24px 12px}.hero h2{font-size:28px}.tabs{flex-wrap:wrap}.tab{flex:1 1 calc(50% - 5px);min-height:54px;padding:10px 6px}.row{grid-template-columns:minmax(0,1fr) 100px 42px;gap:6px}.row label{font-size:12px}.summary{grid-template-columns:1fr}.info-tip{max-width:calc(100vw - 24px);max-height:75vh}.overall{font-size:14px}}
 </style>
     <link rel="stylesheet" href="./mode-d.css?v=20260719-snap-size-14-1">
     <script type="importmap">
@@ -117,10 +118,10 @@
   </div>
 
   <div class="tabs">
-    <div class="tab active" data-mode="direct">모드 A · 값을 이미 알고 있음</div>
-    <div class="tab" data-mode="calc">모드 B · 재질·치수로부터 계산</div>
-    <div class="tab" data-mode="shape">모드 C · Tool 관성모멘트 계산</div>
-    <div class="tab" data-mode="cad">모드 D · STEP CAD 물성 계산</div>
+    <div class="tab active" role="tab" tabindex="0" aria-selected="true" data-mode="direct">모드 A · 값을 이미 알고 있음</div>
+    <div class="tab" role="tab" tabindex="0" aria-selected="false" data-mode="calc">모드 B · 재질·치수로부터 계산</div>
+    <div class="tab" role="tab" tabindex="0" aria-selected="false" data-mode="shape">모드 C · Tool 관성모멘트 계산</div>
+    <div class="tab" role="tab" tabindex="0" aria-selected="false" data-mode="cad">모드 D · STEP CAD 물성 계산</div>
   </div>
 
   <div id="mode-direct">
@@ -307,7 +308,7 @@
       <thead id="reshead"><tr><th>축 / 항목</th><th>계산값</th><th>허용값</th><th>여유율</th><th>판정</th></tr></thead>
       <tbody id="restable"></tbody>
     </table>
-    <div id="overall" class="overall"></div>
+    <div id="overall" class="overall" aria-live="polite" role="status"></div>
   </div>
 </div>
 
@@ -364,6 +365,65 @@ document.getElementById('result').classList.remove('hide');document.getElementBy
 function refreshDynamicLanguage(event){refreshLocalizedHelpImages(event?.detail?.locale);gCobot.label=uiText('다관절로봇');showSpec(true);readBlocks();renderBlocks();readSBlocks();renderSBlocks();if(!document.getElementById('result').classList.contains('hide'))calculate();}
 document.addEventListener('inorobot:i18nready',refreshDynamicLanguage);
 document.addEventListener('inorobot:languagechange',refreshDynamicLanguage);
+</script>
+<script>
+(() => {
+  const originalCalculate = window.calculate;
+  const valueChecks = {
+    direct: [['d_m', 'mass', 'positive'], ['d_lx', 'distance', 'nonnegative'], ['d_ly', 'distance', 'nonnegative'], ['d_lz', 'distance', 'nonnegative'], ['d_ixx', 'inertia', 'nonnegative'], ['d_iyy', 'inertia', 'nonnegative'], ['d_izz', 'inertia', 'nonnegative'], ['j5off', 'J5 flange distance', 'positive']],
+    calc: [['j5off', 'J5 flange distance', 'positive']],
+    shape: []
+  };
+  const fail = (message) => {
+    const result = document.getElementById('result');
+    const overall = document.getElementById('overall');
+    overall.className = 'overall ng';
+    overall.textContent = `❌ ${uiText(message)}`;
+    result.classList.remove('hide');
+    return false;
+  };
+  const validateValue = (rawValue, label, rule) => {
+    const raw = String(rawValue ?? '').trim();
+    const value = Number(raw);
+    if (!raw || !Number.isFinite(value)) return `${label} must be a finite number.`;
+    if (rule === 'positive' && value <= 0) return `${label} must be greater than 0.`;
+    if (rule === 'nonnegative' && value < 0) return `${label} cannot be negative.`;
+    return '';
+  };
+  const validateInput = (id, label, rule) => validateValue(document.getElementById(id)?.value, label, rule);
+  window.calculate = function guardedCalculate() {
+    const mode = document.querySelector('.tab.active')?.dataset.mode || 'direct';
+    for (const [id, label, rule] of (valueChecks[mode] || [])) {
+      const error = validateInput(id, label, rule);
+      if (error) return fail(error);
+    }
+    if (mode === 'calc') {
+      for (const input of document.querySelectorAll('#blocks input, #coms input')) {
+        const rule = ['x', 'y', 'z'].includes(input.dataset.k) ? 'positive' : 'finite';
+        const error = validateValue(input.value, input.dataset.k || 'block value', rule);
+        if (error) return fail(error);
+      }
+    }
+    if (mode === 'shape') {
+      for (const input of document.querySelectorAll('#sblocks input')) {
+        const error = validateValue(input.value, input.dataset.sk || 'shape value', 'positive');
+        if (error) return fail(error);
+      }
+    }
+    try { return originalCalculate(); } catch (error) { return fail(error.message || 'Calculation failed.'); }
+  };
+  document.querySelectorAll('.tab').forEach((tab) => {
+    const activate = () => {
+      document.querySelectorAll('.tab').forEach((candidate) => candidate.setAttribute('aria-selected', String(candidate === tab)));
+    };
+    tab.addEventListener('click', activate);
+    tab.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); tab.click(); } });
+  });
+  document.querySelectorAll('.row label').forEach((label) => {
+    const control = label.parentElement?.querySelector('input,select');
+    if (control?.id && !label.htmlFor) label.htmlFor = control.id;
+  });
+})();
 </script>
   <script type="module" src="./mode-d.js?v=20260720-large-xcaf-quality-1"></script>
 </body>

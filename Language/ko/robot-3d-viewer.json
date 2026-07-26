@@ -717,6 +717,7 @@
     "OLP runtime {build} loaded.": "OLP 런타임 {build}을(를) 불러왔습니다.",
     "JP.pts: {count} JointPoints": "JP.pts: JointPoint {count}개",
     "Point files: {count}": "포인트 파일: {count}개",
+    "{path} · 우클릭 또는 Enter/Space로 현재 로봇 위치와 Arm 파라미터를 덮어쓸 수 있습니다.": "{path} · 우클릭 또는 Enter/Space로 현재 로봇 위치와 Arm 파라미터를 덮어쓸 수 있습니다.",
     "Program files: {count}": "프로그램 파일: {count}개",
     "Remote IO mapping: {path} ({count} entries)": "Remote IO 매핑: {path} ({count}개 항목)",
     "Remote IO mapping: not found; use simulation Run/Stop controls.": "Remote IO 매핑을 찾지 못했습니다. 시뮬레이션 실행/정지 제어를 사용하세요.",

@@ -348,7 +348,7 @@ const Generator = {
 
         const needsSocket = s.VisionUse === "Use - Socket";
         if (needsSocket) {
-            const vis = options.VisionConfigs[n - 1] || { IsClient: true, IpAddress: "192.168.1.10", Port: "5000" };
+            const vis = options.VisionConfigs[s.id] || options.VisionConfigs[n - 1] || { IsClient: true, IpAddress: "192.168.1.10", Port: "5000" };
             if (method !== "Calibration" && method !== "Check") {
                 preOffsetAction = Generator.SocketExchange(s);
             } else if (method === "Check") {
