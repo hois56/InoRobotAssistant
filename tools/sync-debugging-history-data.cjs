@@ -6,7 +6,8 @@ const histories = {
     communicationTester: '7_DebuggingTool/CommunicationTester/업데이트_기록.md',
     labelGenerator: '7_DebuggingTool/InoRobotLabelGen/업데이트기록.md',
     trace: '7_DebuggingTool/Trace/업데이트_기록.md',
-    projectCompare: '7_DebuggingTool/ProjectCompare/업데이트_기록.md'
+    projectCompare: '7_DebuggingTool/ProjectCompare/업데이트_기록.md',
+    cadLightweight: '7_DebuggingTool/CADLightweight/업데이트_기록.md'
 };
 
 const encodedHistories = Object.fromEntries(

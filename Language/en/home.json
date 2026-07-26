@@ -84,6 +84,13 @@
       "title": "Robot Model Select",
       "versions": [
         {
+          "title": "Ver 26.07.26",
+          "items": [
+            "**[Improved]** Removed the CAD download button's file-check delay by using a static manifest for immediate availability decisions.",
+            "**[Changed]** Models without CAD files now immediately display `CAD File Unavailable`."
+          ]
+        },
+        {
           "title": "Ver 26.07.25",
           "items": [
             "**[Added]** Separated six GL20 series modules from controller expansion cards and added them under Remote Coupler Options.",
@@ -275,6 +282,12 @@
       {
         "title": "Project Generator",
         "versions": [
+          {
+            "title": "Ver 26.07.26",
+            "items": [
+              "**[Fixed]** In Korean screens, `No` now appears as `번호`, `Process` as `프로세스`, while the process-method names `Get` and `Put` remain untranslated."
+            ]
+          },
           {
             "title": "Ver 26.07.18",
             "items": [

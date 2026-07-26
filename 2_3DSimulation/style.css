@@ -2128,6 +2128,172 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
     backdrop-filter: blur(18px);
 }
 
+.view-window {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    z-index: 86;
+    width: min(720px, calc(100% - 24px));
+    height: min(440px, calc(100% - 24px));
+    min-width: min(360px, calc(100% - 24px));
+    min-height: min(220px, calc(100% - 24px));
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid rgba(96, 165, 250, 0.42);
+    border-radius: 18px;
+    background: rgba(8, 11, 18, 0.96);
+    box-shadow: 0 22px 65px rgba(0, 0, 0, 0.52);
+    backdrop-filter: blur(18px);
+    transform: translateX(-50%);
+}
+
+.view-window-header {
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.65rem 0.8rem;
+    border-bottom: 1px solid var(--border);
+    background: rgba(15, 23, 42, 0.7);
+    cursor: move;
+    user-select: none;
+}
+
+.view-window-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.42rem;
+    color: #dbeafe;
+    font: 700 0.9rem 'Outfit', sans-serif;
+}
+
+.view-window-header h2 i {
+    color: #60a5fa;
+}
+
+.view-window-header h2 strong {
+    color: #93c5fd;
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.view-window-eyebrow {
+    display: block;
+    margin-bottom: 0.08rem;
+    color: #60a5fa;
+    font: 700 0.52rem 'Outfit', sans-serif;
+    letter-spacing: 0.14em;
+}
+
+.view-window-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.view-window-header button {
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.035);
+    color: #94a3b8;
+    cursor: pointer;
+}
+
+.view-window-header button:hover {
+    border-color: rgba(59, 130, 246, 0.45);
+    background: rgba(37, 99, 235, 0.16);
+    color: #fff;
+}
+
+#view-window-grid {
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    flex: 1 1 auto;
+    display: grid;
+    gap: 0;
+    padding: 0;
+    background: #0b0e14;
+}
+
+#view-window-grid[data-count="1"] {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+}
+
+#view-window-grid[data-count="2"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr);
+}
+
+#view-window-grid[data-count="3"],
+#view-window-grid[data-count="4"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+
+#view-window-grid[data-count="3"] .view-window-cell:last-child {
+    grid-column: 1 / -1;
+}
+
+.view-window-cell {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    border-right: 1px solid rgba(148, 163, 184, 0.7);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.7);
+    background: #0b0e14;
+}
+
+#view-window-grid[data-count="1"] .view-window-cell,
+#view-window-grid[data-count="2"] .view-window-cell:last-child,
+#view-window-grid[data-count="3"] .view-window-cell:last-child,
+#view-window-grid[data-count="4"] .view-window-cell:nth-child(2n) {
+    border-right: 0;
+}
+
+#view-window-grid[data-count="1"] .view-window-cell,
+#view-window-grid[data-count="2"] .view-window-cell,
+#view-window-grid[data-count="3"] .view-window-cell:last-child,
+#view-window-grid[data-count="4"] .view-window-cell:nth-child(n + 3) {
+    border-bottom: 0;
+}
+
+.view-window-label {
+    position: absolute;
+    top: 8px;
+    left: 10px;
+    z-index: 2;
+    color: rgba(226, 232, 240, 0.9);
+    font: 600 0.78rem/1 Inter, 'Noto Sans KR', sans-serif;
+    pointer-events: none;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+}
+
+.view-window-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+    touch-action: none;
+}
+
+.view-window-canvas:active {
+    cursor: grabbing;
+}
+
+.view-window.panel-popout {
+    transform: none !important;
+}
+
 .view-presets-header {
     min-height: 48px;
     display: flex;
@@ -2249,6 +2415,7 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
     background: rgba(13, 18, 28, 0.94);
     box-shadow: 0 18px 50px rgba(0, 0, 0, 0.38);
     backdrop-filter: blur(18px);
+    container-type: inline-size;
 }
 
 .program-panel-header,
@@ -2295,6 +2462,84 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
     min-height: 0;
     flex: 1 1 auto;
     max-height: none;
+}
+
+/* OLP keeps only the mode button in the normal point-program section. */
+.program-panel.olp-mode-active .program-point-section,
+.panel-popout.program-panel.olp-mode-active .program-point-section {
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+    height: auto;
+    max-height: none;
+}
+
+/* OLP is a compact source editor/runtime workspace.  Keep the first layout
+ * deterministic so it does not flash to the full canvas width, while leaving
+ * enough height for the source editor and runtime controls. */
+.program-panel.olp-mode-active {
+    top: 16px;
+    right: auto;
+    bottom: auto;
+    left: 16px;
+    width: min(480px, calc(100% - 32px));
+    height: min(760px, calc(100% - 32px));
+    max-width: calc(100% - 32px);
+    max-height: calc(100% - 32px);
+    box-sizing: border-box;
+}
+
+.program-panel.olp-mode-active.olp-panel-positioned {
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+}
+
+.program-panel.olp-mode-active .program-panel-content {
+    min-width: 0;
+    overflow: hidden;
+}
+
+.program-panel.olp-mode-active .program-robot-section,
+.program-panel.olp-mode-active .program-point-section,
+.program-panel.olp-mode-active .program-file-row,
+.program-panel.olp-mode-active .program-status {
+    flex: 0 0 auto;
+}
+
+.program-panel.olp-mode-active .olp-workspace {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    grid-template-rows: auto minmax(0, 1fr) auto auto minmax(35px, 95px);
+}
+
+.program-panel.olp-mode-active .program-robot-section,
+.program-panel.olp-mode-active .program-point-section,
+.program-panel.olp-mode-active .olp-workspace,
+.program-panel.olp-mode-active .program-file-row,
+.program-panel.olp-mode-active .program-status {
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.program-panel.olp-mode-active .olp-file-grid {
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+}
+
+.program-panel.olp-mode-active .olp-file-grid select,
+.program-panel.olp-mode-active .olp-file-grid textarea {
+    min-width: 0;
+    max-width: 100%;
+    min-height: 0;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.program-panel.olp-mode-active .olp-file-grid textarea {
+    resize: none;
 }
 
 .program-robot-section,
@@ -2813,6 +3058,389 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
 .program-panel select:disabled {
     opacity: 0.35;
     cursor: default;
+}
+
+/* Offline Line Programming workspace */
+#program-robot-name { display: none; }
+.program-olp-button {
+    min-width: 44px !important;
+    color: #bfdbfe !important;
+    border-color: rgba(96, 165, 250, 0.65) !important;
+    background: rgba(37, 99, 235, 0.22) !important;
+    font: 800 0.72rem 'Outfit', sans-serif !important;
+    letter-spacing: 0.08em;
+}
+.program-olp-button.active {
+    color: #fff !important;
+    border-color: #60a5fa !important;
+    background: #2563eb !important;
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.18);
+}
+.olp-robot-control-slot {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+.olp-robot-control-slot .program-control-row {
+    display: flex;
+    align-items: center;
+    flex: 0 1 auto;
+}
+.olp-robot-control-slot code {
+    min-width: 0;
+    margin-left: 0.15rem;
+    overflow: hidden;
+    color: #bfdbfe;
+    font: 700 0.54rem 'JetBrains Mono', Consolas, monospace;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.olp-workspace {
+    display: grid;
+    gap: 0.55rem;
+    padding: 0.7rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    background: rgba(30, 41, 59, 0.22);
+}
+.olp-workspace-header,
+.olp-project-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    min-width: 0;
+}
+.olp-workspace-header > div { display: grid; gap: 0.2rem; min-width: 0; }
+.olp-workspace-header strong { color: #93c5fd; font: 800 0.64rem 'Outfit', sans-serif; letter-spacing: 0.08em; }
+.olp-workspace-header > div > span { overflow: hidden; color: var(--text-2); font-size: 0.62rem; text-overflow: ellipsis; white-space: nowrap; }
+.olp-status-indicators { display: flex; align-items: center; gap: 0.5rem; flex: 0 0 auto; max-width: 100%; }
+.olp-status-dot,
+.olp-bus-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.olp-status-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    color: #64748b;
+    font-size: 0.68rem;
+}
+/* READY is a program state, not a Virtual Bus connection state.  Keep it
+ * neutral so a disconnected bus can never be mistaken for a green link. */
+.olp-status-dot.ready { color: #94a3b8; }
+.olp-status-dot.running { color: #38bdf8; animation: olp-indicator-pulse 1.15s ease-in-out infinite; }
+.olp-status-dot.waiting { color: #facc15; animation: olp-indicator-pulse 1.4s ease-in-out infinite; }
+.olp-status-dot.paused { color: #f59e0b; }
+.olp-status-dot.stopping { color: #fb923c; animation: olp-indicator-pulse 0.8s ease-in-out infinite; }
+.olp-status-dot.stopped { color: #94a3b8; }
+.olp-status-dot.loading { color: #c4b5fd; animation: olp-indicator-pulse 1s ease-in-out infinite; }
+.olp-status-dot.alarm,
+.olp-status-dot.error { color: #f87171; animation: olp-indicator-alarm 0.9s ease-in-out infinite; }
+.olp-bus-indicator {
+    width: 20px;
+    height: 20px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 6px;
+    color: #64748b;
+    font-size: 0.67rem;
+}
+.olp-bus-indicator.connected {
+    border-color: rgba(74, 222, 128, 0.6);
+    color: #4ade80;
+    background: rgba(34, 197, 94, 0.12);
+}
+.olp-bus-indicator.connecting,
+.olp-bus-indicator.waiting {
+    border-color: rgba(250, 204, 21, 0.58);
+    color: #facc15;
+    background: rgba(234, 179, 8, 0.1);
+    animation: olp-indicator-pulse 1.2s ease-in-out infinite;
+}
+.olp-bus-indicator.unavailable,
+.olp-bus-indicator.disconnected {
+    border-color: rgba(148, 163, 184, 0.32);
+    color: #64748b;
+    background: rgba(100, 116, 139, 0.08);
+}
+@keyframes olp-indicator-pulse {
+    0%, 100% { opacity: 0.58; }
+    50% { opacity: 1; }
+}
+@keyframes olp-indicator-alarm {
+    0%, 100% { opacity: 0.62; box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.18); }
+    50% { opacity: 1; box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.14); }
+}
+.olp-toolbar { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.olp-toolbar button { min-height: 26px; padding: 0.25rem 0.42rem; font-size: 0.58rem; }
+.olp-file-grid { display: grid; grid-template-columns: minmax(115px, 0.8fr) minmax(0, 1.8fr); gap: 0.4rem; min-height: 140px; }
+.olp-file-grid select,
+.olp-file-grid textarea {
+    min-width: 0;
+    color: var(--text-1);
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font: 0.62rem/1.45 'JetBrains Mono', Consolas, monospace;
+}
+.olp-file-grid select { padding: 0.25rem; }
+.olp-file-grid textarea { width: 100%; min-height: 140px; padding: 0.45rem; resize: vertical; box-sizing: border-box; }
+.olp-file-grid textarea.olp-cursor-active { border-color: #38bdf8; box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.16); }
+.olp-editor-shell {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: rgba(15, 23, 42, 0.75);
+}
+.olp-editor-shell:focus-within {
+    border-color: rgba(96, 165, 250, 0.72);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.14);
+}
+.olp-file-gutter {
+    position: absolute;
+    z-index: 2;
+    top: 0;
+    right: auto;
+    bottom: 0;
+    left: 0;
+    width: 2.65rem;
+    margin: 0;
+    padding: 0.45rem 0.45rem 0.45rem 0.25rem;
+    box-sizing: border-box;
+    overflow: hidden;
+    border-right: 1px solid rgba(148, 163, 184, 0.18);
+    color: #64748b;
+    background: rgba(15, 23, 42, 0.9);
+    font: 0.62rem/1.45 'JetBrains Mono', Consolas, monospace;
+    text-align: right;
+    white-space: pre;
+    user-select: none;
+    pointer-events: none;
+}
+.olp-file-highlight,
+.olp-editor-shell textarea {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 2.65rem;
+    width: auto;
+    height: 100%;
+    margin: 0;
+    padding: 0.45rem;
+    box-sizing: border-box;
+    border: 0;
+    border-radius: 0;
+    font: 0.62rem/1.45 'JetBrains Mono', Consolas, monospace;
+    letter-spacing: normal;
+    tab-size: 4;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+}
+.olp-file-highlight {
+    z-index: 0;
+    overflow: hidden;
+    color: #e2e8f0;
+    background: transparent;
+    pointer-events: none;
+}
+.olp-editor-shell textarea {
+    z-index: 1;
+    resize: none;
+    outline: none;
+    overflow: auto;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    caret-color: #f8fafc;
+    background: transparent;
+}
+.olp-editor-shell textarea::selection {
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    background: rgba(56, 189, 248, 0.28);
+}
+.olp-editor-shell textarea.olp-cursor-active {
+    border: 0;
+    box-shadow: none;
+}
+.olp-point-table {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    min-width: 0;
+    min-height: 0;
+    color: #e2e8f0;
+    background: rgba(15, 23, 42, 0.98);
+}
+.olp-point-table-note {
+    padding: 0.38rem 0.5rem;
+    overflow: hidden;
+    color: #93c5fd;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+    font: 600 0.58rem/1.35 'Outfit', sans-serif;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.olp-point-table-scroll {
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+}
+.olp-point-table table {
+    width: max-content;
+    min-width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font: 0.6rem/1.35 'JetBrains Mono', Consolas, monospace;
+}
+.olp-point-table th,
+.olp-point-table td {
+    padding: 0.34rem 0.42rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    text-align: left;
+    white-space: nowrap;
+}
+.olp-point-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    color: #94a3b8;
+    background: #172033;
+    font: 700 0.58rem/1.3 'Outfit', sans-serif;
+}
+.olp-point-table tbody tr { cursor: context-menu; }
+.olp-point-table tbody tr:hover { background: rgba(37, 99, 235, 0.16); }
+.olp-point-table .olp-point-id { width: 3.1rem; color: #94a3b8; }
+.olp-point-table .olp-point-name { min-width: 7rem; color: #38bdf8; }
+.olp-point-table td:not(.olp-point-id):not(.olp-point-name) { min-width: 4.6rem; color: #e2e8f0; }
+.olp-point-empty { padding: 1rem !important; color: #64748b !important; text-align: center !important; }
+.olp-syntax-command { color: #7dd3fc; font-weight: 700; }
+.olp-syntax-address { color: #fbbf24; font-weight: 600; }
+.olp-syntax-number { color: #86efac; }
+.olp-syntax-string { color: #fda4af; }
+.olp-syntax-comment { color: #4ade80; font-style: italic; }
+.olp-syntax-label { color: #c4b5fd; font-weight: 700; }
+.olp-syntax-identifier { color: #e2e8f0; }
+.olp-syntax-operator { color: #f0abfc; }
+.olp-syntax-punctuation { color: #94a3b8; }
+.olp-project-meta { color: var(--text-2); font-size: 0.56rem; }
+.olp-project-meta span {
+    min-width: 0;
+    flex: 1 1 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    line-height: 1.35;
+}
+.olp-runtime-panel { display: grid; gap: 0.26rem; padding: 0.45rem; border: 1px solid rgba(96, 165, 250, 0.45); border-radius: 7px; background: rgba(15, 23, 42, 0.78); }
+.olp-runtime-heading { display: flex; align-items: center; gap: 0.42rem; min-width: 0; }
+.olp-runtime-heading strong { overflow: hidden; color: #e0f2fe; font: 700 0.62rem 'Outfit', sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+.olp-runtime-heading code { margin-left: auto; color: #bfdbfe; font: 600 0.56rem 'JetBrains Mono', Consolas, monospace; white-space: nowrap; }
+.olp-runtime-badge { min-width: 3.65rem; padding: 0.14rem 0.28rem; border-radius: 4px; color: #0f172a; background: #94a3b8; font: 800 0.5rem 'JetBrains Mono', Consolas, monospace; text-align: center; }
+.olp-runtime-badge.running { color: #082f49; background: #38bdf8; }
+.olp-runtime-badge.waiting { color: #422006; background: #fbbf24; }
+.olp-runtime-badge.paused { color: #312e81; background: #a5b4fc; }
+.olp-runtime-badge.stopped, .olp-runtime-badge.completed { color: #052e16; background: #86efac; }
+.olp-runtime-badge.error { color: #450a0a; background: #fca5a5; }
+.olp-runtime-line { overflow: hidden; color: #f8fafc; font: 0.56rem/1.35 'JetBrains Mono', Consolas, monospace; text-overflow: ellipsis; white-space: nowrap; }
+.olp-runtime-stack { overflow: hidden; color: var(--text-2); font: 0.5rem/1.3 'JetBrains Mono', Consolas, monospace; text-overflow: ellipsis; white-space: nowrap; }
+.olp-io-monitor { display: grid; gap: 0.35rem; padding: 0.45rem; border: 1px solid rgba(96, 165, 250, 0.3); border-radius: 7px; background: rgba(15, 23, 42, 0.58); }
+.olp-io-monitor-heading { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; color: #93c5fd; font: 700 0.56rem 'Outfit', sans-serif; letter-spacing: 0.08em; }
+.olp-io-monitor-heading span { overflow: hidden; color: #86efac; font: 500 0.54rem Inter, sans-serif; letter-spacing: 0; text-overflow: ellipsis; white-space: nowrap; }
+.olp-io-monitor-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.3rem; }
+.olp-io-monitor-cell { display: grid; gap: 0.12rem; min-width: 0; padding: 0.28rem; border-radius: 5px; background: rgba(2, 6, 23, 0.55); }
+.olp-io-monitor-cell span { overflow: hidden; color: var(--text-2); font-size: 0.48rem; text-overflow: ellipsis; white-space: nowrap; }
+.olp-io-monitor-cell code { color: #bfdbfe; font: 600 0.56rem 'JetBrains Mono', Consolas, monospace; }
+.olp-io-monitor-cell b { color: #f8fafc; font: 700 0.62rem 'JetBrains Mono', Consolas, monospace; }
+.olp-io-monitor-last { overflow: hidden; color: var(--text-2); font: 0.5rem/1.3 'JetBrains Mono', Consolas, monospace; text-overflow: ellipsis; white-space: nowrap; }
+.olp-run-note { color: #93c5fd; font-size: 0.56rem; line-height: 1.4; }
+.olp-console { max-height: 95px; min-height: 35px; margin: 0; padding: 0.4rem; overflow: auto; color: #bfdbfe; background: rgba(2, 6, 23, 0.65); border: 1px solid var(--border); border-radius: 6px; cursor: text; font: 0.58rem/1.4 'JetBrains Mono', Consolas, monospace; user-select: text; white-space: pre-wrap; }
+
+/* OLP can be resized independently of the viewport.  Container queries keep
+ * the indicators and diagnostic text readable when the panel itself becomes
+ * narrow on a wide monitor. */
+@container (max-width: 500px) {
+    .program-panel.olp-mode-active .olp-workspace-header {
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .program-panel.olp-mode-active .olp-project-meta {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .program-panel.olp-mode-active .olp-workspace-header > div:first-child {
+        min-width: 0;
+        flex: 1 1 auto;
+        overflow: hidden;
+    }
+
+    .program-panel.olp-mode-active .olp-status-indicators {
+        flex: 0 0 auto;
+        width: auto;
+        margin-left: auto;
+        justify-content: flex-end;
+        gap: 0.35rem;
+    }
+
+    .program-panel.olp-mode-active .olp-project-meta span {
+        min-width: 0;
+        flex: 1 1 100%;
+    }
+
+    .program-panel.olp-mode-active .olp-workspace-header > div > span,
+    .program-panel.olp-mode-active .olp-project-meta span,
+    .program-panel.olp-mode-active .olp-run-note,
+    .program-panel.olp-mode-active .olp-io-monitor-heading span,
+    .program-panel.olp-mode-active .olp-io-monitor-last {
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .program-panel.olp-mode-active .olp-project-meta {
+        display: grid;
+        justify-content: stretch;
+        gap: 0.25rem;
+    }
+
+    .program-panel.olp-mode-active .olp-file-grid {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: minmax(70px, 0.55fr) minmax(150px, 1.45fr);
+    }
+
+    .program-panel.olp-mode-active .olp-runtime-heading,
+    .program-panel.olp-mode-active .olp-io-monitor-heading {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .program-panel.olp-mode-active .olp-runtime-heading code,
+    .program-panel.olp-mode-active .olp-io-monitor-heading span {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .program-panel.olp-mode-active .olp-runtime-line,
+    .program-panel.olp-mode-active .olp-runtime-stack {
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .program-panel.olp-mode-active .olp-io-monitor-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 .model-tree.motion-locked {
@@ -3485,6 +4113,17 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
         max-height: 58%;
     }
 
+    .view-window {
+        top: 12px;
+        right: 12px;
+        left: 12px;
+        width: auto;
+        height: min(58%, calc(100% - 24px));
+        min-width: 0;
+        min-height: 180px;
+        transform: none;
+    }
+
     .program-robot-list {
         grid-template-columns: 1fr;
     }
@@ -3500,6 +4139,19 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
     .position-value-grid.external-grid,
     .position-value-grid.arm-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .program-panel.olp-mode-active {
+        top: 12px;
+        right: auto;
+        bottom: auto;
+        left: 12px;
+        width: min(480px, calc(100% - 24px));
+        height: min(760px, calc(100% - 24px));
+        max-width: calc(100% - 24px);
+        max-height: calc(100% - 24px);
     }
 }
 
@@ -3521,6 +4173,20 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
     height: calc(100vh - 20px);
     max-height: none !important;
     border-radius: 12px !important;
+}
+
+/* OLP's canvas-sized placement must not leak into its separate window. */
+.panel-popout.program-panel.olp-mode-active {
+    position: relative !important;
+    inset: auto !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    width: 100% !important;
+    height: calc(100vh - 20px) !important;
+    max-width: none !important;
+    max-height: none !important;
 }
 
 .panel-popout .model-tree {

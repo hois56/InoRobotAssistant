@@ -1,0 +1,40 @@
+﻿{
+  "FileType": "RobotProjectConfigFile",
+  "Company": "Inovance",
+  "MajorVersion": 2,
+  "MinorVersion": 1,
+  "IsMainActive": true,
+  "MultiTaskCount": 1,
+  "MultiTaskInfos": [
+    {
+      "TaskId": 1,
+      "EnterProgramFile": "PLC_internal_process.pro",
+      "TaskType": 1,
+      "IsActive": true
+    }
+  ],
+  "ProgramFilesCount": 16,
+  "ProgramFiles": [
+    "main.pro",
+    "PLC_internal_process.pro",
+    "s00_prog_info.pro",
+    "s01_initial.pro",
+    "s02_origin_return.pro",
+    "s03_course_set.pro",
+    "s04_course_move.pro",
+    "s05_error.pro",
+    "s06_offset.pro",
+    "s07_global_variable.pro",
+    "s08_multi_recipe.pro",
+    "s09_receive.pro",
+    "s10_send.pro",
+    "sP01_Tray_Get.pro",
+    "sP02_Stage_Put.pro",
+    "sP03_Vision_Calibration.pro"
+  ],
+  "RobPointFilesCount": 2,
+  "RobPointFiles": [
+    "JP.pts",
+    "P.pts",
+  ]
+}

@@ -476,7 +476,7 @@ function getFinalFileContent(file) {
         if (generated.includes("ProgramInfo")) {
             let header = `ProgramInfo\n    Version = "26.04.02.08"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getNowAmPm()}"\n    RobotName = "${state.options.RobotName}"\nEndProgramInfo\n`;
             if (file.endsWith(".pts")) {
-                header = `ProgramInfo\n    Version = "26.04.02.08"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getNow()}"\n    RobotName = "${state.options.RobotName}"\nEndProgramInfo\n`;
+                header = `ProgramInfo\n    Version = "26.04.02.08"\n    VRC = "V4R24"\n    Time = "${TemplateHelper.getPFileTime()}"\n    RobotName = "${state.options.RobotName}"\nEndProgramInfo\n`;
             }
             result = header + edited;
         } else {

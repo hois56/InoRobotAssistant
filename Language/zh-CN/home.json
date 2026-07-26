@@ -84,6 +84,13 @@
       "title": "Robot Model Select",
       "versions": [
         {
+          "title": "Ver 26.07.26",
+          "items": [
+            "**[改进]** 使用静态 manifest 消除 CAD 下载按钮的文件检查延迟，使可用性判断立即完成。",
+            "**[变更]** 没有 CAD 文件的型号现在会立即显示 `没有 CAD 文件`。"
+          ]
+        },
+        {
           "title": "Ver 26.07.25",
           "items": [
             "**[新增]** 将 6 个 GL20 系列模块从控制器扩展卡中分离，并添加到远程耦合器选项下。",
@@ -275,6 +282,12 @@
       {
         "title": "Project Generator",
         "versions": [
+          {
+            "title": "Ver 26.07.26",
+            "items": [
+              "**[修复]** 在韩语界面中，`No` 显示为 `번호`，`Process` 显示为 `프로세스`，而工艺方式名称 `Get` 和 `Put` 保持不翻译。"
+            ]
+          },
           {
             "title": "Ver 26.07.18",
             "items": [

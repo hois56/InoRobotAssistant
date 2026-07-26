@@ -138,6 +138,73 @@ assert.equal(
     'Collision results must retain the render mesh for highlighting when a proxy is used.'
 );
 
+const prewarmLeft = createBoxRoot(0);
+const prewarmRight = createBoxRoot(3);
+const prewarmSystem = new MeshCollisionSystem();
+const prewarmStats = prewarmSystem.prepare([prewarmLeft, prewarmRight]);
+assert.equal(prewarmStats.geometryCount, 2, 'Prewarming must discover every active collision geometry.');
+assert.equal(prewarmStats.builtGeometryCount, 2, 'Prewarming must build each uncached BVH before motion starts.');
+const prewarmedBvhs = new Map(prewarmSystem.geometryCache);
+prewarmRight.position.x = 0.5;
+prewarmRight.updateMatrixWorld(true);
+assert.ok(prewarmSystem.check([prewarmLeft, prewarmRight]), 'A prewarmed collision must still be detected.');
+assert.deepEqual(
+    new Map(prewarmSystem.geometryCache),
+    prewarmedBvhs,
+    'The first contact after prewarming must reuse the prepared BVHs.'
+);
+assert.equal(
+    prewarmSystem.prepare([prewarmLeft, prewarmRight]).builtGeometryCount,
+    0,
+    'Repeated prewarming must not rebuild cached BVHs.'
+);
+
+const disabledPrewarmRoot = new THREE.Group();
+const disabledPrewarmMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial());
+disabledPrewarmMesh.userData.collisionDisabled = true;
+disabledPrewarmRoot.add(disabledPrewarmMesh);
+assert.equal(
+    new MeshCollisionSystem().prepare([disabledPrewarmRoot]).geometryCount,
+    0,
+    'Prewarming must retain the normal collision-disabled filtering rules.'
+);
+
+const visibilityPrewarmSystem = new MeshCollisionSystem();
+const visibilityPrewarmRoot = createBoxRoot(0);
+const visibilityPrewarmMesh = visibilityPrewarmRoot.children[0];
+visibilityPrewarmMesh.visible = false;
+assert.equal(
+    visibilityPrewarmSystem.prepare([visibilityPrewarmRoot]).geometryCount,
+    0,
+    'A hidden mesh must not be prepared while it is inactive.'
+);
+visibilityPrewarmMesh.visible = true;
+assert.equal(
+    visibilityPrewarmSystem.prepare([visibilityPrewarmRoot]).builtGeometryCount,
+    1,
+    'A mesh made visible after the initial cache pass must still be discovered and prepared.'
+);
+const visibilityPrewarmObstacle = createBoxRoot(0.25);
+assert.ok(
+    visibilityPrewarmSystem.check([visibilityPrewarmRoot, visibilityPrewarmObstacle]),
+    'A mesh made visible after the initial cache pass must participate in collision checks.'
+);
+visibilityPrewarmMesh.visible = false;
+assert.equal(
+    visibilityPrewarmSystem.check([visibilityPrewarmRoot, visibilityPrewarmObstacle]),
+    null,
+    'A cached mesh made hidden again must stop participating in collision checks.'
+);
+
+const proxyPrewarmSystem = new MeshCollisionSystem();
+const proxyPrewarmStats = proxyPrewarmSystem.prepare([proxyVisual]);
+assert.equal(proxyPrewarmStats.geometryCount, 1, 'A collision proxy must be prewarmed as one geometry.');
+assert.equal(
+    [...proxyPrewarmSystem.geometryCache.values()][0]?.geometry,
+    proxyVisual.userData.collisionGeometry,
+    'Prewarming must build the collision proxy instead of the high-detail render geometry.'
+);
+
 const openShell = new THREE.Group();
 const openShellGeometry = new THREE.BufferGeometry();
 openShellGeometry.setAttribute('position', new THREE.Float32BufferAttribute([
@@ -182,7 +249,35 @@ const repeatedJogHits = continuousJogSystem.checkAll([cacheProbe, cacheObstacle]
 assert.equal(repeatedJogHits[0].stats.meshPairs, 0, 'A sustained collision must reuse its recently confirmed exact pair.');
 assert.equal(repeatedJogHits[0].stats.warmHitReuses, 1, 'A sustained collision must avoid a second BVH walk during the warm-hit window.');
 const expiredWarmHit = continuousJogSystem.checkAll([cacheProbe, cacheObstacle], { now: 250 });
-assert.equal(expiredWarmHit[0].stats.meshPairs, 1, 'A sustained collision must be verified again after the warm-hit window expires.');
+assert.equal(expiredWarmHit[0].stats.meshPairs, 0, 'An expired warm hit must recheck its cached surface triangles before walking the BVH.');
+assert.equal(expiredWarmHit[0].stats.cachedTriangleRechecks, 1, 'An expired warm hit must perform one exact cached-triangle test.');
+assert.equal(expiredWarmHit[0].stats.triangleTests, 1, 'Cached surface validation must remain O(1).');
+const staleCachedPair = [...continuousJogSystem.hitMeshPairCache.values()][0];
+staleCachedPair.hit = { ...staleCachedPair.hit, triangleA: -1 };
+const staleCachedFallbackHits = continuousJogSystem.checkAll([cacheProbe, cacheObstacle], { now: 500 });
+assert.ok(staleCachedFallbackHits.length, 'Invalid cached surface metadata must fall back to a full collision search.');
+assert.equal(staleCachedFallbackHits[0].stats.meshPairs, 1, 'A stale cached surface must retain the full BVH fallback.');
+
+const nodeBoundsReuseSystem = new MeshCollisionSystem();
+const nodeBoundsReuseLeft = createBoxRoot(0);
+const nodeBoundsReuseRight = createBoxRoot(0.5);
+nodeBoundsReuseSystem.checkAll([nodeBoundsReuseLeft, nodeBoundsReuseRight], { now: 0, allowWarmHitReuse: false });
+const nodeBoundsReuseCollider = nodeBoundsReuseSystem.meshCache.get(nodeBoundsReuseLeft)[0];
+const nodeBoundsMap = nodeBoundsReuseCollider.nodeBounds;
+const [nodeBoundsEntry] = nodeBoundsMap.values();
+nodeBoundsReuseLeft.position.x = 0.05;
+nodeBoundsReuseLeft.updateMatrixWorld(true);
+nodeBoundsReuseSystem.hitMeshPairCache.clear();
+nodeBoundsReuseSystem.checkAll([nodeBoundsReuseLeft, nodeBoundsReuseRight], {
+    now: 500,
+    allowWarmHitReuse: false
+});
+assert.equal(nodeBoundsReuseCollider.nodeBounds, nodeBoundsMap, 'Moving a collider must retain its allocated BVH node-bounds map.');
+assert.equal(
+    [...nodeBoundsReuseCollider.nodeBounds.values()].includes(nodeBoundsEntry),
+    true,
+    'Moving a collider must refresh existing node-bound boxes instead of allocating replacements.'
+);
 
 const staticLeft = createBoxRoot(0);
 const staticRight = createBoxRoot(0.5);
@@ -207,16 +302,143 @@ assert.equal(
 );
 
 const viewerSource = await readFile(viewerModuleUrl, 'utf8');
-assert.match(viewerSource, /checkAll\(getCollisionModels\(\), \{ allowWarmHitReuse: false \}\)/, 'A forced viewer scan must consume every collision hit without stale reuse.');
 assert.match(
     viewerSource,
-    /function setAttachedToolCollisionHighlight\(model, enabled\)/,
-    'A Tool collision must colour every visible Tool mesh, not only the representative contact mesh.'
+    /const COLLISION_VISUAL_CLEAR_DELAY_MS = 180;/,
+    'Collision feedback must debounce one-frame boundary misses.'
+);
+const collisionVisualLatchSource = viewerSource.slice(
+    viewerSource.indexOf('function cancelCollisionVisualClearTimer('),
+    viewerSource.indexOf('function collisionResultsKey(')
+);
+const visualState = {
+    collision: {
+        lastResult: null,
+        lastVisualResult: null,
+        lastVisualHitAt: 0,
+        visualClearTimer: null,
+        stopNotice: null
+    }
+};
+let nextVisualTimerId = 1;
+const visualTimers = new Map();
+const visualUpdates = [];
+let visualRenderRequests = 0;
+const visualWindow = {
+    setTimeout(callback, delay) {
+        const id = nextVisualTimerId++;
+        visualTimers.set(id, { callback, delay });
+        return id;
+    },
+    clearTimeout(id) {
+        visualTimers.delete(id);
+    }
+};
+const createCollisionVisualLatch = new Function(
+    'state',
+    'window',
+    'performance',
+    'updateCollisionStatus',
+    'requestRender',
+    'asCollisionResults',
+    'COLLISION_VISUAL_CLEAR_DELAY_MS',
+    `${collisionVisualLatchSource}
+    return { resolveCollisionVisualResult };`
+);
+const { resolveCollisionVisualResult: resolveVisualResultForTest } = createCollisionVisualLatch(
+    visualState,
+    visualWindow,
+    { now: () => 0 },
+    (result) => visualUpdates.push(result),
+    () => { visualRenderRequests += 1; },
+    (result) => (Array.isArray(result) ? result.filter(Boolean) : result ? [result] : []),
+    180
+);
+const visualHit = { id: 'visual-hit' };
+visualState.collision.lastResult = [visualHit];
+visualState.collision.lastVisualResult = resolveVisualResultForTest([visualHit], { now: 100 });
+visualState.collision.lastResult = [];
+assert.deepEqual(
+    resolveVisualResultForTest(null, { now: 180 }),
+    [visualHit],
+    'A short raw miss must retain the previous visual collision.'
+);
+assert.equal([...visualTimers.values()][0]?.delay, 100, 'Visual collision clearing must wait only for the remaining debounce interval.');
+visualState.collision.lastResult = [visualHit];
+visualState.collision.lastVisualResult = resolveVisualResultForTest([visualHit], { now: 220 });
+assert.equal(visualTimers.size, 0, 'A reacquired collision must cancel the pending visual clear.');
+visualState.collision.lastResult = [];
+resolveVisualResultForTest(null, { now: 300 });
+const pendingVisualClear = [...visualTimers.values()][0];
+pendingVisualClear.callback();
+assert.deepEqual(visualUpdates, [null], 'A sustained raw clear must eventually clear the visual collision.');
+assert.equal(visualRenderRequests, 1, 'The delayed visual clear must request one final render.');
+const collisionVisualSource = viewerSource.slice(
+    viewerSource.indexOf('function cancelCollisionVisualClearTimer('),
+    viewerSource.indexOf('function collisionInvolvesRobot(')
+);
+assert.match(
+    collisionVisualSource,
+    /if \(asCollisionResults\(state\.collision\.lastResult\)\.length \|\| state\.collision\.stopNotice\) return;/,
+    'A delayed visual clear must be cancelled when a raw collision or stop latch is active.'
 );
 assert.match(
     viewerSource,
-    /setAttachedToolCollisionHighlight\(hit\.objectA, true\);\s*setAttachedToolCollisionHighlight\(hit\.objectB, true\);/,
-    'Collision feedback must apply the Tool-wide highlight to both collision participants.'
+    /state\.collision\.lastResult = result;\s*updateCollisionStatus\(resolveCollisionVisualResult\(result, \{ now, immediate: force \}\)\);\s*return result;/,
+    'Motion logic must retain the raw collision result while visual feedback is debounced separately.'
+);
+const collisionStatusSource = viewerSource.slice(
+    viewerSource.indexOf('function updateCollisionStatus('),
+    viewerSource.indexOf('function latchCollisionStopNotice(')
+);
+assert.doesNotMatch(
+    collisionStatusSource,
+    /state\.collision\.lastResult\s*=/,
+    'Visual status updates must not overwrite the raw collision result used by motion logic.'
+);
+assert.match(
+    viewerSource,
+    /if \(force\) state\.collision\.system\.prepare\(collisionModels\);\s*const result = force[\s\S]*?checkAll\(collisionModels, \{ allowWarmHitReuse: false \}\)/,
+    'A forced viewer scan must prepare every BVH and consume every collision hit without stale reuse.'
+);
+assert.match(
+    viewerSource,
+    /function collectCollisionHighlightMaterials\(result\)[\s\S]*?const attachedTools = new Set\(\)/,
+    'Collision feedback must collect a de-duplicated set of attached Tools.'
+);
+assert.match(
+    viewerSource,
+    /attachedTools\.forEach\(\(model\) => \{[\s\S]*?model\.traverse\(/,
+    'A Tool collision must colour every visible Tool mesh with one traversal per Tool.'
+);
+const collisionHighlightSource = viewerSource.slice(
+    viewerSource.indexOf('function setCollisionMaterialHighlight('),
+    viewerSource.indexOf('function setCollisionDebugForModel(')
+);
+assert.doesNotMatch(
+    collisionHighlightSource,
+    /needsUpdate/,
+    'Collision colour and emissive uniform changes must not invalidate material programs.'
+);
+assert.match(
+    viewerSource,
+    /if \(state\.collision\.enabled\) state\.collision\.system\?\.prepare\(\[model\]\);\s*state\.models\.push\(model\);\s*state\.scene\.add\(model\);/,
+    'Server-loaded models must prepare their collision BVHs while the loading flow is active.'
+);
+assert.match(
+    viewerSource,
+    /if \(state\.collision\.enabled\) state\.collision\.system\?\.prepare\(\[importedModel\]\);\s*state\.models\.push\(importedModel\);/,
+    'Imported scene and Tool models must prepare their collision BVHs before interactive motion.'
+);
+assert.match(
+    viewerSource,
+    /if \(state\.collision\.enabled\) state\.collision\.system\?\.prepare\(\[robot\]\);\s*state\.models\.push\(robot\);\s*state\.scene\.add\(robot\);/,
+    'Project-restored robots must prepare their collision BVHs before interactive motion.'
+);
+assert.match(
+    viewerSource,
+    /part\.visible = nextVisible;\s*if \(nextVisible && state\.collision\.enabled\) state\.collision\.system\?\.prepare\(\[model\]\);\s*markSceneCollisionDirty\(model\);/,
+    'A part made visible again must rebuild any evicted BVH before the next collision frame.'
 );
 assert.match(
     viewerSource,
@@ -229,4 +451,4 @@ const animateSource = viewerSource.slice(viewerSource.indexOf('function animate(
 const programStopSource = animateSource.slice(0, animateSource.indexOf('} else if (collisionFresh && asCollisionResults(collision).length && isVirtualControllerActive())'));
 assert.doesNotMatch(programStopSource, /restoreCollisionSafeRobotPoses\(movingRobots\)/, 'Program collision stops must retain the detected pose.');
 
-console.log('Mesh collision validation passed: transform-cache refresh, all-hit reporting, Tool/body detection, J6 mount exclusion, false-containment protection, lazy BVH bounds, warm-hit reuse, root-pair caching, and collision breakpoint flow.');
+console.log('Mesh collision validation passed: transform-cache refresh, all-hit reporting, Tool/body detection, J6 mount exclusion, false-containment protection, BVH prewarming/reuse, cached-triangle rechecks, visual exit debounce, root-pair caching, and collision breakpoint flow.');
