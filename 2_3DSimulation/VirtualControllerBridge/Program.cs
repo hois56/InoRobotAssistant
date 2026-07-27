@@ -192,7 +192,10 @@ internal static class Program
 
         try
         {
-            string? helloJson = await ReceiveMessageAsync(socket, sessionCancellation.Token);
+            string? helloJson = await ReceiveMessageAsync(
+                socket,
+                sessionCancellation.Token,
+                TimeSpan.FromSeconds(10));
             if (!AuthenticateHello(helloJson))
             {
                 await CloseForPolicyAsync(socket, WebSocketCloseStatus.PolicyViolation, "Pairing required");
@@ -419,15 +422,22 @@ internal static class Program
         return parsed;
     }
 
-    private static async Task<string?> ReceiveMessageAsync(WebSocket socket, CancellationToken cancellationToken)
+    private static async Task<string?> ReceiveMessageAsync(
+        WebSocket socket,
+        CancellationToken cancellationToken,
+        TimeSpan? timeout = null)
     {
         byte[] receiveBuffer = new byte[4096];
         using MemoryStream messageBuffer = new();
-        using CancellationTokenSource timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(TimeSpan.FromSeconds(10));
+        using CancellationTokenSource? timeoutSource = timeout is null
+            ? null
+            : CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        if (timeoutSource is not null)
+            timeoutSource.CancelAfter(timeout.GetValueOrDefault());
+        CancellationToken receiveToken = timeoutSource?.Token ?? cancellationToken;
         while (true)
         {
-            WebSocketReceiveResult result = await socket.ReceiveAsync(receiveBuffer, timeout.Token);
+            WebSocketReceiveResult result = await socket.ReceiveAsync(receiveBuffer, receiveToken);
             if (result.MessageType == WebSocketMessageType.Close) return null;
             if (result.MessageType != WebSocketMessageType.Text) throw new InvalidDataException("Only text WebSocket commands are supported.");
             if (messageBuffer.Length + result.Count > MaxMessageBytes) throw new InvalidDataException("Command message is too large.");
