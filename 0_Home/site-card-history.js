@@ -25,12 +25,20 @@
         return window.InoRobotI18n?.translate(heading) || heading;
     }
 
+    function translate(message, variables) {
+        return window.InoRobotI18n?.translate(message, variables) || message;
+    }
+
     let historyMarkdownPromise = null;
     let lastFocusedElement = null;
     let previousBodyOverflow = '';
     let activeCardKey = null;
 
     function getEmbeddedHistoryMarkdown() {
+        const locale = window.InoRobotI18n?.locale || 'ko';
+        const localized = window.INOROBOT_LOCALES?.[locale]?.historyMarkdown;
+        if (localized) return localized;
+
         const encoded = window.SITE_CARD_HISTORY_MARKDOWN_BASE64;
         if (encoded) {
             try {
@@ -41,8 +49,7 @@
             }
         }
 
-        const locale = window.InoRobotI18n?.locale || 'ko';
-        return window.INOROBOT_LOCALES?.[locale]?.historyMarkdown || null;
+        return null;
     }
 
     function loadHistoryMarkdown() {
@@ -144,7 +151,7 @@
         if (!body.children.length) {
             const message = document.createElement('p');
             message.className = 'history-message';
-            message.textContent = '등록된 버전 기록이 없습니다.';
+            message.textContent = translate('등록된 버전 기록이 없습니다.');
             body.appendChild(message);
         }
 
@@ -154,7 +161,7 @@
     function renderMessage(message) {
         const text = document.createElement('p');
         text.className = 'history-message';
-        text.textContent = message;
+        text.textContent = translate(message);
         body.replaceChildren(text);
     }
 
@@ -187,7 +194,9 @@
         title.textContent = getLocalizedCardHeading(cardKey);
 
         const version = window.SITE_CARD_VERSIONS?.[cardKey];
-        currentVersion.textContent = version ? `Current Ver ${version}` : '';
+        currentVersion.textContent = version
+            ? (window.InoRobotI18n?.t('common.currentVersion', { version }) || `Current Ver ${version}`)
+            : '';
         renderMessage('버전 기록을 불러오는 중입니다.');
         showModal();
 
