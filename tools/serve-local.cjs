@@ -24,7 +24,7 @@ const publicTopLevelDirectories = new Set([
 ]);
 const publicRootFiles = new Set([
     'CNAME', 'sitemap.xml', 'analytics.js', 'analytics-config.js',
-    'visitor-counter.js', 'site-card-versions.js'
+    'site-card-versions.js'
 ]);
 const blockedPathSegments = new Set([
     '.agents', '.cache', '.codex', '.git', '.openai', '.wrangler',

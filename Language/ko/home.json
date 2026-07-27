@@ -60,10 +60,6 @@
     {
       "source": "^Current Ver (.+)$",
       "target": "현재 버전 $1"
-    },
-    {
-      "source": "^visits ([0-9,]+)$",
-      "target": "방문 $1"
     }
   ],
   "_meta": {

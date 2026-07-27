@@ -60,10 +60,6 @@
     {
       "source": "^Current Ver (.+)$",
       "target": "当前版本 $1"
-    },
-    {
-      "source": "^visits ([0-9,]+)$",
-      "target": "访问量 $1"
     }
   ],
   "_meta": {

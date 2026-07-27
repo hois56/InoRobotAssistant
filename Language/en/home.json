@@ -60,10 +60,6 @@
     {
       "source": "^Current Ver (.+)$",
       "target": "Current Version $1"
-    },
-    {
-      "source": "^visits ([0-9,]+)$",
-      "target": "$1 visits"
     }
   ],
   "_meta": {

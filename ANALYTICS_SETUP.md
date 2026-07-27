@@ -13,12 +13,10 @@ Beacon token은 `analytics-config.js`에 입력되어 있으며, 배포 후 페�
 
 토큰은 브라우저에 전달되는 공개 식별자이므로 소스에 포함되어도 정상입니다. API 키나 비밀번호를 입력하면 안 됩니다.
 
-## 기존 누적 방문자 수
+## 방문자 분석
 
-홈페이지 하단의 `SYS ID` 누적 방문자 수는 Cloudflare Web Analytics와 별도로 기존 Cloudflare Worker의
-`/visit` 엔드포인트를 사용합니다. Worker에서 `VISITOR_KV` KV Namespace binding이 연결되어 있어야 하며,
-5분 내 동일 방문자는 중복 집계하지 않습니다. Worker를 다시 배포할 때는 `5_Software/worker/wrangler.toml`의
-KV binding 안내를 확인합니다.
+사이트의 방문자 및 페이지 분석은 Cloudflare Web Analytics에서 확인합니다. 별도의 화면용 누적 카운터나
+Worker KV 집계는 사용하지 않습니다.
 
 ## 확인 방법
 

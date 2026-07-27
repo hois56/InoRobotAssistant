@@ -60,10 +60,6 @@
     {
       "source": "^Current Ver (.+)$",
       "target": "Phiên bản hiện tại $1"
-    },
-    {
-      "source": "^visits ([0-9,]+)$",
-      "target": "$1 lượt truy cập"
     }
   ],
   "_meta": {
