@@ -189,7 +189,9 @@
             ? window.InoRobotI18n.translate(tool.title)
             : tool.title;
         currentVersion.textContent = trigger.dataset.currentVersion
-            ? `Current Ver ${trigger.dataset.currentVersion.replace(/^V/i, '')}`
+            ? (window.InoRobotI18n?.t('common.currentVersion', {
+                version: trigger.dataset.currentVersion.replace(/^V/i, '')
+            }) || `Current Ver ${trigger.dataset.currentVersion.replace(/^V/i, '')}`)
             : '';
         renderMessage('버전 기록을 불러오는 중입니다.');
         showModal();
