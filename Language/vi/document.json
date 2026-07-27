@@ -53,6 +53,28 @@
     "Pendant": "Tay dạy",
     "No": "Không",
     "Functional Safety Expansion Card": "Card mở rộng an toàn chức năng"
+    ,"Inovance Robot Manual Center": "Trung tâm sổ tay robot Inovance"
+    ,"6-Axis High Protection": "6 trục bảo vệ cao"
+    ,"6-Axis IP67 Option": "Tùy chọn IP67 cho robot 6 trục"
+    ,"6-Axis Sol/VV Option": "Tùy chọn Sol/VV cho robot 6 trục"
+    ,"SCARA High Protection": "SCARA bảo vệ cao"
+    ,"팝업이 차단되었습니다. 이 사이트의 팝업을 허용한 뒤 다시 시도해 주세요.": "Cửa sổ bật lên đã bị chặn. Hãy cho phép cửa sổ bật lên của trang này rồi thử lại."
+    ,"자료를 열 수 없습니다.": "Không thể mở tài liệu này."
+    ,"자료를 다운로드할 수 없습니다.": "Không thể tải tài liệu này."
+    ,"1.로봇 소개(INT).pdf": "1. Giới thiệu robot (INT).pdf"
+    ,"2.로봇 기초(INT).pdf": "2. Cơ bản về robot (INT).pdf"
+    ,"3.로봇 구조 및 초기 배선(INT).pdf": "3. Cấu trúc robot và đấu dây ban đầu (INT).pdf"
+    ,"4. 펜던트 기본 조작(INT).pdf": "4. Thao tác cơ bản với tay dạy (INT).pdf"
+    ,"1. InoRobotLab 소프트웨어(INT).pdf": "1. Phần mềm InoRobotLab (INT).pdf"
+    ,"2. 프로그램 기초 - 변수.pdf": "2. Cơ bản lập trình - biến số.pdf"
+    ,"3. 프로그램 기초 - 주요 명령어.pdf": "3. Cơ bản lập trình - lệnh chính.pdf"
+    ,"4. 주요 설정.pdf": "4. Cài đặt chính.pdf"
+    ,"6. Socket 통신.pdf": "6. Truyền thông Socket.pdf"
+    ,"7. Fieldbus 통신.pdf": "7. Truyền thông Fieldbus.pdf"
+    ,"API 교육 자료": "Tài liệu đào tạo API"
+    ,"1.로봇 소개(Display).pdf": "1. Giới thiệu robot (Display).pdf"
+    ,"2.로봇 기초(Display).pdf": "2. Cơ bản về robot (Display).pdf"
+    ,"3.로봇 구조 및 초기 배선(Display).pdf": "3. Cấu trúc robot và đấu dây ban đầu (Display).pdf"
   },
   "patterns": []
 }

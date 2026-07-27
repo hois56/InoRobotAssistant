@@ -12,6 +12,7 @@
 
 # Local caches, temporary workspaces and backups.
 **/.cache/
+**/.npm-cache/
 **/.wrangler/
 **/tmp/
 **/backups/

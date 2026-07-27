@@ -46,6 +46,12 @@ function uiText(value) {
     return window.InoRobotI18n ? window.InoRobotI18n.translate(String(value)) : String(value);
 }
 
+function uiFormat(value, replacements = {}) {
+    return uiText(value).replace(/\{([A-Za-z0-9_]+)\}/g, (match, key) => (
+        Object.prototype.hasOwnProperty.call(replacements, key) ? String(replacements[key]) : match
+    ));
+}
+
 class ProcessStep {
     constructor(no) {
         this.id = createProcessId();
@@ -1081,7 +1087,7 @@ async function exportProj() {
         alert(uiText("Project Generation Completed!"));
     } catch (e) {
         console.error(e);
-        alert(uiText(`Error generating zip: ${e.message || e}`));
+        alert(uiFormat('Error generating zip: {message}', { message: e.message || e }));
     }
 }
 

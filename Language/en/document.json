@@ -53,6 +53,28 @@
     "Pendant": "Pendant",
     "No": "No",
     "Functional Safety Expansion Card": "Functional Safety Expansion Card"
+    ,"Inovance Robot Manual Center": "Inovance Robot Manual Center"
+    ,"6-Axis High Protection": "6-Axis High Protection"
+    ,"6-Axis IP67 Option": "6-Axis IP67 Option"
+    ,"6-Axis Sol/VV Option": "6-Axis Sol/VV Option"
+    ,"SCARA High Protection": "SCARA High Protection"
+    ,"팝업이 차단되었습니다. 이 사이트의 팝업을 허용한 뒤 다시 시도해 주세요.": "The popup was blocked. Allow popups for this site and try again."
+    ,"자료를 열 수 없습니다.": "This resource cannot be opened."
+    ,"자료를 다운로드할 수 없습니다.": "This resource cannot be downloaded."
+    ,"1.로봇 소개(INT).pdf": "1. Robot Introduction (INT).pdf"
+    ,"2.로봇 기초(INT).pdf": "2. Robot Basics (INT).pdf"
+    ,"3.로봇 구조 및 초기 배선(INT).pdf": "3. Robot Structure and Initial Wiring (INT).pdf"
+    ,"4. 펜던트 기본 조작(INT).pdf": "4. Basic Pendant Operation (INT).pdf"
+    ,"1. InoRobotLab 소프트웨어(INT).pdf": "1. InoRobotLab Software (INT).pdf"
+    ,"2. 프로그램 기초 - 변수.pdf": "2. Programming Basics - Variables.pdf"
+    ,"3. 프로그램 기초 - 주요 명령어.pdf": "3. Programming Basics - Main Commands.pdf"
+    ,"4. 주요 설정.pdf": "4. Main Settings.pdf"
+    ,"6. Socket 통신.pdf": "6. Socket Communication.pdf"
+    ,"7. Fieldbus 통신.pdf": "7. Fieldbus Communication.pdf"
+    ,"API 교육 자료": "API Training Materials"
+    ,"1.로봇 소개(Display).pdf": "1. Robot Introduction (Display).pdf"
+    ,"2.로봇 기초(Display).pdf": "2. Robot Basics (Display).pdf"
+    ,"3.로봇 구조 및 초기 배선(Display).pdf": "3. Robot Structure and Initial Wiring (Display).pdf"
   },
   "patterns": []
 }

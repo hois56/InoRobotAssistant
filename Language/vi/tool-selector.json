@@ -193,7 +193,13 @@
     "{format} 파일 분석 완료 · {label} {count}{note}": "Đã phân tích tệp {format} · {label} {count}{note}",
     "{format} 파일을 해석할 수 없습니다. {message}": "Không thể phân tích tệp {format}. {message}",
     "{format} 파일 분석 완료": "Đã phân tích tệp {format}",
-    "STEP 파일 내보내기 완료 · {count}개 부품 · {name}": "Đã xuất STEP · {count} bộ phận · {name}"
+    "STEP 파일 내보내기 완료 · {count}개 부품 · {name}": "Đã xuất STEP · {count} bộ phận · {name}",
+    "InoRobot Tool Select": "Lựa chọn Tool InoRobot",
+    "3D marker legend": "Chú giải marker 3D",
+    " · 대용량 최적화 {count}개 부품": " · Tối ưu tệp lớn: {count} bộ phận",
+    "계산할 수 없습니다.": "Không thể tính toán.",
+    "내보낼 부품을 하나 이상 선택하세요.": "Hãy chọn ít nhất một bộ phận để xuất.",
+    "3D 미리보기를 사용할 수 없지만 CAD 불러오기와 계산은 계속할 수 있습니다.": "Không thể xem trước 3D, nhưng vẫn có thể nhập CAD và tính toán."
   },
   "patterns": []
 }

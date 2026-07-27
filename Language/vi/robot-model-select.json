@@ -208,6 +208,16 @@
     "상세 정보": "Chi tiết",
     "추가 선택 옵션 없음": "Không chọn thêm tùy chọn",
     "본 구성서는 선택된 옵션 기반의 가이드입니다. 제조사 사정에 따라 사양이 변경될 수 있습니다. 생성일시:": "Bảng cấu hình này chỉ mang tính hướng dẫn theo các tùy chọn đã chọn. Thông số có thể thay đổi. Thời gian tạo:"
+    ,"Inovance Product Selection Tool": "Công cụ lựa chọn sản phẩm Inovance",
+    "Inovance Robot Select": "Lựa chọn robot Inovance",
+    "Body: IP65, Wrist: IP67, 클린 사양 없음": "Thân: IP65, cổ tay: IP67, không có cấp sạch",
+    "IP40, 클린 사양 없음": "IP40, không có cấp sạch",
+    "6주": "6 tuần",
+    "7주": "7 tuần",
+    "8주": "8 tuần",
+    "10주": "10 tuần",
+    "기본 핀": "Số chân mặc định",
+    "해당 호환 모델": "Model tương thích"
   },
   "patterns": [
     {

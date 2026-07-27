@@ -62,6 +62,12 @@
     "현재 위치의 엔코더 값을 '티칭값' 항목에 입력합니다.": "将当前位置的编码器值输入示教值。",
     "'최종 결과' 항목에 계산된 값을 확인합니다.": "在最终结果中确认计算值。",
     "로봇 Zero 파라미터에 계산된 값을 입력합니다.": "将计算值输入机器人 Zero 参数。"
+    ,"Inovance Debugging Support Tool": "Inovance 调试支持工具"
+    ,"CAD Lightweight": "CAD 轻量化"
+    ,"Zero Calibration Tool": "零点校准工具"
+    ,"Zero Calibration Tool | Inovance": "零点校准工具 | Inovance"
+    ,"Calibration Mode": "校准模式"
+    ,"내장된 디버깅 툴 버전 기록을 읽지 못했습니다.": "无法读取内置调试工具版本记录。"
   },
   "patterns": []
 }

@@ -1346,8 +1346,8 @@ function renderInterferenceZonePanel() {
             <strong class="interference-zone-number">${zone.id}</strong>
             <span class="interference-zone-remarks"></span>
             <span class="interference-zone-state">${interferenceZoneStatusLabel(status)}</span>
-            <button type="button" class="interference-zone-read" data-interference-zone-read title="실제 컨트롤러에서 설정 가져오기">가져오기</button>
-            <button type="button" class="interference-zone-edit" data-interference-zone-edit>Edit</button>
+            <button type="button" class="interference-zone-read" data-interference-zone-read title="${uiText('실제 컨트롤러에서 설정 가져오기')}">${uiText('가져오기')}</button>
+            <button type="button" class="interference-zone-edit" data-interference-zone-edit>${uiText('Edit')}</button>
         `;
         row.querySelector('.interference-zone-remarks').textContent = zone.remarks || '-';
         return row;
@@ -3365,9 +3365,14 @@ function getSimulationSnapFaceSelectionSignature(selections = getSimulationSnapF
     )).join('|');
 }
 
+function isSimulationSnapFaceSelectionActive(scope = getSimulationSnapScope()) {
+    return (scope === 'scene' && state.snapMoveMode)
+        || (scope === 'zero' && state.zeroPointEdit.active && state.zeroPointEdit.snapMode);
+}
+
 function getSimulationSnapMeshes(scope = 'scene') {
     const selections = getSimulationSnapFaceSelections();
-    if (scope === 'scene' && state.snapMoveMode && selections.length) {
+    if (isSimulationSnapFaceSelectionActive(scope) && selections.length) {
         const selectedMeshes = [...new Set(selections.map((selection) => selection.mesh))];
         // A selected mesh can be temporarily hidden while a large-model chunk
         // or a render update is being applied. Membership must be checked
@@ -3551,9 +3556,9 @@ function buildSimulationCombinedSnapCandidates(candidateGroups, selections = get
 
 async function buildSimulationSnapCandidates(scope = getSimulationSnapScope()) {
     if (!isSimulationSnapInteractionActive()) return [];
-    const faceSelections = scope === 'scene' && state.snapMoveMode
+    const faceSelections = isSimulationSnapFaceSelectionActive(scope)
         ? cloneSimulationSnapFaceSelections() : [];
-    if (scope === 'scene' && state.snapMoveMode && !faceSelections.length) {
+    if (isSimulationSnapFaceSelectionActive(scope) && !faceSelections.length) {
         state.snapCandidates = [];
         state.snapCandidatesReady = false;
         return [];
@@ -3683,7 +3688,7 @@ async function buildSimulationSnapCandidates(scope = getSimulationSnapScope()) {
 
 function getPreparedSimulationSnapMeshes(scope = getSimulationSnapScope()) {
     const meshes = getSimulationSnapMeshes(scope);
-    const faceSelections = scope === 'scene' && state.snapMoveMode
+    const faceSelections = isSimulationSnapFaceSelectionActive(scope)
         ? getSimulationSnapFaceSelections() : [];
     const faceSignature = getSimulationSnapFaceSelectionSignature(faceSelections);
     const signature = `${scope}:${meshes.map((mesh) => `${mesh.uuid}:${mesh.geometry.uuid}`).join('|')}:${faceSignature}`;
@@ -3824,12 +3829,14 @@ function updateSimulationSnapCandidateMarkers() {
     // moving was the main source of the large-model orbit/pan hitch. The
     // selected face remains intact; markers are rebuilt once navigation ends.
     if (state.viewNavigationActive) return;
-    if (!state.snapMoveMode || !getSimulationSnapFaceSelections().length || !state.snapCandidatesReady
+    const scope = getSimulationSnapScope();
+    if (!isSimulationSnapFaceSelectionActive(scope) || !getSimulationSnapFaceSelections().length
+        || !state.snapCandidatesReady
         || !el.canvasContainer || !state.renderer || !state.camera) {
         clearSimulationSnapCandidateMarkers();
         return;
     }
-    const meshes = getSimulationSnapMeshes('scene');
+    const meshes = getSimulationSnapMeshes(scope);
     const bounds = state.renderer.domElement.getBoundingClientRect();
     if (!meshes.length || bounds.width <= 0 || bounds.height <= 0) {
         clearSimulationSnapCandidateMarkers();
@@ -3838,11 +3845,12 @@ function updateSimulationSnapCandidateMarkers() {
     state.camera.updateMatrixWorld(true);
     getSimulationSnapWorldIndex(meshes);
     // Selected-face candidates are intentional snap targets. Do not let the
-    // model's depth occlusion hide them while snap-move mode is active; the
+    // model's depth occlusion hide them while face-selection mode is active; the
     // marker layer must keep priority over geometry behind the selected face.
-    const visibilityMeshes = state.snapMoveMode || isLargeModelSnapPerformanceMode('scene')
+    const visibilityMeshes = isSimulationSnapFaceSelectionActive(scope)
+        || isLargeModelSnapPerformanceMode(scope)
         ? null
-        : getAllSimulationSnapMeshes('scene');
+        : getAllSimulationSnapMeshes(scope);
     const candidates = [];
     const markerCells = new Map();
     const markerSpacing = state.largeModelPerformanceMode ? 12 : 7;
@@ -3938,8 +3946,8 @@ function updateSimulationSnapCandidateMarkers() {
     });
 }
 
-function pickSimulationSnapFaceAtPointer(pointerEvent) {
-    const meshes = getAllSimulationSnapMeshes('scene');
+function pickSimulationSnapFaceAtPointer(pointerEvent, scope = getSimulationSnapScope()) {
+    const meshes = getAllSimulationSnapMeshes(scope);
     if (!meshes.length) return null;
     const bounds = state.renderer.domElement.getBoundingClientRect();
     if (bounds.width <= 0 || bounds.height <= 0) return null;
@@ -3962,10 +3970,11 @@ function pickSimulationSnapFaceAtPointer(pointerEvent) {
     };
 }
 
-function handleSimulationSnapMoveClick(event) {
+function handleSimulationSnapFaceSelectionClick(event) {
+    const scope = getSimulationSnapScope();
     const selectedFaces = getSimulationSnapFaceSelections();
     if (event.shiftKey) {
-        const selection = pickSimulationSnapFaceAtPointer(event);
+        const selection = pickSimulationSnapFaceAtPointer(event, scope);
         if (!selection) {
             setStatus('스냅할 3D 모델의 면을 클릭하세요.', '#f59e0b');
             return;
@@ -3980,11 +3989,15 @@ function handleSimulationSnapMoveClick(event) {
     if (snap) {
         event.preventDefault();
         event.stopPropagation();
-        if (moveRobotTcpToSimulationSnap(snap)) showSimulationSnapMarker(snap);
+        if (state.snapMoveMode) {
+            if (moveRobotTcpToSimulationSnap(snap)) showSimulationSnapMarker(snap);
+        } else if (state.zeroPointEdit.active && state.zeroPointEdit.snapMode) {
+            handleZeroPointSnapSelection(snap);
+        }
         return;
     }
 
-    const selection = pickSimulationSnapFaceAtPointer(event);
+    const selection = pickSimulationSnapFaceAtPointer(event, scope);
     if (selection && !selectedFaces.some((face) => face.key === selection.key)) {
         event.preventDefault();
         event.stopPropagation();
@@ -4022,8 +4035,13 @@ function selectSimulationSnapFace(selection, { additive = false } = {}) {
     hideSimulationSnapMarker();
     setStatus('면을 선택했습니다. 선택된 면의 스냅 후보를 계산하는 중입니다...', '#f59e0b');
     const selectionSignature = getSimulationSnapFaceSelectionSignature(nextSelections);
-    void buildSimulationSnapCandidates('scene').then(() => {
-        if (!state.snapMoveMode || getSimulationSnapFaceSelectionSignature() !== selectionSignature) return;
+    const scope = getSimulationSnapScope();
+    void buildSimulationSnapCandidates(scope).then(() => {
+        if (!isSimulationSnapFaceSelectionActive(scope)
+            || getSimulationSnapFaceSelectionSignature() !== selectionSignature) return;
+        if (scope === 'zero') {
+            setZeroPointSnapReadout('선택한 면의 스냅 후보를 클릭하세요.');
+        }
         setStatus('선택한 면의 스냅 후보를 클릭하세요.', '#60a5fa');
     }).catch((error) => {
         console.warn('Selected face snap candidate generation failed:', error);
@@ -4448,10 +4466,11 @@ function getSimulationSnapCandidatesNearPointer(meshes, bounds, pointerX, pointe
 
 function findSimulationSnapAtPointer(pointerEvent) {
     if (!isSimulationSnapInteractionActive()) return null;
-    const meshes = getPreparedSimulationSnapMeshes();
+    const scope = getSimulationSnapScope();
+    const meshes = getPreparedSimulationSnapMeshes(scope);
     if (!meshes.length) return null;
-    const visibilityMeshes = state.snapMoveMode
-        ? getAllSimulationSnapMeshes('scene')
+    const visibilityMeshes = isSimulationSnapFaceSelectionActive(scope)
+        ? getAllSimulationSnapMeshes(scope)
         : meshes;
     state.camera.updateMatrixWorld(true);
     const bounds = state.renderer.domElement.getBoundingClientRect();
@@ -4510,7 +4529,7 @@ function findSimulationSnapAtPointer(pointerEvent) {
     nearby.sort(requiredType
         ? (left, right) => left.pixelDistance - right.pixelDistance || left.cameraDistance - right.cameraDistance
         : compareSimulationSnapCandidates);
-    if (state.snapMoveMode) {
+    if (isSimulationSnapFaceSelectionActive(getSimulationSnapScope())) {
         const displayedCandidate = nearby.find((candidate) => (
             state.snapDisplayedCandidates.includes(candidate.sourceCandidate)
         ));
@@ -4799,31 +4818,19 @@ function setZeroPointSnapMode(enabled) {
     if (edit.snapMode) {
         state.snapMoveMode = false;
         clearSimulationSnapFaceSelection({ invalidate: false });
+        invalidateSimulationSnapCandidates();
         if (state.tcpSnapMode) setTcpSnapMode(false);
         state.snapLastPointerEvent = null;
         resetZeroPointSnapPoints();
         captureSimulationSnapMarkerReferenceDistance();
-        setStatus('영점 스냅 후보를 계산하는 중입니다...', '#f59e0b');
+        setZeroPointSnapReadout('스냅할 3D 모델의 면을 클릭하세요.');
+        setStatus('스냅할 3D 모델의 면을 클릭하세요.', '#60a5fa');
         if (el.btnZeroPointSnap) {
             el.btnZeroPointSnap.classList.add('active');
             el.btnZeroPointSnap.setAttribute('aria-pressed', 'true');
         }
-        void buildSimulationSnapCandidates('zero')
-            .then(() => {
-                if (!edit.active || !edit.snapMode) return;
-                setZeroPointSnapReadout(isZeroPointMultiPointSnapMode()
-                    ? '스냅 점 2~4개를 선택하세요.'
-                    : '모델 형상 위로 이동하면 스냅 후보가 표시됩니다.');
-                setStatus('영점으로 지정할 모델 스냅 위치를 선택하세요.', '#60a5fa');
-            })
-            .catch((error) => {
-                console.warn('Zero point snap candidate generation failed:', error);
-                if (edit.active && edit.snapMode) {
-                    setZeroPointSnapMode(false);
-                    setStatus('선택 가능한 스냅 지점을 계산하지 못했습니다.', '#ef4444');
-                }
-            });
     } else {
+        clearSimulationSnapFaceSelection({ invalidate: false });
         invalidateSimulationSnapCandidates();
         resetZeroPointSnapPoints();
         hideSimulationSnapMarker();
@@ -4834,6 +4841,10 @@ function setZeroPointSnapMode(enabled) {
             el.btnZeroPointSnap.setAttribute('aria-pressed', 'false');
         }
     }
+    el.canvasContainer?.classList.toggle(
+        'simulation-snap-picking',
+        state.snapMoveMode || state.zeroPointEdit.snapMode
+    );
 }
 
 function getZeroPointBaselineLocalPoint(worldPoint) {
@@ -4937,19 +4948,8 @@ function moveRobotTcpToSimulationSnap(snap) {
 
 function handleSimulationSnapClick(event) {
     if (!isSimulationSnapInteractionActive() || event.button !== 0) return;
-    if (state.snapMoveMode) {
-        handleSimulationSnapMoveClick(event);
-        return;
-    }
-    if (false) {
-        event.preventDefault();
-        event.stopPropagation();
-        const selection = pickSimulationSnapFaceAtPointer(event);
-        if (!selection) {
-            setStatus('스냅할 3D 모델의 면을 클릭하세요.', '#f59e0b');
-            return;
-        }
-        selectSimulationSnapFace(selection);
+    if (isSimulationSnapFaceSelectionActive()) {
+        handleSimulationSnapFaceSelectionClick(event);
         return;
     }
     const snap = findSimulationSnapAtPointer(event);
@@ -4982,7 +4982,10 @@ function updateSimulationSnapButton() {
     el.btnSnapMove.classList.toggle('active', state.snapMoveMode);
     el.btnSnapMove.setAttribute('aria-pressed', String(state.snapMoveMode));
     el.btnSnapMove.title = uiText(state.snapMoveMode ? '스냅 이동 종료' : '스냅 이동');
-    el.canvasContainer?.classList.toggle('simulation-snap-picking', state.snapMoveMode);
+    el.canvasContainer?.classList.toggle(
+        'simulation-snap-picking',
+        state.snapMoveMode || state.zeroPointEdit.snapMode
+    );
 }
 
 async function toggleSimulationSnapMoveMode() {
@@ -5406,9 +5409,12 @@ function setupEventListeners() {
         state.zeroPointEdit.snapType = readZeroPointSnapType();
         resetZeroPointSnapPoints();
         if (state.zeroPointEdit.snapMode) {
-            setZeroPointSnapReadout(isZeroPointMultiPointSnapMode()
-                ? '스냅 점 2~4개를 선택하세요.'
-                : '모델 형상 위로 이동하면 스냅 후보가 표시됩니다.');
+            const hasFaceSelection = getSimulationSnapFaceSelections().length > 0;
+            setZeroPointSnapReadout(!hasFaceSelection
+                ? '스냅할 3D 모델의 면을 클릭하세요.'
+                : isZeroPointMultiPointSnapMode()
+                    ? '스냅 점 2~4개를 선택하세요.'
+                    : '선택한 면의 스냅 후보를 클릭하세요.');
             if (state.snapLastPointerEvent) {
                 showSimulationSnapMarker(findSimulationSnapAtPointer(state.snapLastPointerEvent));
             }
@@ -5803,9 +5809,13 @@ function handleGlobalKeyDown(event) {
         setFullscreenUiMode(false);
         return;
     }
-    if (event.key === 'Escape' && state.snapMoveMode && getSimulationSnapFaceSelections().length) {
+    if (event.key === 'Escape' && isSimulationSnapFaceSelectionActive()
+        && getSimulationSnapFaceSelections().length) {
         event.preventDefault();
         clearSimulationSnapFaceSelection();
+        if (state.zeroPointEdit.active && state.zeroPointEdit.snapMode) {
+            setZeroPointSnapReadout('스냅할 3D 모델의 면을 클릭하세요.');
+        }
         setStatus('스냅할 3D 모델의 면을 클릭하세요.', '#60a5fa');
         return;
     }
@@ -10532,13 +10542,13 @@ function refreshVirtualControllerUi() {
         const zoneId = Number(button.closest('[data-interference-zone-row]')?.dataset.interferenceZoneRow);
         const pending = controller.pendingInterferenceReads.has(zoneId);
         button.disabled = !canReadInterferenceZone || pending;
-        button.textContent = pending ? '읽는 중' : '가져오기';
+        button.textContent = uiText(pending ? '읽는 중' : '가져오기');
     });
     el.endMonitoringList?.querySelectorAll('[data-end-monitoring-read]').forEach((button) => {
         const toolId = Number(button.closest('[data-end-monitoring-row]')?.dataset.endMonitoringRow);
         const pending = controller.pendingInterferenceToolReads.has(toolId);
         button.disabled = !canReadInterferenceZone || pending;
-        button.textContent = pending ? '읽는 중' : '가져오기';
+        button.textContent = uiText(pending ? '읽는 중' : '가져오기');
     });
 }
 

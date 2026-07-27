@@ -62,6 +62,12 @@
     "현재 위치의 엔코더 값을 '티칭값' 항목에 입력합니다.": "Enter the encoder value at the current position in Teaching Value.",
     "'최종 결과' 항목에 계산된 값을 확인합니다.": "Check the calculated values under Final Result.",
     "로봇 Zero 파라미터에 계산된 값을 입력합니다.": "Enter the calculated values in the robot Zero parameters."
+    ,"Inovance Debugging Support Tool": "Inovance Debugging Support Tool"
+    ,"CAD Lightweight": "CAD Lightweight"
+    ,"Zero Calibration Tool": "Zero Calibration Tool"
+    ,"Zero Calibration Tool | Inovance": "Zero Calibration Tool | Inovance"
+    ,"Calibration Mode": "Calibration Mode"
+    ,"내장된 디버깅 툴 버전 기록을 읽지 못했습니다.": "Could not read the embedded debugging-tool version history."
   },
   "patterns": []
 }

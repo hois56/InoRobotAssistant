@@ -53,6 +53,28 @@
     "Pendant": "示教器",
     "No": "无",
     "Functional Safety Expansion Card": "功能安全扩展卡"
+    ,"Inovance Robot Manual Center": "Inovance 机器人手册中心"
+    ,"6-Axis High Protection": "6 轴高防护型"
+    ,"6-Axis IP67 Option": "6 轴 IP67 选项"
+    ,"6-Axis Sol/VV Option": "6 轴 Sol/VV 选项"
+    ,"SCARA High Protection": "SCARA 高防护型"
+    ,"팝업이 차단되었습니다. 이 사이트의 팝업을 허용한 뒤 다시 시도해 주세요.": "弹窗已被阻止。请允许此网站的弹窗后重试。"
+    ,"자료를 열 수 없습니다.": "无法打开此资料。"
+    ,"자료를 다운로드할 수 없습니다.": "无法下载此资料。"
+    ,"1.로봇 소개(INT).pdf": "1. 机器人介绍（INT）.pdf"
+    ,"2.로봇 기초(INT).pdf": "2. 机器人基础（INT）.pdf"
+    ,"3.로봇 구조 및 초기 배선(INT).pdf": "3. 机器人结构与初始接线（INT）.pdf"
+    ,"4. 펜던트 기본 조작(INT).pdf": "4. 示教器基本操作（INT）.pdf"
+    ,"1. InoRobotLab 소프트웨어(INT).pdf": "1. InoRobotLab 软件（INT）.pdf"
+    ,"2. 프로그램 기초 - 변수.pdf": "2. 编程基础 - 变量.pdf"
+    ,"3. 프로그램 기초 - 주요 명령어.pdf": "3. 编程基础 - 主要指令.pdf"
+    ,"4. 주요 설정.pdf": "4. 主要设置.pdf"
+    ,"6. Socket 통신.pdf": "6. Socket 通信.pdf"
+    ,"7. Fieldbus 통신.pdf": "7. Fieldbus 通信.pdf"
+    ,"API 교육 자료": "API 培训资料"
+    ,"1.로봇 소개(Display).pdf": "1. 机器人介绍（Display）.pdf"
+    ,"2.로봇 기초(Display).pdf": "2. 机器人基础（Display）.pdf"
+    ,"3.로봇 구조 및 초기 배선(Display).pdf": "3. 机器人结构与初始接线（Display）.pdf"
   },
   "patterns": []
 }

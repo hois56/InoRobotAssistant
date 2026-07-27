@@ -53,6 +53,28 @@
     "Pendant": "티칭 펜던트",
     "No": "없음",
     "Functional Safety Expansion Card": "기능 안전 확장 카드"
+    ,"Inovance Robot Manual Center": "Inovance Robot Manual Center"
+    ,"6-Axis High Protection": "6축 고보호형"
+    ,"6-Axis IP67 Option": "6축 IP67 옵션"
+    ,"6-Axis Sol/VV Option": "6축 Sol/VV 옵션"
+    ,"SCARA High Protection": "SCARA 고보호형"
+    ,"팝업이 차단되었습니다. 이 사이트의 팝업을 허용한 뒤 다시 시도해 주세요.": "팝업이 차단되었습니다. 이 사이트의 팝업을 허용한 뒤 다시 시도해 주세요."
+    ,"자료를 열 수 없습니다.": "자료를 열 수 없습니다."
+    ,"자료를 다운로드할 수 없습니다.": "자료를 다운로드할 수 없습니다."
+    ,"1.로봇 소개(INT).pdf": "1.로봇 소개(INT).pdf"
+    ,"2.로봇 기초(INT).pdf": "2.로봇 기초(INT).pdf"
+    ,"3.로봇 구조 및 초기 배선(INT).pdf": "3.로봇 구조 및 초기 배선(INT).pdf"
+    ,"4. 펜던트 기본 조작(INT).pdf": "4. 펜던트 기본 조작(INT).pdf"
+    ,"1. InoRobotLab 소프트웨어(INT).pdf": "1. InoRobotLab 소프트웨어(INT).pdf"
+    ,"2. 프로그램 기초 - 변수.pdf": "2. 프로그램 기초 - 변수.pdf"
+    ,"3. 프로그램 기초 - 주요 명령어.pdf": "3. 프로그램 기초 - 주요 명령어.pdf"
+    ,"4. 주요 설정.pdf": "4. 주요 설정.pdf"
+    ,"6. Socket 통신.pdf": "6. Socket 통신.pdf"
+    ,"7. Fieldbus 통신.pdf": "7. Fieldbus 통신.pdf"
+    ,"API 교육 자료": "API 교육 자료"
+    ,"1.로봇 소개(Display).pdf": "1.로봇 소개(Display).pdf"
+    ,"2.로봇 기초(Display).pdf": "2.로봇 기초(Display).pdf"
+    ,"3.로봇 구조 및 초기 배선(Display).pdf": "3.로봇 구조 및 초기 배선(Display).pdf"
   },
   "patterns": []
 }

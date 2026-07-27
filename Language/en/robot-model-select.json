@@ -208,6 +208,16 @@
     "상세 정보": "Details",
     "추가 선택 옵션 없음": "No additional options selected",
     "본 구성서는 선택된 옵션 기반의 가이드입니다. 제조사 사정에 따라 사양이 변경될 수 있습니다. 생성일시:": "This configuration is a guide based on the selected options. Specifications may change without notice. Generated:"
+    ,"Inovance Product Selection Tool": "Inovance Product Selection Tool",
+    "Inovance Robot Select": "Inovance Robot Select",
+    "Body: IP65, Wrist: IP67, 클린 사양 없음": "Body: IP65, Wrist: IP67, No Clean Type",
+    "IP40, 클린 사양 없음": "IP40, No Clean Type",
+    "6주": "6 weeks",
+    "7주": "7 weeks",
+    "8주": "8 weeks",
+    "10주": "10 weeks",
+    "기본 핀": "Default pins",
+    "해당 호환 모델": "Compatible model"
   },
   "patterns": [
     {
