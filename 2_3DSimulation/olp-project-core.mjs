@@ -29,6 +29,15 @@ function isTextPath(path) {
     return [...TEXT_EXTENSIONS].some((extension) => lower.endsWith(extension));
 }
 
+// InoRobot project files are consumed by Windows robot software.  Keep the
+// in-browser editor/runtime newline normalization independent from the file
+// format used when a project is written back to disk.
+export function normalizeOlpTextForWindows(text) {
+    return String(text ?? '')
+        .replace(/^\uFEFF/, '')
+        .replace(/\r?\n/g, '\r\n');
+}
+
 function parseJsonText(text, fallback = null) {
     try {
         const normalized = String(text ?? '').replace(/^\uFEFF/, '');

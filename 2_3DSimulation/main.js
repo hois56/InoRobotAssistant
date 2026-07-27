@@ -67,9 +67,10 @@ import {
 import {
     buildOlpProjectFromFiles,
     getOlpEditableFiles,
+    normalizeOlpTextForWindows,
     resolveOlpPoint,
     updateOlpFileText
-} from './olp-project-core.mjs?v=20260726-olp-point-table-1';
+} from './olp-project-core.mjs?v=20260727-olp-windows-newline-1';
 import {
     BIT_COUNT as OLP_BIT_COUNT,
     BIT_START as OLP_BIT_START,
@@ -11734,7 +11735,7 @@ async function saveOlpProjectAsZip() {
             if (archivePaths.has(archivePath)) throw new Error(`Duplicate ZIP path: ${archivePath}`);
             archivePaths.add(archivePath);
             if (record.binary && record.file) zip.file(archivePath, await record.file.arrayBuffer());
-            else zip.file(archivePath, record.text ?? '');
+            else zip.file(archivePath, normalizeOlpTextForWindows(record.text));
         }
         const blob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
         const suggestedName = `${project.name || 'InoRobotProject'}_OLP.zip`;
@@ -11772,7 +11773,9 @@ async function writeOlpFileToDirectory(directory, record) {
     for (const part of parts) target = await target.getDirectoryHandle(part, { create: true });
     const handle = await target.getFileHandle(fileName, { create: true });
     const writable = await handle.createWritable();
-    await writable.write(record.binary && record.file ? await record.file.arrayBuffer() : (record.text ?? ''));
+    await writable.write(record.binary && record.file
+        ? await record.file.arrayBuffer()
+        : normalizeOlpTextForWindows(record.text));
     await writable.close();
 }
 
