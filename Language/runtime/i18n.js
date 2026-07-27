@@ -268,6 +268,7 @@
         if (pathname.includes('/1_robotmodelselect/') || pathname.includes('/inorobotselect/')) return 'robotSelect';
         if (pathname.includes('/6_document/') || pathname.includes('/manual/')) return 'manual';
         if (pathname.includes('/5_software/') || pathname.includes('/software/')) return 'software';
+        if (pathname.includes('/privacy/')) return 'privacy';
         return 'home';
     }
 

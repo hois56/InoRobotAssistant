@@ -11,7 +11,8 @@ const localeFileDefinitions = [
     { file: 'project-generator.json', pageKeys: ['projectGenerator'] },
     { file: 'software.json', pageKeys: ['software'] },
     { file: 'document.json', pageKeys: ['manual'] },
-    { file: 'debugging-tool.json', pageKeys: ['debugging', 'zeroCalibration'] }
+    { file: 'debugging-tool.json', pageKeys: ['debugging', 'zeroCalibration'] },
+    { file: 'privacy.json', pageKeys: ['privacy'] }
 ];
 const localeRoutes = {
     ko: '/',

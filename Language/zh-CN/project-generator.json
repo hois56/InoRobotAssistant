@@ -70,7 +70,7 @@
     "도달": "已到达",
     "No": "无",
     "Get": "Get",
-    "Put": "Put",
+    "Put": "放置",
     "Process": "工艺",
     "Multi Recipe": "多配方",
     "TCP Speed Monitoring": "TCP 速度监控",
@@ -173,6 +173,35 @@
     "속도": "速度",
     "항목": "项目",
     "코드": "代码"
+    ,"InoRobot Project Generator Web - Expert Edition": "InoRobot Project Generator Web - 专业版"
+    ,"Based on R24.C4": "基于 R24.C4"
+    ,"Inovance Robot Project Generator": "Inovance 机器人项目生成器"
+    ,"No use": "不使用"
+    ,"Wait Pos": "等待位置"
+    ,"Work Pos": "工作位置"
+    ,"Work comp": "工作完成"
+    ,"yAlarm_sts OFF": "yAlarm_sts 关闭"
+    ,"yAlarm_sts ON": "yAlarm_sts 开启"
+    ,"yProg_run_sts OFF": "yProg_run_sts 关闭"
+    ,"Recipe count must be between 2 and 127.": "配方数量必须在 2 到 127 之间。"
+    ,"Process step not found.": "未找到工艺步骤。"
+    ,"Process names must be unique.": "工艺名称必须唯一。"
+    ,"Error generating zip: {message}": "生成 ZIP 时出错：{message}"
+    ,"Processes (": "工艺流程（"
+    ,"Tray": "托盘"
+    ,"Stage": "工作台"
+    ,"MCR": "MCR"
+    ,"Vision": "视觉"
+    ,"Trash": "废料"
+    ,"Check": "检查"
+    ,"Calibration": "标定"
+    ,"Peeling": "剥离"
+    ,"Vacuum": "真空"
+    ,"Gripper": "夹爪"
+    ,"PLC (IO)": "PLC (IO)"
+    ,"Vision (Socket)": "视觉（Socket）"
+    ,"Use - IO": "使用 - IO"
+    ,"Use - Socket": "使用 - Socket"
   },
   "patterns": [
     {

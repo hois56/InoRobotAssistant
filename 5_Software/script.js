@@ -117,7 +117,9 @@ function renderSoftwareList(filterType = 'all', searchTerm = '') {
             const downloadButtons = ver.downloads.map(dl => {
                 const downloadKey = ver.isLocked ? dl.assetId : dl.path;
                 const isDisabled = dl.disabled || !downloadKey;
-                const clickAttr = isDisabled ? '' : `onclick="handleDownload(${JSON.stringify(downloadKey)}, ${ver.isLocked})"`;
+                const downloadDataAttrs = isDisabled
+                    ? ''
+                    : `data-download-key="${encodeURIComponent(downloadKey)}" data-download-locked="${ver.isLocked}"`;
                 const disabledAttr = isDisabled ? 'disabled aria-disabled="true"' : '';
                 const buttonClass = isDisabled ? 'disabled-btn' : (ver.isLocked ? 'locked-btn' : 'download-btn');
                 const icon = isDisabled ? 'ban' : (ver.isLocked ? 'key' : 'download');
@@ -125,7 +127,7 @@ function renderSoftwareList(filterType = 'all', searchTerm = '') {
                 const sizeLabel = dl.size && dl.size !== '-' ? ` ${dl.size}` : '';
 
                 return `
-                    <button ${clickAttr} ${disabledAttr}
+                    <button type="button" ${downloadDataAttrs} ${disabledAttr}
                             class="px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${buttonClass}">
                         <i data-lucide="${icon}" class="w-3.5 h-3.5"></i> ${translateUiText(dl.label)}${sizeLabel}
                     </button>
@@ -156,6 +158,15 @@ function renderSoftwareList(filterType = 'all', searchTerm = '') {
                 </div>
             `;
             listContainer.appendChild(card);
+
+            card.querySelectorAll('button[data-download-key]').forEach(button => {
+                button.addEventListener('click', () => {
+                    handleDownload(
+                        decodeURIComponent(button.dataset.downloadKey),
+                        button.dataset.downloadLocked === 'true'
+                    );
+                });
+            });
         });
     });
 

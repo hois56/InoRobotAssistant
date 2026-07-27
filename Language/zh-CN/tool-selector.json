@@ -193,7 +193,13 @@
     "{format} 파일 분석 완료 · {label} {count}{note}": "{format} 文件分析完成 · {label} {count}{note}",
     "{format} 파일을 해석할 수 없습니다. {message}": "无法解析 {format} 文件。{message}",
     "{format} 파일 분석 완료": "{format} 文件分析完成",
-    "STEP 파일 내보내기 완료 · {count}개 부품 · {name}": "STEP 导出完成 · {count} 个部件 · {name}"
+    "STEP 파일 내보내기 완료 · {count}개 부품 · {name}": "STEP 导出完成 · {count} 个部件 · {name}",
+    "InoRobot Tool Select": "InoRobot 工具选择",
+    "3D marker legend": "3D 标记图例",
+    " · 대용량 최적화 {count}개 부품": " · 大文件优化：{count} 个部件",
+    "계산할 수 없습니다.": "无法计算。",
+    "내보낼 부품을 하나 이상 선택하세요.": "请至少选择一个要导出的部件。",
+    "3D 미리보기를 사용할 수 없지만 CAD 불러오기와 계산은 계속할 수 있습니다.": "3D 预览不可用，但仍可继续导入 CAD 和计算。"
   },
   "patterns": []
 }

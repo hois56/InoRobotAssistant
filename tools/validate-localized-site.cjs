@@ -13,7 +13,8 @@ const localeFileDefinitions = [
     { file: 'project-generator.json', pageKeys: ['projectGenerator'] },
     { file: 'software.json', pageKeys: ['software'] },
     { file: 'document.json', pageKeys: ['manual'] },
-    { file: 'debugging-tool.json', pageKeys: ['debugging', 'zeroCalibration'] }
+    { file: 'debugging-tool.json', pageKeys: ['debugging', 'zeroCalibration'] },
+    { file: 'privacy.json', pageKeys: ['privacy'] }
 ];
 const failures = [];
 
@@ -261,7 +262,7 @@ const jsonFileSets = localeCodes.map(code => fs.readdirSync(path.join(root, 'Lan
 assert(new Set(jsonFileSets).size === 1, 'Locale directories must contain the same JSON source files.');
 const expectedLocaleJsonFiles = localeFileDefinitions.map(definition => definition.file).sort().join('|');
 jsonFileSets.forEach((files, index) => {
-    assert(files === expectedLocaleJsonFiles, localeCodes[index] + ' must contain only the eight page-specific locale JSON files.');
+    assert(files === expectedLocaleJsonFiles, localeCodes[index] + ' must contain only the page-specific locale JSON files.');
 });
 ['ui.json', 'content-centers.json', 'coverage.json', 'model-select.json', 'project-options.json', 'project.json', 'robot-tools.json', 'history.md', 'debug-history.md'].forEach(oldFile => {
     localeCodes.forEach(code => assert(!fs.existsSync(path.join(root, 'Language', code, oldFile)), 'Obsolete locale source still exists: Language/' + code + '/' + oldFile + '.'));

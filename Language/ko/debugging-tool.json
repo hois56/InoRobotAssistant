@@ -62,6 +62,12 @@
     "현재 위치의 엔코더 값을 '티칭값' 항목에 입력합니다.": "현재 위치의 엔코더값을 티칭값에 입력합니다.",
     "'최종 결과' 항목에 계산된 값을 확인합니다.": "최종 결과에서 계산값을 확인합니다.",
     "로봇 Zero 파라미터에 계산된 값을 입력합니다.": "계산값을 로봇 Zero 파라미터에 입력합니다."
+    ,"Inovance Debugging Support Tool": "Inovance 디버깅 지원 도구"
+    ,"CAD Lightweight": "CAD 경량화"
+    ,"Zero Calibration Tool": "영점 보정 툴"
+    ,"Zero Calibration Tool | Inovance": "영점 보정 툴 | Inovance"
+    ,"Calibration Mode": "보정 모드"
+    ,"내장된 디버깅 툴 버전 기록을 읽지 못했습니다.": "내장된 디버깅 툴 버전 기록을 읽지 못했습니다."
   },
   "patterns": []
 }

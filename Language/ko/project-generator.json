@@ -70,7 +70,7 @@
     "도달": "도달",
     "No": "번호",
     "Get": "Get",
-    "Put": "Put",
+    "Put": "넣기",
     "Process": "프로세스",
     "Multi Recipe": "다중 레시피",
     "TCP Speed Monitoring": "TCP 속도 모니터링",
@@ -173,6 +173,35 @@
     "속도": "속도",
     "항목": "항목",
     "코드": "코드"
+    ,"InoRobot Project Generator Web - Expert Edition": "InoRobot 프로젝트 생성기 웹 - 전문가용"
+    ,"Based on R24.C4": "R24.C4 기반"
+    ,"Inovance Robot Project Generator": "Inovance 로봇 프로젝트 생성기"
+    ,"No use": "사용 안 함"
+    ,"Wait Pos": "대기 위치"
+    ,"Work Pos": "작업 위치"
+    ,"Work comp": "작업 완료"
+    ,"yAlarm_sts OFF": "yAlarm_sts 꺼짐"
+    ,"yAlarm_sts ON": "yAlarm_sts 켜짐"
+    ,"yProg_run_sts OFF": "yProg_run_sts 꺼짐"
+    ,"Recipe count must be between 2 and 127.": "레시피 수는 2에서 127 사이여야 합니다."
+    ,"Process step not found.": "공정 단계를 찾을 수 없습니다."
+    ,"Process names must be unique.": "공정 이름은 중복될 수 없습니다."
+    ,"Error generating zip: {message}": "ZIP 생성 오류: {message}"
+    ,"Processes (": "프로세스 ("
+    ,"Tray": "트레이"
+    ,"Stage": "스테이지"
+    ,"MCR": "MCR"
+    ,"Vision": "비전"
+    ,"Trash": "폐기"
+    ,"Check": "검사"
+    ,"Calibration": "교정"
+    ,"Peeling": "박리"
+    ,"Vacuum": "진공"
+    ,"Gripper": "그리퍼"
+    ,"PLC (IO)": "PLC (IO)"
+    ,"Vision (Socket)": "Vision (Socket)"
+    ,"Use - IO": "IO 사용"
+    ,"Use - Socket": "Socket 사용"
   },
   "patterns": [
     {
