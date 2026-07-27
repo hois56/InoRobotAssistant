@@ -8,14 +8,9 @@
  * Required bindings:
  * - DISPLAY_PASSWORD: secret text variable for locked downloads
  * - LOCKED_ASSETS: private R2 bucket containing the allowlisted release files
- * - VISITOR_KV: KV namespace for visitor totals and short-lived seen keys
  * - ALLOWED_ORIGINS: comma-separated production origins
  */
 
-const VISITOR_START_COUNT = 721;
-const VISITOR_WINDOW_SECONDS = 5 * 60;
-const VISITOR_TOTAL_KEY = 'visitor:total';
-const VISITOR_SEEN_PREFIX = 'visitor:seen:';
 const MAX_REQUEST_BYTES = 8 * 1024;
 const RATE_WINDOW_MS = 60 * 1000;
 const MAX_ATTEMPTS_PER_WINDOW = 5;
@@ -65,11 +60,6 @@ export default {
                 return new Response(null, { status: 204, headers: corsHeaders(allowedOrigin) });
             }
 
-            const url = new URL(request.url);
-            if (url.pathname === '/visit' || url.pathname === '/visits') {
-                return handleVisit(request, env, allowedOrigin);
-            }
-
             return await handleDownloadRequest(request, env, allowedOrigin, requestId);
         } catch (error) {
             console.error('download-worker-error', { requestId, name: error?.name || 'Error' });
@@ -100,46 +90,6 @@ function corsHeaders(origin) {
         'Access-Control-Max-Age': '86400',
         'Vary': 'Origin'
     } : {};
-}
-
-async function handleVisit(request, env, origin) {
-    if (request.method !== 'GET' && request.method !== 'POST') {
-        return new Response('Method Not Allowed', { status: 405, headers: corsHeaders(origin) });
-    }
-
-    const store = env.VISITOR_KV;
-    if (!store || typeof store.get !== 'function' || typeof store.put !== 'function') {
-        return json({
-            ok: false,
-            total: VISITOR_START_COUNT,
-            counted: false,
-            deduped: true,
-            storage: 'missing-or-invalid-kv-binding',
-            message: 'VISITOR_KV must be configured as a KV Namespace binding.'
-        }, 500, origin);
-    }
-
-    const currentTotal = await getCurrentTotal(store);
-    if (request.method === 'GET') {
-        return json({ ok: true, total: currentTotal, counted: false, deduped: false }, 200, origin);
-    }
-
-    const visitorHash = await getVisitorHash(request);
-    const seenKey = `${VISITOR_SEEN_PREFIX}${visitorHash}`;
-    if (await store.get(seenKey)) {
-        return json({ ok: true, total: currentTotal, counted: false, deduped: true }, 200, origin);
-    }
-
-    const nextTotal = currentTotal + 1;
-    await store.put(VISITOR_TOTAL_KEY, String(nextTotal));
-    await store.put(seenKey, String(Date.now()), { expirationTtl: VISITOR_WINDOW_SECONDS });
-    return json({ ok: true, total: nextTotal, counted: true, deduped: false }, 200, origin);
-}
-
-async function getCurrentTotal(store) {
-    const storedTotal = await store.get(VISITOR_TOTAL_KEY);
-    const parsedTotal = Number.parseInt(storedTotal || '', 10);
-    return Number.isFinite(parsedTotal) ? Math.max(VISITOR_START_COUNT, parsedTotal) : VISITOR_START_COUNT;
 }
 
 async function getVisitorHash(request) {

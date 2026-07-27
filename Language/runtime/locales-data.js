@@ -1459,10 +1459,6 @@ window.INOROBOT_LOCALES = {
         "target": "현재 버전 $1"
       },
       {
-        "source": "^visits ([0-9,]+)$",
-        "target": "방문 $1"
-      },
-      {
         "source": "^\\[(.+)\\] 제품 상세 및 구성$",
         "target": "[$1] 제품 상세 및 구성"
       },
@@ -1532,10 +1528,6 @@ window.INOROBOT_LOCALES = {
           {
             "source": "^Current Ver (.+)$",
             "target": "현재 버전 $1"
-          },
-          {
-            "source": "^visits ([0-9,]+)$",
-            "target": "방문 $1"
           }
         ]
       },
@@ -4599,10 +4591,6 @@ window.INOROBOT_LOCALES = {
         "target": "Current Version $1"
       },
       {
-        "source": "^visits ([0-9,]+)$",
-        "target": "$1 visits"
-      },
-      {
         "source": "^\\[(.+)\\] 제품 상세 및 구성$",
         "target": "[$1] Product Details and Configuration"
       },
@@ -4672,10 +4660,6 @@ window.INOROBOT_LOCALES = {
           {
             "source": "^Current Ver (.+)$",
             "target": "Current Version $1"
-          },
-          {
-            "source": "^visits ([0-9,]+)$",
-            "target": "$1 visits"
           }
         ]
       },
@@ -7739,10 +7723,6 @@ window.INOROBOT_LOCALES = {
         "target": "当前版本 $1"
       },
       {
-        "source": "^visits ([0-9,]+)$",
-        "target": "访问量 $1"
-      },
-      {
         "source": "^\\[(.+)\\] 제품 상세 및 구성$",
         "target": "[$1] 产品详情与配置"
       },
@@ -7812,10 +7792,6 @@ window.INOROBOT_LOCALES = {
           {
             "source": "^Current Ver (.+)$",
             "target": "当前版本 $1"
-          },
-          {
-            "source": "^visits ([0-9,]+)$",
-            "target": "访问量 $1"
           }
         ]
       },
@@ -10879,10 +10855,6 @@ window.INOROBOT_LOCALES = {
         "target": "Phiên bản hiện tại $1"
       },
       {
-        "source": "^visits ([0-9,]+)$",
-        "target": "$1 lượt truy cập"
-      },
-      {
         "source": "^\\[(.+)\\] 제품 상세 및 구성$",
         "target": "[$1] Chi tiết và cấu hình sản phẩm"
       },
@@ -10952,10 +10924,6 @@ window.INOROBOT_LOCALES = {
           {
             "source": "^Current Ver (.+)$",
             "target": "Phiên bản hiện tại $1"
-          },
-          {
-            "source": "^visits ([0-9,]+)$",
-            "target": "$1 lượt truy cập"
           }
         ]
       },

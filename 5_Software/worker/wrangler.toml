@@ -11,14 +11,3 @@ ALLOWED_ORIGINS = "https://inovancerobot.com,https://www.inovancerobot.com"
 [[r2_buckets]]
 binding = "LOCKED_ASSETS"
 bucket_name = "inorobot-locked-assets"
-
-# Visitor counter storage:
-# Create a Cloudflare KV namespace, then bind it as VISITOR_KV before deploy.
-# Example:
-#   wrangler kv namespace create VISITOR_KV
-#   wrangler kv key put "visitor:total" "721" --binding VISITOR_KV
-#
-# Add the generated namespace id here if deploying with Wrangler:
-# [[kv_namespaces]]
-# binding = "VISITOR_KV"
-# id = "replace-with-cloudflare-kv-namespace-id"
