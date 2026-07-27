@@ -507,6 +507,12 @@
       "title": "Debugging Tool",
       "versions": [
         {
+          "title": "Ver 26.07.27",
+          "items": [
+            "**[Sửa]** Khắc phục sự cố EtherNet/IP đã thực sự kết nối nhưng phần mềm robot vẫn hiển thị trạng thái chưa kết nối."
+          ]
+        },
+        {
           "title": "Ver 26.07.26",
           "items": [
             "**[Thay đổi]** Đã cập nhật Communication Tester lên `V2.8`."
@@ -589,7 +595,13 @@
       "title": "communicationTester",
       "versions": [
         {
-        "title": "Ver 2.8 (2026.07.26)",
+          "title": "Ver 2.9 (2026.07.27)",
+          "items": [
+            "**[Sửa]** Khắc phục sự cố EtherNet/IP đã thực sự kết nối nhưng phần mềm robot vẫn hiển thị trạng thái chưa kết nối."
+          ]
+        },
+        {
+          "title": "Ver 2.8 (2026.07.26)",
           "items": [
             "**[Thêm]** Đã thêm tính năng Virtual Bus. Virtual Bus có thể được sử dụng trong chức năng OLP của 3D Simulation."
           ]

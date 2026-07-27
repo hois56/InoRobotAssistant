@@ -507,6 +507,12 @@
       "title": "Debugging Tool",
       "versions": [
         {
+          "title": "Ver 26.07.27",
+          "items": [
+            "**[Fixed]** Fixed an issue where EtherNet/IP was connected but the robot software remained disconnected."
+          ]
+        },
+        {
           "title": "Ver 26.07.26",
           "items": [
             "**[Changed]** Updated Communication Tester to `V2.8`."
@@ -589,7 +595,13 @@
       "title": "communicationTester",
       "versions": [
         {
-        "title": "Ver 2.8 (2026.07.26)",
+          "title": "Ver 2.9 (2026.07.27)",
+          "items": [
+            "**[Fixed]** Fixed an issue where EtherNet/IP was connected but the robot software remained disconnected."
+          ]
+        },
+        {
+          "title": "Ver 2.8 (2026.07.26)",
           "items": [
             "**[Added]** Added the Virtual Bus feature. Virtual Bus can be used with OLP in 3D Simulation."
           ]

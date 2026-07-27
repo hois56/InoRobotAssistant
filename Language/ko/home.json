@@ -507,6 +507,12 @@
       "title": "Debugging Tool",
       "versions": [
         {
+          "title": "Ver 26.07.27",
+          "items": [
+            "`[수정]` EtherNet/IP가 실제로 연결되었으나 로봇 소프트웨어에서 연결되지 않은 상태로 유지되던 문제를 해결했습니다."
+          ]
+        },
+        {
           "title": "Ver 26.07.26",
           "items": [
             "`[변경]` Communication Tester를 `V2.8`로 업데이트했습니다."
@@ -589,7 +595,13 @@
       "title": "communicationTester",
       "versions": [
         {
-        "title": "Ver 2.8 (2026.07.26)",
+          "title": "Ver 2.9 (2026.07.27)",
+          "items": [
+            "`[수정]` EtherNet/IP가 실제로 연결되었으나 로봇 소프트웨어에서 연결되지 않은 상태로 유지되던 문제를 해결했습니다."
+          ]
+        },
+        {
+          "title": "Ver 2.8 (2026.07.26)",
           "items": [
             "`[추가]` 가상 버스 기능을 추가하였습니다. 가상 버스는 3D 시뮬레이션에서 OLP 기능에서 사용할 수 있습니다."
           ]

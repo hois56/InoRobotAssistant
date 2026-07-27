@@ -507,6 +507,12 @@
       "title": "Debugging Tool",
       "versions": [
         {
+          "title": "Ver 26.07.27",
+          "items": [
+            "**[修复]** 修复了 EtherNet/IP 实际已连接，但机器人软件仍保持未连接状态的问题。"
+          ]
+        },
+        {
           "title": "Ver 26.07.26",
           "items": [
             "**[变更]** Communication Tester 已更新至 `V2.8`。"
@@ -589,7 +595,13 @@
       "title": "communicationTester",
       "versions": [
         {
-        "title": "Ver 2.8 (2026.07.26)",
+          "title": "Ver 2.9 (2026.07.27)",
+          "items": [
+            "**[修复]** 修复了 EtherNet/IP 实际已连接，但机器人软件仍保持未连接状态的问题。"
+          ]
+        },
+        {
+          "title": "Ver 2.8 (2026.07.26)",
           "items": [
             "**[新增]** 新增 Virtual Bus 功能。Virtual Bus 可在 3D Simulation 的 OLP 功能中使用。"
           ]
