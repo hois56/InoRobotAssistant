@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.WebSockets;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Hosting;
@@ -15,8 +16,12 @@ internal static class Program
     private const int MaxMessageBytes = 64 * 1024;
     private const int MaxMessagesPerSecond = 100;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-    private static readonly string PairingToken = Environment.GetEnvironmentVariable("INOROBOT_BRIDGE_TOKEN")?.Trim() ?? string.Empty;
+    private static readonly string PairingToken = GetPairingToken();
     private static readonly HashSet<string> AllowedOrigins = ParseOrigins();
+    private static readonly bool AllowRealController = !string.Equals(
+        Environment.GetEnvironmentVariable("INOROBOT_ALLOW_REAL_CONTROLLER")?.Trim(),
+        "false",
+        StringComparison.OrdinalIgnoreCase);
     private static int activeClient;
 
     [STAThread]
@@ -103,10 +108,22 @@ internal static class Program
 
     private static HashSet<string> ParseOrigins()
     {
-        return (Environment.GetEnvironmentVariable("INOROBOT_BRIDGE_ORIGINS") ?? string.Empty)
+        string configuredOrigins = Environment.GetEnvironmentVariable("INOROBOT_BRIDGE_ORIGINS") ?? string.Empty;
+        string originList = string.IsNullOrWhiteSpace(configuredOrigins)
+            ? "https://inovancerobot.com,https://www.inovancerobot.com,http://127.0.0.1:8765,http://localhost:8765,http://127.0.0.1:5173,http://localhost:5173"
+            : configuredOrigins;
+        return originList
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(origin => origin.TrimEnd('/'))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static string GetPairingToken()
+    {
+        string configuredToken = Environment.GetEnvironmentVariable("INOROBOT_BRIDGE_TOKEN")?.Trim() ?? string.Empty;
+        return string.IsNullOrWhiteSpace(configuredToken)
+            ? Convert.ToHexString(RandomNumberGenerator.GetBytes(32))
+            : configuredToken;
     }
 
     private static bool IsAllowedOrigin(string? origin) =>
@@ -226,21 +243,31 @@ internal static class Program
                                 await SendAsync(new { type = "connectResult", success = false, message = "A valid controller IP address is required." });
                                 continue;
                             }
-                            bool requestedRealController = root.TryGetProperty("controllerKind", out JsonElement kindElement)
-                                && string.Equals(kindElement.GetString(), "real", StringComparison.OrdinalIgnoreCase);
-                            bool realControllerAllowed = string.Equals(
-                                Environment.GetEnvironmentVariable("INOROBOT_ALLOW_REAL_CONTROLLER"),
-                                "true",
-                                StringComparison.OrdinalIgnoreCase);
-                            if (!requestedRealController || !realControllerAllowed)
+                            string controllerKind = root.TryGetProperty("controllerKind", out JsonElement kindElement)
+                                ? kindElement.GetString()?.Trim().ToLowerInvariant() ?? "virtual"
+                                : "virtual";
+                            bool requestedRealController = controllerKind == "real";
+                            if (controllerKind is not ("virtual" or "real"))
+                            {
+                                await SendAsync(new
+                                {
+                                    type = "connectResult",
+                                    success = false,
+                                    message = "Controller kind must be virtual or real."
+                                });
+                                continue;
+                            }
+                            if (requestedRealController && !AllowRealController)
                             {
                                 robot.Disconnect();
                                 robotConnectedByThisSession = false;
                                 realControllerByThisSession = false;
-                                string policyMessage = !requestedRealController
-                                    ? "The bridge accepts real controller connections only."
-                                    : "Real controller access is disabled by local policy.";
-                                await SendAsync(new { type = "connectResult", success = false, message = policyMessage });
+                                await SendAsync(new
+                                {
+                                    type = "connectResult",
+                                    success = false,
+                                    message = "Real controller access is disabled by local policy."
+                                });
                                 continue;
                             }
                             (bool success, string message) = robot.Connect(ip, ControllerPort);

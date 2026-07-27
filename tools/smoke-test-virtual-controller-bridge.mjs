@@ -14,7 +14,12 @@ const result = await new Promise((resolve, reject) => {
     socket.addEventListener('message', (event) => {
         const message = JSON.parse(String(event.data));
         if (message.type === 'bridgeReady') {
-            socket.send(JSON.stringify({ type: 'connect', ip: '127.0.0.1', port: CONTROLLER_PORT }));
+            socket.send(JSON.stringify({
+                type: 'connect',
+                ip: '127.0.0.1',
+                port: CONTROLLER_PORT,
+                controllerKind: 'virtual'
+            }));
         } else if (message.type === 'connectResult') {
             if (!message.success) {
                 clearTimeout(timeout);
