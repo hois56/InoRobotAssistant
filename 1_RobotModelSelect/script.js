@@ -2123,7 +2123,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Pendant check
-            const isPendant = document.querySelector('input[name="pendantConfig"]:checked')?.value !== 'none';
+            const pendantConfig = document.querySelector('input[name="pendantConfig"]:checked')?.value;
+            const isPendant = pendantConfig && pendantConfig !== 'none';
             
             // Build all potential file objects
             const robotFileTasks = [
@@ -2136,10 +2137,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 { path: `Robot_CAD/Controller/${ctrl}/${ctrl}.stp`, name: `${ctrl}.stp` }
             ];
 
-            const tpFiles = isPendant ? [
-                { path: `Robot_CAD/IR-TP-200/IR-TP-200_2D-INT.dwg`, name: `IR-TP-200_2D.dwg` },
-                { path: `Robot_CAD/IR-TP-200/IR-TP-200_3D-INT.stp`, name: `IR-TP-200_3D.stp` }
-            ] : [];
+            const tpFiles = isPendant ? (() => {
+                const pendantCadName = pendantConfig === 'with-cover'
+                    ? 'IR-TP200-EMO-INT'
+                    : 'IR-TP-200';
+                const pendantCadFiles = pendantConfig === 'with-cover'
+                    ? [`${pendantCadName}.dwg`, `${pendantCadName}.stp`]
+                    : [`${pendantCadName}_2D-INT.dwg`, `${pendantCadName}_3D-INT.stp`];
+
+                return pendantCadFiles.map(fileName => ({
+                    path: `Robot_CAD/IR-TP-200/${fileName}`,
+                    name: fileName
+                }));
+            })() : [];
 
             // Helper to fetch single file with fallback (for -INT suffix)
             async function fetchRobotFile(task) {

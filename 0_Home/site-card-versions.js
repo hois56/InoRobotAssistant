@@ -1,6 +1,6 @@
 // Update main site card versions here only.
 window.SITE_CARD_VERSIONS = {
-    robotSelect: '26.07.26',
+    robotSelect: '26.07.28',
     robot3dViewer: '26.07.26',
     toolSelector: '26.07.26',
     projectGenerator: '26.07.26',
