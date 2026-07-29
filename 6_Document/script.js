@@ -430,6 +430,7 @@ const manualData = [
         lang: "KR",
         isLocked: true,
         assetId: "document.edu.display.1",
+        path: "교육 자료/입문과정/Display/1.로봇 소개(Display).pdf",
         description: "Education Item"
     },
     {
@@ -441,6 +442,7 @@ const manualData = [
         lang: "KR",
         isLocked: true,
         assetId: "document.edu.display.2",
+        path: "교육 자료/입문과정/Display/2.로봇 기초(Display).pdf",
         description: "Education Item"
     },
     {
@@ -452,6 +454,7 @@ const manualData = [
         lang: "KR",
         isLocked: true,
         assetId: "document.edu.display.3",
+        path: "교육 자료/입문과정/Display/3.로봇 구조 및 초기 배선(Display).pdf",
         description: "Education Item"
     }
 ];
@@ -869,7 +872,13 @@ async function handleView(id) {
             const res = await fetch(WORKER_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password, assetId: man.assetId, mode: 'view' })
+                body: JSON.stringify({
+                    password,
+                    assetId: man.assetId,
+                    path: man.path,
+                    folder: '6_Document',
+                    mode: 'view'
+                })
             });
 
             const contentType = res.headers.get('Content-Type') || '';
@@ -911,7 +920,13 @@ async function handleDownload(id) {
             const res = await fetch(WORKER_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password, assetId: man.assetId, mode: 'download' })
+                body: JSON.stringify({
+                    password,
+                    assetId: man.assetId,
+                    path: man.path,
+                    folder: '6_Document',
+                    mode: 'download'
+                })
             });
             if (!res.ok) {
                 alert(translateUiText("자료를 다운로드할 수 없습니다."));
