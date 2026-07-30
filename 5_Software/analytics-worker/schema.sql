@@ -39,3 +39,8 @@ CREATE TABLE IF NOT EXISTS analytics_raw_parts (
 
 CREATE INDEX IF NOT EXISTS analytics_raw_parts_host_date_idx
     ON analytics_raw_parts (host, date, part_no);
+
+CREATE TABLE IF NOT EXISTS analytics_sync_state (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
