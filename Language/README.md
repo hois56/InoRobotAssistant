@@ -13,7 +13,7 @@
 
 | 사이트 | 수정할 파일 | 포함 내용 |
 | --- | --- | --- |
-| Home (메인 사이트) | `home.json` | 메인 화면, 공통 언어 UI, 모든 사이트의 버전 기록, Debugging Tool 상세 버전 기록 |
+| Home (메인 사이트) | `home.json` | 메인 화면, 공통 언어 UI |
 | Robot Model Select | `robot-model-select.json` | 필터, 상세 사양, 옵션, 툴팁, PDF 문구 |
 | 3D Simulation | `robot-3d-viewer.json` | 시뮬레이션 UI, 모델 추가 모드, 툴팁 |
 | Tool Selector | `tool-selector.json` | 입력 항목, 계산 결과, 툴팁 |
@@ -30,7 +30,7 @@
 2. JSON의 오른쪽 값만 번역합니다. 왼쪽 키는 바꾸지 않습니다.
 3. `{count}`, `{model}`, `{version}` 같은 변수는 번역문에도 그대로 유지합니다.
 4. 모델명, 주문 코드, 프로토콜명, 파일명, 확장자와 로봇 코드는 번역하지 않습니다.
-5. 버전 기록은 해당 언어의 `home.json` 아래 `versionHistory`와 `debugVersionHistory`에서 수정합니다.
+5. 버전 기록은 `0_Home/version-history.json`에서 수정합니다. 언어별 번역이 아직 없거나 항목 수가 맞지 않으면 한국어 원문이 자동으로 표시됩니다.
 6. 모든 JSON 파일은 UTF-8과 올바른 JSON 형식을 유지합니다.
 
 ## 생성 및 검사
@@ -42,11 +42,16 @@ node tools\build-localized-site.cjs
 node tools\validate-localized-site.cjs
 ```
 
-첫 번째 명령은 브라우저용 번역 데이터, 언어별 메인 페이지와 사이트맵을 다시 만듭니다. 두 번째 명령은 네 언어의 파일 구조, 키, 변수, 페이지별 번역 범위와 버전 기록을 검사합니다.
+첫 번째 명령은 버전 기록 파생 파일, 브라우저용 번역 데이터, 언어별 메인 페이지와 사이트맵을 다시 만듭니다. 두 번째 명령은 네 언어의 파일 구조, 키, 변수, 페이지별 번역 범위와 버전 기록을 검사합니다.
+
+새 버전 기록을 추가할 때는 `0_Home/version-history.json`만 수정하고, `UPDATE_HISTORY.md`, `site-card-versions.js`, `site-card-history-data.js`, `Language/runtime/locales-data.js`, 언어별 홈페이지는 직접 수정하지 않습니다.
 
 다음 파일은 자동 생성되므로 직접 수정하지 않습니다.
 
 - `Language/runtime/locales-data.js`
+- `0_Home/UPDATE_HISTORY.md`
+- `0_Home/site-card-versions.js`
+- `0_Home/site-card-history-data.js`
 - `0_Home/ko/index.html`
 - `0_Home/kr/index.html`
 - `0_Home/en/index.html`

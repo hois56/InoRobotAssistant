@@ -435,6 +435,8 @@
   "IN이 ON이면 해당 영역은 비활성화됩니다. OUT은 영역 밖에서 ON, 영역 안에서 OFF입니다.": "When IN is ON, the zone is disabled. OUT is ON outside the zone and OFF inside.",
   "STEP/STP 가져오기에만 적용됩니다.": "Applies only to STEP/STP imports.",
   "STEP/STP의 메시 정밀도와 처리 속도를 조절합니다.": "Adjusts STEP/STP mesh precision and processing speed.",
+  "TCP 감지 범위": "TCP Detection Range",
+  "도구에 부착된 감지 체적을 설정합니다.": "Set the detection volume attached to the Tool.",
   "Test TCP 1 설정": "Test TCP 1 setup",
   "Test TCP 1 값을 적용했습니다.": "Test TCP 1 values applied.",
   "Test 모델 적용 오류": "Test model apply error",

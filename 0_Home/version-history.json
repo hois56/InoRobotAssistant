@@ -1,0 +1,3005 @@
+{
+  "schemaVersion": 1,
+  "canonicalLocale": "ko",
+  "cards": {
+    "robotSelect": {
+      "section": "Robot Model Select"
+    },
+    "robot3dViewer": {
+      "section": "3D Simulation"
+    },
+    "toolSelector": {
+      "section": "Robot Tool Selector"
+    },
+    "projectGenerator": {
+      "section": "Project Generator"
+    },
+    "software": {
+      "section": "Software"
+    },
+    "manual": {
+      "section": "Document"
+    },
+    "debuggingTool": {
+      "section": "Debugging Tool"
+    }
+  },
+  "locales": {
+    "ko": {
+      "versionHistory": {
+        "title": "InoRobot Assistant 업데이트 기록",
+        "intro": "메인 홈페이지에서 제공하는 각 카드의 기능 추가, 표시 변경, 자료 업데이트 및 오류 수정 내역입니다.\n\n> 업데이트 기록은 사용자 화면과 다운로드 결과에서 확인할 수 있는 변경 사항을 기준으로 작성되었습니다.",
+        "sections": [
+          {
+            "title": "Robot Model Select",
+            "versions": [
+              {
+                "title": "Ver 26.07.28",
+                "items": [
+                  "`[추가]` 펜던트 비상정지 보호커버형을 선택시 다운로드되는 전용 2D,3D CAD 파일을 추가했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.26",
+                "items": [
+                  "`[개선]` CAD 다운로드 버튼이 즉시 활성화되도록 개선했습니다.",
+                  "`[변경]` CAD 파일이 없는 모델은 `CAD 파일 없음`으로 즉시 표시하도록 변경했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.25",
+                "items": [
+                  "`[추가]` GL20 시리즈 6개 모델을 컨트롤러 확장 카드에서 분리하여 리모트 커플러 옵션으로 추가했습니다.",
+                  "`[변경]` 케이블 핀 수 표시와 옵션 구성 내역의 다국어 표시를 정리하고, 구매 코드가 새 그룹에 표시되도록 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.20",
+                "items": [
+                  "`[변경]` 모델 선정 화면에 호환되는 컨트롤러 형번을 추가했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "`[추가]` 한국어·영어·중국어·베트남어를 지원하며, 일부 한국어 버전에서 영어로 표시되던 항목을 모두 한국어로 번역하였습니다.",
+                  "`[변경]` 버전 표기법을 날짜만 기록하는 것으로 변경하였습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.06.19.01",
+                "items": [
+                  "`[신규]` 비상정지 보호커버가 장착된 IR-TP200 티치펜던트를 추가했습니다.",
+                  "`[신규]` 보호커버형 펜던트 구매 코드를 추가했습니다: 5m `01640069`, 10m `01640072`, 15m `01640073`.",
+                  "`[변경]` 펜던트 선택 방식을 `미선택 / 보호커버 없음 / 보호커버 있음`으로 개편했습니다.",
+                  "`[변경]` 선택한 펜던트의 보호커버 유무·길이·구매 코드가 결과와 PDF에 표시됩니다."
+                ]
+              },
+              {
+                "title": "Ver 26.06.15.01",
+                "items": [
+                  "`[추가]` IR-S7-60Z20S-INT 5m 케이블 구매 코드 `01741079*M00018`을 추가했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.06.02.01",
+                "items": [
+                  "`[변경]` KCs 인증이 없는 SCARA 모델의 예상 납기를 10주로 표시하도록 변경했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.06.01.02",
+                "items": [
+                  "`[변경]` 모델 코드를 `IR-R15H-145S-INT → IR-R15H-145S-K-INT`로 수정했습니다.",
+                  "`[변경]` 모델 코드를 `IR-R20H-120S-INT → IR-R20H-120S-K-INT`로 수정했습니다.",
+                  "`[추가]` IR-R15H IP67형 구매 코드 `01741446`을 추가했습니다.",
+                  "`[추가]` IR-R20H IP67형 구매 코드 `01741597`을 추가했습니다.",
+                  "`[추가]` IR-S25-100Z42S-INT 3m 케이블 구매 코드 `01741436*M00002`를 추가했습니다.",
+                  "`[추가]` IR-S60-120Z40S-INT 구매 코드를 추가했습니다: 5m `01741367*M00002`, 15m `01741367*M00003`.",
+                  "`[수정]` R15H·R20H 모델 코드 변경 후 기존 CAD 파일을 찾지 못하던 문제를 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.06.01.01",
+                "items": [
+                  "`[추가]` IR-R10-140S-INT 3m 케이블 구매 코드 `01741086*M00008`을 추가했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.05.29.01",
+                "items": [
+                  "`[신규]` 6축 로봇에 표준형·클린형·IP67형 바디 옵션을 추가했습니다.",
+                  "`[변경]` R10-140·R16·R25는 고정 사양 `Body IP65 / Wrist IP67`만 표시하도록 변경했습니다.",
+                  "`[변경]` R15H·R20H 클린형은 `ISO Class 4`, 나머지 6축 클린형은 `ISO Class 3`으로 표시합니다.",
+                  "`[변경]` 바디 옵션 선택 시 모델명의 `S/C/P` 코드와 PDF 파일명이 함께 변경됩니다.",
+                  "`[수정]` R16·R25 등 `_CN` 또는 `_3D_CN` 파일명을 사용하는 모델의 CAD 다운로드 오류를 수정했습니다.",
+                  "`[수정]` 축 속도와 가동 범위에서 `°`, `°/s`, `mm`, `mm/s` 단위가 누락되던 문제를 수정했습니다.",
+                  "`[수정]` 상세 정보와 PDF에서 중량 `kg`, 반복정밀도 `mm` 단위가 누락되던 문제를 수정했습니다.",
+                  "`[수정]` IR-S35-80Z42S-INT에 잘못 표시되던 KC·KCs 인증을 제거했습니다.",
+                  "`[정리]` 미출시 IR-CS 모델을 필터와 검색 결과에서 제외했습니다.",
+                  "`[정리]` R10-140·R16·R25에서 사용할 수 없는 Handheld Motor Brake Release Box 옵션을 숨겼습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.05.22.01",
+                "items": [
+                  "`[변경]` IR-R4H·R7H-70·R7H-90·R10H·R15H·R20H의 Clean Type을 `Yes → No`로 수정했습니다.",
+                  "`[변경]` 해당 6축 모델의 클린 사양을 기본 사양이 아닌 선택 옵션으로 표시합니다.",
+                  "`[변경]` SCARA 클린형 모델의 예상 납기를 6개월로 변경했습니다.",
+                  "`[수정]` 모델 코드와 CAD 폴더명이 다른 R16·R25 모델에서 CAD 버튼이 비활성화되던 문제를 수정했습니다.",
+                  "`[변경]` CAD 버튼 문구를 `Checking / CAD Download / CAD Not Ready / Preparing`으로 통일했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.04.17.01",
+                "items": [
+                  "`[수정]` IR-S25-120 표준형과 클린형 데이터가 서로 바뀌어 있던 문제를 수정했습니다.",
+                  "`[수정]` IR-S35-100·120 표준형과 클린형의 모델명·암 길이·Z축 길이·중량·사이클타임·인증 정보 연결 오류를 수정했습니다.",
+                  "`[추가]` IR-S25-120Z42S-INT와 IR-S35-120Z42S-INT의 2D DWG·3D STP·FBX 파일을 추가했습니다.",
+                  "`[수정]` R15H·R20H의 IP 등급이 PDF에서 잘못 표시되던 문제를 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.04.12.01",
+                "items": [
+                  "`[신규]` 모델 상세 정보에 권장 차단기 용량을 추가했습니다.",
+                  "`[변경]` R4·R7H 10A, R10·R11 15A, R10-140 20A, R16·R25 30A, S25 15A, S35·S60 20A로 표시합니다."
+                ]
+              },
+              {
+                "title": "Ver 26.03.31.02",
+                "items": [
+                  "`[변경]` 펜던트·Arm I/O·Body I/O·통신 확장 옵션 구매 코드를 주황색 배지로 표시합니다.",
+                  "`[변경]` IR-TP200 연장 케이블 이름에 5m·15m·25m 길이를 직접 표시합니다."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "3D Simulation",
+            "versions": [
+              {
+                "title": "Ver 26.07.26",
+                "items": [
+                  "`[추가]` 프로그램 패널에 OLP (Offline Programming) 기능을 추가했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.25",
+                "items": [
+                  "`[개선]` 대용량 STL 모델은 시각용 원본 메시와 별도의 충돌 프록시를 사용해 충돌 검사 성능과 표시 품질을 함께 개선했습니다.",
+                  "`[수정]` 가상 컨트롤러가 연결되지 않던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.24",
+                "items": [
+                  "`[추가]` 로봇 링크·Tool·설비 모델 간 실제 형상 기준 충돌을 감지하고, 충돌 모델을 빨간색으로 표시하는 기능을 추가했습니다.",
+                  "`[추가]` 원하는 위치에 가상 영역을 설정하여 사용할 수 있는 간섭 영역 설정 기능을 추가했습니다.",
+                  "`[수정]` SCARA J3의 컨트롤러 각도 범위를 모델별로 적용해, 시뮬레이터의 직선축(mm)과 컨트롤러 표시값(°)이 일치하도록 수정했습니다.",
+                  "`[추가]` 저장 설정·배치 모델들을 일괄 초기화하는 기능을 추가했습니다.",
+                  "`[추가]` 실제 컨트롤러 연결 기능을 추가했습니다.",
+                  "`[추가]` 저장한 카메라 뷰를 별도 창에서 열고 여러 뷰를 분할 화면으로 동시에 확인할 수 있는 다중 뷰 기능을 추가했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.21",
+                "items": [
+                  "`[추가]` 대용량 3D 모델 가져오기 품질을 자동·경량·표준·고품질로 선택할 수 있습니다.",
+                  "`[변경]` STL·FBX·STEP 등 대용량 3D 모델을 백그라운드·청크 방식으로 처리하고, STEP 부품 구조와 색상을 유지하도록 변경했습니다.",
+                  "`[수정]` 선택한 면·다중 점 중심점 스냅과 후보 표시가 모델 탐색 중에도 안정적으로 동작하도록 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "`[개편]` 기존 3D 뷰어에서 더 나아가 로봇을 시뮬레이션할 수 있는 3D Simulation으로 전면 개편했습니다.",
+                  "`[지원]` 모든 모델의 로봇을 이동할 수 있으며 프로그래밍을 통해 로봇의 이동 경로를 설정할 수 있습니다.",
+                  "`[지원]` 3D 모델링 가져오기를 지원하며, 가져온 파일을 로봇 Tool에 부착할 수 있습니다.",
+                  "`[지원]` InoRobotLab의 가상컨트롤러와 연결하여 사용할 수 있습니다. (전용 브리지 or 트레이스 툴 사용 필요)",
+                  "`[추가]` 한국어·영어·중국어·베트남어를 지원하며, 일부 한국어 버전에서 영어로 표시되던 항목을 모두 한국어로 번역하였습니다.",
+                  "`[변경]` 버전 표기법을 날짜만 기록하는 것으로 변경하였습니다."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Robot Tool Selector",
+            "versions": [
+              {
+                "title": "Ver 26.07.26",
+                "items": [
+                  "`[개선]` 모바일 웹 UI 레이아웃을 개선했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.21",
+                "items": [
+                  "`[추가]` 대용량 STEP 파일의 가져오기 품질을 기본·초경량으로 선택할 수 있습니다.",
+                  "`[수정]` 회전 핸들의 180° 경계 연속성과 면·원·호 스냅 계산을 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "`[추가]` STEP/STP CAD 파일의 질량 특성을 계산하는 Mode D를 추가했습니다.",
+                  "`[추가]` 부품별 포함 여부·재질·밀도를 설정하고 총 질량, CoG, Tool 원점 및 부하중심 기준 Ixx·Iyy·Izz를 계산합니다.",
+                  "`[추가]` Tool 원점과 TCP를 꼭짓점·끝점·중심점·가상 교점 스냅으로 지정할 수 있습니다.",
+                  "`[추가]` 좌표계 방향을 3D 회전 핸들과 Rx·Ry·Rz 수치로 설정할 수 있습니다.",
+                  "`[추가]` TCP와 CoG를 서로 다른 색상·형상으로 표시하고 3D 뷰어에 범례를 제공합니다.",
+                  "`[추가]` 3D 뷰어 그리드 ON/OFF 버튼을 제공하며 기본값은 OFF입니다.",
+                  "`[추가]` 지정한 Tool 원점과 좌표계 방향을 적용한 STEP 파일을 내보낼 수 있습니다.",
+                  "`[추가]` 원/호 중심점 2~4개를 선택해 평균 중심을 계산하는 다중 원 중심점 스냅을 추가했습니다.",
+                  "`[변경]` 재질·밀도 설정과 좌표계 적용 STEP 내보내기에서 원본 CAD 색상을 그대로 유지합니다.",
+                  "`[추가]` 한국어·영어·중국어·베트남어를 지원하며, 일부 한국어 버전에서 영어로 표시되던 항목을 모두 한국어로 번역하였습니다.",
+                  "`[변경]` 버전 표기법을 날짜만 기록하는 것으로 변경하였습니다."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Project Generator",
+            "versions": [
+              {
+                "title": "Ver 26.07.26",
+                "items": [
+                  "`[수정]` 한국어 화면에서 `No`는 `번호`, `Process`는 `프로세스`로 표시하고, 공정 방식 명칭 `Get`·`Put`은 번역하지 않도록 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "`[추가]` 한국어·영어·중국어·베트남어를 지원하며, 일부 한국어 버전에서 영어로 표시되던 항목을 모두 한국어로 번역하였습니다.",
+                  "`[변경]` 버전 표기법을 날짜만 기록하는 것으로 변경하였습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.12.01",
+                "items": [
+                  "`[수정]` Teach mode에서 Save 이후 반복문을 종료하고, Teach mode를 종료하도록 Save 쪽에 Break; 를 추가했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.06.19.01",
+                "items": [
+                  "`[변경]` Teaching Offset X·Y·Z·A·B·C 항목에 데이터 형식 `2 Word /10000`을 표시합니다."
+                ]
+              },
+              {
+                "title": "Ver 26.06.15.01",
+                "items": [
+                  "`[변경]` Teaching Mode·Wait Position·Process Busy 옵션을 기본 활성화 상태로 변경했습니다.",
+                  "`[신규]` Teaching Mode에 다음 위치 이동·이전 위치 이동·Offset 위치 이동·현재 위치 저장 기능을 추가했습니다.",
+                  "`[변경]` Wait Position과 Work Position의 시작·완료·Busy 상태를 각각 구분하도록 변경했습니다.",
+                  "`[수정]` Vision Offset과 Process Offset을 함께 사용할 때 적용 순서가 뒤바뀌던 문제를 수정했습니다.",
+                  "`[수정]` Vision Offset과 Process Offset이 중복 적용되던 문제를 수정했습니다.",
+                  "`[수정]` 다른 공정에서 Wait 또는 Work 위치로 복귀할 때 잘못된 경로로 이동하던 문제를 수정했습니다.",
+                  "`[수정]` SCARA 프로젝트에 존재하지 않는 J5·J6 토크 항목이 생성되던 문제를 수정했습니다.",
+                  "`[업데이트]` 프로젝트에 포함되는 IO Map을 `InoRobot_IO_Map_0614.xlsx`로 교체했습니다.",
+                  "`[업데이트]` Remote IO Mapping을 최신 Process Wait·Work·Busy·Teaching 구성으로 변경했습니다.",
+                  "`[수정]` Multi Recipe 설명에 잘못 표시된 Point File 전환 주소를 수정했습니다.",
+                  "`[변경]` 옵션 도움말과 타이밍 차트의 신호명을 실제 생성 결과와 동일하게 변경했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.05.20.01",
+                "items": [
+                  "`[수정]` Teaching Mode를 선택하지 않았는데도 일부 Teaching 조건이 생성되던 문제를 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.04.10.01",
+                "items": [
+                  "`[수정]` 특정 옵션 조합에서 불필요한 조건이 생성되어 공정이 시작되지 않던 문제를 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.04.07",
+                "items": [
+                  "`[신규]` 프로젝트 옵션별 상세 설명 버튼과 툴팁을 추가했습니다.",
+                  "`[신규]` IO 타이밍 차트가 포함된 사용 가이드를 추가했습니다.",
+                  "`[수정]` Vision Offset 툴팁이 테이블 아래에 가려지던 문제를 수정했습니다.",
+                  "`[수정]` Teaching Mode 타이밍 차트의 신호와 파형 위치가 맞지 않던 문제를 수정했습니다.",
+                  "`[변경]` 타이밍 차트 헤더·라벨·파형 간격을 정렬하고 신호 변화 표현을 세로선으로 통일했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.04.02",
+                "items": [
+                  "`[신규]` Labels·Remote IO·P.pts·User Warning 파일을 표 형식으로 미리보는 기능을 추가했습니다.",
+                  "`[신규]` Labels·User Warning·P.pts 데이터를 화면에서 직접 수정할 수 있습니다.",
+                  "`[변경]` Labels에서 수정한 이름이 모든 프로그램 미리보기에 반영됩니다.",
+                  "`[변경]` 파일 선택 목록을 Main·Static Task·Sub Program·Process·Data File 그룹으로 분류했습니다."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Software",
+            "versions": [
+              {
+                "title": "Ver 26.07.24",
+                "items": [
+                  "`[업데이트]` InoRobotLab을 `V4R24C4SPC21 → V4R24C4SPC22`로 업데이트했습니다.",
+                  "`[업데이트]` InoRobotTP를 `V4R24C4SPC21 → V4R24C4SPC22`로 업데이트했습니다.",
+                  "`[변경]` InoRobotLab 다운로드 용량을 설치형 509MB, 포터블 514MB로 갱신했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "`[추가]` 한국어·영어·중국어·베트남어를 지원하며, 일부 한국어 버전에서 영어로 표시되던 항목을 모두 한국어로 번역하였습니다.",
+                  "`[변경]` 버전 표기법을 날짜만 기록하는 것으로 변경하였습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.06.19.01",
+                "items": [
+                  "`[업데이트]` InoRobotLab을 `V4R24C4SPC18 → V4R24C4SPC21`로 업데이트했습니다.",
+                  "`[업데이트]` InoRobotTP를 `V4R24C4SPC18 → V4R24C4SPC21`로 업데이트했습니다.",
+                  "`[변경]` InoRobotLab 다운로드 용량을 설치형 470MB, 포터블 473MB로 갱신했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.06.06.01",
+                "items": [
+                  "`[업데이트]` InoRobotLab을 `V4R24C4SPC17 → V4R24C4SPC18`로 업데이트했습니다.",
+                  "`[업데이트]` InoRobotTP를 `V4R24C4SPC17 → V4R24C4SPC18`로 업데이트했습니다.",
+                  "`[정리]` 기존 SPC15·SPC17 다운로드를 제거하고 SPC18 버전만 표시하도록 변경했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.05.14.01",
+                "items": [
+                  "`[업데이트]` Display용 InoRobotLab·InoRobotTP를 `V4R24C4SPC0L18F121`로 교체했습니다.",
+                  "`[변경]` 제공되지 않는 Display용 InoRobotLab 설치형 버튼을 비활성 상태로 변경했습니다.",
+                  "`[추가]` Display용 InoRobotLab 포터블 454MB와 InoRobotTP 57MB 다운로드를 추가했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.04.17.01",
+                "items": [
+                  "`[추가]` InoRobotLab 설치형·포터블 `V4R24C4SPC17` 다운로드를 추가했습니다.",
+                  "`[추가]` InoRobotTP `V4R24C4SPC17` 다운로드를 추가했습니다."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Document",
+            "versions": [
+              {
+                "title": "Ver 26.07.29",
+                "items": [
+                  "`[수정]` 비밀번호가 필요한 Display 교육자료 다운로드 시 프론트엔드와 다운로드 인증 서비스 간 요청 형식을 보완하여 자료가 정상적으로 다운로드되도록 수정했습니다.",
+                  "`[개선]` 교육자료 페이지의 다운로드 스크립트 캐시 버전을 갱신하여 수정 내용이 최신 상태로 반영되도록 개선했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.24",
+                "items": [
+                  "`[개선]` 좌측 문서 필터의 항목 높이와 그룹 간격을 줄여, 많은 항목도 더 적은 스크롤로 탐색할 수 있도록 개선했습니다.",
+                  "`[개선]` Hardware Manual 등 문서 대분류 제목을 흰색으로 표시해 어두운 배경에서의 가독성을 높였습니다.",
+                  "`[개선]` 세부 필터를 선택하면 해당 문서 목록의 시작 위치로 자동 스크롤되도록 개선했습니다.",
+                  "`[변경]` 인증서 필터를 `KC → CE → cSGSus → Clean → FCC → Safety → MTBF` 순서로 재구성하고, KC·CE 관련 세부 인증서를 각 탭에서 통합 조회할 수 있도록 변경했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.20",
+                "items": [
+                  "`[수정]` 셀렉션 가이드 매뉴얼을 다운로드할 수 없던 문제를 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "`[추가]` 한국어·영어·중국어·베트남어를 지원하며, 일부 한국어 버전에서 영어로 표시되던 항목을 모두 한국어로 번역하였습니다.",
+                  "`[변경]` 버전 표기법을 날짜만 기록하는 것으로 변경하였습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.15",
+                "items": [
+                  "`[업데이트]` EtherCAT 통신 프로파일 `V1.01`을 `IRCB50X_SERIES_ECAT_V1.05.xml`로 교체했습니다.",
+                  "`[추가]` Display용 EtherCAT 통신 프로파일 `IRCB50X_SERIES_ECAT_V1.07.xml`을 추가했습니다.",
+                  "`[변경]` `Remote Ethernet Control Function User Guide.pdf`의 표시를 `Common`에서 `API`로 변경했습니다.",
+                  "`[변경]` `Remote IO Control Function User Guide.pdf`와 `Remote_IO_List.xlsx`의 표시를 `Common`에서 `Remote IO`로 변경했습니다.",
+                  "`[추가]` `Communication setting Guide.pdf`를 Common 통신 매뉴얼로 추가했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.06.23.01",
+                "items": [
+                  "`[추가]` 하드웨어 매뉴얼에 `Safety Function` 탭을 추가했습니다.",
+                  "`[추가]` `Robot System Safety Function Guide.PDF`를 Safety Function 매뉴얼로 등록했습니다.",
+                  "`[업데이트]` `INOVANCE ROBOT Selection Guide.pdf`와 `INOVANCE ROBOT Selection Leaflet.pdf`를 최신 파일로 교체했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.06.19.01",
+                "items": [
+                  "`[변경]` 메인 카드 이름을 `Manual → Document`로 변경했습니다.",
+                  "`[변경]` 카드 설명을 `로봇 매뉴얼·교육자료·인증서·통신 프로파일 다운로드 및 조회`로 변경했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.06.15.01",
+                "items": [
+                  "`[신규]` EtherCAT `v1.0.1`, PROFINET `V2.35`, EtherNet/IP `V4.5` 통신 프로파일을 추가했습니다.",
+                  "`[신규]` CE 10개·Clean 4개·cSGSus 4개·FCC 2개·Functional Safety 2개·KCs 59개·MTBF 2개 등 총 83개의 인증서를 추가했습니다.",
+                  "`[신규]` 인증서 필터를 CE·Clean·cSGSus·FCC·Functional Safety·KCs·MTBF로 분류했습니다.",
+                  "`[변경]` 문서 검색 시 제목과 설명뿐만 아니라 실제 파일명과 경로까지 검색합니다."
+                ]
+              },
+              {
+                "title": "Ver 26.06.01.01",
+                "items": [
+                  "`[업데이트]` 입문과정 `2. 로봇 기초` INT 및 Display 교육자료를 최신 PDF로 교체했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.05.14.01",
+                "items": [
+                  "`[추가]` IR-S25&S35, IR-S60&GS60, IR-R15H&R20H 사용자 매뉴얼을 추가했습니다.",
+                  "`[추가]` Input IO·NPN Output IO·Encoder·Functional Safety·IR-LINK·PROFINET 확장카드 매뉴얼을 추가했습니다.",
+                  "`[신규]` 문서 필터에 `Expansion Card`와 `Selection Guide` 항목을 추가했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.04.26.01",
+                "items": [
+                  "`[업데이트]` R25/R16 매뉴얼 파일명을 `IR-R25&R16 → IR-R25&16`으로 변경하고 최신 PDF로 교체했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.04.12.01",
+                "items": [
+                  "`[업데이트]` 입문과정 `1. 로봇 소개` INT 및 Display 교육자료를 최신 PDF로 교체했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.04.10.01",
+                "items": [
+                  "`[신규]` 교육자료에 `Application Level` 분류를 추가했습니다.",
+                  "`[추가]` API 교육자료 PDF와 실습용 API.zip을 추가했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.04.07.01",
+                "items": [
+                  "`[추가]` InoRobotLab·변수·주요 명령어·주요 설정·Socket 통신·Fieldbus 통신 초급과정 자료를 추가했습니다.",
+                  "`[신규]` Display 교육자료 전용 `For Display` 필터를 추가했습니다.",
+                  "`[변경]` 문서 버튼을 `미리보기`와 `다운로드`로 분리했습니다."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Debugging Tool",
+            "versions": [
+              {
+                "title": "Ver 26.07.27",
+                "items": [
+                  "`[수정]` EtherNet/IP가 실제로 연결되었으나 로봇 소프트웨어에서 연결되지 않은 상태로 유지되던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.26",
+                "items": [
+                  "`[변경]` Communication Tester를 `V2.8`로 업데이트했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.25",
+                "items": [
+                  "`[추가]` 대용량 STEP/STP 파일을 PC에서 직접 불러와 부품별로 확인하고, 선택한 부품만 STEP 파일로 저장하거나 파일의 영점 위치를 수정할 수 있는 CAD Lightweight `V1.0`을 추가했습니다.",
+                  "`[변경]` InoRobot Trace를 `V1.4 → V1.5`로 업데이트했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.24",
+                "items": [
+                  "`[변경]` Communication Tester를 `V2.6 → V2.7`로 업데이트했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "`[변경]` InoRobot Trace를 `V1.3 → V1.4`로 업데이트했습니다.",
+                  "`[추가]` 한국어·영어·중국어·베트남어를 지원하며, 일부 한국어 버전에서 영어로 표시되던 항목을 모두 한국어로 번역하였습니다.",
+                  "`[변경]` 버전 표기법을 날짜만 기록하는 것으로 변경하였습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.15.01",
+                "items": [
+                  "`[변경]` InoRobot Trace를 `V1.2 → V1.3`으로 업데이트했습니다.",
+                  "`[추가]` Trace에 Joint Speed J1~J6 채널을 추가했습니다.",
+                  "`[수정]` InoRobot Trace에서 가상 컨트롤러 연결 시 Joint Speed 채널이 비활성화되던 문제를 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.06.19.01",
+                "items": [
+                  "`[업데이트]` InoRobot Label Generator를 `V2.0 → V2.1`로 업데이트했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.06.15.01",
+                "items": [
+                  "`[업데이트]` Communication Tester를 `V2.5 → V2.6`으로 업데이트했습니다.",
+                  "`[업데이트]` InoRobot Trace를 `V1.1 → V1.2`로 업데이트했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.06.10.01",
+                "items": [
+                  "`[변경]` Communication Tester를 `V2.4 → V2.5`로 업데이트했습니다.",
+                  "`[삭제]` 기존 Communication Tester V2.3 실행 파일과 ZIP 파일을 제거했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.05.18.01",
+                "items": [
+                  "`[업데이트]` InoRobot Trace를 `V1.0 → V1.1`로 업데이트했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.04.26.01",
+                "items": [
+                  "`[변경]` Communication Tester를 `V2.3 → V2.4`로 업데이트했습니다.",
+                  "`[추가]` InoRobot Trace V1.0 다운로드를 추가했습니다.",
+                  "`[추가]` InoRobot Label Generator V2.0 다운로드를 추가했습니다.",
+                  "`[변경]` Project Compare를 `V2.0 → V2.1`로 업데이트했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.04.13.01",
+                "items": [
+                  "`[변경]` Communication Tester를 `V2.2 → V2.3`으로 업데이트했습니다.",
+                  "`[수정]` ZIP 파일 대신 Git LFS 정보 파일이 다운로드되던 문제를 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.04.07.01",
+                "items": [
+                  "`[추가]` Zero Calibration 웹 계산기에 오프라인 Excel 다운로드 버튼을 추가했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.04.02",
+                "items": [
+                  "`[추가]` Communication Tester V2.2 다운로드를 추가했습니다.",
+                  "`[추가]` Project Compare V2.0 다운로드를 추가했습니다."
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "debugVersionHistory": {
+        "title": "디버깅 도구 버전 기록",
+        "intro": "",
+        "sections": [
+          {
+            "title": "communicationTester",
+            "versions": [
+              {
+                "title": "Ver 2.7 (2026.07.24)",
+                "items": [
+                  "`[추가]` 에러 발생 시 에러 코드를 로그에 기록하도록 추가했습니다.",
+                  "`[수정]` Socket 통신 시 재연결이 되지 않았던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 2.6 (2026.06.15)",
+                "items": [
+                  "`[변경]` 표준화 프로그램 변경사항에 맞춰 기본 HMI 화면을 개편했습니다.",
+                  "`[변경]` 최신 기본 HMI를 프로그램에 내장하여 별도 파일 없이 사용할 수 있도록 변경했습니다.",
+                  "`[개선]` 프로그램 실행 시 내장된 기본 HMI가 자동으로 적용됩니다."
+                ]
+              },
+              {
+                "title": "Ver 2.5 (2026.06.10)",
+                "items": [
+                  "`[신규]` HMI Code Block에 스크립트 시스템을 적용했습니다.",
+                  "`[추가]` `If / ElseIf / Else / EndIf` 조건문을 추가했습니다.",
+                  "`[추가]` 논리·비교·산술 연산과 Delay 명령을 추가했습니다.",
+                  "`[추가]` 스크립트에서 통신 주소의 값을 읽거나 쓸 수 있는 기능을 추가했습니다.",
+                  "`[추가]` 스크립트 자동 완성, 문법 강조 및 오류 검사 기능을 추가했습니다.",
+                  "`[추가]` Byte 및 BitField 데이터 형식을 추가했습니다.",
+                  "`[추가]` Word 데이터를 Bit·Byte 단위의 하위 행으로 펼쳐보는 기능을 추가했습니다.",
+                  "`[개선]` 다중 쓰기 기능이 각 대상의 데이터 형식을 처리할 수 있도록 개선했습니다.",
+                  "`[개선]` 기존 HMI 파일과의 호환성을 개선했습니다."
+                ]
+              },
+              {
+                "title": "Ver 2.4 (2026.04.26)",
+                "items": [
+                  "`[변경]` .NET 런타임이 설치되지 않은 PC에서도 실행할 수 있는 자체 포함형 프로그램으로 변경했습니다.",
+                  "`[변경]` 프로그램과 필수 구성 요소를 하나의 실행 파일로 통합했습니다.",
+                  "`[수정]` 실행 진입점과 배포 경로 설정 문제를 수정했습니다.",
+                  "`[개선]` 프로그램 실행 및 배포 안정성을 개선했습니다."
+                ]
+              },
+              {
+                "title": "Ver 2.3 (2026.04.13)",
+                "items": [
+                  "`[추가]` HMI Word Button에 조건 비교 및 실행 기능을 추가했습니다.",
+                  "`[추가]` 하나의 버튼으로 최대 10개 주소를 제어하는 다중 쓰기 기능을 추가했습니다.",
+                  "`[변경]` Word Button의 조건 대상과 실행 대상을 구분하여 설정할 수 있도록 변경했습니다.",
+                  "`[개선]` HMI 동작 상태와 트리거 표시를 개선했습니다."
+                ]
+              },
+              {
+                "title": "Ver 2.2 (2026.04.02)",
+                "items": [
+                  "`[신규]` Communication Tester를 홈페이지에 공개했습니다.",
+                  "`[추가]` Modbus TCP 통신 기능을 추가했습니다.",
+                  "`[추가]` EtherNet/IP 통신 기능을 추가했습니다.",
+                  "`[추가]` MC Protocol 통신 기능을 추가했습니다.",
+                  "`[추가]` TCP/IP Socket Client·Server 통신 기능을 추가했습니다.",
+                  "`[추가]` 통신 데이터 실시간 모니터링 및 제어 기능을 추가했습니다.",
+                  "`[추가]` PC에서 테스트 화면을 구성할 수 있는 HMI Builder를 추가했습니다."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "labelGenerator",
+            "versions": [
+              {
+                "title": "Ver 2.1.0",
+                "items": [
+                  "`[수정]` 동일한 주소에 Bit·Byte·Word 라벨이 함께 존재할 때 일부 라벨이 누락되거나 덮어써지던 문제를 수정했습니다.",
+                  "`[변경]` 주소 충돌 시 Bit 라벨을 우선 표시하고, 관련 Byte·Word 라벨은 설명 영역에 함께 표시하도록 변경했습니다.",
+                  "`[추가]` 설명에 포함된 `Double Word`, `2 Word`, `DWORD`, `32-bit` 표기를 자동으로 인식하는 기능을 추가했습니다.",
+                  "`[수정]` Double Word 데이터가 Excel에서 32-bit 범위로 올바르게 병합되도록 수정했습니다.",
+                  "`[변경]` 프로그램 제목과 실행 파일의 버전 정보를 V2.1로 통일했습니다."
+                ]
+              },
+              {
+                "title": "Ver 2.0.0",
+                "items": [
+                  "`[신규]` 개별 버전으로 제공되던 라벨 포맷을 하나의 프로그램으로 통합했습니다.",
+                  "`[추가]` `20글자 Word / 20글자 Byte / 64글자 Word / 64글자 Byte` 포맷 선택 기능을 추가했습니다.",
+                  "`[추가]` Excel → JSN과 JSN → Excel 화면에서 각각 포맷을 선택할 수 있도록 했습니다.",
+                  "`[신규]` JSN 데이터를 Excel로 변환하기 전에 라벨명과 설명을 확인·수정할 수 있는 편집 화면을 추가했습니다.",
+                  "`[추가]` 선택한 포맷에 맞춰 생성되는 Excel 파일명을 자동으로 지정하는 기능을 추가했습니다.",
+                  "`[변경]` 20글자 포맷에서는 긴 변수명을 자동으로 축약하도록 변수명 표준화 기능을 개선했습니다.",
+                  "`[변경]` 현재 선택된 포맷과 불러온 데이터 개수가 상태 영역에 표시되도록 변경했습니다.",
+                  "`[변경]` 기본 포맷을 `20글자 Word`로 변경했습니다."
+                ]
+              },
+              {
+                "title": "Ver 1.0.0",
+                "items": [
+                  "`[신규]` Excel 라벨 데이터를 JSN 파일로 변환하는 기능을 추가했습니다.",
+                  "`[신규]` JSN 파일을 Excel 라벨 양식으로 생성하는 기능을 추가했습니다.",
+                  "`[추가]` Input·Output의 Bit·Byte·Word 라벨 변환을 지원합니다.",
+                  "`[추가]` B·R·D 변수 라벨 변환을 지원합니다.",
+                  "`[추가]` 라벨 목록 조회·정렬·선택·수정 기능을 추가했습니다.",
+                  "`[추가]` 변수명 표준화와 변경 전 미리보기 기능을 추가했습니다.",
+                  "`[추가]` `64글자 Byte`와 `20글자 Word` 양식을 지원합니다."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "trace",
+            "versions": [
+              {
+                "title": "Ver 1.4 (2026.07.18)",
+                "items": [
+                  "`[추가]` 3D 시뮬레이션을 위한 가상 컨트롤러 연동 서버 기능을 추가하였습니다.",
+                  "`[추가]` Joint 위치 값 실시간 모니터링 항목을 추가하였습니다.",
+                  "`[추가]` 측정 항목 창을 열거나 닫는 버튼을 추가하였습니다.",
+                  "`[수정]` 트레이스 창이 일정 너비 이하로 설정된 경우 항목이 표시되지 않던 문제를 해결하였습니다."
+                ]
+              },
+              {
+                "title": "Ver 1.3 (2026.07.15)",
+                "items": [
+                  "`[추가]` J1~J6 축 속도 실시간 모니터링 기능을 추가했습니다."
+                ]
+              },
+              {
+                "title": "Ver 1.2 (2026.06.15)",
+                "items": [
+                  "`[신규]` DI·DO 각 16채널의 실시간 모니터링 기능을 추가했습니다.",
+                  "`[변경]` 디지털 신호 상태를 숫자 대신 `ON / OFF`로 표시하도록 변경했습니다.",
+                  "`[개선]` DI·DO 신호의 변화를 쉽게 확인할 수 있도록 그래프 표시 범위를 최적화했습니다.",
+                  "`[개선]` 선택한 모든 추적 채널을 CSV 파일로 저장할 수 있도록 개선했습니다.",
+                  "`[개선]` CSV 파일을 불러올 때 포함된 채널을 자동으로 인식하고 화면에 표시하도록 개선했습니다.",
+                  "`[개선]` 기존 버전에서 저장한 CSV 파일도 계속 불러올 수 있도록 호환성을 유지했습니다."
+                ]
+              },
+              {
+                "title": "Ver 1.1 (2026.05.18)",
+                "items": [
+                  "`[변경]` B·R·D 변수를 모두 읽는 방식에서 사용자가 선택한 변수만 수집하는 방식으로 변경했습니다.",
+                  "`[추가]` 트레이스 실행 중에도 B·R·D 추적 변수를 변경할 수 있도록 기능을 추가했습니다.",
+                  "`[개선]` 불필요한 로봇 API 호출을 줄여 고속 샘플링의 안정성과 응답 속도를 개선했습니다.",
+                  "`[개선]` 실시간 트레이스 중 로봇과 프로그램에 발생하는 통신 부하를 줄였습니다."
+                ]
+              },
+              {
+                "title": "Ver 1.0 (2026.04.26)",
+                "items": [
+                  "`[신규]` InoRobotTrace를 최초 출시했습니다.",
+                  "`[신규]` 로봇의 TCP 속도와 현재 위치를 실시간으로 추적하는 기능을 추가했습니다.",
+                  "`[신규]` 에러 상태·에러 코드·축별 서보 에러·비상정지 상태를 모니터링하는 기능을 추가했습니다.",
+                  "`[신규]` 프로그램 라인·모션 라인·시스템 시간·펌웨어 버전을 확인하는 기능을 추가했습니다.",
+                  "`[신규]` Tool·Work Object·Load 번호와 B·R·D 변수를 모니터링하는 기능을 추가했습니다.",
+                  "`[신규]` 그래프 확대·이동·채널 분리·커서 측정 기능을 추가했습니다.",
+                  "`[신규]` 트레이스 데이터를 CSV 파일로 저장하고 다시 불러오는 기능을 추가했습니다.",
+                  "`[배포]` 별도의 설치 과정 없이 실행할 수 있는 단일 실행 파일로 제공됩니다."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "projectCompare",
+            "versions": [
+              {
+                "title": "Ver 2.1",
+                "items": [
+                  "`[변경]` 125%, 150% 등 Windows 화면 배율 환경에 대응하도록 디스플레이 설정을 변경했습니다.",
+                  "`[수정]` 고해상도 모니터에서 글자·버튼·입력창이 겹치거나 크기가 비정상적으로 변하던 문제를 수정했습니다.",
+                  "`[변경]` 별도의 .NET 설치 없이 실행할 수 있도록 단일 실행 파일 배포 방식으로 변경했습니다.",
+                  "`[변경]` 프로그램 제목과 실행 파일의 버전 정보를 V2.1로 통일했습니다."
+                ]
+              },
+              {
+                "title": "Ver 2.0",
+                "items": [
+                  "`[신규]` 두 InoRobot 프로젝트를 나란히 비교하는 기능을 추가했습니다.",
+                  "`[신규]` 프로그램 파일(`.pro`), 포인트 파일(`.pts`), 설정 파일(`.jsn`, `.dat`) 자동 분류 기능을 추가했습니다.",
+                  "`[신규]` 파일 상태를 `일치 / 불일치 / A에만 존재 / B에만 존재`로 구분하여 표시합니다.",
+                  "`[신규]` 서로 다른 코드와 데이터를 색상으로 강조하는 비교 화면을 추가했습니다.",
+                  "`[신규]` 포인트와 라벨 데이터를 표 형태로 비교하고 편집하는 기능을 추가했습니다.",
+                  "`[신규]` 선택한 파일을 A → B 또는 B → A 방향으로 덮어쓰는 기능을 추가했습니다.",
+                  "`[신규]` 비교 화면에서 파일을 직접 수정하고 저장하는 기능을 추가했습니다.",
+                  "`[신규]` 기존 프로젝트를 복사하는 `다른 이름으로 저장` 기능을 추가했습니다.",
+                  "`[추가]` 한국어·영어·중국어·베트남어 UI를 지원합니다."
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "en": {
+      "versionHistory": {
+        "title": "InoRobot Assistant Update History",
+        "intro": "This file records user-visible feature additions, content updates, display changes, and fixes for each card on the home page.",
+        "sections": [
+          {
+            "title": "Robot Model Select",
+            "versions": [
+              {
+                "title": "Ver 26.07.28",
+                "items": [
+                  "`[추가]` 펜던트 비상정지 보호커버형을 선택시 다운로드되는 전용 2D,3D CAD 파일을 추가했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.26",
+                "items": [
+                  "`[개선]` CAD 다운로드 버튼이 즉시 활성화되도록 개선했습니다.",
+                  "`[변경]` CAD 파일이 없는 모델은 `CAD 파일 없음`으로 즉시 표시하도록 변경했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.25",
+                "items": [
+                  "`[추가]` GL20 시리즈 6개 모델을 컨트롤러 확장 카드에서 분리하여 리모트 커플러 옵션으로 추가했습니다.",
+                  "`[변경]` 케이블 핀 수 표시와 옵션 구성 내역의 다국어 표시를 정리하고, 구매 코드가 새 그룹에 표시되도록 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.20",
+                "items": [
+                  "**[Changed]** Added compatible controller model numbers to the model selection screen."
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "**[Added]** Korean, English, Chinese, and Vietnamese are now supported, and all items previously displayed in English in certain Korean views have been translated into Korean.",
+                  "**[Changed]** The version-labeling convention has been changed to record the date only."
+                ]
+              },
+              {
+                "title": "Ver 26.06.19.01",
+                "items": [
+                  "**[New]** Added the IR-TP200 teach pendant with an emergency-stop protective cover.",
+                  "**[New]** Added order codes for covered pendants: 5 m 01640069, 10 m 01640072, and 15 m 01640073.",
+                  "**[Changed]** Reorganized pendant selection into Not selected / Without protective cover / With protective cover.",
+                  "**[Changed]** The result and PDF now show the selected pendant cover, length, and order code."
+                ]
+              },
+              {
+                "title": "Ver 26.06.15.01",
+                "items": [
+                  "**[Added]** Added 5 m cable order code 01741079*M00018 for IR-S7-60Z20S-INT."
+                ]
+              },
+              {
+                "title": "Ver 26.06.02.01",
+                "items": [
+                  "**[Changed]** SCARA models without KCs certification now show an estimated lead time of 10 weeks."
+                ]
+              },
+              {
+                "title": "Ver 26.06.01.02",
+                "items": [
+                  "**[Changed]** Renamed model IR-R15H-145S-INT to IR-R15H-145S-K-INT.",
+                  "**[Changed]** Renamed model IR-R20H-120S-INT to IR-R20H-120S-K-INT.",
+                  "**[Added]** Added IR-R15H IP67 order code 01741446.",
+                  "**[Added]** Added IR-R20H IP67 order code 01741597.",
+                  "**[Added]** Added 3 m cable order code 01741436*M00002 for IR-S25-100Z42S-INT.",
+                  "**[Added]** Added IR-S60-120Z40S-INT order codes: 5 m 01741367*M00002 and 15 m 01741367*M00003.",
+                  "**[Fixed]** Restored CAD lookup after the R15H and R20H model-code changes."
+                ]
+              },
+              {
+                "title": "Ver 26.06.01.01",
+                "items": [
+                  "**[Added]** Added 3 m cable order code 01741086*M00008 for IR-R10-140S-INT."
+                ]
+              },
+              {
+                "title": "Ver 26.05.29.01",
+                "items": [
+                  "**[New]** Added Standard, Clean, and IP67 body options for six-axis robots.",
+                  "**[Changed]** R10-140, R16, and R25 now show only the fixed Body IP65 / Wrist IP67 specification.",
+                  "**[Changed]** R15H and R20H Clean models show ISO Class 4; other six-axis Clean models show ISO Class 3.",
+                  "**[Changed]** Selecting a body option now updates the S/C/P model code and PDF filename.",
+                  "**[Fixed]** Fixed CAD downloads for R16, R25, and other models using _CN or _3D_CN filenames.",
+                  "**[Fixed]** Restored °, °/s, mm, and mm/s units in axis speed and motion-range values.",
+                  "**[Fixed]** Restored kg and mm units for mass and repeatability in details and PDFs.",
+                  "**[Fixed]** Removed incorrect KC and KCs certifications from IR-S35-80Z42S-INT.",
+                  "**[Cleanup]** Removed unreleased IR-CS models from filters and search results.",
+                  "**[Cleanup]** Hid the unsupported Handheld Motor Brake Release Box option for R10-140, R16, and R25."
+                ]
+              },
+              {
+                "title": "Ver 26.05.22.01",
+                "items": [
+                  "**[Changed]** Corrected Clean Type from Yes to No for IR-R4H, R7H-70, R7H-90, R10H, R15H, and R20H.",
+                  "**[Changed]** Clean specifications for those six-axis models are now shown as selectable options rather than defaults.",
+                  "**[Changed]** Updated the estimated lead time for Clean SCARA models to six months.",
+                  "**[Fixed]** Enabled CAD buttons for R16 and R25 where model codes differ from CAD folder names.",
+                  "**[Changed]** Standardized CAD button labels as Checking / CAD Download / CAD Not Ready / Preparing."
+                ]
+              },
+              {
+                "title": "Ver 26.04.17.01",
+                "items": [
+                  "**[Fixed]** Corrected swapped Standard and Clean data for IR-S25-120.",
+                  "**[Fixed]** Corrected model name, arm length, Z stroke, mass, cycle time, and certification links for IR-S35-100 and IR-S35-120 variants.",
+                  "**[Added]** Added 2D DWG, 3D STP, and FBX files for IR-S25-120Z42S-INT and IR-S35-120Z42S-INT.",
+                  "**[Fixed]** Corrected IP ratings for R15H and R20H in generated PDFs."
+                ]
+              },
+              {
+                "title": "Ver 26.04.12.01",
+                "items": [
+                  "**[New]** Added recommended circuit-breaker capacity to model details.",
+                  "**[Changed]** Ratings now show R4/R7H 10 A, R10/R11 15 A, R10-140 20 A, R16/R25 30 A, S25 15 A, and S35/S60 20 A."
+                ]
+              },
+              {
+                "title": "Ver 26.03.31.02",
+                "items": [
+                  "**[Changed]** Pendant, Arm I/O, Body I/O, and communication expansion order codes now use orange badges.",
+                  "**[Changed]** IR-TP200 extension-cable names now show 5 m, 15 m, and 25 m lengths directly."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "3D Simulation",
+            "versions": [
+              {
+                "title": "Ver 26.07.26",
+                "items": [
+                  "`[추가]` 프로그램 패널에 OLP (Offline Programming) 기능을 추가했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.25",
+                "items": [
+                  "`[개선]` 대용량 STL 모델은 시각용 원본 메시와 별도의 충돌 프록시를 사용해 충돌 검사 성능과 표시 품질을 함께 개선했습니다.",
+                  "`[수정]` 가상 컨트롤러가 연결되지 않던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.24",
+                "items": [
+                  "`[추가]` 로봇 링크·Tool·설비 모델 간 실제 형상 기준 충돌을 감지하고, 충돌 모델을 빨간색으로 표시하는 기능을 추가했습니다.",
+                  "`[추가]` 원하는 위치에 가상 영역을 설정하여 사용할 수 있는 간섭 영역 설정 기능을 추가했습니다.",
+                  "`[수정]` SCARA J3의 컨트롤러 각도 범위를 모델별로 적용해, 시뮬레이터의 직선축(mm)과 컨트롤러 표시값(°)이 일치하도록 수정했습니다.",
+                  "`[추가]` 저장 설정·배치 모델들을 일괄 초기화하는 기능을 추가했습니다.",
+                  "`[추가]` 실제 컨트롤러 연결 기능을 추가했습니다.",
+                  "`[추가]` 저장한 카메라 뷰를 별도 창에서 열고 여러 뷰를 분할 화면으로 동시에 확인할 수 있는 다중 뷰 기능을 추가했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.21",
+                "items": [
+                  "**[Added]** Added Auto, Lightweight, Standard, and High quality choices for large 3D model imports.",
+                  "**[Changed]** Large STL, FBX, and STEP models are processed in the background and chunks, while STEP part structure and colors are preserved.",
+                  "**[Fixed]** Stabilized selected-face, multi-point-center, and candidate snap feedback while navigating the model."
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "**[Revamp]** The existing 3D Viewer has been comprehensively rebuilt as 3D Simulation, enabling robot simulation.",
+                  "**[Support]** All robot models can be moved, and robot motion paths can be set through programming.",
+                  "**[Support]** Supports importing 3D models and attaching imported files to a robot Tool.",
+                  "**[Support]** Can connect to and use the InoRobotLab Virtual Controller. (Requires the dedicated bridge or Trace tool.)",
+                  "**[Added]** Korean, English, Chinese, and Vietnamese are now supported, and all items previously displayed in English in certain Korean views have been translated into Korean.",
+                  "**[Changed]** The version-labeling convention has been changed to record the date only."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Robot Tool Selector",
+            "versions": [
+              {
+                "title": "Ver 26.07.26",
+                "items": [
+                  "`[개선]` 모바일 웹 UI 레이아웃을 개선했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.21",
+                "items": [
+                  "`[추가]` 대용량 STEP 파일의 가져오기 품질을 기본·초경량으로 선택할 수 있습니다.",
+                  "`[수정]` 회전 핸들의 180° 경계 연속성과 면·원·호 스냅 계산을 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "`[추가]` STEP/STP CAD 파일의 질량 특성을 계산하는 Mode D를 추가했습니다.",
+                  "`[추가]` 부품별 포함 여부·재질·밀도를 설정하고 총 질량, CoG, Tool 원점 및 부하중심 기준 Ixx·Iyy·Izz를 계산합니다.",
+                  "`[추가]` Tool 원점과 TCP를 꼭짓점·끝점·중심점·가상 교점 스냅으로 지정할 수 있습니다.",
+                  "`[추가]` 좌표계 방향을 3D 회전 핸들과 Rx·Ry·Rz 수치로 설정할 수 있습니다.",
+                  "`[추가]` TCP와 CoG를 서로 다른 색상·형상으로 표시하고 3D 뷰어에 범례를 제공합니다.",
+                  "`[추가]` 3D 뷰어 그리드 ON/OFF 버튼을 제공하며 기본값은 OFF입니다.",
+                  "`[추가]` 지정한 Tool 원점과 좌표계 방향을 적용한 STEP 파일을 내보낼 수 있습니다.",
+                  "`[추가]` 원/호 중심점 2~4개를 선택해 평균 중심을 계산하는 다중 원 중심점 스냅을 추가했습니다.",
+                  "`[변경]` 재질·밀도 설정과 좌표계 적용 STEP 내보내기에서 원본 CAD 색상을 그대로 유지합니다.",
+                  "`[추가]` 한국어·영어·중국어·베트남어를 지원하며, 일부 한국어 버전에서 영어로 표시되던 항목을 모두 한국어로 번역하였습니다.",
+                  "`[변경]` 버전 표기법을 날짜만 기록하는 것으로 변경하였습니다."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Project Generator",
+            "versions": [
+              {
+                "title": "Ver 26.07.26",
+                "items": [
+                  "`[수정]` 한국어 화면에서 `No`는 `번호`, `Process`는 `프로세스`로 표시하고, 공정 방식 명칭 `Get`·`Put`은 번역하지 않도록 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "**[Added]** Korean, English, Chinese, and Vietnamese are now supported, and all items previously displayed in English in certain Korean views have been translated into Korean.",
+                  "**[Changed]** The version-labeling convention has been changed to record the date only."
+                ]
+              },
+              {
+                "title": "Ver 26.07.12.01",
+                "items": [
+                  "**[Fixed]** Added Break; after Save so the loop and Teach mode end correctly."
+                ]
+              },
+              {
+                "title": "Ver 26.06.19.01",
+                "items": [
+                  "**[Changed]** Teaching Offset X, Y, Z, A, B, and C now show data format 2 Word /10000."
+                ]
+              },
+              {
+                "title": "Ver 26.06.15.01",
+                "items": [
+                  "**[Changed]** Teaching Mode, Wait Position, and Process Busy are enabled by default.",
+                  "**[New]** Added next, previous, offset-position, and save-current-position actions to Teaching Mode.",
+                  "**[Changed]** Wait and Work Position now have separate Start, Complete, and Busy states.",
+                  "**[Fixed]** Corrected the application order when Vision Offset and Process Offset are used together.",
+                  "**[Fixed]** Prevented duplicate Vision Offset and Process Offset application.",
+                  "**[Fixed]** Corrected return paths to Wait or Work positions from other processes.",
+                  "**[Fixed]** Removed nonexistent J5 and J6 torque items from SCARA projects.",
+                  "**[Updated]** Replaced the bundled IO Map with InoRobot_IO_Map_0614.xlsx.",
+                  "**[Updated]** Updated Remote IO Mapping for the latest Process Wait, Work, Busy, and Teaching configuration.",
+                  "**[Fixed]** Corrected the Point File switching address shown in Multi Recipe help.",
+                  "**[Changed]** Help text and timing-chart signals now match generated output."
+                ]
+              },
+              {
+                "title": "Ver 26.05.20.01",
+                "items": [
+                  "**[Fixed]** Teaching conditions are no longer generated when Teaching Mode is disabled."
+                ]
+              },
+              {
+                "title": "Ver 26.04.10.01",
+                "items": [
+                  "**[Fixed]** Removed unnecessary conditions that could prevent process start for certain option combinations."
+                ]
+              },
+              {
+                "title": "Ver 26.04.07",
+                "items": [
+                  "**[New]** Added detailed-help buttons and tooltips for project options.",
+                  "**[New]** Added a usage guide with IO timing charts.",
+                  "**[Fixed]** Prevented the Vision Offset tooltip from being hidden behind the table.",
+                  "**[Fixed]** Corrected Teaching Mode signal and waveform positions.",
+                  "**[Changed]** Aligned timing-chart headers, labels, and wave spacing and standardized transitions as vertical lines."
+                ]
+              },
+              {
+                "title": "Ver 26.04.02",
+                "items": [
+                  "**[New]** Added table previews for Labels, Remote IO, P.pts, and User Warning files.",
+                  "**[New]** Labels, User Warning, and P.pts data can now be edited in the page.",
+                  "**[Changed]** Edited Label names now appear in all program previews.",
+                  "**[Changed]** Grouped the file selector into Main, Static Task, Sub Program, Process, and Data File."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Software",
+            "versions": [
+              {
+                "title": "Ver 26.07.24",
+                "items": [
+                  "**[Updated]** Updated InoRobotLab from V4R24C4SPC21 to V4R24C4SPC22.",
+                  "**[Updated]** Updated InoRobotTP from V4R24C4SPC21 to V4R24C4SPC22.",
+                  "**[Changed]** Updated InoRobotLab download sizes to 509MB for the install ZIP and 514MB for the portable ZIP."
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "**[Added]** Korean, English, Chinese, and Vietnamese are now supported, and all items previously displayed in English in certain Korean views have been translated into Korean.",
+                  "**[Changed]** The version-labeling convention has been changed to record the date only."
+                ]
+              },
+              {
+                "title": "Ver 26.06.19.01",
+                "items": [
+                  "**[Updated]** Updated InoRobotLab from V4R24C4SPC18 to V4R24C4SPC21.",
+                  "**[Updated]** Updated InoRobotTP from V4R24C4SPC18 to V4R24C4SPC21.",
+                  "**[Changed]** Updated InoRobotLab download sizes to 470 MB installed and 473 MB portable."
+                ]
+              },
+              {
+                "title": "Ver 26.06.06.01",
+                "items": [
+                  "**[Updated]** Updated InoRobotLab from V4R24C4SPC17 to V4R24C4SPC18.",
+                  "**[Updated]** Updated InoRobotTP from V4R24C4SPC17 to V4R24C4SPC18.",
+                  "**[Cleanup]** Removed SPC15 and SPC17 downloads so only SPC18 is shown."
+                ]
+              },
+              {
+                "title": "Ver 26.05.14.01",
+                "items": [
+                  "**[Updated]** Replaced Display editions of InoRobotLab and InoRobotTP with V4R24C4SPC0L18F121.",
+                  "**[Changed]** Disabled the unavailable installed Display edition of InoRobotLab.",
+                  "**[Added]** Added 454 MB portable InoRobotLab and 57 MB InoRobotTP downloads for Display."
+                ]
+              },
+              {
+                "title": "Ver 26.04.17.01",
+                "items": [
+                  "**[Added]** Added installed and portable InoRobotLab V4R24C4SPC17 downloads.",
+                  "**[Added]** Added the InoRobotTP V4R24C4SPC17 download."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Document",
+            "versions": [
+              {
+                "title": "Ver 26.07.29",
+                "items": [
+                  "`[수정]` 비밀번호가 필요한 Display 교육자료 다운로드 시 프론트엔드와 다운로드 인증 서비스 간 요청 형식을 보완하여 자료가 정상적으로 다운로드되도록 수정했습니다.",
+                  "`[개선]` 교육자료 페이지의 다운로드 스크립트 캐시 버전을 갱신하여 수정 내용이 최신 상태로 반영되도록 개선했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.24",
+                "items": [
+                  "`[개선]` 좌측 문서 필터의 항목 높이와 그룹 간격을 줄여, 많은 항목도 더 적은 스크롤로 탐색할 수 있도록 개선했습니다.",
+                  "`[개선]` Hardware Manual 등 문서 대분류 제목을 흰색으로 표시해 어두운 배경에서의 가독성을 높였습니다.",
+                  "`[개선]` 세부 필터를 선택하면 해당 문서 목록의 시작 위치로 자동 스크롤되도록 개선했습니다.",
+                  "`[변경]` 인증서 필터를 `KC → CE → cSGSus → Clean → FCC → Safety → MTBF` 순서로 재구성하고, KC·CE 관련 세부 인증서를 각 탭에서 통합 조회할 수 있도록 변경했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.20",
+                "items": [
+                  "**[Fixed]** Fixed an issue that prevented the Selection Guide manual from being downloaded."
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "**[Added]** Korean, English, Chinese, and Vietnamese are now supported, and all items previously displayed in English in certain Korean views have been translated into Korean.",
+                  "**[Changed]** The version-labeling convention has been changed to record the date only."
+                ]
+              },
+              {
+                "title": "Ver 26.07.15",
+                "items": [
+                  "**[Updated]** Replaced the EtherCAT V1.01 communication profile with `IRCB50X_SERIES_ECAT_V1.05.xml`.",
+                  "**[Added]** Added the `IRCB50X_SERIES_ECAT_V1.07.xml` EtherCAT communication profile for Display.",
+                  "**[Changed]** Changed the label for `Remote Ethernet Control Function User Guide.pdf` from Common to API.",
+                  "**[Changed]** Changed the labels for `Remote IO Control Function User Guide.pdf` and `Remote_IO_List.xlsx` from Common to Remote IO.",
+                  "**[Added]** Added `Communication setting Guide.pdf` as a Common communication manual."
+                ]
+              },
+              {
+                "title": "Ver 26.06.23.01",
+                "items": [
+                  "**[Added]** Added a Safety Function tab to Hardware Manuals.",
+                  "**[Added]** Registered Robot System Safety Function Guide.PDF as a Safety Function manual.",
+                  "**[Updated]** Replaced INOVANCE ROBOT Selection Guide.pdf and INOVANCE ROBOT Selection Leaflet.pdf with current files."
+                ]
+              },
+              {
+                "title": "Ver 26.06.19.01",
+                "items": [
+                  "**[Changed]** Renamed the home card from Manual to Document.",
+                  "**[Changed]** Updated its description to robot manuals, training materials, certificates, communication profiles, downloads, and viewing."
+                ]
+              },
+              {
+                "title": "Ver 26.06.15.01",
+                "items": [
+                  "**[New]** Added EtherCAT v1.0.1, PROFINET V2.35, and EtherNet/IP V4.5 communication profiles.",
+                  "**[New]** Added 83 certificates: CE 10, Clean 4, cSGSus 4, FCC 2, Functional Safety 2, KCs 59, and MTBF 2.",
+                  "**[New]** Added CE, Clean, cSGSus, FCC, Functional Safety, KCs, and MTBF certificate filters.",
+                  "**[Changed]** Document search now includes actual filenames and paths as well as titles and descriptions."
+                ]
+              },
+              {
+                "title": "Ver 26.06.01.01",
+                "items": [
+                  "**[Updated]** Replaced Introduction Course 2. Robot Basics INT and Display training PDFs."
+                ]
+              },
+              {
+                "title": "Ver 26.05.14.01",
+                "items": [
+                  "**[Added]** Added IR-S25&S35, IR-S60&GS60, and IR-R15H&R20H user manuals.",
+                  "**[Added]** Added Input IO, NPN Output IO, Encoder, Functional Safety, IR-LINK, and PROFINET expansion-card manuals.",
+                  "**[New]** Added Expansion Card and Selection Guide document filters."
+                ]
+              },
+              {
+                "title": "Ver 26.04.26.01",
+                "items": [
+                  "**[Updated]** Renamed the R25/R16 manual from IR-R25&R16 to IR-R25&16 and replaced it with the current PDF."
+                ]
+              },
+              {
+                "title": "Ver 26.04.12.01",
+                "items": [
+                  "**[Updated]** Replaced Introduction Course 1. Robot Introduction INT and Display training PDFs."
+                ]
+              },
+              {
+                "title": "Ver 26.04.10.01",
+                "items": [
+                  "**[New]** Added the Application Level training category.",
+                  "**[Added]** Added the API training PDF and practice API.zip."
+                ]
+              },
+              {
+                "title": "Ver 26.04.07.01",
+                "items": [
+                  "**[Added]** Added beginner materials for InoRobotLab, variables, main commands, main settings, socket communication, and fieldbus communication.",
+                  "**[New]** Added a For Display training filter.",
+                  "**[Changed]** Split document actions into Preview and Download."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Debugging Tool",
+            "versions": [
+              {
+                "title": "Ver 26.07.27",
+                "items": [
+                  "`[수정]` EtherNet/IP가 실제로 연결되었으나 로봇 소프트웨어에서 연결되지 않은 상태로 유지되던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.26",
+                "items": [
+                  "`[변경]` Communication Tester를 `V2.8`로 업데이트했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.25",
+                "items": [
+                  "`[추가]` 대용량 STEP/STP 파일을 PC에서 직접 불러와 부품별로 확인하고, 선택한 부품만 STEP 파일로 저장하거나 파일의 영점 위치를 수정할 수 있는 CAD Lightweight `V1.0`을 추가했습니다.",
+                  "`[변경]` InoRobot Trace를 `V1.4 → V1.5`로 업데이트했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.24",
+                "items": [
+                  "`[변경]` Communication Tester를 `V2.6 → V2.7`로 업데이트했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "`[변경]` InoRobot Trace를 `V1.3 → V1.4`로 업데이트했습니다.",
+                  "`[추가]` 한국어·영어·중국어·베트남어를 지원하며, 일부 한국어 버전에서 영어로 표시되던 항목을 모두 한국어로 번역하였습니다.",
+                  "`[변경]` 버전 표기법을 날짜만 기록하는 것으로 변경하였습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.15.01",
+                "items": [
+                  "`[변경]` InoRobot Trace를 `V1.2 → V1.3`으로 업데이트했습니다.",
+                  "`[추가]` Trace에 Joint Speed J1~J6 채널을 추가했습니다.",
+                  "`[수정]` InoRobot Trace에서 가상 컨트롤러 연결 시 Joint Speed 채널이 비활성화되던 문제를 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.06.19.01",
+                "items": [
+                  "**[Updated]** Updated InoRobot Label Generator from V2.0 to V2.1."
+                ]
+              },
+              {
+                "title": "Ver 26.06.15.01",
+                "items": [
+                  "**[Updated]** Updated Communication Tester from V2.5 to V2.6.",
+                  "**[Updated]** Updated InoRobot Trace from V1.1 to V1.2."
+                ]
+              },
+              {
+                "title": "Ver 26.06.10.01",
+                "items": [
+                  "`[변경]` Communication Tester를 `V2.4 → V2.5`로 업데이트했습니다.",
+                  "`[삭제]` 기존 Communication Tester V2.3 실행 파일과 ZIP 파일을 제거했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.05.18.01",
+                "items": [
+                  "**[Updated]** Updated InoRobot Trace from V1.0 to V1.1."
+                ]
+              },
+              {
+                "title": "Ver 26.04.26.01",
+                "items": [
+                  "`[변경]` Communication Tester를 `V2.3 → V2.4`로 업데이트했습니다.",
+                  "`[추가]` InoRobot Trace V1.0 다운로드를 추가했습니다.",
+                  "`[추가]` InoRobot Label Generator V2.0 다운로드를 추가했습니다.",
+                  "`[변경]` Project Compare를 `V2.0 → V2.1`로 업데이트했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.04.13.01",
+                "items": [
+                  "`[변경]` Communication Tester를 `V2.2 → V2.3`으로 업데이트했습니다.",
+                  "`[수정]` ZIP 파일 대신 Git LFS 정보 파일이 다운로드되던 문제를 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.04.07.01",
+                "items": [
+                  "`[추가]` Zero Calibration 웹 계산기에 오프라인 Excel 다운로드 버튼을 추가했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.04.02",
+                "items": [
+                  "`[추가]` Communication Tester V2.2 다운로드를 추가했습니다.",
+                  "`[추가]` Project Compare V2.0 다운로드를 추가했습니다."
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "debugVersionHistory": {
+        "title": "Debugging Tool Version History",
+        "intro": "",
+        "sections": [
+          {
+            "title": "communicationTester",
+            "versions": [
+              {
+                "title": "Ver 2.7 (2026.07.24)",
+                "items": [
+                  "**[Added]** Added error-code logging when an error occurs.",
+                  "**[Fixed]** Fixed an issue that prevented Socket communication from reconnecting."
+                ]
+              },
+              {
+                "title": "Ver 2.6 (2026.06.15)",
+                "items": [
+                  "**[Changed]** Redesigned the default HMI screen for the standardized program changes.",
+                  "**[Changed]** Embedded the latest default HMI so no separate file is required.",
+                  "**[Improved]** The embedded default HMI is applied automatically at startup."
+                ]
+              },
+              {
+                "title": "Ver 2.5 (2026.06.10)",
+                "items": [
+                  "**[New]** Added a scripting system to HMI Code Block.",
+                  "**[Added]** Added If / ElseIf / Else / EndIf conditions.",
+                  "**[Added]** Added logical, comparison, and arithmetic operators plus Delay.",
+                  "**[Added]** Scripts can read and write communication-address values.",
+                  "**[Added]** Added script completion, syntax highlighting, and error checking.",
+                  "**[Added]** Added Byte and BitField data types.",
+                  "**[Added]** Word values can be expanded into Bit and Byte child rows.",
+                  "**[Improved]** Multi-write now handles the data type of each target.",
+                  "**[Improved]** Improved compatibility with existing HMI files."
+                ]
+              },
+              {
+                "title": "Ver 2.4 (2026.04.26)",
+                "items": [
+                  "**[Changed]** Converted to a self-contained application that runs without a separately installed .NET runtime.",
+                  "**[Changed]** Combined the application and required components into one executable.",
+                  "**[Fixed]** Corrected application entry-point and deployment-path settings.",
+                  "**[Improved]** Improved runtime and deployment stability."
+                ]
+              },
+              {
+                "title": "Ver 2.3 (2026.04.13)",
+                "items": [
+                  "**[Added]** Added condition comparison and execution to HMI Word Button.",
+                  "**[Added]** Added multi-write for controlling up to ten addresses with one button.",
+                  "**[Changed]** Condition and execution targets can now be configured separately.",
+                  "**[Improved]** Improved HMI state and trigger indicators."
+                ]
+              },
+              {
+                "title": "Ver 2.2 (2026.04.02)",
+                "items": [
+                  "**[New]** Published Communication Tester on the website.",
+                  "**[Added]** Added Modbus TCP communication.",
+                  "**[Added]** Added EtherNet/IP communication.",
+                  "**[Added]** Added MC Protocol communication.",
+                  "**[Added]** Added TCP/IP Socket Client and Server communication.",
+                  "**[Added]** Added real-time communication-data monitoring and control.",
+                  "**[Added]** Added HMI Builder for creating test screens on a PC."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "labelGenerator",
+            "versions": [
+              {
+                "title": "Ver 2.1.0",
+                "items": [
+                  "**[Fixed]** Prevented Bit, Byte, or Word labels from being omitted or overwritten when they share an address.",
+                  "**[Changed]** On address conflicts, Bit labels are prioritized and related Byte and Word labels appear in the description.",
+                  "**[Added]** Automatically recognizes Double Word, 2 Word, DWORD, and 32-bit notation in descriptions.",
+                  "**[Fixed]** Double Word data now merges correctly across the 32-bit range in Excel.",
+                  "**[Changed]** Standardized the application title and executable version as V2.1."
+                ]
+              },
+              {
+                "title": "Ver 2.0.0",
+                "items": [
+                  "**[New]** Combined separately distributed label formats into one application.",
+                  "**[Added]** Added 20-character Word, 20-character Byte, 64-character Word, and 64-character Byte formats.",
+                  "**[Added]** Formats can be selected independently for Excel to JSN and JSN to Excel.",
+                  "**[New]** Added an editor for reviewing and changing label names and descriptions before JSN-to-Excel conversion.",
+                  "**[Added]** Excel filenames are assigned automatically for the selected format.",
+                  "**[Changed]** Improved name normalization to abbreviate long variable names in 20-character formats.",
+                  "**[Changed]** The status area now shows the active format and loaded record count.",
+                  "**[Changed]** Changed the default format to 20-character Word."
+                ]
+              },
+              {
+                "title": "Ver 1.0.0",
+                "items": [
+                  "**[New]** Added Excel label-data conversion to JSN.",
+                  "**[New]** Added JSN conversion to an Excel label workbook.",
+                  "**[Added]** Supports Input and Output Bit, Byte, and Word labels.",
+                  "**[Added]** Supports B, R, and D variable labels.",
+                  "**[Added]** Added label listing, sorting, selection, and editing.",
+                  "**[Added]** Added variable-name normalization and change preview.",
+                  "**[Added]** Supports 64-character Byte and 20-character Word formats."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "trace",
+            "versions": [
+              {
+                "title": "Ver 1.4 (2026.07.18)",
+                "items": [
+                  "**[Added]** Added a virtual-controller integration server for 3D Simulation.",
+                  "**[Added]** Added real-time monitoring items for Joint position values.",
+                  "**[Added]** Added a button to open or close the measurement-item panel.",
+                  "**[Fixed]** Fixed an issue that prevented items from being displayed when the Trace window was narrower than a certain width."
+                ]
+              },
+              {
+                "title": "Ver 1.3 (2026.07.15)",
+                "items": [
+                  "**[Added]** Added real-time J1 through J6 joint-speed monitoring."
+                ]
+              },
+              {
+                "title": "Ver 1.2 (2026.06.15)",
+                "items": [
+                  "**[New]** Added real-time monitoring for 16 DI and 16 DO channels.",
+                  "**[Changed]** Digital states are shown as ON / OFF instead of numbers.",
+                  "**[Improved]** Optimized graph ranges to make DI and DO transitions easier to see.",
+                  "**[Improved]** All selected trace channels can be saved to CSV.",
+                  "**[Improved]** Channels in loaded CSV files are detected and displayed automatically.",
+                  "**[Improved]** Preserved compatibility with CSV files saved by earlier versions."
+                ]
+              },
+              {
+                "title": "Ver 1.1 (2026.05.18)",
+                "items": [
+                  "**[Changed]** Collects only user-selected B, R, and D variables instead of reading all variables.",
+                  "**[Added]** B, R, and D trace variables can be changed while tracing.",
+                  "**[Improved]** Reduced unnecessary robot API calls for more stable and responsive high-speed sampling.",
+                  "**[Improved]** Reduced communication load on the robot and application during live tracing."
+                ]
+              },
+              {
+                "title": "Ver 1.0 (2026.04.26)",
+                "items": [
+                  "**[New]** Initial release of InoRobotTrace.",
+                  "**[New]** Added real-time tracking of robot TCP speed and position.",
+                  "**[New]** Added monitoring for error status, error code, axis servo errors, and emergency stop.",
+                  "**[New]** Added program line, motion line, system time, and firmware-version monitoring.",
+                  "**[New]** Added Tool, Work Object, Load, and B/R/D variable monitoring.",
+                  "**[New]** Added graph zoom, pan, channel separation, and cursor measurement.",
+                  "**[New]** Added saving and loading trace data as CSV.",
+                  "**[Distribution]** Supplied as a single executable that requires no separate installation."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "projectCompare",
+            "versions": [
+              {
+                "title": "Ver 2.1",
+                "items": [
+                  "**[Changed]** Updated display settings for Windows scaling such as 125% and 150%.",
+                  "**[Fixed]** Fixed overlapping or incorrectly sized text, buttons, and fields on high-resolution displays.",
+                  "**[Changed]** Changed to a single executable that does not require a separate .NET installation.",
+                  "**[Changed]** Standardized the application title and executable version as V2.1."
+                ]
+              },
+              {
+                "title": "Ver 2.0",
+                "items": [
+                  "**[New]** Added side-by-side comparison of two InoRobot projects.",
+                  "**[New]** Added automatic classification of .pro, .pts, .jsn, and .dat files.",
+                  "**[New]** Displays file status as Match / Different / A only / B only.",
+                  "**[New]** Added a comparison view that highlights changed code and data.",
+                  "**[New]** Added table comparison and editing for point and label data.",
+                  "**[New]** Added overwrite from A to B or B to A for selected files.",
+                  "**[New]** Added direct file editing and saving in the comparison view.",
+                  "**[New]** Added Save As for copying an existing project.",
+                  "**[Added]** Supports Korean, English, Chinese, and Vietnamese UI."
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "zh-CN": {
+      "versionHistory": {
+        "title": "InoRobot Assistant 更新记录",
+        "intro": "本文记录主页各功能卡片中用户可见的新增功能、资料更新、显示变更与问题修复。",
+        "sections": [
+          {
+            "title": "Robot Model Select",
+            "versions": [
+              {
+                "title": "Ver 26.07.28",
+                "items": [
+                  "`[추가]` 펜던트 비상정지 보호커버형을 선택시 다운로드되는 전용 2D,3D CAD 파일을 추가했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.26",
+                "items": [
+                  "`[개선]` CAD 다운로드 버튼이 즉시 활성화되도록 개선했습니다.",
+                  "`[변경]` CAD 파일이 없는 모델은 `CAD 파일 없음`으로 즉시 표시하도록 변경했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.25",
+                "items": [
+                  "`[추가]` GL20 시리즈 6개 모델을 컨트롤러 확장 카드에서 분리하여 리모트 커플러 옵션으로 추가했습니다.",
+                  "`[변경]` 케이블 핀 수 표시와 옵션 구성 내역의 다국어 표시를 정리하고, 구매 코드가 새 그룹에 표시되도록 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.20",
+                "items": [
+                  "**[变更]** 在型号选择页面添加兼容控制器型号。"
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "**[新增]** 现已支持韩语、英语、中文和越南语，并已将部分韩语版本中以英语显示的项目全部翻译为韩语。",
+                  "**[变更]** 版本标识规则已变更为仅记录日期。"
+                ]
+              },
+              {
+                "title": "Ver 26.06.19.01",
+                "items": [
+                  "添加带急停保护罩的 IR-TP200 示教器。",
+                  "添加保护罩型示教器订购代码：5 m 01640069、10 m 01640072、15 m 01640073。",
+                  "示教器选择调整为未选择 / 无保护罩 / 有保护罩。",
+                  "结果与 PDF 现在显示保护罩、长度及订购代码。"
+                ]
+              },
+              {
+                "title": "Ver 26.06.15.01",
+                "items": [
+                  "添加 IR-S7-60Z20S-INT 5 m 电缆订购代码 01741079*M00018。"
+                ]
+              },
+              {
+                "title": "Ver 26.06.02.01",
+                "items": [
+                  "无 KCs 认证的 SCARA 型号预计交期改为 10 周。"
+                ]
+              },
+              {
+                "title": "Ver 26.06.01.02",
+                "items": [
+                  "型号由 IR-R15H-145S-INT 更名为 IR-R15H-145S-K-INT。",
+                  "型号由 IR-R20H-120S-INT 更名为 IR-R20H-120S-K-INT。",
+                  "添加 IR-R15H IP67 型订购代码 01741446。",
+                  "添加 IR-R20H IP67 型订购代码 01741597。",
+                  "添加 IR-S25-100Z42S-INT 3 m 电缆订购代码 01741436*M00002。",
+                  "添加 IR-S60-120Z40S-INT 订购代码：5 m 01741367*M00002、15 m 01741367*M00003。",
+                  "修复 R15H、R20H 型号代码变更后无法找到原 CAD 文件的问题。"
+                ]
+              },
+              {
+                "title": "Ver 26.06.01.01",
+                "items": [
+                  "添加 IR-R10-140S-INT 3 m 电缆订购代码 01741086*M00008。"
+                ]
+              },
+              {
+                "title": "Ver 26.05.29.01",
+                "items": [
+                  "为六轴机器人添加标准型、洁净型和 IP67 型机身选项。",
+                  "R10-140、R16、R25 仅显示固定规格 Body IP65 / Wrist IP67。",
+                  "R15H、R20H 洁净型显示 ISO Class 4，其他六轴洁净型显示 ISO Class 3。",
+                  "选择机身选项时，型号中的 S/C/P 代码和 PDF 文件名同步更新。",
+                  "修复 R16、R25 等使用 _CN 或 _3D_CN 文件名的型号无法下载 CAD 的问题。",
+                  "恢复轴速度与运动范围中的 °、°/s、mm、mm/s 单位。",
+                  "恢复详情和 PDF 中质量 kg 与重复定位精度 mm 单位。",
+                  "移除 IR-S35-80Z42S-INT 上错误显示的 KC、KCs 认证。",
+                  "从筛选和搜索结果中排除尚未发布的 IR-CS 型号。",
+                  "隐藏 R10-140、R16、R25 不支持的 Handheld Motor Brake Release Box 选项。"
+                ]
+              },
+              {
+                "title": "Ver 26.05.22.01",
+                "items": [
+                  "将 IR-R4H、R7H-70、R7H-90、R10H、R15H、R20H 的 Clean Type 从 Yes 修正为 No。",
+                  "上述六轴型号的洁净规格改为可选项，而非默认规格。",
+                  "SCARA 洁净型预计交期改为 6 个月。",
+                  "修复 R16、R25 型号代码与 CAD 文件夹名不同时 CAD 按钮不可用的问题。",
+                  "CAD 按钮文字统一为 Checking / CAD Download / CAD Not Ready / Preparing。"
+                ]
+              },
+              {
+                "title": "Ver 26.04.17.01",
+                "items": [
+                  "修正 IR-S25-120 标准型与洁净型数据互换的问题。",
+                  "修正 IR-S35-100、120 各版本的型号名、臂长、Z 轴行程、质量、循环时间及认证信息关联。",
+                  "添加 IR-S25-120Z42S-INT 与 IR-S35-120Z42S-INT 的 2D DWG、3D STP 和 FBX 文件。",
+                  "修正 R15H、R20H 在 PDF 中显示错误 IP 等级的问题。"
+                ]
+              },
+              {
+                "title": "Ver 26.04.12.01",
+                "items": [
+                  "在型号详情中添加建议断路器容量。",
+                  "显示规格：R4/R7H 10 A、R10/R11 15 A、R10-140 20 A、R16/R25 30 A、S25 15 A、S35/S60 20 A。"
+                ]
+              },
+              {
+                "title": "Ver 26.03.31.02",
+                "items": [
+                  "示教器、Arm I/O、Body I/O 和通信扩展选项的订购代码改用橙色徽标显示。",
+                  "IR-TP200 延长电缆名称直接显示 5 m、15 m、25 m 长度。"
+                ]
+              }
+            ]
+          },
+          {
+            "title": "3D Simulation",
+            "versions": [
+              {
+                "title": "Ver 26.07.26",
+                "items": [
+                  "`[추가]` 프로그램 패널에 OLP (Offline Programming) 기능을 추가했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.25",
+                "items": [
+                  "`[개선]` 대용량 STL 모델은 시각용 원본 메시와 별도의 충돌 프록시를 사용해 충돌 검사 성능과 표시 품질을 함께 개선했습니다.",
+                  "`[수정]` 가상 컨트롤러가 연결되지 않던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.24",
+                "items": [
+                  "`[추가]` 로봇 링크·Tool·설비 모델 간 실제 형상 기준 충돌을 감지하고, 충돌 모델을 빨간색으로 표시하는 기능을 추가했습니다.",
+                  "`[추가]` 원하는 위치에 가상 영역을 설정하여 사용할 수 있는 간섭 영역 설정 기능을 추가했습니다.",
+                  "`[수정]` SCARA J3의 컨트롤러 각도 범위를 모델별로 적용해, 시뮬레이터의 직선축(mm)과 컨트롤러 표시값(°)이 일치하도록 수정했습니다.",
+                  "`[추가]` 저장 설정·배치 모델들을 일괄 초기화하는 기능을 추가했습니다.",
+                  "`[추가]` 실제 컨트롤러 연결 기능을 추가했습니다.",
+                  "`[추가]` 저장한 카메라 뷰를 별도 창에서 열고 여러 뷰를 분할 화면으로 동시에 확인할 수 있는 다중 뷰 기능을 추가했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.21",
+                "items": [
+                  "**[新增]** 大型 3D 模型导入支持自动、轻量、标准和高质量选项。",
+                  "**[变更]** 大型 STL、FBX 和 STEP 模型改为后台分块处理，并保留 STEP 部件结构和颜色。",
+                  "**[修复]** 修复模型浏览过程中选定面、多点中心和候选捕捉反馈不稳定的问题。"
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "**[改版]** 在现有 3D Viewer 基础上全面升级为可进行机器人仿真的 3D Simulation。",
+                  "**[支持]** 支持移动所有机器人型号，并可通过编程设置机器人的运动路径。",
+                  "**[支持]** 支持导入 3D 模型，并可将导入文件安装到机器人 Tool。",
+                  "**[支持]** 可连接并使用 InoRobotLab 虚拟控制器。（需要使用专用桥接程序或 Trace 工具。）",
+                  "**[新增]** 现已支持韩语、英语、中文和越南语，并已将部分韩语版本中以英语显示的项目全部翻译为韩语。",
+                  "**[变更]** 版本标识规则已变更为仅记录日期。"
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Robot Tool Selector",
+            "versions": [
+              {
+                "title": "Ver 26.07.26",
+                "items": [
+                  "`[개선]` 모바일 웹 UI 레이아웃을 개선했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.21",
+                "items": [
+                  "`[추가]` 대용량 STEP 파일의 가져오기 품질을 기본·초경량으로 선택할 수 있습니다.",
+                  "`[수정]` 회전 핸들의 180° 경계 연속성과 면·원·호 스냅 계산을 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "`[추가]` STEP/STP CAD 파일의 질량 특성을 계산하는 Mode D를 추가했습니다.",
+                  "`[추가]` 부품별 포함 여부·재질·밀도를 설정하고 총 질량, CoG, Tool 원점 및 부하중심 기준 Ixx·Iyy·Izz를 계산합니다.",
+                  "`[추가]` Tool 원점과 TCP를 꼭짓점·끝점·중심점·가상 교점 스냅으로 지정할 수 있습니다.",
+                  "`[추가]` 좌표계 방향을 3D 회전 핸들과 Rx·Ry·Rz 수치로 설정할 수 있습니다.",
+                  "`[추가]` TCP와 CoG를 서로 다른 색상·형상으로 표시하고 3D 뷰어에 범례를 제공합니다.",
+                  "`[추가]` 3D 뷰어 그리드 ON/OFF 버튼을 제공하며 기본값은 OFF입니다.",
+                  "`[추가]` 지정한 Tool 원점과 좌표계 방향을 적용한 STEP 파일을 내보낼 수 있습니다.",
+                  "`[추가]` 원/호 중심점 2~4개를 선택해 평균 중심을 계산하는 다중 원 중심점 스냅을 추가했습니다.",
+                  "`[변경]` 재질·밀도 설정과 좌표계 적용 STEP 내보내기에서 원본 CAD 색상을 그대로 유지합니다.",
+                  "`[추가]` 한국어·영어·중국어·베트남어를 지원하며, 일부 한국어 버전에서 영어로 표시되던 항목을 모두 한국어로 번역하였습니다.",
+                  "`[변경]` 버전 표기법을 날짜만 기록하는 것으로 변경하였습니다."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Project Generator",
+            "versions": [
+              {
+                "title": "Ver 26.07.26",
+                "items": [
+                  "`[수정]` 한국어 화면에서 `No`는 `번호`, `Process`는 `프로세스`로 표시하고, 공정 방식 명칭 `Get`·`Put`은 번역하지 않도록 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "**[新增]** 现已支持韩语、英语、中文和越南语，并已将部分韩语版本中以英语显示的项目全部翻译为韩语。",
+                  "**[变更]** 版本标识规则已变更为仅记录日期。"
+                ]
+              },
+              {
+                "title": "Ver 26.07.12.01",
+                "items": [
+                  "在 Save 后添加 Break;，使循环和 Teach mode 正确结束。"
+                ]
+              },
+              {
+                "title": "Ver 26.06.19.01",
+                "items": [
+                  "Teaching Offset X、Y、Z、A、B、C 显示数据格式 2 Word /10000。"
+                ]
+              },
+              {
+                "title": "Ver 26.06.15.01",
+                "items": [
+                  "Teaching Mode、Wait Position、Process Busy 默认启用。",
+                  "Teaching Mode 新增下一位置、上一位置、Offset 位置移动和保存当前位置功能。",
+                  "Wait Position 与 Work Position 分别使用 Start、Complete、Busy 状态。",
+                  "修正 Vision Offset 与 Process Offset 同时使用时的应用顺序。",
+                  "防止 Vision Offset 与 Process Offset 重复应用。",
+                  "修正从其他工序返回 Wait 或 Work 位置时的错误路径。",
+                  "移除 SCARA 项目中不存在的 J5、J6 扭矩项。",
+                  "项目内 IO Map 替换为 InoRobot_IO_Map_0614.xlsx。",
+                  "Remote IO Mapping 更新为最新 Process Wait、Work、Busy、Teaching 配置。",
+                  "修正 Multi Recipe 说明中的 Point File 切换地址。",
+                  "帮助文字和时序图信号名称与实际生成结果保持一致。"
+                ]
+              },
+              {
+                "title": "Ver 26.05.20.01",
+                "items": [
+                  "未选择 Teaching Mode 时不再生成 Teaching 条件。"
+                ]
+              },
+              {
+                "title": "Ver 26.04.10.01",
+                "items": [
+                  "移除特定选项组合中阻止工序启动的无关条件。"
+                ]
+              },
+              {
+                "title": "Ver 26.04.07",
+                "items": [
+                  "添加项目选项详细说明按钮和工具提示。",
+                  "添加包含 IO 时序图的使用指南。",
+                  "防止 Vision Offset 工具提示被表格遮挡。",
+                  "修正 Teaching Mode 时序图中的信号与波形位置。",
+                  "对齐时序图标题、标签和波形间距，并统一用竖线表示信号变化。"
+                ]
+              },
+              {
+                "title": "Ver 26.04.02",
+                "items": [
+                  "添加 Labels、Remote IO、P.pts、User Warning 文件的表格预览。",
+                  "可直接在页面编辑 Labels、User Warning 与 P.pts 数据。",
+                  "Labels 中修改的名称会反映到所有程序预览。",
+                  "文件选择器按 Main、Static Task、Sub Program、Process、Data File 分组。"
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Software",
+            "versions": [
+              {
+                "title": "Ver 26.07.24",
+                "items": [
+                  "**[更新]** InoRobotLab 已从 V4R24C4SPC21 更新至 V4R24C4SPC22。",
+                  "**[更新]** InoRobotTP 已从 V4R24C4SPC21 更新至 V4R24C4SPC22。",
+                  "**[变更]** InoRobotLab 下载大小更新为安装 ZIP 509MB、便携 ZIP 514MB。"
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "**[新增]** 现已支持韩语、英语、中文和越南语，并已将部分韩语版本中以英语显示的项目全部翻译为韩语。",
+                  "**[变更]** 版本标识规则已变更为仅记录日期。"
+                ]
+              },
+              {
+                "title": "Ver 26.06.19.01",
+                "items": [
+                  "InoRobotLab 从 V4R24C4SPC18 更新至 V4R24C4SPC21。",
+                  "InoRobotTP 从 V4R24C4SPC18 更新至 V4R24C4SPC21。",
+                  "InoRobotLab 下载容量更新为安装版 470 MB、便携版 473 MB。"
+                ]
+              },
+              {
+                "title": "Ver 26.06.06.01",
+                "items": [
+                  "InoRobotLab 从 V4R24C4SPC17 更新至 V4R24C4SPC18。",
+                  "InoRobotTP 从 V4R24C4SPC17 更新至 V4R24C4SPC18。",
+                  "移除 SPC15、SPC17 下载，仅显示 SPC18。"
+                ]
+              },
+              {
+                "title": "Ver 26.05.14.01",
+                "items": [
+                  "Display 版 InoRobotLab 与 InoRobotTP 替换为 V4R24C4SPC0L18F121。",
+                  "禁用未提供的 Display 版 InoRobotLab 安装按钮。",
+                  "添加 Display 用 InoRobotLab 便携版 454 MB 与 InoRobotTP 57 MB 下载。"
+                ]
+              },
+              {
+                "title": "Ver 26.04.17.01",
+                "items": [
+                  "添加 InoRobotLab V4R24C4SPC17 安装版与便携版下载。",
+                  "添加 InoRobotTP V4R24C4SPC17 下载。"
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Document",
+            "versions": [
+              {
+                "title": "Ver 26.07.29",
+                "items": [
+                  "`[수정]` 비밀번호가 필요한 Display 교육자료 다운로드 시 프론트엔드와 다운로드 인증 서비스 간 요청 형식을 보완하여 자료가 정상적으로 다운로드되도록 수정했습니다.",
+                  "`[개선]` 교육자료 페이지의 다운로드 스크립트 캐시 버전을 갱신하여 수정 내용이 최신 상태로 반영되도록 개선했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.24",
+                "items": [
+                  "`[개선]` 좌측 문서 필터의 항목 높이와 그룹 간격을 줄여, 많은 항목도 더 적은 스크롤로 탐색할 수 있도록 개선했습니다.",
+                  "`[개선]` Hardware Manual 등 문서 대분류 제목을 흰색으로 표시해 어두운 배경에서의 가독성을 높였습니다.",
+                  "`[개선]` 세부 필터를 선택하면 해당 문서 목록의 시작 위치로 자동 스크롤되도록 개선했습니다.",
+                  "`[변경]` 인증서 필터를 `KC → CE → cSGSus → Clean → FCC → Safety → MTBF` 순서로 재구성하고, KC·CE 관련 세부 인증서를 각 탭에서 통합 조회할 수 있도록 변경했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.20",
+                "items": [
+                  "**[修复]** 修复无法下载 Selection Guide 手册的问题。"
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "**[新增]** 现已支持韩语、英语、中文和越南语，并已将部分韩语版本中以英语显示的项目全部翻译为韩语。",
+                  "**[变更]** 版本标识规则已变更为仅记录日期。"
+                ]
+              },
+              {
+                "title": "Ver 26.07.15",
+                "items": [
+                  "将 EtherCAT V1.01 通信配置文件替换为 `IRCB50X_SERIES_ECAT_V1.05.xml`。",
+                  "添加 Display 专用 EtherCAT 通信配置文件 `IRCB50X_SERIES_ECAT_V1.07.xml`。",
+                  "将 `Remote Ethernet Control Function User Guide.pdf` 的标签从 Common 更改为 API。",
+                  "将 `Remote IO Control Function User Guide.pdf` 与 `Remote_IO_List.xlsx` 的标签从 Common 更改为 Remote IO。",
+                  "将 `Communication setting Guide.pdf` 添加为 Common 通信手册。"
+                ]
+              },
+              {
+                "title": "Ver 26.06.23.01",
+                "items": [
+                  "在硬件手册中添加 Safety Function 标签页。",
+                  "将 Robot System Safety Function Guide.PDF 注册为 Safety Function 手册。",
+                  "INOVANCE ROBOT Selection Guide.pdf 与 INOVANCE ROBOT Selection Leaflet.pdf 替换为最新文件。"
+                ]
+              },
+              {
+                "title": "Ver 26.06.19.01",
+                "items": [
+                  "主页卡片名称由 Manual 更改为 Document。",
+                  "卡片说明更新为机器人手册、培训资料、证书、通信配置文件的查看与下载。"
+                ]
+              },
+              {
+                "title": "Ver 26.06.15.01",
+                "items": [
+                  "添加 EtherCAT v1.0.1、PROFINET V2.35、EtherNet/IP V4.5 通信配置文件。",
+                  "添加共 83 份证书：CE 10、Clean 4、cSGSus 4、FCC 2、Functional Safety 2、KCs 59、MTBF 2。",
+                  "添加 CE、Clean、cSGSus、FCC、Functional Safety、KCs、MTBF 证书筛选。",
+                  "文档搜索除标题和说明外，现也包含实际文件名与路径。"
+                ]
+              },
+              {
+                "title": "Ver 26.06.01.01",
+                "items": [
+                  "替换入门课程 2. Robot Basics 的 INT 与 Display 培训 PDF。"
+                ]
+              },
+              {
+                "title": "Ver 26.05.14.01",
+                "items": [
+                  "添加 IR-S25&S35、IR-S60&GS60、IR-R15H&R20H 用户手册。",
+                  "添加 Input IO、NPN Output IO、Encoder、Functional Safety、IR-LINK、PROFINET 扩展卡手册。",
+                  "添加 Expansion Card 与 Selection Guide 文档筛选。"
+                ]
+              },
+              {
+                "title": "Ver 26.04.26.01",
+                "items": [
+                  "R25/R16 手册由 IR-R25&R16 更名为 IR-R25&16，并替换为最新 PDF。"
+                ]
+              },
+              {
+                "title": "Ver 26.04.12.01",
+                "items": [
+                  "替换入门课程 1. Robot Introduction 的 INT 与 Display 培训 PDF。"
+                ]
+              },
+              {
+                "title": "Ver 26.04.10.01",
+                "items": [
+                  "添加 Application Level 培训分类。",
+                  "添加 API 培训 PDF 与练习用 API.zip。"
+                ]
+              },
+              {
+                "title": "Ver 26.04.07.01",
+                "items": [
+                  "添加 InoRobotLab、变量、主要命令、主要设置、Socket 通信和 Fieldbus 通信入门资料。",
+                  "添加 Display 培训专用 For Display 筛选。",
+                  "文档操作拆分为预览与下载。"
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Debugging Tool",
+            "versions": [
+              {
+                "title": "Ver 26.07.27",
+                "items": [
+                  "`[수정]` EtherNet/IP가 실제로 연결되었으나 로봇 소프트웨어에서 연결되지 않은 상태로 유지되던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.26",
+                "items": [
+                  "`[변경]` Communication Tester를 `V2.8`로 업데이트했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.25",
+                "items": [
+                  "`[추가]` 대용량 STEP/STP 파일을 PC에서 직접 불러와 부품별로 확인하고, 선택한 부품만 STEP 파일로 저장하거나 파일의 영점 위치를 수정할 수 있는 CAD Lightweight `V1.0`을 추가했습니다.",
+                  "`[변경]` InoRobot Trace를 `V1.4 → V1.5`로 업데이트했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.24",
+                "items": [
+                  "`[변경]` Communication Tester를 `V2.6 → V2.7`로 업데이트했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "`[변경]` InoRobot Trace를 `V1.3 → V1.4`로 업데이트했습니다.",
+                  "`[추가]` 한국어·영어·중국어·베트남어를 지원하며, 일부 한국어 버전에서 영어로 표시되던 항목을 모두 한국어로 번역하였습니다.",
+                  "`[변경]` 버전 표기법을 날짜만 기록하는 것으로 변경하였습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.15.01",
+                "items": [
+                  "`[변경]` InoRobot Trace를 `V1.2 → V1.3`으로 업데이트했습니다.",
+                  "`[추가]` Trace에 Joint Speed J1~J6 채널을 추가했습니다.",
+                  "`[수정]` InoRobot Trace에서 가상 컨트롤러 연결 시 Joint Speed 채널이 비활성화되던 문제를 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.06.19.01",
+                "items": [
+                  "InoRobot Label Generator 从 V2.0 更新至 V2.1。"
+                ]
+              },
+              {
+                "title": "Ver 26.06.15.01",
+                "items": [
+                  "Communication Tester 从 V2.5 更新至 V2.6。",
+                  "InoRobot Trace 从 V1.1 更新至 V1.2。"
+                ]
+              },
+              {
+                "title": "Ver 26.06.10.01",
+                "items": [
+                  "`[변경]` Communication Tester를 `V2.4 → V2.5`로 업데이트했습니다.",
+                  "`[삭제]` 기존 Communication Tester V2.3 실행 파일과 ZIP 파일을 제거했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.05.18.01",
+                "items": [
+                  "InoRobot Trace 从 V1.0 更新至 V1.1。"
+                ]
+              },
+              {
+                "title": "Ver 26.04.26.01",
+                "items": [
+                  "`[변경]` Communication Tester를 `V2.3 → V2.4`로 업데이트했습니다.",
+                  "`[추가]` InoRobot Trace V1.0 다운로드를 추가했습니다.",
+                  "`[추가]` InoRobot Label Generator V2.0 다운로드를 추가했습니다.",
+                  "`[변경]` Project Compare를 `V2.0 → V2.1`로 업데이트했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.04.13.01",
+                "items": [
+                  "`[변경]` Communication Tester를 `V2.2 → V2.3`으로 업데이트했습니다.",
+                  "`[수정]` ZIP 파일 대신 Git LFS 정보 파일이 다운로드되던 문제를 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.04.07.01",
+                "items": [
+                  "`[추가]` Zero Calibration 웹 계산기에 오프라인 Excel 다운로드 버튼을 추가했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.04.02",
+                "items": [
+                  "`[추가]` Communication Tester V2.2 다운로드를 추가했습니다.",
+                  "`[추가]` Project Compare V2.0 다운로드를 추가했습니다."
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "debugVersionHistory": {
+        "title": "调试工具版本记录",
+        "intro": "",
+        "sections": [
+          {
+            "title": "communicationTester",
+            "versions": [
+              {
+                "title": "Ver 2.7 (2026.07.24)",
+                "items": [
+                  "**[新增]** 新增发生错误时将错误代码记录到日志的功能。",
+                  "**[修复]** 修复 Socket 通信时无法重新连接的问题。"
+                ]
+              },
+              {
+                "title": "Ver 2.6 (2026.06.15)",
+                "items": [
+                  "根据标准化程序变更重新设计默认 HMI 画面。",
+                  "将最新默认 HMI 内置到程序中，无需单独文件。",
+                  "程序启动时自动应用内置默认 HMI。"
+                ]
+              },
+              {
+                "title": "Ver 2.5 (2026.06.10)",
+                "items": [
+                  "为 HMI Code Block 添加脚本系统。",
+                  "添加 If / ElseIf / Else / EndIf 条件语句。",
+                  "添加逻辑、比较、算术运算和 Delay 命令。",
+                  "脚本可读取或写入通信地址值。",
+                  "添加自动完成、语法高亮和错误检查。",
+                  "添加 Byte 与 BitField 数据类型。",
+                  "Word 数据可展开为 Bit、Byte 子行。",
+                  "多重写入可处理各目标的数据类型。",
+                  "提升与现有 HMI 文件的兼容性。"
+                ]
+              },
+              {
+                "title": "Ver 2.4 (2026.04.26)",
+                "items": [
+                  "改为无需单独安装 .NET 运行时的自包含程序。",
+                  "将程序和必要组件合并为一个可执行文件。",
+                  "修正启动入口和部署路径设置。",
+                  "提升运行与部署稳定性。"
+                ]
+              },
+              {
+                "title": "Ver 2.3 (2026.04.13)",
+                "items": [
+                  "为 HMI Word Button 添加条件比较与执行。",
+                  "添加单个按钮控制最多 10 个地址的多重写入。",
+                  "条件目标与执行目标可分别设置。",
+                  "改进 HMI 状态与触发提示。"
+                ]
+              },
+              {
+                "title": "Ver 2.2 (2026.04.02)",
+                "items": [
+                  "在网站发布 Communication Tester。",
+                  "添加 Modbus TCP 通信。",
+                  "添加 EtherNet/IP 通信。",
+                  "添加 MC Protocol 通信。",
+                  "添加 TCP/IP Socket Client 与 Server 通信。",
+                  "添加通信数据实时监控与控制。",
+                  "添加可在 PC 上构建测试画面的 HMI Builder。"
+                ]
+              }
+            ]
+          },
+          {
+            "title": "labelGenerator",
+            "versions": [
+              {
+                "title": "Ver 2.1.0",
+                "items": [
+                  "修复同一地址存在 Bit、Byte、Word 标签时部分标签缺失或被覆盖的问题。",
+                  "地址冲突时优先显示 Bit 标签，并在说明区域显示相关 Byte、Word 标签。",
+                  "自动识别说明中的 Double Word、2 Word、DWORD、32-bit。",
+                  "Double Word 数据在 Excel 中按 32 位范围正确合并。",
+                  "程序标题与可执行文件版本统一为 V2.1。"
+                ]
+              },
+              {
+                "title": "Ver 2.0.0",
+                "items": [
+                  "将原先独立发布的标签格式合并到一个程序。",
+                  "添加 20 字符 Word、20 字符 Byte、64 字符 Word、64 字符 Byte 格式。",
+                  "Excel 转 JSN 与 JSN 转 Excel 可分别选择格式。",
+                  "添加 JSN 转 Excel 前检查、编辑标签名与说明的界面。",
+                  "根据所选格式自动指定 Excel 文件名。",
+                  "改进变量名规范化，在 20 字符格式中自动缩短长名称。",
+                  "状态区域显示当前格式与已加载数据数。",
+                  "默认格式改为 20 字符 Word。"
+                ]
+              },
+              {
+                "title": "Ver 1.0.0",
+                "items": [
+                  "添加 Excel 标签数据转 JSN。",
+                  "添加 JSN 转 Excel 标签工作簿。",
+                  "支持 Input、Output 的 Bit、Byte、Word 标签。",
+                  "支持 B、R、D 变量标签。",
+                  "添加标签查看、排序、选择与编辑。",
+                  "添加变量名规范化与变更预览。",
+                  "支持 64 字符 Byte 与 20 字符 Word 格式。"
+                ]
+              }
+            ]
+          },
+          {
+            "title": "trace",
+            "versions": [
+              {
+                "title": "Ver 1.4 (2026.07.18)",
+                "items": [
+                  "新增用于 3D Simulation 的虚拟控制器联动服务器功能。",
+                  "新增 Joint 位置值实时监控项目。",
+                  "新增用于打开或关闭测量项目窗口的按钮。",
+                  "修复了 Trace 窗口宽度小于一定值时项目不显示的问题。"
+                ]
+              },
+              {
+                "title": "Ver 1.3 (2026.07.15)",
+                "items": [
+                  "添加 J1 至 J6 轴速度实时监控。"
+                ]
+              },
+              {
+                "title": "Ver 1.2 (2026.06.15)",
+                "items": [
+                  "添加 16 个 DI 与 16 个 DO 通道实时监控。",
+                  "数字信号状态由数值改为 ON / OFF。",
+                  "优化图表范围，使 DI、DO 变化更易识别。",
+                  "可将所有已选跟踪通道保存为 CSV。",
+                  "加载 CSV 时自动识别并显示其中的通道。",
+                  "保持与旧版本 CSV 文件的兼容性。"
+                ]
+              },
+              {
+                "title": "Ver 1.1 (2026.05.18)",
+                "items": [
+                  "由读取全部 B、R、D 变量改为仅采集用户选择的变量。",
+                  "跟踪运行中也可更改 B、R、D 跟踪变量。",
+                  "减少不必要的机器人 API 调用，提高高速采样稳定性和响应速度。",
+                  "降低实时跟踪时机器人和程序的通信负载。"
+                ]
+              },
+              {
+                "title": "Ver 1.0 (2026.04.26)",
+                "items": [
+                  "首次发布 InoRobotTrace。",
+                  "添加机器人 TCP 速度与当前位置实时跟踪。",
+                  "添加错误状态、错误代码、各轴伺服错误和急停状态监控。",
+                  "添加程序行、运动行、系统时间和固件版本监控。",
+                  "添加 Tool、Work Object、Load 编号与 B/R/D 变量监控。",
+                  "添加图表缩放、平移、通道分离和光标测量。",
+                  "添加跟踪数据 CSV 保存与重新加载。",
+                  "以无需安装的单一可执行文件提供。"
+                ]
+              }
+            ]
+          },
+          {
+            "title": "projectCompare",
+            "versions": [
+              {
+                "title": "Ver 2.1",
+                "items": [
+                  "更新显示设置以适配 Windows 125%、150% 等缩放。",
+                  "修复高分辨率屏幕中文字、按钮、输入框重叠或尺寸异常的问题。",
+                  "改为无需单独安装 .NET 的单一可执行文件。",
+                  "程序标题与可执行文件版本统一为 V2.1。"
+                ]
+              },
+              {
+                "title": "Ver 2.0",
+                "items": [
+                  "添加两个 InoRobot 项目的并排比较。",
+                  "添加 .pro、.pts、.jsn、.dat 文件自动分类。",
+                  "文件状态显示为一致 / 不同 / 仅 A / 仅 B。",
+                  "添加以颜色突出不同代码与数据的比较画面。",
+                  "添加点位与标签数据的表格比较和编辑。",
+                  "添加所选文件 A 到 B 或 B 到 A 覆盖。",
+                  "可在比较画面直接编辑并保存文件。",
+                  "添加复制现有项目的另存为功能。",
+                  "支持韩语、英语、中文和越南语界面。"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "vi": {
+      "versionHistory": {
+        "title": "Lịch sử cập nhật InoRobot Assistant",
+        "intro": "Tệp này ghi lại các tính năng, tài liệu, thay đổi hiển thị và bản sửa lỗi mà người dùng có thể thấy trên từng thẻ ở trang chủ.",
+        "sections": [
+          {
+            "title": "Robot Model Select",
+            "versions": [
+              {
+                "title": "Ver 26.07.28",
+                "items": [
+                  "`[추가]` 펜던트 비상정지 보호커버형을 선택시 다운로드되는 전용 2D,3D CAD 파일을 추가했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.26",
+                "items": [
+                  "`[개선]` CAD 다운로드 버튼이 즉시 활성화되도록 개선했습니다.",
+                  "`[변경]` CAD 파일이 없는 모델은 `CAD 파일 없음`으로 즉시 표시하도록 변경했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.25",
+                "items": [
+                  "`[추가]` GL20 시리즈 6개 모델을 컨트롤러 확장 카드에서 분리하여 리모트 커플러 옵션으로 추가했습니다.",
+                  "`[변경]` 케이블 핀 수 표시와 옵션 구성 내역의 다국어 표시를 정리하고, 구매 코드가 새 그룹에 표시되도록 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.20",
+                "items": [
+                  "**[Thay đổi]** Thêm mã model bộ điều khiển tương thích vào màn hình chọn model."
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "**[Thêm]** Đã bổ sung hỗ trợ tiếng Hàn, tiếng Anh, tiếng Trung và tiếng Việt; đồng thời dịch sang tiếng Hàn tất cả mục trước đây hiển thị bằng tiếng Anh trong một số giao diện tiếng Hàn.",
+                  "**[Thay đổi]** Quy ước hiển thị phiên bản được thay đổi thành chỉ ghi ngày."
+                ]
+              },
+              {
+                "title": "Ver 26.06.19.01",
+                "items": [
+                  "**[Mới]** Thêm tay dạy IR-TP200 có nắp bảo vệ nút dừng khẩn cấp.",
+                  "**[Mới]** Thêm mã đặt hàng tay dạy có nắp: 5 m 01640069, 10 m 01640072 và 15 m 01640073.",
+                  "**[Thay đổi]** Sắp xếp lại lựa chọn tay dạy thành Không chọn / Không có nắp / Có nắp bảo vệ.",
+                  "**[Thay đổi]** Kết quả và PDF hiển thị loại nắp, chiều dài và mã đặt hàng đã chọn."
+                ]
+              },
+              {
+                "title": "Ver 26.06.15.01",
+                "items": [
+                  "**[Thêm]** Thêm mã cáp 5 m 01741079*M00018 cho IR-S7-60Z20S-INT."
+                ]
+              },
+              {
+                "title": "Ver 26.06.02.01",
+                "items": [
+                  "**[Thay đổi]** Mẫu SCARA không có chứng nhận KCs hiển thị thời gian giao dự kiến 10 tuần."
+                ]
+              },
+              {
+                "title": "Ver 26.06.01.02",
+                "items": [
+                  "**[Thay đổi]** Đổi IR-R15H-145S-INT thành IR-R15H-145S-K-INT.",
+                  "**[Thay đổi]** Đổi IR-R20H-120S-INT thành IR-R20H-120S-K-INT.",
+                  "**[Thêm]** Thêm mã đặt hàng IR-R15H IP67 01741446.",
+                  "**[Thêm]** Thêm mã đặt hàng IR-R20H IP67 01741597.",
+                  "**[Thêm]** Thêm mã cáp 3 m 01741436*M00002 cho IR-S25-100Z42S-INT.",
+                  "**[Thêm]** Thêm mã IR-S60-120Z40S-INT: 5 m 01741367*M00002 và 15 m 01741367*M00003.",
+                  "**[Sửa]** Khôi phục tra cứu CAD sau khi đổi mã R15H và R20H."
+                ]
+              },
+              {
+                "title": "Ver 26.06.01.01",
+                "items": [
+                  "**[Thêm]** Thêm mã cáp 3 m 01741086*M00008 cho IR-R10-140S-INT."
+                ]
+              },
+              {
+                "title": "Ver 26.05.29.01",
+                "items": [
+                  "**[Mới]** Thêm tùy chọn thân Standard, Clean và IP67 cho robot sáu trục.",
+                  "**[Thay đổi]** R10-140, R16 và R25 chỉ hiển thị cấu hình cố định Body IP65 / Wrist IP67.",
+                  "**[Thay đổi]** R15H và R20H Clean hiển thị ISO Class 4; các mẫu sáu trục Clean khác hiển thị ISO Class 3.",
+                  "**[Thay đổi]** Khi chọn loại thân, mã S/C/P của tên mẫu và tên tệp PDF được cập nhật đồng thời.",
+                  "**[Sửa]** Sửa lỗi tải CAD cho R16, R25 và các mẫu dùng tên _CN hoặc _3D_CN.",
+                  "**[Sửa]** Khôi phục đơn vị °, °/s, mm và mm/s cho tốc độ trục và phạm vi chuyển động.",
+                  "**[Sửa]** Khôi phục đơn vị kg và mm cho khối lượng và độ lặp lại trong chi tiết và PDF.",
+                  "**[Sửa]** Xóa chứng nhận KC, KCs hiển thị sai trên IR-S35-80Z42S-INT.",
+                  "**[Dọn dẹp]** Loại mẫu IR-CS chưa phát hành khỏi bộ lọc và kết quả tìm kiếm.",
+                  "**[Dọn dẹp]** Ẩn tùy chọn Handheld Motor Brake Release Box không hỗ trợ trên R10-140, R16 và R25."
+                ]
+              },
+              {
+                "title": "Ver 26.05.22.01",
+                "items": [
+                  "**[Thay đổi]** Sửa Clean Type từ Yes thành No cho IR-R4H, R7H-70, R7H-90, R10H, R15H và R20H.",
+                  "**[Thay đổi]** Cấu hình Clean của các mẫu sáu trục này được hiển thị dưới dạng tùy chọn thay vì mặc định.",
+                  "**[Thay đổi]** Thời gian giao dự kiến cho SCARA Clean đổi thành sáu tháng.",
+                  "**[Sửa]** Bật nút CAD cho R16 và R25 khi mã mẫu khác tên thư mục CAD.",
+                  "**[Thay đổi]** Chuẩn hóa nhãn nút CAD thành Checking / CAD Download / CAD Not Ready / Preparing."
+                ]
+              },
+              {
+                "title": "Ver 26.04.17.01",
+                "items": [
+                  "**[Sửa]** Sửa dữ liệu Standard và Clean bị hoán đổi của IR-S25-120.",
+                  "**[Sửa]** Sửa liên kết tên mẫu, chiều dài tay, hành trình Z, khối lượng, chu kỳ và chứng nhận của IR-S35-100 và IR-S35-120.",
+                  "**[Thêm]** Thêm tệp 2D DWG, 3D STP và FBX cho IR-S25-120Z42S-INT và IR-S35-120Z42S-INT.",
+                  "**[Sửa]** Sửa cấp IP của R15H và R20H trong PDF."
+                ]
+              },
+              {
+                "title": "Ver 26.04.12.01",
+                "items": [
+                  "**[Mới]** Thêm dung lượng bộ ngắt mạch khuyến nghị vào chi tiết mẫu.",
+                  "**[Thay đổi]** Hiển thị R4/R7H 10 A, R10/R11 15 A, R10-140 20 A, R16/R25 30 A, S25 15 A và S35/S60 20 A."
+                ]
+              },
+              {
+                "title": "Ver 26.03.31.02",
+                "items": [
+                  "**[Thay đổi]** Mã đặt hàng cho tay dạy, Arm I/O, Body I/O và mở rộng truyền thông dùng huy hiệu màu cam.",
+                  "**[Thay đổi]** Tên cáp nối dài IR-TP200 hiển thị trực tiếp chiều dài 5 m, 15 m và 25 m."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "3D Simulation",
+            "versions": [
+              {
+                "title": "Ver 26.07.26",
+                "items": [
+                  "`[추가]` 프로그램 패널에 OLP (Offline Programming) 기능을 추가했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.25",
+                "items": [
+                  "`[개선]` 대용량 STL 모델은 시각용 원본 메시와 별도의 충돌 프록시를 사용해 충돌 검사 성능과 표시 품질을 함께 개선했습니다.",
+                  "`[수정]` 가상 컨트롤러가 연결되지 않던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.24",
+                "items": [
+                  "`[추가]` 로봇 링크·Tool·설비 모델 간 실제 형상 기준 충돌을 감지하고, 충돌 모델을 빨간색으로 표시하는 기능을 추가했습니다.",
+                  "`[추가]` 원하는 위치에 가상 영역을 설정하여 사용할 수 있는 간섭 영역 설정 기능을 추가했습니다.",
+                  "`[수정]` SCARA J3의 컨트롤러 각도 범위를 모델별로 적용해, 시뮬레이터의 직선축(mm)과 컨트롤러 표시값(°)이 일치하도록 수정했습니다.",
+                  "`[추가]` 저장 설정·배치 모델들을 일괄 초기화하는 기능을 추가했습니다.",
+                  "`[추가]` 실제 컨트롤러 연결 기능을 추가했습니다.",
+                  "`[추가]` 저장한 카메라 뷰를 별도 창에서 열고 여러 뷰를 분할 화면으로 동시에 확인할 수 있는 다중 뷰 기능을 추가했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.21",
+                "items": [
+                  "**[Thêm]** Thêm lựa chọn chất lượng Tự động, Nhẹ, Tiêu chuẩn và Cao cho việc nhập mô hình 3D lớn.",
+                  "**[Thay đổi]** Mô hình STL, FBX và STEP lớn được xử lý nền theo từng khối, đồng thời giữ cấu trúc và màu của chi tiết STEP.",
+                  "**[Sửa]** Ổn định phản hồi bắt dính cho mặt đã chọn, tâm nhiều điểm và các ứng viên khi duyệt mô hình."
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "**[Cải tổ]** Đã cải tổ toàn diện 3D Viewer hiện có thành 3D Simulation có thể mô phỏng robot.",
+                  "**[Hỗ trợ]** Có thể di chuyển tất cả các mẫu robot và thiết lập đường đi của robot thông qua lập trình.",
+                  "**[Hỗ trợ]** Hỗ trợ nhập mô hình 3D và gắn tệp đã nhập vào Tool của robot.",
+                  "**[Hỗ trợ]** Có thể kết nối và sử dụng Bộ điều khiển ảo của InoRobotLab. (Cần dùng bridge chuyên dụng hoặc công cụ Trace.)",
+                  "**[Thêm]** Đã bổ sung hỗ trợ tiếng Hàn, tiếng Anh, tiếng Trung và tiếng Việt; đồng thời dịch sang tiếng Hàn tất cả mục trước đây hiển thị bằng tiếng Anh trong một số giao diện tiếng Hàn.",
+                  "**[Thay đổi]** Quy ước hiển thị phiên bản được thay đổi thành chỉ ghi ngày."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Robot Tool Selector",
+            "versions": [
+              {
+                "title": "Ver 26.07.26",
+                "items": [
+                  "`[개선]` 모바일 웹 UI 레이아웃을 개선했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.21",
+                "items": [
+                  "`[추가]` 대용량 STEP 파일의 가져오기 품질을 기본·초경량으로 선택할 수 있습니다.",
+                  "`[수정]` 회전 핸들의 180° 경계 연속성과 면·원·호 스냅 계산을 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "`[추가]` STEP/STP CAD 파일의 질량 특성을 계산하는 Mode D를 추가했습니다.",
+                  "`[추가]` 부품별 포함 여부·재질·밀도를 설정하고 총 질량, CoG, Tool 원점 및 부하중심 기준 Ixx·Iyy·Izz를 계산합니다.",
+                  "`[추가]` Tool 원점과 TCP를 꼭짓점·끝점·중심점·가상 교점 스냅으로 지정할 수 있습니다.",
+                  "`[추가]` 좌표계 방향을 3D 회전 핸들과 Rx·Ry·Rz 수치로 설정할 수 있습니다.",
+                  "`[추가]` TCP와 CoG를 서로 다른 색상·형상으로 표시하고 3D 뷰어에 범례를 제공합니다.",
+                  "`[추가]` 3D 뷰어 그리드 ON/OFF 버튼을 제공하며 기본값은 OFF입니다.",
+                  "`[추가]` 지정한 Tool 원점과 좌표계 방향을 적용한 STEP 파일을 내보낼 수 있습니다.",
+                  "`[추가]` 원/호 중심점 2~4개를 선택해 평균 중심을 계산하는 다중 원 중심점 스냅을 추가했습니다.",
+                  "`[변경]` 재질·밀도 설정과 좌표계 적용 STEP 내보내기에서 원본 CAD 색상을 그대로 유지합니다.",
+                  "`[추가]` 한국어·영어·중국어·베트남어를 지원하며, 일부 한국어 버전에서 영어로 표시되던 항목을 모두 한국어로 번역하였습니다.",
+                  "`[변경]` 버전 표기법을 날짜만 기록하는 것으로 변경하였습니다."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Project Generator",
+            "versions": [
+              {
+                "title": "Ver 26.07.26",
+                "items": [
+                  "`[수정]` 한국어 화면에서 `No`는 `번호`, `Process`는 `프로세스`로 표시하고, 공정 방식 명칭 `Get`·`Put`은 번역하지 않도록 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "**[Thêm]** Đã bổ sung hỗ trợ tiếng Hàn, tiếng Anh, tiếng Trung và tiếng Việt; đồng thời dịch sang tiếng Hàn tất cả mục trước đây hiển thị bằng tiếng Anh trong một số giao diện tiếng Hàn.",
+                  "**[Thay đổi]** Quy ước hiển thị phiên bản được thay đổi thành chỉ ghi ngày."
+                ]
+              },
+              {
+                "title": "Ver 26.07.12.01",
+                "items": [
+                  "**[Sửa]** Thêm Break; sau Save để kết thúc đúng vòng lặp và Teach mode."
+                ]
+              },
+              {
+                "title": "Ver 26.06.19.01",
+                "items": [
+                  "**[Thay đổi]** Teaching Offset X, Y, Z, A, B và C hiển thị định dạng 2 Word /10000."
+                ]
+              },
+              {
+                "title": "Ver 26.06.15.01",
+                "items": [
+                  "**[Thay đổi]** Teaching Mode, Wait Position và Process Busy được bật mặc định.",
+                  "**[Mới]** Thêm di chuyển đến vị trí kế tiếp, vị trí trước, vị trí Offset và lưu vị trí hiện tại trong Teaching Mode.",
+                  "**[Thay đổi]** Wait Position và Work Position có trạng thái Start, Complete và Busy riêng.",
+                  "**[Sửa]** Sửa thứ tự áp dụng khi dùng Vision Offset cùng Process Offset.",
+                  "**[Sửa]** Ngăn Vision Offset và Process Offset bị áp dụng hai lần.",
+                  "**[Sửa]** Sửa đường trở về Wait hoặc Work từ công đoạn khác.",
+                  "**[Sửa]** Xóa mục mômen J5 và J6 không tồn tại khỏi dự án SCARA.",
+                  "**[Cập nhật]** Thay IO Map đi kèm bằng InoRobot_IO_Map_0614.xlsx.",
+                  "**[Cập nhật]** Cập nhật Remote IO Mapping cho cấu hình Process Wait, Work, Busy và Teaching mới nhất.",
+                  "**[Sửa]** Sửa địa chỉ chuyển Point File trong hướng dẫn Multi Recipe.",
+                  "**[Thay đổi]** Tên tín hiệu trong trợ giúp và biểu đồ thời gian khớp với kết quả tạo thực tế."
+                ]
+              },
+              {
+                "title": "Ver 26.05.20.01",
+                "items": [
+                  "**[Sửa]** Không còn tạo điều kiện Teaching khi Teaching Mode bị tắt."
+                ]
+              },
+              {
+                "title": "Ver 26.04.10.01",
+                "items": [
+                  "**[Sửa]** Loại bỏ điều kiện thừa có thể ngăn công đoạn khởi động với một số tổ hợp tùy chọn."
+                ]
+              },
+              {
+                "title": "Ver 26.04.07",
+                "items": [
+                  "**[Mới]** Thêm nút giải thích chi tiết và chú giải cho từng tùy chọn dự án.",
+                  "**[Mới]** Thêm hướng dẫn sử dụng có biểu đồ thời gian IO.",
+                  "**[Sửa]** Ngăn chú giải Vision Offset bị che dưới bảng.",
+                  "**[Sửa]** Sửa vị trí tín hiệu và dạng sóng trong biểu đồ Teaching Mode.",
+                  "**[Thay đổi]** Căn chỉnh tiêu đề, nhãn, khoảng cách dạng sóng và thống nhất chuyển mức bằng đường dọc."
+                ]
+              },
+              {
+                "title": "Ver 26.04.02",
+                "items": [
+                  "**[Mới]** Thêm xem trước dạng bảng cho Labels, Remote IO, P.pts và User Warning.",
+                  "**[Mới]** Có thể sửa trực tiếp dữ liệu Labels, User Warning và P.pts trên trang.",
+                  "**[Thay đổi]** Tên sửa trong Labels được phản ánh vào mọi bản xem trước chương trình.",
+                  "**[Thay đổi]** Nhóm bộ chọn tệp thành Main, Static Task, Sub Program, Process và Data File."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Software",
+            "versions": [
+              {
+                "title": "Ver 26.07.24",
+                "items": [
+                  "**[Cập nhật]** Đã cập nhật InoRobotLab từ V4R24C4SPC21 lên V4R24C4SPC22.",
+                  "**[Cập nhật]** Đã cập nhật InoRobotTP từ V4R24C4SPC21 lên V4R24C4SPC22.",
+                  "**[Thay đổi]** Cập nhật kích thước tải xuống InoRobotLab thành 509MB cho ZIP cài đặt và 514MB cho ZIP portable."
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "**[Thêm]** Đã bổ sung hỗ trợ tiếng Hàn, tiếng Anh, tiếng Trung và tiếng Việt; đồng thời dịch sang tiếng Hàn tất cả mục trước đây hiển thị bằng tiếng Anh trong một số giao diện tiếng Hàn.",
+                  "**[Thay đổi]** Quy ước hiển thị phiên bản được thay đổi thành chỉ ghi ngày."
+                ]
+              },
+              {
+                "title": "Ver 26.06.19.01",
+                "items": [
+                  "**[Cập nhật]** InoRobotLab từ V4R24C4SPC18 lên V4R24C4SPC21.",
+                  "**[Cập nhật]** InoRobotTP từ V4R24C4SPC18 lên V4R24C4SPC21.",
+                  "**[Thay đổi]** Cập nhật dung lượng InoRobotLab thành bản cài 470 MB và bản portable 473 MB."
+                ]
+              },
+              {
+                "title": "Ver 26.06.06.01",
+                "items": [
+                  "**[Cập nhật]** InoRobotLab từ V4R24C4SPC17 lên V4R24C4SPC18.",
+                  "**[Cập nhật]** InoRobotTP từ V4R24C4SPC17 lên V4R24C4SPC18.",
+                  "**[Dọn dẹp]** Xóa tải xuống SPC15, SPC17 và chỉ hiển thị SPC18."
+                ]
+              },
+              {
+                "title": "Ver 26.05.14.01",
+                "items": [
+                  "**[Cập nhật]** Thay InoRobotLab và InoRobotTP bản Display bằng V4R24C4SPC0L18F121.",
+                  "**[Thay đổi]** Vô hiệu hóa nút bản cài InoRobotLab Display không được cung cấp.",
+                  "**[Thêm]** Thêm InoRobotLab portable 454 MB và InoRobotTP 57 MB cho Display."
+                ]
+              },
+              {
+                "title": "Ver 26.04.17.01",
+                "items": [
+                  "**[Thêm]** Thêm bản cài và portable InoRobotLab V4R24C4SPC17.",
+                  "**[Thêm]** Thêm tải xuống InoRobotTP V4R24C4SPC17."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Document",
+            "versions": [
+              {
+                "title": "Ver 26.07.29",
+                "items": [
+                  "`[수정]` 비밀번호가 필요한 Display 교육자료 다운로드 시 프론트엔드와 다운로드 인증 서비스 간 요청 형식을 보완하여 자료가 정상적으로 다운로드되도록 수정했습니다.",
+                  "`[개선]` 교육자료 페이지의 다운로드 스크립트 캐시 버전을 갱신하여 수정 내용이 최신 상태로 반영되도록 개선했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.24",
+                "items": [
+                  "`[개선]` 좌측 문서 필터의 항목 높이와 그룹 간격을 줄여, 많은 항목도 더 적은 스크롤로 탐색할 수 있도록 개선했습니다.",
+                  "`[개선]` Hardware Manual 등 문서 대분류 제목을 흰색으로 표시해 어두운 배경에서의 가독성을 높였습니다.",
+                  "`[개선]` 세부 필터를 선택하면 해당 문서 목록의 시작 위치로 자동 스크롤되도록 개선했습니다.",
+                  "`[변경]` 인증서 필터를 `KC → CE → cSGSus → Clean → FCC → Safety → MTBF` 순서로 재구성하고, KC·CE 관련 세부 인증서를 각 탭에서 통합 조회할 수 있도록 변경했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.20",
+                "items": [
+                  "**[Sửa]** Khắc phục lỗi không thể tải xuống tài liệu Selection Guide."
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "**[Thêm]** Đã bổ sung hỗ trợ tiếng Hàn, tiếng Anh, tiếng Trung và tiếng Việt; đồng thời dịch sang tiếng Hàn tất cả mục trước đây hiển thị bằng tiếng Anh trong một số giao diện tiếng Hàn.",
+                  "**[Thay đổi]** Quy ước hiển thị phiên bản được thay đổi thành chỉ ghi ngày."
+                ]
+              },
+              {
+                "title": "Ver 26.07.15",
+                "items": [
+                  "**[Cập nhật]** Thay hồ sơ truyền thông EtherCAT V1.01 bằng `IRCB50X_SERIES_ECAT_V1.05.xml`.",
+                  "**[Thêm]** Thêm hồ sơ truyền thông EtherCAT `IRCB50X_SERIES_ECAT_V1.07.xml` dành cho Display.",
+                  "**[Thay đổi]** Đổi nhãn của `Remote Ethernet Control Function User Guide.pdf` từ Common thành API.",
+                  "**[Thay đổi]** Đổi nhãn của `Remote IO Control Function User Guide.pdf` và `Remote_IO_List.xlsx` từ Common thành Remote IO.",
+                  "**[Thêm]** Thêm `Communication setting Guide.pdf` làm tài liệu truyền thông Common."
+                ]
+              },
+              {
+                "title": "Ver 26.06.23.01",
+                "items": [
+                  "**[Thêm]** Thêm thẻ Safety Function vào phần hướng dẫn phần cứng.",
+                  "**[Thêm]** Đăng ký Robot System Safety Function Guide.PDF làm hướng dẫn Safety Function.",
+                  "**[Cập nhật]** Thay INOVANCE ROBOT Selection Guide.pdf và INOVANCE ROBOT Selection Leaflet.pdf bằng tệp mới nhất."
+                ]
+              },
+              {
+                "title": "Ver 26.06.19.01",
+                "items": [
+                  "**[Thay đổi]** Đổi tên thẻ trang chủ từ Manual thành Document.",
+                  "**[Thay đổi]** Cập nhật mô tả thành xem và tải hướng dẫn robot, tài liệu đào tạo, chứng chỉ và hồ sơ truyền thông."
+                ]
+              },
+              {
+                "title": "Ver 26.06.15.01",
+                "items": [
+                  "**[Mới]** Thêm hồ sơ EtherCAT v1.0.1, PROFINET V2.35 và EtherNet/IP V4.5.",
+                  "**[Mới]** Thêm 83 chứng chỉ: CE 10, Clean 4, cSGSus 4, FCC 2, Functional Safety 2, KCs 59 và MTBF 2.",
+                  "**[Mới]** Thêm bộ lọc CE, Clean, cSGSus, FCC, Functional Safety, KCs và MTBF.",
+                  "**[Thay đổi]** Tìm kiếm tài liệu bao gồm cả tên tệp và đường dẫn, ngoài tiêu đề và mô tả."
+                ]
+              },
+              {
+                "title": "Ver 26.06.01.01",
+                "items": [
+                  "**[Cập nhật]** Thay PDF đào tạo INT và Display của khóa nhập môn 2. Robot Basics."
+                ]
+              },
+              {
+                "title": "Ver 26.05.14.01",
+                "items": [
+                  "**[Thêm]** Thêm hướng dẫn IR-S25&S35, IR-S60&GS60 và IR-R15H&R20H.",
+                  "**[Thêm]** Thêm hướng dẫn thẻ mở rộng Input IO, NPN Output IO, Encoder, Functional Safety, IR-LINK và PROFINET.",
+                  "**[Mới]** Thêm bộ lọc Expansion Card và Selection Guide."
+                ]
+              },
+              {
+                "title": "Ver 26.04.26.01",
+                "items": [
+                  "**[Cập nhật]** Đổi tên hướng dẫn R25/R16 từ IR-R25&R16 thành IR-R25&16 và thay PDF mới nhất."
+                ]
+              },
+              {
+                "title": "Ver 26.04.12.01",
+                "items": [
+                  "**[Cập nhật]** Thay PDF đào tạo INT và Display của khóa nhập môn 1. Robot Introduction."
+                ]
+              },
+              {
+                "title": "Ver 26.04.10.01",
+                "items": [
+                  "**[Mới]** Thêm phân loại đào tạo Application Level.",
+                  "**[Thêm]** Thêm PDF đào tạo API và API.zip thực hành."
+                ]
+              },
+              {
+                "title": "Ver 26.04.07.01",
+                "items": [
+                  "**[Thêm]** Thêm tài liệu cơ bản về InoRobotLab, biến, lệnh chính, cài đặt chính, Socket và Fieldbus.",
+                  "**[Mới]** Thêm bộ lọc đào tạo For Display.",
+                  "**[Thay đổi]** Tách thao tác tài liệu thành Xem trước và Tải xuống."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Debugging Tool",
+            "versions": [
+              {
+                "title": "Ver 26.07.27",
+                "items": [
+                  "`[수정]` EtherNet/IP가 실제로 연결되었으나 로봇 소프트웨어에서 연결되지 않은 상태로 유지되던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.26",
+                "items": [
+                  "`[변경]` Communication Tester를 `V2.8`로 업데이트했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.25",
+                "items": [
+                  "`[추가]` 대용량 STEP/STP 파일을 PC에서 직접 불러와 부품별로 확인하고, 선택한 부품만 STEP 파일로 저장하거나 파일의 영점 위치를 수정할 수 있는 CAD Lightweight `V1.0`을 추가했습니다.",
+                  "`[변경]` InoRobot Trace를 `V1.4 → V1.5`로 업데이트했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.24",
+                "items": [
+                  "`[변경]` Communication Tester를 `V2.6 → V2.7`로 업데이트했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.18",
+                "items": [
+                  "`[변경]` InoRobot Trace를 `V1.3 → V1.4`로 업데이트했습니다.",
+                  "`[추가]` 한국어·영어·중국어·베트남어를 지원하며, 일부 한국어 버전에서 영어로 표시되던 항목을 모두 한국어로 번역하였습니다.",
+                  "`[변경]` 버전 표기법을 날짜만 기록하는 것으로 변경하였습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.07.15.01",
+                "items": [
+                  "`[변경]` InoRobot Trace를 `V1.2 → V1.3`으로 업데이트했습니다.",
+                  "`[추가]` Trace에 Joint Speed J1~J6 채널을 추가했습니다.",
+                  "`[수정]` InoRobot Trace에서 가상 컨트롤러 연결 시 Joint Speed 채널이 비활성화되던 문제를 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.06.19.01",
+                "items": [
+                  "**[Cập nhật]** InoRobot Label Generator từ V2.0 lên V2.1."
+                ]
+              },
+              {
+                "title": "Ver 26.06.15.01",
+                "items": [
+                  "**[Cập nhật]** Communication Tester từ V2.5 lên V2.6.",
+                  "**[Cập nhật]** InoRobot Trace từ V1.1 lên V1.2."
+                ]
+              },
+              {
+                "title": "Ver 26.06.10.01",
+                "items": [
+                  "`[변경]` Communication Tester를 `V2.4 → V2.5`로 업데이트했습니다.",
+                  "`[삭제]` 기존 Communication Tester V2.3 실행 파일과 ZIP 파일을 제거했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.05.18.01",
+                "items": [
+                  "**[Cập nhật]** InoRobot Trace từ V1.0 lên V1.1."
+                ]
+              },
+              {
+                "title": "Ver 26.04.26.01",
+                "items": [
+                  "`[변경]` Communication Tester를 `V2.3 → V2.4`로 업데이트했습니다.",
+                  "`[추가]` InoRobot Trace V1.0 다운로드를 추가했습니다.",
+                  "`[추가]` InoRobot Label Generator V2.0 다운로드를 추가했습니다.",
+                  "`[변경]` Project Compare를 `V2.0 → V2.1`로 업데이트했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.04.13.01",
+                "items": [
+                  "`[변경]` Communication Tester를 `V2.2 → V2.3`으로 업데이트했습니다.",
+                  "`[수정]` ZIP 파일 대신 Git LFS 정보 파일이 다운로드되던 문제를 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.04.07.01",
+                "items": [
+                  "`[추가]` Zero Calibration 웹 계산기에 오프라인 Excel 다운로드 버튼을 추가했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.04.02",
+                "items": [
+                  "`[추가]` Communication Tester V2.2 다운로드를 추가했습니다.",
+                  "`[추가]` Project Compare V2.0 다운로드를 추가했습니다."
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "debugVersionHistory": {
+        "title": "Lịch sử phiên bản công cụ gỡ lỗi",
+        "intro": "",
+        "sections": [
+          {
+            "title": "communicationTester",
+            "versions": [
+              {
+                "title": "Ver 2.7 (2026.07.24)",
+                "items": [
+                  "**[Thêm]** Thêm ghi mã lỗi vào nhật ký khi xảy ra lỗi.",
+                  "**[Sửa]** Khắc phục lỗi không thể kết nối lại khi giao tiếp Socket."
+                ]
+              },
+              {
+                "title": "Ver 2.6 (2026.06.15)",
+                "items": [
+                  "**[Thay đổi]** Thiết kế lại màn hình HMI mặc định theo chương trình chuẩn hóa.",
+                  "**[Thay đổi]** Nhúng HMI mặc định mới nhất vào chương trình, không cần tệp riêng.",
+                  "**[Cải tiến]** HMI mặc định nhúng được áp dụng tự động khi khởi động."
+                ]
+              },
+              {
+                "title": "Ver 2.5 (2026.06.10)",
+                "items": [
+                  "**[Mới]** Thêm hệ thống script vào HMI Code Block.",
+                  "**[Thêm]** Thêm điều kiện If / ElseIf / Else / EndIf.",
+                  "**[Thêm]** Thêm phép logic, so sánh, số học và lệnh Delay.",
+                  "**[Thêm]** Script có thể đọc và ghi giá trị địa chỉ truyền thông.",
+                  "**[Thêm]** Thêm tự động hoàn thành, tô sáng cú pháp và kiểm tra lỗi.",
+                  "**[Thêm]** Thêm kiểu dữ liệu Byte và BitField.",
+                  "**[Thêm]** Có thể mở rộng Word thành các hàng Bit và Byte.",
+                  "**[Cải tiến]** Ghi nhiều địa chỉ xử lý đúng kiểu dữ liệu của từng đích.",
+                  "**[Cải tiến]** Cải thiện tương thích với tệp HMI hiện có."
+                ]
+              },
+              {
+                "title": "Ver 2.4 (2026.04.26)",
+                "items": [
+                  "**[Thay đổi]** Chuyển thành ứng dụng độc lập chạy không cần cài riêng .NET runtime.",
+                  "**[Thay đổi]** Gộp chương trình và thành phần bắt buộc vào một tệp chạy.",
+                  "**[Sửa]** Sửa điểm khởi động và thiết lập đường dẫn triển khai.",
+                  "**[Cải tiến]** Cải thiện độ ổn định khi chạy và triển khai."
+                ]
+              },
+              {
+                "title": "Ver 2.3 (2026.04.13)",
+                "items": [
+                  "**[Thêm]** Thêm so sánh điều kiện và thực thi cho HMI Word Button.",
+                  "**[Thêm]** Thêm ghi nhiều để điều khiển tối đa 10 địa chỉ bằng một nút.",
+                  "**[Thay đổi]** Có thể cấu hình riêng đích điều kiện và đích thực thi.",
+                  "**[Cải tiến]** Cải thiện hiển thị trạng thái và kích hoạt HMI."
+                ]
+              },
+              {
+                "title": "Ver 2.2 (2026.04.02)",
+                "items": [
+                  "**[Mới]** Phát hành Communication Tester trên trang web.",
+                  "**[Thêm]** Thêm truyền thông Modbus TCP.",
+                  "**[Thêm]** Thêm truyền thông EtherNet/IP.",
+                  "**[Thêm]** Thêm truyền thông MC Protocol.",
+                  "**[Thêm]** Thêm TCP/IP Socket Client và Server.",
+                  "**[Thêm]** Thêm giám sát và điều khiển dữ liệu truyền thông thời gian thực.",
+                  "**[Thêm]** Thêm HMI Builder để tạo màn hình kiểm thử trên PC."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "labelGenerator",
+            "versions": [
+              {
+                "title": "Ver 2.1.0",
+                "items": [
+                  "**[Sửa]** Ngăn nhãn Bit, Byte hoặc Word bị thiếu hay ghi đè khi dùng cùng địa chỉ.",
+                  "**[Thay đổi]** Khi xung đột địa chỉ, ưu tiên nhãn Bit và hiển thị Byte, Word liên quan trong phần mô tả.",
+                  "**[Thêm]** Tự nhận dạng Double Word, 2 Word, DWORD và 32-bit trong mô tả.",
+                  "**[Sửa]** Dữ liệu Double Word được ghép đúng trong phạm vi 32 bit của Excel.",
+                  "**[Thay đổi]** Thống nhất tiêu đề chương trình và phiên bản tệp chạy là V2.1."
+                ]
+              },
+              {
+                "title": "Ver 2.0.0",
+                "items": [
+                  "**[Mới]** Gộp các định dạng nhãn phát hành riêng thành một chương trình.",
+                  "**[Thêm]** Thêm định dạng Word 20 ký tự, Byte 20 ký tự, Word 64 ký tự và Byte 64 ký tự.",
+                  "**[Thêm]** Có thể chọn định dạng riêng cho Excel sang JSN và JSN sang Excel.",
+                  "**[Mới]** Thêm màn hình kiểm tra, sửa tên nhãn và mô tả trước khi chuyển JSN sang Excel.",
+                  "**[Thêm]** Tự đặt tên tệp Excel theo định dạng đã chọn.",
+                  "**[Thay đổi]** Cải thiện chuẩn hóa tên để rút gọn tên biến dài trong định dạng 20 ký tự.",
+                  "**[Thay đổi]** Vùng trạng thái hiển thị định dạng hiện tại và số bản ghi đã tải.",
+                  "**[Thay đổi]** Đổi mặc định thành Word 20 ký tự."
+                ]
+              },
+              {
+                "title": "Ver 1.0.0",
+                "items": [
+                  "**[Mới]** Thêm chuyển dữ liệu nhãn Excel sang JSN.",
+                  "**[Mới]** Thêm chuyển JSN sang sổ nhãn Excel.",
+                  "**[Thêm]** Hỗ trợ nhãn Bit, Byte, Word của Input và Output.",
+                  "**[Thêm]** Hỗ trợ nhãn biến B, R và D.",
+                  "**[Thêm]** Thêm xem, sắp xếp, chọn và sửa nhãn.",
+                  "**[Thêm]** Thêm chuẩn hóa tên biến và xem trước thay đổi.",
+                  "**[Thêm]** Hỗ trợ Byte 64 ký tự và Word 20 ký tự."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "trace",
+            "versions": [
+              {
+                "title": "Ver 1.4 (2026.07.18)",
+                "items": [
+                  "**[Thêm]** Đã thêm máy chủ liên kết bộ điều khiển ảo cho 3D Simulation.",
+                  "**[Thêm]** Đã thêm mục giám sát thời gian thực giá trị vị trí Joint.",
+                  "**[Thêm]** Đã thêm nút mở hoặc đóng cửa sổ các mục đo lường.",
+                  "**[Sửa]** Đã khắc phục lỗi các mục không hiển thị khi cửa sổ Trace nhỏ hơn một độ rộng nhất định."
+                ]
+              },
+              {
+                "title": "Ver 1.3 (2026.07.15)",
+                "items": [
+                  "**[Thêm]** Thêm giám sát tốc độ khớp J1 đến J6 theo thời gian thực."
+                ]
+              },
+              {
+                "title": "Ver 1.2 (2026.06.15)",
+                "items": [
+                  "**[Mới]** Thêm giám sát thời gian thực cho 16 kênh DI và 16 kênh DO.",
+                  "**[Thay đổi]** Trạng thái số hiển thị ON / OFF thay vì số.",
+                  "**[Cải tiến]** Tối ưu phạm vi đồ thị để dễ thấy chuyển trạng thái DI, DO.",
+                  "**[Cải tiến]** Có thể lưu mọi kênh trace đã chọn thành CSV.",
+                  "**[Cải tiến]** Tự nhận dạng và hiển thị các kênh trong CSV khi tải.",
+                  "**[Cải tiến]** Duy trì tương thích với CSV lưu từ phiên bản cũ."
+                ]
+              },
+              {
+                "title": "Ver 1.1 (2026.05.18)",
+                "items": [
+                  "**[Thay đổi]** Chỉ thu thập biến B, R, D người dùng chọn thay vì đọc tất cả.",
+                  "**[Thêm]** Có thể đổi biến trace B, R, D khi đang chạy.",
+                  "**[Cải tiến]** Giảm gọi robot API không cần thiết để lấy mẫu tốc độ cao ổn định và nhanh hơn.",
+                  "**[Cải tiến]** Giảm tải truyền thông của robot và chương trình khi trace trực tiếp."
+                ]
+              },
+              {
+                "title": "Ver 1.0 (2026.04.26)",
+                "items": [
+                  "**[Mới]** Phát hành InoRobotTrace lần đầu.",
+                  "**[Mới]** Thêm theo dõi tốc độ TCP và vị trí robot thời gian thực.",
+                  "**[Mới]** Thêm giám sát lỗi, mã lỗi, lỗi servo từng trục và dừng khẩn cấp.",
+                  "**[Mới]** Thêm giám sát dòng chương trình, dòng chuyển động, thời gian hệ thống và firmware.",
+                  "**[Mới]** Thêm giám sát số Tool, Work Object, Load và biến B/R/D.",
+                  "**[Mới]** Thêm phóng to, kéo đồ thị, tách kênh và đo bằng con trỏ.",
+                  "**[Mới]** Thêm lưu và tải lại dữ liệu trace dạng CSV.",
+                  "**[Phân phối]** Cung cấp dưới dạng một tệp chạy không cần cài đặt riêng."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "projectCompare",
+            "versions": [
+              {
+                "title": "Ver 2.1",
+                "items": [
+                  "**[Thay đổi]** Cập nhật hiển thị cho tỷ lệ Windows 125%, 150% và các mức khác.",
+                  "**[Sửa]** Sửa chữ, nút và ô nhập chồng nhau hoặc sai kích thước trên màn hình độ phân giải cao.",
+                  "**[Thay đổi]** Chuyển sang một tệp chạy không cần cài .NET riêng.",
+                  "**[Thay đổi]** Thống nhất tiêu đề chương trình và phiên bản tệp chạy là V2.1."
+                ]
+              },
+              {
+                "title": "Ver 2.0",
+                "items": [
+                  "**[Mới]** Thêm so sánh song song hai dự án InoRobot.",
+                  "**[Mới]** Thêm tự phân loại tệp .pro, .pts, .jsn và .dat.",
+                  "**[Mới]** Hiển thị trạng thái tệp là Khớp / Khác / Chỉ A / Chỉ B.",
+                  "**[Mới]** Thêm màn hình tô màu mã và dữ liệu khác nhau.",
+                  "**[Mới]** Thêm so sánh dạng bảng và sửa dữ liệu point, label.",
+                  "**[Mới]** Thêm ghi đè tệp đã chọn theo hướng A sang B hoặc B sang A.",
+                  "**[Mới]** Có thể sửa và lưu tệp trực tiếp trong màn hình so sánh.",
+                  "**[Mới]** Thêm Lưu thành để sao chép dự án hiện có.",
+                  "**[Thêm]** Hỗ trợ giao diện tiếng Hàn, Anh, Trung và Việt."
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
