@@ -22,3 +22,6 @@
 # Debug symbols and publish staging output must not be released accidentally.
 **/*.pdb
 **/publish-stability/
+
+# Google service-account credentials.
+/inorobotassistant-f000dd7470d8.json

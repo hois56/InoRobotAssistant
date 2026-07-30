@@ -5,18 +5,18 @@ compatibility_date = "2024-01-01"
 [vars]
 CLOUDFLARE_ACCOUNT_TAG = "c0958ea63507a74f5339d689ec75c57b"
 WEB_ANALYTICS_HOST = "inovancerobot.com"
+GOOGLE_SHEETS_HEADER_RANGE = "Daily!A1:H1"
+GOOGLE_SHEETS_CLEAR_RANGE = "Daily!A2:H5000"
+GOOGLE_SHEETS_DATA_START = "Daily!A2"
 
 [triggers]
-# 00:20 UTC = 09:20 KST. The Worker refreshes the previous three days.
-crons = ["20 0 * * *"]
+# 01:00 UTC = 10:00 KST. The Worker refreshes the previous three days.
+crons = ["0 1 * * *"]
 
 [[d1_databases]]
 binding = "ANALYTICS_DB"
 database_name = "inorobot-analytics"
 database_id = "f05267aa-a3bb-4ba3-ad7b-70ef3975d408"
 
-# Optional large-object mirror. D1 stores raw JSON in chunks even when R2 is
-# not enabled for the account. Uncomment after enabling R2 in the dashboard.
-# [[r2_buckets]]
-# binding = "ANALYTICS_RAW"
-# bucket_name = "inorobot-analytics-raw"
+# R2 is intentionally not required. The free D1 database stores the daily
+# metrics, and /analytics.csv exports them as an Excel-compatible CSV file.

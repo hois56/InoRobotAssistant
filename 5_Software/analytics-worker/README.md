@@ -1,7 +1,7 @@
 # InoRobot Analytics Worker
 
-This Worker archives Cloudflare Web Analytics RUM data in Cloudflare D1 and,
-when enabled, R2.
+This Worker archives Cloudflare Web Analytics RUM data in Cloudflare D1 and
+optionally synchronizes the daily summary to Google Sheets.
 The public site keeps using the Cloudflare Web Analytics beacon; this Worker
 only runs as a scheduled server-side collector.
 
@@ -19,32 +19,45 @@ only runs as a scheduled server-side collector.
    npx wrangler@latest d1 execute inorobot-analytics --remote --file=schema.sql
    ```
 
-3. Optional: create the R2 bucket used for the large-object raw JSON mirror:
+3. D1 stores the daily metrics, and the deployed Worker exposes an
+   Excel-compatible CSV download at `/analytics.csv`.
+
+4. To enable Google Sheets synchronization:
+
+   - Enable the Google Sheets API in a Google Cloud project.
+   - Create a service account and download its JSON key.
+   - Share the target spreadsheet's `Daily` tab with the service account email
+     as an Editor.
+   - Put the following values into Worker secrets. The private key may be
+     pasted with real line breaks or with `\\n` escapes:
 
    ```powershell
-   npx wrangler@latest r2 bucket create inorobot-analytics-raw
+   npx.cmd wrangler secret put GOOGLE_SERVICE_ACCOUNT_EMAIL
+   npx.cmd wrangler secret put GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+   npx.cmd wrangler secret put GOOGLE_SHEETS_ID
    ```
 
-   R2 must first be enabled in the Cloudflare Dashboard. If R2 is not
-   enabled, the Worker stores the same raw JSON in D1 as chunked rows, so raw
-   retention still works without R2.
+   The spreadsheet ID is the value between `/d/` and `/edit` in its URL. The
+   Worker rewrites `Daily!A2:H5000` from D1 after each scheduled collection,
+   so reprocessing the previous three days does not create duplicate rows.
 
-4. Create a scoped Cloudflare API token with analytics read access and store it
+5. Create a scoped Cloudflare API token with analytics read access and store it
    as a Worker secret. Never put this token in the repository or in a webpage:
 
    ```powershell
    npx wrangler@latest secret put CLOUDFLARE_API_TOKEN
    ```
 
-5. Deploy the Worker:
+6. Deploy the Worker:
 
    ```powershell
    npx wrangler@latest deploy
    ```
 
-The scheduled handler runs at 00:20 UTC and refreshes the previous three UTC
-days. Re-running a day replaces that day's D1 rows and raw archive, so late-
-arriving analytics can be corrected without duplicates.
+The scheduled handler runs at 01:00 UTC (10:00 KST). On the first run it backfills the
+previous six months in 30-day batches, synchronizes each batch to Google
+Sheets, and then switches to refreshing the previous three UTC days. The D1
+upsert and full-sheet synchronization prevent duplicate rows.
 
 ## Stored metrics
 
@@ -68,7 +81,7 @@ stream. It does not provide IP addresses, cookies, or a lifetime visitor ID.
 A lifetime unique-visitor number must not be calculated by summing daily
 visitor estimates; returning visitors would be counted more than once.
 
-When R2 is enabled, object keys use this format:
+If R2 is enabled later, raw JSON object keys use this format:
 
 ```text
 web-analytics/date=YYYY-MM-DD/host=inovancerobot.com.json
