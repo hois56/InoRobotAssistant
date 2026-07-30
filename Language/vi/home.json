@@ -80,6 +80,12 @@
       "title": "Robot Model Select",
       "versions": [
         {
+          "title": "Ver 26.07.28",
+          "items": [
+            "**[Thêm]** Đã thêm các tệp CAD 2D và 3D riêng được tải xuống khi chọn mẫu tay dạy có nắp bảo vệ nút dừng khẩn cấp."
+          ]
+        },
+        {
           "title": "Ver 26.07.26",
           "items": [
             "**[Cải tiến]** Loại bỏ độ trễ kiểm tra tệp của nút tải CAD bằng manifest tĩnh để xác định trạng thái ngay lập tức.",

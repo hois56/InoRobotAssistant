@@ -80,6 +80,12 @@
       "title": "Robot Model Select",
       "versions": [
         {
+          "title": "Ver 26.07.28",
+          "items": [
+            "**[Added]** Added dedicated 2D and 3D CAD files that download when the pendant emergency-stop protective-cover model is selected."
+          ]
+        },
+        {
           "title": "Ver 26.07.26",
           "items": [
             "**[Improved]** Removed the CAD download button's file-check delay by using a static manifest for immediate availability decisions.",

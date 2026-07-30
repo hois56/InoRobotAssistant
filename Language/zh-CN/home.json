@@ -80,6 +80,12 @@
       "title": "Robot Model Select",
       "versions": [
         {
+          "title": "Ver 26.07.28",
+          "items": [
+            "**[新增]** 新增选择带急停保护罩示教器型号时下载的专用 2D、3D CAD 文件。"
+          ]
+        },
+        {
           "title": "Ver 26.07.26",
           "items": [
             "**[改进]** 使用静态 manifest 消除 CAD 下载按钮的文件检查延迟，使可用性判断立即完成。",
