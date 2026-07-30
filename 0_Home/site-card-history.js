@@ -60,7 +60,7 @@
             } else if (window.location.protocol === 'file:') {
                 historyMarkdownPromise = Promise.reject(new Error('Embedded history data is unavailable'));
             } else {
-                historyMarkdownPromise = fetch('/0_Home/UPDATE_HISTORY.md', { cache: 'no-cache' })
+                historyMarkdownPromise = fetch('/0_Home/UPDATE_HISTORY.md?v=20260730-2', { cache: 'no-store' })
                     .then((response) => {
                         if (!response.ok) throw new Error(`HTTP ${response.status}`);
                         return response.text();
