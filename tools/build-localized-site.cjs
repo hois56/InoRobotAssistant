@@ -1,5 +1,11 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
+const {
+    historyToMarkdown,
+    loadVersionHistory,
+    writeGeneratedArtifacts
+} = require('./version-history.cjs');
 
 const root = path.resolve(__dirname, '..');
 const localeCodes = ['ko', 'en', 'zh-CN', 'vi'];
@@ -41,18 +47,6 @@ function readJson(filePath) {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
 }
 
-function loadSiteCardVersions() {
-    const source = fs.readFileSync(path.join(root, '0_Home', 'site-card-versions.js'), 'utf8');
-    const versions = {};
-    for (const match of source.matchAll(/([A-Za-z0-9_]+):\s*['"]([^'"]+)['"]/g)) {
-        versions[match[1]] = match[2];
-    }
-    if (!Object.keys(versions).length) {
-        throw new Error('No card versions were found in 0_Home/site-card-versions.js.');
-    }
-    return versions;
-}
-
 function injectCardVersions(html, versions) {
     return html.replace(
         /(<span\b[^>]*data-site-card-version=["']([^"']+)["'][^>]*>)[\s\S]*?(<\/span>)/g,
@@ -61,6 +55,20 @@ function injectCardVersions(html, versions) {
             const displayVersion = String(versions[key]).replace(/^(\d{2}\.\d{2}\.\d{2})\.\d+$/, '$1');
             return open + 'Ver ' + displayVersion + close;
         }
+    );
+}
+
+function getVersionHistoryCacheVersion() {
+    const hash = crypto.createHash('sha256');
+    ['0_Home/version-history.json', '0_Home/site-card-versions.js', '0_Home/site-card-history-data.js']
+        .forEach(relativePath => hash.update(fs.readFileSync(path.join(root, relativePath))));
+    return hash.digest('hex').slice(0, 12);
+}
+
+function injectVersionHistoryCacheVersion(html, cacheVersion) {
+    return html.replace(
+        /(src="\/0_Home\/(?:site-card-versions|site-card-history-data|site-card-history)\.js)(?:\?v=[^"]*)?"/g,
+        '$1?v=' + cacheVersion + '"'
     );
 }
 
@@ -146,22 +154,7 @@ function compareShape(reference, candidate, currentPath, errors) {
     }
 }
 
-function historyToMarkdown(history) {
-    if (!history || typeof history !== 'object') return '';
-    const lines = ['# ' + history.title, ''];
-    if (history.intro) lines.push(history.intro, '');
-    (history.sections || []).forEach(section => {
-        lines.push('## ' + section.title, '');
-        (section.versions || []).forEach(version => {
-            lines.push('### ' + version.title, '');
-            (version.items || []).forEach(item => lines.push('- ' + item));
-            lines.push('');
-        });
-    });
-    return lines.join('\n').trimEnd() + '\n';
-}
-
-function loadLocales() {
+function loadLocales(versionHistory) {
     const locales = {};
     const sources = {};
 
@@ -210,9 +203,9 @@ function loadLocales() {
                 };
             });
         });
-        const homeSource = sources[code]['home.json'];
-        locale.historyMarkdown = historyToMarkdown(homeSource.versionHistory);
-        locale.debugHistoryMarkdown = historyToMarkdown(homeSource.debugVersionHistory);
+        const localizedHistory = versionHistory.locales[code];
+        locale.historyMarkdown = historyToMarkdown(localizedHistory.versionHistory);
+        locale.debugHistoryMarkdown = historyToMarkdown(localizedHistory.debugVersionHistory);
         locales[code] = locale;
     });
 
@@ -290,7 +283,7 @@ function replaceMetaDescription(html, description) {
     return html.replace(/<meta\s+name=["']viewport["'][^>]*>/i, match => match + '\n' + meta);
 }
 
-function translateHomeTemplate(template, localeCode, locales, route, versions) {
+function translateHomeTemplate(template, localeCode, locales, route, versions, historyCacheVersion) {
     const locale = locales[localeCode];
     let html = template;
     html = html.replace(/<html\b[^>]*>/i, '<html lang="' + htmlLanguages[localeCode] + '" data-route-locale="' + localeCode + '">');
@@ -305,6 +298,7 @@ function translateHomeTemplate(template, localeCode, locales, route, versions) {
 
     html = translateVisibleHtml(html, locale.pageTranslations.home);
     html = injectCardVersions(html, versions);
+    html = injectVersionHistoryCacheVersion(html, historyCacheVersion);
     html = html.replace(/(<option value="(?:ko|en|zh-CN|vi)") selected/g, '$1');
     html = html.replace('<option value="' + localeCode + '">', '<option value="' + localeCode + '" selected>');
 
@@ -331,17 +325,17 @@ function writeFile(relativePath, content) {
     }
 }
 
-function buildLandingPages(locales, versions) {
+function buildLandingPages(locales, versions, historyCacheVersion) {
     fs.mkdirSync(path.dirname(templatePath), { recursive: true });
     if (!fs.existsSync(templatePath)) {
         fs.writeFileSync(templatePath, ensureRuntimeReferences(fs.readFileSync(rootIndexPath, 'utf8')), 'utf8');
     }
     const template = fs.readFileSync(templatePath, 'utf8');
-    writeFile(outputRoutes.ko, translateHomeTemplate(template, 'ko', locales, '/', versions));
-    writeFile(outputRoutes.kr, translateHomeTemplate(template, 'ko', locales, '/kr/', versions));
-    writeFile(outputRoutes.en, translateHomeTemplate(template, 'en', locales, '/en/', versions));
-    writeFile(outputRoutes['zh-CN'], translateHomeTemplate(template, 'zh-CN', locales, '/cn/', versions));
-    writeFile(outputRoutes.vi, translateHomeTemplate(template, 'vi', locales, '/vn/', versions));
+    writeFile(outputRoutes.ko, translateHomeTemplate(template, 'ko', locales, '/', versions, historyCacheVersion));
+    writeFile(outputRoutes.kr, translateHomeTemplate(template, 'ko', locales, '/kr/', versions, historyCacheVersion));
+    writeFile(outputRoutes.en, translateHomeTemplate(template, 'en', locales, '/en/', versions, historyCacheVersion));
+    writeFile(outputRoutes['zh-CN'], translateHomeTemplate(template, 'zh-CN', locales, '/cn/', versions, historyCacheVersion));
+    writeFile(outputRoutes.vi, translateHomeTemplate(template, 'vi', locales, '/vn/', versions, historyCacheVersion));
 }
 
 function buildLocaleBundle(locales) {
@@ -365,10 +359,13 @@ function buildSitemap() {
     writeFile('sitemap.xml', xml);
 }
 
-const locales = loadLocales();
-const siteCardVersions = loadSiteCardVersions();
+const versionHistory = loadVersionHistory(root);
+writeGeneratedArtifacts(root, versionHistory);
+const locales = loadLocales(versionHistory);
+const siteCardVersions = versionHistory.cardVersions;
+const historyCacheVersion = getVersionHistoryCacheVersion();
 buildLocaleBundle(locales);
 integrateSubpages();
-buildLandingPages(locales, siteCardVersions);
+buildLandingPages(locales, siteCardVersions, historyCacheVersion);
 buildSitemap();
 console.log('Built locales and landing routes: /, /kr/, /en/, /cn/, /vn/');

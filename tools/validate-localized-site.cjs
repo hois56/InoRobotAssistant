@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const { historyToMarkdown: renderVersionHistory, loadVersionHistory } = require('./version-history.cjs');
 
 const root = path.resolve(__dirname, '..');
 const localeCodes = ['ko', 'en', 'zh-CN', 'vi'];
@@ -175,6 +176,14 @@ function translateLegacySource(locale, source) {
 
 const locales = Object.fromEntries(localeCodes.map(code => [code, loadMergedLocale(code)]));
 const siteCardVersions = parseSiteCardVersions(read('0_Home/site-card-versions.js'));
+const versionHistory = loadVersionHistory(root);
+const canonicalMarkdown = renderVersionHistory(versionHistory.locales.ko.versionHistory, true);
+assert(read('0_Home/UPDATE_HISTORY.md') === canonicalMarkdown, 'UPDATE_HISTORY.md is out of sync with version-history.json.');
+const embeddedHistoryMatch = read('0_Home/site-card-history-data.js').match(/BASE64 = '([^']+)'/);
+assert(Boolean(embeddedHistoryMatch), 'site-card-history-data.js is missing its embedded history.');
+if (embeddedHistoryMatch) {
+    assert(Buffer.from(embeddedHistoryMatch[1], 'base64').toString('utf8') === canonicalMarkdown, 'site-card-history-data.js is out of sync with version-history.json.');
+}
 
 const robotDataContext = {};
 vm.runInNewContext(read('1_RobotModelSelect/data.js') + '\nthis.__accessories = accessoriesList;', robotDataContext);
@@ -597,15 +606,14 @@ assert(read('7_DebuggingTool/index.html').includes('data-i18n-skip>Debugging Too
 
 localeCodes.forEach(code => {
     const homeSource = locales[code].sources['home.json'];
-    assert(Boolean(homeSource.versionHistory), code + '/home.json is missing the home version history.');
-    assert(Boolean(homeSource.debugVersionHistory), code + '/home.json is missing the debugging-tool version history.');
+    assert(!homeSource.versionHistory && !homeSource.debugVersionHistory, code + '/home.json still contains legacy version-history data.');
     localeFileDefinitions.filter(definition => definition.file !== 'home.json').forEach(definition => {
         const source = locales[code].sources[definition.file];
         assert(!source.versionHistory && !source.debugVersionHistory, code + '/' + definition.file + ' must not contain version history.');
     });
 });
 
-const sourceHistory = parseSections(historyToMarkdown(locales.ko.sources['home.json'].versionHistory));
+const sourceHistory = parseSections(historyToMarkdown(versionHistory.locales.ko.versionHistory));
 const cardVersionSections = {
     robotSelect: 'Robot Model Select',
     robot3dViewer: '3D Simulation',
@@ -617,10 +625,11 @@ const cardVersionSections = {
 };
 Object.entries(cardVersionSections).forEach(([key, section]) => {
     assert(sourceHistory[section] && sourceHistory[section].versions[0] === 'Ver ' + siteCardVersions[key], key + ' card version does not match the latest update history entry.');
+    assert(siteCardVersions[key] === versionHistory.cardVersions[key], key + ' card version does not match version-history.json.');
 });
 const cardSections = ['Robot Model Select', '3D Simulation', 'Robot Tool Selector', 'Project Generator', 'Software', 'Document', 'Debugging Tool'];
 targetLocaleCodes.forEach(code => {
-    const localized = parseSections(historyToMarkdown(locales[code].sources['home.json'].versionHistory));
+    const localized = parseSections(historyToMarkdown(versionHistory.locales[code].versionHistory));
     cardSections.forEach(section => {
         assert(Boolean(localized[section]), code + ' history is missing ' + section + '.');
         if (!localized[section]) return;
@@ -629,14 +638,14 @@ targetLocaleCodes.forEach(code => {
     });
 });
 const chineseHomeHistory = JSON.stringify({
-    versionHistory: locales['zh-CN'].sources['home.json'].versionHistory,
-    debugVersionHistory: locales['zh-CN'].sources['home.json'].debugVersionHistory
+    versionHistory: versionHistory.locales['zh-CN'].versionHistory,
+    debugVersionHistory: versionHistory.locales['zh-CN'].debugVersionHistory
 });
 assert(!/\*\*【[^】]+】\*\*/.test(chineseHomeHistory), 'Chinese version history still shows a bold category prefix.');
 
-const debugSources = parseSections(historyToMarkdown(locales.ko.sources['home.json'].debugVersionHistory));
+const debugSources = parseSections(historyToMarkdown(versionHistory.locales.ko.debugVersionHistory));
 targetLocaleCodes.forEach(code => {
-    const localized = parseSections(historyToMarkdown(locales[code].sources['home.json'].debugVersionHistory));
+    const localized = parseSections(historyToMarkdown(versionHistory.locales[code].debugVersionHistory));
     Object.entries(debugSources).forEach(([section, source]) => {
         assert(Boolean(localized[section]), code + ' debugging history is missing ' + section + '.');
         if (!localized[section]) return;
