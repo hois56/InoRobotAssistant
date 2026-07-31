@@ -7346,7 +7346,7 @@ function discardUncommittedModel(model, type) {
 
 async function loadModelFromServer(modelDefinition) {
     const isAddMode = Boolean(el.btnAddMode?.checked);
-    if (isMotionActive() && !isAddMode) {
+    if (isRobotMotionActive() && !isAddMode) {
         setStatus('시뮬레이션 실행 중에는 Add Mode에서만 모델을 추가할 수 있습니다.', '#f59e0b');
         return;
     }
@@ -7375,7 +7375,7 @@ async function loadModelFromServer(modelDefinition) {
             return;
         }
 
-        const motionWasActive = isMotionActive();
+        const motionWasActive = isRobotMotionActive();
         if (motionWasActive && !isAddMode) {
             discardUncommittedModel(model, type);
             setStatus('시뮬레이션이 시작되어 모델 교체를 취소했습니다.', '#f59e0b');
@@ -8891,7 +8891,7 @@ async function importTestModelFile(file, placement, options = {}) {
 }
 
 async function handleTestModelImport() {
-    if (isMotionActive()) {
+    if (isRobotMotionActive()) {
         setStatus('모션 실행 중에는 테스트 모델을 적용할 수 없습니다.', '#f59e0b');
         return;
     }
@@ -13216,8 +13216,16 @@ function getMotionSession(robot) {
 }
 
 function isMotionActive() {
+    return isRobotMotionActive()
+        || isVirtualControllerActive();
+}
+
+// A connected controller continuously updates the selected robot pose, but it
+// should not make unrelated scene operations unavailable. Keep the controller
+// in the motion interlock for robot-control actions while using this narrower
+// predicate for model loading and other scene-only operations.
+function isRobotMotionActive() {
     return state.motionSessions.size > 0
-        || isVirtualControllerActive()
         || isOlpRunning()
         || Boolean(state.olp.workOriginBusy)
         || Boolean(state.olp.manualMoveBusy);
@@ -14331,13 +14339,17 @@ function syncMotionRepeatControl() {
 
 function updateMotionUiLock() {
     const locked = isMotionActive();
+    const sceneLocked = isRobotMotionActive();
     // Model selection stays available while motion is running so Add Mode can
     // load another robot in the background. Replacing the active scene is
     // still rejected by loadModelFromServer.
     if (el.modelSelect) el.modelSelect.disabled = false;
-    if (el.btnImport3D) el.btnImport3D.disabled = locked;
+    // A controller connection only locks robot-control actions. Standalone
+    // model import and the model tree remain usable while controller samples
+    // are streaming.
+    if (el.btnImport3D) el.btnImport3D.disabled = sceneLocked;
     if (el.btnAddMode) el.btnAddMode.disabled = false;
-    if (el.modelTree) el.modelTree.classList.toggle('motion-locked', locked);
+    if (el.modelTree) el.modelTree.classList.toggle('motion-locked', sceneLocked);
     el.jogPanel?.querySelectorAll('button:not([data-panel-action]), input')
         .forEach((control) => { control.disabled = locked; });
     el.jogPanel?.querySelectorAll('[data-panel-action]')
