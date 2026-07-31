@@ -1,0 +1,10 @@
+name = "inorobot-visitor-counter"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+ALLOWED_ORIGINS = "https://inovancerobot.com,https://www.inovancerobot.com"
+
+[[kv_namespaces]]
+binding = "VISITOR_KV"
+id = "54c0883acedf463c8e88e496f23bedf5"

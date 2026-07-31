@@ -480,13 +480,13 @@
               {
                 "title": "Ver 26.07.27",
                 "items": [
-                  "`[수정]` EtherNet/IP가 실제로 연결되었으나 로봇 소프트웨어에서 연결되지 않은 상태로 유지되던 문제를 해결했습니다."
+                  "`[변경]` Communication Tester를 `V2.8 → V2.9`로 업데이트했습니다."
                 ]
               },
               {
                 "title": "Ver 26.07.26",
                 "items": [
-                  "`[변경]` Communication Tester를 `V2.8`로 업데이트했습니다."
+                  "`[변경]` Communication Tester를 `V2.7 → V2.8`로 업데이트했습니다."
                 ]
               },
               {
@@ -584,6 +584,18 @@
           {
             "title": "communicationTester",
             "versions": [
+              {
+                "title": "Ver 2.9 (2026.07.27)",
+                "items": [
+                  "`[수정]` EtherNet/IP 통신 모니터링이 정상적으로 동작하지 않던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 2.8 (2026.07.26)",
+                "items": [
+                  "`[추가]` 가상 버스 기능을 추가했습니다."
+                ]
+              },
               {
                 "title": "Ver 2.7 (2026.07.24)",
                 "items": [
@@ -688,6 +700,12 @@
           {
             "title": "trace",
             "versions": [
+              {
+                "title": "Ver 1.5 (2026.07.25)",
+                "items": [
+                  "`[수정]` 배터리 사용량 모니터링 항목을 제거했습니다."
+                ]
+              },
               {
                 "title": "Ver 1.4 (2026.07.18)",
                 "items": [
@@ -1224,13 +1242,13 @@
               {
                 "title": "Ver 26.07.27",
                 "items": [
-                  "`[수정]` EtherNet/IP가 실제로 연결되었으나 로봇 소프트웨어에서 연결되지 않은 상태로 유지되던 문제를 해결했습니다."
+                  "`[변경]` Communication Tester를 `V2.8 → V2.9`로 업데이트했습니다."
                 ]
               },
               {
                 "title": "Ver 26.07.26",
                 "items": [
-                  "`[변경]` Communication Tester를 `V2.8`로 업데이트했습니다."
+                  "`[변경]` Communication Tester를 `V2.7 → V2.8`로 업데이트했습니다."
                 ]
               },
               {
@@ -1328,6 +1346,18 @@
           {
             "title": "communicationTester",
             "versions": [
+              {
+                "title": "Ver 2.9 (2026.07.27)",
+                "items": [
+                  "**[Fixed]** Fixed an issue that prevented EtherNet/IP communication monitoring from working correctly."
+                ]
+              },
+              {
+                "title": "Ver 2.8 (2026.07.26)",
+                "items": [
+                  "**[Added]** Added Virtual Bus functionality."
+                ]
+              },
               {
                 "title": "Ver 2.7 (2026.07.24)",
                 "items": [
@@ -1432,6 +1462,12 @@
           {
             "title": "trace",
             "versions": [
+              {
+                "title": "Ver 1.5 (2026.07.25)",
+                "items": [
+                  "**[Fixed]** Removed the battery usage monitoring item."
+                ]
+              },
               {
                 "title": "Ver 1.4 (2026.07.18)",
                 "items": [
@@ -1968,13 +2004,13 @@
               {
                 "title": "Ver 26.07.27",
                 "items": [
-                  "`[수정]` EtherNet/IP가 실제로 연결되었으나 로봇 소프트웨어에서 연결되지 않은 상태로 유지되던 문제를 해결했습니다."
+                  "`[변경]` Communication Tester를 `V2.8 → V2.9`로 업데이트했습니다."
                 ]
               },
               {
                 "title": "Ver 26.07.26",
                 "items": [
-                  "`[변경]` Communication Tester를 `V2.8`로 업데이트했습니다."
+                  "`[변경]` Communication Tester를 `V2.7 → V2.8`로 업데이트했습니다."
                 ]
               },
               {
@@ -2072,6 +2108,18 @@
           {
             "title": "communicationTester",
             "versions": [
+              {
+                "title": "Ver 2.9 (2026.07.27)",
+                "items": [
+                  "**[修复]** 修复 EtherNet/IP 通信监控无法正常工作的问题。"
+                ]
+              },
+              {
+                "title": "Ver 2.8 (2026.07.26)",
+                "items": [
+                  "**[新增]** 新增 Virtual Bus 功能。"
+                ]
+              },
               {
                 "title": "Ver 2.7 (2026.07.24)",
                 "items": [
@@ -2176,6 +2224,12 @@
           {
             "title": "trace",
             "versions": [
+              {
+                "title": "Ver 1.5 (2026.07.25)",
+                "items": [
+                  "**[修复]** 删除电池使用量监控项目。"
+                ]
+              },
               {
                 "title": "Ver 1.4 (2026.07.18)",
                 "items": [
@@ -2712,13 +2766,13 @@
               {
                 "title": "Ver 26.07.27",
                 "items": [
-                  "`[수정]` EtherNet/IP가 실제로 연결되었으나 로봇 소프트웨어에서 연결되지 않은 상태로 유지되던 문제를 해결했습니다."
+                  "`[변경]` Communication Tester를 `V2.8 → V2.9`로 업데이트했습니다."
                 ]
               },
               {
                 "title": "Ver 26.07.26",
                 "items": [
-                  "`[변경]` Communication Tester를 `V2.8`로 업데이트했습니다."
+                  "`[변경]` Communication Tester를 `V2.7 → V2.8`로 업데이트했습니다."
                 ]
               },
               {
@@ -2816,6 +2870,18 @@
           {
             "title": "communicationTester",
             "versions": [
+              {
+                "title": "Ver 2.9 (2026.07.27)",
+                "items": [
+                  "**[Sửa]** Khắc phục lỗi giám sát truyền thông EtherNet/IP không hoạt động đúng cách."
+                ]
+              },
+              {
+                "title": "Ver 2.8 (2026.07.26)",
+                "items": [
+                  "**[Thêm]** Thêm chức năng Virtual Bus."
+                ]
+              },
               {
                 "title": "Ver 2.7 (2026.07.24)",
                 "items": [
@@ -2920,6 +2986,12 @@
           {
             "title": "trace",
             "versions": [
+              {
+                "title": "Ver 1.5 (2026.07.25)",
+                "items": [
+                  "**[Sửa]** Đã xóa mục giám sát mức sử dụng pin."
+                ]
+              },
               {
                 "title": "Ver 1.4 (2026.07.18)",
                 "items": [
