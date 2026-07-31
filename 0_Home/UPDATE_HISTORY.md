@@ -354,11 +354,11 @@
 
 ### Ver 26.07.27
 
-- `[수정]` EtherNet/IP가 실제로 연결되었으나 로봇 소프트웨어에서 연결되지 않은 상태로 유지되던 문제를 해결했습니다.
+- `[변경]` Communication Tester를 `V2.8 → V2.9`로 업데이트했습니다.
 
 ### Ver 26.07.26
 
-- `[변경]` Communication Tester를 `V2.8`로 업데이트했습니다.
+- `[변경]` Communication Tester를 `V2.7 → V2.8`로 업데이트했습니다.
 
 ### Ver 26.07.25
 

@@ -149,6 +149,8 @@ assert.match(main, /new WebSocket\(source\.socketUrl\)/);
 assert.match(main, /applyVirtualControllerFrame\(timestamp\)/);
 assert.match(main, /function monitorVirtualControllerStream\(\)/);
 assert.match(main, /VIRTUAL_CONTROLLER_STREAM_STALL_MS = 750/);
+assert.match(main, /function scheduleVirtualControllerReconnect\(source, message = ''\)/);
+assert.match(main, /controller\.reconnectAttempt/);
 assert.match(main, /const sample = controller\.samples\.getLatest\(\)/);
 assert.match(main, /sample\.sampleId <= controller\.lastAppliedSampleId/);
 assert.match(main, /sample\.joints\.length < joints\.length/);
@@ -169,11 +171,14 @@ assert.doesNotMatch(bridge, /!requestedRealController \|\| !realControllerAllowe
 assert.match(bridge, /TimeSpan\.FromSeconds\(10\)/);
 assert.match(bridge, /TimeSpan\? timeout = null/);
 assert.match(bridge, /ReceiveMessageAsync\(socket, sessionCancellation\.Token\);/);
+assert.match(bridge, /controllerConnectionLost/);
+assert.match(bridge, /robot\.Connect\(controllerIp, ControllerPort, 3000\)/);
 assert.match(bridge, /IsAllowedOrigin/);
 assert.match(bridge, /type == "shutdown"/);
 assert.doesNotMatch(bridge, /AccessControlAllowOrigin = "\*"/);
 assert.match(nativeClient, /IMC100_Get_RobJPosHere/);
 assert.match(nativeClient, /int port = 2222/);
+assert.match(nativeClient, /DisconnectUnsafe\(\);\r?\n\s*return null;/);
 assert.match(nativeClient, /double\[\] tcp = Array\.Empty<double>\(\)/);
 assert.match(nativeClient, /if \(tcpResult >= 0\)/);
 

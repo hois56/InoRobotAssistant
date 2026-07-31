@@ -208,6 +208,7 @@ const state = {
         sourceConnectedAt: 0,
         lastSampleAt: 0,
         lastStreamStartAt: 0,
+        reconnectAttempt: 0,
         streamWatchdogTimer: null
     },
     olp: {
@@ -10637,6 +10638,7 @@ function handleVirtualControllerMessage(raw) {
         applyInterferenceToolControllerResult(message.result);
     } else if (parsed.type === 'connectResult') {
         if (message.success) {
+            controller.reconnectAttempt = 0;
             controller.sourceConnectedAt = performance.now();
             setVirtualControllerStatus('connected');
             startVirtualControllerStream();
@@ -10645,6 +10647,14 @@ function handleVirtualControllerMessage(raw) {
             setVirtualControllerStatus('error');
             controller.socket?.close();
         }
+    } else if (parsed.type === 'controllerConnectionLost') {
+        setVirtualControllerStatus('reconnecting', message.message || 'Controller feedback interrupted; reconnecting...');
+    } else if (parsed.type === 'controllerReconnected') {
+        controller.reconnectAttempt = 0;
+        controller.sourceConnectedAt = performance.now();
+        setVirtualControllerStatus('connected');
+        startVirtualControllerStream();
+        monitorVirtualControllerStream();
     } else if (parsed.type === 'streamStartResult' || parsed.type === 'traceStartResult') {
         if (message.success && controller.status !== 'streaming') setVirtualControllerStatus('connected');
         if (!message.success) setVirtualControllerStatus('error', '가상 컨트롤러 연결 실패');
@@ -10655,6 +10665,26 @@ function handleVirtualControllerMessage(raw) {
     } else if (parsed.type === 'error') {
         setVirtualControllerStatus('error');
     }
+}
+
+function scheduleVirtualControllerReconnect(source, message = '') {
+    const controller = state.virtualController;
+    if (!controller.wanted || controller.reconnectTimer) return;
+
+    const attempt = controller.reconnectAttempt || 0;
+    const delay = Math.min(5000, 250 * (2 ** Math.min(attempt, 4)));
+    controller.reconnectAttempt = Math.min(attempt + 1, 4);
+    setVirtualControllerStatus('reconnecting', message || 'Connection lost; reconnecting automatically...');
+    controller.reconnectTimer = window.setTimeout(async () => {
+        controller.reconnectTimer = null;
+        if (!controller.wanted) return;
+
+        if (source.id === 'bridge' && !(await isVirtualControllerBridgeRunning())) {
+            scheduleVirtualControllerReconnect(source, 'Waiting for the dedicated bridge...');
+            return;
+        }
+        openVirtualControllerSocket(true);
+    }, delay);
 }
 
 function openVirtualControllerSocket(isReconnect = false) {
@@ -10715,7 +10745,7 @@ function openVirtualControllerSocket(isReconnect = false) {
             if (!controller.statusMessage) setVirtualControllerStatus('disconnected');
             return;
         }
-        endVirtualControllerSessionForSourceExit(source);
+        scheduleVirtualControllerReconnect(source);
     });
     socket.addEventListener('error', () => {
         if (controller.socket === socket && controller.wanted) {
@@ -10727,9 +10757,7 @@ function openVirtualControllerSocket(isReconnect = false) {
 function endVirtualControllerSessionForSourceExit(source) {
     const controller = state.virtualController;
     if (!controller.wanted) return;
-    const historyBefore = controller.historyBefore;
-    controller.historyBefore = null;
-    controller.wanted = false;
+    const socket = controller.socket;
     controller.socket = null;
     controller.pendingInterferenceReads.clear();
     controller.pendingInterferenceToolReads.clear();
@@ -10739,12 +10767,14 @@ function endVirtualControllerSessionForSourceExit(source) {
     controller.lastSampleAt = 0;
     controller.lastStreamStartAt = 0;
     clearVirtualControllerStreamWatchdog();
+    try {
+        if (socket && [WebSocket.CONNECTING, WebSocket.OPEN].includes(socket.readyState)) socket.close();
+    } catch { /* The source may already be closed. */ }
     const message = source.id === 'trace'
-        ? 'Trace 도구 연결이 종료되어 3D 동기화를 해제했습니다.'
-        : '전용 브리지가 종료되어 3D 동기화를 해제했습니다.';
-    setVirtualControllerStatus('disconnected', message);
+        ? 'Trace 연결이 일시적으로 끊겨 자동으로 재연결하는 중입니다.'
+        : '전용 브리지 연결이 일시적으로 끊겨 자동으로 재연결하는 중입니다.';
+    scheduleVirtualControllerReconnect(source, message);
     refreshViewPresetsUi();
-    if (historyBefore) recordHistory('가상 컨트롤러 동기화', historyBefore, captureSceneSnapshot());
 }
 
 function isOlpRunning() {
@@ -12911,6 +12941,7 @@ async function connectVirtualController() {
     controller.sourceConnectedAt = 0;
     controller.lastSampleAt = 0;
     controller.lastStreamStartAt = 0;
+    controller.reconnectAttempt = 0;
     openVirtualControllerSocket(false);
     requestRender();
 }

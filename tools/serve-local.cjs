@@ -23,7 +23,7 @@ const publicTopLevelDirectories = new Set([
     'Language', 'privacy'
 ]);
 const publicRootFiles = new Set([
-    'CNAME', 'sitemap.xml', 'analytics.js', 'analytics-config.js',
+    'CNAME', 'sitemap.xml', 'analytics.js', 'analytics-config.js', 'visitor-counter.js',
     'site-card-versions.js'
 ]);
 const blockedPathSegments = new Set([

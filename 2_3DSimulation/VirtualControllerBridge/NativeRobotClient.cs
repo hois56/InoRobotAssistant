@@ -155,24 +155,49 @@ internal sealed class NativeRobotClient : IDisposable
                 return null;
 
             RobJointPosition jointPosition = CreateJointPosition();
-            int jointResult = NativeApi.IMC100_Get_RobJPosHere(ref jointPosition, CommunicationId);
-            if (jointResult < 0)
+            try
+            {
+                int jointResult = NativeApi.IMC100_Get_RobJPosHere(ref jointPosition, CommunicationId);
+                if (jointResult < 0)
+                {
+                    // A failed joint read means the native controller session is no
+                    // longer usable. Mark it disconnected so the bridge can recover
+                    // instead of leaving the browser in a permanently stale state.
+                    DisconnectUnsafe();
+                    return null;
+                }
+
+                // Joint feedback is sufficient for 3D synchronization. Some controller
+                // configurations can report joint feedback before TCP feedback is available,
+                // so keep streaming the usable joint state instead of dropping the frame.
+                double[] tcp = Array.Empty<double>();
+                RobPosition tcpPosition = CreateTcpPosition();
+                try
+                {
+                    int tcpResult = NativeApi.IMC100_Get_RobPosHere(ref tcpPosition, CommunicationId);
+                    if (tcpResult >= 0)
+                        tcp = tcpPosition.RobotPositionData.ToArray();
+                }
+                catch
+                {
+                    // TCP feedback is optional for 3D joint synchronization. Keep
+                    // the valid joint sample when a controller does not provide TCP
+                    // feedback or its optional call fails transiently.
+                }
+
+                return new RobotState(
+                    sequence,
+                    timestamp,
+                    jointPosition.JointData.ToArray(),
+                    tcp);
+            }
+            catch
+            {
+                // Native API failures must not fault the streaming task. A transient
+                // controller/socket failure is handled by the bridge reconnect loop.
+                DisconnectUnsafe();
                 return null;
-
-            // Joint feedback is sufficient for 3D synchronization. Some controller
-            // configurations can report joint feedback before TCP feedback is available,
-            // so keep streaming the usable joint state instead of dropping the frame.
-            double[] tcp = Array.Empty<double>();
-            RobPosition tcpPosition = CreateTcpPosition();
-            int tcpResult = NativeApi.IMC100_Get_RobPosHere(ref tcpPosition, CommunicationId);
-            if (tcpResult >= 0)
-                tcp = tcpPosition.RobotPositionData.ToArray();
-
-            return new RobotState(
-                sequence,
-                timestamp,
-                jointPosition.JointData.ToArray(),
-                tcp);
+            }
         }
     }
 

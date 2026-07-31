@@ -169,7 +169,9 @@ internal static class Program
             CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted);
         using SemaphoreSlim sendLock = new(1, 1);
         int streaming = 0;
+        int controllerReconnectEnabled = 0;
         int sampleIntervalMs = DefaultSampleIntervalMs;
+        string controllerIp = string.Empty;
         bool robotConnectedByThisSession = false;
         bool realControllerByThisSession = false;
 
@@ -262,6 +264,7 @@ internal static class Program
                             }
                             if (requestedRealController && !AllowRealController)
                             {
+                                Interlocked.Exchange(ref controllerReconnectEnabled, 0);
                                 robot.Disconnect();
                                 robotConnectedByThisSession = false;
                                 realControllerByThisSession = false;
@@ -273,7 +276,9 @@ internal static class Program
                                 });
                                 continue;
                             }
+                            controllerIp = ip;
                             (bool success, string message) = robot.Connect(ip, ControllerPort);
+                            Interlocked.Exchange(ref controllerReconnectEnabled, success ? 1 : 0);
                             robotConnectedByThisSession = success;
                             realControllerByThisSession = success;
                             await SendAsync(new { type = "connectResult", success, message });
@@ -307,6 +312,7 @@ internal static class Program
                         }
                         else if (type == "disconnect")
                         {
+                            Interlocked.Exchange(ref controllerReconnectEnabled, 0);
                             Interlocked.Exchange(ref streaming, 0);
                             robot.Disconnect();
                             robotConnectedByThisSession = false;
@@ -320,6 +326,7 @@ internal static class Program
                                 await SendAsync(new { type = "shutdownResult", success = false, message = "Explicit shutdown permission is required." });
                                 continue;
                             }
+                            Interlocked.Exchange(ref controllerReconnectEnabled, 0);
                             Interlocked.Exchange(ref streaming, 0);
                             robot.Disconnect();
                             robotConnectedByThisSession = false;
@@ -351,6 +358,8 @@ internal static class Program
             async Task StreamRobotStateAsync()
             {
                 long sequence = 0;
+                int reconnectAttempt = 0;
+                bool connectionLossReported = false;
                 while (!sessionCancellation.IsCancellationRequested && socket.State == WebSocketState.Open)
                 {
                     long cycleStart = Environment.TickCount64;
@@ -359,7 +368,38 @@ internal static class Program
                         RobotState? state = robot.ReadState(
                             Interlocked.Increment(ref sequence),
                             DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-                        if (state is not null) await SendAsync(new { type = "robotState", data = state });
+                        if (state is not null)
+                        {
+                            reconnectAttempt = 0;
+                            connectionLossReported = false;
+                            await SendAsync(new { type = "robotState", data = state });
+                        }
+                        else if (Volatile.Read(ref controllerReconnectEnabled) == 1
+                            && !string.IsNullOrWhiteSpace(controllerIp))
+                        {
+                            if (!connectionLossReported)
+                            {
+                                connectionLossReported = true;
+                                await SendAsync(new { type = "controllerConnectionLost", message = "Controller feedback was interrupted. Reconnecting..." });
+                            }
+
+                            int retryDelay = 250 * (1 << Math.Min(reconnectAttempt, 4));
+                            reconnectAttempt = Math.Min(reconnectAttempt + 1, 4);
+                            await Task.Delay(retryDelay, sessionCancellation.Token);
+                            if (Volatile.Read(ref controllerReconnectEnabled) == 1
+                                && !sessionCancellation.IsCancellationRequested)
+                            {
+                                (bool success, string message) = robot.Connect(controllerIp, ControllerPort, 3000);
+                                if (success)
+                                {
+                                    reconnectAttempt = 0;
+                                    connectionLossReported = false;
+                                    robotConnectedByThisSession = true;
+                                    realControllerByThisSession = true;
+                                    await SendAsync(new { type = "controllerReconnected", success = true, message });
+                                }
+                            }
+                        }
                     }
                     int remaining = sampleIntervalMs - checked((int)Math.Min(int.MaxValue, Environment.TickCount64 - cycleStart));
                     if (remaining > 0) await Task.Delay(remaining, sessionCancellation.Token);
