@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const crypto = require('crypto');
 const { historyToMarkdown: renderVersionHistory, loadVersionHistory } = require('./version-history.cjs');
 
 const root = path.resolve(__dirname, '..');
@@ -184,6 +185,26 @@ assert(Boolean(embeddedHistoryMatch), 'site-card-history-data.js is missing its 
 if (embeddedHistoryMatch) {
     assert(Buffer.from(embeddedHistoryMatch[1], 'base64').toString('utf8') === canonicalMarkdown, 'site-card-history-data.js is out of sync with version-history.json.');
 }
+const localeBundleSource = read('Language/runtime/locales-data.js');
+const localeBundleContext = { window: {} };
+vm.runInNewContext(localeBundleSource, localeBundleContext);
+const runtimeLocales = localeBundleContext.window.INOROBOT_LOCALES || {};
+localeCodes.forEach(code => {
+    assert(
+        runtimeLocales[code]?.historyMarkdown === renderVersionHistory(versionHistory.locales[code].versionHistory),
+        'Language/runtime/locales-data.js history is out of sync for ' + code + '.'
+    );
+    assert(
+        runtimeLocales[code]?.debugHistoryMarkdown === renderVersionHistory(versionHistory.locales[code].debugVersionHistory),
+        'Language/runtime/locales-data.js debug history is out of sync for ' + code + '.'
+    );
+});
+const normalizedLocaleBundleSource = localeBundleSource.replace(/\r\n?/g, '\n');
+const localeBundleCacheVersion = crypto.createHash('sha256').update(normalizedLocaleBundleSource).digest('hex').slice(0, 12);
+assert(
+    read('privacy/index.html').includes('/Language/runtime/locales-data.js?v=' + localeBundleCacheVersion + '"'),
+    'privacy/index.html does not use the current locale bundle cache version.'
+);
 
 const robotDataContext = {};
 vm.runInNewContext(read('1_RobotModelSelect/data.js') + '\nthis.__accessories = accessoriesList;', robotDataContext);
@@ -336,6 +357,10 @@ routes.forEach(route => {
     const permalinkHeader = new RegExp('^---\\r?\\npermalink: ' + escapeRegExp(route.route) + '\\r?\\n---\\r?\\n');
     assert(permalinkHeader.test(html), route.file + ' is missing its stable public permalink.');
     assert(html.includes('/Language/runtime/locales-data.js') && html.includes('/Language/runtime/i18n.js'), route.file + ' is missing the i18n runtime.');
+    assert(
+        html.includes('/Language/runtime/locales-data.js?v=' + localeBundleCacheVersion + '"'),
+        route.file + ' does not use the current locale bundle cache version.'
+    );
     assert(html.includes('/Language/runtime/icon-fallback.js'), route.file + ' is missing the local icon fallback.');
     assert(html.includes('id="inorobot-language-switcher"') && html.includes('id="inorobot-language-select"'), route.file + ' is missing the top-right language UI.');
     assert(html.includes('<span class="inorobot-language-label" aria-hidden="true">Language</span>'), route.file + ' does not show the Language label.');
@@ -579,6 +604,22 @@ const zeroCalibration = read('7_DebuggingTool/ZeroCalibration/index.html');
 assert(zeroCalibration.includes('function calculate(index)') && zeroCalibration.includes('function downloadOfflineTool()'), 'Zero Calibration calculation or offline download hook is missing.');
 
 const homeTemplate = read('0_Home/home.template.html');
+[
+    '0_Home/home.template.html',
+    '0_Home/ko/index.html',
+    '0_Home/kr/index.html',
+    '0_Home/en/index.html',
+    '0_Home/zh-CN/index.html',
+    '0_Home/vi/index.html'
+].forEach(file => {
+    const source = read(file);
+    const scriptCount = (source.match(/src=["']\/visitor-counter\.js\?v=20260812-1["']/g) || []).length;
+    const counterCount = (source.match(/id=["']visit-count["']/g) || []).length;
+    assert(scriptCount === 1, file + ' must load visitor-counter.js exactly once.');
+    assert(counterCount === 1, file + ' must contain exactly one visit-count element.');
+    assert(/id=["']visit-count["'][^>]*>visits 2,031<\/span>/.test(source), file + ' must preserve the verified 2,031 visit snapshot.');
+    assert(!/<span[^>]*id=["']visit-count["'][^>]*data-i18n-skip/i.test(source), file + ' prevents the visit count from being localized.');
+});
 [
     ['/1_RobotModelSelect/INOVANCE_Logo.png', '1_RobotModelSelect/INOVANCE_Logo.png']
 ].forEach(([webPath, filePath]) => {

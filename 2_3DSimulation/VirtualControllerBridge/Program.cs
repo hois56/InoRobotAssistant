@@ -365,6 +365,7 @@ internal static class Program
                 long sequence = 0;
                 int reconnectAttempt = 0;
                 bool connectionLossReported = false;
+                string connectionLossDiagnostic = string.Empty;
                 while (!sessionCancellation.IsCancellationRequested && socket.State == WebSocketState.Open)
                 {
                     long cycleStart = Environment.TickCount64;
@@ -377,15 +378,23 @@ internal static class Program
                         {
                             reconnectAttempt = 0;
                             connectionLossReported = false;
+                            connectionLossDiagnostic = string.Empty;
                             await SendAsync(new { type = "robotState", data = state });
                         }
-                        else if (Volatile.Read(ref controllerReconnectEnabled) == 1
+                        else if (!robot.IsConnected
+                            && Volatile.Read(ref controllerReconnectEnabled) == 1
                             && !string.IsNullOrWhiteSpace(controllerIp))
                         {
                             if (!connectionLossReported)
                             {
                                 connectionLossReported = true;
-                                await SendAsync(new { type = "controllerConnectionLost", message = "Controller feedback was interrupted. Reconnecting..." });
+                                connectionLossDiagnostic = robot.LastConnectionLossDiagnostic
+                                    ?? "Controller session became unavailable without a joint feedback diagnostic.";
+                                await SendAsync(new
+                                {
+                                    type = "controllerConnectionLost",
+                                    message = $"Controller feedback was interrupted. {connectionLossDiagnostic} Reconnecting..."
+                                });
                             }
 
                             int retryDelay = 250 * (1 << Math.Min(reconnectAttempt, 4));
@@ -404,7 +413,12 @@ internal static class Program
                                     connectionLossReported = false;
                                     robotConnectedByThisSession = true;
                                     realControllerByThisSession = true;
-                                    await SendAsync(new { type = "controllerReconnected", success = true, message });
+                                    await SendAsync(new
+                                    {
+                                        type = "controllerReconnected",
+                                        success = true,
+                                        message = $"{message}. Recovery cause: {connectionLossDiagnostic}"
+                                    });
                                 }
                                 else
                                 {
@@ -412,7 +426,7 @@ internal static class Program
                                     {
                                         type = "controllerReconnectFailed",
                                         success = false,
-                                        message
+                                        message = $"{message} Recovery cause: {connectionLossDiagnostic}"
                                     });
                                 }
                             }

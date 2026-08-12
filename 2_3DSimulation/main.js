@@ -197,6 +197,9 @@ const state = {
         bridgeToken: null,
         bridgeHealthDeadline: 0,
         bridgeHealthTimer: null,
+        bridgeHealthFailureCount: 0,
+        bridgeHealthCheckSequence: 0,
+        bridgeHealthMonitorGeneration: 0,
         targetRobotId: null,
         pendingInterferenceReads: new Set(),
         pendingInterferenceToolReads: new Set(),
@@ -210,7 +213,8 @@ const state = {
         lastStreamStartAt: 0,
         reconnectAttempt: 0,
         reconnectMessage: '',
-        streamWatchdogTimer: null
+        streamWatchdogTimer: null,
+        socketGeneration: 0
     },
     olp: {
         enabled: false,
@@ -666,6 +670,7 @@ const TCP_PROFILE_COUNT = 3;
 const TRACE_SOURCE_LIVENESS_TIMEOUT_MS = 2500;
 const VIRTUAL_CONTROLLER_STREAM_STALL_MS = 750;
 const VIRTUAL_CONTROLLER_STREAM_WATCHDOG_MS = 250;
+const VIRTUAL_CONTROLLER_BRIDGE_HEALTH_FAILURE_LIMIT = 3;
 const SUPPORTED_IMPORT_EXTENSIONS = new Set(['stl', 'fbx', 'obj', 'glb', 'gltf', 'stp', 'step']);
 const Y_UP_IMPORT_EXTENSIONS = new Set(['fbx', 'glb', 'gltf']);
 const TEST_MODEL_ASSET_PATHS = Object.freeze({
@@ -10652,7 +10657,9 @@ function handleVirtualControllerMessage(raw) {
             controller.socket?.close();
         }
     } else if (parsed.type === 'controllerConnectionLost') {
-        setVirtualControllerStatus('reconnecting', message.message || 'Controller feedback interrupted; reconnecting...');
+        const detail = String(message.message || 'Controller feedback interrupted; reconnecting...').trim();
+        console.warn('Virtual controller native feedback interrupted.', { detail });
+        setVirtualControllerStatus('reconnecting', detail);
     } else if (parsed.type === 'controllerReconnected') {
         controller.reconnectAttempt = 0;
         controller.reconnectMessage = '';
@@ -10662,6 +10669,7 @@ function handleVirtualControllerMessage(raw) {
         monitorVirtualControllerStream();
     } else if (parsed.type === 'controllerReconnectFailed') {
         const detail = String(message.message || 'Controller reconnection failed.').trim();
+        console.warn('Virtual controller native reconnect failed.', { detail });
         setVirtualControllerStatus('reconnecting', `${uiText('재연결 중')}: ${detail}`);
     } else if (parsed.type === 'streamStartResult' || parsed.type === 'traceStartResult') {
         if (message.success && controller.status !== 'streaming') setVirtualControllerStatus('connected');
@@ -10681,18 +10689,27 @@ function scheduleVirtualControllerReconnect(source, message = '') {
 
     const attempt = controller.reconnectAttempt || 0;
     const delay = Math.min(5000, 250 * (2 ** Math.min(attempt, 4)));
+    const socketGeneration = controller.socketGeneration;
     controller.reconnectAttempt = Math.min(attempt + 1, 4);
     setVirtualControllerStatus('reconnecting', message || 'Connection lost; reconnecting automatically...');
-    controller.reconnectTimer = window.setTimeout(async () => {
+    const reconnectTimer = window.setTimeout(async () => {
+        if (controller.reconnectTimer !== reconnectTimer) return;
         controller.reconnectTimer = null;
-        if (!controller.wanted) return;
+        if (!controller.wanted || controller.socketGeneration !== socketGeneration) return;
 
-        if (source.id === 'bridge' && !(await isVirtualControllerBridgeRunning())) {
-            scheduleVirtualControllerReconnect(source, 'Waiting for the dedicated bridge...');
-            return;
+        if (source.id === 'bridge') {
+            const healthCheckSequence = controller.bridgeHealthCheckSequence + 1;
+            const bridgeRunning = await isVirtualControllerBridgeRunning();
+            if (!controller.wanted || controller.socketGeneration !== socketGeneration) return;
+            if (controller.bridgeHealthCheckSequence !== healthCheckSequence || !bridgeRunning) {
+                scheduleVirtualControllerReconnect(source, 'Waiting for the dedicated bridge...');
+                return;
+            }
         }
+        if (!controller.wanted || controller.socketGeneration !== socketGeneration) return;
         openVirtualControllerSocket(true);
     }, delay);
+    controller.reconnectTimer = reconnectTimer;
 }
 
 function openVirtualControllerSocket(isReconnect = false) {
@@ -10716,9 +10733,13 @@ function openVirtualControllerSocket(isReconnect = false) {
         setVirtualControllerStatus('error', getVirtualControllerUnavailableMessage());
         return;
     }
+    const socketGeneration = controller.socketGeneration + 1;
+    controller.socketGeneration = socketGeneration;
     controller.socket = socket;
+    const isCurrentSocket = () => controller.socket === socket
+        && controller.socketGeneration === socketGeneration;
     socket.addEventListener('open', () => {
-        if (controller.socket !== socket || !controller.wanted) return;
+        if (!isCurrentSocket() || !controller.wanted) return;
         if (source.id === 'bridge') {
             if (!controller.bridgeToken) {
                 setVirtualControllerStatus('error', '브리지 인증 토큰을 확인할 수 없습니다.');
@@ -10739,10 +10760,26 @@ function openVirtualControllerSocket(isReconnect = false) {
         sendVirtualControllerCommand(connectCommand);
     });
     socket.addEventListener('message', (event) => {
-        if (controller.socket === socket) handleVirtualControllerMessage(event.data);
+        if (isCurrentSocket()) handleVirtualControllerMessage(event.data);
     });
-    socket.addEventListener('close', () => {
-        if (controller.socket === socket) controller.socket = null;
+    socket.addEventListener('close', (event) => {
+        const closeDiagnostic = {
+            source: source.id,
+            code: Number(event.code) || 0,
+            reason: String(event.reason || ''),
+            wasClean: Boolean(event.wasClean),
+            socketGeneration,
+            current: isCurrentSocket()
+        };
+        if (!closeDiagnostic.current) {
+            console.debug('Ignored stale virtual controller WebSocket close.', closeDiagnostic);
+            return;
+        }
+        if (controller.wanted || closeDiagnostic.code !== 1000 || !closeDiagnostic.wasClean) {
+            console.warn('Virtual controller WebSocket closed.', closeDiagnostic);
+        }
+        controller.socket = null;
+        controller.socketGeneration += 1;
         const reconnectMessage = controller.reconnectMessage;
         controller.reconnectMessage = '';
         controller.pendingInterferenceReads.clear();
@@ -10758,7 +10795,7 @@ function openVirtualControllerSocket(isReconnect = false) {
         scheduleVirtualControllerReconnect(source, reconnectMessage);
     });
     socket.addEventListener('error', () => {
-        if (controller.socket === socket && controller.wanted) {
+        if (isCurrentSocket() && controller.wanted) {
             setVirtualControllerStatus('error', getVirtualControllerUnavailableMessage());
         }
     });
@@ -10767,8 +10804,13 @@ function openVirtualControllerSocket(isReconnect = false) {
 function endVirtualControllerSessionForSourceExit(source) {
     const controller = state.virtualController;
     if (!controller.wanted) return;
+    if (controller.reconnectTimer) {
+        clearTimeout(controller.reconnectTimer);
+        controller.reconnectTimer = null;
+    }
     const socket = controller.socket;
     controller.socket = null;
+    controller.socketGeneration += 1;
     controller.pendingInterferenceReads.clear();
     controller.pendingInterferenceToolReads.clear();
     controller.samples?.clear();
@@ -12963,10 +13005,13 @@ function clearVirtualControllerBridgeHealthMonitor() {
         clearTimeout(controller.bridgeHealthTimer);
         controller.bridgeHealthTimer = null;
     }
+    controller.bridgeHealthMonitorGeneration += 1;
 }
 
 async function isVirtualControllerBridgeRunning() {
     const controller = state.virtualController;
+    const healthCheckSequence = controller.bridgeHealthCheckSequence + 1;
+    controller.bridgeHealthCheckSequence = healthCheckSequence;
     const bridge = controller.core?.getVirtualControllerSource?.('bridge') || {
         healthUrl: 'http://127.0.0.1:5055/api/health'
     };
@@ -12974,14 +13019,37 @@ async function isVirtualControllerBridgeRunning() {
     try {
         const response = await fetch(bridge.healthUrl, { cache: 'no-store' });
         const health = await response.json().catch(() => ({}));
-        controller.bridgeToken = response.ok && typeof health.pairingToken === 'string'
+        const pairingToken = response.ok && typeof health.pairingToken === 'string'
             ? health.pairingToken
             : null;
-        return response.ok
+        const running = response.ok
             && health.service === 'InoRobotVirtualControllerBridge'
-            && Boolean(controller.bridgeToken);
-    } catch {
-        controller.bridgeToken = null;
+            && Boolean(pairingToken);
+        if (controller.bridgeHealthCheckSequence === healthCheckSequence && running) {
+            controller.bridgeToken = pairingToken;
+            controller.bridgeHealthFailureCount = 0;
+        } else if (controller.bridgeHealthCheckSequence === healthCheckSequence
+            && (controller.wanted || controller.bridgeRunning || controller.bridgeStartInProgress)) {
+            console.warn('Virtual controller bridge health check returned an unusable response.', {
+                healthUrl: bridge.healthUrl,
+                sequence: healthCheckSequence,
+                status: Number(response.status) || 0,
+                service: String(health.service || ''),
+                hasPairingToken: Boolean(pairingToken)
+            });
+        }
+        return running;
+    } catch (error) {
+        if (controller.bridgeHealthCheckSequence === healthCheckSequence
+            && (controller.wanted || controller.bridgeRunning || controller.bridgeStartInProgress)) {
+            console.warn('Virtual controller bridge health check failed.', {
+                healthUrl: bridge.healthUrl,
+                sequence: healthCheckSequence,
+                error: error instanceof Error
+                    ? `${error.name}: ${error.message}`
+                    : String(error)
+            });
+        }
         return false;
     }
 }
@@ -12989,13 +13057,24 @@ async function isVirtualControllerBridgeRunning() {
 function monitorVirtualControllerBridgeHealth(silent = false) {
     const controller = state.virtualController;
     clearVirtualControllerBridgeHealthMonitor();
+    const monitorGeneration = controller.bridgeHealthMonitorGeneration;
     void (async () => {
         const wasRunning = controller.bridgeRunning;
+        const healthCheckSequence = controller.bridgeHealthCheckSequence + 1;
         const running = await isVirtualControllerBridgeRunning();
-        controller.bridgeRunning = running;
+        if (controller.bridgeHealthMonitorGeneration !== monitorGeneration) return;
+        if (controller.bridgeHealthCheckSequence !== healthCheckSequence) {
+            controller.bridgeHealthTimer = window.setTimeout(
+                () => monitorVirtualControllerBridgeHealth(true),
+                controller.wanted ? 350 : 750
+            );
+            return;
+        }
         const bridgeIsActiveSource = getVirtualControllerSourceConfig().id === 'bridge';
 
         if (running) {
+            controller.bridgeRunning = true;
+            controller.bridgeHealthFailureCount = 0;
             const wasStarting = controller.bridgeStartInProgress;
             controller.bridgeStartInProgress = false;
             controller.bridgeHealthDeadline = 0;
@@ -13020,6 +13099,21 @@ function monitorVirtualControllerBridgeHealth(silent = false) {
             return;
         }
 
+        controller.bridgeHealthFailureCount = Math.min(
+            VIRTUAL_CONTROLLER_BRIDGE_HEALTH_FAILURE_LIMIT,
+            controller.bridgeHealthFailureCount + 1
+        );
+        if (controller.bridgeHealthFailureCount < VIRTUAL_CONTROLLER_BRIDGE_HEALTH_FAILURE_LIMIT) {
+            controller.bridgeHealthTimer = window.setTimeout(
+                () => monitorVirtualControllerBridgeHealth(true),
+                controller.wanted ? 350 : 750
+            );
+            if (!wasRunning) refreshVirtualControllerUi();
+            return;
+        }
+
+        controller.bridgeRunning = false;
+        controller.bridgeToken = null;
         controller.bridgeStartInProgress = false;
         controller.bridgeHealthDeadline = 0;
         if (controller.wanted && bridgeIsActiveSource) {
@@ -13120,6 +13214,7 @@ function closeVirtualControllerSocket(notifyBridge = true) {
     }
     const socket = controller.socket;
     controller.socket = null;
+    controller.socketGeneration += 1;
     if (!socket) return;
     if (notifyBridge && socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify({ type: getVirtualControllerSourceConfig().stopCommand }));
@@ -13134,6 +13229,8 @@ function disconnectVirtualController() {
     controller.historyBefore = null;
     controller.wanted = false;
     closeVirtualControllerSocket(true);
+    controller.pendingInterferenceReads.clear();
+    controller.pendingInterferenceToolReads.clear();
     controller.samples?.clear();
     controller.lastAppliedSampleId = 0;
     controller.sourceConnectedAt = 0;

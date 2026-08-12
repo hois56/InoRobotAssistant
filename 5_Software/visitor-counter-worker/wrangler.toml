@@ -1,6 +1,6 @@
 name = "inorobot-visitor-counter"
 main = "worker.js"
-compatibility_date = "2024-01-01"
+compatibility_date = "2026-08-12"
 
 [vars]
 ALLOWED_ORIGINS = "https://inovancerobot.com,https://www.inovancerobot.com"
@@ -8,3 +8,11 @@ ALLOWED_ORIGINS = "https://inovancerobot.com,https://www.inovancerobot.com"
 [[kv_namespaces]]
 binding = "VISITOR_KV"
 id = "54c0883acedf463c8e88e496f23bedf5"
+
+[[durable_objects.bindings]]
+name = "VISITOR_COUNTER"
+class_name = "VisitorCounter"
+
+[exports.VisitorCounter]
+type = "durable-object"
+storage = "sqlite"

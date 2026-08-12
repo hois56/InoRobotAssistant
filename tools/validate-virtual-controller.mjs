@@ -146,14 +146,31 @@ assert.match(main, /function endVirtualControllerSessionForSourceExit\(source\)/
 assert.match(main, /TRACE_SOURCE_LIVENESS_TIMEOUT_MS = 2500/);
 assert.match(main, /function isVirtualControllerSourceLive\(timestamp\)/);
 assert.match(main, /function monitorVirtualControllerBridgeHealth\(silent = false\)/);
+assert.match(main, /VIRTUAL_CONTROLLER_BRIDGE_HEALTH_FAILURE_LIMIT = 3/);
+assert.match(main, /bridgeHealthFailureCount/);
+assert.match(main, /bridgeHealthCheckSequence/);
+assert.match(main, /bridgeHealthMonitorGeneration/);
 assert.match(main, /new WebSocket\(source\.socketUrl\)/);
+assert.match(main, /socketGeneration/);
+assert.match(main, /isCurrentSocket/);
+assert.match(main, /Virtual controller WebSocket closed\./);
+assert.match(main, /code: Number\(event\.code\) \|\| 0/);
+assert.match(main, /reason: String\(event\.reason \|\| ''\)/);
+assert.match(main, /Virtual controller bridge health check failed\./);
+assert.match(main, /Virtual controller bridge health check returned an unusable response\./);
 assert.match(main, /applyVirtualControllerFrame\(timestamp\)/);
 assert.match(main, /function monitorVirtualControllerStream\(\)/);
 assert.match(main, /VIRTUAL_CONTROLLER_STREAM_STALL_MS = 750/);
 assert.match(main, /function scheduleVirtualControllerReconnect\(source, message = ''\)/);
 assert.match(main, /controller\.reconnectAttempt/);
 assert.match(main, /parsed\.type === 'controllerReconnectFailed'/);
+assert.match(main, /Virtual controller native feedback interrupted\./);
+assert.match(main, /Virtual controller native reconnect failed\./);
 assert.match(main, /controller\.reconnectMessage/);
+assert.match(
+    main,
+    /function disconnectVirtualController\(\)[\s\S]*?pendingInterferenceReads\.clear\(\);[\s\S]*?pendingInterferenceToolReads\.clear\(\);/
+);
 assert.match(main, /const sample = controller\.samples\.getLatest\(\)/);
 assert.match(main, /sample\.sampleId <= controller\.lastAppliedSampleId/);
 assert.match(main, /sample\.joints\.length < joints\.length/);
@@ -178,6 +195,8 @@ assert.match(bridge, /controllerConnectionLost/);
 assert.match(bridge, /InitialControllerTimeoutSeconds = 5/);
 assert.match(bridge, /ReconnectControllerTimeoutSeconds = 3/);
 assert.match(bridge, /controllerReconnectFailed/);
+assert.match(bridge, /else if \(!robot\.IsConnected\s*&&\s*Volatile\.Read\(ref controllerReconnectEnabled\) == 1/);
+assert.match(bridge, /robot\.LastConnectionLossDiagnostic/);
 assert.match(bridge, /IsAllowedOrigin/);
 assert.match(bridge, /type == "shutdown"/);
 assert.doesNotMatch(bridge, /AccessControlAllowOrigin = "\*"/);
@@ -191,7 +210,16 @@ assert.match(nativeClient, /_runtimeLibraryHandle = LoadLibrary\(runtimePath\)/)
 assert.match(nativeClient, /SHA256\.HashData/);
 assert.match(bridgeProject, /Native\\MSVCR120\.dll/);
 assert.match(bridgeProject, /InoRobotVirtualControllerBridge\.MSVCR120\.dll/);
-assert.match(nativeClient, /DisconnectUnsafe\(\);\r?\n\s*return null;/);
+assert.match(nativeClient, /JointReadFailureDisconnectThresholdMs = 100/);
+assert.match(nativeClient, /RegisterJointReadFailureUnsafe\(\$"return code \{jointResult\}"\);/);
+assert.match(nativeClient, /ResetJointReadFailuresUnsafe\(\);/);
+assert.match(nativeClient, /durationMs < JointReadFailureDisconnectThresholdMs/);
+assert.match(nativeClient, /LastConnectionLossDiagnostic/);
+assert.doesNotMatch(
+    nativeClient,
+    /if \(jointResult < 0\)\s*\{\s*DisconnectUnsafe\(\);/,
+    'A single failed joint read must not immediately tear down the controller session.'
+);
 assert.match(nativeClient, /double\[\] tcp = Array\.Empty<double>\(\)/);
 assert.match(nativeClient, /if \(tcpResult >= 0\)/);
 

@@ -1,23 +1,34 @@
 /*
  * Cumulative visit counter.
  *
- * The Worker keeps the total in Cloudflare KV and suppresses repeat visits
- * from the same browser fingerprint for a short window. The displayed
- * baseline protects the site from falling below its known historical total.
+ * The Worker keeps the total in a transaction-safe Durable Object and
+ * suppresses repeat visits from the same browser fingerprint for a short
+ * window. The displayed snapshot protects the site from falling below the
+ * last verified total while the API is unavailable.
  */
 (() => {
-    const visitCounterStart = 1800;
+    const visitCounterStart = 2031;
     const visitCounterUrl = 'https://inorobot-visitor-counter.hois56.workers.dev/visit';
     const visitCounter = document.getElementById('visit-count');
 
     if (!visitCounter) return;
 
+    const initialCount = Number.parseInt(visitCounter.textContent.replace(/[^0-9]/g, ''), 10);
+    const fallbackCount = Math.max(
+        visitCounterStart,
+        Number.isFinite(initialCount) ? initialCount : visitCounterStart
+    );
+
     function renderVisitCount(total) {
-        const count = Math.max(visitCounterStart, Number(total) || visitCounterStart);
-        visitCounter.textContent = `visits ${count.toLocaleString('en-US')}`;
+        const count = Math.max(fallbackCount, Number(total) || fallbackCount);
+        const formattedCount = count.toLocaleString('en-US');
+        const currentText = visitCounter.textContent;
+        visitCounter.textContent = /[0-9][0-9,]*/.test(currentText)
+            ? currentText.replace(/[0-9][0-9,]*/, formattedCount)
+            : `visits ${formattedCount}`;
     }
 
-    renderVisitCount(visitCounterStart);
+    renderVisitCount(fallbackCount);
 
     fetch(visitCounterUrl, {
         method: 'POST',
@@ -28,7 +39,5 @@
         .then(data => {
             if (data?.ok) renderVisitCount(data.total);
         })
-        .catch(() => {
-            renderVisitCount(visitCounterStart);
-        });
+        .catch(() => {});
 })();

@@ -9,6 +9,7 @@ namespace InoRobotVirtualControllerBridge;
 internal sealed class NativeRobotClient : IDisposable
 {
     private const int CommunicationId = 0;
+    private const long JointReadFailureDisconnectThresholdMs = 100;
     private const string NativeLibraryName = "IMC100API.dll";
     private const string EmbeddedLibraryName = "InoRobotVirtualControllerBridge.IMC100API.dll";
     private const string RuntimeLibraryName = "MSVCR120.dll";
@@ -17,8 +18,20 @@ internal sealed class NativeRobotClient : IDisposable
     private static IntPtr _runtimeLibraryHandle;
     private bool _nativeSessionOpen;
     private bool _disposed;
+    private int _consecutiveJointReadFailures;
+    private long _jointReadFailureStartedAt;
+    private string? _lastConnectionLossDiagnostic;
 
     public bool IsConnected { get; private set; }
+
+    public string? LastConnectionLossDiagnostic
+    {
+        get
+        {
+            lock (_sync)
+                return _lastConnectionLossDiagnostic;
+        }
+    }
 
     public static void PrepareNativeLibrary()
     {
@@ -149,6 +162,8 @@ internal sealed class NativeRobotClient : IDisposable
         lock (_sync)
         {
             DisconnectUnsafe();
+            ResetJointReadFailuresUnsafe();
+            _lastConnectionLossDiagnostic = null;
             try
             {
                 IPAddress parsedAddress = IPAddress.Parse(ipAddress);
@@ -182,7 +197,7 @@ internal sealed class NativeRobotClient : IDisposable
             catch (Exception error)
             {
                 DisconnectUnsafe();
-                return (false, error.Message);
+                return (false, $"{error.GetType().Name}: {error.Message}");
             }
         }
     }
@@ -200,12 +215,11 @@ internal sealed class NativeRobotClient : IDisposable
                 int jointResult = NativeApi.IMC100_Get_RobJPosHere(ref jointPosition, CommunicationId);
                 if (jointResult < 0)
                 {
-                    // A failed joint read means the native controller session is no
-                    // longer usable. Mark it disconnected so the bridge can recover
-                    // instead of leaving the browser in a permanently stale state.
-                    DisconnectUnsafe();
+                    RegisterJointReadFailureUnsafe($"return code {jointResult}");
                     return null;
                 }
+
+                ResetJointReadFailuresUnsafe();
 
                 // Joint feedback is sufficient for 3D synchronization. Some controller
                 // configurations can report joint feedback before TCP feedback is available,
@@ -231,11 +245,13 @@ internal sealed class NativeRobotClient : IDisposable
                     jointPosition.JointData.ToArray(),
                     tcp);
             }
-            catch
+            catch (Exception error)
             {
-                // Native API failures must not fault the streaming task. A transient
-                // controller/socket failure is handled by the bridge reconnect loop.
-                DisconnectUnsafe();
+                // Treat native API exceptions the same as negative return codes. Short
+                // interruptions only drop samples; a sustained failure closes the native
+                // session so the bridge reconnect loop can recover it.
+                RegisterJointReadFailureUnsafe(
+                    $"{error.GetType().Name}: {error.Message}");
                 return null;
             }
         }
@@ -388,6 +404,29 @@ internal sealed class NativeRobotClient : IDisposable
         ArmParameters = new int[4],
         ExternalPositionData = new double[6]
     };
+
+    private void RegisterJointReadFailureUnsafe(string failure)
+    {
+        long now = Environment.TickCount64;
+        if (_consecutiveJointReadFailures == 0)
+            _jointReadFailureStartedAt = now;
+
+        _consecutiveJointReadFailures++;
+        long durationMs = Math.Max(0, now - _jointReadFailureStartedAt);
+        if (durationMs < JointReadFailureDisconnectThresholdMs)
+            return;
+
+        _lastConnectionLossDiagnostic =
+            $"Joint feedback failed {_consecutiveJointReadFailures} consecutive times " +
+            $"over {durationMs} ms; last failure: {failure}.";
+        DisconnectUnsafe();
+    }
+
+    private void ResetJointReadFailuresUnsafe()
+    {
+        _consecutiveJointReadFailures = 0;
+        _jointReadFailureStartedAt = 0;
+    }
 
     private void DisconnectUnsafe()
     {
