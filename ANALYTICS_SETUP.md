@@ -15,8 +15,16 @@ Beacon token은 `analytics-config.js`에 입력되어 있으며, 배포 후 페�
 
 ## 방문자 분석
 
-사이트의 방문자 및 페이지 분석은 Cloudflare Web Analytics에서 확인합니다. 별도의 화면용 누적 카운터나
-Worker KV 집계는 사용하지 않습니다.
+사이트에는 목적이 다른 두 지표가 있습니다.
+
+- 페이지별 방문·유입·기기 통계는 Cloudflare Web Analytics에서 확인합니다.
+- 홈 하단의 누적 방문자 수는 전용 Cloudflare Worker와 SQLite 기반 Durable Object에서 집계합니다.
+
+누적 카운터는 확인된 운영값 `2,031`을 승계 하한으로 사용하고, 같은 방문자 조합은 5분 동안 한 번만
+반영합니다. 총계 증가와 중복 확인을 하나의 원자 트랜잭션으로 처리하므로 동시 방문으로 증가분이
+유실되지 않습니다. 이전 Workers KV는 배포 전후의 증가분을 무손실로 승계하는 전환 용도로만 남겨 둡니다.
+배포와 승계 확인 절차는 [`5_Software/visitor-counter-worker/README.md`](5_Software/visitor-counter-worker/README.md)를
+따릅니다.
 
 ## 확인 방법
 

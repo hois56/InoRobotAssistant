@@ -25,3 +25,6 @@
 
 # Google service-account credentials.
 /inorobotassistant-f000dd7470d8.json
+
+# Local Cloudflare API token notes.
+/API_토큰*.txt

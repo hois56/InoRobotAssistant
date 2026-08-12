@@ -6,12 +6,16 @@ compatibility_date = "2024-01-01"
 CLOUDFLARE_ACCOUNT_TAG = "c0958ea63507a74f5339d689ec75c57b"
 WEB_ANALYTICS_HOST = "inovancerobot.com"
 GOOGLE_SHEETS_HEADER_RANGE = "Daily!A1:H1"
-GOOGLE_SHEETS_CLEAR_RANGE = "Daily!A2:H5000"
+GOOGLE_SHEETS_CLEAR_RANGE = "Daily!A2:H"
 GOOGLE_SHEETS_DATA_START = "Daily!A2"
 
 [triggers]
-# 01:00 UTC = 10:00 KST. The Worker refreshes the previous three days.
+# 01:00 UTC = 10:00 KST. The Worker refreshes the previous three KST days.
 crons = ["0 1 * * *"]
+
+[observability.logs]
+enabled = true
+invocation_logs = true
 
 [[d1_databases]]
 binding = "ANALYTICS_DB"
@@ -19,4 +23,4 @@ database_name = "inorobot-analytics"
 database_id = "f05267aa-a3bb-4ba3-ad7b-70ef3975d408"
 
 # R2 is intentionally not required. The free D1 database stores the daily
-# metrics, and /analytics.csv exports them as an Excel-compatible CSV file.
+# metrics. /analytics.csv requires the ANALYTICS_CSV_TOKEN Worker secret.
