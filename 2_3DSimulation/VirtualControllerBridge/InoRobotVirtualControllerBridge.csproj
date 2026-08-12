@@ -20,5 +20,7 @@
   <ItemGroup>
     <EmbeddedResource Include="..\..\7_DebuggingTool\Trace\IMC100API.dll"
                       LogicalName="InoRobotVirtualControllerBridge.IMC100API.dll" />
+    <EmbeddedResource Include="Native\MSVCR120.dll"
+                      LogicalName="InoRobotVirtualControllerBridge.MSVCR120.dll" />
   </ItemGroup>
 </Project>
