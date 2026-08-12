@@ -104,7 +104,7 @@ internal sealed class NativeRobotClient : IDisposable
     [DllImport("kernel32.dll", EntryPoint = "LoadLibraryW", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern IntPtr LoadLibrary(string fileName);
 
-    public (bool Success, string Message) Connect(string ipAddress = "127.0.0.1", int port = 2222, int timeoutMs = 1000)
+    public (bool Success, string Message) Connect(string ipAddress = "127.0.0.1", int port = 2222, int timeoutSeconds = 5)
     {
         lock (_sync)
         {
@@ -120,7 +120,7 @@ internal sealed class NativeRobotClient : IDisposable
                     | ((uint)bytes[1] << 16)
                     | ((uint)bytes[2] << 8)
                     | bytes[3];
-                int result = NativeApi.IMC100_Init_ETH(address, checked((ushort)port), timeoutMs, CommunicationId);
+                int result = NativeApi.IMC100_Init_ETH(address, checked((ushort)port), timeoutSeconds, CommunicationId);
                 if (result < 0)
                 {
                     CloseNativeSessionUnsafe();

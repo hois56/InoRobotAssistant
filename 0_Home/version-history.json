@@ -159,6 +159,13 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.08.12",
+                "items": [
+                  "`[수정]` 일부 PC에서 컨트롤러 연결이 실패한 뒤 재연결 중 상태가 장시간 유지되던 문제를 해결했습니다.",
+                  "`[개선]` 컨트롤러 연결과 자동 재연결 실패 사유를 연결 상태에 표시하도록 개선했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.07.26",
                 "items": [
                   "`[추가]` 프로그램 패널에 OLP (Offline Programming) 기능을 추가했습니다."
@@ -920,6 +927,13 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.08.12",
+                "items": [
+                  "**[Fixed]** Resolved an issue where the controller could remain in the reconnecting state for a long time after a connection failure on some PCs.",
+                  "**[Improved]** Controller connection and automatic reconnection failures now show their cause in the connection status."
+                ]
+              },
               {
                 "title": "Ver 26.07.26",
                 "items": [
@@ -1683,6 +1697,13 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.08.12",
+                "items": [
+                  "**[修复]** 修复了部分电脑在控制器连接失败后长时间停留在重新连接状态的问题。",
+                  "**[改进]** 控制器连接和自动重新连接失败时，连接状态现在会显示失败原因。"
+                ]
+              },
+              {
                 "title": "Ver 26.07.26",
                 "items": [
                   "`[추가]` 프로그램 패널에 OLP (Offline Programming) 기능을 추가했습니다."
@@ -2444,6 +2465,13 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.08.12",
+                "items": [
+                  "**[Sửa lỗi]** Đã khắc phục sự cố khiến trạng thái kết nối bộ điều khiển có thể bị kẹt ở trạng thái đang kết nối lại trong thời gian dài trên một số máy tính.",
+                  "**[Cải tiến]** Trạng thái kết nối giờ hiển thị nguyên nhân khi kết nối bộ điều khiển hoặc tự động kết nối lại thất bại."
+                ]
+              },
               {
                 "title": "Ver 26.07.26",
                 "items": [
