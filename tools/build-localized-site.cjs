@@ -33,6 +33,16 @@ const outputRoutes = {
     'zh-CN': '0_Home/zh-CN/index.html',
     vi: '0_Home/vi/index.html'
 };
+const subpageSeoDefinitions = [
+    { file: '1_RobotModelSelect/index.html', route: '/1_RobotModelSelect/', pageKey: 'robotSelect' },
+    { file: '2_3DSimulation/index.html', route: '/2_3DSimulation/', pageKey: 'robot3dViewer' },
+    { file: '3_ToolSelector/index.html', route: '/3_ToolSelector/', pageKey: 'toolSelector' },
+    { file: '4_ProjectGenerator/index.html', route: '/4_ProjectGenerator/', pageKey: 'projectGenerator' },
+    { file: '5_Software/index.html', route: '/5_Software/', pageKey: 'software' },
+    { file: '6_Document/index.html', route: '/6_Document/', pageKey: 'manual' },
+    { file: '7_DebuggingTool/index.html', route: '/7_DebuggingTool/', pageKey: 'debugging' },
+    { file: '7_DebuggingTool/ZeroCalibration/index.html', route: '/7_DebuggingTool/ZeroCalibration/', pageKey: 'zeroCalibration' }
+];
 const htmlLanguages = {
     ko: 'ko',
     en: 'en',
@@ -253,21 +263,46 @@ function ensureRuntimeReferences(html) {
     return output;
 }
 
-function integrateSubpages() {
-    const htmlFiles = [
-        '1_RobotModelSelect/index.html',
-        '2_3DSimulation/index.html',
-        '3_ToolSelector/index.html',
-        '4_ProjectGenerator/index.html',
-        '5_Software/index.html',
-        '6_Document/index.html',
-        '7_DebuggingTool/index.html',
-        '7_DebuggingTool/ZeroCalibration/index.html'
-    ];
-    htmlFiles.forEach(relativePath => {
-        const filePath = path.join(root, relativePath);
+function escapeHtmlAttribute(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+function replaceSubpageSeo(html, metadata, route) {
+    const canonicalUrl = siteUrl + route;
+    const title = escapeHtmlAttribute(metadata.title);
+    const description = escapeHtmlAttribute(metadata.description);
+    const block = [
+        '    <!-- SUBPAGE-SEO:START -->',
+        '    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">',
+        '    <link rel="canonical" href="' + canonicalUrl + '">',
+        '    <meta property="og:type" content="website">',
+        '    <meta property="og:site_name" content="InoRobot Assistant">',
+        '    <meta property="og:title" content="' + title + '">',
+        '    <meta property="og:description" content="' + description + '">',
+        '    <meta property="og:url" content="' + canonicalUrl + '">',
+        '    <meta property="og:locale" content="ko_KR">',
+        '    <meta name="twitter:card" content="summary">',
+        '    <meta name="twitter:title" content="' + title + '">',
+        '    <meta name="twitter:description" content="' + description + '">',
+        '    <!-- SUBPAGE-SEO:END -->'
+    ].join('\n');
+    const marker = /[ \t]*<!-- SUBPAGE-SEO:START -->[\s\S]*?<!-- SUBPAGE-SEO:END -->/;
+    let output = marker.test(html) ? html.replace(marker, '\n' + block) : html.replace('</head>', block + '\n</head>');
+    output = output.replace(/<title>[\s\S]*?<\/title>/i, '<title>' + title + '</title>');
+    output = replaceMetaDescription(output, metadata.description);
+    return output;
+}
+
+function integrateSubpages(locales) {
+    subpageSeoDefinitions.forEach(definition => {
+        const filePath = path.join(root, definition.file);
         const source = fs.readFileSync(filePath, 'utf8');
-        const updated = ensureRuntimeReferences(source);
+        let updated = ensureRuntimeReferences(source);
+        updated = replaceSubpageSeo(updated, locales.en.pages[definition.pageKey], definition.route);
         if (updated !== source) fs.writeFileSync(filePath, updated, 'utf8');
     });
 }
@@ -286,8 +321,6 @@ function replaceSeoBlock(html, locale, route) {
         '    <!-- I18N-SEO:START -->',
         '    <link rel="canonical" href="' + canonicalUrl + '">',
         alternateLinks,
-        '    <meta property="og:locale" content="' + locale._meta.ogLocale + '">',
-        '    <meta property="og:url" content="' + canonicalUrl + '">',
         '    <!-- I18N-SEO:END -->'
     ].join('\n');
     const marker = /[ \t]*<!-- I18N-SEO:START -->[\s\S]*?<!-- I18N-SEO:END -->/;
@@ -295,11 +328,34 @@ function replaceSeoBlock(html, locale, route) {
 }
 
 function replaceMetaDescription(html, description) {
-    const meta = '    <meta name="description" content="' + description.replace(/"/g, '&quot;') + '">';
+    const meta = '    <meta name="description" content="' + escapeHtmlAttribute(description) + '">';
     if (/<meta\s+name=["']description["'][^>]*>/i.test(html)) {
         return html.replace(/<meta\s+name=["']description["'][^>]*>/i, meta.trim());
     }
     return html.replace(/<meta\s+name=["']viewport["'][^>]*>/i, match => match + '\n' + meta);
+}
+
+function replaceSocialMetaBlock(html, locale, route) {
+    const canonicalRoute = route === '/kr/' ? '/' : route;
+    const canonicalUrl = siteUrl + canonicalRoute;
+    const title = escapeHtmlAttribute(locale.pages.home.title);
+    const description = escapeHtmlAttribute(locale.pages.home.description);
+    const block = [
+        '    <!-- I18N-SOCIAL:START -->',
+        '    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">',
+        '    <meta property="og:type" content="website">',
+        '    <meta property="og:site_name" content="InoRobot Assistant">',
+        '    <meta property="og:title" content="' + title + '">',
+        '    <meta property="og:description" content="' + description + '">',
+        '    <meta property="og:url" content="' + canonicalUrl + '">',
+        '    <meta property="og:locale" content="' + escapeHtmlAttribute(locale._meta.ogLocale || 'ko_KR') + '">',
+        '    <meta name="twitter:card" content="summary">',
+        '    <meta name="twitter:title" content="' + title + '">',
+        '    <meta name="twitter:description" content="' + description + '">',
+        '    <!-- I18N-SOCIAL:END -->'
+    ].join('\n');
+    const marker = /[ \t]*<!-- I18N-SOCIAL:START -->[\s\S]*?<!-- I18N-SOCIAL:END -->/;
+    return marker.test(html) ? html.replace(marker, '\n' + block) : html.replace('</head>', block + '\n</head>');
 }
 
 function translateHomeTemplate(template, localeCode, locales, route, versions, historyCacheVersion, localeBundleCacheVersion) {
@@ -310,6 +366,7 @@ function translateHomeTemplate(template, localeCode, locales, route, versions, h
     html = replaceMetaDescription(html, locale.pages.home.description);
     html = ensureRuntimeReferences(html);
     html = replaceSeoBlock(html, locale, route);
+    html = replaceSocialMetaBlock(html, locale, route);
 
     if (route !== '/' && !/<base\s/i.test(html)) {
         html = html.replace('<head>', '<head>\n    <base href="/">');
@@ -371,7 +428,7 @@ function buildLocaleBundle(locales) {
 }
 
 function buildSitemap() {
-    const urls = ['/', '/en/', '/cn/', '/vn/', '/privacy/'];
+    const urls = ['/', '/en/', '/cn/', '/vn/', ...subpageSeoDefinitions.map(definition => definition.route), '/privacy/'];
     const xml = [
         '<?xml version="1.0" encoding="UTF-8"?>',
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
@@ -382,6 +439,16 @@ function buildSitemap() {
     writeFile('sitemap.xml', xml);
 }
 
+function buildRobotsTxt() {
+    writeFile('robots.txt', [
+        'User-agent: *',
+        'Allow: /',
+        '',
+        'Sitemap: ' + siteUrl + '/sitemap.xml',
+        ''
+    ].join('\n'));
+}
+
 const versionHistory = loadVersionHistory(root);
 writeGeneratedArtifacts(root, versionHistory);
 const locales = loadLocales(versionHistory);
@@ -389,8 +456,9 @@ const siteCardVersions = versionHistory.cardVersions;
 const historyCacheVersion = getVersionHistoryCacheVersion();
 const localeBundleCacheVersion = getLocaleBundleCacheVersion(locales);
 buildLocaleBundle(locales);
-integrateSubpages();
+integrateSubpages(locales);
 updatePrivacyLocaleCacheVersion(localeBundleCacheVersion);
 buildLandingPages(locales, siteCardVersions, historyCacheVersion, localeBundleCacheVersion);
 buildSitemap();
+buildRobotsTxt();
 console.log('Built locales and landing routes: /, /kr/, /en/, /cn/, /vn/');

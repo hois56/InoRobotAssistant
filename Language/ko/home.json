@@ -1,11 +1,12 @@
 {
   "pages": {
     "home": {
-      "title": "Inovance Robot Assistant | 이노반스 로봇 코리아",
-      "description": "INOVANCE 로봇의 설계, 프로그래밍, 시운전을 지원하는 도구 모음입니다."
+      "title": "Inovance Robot Assistant | 이노밴스 코리아",
+      "description": "이노로봇은 이노밴스 로봇(INOVANCE robot)의 모델 선택, 3D 시뮬레이션, 프로젝트 생성, 소프트웨어와 기술 문서를 지원하는 도구 모음입니다."
     }
   },
   "legacy": {
+    "이노로봇(InoRobot Assistant)은 이노밴스 로봇(INOVANCE robot)의 모델 선택, 3D 시뮬레이션, 프로젝트 생성, 소프트웨어, 문서와 디버깅을 지원합니다.": "이노로봇(InoRobot Assistant)은 이노밴스 로봇(INOVANCE robot)의 모델 선택, 3D 시뮬레이션, 프로젝트 생성, 소프트웨어, 문서와 디버깅을 지원합니다.",
     "InoRobot Assistant는 INOVANCE Robot을 설계부터 프로그래밍, 시운전까지 지원하는 유용한 협업 도구입니다.": "InoRobot Assistant는 INOVANCE Robot을 설계부터 프로그래밍, 시운전까지 지원하는 유용한 협업 도구입니다.",
     "필요한 도구를 선택하여 작업을 시작하세요.": "필요한 도구를 선택하여 작업을 시작하세요.",
     "INOVANCE 로봇의 라인업을 확인하세요. 선택한 모델과 옵션 구성을 PDF로 저장하여 발주에 활용할 수 있습니다. 또한 2D, 3D CAD 파일을 다운로드 받을 수 있습니다.": "INOVANCE 로봇의 라인업을 확인하세요. 선택한 모델과 옵션 구성을 PDF로 저장하여 발주에 활용할 수 있습니다. 또한 2D, 3D CAD 파일을 다운로드할 수 있습니다.",
