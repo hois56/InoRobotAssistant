@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 
 namespace InoRobotVirtualControllerBridge;
 
@@ -10,7 +11,10 @@ internal sealed class NativeRobotClient : IDisposable
     private const int CommunicationId = 0;
     private const string NativeLibraryName = "IMC100API.dll";
     private const string EmbeddedLibraryName = "InoRobotVirtualControllerBridge.IMC100API.dll";
+    private const string RuntimeLibraryName = "MSVCR120.dll";
+    private const string EmbeddedRuntimeLibraryName = "InoRobotVirtualControllerBridge.MSVCR120.dll";
     private readonly object _sync = new();
+    private static IntPtr _runtimeLibraryHandle;
     private bool _nativeSessionOpen;
     private bool _disposed;
 
@@ -20,18 +24,20 @@ internal sealed class NativeRobotClient : IDisposable
     {
         string directory = GetWritableNativeLibraryDirectory();
         string nativePath = Path.Combine(directory, NativeLibraryName);
+        string runtimePath = Path.Combine(directory, RuntimeLibraryName);
 
-        using Stream? resource = Assembly.GetExecutingAssembly().GetManifestResourceStream(EmbeddedLibraryName);
-        if (resource is null)
-            throw new InvalidOperationException($"Embedded resource {EmbeddedLibraryName} was not found.");
+        EnsureEmbeddedLibrary(EmbeddedRuntimeLibraryName, runtimePath);
+        EnsureEmbeddedLibrary(EmbeddedLibraryName, nativePath);
 
-        bool writeLibrary = !File.Exists(nativePath) || new FileInfo(nativePath).Length != resource.Length;
-        if (writeLibrary)
+        // IMC100API.dll was built with the Visual C++ 2013 x64 runtime. Load
+        // the bundled runtime first so Windows can resolve the dependency on
+        // PCs where the VC++ 2013 Redistributable is not installed.
+        _runtimeLibraryHandle = LoadLibrary(runtimePath);
+        if (_runtimeLibraryHandle == IntPtr.Zero)
         {
-            string temporaryPath = nativePath + ".tmp";
-            using (FileStream output = File.Create(temporaryPath))
-                resource.CopyTo(output);
-            File.Move(temporaryPath, nativePath, true);
+            int error = Marshal.GetLastWin32Error();
+            throw new DllNotFoundException(
+                $"Unable to load bundled runtime {runtimePath}: {new Win32Exception(error).Message} (0x{error:X8}).");
         }
 
         NativeLibrary.SetDllImportResolver(typeof(NativeRobotClient).Assembly, (libraryName, _, _) =>
@@ -60,6 +66,40 @@ internal sealed class NativeRobotClient : IDisposable
 
             return handle;
         });
+    }
+
+    private static void EnsureEmbeddedLibrary(string resourceName, string destinationPath)
+    {
+        using Stream? resource = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName);
+        if (resource is null)
+            throw new InvalidOperationException($"Embedded resource {resourceName} was not found.");
+
+        using MemoryStream embeddedStream = new();
+        resource.CopyTo(embeddedStream);
+        byte[] embeddedBytes = embeddedStream.ToArray();
+        byte[] embeddedHash = SHA256.HashData(embeddedBytes);
+
+        bool writeLibrary = true;
+        if (File.Exists(destinationPath) && new FileInfo(destinationPath).Length == embeddedBytes.Length)
+        {
+            using FileStream existingStream = File.OpenRead(destinationPath);
+            byte[] existingHash = SHA256.HashData(existingStream);
+            writeLibrary = !CryptographicOperations.FixedTimeEquals(existingHash, embeddedHash);
+        }
+
+        if (!writeLibrary)
+            return;
+
+        string temporaryPath = destinationPath + $".{Environment.ProcessId}.tmp";
+        try
+        {
+            File.WriteAllBytes(temporaryPath, embeddedBytes);
+            File.Move(temporaryPath, destinationPath, true);
+        }
+        finally
+        {
+            try { File.Delete(temporaryPath); } catch { }
+        }
     }
 
     private static string GetWritableNativeLibraryDirectory()

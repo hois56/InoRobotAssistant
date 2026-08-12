@@ -162,7 +162,8 @@
                 "title": "Ver 26.08.12",
                 "items": [
                   "`[수정]` 일부 PC에서 컨트롤러 연결이 실패한 뒤 재연결 중 상태가 장시간 유지되던 문제를 해결했습니다.",
-                  "`[개선]` 컨트롤러 연결과 자동 재연결 실패 사유를 연결 상태에 표시하도록 개선했습니다."
+                  "`[개선]` 컨트롤러 연결과 자동 재연결 실패 사유를 연결 상태에 표시하도록 개선했습니다.",
+                  "`[수정]` Visual C++ 2013 런타임이 설치되지 않은 PC에서 컨트롤러 API를 불러오지 못하던 문제를 해결했습니다."
                 ]
               },
               {
@@ -931,7 +932,8 @@
                 "title": "Ver 26.08.12",
                 "items": [
                   "**[Fixed]** Resolved an issue where the controller could remain in the reconnecting state for a long time after a connection failure on some PCs.",
-                  "**[Improved]** Controller connection and automatic reconnection failures now show their cause in the connection status."
+                  "**[Improved]** Controller connection and automatic reconnection failures now show their cause in the connection status.",
+                  "**[Fixed]** Resolved an issue where the controller API could not load on PCs without the Visual C++ 2013 runtime installed."
                 ]
               },
               {
@@ -1700,7 +1702,8 @@
                 "title": "Ver 26.08.12",
                 "items": [
                   "**[修复]** 修复了部分电脑在控制器连接失败后长时间停留在重新连接状态的问题。",
-                  "**[改进]** 控制器连接和自动重新连接失败时，连接状态现在会显示失败原因。"
+                  "**[改进]** 控制器连接和自动重新连接失败时，连接状态现在会显示失败原因。",
+                  "**[修复]** 修复了未安装 Visual C++ 2013 运行库的电脑无法加载控制器 API 的问题。"
                 ]
               },
               {
@@ -2469,7 +2472,8 @@
                 "title": "Ver 26.08.12",
                 "items": [
                   "**[Sửa lỗi]** Đã khắc phục sự cố khiến trạng thái kết nối bộ điều khiển có thể bị kẹt ở trạng thái đang kết nối lại trong thời gian dài trên một số máy tính.",
-                  "**[Cải tiến]** Trạng thái kết nối giờ hiển thị nguyên nhân khi kết nối bộ điều khiển hoặc tự động kết nối lại thất bại."
+                  "**[Cải tiến]** Trạng thái kết nối giờ hiển thị nguyên nhân khi kết nối bộ điều khiển hoặc tự động kết nối lại thất bại.",
+                  "**[Sửa lỗi]** Đã khắc phục sự cố không thể tải API bộ điều khiển trên máy tính chưa cài đặt Visual C++ 2013 runtime."
                 ]
               },
               {
