@@ -6,6 +6,7 @@
 
 ## 목차
 
+- [InoRobot Assistant](#inorobot-assistant)
 - [Robot Model Select](#robot-model-select)
 - [3D Simulation](#3d-simulation)
 - [Robot Tool Selector](#robot-tool-selector)
@@ -13,6 +14,15 @@
 - [Software](#software)
 - [Document](#document)
 - [Debugging Tool](#debugging-tool)
+
+---
+
+## InoRobot Assistant
+
+### Ver 26.08.12
+
+- `[개선]` 이노로봇, 이노밴스 로봇, INOVANCE robot 검색어로 사이트를 더 쉽게 찾을 수 있도록 홈페이지 SEO를 개선했습니다.
+- `[변경]` 홈페이지 검색 제목을 `Inovance Robot Assistant | 이노밴스 코리아`로 변경했습니다.
 
 ---
 

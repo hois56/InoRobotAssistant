@@ -287,6 +287,16 @@
             document.head.appendChild(descriptionElement);
         }
         if (descriptionElement && description) descriptionElement.content = description;
+
+        [
+            ['meta[property="og:title"]', title],
+            ['meta[property="og:description"]', description],
+            ['meta[name="twitter:title"]', title],
+            ['meta[name="twitter:description"]', description]
+        ].forEach(function (entry) {
+            const element = document.querySelector(entry[0]);
+            if (element && entry[1]) element.content = entry[1];
+        });
     }
 
     function updateHomeLinks() {
