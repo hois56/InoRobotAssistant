@@ -209,6 +209,7 @@ const state = {
         lastSampleAt: 0,
         lastStreamStartAt: 0,
         reconnectAttempt: 0,
+        reconnectMessage: '',
         streamWatchdogTimer: null
     },
     olp: {
@@ -10639,22 +10640,29 @@ function handleVirtualControllerMessage(raw) {
     } else if (parsed.type === 'connectResult') {
         if (message.success) {
             controller.reconnectAttempt = 0;
+            controller.reconnectMessage = '';
             controller.sourceConnectedAt = performance.now();
             setVirtualControllerStatus('connected');
             startVirtualControllerStream();
             monitorVirtualControllerStream();
         } else {
-            setVirtualControllerStatus('error');
+            const detail = String(message.message || 'Controller connection failed.').trim();
+            controller.reconnectMessage = `${uiText('재연결 중')}: ${detail}`;
+            setVirtualControllerStatus('error', detail);
             controller.socket?.close();
         }
     } else if (parsed.type === 'controllerConnectionLost') {
         setVirtualControllerStatus('reconnecting', message.message || 'Controller feedback interrupted; reconnecting...');
     } else if (parsed.type === 'controllerReconnected') {
         controller.reconnectAttempt = 0;
+        controller.reconnectMessage = '';
         controller.sourceConnectedAt = performance.now();
         setVirtualControllerStatus('connected');
         startVirtualControllerStream();
         monitorVirtualControllerStream();
+    } else if (parsed.type === 'controllerReconnectFailed') {
+        const detail = String(message.message || 'Controller reconnection failed.').trim();
+        setVirtualControllerStatus('reconnecting', `${uiText('재연결 중')}: ${detail}`);
     } else if (parsed.type === 'streamStartResult' || parsed.type === 'traceStartResult') {
         if (message.success && controller.status !== 'streaming') setVirtualControllerStatus('connected');
         if (!message.success) setVirtualControllerStatus('error', '가상 컨트롤러 연결 실패');
@@ -10735,6 +10743,8 @@ function openVirtualControllerSocket(isReconnect = false) {
     });
     socket.addEventListener('close', () => {
         if (controller.socket === socket) controller.socket = null;
+        const reconnectMessage = controller.reconnectMessage;
+        controller.reconnectMessage = '';
         controller.pendingInterferenceReads.clear();
         controller.pendingInterferenceToolReads.clear();
         if (source.id === 'bridge') controller.bridgeRunning = false;
@@ -10745,7 +10755,7 @@ function openVirtualControllerSocket(isReconnect = false) {
             if (!controller.statusMessage) setVirtualControllerStatus('disconnected');
             return;
         }
-        scheduleVirtualControllerReconnect(source);
+        scheduleVirtualControllerReconnect(source, reconnectMessage);
     });
     socket.addEventListener('error', () => {
         if (controller.socket === socket && controller.wanted) {
@@ -12942,6 +12952,7 @@ async function connectVirtualController() {
     controller.lastSampleAt = 0;
     controller.lastStreamStartAt = 0;
     controller.reconnectAttempt = 0;
+    controller.reconnectMessage = '';
     openVirtualControllerSocket(false);
     requestRender();
 }
@@ -13128,6 +13139,7 @@ function disconnectVirtualController() {
     controller.sourceConnectedAt = 0;
     controller.lastSampleAt = 0;
     controller.lastStreamStartAt = 0;
+    controller.reconnectMessage = '';
     clearVirtualControllerStreamWatchdog();
     setVirtualControllerStatus('disconnected');
     refreshViewPresetsUi();

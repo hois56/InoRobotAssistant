@@ -12,6 +12,8 @@ internal static class Program
 {
     private const int BridgePort = 5055;
     private const int ControllerPort = 2222;
+    private const int InitialControllerTimeoutSeconds = 5;
+    private const int ReconnectControllerTimeoutSeconds = 3;
     private const int DefaultSampleIntervalMs = 4;
     private const int MaxMessageBytes = 64 * 1024;
     private const int MaxMessagesPerSecond = 100;
@@ -277,7 +279,10 @@ internal static class Program
                                 continue;
                             }
                             controllerIp = ip;
-                            (bool success, string message) = robot.Connect(ip, ControllerPort);
+                            (bool success, string message) = robot.Connect(
+                                ip,
+                                ControllerPort,
+                                InitialControllerTimeoutSeconds);
                             Interlocked.Exchange(ref controllerReconnectEnabled, success ? 1 : 0);
                             robotConnectedByThisSession = success;
                             realControllerByThisSession = success;
@@ -389,7 +394,10 @@ internal static class Program
                             if (Volatile.Read(ref controllerReconnectEnabled) == 1
                                 && !sessionCancellation.IsCancellationRequested)
                             {
-                                (bool success, string message) = robot.Connect(controllerIp, ControllerPort, 3000);
+                                (bool success, string message) = robot.Connect(
+                                    controllerIp,
+                                    ControllerPort,
+                                    ReconnectControllerTimeoutSeconds);
                                 if (success)
                                 {
                                     reconnectAttempt = 0;
@@ -397,6 +405,15 @@ internal static class Program
                                     robotConnectedByThisSession = true;
                                     realControllerByThisSession = true;
                                     await SendAsync(new { type = "controllerReconnected", success = true, message });
+                                }
+                                else
+                                {
+                                    await SendAsync(new
+                                    {
+                                        type = "controllerReconnectFailed",
+                                        success = false,
+                                        message
+                                    });
                                 }
                             }
                         }
