@@ -248,6 +248,10 @@ function loadLocales(versionHistory) {
 
 function ensureRuntimeReferences(html) {
     let output = html.replaceAll('/i18n/', '/Language/runtime/');
+    output = output.replace(/href=(["'])\/favicon\.png(?:\?[^"']*)?\1/gi, 'href=$1/favicon.png?v=20260813$1');
+    if (!/<link\b[^>]*rel=["']icon["'][^>]*href=["']\/favicon\.png\?v=20260813["']/i.test(output)) {
+        output = output.replace('<head>', '<head>\n    <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png?v=20260813">');
+    }
     if (!output.includes('Noto+Sans+KR')) {
         output = output.replace('</head>', '    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">\n</head>');
     }

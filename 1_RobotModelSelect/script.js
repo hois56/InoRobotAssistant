@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const isManualEmbed = new URLSearchParams(window.location.search).get('embed') === 'manual';
+    if (isManualEmbed) document.documentElement.dataset.modelSelectEmbed = 'manual';
+
     const uiText = (value) => window.InoRobotI18n
         ? window.InoRobotI18n.translate(String(value))
         : String(value);
@@ -94,6 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.filters.forEach(filterCategory => {
             const row = document.createElement('div');
             row.className = 'filter-row';
+            row.dataset.filterId = filterCategory.id;
 
             const labelArea = document.createElement('div');
             labelArea.className = 'filter-label';
@@ -133,6 +137,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const btn = document.createElement('button');
                 btn.className = opt.isSelected ? 'filter-option active' : 'filter-option';
                 btn.textContent = uiText(opt.label);
+                btn.dataset.filterId = filterCategory.id;
+                btn.dataset.optionId = opt.id;
                 btn.addEventListener('click', () => {
                     toggleFilter(filterCategory.id, opt.id, !opt.isSelected);
                 });
@@ -178,6 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
         filteredProducts.forEach(product => {
             const card = document.createElement('div');
             card.className = 'product-card';
+            card.dataset.productId = product.id;
 
             const name = product.name.toUpperCase();
             const isClean = product.specs['Clean Type'] === 'Yes';
@@ -267,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             card.innerHTML = `
-                <img src="${product.image}" alt="${product.name}" class="product-image" style="pointer-events:none; min-height:180px;">
+                <img src="${product.image}" alt="${product.name}" class="product-image" loading="lazy" decoding="async" style="pointer-events:none; min-height:180px;">
                 <div class="product-name" style="pointer-events:none;">${displayName}</div>
                 <div class="product-specs" style="pointer-events:none;">
                     <div class="spec-row">
@@ -324,13 +331,15 @@ document.addEventListener('DOMContentLoaded', () => {
         renderProducts();
     }
 
-    resetBtn.addEventListener('click', () => {
+    function resetFilters() {
         state.filters.forEach(cat => {
             cat.options.forEach(opt => opt.isSelected = false);
         });
         renderFilters();
         renderProducts();
-    });
+    }
+
+    resetBtn.addEventListener('click', resetFilters);
 
     function parseLen(l) {
         if (!l || l === 'N/A') return 999;
@@ -1707,12 +1716,14 @@ document.addEventListener('DOMContentLoaded', () => {
         modalOverlay.style.display = 'flex';
     }
 
-    closeModalBtn.addEventListener('click', () => {
+    function closeOptionsModal() {
         modalOverlay.style.display = 'none';
         currentActiveProduct = null;
-    });
+    }
 
-    downloadPdfBtn.addEventListener('click', () => {
+    closeModalBtn.addEventListener('click', closeOptionsModal);
+
+        function buildConfigurationSheet(options = {}) {
         if (!currentActiveProduct) return;
 
         const bodyCodeInput = document.getElementById('bodySelectionCode');
@@ -1770,7 +1781,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const selectedAccs = [];
 
-        if (robotBodySelected) {
+        if (robotBodySelected && robotBodySelected.value !== 'standard') {
             const bodyLabel = robotBodySelected.getAttribute('data-label') || robotBodySelected.value;
             const bodySpec = robotBodySelected.getAttribute('data-spec') || '';
             selectedAccs.push({
@@ -1855,6 +1866,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Expansion Cards
         document.querySelectorAll('input[name="expSelection"]:checked').forEach(cb => {
+            const selectedCommunicationCode = selComm && selComm.value !== 'none'
+                ? selComm.getAttribute('data-code')
+                : '';
+            if (selectedCommunicationCode && cb.value === selectedCommunicationCode) return;
             const fullDesc = cb.getAttribute('data-desc') || "";
             let namePart = "확장 카드";
             let detailPart = fullDesc;
@@ -1971,9 +1986,10 @@ document.addEventListener('DOMContentLoaded', () => {
             `).join('');
         }
 
+        const generatedDate = options.generatedAt instanceof Date ? options.generatedAt : new Date();
         const generatedAt = window.InoRobotI18n
-            ? window.InoRobotI18n.formatDate(new Date(), { dateStyle: 'medium', timeStyle: 'medium' })
-            : new Date().toLocaleString('ko-KR');
+            ? window.InoRobotI18n.formatDate(generatedDate, { dateStyle: 'medium', timeStyle: 'medium' })
+            : generatedDate.toLocaleString('ko-KR');
         const pdfFooterText = uiText('본 구성서는 선택된 옵션 기반의 가이드입니다. 제조사 사정에 따라 사양이 변경될 수 있습니다. 생성일시:');
 
         pdfContainer.innerHTML = `
@@ -2055,13 +2071,20 @@ document.addEventListener('DOMContentLoaded', () => {
             pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
         };
 
+        return { pdfWrapper, pdfContainer, dlObj, filename: dlObj.filename };
+    }
+
+    downloadPdfBtn.addEventListener('click', () => {
+        const sheet = buildConfigurationSheet();
+        if (!sheet) return;
+
         setTimeout(() => {
             const fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
-            fontsReady.then(() => html2pdf().set(dlObj).from(pdfContainer).save()).then(() => {
-                document.body.removeChild(pdfWrapper);
+            fontsReady.then(() => html2pdf().set(sheet.dlObj).from(sheet.pdfContainer).save()).then(() => {
+                sheet.pdfWrapper.remove();
             }).catch(err => {
                 console.error("PDF Generation Error:", err);
-                document.body.removeChild(pdfWrapper);
+                sheet.pdfWrapper.remove();
             });
         }, 800);
     });
@@ -2209,8 +2232,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     modalOverlay.addEventListener('click', (e) => {
         if (e.target === modalOverlay) {
-            modalOverlay.style.display = 'none';
-            currentActiveProduct = null;
+            closeOptionsModal();
         }
     });
 
@@ -2247,5 +2269,748 @@ document.addEventListener('DOMContentLoaded', () => {
     renderFilters();
     renderProducts();
 
+    if (isManualEmbed) {
+        const demoFilters = [
+            { categoryId: 'Type', optionId: '6-Axis' },
+            { categoryId: 'Payload(kg)', optionId: '25' },
+            { categoryId: 'Manipulator Length(mm)', optionId: '1783' }
+        ];
+        const demoOptions = [
+            ['cableLenSelection', '10m'],
+            ['cableTypeSelection', 'High Flex (유연형)'],
+            ['pendantConfig', 'without-cover'],
+            ['commSelection', 'IRCB501-2PN-BD']
+        ];
+        const demoProductId = 'IR-R25-178S-INT';
+        const demoGeneratedAt = new Date('2026-08-13T09:00:00+09:00');
+        let manualTargets = [];
+        let manualCursor = null;
+        let manualSpotlight = null;
+        let manualRipple = null;
+        let manualToast = null;
+        let manualPreview = null;
+        let manualFocusPoint = null;
+        let manualCue = '';
+        let manualTargetToken = 0;
+        let manualPaused = false;
+        let manualAnimateScroll = false;
+        let manualScrollAnimation = null;
+        let manualScrollTracking = false;
+        let manualConfiguredOptionCount = -1;
+        let manualActivationFrame = null;
+        const manualReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+        const MANUAL_SCROLL_DURATION = 720;
+
+        function isManualRootScroller(element) {
+            return element === document.scrollingElement
+                || element === document.documentElement
+                || element === document.body;
+        }
+
+        function getManualScrollTop(element) {
+            return isManualRootScroller(element)
+                ? (window.scrollY || document.documentElement.scrollTop || 0)
+                : element.scrollTop;
+        }
+
+        function setManualScrollTop(element, value) {
+            if (isManualRootScroller(element)) window.scrollTo(0, value);
+            else element.scrollTop = value;
+        }
+
+        function getManualScrollContainer(target) {
+            const modalScroller = target.closest('.modal-body');
+            let ancestor = target.parentElement;
+            while (ancestor && ancestor !== document.body) {
+                const style = window.getComputedStyle(ancestor);
+                if (/(auto|scroll|overlay)/.test(style.overflowY)
+                    && ancestor.scrollHeight > ancestor.clientHeight + 1) return ancestor;
+                ancestor = ancestor.parentElement;
+            }
+            if (modalScroller) return modalScroller;
+            return document.scrollingElement || document.documentElement;
+        }
+
+        function cancelManualScroll(complete = false) {
+            const animation = manualScrollAnimation;
+            if (!animation) {
+                setManualScrollTracking(false);
+                return;
+            }
+            if (animation.frame !== null) cancelAnimationFrame(animation.frame);
+            manualScrollAnimation = null;
+            setManualScrollTracking(false);
+            if (!complete) return;
+            setManualScrollTop(animation.container, animation.end);
+            animation.onUpdate?.(1);
+            animation.onComplete?.();
+        }
+
+        function cancelManualActivation() {
+            if (manualActivationFrame === null) return;
+            window.cancelAnimationFrame(manualActivationFrame);
+            manualActivationFrame = null;
+        }
+
+        function setManualScrollTracking(tracking) {
+            manualScrollTracking = Boolean(tracking);
+            manualSpotlight?.classList.toggle('is-scroll-tracking', manualScrollTracking);
+        }
+
+        function finishManualScrollTracking() {
+            if (!manualScrollTracking) return;
+            manualScrollTracking = false;
+            manualSpotlight?.classList.remove('is-scroll-tracking');
+        }
+
+        function startManualScroll(container, end, options = {}) {
+            cancelManualScroll(false);
+            const start = getManualScrollTop(container);
+            const maximum = Math.max(0, container.scrollHeight - container.clientHeight);
+            const destination = Math.max(0, Math.min(maximum, end));
+            const animate = Boolean(options.animate)
+                && !manualPaused
+                && !manualReducedMotion.matches
+                && Math.abs(destination - start) > 1;
+
+            if (!animate) {
+                setManualScrollTracking(false);
+                setManualScrollTop(container, destination);
+                options.onUpdate?.(1);
+                options.onComplete?.();
+                return;
+            }
+
+            const animation = {
+                container,
+                start,
+                end: destination,
+                elapsed: 0,
+                duration: Math.max(180, Number(options.duration) || MANUAL_SCROLL_DURATION),
+                lastTimestamp: 0,
+                frame: null,
+                onUpdate: options.onUpdate,
+                onComplete: options.onComplete,
+                step: null
+            };
+
+            animation.step = timestamp => {
+                if (manualScrollAnimation !== animation || manualPaused) return;
+                if (!animation.lastTimestamp) animation.lastTimestamp = timestamp;
+                else {
+                    animation.elapsed += Math.min(64, timestamp - animation.lastTimestamp);
+                    animation.lastTimestamp = timestamp;
+                }
+                const progress = Math.min(1, animation.elapsed / animation.duration);
+                const eased = progress < 0.5
+                    ? 4 * progress * progress * progress
+                    : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+                setManualScrollTop(container, animation.start + (animation.end - animation.start) * eased);
+                animation.onUpdate?.(progress);
+                if (progress < 1) {
+                    animation.frame = requestAnimationFrame(animation.step);
+                    return;
+                }
+                manualScrollAnimation = null;
+                animation.frame = null;
+                finishManualScrollTracking();
+                animation.onComplete?.();
+            };
+
+            manualScrollAnimation = animation;
+            setManualScrollTracking(true);
+            animation.frame = requestAnimationFrame(animation.step);
+        }
+
+        function scrollManualTargetIntoView(target, options = {}) {
+            const container = getManualScrollContainer(target);
+            const targetRect = target.getBoundingClientRect();
+            const rootScroller = isManualRootScroller(container);
+            const containerRect = rootScroller
+                ? { top: 0, height: window.innerHeight }
+                : container.getBoundingClientRect();
+            const current = getManualScrollTop(container);
+            const relativeTop = rootScroller ? targetRect.top : targetRect.top - containerRect.top;
+            const destination = current + relativeTop
+                - Math.max(0, (containerRect.height - targetRect.height) / 2);
+            startManualScroll(container, destination, options);
+        }
+
+        manualReducedMotion.addEventListener?.('change', event => {
+            if (event.matches) cancelManualScroll(true);
+        });
+
+        function ensureManualEffects() {
+            if (manualCursor) return;
+            manualCursor = document.createElement('div');
+            manualCursor.className = 'model-manual-cursor';
+            manualCursor.setAttribute('aria-hidden', 'true');
+            manualCursor.innerHTML = '<svg viewBox="0 0 24 30" fill="currentColor"><path d="M2.2 1.6 20.4 17c.9.8.3 2.3-.9 2.3h-7l-3.7 7.8c-.5 1.1-2.1.9-2.4-.2L.4 3.2c-.4-1.4.8-2.5 1.8-1.6Z"/></svg>';
+            document.body.appendChild(manualCursor);
+
+            manualSpotlight = document.createElement('div');
+            manualSpotlight.className = 'model-manual-spotlight';
+            manualSpotlight.setAttribute('aria-hidden', 'true');
+            document.body.appendChild(manualSpotlight);
+
+            manualRipple = document.createElement('div');
+            manualRipple.className = 'model-manual-ripple';
+            manualRipple.setAttribute('aria-hidden', 'true');
+            document.body.appendChild(manualRipple);
+        }
+
+        function clearManualTargets(hideCursor = true, preserveFocus = false) {
+            cancelManualActivation();
+            cancelManualScroll(false);
+            manualTargetToken += 1;
+            manualTargets.forEach(element => element.classList.remove('model-manual-pressed', 'model-manual-hover'));
+            manualTargets = [];
+            if (!preserveFocus) manualFocusPoint = null;
+            if (hideCursor && manualCursor) manualCursor.classList.remove('is-visible');
+            if (manualSpotlight) manualSpotlight.classList.remove('is-visible', 'is-pulsing');
+            if (manualRipple) manualRipple.classList.remove('is-visible');
+        }
+
+        function highlightManualTargets(elements, pointElement, options = {}) {
+            clearManualTargets(false, true);
+            manualTargets = elements.filter(element => element instanceof HTMLElement);
+
+            const target = pointElement instanceof HTMLElement
+                ? pointElement
+                : manualTargets[manualTargets.length - 1];
+            if (!target) {
+                if (manualCursor) manualCursor.classList.remove('is-visible');
+                return false;
+            }
+
+            const token = manualTargetToken;
+            const positionEffects = complete => {
+                if (token !== manualTargetToken) return;
+                const rect = target.getBoundingClientRect();
+                ensureManualEffects();
+                setManualScrollTracking(manualScrollTracking);
+                const cursorX = Math.min(
+                    window.innerWidth - 28,
+                    Math.max(8, rect.left + Math.min(rect.width * (options.cursorX ?? 0.72), rect.width - 8))
+                );
+                const cursorY = Math.min(
+                    window.innerHeight - 34,
+                    Math.max(8, rect.top + Math.min(rect.height * (options.cursorY ?? 0.66), rect.height - 6))
+                );
+                if (options.updateFocus !== false) {
+                    manualFocusPoint = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+                }
+                manualCursor.style.transform = `translate3d(${cursorX}px, ${cursorY}px, 0)`;
+                manualCursor.classList.add('is-visible');
+
+                if (options.ring !== false) {
+                    const computedRadius = window.getComputedStyle(target).borderRadius || '10px';
+                    manualSpotlight.style.left = `${Math.round(rect.left - 4)}px`;
+                    manualSpotlight.style.top = `${Math.round(rect.top - 4)}px`;
+                    manualSpotlight.style.width = `${Math.round(rect.width + 8)}px`;
+                    manualSpotlight.style.height = `${Math.round(rect.height + 8)}px`;
+                    manualSpotlight.style.borderRadius = computedRadius;
+                    manualSpotlight.classList.add('is-visible');
+                    if (complete) {
+                        manualSpotlight.classList.remove('is-pulsing');
+                        void manualSpotlight.offsetWidth;
+                        manualSpotlight.classList.add('is-pulsing');
+                    }
+                }
+
+                if (options.hover) target.classList.add('model-manual-hover');
+                if (options.pressed && complete) {
+                    target.classList.add('model-manual-pressed');
+                    manualRipple.style.left = `${cursorX}px`;
+                    manualRipple.style.top = `${cursorY}px`;
+                    manualRipple.classList.remove('is-visible');
+                    void manualRipple.offsetWidth;
+                    manualRipple.classList.add('is-visible');
+                    if (typeof options.onActivate === 'function') {
+                        cancelManualActivation();
+                        const activationToken = manualTargetToken;
+                        manualActivationFrame = window.requestAnimationFrame(() => {
+                            manualActivationFrame = null;
+                            if (activationToken !== manualTargetToken) return;
+                            options.onActivate();
+                        });
+                    }
+                }
+            };
+
+            // Publish the next target before either document schedules its
+            // animation frame. This keeps the parent camera from briefly
+            // falling back to an unrelated position between cues.
+            positionEffects(false);
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                if (token !== manualTargetToken) return;
+                if (options.scroll === false) {
+                    positionEffects(true);
+                    return;
+                }
+                scrollManualTargetIntoView(target, {
+                    animate: options.animateScroll ?? manualAnimateScroll,
+                    onComplete: () => positionEffects(true)
+                });
+            }));
+            return true;
+        }
+
+        function setManualFilters(selections) {
+            state.filters.forEach(category => {
+                category.options.forEach(option => { option.isSelected = false; });
+            });
+            selections.forEach(({ categoryId, optionId }) => {
+                const category = state.filters.find(item => item.id === categoryId);
+                const option = category?.options.find(item => item.id === optionId);
+                if (option) option.isSelected = true;
+            });
+            renderFilters();
+            renderProducts();
+        }
+
+        function manualFiltersMatch(count) {
+            const expected = demoFilters.slice(0, count);
+            const selected = state.filters.flatMap(category => category.options
+                .filter(option => option.isSelected)
+                .map(option => ({ categoryId: category.id, optionId: option.id })));
+            return selected.length === expected.length && expected.every(filter => selected.some(item => (
+                item.categoryId === filter.categoryId && item.optionId === filter.optionId
+            )));
+        }
+
+        function findFilterButton(categoryId, optionId) {
+            return Array.from(filterContainer.querySelectorAll('.filter-option')).find(button => (
+                button.dataset.filterId === categoryId && button.dataset.optionId === optionId
+            )) || null;
+        }
+
+        function selectManualFilter(categoryId, optionId) {
+            toggleFilter(categoryId, optionId, true);
+            const button = findFilterButton(categoryId, optionId);
+            return highlightManualTargets(button ? [button] : [], button);
+        }
+
+        function selectManualOption(name, value, shouldHighlight = true) {
+            const input = Array.from(modalBody.querySelectorAll(`input[name="${name}"]`))
+                .find(element => element.value === value);
+            if (!input) return false;
+            input.click();
+            if (shouldHighlight) {
+                const target = input.closest('label') || input;
+                highlightManualTargets([target], target);
+            }
+            return true;
+        }
+
+        function showManualProduct(productId = demoProductId) {
+            const card = productContainer.querySelector(`[data-product-id="${productId}"]`);
+            return highlightManualTargets(card ? [card] : [], card);
+        }
+
+        function openManualProduct(productId = demoProductId) {
+            clearManualTargets();
+            openOptionsModal(productId);
+            modalBody.scrollTop = 0;
+            return modalOverlay.style.display === 'flex';
+        }
+
+        function highlightManualDownloads(targetName = 'both') {
+            const cadButton = document.getElementById('download-cad-btn');
+            const pdfButton = document.getElementById('download-pdf-btn');
+            const targets = targetName === 'cad'
+                ? [cadButton]
+                : targetName === 'pdf'
+                    ? [pdfButton]
+                    : [cadButton, pdfButton];
+            const pointTarget = targetName === 'cad' ? cadButton : pdfButton;
+            return highlightManualTargets(targets, pointTarget, { ring: false, hover: true, scroll: false });
+        }
+
+        function configureManualOptions(shouldHighlight = false) {
+            demoOptions.forEach(([name, value]) => selectManualOption(name, value, shouldHighlight));
+        }
+
+        function prepareManualScene(scene) {
+            clearManualTargets();
+            closeOptionsModal();
+
+            if (scene === 'filters') {
+                setManualFilters([]);
+                window.scrollTo({ top: 0, behavior: 'auto' });
+                return true;
+            }
+
+            setManualFilters(demoFilters);
+
+            if (scene === 'products') {
+                return showManualProduct();
+            }
+
+            openManualProduct();
+            if (scene === 'downloads') {
+                configureManualOptions(false);
+                return highlightManualDownloads('both');
+            }
+            return true;
+        }
+
+        function completeManualScene(scene) {
+            prepareManualScene(scene);
+            if (scene === 'filters') {
+                setManualFilters(demoFilters);
+                const reachButton = findFilterButton(demoFilters[2].categoryId, demoFilters[2].optionId);
+                return highlightManualTargets(reachButton ? [reachButton] : [], reachButton);
+            }
+            if (scene === 'options') {
+                configureManualOptions(false);
+                const commInput = modalBody.querySelector('input[name="commSelection"][value="IRCB501-2PN-BD"]');
+                const target = commInput?.closest('label') || commInput;
+                return highlightManualTargets(target ? [target] : [], target);
+            }
+            return true;
+        }
+
+        function closeManualToast() {
+            manualToast?.remove();
+            manualToast = null;
+        }
+
+        function showManualToast(filename) {
+            closeManualToast();
+            manualToast = document.createElement('div');
+            manualToast.className = 'model-manual-download-toast';
+            manualToast.setAttribute('role', 'status');
+            manualToast.innerHTML = `
+                <span class="model-manual-toast-check" aria-hidden="true">✓</span>
+                <span><strong>${uiText('다운로드 완료')}</strong><small></small></span>
+            `;
+            manualToast.querySelector('small').textContent = filename;
+            document.body.appendChild(manualToast);
+        }
+
+        function closeManualPreview() {
+            if (!manualPreview) return;
+            manualPreview.element.remove();
+            manualPreview = null;
+        }
+
+        function showManualPreview(progress = 0) {
+            closeManualPreview();
+            const sheet = buildConfigurationSheet({ generatedAt: demoGeneratedAt });
+            if (!sheet) return false;
+
+            sheet.pdfWrapper.remove();
+            const viewer = document.createElement('section');
+            viewer.className = 'model-manual-document-viewer';
+            viewer.innerHTML = `
+                <header>
+                    <span class="model-manual-document-icon" aria-hidden="true">PDF</span>
+                    <span><strong>${uiText('구성 내역 확인')}</strong><small></small></span>
+                    <button type="button" tabindex="-1" aria-hidden="true">×</button>
+                </header>
+                <div class="model-manual-document-scroll"></div>
+            `;
+            viewer.querySelector('header small').textContent = sheet.filename;
+            const scrollArea = viewer.querySelector('.model-manual-document-scroll');
+            sheet.pdfContainer.classList.add('model-manual-configuration-sheet');
+            scrollArea.appendChild(sheet.pdfContainer);
+            document.body.appendChild(viewer);
+            manualPreview = { element: viewer, scrollArea };
+            manualFocusPoint = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+            setManualPreviewScroll(progress);
+            return true;
+        }
+
+        function setManualPreviewScroll(progress) {
+            if (!manualPreview) return false;
+            const normalized = Math.max(0, Math.min(1, Number(progress) || 0));
+            const scrollArea = manualPreview.scrollArea;
+            scrollArea.scrollTop = normalized * Math.max(0, scrollArea.scrollHeight - scrollArea.clientHeight);
+            return true;
+        }
+
+        function resetManualDownloadButtons() {
+            const cadButton = document.getElementById('download-cad-btn');
+            const pdfButton = document.getElementById('download-pdf-btn');
+            if (cadButton && currentActiveProduct) {
+                const hasCad = Boolean(getCad3dPath(currentActiveProduct));
+                cadButton.textContent = uiText(hasCad ? 'CAD 다운로드' : 'CAD 파일 없음');
+                cadButton.disabled = !hasCad;
+            }
+            if (pdfButton) {
+                pdfButton.textContent = uiText('구성 내역 다운로드');
+                pdfButton.disabled = false;
+            }
+        }
+
+        function getManualOptionTarget(name, value) {
+            const input = Array.from(modalBody.querySelectorAll(`input[name="${name}"]`))
+                .find(element => element.value === value);
+            return input?.closest('label') || input || null;
+        }
+
+        function prepareManualFilters(count) {
+            manualConfiguredOptionCount = -1;
+            closeManualPreview();
+            closeManualToast();
+            closeOptionsModal();
+            if (!manualFiltersMatch(count)) setManualFilters(demoFilters.slice(0, count));
+        }
+
+        function prepareManualConfiguredModal(optionCount = 0) {
+            const previousScrollTop = modalOverlay.style.display === 'flex' ? modalBody.scrollTop : 0;
+            const canReuseModal = modalOverlay.style.display === 'flex'
+                && currentActiveProduct?.id === demoProductId
+                && manualConfiguredOptionCount >= 0
+                && optionCount >= manualConfiguredOptionCount;
+            closeManualPreview();
+            closeManualToast();
+            if (!canReuseModal) {
+                closeOptionsModal();
+                setManualFilters(demoFilters);
+                openOptionsModal(demoProductId);
+            }
+            const selectionStart = canReuseModal ? manualConfiguredOptionCount : 0;
+            demoOptions.slice(selectionStart, optionCount).forEach(([name, value]) => {
+                selectManualOption(name, value, false);
+            });
+            manualConfiguredOptionCount = optionCount;
+            resetManualDownloadButtons();
+            modalBody.scrollTop = Math.min(previousScrollTop, Math.max(0, modalBody.scrollHeight - modalBody.clientHeight));
+        }
+
+        function pointAtManualFilter(index, options = {}) {
+            const filter = demoFilters[index];
+            const button = findFilterButton(filter.categoryId, filter.optionId);
+            return highlightManualTargets(button ? [button] : [], button, options);
+        }
+
+        function pointAtManualOption(index, options = {}) {
+            const [name, value] = demoOptions[index];
+            const target = getManualOptionTarget(name, value);
+            return highlightManualTargets(target ? [target] : [], target, options);
+        }
+
+        function activateManualFilter(index) {
+            setManualFilters(demoFilters.slice(0, index + 1));
+        }
+
+        function activateManualOption(index) {
+            const [name, value] = demoOptions[index] || [];
+            if (!name || !selectManualOption(name, value, false)) return;
+            manualConfiguredOptionCount = Math.max(manualConfiguredOptionCount, index + 1);
+        }
+
+        function pointAtManualDownload(kind, options = {}) {
+            const button = document.getElementById(kind === 'cad' ? 'download-cad-btn' : 'download-pdf-btn');
+            return highlightManualTargets(button ? [button] : [], button, {
+                ring: false,
+                hover: true,
+                pressed: Boolean(options.pressed),
+                onActivate: options.onActivate,
+                scroll: false,
+                updateFocus: !options.keepFocus,
+                cursorX: kind === 'cad' ? 0.68 : 0.72
+            });
+        }
+
+        function renderManualTimelineCue(cue, options = {}) {
+            if (!cue || (cue === manualCue && !options.force)) return true;
+            manualCue = cue;
+            manualAnimateScroll = Boolean(options.animateScroll) && !manualReducedMotion.matches;
+            const keepCursorForScreenMove = cue === 'results'
+                && manualAnimateScroll
+                && manualCursor?.classList.contains('is-visible');
+            clearManualTargets(!keepCursorForScreenMove, keepCursorForScreenMove);
+
+            if (cue === 'reset') {
+                prepareManualFilters(0);
+                window.scrollTo({ top: 0, behavior: 'auto' });
+            } else if (cue === 'filter_type' || cue === 'filter_payload' || cue === 'filter_reach') {
+                const filterIndex = { filter_type: 0, filter_payload: 1, filter_reach: 2 }[cue];
+                prepareManualFilters(filterIndex + 1);
+                pointAtManualFilter(filterIndex);
+            } else if (/^filter_(type|payload|reach)_(focus|press)$/.test(cue)) {
+                const [, filterName, phase] = cue.match(/^filter_(type|payload|reach)_(focus|press)$/);
+                const filterIndex = { type: 0, payload: 1, reach: 2 }[filterName];
+                prepareManualFilters(filterIndex);
+                pointAtManualFilter(filterIndex, {
+                    scroll: phase === 'focus',
+                    pressed: phase === 'press',
+                    onActivate: phase === 'press' ? () => activateManualFilter(filterIndex) : null
+                });
+            } else if (cue === 'results') {
+                prepareManualFilters(3);
+                const resultsToken = manualTargetToken;
+                const resultsRect = productContainer.getBoundingClientRect();
+                manualFocusPoint = {
+                    x: resultsRect.left + resultsRect.width / 2,
+                    y: resultsRect.top + resultsRect.height / 2
+                };
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    if (resultsToken !== manualTargetToken) return;
+                    scrollManualTargetIntoView(productContainer, {
+                        animate: manualAnimateScroll,
+                        onUpdate: () => {
+                            const rect = productContainer.getBoundingClientRect();
+                            manualFocusPoint = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+                        }
+                    });
+                }));
+            } else if (cue === 'model_focus' || cue === 'model_press') {
+                prepareManualFilters(3);
+                const card = productContainer.querySelector(`[data-product-id="${demoProductId}"]`);
+                highlightManualTargets(card ? [card] : [], card, {
+                    scroll: cue === 'model_focus',
+                    hover: true,
+                    pressed: cue === 'model_press',
+                    onActivate: cue === 'model_press'
+                        ? () => {
+                            openOptionsModal(demoProductId);
+                            modalBody.scrollTop = 0;
+                            manualConfiguredOptionCount = 0;
+                        }
+                        : null,
+                    cursorX: 0.66,
+                    cursorY: 0.62
+                });
+            } else if (cue === 'modal_open') {
+                if (modalOverlay.style.display !== 'flex' || currentActiveProduct?.id !== demoProductId) {
+                    prepareManualConfiguredModal(0);
+                }
+                modalOverlay.querySelector('.modal-content')?.classList.add('model-manual-enter');
+                manualFocusPoint = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+            } else if (cue === 'option_length' || cue === 'option_flex' || cue === 'option_pendant' || cue === 'option_comm') {
+                const optionIndex = { option_length: 0, option_flex: 1, option_pendant: 2, option_comm: 3 }[cue];
+                prepareManualConfiguredModal(optionIndex + 1);
+                pointAtManualOption(optionIndex);
+            } else if (/^option_(length|flex|pendant|comm)_(focus|press)$/.test(cue)) {
+                const [, optionName, phase] = cue.match(/^option_(length|flex|pendant|comm)_(focus|press)$/);
+                const optionIndex = { length: 0, flex: 1, pendant: 2, comm: 3 }[optionName];
+                prepareManualConfiguredModal(optionIndex);
+                pointAtManualOption(optionIndex, {
+                    scroll: phase === 'focus',
+                    pressed: phase === 'press',
+                    onActivate: phase === 'press' ? () => activateManualOption(optionIndex) : null
+                });
+            } else if (cue === 'configured') {
+                prepareManualConfiguredModal(4);
+                const code = document.getElementById('dynamic-purchase-code');
+                highlightManualTargets(code ? [code] : [], code, { cursorX: 0.9, cursorY: 0.5 });
+            } else if (cue === 'cad_focus' || cue === 'cad_press' || cue === 'cad_done') {
+                prepareManualConfiguredModal(4);
+                const button = document.getElementById('download-cad-btn');
+                pointAtManualDownload('cad', {
+                    pressed: cue === 'cad_press',
+                    onActivate: cue === 'cad_press' && button
+                        ? () => { button.textContent = uiText('준비 중...'); }
+                        : null,
+                    keepFocus: cue === 'cad_done'
+                });
+                if (cue === 'cad_done') {
+                    showManualToast(`Inovance_CAD_${demoProductId}.zip`);
+                    manualFocusPoint = { x: window.innerWidth - 180, y: window.innerHeight - 78 };
+                }
+            } else if (cue === 'pdf_focus' || cue === 'pdf_press' || cue === 'pdf_done') {
+                prepareManualConfiguredModal(4);
+                const button = document.getElementById('download-pdf-btn');
+                pointAtManualDownload('pdf', {
+                    pressed: cue === 'pdf_press',
+                    onActivate: cue === 'pdf_press' && button
+                        ? () => { button.textContent = uiText('구성 내역 생성 중...'); }
+                        : null,
+                    keepFocus: cue === 'pdf_done'
+                });
+                if (cue === 'pdf_done') {
+                    showManualToast(`Inovance_Config_${demoProductId}.pdf`);
+                    manualFocusPoint = { x: window.innerWidth - 180, y: window.innerHeight - 78 };
+                }
+            } else if (cue === 'preview') {
+                prepareManualConfiguredModal(4);
+                clearManualTargets();
+                showManualPreview(0);
+            }
+            return true;
+        }
+
+        document.addEventListener('click', event => {
+            if (event.target.closest('#download-cad-btn, #download-pdf-btn')) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+            }
+        }, true);
+
+        const manualApi = Object.freeze({
+            renderTimelineCue: renderManualTimelineCue,
+            setPreviewScroll: setManualPreviewScroll,
+            resetTimeline: () => {
+                manualCue = '';
+                closeManualPreview();
+                closeManualToast();
+                clearManualTargets();
+            },
+            getFocusPoint: () => manualFocusPoint ? { ...manualFocusPoint } : null,
+            prepareScene: prepareManualScene,
+            completeScene: completeManualScene,
+            selectFilter: selectManualFilter,
+            showProduct: showManualProduct,
+            openProduct: openManualProduct,
+            selectOption: selectManualOption,
+            highlightDownloads: highlightManualDownloads,
+            clearHighlights: clearManualTargets,
+            setPaused: paused => {
+                manualPaused = Boolean(paused);
+                document.documentElement.classList.toggle('model-manual-paused', manualPaused);
+                const animation = manualScrollAnimation;
+                if (!animation) return;
+                if (manualPaused) {
+                    if (animation.frame !== null) cancelAnimationFrame(animation.frame);
+                    animation.frame = null;
+                    animation.lastTimestamp = 0;
+                } else if (animation.frame === null) {
+                    animation.frame = requestAnimationFrame(animation.step);
+                }
+            },
+            cancel: () => {
+                manualCue = '';
+                closeManualPreview();
+                closeManualToast();
+                clearManualTargets();
+                closeOptionsModal();
+                setManualFilters([]);
+                window.scrollTo({ top: 0, behavior: 'auto' });
+            },
+            getState: () => ({
+                cue: manualCue,
+                modalOpen: modalOverlay.style.display === 'flex',
+                productId: currentActiveProduct?.id || null,
+                optionCount: manualConfiguredOptionCount,
+                options: {
+                    cableLength: modalBody.querySelector('input[name="cableLenSelection"]:checked')?.value || null,
+                    cableType: modalBody.querySelector('input[name="cableTypeSelection"]:checked')?.value || null,
+                    pendant: modalBody.querySelector('input[name="pendantConfig"]:checked')?.value || null,
+                    communication: modalBody.querySelector('input[name="commSelection"]:checked')?.value || null
+                },
+                toast: manualToast?.querySelector('small')?.textContent || null,
+                previewOpen: Boolean(manualPreview),
+                previewScrollTop: manualPreview?.scrollArea.scrollTop || 0,
+                pageScrollTop: window.scrollY || document.documentElement.scrollTop || 0,
+                modalScrollTop: modalBody.scrollTop,
+                scrollTracking: manualScrollTracking,
+                cursorVisible: Boolean(manualCursor?.classList.contains('is-visible')),
+                spotlightVisible: Boolean(manualSpotlight?.classList.contains('is-visible')),
+                filters: state.filters.flatMap(category => category.options
+                    .filter(option => option.isSelected)
+                    .map(option => ({ categoryId: category.id, optionId: option.id })))
+            })
+        });
+
+        window.InoRobotModelManual = manualApi;
+        document.dispatchEvent(new CustomEvent('inorobot:model-manual-ready'));
+        if (window.parent !== window) {
+            window.parent.postMessage({ type: 'inorobot:model-manual-ready' }, window.location.origin);
+        }
+    }
 
 });

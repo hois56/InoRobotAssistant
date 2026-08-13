@@ -179,3 +179,276 @@ body::before {
 }
 .cable-option input { accent-color: #38bdf8; }
 @media (max-width: 768px) { .filter-row { flex-direction: column; } .filter-label { width: 100%; margin-bottom: 8px; } }
+
+/* The embedded guide renders this same page; only its tutorial pointer and focus ring are added. */
+html[data-model-select-embed="manual"] {
+    scroll-behavior: auto;
+}
+
+html[data-model-select-embed="manual"] #inorobot-language-switcher {
+    display: none !important;
+}
+
+html[data-model-select-embed="manual"] .logo-link {
+    pointer-events: none;
+}
+
+html[data-model-select-embed="manual"],
+html[data-model-select-embed="manual"] body,
+html[data-model-select-embed="manual"] .modal-body {
+    overflow-anchor: none;
+}
+
+html[data-model-select-embed="manual"] .model-manual-cursor {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 2200;
+    width: 25px;
+    height: 31px;
+    color: #fff;
+    filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.8));
+    opacity: 0;
+    pointer-events: none;
+    transform: translate3d(-60px, -60px, 0);
+    transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.18s ease;
+}
+
+html[data-model-select-embed="manual"] .model-manual-cursor svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+html[data-model-select-embed="manual"] .model-manual-cursor.is-visible {
+    opacity: 1;
+}
+
+html[data-model-select-embed="manual"] .model-manual-spotlight {
+    position: fixed;
+    z-index: 2190;
+    border: 2px solid rgba(56, 189, 248, 0.95);
+    box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.1), 0 10px 28px rgba(14, 165, 233, 0.2);
+    opacity: 0;
+    pointer-events: none;
+    transition: left 0.42s cubic-bezier(0.16, 1, 0.3, 1), top 0.42s cubic-bezier(0.16, 1, 0.3, 1), width 0.42s cubic-bezier(0.16, 1, 0.3, 1), height 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.18s ease;
+}
+
+html[data-model-select-embed="manual"] .model-manual-spotlight.is-visible {
+    opacity: 1;
+}
+
+html[data-model-select-embed="manual"] .model-manual-spotlight.is-scroll-tracking {
+    opacity: 0 !important;
+    transition: none !important;
+}
+
+html[data-model-select-embed="manual"] .model-manual-spotlight.is-pulsing {
+    animation: modelManualSpotlightOnce 0.55s ease-out 1;
+}
+
+html[data-model-select-embed="manual"] .model-manual-ripple {
+    position: fixed;
+    z-index: 2210;
+    width: 12px;
+    height: 12px;
+    margin: -6px 0 0 -6px;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    border-radius: 999px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+html[data-model-select-embed="manual"] .model-manual-ripple.is-visible {
+    animation: modelManualClickRipple 0.45s ease-out 1;
+}
+
+html[data-model-select-embed="manual"] .model-manual-hover {
+    filter: brightness(1.08);
+}
+
+html[data-model-select-embed="manual"] .model-manual-pressed {
+    transform: scale(0.97) !important;
+    transition: transform 0.12s ease !important;
+}
+
+html[data-model-select-embed="manual"] .modal-content.model-manual-enter {
+    animation: modelManualModalEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) 1;
+}
+
+html[data-model-select-embed="manual"] .model-manual-download-toast {
+    position: fixed;
+    right: 24px;
+    bottom: 22px;
+    z-index: 2250;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 310px;
+    padding: 13px 16px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.96);
+    color: #e2e8f0;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.48);
+    animation: modelManualToastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) 1;
+}
+
+html[data-model-select-embed="manual"] .model-manual-toast-check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: rgba(16, 185, 129, 0.18);
+    color: #6ee7b7;
+    font-weight: 800;
+}
+
+html[data-model-select-embed="manual"] .model-manual-download-toast strong,
+html[data-model-select-embed="manual"] .model-manual-download-toast small {
+    display: block;
+}
+
+html[data-model-select-embed="manual"] .model-manual-download-toast strong {
+    font-size: 13px;
+}
+
+html[data-model-select-embed="manual"] .model-manual-download-toast small {
+    margin-top: 3px;
+    color: #94a3b8;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px;
+}
+
+html[data-model-select-embed="manual"] .model-manual-document-viewer {
+    position: fixed;
+    inset: 18px;
+    z-index: 2180;
+    display: flex;
+    overflow: hidden;
+    flex-direction: column;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    border-radius: 16px;
+    background: #cbd5e1;
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.7);
+    animation: modelManualViewerIn 0.36s cubic-bezier(0.16, 1, 0.3, 1) 1;
+}
+
+html[data-model-select-embed="manual"] .model-manual-document-viewer > header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 58px;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    background: #0f172a;
+    color: #f8fafc;
+}
+
+html[data-model-select-embed="manual"] .model-manual-document-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 30px;
+    border-radius: 7px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+}
+
+html[data-model-select-embed="manual"] .model-manual-document-viewer header span:nth-child(2) {
+    min-width: 0;
+    flex: 1;
+}
+
+html[data-model-select-embed="manual"] .model-manual-document-viewer header strong,
+html[data-model-select-embed="manual"] .model-manual-document-viewer header small {
+    display: block;
+}
+
+html[data-model-select-embed="manual"] .model-manual-document-viewer header strong {
+    font-size: 14px;
+}
+
+html[data-model-select-embed="manual"] .model-manual-document-viewer header small {
+    margin-top: 2px;
+    overflow: hidden;
+    color: #94a3b8;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+html[data-model-select-embed="manual"] .model-manual-document-viewer header button {
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #94a3b8;
+    font-size: 22px;
+}
+
+html[data-model-select-embed="manual"] .model-manual-document-scroll {
+    flex: 1;
+    overflow: auto;
+    padding: 26px;
+    scroll-behavior: auto;
+}
+
+html[data-model-select-embed="manual"] .model-manual-configuration-sheet {
+    margin: 0 auto;
+    box-shadow: 0 12px 34px rgba(15, 23, 42, 0.28);
+}
+
+html.model-manual-paused .model-manual-cursor {
+    transition-duration: 0s !important;
+}
+
+html.model-manual-paused .model-manual-spotlight {
+    transition-duration: 0s !important;
+}
+
+@keyframes modelManualSpotlightOnce {
+    0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.35); }
+    100% { box-shadow: 0 0 0 9px rgba(56, 189, 248, 0), 0 10px 28px rgba(14, 165, 233, 0.16); }
+}
+
+@keyframes modelManualClickRipple {
+    0% { opacity: 0.95; transform: scale(0.45); }
+    100% { opacity: 0; transform: scale(4.2); }
+}
+
+@keyframes modelManualModalEnter {
+    from { opacity: 0; transform: translateY(12px) scale(0.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes modelManualToastIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes modelManualViewerIn {
+    from { opacity: 0; transform: translateY(14px) scale(0.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html[data-model-select-embed="manual"] .model-manual-cursor,
+    html[data-model-select-embed="manual"] .model-manual-spotlight,
+    html[data-model-select-embed="manual"] .model-manual-ripple,
+    html[data-model-select-embed="manual"] .model-manual-download-toast,
+    html[data-model-select-embed="manual"] .model-manual-document-viewer,
+    html[data-model-select-embed="manual"] .model-manual-enter {
+        animation: none !important;
+        transition: none !important;
+    }
+}

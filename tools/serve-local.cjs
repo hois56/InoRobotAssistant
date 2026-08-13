@@ -23,7 +23,7 @@ const publicTopLevelDirectories = new Set([
     'Language', 'privacy'
 ]);
 const publicRootFiles = new Set([
-    'CNAME', 'robots.txt', 'sitemap.xml', 'analytics.js', 'analytics-config.js', 'visitor-counter.js',
+    'CNAME', 'favicon.png', 'robots.txt', 'sitemap.xml', 'analytics.js', 'analytics-config.js', 'visitor-counter.js',
     'site-card-versions.js'
 ]);
 const blockedPathSegments = new Set([
@@ -146,6 +146,17 @@ function isValidVirtualBusMessage(parsed) {
     return true;
 }
 
+function isValidVirtualBusHello(parsed, expectedRole = '') {
+    const role = String(parsed?.role || '').toLowerCase();
+    return String(parsed?.type || '') === 'hello'
+        && Boolean(virtualBusToken)
+        && parsed.token === virtualBusToken
+        && String(parsed.protocol || '') === 'inorobot-virtual-bus'
+        && Number(parsed.version) === 1
+        && ['master', 'slave'].includes(role)
+        && (!expectedRole || role === expectedRole);
+}
+
 function relayVirtualBusMessage(peer, message) {
     if (Buffer.byteLength(message, 'utf8') > maxVirtualBusMessageBytes) return closeVirtualBusPeer(peer);
     let parsed;
@@ -153,13 +164,8 @@ function relayVirtualBusMessage(peer, message) {
     const type = String(parsed?.type || '');
 
     if (!peer.authenticated) {
-        if (type !== 'hello' || !virtualBusToken || parsed.token !== virtualBusToken) return closeVirtualBusPeer(peer);
-        const protocol = String(parsed.protocol || '');
-        const version = Number(parsed.version);
+        if (!isValidVirtualBusHello(parsed)) return closeVirtualBusPeer(peer);
         const role = String(parsed.role || '').toLowerCase();
-        if (protocol !== 'inorobot-virtual-bus' || version !== 1 || !['master', 'slave'].includes(role)) {
-            return closeVirtualBusPeer(peer);
-        }
         peer.authenticated = true;
         peer.role = role;
         virtualBus.generation += 1;
@@ -184,7 +190,21 @@ function relayVirtualBusMessage(peer, message) {
     }
 
     if (!isValidVirtualBusMessage(parsed)) return closeVirtualBusPeer(peer);
-    if (type === 'hello') return closeVirtualBusPeer(peer);
+    if (type === 'hello') {
+        // OLP can load or start a project after the socket was paired. Treat a
+        // valid same-session slave hello as a metadata refresh, while keeping
+        // role changes, stale tokens, and inactive peers as protocol errors.
+        if (peer.role !== 'slave'
+            || !isActiveVirtualBusPeer(peer)
+            || !isValidVirtualBusHello(parsed, peer.role)) {
+            return closeVirtualBusPeer(peer);
+        }
+        virtualBus.lastOlpHello = message;
+        if (isActiveVirtualBusPeer(virtualBus.master)) {
+            void sendVirtualBusText(virtualBus.master, message);
+        }
+        return;
+    }
     if (type === 'goodbye') return closeVirtualBusPeer(peer);
     if (!isActiveVirtualBusPeer(peer)) return;
     const target = peer.role === 'slave' ? virtualBus.master : virtualBus.olp;
@@ -223,6 +243,10 @@ function consumeVirtualBusFrames(peer) {
             void sendVirtualBusFrame(peer, payload, 0xA);
             continue;
         }
+        // ClientWebSocket sends a keep-alive PONG control frame about every
+        // 30 seconds. It carries no application data and must not terminate
+        // an otherwise healthy Virtual Bus session.
+        if (opcode === 0xA) continue;
         if (opcode !== 0x1) return closeVirtualBusPeer(peer);
         const now = Date.now();
         peer.rateWindow = now - peer.rateWindow.start >= 1000
@@ -270,7 +294,25 @@ function resolvePublicFile(pathname) {
 
 function originForRequest(request) {
     const origin = request.headers.origin;
-    return allowedOrigin(origin) ? origin : null;
+    if (origin) return allowedOrigin(origin) ? origin : null;
+
+    // Browsers normally omit Origin for a same-origin GET.  In that case use
+    // the referrer emitted by this local site, or the Fetch Metadata + Host
+    // pair when referrer transmission is disabled.  Cross-origin requests
+    // still carry an Origin and are rejected by the branch above.
+    const referer = request.headers.referer;
+    if (referer) {
+        try {
+            const refererOrigin = new URL(referer).origin;
+            if (allowedOrigin(refererOrigin)) return refererOrigin;
+        } catch { }
+    }
+
+    if (String(request.headers['sec-fetch-site'] || '').toLowerCase() === 'same-origin') {
+        const hostOrigin = `http://${String(request.headers.host || '')}`;
+        if (allowedOrigin(hostOrigin)) return hostOrigin;
+    }
+    return null;
 }
 
 const server = http.createServer((request, response) => {

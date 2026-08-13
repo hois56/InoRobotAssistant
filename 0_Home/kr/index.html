@@ -11,6 +11,7 @@ permalink: /kr/
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="이노로봇은 이노밴스 로봇(INOVANCE robot)의 모델 선택, 3D 시뮬레이션, 프로젝트 생성, 소프트웨어와 기술 문서를 지원하는 도구 모음입니다.">
     <title>Inovance Robot Assistant | 이노밴스 코리아</title>
+    <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png?v=20260813">
 
     <!-- Search engines can identify the site name and its common Korean/English names. -->
     <script type="application/ld+json">
@@ -30,7 +31,7 @@ permalink: /kr/
         "url": "https://inovancerobot.com/",
         "logo": {
           "@type": "ImageObject",
-          "url": "https://inovancerobot.com/1_RobotModelSelect/INOVANCE_Logo.png"
+          "url": "https://inovancerobot.com/favicon.png"
         }
       }
     }
@@ -459,7 +460,8 @@ permalink: /kr/
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/Language/runtime/i18n.css">
-    <script src="/Language/runtime/locales-data.js?v=5efb65afa0e6" defer></script>
+    <link rel="stylesheet" href="/0_Home/robot-select-guide.css?v=20260813-5">
+    <script src="/Language/runtime/locales-data.js?v=a36475780f8e" defer></script>
     <script src="/Language/runtime/i18n.js" defer></script>
     <script src="/analytics-config.js"></script>
     <script src="/analytics.js" defer></script>
@@ -538,28 +540,33 @@ permalink: /kr/
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
 
             <!-- 1. Robot Selector Card -->
-            <a href="/1_RobotModelSelect/" class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8"
-                style="animation: fadeInUp 0.5s ease 0.1s forwards; text-decoration: none;">
-                <div
-                    class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
-                    <i data-lucide="bot" class="w-8 h-8 text-white"></i>
-                </div>
-                <h2 class="font-outfit text-2xl font-bold mb-3 text-white">
-                    로봇 모델 선택
-                </h2>
-                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
-                    INOVANCE 로봇의 라인업을 확인하세요. 선택한 모델과 옵션 구성을 PDF로 저장하여 발주시 활용할 수 있습니다. 또한 2D, 3D CAD 파일도 다운로드 받을 수 있습니다.
-                </p>
+            <article class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8"
+                style="animation: fadeInUp 0.5s ease 0.1s forwards;">
+                <a href="/1_RobotModelSelect/" class="flex flex-col flex-grow" style="text-decoration: none;">
+                    <div
+                        class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
+                        <i data-lucide="bot" class="w-8 h-8 text-white"></i>
+                    </div>
+                    <h2 class="font-outfit text-2xl font-bold mb-3 text-white">
+                        로봇 모델 선택
+                    </h2>
+                    <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
+                        INOVANCE 로봇의 라인업을 확인하세요. 선택한 모델과 옵션 구성을 PDF로 저장하여 발주시 활용할 수 있습니다. 또한 2D, 3D CAD 파일도 다운로드 받을 수 있습니다.
+                    </p>
+                </a>
                 <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
+                    <button type="button" id="robot-select-guide-trigger" class="manual-info-button" data-manual-open
+                        aria-label="로봇 모델 선택 사용 방법 보기" aria-haspopup="dialog"
+                        aria-controls="robot-select-guide-modal" aria-expanded="false" title="사용 방법">i</button>
                     <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg"
-                        data-site-card-version="robotSelect">Ver 26.07.28</span>
+                        data-site-card-version="robotSelect">Ver 26.08.13</span>
                     <button type="button" class="history-button" data-history-card="robotSelect"
                         aria-label="Robot Model Select 버전 기록 보기">
                         <i data-lucide="history" class="w-3.5 h-3.5"></i>
                         버전 기록
                     </button>
                 </div>
-            </a>
+            </article>
 
             <!-- 2. 3D Simulation Card (가운데 위치) -->
             <a href="/2_3DSimulation/" class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8"
@@ -575,8 +582,10 @@ permalink: /kr/
                     INOVANCE 로봇의 관절 및 Base JOG, Tool·설비 배치와 3D 모델 시뮬레이션을 지원합니다.
                 </p>
                 <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
+                    <button type="button" class="manual-info-button tool-manual-open" data-tool-guide="simulation"
+                        aria-label="3D 시뮬레이션 사용 방법 보기" aria-haspopup="dialog" aria-controls="tool-guide-modal" aria-expanded="false" title="사용 방법">i</button>
                     <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20"
-                        data-site-card-version="robot3dViewer">Ver 26.08.12</span>
+                        data-site-card-version="robot3dViewer">Ver 26.08.13</span>
                     <button type="button" class="history-button" data-history-card="robot3dViewer"
                         aria-label="3D Simulation 버전 기록 보기">
                         <i data-lucide="history" class="w-3.5 h-3.5"></i>
@@ -599,8 +608,10 @@ permalink: /kr/
                     로봇 Tool 부하 조건에 따른 모델 적합성을 판정합니다. 관성 모멘트 및 허용 하중을 계산하여 최적의 모델을 선택하세요.
                 </p>
                 <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
+                    <button type="button" class="manual-info-button tool-manual-open" data-tool-guide="tool"
+                        aria-label="로봇 툴 선정 사용 방법 보기" aria-haspopup="dialog" aria-controls="tool-guide-modal" aria-expanded="false" title="사용 방법">i</button>
                     <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20"
-                        data-site-card-version="toolSelector">Ver 26.07.26</span>
+                        data-site-card-version="toolSelector">Ver 26.08.13</span>
                     <button type="button" class="history-button" data-history-card="toolSelector"
                         aria-label="Robot Tool Selector 버전 기록 보기">
                         <i data-lucide="history" class="w-3.5 h-3.5"></i>
@@ -626,8 +637,10 @@ permalink: /kr/
                 </p>
 
                 <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
+                    <button type="button" class="manual-info-button tool-manual-open" data-tool-guide="project"
+                        aria-label="프로젝트 생성기 사용 방법 보기" aria-haspopup="dialog" aria-controls="tool-guide-modal" aria-expanded="false" title="사용 방법">i</button>
                     <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg"
-                        data-site-card-version="projectGenerator">Ver 26.07.26</span>
+                        data-site-card-version="projectGenerator">Ver 26.08.13</span>
                     <button type="button" class="history-button" data-history-card="projectGenerator"
                         aria-label="Project Generator 버전 기록 보기">
                         <i data-lucide="history" class="w-3.5 h-3.5"></i>
@@ -674,8 +687,10 @@ permalink: /kr/
                     로봇 매뉴얼, 교육자료, 인증서와 통신 프로파일을 다운로드하고 조회합니다.
                 </p>
                 <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
+                    <button type="button" class="manual-info-button tool-manual-open" data-tool-guide="document"
+                        aria-label="문서 사용 방법 보기" aria-haspopup="dialog" aria-controls="tool-guide-modal" aria-expanded="false" title="사용 방법">i</button>
                     <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20"
-                        data-site-card-version="manual">Ver 26.07.29</span>
+                        data-site-card-version="manual">Ver 26.08.13</span>
                     <button type="button" class="history-button" data-history-card="manual"
                         aria-label="Document 버전 기록 보기">
                         <i data-lucide="history" class="w-3.5 h-3.5"></i>
@@ -716,6 +731,147 @@ permalink: /kr/
 
         <!-- Footer removed -->
     </main>
+
+    <div id="robot-select-guide-modal" class="manual-guide-modal" aria-hidden="true">
+        <section class="manual-guide-dialog" role="dialog" aria-modal="true"
+            aria-labelledby="robot-select-guide-title" tabindex="-1">
+            <header class="manual-guide-header">
+                <div class="min-w-0">
+                    <div class="manual-guide-kicker">
+                        <span class="manual-guide-live-dot" aria-hidden="true"></span>
+                        빠른 사용 가이드 · 약 36초
+                    </div>
+                    <h2 id="robot-select-guide-title" class="manual-guide-title">로봇 모델 선택 사용 가이드</h2>
+                </div>
+                <button type="button" class="manual-guide-close" data-manual-close aria-label="사용 가이드 닫기">
+                    <i data-lucide="x" aria-hidden="true"></i>
+                </button>
+            </header>
+
+            <div class="manual-guide-body">
+                <nav class="manual-guide-steps" aria-label="가이드 단계 선택">
+                    <button type="button" class="manual-step-button is-active" data-manual-step="0" aria-current="step">
+                        <span class="manual-step-number">01</span>
+                        <span class="manual-step-copy">
+                            <strong>필요한 사양을 선택하세요</strong>
+                            <small>로봇 유형, 가반하중, 리치 등 필요한 조건을 필터에서 선택합니다.</small>
+                        </span>
+                    </button>
+                    <button type="button" class="manual-step-button" data-manual-step="1">
+                        <span class="manual-step-number">02</span>
+                        <span class="manual-step-copy">
+                            <strong>모델을 선택하고 옵션을 구성하세요</strong>
+                            <small>모델 카드를 선택해 상세 구성 화면을 열고 케이블, 티치펜던트와 통신 옵션을 구성합니다.</small>
+                        </span>
+                    </button>
+                    <button type="button" class="manual-step-button" data-manual-step="2">
+                        <span class="manual-step-number">03</span>
+                        <span class="manual-step-copy">
+                            <strong>파일을 내려받고 구성 내역을 확인하세요</strong>
+                            <small>CAD와 구성 내역을 내려받은 뒤 구성서를 열어 선택한 모델과 옵션을 확인합니다.</small>
+                        </span>
+                    </button>
+                </nav>
+
+                <div class="manual-guide-player">
+                    <div class="manual-guide-viewport" aria-hidden="true">
+                        <div class="manual-real-ui-stage" data-manual-stage>
+                            <div class="manual-real-ui-canvas" data-manual-canvas>
+                                <iframe id="robot-select-guide-frame"
+                                    data-src="/1_RobotModelSelect/?embed=manual"
+                                    title="실제 Model Select 화면"
+                                    sandbox="allow-scripts allow-same-origin"
+                                    tabindex="-1" aria-hidden="true"></iframe>
+                            </div>
+                            <div class="manual-frame-state" data-manual-loading>
+                                <span class="manual-frame-spinner" aria-hidden="true"></span>
+                                <strong>실제 Model Select 화면을 불러오는 중입니다.</strong>
+                            </div>
+                            <div class="manual-frame-state manual-frame-error" data-manual-error hidden>
+                                <strong>실제 화면을 불러오지 못했습니다.</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="manual-guide-caption">
+                        <strong data-manual-caption-title>필요한 사양을 선택하세요</strong>
+                        <span data-manual-caption-copy>로봇 유형, 가반하중, 리치 등 필요한 조건을 필터에서 선택합니다.</span>
+                    </div>
+                    <div class="manual-guide-transport">
+                        <button type="button" class="manual-guide-control manual-guide-play" data-manual-play
+                            aria-label="일시정지" aria-pressed="false">
+                            <span data-manual-pause-icon><i data-lucide="pause" aria-hidden="true"></i></span>
+                            <span data-manual-play-icon hidden><i data-lucide="play" aria-hidden="true"></i></span>
+                            <span data-manual-pause-label hidden>일시정지</span>
+                            <span data-manual-play-label hidden>재생</span>
+                            <span data-manual-replay-label hidden>다시 재생</span>
+                        </button>
+                        <output class="manual-guide-time" data-manual-time aria-hidden="true">00:00 / 00:36</output>
+                        <div class="manual-timeline-shell">
+                            <input type="range" class="manual-timeline-range" data-manual-seek
+                                min="0" max="36000" step="100" value="0"
+                                aria-label="가이드 재생 위치" aria-valuetext="00:00 / 00:36">
+                            <div class="manual-timeline-markers">
+                                <button type="button" data-manual-marker="0" style="--manual-marker-position: 0%"
+                                    aria-label="필터 선택 단계로 이동"><span aria-hidden="true">필터 선택</span></button>
+                                <button type="button" data-manual-marker="8000" style="--manual-marker-position: 22.22%"
+                                    aria-label="모델 선택 및 옵션 구성 단계로 이동"><span aria-hidden="true">모델·옵션</span></button>
+                                <button type="button" data-manual-marker="22000" style="--manual-marker-position: 61.11%"
+                                    aria-label="파일 다운로드 및 구성 내역 확인 단계로 이동"><span aria-hidden="true">다운로드·확인</span></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="manual-guide-footer">
+                        <button type="button" class="manual-guide-control" data-manual-previous>
+                            <i data-lucide="chevron-left" aria-hidden="true"></i><span>이전 단계</span>
+                        </button>
+                        <button type="button" class="manual-guide-control" data-manual-next>
+                            <span>다음 단계</span><i data-lucide="chevron-right" aria-hidden="true"></i>
+                        </button>
+                        <a href="/1_RobotModelSelect/" class="manual-guide-launch">
+                            <span>직접 사용해 보기</span><i data-lucide="arrow-up-right" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                    <p class="manual-guide-sr-status" data-manual-status aria-live="polite"></p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div id="tool-guide-modal" class="manual-guide-modal tool-guide-modal" aria-hidden="true">
+        <section class="manual-guide-dialog" role="dialog" aria-modal="true"
+            aria-labelledby="tool-guide-title" tabindex="-1">
+            <header class="manual-guide-header">
+                <div class="min-w-0">
+                    <div class="manual-guide-kicker"><span class="manual-guide-live-dot" aria-hidden="true"></span><span data-tool-guide-kicker>빠른 사용 가이드 · 약 32초</span></div>
+                    <h2 id="tool-guide-title" class="manual-guide-title" data-tool-guide-title>도구 사용 가이드</h2>
+                </div>
+                <button type="button" class="manual-guide-close" data-tool-guide-close aria-label="사용 가이드 닫기"><i data-lucide="x" aria-hidden="true"></i></button>
+            </header>
+            <div class="manual-guide-body">
+                <nav class="manual-guide-steps" data-tool-guide-steps aria-label="가이드 단계 선택"></nav>
+                <div class="manual-guide-player">
+                    <div class="manual-guide-viewport" aria-hidden="true">
+                        <div class="manual-real-ui-stage" data-tool-guide-stage>
+                            <div class="manual-real-ui-canvas" data-tool-guide-canvas>
+                                <iframe id="tool-guide-frame" title="실제 도구 화면" sandbox="allow-scripts allow-same-origin" tabindex="-1" aria-hidden="true"></iframe>
+                            </div>
+                            <div class="manual-frame-state" data-tool-guide-loading><span class="manual-frame-spinner" aria-hidden="true"></span><strong>실제 도구 화면을 불러오는 중입니다.</strong></div>
+                            <div class="manual-frame-state manual-frame-error" data-tool-guide-error hidden><strong>실제 화면을 불러오지 못했습니다.</strong><button type="button" class="manual-guide-control" data-tool-guide-retry>다시 시도</button></div>
+                        </div>
+                    </div>
+                    <div class="manual-guide-caption"><strong data-tool-guide-caption-title></strong><span data-tool-guide-caption-copy></span></div>
+                    <div class="manual-guide-transport">
+                        <button type="button" class="manual-guide-control manual-guide-play" data-tool-guide-play aria-label="일시정지" aria-pressed="false"><span data-tool-guide-pause-icon><i data-lucide="pause" aria-hidden="true"></i></span><span data-tool-guide-play-icon hidden><i data-lucide="play" aria-hidden="true"></i></span><span data-tool-guide-replay-icon hidden><i data-lucide="rotate-ccw" aria-hidden="true"></i></span><span data-tool-guide-pause-label hidden>일시정지</span><span data-tool-guide-play-label hidden>재생</span><span data-tool-guide-replay-label hidden>다시 재생</span></button>
+                        <output class="manual-guide-time" data-tool-guide-time aria-hidden="true">00:00 / 00:32</output>
+                        <div class="manual-timeline-shell"><input type="range" class="manual-timeline-range" data-tool-guide-seek min="0" max="32000" step="100" value="0" aria-label="가이드 재생 위치" aria-valuetext="00:00 / 00:32"><div class="manual-timeline-markers" data-tool-guide-markers></div></div>
+                    </div>
+                    <div class="manual-guide-footer"><button type="button" class="manual-guide-control" data-tool-guide-previous><i data-lucide="chevron-left" aria-hidden="true"></i><span>이전 단계</span></button><button type="button" class="manual-guide-control" data-tool-guide-next><span>다음 단계</span><i data-lucide="chevron-right" aria-hidden="true"></i></button><a href="/" class="manual-guide-launch" data-tool-guide-launch><span>직접 사용해 보기</span><i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div>
+                    <p class="manual-guide-sr-status" data-tool-guide-status aria-live="polite"></p>
+                </div>
+            </div>
+        </section>
+    </div>
 
     <div id="version-history-modal" class="history-modal" aria-hidden="true">
         <section class="history-dialog" role="dialog" aria-modal="true" aria-labelledby="history-dialog-title">
@@ -784,9 +940,11 @@ permalink: /kr/
         }
     </style>
 
-    <script src="/0_Home/site-card-versions.js?v=aa20e38742c1"></script>
-    <script src="/0_Home/site-card-history-data.js?v=aa20e38742c1"></script>
-    <script src="/0_Home/site-card-history.js?v=aa20e38742c1"></script>
+    <script src="/0_Home/site-card-versions.js?v=c52fa6289ede"></script>
+    <script src="/0_Home/site-card-history-data.js?v=c52fa6289ede"></script>
+    <script src="/0_Home/site-card-history.js?v=c52fa6289ede"></script>
+    <script src="/0_Home/robot-select-guide.js?v=20260813-7"></script>
+    <script src="/0_Home/tool-guide.js?v=20260813-9"></script>
     <script>
         // Keep the main-site card versions in one place.
         const siteCardVersions = window.SITE_CARD_VERSIONS || {};

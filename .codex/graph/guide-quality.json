@@ -1,0 +1,24 @@
+{
+  "objective": "3D Simulation, Tool Selector, Project Generator, Document 애니메이션 가이드를 Robot Model Select 수준의 실제 UI 상호작용·상태 변화·재생 제어 품질로 개선한다.",
+  "deliverables": [
+    "도구별 실제 UI 기반 결정론적 타임라인",
+    "재생·탐색 시 같은 시점에 같은 화면이 복원되는 상태 그래프",
+    "안전한 embed 전용 시연 모드와 부작용 차단",
+    "모바일 카메라·접근성·다국어·버전 기록",
+    "브라우저 상호작용 및 빌드 검증"
+  ],
+  "constraints": [
+    "Project Generator의 Get, Put, Tray는 영어 원문 유지",
+    "실제 다운로드·프로젝트 생성 등 부작용은 자동 가이드에서 실행하지 않음",
+    "기존 사용자 변경사항 보존",
+    "최종 차이만 버전 기록에 작성"
+  ],
+  "nodes": [
+    {"id":"N1","purpose":"현재 가이드와 실제 UI 차이 조사","dependencies":[],"status":"SUCCESS","successCondition":"네 도구의 실제 흐름·선택자·품질 결함 목록 확보","failureRoute":"N1_RETRY","retries":0},
+    {"id":"N2","purpose":"도구별 장면 및 상태 그래프 설계","dependencies":["N1"],"status":"SUCCESS","successCondition":"시간축·상태·안전 동작·카메라 정의","failureRoute":"N2_REPAIR","retries":0},
+    {"id":"N3","purpose":"공통 플레이어와 도구별 어댑터 구현","dependencies":["N2"],"status":"SUCCESS","successCondition":"실제 DOM 상태 변화와 역방향 탐색 복원","failureRoute":"N3_REPAIR","retries":2},
+    {"id":"N4","purpose":"다국어 및 버전 기록 생성","dependencies":["N3"],"status":"SUCCESS","successCondition":"모든 locale과 카드 버전 일치","failureRoute":"N4_REPAIR","retries":0},
+    {"id":"N5","purpose":"정적·브라우저·반응형 검증","dependencies":["N3","N4"],"status":"SUCCESS","successCondition":"빌드·검증·네 가이드 장면·탐색·접근성 통과","failureRoute":"N3_REPAIR","retries":1},
+    {"id":"N6","purpose":"최종 요구사항 대조","dependencies":["N5"],"status":"SUCCESS","successCondition":"핵심 요구사항 모두 PASS 또는 명시적 NOT VERIFIED","failureRoute":"N3_REPAIR","retries":0}
+  ]
+}

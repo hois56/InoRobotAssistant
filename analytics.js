@@ -4,6 +4,11 @@
  * it possible to disable analytics by clearing the token in analytics-config.js.
  */
 (function loadInoRobotAnalytics() {
+    const embedMode = new URLSearchParams(window.location.search).get('embed');
+    const isEmbeddedManual = window.self !== window.top
+        && (embedMode === 'manual' || embedMode === 'manual-guide');
+    if (isEmbeddedManual) return;
+
     const config = window.INOROBOT_ANALYTICS_CONFIG;
     const token = typeof config?.token === 'string' ? config.token.trim() : '';
 
