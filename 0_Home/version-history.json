@@ -188,7 +188,7 @@
             "items": [
               "`[추가]` 해당 기능의 가이드를 추가했습니다.",
               "`[수정]` SCARA 로봇의 케이블관 높이와 모델링을 수정했습니다.",
-              "`[수정]` 3D 시뮬레이션 초기 화면에서 프로그램 패널이 자동으로 열리던 문제를 해결했습니다.",
+              "`[수정]` 3D 시뮬레이션 초기 화면에서 프로그램 패널이 표시되지 않도록 수정했습니다.",
               "`[수정]` 브라우저 OLP가 Virtual Bus 인증 정보를 받지 못해 통신 테스터와 연결되지 않던 문제를 해결했습니다.",
               "`[수정]` 프로젝트가 없는 OLP에서 Virtual Bus 재연결이 중단되거나 연결 후 약 30초 뒤 끊기던 문제를 해결했습니다.",
               "`[수정]` OLP Virtual Bus 연결 상태에서 프로그램을 시작할 때 통신이 한 번 끊기던 문제를 해결했습니다."
@@ -373,18 +373,6 @@
           {
             "title": "Software",
             "versions": [
-              {
-                "title": "Ver 26.08.12",
-                "items": [
-                  "`[추가]` 방문 기록 시트에 주간·월간 조회수와 유입 방문수 집계, 이전 기간 대비 변화율, 추이 차트를 추가했습니다.",
-                  "`[변경]` 개인정보처리방침의 문의 이메일 주소를 `inovancerobot@gmail.com`으로 변경했습니다.",
-                  "`[수정]` 다국어 홈페이지를 다시 생성하면 누적 방문자 수 표시가 사라지던 문제를 해결했습니다.",
-                  "`[개선]` 기존 누적 방문자 수를 유지하면서 동시 방문 집계와 5분 중복 방문 방지의 안정성을 개선했습니다.",
-                  "`[개선]` 방문 기록을 한국 날짜 기준으로 집계하고 방문이 많은 날에도 누락되지 않도록 개선했습니다.",
-                  "`[개선]` 현재 Google Sheets 구성을 유지하면서 장기간 추이와 데이터 갱신 안정성을 개선했습니다.",
-                  "`[보안]` 방문 기록 CSV는 운영자 인증 후에만 내려받을 수 있도록 변경했습니다."
-                ]
-              },
               {
                 "title": "Ver 26.08.11",
                 "items": [
@@ -1018,7 +1006,7 @@
             "items": [
               "`[Added]` Added a guide for this feature.",
               "`[Fixed]` Updated the SCARA robot cable conduit height and modeling.",
-              "`[Fixed]` Fixed an issue where the Program Panel opened automatically on the initial 3D Simulation screen.",
+              "`[Fixed]` Updated the initial 3D Simulation screen so the Program Panel is not displayed.",
               "`[Fixed]` Fixed an issue where browser OLP could not connect to the Communication Tester because it could not obtain Virtual Bus authentication information.",
               "`[Fixed]` Fixed an issue where Virtual Bus reconnection stopped in OLP without a project or disconnected about 30 seconds after connecting.",
               "`[Fixed]` Fixed an issue where communication disconnected once when starting an OLP program while Virtual Bus was connected."
@@ -1203,18 +1191,6 @@
           {
             "title": "Software",
             "versions": [
-              {
-                "title": "Ver 26.08.12",
-                "items": [
-                  "**[Added]** Added weekly and monthly page-view and referrer-visit summaries, previous-period change rates, and trend charts to the visit-record spreadsheet.",
-                  "**[Changed]** Changed the contact email address in the Privacy Policy to `inovancerobot@gmail.com`.",
-                  "**[Fixed]** Fixed an issue where regenerating the localized home pages removed the cumulative visitor count.",
-                  "**[Improved]** Improved concurrent visit counting and five-minute duplicate protection while preserving the existing cumulative total.",
-                  "**[Improved]** Visit records are now aggregated by Korean calendar date without omissions on high-volume days.",
-                  "**[Improved]** Kept the current Google Sheets layout while improving long-term trends and update reliability.",
-                  "**[Security]** The visit-record CSV now requires operator authentication before download."
-                ]
-              },
               {
                 "title": "Ver 26.08.11",
                 "items": [
@@ -1848,7 +1824,7 @@
             "items": [
               "`[新增]` 添加了该功能的使用指南。",
               "`[修复]` 修正了 SCARA 机器人的电缆管高度和模型。",
-              "`[修复]` 修复了 3D 仿真初始画面自动打开程序面板的问题。",
+              "`[修复]` 已修改 3D 仿真初始画面，使程序面板不显示。",
               "`[修复]` 修复了浏览器 OLP 因无法获取 Virtual Bus 认证信息而无法连接通信测试器的问题。",
               "`[修复]` 修复了未加载项目的 OLP 中 Virtual Bus 停止重连或连接约 30 秒后断开的问题。",
               "`[修复]` 修复了 Virtual Bus 已连接时启动 OLP 程序会发生一次通信断开的问题。"
@@ -2033,18 +2009,6 @@
           {
             "title": "Software",
             "versions": [
-              {
-                "title": "Ver 26.08.12",
-                "items": [
-                  "**[新增]** 在访问记录表中新增每周和每月页面浏览量与来源访问量汇总、较上一周期变化率及趋势图表。",
-                  "**[变更]** 将隐私政策中的联系邮箱更改为 `inovancerobot@gmail.com`。",
-                  "**[修复]** 修复了重新生成多语言首页后累计访问者数量显示消失的问题。",
-                  "**[改进]** 在保留现有累计数量的同时，提高了并发访问统计和五分钟重复访问防护的稳定性。",
-                  "**[改进]** 访问记录现按韩国日历日期汇总，并避免在高访问量日期出现遗漏。",
-                  "**[改进]** 保持现有 Google Sheets 布局，同时提高长期趋势和数据更新的稳定性。",
-                  "**[安全]** 访问记录 CSV 现仅可在运营者认证后下载。"
-                ]
-              },
               {
                 "title": "Ver 26.08.11",
                 "items": [
@@ -2678,7 +2642,7 @@
             "items": [
               "`[Thêm mới]` Đã thêm hướng dẫn cho chức năng này.",
               "`[Sửa lỗi]` Đã chỉnh sửa chiều cao và mô hình ống cáp của robot SCARA.",
-              "`[Sửa lỗi]` Đã khắc phục lỗi Bảng chương trình tự động mở trên màn hình 3D Simulation ban đầu.",
+              "`[Sửa lỗi]` Đã chỉnh sửa để Bảng chương trình không hiển thị trên màn hình 3D Simulation ban đầu.",
               "`[Sửa lỗi]` Đã khắc phục lỗi OLP trên trình duyệt không thể kết nối với Trình kiểm tra giao tiếp do không nhận được thông tin xác thực Virtual Bus.",
               "`[Sửa lỗi]` Đã khắc phục lỗi Virtual Bus ngừng kết nối lại trong OLP chưa tải dự án hoặc ngắt kết nối khoảng 30 giây sau khi kết nối.",
               "`[Sửa lỗi]` Đã khắc phục lỗi giao tiếp bị ngắt một lần khi khởi động chương trình OLP trong lúc Virtual Bus đang kết nối."
@@ -2863,18 +2827,6 @@
           {
             "title": "Software",
             "versions": [
-              {
-                "title": "Ver 26.08.12",
-                "items": [
-                  "**[Đã thêm]** Đã thêm bảng tổng hợp lượt xem trang và lượt truy cập từ nguồn giới thiệu theo tuần, tháng, tỷ lệ thay đổi so với kỳ trước và biểu đồ xu hướng vào bảng tính lịch sử truy cập.",
-                  "**[Thay đổi]** Đã thay đổi địa chỉ email liên hệ trong Chính sách quyền riêng tư thành `inovancerobot@gmail.com`.",
-                  "**[Sửa lỗi]** Đã khắc phục sự cố số lượng khách truy cập tích lũy biến mất khi tạo lại các trang chủ đa ngôn ngữ.",
-                  "**[Cải tiến]** Cải thiện độ ổn định của việc đếm truy cập đồng thời và ngăn trùng lặp trong năm phút, đồng thời giữ nguyên tổng số hiện có.",
-                  "**[Cải tiến]** Lịch sử truy cập hiện được tổng hợp theo ngày tại Hàn Quốc mà không bị thiếu dữ liệu vào những ngày có lưu lượng lớn.",
-                  "**[Cải tiến]** Giữ nguyên bố cục Google Sheets hiện tại, đồng thời cải thiện xu hướng dài hạn và độ ổn định khi cập nhật dữ liệu.",
-                  "**[Bảo mật]** Tệp CSV lịch sử truy cập hiện chỉ có thể tải xuống sau khi xác thực người vận hành."
-                ]
-              },
               {
                 "title": "Ver 26.08.11",
                 "items": [
