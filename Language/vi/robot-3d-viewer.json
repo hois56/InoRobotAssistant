@@ -6,6 +6,12 @@
     }
   },
   "legacy": {
+    "로봇 모델을 생성하는 중...": "Đang tạo model robot...",
+    "Test 설비와 Tool을 배치하는 중...": "Đang bố trí thiết bị Test và Tool...",
+    "Test 모델 배치 완료": "Đã bố trí model Test",
+    "스냅 이동 완료": "Đã hoàn tất di chuyển snap",
+    "자동 반복 운전 중": "Đang chạy lặp tự động",
+    "패널을 닫고 반복 동작 확인": "Đóng các bảng và xem chuyển động lặp",
     "Download": "Tải xuống",
     "다운로드": "Tải xuống",
     "메인 페이지로 이동": "Về trang chủ",
@@ -79,6 +85,8 @@
     "MODEL": "Mô hình",
     "Unnamed model": "Mô hình chưa đặt tên",
     "선택": "Chọn",
+    "접기": "Thu gọn",
+    "펼치기": "Mở rộng",
     "관절 각도": "góc khớp",
     "관절 각도(도)": "góc khớp theo độ",
     "관절 위치": "vị trí khớp",

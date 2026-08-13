@@ -91,6 +91,9 @@ function uiFormat(value, replacements = {}) {
     ));
 }
 
+const IS_MANUAL_GUIDE_EMBED = window.self !== window.top
+    && new URLSearchParams(window.location.search).get('embed') === 'manual-guide';
+
 const state = {
     scene: null, camera: null, renderer: null,
     controls: null, transformControls: null,
@@ -118,6 +121,7 @@ const state = {
     },
     modelTreeIdCounter: 0,
     modelPartIdCounter: 0,
+    modelTreeCollapsedIds: new Set(),
     undoStack: [],
     redoStack: [],
     historySuspended: false,
@@ -659,6 +663,25 @@ const BASE_JOG_GIZMO_ACTIVE_COLOR_SCALE = 0.58;
 const BASE_JOG_MAX_VISIBLE_LINE_SPAN = 10;
 const SCARA_TOOL_AXES = { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] };
 const SIX_AXIS_TOOL_AXES = { x: [0, 0, 1], y: [0, -1, 0], z: [1, 0, 0] };
+// TUBE.stl keeps each cable's authored CAD shape. These Z translations restore
+// the component placement measured in the matching full SCARA assembly FBX.
+const SCARA_TUBE_CAD_Z_OFFSETS = Object.freeze({
+    'IR-S4-40Z15': -2,
+    'IR-S7-50Z20': -1,
+    'IR-S7-60Z20': 1,
+    'IR-S7-70Z20': -1,
+    'IR-S10-60Z20': -1,
+    'IR-S10-70Z20': -1,
+    'IR-S10-80Z20': -1,
+    'IR-S25-80Z42': 0,
+    'IR-S25-100Z42': -5.002,
+    'IR-S25-120Z42': -52.5,
+    'IR-S35-80Z42': 0,
+    'IR-S35-100Z42': 0,
+    'IR-S35-120Z42': 0,
+    'IR-S60-120Z40': -45.372,
+    'IR-GS60-120Z40': -5.628
+});
 const SIX_AXIS_POSITION_HOME_QUATERNION = new THREE.Quaternion().setFromEuler(
     new THREE.Euler(-Math.PI, -Math.PI / 2, 0, 'ZYX')
 );
@@ -890,7 +913,9 @@ async function init() {
         animate();
         scheduleStepImportWorkerWarmup();
         await populateModelList();
-        await restoreMotionProjectFromStorage();
+        if (IS_MANUAL_GUIDE_EMBED) renderMotionProgramPanel();
+        else await restoreMotionProjectFromStorage();
+        installSimulationManualGuide();
         setStatus('Ready', '#22c55e');
     } catch (err) {
         console.error("Initialization Failed:", err);
@@ -2313,6 +2338,7 @@ function serializeViewConfiguration() {
 }
 
 function saveViewConfiguration() {
+    if (IS_MANUAL_GUIDE_EMBED) return;
     try {
         localStorage.setItem(VIEW_PRESETS_STORAGE_KEY, JSON.stringify(serializeViewConfiguration()));
     } catch (error) {
@@ -2322,6 +2348,10 @@ function saveViewConfiguration() {
 
 function loadViewConfiguration() {
     state.viewPresets = Array.from({ length: VIEW_PRESET_COUNT }, () => null);
+    if (IS_MANUAL_GUIDE_EMBED) {
+        refreshViewPresetsUi();
+        return;
+    }
     try {
         const raw = JSON.parse(localStorage.getItem(VIEW_PRESETS_STORAGE_KEY) || 'null');
         const presets = Array.isArray(raw) ? raw : raw?.viewPresets;
@@ -2515,6 +2545,7 @@ function restoreViewWindowFromPopup(closePopup = false) {
     else viewWindow.root.removeAttribute('style');
     viewWindow.savedStyle = '';
     if (closePopup && !popup.closed) popup.close();
+    requestRender();
 }
 
 function closeViewWindow() {
@@ -5336,6 +5367,13 @@ function setupEventListeners() {
     });
 
     el.modelTree?.addEventListener('click', (event) => {
+        const toggle = event.target.closest('[data-model-tree-toggle]');
+        if (toggle) {
+            event.preventDefault();
+            const model = state.models.find((candidate) => candidate.userData.modelTreeId === toggle.dataset.modelTreeToggle);
+            if (model) toggleModelTreeNode(model);
+            return;
+        }
         const partButton = event.target.closest('[data-model-part-id]');
         if (partButton) {
             const match = findImportedModelPart(partButton.dataset.modelPartId);
@@ -6755,6 +6793,22 @@ function ensureModelTreeId(model) {
     return model.userData.modelTreeId;
 }
 
+function modelTreeHasChildren(model) {
+    return state.models.some((candidate) => candidate.userData.attachmentHost === model)
+        || getImportedModelParts(model).length > 0;
+}
+
+function isModelTreeNodeCollapsed(model) {
+    return state.modelTreeCollapsedIds.has(ensureModelTreeId(model));
+}
+
+function toggleModelTreeNode(model) {
+    const treeId = ensureModelTreeId(model);
+    if (state.modelTreeCollapsedIds.has(treeId)) state.modelTreeCollapsedIds.delete(treeId);
+    else state.modelTreeCollapsedIds.add(treeId);
+    renderModelTree();
+}
+
 function getModelTreeMeta(model) {
     if (model.userData.placement === 'tcp') {
         return { kind: 'TOOL', className: 'tool', icon: 'fa-screwdriver-wrench' };
@@ -6813,17 +6867,40 @@ function createModelTreePartNode(model, part) {
 function createModelTreeNode(model) {
     const treeId = ensureModelTreeId(model);
     const meta = getModelTreeMeta(model);
+    const hasChildren = modelTreeHasChildren(model);
+    const collapsed = hasChildren && isModelTreeNodeCollapsed(model);
     const item = document.createElement('li');
     item.className = 'model-tree-node';
     item.setAttribute('role', 'treeitem');
     item.setAttribute('aria-selected', String(model === state.selectedModel));
+    if (hasChildren) item.setAttribute('aria-expanded', String(!collapsed));
+
+    const row = document.createElement('div');
+    row.className = 'model-tree-node-row';
+
+    if (hasChildren) {
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'model-tree-toggle';
+        toggle.dataset.modelTreeToggle = treeId;
+        toggle.setAttribute('aria-expanded', String(!collapsed));
+        toggle.setAttribute('aria-label', `${displayNameForModelTree(model)} ${uiText(collapsed ? '펼치기' : '접기')}`);
+        toggle.title = uiText(collapsed ? '펼치기' : '접기');
+        toggle.innerHTML = `<i class="fa-solid fa-chevron-${collapsed ? 'right' : 'down'}"></i>`;
+        row.appendChild(toggle);
+    } else {
+        const placeholder = document.createElement('span');
+        placeholder.className = 'model-tree-toggle-placeholder';
+        placeholder.setAttribute('aria-hidden', 'true');
+        row.appendChild(placeholder);
+    }
 
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `model-tree-button${model === state.selectedModel ? ' active' : ''}`;
     button.classList.add(`model-tree-button-${meta.className}`);
     button.dataset.modelTreeId = treeId;
-    const displayName = formatRobotPanelName(model.userData.motionDisplayName || model.userData.modelName || model.name || uiText('MODEL'));
+    const displayName = displayNameForModelTree(model);
     button.title = `${displayName} ${uiText('선택')}`;
 
     const icon = document.createElement('span');
@@ -6839,19 +6916,25 @@ function createModelTreeNode(model) {
     kind.textContent = uiText(meta.kind);
 
     button.append(icon, name, kind);
-    item.appendChild(button);
+    row.appendChild(button);
+    item.appendChild(row);
 
     const children = state.models.filter((candidate) => candidate.userData.attachmentHost === model);
     const parts = getImportedModelParts(model);
-    if (children.length > 0 || parts.length > 0) {
+    if (hasChildren) {
         const childList = document.createElement('ul');
         childList.className = 'model-tree-children';
         childList.setAttribute('role', 'group');
+        childList.hidden = collapsed;
         children.forEach((child) => childList.appendChild(createModelTreeNode(child)));
         parts.forEach((part) => childList.appendChild(createModelTreePartNode(model, part)));
         item.appendChild(childList);
     }
     return item;
+}
+
+function displayNameForModelTree(model) {
+    return formatRobotPanelName(model.userData.motionDisplayName || model.userData.modelName || model.name || uiText('MODEL'));
 }
 
 function renderModelTree() {
@@ -7452,7 +7535,6 @@ async function loadModelFromServer(modelDefinition) {
             state.activeArticulatedModel = model;
             state.activeProgramRobot = model;
             renderJogControls(model);
-            showMotionProgramPanel();
         } else {
             state.activeArticulatedModel = null;
             hideJogPanel();
@@ -7511,7 +7593,12 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
     robot.add(baseMesh);
     if (manifest.tube) {
         const tubeGeometry = geometries[manifest.joints.length + 1];
-        const tubeMesh = createScaraTubeMesh(tubeGeometry, manifest.tube);
+        const tubeMesh = createScaraTubeMesh(
+            tubeGeometry,
+            manifest.tube,
+            geometries[0],
+            manifest.joints[1]?.pivot?.[0]
+        );
         robot.add(tubeMesh);
         robot.userData.scaraTube = tubeMesh;
     }
@@ -7562,6 +7649,11 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
         parent = jointGroup;
         parentPivot = pivot;
     });
+
+    // TUBE.stl already contains the conduit and both rotary connector details.
+    // Keep that complete CAD mesh in the fixed robot frame and only reshape its
+    // longitudinal span after the J1/J2 hierarchy has been assembled.
+    if (robot.userData.scaraTube) updateScaraTube(robot);
 
     const tcpPosition = new THREE.Vector3().fromArray(manifest.tcp || parentPivot.toArray());
     const flangeFrame = new THREE.Group();
@@ -7720,7 +7812,12 @@ function createRobotManifest(modelDefinition) {
             base: { name: 'P0', mesh: 'P0.stl', color: ROBOT_BODY_COLOR },
             tube: kinematicVariant === 'ceiling-scara'
                 ? null
-                : { name: 'CD conduit', mesh: 'TUBE.stl', color: '#292c2f' },
+                : {
+                    name: 'CD conduit',
+                    mesh: 'TUBE.stl',
+                    color: '#292c2f',
+                    cadZOffset: SCARA_TUBE_CAD_Z_OFFSETS[modelDefinition.folder] ?? 0
+                },
             joints: [
                 joint(0, 'P1.stl', [0, 0, 0], [0, 0, 1]),
                 joint(1, 'P2.stl', [arm1, 0, 0], [0, 0, 1]),
@@ -8960,86 +9057,239 @@ function createSTLMesh(geometry, definition) {
     return mesh;
 }
 
-function createScaraTubeMesh(sourceGeometry, definition) {
+function getExtremeSectionCenter(sourceGeometry, axisIndex, direction) {
+    const position = sourceGeometry?.getAttribute?.('position');
+    if (!position || position.count === 0) return null;
+    let extreme = direction < 0 ? Infinity : -Infinity;
+    for (let vertex = 0; vertex < position.count; vertex += 1) {
+        const coordinate = position.array[vertex * position.itemSize + axisIndex];
+        extreme = direction < 0
+            ? Math.min(extreme, coordinate)
+            : Math.max(extreme, coordinate);
+    }
+    if (!Number.isFinite(extreme)) return null;
+
+    const tolerance = 0.5;
+    const section = [];
+    for (let vertex = 0; vertex < position.count; vertex += 1) {
+        const point = new THREE.Vector3().fromBufferAttribute(position, vertex);
+        const coordinate = point.getComponent(axisIndex);
+        if ((direction < 0 && coordinate <= extreme + tolerance)
+            || (direction > 0 && coordinate >= extreme - tolerance)) {
+            section.push(point);
+        }
+    }
+    if (section.length === 0) return null;
+
+    const min = new THREE.Vector3(Infinity, Infinity, Infinity);
+    const max = new THREE.Vector3(-Infinity, -Infinity, -Infinity);
+    section.forEach((point) => {
+        min.min(point);
+        max.max(point);
+    });
+    return min.add(max).multiplyScalar(0.5);
+}
+
+function getScaraTubeJ1SocketOffset(sourceGeometry, baseGeometry, cadZOffset = 0) {
+    const tubeJ1End = getExtremeSectionCenter(sourceGeometry, 2, -1);
+    const baseJ1Socket = getExtremeSectionCenter(baseGeometry, 2, 1);
+    if (!tubeJ1End || !baseJ1Socket) return new THREE.Vector3();
+    const offset = baseJ1Socket.sub(tubeJ1End);
+    // X/Y seat the rotary J1 connector in its socket. Z comes from the matching
+    // full assembly CAD because the insertion depth differs by robot model and
+    // cannot be inferred from the highest P0 surface.
+    offset.z = Number.isFinite(Number(cadZOffset)) ? Number(cadZOffset) : 0;
+    return offset;
+}
+
+function mapScaraTubeLongitudinal(
+    longitudinal,
+    sourcePlanLength,
+    targetPlanLength,
+    j1RigidEndLength
+) {
+    const flexibleStart = j1RigidEndLength;
+    if (longitudinal <= flexibleStart) {
+        return { distance: longitudinal, scale: 1 };
+    }
+
+    const sourceFlexibleLength = Math.max(sourcePlanLength - flexibleStart, 1e-6);
+    const targetFlexibleLength = Math.max(
+        targetPlanLength - flexibleStart,
+        1e-6
+    );
+    const normalized = (longitudinal - flexibleStart) / sourceFlexibleLength;
+    const targetFlexibleScale = targetFlexibleLength / sourceFlexibleLength;
+    // Keep only the J1 socket rigid. After a short smooth transition, distribute
+    // the remaining span change uniformly through the conduit all the way to J2.
+    // No angle or rigid lead is imposed at J2, so short models do not form a
+    // pointed crown when their endpoints approach each other.
+    const transitionFraction = Math.min(0.12, targetFlexibleScale * 0.25);
+    const flowingScale = (targetFlexibleScale - transitionFraction * 0.5)
+        / (1 - transitionFraction * 0.5);
+    const transitionIntegral = (value) => value ** 6
+        - 3 * value ** 5
+        + 2.5 * value ** 4;
+    const transitionScale = (value) => value ** 3
+        * (value * (value * 6 - 15) + 10);
+    const transitionArea = transitionFraction * (1 + flowingScale) * 0.5;
+    let normalizedDistance;
+    let localScale;
+    if (normalized < transitionFraction) {
+        const transition = normalized / transitionFraction;
+        normalizedDistance = normalized
+            + (flowingScale - 1) * transitionFraction * transitionIntegral(transition);
+        localScale = 1 + (flowingScale - 1) * transitionScale(transition);
+    } else {
+        normalizedDistance = transitionArea
+            + flowingScale * (normalized - transitionFraction);
+        localScale = flowingScale;
+    }
+    return {
+        distance: flexibleStart + sourceFlexibleLength * normalizedDistance,
+        scale: Math.max(localScale, 1e-6)
+    };
+}
+
+function createScaraTubeMesh(sourceGeometry, definition, baseGeometry, j2PivotX) {
     const geometry = sourceGeometry.clone();
     if (!geometry.getAttribute('normal')) geometry.computeVertexNormals();
+    geometry.computeBoundingBox();
 
     const position = geometry.getAttribute('position');
     const normal = geometry.getAttribute('normal');
-    const originalPositions = Float32Array.from(position.array);
-    const originalNormals = Float32Array.from(normal.array);
-    let minX = Infinity;
-    let maxX = -Infinity;
-    for (let index = 0; index < originalPositions.length; index += 3) {
-        minX = Math.min(minX, originalPositions[index]);
-        maxX = Math.max(maxX, originalPositions[index]);
+    if (!position || position.count === 0) {
+        throw new Error('SCARA CD conduit geometry has no vertices.');
     }
 
-    const span = Math.max(maxX - minX, 1);
-    const fixedEnd = minX + span * 0.07;
-    const movingEnd = maxX - span * 0.07;
-    const weightBuckets = new Uint8Array(position.count);
-    for (let vertex = 0; vertex < position.count; vertex += 1) {
-        const x = originalPositions[vertex * 3];
-        const linearWeight = THREE.MathUtils.clamp((x - fixedEnd) / (movingEnd - fixedEnd), 0, 1);
-        const smoothWeight = linearWeight * linearWeight * (3 - 2 * linearWeight);
-        weightBuckets[vertex] = Math.round(smoothWeight * 255);
-    }
+    // Preserve every TUBE.stl vertex, including the authored polygonal conduit
+    // profile and both connector details. Only the plane/span mapping changes.
+    const originalPositions = Float32Array.from(position.array);
+    const originalNormals = Float32Array.from(normal.array);
+    const sourceFixedEnd = getExtremeSectionCenter(geometry, 2, -1);
+    if (!sourceFixedEnd) throw new Error('SCARA CD conduit has no fixed endpoint.');
+
+    const j1SocketOffset = getScaraTubeJ1SocketOffset(
+        sourceGeometry,
+        baseGeometry,
+        definition.cadZOffset
+    );
+    const fixedEnd = sourceFixedEnd.clone().add(j1SocketOffset);
+    const sourceMovingX = Number.isFinite(Number(j2PivotX))
+        ? Number(j2PivotX)
+        : geometry.boundingBox.max.x;
+    const sourceDeltaX = sourceMovingX - sourceFixedEnd.x;
+    const sourceDeltaY = -sourceFixedEnd.y;
+    const sourcePlanLength = Math.max(Math.hypot(sourceDeltaX, sourceDeltaY), 1);
 
     position.setUsage(THREE.DynamicDrawUsage);
     normal.setUsage(THREE.DynamicDrawUsage);
     const mesh = createSTLMesh(geometry, definition);
     mesh.frustumCulled = false;
-    mesh.userData.originalPositions = originalPositions;
-    mesh.userData.originalNormals = originalNormals;
-    mesh.userData.weightBuckets = weightBuckets;
-    mesh.userData.scaraCosines = new Float32Array(256);
-    mesh.userData.scaraSines = new Float32Array(256);
+    mesh.userData.excludeFromOutline = true;
+    mesh.userData.scaraTubeOriginalStl = true;
+    mesh.userData.scaraTubeOriginalPositions = originalPositions;
+    mesh.userData.scaraTubeOriginalNormals = originalNormals;
+    mesh.userData.scaraTubeSourceFixedEnd = sourceFixedEnd.toArray();
+    mesh.userData.scaraTubeFixedEnd = fixedEnd.toArray();
+    mesh.userData.scaraTubeSourceDirection = [
+        sourceDeltaX / sourcePlanLength,
+        sourceDeltaY / sourcePlanLength
+    ];
+    mesh.userData.scaraTubeSourcePlanLength = sourcePlanLength;
+    mesh.userData.scaraTubeJ1SocketOffset = j1SocketOffset.toArray();
     return mesh;
 }
 
 function updateScaraTube(robot) {
     const tube = robot?.userData.scaraTube;
-    const j1 = robot?.userData.joints?.[0];
-    if (!tube || !j1) return;
+    const j2 = robot?.userData.joints?.[1];
+    if (!tube || !j2) return;
 
-    const physicalAngle = THREE.MathUtils.degToRad(j1.angle) * Math.sign(j1.axis.z || 1);
-    const cosines = tube.userData.scaraCosines
-        || (tube.userData.scaraCosines = new Float32Array(256));
-    const sines = tube.userData.scaraSines
-        || (tube.userData.scaraSines = new Float32Array(256));
-    for (let bucket = 0; bucket < 256; bucket += 1) {
-        const angle = physicalAngle * bucket / 255;
-        cosines[bucket] = Math.cos(angle);
-        sines[bucket] = Math.sin(angle);
-    }
+    // The P0-side endpoint is fixed. The authored TUBE.stl curve and connector
+    // geometry are retained while its longitudinal axis is mapped into the one
+    // vertical plane shared by the fixed socket and the moving J2 socket.
+    if (tube.parent !== robot) robot.add(tube);
+    tube.position.set(0, 0, 0);
+    tube.quaternion.identity();
 
+    robot.updateMatrixWorld(true);
+    const fixedEnd = new THREE.Vector3().fromArray(tube.userData.scaraTubeFixedEnd);
+    const movingEndWorld = j2.group.getWorldPosition(new THREE.Vector3());
+    const movingEnd = robot.worldToLocal(movingEndWorld.clone());
+    const targetDeltaX = movingEnd.x - fixedEnd.x;
+    const targetDeltaY = movingEnd.y - fixedEnd.y;
+    const targetPlanLength = Math.hypot(targetDeltaX, targetDeltaY);
+    if (targetPlanLength < 1e-6) return;
+
+    const sourceFixedEnd = new THREE.Vector3().fromArray(tube.userData.scaraTubeSourceFixedEnd);
+    const [sourceDirectionX, sourceDirectionY] = tube.userData.scaraTubeSourceDirection;
+    const sourceNormalX = -sourceDirectionY;
+    const sourceNormalY = sourceDirectionX;
+    const sourcePlanLength = tube.userData.scaraTubeSourcePlanLength;
+    const targetDirectionX = targetDeltaX / targetPlanLength;
+    const targetDirectionY = targetDeltaY / targetPlanLength;
+    const targetNormalX = -targetDirectionY;
+    const targetNormalY = targetDirectionX;
+
+    // Keep the J1 socket seated while the original conduit changes span in one
+    // vertical plane all the way to the moving J2 socket.
+    const j1RigidEndLength = Math.min(
+        sourcePlanLength * 0.12,
+        45,
+        targetPlanLength * 0.24
+    );
+    const originalPositions = tube.userData.scaraTubeOriginalPositions;
+    const originalNormals = tube.userData.scaraTubeOriginalNormals;
     const position = tube.geometry.getAttribute('position');
     const normal = tube.geometry.getAttribute('normal');
     const positions = position.array;
     const normals = normal.array;
-    const originalPositions = tube.userData.originalPositions;
-    const originalNormals = tube.userData.originalNormals;
-    const weightBuckets = tube.userData.weightBuckets;
+    const zOffset = tube.userData.scaraTubeJ1SocketOffset[2];
 
     for (let vertex = 0; vertex < position.count; vertex += 1) {
         const offset = vertex * 3;
-        const bucket = weightBuckets[vertex];
-        const cosine = cosines[bucket];
-        const sine = sines[bucket];
-        const x = originalPositions[offset];
-        const y = originalPositions[offset + 1];
-        const nx = originalNormals[offset];
-        const ny = originalNormals[offset + 1];
-        positions[offset] = x * cosine - y * sine;
-        positions[offset + 1] = x * sine + y * cosine;
-        positions[offset + 2] = originalPositions[offset + 2];
-        normals[offset] = nx * cosine - ny * sine;
-        normals[offset + 1] = nx * sine + ny * cosine;
-        normals[offset + 2] = originalNormals[offset + 2];
+        const sourceOffsetX = originalPositions[offset] - sourceFixedEnd.x;
+        const sourceOffsetY = originalPositions[offset + 1] - sourceFixedEnd.y;
+        const longitudinal = sourceOffsetX * sourceDirectionX + sourceOffsetY * sourceDirectionY;
+        const lateral = sourceOffsetX * sourceNormalX + sourceOffsetY * sourceNormalY;
+        const longitudinalMapping = mapScaraTubeLongitudinal(
+            longitudinal,
+            sourcePlanLength,
+            targetPlanLength,
+            j1RigidEndLength
+        );
+        const mappedLongitudinal = longitudinalMapping.distance;
+        const localScale = longitudinalMapping.scale;
+        positions[offset] = fixedEnd.x
+            + targetDirectionX * mappedLongitudinal
+            + targetNormalX * lateral;
+        positions[offset + 1] = fixedEnd.y
+            + targetDirectionY * mappedLongitudinal
+            + targetNormalY * lateral;
+        positions[offset + 2] = originalPositions[offset + 2] + zOffset;
+
+        const sourceNormalU = originalNormals[offset] * sourceDirectionX
+            + originalNormals[offset + 1] * sourceDirectionY;
+        const sourceNormalV = originalNormals[offset] * sourceNormalX
+            + originalNormals[offset + 1] * sourceNormalY;
+        const transformedNormalU = sourceNormalU / Math.max(localScale, 1e-6);
+        let normalX = targetDirectionX * transformedNormalU + targetNormalX * sourceNormalV;
+        let normalY = targetDirectionY * transformedNormalU + targetNormalY * sourceNormalV;
+        let normalZ = originalNormals[offset + 2];
+        const normalLength = Math.hypot(normalX, normalY, normalZ) || 1;
+        normalX /= normalLength;
+        normalY /= normalLength;
+        normalZ /= normalLength;
+        normals[offset] = normalX;
+        normals[offset + 1] = normalY;
+        normals[offset + 2] = normalZ;
     }
+
     position.needsUpdate = true;
     normal.needsUpdate = true;
+    tube.geometry.computeBoundingBox();
+    tube.geometry.computeBoundingSphere();
 }
 
 function createDefaultTcpProfile() {
@@ -11152,6 +11402,10 @@ function setOlpBusPhase(phase, status, message = '') {
 function invalidateOlpBusSocket(socket, status, message = '', reconnect = true) {
     if (socket && state.olp.socket !== socket) return;
     clearOlpBusHandshakeTimer();
+    // The launcher creates a new pairing token every time it starts.  Drop
+    // the browser-side cached token whenever this socket is invalidated so a
+    // reconnect can authenticate against the current server session.
+    state.olp.busToken = null;
     state.olp.busConnected = false;
     state.olp.busPhase = state.olp.virtualBusWanted ? 'waiting' : 'off';
     state.olp.busSocketGeneration += 1;
@@ -11165,7 +11419,10 @@ function scheduleOlpVirtualBusReconnect() {
     if (!state.olp.virtualBusWanted || state.virtualController.wanted || state.olp.reconnectTimer) return;
     state.olp.reconnectTimer = window.setTimeout(() => {
         state.olp.reconnectTimer = null;
-        if (state.olp.virtualBusWanted && state.olp.project && !state.virtualController.wanted) connectOlpVirtualBus();
+        // Virtual Bus pairing is independent of loading an OLP project.  A
+        // project only supplies labels/mappings, so keep the slave available
+        // while the empty OLP workspace waits for the tester as well.
+        if (state.olp.virtualBusWanted && !state.virtualController.wanted) connectOlpVirtualBus();
     }, 1000);
 }
 
@@ -11804,7 +12061,7 @@ async function handleOlpFolderImport(selectedFiles = null) {
         renderOlpProjectUi();
         toggleOlpWorkspace(true);
         setOlpStatus('connected', 'Project ready. The current selected robot model will be used.');
-        connectOlpVirtualBus();
+        connectOlpVirtualBus({ refreshMetadata: true });
     } catch (error) {
         console.error('OLP project import failed:', error);
         setOlpStatus('error', 'Project load failed: {error}', { error: error.message || error });
@@ -12645,8 +12902,8 @@ function getOlpVirtualBusEndpoint() {
     return 'ws://127.0.0.1:8765/virtualbus/';
 }
 
-async function getOlpVirtualBusToken() {
-    if (state.olp.busToken) return state.olp.busToken;
+async function getOlpVirtualBusToken({ force = false } = {}) {
+    if (!force && state.olp.busToken) return state.olp.busToken;
     try {
         const response = await fetch('/api/virtualbus-token', { cache: 'no-store' });
         const data = await response.json().catch(() => ({}));
@@ -12660,7 +12917,9 @@ async function getOlpVirtualBusToken() {
 
 async function sendOlpVirtualBusHello(socket = state.olp.socket) {
     if (!socket || socket.readyState !== WebSocket.OPEN) return false;
-    const token = await getOlpVirtualBusToken();
+    // Fetch on every hello so a server restart cannot leave the browser
+    // handshaking with a token from an earlier launcher session.
+    const token = await getOlpVirtualBusToken({ force: true });
     if (!token || socket.readyState !== WebSocket.OPEN) {
         updateOlpBusStatus('Virtual Bus unavailable · OLP local execution remains active', 'Local Virtual Bus pairing token is not configured.');
         return false;
@@ -12680,7 +12939,7 @@ async function sendOlpVirtualBusHello(socket = state.olp.socket) {
     return true;
 }
 
-function connectOlpVirtualBus() {
+function connectOlpVirtualBus({ refreshMetadata = false } = {}) {
     if (state.virtualController.wanted || !state.olp.virtualBusWanted) return;
     startOlpBusMonitor();
     if (state.olp.reconnectTimer) {
@@ -12691,7 +12950,7 @@ function connectOlpVirtualBus() {
     if (oldSocket && oldSocket.readyState === WebSocket.OPEN) {
         // A project can be loaded after OLP was enabled. Refresh the broker's
         // project metadata without opening a second browser connection.
-        try { sendOlpVirtualBusHello(oldSocket); } catch { }
+        if (refreshMetadata) void sendOlpVirtualBusHello(oldSocket).catch(() => { });
         return;
     }
     if (oldSocket && oldSocket.readyState === WebSocket.CONNECTING) return;
@@ -12808,6 +13067,7 @@ function connectOlpVirtualBus() {
     socket.addEventListener('close', () => {
         if (!isCurrentSocket()) return;
         clearOlpBusHandshakeTimer();
+        state.olp.busToken = null;
         state.olp.socket = null;
         state.olp.busConnected = false;
         state.olp.busPhase = state.olp.virtualBusWanted ? 'waiting' : 'off';
@@ -12824,6 +13084,7 @@ function connectOlpVirtualBus() {
     });
     socket.addEventListener('error', () => {
         if (!isCurrentSocket()) return;
+        state.olp.busToken = null;
         state.olp.busConnected = false;
         state.olp.busPhase = 'unavailable';
         updateOlpBusStatus('Virtual Bus unavailable · OLP local execution remains active');
@@ -14570,6 +14831,7 @@ function serializeMotionProject() {
 function saveMotionProjectNow() {
     window.clearTimeout(state.motionSaveTimer);
     state.motionSaveTimer = null;
+    if (IS_MANUAL_GUIDE_EMBED) return;
     try {
         localStorage.setItem(MOTION_PROJECT_STORAGE_KEY, JSON.stringify(serializeMotionProject()));
     } catch (error) {
@@ -14579,6 +14841,10 @@ function saveMotionProjectNow() {
 
 function scheduleMotionProjectSave() {
     window.clearTimeout(state.motionSaveTimer);
+    if (IS_MANUAL_GUIDE_EMBED) {
+        state.motionSaveTimer = null;
+        return;
+    }
     state.motionSaveTimer = window.setTimeout(saveMotionProjectNow, 180);
 }
 
@@ -14674,7 +14940,6 @@ async function restoreMotionProjectData(input) {
     state.activeProgramRobot = state.activeArticulatedModel;
     if (state.activeArticulatedModel) {
         renderJogControls(state.activeArticulatedModel);
-        showMotionProgramPanel();
     } else {
         hideJogPanel();
     }
@@ -15903,6 +16168,562 @@ async function handleCADDownload() {
     btnDown.innerHTML = oldHtml;
 }
 
+const SIMULATION_MANUAL_TIMELINE = Object.freeze({
+    jog: [13000, 16000],
+    snap: [41500, 44500],
+    programPoseA: [49500, 51000],
+    programPoseB: [53100, 54500]
+});
+
+function installSimulationManualGuide() {
+    if (!IS_MANUAL_GUIDE_EMBED || window.InoRobotSimulationManual) return;
+
+    const manual = {
+        preparing: null,
+        prepared: false,
+        paused: true,
+        cue: '',
+        milestone: 'blank',
+        snapshots: new Map(),
+        robotCatalogKey: 'robot:IR-S4-40Z15',
+        homeAngles: [],
+        jogAngles: [],
+        snapAngles: [],
+        programPoseA: [],
+        programPoseB: [],
+        snapSelection: null,
+        snapTarget: null
+    };
+
+    const waitForManualCondition = (test, timeout = 45000, interval = 80) => new Promise((resolve, reject) => {
+        const started = performance.now();
+        const poll = () => {
+            let result = null;
+            try { result = test(); } catch { result = null; }
+            if (result) {
+                resolve(result);
+                return;
+            }
+            if (performance.now() - started >= timeout) {
+                reject(new Error('3D Simulation manual preparation timed out.'));
+                return;
+            }
+            window.setTimeout(poll, interval);
+        };
+        poll();
+    });
+
+    const activeManualRobot = () => state.activeArticulatedModel
+        || getArticulatedRobots().find((robot) => robot.userData.motionModelFolder === 'IR-S4-40Z15')
+        || getArticulatedRobots()[0]
+        || null;
+
+    const clampManualAngles = (robot, values) => (robot?.userData.joints || []).map((joint, index) => (
+        THREE.MathUtils.clamp(
+            Number.isFinite(Number(values[index])) ? Number(values[index]) : joint.angle,
+            joint.definition.min,
+            joint.definition.max
+        )
+    ));
+
+    const setManualJointAngles = (values) => {
+        const robot = activeManualRobot();
+        if (!robot) return false;
+        const angles = clampManualAngles(robot, values);
+        angles.forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle, false));
+        robot.updateMatrixWorld(true);
+        syncJointControls(robot);
+        captureCurrentTcpTarget(robot);
+        updateTcpPresentation(robot);
+        requestRender();
+        return true;
+    };
+
+    const captureManualMilestone = (name) => {
+        manual.snapshots.set(name, captureSceneSnapshot());
+        return manual.snapshots.get(name);
+    };
+
+    const closeManualDialogs = () => {
+        if (el.testModelDialog?.open) el.testModelDialog.close();
+        const importDialog = document.getElementById('import-3d-dialog');
+        if (importDialog?.open) importDialog.close();
+        showLoading(false);
+    };
+
+    const clearManualSnapUi = () => {
+        state.snapMoveMode = false;
+        clearSimulationSnapFaceSelection();
+        hideSimulationSnapMarker();
+        resetSimulationSnapMarkerCameraScale();
+        updateSimulationSnapButton();
+    };
+
+    const applyManualMilestone = (name, { fit = true } = {}) => {
+        const snapshot = manual.snapshots.get(name);
+        if (!snapshot) return false;
+        stopRobotMotions(getArticulatedRobots());
+        closeManualDialogs();
+        clearManualSnapUi();
+        applySceneSnapshot(snapshot);
+        manual.milestone = name;
+        if (el.modelSelect) el.modelSelect.value = name === 'blank' ? '' : manual.robotCatalogKey;
+        if (fit && state.models.length) fitCamera();
+        requestRender();
+        return true;
+    };
+
+    const manualFaceEntries = (model) => {
+        const entries = [];
+        model?.updateMatrixWorld(true);
+        model?.traverse((mesh) => {
+            const position = mesh.isMesh ? mesh.geometry?.getAttribute('position') : null;
+            if (!position) return;
+            mesh.updateWorldMatrix?.(true, false);
+            const faces = getValidatedStepBrepFaces(mesh)
+                || Array.from({ length: Math.min(80, Math.floor((mesh.geometry.index?.count || position.count) / 3)) }, (_, index) => ({ first: index, last: index }));
+            faces.forEach((face, faceIndex) => {
+                const triangleIndex = Number(face.first);
+                const indices = getSimulationSnapTriangleVertexIndices(mesh.geometry, triangleIndex);
+                if (indices.some((index) => !Number.isInteger(index) || index < 0 || index >= position.count)) return;
+                const points = indices.map((index) => new THREE.Vector3().fromBufferAttribute(position, index).applyMatrix4(mesh.matrixWorld));
+                const normal = points[1].clone().sub(points[0]).cross(points[2].clone().sub(points[0])).normalize();
+                const point = points[0].clone().add(points[1]).add(points[2]).multiplyScalar(1 / 3);
+                const range = getSimulationSnapFaceTriangleRanges(mesh, triangleIndex);
+                entries.push({
+                    mesh,
+                    point,
+                    faceIndex: range.faceIndex ?? faceIndex,
+                    triangleIndex,
+                    key: range.key,
+                    triangleRanges: range.triangleRanges,
+                    upward: Math.abs(normal.z)
+                });
+            });
+        });
+        const robot = activeManualRobot();
+        const pose = robot && getCurrentTcpPoseBase(robot);
+        const tcpWorld = pose ? robot.localToWorld(pose.position.clone()) : new THREE.Vector3();
+        return entries.sort((left, right) => (
+            (left.upward >= 0.65 ? 0 : 1) - (right.upward >= 0.65 ? 0 : 1)
+            || left.point.distanceToSquared(tcpWorld) - right.point.distanceToSquared(tcpWorld)
+        ));
+    };
+
+    const projectManualSnapTarget = () => {
+        if (!manual.snapTarget || !state.camera || !el.canvasContainer) return null;
+        const bounds = state.renderer.domElement.getBoundingClientRect();
+        const projected = manual.snapTarget.worldPoint.clone().project(state.camera);
+        return {
+            ...manual.snapTarget,
+            screenX: (projected.x * 0.5 + 0.5) * bounds.width,
+            screenY: (-projected.y * 0.5 + 0.5) * bounds.height,
+            projected
+        };
+    };
+
+    const tryManualSnapWorldPoint = (robot, startAngles, worldPoint, type = 'vertex') => {
+        startAngles.forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle, false));
+        robot.updateMatrixWorld(true);
+        if (!moveRobotTcpToSimulationSnap({ worldPoint: worldPoint.clone(), type })) return false;
+        manual.snapTarget = { worldPoint: worldPoint.clone(), type };
+        manual.snapAngles = robot.userData.joints.map((joint) => joint.angle);
+        const visibleTarget = projectManualSnapTarget();
+        if (visibleTarget) showSimulationSnapMarker(visibleTarget);
+        return true;
+    };
+
+    const findManualSnapTarget = async () => {
+        const robot = activeManualRobot();
+        const equipment = state.models.find((model) => isTestModel(model) && model.userData.placement === 'scene');
+        if (!robot || !equipment) return false;
+        const startAngles = robot.userData.joints.map((joint) => joint.angle);
+        const pose = getCurrentTcpPoseBase(robot);
+        const tcpWorld = pose ? robot.localToWorld(pose.position.clone()) : new THREE.Vector3();
+        state.snapMoveMode = true;
+        updateSimulationSnapButton();
+
+        for (const selection of manualFaceEntries(equipment).slice(0, 28)) {
+            startAngles.forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle, false));
+            clearSimulationSnapFaceSelection();
+            state.snapMoveMode = true;
+            updateSimulationSnapButton();
+            selectSimulationSnapFace(selection);
+            try {
+                await waitForManualCondition(() => state.snapCandidatesReady, 8000, 40);
+            } catch {
+                continue;
+            }
+            getSimulationSnapWorldIndex(getSimulationSnapMeshes('scene'));
+            const typeOrder = new Map(['circle-center', 'rectangle-center', 'edge-midpoint', 'endpoint', 'vertex']
+                .map((type, index) => [type, index]));
+            const candidates = state.snapCandidates
+                .filter((candidate) => candidate.snapWorldPoint || candidate.localPoint)
+                .map((candidate) => ({
+                    candidate,
+                    worldPoint: candidate.snapWorldPoint?.clone()
+                        || candidate.localPoint.clone().applyMatrix4(candidate.mesh.matrixWorld)
+                }))
+                .sort((left, right) => (
+                    (typeOrder.get(left.candidate.type) ?? 99) - (typeOrder.get(right.candidate.type) ?? 99)
+                    || left.worldPoint.distanceToSquared(tcpWorld) - right.worldPoint.distanceToSquared(tcpWorld)
+                ));
+            for (const item of candidates.slice(0, 60)) {
+                if (!tryManualSnapWorldPoint(robot, startAngles, item.worldPoint, item.candidate.type)) continue;
+                manual.snapSelection = cloneSimulationSnapFaceSelection(selection);
+                return true;
+            }
+        }
+
+        const bounds = new THREE.Box3().setFromObject(equipment);
+        const center = bounds.getCenter(new THREE.Vector3());
+        const size = bounds.getSize(new THREE.Vector3());
+        const fallbackPoints = [
+            center.clone().setZ(bounds.max.z),
+            center.clone().add(new THREE.Vector3(size.x * 0.2, 0, size.z * 0.35)),
+            center.clone().add(new THREE.Vector3(-size.x * 0.2, 0, size.z * 0.35))
+        ];
+        for (const worldPoint of fallbackPoints) {
+            if (tryManualSnapWorldPoint(robot, startAngles, worldPoint, 'vertex')) return true;
+        }
+
+        startAngles.forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle, false));
+        syncJointControls(robot);
+        captureCurrentTcpTarget(robot);
+        updateTcpPresentation(robot);
+        clearManualSnapUi();
+        return false;
+    };
+
+    const prepareManualTestAssets = async () => {
+        const robot = activeManualRobot();
+        if (!robot) throw new Error('The manual robot is not ready.');
+        const [equipmentFile, toolFile] = await Promise.all([
+            loadTestModelAssetFile(TEST_MODEL_ASSET_PATHS.scene),
+            loadTestModelAssetFile(TEST_MODEL_ASSET_PATHS.tcp)
+        ]);
+        removeExistingTestModels();
+        if (!applyTestTcpProfile(robot)) throw new Error('Test TCP 1 is not available.');
+        const equipment = await importTestModelFile(equipmentFile, 'scene', { testModel: true });
+        const tool = await importTestModelFile(toolFile, 'tcp', {
+            testModel: true,
+            testToolPositionZero: true,
+            testToolRotationX: robot.userData.manifest?.robotType === 'scara'
+        });
+        if (!equipment || !tool) throw new Error('The Test assets could not be prepared.');
+        fitCamera();
+        requestRender();
+    };
+
+    const prepareManualProgramMilestones = () => {
+        const robot = activeManualRobot();
+        if (!robot) throw new Error('The manual robot is not ready.');
+        const program = ensureMotionProgram(robot);
+        program.steps = [];
+        program.selectedStepId = null;
+        program.status = 'idle';
+        program.progress = 0;
+        state.motionRepeatRobot = false;
+        syncMotionRepeatControl();
+        renderMotionProgramPanel();
+        captureManualMilestone('programBase');
+
+        const center = manual.snapAngles.length
+            ? manual.snapAngles
+            : robot.userData.joints.map((joint) => joint.angle);
+        manual.programPoseA = clampManualAngles(robot, center.map((value, index) => (
+            index === 0 ? value - 24 : index === 1 ? value + 10 : value
+        )));
+        manual.programPoseB = clampManualAngles(robot, center.map((value, index) => (
+            index === 0 ? value + 24 : index === 1 ? value - 10 : value
+        )));
+
+        setManualJointAngles(manual.programPoseA);
+        captureManualMilestone('programPoseA');
+        addCurrentMotionStep();
+        const first = program.steps[0];
+        if (first) {
+            first.label = 'Pick';
+            first.speed = 12;
+        }
+        renderMotionProgramPanel();
+        captureManualMilestone('programP0');
+
+        setManualJointAngles(manual.programPoseB);
+        captureManualMilestone('programPoseB');
+        addCurrentMotionStep();
+        const second = program.steps[1];
+        if (second) {
+            second.label = 'Place';
+            second.speed = 12;
+        }
+        program.selectedStepId = second?.id || first?.id || null;
+        renderMotionProgramPanel();
+        captureManualMilestone('programP1');
+
+        state.motionRepeatRobot = true;
+        syncMotionRepeatControl();
+        renderMotionProgramPanel();
+        captureManualMilestone('programReady');
+    };
+
+    const prepare = async () => {
+        if (manual.prepared) {
+            applyManualMilestone('blank', { fit: false });
+            return true;
+        }
+        if (manual.preparing) return manual.preparing;
+        manual.preparing = (async () => {
+            await waitForManualCondition(() => state.scene && state.renderer && state.catalog.size > 0);
+            state.collision.enabled = false;
+            clearCollisionStopNotice();
+            updateCollisionUi();
+            captureManualMilestone('blank');
+
+            const definition = state.catalog.get(manual.robotCatalogKey)
+                || [...state.catalog.values()].find((item) => item.folder === 'IR-S4-40Z15');
+            if (!definition) throw new Error('IR-S4-40Z15 is not available.');
+            await loadModelFromServer(definition);
+            const robot = await waitForManualCondition(() => activeManualRobot(), 30000, 100);
+            manual.homeAngles = robot.userData.joints.map((joint) => joint.angle);
+            captureManualMilestone('robot');
+
+            manual.jogAngles = clampManualAngles(robot, manual.homeAngles.map((value, index) => (
+                index === 0 ? value + 24 : value
+            )));
+            setManualJointAngles(manual.jogAngles);
+            captureManualMilestone('jog');
+
+            await prepareManualTestAssets();
+            captureManualMilestone('test');
+
+            const snapped = await findManualSnapTarget();
+            if (!snapped) {
+                manual.snapAngles = [...manual.jogAngles];
+                setManualJointAngles(manual.snapAngles);
+            }
+            captureManualMilestone('snap');
+            prepareManualProgramMilestones();
+
+            state.undoStack = [];
+            state.redoStack = [];
+            updateHistoryButtons();
+            manual.prepared = true;
+            applyManualMilestone('blank', { fit: false });
+            return true;
+        })().finally(() => {
+            manual.preparing = null;
+        });
+        return manual.preparing;
+    };
+
+    const interpolateManualMilestone = (fromName, toAngles, startTime, endTime, time) => {
+        const snapshot = manual.snapshots.get(fromName);
+        const robotEntry = snapshot?.joints?.[0];
+        if (!robotEntry || !toAngles.length) return;
+        const raw = (Number(time) - startTime) / Math.max(1, endTime - startTime);
+        const progress = sCurveProgress(THREE.MathUtils.clamp(raw, 0, 1));
+        setManualJointAngles(robotEntry.angles.map((value, index) => (
+            THREE.MathUtils.lerp(value, toAngles[index] ?? value, progress)
+        )));
+    };
+
+    const interpolateManualJogJ1 = (time) => {
+        const snapshot = manual.snapshots.get('robot');
+        const robot = activeManualRobot();
+        const j1 = robot?.userData.joints?.[0];
+        const fromAngle = snapshot?.joints?.[0]?.angles?.[0];
+        const toAngle = manual.jogAngles[0];
+        if (!j1 || !Number.isFinite(fromAngle) || !Number.isFinite(toAngle)) return;
+        const [startTime, endTime] = SIMULATION_MANUAL_TIMELINE.jog;
+        const raw = (Number(time) - startTime) / Math.max(1, endTime - startTime);
+        const progress = sCurveProgress(THREE.MathUtils.clamp(raw, 0, 1));
+        const nextAngle = THREE.MathUtils.lerp(fromAngle, toAngle, progress);
+        const range = j1.control?.range;
+        const display = j1.control?.display || getJointJogDisplaySpec(j1);
+        if (range) {
+            range.value = formatJogValue(display.toDisplay(nextAngle));
+            range.dispatchEvent(new Event('input', { bubbles: true }));
+        } else {
+            setJointAngle(j1, nextAngle);
+            captureCurrentTcpTarget(robot);
+        }
+    };
+
+    const setTimelineTime = (time) => {
+        if (!manual.prepared) return;
+        if (manual.cue === 'simulation_jog_move') {
+            interpolateManualJogJ1(time);
+        } else if (manual.cue === 'simulation_snap_move') {
+            interpolateManualMilestone('test', manual.snapAngles, ...SIMULATION_MANUAL_TIMELINE.snap, time);
+        } else if (manual.cue === 'simulation_program_pose_a') {
+            interpolateManualMilestone('programBase', manual.programPoseA, ...SIMULATION_MANUAL_TIMELINE.programPoseA, time);
+        } else if (manual.cue === 'simulation_program_pose_b') {
+            interpolateManualMilestone('programP0', manual.programPoseB, ...SIMULATION_MANUAL_TIMELINE.programPoseB, time);
+        }
+    };
+
+    const setSnapMode = (enabled) => {
+        state.snapMoveMode = Boolean(enabled);
+        if (enabled) {
+            if (state.tcpSnapMode) setTcpSnapMode(false);
+            clearJogModeSelectionForSnap();
+        } else {
+            clearSimulationSnapFaceSelection();
+        }
+        updateSimulationSnapButton();
+        if (enabled) captureSimulationSnapMarkerReferenceDistance();
+    };
+
+    const showSnapSelection = () => {
+        setSnapMode(true);
+        if (manual.snapSelection) selectSimulationSnapFace(manual.snapSelection);
+        requestRender();
+    };
+
+    const showSnapTarget = () => {
+        setSnapMode(true);
+        const target = projectManualSnapTarget();
+        if (target) showSimulationSnapMarker(target);
+        requestRender();
+    };
+
+    const showProgramPanelForManual = () => {
+        showMotionProgramPanel();
+        el.programPanel?.classList.remove('panel-user-hidden');
+        updatePanelLauncher('program-panel');
+        renderMotionProgramPanel();
+    };
+
+    const setManualPanelVisible = (panelId, visible) => {
+        const panel = getPanelElement(panelId);
+        if (!panel) return false;
+        if (!visible) {
+            if (isPanelOpenInDocument(panel)) handlePanelAction('hide', panelId);
+            else panel.classList.add('panel-user-hidden');
+            updatePanelLauncher(panelId);
+            updatePanelStack();
+            return true;
+        }
+        if (panelId === 'program-panel') showMotionProgramPanel();
+        if (panelId === 'jog-panel') {
+            const robot = activeManualRobot();
+            if (robot && (panel.classList.contains('hidden') || !el.jogControls?.children.length)) {
+                renderJogControls(robot);
+            }
+            if (robot) syncJointControls(robot);
+        }
+        panel.classList.remove('hidden', 'panel-user-hidden');
+        updatePanelLauncher(panelId);
+        bringPanelToFront(panelId);
+        return true;
+    };
+
+    const focusManualRobot = () => {
+        const robot = activeManualRobot();
+        if (!robot || !state.camera || !state.controls) return false;
+        robot.updateMatrixWorld(true);
+        const box = new THREE.Box3().setFromObject(robot);
+        if (box.isEmpty()) return false;
+        const sphere = box.getBoundingSphere(new THREE.Sphere());
+        const verticalFov = THREE.MathUtils.degToRad(state.camera.fov || 50);
+        const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * Math.max(0.1, state.camera.aspect || 1));
+        const limitingFov = Math.max(0.1, Math.min(verticalFov, horizontalFov));
+        const distance = Math.max(1, sphere.radius * 1.3 / Math.sin(limitingFov / 2));
+        const direction = new THREE.Vector3(0.8, -0.8, 0.55).normalize();
+        state.camera.up.set(0, 0, 1);
+        state.camera.position.copy(sphere.center).addScaledVector(direction, distance);
+        state.camera.lookAt(sphere.center);
+        state.controls.target.copy(sphere.center);
+        state.controls.update();
+        requestRender();
+        return true;
+    };
+
+    const startProgram = () => {
+        applyManualMilestone('programReady');
+        showProgramPanelForManual();
+        runActiveRobotProgram();
+        if (manual.paused) pauseRobotMotions([activeManualRobot()].filter(Boolean));
+        requestRender();
+    };
+
+    const ensureProgramRunning = () => {
+        const robot = activeManualRobot();
+        if (!robot) return false;
+        const program = ensureMotionProgram(robot);
+        if (program.steps.length !== 2 || !state.motionRepeatRobot) {
+            applyManualMilestone('programReady');
+        }
+        const session = getMotionSession(robot);
+        if (session?.status === 'paused') resumePausedRobotMotions([robot]);
+        else if (!session || session.status !== 'running') runActiveRobotProgram();
+        if (manual.paused) pauseRobotMotions([robot]);
+        requestRender();
+        return ['running', 'paused'].includes(getMotionStatus(robot));
+    };
+
+    const setPaused = (paused) => {
+        manual.paused = Boolean(paused);
+        const robot = activeManualRobot();
+        if (!robot) return;
+        if (manual.paused) pauseRobotMotions([robot]);
+        else resumePausedRobotMotions([robot]);
+    };
+
+    const reset = () => {
+        manual.cue = '';
+        setPaused(true);
+        closeManualDialogs();
+        if (manual.prepared) applyManualMilestone('blank', { fit: false });
+    };
+
+    window.InoRobotSimulationManual = Object.freeze({
+        prepare,
+        applyMilestone: applyManualMilestone,
+        setCue: cue => { manual.cue = String(cue || ''); },
+        setTimelineTime,
+        setPaused,
+        reset,
+        showLoading: (show, text = '불러오는 중...') => showLoading(Boolean(show), uiText(text)),
+        showTestDialog: () => {
+            if (el.testModelDialog && !el.testModelDialog.open) el.testModelDialog.showModal();
+        },
+        closeTestDialog: () => { if (el.testModelDialog?.open) el.testModelDialog.close(); },
+        showModelSelection: selected => {
+            if (el.modelSelect) el.modelSelect.value = selected ? manual.robotCatalogKey : '';
+        },
+        setJogMode,
+        setSnapMode,
+        showSnapSelection,
+        showSnapTarget,
+        showProgramPanel: showProgramPanelForManual,
+        setPanelVisible: setManualPanelVisible,
+        focusRobot: focusManualRobot,
+        startProgram,
+        ensureProgramRunning,
+        getState: () => ({
+            prepared: manual.prepared,
+            cue: manual.cue,
+            milestone: manual.milestone,
+            robotName: activeManualRobot()?.userData.motionDisplayName || '',
+            joints: activeManualRobot()?.userData.joints.map((joint) => joint.angle) || [],
+            testScene: state.models.some((model) => isTestModel(model) && model.userData.placement === 'scene'),
+            testTool: state.models.some((model) => isTestModel(model) && model.userData.placement === 'tcp'),
+            snapReady: Boolean(manual.snapTarget),
+            programSteps: activeManualRobot() ? ensureMotionProgram(activeManualRobot()).steps.length : 0,
+            repeat: state.motionRepeatRobot,
+            motionStatus: activeManualRobot() ? getMotionStatus(activeManualRobot()) : 'idle',
+            modelSelectValue: el.modelSelect?.value || '',
+            panels: {
+                model: isPanelOpenInDocument(el.modelBrowserPanel),
+                jog: isPanelOpenInDocument(el.jogPanel),
+                program: isPanelOpenInDocument(el.programPanel)
+            }
+        })
+    });
+}
+
 function requiresContinuousRendering() {
     return isViewWindowOpen()
         || isVirtualControllerActive()
@@ -15916,10 +16737,22 @@ function requiresContinuousRendering() {
         || [...state.motionSessions.values()].some((session) => session.status === 'running');
 }
 
+function getRenderWindow() {
+    const popup = state.viewWindow?.popup;
+    return popup && !popup.closed && typeof popup.requestAnimationFrame === 'function'
+        ? popup
+        : window;
+}
+
 function requestRender() {
     if (!state.renderer || state.renderFramePending) return;
     state.renderFramePending = true;
-    requestAnimationFrame(animate);
+    // When the fixed-view panel is detached, the opener can be backgrounded by
+    // the browser. Schedule the scene loop in the visible popup so camera input
+    // and robot motion continue to repaint at the expected rate. Always pass the
+    // opener's monotonic clock to animate because each window has its own
+    // requestAnimationFrame timestamp origin.
+    getRenderWindow().requestAnimationFrame(() => animate(performance.now()));
 }
 
 function animate(timestamp = performance.now()) {

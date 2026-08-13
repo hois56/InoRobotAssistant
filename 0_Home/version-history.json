@@ -34,10 +34,17 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.08.13",
+                "items": [
+                  "`[수정]` 웹사이트 원형 로고의 바깥쪽 흰색 사각형 테두리가 표시되던 문제를 해결했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.08.12",
                 "items": [
                   "`[개선]` 이노로봇, 이노밴스 로봇, INOVANCE robot 검색어로 사이트를 더 쉽게 찾을 수 있도록 홈페이지 SEO를 개선했습니다.",
-                  "`[변경]` 홈페이지 검색 제목을 `Inovance Robot Assistant | 이노밴스 코리아`로 변경했습니다."
+                  "`[변경]` 홈페이지 검색 제목을 `Inovance Robot Assistant | 이노밴스 코리아`로 변경했습니다.",
+                  "`[추가]` Google 검색 결과에서 웹사이트를 식별할 수 있도록 원형 로고 아이콘을 추가했습니다."
                 ]
               }
             ]
@@ -45,6 +52,12 @@
           {
             "title": "Robot Model Select",
             "versions": [
+        {
+          "title": "Ver 26.08.13",
+          "items": [
+            "`[추가]` 해당 기능의 가이드를 추가했습니다."
+                ]
+              },
               {
                 "title": "Ver 26.07.28",
                 "items": [
@@ -170,6 +183,17 @@
           {
             "title": "3D Simulation",
             "versions": [
+        {
+          "title": "Ver 26.08.13",
+            "items": [
+              "`[추가]` 해당 기능의 가이드를 추가했습니다.",
+              "`[수정]` SCARA 로봇의 케이블관 높이와 모델링을 수정했습니다.",
+              "`[수정]` 3D 시뮬레이션 초기 화면에서 프로그램 패널이 자동으로 열리던 문제를 해결했습니다.",
+              "`[수정]` 브라우저 OLP가 Virtual Bus 인증 정보를 받지 못해 통신 테스터와 연결되지 않던 문제를 해결했습니다.",
+              "`[수정]` 프로젝트가 없는 OLP에서 Virtual Bus 재연결이 중단되거나 연결 후 약 30초 뒤 끊기던 문제를 해결했습니다.",
+              "`[수정]` OLP Virtual Bus 연결 상태에서 프로그램을 시작할 때 통신이 한 번 끊기던 문제를 해결했습니다."
+                ]
+              },
               {
                 "title": "Ver 26.08.12",
                 "items": [
@@ -225,6 +249,13 @@
           {
             "title": "Robot Tool Selector",
             "versions": [
+        {
+          "title": "Ver 26.08.13",
+          "items": [
+            "`[추가]` 해당 기능의 가이드를 추가했습니다.",
+            "`[수정]` 모드 D에서 클릭한 CAD 면과 다른 위치의 스냅 후보가 선택되던 문제를 해결했습니다."
+                ]
+              },
               {
                 "title": "Ver 26.07.26",
                 "items": [
@@ -259,6 +290,12 @@
           {
             "title": "Project Generator",
             "versions": [
+        {
+          "title": "Ver 26.08.13",
+          "items": [
+            "`[추가]` 해당 기능의 가이드를 추가했습니다."
+                ]
+              },
               {
                 "title": "Ver 26.07.26",
                 "items": [
@@ -412,6 +449,12 @@
           {
             "title": "Document",
             "versions": [
+        {
+          "title": "Ver 26.08.13",
+          "items": [
+            "`[추가]` 해당 기능의 가이드를 추가했습니다."
+                ]
+              },
               {
                 "title": "Ver 26.07.29",
                 "items": [
@@ -839,6 +882,12 @@
           {
             "title": "Robot Model Select",
             "versions": [
+        {
+          "title": "Ver 26.08.13",
+          "items": [
+            "`[Added]` Added a guide for this feature."
+                ]
+              },
               {
                 "title": "Ver 26.07.28",
                 "items": [
@@ -964,6 +1013,17 @@
           {
             "title": "3D Simulation",
             "versions": [
+        {
+          "title": "Ver 26.08.13",
+            "items": [
+              "`[Added]` Added a guide for this feature.",
+              "`[Fixed]` Updated the SCARA robot cable conduit height and modeling.",
+              "`[Fixed]` Fixed an issue where the Program Panel opened automatically on the initial 3D Simulation screen.",
+              "`[Fixed]` Fixed an issue where browser OLP could not connect to the Communication Tester because it could not obtain Virtual Bus authentication information.",
+              "`[Fixed]` Fixed an issue where Virtual Bus reconnection stopped in OLP without a project or disconnected about 30 seconds after connecting.",
+              "`[Fixed]` Fixed an issue where communication disconnected once when starting an OLP program while Virtual Bus was connected."
+                ]
+              },
               {
                 "title": "Ver 26.08.12",
                 "items": [
@@ -1019,6 +1079,13 @@
           {
             "title": "Robot Tool Selector",
             "versions": [
+        {
+          "title": "Ver 26.08.13",
+          "items": [
+            "`[Added]` Added a guide for this feature.",
+            "`[Fixed]` Fixed an issue in Mode D where a snap candidate from a different location than the clicked CAD face could be selected."
+                ]
+              },
               {
                 "title": "Ver 26.07.26",
                 "items": [
@@ -1053,6 +1120,12 @@
           {
             "title": "Project Generator",
             "versions": [
+        {
+          "title": "Ver 26.08.13",
+          "items": [
+            "`[Added]` Added a guide for this feature."
+                ]
+              },
               {
                 "title": "Ver 26.07.26",
                 "items": [
@@ -1206,6 +1279,12 @@
           {
             "title": "Document",
             "versions": [
+        {
+          "title": "Ver 26.08.13",
+          "items": [
+            "`[Added]` Added a guide for this feature."
+                ]
+              },
               {
                 "title": "Ver 26.07.29",
                 "items": [
@@ -1633,6 +1712,12 @@
           {
             "title": "Robot Model Select",
             "versions": [
+        {
+          "title": "Ver 26.08.13",
+          "items": [
+            "`[新增]` 添加了该功能的使用指南。"
+                ]
+              },
               {
                 "title": "Ver 26.07.28",
                 "items": [
@@ -1758,6 +1843,17 @@
           {
             "title": "3D Simulation",
             "versions": [
+        {
+          "title": "Ver 26.08.13",
+            "items": [
+              "`[新增]` 添加了该功能的使用指南。",
+              "`[修复]` 修正了 SCARA 机器人的电缆管高度和模型。",
+              "`[修复]` 修复了 3D 仿真初始画面自动打开程序面板的问题。",
+              "`[修复]` 修复了浏览器 OLP 因无法获取 Virtual Bus 认证信息而无法连接通信测试器的问题。",
+              "`[修复]` 修复了未加载项目的 OLP 中 Virtual Bus 停止重连或连接约 30 秒后断开的问题。",
+              "`[修复]` 修复了 Virtual Bus 已连接时启动 OLP 程序会发生一次通信断开的问题。"
+                ]
+              },
               {
                 "title": "Ver 26.08.12",
                 "items": [
@@ -1813,6 +1909,13 @@
           {
             "title": "Robot Tool Selector",
             "versions": [
+        {
+          "title": "Ver 26.08.13",
+          "items": [
+            "`[新增]` 添加了该功能的使用指南。",
+            "`[修复]` 修复了模式 D 中可能选中与所点击 CAD 面位置不同的捕捉候选点的问题。"
+                ]
+              },
               {
                 "title": "Ver 26.07.26",
                 "items": [
@@ -1847,6 +1950,12 @@
           {
             "title": "Project Generator",
             "versions": [
+        {
+          "title": "Ver 26.08.13",
+          "items": [
+            "`[新增]` 添加了该功能的使用指南。"
+                ]
+              },
               {
                 "title": "Ver 26.07.26",
                 "items": [
@@ -2000,6 +2109,12 @@
           {
             "title": "Document",
             "versions": [
+        {
+          "title": "Ver 26.08.13",
+          "items": [
+            "`[新增]` 添加了该功能的使用指南。"
+                ]
+              },
               {
                 "title": "Ver 26.07.29",
                 "items": [
@@ -2427,6 +2542,12 @@
           {
             "title": "Robot Model Select",
             "versions": [
+        {
+          "title": "Ver 26.08.13",
+          "items": [
+            "`[Thêm mới]` Đã thêm hướng dẫn cho chức năng này."
+                ]
+              },
               {
                 "title": "Ver 26.07.28",
                 "items": [
@@ -2552,6 +2673,17 @@
           {
             "title": "3D Simulation",
             "versions": [
+        {
+          "title": "Ver 26.08.13",
+            "items": [
+              "`[Thêm mới]` Đã thêm hướng dẫn cho chức năng này.",
+              "`[Sửa lỗi]` Đã chỉnh sửa chiều cao và mô hình ống cáp của robot SCARA.",
+              "`[Sửa lỗi]` Đã khắc phục lỗi Bảng chương trình tự động mở trên màn hình 3D Simulation ban đầu.",
+              "`[Sửa lỗi]` Đã khắc phục lỗi OLP trên trình duyệt không thể kết nối với Trình kiểm tra giao tiếp do không nhận được thông tin xác thực Virtual Bus.",
+              "`[Sửa lỗi]` Đã khắc phục lỗi Virtual Bus ngừng kết nối lại trong OLP chưa tải dự án hoặc ngắt kết nối khoảng 30 giây sau khi kết nối.",
+              "`[Sửa lỗi]` Đã khắc phục lỗi giao tiếp bị ngắt một lần khi khởi động chương trình OLP trong lúc Virtual Bus đang kết nối."
+                ]
+              },
               {
                 "title": "Ver 26.08.12",
                 "items": [
@@ -2607,6 +2739,13 @@
           {
             "title": "Robot Tool Selector",
             "versions": [
+        {
+          "title": "Ver 26.08.13",
+          "items": [
+            "`[Thêm mới]` Đã thêm hướng dẫn cho chức năng này.",
+            "`[Sửa lỗi]` Đã khắc phục sự cố trong Chế độ D khi có thể chọn ứng viên bắt điểm ở vị trí khác với mặt CAD đã nhấp."
+                ]
+              },
               {
                 "title": "Ver 26.07.26",
                 "items": [
@@ -2641,6 +2780,12 @@
           {
             "title": "Project Generator",
             "versions": [
+        {
+          "title": "Ver 26.08.13",
+          "items": [
+            "`[Thêm mới]` Đã thêm hướng dẫn cho chức năng này."
+                ]
+              },
               {
                 "title": "Ver 26.07.26",
                 "items": [
@@ -2794,6 +2939,12 @@
           {
             "title": "Document",
             "versions": [
+        {
+          "title": "Ver 26.08.13",
+          "items": [
+            "`[Thêm mới]` Đã thêm hướng dẫn cho chức năng này."
+                ]
+              },
               {
                 "title": "Ver 26.07.29",
                 "items": [

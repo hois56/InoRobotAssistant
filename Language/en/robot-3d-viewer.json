@@ -6,6 +6,12 @@
     }
   },
   "legacy": {
+    "로봇 모델을 생성하는 중...": "Creating the robot model...",
+    "Test 설비와 Tool을 배치하는 중...": "Placing the Test equipment and Tool...",
+    "Test 모델 배치 완료": "Test models placed",
+    "스냅 이동 완료": "Snap move complete",
+    "자동 반복 운전 중": "Automatic repeat in progress",
+    "패널을 닫고 반복 동작 확인": "Panels closed — watching the repeated motion",
     "Download": "Download",
     "다운로드": "Download",
     "메인 페이지로 이동": "Go to home page",
@@ -79,6 +85,8 @@
     "MODEL": "Model",
     "Unnamed model": "Unnamed model",
     "선택": "Select",
+    "접기": "Collapse",
+    "펼치기": "Expand",
     "관절 각도": "joint angle",
     "관절 각도(도)": "joint angle in degrees",
     "관절 위치": "joint position",

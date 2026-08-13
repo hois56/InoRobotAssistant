@@ -11,6 +11,7 @@ permalink: /en/
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="InoRobot provides model selection, 3D simulation, project generation, software, manuals, and debugging tools for INOVANCE robots.">
     <title>InoRobot | INOVANCE Robot Tools</title>
+    <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png?v=20260813">
 
     <!-- Search engines can identify the site name and its common Korean/English names. -->
     <script type="application/ld+json">
@@ -30,7 +31,7 @@ permalink: /en/
         "url": "https://inovancerobot.com/",
         "logo": {
           "@type": "ImageObject",
-          "url": "https://inovancerobot.com/1_RobotModelSelect/INOVANCE_Logo.png"
+          "url": "https://inovancerobot.com/favicon.png"
         }
       }
     }
@@ -459,7 +460,8 @@ permalink: /en/
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/Language/runtime/i18n.css">
-    <script src="/Language/runtime/locales-data.js?v=5efb65afa0e6" defer></script>
+    <link rel="stylesheet" href="/0_Home/robot-select-guide.css?v=20260813-5">
+    <script src="/Language/runtime/locales-data.js?v=a36475780f8e" defer></script>
     <script src="/Language/runtime/i18n.js" defer></script>
     <script src="/analytics-config.js"></script>
     <script src="/analytics.js" defer></script>
@@ -538,28 +540,33 @@ permalink: /en/
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
 
             <!-- 1. Robot Selector Card -->
-            <a href="/1_RobotModelSelect/" class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8"
-                style="animation: fadeInUp 0.5s ease 0.1s forwards; text-decoration: none;">
-                <div
-                    class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
-                    <i data-lucide="bot" class="w-8 h-8 text-white"></i>
-                </div>
-                <h2 class="font-outfit text-2xl font-bold mb-3 text-white">
-                    Robot Model Select
-                </h2>
-                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
-                    Explore the INOVANCE robot lineup. Save the selected model and options as a PDF for ordering, and download 2D and 3D CAD files.
-                </p>
+            <article class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8"
+                style="animation: fadeInUp 0.5s ease 0.1s forwards;">
+                <a href="/1_RobotModelSelect/" class="flex flex-col flex-grow" style="text-decoration: none;">
+                    <div
+                        class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
+                        <i data-lucide="bot" class="w-8 h-8 text-white"></i>
+                    </div>
+                    <h2 class="font-outfit text-2xl font-bold mb-3 text-white">
+                        Robot Model Select
+                    </h2>
+                    <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
+                        Explore the INOVANCE robot lineup. Save the selected model and options as a PDF for ordering, and download 2D and 3D CAD files.
+                    </p>
+                </a>
                 <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
+                    <button type="button" id="robot-select-guide-trigger" class="manual-info-button" data-manual-open
+                        aria-label="View the Robot Model Select guide" aria-haspopup="dialog"
+                        aria-controls="robot-select-guide-modal" aria-expanded="false" title="How to use">i</button>
                     <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg"
-                        data-site-card-version="robotSelect">Ver 26.07.28</span>
+                        data-site-card-version="robotSelect">Ver 26.08.13</span>
                     <button type="button" class="history-button" data-history-card="robotSelect"
                         aria-label="Open Robot Model Select version history">
                         <i data-lucide="history" class="w-3.5 h-3.5"></i>
                         Version History
                     </button>
                 </div>
-            </a>
+            </article>
 
             <!-- 2. 3D Simulation Card (가운데 위치) -->
             <a href="/2_3DSimulation/" class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8"
@@ -575,8 +582,10 @@ permalink: /en/
                     Simulate INOVANCE robots with joint and Base JOG, Tool and equipment placement, and imported 3D models.
                 </p>
                 <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
+                    <button type="button" class="manual-info-button tool-manual-open" data-tool-guide="simulation"
+                        aria-label="View the 3D Simulation guide" aria-haspopup="dialog" aria-controls="tool-guide-modal" aria-expanded="false" title="How to use">i</button>
                     <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20"
-                        data-site-card-version="robot3dViewer">Ver 26.08.12</span>
+                        data-site-card-version="robot3dViewer">Ver 26.08.13</span>
                     <button type="button" class="history-button" data-history-card="robot3dViewer"
                         aria-label="Open 3D Simulation version history">
                         <i data-lucide="history" class="w-3.5 h-3.5"></i>
@@ -599,8 +608,10 @@ permalink: /en/
                     Evaluate robot suitability for the Tool load. Calculate inertia and allowable load to select the optimal model.
                 </p>
                 <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
+                    <button type="button" class="manual-info-button tool-manual-open" data-tool-guide="tool"
+                        aria-label="View the Robot Tool Selector guide" aria-haspopup="dialog" aria-controls="tool-guide-modal" aria-expanded="false" title="How to use">i</button>
                     <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20"
-                        data-site-card-version="toolSelector">Ver 26.07.26</span>
+                        data-site-card-version="toolSelector">Ver 26.08.13</span>
                     <button type="button" class="history-button" data-history-card="toolSelector"
                         aria-label="Open Robot Tool Selector version history">
                         <i data-lucide="history" class="w-3.5 h-3.5"></i>
@@ -626,8 +637,10 @@ permalink: /en/
                 </p>
 
                 <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
+                    <button type="button" class="manual-info-button tool-manual-open" data-tool-guide="project"
+                        aria-label="View the Project Generator guide" aria-haspopup="dialog" aria-controls="tool-guide-modal" aria-expanded="false" title="How to use">i</button>
                     <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg"
-                        data-site-card-version="projectGenerator">Ver 26.07.26</span>
+                        data-site-card-version="projectGenerator">Ver 26.08.13</span>
                     <button type="button" class="history-button" data-history-card="projectGenerator"
                         aria-label="Open Project Generator version history">
                         <i data-lucide="history" class="w-3.5 h-3.5"></i>
@@ -674,8 +687,10 @@ permalink: /en/
                     Browse and download robot manuals, training materials, certificates, and communication profiles.
                 </p>
                 <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
+                    <button type="button" class="manual-info-button tool-manual-open" data-tool-guide="document"
+                        aria-label="View the Document guide" aria-haspopup="dialog" aria-controls="tool-guide-modal" aria-expanded="false" title="How to use">i</button>
                     <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20"
-                        data-site-card-version="manual">Ver 26.07.29</span>
+                        data-site-card-version="manual">Ver 26.08.13</span>
                     <button type="button" class="history-button" data-history-card="manual"
                         aria-label="Open Document version history">
                         <i data-lucide="history" class="w-3.5 h-3.5"></i>
@@ -716,6 +731,147 @@ permalink: /en/
 
         <!-- Footer removed -->
     </main>
+
+    <div id="robot-select-guide-modal" class="manual-guide-modal" aria-hidden="true">
+        <section class="manual-guide-dialog" role="dialog" aria-modal="true"
+            aria-labelledby="robot-select-guide-title" tabindex="-1">
+            <header class="manual-guide-header">
+                <div class="min-w-0">
+                    <div class="manual-guide-kicker">
+                        <span class="manual-guide-live-dot" aria-hidden="true"></span>
+                        Quick guide · about 36 sec
+                    </div>
+                    <h2 id="robot-select-guide-title" class="manual-guide-title">Robot Model Select guide</h2>
+                </div>
+                <button type="button" class="manual-guide-close" data-manual-close aria-label="Close guide">
+                    <i data-lucide="x" aria-hidden="true"></i>
+                </button>
+            </header>
+
+            <div class="manual-guide-body">
+                <nav class="manual-guide-steps" aria-label="Choose a guide step">
+                    <button type="button" class="manual-step-button is-active" data-manual-step="0" aria-current="step">
+                        <span class="manual-step-number">01</span>
+                        <span class="manual-step-copy">
+                            <strong>Select the specifications you need</strong>
+                            <small>Choose the robot type, payload, reach, and other requirements in the filters.</small>
+                        </span>
+                    </button>
+                    <button type="button" class="manual-step-button" data-manual-step="1">
+                        <span class="manual-step-number">02</span>
+                        <span class="manual-step-copy">
+                            <strong>Select a model and configure its options</strong>
+                            <small>Select a model card to open its configuration, then choose the cable, teach pendant, and communication options.</small>
+                        </span>
+                    </button>
+                    <button type="button" class="manual-step-button" data-manual-step="2">
+                        <span class="manual-step-number">03</span>
+                        <span class="manual-step-copy">
+                            <strong>Download the files and review the configuration</strong>
+                            <small>Download the CAD package and configuration sheet, then open the sheet to review the selected model and options.</small>
+                        </span>
+                    </button>
+                </nav>
+
+                <div class="manual-guide-player">
+                    <div class="manual-guide-viewport" aria-hidden="true">
+                        <div class="manual-real-ui-stage" data-manual-stage>
+                            <div class="manual-real-ui-canvas" data-manual-canvas>
+                                <iframe id="robot-select-guide-frame"
+                                    data-src="/1_RobotModelSelect/?embed=manual"
+                                    title="Actual Model Select interface"
+                                    sandbox="allow-scripts allow-same-origin"
+                                    tabindex="-1" aria-hidden="true"></iframe>
+                            </div>
+                            <div class="manual-frame-state" data-manual-loading>
+                                <span class="manual-frame-spinner" aria-hidden="true"></span>
+                                <strong>Loading the actual Model Select interface.</strong>
+                            </div>
+                            <div class="manual-frame-state manual-frame-error" data-manual-error hidden>
+                                <strong>The actual interface could not be loaded.</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="manual-guide-caption">
+                        <strong data-manual-caption-title>Select the specifications you need</strong>
+                        <span data-manual-caption-copy>Choose the robot type, payload, reach, and other requirements in the filters.</span>
+                    </div>
+                    <div class="manual-guide-transport">
+                        <button type="button" class="manual-guide-control manual-guide-play" data-manual-play
+                            aria-label="Pause" aria-pressed="false">
+                            <span data-manual-pause-icon><i data-lucide="pause" aria-hidden="true"></i></span>
+                            <span data-manual-play-icon hidden><i data-lucide="play" aria-hidden="true"></i></span>
+                            <span data-manual-pause-label hidden>Pause</span>
+                            <span data-manual-play-label hidden>Play</span>
+                            <span data-manual-replay-label hidden>Replay</span>
+                        </button>
+                        <output class="manual-guide-time" data-manual-time aria-hidden="true">00:00 / 00:36</output>
+                        <div class="manual-timeline-shell">
+                            <input type="range" class="manual-timeline-range" data-manual-seek
+                                min="0" max="36000" step="100" value="0"
+                                aria-label="Guide playback position" aria-valuetext="00:00 / 00:36">
+                            <div class="manual-timeline-markers">
+                                <button type="button" data-manual-marker="0" style="--manual-marker-position: 0%"
+                                    aria-label="Go to the filter selection chapter"><span aria-hidden="true">Filter selection</span></button>
+                                <button type="button" data-manual-marker="8000" style="--manual-marker-position: 22.22%"
+                                    aria-label="Go to the model and option configuration chapter"><span aria-hidden="true">Model · Options</span></button>
+                                <button type="button" data-manual-marker="22000" style="--manual-marker-position: 61.11%"
+                                    aria-label="Go to the file download and configuration review chapter"><span aria-hidden="true">Download · Review</span></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="manual-guide-footer">
+                        <button type="button" class="manual-guide-control" data-manual-previous>
+                            <i data-lucide="chevron-left" aria-hidden="true"></i><span>Previous step</span>
+                        </button>
+                        <button type="button" class="manual-guide-control" data-manual-next>
+                            <span>Next step</span><i data-lucide="chevron-right" aria-hidden="true"></i>
+                        </button>
+                        <a href="/1_RobotModelSelect/" class="manual-guide-launch">
+                            <span>Try it now</span><i data-lucide="arrow-up-right" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                    <p class="manual-guide-sr-status" data-manual-status aria-live="polite"></p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div id="tool-guide-modal" class="manual-guide-modal tool-guide-modal" aria-hidden="true">
+        <section class="manual-guide-dialog" role="dialog" aria-modal="true"
+            aria-labelledby="tool-guide-title" tabindex="-1">
+            <header class="manual-guide-header">
+                <div class="min-w-0">
+                    <div class="manual-guide-kicker"><span class="manual-guide-live-dot" aria-hidden="true"></span><span data-tool-guide-kicker>Quick guide · about 32 sec</span></div>
+                    <h2 id="tool-guide-title" class="manual-guide-title" data-tool-guide-title>Tool guide</h2>
+                </div>
+                <button type="button" class="manual-guide-close" data-tool-guide-close aria-label="Close guide"><i data-lucide="x" aria-hidden="true"></i></button>
+            </header>
+            <div class="manual-guide-body">
+                <nav class="manual-guide-steps" data-tool-guide-steps aria-label="Choose a guide step"></nav>
+                <div class="manual-guide-player">
+                    <div class="manual-guide-viewport" aria-hidden="true">
+                        <div class="manual-real-ui-stage" data-tool-guide-stage>
+                            <div class="manual-real-ui-canvas" data-tool-guide-canvas>
+                                <iframe id="tool-guide-frame" title="Actual tool screen" sandbox="allow-scripts allow-same-origin" tabindex="-1" aria-hidden="true"></iframe>
+                            </div>
+                            <div class="manual-frame-state" data-tool-guide-loading><span class="manual-frame-spinner" aria-hidden="true"></span><strong>Loading the actual tool screen.</strong></div>
+                            <div class="manual-frame-state manual-frame-error" data-tool-guide-error hidden><strong>The actual interface could not be loaded.</strong><button type="button" class="manual-guide-control" data-tool-guide-retry>Retry</button></div>
+                        </div>
+                    </div>
+                    <div class="manual-guide-caption"><strong data-tool-guide-caption-title></strong><span data-tool-guide-caption-copy></span></div>
+                    <div class="manual-guide-transport">
+                        <button type="button" class="manual-guide-control manual-guide-play" data-tool-guide-play aria-label="Pause" aria-pressed="false"><span data-tool-guide-pause-icon><i data-lucide="pause" aria-hidden="true"></i></span><span data-tool-guide-play-icon hidden><i data-lucide="play" aria-hidden="true"></i></span><span data-tool-guide-replay-icon hidden><i data-lucide="rotate-ccw" aria-hidden="true"></i></span><span data-tool-guide-pause-label hidden>Pause</span><span data-tool-guide-play-label hidden>Play</span><span data-tool-guide-replay-label hidden>Replay</span></button>
+                        <output class="manual-guide-time" data-tool-guide-time aria-hidden="true">00:00 / 00:32</output>
+                        <div class="manual-timeline-shell"><input type="range" class="manual-timeline-range" data-tool-guide-seek min="0" max="32000" step="100" value="0" aria-label="Guide playback position" aria-valuetext="00:00 / 00:32"><div class="manual-timeline-markers" data-tool-guide-markers></div></div>
+                    </div>
+                    <div class="manual-guide-footer"><button type="button" class="manual-guide-control" data-tool-guide-previous><i data-lucide="chevron-left" aria-hidden="true"></i><span>Previous step</span></button><button type="button" class="manual-guide-control" data-tool-guide-next><span>Next step</span><i data-lucide="chevron-right" aria-hidden="true"></i></button><a href="/" class="manual-guide-launch" data-tool-guide-launch><span>Try it now</span><i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div>
+                    <p class="manual-guide-sr-status" data-tool-guide-status aria-live="polite"></p>
+                </div>
+            </div>
+        </section>
+    </div>
 
     <div id="version-history-modal" class="history-modal" aria-hidden="true">
         <section class="history-dialog" role="dialog" aria-modal="true" aria-labelledby="history-dialog-title">
@@ -784,9 +940,11 @@ permalink: /en/
         }
     </style>
 
-    <script src="/0_Home/site-card-versions.js?v=aa20e38742c1"></script>
-    <script src="/0_Home/site-card-history-data.js?v=aa20e38742c1"></script>
-    <script src="/0_Home/site-card-history.js?v=aa20e38742c1"></script>
+    <script src="/0_Home/site-card-versions.js?v=c52fa6289ede"></script>
+    <script src="/0_Home/site-card-history-data.js?v=c52fa6289ede"></script>
+    <script src="/0_Home/site-card-history.js?v=c52fa6289ede"></script>
+    <script src="/0_Home/robot-select-guide.js?v=20260813-7"></script>
+    <script src="/0_Home/tool-guide.js?v=20260813-9"></script>
     <script>
         // Keep the main-site card versions in one place.
         const siteCardVersions = window.SITE_CARD_VERSIONS || {};

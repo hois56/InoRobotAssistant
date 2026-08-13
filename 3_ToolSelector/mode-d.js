@@ -101,6 +101,9 @@ const state = {
   pointerMoveFrame: null,
   lastPointer: null,
   snapCandidates: [],
+  snapFaceCandidates: [],
+  snapFaceSelection: null,
+  snapFaceOverlay: null,
   snapType: 'auto',
   snapRadiusPx: 16,
   snapMarkerReferenceDistance: null,
@@ -718,6 +721,7 @@ function setOutlineMode(enabled) {
 }
 
 function clearParts() {
+  clearSnapFaceSelection();
   disposePartOutlines();
   state.parts.forEach((part) => {
     part.mesh.geometry.dispose();
@@ -727,6 +731,7 @@ function clearParts() {
   state.parts = [];
   state.selectedPartIndex = null;
   state.snapCandidates = [];
+  state.snapFaceCandidates = [];
   state.snapMarkerReferenceDistance = null;
   el.snapMarker?.style.setProperty('--cad-snap-camera-scale', '1');
   state.hoverSnap = null;
@@ -1088,12 +1093,14 @@ function appendImportedStepMesh(meshDefinition, index, sourceFormat, context) {
   state.modelGroup.add(mesh);
 
   const partIndex = state.parts.length;
+  mesh.userData.modeDPartIndex = partIndex;
   state.parts.push({
     name: mesh.name,
     cadPartKey: meshDefinition.partId || `cad-mesh-${index}`,
     cadPartName: meshDefinition.partName || mesh.name,
     mesh,
     geometry: geometryProperties,
+    brepFaces: Array.isArray(meshDefinition.brep_faces) ? meshDefinition.brep_faces : [],
     snapStats: snapData.stats,
     sourceColorHex: cadColorToHex(meshDefinition.color),
     materialKey: 'aluminum',
@@ -1187,12 +1194,14 @@ async function loadCadFile(file) {
         mesh.name = meshDefinition.partName || meshDefinition.name || `Part ${index + 1}`;
         state.modelGroup.add(mesh);
         const partIndex = state.parts.length;
+        mesh.userData.modeDPartIndex = partIndex;
         state.parts.push({
           name: mesh.name,
           cadPartKey: meshDefinition.partId || `cad-mesh-${index}`,
           cadPartName: meshDefinition.partName || mesh.name,
           mesh,
           geometry: geometryProperties,
+          brepFaces: Array.isArray(meshDefinition.brep_faces) ? meshDefinition.brep_faces : [],
           snapStats: snapData.stats,
           sourceColorHex: cadColorToHex(meshDefinition.color),
           materialKey: 'aluminum',
@@ -1376,6 +1385,12 @@ function updatePartFromControl(control) {
       part.enabled = control.checked;
       part.mesh.visible = part.enabled;
     });
+    if (!control.checked && group.parts.some(({ part }) => (
+      part === state.parts[state.snapFaceSelection?.partIndex]
+    ))) {
+      clearSnapFaceSelection();
+      hideSnapMarker();
+    }
   } else if (control.matches('[data-part-material]')) {
     const density = MATERIALS[control.value].density;
     group.parts.forEach(({ part }) => {
@@ -1435,6 +1450,159 @@ function formatSnapPoint(point) {
   return `X ${point.x.toFixed(3)} · Y ${point.y.toFixed(3)} · Z ${point.z.toFixed(3)} mm`;
 }
 
+function getValidatedPartBrepFaces(part) {
+  const rawFaces = part?.brepFaces;
+  const triangleCount = Math.floor((part?.mesh?.geometry?.index?.count
+    ?? part?.mesh?.geometry?.getAttribute?.('position')?.count
+    ?? 0) / 3);
+  if (!Array.isArray(rawFaces) || !rawFaces.length || triangleCount <= 0) return null;
+
+  const faces = [];
+  let expectedFirst = 0;
+  for (const rawFace of rawFaces) {
+    const first = Number(rawFace?.first);
+    const last = Number(rawFace?.last);
+    if (!Number.isInteger(first) || !Number.isInteger(last)
+      || first !== expectedFirst || first < 0 || last < first || last >= triangleCount) {
+      return null;
+    }
+    faces.push({ first, last });
+    expectedFirst = last + 1;
+  }
+  return expectedFirst === triangleCount ? faces : null;
+}
+
+function getSnapFaceTriangleRange(part, triangleIndex) {
+  const brepFaces = getValidatedPartBrepFaces(part);
+  if (brepFaces) {
+    const faceIndex = brepFaces.findIndex((face) => (
+      triangleIndex >= face.first && triangleIndex <= face.last
+    ));
+    if (faceIndex >= 0) {
+      return {
+        faceIndex,
+        key: `${part.mesh.uuid}:step-face:${faceIndex}`,
+        triangleRanges: [{ ...brepFaces[faceIndex] }]
+      };
+    }
+  }
+  return {
+    faceIndex: triangleIndex,
+    key: `${part.mesh.uuid}:triangle:${triangleIndex}`,
+    triangleRanges: [{ first: triangleIndex, last: triangleIndex }]
+  };
+}
+
+function pickSnapFaceAtPointer(pointerEvent) {
+  if (!state.camera || !state.renderer) return null;
+  const enabledMeshes = state.parts.filter((part) => part.enabled).map((part) => part.mesh);
+  if (!enabledMeshes.length) return null;
+  const bounds = state.renderer.domElement.getBoundingClientRect();
+  if (bounds.width <= 0 || bounds.height <= 0) return null;
+  const pointer = new THREE.Vector2(
+    ((pointerEvent.clientX - bounds.left) / bounds.width) * 2 - 1,
+    -((pointerEvent.clientY - bounds.top) / bounds.height) * 2 + 1
+  );
+  state.camera.updateMatrixWorld(true);
+  state.scene?.updateMatrixWorld(true);
+  state.visibilityRaycaster.setFromCamera(pointer, state.camera);
+  const hit = state.visibilityRaycaster.intersectObjects(enabledMeshes, false)[0];
+  const partIndex = Number(hit?.object?.userData?.modeDPartIndex);
+  if (!hit?.object || !Number.isInteger(hit.faceIndex)
+    || !Number.isInteger(partIndex) || !state.parts[partIndex]?.enabled) return null;
+  const face = getSnapFaceTriangleRange(state.parts[partIndex], hit.faceIndex);
+  return {
+    ...face,
+    mesh: hit.object,
+    partIndex,
+    point: hit.point.clone(),
+    triangleIndex: hit.faceIndex
+  };
+}
+
+function createSnapFaceOverlay(selection) {
+  const geometry = selection?.mesh?.geometry;
+  const position = geometry?.getAttribute('position');
+  if (!geometry || !position || !selection?.triangleRanges?.length) return null;
+  const index = geometry.getIndex();
+  const vertices = [];
+  selection.triangleRanges.forEach((range) => {
+    for (let triangleIndex = range.first; triangleIndex <= range.last; triangleIndex += 1) {
+      for (let corner = 0; corner < 3; corner += 1) {
+        const offset = triangleIndex * 3 + corner;
+        const vertexIndex = index ? index.getX(offset) : offset;
+        if (!Number.isInteger(vertexIndex) || vertexIndex < 0 || vertexIndex >= position.count) continue;
+        vertices.push(position.getX(vertexIndex), position.getY(vertexIndex), position.getZ(vertexIndex));
+      }
+    }
+  });
+  if (vertices.length < 9) return null;
+
+  const overlayGeometry = new THREE.BufferGeometry();
+  overlayGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  overlayGeometry.computeVertexNormals();
+  const overlay = new THREE.Mesh(overlayGeometry, new THREE.MeshBasicMaterial({
+    color: 0xfacc15,
+    transparent: true,
+    opacity: 0.2,
+    depthWrite: false,
+    side: THREE.DoubleSide
+  }));
+  overlay.name = 'Mode D Snap Selected Face';
+  overlay.userData.modeDSnapFaceOverlay = true;
+  overlay.renderOrder = 1000;
+  overlay.frustumCulled = false;
+  selection.mesh.add(overlay);
+  return overlay;
+}
+
+function clearSnapFaceSelection() {
+  state.snapFaceOverlay?.removeFromParent();
+  state.snapFaceOverlay?.geometry?.dispose();
+  state.snapFaceOverlay?.material?.dispose();
+  state.snapFaceOverlay = null;
+  state.snapFaceSelection = null;
+  state.snapFaceCandidates = [];
+}
+
+function selectSnapFace(selection) {
+  if (!selection?.mesh || !state.parts[selection.partIndex]?.enabled) return false;
+  clearSnapFaceSelection();
+  state.snapFaceSelection = {
+    ...selection,
+    point: selection.point.clone(),
+    triangleRanges: selection.triangleRanges.map((range) => ({ ...range }))
+  };
+  state.snapFaceOverlay = createSnapFaceOverlay(state.snapFaceSelection);
+  const part = state.parts[selection.partIndex];
+  try {
+    const snapData = buildStepSnapCandidates({
+      attributes: part.mesh.geometry.attributes,
+      index: part.mesh.geometry.index,
+      brep_faces: getValidatedPartBrepFaces(part) || []
+    }, {
+      triangleRanges: selection.triangleRanges,
+      maxVirtualPairs: 6000,
+      maxVirtualCandidates: 160
+    });
+    part.mesh.updateWorldMatrix(true, false);
+    state.snapFaceCandidates = snapData.candidates.map((candidate) => ({
+      ...candidate,
+      point: new THREE.Vector3(...candidate.point).applyMatrix4(part.mesh.matrixWorld),
+      partIndex: selection.partIndex,
+      faceKey: selection.key
+    }));
+  } catch (error) {
+    console.warn('Selected CAD face snap candidate generation failed:', error);
+    clearSnapFaceSelection();
+    setStatus('선택한 면의 스냅 후보를 계산할 수 없습니다.', 'error');
+    return false;
+  }
+  setStatus('선택한 면의 스냅 후보를 클릭하세요.');
+  setSnapReadout('선택한 면의 스냅 후보를 클릭하세요.');
+  return true;
+}
+
 function isSnapCandidateVisible(candidate, projected, enabledMeshes) {
   if (!state.camera || !state.renderer) return false;
   state.visibilityRaycaster.setFromCamera(new THREE.Vector2(projected.x, projected.y), state.camera);
@@ -1464,7 +1632,7 @@ function findSnapAtPointer(pointerEvent) {
 
   let best = null;
   const nearbyCandidates = [];
-  state.snapCandidates.forEach((candidate) => {
+  state.snapFaceCandidates.forEach((candidate) => {
     if (!state.parts[candidate.partIndex]?.enabled) return;
     if (requiredType !== 'auto' && candidate.type !== requiredType) return;
     const projected = candidate.point.clone().project(state.camera);
@@ -1505,7 +1673,9 @@ function showSnapMarker(snap) {
     if (state.pickMode) {
       setSnapReadout(isMultiPointCenterMode()
         ? multiCenterInstruction
-        : '현재 위치에 선택 가능한 스냅 후보가 없습니다.');
+        : state.snapFaceSelection
+          ? '선택한 면의 스냅 후보를 클릭하세요.'
+          : '스냅할 CAD 면을 클릭하세요.');
     }
     return;
   }
@@ -1528,6 +1698,7 @@ function showSnapMarker(snap) {
 function setPickMode(mode) {
   const nextPickMode = state.pickMode === mode ? null : mode;
   if (nextPickMode !== state.pickMode) resetMultiPoints();
+  clearSnapFaceSelection();
   state.pickMode = nextPickMode;
   el.mode.querySelectorAll('[data-pick]').forEach((button) => button.classList.toggle('active', button.dataset.pick === state.pickMode));
   el.viewport.classList.toggle('is-picking', Boolean(state.pickMode));
@@ -1541,7 +1712,7 @@ function setPickMode(mode) {
     setStatus(messages[state.pickMode]);
     setSnapReadout(isMultiPointCenterMode()
       ? multiCenterInstruction
-      : 'CAD 형상 위로 이동하면 스냅 후보가 표시됩니다.');
+      : '스냅할 CAD 면을 클릭하세요.');
   } else {
     hideSnapMarker();
     if (state.parts.length) setStatus(() => uiFormat('{format} 파일 분석 완료', {
@@ -1578,6 +1749,8 @@ function addMultiPoint(snap) {
     return;
   }
   state.multiPoints.push(snap.point.clone());
+  clearSnapFaceSelection();
+  hideSnapMarker();
   updateMultiCenterHelper();
   updateMultiCenterControls();
   const countLabel = () => `${uiText('다중 점 선택')} ${state.multiPoints.length}/4`;
@@ -1616,18 +1789,26 @@ function onPointerUp(event) {
   const movement = Math.hypot(event.clientX - state.pointerDown.x, event.clientY - state.pointerDown.y);
   state.pointerDown = null;
   if (movement > 5) return;
-  const snap = findSnapAtPointer(event);
-  if (!snap) {
-    setStatus('현재 위치에 선택 가능한 스냅 후보가 없습니다.', 'error');
-    return;
-  }
+  const snap = state.snapFaceSelection ? findSnapAtPointer(event) : null;
 
   try {
-    if (isMultiPointCenterMode()) {
-      addMultiPoint(snap);
+    if (snap) {
+      if (isMultiPointCenterMode()) {
+        addMultiPoint(snap);
+        return;
+      }
+      commitSnapPoint(snap.point, snapTypeInfo(snap.type).label);
       return;
     }
-    commitSnapPoint(snap.point, snapTypeInfo(snap.type).label);
+
+    const selection = pickSnapFaceAtPointer(event);
+    if (selection && selection.key !== state.snapFaceSelection?.key && selectSnapFace(selection)) {
+      showSnapMarker(findSnapAtPointer(event));
+      return;
+    }
+    setStatus(selection
+      ? '선택한 면의 스냅 후보를 클릭하세요.'
+      : '스냅할 CAD 면을 클릭하세요.', 'error');
   } catch (error) {
     setStatus('좌표계 방향이 올바르지 않습니다.', 'error');
   }

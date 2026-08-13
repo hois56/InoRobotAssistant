@@ -15,9 +15,21 @@ if errorlevel 1 (
     exit /b 1
 )
 
+if not defined INOROBOT_VIRTUAL_BUS_TOKEN (
+    for /f "delims=" %%T in ('node -e "process.stdout.write(require('crypto').randomBytes(32).toString('hex'))"') do set "INOROBOT_VIRTUAL_BUS_TOKEN=%%T"
+)
+if not defined INOROBOT_VIRTUAL_BUS_TOKEN (
+    echo.
+    echo Failed to create the Virtual Bus pairing token.
+    echo.
+    pause
+    exit /b 1
+)
+
 echo.
 echo Starting the InoRobot virtual environment...
 echo Opening: http://127.0.0.1:8765/2_3DSimulation/
+echo Virtual Bus pairing is enabled for this session.
 echo Stop the server by closing this window or pressing Ctrl+C.
 echo.
 

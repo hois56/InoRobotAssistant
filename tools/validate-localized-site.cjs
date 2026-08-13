@@ -176,6 +176,27 @@ function translateLegacySource(locale, source) {
 }
 
 const locales = Object.fromEntries(localeCodes.map(code => [code, loadMergedLocale(code)]));
+assert(fs.existsSync(path.join(root, 'favicon.png')), 'favicon.png is missing.');
+[
+    '0_Home/ko/index.html',
+    '0_Home/kr/index.html',
+    '0_Home/en/index.html',
+    '0_Home/zh-CN/index.html',
+    '0_Home/vi/index.html',
+    '1_RobotModelSelect/index.html',
+    '2_3DSimulation/index.html',
+    '3_ToolSelector/index.html',
+    '4_ProjectGenerator/index.html',
+    '5_Software/index.html',
+    '6_Document/index.html',
+    '7_DebuggingTool/index.html',
+    '7_DebuggingTool/ZeroCalibration/index.html'
+].forEach(file => {
+    assert(
+        /<link\s+rel=["']icon["'][^>]*href=["']\/favicon\.png\?v=20260813["']/i.test(read(file)),
+        file + ' is missing the site favicon link.'
+    );
+});
 const siteCardVersions = parseSiteCardVersions(read('0_Home/site-card-versions.js'));
 const versionHistory = loadVersionHistory(root);
 const canonicalMarkdown = renderVersionHistory(versionHistory.locales.ko.versionHistory, true);
@@ -547,7 +568,7 @@ assert(protectedScripts.includes('translateUiText'), 'Protected content prompts 
 assert(protectedScripts.includes('fetch(WORKER_URL'), 'Protected Manual/Software authentication requests are missing.');
 
 const robotSelectScript = read('1_RobotModelSelect/script.js');
-assert(robotSelectScript.includes('html2pdf().set(dlObj)'), 'Robot Select PDF generation hook is missing.');
+assert(robotSelectScript.includes('html2pdf().set(sheet.dlObj)'), 'Robot Select PDF generation hook is missing.');
 assert(robotSelectScript.includes('new JSZip()') && robotSelectScript.includes('saveAs(content'), 'Robot Select CAD ZIP generation hook is missing.');
 assert(robotSelectScript.includes('uiText(filterCategory.label)') && robotSelectScript.includes("uiText('가반 하중 (kg)')"), 'Robot Select dynamic filters or specification labels are not localized.');
 assert(robotSelectScript.includes('window.InoRobotI18n.apply(modalBody)') && robotSelectScript.includes('pdfFooterText'), 'Robot Select options or PDF footer are not localized.');
