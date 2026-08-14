@@ -1060,6 +1060,10 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
     border-left: 1px solid rgba(148, 163, 184, 0.22);
 }
 
+.model-tree-children[hidden] {
+    display: none;
+}
+
 .model-tree-node {
     min-width: 0;
 }
