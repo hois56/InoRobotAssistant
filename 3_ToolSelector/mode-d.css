@@ -476,6 +476,14 @@ input[type="number"]::-webkit-outer-spin-button {
 
 .cad-snap-marker[hidden] { display: none; }
 
+.cad-snap-candidate-marker {
+  z-index: 3;
+}
+
+.cad-snap-candidate-marker > span {
+  opacity: .82;
+}
+
 .cad-snap-marker > span {
   position: absolute;
   inset: 0;
@@ -761,6 +769,44 @@ input[type="number"]::-webkit-outer-spin-button {
   color: #fff;
   font-size: 14px;
 }
+
+.cad-robot-selection {
+  margin-bottom: 0;
+}
+
+.cad-robot-description {
+  margin: -4px 0 16px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.cad-robot-calculate {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.cad-robot-calculate:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+  transform: none;
+  box-shadow: none;
+}
+
+.cad-robot-result {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+.cad-robot-result h3 {
+  margin: 0 0 14px;
+  color: #94a3b8;
+  font-size: 11px;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.cad-robot-result[hidden] { display: none; }
 
 @media (max-width: 980px) {
   .cad-top-grid { grid-template-columns: 1fr; }

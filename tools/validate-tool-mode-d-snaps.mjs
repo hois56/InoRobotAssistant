@@ -16,8 +16,20 @@ for (const [locale, [centerLabel, selectionLabel]] of Object.entries(multiPointT
   assert.equal(localeData.legacy['다중 점 선택'], selectionLabel);
   assert.notEqual(localeData.legacy['스냅 선택'], '스냅 선택');
 }
-assert.match(modeDSource, /new OrbitControls\(state\.camera, state\.renderer\.domElement\)/);
-assert.match(modeDSource, /state\.controls\.enableDamping\s*=\s*false/);
+const cadRobotSelectionTranslations = {
+  en: 'Evaluate Robot Suitability',
+  'zh-CN': '评估机器人适用性',
+  vi: 'Đánh giá độ phù hợp của robot'
+};
+for (const [locale, label] of Object.entries(cadRobotSelectionTranslations)) {
+  const localeData = JSON.parse(readFileSync(new URL(`../Language/${locale}/tool-selector.json`, import.meta.url), 'utf8'));
+  assert.equal(localeData.legacy['로봇 적합성 판정'], label);
+  assert.notEqual(localeData.legacy['CAD 계산 결과로 로봇 선정'], 'CAD 계산 결과로 로봇 선정');
+}
+assert.match(modeDSource, /import \{ TrackballControls \} from '.\/vendor\/three\/examples\/jsm\/controls\/TrackballControls\.js'/);
+assert.match(modeDSource, /new TrackballControls\(state\.camera, state\.renderer\.domElement\)/);
+assert.match(modeDSource, /state\.controls\.staticMoving\s*=\s*true/);
+assert.doesNotMatch(modeDSource, /new OrbitControls\(/);
 assert.match(modeDSource, /state\.controls\?\.handleResize\?\.\(\)/);
 assert.match(modeDSource, /KG_PER_MM3_PER_G_PER_CM3\s*=\s*1e-6/);
 assert.match(modeDSource, />g\/cm³</);
@@ -37,6 +49,14 @@ assert.match(modeDSource, /state\.snapFaceCandidates\.forEach\(\(candidate\)\s*=
 assert.match(modeDSource, /const snap\s*=\s*state\.snapFaceSelection\s*\?\s*findSnapAtPointer\(event\)\s*:\s*null/);
 assert.match(modeDSource, /selection\.key\s*!==\s*state\.snapFaceSelection\?\.key\s*&&\s*selectSnapFace\(selection\)/);
 assert.match(modeDSource, /clearSnapFaceSelection\(\);[\s\S]*?state\.multiPoints\.push|state\.multiPoints\.push[\s\S]*?clearSnapFaceSelection\(\);/s);
+assert.match(modeDSource, /function updateSnapCandidateMarkers\(\)/);
+assert.match(modeDSource, /state\.snapFaceCandidates\.forEach\(\(candidate\)\s*=>/);
+assert.match(modeDSource, /state\.snapDisplayedCandidates\s*=\s*candidates\.map/);
+assert.match(modeDSource, /state\.snapCandidateMarkers\.push\(createSnapCandidateMarker\(\)\)/);
+assert.match(modeDSource, /state\.controls\.addEventListener\('start', hideSnapCandidateMarkersForNavigation\)/);
+assert.match(modeDSource, /state\.controls\.addEventListener\('end',[\s\S]*?updateSnapCandidateMarkers\(\)/s);
+assert.match(modeDStyles, /\.cad-snap-candidate-marker\s*\{[^}]*z-index:\s*3;/s);
+assert.match(modeDStyles, /\.cad-snap-candidate-marker > span\s*\{[^}]*opacity:\s*\.82;/s);
 assert.match(modeDStyles, /\.cad-snap-marker\s*\{[^}]*width:\s*14px;[^}]*height:\s*14px;/s);
 assert.match(modeDStyles, /\.cad-snap-marker\s*\{[^}]*color:\s*#f59e0b;/s);
 assert.match(modeDStyles, /\.cad-snap-marker > span\s*\{[^}]*width:\s*14px;[^}]*height:\s*14px;[^}]*border:\s*1\.25px solid currentColor;/s);
@@ -49,6 +69,16 @@ assert.match(modeDStyles, /filter:\s*drop-shadow\(0 0 2px/);
 assert.match(modeDStyles, /data-snap-type="endpoint"[^}]*> span\s*\{[^}]*background:\s*radial-gradient\(circle at center,/s);
 assert.match(modeDStyles, /\.cad-snap-marker b\s*\{[^}]*position:\s*absolute;/s);
 assert.match(modeDSource, /new TransformControls\(state\.camera, state\.renderer\.domElement\)/);
+assert.match(modeDSource, /ROBOT_SELECTION_GRAVITY\s*=\s*9\.8/);
+assert.match(modeDSource, /function calculateCadRobotSuitability\(\)/);
+assert.match(modeDSource, /centerInertia\[1\]\[1\] \+ mass \* \(x \* x \+ z \* z\)/);
+assert.match(modeDSource, /centerInertia\[2\]\[2\] \+ mass \* \(x \* x \+ y \* y\)/);
+assert.match(modeDSource, /state\.massProperties\s*=\s*\{/);
+assert.match(modeDSource, /invalidateCadRobotSelection\(\)/);
+assert.match(modeDHtml, /id="cad-robot"/);
+assert.match(modeDHtml, /id="cad-robot-calculate"[^>]*disabled/);
+assert.match(modeDHtml, /id="cad-robot-result"[^>]*hidden/);
+assert.match(modeDHtml, /window\.ToolSelectorRobotModels\s*=\s*ROBOTS/);
 assert.match(modeDSource, /state\.rotationHandler\.setMode\('rotate'\)/);
 assert.match(modeDSource, /removeRotationScreenHandle\(state\.rotationHandler\)/);
 assert.match(modeDSource, /object\.name\s*===\s*'E'/);
