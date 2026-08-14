@@ -135,6 +135,92 @@ export function calculateCycleElapsedSeconds(startedAt, currentAt) {
     return Math.max(0, currentAt - startedAt) / 1000;
 }
 
+export function advanceMotionCursor({
+    cursor,
+    direction,
+    stepCount,
+    repeat = false,
+    reverseRepeat = false
+} = {}) {
+    const count = Math.max(0, Math.trunc(Number(stepCount) || 0));
+    const playbackDirection = Number(direction) < 0 ? -1 : 1;
+    if (count === 0) {
+        return {
+            cursor: 0,
+            direction: reverseRepeat ? 1 : playbackDirection,
+            completed: true,
+            boundary: 'empty'
+        };
+    }
+
+    const lastCursor = count - 1;
+    const currentCursor = clamp(Math.trunc(Number(cursor) || 0), 0, lastCursor);
+    if (count === 1 && (repeat || reverseRepeat)) {
+        return {
+            cursor: 0,
+            direction: 1,
+            completed: false,
+            boundary: 'end'
+        };
+    }
+    const boundary = playbackDirection > 0 ? 'end' : 'start';
+    const nextCursor = currentCursor + playbackDirection;
+    if (nextCursor >= 0 && nextCursor <= lastCursor) {
+        return {
+            cursor: nextCursor,
+            direction: playbackDirection,
+            completed: false,
+            boundary: null
+        };
+    }
+
+    if (reverseRepeat) {
+        const nextDirection = -playbackDirection;
+        return {
+            cursor: count === 1 ? 0 : currentCursor + nextDirection,
+            direction: nextDirection,
+            completed: false,
+            boundary
+        };
+    }
+
+    if (repeat) {
+        return {
+            cursor: 0,
+            direction: 1,
+            completed: false,
+            boundary
+        };
+    }
+
+    return {
+        cursor: currentCursor,
+        direction: playbackDirection,
+        completed: true,
+        boundary
+    };
+}
+
+export function resolveDirectionalMotionType(motion, direction) {
+    if (Number(direction) >= 0) return motion;
+    if (motion === 'TIME_START') return 'TIME_OUT';
+    if (motion === 'TIME_OUT') return 'TIME_START';
+    return motion;
+}
+
+export function getDirectionalTimerActions(motion, playback = {}) {
+    if (motion !== 'TIME_START' && motion !== 'TIME_OUT') return [];
+    const stepCount = Math.max(0, Math.trunc(Number(playback.stepCount) || 0));
+    const singleStepReverse = Boolean(playback.reverseRepeat) && stepCount <= 1;
+    const direction = (singleStepReverse || Number(playback.direction) >= 0) ? 1 : -1;
+    const actions = [resolveDirectionalMotionType(motion, direction)];
+    const advanced = advanceMotionCursor(playback);
+    if (!singleStepReverse && playback.reverseRepeat && advanced.direction !== direction) {
+        actions.push(resolveDirectionalMotionType(motion, advanced.direction));
+    }
+    return actions;
+}
+
 export function createEmptyMotionProgram(included = true) {
     return {
         included: Boolean(included),
@@ -495,12 +581,18 @@ export function normalizeMotionProject(input) {
             steps
         };
     });
+    const reverseRepeatCurrentRobot = Boolean(input.reverseRepeatCurrentRobot);
+    const reverseRepeat = Boolean(input.reverseRepeat);
     return {
         schemaVersion: MOTION_PROJECT_SCHEMA_VERSION,
-        repeatCurrentRobot: input.repeatCurrentRobot === undefined
-            ? Boolean(input.repeat)
-            : Boolean(input.repeatCurrentRobot),
-        repeat: Boolean(input.repeat),
+        repeatCurrentRobot: reverseRepeatCurrentRobot
+            ? false
+            : input.repeatCurrentRobot === undefined
+                ? Boolean(input.repeat)
+                : Boolean(input.repeatCurrentRobot),
+        reverseRepeatCurrentRobot,
+        repeat: reverseRepeat ? false : Boolean(input.repeat),
+        reverseRepeat,
         robots
     };
 }

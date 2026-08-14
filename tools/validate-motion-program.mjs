@@ -24,6 +24,9 @@ import {
     calculateMovlDuration,
     calculateDelayDuration,
     calculateCycleElapsedSeconds,
+    advanceMotionCursor,
+    resolveDirectionalMotionType,
+    getDirectionalTimerActions,
     cloneMotionProgram,
     reorderMotionSteps,
     normalizeMotionProject
@@ -107,6 +110,95 @@ closeTo(calculateDelayDuration(undefined), DEFAULT_DELAY_SECONDS);
 closeTo(calculateCycleElapsedSeconds(1000, 2345), 1.345);
 closeTo(calculateCycleElapsedSeconds(2345, 1000), 0);
 assert.equal(calculateCycleElapsedSeconds(null, 1000), null);
+
+const collectReverseCursors = (stepCount, transitionCount) => {
+    const cursors = [0];
+    const directions = [1];
+    let playback = { cursor: 0, direction: 1 };
+    for (let index = 0; index < transitionCount; index += 1) {
+        playback = advanceMotionCursor({
+            ...playback,
+            stepCount,
+            repeat: false,
+            reverseRepeat: true
+        });
+        assert.equal(playback.completed, false);
+        cursors.push(playback.cursor);
+        directions.push(playback.direction);
+    }
+    return { cursors, directions };
+};
+
+assert.deepEqual(
+    collectReverseCursors(10, 19).cursors,
+    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 1],
+    'Ten rows must ping-pong without replaying either endpoint during a turn.'
+);
+assert.deepEqual(collectReverseCursors(3, 6).cursors, [0, 1, 2, 1, 0, 1, 2]);
+assert.deepEqual(collectReverseCursors(2, 5).cursors, [0, 1, 0, 1, 0, 1]);
+const oneStepReverse = collectReverseCursors(1, 4);
+assert.deepEqual(oneStepReverse.cursors, [0, 0, 0, 0, 0]);
+assert.deepEqual(oneStepReverse.directions, [1, 1, 1, 1, 1], 'A one-row reverse repeat must stay in the forward direction.');
+assert.deepEqual(
+    advanceMotionCursor({ cursor: 0, direction: -1, stepCount: 1, repeat: false, reverseRepeat: true }),
+    { cursor: 0, direction: 1, completed: false, boundary: 'end' },
+    'A one-row reverse repeat must recover a stale reverse direction without completing.'
+);
+
+assert.deepEqual(
+    advanceMotionCursor({ cursor: 2, direction: 1, stepCount: 3, repeat: true, reverseRepeat: false }),
+    { cursor: 0, direction: 1, completed: false, boundary: 'end' }
+);
+assert.deepEqual(
+    advanceMotionCursor({ cursor: 2, direction: 1, stepCount: 3, repeat: false, reverseRepeat: false }),
+    { cursor: 2, direction: 1, completed: true, boundary: 'end' }
+);
+assert.deepEqual(
+    advanceMotionCursor({ cursor: 2, direction: -1, stepCount: 3, repeat: false, reverseRepeat: false }),
+    { cursor: 1, direction: -1, completed: false, boundary: null }
+);
+assert.deepEqual(
+    advanceMotionCursor({ cursor: 0, direction: -1, stepCount: 3, repeat: false, reverseRepeat: false }),
+    { cursor: 0, direction: -1, completed: true, boundary: 'start' },
+    'Turning reverse repeat off while descending must finish at the first row.'
+);
+assert.deepEqual(
+    advanceMotionCursor({ cursor: 0, direction: -1, stepCount: 3, repeat: true, reverseRepeat: false }),
+    { cursor: 0, direction: 1, completed: false, boundary: 'start' },
+    'Switching from reverse repeat to normal repeat must restart in the forward direction.'
+);
+assert.deepEqual(
+    advanceMotionCursor({ cursor: 0, direction: 1, stepCount: 0, repeat: true, reverseRepeat: true }),
+    { cursor: 0, direction: 1, completed: true, boundary: 'empty' }
+);
+
+assert.equal(resolveDirectionalMotionType('TIME_START', 1), 'TIME_START');
+assert.equal(resolveDirectionalMotionType('TIME_OUT', 1), 'TIME_OUT');
+assert.equal(resolveDirectionalMotionType('TIME_START', -1), 'TIME_OUT');
+assert.equal(resolveDirectionalMotionType('TIME_OUT', -1), 'TIME_START');
+assert.equal(resolveDirectionalMotionType('MOVJ', -1), 'MOVJ');
+assert.deepEqual(getDirectionalTimerActions('MOVJ', {
+    cursor: 2, direction: 1, stepCount: 3, reverseRepeat: true
+}), []);
+assert.deepEqual(getDirectionalTimerActions('TIME_OUT', {
+    cursor: 1, direction: 1, stepCount: 3, reverseRepeat: true
+}), ['TIME_OUT']);
+assert.deepEqual(getDirectionalTimerActions('TIME_OUT', {
+    cursor: 2, direction: 1, stepCount: 3, reverseRepeat: true
+}), ['TIME_OUT', 'TIME_START'], 'The last row must apply its forward and returning timer meanings once each.');
+assert.deepEqual(getDirectionalTimerActions('TIME_START', {
+    cursor: 0, direction: -1, stepCount: 3, reverseRepeat: true
+}), ['TIME_OUT', 'TIME_START'], 'The first row must close the return timer and start the next forward timer.');
+assert.deepEqual(getDirectionalTimerActions('TIME_START', {
+    cursor: 0, direction: -1, stepCount: 3, repeat: false, reverseRepeat: false
+}), ['TIME_OUT'], 'A disabled reverse repeat must not add a new forward timer action.');
+assert.deepEqual(getDirectionalTimerActions('TIME_START', {
+    cursor: 0, direction: -1, stepCount: 1, repeat: false, reverseRepeat: true
+}), ['TIME_START'], 'A one-row reverse repeat must execute TIME_START once without swapping it.');
+assert.deepEqual(getDirectionalTimerActions('TIME_OUT', {
+    cursor: 0, direction: -1, stepCount: 1, repeat: false, reverseRepeat: true
+}), ['TIME_OUT'], 'A one-row reverse repeat must execute TIME_OUT once without swapping it.');
+
 assert.equal(MIN_POINT_INDEX, 0);
 assert.equal(MAX_POINT_INDEX, 9999);
 assert.equal(MAX_POINT_LABEL_LENGTH, 19);
@@ -162,12 +254,24 @@ for (let frame = 0; frame <= 10000; frame += 1) {
     });
 }
 
-const [catalogText, mainSource, motionCoreSource, htmlSource, cssSource, gs60SourceText, ...viewerLocaleTexts] = await Promise.all([
+const [
+    catalogText,
+    mainSource,
+    motionCoreSource,
+    workspaceRecoveryCoreSource,
+    htmlSource,
+    cssSource,
+    changeLogSource,
+    gs60SourceText,
+    ...viewerLocaleTexts
+] = await Promise.all([
     readFile(new URL('../2_3DSimulation/models/models.json', import.meta.url), 'utf8'),
     readFile(new URL('../2_3DSimulation/main.js', import.meta.url), 'utf8'),
     readFile(new URL('../2_3DSimulation/motion-program-core.mjs', import.meta.url), 'utf8'),
+    readFile(new URL('../2_3DSimulation/workspace-recovery-core.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../2_3DSimulation/index.html', import.meta.url), 'utf8'),
     readFile(new URL('../2_3DSimulation/style.css', import.meta.url), 'utf8'),
+    readFile(new URL('../2_3DSimulation/수정사항 정리.txt', import.meta.url), 'utf8'),
     readFile(new URL('../2_3DSimulation/새 폴더/IR-GS60-120Z40S5-C1LNSX-INT_01741178.json', import.meta.url), 'utf8'),
     ...['ko', 'en', 'zh-CN', 'vi'].map((locale) => (
         readFile(new URL(`../Language/${locale}/robot-3d-viewer.json`, import.meta.url), 'utf8')
@@ -183,6 +287,50 @@ const viewerLocales = Object.fromEntries(viewerLocaleCodes.map((locale, index) =
 const viewerLocaleKeySets = viewerLocaleCodes.map((locale) => Object.keys(viewerLocales[locale]).sort());
 viewerLocaleKeySets.slice(1).forEach((keys, index) => {
     assert.deepEqual(keys, viewerLocaleKeySets[0], `${viewerLocaleCodes[index + 1]} viewer locale keys must match Korean.`);
+});
+
+const workspaceRecoveryTranslationKeys = [
+    '이전 작업 복구',
+    '저장된 3D 시뮬레이션 작업이 있습니다. 불러오시겠습니까?',
+    '마지막 저장: {time}',
+    '로봇 {robots}대 · 3D 모델 {models}개',
+    'OLP 프로젝트 {projects}개',
+    '다른 창에서 연 작업은 독립된 복사본으로 저장되어 서로 덮어쓰지 않습니다.',
+    '새 작업 시작',
+    '이전 작업 불러오기',
+    '같은 작업이 다른 창에서 열려 있어 이 창은 독립된 복사본으로 시작합니다.',
+    '작업을 자동 저장하지 못했습니다.',
+    '이전 작업을 불러오지 못했습니다.',
+    '자동 복구 저장 공간이 부족합니다. 프로젝트를 파일로 저장해 주세요.',
+    '저장된 작업 파일 일부를 찾을 수 없어 이전 작업을 모두 복구하지 못했습니다.',
+    '3D 모델은 불러왔지만 원본 파일을 작업 복구 저장소에 저장하지 못했습니다.',
+    'OLP 프로젝트는 불러왔지만 일부 바이너리 파일을 작업 복구 저장소에 저장하지 못했습니다.',
+    '이전 작업 불러오는 중...',
+    '이전 작업을 불러왔습니다.',
+    '이 브라우저에서는 자동 복구 저장소를 사용할 수 없습니다.'
+];
+workspaceRecoveryTranslationKeys.forEach((source) => {
+    const expectedPlaceholders = [...source.matchAll(/\{([A-Za-z0-9_]+)\}/g)]
+        .map((match) => match[1])
+        .sort();
+    viewerLocaleCodes.forEach((locale) => {
+        assert.ok(
+            Object.prototype.hasOwnProperty.call(viewerLocales[locale], source),
+            `${locale} is missing workspace-recovery translation: ${source}`
+        );
+        const translated = String(viewerLocales[locale][source]);
+        const translatedPlaceholders = [...translated.matchAll(/\{([A-Za-z0-9_]+)\}/g)]
+            .map((match) => match[1])
+            .sort();
+        assert.deepEqual(
+            translatedPlaceholders,
+            expectedPlaceholders,
+            `${locale} changes workspace-recovery placeholders for: ${source}`
+        );
+        if (locale !== 'ko') {
+            assert.doesNotMatch(translated, /[가-힣]/, `${locale} leaves workspace-recovery text untranslated: ${source}`);
+        }
+    });
 });
 
 const viewerTranslationSources = new Set([
@@ -224,6 +372,724 @@ viewerLocaleCodes.forEach((locale) => {
         }
     });
 });
+
+[
+    "export const WORKSPACE_SCHEMA_VERSION = 1;",
+    "export const WORKSPACE_DB_NAME = 'inorobot-3d-simulation-workspaces';",
+    "export const WORKSPACE_STORE_NAME = 'workspaces';",
+    "export const WORKSPACE_ASSET_STORE_NAME = 'assets';",
+    "export const WORKSPACE_LEASE_STORE_NAME = 'leases';",
+    "export const WORKSPACE_SESSION_KEY = 'inorobot.3d-simulation.workspace-id.v1';",
+    "export const WORKSPACE_START_CLEAN_SESSION_KEY = 'inorobot.3d-simulation.start-clean.v1';",
+    "export const WORKSPACE_CHANNEL_NAME = 'inorobot.3d-simulation.workspace.v1';",
+    'export class WorkspaceRecoveryStore',
+    'export function normalizeWorkspaceRecord',
+    'export function normalizeWorkspaceAsset',
+    'export function collectWorkspaceAssetIds',
+    'export function collectOrphanWorkspaceAssetIds',
+    'export function evaluateWorkspaceLease',
+    'export function assertWorkspaceLeaseOwnership',
+    'export function decideWorkspaceStartup',
+    'export function createForkedWorkspaceRecord',
+    'export function getWorkspaceSummary',
+    'export function isWorkspaceQuotaError'
+].forEach((marker) => assert.ok(
+    workspaceRecoveryCoreSource.includes(marker),
+    `Missing workspace-recovery core marker: ${marker}`
+));
+assert.match(
+    workspaceRecoveryCoreSource,
+    /createObjectStore\(WORKSPACE_STORE_NAME, \{ keyPath: 'id' \}\)[\s\S]*?createObjectStore\(WORKSPACE_ASSET_STORE_NAME, \{ keyPath: 'id' \}\)[\s\S]*?createObjectStore\(WORKSPACE_LEASE_STORE_NAME, \{ keyPath: 'workspaceId' \}\)/,
+    'Workspace recovery must persist workspace snapshots, immutable source assets and ownership leases in separate IndexedDB stores.'
+);
+[
+    'async open()',
+    'async getWorkspace(id)',
+    'async listWorkspaces(',
+    'async getLatestWorkspace(',
+    'async putWorkspace(input)',
+    'async saveWorkspaceWithLease(',
+    'async getLease(workspaceId)',
+    'async acquireLease(',
+    'async renewLease(',
+    'async releaseLease(',
+    'async forkWorkspace(',
+    'async archiveWorkspace(',
+    'async pruneArchivedWorkspaces(',
+    'async deleteWorkspace(',
+    'async putAsset(input)',
+    'async getAsset(',
+    'async listAssets()',
+    'async collectOrphanAssetIds()',
+    'async deleteOrphanAssets({'
+].forEach((marker) => assert.ok(
+    workspaceRecoveryCoreSource.includes(marker),
+    `WorkspaceRecoveryStore is missing operation: ${marker}`
+));
+assert.ok(
+    workspaceRecoveryCoreSource.includes("throw workspaceError('Workspace revision changed in another window.', 'WORKSPACE_REVISION_CONFLICT')")
+        && workspaceRecoveryCoreSource.includes("throw workspaceError('Workspace ownership was lost to another window.', 'WORKSPACE_LEASE_LOST')")
+        && workspaceRecoveryCoreSource.includes("return { acquired: false, reason: 'live-owner'")
+        && workspaceRecoveryCoreSource.includes("action: sessionHasLiveOwner ? 'offer-fork' : 'offer-restore'")
+        && workspaceRecoveryCoreSource.includes("if (startClean) return { action: 'fresh'"),
+    'Workspace saves and startup decisions must reject stale writers, offer a fork for a live owner, and preserve an explicit clean start.'
+);
+assert.ok(
+    workspaceRecoveryCoreSource.includes('blob,')
+        && workspaceRecoveryCoreSource.includes("throw workspaceError('Workspace asset size does not match its Blob.', 'INVALID_ASSET')")
+        && workspaceRecoveryCoreSource.includes("throw workspaceError('An immutable workspace asset id is already in use.', 'ASSET_ID_CONFLICT')"),
+    'Imported model source binaries must remain Blob-backed immutable assets with size validation.'
+);
+const workspaceNormalizeCoreSource = workspaceRecoveryCoreSource.slice(
+    workspaceRecoveryCoreSource.indexOf('export function normalizeWorkspaceRecord('),
+    workspaceRecoveryCoreSource.indexOf('export function normalizeWorkspaceAsset(')
+);
+assert.ok(
+    workspaceNormalizeCoreSource.includes("const incompleteRecoveryFrom = String(input.incompleteRecoveryFrom || '').trim() || null;")
+        && workspaceNormalizeCoreSource.includes('incompleteRecoveryFrom: incompleteRecoveryFrom === id ? null : incompleteRecoveryFrom'),
+    'Workspace records must normalize partial-recovery provenance and reject a self-referencing complete source.'
+);
+const workspaceForkCoreSource = workspaceRecoveryCoreSource.slice(
+    workspaceRecoveryCoreSource.indexOf('export function createForkedWorkspaceRecord('),
+    workspaceRecoveryCoreSource.indexOf('export function getWorkspaceSummary(')
+);
+assert.match(
+    workspaceForkCoreSource,
+    /\.\.\.normalized,[\s\S]*?forkedFrom: normalized\.id,[\s\S]*?state: structuredClone\(normalized\.state\)/,
+    'A duplicated tab/window must fork mutable workspace state while preserving asset refs and incomplete-recovery provenance.'
+);
+assert.ok(
+    workspaceRecoveryCoreSource.includes('this.listWorkspaces({ includeArchived: true })')
+        && workspaceRecoveryCoreSource.includes('collectOrphanWorkspaceAssetIds(workspaces, assets)'),
+    'Asset cleanup must account for archived workspaces before deleting unreferenced binaries.'
+);
+assert.match(
+    workspaceRecoveryCoreSource,
+    /const olpProjects = Array\.isArray\(state\.olpProject\?\.files\)[\s\S]*?return \{ robots, models: imported \+ catalog, olpProjects \};/,
+    'Workspace summaries must count a saved OLP project for the startup recovery dialog.'
+);
+const workspaceOrphanCleanupCoreSource = workspaceRecoveryCoreSource.slice(
+    workspaceRecoveryCoreSource.indexOf('async deleteOrphanAssets(')
+);
+assert.ok(
+    workspaceOrphanCleanupCoreSource.includes('async deleteOrphanAssets({ now = Date.now(), gracePeriodMs = 600000 } = {})')
+        && workspaceOrphanCleanupCoreSource.includes("db.transaction([WORKSPACE_STORE_NAME, WORKSPACE_ASSET_STORE_NAME], 'readwrite')")
+        && workspaceOrphanCleanupCoreSource.includes('requestResult(workspaceStore.getAll())')
+        && workspaceOrphanCleanupCoreSource.includes('requestResult(assetStore.getAll())')
+        && workspaceOrphanCleanupCoreSource.includes('const cutoff = now - Math.max(0, Number(gracePeriodMs) || 0);')
+        && workspaceOrphanCleanupCoreSource.includes('Math.max(Number(asset?.lastUsedAt) || 0, Number(asset?.createdAt) || 0)')
+        && workspaceOrphanCleanupCoreSource.includes('ids.forEach((id) => assetStore.delete(id));'),
+    'Orphan cleanup must discover workspace references atomically and retain uncommitted import assets for a ten-minute grace period.'
+);
+const workspaceArchiveCoreSource = workspaceRecoveryCoreSource.slice(
+    workspaceRecoveryCoreSource.indexOf('async archiveWorkspace('),
+    workspaceRecoveryCoreSource.indexOf('async deleteWorkspace(')
+);
+assert.ok(
+    workspaceArchiveCoreSource.includes('expectedRevision = null')
+        && workspaceArchiveCoreSource.includes('requireUnleased = false')
+        && workspaceArchiveCoreSource.includes("db.transaction([WORKSPACE_STORE_NAME, WORKSPACE_LEASE_STORE_NAME], 'readwrite')")
+        && workspaceArchiveCoreSource.includes("'WORKSPACE_REVISION_CONFLICT'")
+        && workspaceArchiveCoreSource.includes("'WORKSPACE_LEASE_ACTIVE'"),
+    'Archiving a recovery source must atomically reject a changed revision or a newly acquired live lease.'
+);
+const workspacePruneCoreSource = workspaceRecoveryCoreSource.slice(
+    workspaceRecoveryCoreSource.indexOf('async pruneArchivedWorkspaces('),
+    workspaceRecoveryCoreSource.indexOf('async deleteWorkspace(')
+);
+assert.ok(
+    workspacePruneCoreSource.includes('const retainedCount = Math.max(0, Math.trunc(Number(keep) || 0));')
+        && workspacePruneCoreSource.includes("db.transaction([WORKSPACE_STORE_NAME, WORKSPACE_LEASE_STORE_NAME], 'readwrite')")
+        && workspacePruneCoreSource.includes('record?.archived && record?.id')
+        && workspacePruneCoreSource.includes('.sort((left, right) => Number(right.updatedAt) - Number(left.updatedAt))')
+        && workspacePruneCoreSource.includes('const removedIds = archived.slice(retainedCount)')
+        && workspacePruneCoreSource.includes('workspaces.delete(id);')
+        && workspacePruneCoreSource.includes('leases.delete(id);'),
+    'Archived-workspace pruning must retain the newest requested records and remove old workspace/lease metadata atomically.'
+);
+
+const workspaceRecoveryDialogStart = htmlSource.indexOf('<dialog id="workspace-recovery-dialog"');
+const workspaceRecoveryDialogEnd = htmlSource.indexOf('</dialog>', workspaceRecoveryDialogStart);
+assert.ok(workspaceRecoveryDialogStart >= 0 && workspaceRecoveryDialogEnd > workspaceRecoveryDialogStart, 'Viewer must expose the startup workspace-recovery dialog.');
+const workspaceRecoveryDialogSource = htmlSource.slice(workspaceRecoveryDialogStart, workspaceRecoveryDialogEnd + '</dialog>'.length);
+[
+    'workspace-recovery-dialog-title',
+    'workspace-recovery-description',
+    'workspace-recovery-saved-at',
+    'workspace-recovery-summary',
+    'workspace-recovery-isolation-note',
+    'workspace-recovery-error',
+    'btn-workspace-new',
+    'btn-workspace-restore'
+].forEach((id) => assert.match(workspaceRecoveryDialogSource, new RegExp(`id=["']${id}["']`)));
+assert.match(
+    workspaceRecoveryDialogSource,
+    /aria-labelledby="workspace-recovery-dialog-title"[\s\S]*?aria-describedby="workspace-recovery-description workspace-recovery-isolation-note"/,
+    'The recovery decision must expose its title, description and multi-window isolation guidance to assistive technology.'
+);
+assert.match(workspaceRecoveryDialogSource, /id="workspace-recovery-error"[^>]*role="alert"[^>]*hidden/);
+assert.deepEqual(
+    [...workspaceRecoveryDialogSource.matchAll(/<button[^>]*id="([^"]+)"/g)].map((match) => match[1]),
+    ['btn-workspace-new', 'btn-workspace-restore'],
+    'Recovery must require an explicit New or Restore choice and must not expose a dismiss button.'
+);
+assert.match(workspaceRecoveryDialogSource, /id="workspace-recovery-saved-at">마지막 저장: \{time\}<\/p>/);
+assert.match(workspaceRecoveryDialogSource, /id="workspace-recovery-summary">로봇 \{robots\}대 · 3D 모델 \{models\}개<\/p>/);
+assert.ok(
+    cssSource.includes('.workspace-recovery-dialog::backdrop')
+        && cssSource.includes('.workspace-recovery-error[hidden]')
+        && cssSource.includes('.workspace-recovery-dialog-actions button:focus-visible')
+        && cssSource.includes('.workspace-recovery-dialog-actions button:disabled'),
+    'The recovery dialog must provide a modal backdrop, hidden-error semantics, keyboard focus and disabled loading feedback.'
+);
+assert.ok(
+    htmlSource.includes('style.css?v=20260815-workspace-recovery-1')
+        && htmlSource.includes('main.js?v=20260815-workspace-recovery-1')
+        && htmlSource.includes('/Language/runtime/locales-data.js?v=20260815-workspace-recovery-1'),
+    'Workspace recovery must invalidate simulation style, module and localized-text caches.'
+);
+assert.ok(
+    changeLogSource.includes('3D 시뮬레이션 작업을 창별로 독립 저장하고, 다시 열 때 이전 모델·위치값·프로그램·화면 설정과 OLP 프로젝트를 선택해 복구할 수 있도록 개선했습니다.'),
+    'The user-facing version record must describe isolated autosave and full startup recovery without implementation detail.'
+);
+
+assert.ok(
+    mainSource.includes("import * as WorkspaceRecovery from './workspace-recovery-core.mjs?v=20260815-workspace-recovery-1';")
+        && mainSource.includes('workspaceRecovery: {')
+        && mainSource.includes('pendingProbes: new Map()'),
+    'The simulation must load the versioned workspace core and keep per-document recovery state.'
+);
+[
+    "workspaceRecoveryDialog: document.getElementById('workspace-recovery-dialog')",
+    "workspaceRecoverySavedAt: document.getElementById('workspace-recovery-saved-at')",
+    "workspaceRecoverySummary: document.getElementById('workspace-recovery-summary')",
+    "workspaceRecoveryIsolationNote: document.getElementById('workspace-recovery-isolation-note')",
+    "workspaceRecoveryError: document.getElementById('workspace-recovery-error')",
+    "btnWorkspaceNew: document.getElementById('btn-workspace-new')",
+    "btnWorkspaceRestore: document.getElementById('btn-workspace-restore')"
+].forEach((marker) => assert.ok(mainSource.includes(marker), `Missing recovery-dialog binding: ${marker}`));
+const workspaceInitSource = mainSource.slice(
+    mainSource.indexOf('async function init()'),
+    mainSource.indexOf('function setupUI()')
+);
+assert.ok(
+    workspaceInitSource.includes('if (IS_MANUAL_GUIDE_EMBED) renderMotionProgramPanel();')
+        && workspaceInitSource.includes('else preserveWorkspaceStatus = await initializeWorkspaceRecovery();')
+        && workspaceInitSource.includes("if (!preserveWorkspaceStatus) setStatus('Ready', '#22c55e');")
+        && !workspaceInitSource.includes('restoreMotionProjectFromStorage()'),
+    'Normal startup must await workspace recovery, preserve recovery errors, and leave the manual-guide embed storage-free.'
+);
+assert.ok(
+    mainSource.includes("el.btnWorkspaceNew?.addEventListener('click', () => resolveWorkspaceRecoveryChoice('new'))")
+        && mainSource.includes("el.btnWorkspaceRestore?.addEventListener('click', () => resolveWorkspaceRecoveryChoice('restore'))")
+        && /el\.workspaceRecoveryDialog\?\.addEventListener\('cancel',[\s\S]*?event\.preventDefault\(\);[\s\S]*?\}\);/.test(mainSource),
+    'The startup dialog must resolve only from its New/Restore buttons and must suppress native cancel.'
+);
+const pageHideSource = mainSource.slice(
+    mainSource.indexOf("window.addEventListener('pagehide', (event) =>"),
+    mainSource.indexOf("document.addEventListener('inorobot:i18nready'")
+);
+assert.ok(
+    pageHideSource.includes('if (event.persisted || state.resetInProgress) return;')
+        && pageHideSource.includes('void Promise.resolve(saveMotionProjectNow()).catch((error) => {')
+        && pageHideSource.includes("console.warn('Final workspace save failed:', error)")
+        && pageHideSource.includes('}).finally(() => {')
+        && pageHideSource.includes('releaseWorkspaceOwnership();')
+        && pageHideSource.indexOf('saveMotionProjectNow()')
+            < pageHideSource.indexOf('releaseWorkspaceOwnership();'),
+    'A real page hide must await the final durable save before releasing ownership, while preserving a BFCache document.'
+);
+const beforeUnloadSource = mainSource.slice(
+    mainSource.indexOf("window.addEventListener('beforeunload', (event) =>"),
+    mainSource.indexOf('function setFullscreenUiMode(')
+);
+assert.ok(
+    beforeUnloadSource.includes('flushOlpPendingEdit();')
+        && beforeUnloadSource.includes("event.returnValue = ''")
+        && !beforeUnloadSource.includes('releaseWorkspaceOwnership'),
+    'Unload prompting must flush the latest OLP text, and cancelling it must not disable autosave or release this document ownership.'
+);
+
+const workspaceSerializeSource = mainSource.slice(
+    mainSource.indexOf('function serializeWorkspaceSnapshot()'),
+    mainSource.indexOf('function serializeMotionProject()')
+);
+[
+    'const motionProject = serializeMotionProject();',
+    'const cameraChanged = state.camera && state.controls',
+    'const interferenceChanged = JSON.stringify(state.interferenceZones)',
+    'const monitoringChanged = JSON.stringify(state.endMonitoringObjects)',
+    'hasWork,',
+    'robotRuntime:',
+    'programSelection:',
+    'importedModels:',
+    'catalogModels:',
+    'assetIds:',
+    'selectedModelId:',
+    'activeRobotInstanceId:',
+    'camera:',
+    'gridVisible:',
+    'outlineMode:',
+    'collisionEnabled:',
+    'viewConfiguration: serializeViewConfiguration()',
+    'collapsedModelIds:'
+].forEach((marker) => assert.ok(
+    workspaceSerializeSource.includes(marker),
+    `Workspace snapshot is missing scene state: ${marker}`
+));
+const workspaceOlpSerializeSource = mainSource.slice(
+    mainSource.indexOf('function serializeWorkspaceOlpProject()'),
+    mainSource.indexOf('function serializeWorkspaceSnapshot()')
+);
+[
+    'schemaVersion: 1,',
+    "name: String(project.name || 'OLP Project')",
+    'programPath: project.programPath || null',
+    "selectedFile: state.olp.selectedFile || ''",
+    'enabled: Boolean(state.olp.enabled)',
+    'projectDirty: Boolean(state.olp.projectDirty)',
+    'files: [...project.files.values()].map((record) => ({',
+    'binary: Boolean(record.binary)',
+    "text: record.binary ? null : String(record.text ?? '')",
+    'assetId: record.binary ? (record.workspaceAssetId || null) : null'
+].forEach((marker) => assert.ok(
+    workspaceOlpSerializeSource.includes(marker),
+    `Saved OLP metadata is missing marker: ${marker}`
+));
+assert.doesNotMatch(
+    workspaceOlpSerializeSource,
+    /\b(?:blob|arrayBuffer)\b/,
+    'OLP snapshots must reference binary assets by id instead of embedding their bytes in workspace metadata.'
+);
+assert.ok(
+    workspaceSerializeSource.indexOf('flushOlpPendingEdit();')
+        < workspaceSerializeSource.indexOf('const olpProject = serializeWorkspaceOlpProject();')
+        && workspaceSerializeSource.includes('|| Boolean(olpProject)')
+        && workspaceSerializeSource.includes('olpProject,')
+        && workspaceSerializeSource.includes('.filter((file) => file.binary && file.assetId)')
+        && workspaceSerializeSource.includes('.map((file) => file.assetId)'),
+    'Every autosave must flush the visible OLP editor, mark OLP-only work as durable, and retain binary asset references.'
+);
+const olpBinaryPersistenceSource = mainSource.slice(
+    mainSource.indexOf('async function persistOlpWorkspaceBinaryAssets(project)'),
+    mainSource.indexOf('function activateOlpProject(')
+);
+assert.ok(
+    olpBinaryPersistenceSource.includes('!record?.binary || record.workspaceAssetId || !record.file?.arrayBuffer')
+        && olpBinaryPersistenceSource.includes('const bytes = await record.file.arrayBuffer();')
+        && olpBinaryPersistenceSource.includes('record.workspaceAssetId = await persistImportedWorkspaceAsset(file, getFileExtension(name));')
+        && olpBinaryPersistenceSource.includes("console.warn('OLP binary source could not be saved for workspace recovery:', error)")
+        && olpBinaryPersistenceSource.includes('return failed;'),
+    'OLP import must persist each binary once as an immutable workspace asset and report any partial persistence failure.'
+);
+const olpImportWorkspaceSource = mainSource.slice(
+    mainSource.indexOf('async function handleOlpFolderImport('),
+    mainSource.indexOf('async function saveOlpProjectAsZip()')
+);
+assert.ok(
+    olpImportWorkspaceSource.indexOf('await persistOlpWorkspaceBinaryAssets(project)')
+        < olpImportWorkspaceSource.indexOf('activateOlpProject(project, {')
+        && olpImportWorkspaceSource.indexOf('activateOlpProject(project, {')
+            < olpImportWorkspaceSource.indexOf('if (!options.suppressWorkspaceSave) scheduleMotionProjectSave();')
+        && olpImportWorkspaceSource.indexOf('if (!options.suppressWorkspaceSave) scheduleMotionProjectSave();')
+            < olpImportWorkspaceSource.indexOf("setStatus('OLP 프로젝트는 불러왔지만 일부 바이너리 파일을 작업 복구 저장소에 저장하지 못했습니다.'"),
+    'A loaded OLP project must autosave after binary persistence, while leaving any asset warning as the final visible status.'
+);
+assert.ok(
+    mainSource.includes("const assetId = WorkspaceRecovery.createWorkspaceId('asset')")
+        && mainSource.includes("file.slice(0, file.size, file.type || '')")
+        && mainSource.includes('const asset = await recovery.db.putAsset({'),
+    'Imported model persistence must assign a fresh asset id and save the source File bytes as an IndexedDB Blob.'
+);
+assert.match(
+    mainSource,
+    /const asset = await recovery\.db\.putAsset\(\{[\s\S]*?name: file\.name,[\s\S]*?size: file\.size,[\s\S]*?lastModified:[\s\S]*?extension,[\s\S]*?blob[\s\S]*?\}\);/,
+    'The durable asset must retain its source name, size, timestamp, extension and Blob.'
+);
+const importedModelAssetSource = mainSource.slice(
+    mainSource.indexOf('async function handle3DImport(options = {})'),
+    mainSource.indexOf('function isTestModel(')
+);
+assert.ok(
+    importedModelAssetSource.includes('if (options.workspaceAssetId) importedModel.userData.workspaceAssetId = options.workspaceAssetId;')
+        && importedModelAssetSource.includes('let assetPersistenceFailed = false;')
+        && importedModelAssetSource.includes('assetPersistenceFailed = true;')
+        && /updateUIStatus\(\);[\s\S]*?if \(assetPersistenceFailed\) \{[\s\S]*?원본 파일을 작업 복구 저장소에 저장하지 못했습니다/.test(importedModelAssetSource),
+    'A model may finish importing only after retaining its asset reference, and a source-save failure must remain the final visible status.'
+);
+assert.ok(
+    mainSource.includes('const asset = await state.workspaceRecovery.db.getAsset(entry.assetId, { touch: true });')
+        && mainSource.includes('const file = new File([asset.blob], asset.name, {')
+        && mainSource.includes('skipAssetPersistence: true')
+        && mainSource.includes('workspaceModelId: entry.workspaceModelId')
+        && mainSource.includes('applyWorkspaceChildMatrices(model, entry.childMatrices)')
+        && mainSource.includes('applyWorkspaceMaterialColors(model, entry.materialColors)'),
+    'Restoring an imported model must rebuild its File from IndexedDB and reapply stable ids, transforms, zero points and material state.'
+);
+const workspaceOlpRestoreSource = mainSource.slice(
+    mainSource.indexOf('function createWorkspaceOlpFileWrapper('),
+    mainSource.indexOf('async function clearOlpProjectForWorkspaceRestore()')
+);
+assert.ok(
+    workspaceOlpRestoreSource.includes("relativePath: prefixRoot ? `__workspace__/${path}` : path")
+        && workspaceOlpRestoreSource.includes('text: () => content.text()')
+        && workspaceOlpRestoreSource.includes('arrayBuffer: () => content.arrayBuffer()')
+        && workspaceOlpRestoreSource.includes('validateOlpImportFiles(validationFiles);')
+        && workspaceOlpRestoreSource.includes('await state.workspaceRecovery.db.getAsset(entry.assetId, { touch: true })')
+        && workspaceOlpRestoreSource.includes("warnings.push(entry?.path || entry?.name || 'OLP binary')")
+        && workspaceOlpRestoreSource.includes("relativePath: String(file.relativePath || '').replace(/^__workspace__\\//, '')")
+        && workspaceOlpRestoreSource.includes('const project = await buildOlpProjectFromFiles(files);')
+        && workspaceOlpRestoreSource.includes('record.workspaceAssetId = saved.assetId;')
+        && workspaceOlpRestoreSource.includes('selectedFile: snapshot.selectedFile ||')
+        && workspaceOlpRestoreSource.includes('enabled: snapshot.enabled !== false')
+        && workspaceOlpRestoreSource.includes('dirty: Boolean(snapshot.projectDirty)')
+        && workspaceOlpRestoreSource.includes('connectBus: false'),
+    'OLP recovery must validate files, restore selection/visibility/dirty state, and never auto-connect the Virtual Bus.'
+);
+const workspaceOlpClearSource = mainSource.slice(
+    mainSource.indexOf('async function clearOlpProjectForWorkspaceRestore()'),
+    mainSource.indexOf('async function restoreWorkspaceSnapshot(snapshot)')
+);
+assert.ok(
+    workspaceOlpClearSource.includes('window.clearTimeout(state.olp.projectEditTimer);')
+        && workspaceOlpClearSource.includes("await stopOlpSession('Workspace changed', { closeBus: true });")
+        && workspaceOlpClearSource.includes('state.olp.project = null;')
+        && workspaceOlpClearSource.includes('state.olp.projectDirty = false;')
+        && workspaceOlpClearSource.includes('toggleOlpWorkspace(false, { connectBus: false, saveWorkspace: false });'),
+    'Switching recovery workspaces must stop OLP runtime resources and clear project UI without scheduling an intermediate save.'
+);
+const workspaceRestoreSource = mainSource.slice(
+    mainSource.indexOf('async function restoreWorkspaceSnapshot(snapshot)'),
+    mainSource.indexOf('function workspaceSnapshotHasWork(')
+);
+assert.ok(
+    workspaceRestoreSource.includes('await restoreMotionProjectData(motionProject);')
+        && workspaceRestoreSource.includes('snapshot?.programSelection')
+        && workspaceRestoreSource.includes('await restoreWorkspaceCatalogModel(entry);')
+        && workspaceRestoreSource.indexOf("model?.placement !== 'tcp'") < workspaceRestoreSource.indexOf("model?.placement === 'tcp'")
+        && workspaceRestoreSource.includes('warnings.push(...await restoreWorkspaceOlpProject(snapshot.olpProject));')
+        && workspaceRestoreSource.indexOf('warnings.push(...await restoreWorkspaceOlpProject(snapshot.olpProject));')
+            > workspaceRestoreSource.indexOf("model?.placement === 'tcp'")
+        && workspaceRestoreSource.indexOf('warnings.push(...await restoreWorkspaceOlpProject(snapshot.olpProject));')
+            < workspaceRestoreSource.indexOf('restoreWorkspaceViewConfiguration(snapshot?.viewConfiguration)')
+        && workspaceRestoreSource.includes('restoreWorkspaceViewConfiguration(snapshot?.viewConfiguration)')
+        && workspaceRestoreSource.includes('applyWorkspaceDisplayState(snapshot)')
+        && workspaceRestoreSource.includes('applyWorkspaceCameraState(snapshot?.camera)')
+        && workspaceRestoreSource.indexOf('state.activeProgramRobot = robotsById.get(selection.activeProgramRobotInstanceId)')
+            < workspaceRestoreSource.indexOf('syncOlpHomeStatus(state.activeProgramRobot || state.activeArticulatedModel);')
+        && !workspaceRestoreSource.includes('connectOlpVirtualBus(')
+        && workspaceRestoreSource.includes('state.undoStack = []')
+        && workspaceRestoreSource.includes('recovery.restoring = false;'),
+    'Workspace restoration must rebuild robots/programs before scene tools, resync OLP Home state without opening Virtual Bus, then leave UI history/runtime clean.'
+);
+
+const olpWorkspaceEventSource = mainSource.slice(
+    mainSource.indexOf("el.olpModeButton?.addEventListener('click'"),
+    mainSource.indexOf("el.olpFileEditor?.addEventListener('scroll'")
+);
+assert.ok(
+    /el\.olpFileSelect\?\.addEventListener\('change',[\s\S]*?flushOlpPendingEdit\(\);[\s\S]*?state\.olp\.selectedFile =[\s\S]*?scheduleMotionProjectSave\(\);/.test(olpWorkspaceEventSource)
+        && /el\.olpFileEditor\?\.addEventListener\('input',[\s\S]*?state\.olp\.projectDirty = true;[\s\S]*?scheduleMotionProjectSave\(\);[\s\S]*?updateOlpFileText\(/.test(olpWorkspaceEventSource),
+    'OLP selection and editor changes must flush pending text, retain dirty state, and trigger workspace autosave.'
+);
+const toggleOlpWorkspaceSource = mainSource.slice(
+    mainSource.indexOf('function toggleOlpWorkspace('),
+    mainSource.indexOf('const OLP_SYNTAX_ADDRESS_PATTERN')
+);
+assert.ok(
+    toggleOlpWorkspaceSource.includes('if (saveWorkspace) scheduleMotionProjectSave();'),
+    'Opening or closing the OLP workspace must be included in automatic recovery state.'
+);
+const saveOlpProjectAsZipSource = mainSource.slice(
+    mainSource.indexOf('async function saveOlpProjectAsZip()'),
+    mainSource.indexOf('async function writeOlpFileToDirectory(')
+);
+const saveOlpProjectAsFolderSource = mainSource.slice(
+    mainSource.indexOf('async function saveOlpProjectAsFolder()'),
+    mainSource.indexOf('function canonicalOlpAddress(')
+);
+[saveOlpProjectAsZipSource, saveOlpProjectAsFolderSource].forEach((source) => assert.ok(
+    source.indexOf('state.olp.projectDirty = false;') >= 0
+        && source.indexOf('state.olp.projectDirty = false;') < source.indexOf('scheduleMotionProjectSave();'),
+    'Saving an OLP project to disk must autosave the cleared dirty flag.'
+));
+const workspaceHasWorkSource = mainSource.slice(
+    mainSource.indexOf('function workspaceSnapshotHasWork('),
+    mainSource.indexOf('function readSessionStorageValue(')
+);
+assert.ok(
+    workspaceHasWorkSource.includes('Array.isArray(snapshot.olpProject?.files) && snapshot.olpProject.files.length > 0'),
+    'An OLP-only workspace must be offered for startup recovery.'
+);
+
+const workspaceChoiceSource = mainSource.slice(
+    mainSource.indexOf('function requestWorkspaceRecoveryChoice('),
+    mainSource.indexOf('function closeWorkspaceRecoveryDialog(')
+);
+assert.ok(
+    workspaceChoiceSource.includes('WorkspaceRecovery.getWorkspaceSummary(record)')
+        && workspaceChoiceSource.includes('new Intl.DateTimeFormat(language')
+        && workspaceChoiceSource.includes("uiFormat('마지막 저장: {time}'")
+        && workspaceChoiceSource.includes("uiFormat('로봇 {robots}대 · 3D 모델 {models}개'")
+        && workspaceChoiceSource.includes("uiFormat('OLP 프로젝트 {projects}개', { projects: summary.olpProjects })")
+        && workspaceChoiceSource.includes('el.workspaceRecoveryDialog.showModal()')
+        && workspaceChoiceSource.includes('recoveryChoiceResolver = resolve'),
+    'The modal must show localized save metadata and wait for the required user decision.'
+);
+const workspaceChannelSource = mainSource.slice(
+    mainSource.indexOf('function setupWorkspaceBroadcastChannel()'),
+    mainSource.indexOf('async function claimWorkspaceLease(')
+);
+assert.ok(
+    workspaceChannelSource.includes('new BroadcastChannel(WORKSPACE_BROADCAST_CHANNEL)')
+        && workspaceChannelSource.includes("message.type === 'workspace-probe'")
+        && workspaceChannelSource.includes('void Promise.resolve(saveMotionProjectNow())')
+        && workspaceChannelSource.includes(".finally(() => {")
+        && workspaceChannelSource.includes("type: 'workspace-alive'")
+        && workspaceChannelSource.includes('revision: recovery.workspace?.revision || 0')
+        && workspaceChannelSource.includes('recovery.pendingProbes')
+        && workspaceChannelSource.includes('WORKSPACE_LIVE_PROBE_TIMEOUT_MS'),
+    'A probed owner must finish its latest durable save before responding with its workspace revision to a duplicated tab.'
+);
+const workspaceHeartbeatSource = mainSource.slice(
+    mainSource.indexOf('function startWorkspaceHeartbeat()'),
+    mainSource.indexOf('function clearLegacyWorkspaceStorageAfterCommit()')
+);
+assert.ok(
+    workspaceHeartbeatSource.includes("if (error?.code === 'WORKSPACE_LEASE_LOST') void forkWorkspaceAfterOwnershipLoss();")
+        && workspaceHeartbeatSource.includes('incompleteRecoveryFrom: recovery.workspace?.incompleteRecoveryFrom || null')
+        && workspaceHeartbeatSource.includes('recovery.saveQueued = true;')
+        && workspaceHeartbeatSource.includes('if (!recovery.saveInFlight) queueMicrotask(() => void runWorkspaceSaveLoop());'),
+    'Heartbeat-only lease loss must fork immediately, preserve partial-recovery provenance, and queue a durable save.'
+);
+const workspaceSaveLoopSource = mainSource.slice(
+    mainSource.indexOf('async function runWorkspaceSaveLoop()'),
+    mainSource.indexOf('async function findLatestWorkspaceCandidate(')
+);
+assert.ok(
+    workspaceSaveLoopSource.includes('recovery.saveQueued = true;')
+        && workspaceSaveLoopSource.includes('const snapshot = serializeWorkspaceSnapshot();')
+        && workspaceSaveLoopSource.includes('await recovery.db.saveWorkspaceWithLease({')
+        && workspaceSaveLoopSource.includes('expectedRevision: previous.revision')
+        && workspaceSaveLoopSource.includes("error?.code === 'WORKSPACE_LEASE_LOST'")
+        && workspaceSaveLoopSource.includes("error?.code === 'WORKSPACE_REVISION_CONFLICT'")
+        && workspaceSaveLoopSource.includes('await forkWorkspaceAfterOwnershipLoss();')
+        && workspaceSaveLoopSource.includes('WorkspaceRecovery.isWorkspaceQuotaError(error)'),
+    'Autosave must serialize writes, enforce lease/revision ownership, fork on stale ownership and expose quota failures.'
+);
+const workspaceCandidateSource = mainSource.slice(
+    mainSource.indexOf('async function findLatestWorkspaceCandidate('),
+    mainSource.indexOf('function readLegacyWorkspaceCandidate(')
+);
+assert.ok(
+    workspaceCandidateSource.includes('const recordById = new Map(records.map((record) => [record.id, record]));')
+        && workspaceCandidateSource.includes('const preservedSourceIds = new Set(records')
+        && workspaceCandidateSource.includes('.map((record) => record.incompleteRecoveryFrom)')
+        && workspaceCandidateSource.includes('.filter((id) => id && recordById.has(id)));')
+        && workspaceCandidateSource.includes('const orderedRecords = [...records].sort((left, right) => {')
+        && workspaceCandidateSource.includes('const priority = (record) => preservedSourceIds.has(record.id)')
+        && workspaceCandidateSource.includes('? 0')
+        && workspaceCandidateSource.includes(': record.incompleteRecoveryFrom ? 2 : 1;')
+        && workspaceCandidateSource.includes('return priority(left) - priority(right)')
+        && workspaceCandidateSource.includes('for (const record of orderedRecords)')
+        && workspaceCandidateSource.includes('let liveFallback = null;')
+        && workspaceCandidateSource.includes('if (!live) return { record, live: false };')
+        && workspaceCandidateSource.includes('if (!liveFallback) liveFallback = { record, live: true };')
+        && workspaceCandidateSource.includes('return liveFallback;'),
+    'Startup discovery must prefer an intact source still referenced by a partial recovery, rank partial targets last, and retain a live fallback.'
+);
+assert.doesNotMatch(
+    mainSource,
+    /localStorage\.setItem\(\s*(?:MOTION_PROJECT_STORAGE_KEY|VIEW_PRESETS_STORAGE_KEY)/,
+    'Workspace state and imported binaries must never be written back to the shared legacy localStorage keys.'
+);
+assert.ok(
+    mainSource.includes('const motionRaw = localStorage.getItem(MOTION_PROJECT_STORAGE_KEY);')
+        && mainSource.includes('const viewRaw = localStorage.getItem(VIEW_PRESETS_STORAGE_KEY);')
+        && mainSource.includes('clearLegacyWorkspaceStorageAfterCommit();'),
+    'Legacy localStorage must be read only for migration and cleared only after a successful IndexedDB commit.'
+);
+const workspaceRecordFactorySource = mainSource.slice(
+    mainSource.indexOf('function createWorkspaceRecord('),
+    mainSource.indexOf('function resolveWorkspaceRecoveryChoice(')
+);
+assert.ok(
+    workspaceRecordFactorySource.includes('incompleteRecoveryFrom: options.incompleteRecoveryFrom || null'),
+    'New workspace records must accept provenance linking a partial recovery back to its intact source.'
+);
+const workspaceRecoveryInitSource = mainSource.slice(
+    mainSource.indexOf('async function initializeWorkspaceRecovery()'),
+    mainSource.indexOf('function releaseWorkspaceOwnership(')
+);
+[
+    "recovery.ownerId = WorkspaceRecovery.createWorkspaceId('owner')",
+    'new WorkspaceRecovery.WorkspaceRecoveryStore(window.indexedDB)',
+    'readSessionStorageValue(WORKSPACE_SESSION_POINTER_KEY)',
+    "performance.getEntriesByType?.('navigation')?.[0]?.type || ''",
+    "const reclaimingSessionReload = navigationType === 'reload' && Boolean(sessionWorkspaceId);",
+    'await probeLiveWorkspaceOwner(source.id)',
+    'const lease = await recovery.db.getLease(source.id);',
+    'const reclaimingSameTabReload = reclaimingSessionReload',
+    'Number(lease.expiresAt) > Date.now()',
+    'const previousRevision = source.revision;',
+    'for (let attempt = 0; attempt < 10; attempt += 1)',
+    'const refreshed = await recovery.db.getWorkspace(source.id);',
+    'if (source.revision > previousRevision) break;',
+    'const candidate = await findLatestWorkspaceCandidate(await recovery.db.listWorkspaces());',
+    'source = candidate?.record || null;',
+    'sourceIsLive = Boolean(candidate?.live);',
+    'readLegacyWorkspaceCandidate()',
+    'let targetWorkspaceId = source && !sourceIsLive',
+    '? source.id',
+    'await claimWorkspaceLease(targetWorkspaceId',
+    'await requestWorkspaceRecoveryChoice(source',
+    'await restoreWorkspaceSnapshot(source.state)',
+    'let restoreHadWarnings = false;',
+    'restoreHadWarnings = true;',
+    "setStatus('저장된 작업 파일 일부를 찾을 수 없어 이전 작업을 모두 복구하지 못했습니다.'",
+    'if (restoreSelected && restoreHadWarnings && source?.id === recovery.workspaceId)',
+    'await recovery.db.releaseLease(recovery.workspaceId, recovery.ownerId)',
+    'writeSessionStorageValue(WORKSPACE_SESSION_POINTER_KEY, recovery.workspaceId)',
+    'const reusingSourceRecord = Boolean(source && source.id === recovery.workspaceId);',
+    'revision: reusingSourceRecord ? source.revision : 0',
+    'createdAt: reusingSourceRecord ? source.createdAt : Date.now()',
+    'await runWorkspaceSaveLoop()',
+    'const targetWasCommitted = Number(recovery.workspace?.revision) > 0;',
+    'source && !sourceIsLive && !legacySource && !restoreHadWarnings',
+    'source.id !== recovery.workspaceId',
+    'await recovery.db.archiveWorkspace(source.id, true, {',
+    'expectedRevision: source.revision',
+    'requireUnleased: true',
+    "console.warn('Unable to archive the migrated workspace source:', error)",
+    'await recovery.db.pruneArchivedWorkspaces({ keep: 1 });',
+    'await recovery.db.deleteOrphanAssets({ gracePeriodMs: 600000 });',
+    "console.warn('Unable to clean old workspace recovery records:', error)"
+].forEach((marker) => assert.ok(
+    workspaceRecoveryInitSource.includes(marker),
+    `Workspace startup/isolation is missing marker: ${marker}`
+));
+const workspaceSessionSourceSelection = workspaceRecoveryInitSource.slice(
+    workspaceRecoveryInitSource.indexOf('const sessionWorkspaceId = readSessionStorageValue('),
+    workspaceRecoveryInitSource.indexOf('let sourceIsLive = false;')
+);
+assert.ok(
+    workspaceSessionSourceSelection.includes('if (source?.incompleteRecoveryFrom && !startClean) {')
+        && workspaceSessionSourceSelection.includes('const completeSource = await recovery.db.getWorkspace(source.incompleteRecoveryFrom);')
+        && workspaceSessionSourceSelection.includes('if (completeSource && !completeSource.archived')
+        && workspaceSessionSourceSelection.includes('&& workspaceSnapshotHasWork(completeSource.state)) {')
+        && workspaceSessionSourceSelection.includes('source = completeSource;'),
+    'A partial session pointer may select its intact source before lease/probe decisions only while that source remains unarchived and usable.'
+);
+const workspaceLiveCandidateRefreshSource = workspaceRecoveryInitSource.slice(
+    workspaceRecoveryInitSource.indexOf('const candidate = await findLatestWorkspaceCandidate('),
+    workspaceRecoveryInitSource.indexOf('let legacySource = null;')
+);
+assert.ok(
+    workspaceLiveCandidateRefreshSource.includes('source = candidate?.record || null;')
+        && workspaceLiveCandidateRefreshSource.includes('sourceIsLive = Boolean(candidate?.live);')
+        && workspaceLiveCandidateRefreshSource.includes('if (source && sourceIsLive) {')
+        && workspaceLiveCandidateRefreshSource.includes('const previousRevision = source.revision;')
+        && workspaceLiveCandidateRefreshSource.includes('for (let attempt = 0; attempt < 10; attempt += 1)')
+        && workspaceLiveCandidateRefreshSource.includes('const refreshed = await recovery.db.getWorkspace(source.id);')
+        && workspaceLiveCandidateRefreshSource.includes('if (refreshed) source = refreshed;')
+        && workspaceLiveCandidateRefreshSource.includes('if (source.revision > previousRevision) break;')
+        && workspaceLiveCandidateRefreshSource.includes('await new Promise((resolve) => window.setTimeout(resolve, 100));'),
+    'A new window without a session pointer must poll the live candidate until the owner probe-save revision is visible before offering recovery.'
+);
+const workspacePartialRecoveryCommitSource = workspaceRecoveryInitSource.slice(
+    workspaceRecoveryInitSource.indexOf('let restoreSelected = false;'),
+    workspaceRecoveryInitSource.indexOf('void (async () => {')
+);
+assert.ok(
+    workspacePartialRecoveryCommitSource.includes('let incompleteRecoverySourceId = null;')
+        && workspacePartialRecoveryCommitSource.includes('if (restoreSelected && restoreHadWarnings && source?.id) {')
+        && workspacePartialRecoveryCommitSource.includes('incompleteRecoverySourceId = source.id;')
+        && workspacePartialRecoveryCommitSource.includes('incompleteRecoveryFrom: incompleteRecoverySourceId')
+        && workspacePartialRecoveryCommitSource.indexOf('await runWorkspaceSaveLoop();')
+            < workspacePartialRecoveryCommitSource.indexOf('if (targetWasCommitted && incompleteRecoverySourceId) {')
+        && workspacePartialRecoveryCommitSource.includes('record.id !== recovery.workspaceId')
+        && workspacePartialRecoveryCommitSource.includes('record.incompleteRecoveryFrom === incompleteRecoverySourceId')
+        && workspacePartialRecoveryCommitSource.includes('expectedRevision: record.revision')
+        && workspacePartialRecoveryCommitSource.includes('requireUnleased: true')
+        && workspacePartialRecoveryCommitSource.includes("console.warn('Unable to archive an older partial recovery:', error)"),
+    'A warned partial restore must commit a provenance-marked target before atomically archiving older partial descendants while preserving the intact source.'
+);
+const workspaceResolvedPartialSource = workspacePartialRecoveryCommitSource.slice(
+    workspacePartialRecoveryCommitSource.indexOf('if (targetWasCommitted && source && !sourceIsLive && !restoreHadWarnings) {'),
+    workspacePartialRecoveryCommitSource.indexOf('if (targetWasCommitted && incompleteRecoverySourceId) {')
+);
+assert.ok(
+    workspaceResolvedPartialSource.includes('const resolvedPartialRecords = (await recovery.db.listWorkspaces())')
+        && workspaceResolvedPartialSource.includes('record.id !== recovery.workspaceId')
+        && workspaceResolvedPartialSource.includes('record.incompleteRecoveryFrom === source.id')
+        && workspaceResolvedPartialSource.includes('expectedRevision: record.revision')
+        && workspaceResolvedPartialSource.includes('requireUnleased: true')
+        && workspaceResolvedPartialSource.includes("console.warn('Unable to archive a resolved partial recovery:', error)")
+        && workspacePartialRecoveryCommitSource.indexOf('await runWorkspaceSaveLoop();')
+            < workspacePartialRecoveryCommitSource.indexOf('if (targetWasCommitted && source && !sourceIsLive && !restoreHadWarnings) {'),
+    'After a full restore or New choice is durably committed, stale partial descendants except the current target must be archived with revision/lease guards.'
+);
+assert.ok(
+    workspaceRecoveryInitSource.indexOf('await probeLiveWorkspaceOwner(source.id)')
+        < workspaceRecoveryInitSource.indexOf('const lease = await recovery.db.getLease(source.id);')
+        && workspaceRecoveryInitSource.indexOf('const reclaimingSameTabReload = reclaimingSessionReload')
+            < workspaceRecoveryInitSource.indexOf('Number(lease.expiresAt) > Date.now()')
+        && workspaceRecoveryInitSource.indexOf('const previousRevision = source.revision;')
+            < workspaceRecoveryInitSource.indexOf('const refreshed = await recovery.db.getWorkspace(source.id);'),
+    'BroadcastChannel timeout must still honor a live lease, while only a true reload may reclaim this tab and a live fork polls its newest revision.'
+);
+const workspaceLeaseClaimSource = workspaceRecoveryInitSource.slice(
+    workspaceRecoveryInitSource.indexOf('let targetWorkspaceId = source && !sourceIsLive'),
+    workspaceRecoveryInitSource.indexOf('recovery.workspaceId = targetWorkspaceId;')
+);
+assert.ok(
+    workspaceLeaseClaimSource.includes('force: Boolean(reclaimingSessionReload && source && !sourceIsLive')
+        && workspaceLeaseClaimSource.includes('source.id === sessionWorkspaceId && source.id === targetWorkspaceId)')
+        && !workspaceLeaseClaimSource.includes('force: Boolean(source && !sourceIsLive && source.id === targetWorkspaceId)'),
+    'Forced lease reclaim must be scoped to a real reload of the same session-pointer source; a latest-candidate race must fork instead.'
+);
+assert.ok(
+    workspaceRecoveryInitSource.indexOf('const candidate = await findLatestWorkspaceCandidate(await recovery.db.listWorkspaces());')
+        < workspaceRecoveryInitSource.indexOf('const recoveryWasOffered = Boolean(source && workspaceSnapshotHasWork(source.state)')
+        && workspaceRecoveryInitSource.includes('isolatedCopy: sourceIsLive || source.id !== targetWorkspaceId')
+        && workspaceRecoveryInitSource.indexOf('let targetWorkspaceId = source && !sourceIsLive')
+            < workspaceRecoveryInitSource.indexOf('const reusingSourceRecord = Boolean(source && source.id === recovery.workspaceId);')
+        && workspaceRecoveryInitSource.indexOf('await recovery.db.pruneArchivedWorkspaces({ keep: 1 });')
+            < workspaceRecoveryInitSource.indexOf('await recovery.db.deleteOrphanAssets({ gracePeriodMs: 600000 });')
+        && workspaceRecoveryInitSource.includes('source.id !== recovery.workspaceId')
+        && workspaceRecoveryInitSource.includes('requireUnleased: true'),
+    'A live/raced candidate must use isolated recovery, source archival must exclude the target and live leases, and pruned assets need a ten-minute grace period.'
+);
+assert.ok(
+    mainSource.includes("writeSessionStorageValue(WORKSPACE_START_CLEAN_KEY, '1')")
+        && mainSource.includes("const startClean = readSessionStorageValue(WORKSPACE_START_CLEAN_KEY) === '1'")
+        && mainSource.includes("writeSessionStorageValue(WORKSPACE_START_CLEAN_KEY, null)"),
+    'A reset must request one explicit clean startup without leaking that choice into later sessions.'
+);
+assert.match(
+    workspaceRecoveryInitSource,
+    /if \(choice === 'new'\) break;\s*closeWorkspaceRecoveryDialog\(\);\s*showLoading\(true, uiText\('이전 작업 불러오는 중\.\.\.'\)\);/,
+    'Restore must leave the top-layer dialog before showing loading, so long model reconstruction remains visibly in progress.'
+);
+const resetSimulationSource = mainSource.slice(
+    mainSource.indexOf('async function resetSimulation()'),
+    mainSource.indexOf('function getInterferenceZoneRuntime(')
+);
+assert.ok(
+    resetSimulationSource.includes('const resetLineageSourceId = recovery.workspace?.incompleteRecoveryFrom')
+        && resetSimulationSource.includes('|| recovery.workspaceId;')
+        && resetSimulationSource.includes('await recovery.db.deleteWorkspace(recovery.workspaceId, { ownerId: recovery.ownerId });')
+        && resetSimulationSource.includes('record.id === resetLineageSourceId')
+        && resetSimulationSource.includes('record.incompleteRecoveryFrom === resetLineageSourceId')
+        && resetSimulationSource.includes('expectedRevision: record.revision')
+        && resetSimulationSource.includes('requireUnleased: true')
+        && resetSimulationSource.includes("console.warn('Unable to archive a reset recovery record:', error)")
+        && resetSimulationSource.indexOf('await recovery.db.deleteWorkspace(recovery.workspaceId')
+            < resetSimulationSource.indexOf('await recovery.db.archiveWorkspace(record.id, true, {')
+        && !resetSimulationSource.includes('deleteOrphanAssets'),
+    'Reset must delete this workspace, best-effort archive its complete/partial lineage with ownership guards, and leave live-window records/assets intact.'
+);
+
 const models = catalog.filter((entry) => entry.type === 'articulated-stl');
 const scaraCount = models.filter((entry) => entry.robotType === 'scara').length;
 const sixAxisCount = models.filter((entry) => entry.robotType === 'six-axis').length;
@@ -444,7 +1310,9 @@ const makeTimerStep = (model, modelIndex, motion) => ({
 const fullProject = {
     schemaVersion: MOTION_PROJECT_SCHEMA_VERSION,
     repeatCurrentRobot: false,
+    reverseRepeatCurrentRobot: false,
     repeat: true,
+    reverseRepeat: false,
     robots: models.map((model, index) => ({
         instanceId: `robot-${index + 1}`,
         modelFolder: model.folder,
@@ -471,7 +1339,9 @@ const normalized = normalizeMotionProject(fullProject);
 assert.equal(normalized.robots.length, 29);
 assert.equal(normalized.robots.filter((robot) => robot.included).length, 4);
 assert.equal(normalized.repeatCurrentRobot, false);
+assert.equal(normalized.reverseRepeatCurrentRobot, false);
 assert.equal(normalized.repeat, true);
+assert.equal(normalized.reverseRepeat, false);
 assert.equal(normalized.robots[0].steps[0].name, 'P[0]');
 assert.equal(normalized.robots[0].steps[0].pointIndex, 0);
 assert.equal(normalized.robots[0].steps[0].label, 'Pickup_01');
@@ -546,7 +1416,30 @@ assert.equal(reorderMotionSteps(reorderedSteps, 'missing', 'P1', false), false);
 assert.deepEqual(normalizeMotionProject(JSON.parse(JSON.stringify(normalized))), normalized);
 const legacyRepeatProject = structuredClone(fullProject);
 delete legacyRepeatProject.repeatCurrentRobot;
-assert.equal(normalizeMotionProject(legacyRepeatProject).repeatCurrentRobot, true, 'Legacy repeat must apply to both scopes.');
+delete legacyRepeatProject.reverseRepeatCurrentRobot;
+delete legacyRepeatProject.reverseRepeat;
+const normalizedLegacyRepeatProject = normalizeMotionProject(legacyRepeatProject);
+assert.equal(normalizedLegacyRepeatProject.repeatCurrentRobot, true, 'Legacy repeat must apply to both scopes.');
+assert.equal(normalizedLegacyRepeatProject.reverseRepeatCurrentRobot, false, 'Legacy projects must default robot reverse repeat off.');
+assert.equal(normalizedLegacyRepeatProject.reverseRepeat, false, 'Legacy projects must default group reverse repeat off.');
+const conflictingRepeatProject = structuredClone(fullProject);
+conflictingRepeatProject.repeatCurrentRobot = true;
+conflictingRepeatProject.reverseRepeatCurrentRobot = true;
+conflictingRepeatProject.repeat = true;
+conflictingRepeatProject.reverseRepeat = true;
+const normalizedConflictingRepeatProject = normalizeMotionProject(conflictingRepeatProject);
+assert.equal(normalizedConflictingRepeatProject.repeatCurrentRobot, false);
+assert.equal(normalizedConflictingRepeatProject.reverseRepeatCurrentRobot, true);
+assert.equal(normalizedConflictingRepeatProject.repeat, false);
+assert.equal(normalizedConflictingRepeatProject.reverseRepeat, true);
+const groupOnlyReverseRepeatProject = structuredClone(fullProject);
+groupOnlyReverseRepeatProject.repeatCurrentRobot = true;
+groupOnlyReverseRepeatProject.reverseRepeatCurrentRobot = false;
+groupOnlyReverseRepeatProject.repeat = true;
+groupOnlyReverseRepeatProject.reverseRepeat = true;
+const normalizedGroupOnlyReverseRepeatProject = normalizeMotionProject(groupOnlyReverseRepeatProject);
+assert.equal(normalizedGroupOnlyReverseRepeatProject.repeatCurrentRobot, true, 'Group reverse repeat must not disable robot repeat.');
+assert.equal(normalizedGroupOnlyReverseRepeatProject.repeat, false, 'Group reverse repeat must disable group repeat.');
 
 const duplicateModels = structuredClone(fullProject);
 duplicateModels.robots = [
@@ -600,9 +1493,11 @@ assert.throws(() => normalizeMotionProject(invalidActiveTcp), /active TCP index 
     'program-step-robot',
     'program-run-robot',
     'program-repeat-robot',
+    'program-reverse-repeat-robot',
     'program-step-group',
     'program-run-group',
     'program-repeat',
+    'program-reverse-repeat',
     'program-import-file'
 ].forEach((id) => assert.match(htmlSource, new RegExp(`id=["']${id}["']`)));
 [
@@ -611,8 +1506,11 @@ assert.throws(() => normalizeMotionProject(invalidActiveTcp), /active TCP index 
     'tcp-profile-panel',
     'tcp-launcher-label',
     'model-context-menu',
+    'model-copy',
+    'model-paste',
     'model-change-color',
     'model-color-picker',
+    'model-delete',
     'btn-apply-tcp-profile',
     'btn-reset-tcp-profile',
     'tcp-snap-type',
@@ -626,6 +1524,148 @@ assert.equal((htmlSource.match(/data-tcp-profile=/g) || []).length, 3, 'Viewer m
 assert.ok(mainSource.includes('function applyImportedModelColor(')
     && mainSource.includes('findImportedModelPart(partId)')
     && mainSource.includes('modelColorPicker?.addEventListener'), 'Imported model and part colors must be editable from the model tree context menu.');
+const modelContextMenuSource = htmlSource.slice(
+    htmlSource.indexOf('<div id="model-context-menu"'),
+    htmlSource.indexOf('<footer id="stats-bar"')
+);
+const modelContextMenuOrder = [
+    'id="model-copy"',
+    'id="model-paste"',
+    'id="model-change-zero-point"',
+    'id="model-change-color"',
+    'id="model-delete"'
+].map((marker) => modelContextMenuSource.indexOf(marker));
+assert.ok(
+    modelContextMenuOrder.every((index) => index >= 0)
+        && modelContextMenuOrder.every((index, position) => position === 0 || modelContextMenuOrder[position - 1] < index),
+    'The model context menu must order Copy, Paste, zero-point, color and Delete commands.'
+);
+assert.match(modelContextMenuSource, /id="model-copy"[^>]*>[\s\S]*?fa-copy/, 'Model Copy must expose its copy icon.');
+assert.match(modelContextMenuSource, /id="model-paste"[^>]*disabled[^>]*>[\s\S]*?fa-paste/, 'Model Paste must start disabled and expose its paste icon.');
+assert.match(modelContextMenuSource, /id="model-delete"[^>]*class="model-context-danger"[^>]*>[\s\S]*?fa-trash/, 'Model Delete must use the destructive command style and trash icon.');
+assert.match(
+    cssSource,
+    /\.program-step-context-menu\s+\[hidden\]\s*\{[^}]*display:\s*none\s*!important;/,
+    'Hidden model context commands must stay hidden even when menu controls use flex layouts.'
+);
+assert.ok(
+    mainSource.includes('modelClipboard: null')
+        && mainSource.includes("modelCopy: document.getElementById('model-copy')")
+        && mainSource.includes("modelPaste: document.getElementById('model-paste')")
+        && mainSource.includes("modelDelete: document.getElementById('model-delete')")
+        && mainSource.includes("modelChangeColor: document.getElementById('model-change-color')"),
+    'The viewer must retain a session model clipboard and bind all structural menu controls.'
+);
+assert.ok(
+    mainSource.includes("el.modelCopy?.addEventListener('click', copyModelContextTarget)")
+        && mainSource.includes("el.modelPaste?.addEventListener('click'")
+        && mainSource.includes('void pasteModelClipboard();')
+        && mainSource.includes("el.modelDelete?.addEventListener('click'")
+        && mainSource.includes('deleteSelectedModel();'),
+    'Copy, Paste and Delete menu commands must be connected to their scene operations.'
+);
+const modelTreeContextEventSource = mainSource.slice(
+    mainSource.indexOf("el.modelTree?.addEventListener('contextmenu'"),
+    mainSource.indexOf("el.modelCopy?.addEventListener('click'")
+);
+assert.ok(
+    modelTreeContextEventSource.includes("event.target.closest('[data-model-part-id]')")
+        && modelTreeContextEventSource.includes("event.target.closest('[data-model-tree-id]')")
+        && modelTreeContextEventSource.indexOf('event.preventDefault();')
+            < modelTreeContextEventSource.indexOf('if (isMotionActive())')
+        && modelTreeContextEventSource.includes('if (!model) return;')
+        && !modelTreeContextEventSource.includes('model.userData.uploaded')
+        && modelTreeContextEventSource.includes('openModelContextMenu(event, model, partMatch?.part || null);'),
+    'Right-click must reach every model root while preserving imported-part targeting.'
+);
+assert.ok(
+    mainSource.includes('row.dataset.modelTreeId = treeId;')
+        && mainSource.includes('row.dataset.modelPartId = part.userData.modelPartId;'),
+    'The full model and part row hitboxes, including root toggles, must resolve their context-menu targets.'
+);
+const openModelContextMenuSource = mainSource.slice(
+    mainSource.indexOf('function openModelContextMenu('),
+    mainSource.indexOf('function closeModelContextMenu(')
+);
+assert.ok(
+    openModelContextMenuSource.includes('const structuralActionsHidden = Boolean(part);')
+        && openModelContextMenuSource.includes('[el.modelCopy, el.modelPaste, el.modelDelete].forEach((control) =>')
+        && openModelContextMenuSource.includes('control.hidden = structuralActionsHidden;')
+        && openModelContextMenuSource.includes('el.modelPaste.disabled = state.modelClipboardPastePending || !state.modelClipboard')
+        && openModelContextMenuSource.includes('el.modelChangeColor.hidden = !uploaded'),
+    'Imported parts must retain their color command but hide model-level Copy, Paste and Delete actions.'
+);
+const copyModelContextSource = mainSource.slice(
+    mainSource.indexOf('function copyModelContextTarget('),
+    mainSource.indexOf('function beginModelClipboardPasteMutation(')
+);
+assert.ok(
+    copyModelContextSource.includes('target.part')
+        && copyModelContextSource.includes('state.modelClipboard = snapshot;'),
+    'Copy must reject imported parts and replace the session clipboard only with a model-root snapshot.'
+);
+const clipboardCloneSource = mainSource.slice(
+    mainSource.indexOf('function cloneClipboardMaterial('),
+    mainSource.indexOf('function captureClipboardTransform(')
+);
+assert.ok(
+    mainSource.includes("import { clone as cloneObjectWithSkeletons } from 'three/addons/utils/SkeletonUtils.js';")
+        && clipboardCloneSource.includes('record.object.isSkinnedMesh')
+        && clipboardCloneSource.includes('clone = cloneObjectWithSkeletons(source);')
+        && clipboardCloneSource.includes('clone = source.clone(true);')
+        && clipboardCloneSource.includes('sourceMaterials.map(cloneClipboardMaterial)')
+        && clipboardCloneSource.includes('state.collision.highlightedMaterials.get(material)')
+        && clipboardCloneSource.includes('clonedMaterial.color.copy(collisionSnapshot.color)')
+        && clipboardCloneSource.includes('object.userData?.simulationSnapFaceOverlay')
+        && clipboardCloneSource.includes('object.userData?.collisionDebugMesh')
+        && clipboardCloneSource.includes('delete clonedObject.userData.modelTreeId;')
+        && clipboardCloneSource.includes('delete clonedObject.userData.modelPartId;')
+        && clipboardCloneSource.includes('delete clonedObject.userData.attachmentHost;'),
+    'Clipboard templates must clone stable hierarchy/material state without retaining transient visuals, scene identity or attachment references.'
+);
+assert.ok(
+    clipboardCloneSource.includes('function assignClipboardModelTreeIds(')
+        && clipboardCloneSource.includes('delete model.userData.modelTreeId;')
+        && clipboardCloneSource.includes('ensureModelTreeId(model);')
+        && clipboardCloneSource.includes('state.modelPartIdCounter += 1;')
+        && clipboardCloneSource.includes('part.userData.modelPartId = `scene-model-part-${state.modelPartIdCounter}`;'),
+    'Every pasted root and imported part must receive a fresh model-tree identity.'
+);
+const robotClipboardPasteSource = mainSource.slice(
+    mainSource.indexOf('async function pasteRobotClipboardSnapshot('),
+    mainSource.indexOf('async function pasteModelClipboard(')
+);
+assert.ok(
+    robotClipboardPasteSource.includes('await loadArticulatedRobot(snapshot.modelDefinition')
+        && robotClipboardPasteSource.includes('assignRobotInstanceMetadata(robot, snapshot.modelDefinition);')
+        && robotClipboardPasteSource.includes('restoreRobotTcpProfiles(robot, snapshot.tcpProfiles, snapshot.activeTcpProfileIndex);')
+        && robotClipboardPasteSource.includes('state.motionPrograms.set(robot.userData.motionInstanceId, cloneMotionProgram(snapshot.program));'),
+    'Robot Paste must rebuild an independent articulated instance with fresh metadata, TCP profiles and a copied program.'
+);
+assert.ok(
+    mainSource.includes('const MODEL_CLIPBOARD_TOOL_PASTE_OFFSET_Y = 100;')
+        && mainSource.includes('MODEL_CLIPBOARD_TOOL_PASTE_OFFSET_Y * pasteNumber'),
+    'Repeated Tool Paste must use a visible local offset instead of stacking collision roots at the same flange pose.'
+);
+const snapshotApplySource = mainSource.slice(
+    mainSource.indexOf('function applySceneSnapshot('),
+    mainSource.indexOf('function recordHistory(')
+);
+const clipboardRollbackSource = mainSource.slice(
+    mainSource.indexOf('function rollbackModelClipboardPaste('),
+    mainSource.indexOf('function pasteObjectClipboardSnapshot(')
+);
+assert.ok(
+    snapshotApplySource.includes('disposeCollisionDebugForModel(model);')
+        && clipboardRollbackSource.includes('disposeCollisionDebugForModel(model);')
+        && clipboardRollbackSource.includes('disposeObjectResources(addedModels[0]);')
+        && mainSource.includes('{ disposeRootResources: Boolean(robot) }'),
+    'Undo/Redo removal and failed Paste rollback must release collision-debug references and owned robot resources.'
+);
+assert.ok(
+    mainSource.includes("recordHistory('모델 붙여넣기', historyBefore, captureSceneSnapshot())"),
+    'Model Paste must create one undoable scene-history entry.'
+);
   const tcpSnapSelector = htmlSource.match(/<select id="tcp-snap-type">[\s\S]*?<\/select>/)?.[0] || '';
   assert.equal((tcpSnapSelector.match(/<option value="(?:auto|vertex|endpoint|edge-midpoint|circle-center|rectangle-center|multi-point-center)"/g) || []).length, 7, 'TCP snap type selector must expose the supported CAD snap types.');
 assert.equal((htmlSource.match(/data-panel-toggle="tcp-profile-panel"/g) || []).length, 1, 'Viewer must expose one TCP panel launcher.');
@@ -638,12 +1678,13 @@ const programControlRows = [...htmlSource.matchAll(/<div[^>]*class="program-cont
         .map((button) => button[1])
         .filter((id) => id !== 'program-work-origin-robot'));
 assert.deepEqual(programControlRows, [
-    ['program-step-robot', 'program-run-robot', 'program-pause-robot', 'program-stop-robot', 'program-repeat-robot'],
-    ['program-step-group', 'program-run-group', 'program-pause-group', 'program-stop-group', 'program-repeat']
-], 'Current and checked robot rows must share the Step Into, play, pause, stop and repeat layout.');
+    ['program-step-robot', 'program-run-robot', 'program-pause-robot', 'program-stop-robot', 'program-repeat-robot', 'program-reverse-repeat-robot'],
+    ['program-step-group', 'program-run-group', 'program-pause-group', 'program-stop-group', 'program-repeat', 'program-reverse-repeat']
+], 'Current and checked robot rows must share the Step Into, play, pause, stop, repeat and reverse-repeat layout.');
 [
     'function updateMotionSessions(',
     'function preflightRobotMotion(',
+    'function preflightActiveReverseRepeatSessions(',
     'function addDelayMotionStep(',
     'function addTimerMotionStep(',
     'function restoreMotionProjectData(',
@@ -679,9 +1720,13 @@ assert.deepEqual(programControlRows, [
     'function stepIntoCheckedRobots(',
     'stepIntoStepId: step.id',
     'repeat: false',
+    'reverseRepeat: false',
     "controlScope: 'robot'",
     "controlScope: 'group'",
     'repeatCurrentRobot: state.motionRepeatRobot',
+    'reverseRepeatCurrentRobot: state.motionReverseRepeatRobot',
+    'advanceMotionCursor({',
+    'getDirectionalTimerActions(step.motion, {',
     'program.selectedStepId = program.steps[nextIndex].id',
     'if (robot && resumePausedRobotMotions([robot])) return;',
     'if (resumePausedRobotMotions(robots)) return;',
@@ -692,7 +1737,7 @@ assert.deepEqual(programControlRows, [
     'return elapsed >= segment.duration',
     "if (step.motion === 'DELAY')",
     "type: 'DELAY'",
-    "type: step.motion",
+    'timerActions,',
     'duration: calculateDelayDuration(step.delaySeconds) * 1000',
     'delaySeconds: step.delaySeconds',
     'robot.userData.manifest.cartesianMotion.maxSpeed',
@@ -707,7 +1752,6 @@ assert.deepEqual(programControlRows, [
     'session.segment = createMotionSegment(session, session.nextSegmentStartAt)',
     'completedSegment.startTime + completedSegment.duration',
     'const markerTime = segment.startTime',
-    'localStorage.setItem(MOTION_PROJECT_STORAGE_KEY',
     'window.showSaveFilePicker({',
     'await fileHandle.createWritable()',
     "startIn: 'documents'"
@@ -803,6 +1847,12 @@ assert.match(cssSource, /\.program-step-list\s*\{[^}]*grid-auto-rows:\s*42px[^}]
 assert.match(cssSource, /\.program-step-row\s*\{[^}]*height:\s*42px[^}]*min-height:\s*42px[^}]*max-height:\s*42px/s, 'Every program command row must keep a fixed height.');
 assert.ok(mainSource.includes("const row = event.target.closest('[data-program-step-id]')"), 'Program command selection must use the full row hit box.');
 assert.ok(mainSource.includes('program.selectedStepId = row.dataset.programStepId'), 'Clicking a program row must select that command.');
+assert.ok(
+    mainSource.includes("el.olpPointTable?.addEventListener('contextmenu', handleOlpPointContextMenu)")
+        && mainSource.includes("el.olpPointTable?.addEventListener('keydown', handleOlpPointTableActivate)")
+        && !mainSource.includes("el.olpPointTable?.addEventListener('click', handleOlpPointTableActivate)"),
+    'OLP point actions must open from right-click or keyboard activation, never from left-click.'
+);
 assert.match(htmlSource, /id="program-step-list"[^>]*data-panel-drag-ignore/, 'The program command list must never initiate panel dragging.');
 assert.ok(mainSource.includes('function insertMotionStepAfterSelected(program, step)'), 'New commands must be inserted relative to the selected row.');
 assert.ok(
@@ -885,17 +1935,68 @@ const preflightSource = mainSource.slice(
     mainSource.indexOf('function createMotionSession(')
 );
 assert.ok(preflightSource.includes("if (step.motion === 'DELAY')") && preflightSource.includes('return;'), 'DELAY preflight must not run robot IK.');
-assert.ok(preflightSource.includes("if (step.motion === 'TIME_START')")
-    && preflightSource.includes("if (step.motion === 'TIME_OUT')")
-    && preflightSource.includes('TIME START must run before TIME OUT'), 'TIME OUT must require an active TIME START marker.');
+assert.ok(preflightSource.includes('const validateTimerAction = (action, step) =>')
+    && preflightSource.includes("if (action === 'TIME_START')")
+    && preflightSource.includes("if (action === 'TIME_OUT')")
+    && preflightSource.includes('getDirectionalTimerActions(step.motion, {')
+    && preflightSource.includes('timerActions.forEach((action) => validateTimerAction(action, step))')
+    && preflightSource.includes('TIME START must run before TIME OUT'), 'Directional TIME OUT must require an active TIME START marker.');
+assert.ok(
+    preflightSource.includes('{ reverseRepeat = false, timerOnly = false }')
+        && preflightSource.includes('if (timerOnly) return;')
+        && preflightSource.includes('if (originalAngles) restoreRobotJointAngles(robot, originalAngles);'),
+    'Timer-only live validation must skip kinematics and avoid touching the current robot pose.'
+);
+assert.ok(
+    mainSource.includes('plans.forEach(({ robot, steps, reverseRepeat }) => preflightRobotMotion(robot, steps, { reverseRepeat }));'),
+    'Starting a reverse-repeat program must retain full timer and kinematics preflight.'
+);
 assert.ok(cssSource.includes('width: min(340px, calc(100% - 32px))'), 'Program Panel compact width must remain 340px.');
 assert.match(cssSource, /\.program-panel\s*\{[^}]*top:\s*0[^}]*left:\s*320px[^}]*transform:\s*none/s, 'Program Panel must initially appear beside the model tree.');
 assert.ok(htmlSource.includes('id="program-repeat" class="program-repeat-toggle"'), 'Repeat must be an icon toggle button.');
 assert.ok(htmlSource.includes('id="program-repeat-robot" class="program-repeat-toggle"'), 'Current robot repeat must be an icon toggle button.');
+assert.ok(htmlSource.includes('id="program-reverse-repeat" class="program-repeat-toggle"'), 'Reverse repeat must be an icon toggle button.');
+assert.ok(htmlSource.includes('id="program-reverse-repeat-robot" class="program-repeat-toggle"'), 'Current robot reverse repeat must be an icon toggle button.');
 assert.equal((htmlSource.match(/data-program-repeat(?=[\s>])/g) || []).length, 2, 'Both playback rows must expose a repeat control.');
+assert.equal((htmlSource.match(/data-program-reverse-repeat(?=[\s>])/g) || []).length, 2, 'Both playback rows must expose a reverse-repeat control.');
 assert.match(htmlSource, /id="program-repeat-robot"[^>]*data-program-repeat-scope="robot"/);
 assert.match(htmlSource, /id="program-repeat"[^>]*data-program-repeat-scope="group"/);
+assert.match(htmlSource, /id="program-reverse-repeat-robot"[^>]*data-program-repeat-scope="robot"/);
+assert.match(htmlSource, /id="program-reverse-repeat"[^>]*data-program-repeat-scope="group"/);
+assert.ok(
+    mainSource.includes("button.setAttribute('aria-label', uiText(reverse")
+        && mainSource.includes("robotScope ? '현재 로봇 역순 반복' : '체크 로봇 역순 반복'")
+        && mainSource.includes("robotScope ? '현재 로봇 반복 실행' : '체크 로봇 반복 실행'"),
+    'Repeat controls must refresh localized accessible names when the language changes.'
+);
 assert.ok(!htmlSource.includes('<input id="program-repeat"'), 'Repeat must not use a checkbox.');
+assert.ok(
+    mainSource.includes('state[repeatStateKey] = reverse ? false : enabled;')
+        && mainSource.includes('state[reverseStateKey] = reverse ? enabled : false;')
+        && mainSource.includes('session.reverseRepeat = state[reverseStateKey];'),
+    'Repeat and reverse repeat must remain mutually exclusive, including active sessions.'
+);
+const repeatToggleSource = mainSource.slice(
+    mainSource.indexOf('function preflightActiveReverseRepeatSessions('),
+    mainSource.indexOf('function syncMotionRepeatControl(')
+);
+assert.ok(
+    repeatToggleSource.includes('.filter((session) => !session.stepIntoStepId && session.controlScope === scope)')
+        && repeatToggleSource.includes('preflightRobotMotion(session.robot, session.steps, {')
+        && repeatToggleSource.includes('reverseRepeat: true,')
+        && repeatToggleSource.includes('timerOnly: true'),
+    'Enabling reverse repeat during playback must timer-preflight every matching non-StepInto session.'
+);
+assert.ok(
+    repeatToggleSource.includes('if (reverse && enabled)')
+        && repeatToggleSource.includes('catch (error)')
+        && repeatToggleSource.includes("setMotionProgramStatus('모션 경로 검증에 실패했습니다.', 'error')")
+        && repeatToggleSource.indexOf('preflightActiveReverseRepeatSessions(scope);')
+            < repeatToggleSource.indexOf('state[repeatStateKey] = reverse ? false : enabled;')
+        && repeatToggleSource.indexOf('return;', repeatToggleSource.indexOf('catch (error)'))
+            < repeatToggleSource.indexOf('state[repeatStateKey] = reverse ? false : enabled;'),
+    'A failed live reverse-repeat preflight must return before changing toggle or session state.'
+);
 assert.ok(!htmlSource.includes('id="program-run-step"'), 'The old selected-row run control must be replaced by Step Into.');
 assert.ok(!htmlSource.includes('fa-play"></i> 동시 시작'), 'Group play must use the compact icon-only button.');
 assert.ok(
@@ -914,4 +2015,4 @@ assert.ok(mainSource.includes("dataset.userResized === 'true'"), 'Resized panels
 assert.match(cssSource, /\.panel-edge-resizable:is\(\[data-resize-edge="e"\], \[data-resize-edge="w"\]\)[^{]*\{[^}]*cursor:\s*ew-resize/s);
 assert.match(cssSource, /\.panel-edge-resizable:is\(\[data-resize-edge="n"\], \[data-resize-edge="s"\]\)[^{]*\{[^}]*cursor:\s*ns-resize/s);
 
-console.log(`Motion program core OK: ${models.length} robots (${scaraCount} SCARA, ${sixAxisCount} six-axis), MOVJ/MOVL/DELAY timing, cycle timers, four-robot numerical stress, JSON round trip and schema checks`);
+console.log(`Motion program core OK: ${models.length} robots (${scaraCount} SCARA, ${sixAxisCount} six-axis), MOVJ/MOVL/DELAY timing, forward/reverse-repeat cursors, directional cycle timers, four-robot numerical stress, JSON round trip and schema checks`);
