@@ -413,6 +413,10 @@
 
 ## Debugging Tool
 
+### Ver 26.08.14
+
+- `[변경]` Communication Tester를 `V2.9 → V3.0`로 업데이트했습니다.
+
 ### Ver 26.07.27
 
 - `[변경]` Communication Tester를 `V2.8 → V2.9`로 업데이트했습니다.

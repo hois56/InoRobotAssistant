@@ -7,5 +7,5 @@ window.SITE_CARD_VERSIONS = {
     projectGenerator: '26.08.13',
     software: '26.08.11',
     manual: '26.08.13',
-    debuggingTool: '26.07.27'
+    debuggingTool: '26.08.14'
 };
