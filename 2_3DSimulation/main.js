@@ -6887,6 +6887,11 @@ function createModelTreeNode(model) {
         toggle.setAttribute('aria-label', `${displayNameForModelTree(model)} ${uiText(collapsed ? '펼치기' : '접기')}`);
         toggle.title = uiText(collapsed ? '펼치기' : '접기');
         toggle.innerHTML = `<i class="fa-solid fa-chevron-${collapsed ? 'right' : 'down'}"></i>`;
+        toggle.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            toggleModelTreeNode(model);
+        });
         row.appendChild(toggle);
     } else {
         const placeholder = document.createElement('span');
