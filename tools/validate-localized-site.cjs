@@ -340,7 +340,7 @@ assert(fs.existsSync(traceDownloadArchive) && fs.statSync(traceDownloadArchive).
 const traceV14Archive = path.join(root, '7_DebuggingTool', 'Trace', 'InoRobotTrace_V1.4.zip');
 assert(!fs.existsSync(traceV14Archive), 'The retired Trace V1.4 download archive is still present.');
 const releaseAssets = [
-    ['7_DebuggingTool/CommunicationTester/InoRobot_Comm_Test_V2.9.zip', 'Communication Tester V2.9'],
+    ['7_DebuggingTool/CommunicationTester/InoRobot_Comm_Test_V3.0.zip', 'Communication Tester V3.0'],
     ['7_DebuggingTool/Trace/InoRobotTrace_V1.5.zip', 'Trace V1.5'],
     ['7_DebuggingTool/CADLightweight/CAD_Lightweight.zip', 'lightweight CAD archive']
 ];
@@ -349,7 +349,7 @@ releaseAssets.forEach(([relativePath, label]) => {
     assert(fs.existsSync(assetPath) && fs.statSync(assetPath).size > 0, label + ' release asset is missing.');
 });
 const debuggingHtml = read('7_DebuggingTool/index.html');
-assert(debuggingHtml.includes('CommunicationTester/InoRobot_Comm_Test_V2.9.zip')
+assert(debuggingHtml.includes('CommunicationTester/InoRobot_Comm_Test_V3.0.zip')
     && debuggingHtml.includes('Trace/InoRobotTrace_V1.5.zip'), 'Debugging Tool does not link the current release archives.');
 assert(!debuggingHtml.includes('InoRobot_Comm_Test_V2.8.zip') && !debuggingHtml.includes('InoRobotTrace_V1.4.zip'), 'Debugging Tool still links a retired release archive.');
 const simulationHtml = read('2_3DSimulation/index.html');
