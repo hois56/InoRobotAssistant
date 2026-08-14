@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three/three.module.js';
-import { OrbitControls } from './vendor/three/examples/jsm/controls/OrbitControls.js';
+import { TrackballControls } from './vendor/three/examples/jsm/controls/TrackballControls.js';
 import { TransformControls } from './vendor/three/examples/jsm/controls/TransformControls.js';
 import { STLLoader } from './vendor/three/examples/jsm/loaders/STLLoader.js';
 import { enableContinuousTransformRotation } from './continuous-transform-rotation.mjs?v=20260720-rx-continuous-1';
@@ -15,6 +15,7 @@ import { cadColorToHex } from './step-export-transform.mjs?v=20260719-ry-trackba
 const OCCT_IMPORT_BASE_URL = './vendor/occt/';
 const OCCT_IMPORT_SCRIPT_URL = `${OCCT_IMPORT_BASE_URL}occt-import-js.js`;
 const KG_PER_MM3_PER_G_PER_CM3 = 1e-6;
+const ROBOT_SELECTION_GRAVITY = 9.8;
 const MAX_DETAILED_SNAP_TRIANGLES = 200000;
 const LARGE_STEP_ENGINE_MIN_BYTES = 100 * 1024 * 1024;
 const LARGE_STEP_ENGINE_WORKER_URL = '../2_3DSimulation/step-import-worker.js?v=20260720-large-xcaf-quality-1';
@@ -52,6 +53,17 @@ const HELPER_SCREEN_PIXELS = Object.freeze({
   multiPointCenter: 14
 });
 const SNAP_MARKER_CAMERA_SCALE = Object.freeze({ min: 0.55, max: 1.25 });
+const MAX_VISIBLE_CAD_SNAP_MARKERS = 256;
+const CAD_SNAP_MARKER_TYPE_ORDER = Object.freeze([
+  'rectangle-center',
+  'circle-center',
+  'face-center',
+  'shape-center',
+  'endpoint',
+  'vertex',
+  'edge-midpoint',
+  'virtual-intersection'
+]);
 const MATERIALS = {
   aluminum: { name: '알루미늄 합금', density: 2.70e-6, color: 0xa8b7c4 },
   steel: { name: '강철', density: 7.85e-6, color: 0x64748b },
@@ -104,6 +116,8 @@ const state = {
   snapFaceCandidates: [],
   snapFaceSelection: null,
   snapFaceOverlay: null,
+  snapCandidateMarkers: [],
+  snapDisplayedCandidates: [],
   snapType: 'auto',
   snapRadiusPx: 16,
   snapMarkerReferenceDistance: null,
@@ -117,6 +131,7 @@ const state = {
   sourceStepFile: null,
   sourceCadFormat: null,
   selectedPartIndex: null,
+  massProperties: null,
   exportingStep: false
 };
 
@@ -174,6 +189,15 @@ function cacheElements() {
     originInertia: document.getElementById('cad-result-origin-inertia'),
     centerInertia: document.getElementById('cad-result-center-inertia'),
     calculate: document.getElementById('cad-calculate'),
+    robot: document.getElementById('cad-robot'),
+    robotJ5OffsetRow: document.getElementById('cad-j5off-row'),
+    robotJ5Offset: document.getElementById('cad-j5off'),
+    robotSpec: document.getElementById('cad-robot-spec'),
+    robotCalculate: document.getElementById('cad-robot-calculate'),
+    robotResult: document.getElementById('cad-robot-result'),
+    robotSummary: document.getElementById('cad-robot-summary'),
+    robotTable: document.getElementById('cad-robot-table'),
+    robotOverall: document.getElementById('cad-robot-overall'),
     snapType: document.getElementById('cad-snap-type'),
     snapRadius: document.getElementById('cad-snap-radius'),
     snapRadiusValue: document.getElementById('cad-snap-radius-value'),
@@ -228,11 +252,17 @@ function setupScene() {
     state.renderer.outputColorSpace = THREE.SRGBColorSpace;
     el.viewport.appendChild(state.renderer.domElement);
 
-    // Match the 3D Simulation camera interaction exactly: left drag rotates,
-    // the wheel zooms, and right drag pans with OrbitControls defaults.
-    state.controls = new OrbitControls(state.camera, state.renderer.domElement);
-    state.controls.enableDamping = false;
+    // Trackball controls allow the view to pass over every axis, so the CAD
+    // model can be freely rotated through 360 degrees in any direction.
+    // Left drag rotates, the wheel zooms, and right drag pans.
+    state.controls = new TrackballControls(state.camera, state.renderer.domElement);
+    state.controls.staticMoving = true;
     state.controls.addEventListener('change', scheduleSnapPreview);
+    state.controls.addEventListener('start', hideSnapCandidateMarkersForNavigation);
+    state.controls.addEventListener('end', () => {
+      updateSnapCandidateMarkers();
+      scheduleSnapPreview();
+    });
     state.rotationHandler = new TransformControls(state.camera, state.renderer.domElement);
     enableContinuousTransformRotation(state.rotationHandler, THREE);
     state.rotationHandler.setMode('rotate');
@@ -610,6 +640,7 @@ function syncOrientationFromHandler() {
   writeVectorInputs('rotation', state.rotationDegrees.toArray());
   updateHelpers();
   el.result.classList.add('hide');
+  invalidateCadRobotSelection();
   if (state.centerMarker) state.centerMarker.visible = false;
 }
 
@@ -641,6 +672,7 @@ function resizeRenderer() {
   state.camera.aspect = width / height;
   state.camera.updateProjectionMatrix();
   state.controls?.handleResize?.();
+  updateSnapCandidateMarkers();
 }
 
 function animate() {
@@ -740,6 +772,7 @@ function clearParts() {
   if (state.centerMarker) state.centerMarker.visible = false;
   state.sourceStepFile = null;
   state.sourceCadFormat = null;
+  invalidateCadRobotSelection();
   if (el.exportStep) el.exportStep.disabled = true;
   el.result.classList.add('hide');
   renderParts();
@@ -1407,6 +1440,7 @@ function updatePartFromControl(control) {
     row.querySelector('[data-part-material]').value = 'custom';
   }
   el.result.classList.add('hide');
+  invalidateCadRobotSelection();
   if (state.centerMarker) state.centerMarker.visible = false;
 }
 
@@ -1563,6 +1597,120 @@ function clearSnapFaceSelection() {
   state.snapFaceOverlay = null;
   state.snapFaceSelection = null;
   state.snapFaceCandidates = [];
+  clearSnapCandidateMarkers();
+}
+
+function clearSnapCandidateMarkers() {
+  state.snapCandidateMarkers.forEach((marker) => marker.remove());
+  state.snapCandidateMarkers = [];
+  state.snapDisplayedCandidates = [];
+}
+
+function hideSnapCandidateMarkersForNavigation() {
+  state.snapCandidateMarkers.forEach((marker) => { marker.hidden = true; });
+  state.snapDisplayedCandidates = [];
+}
+
+function createSnapCandidateMarker() {
+  const marker = document.createElement('div');
+  marker.className = 'cad-snap-marker cad-snap-candidate-marker';
+  marker.setAttribute('aria-hidden', 'true');
+  marker.innerHTML = '<span></span>';
+  el.snapMarker?.parentElement?.appendChild(marker);
+  return marker;
+}
+
+function updateSnapCandidateMarkers() {
+  const markerParent = el.snapMarker?.parentElement;
+  if (!state.pickMode || !state.snapFaceSelection || !state.snapFaceCandidates.length
+    || !markerParent || !state.renderer || !state.camera) {
+    clearSnapCandidateMarkers();
+    return;
+  }
+  const bounds = state.renderer.domElement.getBoundingClientRect();
+  if (bounds.width <= 0 || bounds.height <= 0) {
+    clearSnapCandidateMarkers();
+    return;
+  }
+
+  state.camera.updateMatrixWorld(true);
+  state.scene?.updateMatrixWorld(true);
+  const markerParentBounds = markerParent.getBoundingClientRect();
+  const candidates = [];
+  const markerCells = new Map();
+  const markerSpacing = 7;
+  const candidatesByType = new Map();
+  state.snapFaceCandidates.forEach((candidate) => {
+    const candidatesForType = candidatesByType.get(candidate.type) || [];
+    candidatesForType.push(candidate);
+    candidatesByType.set(candidate.type, candidatesForType);
+  });
+  const orderedCandidates = [];
+  const orderedTypes = new Set();
+  CAD_SNAP_MARKER_TYPE_ORDER.forEach((type) => {
+    orderedTypes.add(type);
+    orderedCandidates.push(...(candidatesByType.get(type) || []));
+  });
+  candidatesByType.forEach((candidatesForType, type) => {
+    if (!orderedTypes.has(type)) orderedCandidates.push(...candidatesForType);
+  });
+
+  const projected = new THREE.Vector3();
+  for (const candidate of orderedCandidates) {
+    if (!state.parts[candidate.partIndex]?.enabled) continue;
+    projected.copy(candidate.point).project(state.camera);
+    if (projected.z < -1 || projected.z > 1) continue;
+    const screenX = (projected.x * 0.5 + 0.5) * bounds.width;
+    const screenY = (-projected.y * 0.5 + 0.5) * bounds.height;
+    if (screenX < -12 || screenX > bounds.width + 12
+      || screenY < -12 || screenY > bounds.height + 12) continue;
+
+    const item = { candidate, screenX, screenY };
+    const cellX = Math.floor(screenX / markerSpacing);
+    const cellY = Math.floor(screenY / markerSpacing);
+    let duplicateIndex = -1;
+    for (let offsetX = -1; offsetX <= 1 && duplicateIndex < 0; offsetX += 1) {
+      for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
+        const cell = markerCells.get(`${cellX + offsetX}:${cellY + offsetY}`) || [];
+        const match = cell.find((index) => (
+          Math.hypot(candidates[index].screenX - screenX, candidates[index].screenY - screenY)
+          <= markerSpacing
+        ));
+        if (match !== undefined) {
+          duplicateIndex = match;
+          break;
+        }
+      }
+    }
+    if (duplicateIndex >= 0) {
+      const current = candidates[duplicateIndex];
+      if (snapTypeInfo(candidate.type).priority < snapTypeInfo(current.candidate.type).priority) {
+        candidates[duplicateIndex] = item;
+      }
+      continue;
+    }
+    const cellKey = `${cellX}:${cellY}`;
+    const cell = markerCells.get(cellKey) || [];
+    cell.push(candidates.length);
+    markerCells.set(cellKey, cell);
+    candidates.push(item);
+    if (candidates.length >= MAX_VISIBLE_CAD_SNAP_MARKERS) break;
+  }
+
+  state.snapDisplayedCandidates = candidates.map(({ candidate }) => candidate);
+  while (state.snapCandidateMarkers.length < candidates.length) {
+    state.snapCandidateMarkers.push(createSnapCandidateMarker());
+  }
+  const markerScale = el.snapMarker.style.getPropertyValue('--cad-snap-camera-scale') || '1';
+  state.snapCandidateMarkers.forEach((marker, index) => {
+    const item = candidates[index];
+    marker.hidden = !item;
+    if (!item) return;
+    marker.style.left = `${bounds.left + item.screenX - markerParentBounds.left - markerParent.clientLeft}px`;
+    marker.style.top = `${bounds.top + item.screenY - markerParentBounds.top - markerParent.clientTop}px`;
+    marker.style.setProperty('--cad-snap-camera-scale', markerScale);
+    marker.dataset.snapType = item.candidate.type;
+  });
 }
 
 function selectSnapFace(selection) {
@@ -1592,6 +1740,7 @@ function selectSnapFace(selection) {
       partIndex: selection.partIndex,
       faceKey: selection.key
     }));
+    updateSnapCandidateMarkers();
   } catch (error) {
     console.warn('Selected CAD face snap candidate generation failed:', error);
     clearSnapFaceSelection();
@@ -1655,7 +1804,12 @@ function findSnapAtPointer(pointerEvent) {
     });
   });
   nearbyCandidates.sort((first, second) => first.score - second.score || first.cameraDistance - second.cameraDistance);
-  best = nearbyCandidates.find((candidate) => isSnapCandidateVisible(candidate, candidate.projected, enabledMeshes)) || null;
+  // The selected face owns these candidates. Match 3D Simulation by letting
+  // every displayed marker remain selectable instead of hiding it behind a
+  // second whole-model visibility test.
+  best = state.snapFaceSelection
+    ? nearbyCandidates[0] || null
+    : nearbyCandidates.find((candidate) => isSnapCandidateVisible(candidate, candidate.projected, enabledMeshes)) || null;
   return best;
 }
 
@@ -1735,6 +1889,7 @@ function commitSnapPoint(point, selectedLabelKey) {
   setStatus(() => `${uiText(selectedLabelKey)} ${uiText('스냅 선택')} · ${selectedPoint}`, 'ok');
   setSnapReadout(() => `${uiText(selectedLabelKey)} · ${selectedPoint}`);
   el.result.classList.add('hide');
+  invalidateCadRobotSelection();
   if (state.centerMarker) state.centerMarker.visible = false;
 }
 
@@ -1820,8 +1975,130 @@ function renderTriple(container, labels, values, unit, digits) {
   `).join('');
 }
 
+function getCadRobotModels() {
+  return Array.isArray(window.ToolSelectorRobotModels) ? window.ToolSelectorRobotModels : [];
+}
+
+function getSelectedCadRobot() {
+  const models = getCadRobotModels();
+  const index = Number(el.robot?.value);
+  return Number.isInteger(index) && index >= 0 && index < models.length ? models[index] : null;
+}
+
+function updateCadRobotSpec(preserveJ5Offset = false) {
+  const robot = getSelectedCadRobot();
+  if (!robot) return;
+
+  const isScara = robot.type === 'scara';
+  el.robotJ5OffsetRow.hidden = isScara;
+  if (!isScara && !preserveJ5Offset) el.robotJ5Offset.value = robot.j5;
+
+  el.robotSpec.textContent = isScara
+    ? `${uiText('형식 SCARA')} · ${uiText('정격 부하')} ${robot.rated} kg · ${uiText('최대 부하')} ${robot.load} kg · ${uiText('J4 정격 관성모멘트')} ${robot.i4r} kgm² · ${uiText('J4 허용 관성모멘트')} ${robot.i4} kgm²`
+    : `${uiText('허용 질량')} ${robot.load} kg · ${uiText('J5 허용 토크')} ${robot.t5} N·m · ${uiText('J6 허용 토크')} ${robot.t6} N·m · ${uiText('J5 허용 관성모멘트')} ${robot.i5} kgm² · ${uiText('J6 허용 관성모멘트')} ${robot.i6} kgm²`;
+}
+
+function updateCadRobotSelectionAvailability() {
+  const available = Boolean(state.massProperties && getSelectedCadRobot());
+  if (el.robotCalculate) el.robotCalculate.disabled = !available;
+  if (!available && el.robotResult) el.robotResult.hidden = true;
+}
+
+function invalidateCadRobotSelection() {
+  state.massProperties = null;
+  updateCadRobotSelectionAvailability();
+}
+
+function setupCadRobotSelection() {
+  const models = getCadRobotModels();
+  if (!el.robot || !models.length) return;
+
+  const articulated = document.createElement('optgroup');
+  articulated.label = uiText('다관절로봇');
+  const scara = document.createElement('optgroup');
+  scara.label = 'SCARA';
+  models.forEach((robot, index) => {
+    const option = document.createElement('option');
+    option.value = String(index);
+    option.textContent = robot.name;
+    (robot.type === 'scara' ? scara : articulated).appendChild(option);
+  });
+  el.robot.replaceChildren(articulated, scara);
+  el.robot.value = String(Math.max(models.findIndex((robot) => robot.name === 'R25'), 0));
+  updateCadRobotSpec();
+  updateCadRobotSelectionAvailability();
+}
+
+function calculateCadRobotSuitability() {
+  const robot = getSelectedCadRobot();
+  const massProperties = state.massProperties;
+  if (!robot || !massProperties) return;
+
+  const mass = massProperties.massKg;
+  const [xMm, yMm, zMm] = massProperties.centerOfMassToolMm;
+  const centerInertia = massProperties.inertiaCenterKgM2;
+  const centerValues = [xMm, yMm, zMm].map(Number);
+  const inertiaValues = [centerInertia?.[1]?.[1], centerInertia?.[2]?.[2]].map(Number);
+  if (![mass, ...centerValues, ...inertiaValues].every(Number.isFinite)) return;
+
+  const isScara = robot.type === 'scara';
+  const [x, y, centerZ] = centerValues.map((value) => value / 1000);
+  const j5OffsetInput = el.robotJ5Offset.value.trim();
+  const enteredJ5Offset = j5OffsetInput === '' ? Number.NaN : Number(j5OffsetInput);
+  const j5Offset = Number.isFinite(enteredJ5Offset) ? enteredJ5Offset : robot.j5;
+  const z = centerZ + (isScara ? 0 : j5Offset / 1000);
+  const j5ToCenter = Math.hypot(z, x);
+  const j6ToCenter = Math.hypot(x, y);
+  const j5Torque = mass * ROBOT_SELECTION_GRAVITY * j5ToCenter;
+  const j6Torque = mass * ROBOT_SELECTION_GRAVITY * j6ToCenter;
+  const j5Inertia = centerInertia[1][1] + mass * (x * x + z * z);
+  const j6Inertia = centerInertia[2][2] + mass * (x * x + y * y);
+  const rows = isScara
+    ? [[uiText('최대 부하'), mass, robot.load, 'kg'], [uiText('J4 허용 관성모멘트'), j6Inertia, robot.i4, 'kgm²']]
+    : [
+      [uiText('허용 질량'), mass, robot.load, 'kg'],
+      [uiText('J5 허용 토크'), j5Torque, robot.t5, 'N·m'],
+      [uiText('J6 허용 토크'), j6Torque, robot.t6, 'N·m'],
+      [uiText('J5 허용 관성모멘트'), j5Inertia, robot.i5, 'kgm²'],
+      [uiText('J6 허용 관성모멘트'), j6Inertia, robot.i6, 'kgm²']
+    ];
+
+  let anyNg = false;
+  let anyTight = false;
+  el.robotTable.innerHTML = rows.map(([label, value, limit, unit]) => {
+    const margin = (1 - value / limit) * 100;
+    const isWithinLimit = value <= limit;
+    const isTight = isWithinLimit && margin < 10;
+    if (!isWithinLimit) anyNg = true;
+    if (isTight) anyTight = true;
+    const statusClass = !isWithinLimit ? 'ng' : isTight ? 'warn' : 'ok';
+    const status = !isWithinLimit ? 'NG' : isTight ? uiText('OK (마진부족)') : 'OK';
+    return `<tr><td>${label}</td><td>${value.toFixed(3)} ${unit}</td><td>${limit.toFixed(2)} ${unit}</td><td>${margin.toFixed(1)}%</td><td class="${statusClass}">${status}</td></tr>`;
+  }).join('');
+  el.robotSummary.innerHTML = isScara
+    ? `<div>${uiText('총 질량')}<b>${mass.toFixed(3)} kg</b></div><div>${uiText('CoG 반경 (XY)')}<b>${(j6ToCenter * 1000).toFixed(1)} mm</b></div><div>${uiText('J4 관성')}<b>${j6Inertia.toFixed(3)} kgm²</b></div>`
+    : `<div>${uiText('총 질량')}<b>${mass.toFixed(3)} kg</b></div><div>${uiText('J5→CoG')}<b>${(j5ToCenter * 1000).toFixed(1)} mm</b></div><div>${uiText('J6→CoG')}<b>${(j6ToCenter * 1000).toFixed(1)} mm</b></div>`;
+
+  el.robotOverall.removeAttribute('style');
+  if (anyNg) {
+    el.robotOverall.className = 'overall ng';
+    el.robotOverall.textContent = `❌ ${uiText('부적합 — 상위 모델 또는 Tool 재설계 필요')}`;
+  } else if (anyTight) {
+    el.robotOverall.className = 'overall ng';
+    el.robotOverall.style.background = 'rgba(245,158,11,.1)';
+    el.robotOverall.style.borderColor = 'rgba(245,158,11,.3)';
+    el.robotOverall.style.color = '#fbbf24';
+    el.robotOverall.textContent = `⚠️ ${uiText('적합하나 마진 부족')}`;
+  } else {
+    el.robotOverall.className = 'overall ok';
+    el.robotOverall.textContent = `✅ ${uiText('적합 — 설치 가능')}`;
+  }
+  el.robotResult.hidden = false;
+}
+
 function calculateMassProperties() {
   try {
+    invalidateCadRobotSelection();
     if (!state.parts.length) throw new Error(uiText('CAD 파일을 먼저 불러오세요.'));
     readCoordinateInputs();
     const frame = getFrame();
@@ -1849,6 +2126,13 @@ function calculateMassProperties() {
       state.centerMarker.visible = true;
     }
     if (state.tcpMarker) state.tcpMarker.userData.toolCoordinatesMm = tcpTool;
+    state.massProperties = {
+      massKg: result.massKg,
+      centerOfMassToolMm: [...result.centerOfMassToolMm],
+      inertiaCenterKgM2: result.inertiaCenterKgM2.map((row) => [...row])
+    };
+    updateCadRobotSelectionAvailability();
+    calculateCadRobotSuitability();
     el.result.classList.remove('hide');
     setStatus('계산이 완료되었습니다.', 'ok');
     el.result.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1967,6 +2251,12 @@ function bindEvents() {
     setSnapReadout(multiCenterInstruction);
   });
   el.rotationHandlerToggle.addEventListener('change', updateRotationHandlerVisibility);
+  el.robot?.addEventListener('change', () => {
+    updateCadRobotSpec();
+    calculateCadRobotSuitability();
+  });
+  el.robotJ5Offset?.addEventListener('change', calculateCadRobotSuitability);
+  el.robotCalculate?.addEventListener('click', calculateCadRobotSuitability);
   el.mode.querySelectorAll('[data-vector]').forEach((input) => {
     const eventName = input.dataset.vector === 'rotation' ? 'input' : 'change';
     input.addEventListener(eventName, () => {
@@ -1974,6 +2264,7 @@ function bindEvents() {
       try {
         readCoordinateInputs();
         el.result.classList.add('hide');
+        invalidateCadRobotSelection();
         if (state.centerMarker) state.centerMarker.visible = false;
       } catch {
         setStatus('좌표계 방향이 올바르지 않습니다.', 'error');
@@ -1987,18 +2278,25 @@ function bindEvents() {
 
 function refreshDynamicLanguage() {
   renderParts();
+  if (el.robot) {
+    const [articulated] = el.robot.querySelectorAll('optgroup');
+    if (articulated) articulated.label = uiText('다관절로봇');
+    updateCadRobotSpec(true);
+  }
   updateOutlineToggleUi();
   updateGridVisibility();
   updateMultiCenterControls();
   renderStatus();
   renderSnapReadout();
   if (state.hoverSnap) el.snapLabel.textContent = uiText(snapTypeInfo(state.hoverSnap.type).label);
+  calculateCadRobotSuitability();
 }
 
 function init() {
   cacheElements();
   if (!el.mode || !el.viewport) return;
   const previewReady = setupScene();
+  setupCadRobotSelection();
   bindEvents();
   renderParts();
   state.snapType = el.snapType.value;

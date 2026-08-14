@@ -249,6 +249,14 @@
           {
             "title": "Robot Tool Selector",
             "versions": [
+              {
+                "title": "Ver 26.08.14",
+                "items": [
+                  "`[수정]` 모드 D에서 CAD 면을 선택해도 마우스 주변의 스냅 후보만 표시되던 문제를 해결했습니다.",
+                  "`[수정]` 모드 D 3D 화면을 모든 방향으로 360도 회전할 수 없던 문제를 해결했습니다.",
+                  "`[개선]` 모드 D에서 STEP CAD 계산 결과로 로봇 모델 적합성을 판정할 수 있도록 개선했습니다."
+                ]
+              },
         {
           "title": "Ver 26.08.13",
           "items": [
@@ -1067,6 +1075,14 @@
           {
             "title": "Robot Tool Selector",
             "versions": [
+              {
+                "title": "Ver 26.08.14",
+                "items": [
+                  "`[Fixed]` Fixed an issue where Mode D displayed only snap candidates near the pointer after selecting a CAD face.",
+                  "`[Fixed]` Fixed an issue that prevented the Mode D 3D view from freely rotating 360 degrees in every direction.",
+                  "`[Improved]` Added robot suitability evaluation using Mode D STEP CAD calculation results."
+                ]
+              },
         {
           "title": "Ver 26.08.13",
           "items": [
@@ -1885,6 +1901,14 @@
           {
             "title": "Robot Tool Selector",
             "versions": [
+              {
+                "title": "Ver 26.08.14",
+                "items": [
+                  "`[修复]` 修复了模式 D 在选择 CAD 面后仅显示鼠标附近捕捉候选点的问题。",
+                  "`[修复]` 修复了模式 D 的 3D 视图无法向任意方向自由 360 度旋转的问题。",
+                  "`[改进]` 改进了模式 D，使其可以根据 STEP CAD 计算结果评估机器人型号的适用性。"
+                ]
+              },
         {
           "title": "Ver 26.08.13",
           "items": [
@@ -2703,6 +2727,14 @@
           {
             "title": "Robot Tool Selector",
             "versions": [
+              {
+                "title": "Ver 26.08.14",
+                "items": [
+                  "`[Sửa lỗi]` Đã khắc phục sự cố Chế độ D chỉ hiển thị các ứng viên bắt điểm gần con trỏ sau khi chọn mặt CAD.",
+                  "`[Sửa lỗi]` Đã khắc phục sự cố không thể xoay tự do 360 độ theo mọi hướng trong chế độ xem 3D của Chế độ D.",
+                  "`[Cải tiến]` Đã bổ sung đánh giá độ phù hợp của robot dựa trên kết quả tính STEP CAD ở Chế độ D."
+                ]
+              },
         {
           "title": "Ver 26.08.13",
           "items": [

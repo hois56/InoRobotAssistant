@@ -78,7 +78,7 @@
   .info-tip.wide{width:1040px}
   @media (max-width:600px){#topbar{height:auto;min-height:64px;padding:8px 12px}.topbar-left{gap:.75rem}.logo{height:46px}.app-title{font-size:1rem;padding-left:.75rem}.wrap{padding:24px 12px}.hero h2{font-size:28px}.tabs{flex-wrap:wrap}.tab{flex:1 1 calc(50% - 5px);min-height:54px;padding:10px 6px}.row{grid-template-columns:minmax(0,1fr) 100px 42px;gap:6px}.row label{font-size:12px}.summary{grid-template-columns:1fr}.info-tip{max-width:calc(100vw - 24px);max-height:75vh}.overall{font-size:14px}}
 </style>
-    <link rel="stylesheet" href="./mode-d.css?v=20260719-snap-size-14-1">
+    <link rel="stylesheet" href="./mode-d.css?v=20260814-cad-robot-selection-1">
     <script type="importmap">
     {
       "imports": {
@@ -94,6 +94,8 @@
     <script src="/Language/runtime/icon-fallback.js" defer></script>
 <script src="/analytics-config.js"></script>
 <script src="/analytics.js" defer></script>
+
+
 
 
 
@@ -360,6 +362,25 @@
         </section>
       </div>
     </div>
+
+    <div id="cad-robot-selection" class="card cad-robot-selection" style="margin-top:20px">
+      <h2>CAD 계산 결과로 로봇 선정</h2>
+      <p class="cad-robot-description">CAD 계산 결과를 선택한 로봇의 허용값과 비교합니다.</p>
+      <div class="row"><label for="cad-robot">모델</label><select id="cad-robot" aria-label="로봇 모델 선택"></select><span></span></div>
+      <div class="row" id="cad-j5off-row"><label for="cad-j5off">J5 → 끝단 플랜지 거리</label><input type="number" id="cad-j5off" step="1"><span class="unit">mm</span></div>
+      <div id="cad-robot-spec" class="hint"></div>
+      <button id="cad-robot-calculate" class="btn cad-robot-calculate" type="button" disabled>로봇 적합성 판정</button>
+
+      <div id="cad-robot-result" class="cad-robot-result" hidden>
+        <h3>판정 결과</h3>
+        <div class="summary" id="cad-robot-summary"></div>
+        <table>
+          <thead><tr><th>축 / 항목</th><th>계산값</th><th>허용값</th><th>여유율</th><th>판정</th></tr></thead>
+          <tbody id="cad-robot-table"></tbody>
+        </table>
+        <div id="cad-robot-overall" class="overall"></div>
+      </div>
+    </div>
   </div>
 
   <button id="main-calculate" class="btn" onclick="calculate()">계산하기</button>
@@ -378,6 +399,7 @@
 <script>
 const ROBOTS=[{type:"cobot",name:"R4",load:4,t5:8.86,t6:4.9,i5:.20,i6:.067,j5:70},{type:"cobot",name:"R4H",load:4,t5:8.86,t6:4.9,i5:.20,i6:.067,j5:75},{type:"cobot",name:"R7H",load:7,t5:16.9,t6:9.4,i5:.49,i6:.150,j5:78},{type:"cobot",name:"R10-110",load:10,t5:18.59,t6:9.8,i5:.60,i6:.200,j5:80},{type:"cobot",name:"R10-140",load:10,t5:22.0,t6:9.8,i5:.63,i6:.200,j5:107.7},{type:"cobot",name:"R10H",load:10,t5:18.59,t6:9.8,i5:.60,i6:.200,j5:78},{type:"cobot",name:"R11",load:11,t5:20.45,t6:10.8,i5:.60,i6:.200,j5:80},{type:"cobot",name:"R15H",load:15,t5:26.5,t6:12.0,i5:.90,i6:.300,j5:86},{type:"cobot",name:"R16",load:16,t5:25.0,t6:12.0,i5:.78,i6:.300,j5:123},{type:"cobot",name:"R20H",load:20,t5:35.0,t6:20.0,i5:1.0,i6:.400,j5:86},{type:"cobot",name:"R25",load:25,t5:50.0,t6:30.0,i5:2.20,i6:1.500,j5:123},{type:"scara",name:"S4",load:4,rated:2,i4r:.005,i4:.05},{type:"scara",name:"S7",load:7,rated:3,i4r:.01,i4:.12},{type:"scara",name:"S10",load:10,rated:5,i4r:.02,i4:.30},{type:"scara",name:"S25",load:25,rated:10,i4r:.5,i4:1.2},{type:"scara",name:"S35",load:35,rated:20,i4r:.6,i4:1.2},{type:"scara",name:"S60",load:60,rated:30,i4r:1.2,i4:2.45},{type:"scara",name:"TS4",load:4,rated:2,i4r:.005,i4:.01},{type:"scara",name:"TS5",load:5,rated:2,i4r:.05,i4:.12}];
 const G=9.8;
+window.ToolSelectorRobotModels=ROBOTS;
 const uiText=value=>window.InoRobotI18n?window.InoRobotI18n.translate(String(value)):String(value);
 const LOCALIZED_HELP_IMAGES={
   'block-ref':{ko:'block_ref.png',en:'block_ref.en.png','zh-CN':'block_ref.zh-CN.png',vi:'block_ref.vi.png'},
@@ -488,7 +510,7 @@ document.addEventListener('inorobot:languagechange',refreshDynamicLanguage);
   });
 })();
 </script>
-  <script type="module" src="./mode-d.js?v=20260813-selected-face-snap-1"></script>
+  <script type="module" src="./mode-d.js?v=20260814-cad-robot-selection-1"></script>
   <script src="/0_Home/tool-guide-embed.js?v=20260813-10"></script>
 </body>
 </html>
