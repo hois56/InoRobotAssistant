@@ -446,6 +446,12 @@
             "title": "Document",
             "versions": [
         {
+          "title": "Ver 26.08.14",
+          "items": [
+            "`[수정]` 7개 6축 로봇 모델의 KCs 인증서에 4axis로 표기되던 문제를 해결하고, 6axis 재인증서로 교체했습니다."
+          ]
+        },
+        {
           "title": "Ver 26.08.13",
           "items": [
             "`[추가]` 해당 기능의 가이드를 추가했습니다."
@@ -1283,6 +1289,12 @@
           {
             "title": "Document",
             "versions": [
+        {
+          "title": "Ver 26.08.14",
+          "items": [
+            "`[Fixed]` Replaced the KCs certificates for seven 6-axis robot models with their recertified 6axis versions, resolving the incorrect 4axis designation."
+          ]
+        },
         {
           "title": "Ver 26.08.13",
           "items": [
@@ -2122,6 +2134,12 @@
             "title": "Document",
             "versions": [
         {
+          "title": "Ver 26.08.14",
+          "items": [
+            "`[修复]` 已将 7 款六轴机器人型号的 KCs 认证书替换为重新认证的 6axis 版本，解决了错误标注为 4axis 的问题。"
+          ]
+        },
+        {
           "title": "Ver 26.08.13",
           "items": [
             "`[新增]` 添加了该功能的使用指南。"
@@ -2959,6 +2977,12 @@
           {
             "title": "Document",
             "versions": [
+        {
+          "title": "Ver 26.08.14",
+          "items": [
+            "`[Sửa lỗi]` Đã thay chứng chỉ KCs của 7 mẫu robot 6 trục bằng bản tái chứng nhận 6axis, khắc phục tình trạng ghi nhầm 4axis."
+          ]
+        },
         {
           "title": "Ver 26.08.13",
           "items": [
