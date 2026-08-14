@@ -561,6 +561,12 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.08.14",
+                "items": [
+                  "`[변경]` Communication Tester를 `V2.9 → V3.0`로 업데이트했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.07.27",
                 "items": [
                   "`[변경]` Communication Tester를 `V2.8 → V2.9`로 업데이트했습니다."
@@ -667,6 +673,12 @@
           {
             "title": "communicationTester",
             "versions": [
+              {
+                "title": "Ver 3.0 (2026.08.14)",
+                "items": [
+                  "`[수정]` EtherNet/IP 통신에서 로봇 입출력 데이터가 전달되지 않던 문제를 해결했습니다."
+                ]
+              },
               {
                 "title": "Ver 2.9 (2026.07.27)",
                 "items": [
@@ -1387,6 +1399,12 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.08.14",
+                "items": [
+                  "`[Updated]` Communication Tester has been updated from `V2.9` to `V3.0`."
+                ]
+              },
+              {
                 "title": "Ver 26.07.27",
                 "items": [
                   "`[변경]` Communication Tester를 `V2.8 → V2.9`로 업데이트했습니다."
@@ -1493,6 +1511,12 @@
           {
             "title": "communicationTester",
             "versions": [
+              {
+                "title": "Ver 3.0 (2026.08.14)",
+                "items": [
+                  "**[Fixed]** Resolved an issue where robot I/O data was not transmitted through EtherNet/IP communication."
+                ]
+              },
               {
                 "title": "Ver 2.9 (2026.07.27)",
                 "items": [
@@ -2213,6 +2237,12 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.08.14",
+                "items": [
+                  "`[更新]` Communication Tester 已从 `V2.9` 更新至 `V3.0`。"
+                ]
+              },
+              {
                 "title": "Ver 26.07.27",
                 "items": [
                   "`[변경]` Communication Tester를 `V2.8 → V2.9`로 업데이트했습니다."
@@ -2319,6 +2349,12 @@
           {
             "title": "communicationTester",
             "versions": [
+              {
+                "title": "Ver 3.0 (2026.08.14)",
+                "items": [
+                  "**[修复]** 修复 EtherNet/IP 通信中机器人 I/O 数据无法传输的问题。"
+                ]
+              },
               {
                 "title": "Ver 2.9 (2026.07.27)",
                 "items": [
@@ -3039,6 +3075,12 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.08.14",
+                "items": [
+                  "`[Cập nhật]` Đã cập nhật Communication Tester từ `V2.9` lên `V3.0`."
+                ]
+              },
+              {
                 "title": "Ver 26.07.27",
                 "items": [
                   "`[변경]` Communication Tester를 `V2.8 → V2.9`로 업데이트했습니다."
@@ -3145,6 +3187,12 @@
           {
             "title": "communicationTester",
             "versions": [
+              {
+                "title": "Ver 3.0 (2026.08.14)",
+                "items": [
+                  "**[Sửa]** Đã khắc phục lỗi dữ liệu I/O của robot không được truyền qua EtherNet/IP."
+                ]
+              },
               {
                 "title": "Ver 2.9 (2026.07.27)",
                 "items": [
