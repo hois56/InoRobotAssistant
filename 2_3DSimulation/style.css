@@ -438,6 +438,190 @@ input[type="number"]::-webkit-outer-spin-button {
     opacity: 0.6;
 }
 
+/* ── Workspace recovery dialog ───────────────── */
+.workspace-recovery-dialog {
+    width: min(520px, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+    margin: auto;
+    padding: 0;
+    overflow: auto;
+    color: var(--text-1);
+    background:
+        radial-gradient(circle at 12% 0%, rgba(59, 130, 246, 0.16), transparent 42%),
+        #0f172a;
+    border: 1px solid rgba(96, 165, 250, 0.38);
+    border-radius: 18px;
+    outline: none;
+    box-shadow: 0 28px 90px rgba(2, 6, 23, 0.78);
+}
+
+.workspace-recovery-dialog::backdrop {
+    background: rgba(2, 6, 23, 0.78);
+    backdrop-filter: blur(5px);
+}
+
+.workspace-recovery-dialog form {
+    margin: 0;
+    padding: 1.45rem;
+}
+
+.workspace-recovery-dialog-header {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    margin-bottom: 1rem;
+}
+
+.workspace-recovery-dialog-icon {
+    display: grid;
+    flex: 0 0 46px;
+    width: 46px;
+    height: 46px;
+    place-items: center;
+    color: #bfdbfe;
+    background: rgba(37, 99, 235, 0.28);
+    border: 1px solid rgba(96, 165, 250, 0.38);
+    border-radius: 14px;
+    font-size: 1.15rem;
+}
+
+.workspace-recovery-dialog-header > div > span {
+    display: block;
+    margin-bottom: 0.16rem;
+    color: #60a5fa;
+    font: 700 0.68rem/1 'Outfit', sans-serif;
+    letter-spacing: 0.12em;
+}
+
+.workspace-recovery-dialog-header h2 {
+    margin: 0;
+    font: 700 1.2rem/1.25 'Outfit', sans-serif;
+}
+
+.workspace-recovery-description {
+    margin: 0;
+    color: #dbeafe;
+    font-size: 0.94rem;
+    line-height: 1.6;
+}
+
+.workspace-recovery-details {
+    display: grid;
+    gap: 0.48rem;
+    margin-top: 1rem;
+    padding: 0.85rem 0.95rem;
+    background: rgba(15, 23, 42, 0.72);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 12px;
+}
+
+.workspace-recovery-details p {
+    margin: 0;
+    color: #e2e8f0;
+    font-size: 0.86rem;
+    line-height: 1.45;
+}
+
+.workspace-recovery-details p:first-child {
+    color: #93c5fd;
+}
+
+.workspace-recovery-isolation-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55rem;
+    margin: 0.85rem 0 0;
+    padding: 0.72rem 0.8rem;
+    color: #cbd5e1;
+    background: rgba(30, 41, 59, 0.52);
+    border-radius: 10px;
+    font-size: 0.79rem;
+    line-height: 1.55;
+}
+
+.workspace-recovery-isolation-note i {
+    margin-top: 0.18rem;
+    color: #38bdf8;
+}
+
+.workspace-recovery-error {
+    margin: 0.85rem 0 0;
+    padding: 0.68rem 0.78rem;
+    color: #fecaca;
+    background: rgba(127, 29, 29, 0.3);
+    border: 1px solid rgba(248, 113, 113, 0.34);
+    border-radius: 10px;
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+.workspace-recovery-error[hidden] {
+    display: none;
+}
+
+.workspace-recovery-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.65rem;
+    margin-top: 1.15rem;
+}
+
+.workspace-recovery-dialog-actions button {
+    min-height: 40px;
+    padding: 0.58rem 0.95rem;
+    border: 1px solid rgba(148, 163, 184, 0.32);
+    border-radius: 10px;
+    color: #e2e8f0;
+    background: rgba(51, 65, 85, 0.76);
+    font: 600 0.86rem 'Inter', sans-serif;
+    cursor: pointer;
+}
+
+.workspace-recovery-dialog-actions button:hover {
+    border-color: #60a5fa;
+    background: rgba(51, 65, 85, 0.96);
+}
+
+.workspace-recovery-dialog-actions button:focus-visible {
+    outline: 2px solid #93c5fd;
+    outline-offset: 2px;
+}
+
+.workspace-recovery-dialog-actions .primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    color: #eff6ff;
+    background: #2563eb;
+    border-color: #60a5fa;
+}
+
+.workspace-recovery-dialog-actions .primary:hover {
+    background: #1d4ed8;
+    border-color: #93c5fd;
+}
+
+.workspace-recovery-dialog-actions button:disabled {
+    cursor: wait;
+    opacity: 0.58;
+}
+
+@media (max-width: 520px) {
+    .workspace-recovery-dialog form {
+        padding: 1.15rem;
+    }
+
+    .workspace-recovery-dialog-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .workspace-recovery-dialog-actions .primary {
+        grid-row: 1;
+    }
+}
+
 /* ── 3D file import dialog ─────────────────── */
 .import-dialog {
     position: fixed;
@@ -2959,6 +3143,10 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
     box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
 }
 
+.program-step-context-menu [hidden] {
+    display: none !important;
+}
+
 .program-step-context-menu button {
     display: flex;
     align-items: center;
@@ -2977,6 +3165,27 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
 .program-step-context-menu button:hover {
     background: rgba(37, 99, 235, 0.22);
     color: #fff;
+}
+
+.program-step-context-menu button:disabled {
+    color: #64748b;
+    cursor: not-allowed;
+}
+
+.program-step-context-menu button:disabled:hover {
+    background: transparent;
+    color: #64748b;
+}
+
+.program-step-context-menu button.model-context-danger {
+    margin-top: 0.24rem;
+    border-top: 1px solid rgba(248, 113, 113, 0.24);
+    color: #fca5a5;
+}
+
+.program-step-context-menu button.model-context-danger:hover {
+    background: rgba(127, 29, 29, 0.34);
+    color: #fecaca;
 }
 
 .model-context-color-control {

@@ -1,0 +1,59 @@
+{
+  "objective": "3D Simulation 프로그램 패널에 정방향과 역방향을 왕복하는 역순 반복을 추가하고, 역방향 실행 중 TIME_OUT은 타이머 시작으로, TIME_START는 타이머 종료로 처리한다.",
+  "deliverables": [
+    "현재 로봇과 체크 로봇 실행 행의 기존 반복 버튼 우측에 역순 반복 토글 추가",
+    "1→마지막→...→1→2 형태의 결정론적 왕복 실행",
+    "역방향 구간에서만 TIME_START와 TIME_OUT 의미 교환",
+    "기존 반복과 역순 반복의 상호배타 상태 및 프로젝트 저장 호환성",
+    "회귀 테스트, 실제 UI 검증, 사용자 관점 버전 기록"
+  ],
+  "constraints": [
+    "기존 일반 반복·Step Into·일시정지·정지·그룹 실행 동작을 보존한다.",
+    "역방향에서도 모션·딜레이·뷰 명령은 기존 동작을 그대로 사용한다.",
+    "이전 요청에서 작업 중인 변경사항을 보존한다.",
+    "최종 결과와 기존 값의 차이만 버전 기록에 작성한다."
+  ],
+  "existingContext": [
+    "일반 반복은 세션 끝에서 stepIndex를 0으로 되돌린다.",
+    "TIME_START와 TIME_OUT은 세그먼트 실행 시 cycleTimerStartedAt을 갱신한다.",
+    "현재 로봇과 그룹 반복 상태가 별도로 존재한다."
+  ],
+  "dependencies": [
+    "프로그램 실행 세션의 stepIndex 진행 규칙",
+    "모션 사전검사와 타이머 명령 유효성 검사",
+    "프로젝트 내보내기·불러오기 정규화",
+    "프로그램 패널 버튼 상태 렌더링"
+  ],
+  "unknowns": [
+    "해결됨: 왕복 경계의 첫 행과 마지막 행은 중복 실행하지 않는다.",
+    "해결됨: 역방향 타이머 교환은 사전검사와 런타임에 동일한 순수 규칙을 사용한다.",
+    "해결됨: 기존 스키마 버전은 유지하고 누락된 역순 반복 필드는 false로 정규화한다."
+  ],
+  "decisions": [
+    "세션은 direction(1|-1), repeat, reverseRepeat를 독립적으로 보유한다.",
+    "일반 반복과 역순 반복은 범위별로 동시에 켜지지 않는다.",
+    "끝점 타이머는 현재 방향 명령과 다음 방향 명령을 같은 시각에 적용해 끝점 중복 없이 양방향 측정을 보존한다.",
+    "역순 반복을 역방향 실행 중 끄면 첫 행까지 실행한 뒤 세션을 완료한다."
+  ],
+  "verificationMethod": [
+    "결정론적 순서 시뮬레이션과 타이머 의미 교환 단위 테스트",
+    "기존 motion-program 전체 회귀 검사",
+    "JavaScript 구문 및 다국어 정합성 검사",
+    "로컬 브라우저에서 버튼 배치·상호배타·실행 커서 확인"
+  ],
+  "completionCriteria": [
+    "현재 로봇과 그룹 모두 역순 반복을 선택하고 중지할 수 있다.",
+    "경계 행을 한 번씩만 실행하며 방향을 전환한다.",
+    "역방향 TIME_OUT→시작, TIME_START→종료가 자동 적용된다.",
+    "기존 일반 반복과 단발 실행 회귀 검사가 통과한다.",
+    "버전 기록과 캐시 갱신이 반영된다."
+  ],
+  "nodes": [
+    {"id":"N1","purpose":"반복 실행·타이머·UI·저장 구조 조사","dependencies":[],"status":"SUCCESS","inputs":["main.js","index.html","style.css","검증 스크립트"],"outputs":["수정 지점","경계조건","기준선 검증 결과"],"successCondition":"수정 지점과 경계조건 확정","failureRoute":"N1_RETRY","retries":0},
+    {"id":"N2","purpose":"왕복 상태 머신과 역방향 타이머 규칙 설계","dependencies":["N1"],"status":"SUCCESS","inputs":["병렬 조사 결과"],"outputs":["끝점 비중복 상태 머신","끝점 타이머 이중 의미 규칙","레거시 호환 규칙"],"successCondition":"단일·그룹·중단·재시작 규칙 확정","failureRoute":"N2_REPAIR","retries":0},
+    {"id":"N3","purpose":"실행 엔진·UI·저장 호환성 구현","dependencies":["N2"],"status":"SUCCESS","inputs":["N2 설계"],"outputs":["끝점 비중복 왕복 실행 엔진","방향별 스톱워치 처리","상호배타 UI와 저장 호환","1행 및 실행 중 전환 경계 보정"],"successCondition":"요구 동작 코드 반영","failureRoute":"N3_REPAIR","retries":3},
+    {"id":"N4","purpose":"결정론적 테스트와 버전 기록 구현","dependencies":["N2","N3"],"status":"SUCCESS","inputs":["N3 구현 결과"],"outputs":["N=10/3/2/1 왕복 회귀 검사","방향별 타이머 및 저장 호환 검사","다국어 생성물과 2026.08.15 기록"],"successCondition":"왕복·타이머·호환성 회귀 검사 추가","failureRoute":"N3_REPAIR","retries":1},
+    {"id":"N5","purpose":"구문·회귀·브라우저 검증","dependencies":["N3","N4"],"status":"SUCCESS","inputs":["구현 및 회귀 검사"],"outputs":["JavaScript 구문 검사 PASS","motion/localized/OLP 회귀 검사 PASS","버튼 배치·상호배타·다국어 UI PASS","브라우저 오류 로그 0건"],"successCondition":"모든 자동 검사와 UI 검증 통과","failureRoute":"N3_REPAIR|N4_REPAIR","retries":0},
+    {"id":"N6","purpose":"최종 요구사항 대조","dependencies":["N5"],"status":"SUCCESS","inputs":["N5 검증 결과"],"outputs":["버튼 위치 PASS","왕복 순서 PASS","역방향 스톱워치 전환 PASS","기존 동작·저장·다국어 PASS"],"successCondition":"핵심 요구사항 PASS 또는 명시적 NOT VERIFIED","failureRoute":"N3_REPAIR","retries":0}
+  ]
+}

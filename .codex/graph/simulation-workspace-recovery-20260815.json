@@ -1,0 +1,60 @@
+{
+  "objective": "Persist the complete 3D Simulation workspace across refreshes or unexpected closes, ask whether to restore it at startup, and isolate independently opened simulation windows.",
+  "deliverables": [
+    "Durable workspace storage for imported files, models, transforms, programs, and relevant settings",
+    "Startup restore-choice dialog",
+    "Independent workspace identity per simulation window",
+    "Explicit handling for duplicate versus newly opened windows",
+    "Safe legacy migration and storage-failure behavior",
+    "Localized UI, version record, automated tests, and real-browser verification"
+  ],
+  "constraints": [
+    "Preserve all existing OLP, reverse-repeat, and model-tree clipboard changes",
+    "Do not serialize live Three.js object references",
+    "Large imported files must not be stored in localStorage",
+    "Two simultaneously opened windows must not overwrite one another",
+    "The user must choose whether to restore previously saved work",
+    "Existing project import/export behavior must remain compatible"
+  ],
+  "existingContext": [
+    "Robot motion projects currently use a shared localStorage key",
+    "Imported 3D models are rebuilt from File objects and are not currently durable",
+    "Scene snapshots support Undo/Redo but contain live runtime references"
+  ],
+  "dependencies": [
+    "Current autosave and project-normalization flow",
+    "Imported model loaders and source File lifecycle",
+    "Startup sequencing and existing dialogs",
+    "Browser IndexedDB, sessionStorage, and cross-tab storage semantics"
+  ],
+  "unknowns": [
+    "Which settings are already persisted separately",
+    "Whether every supported imported format can be restored from stored bytes without auxiliary files",
+    "How duplicated tabs should inherit or fork a workspace identity",
+    "Storage quota and partial-write recovery behavior"
+  ],
+  "verificationMethod": [
+    "JSON/schema and JavaScript syntax checks",
+    "Automated persistence, migration, and tab-isolation regression tests",
+    "Localized-site and existing 3D regression validators",
+    "Real browser refresh/restore/discard and simultaneous-window scenarios",
+    "Independent integration review and repair loop"
+  ],
+  "completionCriteria": [
+    "A refreshed or reopened window can restore its last durable workspace after user confirmation",
+    "Imported 3D model bytes and transforms survive restore",
+    "Choosing not to restore starts clean without destroying the saved recovery copy unintentionally",
+    "Two concurrent windows write separate workspace records",
+    "Storage failures are visible and never claim success",
+    "All automated and browser checks pass"
+  ],
+  "nodes": [
+    {"id":"N1","purpose":"Inspect current persistence, startup, dialogs, and state ownership","dependencies":[],"status":"SUCCESS","inputs":["main.js","index.html","core modules"],"outputs":["Mapped shared localStorage autosave, startup auto-restore, reset, view presets, and missing scene state","Reproduced missing VIEW viewSlot serialization defect"],"successCondition":"Existing save/restore paths mapped","failureRoute":"N1","retries":0},
+    {"id":"N2","purpose":"Inspect imported-file lifecycle and durable binary-storage options","dependencies":[],"status":"SUCCESS","inputs":["import loaders","worker paths","browser storage"],"outputs":["Mapped File/Blob/worker flow for STL, FBX, OBJ, GLB, GLTF, STP, and STEP","Selected a separate IndexedDB asset store with transaction-complete semantics"],"successCondition":"All supported model types have a restoration strategy","failureRoute":"N2","retries":0},
+    {"id":"N3","purpose":"Design workspace identity, startup choice, schema, and failure semantics","dependencies":["N1","N2"],"status":"SUCCESS","inputs":[],"outputs":["Session workspace pointer plus authoritative IndexedDB lease and live-owner probe","Duplicate windows fork metadata while sharing immutable asset blobs","Restore/New startup choice preserves the recovery copy and isolates concurrent writers"],"successCondition":"Deterministic multi-window persistence contract approved by evidence","failureRoute":"N1","retries":0},
+    {"id":"N4","purpose":"Implement durable storage, restore UI, model reconstruction, and isolation","dependencies":["N3"],"status":"SUCCESS","inputs":["N3 workspace contract"],"outputs":["IndexedDB workspaces/assets/leases store","Session-pointer plus BroadcastChannel live probe and atomic lease/revision fork","Scene snapshot restores robots, current joints, uploaded/catalog models, tools, transforms, colors, visibility, camera, view presets, collision/display settings, selection, and OLP projects","Startup Restore/New modal with partial-recovery lineage preservation","Reload-only lease reclaim, simultaneous-window isolation, archive retention, and atomic ten-minute-grace asset cleanup"],"successCondition":"Feature implemented end-to-end","failureRoute":"N4","retries":7},
+    {"id":"N5","purpose":"Add localization, version record, and deterministic regression coverage","dependencies":["N4"],"status":"SUCCESS","inputs":["N3 workspace contract"],"outputs":["Four-locale recovery dialog, warning, quota, isolation, and OLP strings","3D Simulation version-history entry","Workspace core unit validator plus expanded motion-program integration assertions"],"successCondition":"User-visible text and regression contracts complete","failureRoute":"N4","retries":1},
+    {"id":"N6","purpose":"Run refresh, restore, discard, crash-recovery, and multi-window browser scenarios","dependencies":["N5"],"status":"SUCCESS","inputs":[],"outputs":["Restored articulated robot, uploaded STEP equipment, TCP Tool, and model X transform after reload","Verified Restore/New dialog and clean New path","Verified two concurrent windows retained different robot/model trees and emitted no browser console errors","Verified a live workspace is offered as an isolated-copy recovery rather than overwritten"],"successCondition":"Real browser scenarios pass without cross-window overwrite","failureRoute":"N4","retries":1},
+    {"id":"N7","purpose":"Independent review and final requirement comparison","dependencies":["N6"],"status":"SUCCESS","inputs":[],"outputs":["Independent review found and repaired unload, lease, partial-recovery, OLP, reset, archive, and asset-GC race edges","Final syntax, workspace, motion, OLP, localization, and diff checks all passed","No remaining confirmed P1, P2, or P3 issue"],"successCondition":"No failed or unverified critical requirement","failureRoute":"N4","retries":8}
+  ]
+}

@@ -8,7 +8,7 @@
     <title>3D Simulation | INOVANCE</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=20260814-model-tree-collapse-2">
+    <link rel="stylesheet" href="style.css?v=20260815-workspace-recovery-1">
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -23,11 +23,14 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/Language/runtime/i18n.css">
-    <script src="/Language/runtime/locales-data.js?v=20260726-olp-i18n-1" defer></script>
+    <script src="/Language/runtime/locales-data.js?v=20260815-workspace-recovery-1" defer></script>
     <script src="/Language/runtime/i18n.js" defer></script>
     <script src="/Language/runtime/icon-fallback.js" defer></script>
     <script src="/analytics-config.js"></script>
     <script src="/analytics.js" defer></script>
+
+
+
 
 
 
@@ -161,6 +164,39 @@
             <div class="simulation-reset-dialog-actions">
                 <button id="btn-cancel-test-model" type="button" class="secondary">아니오</button>
                 <button id="btn-confirm-test-model" type="button" class="primary">예</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="workspace-recovery-dialog" class="workspace-recovery-dialog"
+        aria-labelledby="workspace-recovery-dialog-title"
+        aria-describedby="workspace-recovery-description workspace-recovery-isolation-note">
+        <form method="dialog">
+            <div class="workspace-recovery-dialog-header">
+                <span class="workspace-recovery-dialog-icon" aria-hidden="true">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                </span>
+                <div>
+                    <span>3D SIMULATION</span>
+                    <h2 id="workspace-recovery-dialog-title">이전 작업 복구</h2>
+                </div>
+            </div>
+            <p id="workspace-recovery-description" class="workspace-recovery-description">저장된 3D 시뮬레이션 작업이 있습니다. 불러오시겠습니까?</p>
+            <div class="workspace-recovery-details" aria-live="polite">
+                <p id="workspace-recovery-saved-at">마지막 저장: {time}</p>
+                <p id="workspace-recovery-summary">로봇 {robots}대 · 3D 모델 {models}개</p>
+            </div>
+            <p id="workspace-recovery-isolation-note" class="workspace-recovery-isolation-note">
+                <i class="fa-solid fa-window-restore" aria-hidden="true"></i>
+                <span>다른 창에서 연 작업은 독립된 복사본으로 저장되어 서로 덮어쓰지 않습니다.</span>
+            </p>
+            <p id="workspace-recovery-error" class="workspace-recovery-error" role="alert" hidden></p>
+            <div class="workspace-recovery-dialog-actions">
+                <button id="btn-workspace-new" type="button" class="secondary">새 작업 시작</button>
+                <button id="btn-workspace-restore" type="button" class="primary">
+                    <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+                    이전 작업 불러오기
+                </button>
             </div>
         </form>
     </dialog>
@@ -713,6 +749,7 @@
                         <button id="program-pause-robot" type="button" title="현재 로봇 일시정지"><i class="fa-solid fa-pause"></i></button>
                         <button id="program-stop-robot" type="button" title="현재 로봇 정지"><i class="fa-solid fa-stop"></i></button>
                         <button id="program-repeat-robot" class="program-repeat-toggle" data-program-repeat data-program-repeat-scope="robot" type="button" title="반복 실행" aria-label="현재 로봇 반복 실행" aria-pressed="false"><i class="fa-solid fa-repeat"></i></button>
+                        <button id="program-reverse-repeat-robot" class="program-repeat-toggle" data-program-reverse-repeat data-program-repeat-scope="robot" type="button" title="역순 반복" aria-label="현재 로봇 역순 반복" aria-pressed="false"><i class="fa-solid fa-arrows-left-right"></i></button>
                     </div>
                     <div id="program-control-group" class="program-control-row program-group-row">
                         <button id="program-step-group" type="button" title="체크 로봇 Step Into" aria-label="체크 로봇 다음 명령 동시 한 스텝 실행"><i class="fa-solid fa-forward-step"></i></button>
@@ -720,6 +757,7 @@
                         <button id="program-pause-group" type="button" title="체크 로봇 일시정지"><i class="fa-solid fa-pause"></i></button>
                         <button id="program-stop-group" type="button" title="체크 로봇 정지"><i class="fa-solid fa-stop"></i></button>
                         <button id="program-repeat" class="program-repeat-toggle" data-program-repeat data-program-repeat-scope="group" type="button" title="반복 실행" aria-label="체크 로봇 반복 실행" aria-pressed="false"><i class="fa-solid fa-repeat"></i></button>
+                        <button id="program-reverse-repeat" class="program-repeat-toggle" data-program-reverse-repeat data-program-repeat-scope="group" type="button" title="역순 반복" aria-label="체크 로봇 역순 반복" aria-pressed="false"><i class="fa-solid fa-arrows-left-right"></i></button>
                     </div>
                 </div>
                 <div id="program-cycle-time-panel" class="program-cycle-time" role="status" aria-live="polite">
@@ -806,6 +844,14 @@
         </button>
     </div>
     <div id="model-context-menu" class="program-step-context-menu hidden" role="menu">
+        <button id="model-copy" type="button" role="menuitem">
+            <i class="fa-solid fa-copy"></i>
+            복사
+        </button>
+        <button id="model-paste" type="button" role="menuitem" disabled>
+            <i class="fa-solid fa-paste"></i>
+            붙여넣기
+        </button>
         <button id="model-change-zero-point" type="button" role="menuitem">
             <i class="fa-solid fa-crosshairs"></i>
             영점 변경
@@ -815,6 +861,10 @@
             <span>색상 변경</span>
             <input id="model-color-picker" type="color" value="#bfc7d5" aria-label="색상 변경">
         </label>
+        <button id="model-delete" class="model-context-danger" type="button" role="menuitem">
+            <i class="fa-solid fa-trash"></i>
+            삭제
+        </button>
     </div>
 
     <footer id="stats-bar">
@@ -849,7 +899,7 @@
         </div>
     </footer>
 
-<script type="module" src="main.js?v=20260814-model-tree-collapse-2"></script>
+<script type="module" src="main.js?v=20260815-workspace-recovery-1"></script>
 <script src="/0_Home/tool-guide-embed.js?v=20260813-10"></script>
 </body>
 </html>

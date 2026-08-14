@@ -1,0 +1,60 @@
+{
+  "objective": "3D 시뮬레이션 모델 트리의 항목 우클릭 메뉴에 삭제, 복사, 붙여넣기 기능을 추가한다.",
+  "deliverables": [
+    "기존 모델 트리 컨텍스트 메뉴에 삭제·복사·붙여넣기 명령 추가",
+    "선택한 모델 항목의 안전한 복제와 삭제",
+    "붙여넣기 가능 상태와 대상 범위의 명확한 UI 피드백",
+    "Undo/Redo·자동 저장·다국어·기존 우클릭 기능 호환",
+    "회귀 테스트·실제 브라우저 검증·버전 기록"
+  ],
+  "constraints": [
+    "이전 작업의 미커밋 변경사항을 보존한다.",
+    "기존 모델 로딩·선택·트리 계층·색상 변경 동작을 유지한다.",
+    "복사 데이터는 원본과 독립되어야 하며 고유 식별자가 충돌하지 않아야 한다.",
+    "버전 기록에는 최종 사용자 관점의 변경만 기록한다."
+  ],
+  "existingContext": [
+    "모델 트리에 기존 우클릭 컨텍스트 메뉴와 색상 변경 기능이 있다.",
+    "장면 변경은 snapshot 기반 Undo/Redo와 프로젝트 자동 저장 경로를 사용한다.",
+    "로봇 모델과 가져온 일반 3D 모델이 동일 트리에 함께 표시된다."
+  ],
+  "dependencies": [
+    "모델 트리 항목의 root/part 식별 규칙",
+    "기존 모델 추가·삭제 함수와 GLTF/로봇 인스턴스 생성 경로",
+    "scene snapshot·serialization·restore 경로",
+    "컨텍스트 메뉴 및 다국어 런타임"
+  ],
+  "unknowns": [
+    "해결됨: state.models에 속한 모델 행만 구조 복사·삭제하고 하위 파츠는 기존 색상 기능만 유지한다.",
+    "해결됨: 원본과 같은 배치/부착 관계를 유지하며 scene 모델은 붙여넣기마다 Y축 600mm씩 이동한다.",
+    "해결됨: 로봇은 현재 관절·TCP·프로그램과 직접 부착 Tool을 새 런타임에 복제한다."
+  ],
+  "decisions": [
+    "앱 내부 클립보드에 Copy 시점의 독립 template/descriptor를 저장하고 Copy 자체는 history에 기록하지 않는다.",
+    "로봇은 loadArticulatedRobot과 assignRobotInstanceMetadata를 사용해 새 ID와 런타임 참조를 만든다.",
+    "일반·업로드 모델은 geometry를 공유하되 material·userData 런타임 참조·모델/파트 ID를 독립시킨다.",
+    "Paste와 Delete는 snapshot 기반 Undo/Redo 한 건으로 기록하고 붙여넣은 모델을 선택한다.",
+    "파트 행에서는 복사·붙여넣기·삭제를 숨기고 기존 색상 변경만 제공한다."
+  ],
+  "verificationMethod": [
+    "결정론적 복제·삭제·직렬화 회귀 검사",
+    "JavaScript 구문 및 전체 3D 모션 회귀 검사",
+    "다국어 정합성 검사",
+    "로컬 브라우저에서 우클릭·복사·붙여넣기·삭제·Undo/Redo 확인"
+  ],
+  "completionCriteria": [
+    "모델 트리 항목 우클릭 시 세 명령이 표시된다.",
+    "복사 후 붙여넣으면 독립된 새 모델이 생성되고 선택된다.",
+    "삭제는 정확한 대상만 제거하며 Undo로 복구된다.",
+    "붙여넣기 불가 상태가 안전하게 비활성화된다.",
+    "기존 모델 트리와 모션 프로그램 회귀 검사가 통과한다."
+  ],
+  "nodes": [
+    {"id":"N1","purpose":"컨텍스트 메뉴·트리·선택 구조 조사","dependencies":[],"status":"SUCCESS","inputs":["main.js","index.html","style.css"],"outputs":["루트/파트 식별 규칙","기존 우클릭·색상 경로","삭제 재사용 지점"],"successCondition":"대상 식별 및 기존 이벤트 경로 확정","failureRoute":"N1_RETRY","retries":0},
+    {"id":"N2","purpose":"모델 복제·삭제·저장·히스토리 경로 조사","dependencies":[],"status":"SUCCESS","inputs":["main.js","모델 로더","검증 스크립트"],"outputs":["로봇 재생성 경로","업로드 모델 독립 복제 조건","Undo/Redo 재사용 계약"],"successCondition":"안전한 복제 및 삭제 재사용 경로 확정","failureRoute":"N2_RETRY","retries":0},
+    {"id":"N3","purpose":"복사·붙여넣기·삭제 동작 규칙 설계","dependencies":["N1","N2"],"status":"SUCCESS","inputs":["N1/N2 조사 결과"],"outputs":["모델 행 단위 계약","동일 배치·600mm 오프셋","로봇 상태·Tool 복제 규칙"],"successCondition":"범위·상태·오프셋·호환 규칙 확정","failureRoute":"N3_REPAIR","retries":0},
+    {"id":"N4","purpose":"UI·실행 로직·다국어·버전 기록 구현","dependencies":["N3"],"status":"SUCCESS","inputs":["N3 설계"],"outputs":["우클릭 메뉴","모델 클립보드","로봇·일반 모델·Tool 복제","Undo/Redo","4개 언어","버전 기록"],"successCondition":"요구 기능 코드 반영","failureRoute":"N4_REPAIR","retries":4},
+    {"id":"N5","purpose":"자동 검사·브라우저 상호작용·통합 리뷰","dependencies":["N4"],"status":"SUCCESS","inputs":["N4 구현"],"outputs":["전체 자동 검사 통과","실제 로봇·가져온 모델·Tool UI 흐름 통과","브라우저 오류 없음","잔여 P1/P2/P3 없음"],"successCondition":"자동 및 실제 UI 검증 통과","failureRoute":"N4_REPAIR","retries":4},
+    {"id":"N6","purpose":"최종 요구사항 대조","dependencies":["N5"],"status":"SUCCESS","inputs":["N5 검증 결과"],"outputs":["핵심 요구사항 전체 PASS"],"successCondition":"핵심 요구사항 PASS 또는 명시적 NOT VERIFIED","failureRoute":"N4_REPAIR","retries":0}
+  ]
+}
