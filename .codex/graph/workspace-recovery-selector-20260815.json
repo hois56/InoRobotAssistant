@@ -1,0 +1,60 @@
+{
+  "objective": "Let users choose which saved 3D Simulation workspace to restore when multiple window-specific workspaces exist, while preserving lease isolation and explaining storage-capacity behavior.",
+  "deliverables": [
+    "Startup list of all eligible saved workspaces",
+    "Accessible selection UI with saved time, robot/model/OLP summary, and live-window state",
+    "Restore the selected workspace without overwriting another live window",
+    "Localized Korean, English, Simplified Chinese, and Vietnamese UI",
+    "Deterministic and real-browser regression coverage",
+    "Evidence-based storage-capacity explanation"
+  ],
+  "constraints": [
+    "Preserve existing Restore/New behavior for one candidate",
+    "Never claim or overwrite an unselected workspace",
+    "A live selected workspace must open as an isolated copy",
+    "Archived or superseded partial recoveries must not reappear",
+    "Keep all previous 3D Simulation fixes intact",
+    "Use the repository main-branch and version-history conventions"
+  ],
+  "existingContext": [
+    "IndexedDB stores workspaces, immutable assets, and leases",
+    "The current startup dialog receives only one candidate",
+    "Each workspace already has revision, timestamp, summary, and live-owner detection",
+    "Imported-file capacity preflight uses remaining quota versus file size"
+  ],
+  "dependencies": [
+    "Workspace recovery core and main startup flow",
+    "Recovery dialog DOM and four locale source files",
+    "Motion-program integration validator",
+    "In-app browser for multi-window verification"
+  ],
+  "unknowns": [
+    "How session-pointer and non-session candidates should be ordered",
+    "How to refresh a selected live record immediately before restore",
+    "How many candidates should be shown without harming dialog usability",
+    "Browser-specific quota available to this origin"
+  ],
+  "verificationMethod": [
+    "JavaScript syntax checks",
+    "Workspace recovery unit and integration validators",
+    "Four-locale parity and localized-site validation",
+    "Real browser creation and selection of two distinct saved workspaces",
+    "Independent race-condition review"
+  ],
+  "completionCriteria": [
+    "Two or more saved workspaces appear as separate selectable options",
+    "The chosen workspace alone is restored",
+    "Selecting a live workspace creates an isolated copy",
+    "New starts clean and does not overwrite live work",
+    "Capacity guidance matches the implemented formula",
+    "All automated and browser checks pass"
+  ],
+  "nodes": [
+    {"id":"N1","purpose":"Inspect candidate, ownership, dialog, and capacity paths","dependencies":[],"status":"SUCCESS","inputs":["main.js","workspace core","dialog","validators"],"outputs":["Mapped single-candidate preclaim flow, lineage fields, lease/probe paths, and quota formula Q-U >= 1.1*S + 8 MiB"],"successCondition":"All affected seams and current capacity formula are mapped","failureRoute":"N1","retries":0},
+    {"id":"N2","purpose":"Design candidate ordering, selection, and lease-safe restore contract","dependencies":["N1"],"status":"SUCCESS","inputs":[],"outputs":["Defined read-only discovery -> explicit selection -> atomic claim/fork -> latest reread -> restore -> commit/archive sequence"],"successCondition":"Selection behavior is deterministic for session, inactive, live, partial, and legacy records","failureRoute":"N1","retries":0},
+    {"id":"N3","purpose":"Implement list UI, selected-source startup flow, and localization","dependencies":["N2"],"status":"SUCCESS","inputs":[],"outputs":["Recovery selector DOM, responsive radio-card CSS, four locale sources, selected-source rendering, parallel read-only discovery, post-choice lease/fork flow, cache token, and version record implemented","main.js syntax check passed"],"successCondition":"Feature works for one and multiple candidates","failureRoute":"N3","retries":0},
+    {"id":"N4","purpose":"Add deterministic regression coverage and regenerate localized assets","dependencies":["N3"],"status":"SUCCESS","inputs":[],"outputs":["Pure lineage/order unit tests and DOM, CSS, locale, cache, concurrency, and version assertions added","JavaScript syntax, workspace recovery, motion program, OLP Virtual Bus, and localized-site validators all passed"],"successCondition":"Automated checks pass","failureRoute":"N3","retries":1},
+    {"id":"N5","purpose":"Verify two-workspace selection in a real browser","dependencies":["N4"],"status":"SUCCESS","inputs":[],"outputs":["Displayed four independent saved-work cards with model names/timestamps","Explicit IR-S4 selection restored only IR-S4","Selecting a live workspace produced a second independently live IR-S4 recovery candidate","Five-tab console error scan returned zero errors"],"successCondition":"Both saved workspaces can be independently selected and restored","failureRoute":"N3","retries":0},
+    {"id":"N6","purpose":"Independent review and final requirement comparison","dependencies":["N5"],"status":"SUCCESS","inputs":[],"outputs":["Reviewer found and repair loop fixed unsafe reload force-claim and legacy New deletion","Additional lease cleanup, restore heartbeat, partial provenance, malformed-record isolation, accessibility, single-partial warning, legacy rediscovery, and transition-race repairs applied","Final independent rereview found no remaining P1, P2, or P3 issue"],"successCondition":"No confirmed critical issue remains","failureRoute":"N3","retries":2}
+  ]
+}

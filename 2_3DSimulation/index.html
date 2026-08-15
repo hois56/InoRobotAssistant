@@ -8,7 +8,7 @@
     <title>3D Simulation | INOVANCE</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=20260815-workspace-recovery-1">
+    <link rel="stylesheet" href="style.css?v=20260815-workspace-selector-1">
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -23,7 +23,7 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/Language/runtime/i18n.css">
-    <script src="/Language/runtime/locales-data.js?v=20260815-workspace-recovery-1" defer></script>
+    <script src="/Language/runtime/locales-data.js?v=20260815-workspace-selector-1" defer></script>
     <script src="/Language/runtime/i18n.js" defer></script>
     <script src="/Language/runtime/icon-fallback.js" defer></script>
     <script src="/analytics-config.js"></script>
@@ -182,7 +182,11 @@
                 </div>
             </div>
             <p id="workspace-recovery-description" class="workspace-recovery-description">저장된 3D 시뮬레이션 작업이 있습니다. 불러오시겠습니까?</p>
-            <div class="workspace-recovery-details" aria-live="polite">
+            <fieldset id="workspace-recovery-options" class="workspace-recovery-options" hidden>
+                <legend id="workspace-recovery-options-label">불러올 작업 선택</legend>
+                <div id="workspace-recovery-list" class="workspace-recovery-list"></div>
+            </fieldset>
+            <div id="workspace-recovery-details" class="workspace-recovery-details" aria-live="polite">
                 <p id="workspace-recovery-saved-at">마지막 저장: {time}</p>
                 <p id="workspace-recovery-summary">로봇 {robots}대 · 3D 모델 {models}개</p>
             </div>
@@ -899,7 +903,7 @@
         </div>
     </footer>
 
-<script type="module" src="main.js?v=20260815-workspace-recovery-1"></script>
+<script type="module" src="main.js?v=20260815-workspace-selector-1"></script>
 <script src="/0_Home/tool-guide-embed.js?v=20260813-10"></script>
 </body>
 </html>

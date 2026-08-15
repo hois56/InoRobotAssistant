@@ -6,6 +6,8 @@ import {
     WORKSPACE_ASSET_STORE_NAME,
     WORKSPACE_LEASE_STORE_NAME,
     normalizeWorkspaceRecord,
+    compareWorkspaceRecoveryRecords,
+    collapseWorkspaceRecoveryRecords,
     normalizeWorkspaceAsset,
     collectWorkspaceAssetIds,
     collectOrphanWorkspaceAssetIds,
@@ -78,6 +80,88 @@ assert.equal(
 );
 assert.equal(incompleteFork.forkedFrom, incompleteRecovery.id);
 
+const recoveryCandidate = (id, {
+    updatedAt,
+    revision = 1,
+    forkedFrom = null,
+    incompleteRecoveryFrom = null
+}) => normalizeWorkspaceRecord({
+    id,
+    schemaVersion: 1,
+    revision,
+    createdAt: 1,
+    updatedAt,
+    forkedFrom,
+    incompleteRecoveryFrom,
+    state: { hasWork: true }
+});
+const intact = recoveryCandidate('intact', { updatedAt: 100 });
+const partial = recoveryCandidate('partial', {
+    updatedAt: 900,
+    incompleteRecoveryFrom: intact.id
+});
+const independentNew = recoveryCandidate('independent-new', { updatedAt: 700 });
+const forkA = recoveryCandidate('fork-a', { updatedAt: 500, revision: 2, forkedFrom: intact.id });
+const forkB = recoveryCandidate('fork-b', { updatedAt: 500, revision: 2, forkedFrom: intact.id });
+const forkHigherRevision = recoveryCandidate('fork-higher-revision', {
+    updatedAt: 500,
+    revision: 3,
+    forkedFrom: intact.id
+});
+const missingOld = recoveryCandidate('missing-old', {
+    updatedAt: 1900,
+    revision: 99,
+    incompleteRecoveryFrom: 'missing-source'
+});
+const missingTieB = recoveryCandidate('missing-tie-b', {
+    updatedAt: 2000,
+    revision: 2,
+    incompleteRecoveryFrom: 'missing-source'
+});
+const missingTieA = recoveryCandidate('missing-tie-a', {
+    updatedAt: 2000,
+    revision: 2,
+    incompleteRecoveryFrom: 'missing-source'
+});
+const otherMissing = recoveryCandidate('other-missing', {
+    updatedAt: 2200,
+    incompleteRecoveryFrom: 'other-missing-source'
+});
+const collapsedCandidates = collapseWorkspaceRecoveryRecords([
+    missingOld,
+    forkB,
+    partial,
+    otherMissing,
+    forkA,
+    missingTieB,
+    intact,
+    independentNew,
+    missingTieA,
+    forkHigherRevision
+], { sessionWorkspaceId: partial.id });
+assert.deepEqual(
+    collapsedCandidates.map((candidate) => candidate.record.id),
+    [
+        intact.id,
+        independentNew.id,
+        forkHigherRevision.id,
+        forkA.id,
+        forkB.id,
+        otherMissing.id,
+        missingTieA.id
+    ],
+    'Session lineage must rank first, intact/forked workspaces must stay independent, and partial fallbacks must rank last.'
+);
+assert.deepEqual(collapsedCandidates[0].memberIds, [intact.id, partial.id]);
+assert.equal(collapsedCandidates[0].sessionMatch, true);
+assert.equal(collapsedCandidates.filter((candidate) => candidate.record.forkedFrom === intact.id).length, 3);
+assert.deepEqual(
+    collapsedCandidates.at(-1).memberIds,
+    [missingOld.id, missingTieA.id, missingTieB.id].sort(),
+    'A missing intact source must expose only the deterministic newest member of that partial lineage.'
+);
+assert.ok(compareWorkspaceRecoveryRecords(forkHigherRevision, forkA) < 0);
+
 assert.deepEqual(
     collectOrphanWorkspaceAssetIds([source, fork], [{ id: 'asset-a' }, { id: 'asset-b' }, { id: 'asset-c' }]),
     ['asset-c']
@@ -139,4 +223,4 @@ assert.equal(isWorkspaceQuotaError({ name: 'QuotaExceededError' }), true);
 assert.equal(isWorkspaceQuotaError(new Error('storage quota is full')), true);
 assert.equal(isWorkspaceQuotaError(new Error('network')), false);
 
-console.log('Workspace recovery core OK: schema, incomplete-recovery provenance, immutable assets, forks, leases, startup decisions and orphan detection');
+console.log('Workspace recovery core OK: schema, candidate ordering, incomplete-recovery provenance, immutable assets, forks, leases, startup decisions and orphan detection');

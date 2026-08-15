@@ -277,6 +277,10 @@ const [
         readFile(new URL(`../Language/${locale}/robot-3d-viewer.json`, import.meta.url), 'utf8')
     ))
 ]);
+const runtimeLocalesSource = await readFile(
+    new URL('../Language/runtime/locales-data.js', import.meta.url),
+    'utf8'
+);
 const catalog = JSON.parse(catalogText);
 const gs60Source = JSON.parse(gs60SourceText.replace(/^\uFEFF/, ''));
 const viewerLocaleCodes = ['ko', 'en', 'zh-CN', 'vi'];
@@ -292,6 +296,11 @@ viewerLocaleKeySets.slice(1).forEach((keys, index) => {
 const workspaceRecoveryTranslationKeys = [
     '이전 작업 복구',
     '저장된 3D 시뮬레이션 작업이 있습니다. 불러오시겠습니까?',
+    '저장된 작업이 여러 개 있습니다. 불러올 작업을 선택하세요.',
+    '불러올 작업 선택',
+    '저장된 작업 {number}',
+    '다른 창에서 열려 있음',
+    '일부만 복구된 작업',
     '마지막 저장: {time}',
     '로봇 {robots}대 · 3D 모델 {models}개',
     'OLP 프로젝트 {projects}개',
@@ -332,6 +341,13 @@ workspaceRecoveryTranslationKeys.forEach((source) => {
         }
     });
 });
+assert.ok(
+    runtimeLocalesSource.includes('일부만 복구된 작업')
+        && runtimeLocalesSource.includes('Partially Recovered')
+        && runtimeLocalesSource.includes('部分恢复的工作')
+        && runtimeLocalesSource.includes('Công việc được khôi phục một phần'),
+    'The generated locale runtime must include the partial-recovery badge in all four viewer languages.'
+);
 
 const viewerTranslationSources = new Set([
     'Program', 'Program Panel', 'ROBOTS', 'CYCLE TIME',
@@ -426,6 +442,19 @@ assert.match(
     workspaceRecoveryCoreSource.includes(marker),
     `WorkspaceRecoveryStore is missing operation: ${marker}`
 ));
+const workspaceListSource = workspaceRecoveryCoreSource.slice(
+    workspaceRecoveryCoreSource.indexOf('async listWorkspaces('),
+    workspaceRecoveryCoreSource.indexOf('async getLatestWorkspace(')
+);
+assert.ok(
+    workspaceListSource.includes('values.forEach((value) => {')
+        && workspaceListSource.includes('try {')
+        && workspaceListSource.includes('records.push(normalizeWorkspaceRecord(value));')
+        && workspaceListSource.includes('} catch {')
+        && workspaceListSource.includes('return records')
+        && !workspaceListSource.includes('throw'),
+    'A malformed workspace record must be skipped without hiding other valid recovery choices.'
+);
 assert.ok(
     workspaceRecoveryCoreSource.includes("throw workspaceError('Workspace revision changed in another window.', 'WORKSPACE_REVISION_CONFLICT')")
         && workspaceRecoveryCoreSource.includes("throw workspaceError('Workspace ownership was lost to another window.', 'WORKSPACE_LEASE_LOST')")
@@ -515,6 +544,10 @@ const workspaceRecoveryDialogSource = htmlSource.slice(workspaceRecoveryDialogSt
 [
     'workspace-recovery-dialog-title',
     'workspace-recovery-description',
+    'workspace-recovery-options',
+    'workspace-recovery-options-label',
+    'workspace-recovery-list',
+    'workspace-recovery-details',
     'workspace-recovery-saved-at',
     'workspace-recovery-summary',
     'workspace-recovery-isolation-note',
@@ -528,6 +561,11 @@ assert.match(
     'The recovery decision must expose its title, description and multi-window isolation guidance to assistive technology.'
 );
 assert.match(workspaceRecoveryDialogSource, /id="workspace-recovery-error"[^>]*role="alert"[^>]*hidden/);
+assert.match(
+    workspaceRecoveryDialogSource,
+    /<fieldset[^>]*id="workspace-recovery-options"[^>]*class="workspace-recovery-options"[^>]*hidden[^>]*>[\s\S]*?<legend id="workspace-recovery-options-label">불러올 작업 선택<\/legend>[\s\S]*?<div id="workspace-recovery-list" class="workspace-recovery-list"><\/div>[\s\S]*?<\/fieldset>/,
+    'Multiple saved workspaces must use a native, initially hidden fieldset/legend choice group.'
+);
 assert.deepEqual(
     [...workspaceRecoveryDialogSource.matchAll(/<button[^>]*id="([^"]+)"/g)].map((match) => match[1]),
     ['btn-workspace-new', 'btn-workspace-restore'],
@@ -537,30 +575,47 @@ assert.match(workspaceRecoveryDialogSource, /id="workspace-recovery-saved-at">�
 assert.match(workspaceRecoveryDialogSource, /id="workspace-recovery-summary">로봇 \{robots\}대 · 3D 모델 \{models\}개<\/p>/);
 assert.ok(
     cssSource.includes('.workspace-recovery-dialog::backdrop')
+        && cssSource.includes('.workspace-recovery-options[hidden]')
+        && cssSource.includes('.workspace-recovery-details[hidden]')
+        && cssSource.includes('.workspace-recovery-list')
+        && cssSource.includes('.workspace-recovery-option:focus-within')
+        && cssSource.includes('.workspace-recovery-option:has(input[type="radio"]:checked)')
+        && cssSource.includes('.workspace-recovery-option-live')
+        && cssSource.includes('.workspace-recovery-option-incomplete')
+        && cssSource.includes('.workspace-recovery-details.is-incomplete')
+        && cssSource.includes('.workspace-recovery-details.is-incomplete #workspace-recovery-summary')
         && cssSource.includes('.workspace-recovery-error[hidden]')
         && cssSource.includes('.workspace-recovery-dialog-actions button:focus-visible')
         && cssSource.includes('.workspace-recovery-dialog-actions button:disabled'),
     'The recovery dialog must provide a modal backdrop, hidden-error semantics, keyboard focus and disabled loading feedback.'
 );
 assert.ok(
-    htmlSource.includes('style.css?v=20260815-workspace-recovery-1')
-        && htmlSource.includes('main.js?v=20260815-workspace-recovery-1')
-        && htmlSource.includes('/Language/runtime/locales-data.js?v=20260815-workspace-recovery-1'),
+    htmlSource.includes('style.css?v=20260815-workspace-selector-1')
+        && htmlSource.includes('main.js?v=20260815-workspace-selector-1')
+        && htmlSource.includes('/Language/runtime/locales-data.js?v=20260815-workspace-selector-1'),
     'Workspace recovery must invalidate simulation style, module and localized-text caches.'
 );
 assert.ok(
     changeLogSource.includes('3D 시뮬레이션 작업을 창별로 독립 저장하고, 다시 열 때 이전 모델·위치값·프로그램·화면 설정과 OLP 프로젝트를 선택해 복구할 수 있도록 개선했습니다.'),
     'The user-facing version record must describe isolated autosave and full startup recovery without implementation detail.'
 );
+assert.ok(
+    changeLogSource.includes('3D 시뮬레이션 시작 시 저장된 작업이 여러 개 있으면 불러올 작업을 선택할 수 있도록 개선했습니다.'),
+    'The user-facing version record must describe choosing among multiple saved workspaces.'
+);
 
 assert.ok(
-    mainSource.includes("import * as WorkspaceRecovery from './workspace-recovery-core.mjs?v=20260815-workspace-recovery-1';")
+    mainSource.includes("import * as WorkspaceRecovery from './workspace-recovery-core.mjs?v=20260815-workspace-selector-1';")
         && mainSource.includes('workspaceRecovery: {')
         && mainSource.includes('pendingProbes: new Map()'),
     'The simulation must load the versioned workspace core and keep per-document recovery state.'
 );
 [
     "workspaceRecoveryDialog: document.getElementById('workspace-recovery-dialog')",
+    "workspaceRecoveryDescription: document.getElementById('workspace-recovery-description')",
+    "workspaceRecoveryOptions: document.getElementById('workspace-recovery-options')",
+    "workspaceRecoveryList: document.getElementById('workspace-recovery-list')",
+    "workspaceRecoveryDetails: document.getElementById('workspace-recovery-details')",
     "workspaceRecoverySavedAt: document.getElementById('workspace-recovery-saved-at')",
     "workspaceRecoverySummary: document.getElementById('workspace-recovery-summary')",
     "workspaceRecoveryIsolationNote: document.getElementById('workspace-recovery-isolation-note')",
@@ -582,6 +637,7 @@ assert.ok(
 assert.ok(
     mainSource.includes("el.btnWorkspaceNew?.addEventListener('click', () => resolveWorkspaceRecoveryChoice('new'))")
         && mainSource.includes("el.btnWorkspaceRestore?.addEventListener('click', () => resolveWorkspaceRecoveryChoice('restore'))")
+        && mainSource.includes("el.workspaceRecoveryList?.addEventListener('change', handleWorkspaceRecoverySelectionChange)")
         && /el\.workspaceRecoveryDialog\?\.addEventListener\('cancel',[\s\S]*?event\.preventDefault\(\);[\s\S]*?\}\);/.test(mainSource),
     'The startup dialog must resolve only from its New/Restore buttons and must suppress native cancel.'
 );
@@ -822,19 +878,60 @@ assert.ok(
     'An OLP-only workspace must be offered for startup recovery.'
 );
 
+const workspaceChoiceResolverSource = mainSource.slice(
+    mainSource.indexOf('function resolveWorkspaceRecoveryChoice('),
+    mainSource.indexOf('function showWorkspaceRecoveryError(')
+);
+assert.ok(
+    workspaceChoiceResolverSource.includes("{ action: 'restore', workspaceId: recovery.selectedRecoveryWorkspaceId }")
+        && workspaceChoiceResolverSource.includes("{ action: 'new', workspaceId: null }"),
+    'The modal decision must return an explicit action and selected workspace id.'
+);
+const workspaceCandidateRendererSource = mainSource.slice(
+    mainSource.indexOf('function renderWorkspaceRecoveryCandidates('),
+    mainSource.indexOf('function requestWorkspaceRecoveryChoice(')
+);
+assert.ok(
+    workspaceCandidateRendererSource.includes('const multiple = candidates.length > 1;')
+        && workspaceCandidateRendererSource.includes('el.workspaceRecoveryOptions.hidden = !multiple')
+        && workspaceCandidateRendererSource.includes('el.workspaceRecoveryDetails.hidden = multiple')
+        && workspaceCandidateRendererSource.includes('const singleIncomplete = Boolean(!multiple && selected?.incompleteFallback);')
+        && workspaceCandidateRendererSource.includes("el.workspaceRecoveryDetails?.classList.toggle('is-incomplete', singleIncomplete)")
+        && workspaceCandidateRendererSource.includes("el.btnWorkspaceRestore.setAttribute('aria-describedby', 'workspace-recovery-summary')")
+        && workspaceCandidateRendererSource.includes("el.btnWorkspaceRestore.removeAttribute('aria-describedby')")
+        && workspaceCandidateRendererSource.includes('el.workspaceRecoverySummary.textContent = selected.incompleteFallback')
+        && workspaceCandidateRendererSource.includes("? `${summary} · ${uiText('일부만 복구된 작업')}`")
+        && workspaceCandidateRendererSource.includes("input.type = 'radio'")
+        && workspaceCandidateRendererSource.includes("input.name = 'workspace-recovery-source'")
+        && workspaceCandidateRendererSource.includes('input.value = candidate.record.id')
+        && workspaceCandidateRendererSource.includes('input.checked = candidate.record.id === preferred')
+        && workspaceCandidateRendererSource.includes('const statusDescriptionIds = [];')
+        && workspaceCandidateRendererSource.includes('live.id = `workspace-recovery-option-live-${number}`')
+        && workspaceCandidateRendererSource.includes('statusDescriptionIds.push(live.id)')
+        && workspaceCandidateRendererSource.includes("live.className = 'workspace-recovery-option-live'")
+        && workspaceCandidateRendererSource.includes("live.textContent = uiText('다른 창에서 열려 있음')")
+        && workspaceCandidateRendererSource.includes('if (candidate.incompleteFallback) {')
+        && workspaceCandidateRendererSource.includes('incomplete.id = `workspace-recovery-option-incomplete-${number}`')
+        && workspaceCandidateRendererSource.includes("incomplete.className = 'workspace-recovery-option-incomplete'")
+        && workspaceCandidateRendererSource.includes("incomplete.textContent = uiText('일부만 복구된 작업')")
+        && workspaceCandidateRendererSource.includes("input.setAttribute('aria-describedby', [metaId, summaryId, ...statusDescriptionIds].join(' '))")
+        && workspaceCandidateRendererSource.includes('title.textContent = getWorkspaceRecoveryDisplayName(')
+        && workspaceCandidateRendererSource.includes("meta.textContent = uiFormat('마지막 저장: {time}'")
+        && workspaceCandidateRendererSource.includes('summary.textContent = formatWorkspaceRecoverySummary(candidate.record)')
+        && !workspaceCandidateRendererSource.includes('innerHTML'),
+    'Multiple candidates must render as safe native radio cards while the one-candidate details remain intact.'
+);
 const workspaceChoiceSource = mainSource.slice(
     mainSource.indexOf('function requestWorkspaceRecoveryChoice('),
     mainSource.indexOf('function closeWorkspaceRecoveryDialog(')
 );
 assert.ok(
-    workspaceChoiceSource.includes('WorkspaceRecovery.getWorkspaceSummary(record)')
-        && workspaceChoiceSource.includes('new Intl.DateTimeFormat(language')
-        && workspaceChoiceSource.includes("uiFormat('마지막 저장: {time}'")
-        && workspaceChoiceSource.includes("uiFormat('로봇 {robots}대 · 3D 모델 {models}개'")
-        && workspaceChoiceSource.includes("uiFormat('OLP 프로젝트 {projects}개', { projects: summary.olpProjects })")
+    workspaceChoiceSource.includes('renderWorkspaceRecoveryCandidates(candidates, preferredWorkspaceId)')
         && workspaceChoiceSource.includes('el.workspaceRecoveryDialog.showModal()')
-        && workspaceChoiceSource.includes('recoveryChoiceResolver = resolve'),
-    'The modal must show localized save metadata and wait for the required user decision.'
+        && workspaceChoiceSource.includes("el.workspaceRecoveryList?.querySelector('input[type=\"radio\"]:checked')?.focus()")
+        && workspaceChoiceSource.includes('recoveryChoiceResolver = resolve')
+        && workspaceChoiceSource.includes("return Promise.resolve({ action: 'restore', workspaceId: candidates[index].record.id })"),
+    'The modal must focus the selected radio, await an explicit decision, and retain a multi-choice no-dialog fallback.'
 );
 const workspaceChannelSource = mainSource.slice(
     mainSource.indexOf('function setupWorkspaceBroadcastChannel()'),
@@ -856,47 +953,134 @@ const workspaceHeartbeatSource = mainSource.slice(
     mainSource.indexOf('function clearLegacyWorkspaceStorageAfterCommit()')
 );
 assert.ok(
-    workspaceHeartbeatSource.includes("if (error?.code === 'WORKSPACE_LEASE_LOST') void forkWorkspaceAfterOwnershipLoss();")
+    workspaceHeartbeatSource.includes('if ((!recovery.ready && !recovery.restoring)')
+        && workspaceHeartbeatSource.includes('|| recovery.unloading || !recovery.workspaceId) return;')
+        && workspaceHeartbeatSource.includes('void recovery.db.renewLease(recovery.workspaceId, recovery.ownerId)')
+        && workspaceHeartbeatSource.includes("if (error?.code === 'WORKSPACE_LEASE_LOST') {")
+        && workspaceHeartbeatSource.includes('if (recovery.ready || recovery.restoring) void forkWorkspaceAfterOwnershipLoss();')
         && workspaceHeartbeatSource.includes('incompleteRecoveryFrom: recovery.workspace?.incompleteRecoveryFrom || null')
         && workspaceHeartbeatSource.includes('recovery.saveQueued = true;')
         && workspaceHeartbeatSource.includes('if (!recovery.saveInFlight) queueMicrotask(() => void runWorkspaceSaveLoop());'),
-    'Heartbeat-only lease loss must fork immediately, preserve partial-recovery provenance, and queue a durable save.'
+    'Heartbeat lease loss may fork only an active ready/restoring workspace, preserving partial provenance and durable save queuing.'
+);
+const workspaceLegacyCommitSource = mainSource.slice(
+    mainSource.indexOf('function clearLegacyWorkspaceStorageAfterCommit()'),
+    mainSource.indexOf('async function runWorkspaceSaveLoop()')
+);
+assert.ok(
+    mainSource.includes('legacyMigrationFingerprint: null')
+        && workspaceLegacyCommitSource.includes('const currentFingerprint = readLegacyWorkspaceFingerprint();')
+        && workspaceLegacyCommitSource.includes('currentFingerprint !== recovery.legacyMigrationFingerprint')
+        && workspaceLegacyCommitSource.indexOf('currentFingerprint !== recovery.legacyMigrationFingerprint')
+            < workspaceLegacyCommitSource.indexOf('localStorage.removeItem(MOTION_PROJECT_STORAGE_KEY)')
+        && workspaceLegacyCommitSource.includes('recovery.legacyMigrationPending = false;')
+        && workspaceLegacyCommitSource.includes('recovery.legacyMigrationFingerprint = null;'),
+    'A legacy snapshot changed while the picker was open must remain in localStorage after the selected snapshot commits.'
 );
 const workspaceSaveLoopSource = mainSource.slice(
     mainSource.indexOf('async function runWorkspaceSaveLoop()'),
-    mainSource.indexOf('async function findLatestWorkspaceCandidate(')
+    mainSource.indexOf('async function findWorkspaceRecoveryCandidates(')
 );
 assert.ok(
     workspaceSaveLoopSource.includes('recovery.saveQueued = true;')
         && workspaceSaveLoopSource.includes('const snapshot = serializeWorkspaceSnapshot();')
         && workspaceSaveLoopSource.includes('await recovery.db.saveWorkspaceWithLease({')
         && workspaceSaveLoopSource.includes('expectedRevision: previous.revision')
+        && workspaceSaveLoopSource.indexOf('await recovery.db.saveWorkspaceWithLease({')
+            < workspaceSaveLoopSource.indexOf('clearLegacyWorkspaceStorageAfterCommit();')
         && workspaceSaveLoopSource.includes("error?.code === 'WORKSPACE_LEASE_LOST'")
         && workspaceSaveLoopSource.includes("error?.code === 'WORKSPACE_REVISION_CONFLICT'")
         && workspaceSaveLoopSource.includes('await forkWorkspaceAfterOwnershipLoss();')
         && workspaceSaveLoopSource.includes('WorkspaceRecovery.isWorkspaceQuotaError(error)'),
     'Autosave must serialize writes, enforce lease/revision ownership, fork on stale ownership and expose quota failures.'
 );
+const workspaceOrderingSource = workspaceRecoveryCoreSource.slice(
+    workspaceRecoveryCoreSource.indexOf('export function compareWorkspaceRecoveryRecords('),
+    workspaceRecoveryCoreSource.indexOf('function resolveWorkspaceRecoveryLineage(')
+);
+assert.ok(
+    workspaceOrderingSource.includes('const timestampOrder = Number(right?.updatedAt) - Number(left?.updatedAt);')
+        && workspaceOrderingSource.includes('if (timestampOrder) return timestampOrder;')
+        && workspaceOrderingSource.includes('const revisionOrder = Number(right?.revision) - Number(left?.revision);')
+        && workspaceOrderingSource.includes('if (revisionOrder) return revisionOrder;')
+        && workspaceOrderingSource.includes("const leftId = String(left?.id || '');")
+        && workspaceOrderingSource.includes("const rightId = String(right?.id || '');")
+        && workspaceOrderingSource.includes('return leftId < rightId ? -1 : leftId > rightId ? 1 : 0;'),
+    'Workspace ordering must be deterministic across equal timestamps and revisions.'
+);
+const workspaceLineageSource = workspaceRecoveryCoreSource.slice(
+    workspaceRecoveryCoreSource.indexOf('function resolveWorkspaceRecoveryLineage('),
+    workspaceRecoveryCoreSource.indexOf('export function collapseWorkspaceRecoveryRecords(')
+);
+assert.ok(
+    workspaceLineageSource.includes('while (current?.incompleteRecoveryFrom)')
+        && workspaceLineageSource.includes('if (visitedAt.has(current.id))')
+        && workspaceLineageSource.includes('const cycleIds = path.slice(visitedAt.get(current.id))')
+        && workspaceLineageSource.includes("fallbackKey: `cycle:${cycleIds.join('|')}`")
+        && workspaceLineageSource.includes("return { representative: null, fallbackKey: `partial:${sourceId}` }")
+        && workspaceLineageSource.includes('return { representative: current, fallbackKey: null };'),
+    'Partial-recovery lineage must resolve to its intact source and terminate safely for missing or cyclic ancestry.'
+);
+const workspaceCollapseSource = workspaceRecoveryCoreSource.slice(
+    workspaceRecoveryCoreSource.indexOf('export function collapseWorkspaceRecoveryRecords('),
+    workspaceRecoveryCoreSource.indexOf('export function normalizeWorkspaceAsset(')
+);
+assert.ok(
+    workspaceCollapseSource.includes(".filter((record) => record?.id)")
+        && workspaceCollapseSource.includes("? `workspace:${representative.id}`")
+        && workspaceCollapseSource.includes("lineage.fallbackKey || `workspace:${record.id}`")
+        && workspaceCollapseSource.includes('incompleteFallback: !lineage.representative')
+        && workspaceCollapseSource.includes('memberIds.add(String(record.id))')
+        && workspaceCollapseSource.includes('memberIds: [...memberIds]')
+        && workspaceCollapseSource.includes('sessionMatch: Boolean(sessionId && candidate.memberIds.includes(sessionId))')
+        && workspaceCollapseSource.includes('Number(right.sessionMatch) - Number(left.sessionMatch)')
+        && workspaceCollapseSource.includes('Number(left.incompleteFallback) - Number(right.incompleteFallback)')
+        && workspaceCollapseSource.includes('compareWorkspaceRecoveryRecords(left.record, right.record)'),
+    'Startup candidates must collapse only the same partial lineage while preserving independent workspace roots.'
+);
 const workspaceCandidateSource = mainSource.slice(
-    mainSource.indexOf('async function findLatestWorkspaceCandidate('),
+    mainSource.indexOf('async function findWorkspaceRecoveryCandidates('),
+    mainSource.indexOf('async function waitForWorkspaceRecoveryRevision(')
+);
+assert.ok(
+    workspaceCandidateSource.includes('record && !record.archived && workspaceSnapshotHasWork(record.state)')
+        && workspaceCandidateSource.includes('WorkspaceRecovery.collapseWorkspaceRecoveryRecords(eligible, { sessionWorkspaceId })')
+        && workspaceCandidateSource.includes('const candidates = await Promise.all(collapsed.map(async (candidate) => {')
+        && workspaceCandidateSource.includes('const [probe, lease] = await Promise.all([')
+        && workspaceCandidateSource.includes('probeLiveWorkspaceOwner(candidate.record.id)')
+        && workspaceCandidateSource.includes('state.workspaceRecovery.db.getLease(candidate.record.id)')
+        && workspaceCandidateSource.includes('live: probe.live || leased')
+        && workspaceCandidateSource.includes('observedRevision: probe.revision')
+        && workspaceCandidateSource.includes('return candidates;'),
+    'Every eligible workspace must be probed in parallel and sorted by session match, lineage health, recency, revision, and id.'
+);
+const workspaceCandidateRefreshSource = mainSource.slice(
+    mainSource.indexOf('async function refreshWorkspaceRecoveryCandidate('),
     mainSource.indexOf('function readLegacyWorkspaceCandidate(')
 );
 assert.ok(
-    workspaceCandidateSource.includes('const recordById = new Map(records.map((record) => [record.id, record]));')
-        && workspaceCandidateSource.includes('const preservedSourceIds = new Set(records')
-        && workspaceCandidateSource.includes('.map((record) => record.incompleteRecoveryFrom)')
-        && workspaceCandidateSource.includes('.filter((id) => id && recordById.has(id)));')
-        && workspaceCandidateSource.includes('const orderedRecords = [...records].sort((left, right) => {')
-        && workspaceCandidateSource.includes('const priority = (record) => preservedSourceIds.has(record.id)')
-        && workspaceCandidateSource.includes('? 0')
-        && workspaceCandidateSource.includes(': record.incompleteRecoveryFrom ? 2 : 1;')
-        && workspaceCandidateSource.includes('return priority(left) - priority(right)')
-        && workspaceCandidateSource.includes('for (const record of orderedRecords)')
-        && workspaceCandidateSource.includes('let liveFallback = null;')
-        && workspaceCandidateSource.includes('if (!live) return { record, live: false };')
-        && workspaceCandidateSource.includes('if (!liveFallback) liveFallback = { record, live: true };')
-        && workspaceCandidateSource.includes('return liveFallback;'),
-    'Startup discovery must prefer an intact source still referenced by a partial recovery, rank partial targets last, and retain a live fallback.'
+    workspaceCandidateRefreshSource.includes('if (candidate.legacy) {')
+        && workspaceCandidateRefreshSource.includes('const latest = readLegacyWorkspaceCandidate();')
+        && workspaceCandidateRefreshSource.includes('return { ...candidate, record: latest, live: false };')
+        && workspaceCandidateRefreshSource.includes('let record = await state.workspaceRecovery.db.getWorkspace(candidate.record.id);')
+        && workspaceCandidateRefreshSource.includes('record.archived || !workspaceSnapshotHasWork(record.state)')
+        && workspaceCandidateRefreshSource.includes('const [probe, lease] = await Promise.all([')
+        && workspaceCandidateRefreshSource.includes('record = await waitForWorkspaceRecoveryRevision(record.id, probe.revision)')
+        && workspaceCandidateRefreshSource.includes('record = await state.workspaceRecovery.db.getWorkspace(record.id) || record;')
+        && workspaceCandidateRefreshSource.includes("error.code = 'WORKSPACE_NOT_FOUND'"),
+    'The chosen workspace must be reread and revalidated against its latest owner revision before any restore claim.'
+);
+const workspaceLegacyCandidateSource = mainSource.slice(
+    mainSource.indexOf('function readLegacyWorkspaceCandidate('),
+    mainSource.indexOf('async function resetCleanWorkspaceUiState(')
+);
+assert.ok(
+    workspaceLegacyCandidateSource.includes("motionRaw = localStorage.getItem(MOTION_PROJECT_STORAGE_KEY) || ''")
+        && workspaceLegacyCandidateSource.includes("viewRaw = localStorage.getItem(VIEW_PRESETS_STORAGE_KEY) || ''")
+        && workspaceLegacyCandidateSource.includes('record.legacyFingerprint = `${motionRaw}\\u0000${viewRaw}`;')
+        && workspaceLegacyCandidateSource.includes('function readLegacyWorkspaceFingerprint()')
+        && workspaceLegacyCandidateSource.includes('return `${motionRaw}\\u0000${viewRaw}`;'),
+    'Legacy recovery must fingerprint the raw selected snapshot and support a fresh comparison before migration cleanup.'
 );
 assert.doesNotMatch(
     mainSource,
@@ -904,8 +1088,8 @@ assert.doesNotMatch(
     'Workspace state and imported binaries must never be written back to the shared legacy localStorage keys.'
 );
 assert.ok(
-    mainSource.includes('const motionRaw = localStorage.getItem(MOTION_PROJECT_STORAGE_KEY);')
-        && mainSource.includes('const viewRaw = localStorage.getItem(VIEW_PRESETS_STORAGE_KEY);')
+    mainSource.includes("localStorage.getItem(MOTION_PROJECT_STORAGE_KEY) || ''")
+        && mainSource.includes("localStorage.getItem(VIEW_PRESETS_STORAGE_KEY) || ''")
         && mainSource.includes('clearLegacyWorkspaceStorageAfterCommit();'),
     'Legacy localStorage must be read only for migration and cleared only after a successful IndexedDB commit.'
 );
@@ -917,6 +1101,47 @@ assert.ok(
     workspaceRecordFactorySource.includes('incompleteRecoveryFrom: options.incompleteRecoveryFrom || null'),
     'New workspace records must accept provenance linking a partial recovery back to its intact source.'
 );
+const workspaceCandidateDiscoverySource = mainSource.slice(
+    mainSource.indexOf('async function discoverWorkspaceRecoveryCandidates('),
+    mainSource.indexOf('async function acquireSelectedWorkspaceRecovery(')
+);
+assert.ok(
+    workspaceCandidateDiscoverySource.includes('if (startClean) return [];')
+        && workspaceCandidateDiscoverySource.includes('await state.workspaceRecovery.db.listWorkspaces()')
+        && workspaceCandidateDiscoverySource.includes('{ sessionWorkspaceId }')
+        && workspaceCandidateDiscoverySource.includes('const legacy = readLegacyWorkspaceCandidate();')
+        && workspaceCandidateDiscoverySource.includes('if (legacy) {')
+        && workspaceCandidateDiscoverySource.includes('candidates.push({')
+        && workspaceCandidateDiscoverySource.includes('memberIds: new Set([legacy.id])')
+        && workspaceCandidateDiscoverySource.includes('legacy: true')
+        && workspaceCandidateDiscoverySource.includes('return candidates;')
+        && !workspaceCandidateDiscoverySource.includes('if (candidates.length) return candidates;'),
+    'Startup discovery must append a valid legacy snapshot even when modern IndexedDB workspaces are also available.'
+);
+const workspaceSelectedAcquireSource = mainSource.slice(
+    mainSource.indexOf('async function acquireSelectedWorkspaceRecovery('),
+    mainSource.indexOf('async function initializeWorkspaceRecovery(')
+);
+assert.ok(
+    workspaceSelectedAcquireSource.includes('let selected = await refreshWorkspaceRecoveryCandidate(candidate);')
+        && workspaceSelectedAcquireSource.includes('let sourceIsLive = Boolean(selected.live);')
+        && workspaceSelectedAcquireSource.includes('if (selected.legacy || sourceIsLive) {')
+        && workspaceSelectedAcquireSource.includes("claimWorkspaceLease(WorkspaceRecovery.createWorkspaceId('workspace'))")
+        && workspaceSelectedAcquireSource.includes('const leaseResult = await recovery.db.acquireLease(source.id, recovery.ownerId);')
+        && workspaceSelectedAcquireSource.includes('if (leaseResult.acquired) {')
+        && workspaceSelectedAcquireSource.includes('selected = await refreshWorkspaceRecoveryCandidate({ ...selected, live: true });')
+        && workspaceSelectedAcquireSource.includes('try {')
+        && workspaceSelectedAcquireSource.includes('const latest = await state.workspaceRecovery.db.getWorkspace(source.id);')
+        && workspaceSelectedAcquireSource.includes('} catch (error) {')
+        && workspaceSelectedAcquireSource.includes('if (targetWorkspaceId) {')
+        && workspaceSelectedAcquireSource.includes('await recovery.db.releaseLease(targetWorkspaceId, recovery.ownerId).catch(() => {});')
+        && workspaceSelectedAcquireSource.includes('throw error;')
+        && workspaceSelectedAcquireSource.includes('return { source, sourceIsLive, legacySource, targetWorkspaceId };')
+        && !workspaceSelectedAcquireSource.includes('force:')
+        && !workspaceSelectedAcquireSource.includes('reclaimingSessionReload')
+        && !workspaceSelectedAcquireSource.includes('archiveWorkspace('),
+    'The selected record alone must be refreshed, atomically claimed, reread, and always isolated when live, leased, or won by another window.'
+);
 const workspaceRecoveryInitSource = mainSource.slice(
     mainSource.indexOf('async function initializeWorkspaceRecovery()'),
     mainSource.indexOf('function releaseWorkspaceOwnership(')
@@ -925,31 +1150,33 @@ const workspaceRecoveryInitSource = mainSource.slice(
     "recovery.ownerId = WorkspaceRecovery.createWorkspaceId('owner')",
     'new WorkspaceRecovery.WorkspaceRecoveryStore(window.indexedDB)',
     'readSessionStorageValue(WORKSPACE_SESSION_POINTER_KEY)',
-    "performance.getEntriesByType?.('navigation')?.[0]?.type || ''",
-    "const reclaimingSessionReload = navigationType === 'reload' && Boolean(sessionWorkspaceId);",
-    'await probeLiveWorkspaceOwner(source.id)',
-    'const lease = await recovery.db.getLease(source.id);',
-    'const reclaimingSameTabReload = reclaimingSessionReload',
-    'Number(lease.expiresAt) > Date.now()',
-    'const previousRevision = source.revision;',
-    'for (let attempt = 0; attempt < 10; attempt += 1)',
-    'const refreshed = await recovery.db.getWorkspace(source.id);',
-    'if (source.revision > previousRevision) break;',
-    'const candidate = await findLatestWorkspaceCandidate(await recovery.db.listWorkspaces());',
-    'source = candidate?.record || null;',
-    'sourceIsLive = Boolean(candidate?.live);',
-    'readLegacyWorkspaceCandidate()',
-    'let targetWorkspaceId = source && !sourceIsLive',
-    '? source.id',
-    'await claimWorkspaceLease(targetWorkspaceId',
-    'await requestWorkspaceRecoveryChoice(source',
+    'let candidates = await discoverWorkspaceRecoveryCandidates({ sessionWorkspaceId, startClean });',
+    'let preferredWorkspaceId = candidates.find((candidate) => candidate.sessionMatch)?.record.id',
+    'const choice = await requestWorkspaceRecoveryChoice(candidates, {',
+    "if (choice.action === 'new') {",
+    'preferredWorkspaceId = choice.workspaceId;',
+    'const candidate = candidates.find((entry) => entry.record.id === choice.workspaceId);',
+    'const prepared = await acquireSelectedWorkspaceRecovery(candidate);',
+    'source = prepared.source;',
+    'sourceIsLive = prepared.sourceIsLive;',
+    'legacySource = prepared.legacySource;',
+    'targetWorkspaceId = prepared.targetWorkspaceId;',
+    'recovery.workspaceId = targetWorkspaceId;',
     'await restoreWorkspaceSnapshot(source.state)',
+    'candidates = await discoverWorkspaceRecoveryCandidates({ sessionWorkspaceId });',
     'let restoreHadWarnings = false;',
     'restoreHadWarnings = true;',
+    'recovery.legacyMigrationPending = Boolean(legacySource);',
+    'recovery.legacyMigrationFingerprint = legacySource?.legacyFingerprint || null;',
+    'startWorkspaceHeartbeat();',
+    'else if (source.incompleteRecoveryFrom) {',
     "setStatus('저장된 작업 파일 일부를 찾을 수 없어 이전 작업을 모두 복구하지 못했습니다.'",
     'if (restoreSelected && restoreHadWarnings && source?.id === recovery.workspaceId)',
     'await recovery.db.releaseLease(recovery.workspaceId, recovery.ownerId)',
     'writeSessionStorageValue(WORKSPACE_SESSION_POINTER_KEY, recovery.workspaceId)',
+    "recovery.workspaceId = await claimWorkspaceLease(WorkspaceRecovery.createWorkspaceId('workspace'));",
+    'recovery.legacyMigrationPending = false;',
+    'recovery.legacyMigrationFingerprint = null;',
     'const reusingSourceRecord = Boolean(source && source.id === recovery.workspaceId);',
     'revision: reusingSourceRecord ? source.revision : 0',
     'createdAt: reusingSourceRecord ? source.createdAt : Date.now()',
@@ -968,33 +1195,93 @@ const workspaceRecoveryInitSource = mainSource.slice(
     workspaceRecoveryInitSource.includes(marker),
     `Workspace startup/isolation is missing marker: ${marker}`
 ));
-const workspaceSessionSourceSelection = workspaceRecoveryInitSource.slice(
-    workspaceRecoveryInitSource.indexOf('const sessionWorkspaceId = readSessionStorageValue('),
-    workspaceRecoveryInitSource.indexOf('let sourceIsLive = false;')
+const workspaceStartupBeforeChoiceSource = workspaceRecoveryInitSource.slice(
+    0,
+    workspaceRecoveryInitSource.indexOf('const choice = await requestWorkspaceRecoveryChoice(candidates, {')
+);
+assert.doesNotMatch(
+    workspaceStartupBeforeChoiceSource,
+    /claimWorkspaceLease\(|\.acquireLease\(/,
+    'Candidate discovery must remain read-only until the user chooses Restore or New.'
 );
 assert.ok(
-    workspaceSessionSourceSelection.includes('if (source?.incompleteRecoveryFrom && !startClean) {')
-        && workspaceSessionSourceSelection.includes('const completeSource = await recovery.db.getWorkspace(source.incompleteRecoveryFrom);')
-        && workspaceSessionSourceSelection.includes('if (completeSource && !completeSource.archived')
-        && workspaceSessionSourceSelection.includes('&& workspaceSnapshotHasWork(completeSource.state)) {')
-        && workspaceSessionSourceSelection.includes('source = completeSource;'),
-    'A partial session pointer may select its intact source before lease/probe decisions only while that source remains unarchived and usable.'
+    workspaceRecoveryInitSource.indexOf('let candidates = await discoverWorkspaceRecoveryCandidates({ sessionWorkspaceId, startClean });')
+        < workspaceRecoveryInitSource.indexOf('const choice = await requestWorkspaceRecoveryChoice(candidates, {')
+        && workspaceRecoveryInitSource.indexOf('const choice = await requestWorkspaceRecoveryChoice(candidates, {')
+            < workspaceRecoveryInitSource.indexOf('const prepared = await acquireSelectedWorkspaceRecovery(candidate);')
+        && workspaceRecoveryInitSource.indexOf('closeWorkspaceRecoveryDialog();')
+            < workspaceRecoveryInitSource.indexOf('showLoading(true, uiText(\'이전 작업 불러오는 중...\'));')
+        && workspaceRecoveryInitSource.indexOf('showLoading(true, uiText(\'이전 작업 불러오는 중...\'));')
+            < workspaceRecoveryInitSource.indexOf('const prepared = await acquireSelectedWorkspaceRecovery(candidate);'),
+    'The modal choice must precede lease acquisition, and Restore must close the dialog before reconstruction begins.'
 );
-const workspaceLiveCandidateRefreshSource = workspaceRecoveryInitSource.slice(
-    workspaceRecoveryInitSource.indexOf('const candidate = await findLatestWorkspaceCandidate('),
-    workspaceRecoveryInitSource.indexOf('let legacySource = null;')
+const workspaceRestoreLeaseSource = workspaceRecoveryInitSource.slice(
+    workspaceRecoveryInitSource.indexOf('recovery.workspaceId = targetWorkspaceId;'),
+    workspaceRecoveryInitSource.indexOf('restoreSelected = true;')
 );
 assert.ok(
-    workspaceLiveCandidateRefreshSource.includes('source = candidate?.record || null;')
-        && workspaceLiveCandidateRefreshSource.includes('sourceIsLive = Boolean(candidate?.live);')
-        && workspaceLiveCandidateRefreshSource.includes('if (source && sourceIsLive) {')
-        && workspaceLiveCandidateRefreshSource.includes('const previousRevision = source.revision;')
-        && workspaceLiveCandidateRefreshSource.includes('for (let attempt = 0; attempt < 10; attempt += 1)')
-        && workspaceLiveCandidateRefreshSource.includes('const refreshed = await recovery.db.getWorkspace(source.id);')
-        && workspaceLiveCandidateRefreshSource.includes('if (refreshed) source = refreshed;')
-        && workspaceLiveCandidateRefreshSource.includes('if (source.revision > previousRevision) break;')
-        && workspaceLiveCandidateRefreshSource.includes('await new Promise((resolve) => window.setTimeout(resolve, 100));'),
-    'A new window without a session pointer must poll the live candidate until the owner probe-save revision is visible before offering recovery.'
+    workspaceRestoreLeaseSource.indexOf('startWorkspaceHeartbeat();')
+        < workspaceRestoreLeaseSource.indexOf('await restoreWorkspaceSnapshot(source.state);'),
+    'The selected target lease must start renewing before a potentially long workspace reconstruction.'
+);
+const workspaceKnownPartialWarningSource = workspaceRecoveryInitSource.slice(
+    workspaceRecoveryInitSource.indexOf('else if (source.incompleteRecoveryFrom) {'),
+    workspaceRecoveryInitSource.indexOf('break;', workspaceRecoveryInitSource.indexOf('else if (source.incompleteRecoveryFrom) {'))
+);
+assert.ok(
+    workspaceKnownPartialWarningSource.includes('recovery.startupWarning = true;')
+        && workspaceKnownPartialWarningSource.includes("setStatus('저장된 작업 파일 일부를 찾을 수 없어 이전 작업을 모두 복구하지 못했습니다.'"),
+    'Restoring a known incomplete lineage must keep its warning visible even when reconstruction emits no new warnings.'
+);
+const workspaceRestoreCatchStart = workspaceRecoveryInitSource.indexOf(
+    '} catch (error) {',
+    workspaceRecoveryInitSource.indexOf('const prepared = await acquireSelectedWorkspaceRecovery(candidate);')
+);
+const workspaceRestoreCatchSource = workspaceRecoveryInitSource.slice(
+    workspaceRestoreCatchStart,
+    workspaceRecoveryInitSource.indexOf('if (restoreSelected && restoreHadWarnings', workspaceRestoreCatchStart)
+);
+assert.ok(
+    workspaceRestoreCatchSource.includes('window.clearInterval(recovery.heartbeatTimer);')
+        && workspaceRestoreCatchSource.includes('recovery.heartbeatTimer = null;')
+        && workspaceRestoreCatchSource.includes('if (recovery.ownershipTransition) {')
+        && workspaceRestoreCatchSource.includes('await recovery.ownershipTransition.catch(() => {});')
+        && workspaceRestoreCatchSource.includes('const failedWorkspaceIds = new Set([')
+        && workspaceRestoreCatchSource.includes('targetWorkspaceId,')
+        && workspaceRestoreCatchSource.includes('recovery.workspaceId')
+        && workspaceRestoreCatchSource.includes('for (const workspaceId of failedWorkspaceIds) {')
+        && workspaceRestoreCatchSource.includes('await recovery.db.releaseLease(workspaceId, recovery.ownerId).catch(() => {});')
+        && workspaceRestoreCatchSource.includes('recovery.workspaceId = null;')
+        && workspaceRestoreCatchSource.includes('recovery.workspace = null;')
+        && workspaceRestoreCatchSource.indexOf('await recovery.ownershipTransition.catch(() => {});')
+            < workspaceRestoreCatchSource.indexOf('const failedWorkspaceIds = new Set(['),
+    'A failed reconstruction must stop heartbeat, await an ownership fork, then release every resulting target lease and clear stale state.'
+);
+const workspaceNewChoiceSource = workspaceRecoveryInitSource.slice(
+    workspaceRecoveryInitSource.indexOf("if (choice.action === 'new') {"),
+    workspaceRecoveryInitSource.indexOf('preferredWorkspaceId = choice.workspaceId;')
+);
+assert.ok(
+    workspaceNewChoiceSource.includes('break;')
+        && !workspaceNewChoiceSource.includes('archiveWorkspace(')
+        && !workspaceNewChoiceSource.includes('acquireSelectedWorkspaceRecovery('),
+    'New must leave every offered workspace unclaimed and unarchived.'
+);
+const workspaceNewTargetSource = workspaceRecoveryInitSource.slice(
+    workspaceRecoveryInitSource.indexOf('if (!restoreSelected) {'),
+    workspaceRecoveryInitSource.indexOf('const reusingSourceRecord = Boolean(')
+);
+assert.ok(
+    workspaceNewTargetSource.includes("claimWorkspaceLease(WorkspaceRecovery.createWorkspaceId('workspace'))")
+        && workspaceNewTargetSource.includes('recovery.legacyMigrationPending = false;')
+        && workspaceNewTargetSource.includes('recovery.legacyMigrationFingerprint = null;')
+        && !workspaceNewTargetSource.includes('archiveWorkspace('),
+    'New must claim a fresh independent workspace without mutating or deleting any unselected modern or legacy source.'
+);
+assert.doesNotMatch(
+    workspaceRecoveryInitSource,
+    /reclaimingSessionReload|canForceSameTabReload|force:\s*true|declinedLegacy/,
+    'Reload must never force-reclaim a live lease, and declining legacy recovery must preserve the legacy source.'
 );
 const workspacePartialRecoveryCommitSource = workspaceRecoveryInitSource.slice(
     workspaceRecoveryInitSource.indexOf('let restoreSelected = false;'),
@@ -1005,71 +1292,30 @@ assert.ok(
         && workspacePartialRecoveryCommitSource.includes('if (restoreSelected && restoreHadWarnings && source?.id) {')
         && workspacePartialRecoveryCommitSource.includes('incompleteRecoverySourceId = source.id;')
         && workspacePartialRecoveryCommitSource.includes('incompleteRecoveryFrom: incompleteRecoverySourceId')
-        && workspacePartialRecoveryCommitSource.indexOf('await runWorkspaceSaveLoop();')
-            < workspacePartialRecoveryCommitSource.indexOf('if (targetWasCommitted && incompleteRecoverySourceId) {')
-        && workspacePartialRecoveryCommitSource.includes('record.id !== recovery.workspaceId')
-        && workspacePartialRecoveryCommitSource.includes('record.incompleteRecoveryFrom === incompleteRecoverySourceId')
-        && workspacePartialRecoveryCommitSource.includes('expectedRevision: record.revision')
-        && workspacePartialRecoveryCommitSource.includes('requireUnleased: true')
-        && workspacePartialRecoveryCommitSource.includes("console.warn('Unable to archive an older partial recovery:', error)"),
-    'A warned partial restore must commit a provenance-marked target before atomically archiving older partial descendants while preserving the intact source.'
-);
-const workspaceResolvedPartialSource = workspacePartialRecoveryCommitSource.slice(
-    workspacePartialRecoveryCommitSource.indexOf('if (targetWasCommitted && source && !sourceIsLive && !restoreHadWarnings) {'),
-    workspacePartialRecoveryCommitSource.indexOf('if (targetWasCommitted && incompleteRecoverySourceId) {')
+        && workspacePartialRecoveryCommitSource.includes('|| (restoreSelected ? source?.incompleteRecoveryFrom : null)')
+        && workspacePartialRecoveryCommitSource.includes('else if (source.incompleteRecoveryFrom) {')
+        && workspacePartialRecoveryCommitSource.includes('Partial-recovery descendants stay durable and are collapsed behind')
+        && workspacePartialRecoveryCommitSource.includes('They are never auto-archived:')
+        && !workspacePartialRecoveryCommitSource.includes('resolvedPartialRecords')
+        && !workspacePartialRecoveryCommitSource.includes('previousPartialRecords')
+        && !workspacePartialRecoveryCommitSource.includes('Unable to archive a resolved partial recovery')
+        && !workspacePartialRecoveryCommitSource.includes('Unable to archive an older partial recovery'),
+    'Partial recovery provenance and warning state must survive startup without auto-archiving any descendant that another window may own.'
 );
 assert.ok(
-    workspaceResolvedPartialSource.includes('const resolvedPartialRecords = (await recovery.db.listWorkspaces())')
-        && workspaceResolvedPartialSource.includes('record.id !== recovery.workspaceId')
-        && workspaceResolvedPartialSource.includes('record.incompleteRecoveryFrom === source.id')
-        && workspaceResolvedPartialSource.includes('expectedRevision: record.revision')
-        && workspaceResolvedPartialSource.includes('requireUnleased: true')
-        && workspaceResolvedPartialSource.includes("console.warn('Unable to archive a resolved partial recovery:', error)")
-        && workspacePartialRecoveryCommitSource.indexOf('await runWorkspaceSaveLoop();')
-            < workspacePartialRecoveryCommitSource.indexOf('if (targetWasCommitted && source && !sourceIsLive && !restoreHadWarnings) {'),
-    'After a full restore or New choice is durably committed, stale partial descendants except the current target must be archived with revision/lease guards.'
-);
-assert.ok(
-    workspaceRecoveryInitSource.indexOf('await probeLiveWorkspaceOwner(source.id)')
-        < workspaceRecoveryInitSource.indexOf('const lease = await recovery.db.getLease(source.id);')
-        && workspaceRecoveryInitSource.indexOf('const reclaimingSameTabReload = reclaimingSessionReload')
-            < workspaceRecoveryInitSource.indexOf('Number(lease.expiresAt) > Date.now()')
-        && workspaceRecoveryInitSource.indexOf('const previousRevision = source.revision;')
-            < workspaceRecoveryInitSource.indexOf('const refreshed = await recovery.db.getWorkspace(source.id);'),
-    'BroadcastChannel timeout must still honor a live lease, while only a true reload may reclaim this tab and a live fork polls its newest revision.'
-);
-const workspaceLeaseClaimSource = workspaceRecoveryInitSource.slice(
-    workspaceRecoveryInitSource.indexOf('let targetWorkspaceId = source && !sourceIsLive'),
-    workspaceRecoveryInitSource.indexOf('recovery.workspaceId = targetWorkspaceId;')
-);
-assert.ok(
-    workspaceLeaseClaimSource.includes('force: Boolean(reclaimingSessionReload && source && !sourceIsLive')
-        && workspaceLeaseClaimSource.includes('source.id === sessionWorkspaceId && source.id === targetWorkspaceId)')
-        && !workspaceLeaseClaimSource.includes('force: Boolean(source && !sourceIsLive && source.id === targetWorkspaceId)'),
-    'Forced lease reclaim must be scoped to a real reload of the same session-pointer source; a latest-candidate race must fork instead.'
-);
-assert.ok(
-    workspaceRecoveryInitSource.indexOf('const candidate = await findLatestWorkspaceCandidate(await recovery.db.listWorkspaces());')
-        < workspaceRecoveryInitSource.indexOf('const recoveryWasOffered = Boolean(source && workspaceSnapshotHasWork(source.state)')
-        && workspaceRecoveryInitSource.includes('isolatedCopy: sourceIsLive || source.id !== targetWorkspaceId')
-        && workspaceRecoveryInitSource.indexOf('let targetWorkspaceId = source && !sourceIsLive')
-            < workspaceRecoveryInitSource.indexOf('const reusingSourceRecord = Boolean(source && source.id === recovery.workspaceId);')
+    workspaceRecoveryInitSource.indexOf('await runWorkspaceSaveLoop();')
+        < workspaceRecoveryInitSource.indexOf('await recovery.db.archiveWorkspace(source.id, true, {')
         && workspaceRecoveryInitSource.indexOf('await recovery.db.pruneArchivedWorkspaces({ keep: 1 });')
             < workspaceRecoveryInitSource.indexOf('await recovery.db.deleteOrphanAssets({ gracePeriodMs: 600000 });')
         && workspaceRecoveryInitSource.includes('source.id !== recovery.workspaceId')
         && workspaceRecoveryInitSource.includes('requireUnleased: true'),
-    'A live/raced candidate must use isolated recovery, source archival must exclude the target and live leases, and pruned assets need a ten-minute grace period.'
+    'Only a committed selected source may be archived, with target/live guards, before ten-minute-grace orphan cleanup.'
 );
 assert.ok(
     mainSource.includes("writeSessionStorageValue(WORKSPACE_START_CLEAN_KEY, '1')")
         && mainSource.includes("const startClean = readSessionStorageValue(WORKSPACE_START_CLEAN_KEY) === '1'")
         && mainSource.includes("writeSessionStorageValue(WORKSPACE_START_CLEAN_KEY, null)"),
     'A reset must request one explicit clean startup without leaking that choice into later sessions.'
-);
-assert.match(
-    workspaceRecoveryInitSource,
-    /if \(choice === 'new'\) break;\s*closeWorkspaceRecoveryDialog\(\);\s*showLoading\(true, uiText\('이전 작업 불러오는 중\.\.\.'\)\);/,
-    'Restore must leave the top-layer dialog before showing loading, so long model reconstruction remains visibly in progress.'
 );
 const resetSimulationSource = mainSource.slice(
     mainSource.indexOf('async function resetSimulation()'),
