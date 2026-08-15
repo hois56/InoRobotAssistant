@@ -74,7 +74,7 @@ import {
     resolveOlpPoint,
     updateOlpFileText
 } from './olp-project-core.mjs?v=20260727-olp-windows-newline-1';
-import * as WorkspaceRecovery from './workspace-recovery-core.mjs?v=20260815-workspace-recovery-1';
+import * as WorkspaceRecovery from './workspace-recovery-core.mjs?v=20260815-workspace-selector-1';
 import {
     BIT_COUNT as OLP_BIT_COUNT,
     BIT_START as OLP_BIT_START,
@@ -204,9 +204,12 @@ const state = {
         channelListener: null,
         pendingProbes: new Map(),
         recoveryChoiceResolver: null,
+        recoveryCandidates: [],
+        selectedRecoveryWorkspaceId: null,
         ownershipTransition: null,
         unloading: false,
         legacyMigrationPending: false,
+        legacyMigrationFingerprint: null,
         startupWarning: false
     },
     lastCycleTimeDisplayUpdate: 0,
@@ -410,6 +413,10 @@ const el = {
     btnCancelSimulationReset: document.getElementById('btn-cancel-simulation-reset'),
     btnConfirmSimulationReset: document.getElementById('btn-confirm-simulation-reset'),
     workspaceRecoveryDialog: document.getElementById('workspace-recovery-dialog'),
+    workspaceRecoveryDescription: document.getElementById('workspace-recovery-description'),
+    workspaceRecoveryOptions: document.getElementById('workspace-recovery-options'),
+    workspaceRecoveryList: document.getElementById('workspace-recovery-list'),
+    workspaceRecoveryDetails: document.getElementById('workspace-recovery-details'),
     workspaceRecoverySavedAt: document.getElementById('workspace-recovery-saved-at'),
     workspaceRecoverySummary: document.getElementById('workspace-recovery-summary'),
     workspaceRecoveryIsolationNote: document.getElementById('workspace-recovery-isolation-note'),
@@ -5396,6 +5403,7 @@ function setupEventListeners() {
     });
     el.btnWorkspaceNew?.addEventListener('click', () => resolveWorkspaceRecoveryChoice('new'));
     el.btnWorkspaceRestore?.addEventListener('click', () => resolveWorkspaceRecoveryChoice('restore'));
+    el.workspaceRecoveryList?.addEventListener('change', handleWorkspaceRecoverySelectionChange);
     el.workspaceRecoveryDialog?.addEventListener('cancel', (event) => {
         // A recovery source must never be silently accepted or overwritten.
         event.preventDefault();
@@ -16250,7 +16258,9 @@ function resolveWorkspaceRecoveryChoice(choice) {
     const resolve = recovery.recoveryChoiceResolver;
     if (!resolve) return;
     recovery.recoveryChoiceResolver = null;
-    resolve(choice === 'restore' ? 'restore' : 'new');
+    resolve(choice === 'restore'
+        ? { action: 'restore', workspaceId: recovery.selectedRecoveryWorkspaceId }
+        : { action: 'new', workspaceId: null });
 }
 
 function showWorkspaceRecoveryError(message = '') {
@@ -16259,36 +16269,212 @@ function showWorkspaceRecoveryError(message = '') {
     el.workspaceRecoveryError.hidden = !message;
 }
 
-function requestWorkspaceRecoveryChoice(record, { isolatedCopy = false, errorMessage = '' } = {}) {
-    const summary = WorkspaceRecovery.getWorkspaceSummary(record);
+function formatWorkspaceRecoverySavedAt(record) {
     const language = document.documentElement.lang || navigator.language || 'ko';
-    const savedAt = new Intl.DateTimeFormat(language, {
-        dateStyle: 'medium',
-        timeStyle: 'short'
-    }).format(new Date(record.updatedAt || Date.now()));
+    try {
+        return new Intl.DateTimeFormat(language, {
+            dateStyle: 'medium',
+            timeStyle: 'short'
+        }).format(new Date(record?.updatedAt || Date.now()));
+    } catch {
+        return new Date(record?.updatedAt || Date.now()).toLocaleString();
+    }
+}
+
+function formatWorkspaceRecoverySummary(record) {
+    const summary = WorkspaceRecovery.getWorkspaceSummary(record);
+    const baseSummary = uiFormat('로봇 {robots}대 · 3D 모델 {models}개', summary);
+    return summary.olpProjects > 0
+        ? `${baseSummary} · ${uiFormat('OLP 프로젝트 {projects}개', { projects: summary.olpProjects })}`
+        : baseSummary;
+}
+
+function getWorkspaceRecoveryDisplayName(record, number) {
+    const stateSnapshot = record?.state || {};
+    const primaryName = stateSnapshot.motionProject?.robots?.[0]?.displayName
+        || stateSnapshot.importedModels?.[0]?.name
+        || stateSnapshot.catalogModels?.[0]?.name
+        || stateSnapshot.olpProject?.name
+        || '';
+    const numberedName = uiFormat('저장된 작업 {number}', { number });
+    return primaryName ? `${numberedName} · ${primaryName}` : numberedName;
+}
+
+function updateWorkspaceRecoveryIsolationNote(isolatedCopy) {
+    if (!el.workspaceRecoveryIsolationNote) return;
+    const message = isolatedCopy
+        ? '같은 작업이 다른 창에서 열려 있어 이 창은 독립된 복사본으로 시작합니다.'
+        : '다른 창에서 연 작업은 독립된 복사본으로 저장되어 서로 덮어쓰지 않습니다.';
+    const noteText = el.workspaceRecoveryIsolationNote.querySelector('span');
+    if (noteText) noteText.textContent = uiText(message);
+}
+
+function renderWorkspaceRecoverySelection() {
+    const recovery = state.workspaceRecovery;
+    const selectedId = recovery.selectedRecoveryWorkspaceId;
+    const selected = recovery.recoveryCandidates.find((candidate) => candidate.record.id === selectedId)
+        || recovery.recoveryCandidates[0]
+        || null;
+    if (selected && selected.record.id !== selectedId) {
+        recovery.selectedRecoveryWorkspaceId = selected.record.id;
+    }
+    el.workspaceRecoveryList?.querySelectorAll('.workspace-recovery-option').forEach((option) => {
+        const input = option.querySelector('input[type="radio"]');
+        option.classList.toggle('is-selected', Boolean(input?.checked));
+    });
+    updateWorkspaceRecoveryIsolationNote(Boolean(selected?.live));
+    if (el.btnWorkspaceRestore) el.btnWorkspaceRestore.disabled = !selected;
+}
+
+function handleWorkspaceRecoverySelectionChange(event) {
+    const input = event.target?.closest?.('input[name="workspace-recovery-source"]');
+    if (!input) return;
+    state.workspaceRecovery.selectedRecoveryWorkspaceId = input.value;
+    renderWorkspaceRecoverySelection();
+}
+
+function renderWorkspaceRecoveryCandidates(candidates, preferredWorkspaceId = null) {
+    const recovery = state.workspaceRecovery;
+    recovery.recoveryCandidates = [...candidates];
+    const preferred = candidates.some((candidate) => candidate.record.id === preferredWorkspaceId)
+        ? preferredWorkspaceId
+        : candidates[0]?.record?.id || null;
+    recovery.selectedRecoveryWorkspaceId = preferred;
+    const multiple = candidates.length > 1;
+    if (el.workspaceRecoveryDescription) {
+        el.workspaceRecoveryDescription.textContent = uiText(multiple
+            ? '저장된 작업이 여러 개 있습니다. 불러올 작업을 선택하세요.'
+            : '저장된 3D 시뮬레이션 작업이 있습니다. 불러오시겠습니까?');
+    }
+    if (el.workspaceRecoveryOptions) el.workspaceRecoveryOptions.hidden = !multiple;
+    if (el.workspaceRecoveryDetails) el.workspaceRecoveryDetails.hidden = multiple;
+    if (el.workspaceRecoveryList) el.workspaceRecoveryList.replaceChildren();
+
+    const selected = candidates.find((candidate) => candidate.record.id === preferred)
+        || candidates[0]
+        || null;
+    const singleIncomplete = Boolean(!multiple && selected?.incompleteFallback);
+    el.workspaceRecoveryDetails?.classList.toggle('is-incomplete', singleIncomplete);
+    if (el.btnWorkspaceRestore) {
+        if (singleIncomplete) {
+            el.btnWorkspaceRestore.setAttribute('aria-describedby', 'workspace-recovery-summary');
+        } else {
+            el.btnWorkspaceRestore.removeAttribute('aria-describedby');
+        }
+    }
+    if (!multiple && selected) {
+        if (el.workspaceRecoverySavedAt) {
+            el.workspaceRecoverySavedAt.textContent = uiFormat('마지막 저장: {time}', {
+                time: formatWorkspaceRecoverySavedAt(selected.record)
+            });
+        }
+        if (el.workspaceRecoverySummary) {
+            const summary = formatWorkspaceRecoverySummary(selected.record);
+            el.workspaceRecoverySummary.textContent = selected.incompleteFallback
+                ? `${summary} · ${uiText('일부만 복구된 작업')}`
+                : summary;
+        }
+    }
+
+    if (multiple && el.workspaceRecoveryList) {
+        const fragment = document.createDocumentFragment();
+        candidates.forEach((candidate, index) => {
+            const number = index + 1;
+            const option = document.createElement('label');
+            option.className = 'workspace-recovery-option';
+            const input = document.createElement('input');
+            input.type = 'radio';
+            input.name = 'workspace-recovery-source';
+            input.value = candidate.record.id;
+            input.checked = candidate.record.id === preferred;
+            const metaId = `workspace-recovery-option-meta-${number}`;
+            const summaryId = `workspace-recovery-option-summary-${number}`;
+            input.setAttribute('aria-label', getWorkspaceRecoveryDisplayName(candidate.record, number));
+            const content = document.createElement('span');
+            content.className = 'workspace-recovery-option-content';
+            const header = document.createElement('span');
+            header.className = 'workspace-recovery-option-header';
+            const title = document.createElement('span');
+            title.className = 'workspace-recovery-option-title';
+            title.textContent = getWorkspaceRecoveryDisplayName(candidate.record, number);
+            header.append(title);
+            const statusDescriptionIds = [];
+            if (candidate.live) {
+                const live = document.createElement('span');
+                live.id = `workspace-recovery-option-live-${number}`;
+                statusDescriptionIds.push(live.id);
+                live.className = 'workspace-recovery-option-live';
+                live.textContent = uiText('다른 창에서 열려 있음');
+                header.append(live);
+            }
+            if (candidate.incompleteFallback) {
+                const incomplete = document.createElement('span');
+                incomplete.id = `workspace-recovery-option-incomplete-${number}`;
+                statusDescriptionIds.push(incomplete.id);
+                incomplete.className = 'workspace-recovery-option-incomplete';
+                incomplete.textContent = uiText('일부만 복구된 작업');
+                header.append(incomplete);
+            }
+            const meta = document.createElement('span');
+            meta.id = metaId;
+            meta.className = 'workspace-recovery-option-meta';
+            meta.textContent = uiFormat('마지막 저장: {time}', {
+                time: formatWorkspaceRecoverySavedAt(candidate.record)
+            });
+            const summary = document.createElement('span');
+            summary.id = summaryId;
+            summary.className = 'workspace-recovery-option-summary';
+            summary.textContent = formatWorkspaceRecoverySummary(candidate.record);
+            input.setAttribute('aria-describedby', [metaId, summaryId, ...statusDescriptionIds].join(' '));
+            content.append(header, meta, summary);
+            option.append(input, content);
+            fragment.append(option);
+        });
+        el.workspaceRecoveryList.append(fragment);
+    }
+    renderWorkspaceRecoverySelection();
+}
+
+function requestWorkspaceRecoveryChoice(candidates, {
+    preferredWorkspaceId = null,
+    errorMessage = ''
+} = {}) {
+    renderWorkspaceRecoveryCandidates(candidates, preferredWorkspaceId);
+    const selected = candidates.find((candidate) => (
+        candidate.record.id === state.workspaceRecovery.selectedRecoveryWorkspaceId
+    )) || candidates[0] || null;
     if (el.workspaceRecoverySavedAt) {
-        el.workspaceRecoverySavedAt.textContent = uiFormat('마지막 저장: {time}', { time: savedAt });
-    }
-    if (el.workspaceRecoverySummary) {
-        const baseSummary = uiFormat('로봇 {robots}대 · 3D 모델 {models}개', summary);
-        el.workspaceRecoverySummary.textContent = summary.olpProjects > 0
-            ? `${baseSummary} · ${uiFormat('OLP 프로젝트 {projects}개', { projects: summary.olpProjects })}`
-            : baseSummary;
-    }
-    if (el.workspaceRecoveryIsolationNote) {
-        const message = isolatedCopy
-            ? '같은 작업이 다른 창에서 열려 있어 이 창은 독립된 복사본으로 시작합니다.'
-            : '다른 창에서 연 작업은 독립된 복사본으로 저장되어 서로 덮어쓰지 않습니다.';
-        const noteText = el.workspaceRecoveryIsolationNote.querySelector('span');
-        if (noteText) noteText.textContent = uiText(message);
+        // Keep the original single-record details populated for assistive
+        // technology even while the multi-record fieldset is visible.
+        if (selected && candidates.length > 1) {
+            el.workspaceRecoverySavedAt.textContent = uiFormat('마지막 저장: {time}', {
+                time: formatWorkspaceRecoverySavedAt(selected.record)
+            });
+        }
     }
     showWorkspaceRecoveryError(errorMessage);
     if (typeof el.workspaceRecoveryDialog?.showModal !== 'function') {
-        return Promise.resolve(window.confirm(uiText('저장된 3D 시뮬레이션 작업이 있습니다. 불러오시겠습니까?'))
-            ? 'restore'
-            : 'new');
+        const shouldRestore = window.confirm(uiText(candidates.length > 1
+            ? '저장된 작업이 여러 개 있습니다. 불러올 작업을 선택하세요.'
+            : '저장된 3D 시뮬레이션 작업이 있습니다. 불러오시겠습니까?'));
+        if (!shouldRestore || !selected) {
+            return Promise.resolve({ action: 'new', workspaceId: null });
+        }
+        if (candidates.length === 1 || typeof window.prompt !== 'function') {
+            return Promise.resolve({ action: 'restore', workspaceId: selected.record.id });
+        }
+        const options = candidates.map((candidate, index) => (
+            `${index + 1}. ${getWorkspaceRecoveryDisplayName(candidate.record, index + 1)}`
+        )).join('\n');
+        const answer = window.prompt(`${uiText('불러올 작업 선택')}\n${options}`, '1');
+        if (answer === null) return Promise.resolve({ action: 'new', workspaceId: null });
+        const index = Math.max(0, Math.min(candidates.length - 1, Math.trunc(Number(answer) || 1) - 1));
+        return Promise.resolve({ action: 'restore', workspaceId: candidates[index].record.id });
     }
     if (!el.workspaceRecoveryDialog.open) el.workspaceRecoveryDialog.showModal();
+    queueMicrotask(() => {
+        el.workspaceRecoveryList?.querySelector('input[type="radio"]:checked')?.focus();
+    });
     return new Promise((resolve) => {
         state.workspaceRecovery.recoveryChoiceResolver = resolve;
     });
@@ -16328,7 +16514,12 @@ function setupWorkspaceBroadcastChannel() {
         if (message.type === 'workspace-alive'
             && message.targetOwnerId === recovery.ownerId) {
             const pending = recovery.pendingProbes.get(message.probeId);
-            if (pending) pending(true);
+            if (pending) pending({
+                live: true,
+                revision: Number.isInteger(Number(message.revision))
+                    ? Number(message.revision)
+                    : null
+            });
         }
     };
     channel.addEventListener('message', listener);
@@ -16338,15 +16529,22 @@ function setupWorkspaceBroadcastChannel() {
 
 function probeLiveWorkspaceOwner(workspaceId) {
     const recovery = state.workspaceRecovery;
-    if (!workspaceId || !recovery.channel) return Promise.resolve(false);
+    if (!workspaceId || !recovery.channel) {
+        return Promise.resolve({ live: false, revision: null });
+    }
     const probeId = WorkspaceRecovery.createWorkspaceId('probe');
     return new Promise((resolve) => {
         let settled = false;
-        const finish = (live) => {
+        const finish = (result = {}) => {
             if (settled) return;
             settled = true;
             recovery.pendingProbes.delete(probeId);
-            resolve(Boolean(live));
+            resolve({
+                live: Boolean(result.live),
+                revision: Number.isInteger(Number(result.revision))
+                    ? Number(result.revision)
+                    : null
+            });
         };
         recovery.pendingProbes.set(probeId, finish);
         recovery.channel.postMessage({
@@ -16355,7 +16553,7 @@ function probeLiveWorkspaceOwner(workspaceId) {
             probeId,
             senderId: recovery.ownerId
         });
-        window.setTimeout(() => finish(false), WORKSPACE_LIVE_PROBE_TIMEOUT_MS);
+        window.setTimeout(() => finish({ live: false, revision: null }), WORKSPACE_LIVE_PROBE_TIMEOUT_MS);
     });
 }
 
@@ -16374,9 +16572,12 @@ function startWorkspaceHeartbeat() {
     const recovery = state.workspaceRecovery;
     window.clearInterval(recovery.heartbeatTimer);
     recovery.heartbeatTimer = window.setInterval(() => {
-        if (!recovery.ready || recovery.unloading || !recovery.workspaceId) return;
+        if ((!recovery.ready && !recovery.restoring)
+            || recovery.unloading || !recovery.workspaceId) return;
         void recovery.db.renewLease(recovery.workspaceId, recovery.ownerId).catch((error) => {
-            if (error?.code === 'WORKSPACE_LEASE_LOST') void forkWorkspaceAfterOwnershipLoss();
+            if (error?.code === 'WORKSPACE_LEASE_LOST') {
+                if (recovery.ready || recovery.restoring) void forkWorkspaceAfterOwnershipLoss();
+            }
             else console.warn('Workspace heartbeat failed:', error);
         });
         recovery.channel?.postMessage({
@@ -16414,9 +16615,19 @@ function clearLegacyWorkspaceStorageAfterCommit() {
     const recovery = state.workspaceRecovery;
     if (!recovery.legacyMigrationPending) return;
     try {
+        const currentFingerprint = readLegacyWorkspaceFingerprint();
+        if (recovery.legacyMigrationFingerprint
+            && currentFingerprint !== recovery.legacyMigrationFingerprint) {
+            // A legacy tab saved a newer snapshot while the picker was open.
+            // Preserve it for the next explicit recovery choice.
+            recovery.legacyMigrationPending = false;
+            recovery.legacyMigrationFingerprint = null;
+            return;
+        }
         localStorage.removeItem(MOTION_PROJECT_STORAGE_KEY);
         localStorage.removeItem(VIEW_PRESETS_STORAGE_KEY);
         recovery.legacyMigrationPending = false;
+        recovery.legacyMigrationFingerprint = null;
     } catch (error) {
         console.warn('Unable to finish legacy workspace migration:', error);
     }
@@ -16466,39 +16677,91 @@ async function runWorkspaceSaveLoop() {
     return recovery.saveInFlight;
 }
 
-async function findLatestWorkspaceCandidate(records) {
-    const recordById = new Map(records.map((record) => [record.id, record]));
-    const preservedSourceIds = new Set(records
-        .map((record) => record.incompleteRecoveryFrom)
-        .filter((id) => id && recordById.has(id)));
-    const orderedRecords = [...records].sort((left, right) => {
-        const priority = (record) => preservedSourceIds.has(record.id)
-            ? 0
-            : record.incompleteRecoveryFrom ? 2 : 1;
-        return priority(left) - priority(right)
-            || Number(right.updatedAt) - Number(left.updatedAt)
-            || Number(right.revision) - Number(left.revision);
-    });
-    let liveFallback = null;
-    for (const record of orderedRecords) {
-        if (!workspaceSnapshotHasWork(record?.state)) continue;
-        let live = await probeLiveWorkspaceOwner(record.id);
-        if (!live) {
-            const lease = await state.workspaceRecovery.db.getLease(record.id);
-            live = Boolean(lease && Number(lease.expiresAt) > Date.now());
-        }
-        if (!live) return { record, live: false };
-        if (!liveFallback) liveFallback = { record, live: true };
+async function findWorkspaceRecoveryCandidates(records, { sessionWorkspaceId = null } = {}) {
+    const eligible = records.filter((record) => (
+        record && !record.archived && workspaceSnapshotHasWork(record.state)
+    ));
+    const collapsed = WorkspaceRecovery.collapseWorkspaceRecoveryRecords(eligible, { sessionWorkspaceId });
+    const candidates = await Promise.all(collapsed.map(async (candidate) => {
+        const [probe, lease] = await Promise.all([
+            probeLiveWorkspaceOwner(candidate.record.id),
+            state.workspaceRecovery.db.getLease(candidate.record.id)
+        ]);
+        const leased = Boolean(lease && Number(lease.expiresAt) > Date.now()
+            && lease.ownerId !== state.workspaceRecovery.ownerId);
+        return {
+            ...candidate,
+            live: probe.live || leased,
+            respondingOwner: probe.live,
+            leased,
+            observedRevision: probe.revision
+        };
+    }));
+    return candidates;
+}
+
+async function waitForWorkspaceRecoveryRevision(workspaceId, minimumRevision = null) {
+    let record = await state.workspaceRecovery.db.getWorkspace(workspaceId);
+    if (!record || minimumRevision === null || record.revision >= minimumRevision) return record;
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+        await new Promise((resolve) => window.setTimeout(resolve, 100));
+        const refreshed = await state.workspaceRecovery.db.getWorkspace(workspaceId);
+        if (refreshed) record = refreshed;
+        if (!record || record.revision >= minimumRevision) break;
     }
-    return liveFallback;
+    return record;
+}
+
+async function refreshWorkspaceRecoveryCandidate(candidate) {
+    if (candidate.legacy) {
+        const latest = readLegacyWorkspaceCandidate();
+        if (!latest) {
+            const error = new Error('The selected legacy workspace is no longer available.');
+            error.code = 'WORKSPACE_NOT_FOUND';
+            throw error;
+        }
+        return { ...candidate, record: latest, live: false };
+    }
+    let record = await state.workspaceRecovery.db.getWorkspace(candidate.record.id);
+    if (!record || record.archived || !workspaceSnapshotHasWork(record.state)) {
+        const error = new Error('The selected workspace is no longer available.');
+        error.code = 'WORKSPACE_NOT_FOUND';
+        throw error;
+    }
+    const [probe, lease] = await Promise.all([
+        probeLiveWorkspaceOwner(record.id),
+        state.workspaceRecovery.db.getLease(record.id)
+    ]);
+    if (probe.revision !== null && probe.revision > record.revision) {
+        record = await waitForWorkspaceRecoveryRevision(record.id, probe.revision);
+    } else {
+        record = await state.workspaceRecovery.db.getWorkspace(record.id) || record;
+    }
+    if (!record || record.archived || !workspaceSnapshotHasWork(record.state)) {
+        const error = new Error('The selected workspace is no longer available.');
+        error.code = 'WORKSPACE_NOT_FOUND';
+        throw error;
+    }
+    return {
+        ...candidate,
+        record,
+        live: probe.live || Boolean(lease && Number(lease.expiresAt) > Date.now()
+            && lease.ownerId !== state.workspaceRecovery.ownerId),
+        respondingOwner: probe.live,
+        leased: Boolean(lease && Number(lease.expiresAt) > Date.now()
+            && lease.ownerId !== state.workspaceRecovery.ownerId),
+        observedRevision: probe.revision
+    };
 }
 
 function readLegacyWorkspaceCandidate() {
     let motionProject = null;
     let viewConfiguration = null;
+    let motionRaw = '';
+    let viewRaw = '';
     try {
-        const motionRaw = localStorage.getItem(MOTION_PROJECT_STORAGE_KEY);
-        const viewRaw = localStorage.getItem(VIEW_PRESETS_STORAGE_KEY);
+        motionRaw = localStorage.getItem(MOTION_PROJECT_STORAGE_KEY) || '';
+        viewRaw = localStorage.getItem(VIEW_PRESETS_STORAGE_KEY) || '';
         if (motionRaw) motionProject = JSON.parse(motionRaw);
         if (viewRaw) viewConfiguration = JSON.parse(viewRaw);
         if (!motionRaw && !viewRaw) return null;
@@ -16527,9 +16790,21 @@ function readLegacyWorkspaceCandidate() {
         collapsedModelIds: []
     };
     if (!workspaceSnapshotHasWork(snapshot)) return null;
-    return createWorkspaceRecord(WorkspaceRecovery.createWorkspaceId('legacy'), snapshot, {
+    const record = createWorkspaceRecord(WorkspaceRecovery.createWorkspaceId('legacy'), snapshot, {
         updatedAt: Date.now()
     });
+    record.legacyFingerprint = `${motionRaw}\u0000${viewRaw}`;
+    return record;
+}
+
+function readLegacyWorkspaceFingerprint() {
+    try {
+        const motionRaw = localStorage.getItem(MOTION_PROJECT_STORAGE_KEY) || '';
+        const viewRaw = localStorage.getItem(VIEW_PRESETS_STORAGE_KEY) || '';
+        return `${motionRaw}\u0000${viewRaw}`;
+    } catch {
+        return null;
+    }
 }
 
 async function resetCleanWorkspaceUiState() {
@@ -16553,6 +16828,72 @@ async function resetCleanWorkspaceUiState() {
     fitCamera();
 }
 
+async function discoverWorkspaceRecoveryCandidates({ sessionWorkspaceId = null, startClean = false } = {}) {
+    if (startClean) return [];
+    const candidates = await findWorkspaceRecoveryCandidates(
+        await state.workspaceRecovery.db.listWorkspaces(),
+        { sessionWorkspaceId }
+    );
+    const legacy = readLegacyWorkspaceCandidate();
+    if (legacy) {
+        candidates.push({
+            record: legacy,
+            live: false,
+            respondingOwner: false,
+            leased: false,
+            observedRevision: null,
+            sessionMatch: false,
+            incompleteFallback: false,
+            memberIds: new Set([legacy.id]),
+            legacy: true
+        });
+    }
+    return candidates;
+}
+
+async function acquireSelectedWorkspaceRecovery(candidate) {
+    const recovery = state.workspaceRecovery;
+    let selected = await refreshWorkspaceRecoveryCandidate(candidate);
+    let source = selected.record;
+    const legacySource = selected.legacy ? source : null;
+    let targetWorkspaceId = null;
+    let sourceIsLive = Boolean(selected.live);
+
+    if (selected.legacy || sourceIsLive) {
+        targetWorkspaceId = await claimWorkspaceLease(WorkspaceRecovery.createWorkspaceId('workspace'));
+    } else {
+        const leaseResult = await recovery.db.acquireLease(source.id, recovery.ownerId);
+        if (leaseResult.acquired) {
+            targetWorkspaceId = source.id;
+        } else {
+            // Another window won the selection race. Refresh the durable source
+            // that it owns, then restore into this document's isolated target.
+            selected = await refreshWorkspaceRecoveryCandidate({ ...selected, live: true });
+            source = selected.record;
+            sourceIsLive = true;
+            targetWorkspaceId = await claimWorkspaceLease(WorkspaceRecovery.createWorkspaceId('workspace'));
+        }
+    }
+
+    try {
+        if (!selected.legacy) {
+            const latest = await state.workspaceRecovery.db.getWorkspace(source.id);
+            if (!latest || latest.archived || !workspaceSnapshotHasWork(latest.state)) {
+                const error = new Error('The selected workspace is no longer available.');
+                error.code = 'WORKSPACE_NOT_FOUND';
+                throw error;
+            }
+            source = latest;
+        }
+        return { source, sourceIsLive, legacySource, targetWorkspaceId };
+    } catch (error) {
+        if (targetWorkspaceId) {
+            await recovery.db.releaseLease(targetWorkspaceId, recovery.ownerId).catch(() => {});
+        }
+        throw error;
+    }
+}
+
 async function initializeWorkspaceRecovery() {
     const recovery = state.workspaceRecovery;
     recovery.ownerId = WorkspaceRecovery.createWorkspaceId('owner');
@@ -16564,113 +16905,94 @@ async function initializeWorkspaceRecovery() {
         const startClean = readSessionStorageValue(WORKSPACE_START_CLEAN_KEY) === '1';
         writeSessionStorageValue(WORKSPACE_START_CLEAN_KEY, null);
         const sessionWorkspaceId = readSessionStorageValue(WORKSPACE_SESSION_POINTER_KEY);
-        const navigationType = performance.getEntriesByType?.('navigation')?.[0]?.type || '';
-        const reclaimingSessionReload = navigationType === 'reload' && Boolean(sessionWorkspaceId);
-        let source = sessionWorkspaceId
-            ? await recovery.db.getWorkspace(sessionWorkspaceId)
-            : null;
-        if (source?.incompleteRecoveryFrom && !startClean) {
-            const completeSource = await recovery.db.getWorkspace(source.incompleteRecoveryFrom);
-            if (completeSource && !completeSource.archived
-                && workspaceSnapshotHasWork(completeSource.state)) {
-                // A prior partial restore must not hide the intact recovery
-                // source on the most common same-tab reload path.
-                source = completeSource;
-            }
-        }
+        let candidates = await discoverWorkspaceRecoveryCandidates({ sessionWorkspaceId, startClean });
+        let preferredWorkspaceId = candidates.find((candidate) => candidate.sessionMatch)?.record.id
+            || candidates[0]?.record.id
+            || null;
+        let source = null;
         let sourceIsLive = false;
-        if (source && !startClean) {
-            sourceIsLive = await probeLiveWorkspaceOwner(source.id);
-            const lease = await recovery.db.getLease(source.id);
-            const reclaimingSameTabReload = reclaimingSessionReload
-                && source.id === sessionWorkspaceId;
-            if (!sourceIsLive && !reclaimingSameTabReload) {
-                sourceIsLive = Boolean(lease && Number(lease.expiresAt) > Date.now()
-                    && lease.ownerId !== recovery.ownerId);
-            }
-            if (sourceIsLive) {
-                // A responding owner writes before its alive packet. When the
-                // lease was the only signal, briefly poll for the same commit.
-                const previousRevision = source.revision;
-                for (let attempt = 0; attempt < 10; attempt += 1) {
-                    const refreshed = await recovery.db.getWorkspace(source.id);
-                    if (refreshed) source = refreshed;
-                    if (source.revision > previousRevision) break;
-                    await new Promise((resolve) => window.setTimeout(resolve, 100));
-                }
-            }
-        }
-        if (!source && !startClean) {
-            const candidate = await findLatestWorkspaceCandidate(await recovery.db.listWorkspaces());
-            source = candidate?.record || null;
-            sourceIsLive = Boolean(candidate?.live);
-            if (source && sourceIsLive) {
-                // A live probe is answered only after the owner finishes its
-                // pending save. Re-read that committed revision instead of
-                // restoring the stale record returned by the earlier list.
-                const previousRevision = source.revision;
-                for (let attempt = 0; attempt < 10; attempt += 1) {
-                    const refreshed = await recovery.db.getWorkspace(source.id);
-                    if (refreshed) source = refreshed;
-                    if (source.revision > previousRevision) break;
-                    await new Promise((resolve) => window.setTimeout(resolve, 100));
-                }
-            }
-        }
         let legacySource = null;
-        if (!source && !startClean) {
-            legacySource = readLegacyWorkspaceCandidate();
-            source = legacySource;
-            recovery.legacyMigrationPending = Boolean(legacySource);
-        }
-
-        let targetWorkspaceId = source && !sourceIsLive
-            ? source.id
-            : WorkspaceRecovery.createWorkspaceId('workspace');
-        targetWorkspaceId = await claimWorkspaceLease(targetWorkspaceId, {
-            force: Boolean(reclaimingSessionReload && source && !sourceIsLive
-                && source.id === sessionWorkspaceId && source.id === targetWorkspaceId)
-        });
-        recovery.workspaceId = targetWorkspaceId;
-        writeSessionStorageValue(WORKSPACE_SESSION_POINTER_KEY, targetWorkspaceId);
-
         let restoreSelected = false;
         let restoreHadWarnings = false;
         let incompleteRecoverySourceId = null;
-        const recoveryWasOffered = Boolean(source && workspaceSnapshotHasWork(source.state) && !startClean);
-        if (recoveryWasOffered) {
-            let errorMessage = '';
-            for (;;) {
-                const choice = await requestWorkspaceRecoveryChoice(source, {
-                    isolatedCopy: sourceIsLive || source.id !== targetWorkspaceId,
-                    errorMessage
-                });
-                if (choice === 'new') break;
-                closeWorkspaceRecoveryDialog();
-                showLoading(true, uiText('이전 작업 불러오는 중...'));
-                try {
-                    const warnings = await restoreWorkspaceSnapshot(source.state);
-                    restoreSelected = true;
-                    closeWorkspaceRecoveryDialog();
-                    if (warnings.length) {
-                        restoreHadWarnings = true;
-                        recovery.startupWarning = true;
-                        setStatus('저장된 작업 파일 일부를 찾을 수 없어 이전 작업을 모두 복구하지 못했습니다.', '#f59e0b');
-                    }
-                    break;
-                } catch (error) {
-                    console.error('Workspace restore failed:', error);
-                    showLoading(false);
-                    errorMessage = '이전 작업을 불러오지 못했습니다.';
+        let targetWorkspaceId = null;
+        let errorMessage = '';
+
+        while (candidates.length && !startClean) {
+            const choice = await requestWorkspaceRecoveryChoice(candidates, {
+                preferredWorkspaceId,
+                errorMessage
+            });
+            if (choice.action === 'new') {
+                break;
+            }
+            preferredWorkspaceId = choice.workspaceId;
+            const candidate = candidates.find((entry) => entry.record.id === choice.workspaceId);
+            if (!candidate) {
+                errorMessage = '이전 작업을 불러오지 못했습니다.';
+                candidates = await discoverWorkspaceRecoveryCandidates({ sessionWorkspaceId });
+                continue;
+            }
+            closeWorkspaceRecoveryDialog();
+            showLoading(true, uiText('이전 작업 불러오는 중...'));
+            try {
+                const prepared = await acquireSelectedWorkspaceRecovery(candidate);
+                source = prepared.source;
+                sourceIsLive = prepared.sourceIsLive;
+                legacySource = prepared.legacySource;
+                targetWorkspaceId = prepared.targetWorkspaceId;
+                recovery.workspaceId = targetWorkspaceId;
+                writeSessionStorageValue(WORKSPACE_SESSION_POINTER_KEY, targetWorkspaceId);
+                recovery.legacyMigrationPending = Boolean(legacySource);
+                recovery.legacyMigrationFingerprint = legacySource?.legacyFingerprint || null;
+                startWorkspaceHeartbeat();
+                const warnings = await restoreWorkspaceSnapshot(source.state);
+                restoreSelected = true;
+                if (warnings.length) {
+                    restoreHadWarnings = true;
+                    recovery.startupWarning = true;
+                    setStatus('저장된 작업 파일 일부를 찾을 수 없어 이전 작업을 모두 복구하지 못했습니다.', '#f59e0b');
+                } else if (source.incompleteRecoveryFrom) {
+                    recovery.startupWarning = true;
+                    setStatus('저장된 작업 파일 일부를 찾을 수 없어 이전 작업을 모두 복구하지 못했습니다.', '#f59e0b');
                 }
+                break;
+            } catch (error) {
+                console.error('Workspace restore failed:', error);
+                showLoading(false);
+                window.clearInterval(recovery.heartbeatTimer);
+                recovery.heartbeatTimer = null;
+                if (recovery.ownershipTransition) {
+                    await recovery.ownershipTransition.catch(() => {});
+                }
+                const failedWorkspaceIds = new Set([
+                    targetWorkspaceId,
+                    recovery.workspaceId
+                ].filter(Boolean));
+                for (const workspaceId of failedWorkspaceIds) {
+                    await recovery.db.releaseLease(workspaceId, recovery.ownerId).catch(() => {});
+                }
+                recovery.workspaceId = null;
+                recovery.workspace = null;
+                writeSessionStorageValue(WORKSPACE_SESSION_POINTER_KEY, null);
+                source = null;
+                sourceIsLive = false;
+                legacySource = null;
+                targetWorkspaceId = null;
+                errorMessage = '이전 작업을 불러오지 못했습니다.';
+                candidates = await discoverWorkspaceRecoveryCandidates({ sessionWorkspaceId });
+                preferredWorkspaceId = candidates.some((entry) => entry.record.id === choice.workspaceId)
+                    ? choice.workspaceId
+                    : candidates[0]?.record.id || null;
             }
         }
 
         if (restoreSelected && restoreHadWarnings && source?.id === recovery.workspaceId) {
-            // Keep the complete recovery record untouched when only part of it
-            // could be rebuilt (for example, a missing imported source Blob).
+            // Keep an intact source untouched when a missing model asset causes
+            // a partial restore. The incomplete result is stored separately.
             await recovery.db.releaseLease(recovery.workspaceId, recovery.ownerId);
             recovery.workspaceId = await claimWorkspaceLease(WorkspaceRecovery.createWorkspaceId('workspace'));
+            targetWorkspaceId = recovery.workspaceId;
             writeSessionStorageValue(WORKSPACE_SESSION_POINTER_KEY, recovery.workspaceId);
         }
         if (restoreSelected && restoreHadWarnings && source?.id) {
@@ -16680,13 +17002,11 @@ async function initializeWorkspaceRecovery() {
         if (!restoreSelected) {
             closeWorkspaceRecoveryDialog();
             await resetCleanWorkspaceUiState();
-            // Declining an in-place recovery must never overwrite that saved
-            // recovery record. Move this document to a new workspace first.
-            if ((recoveryWasOffered || startClean) && source && source.id === recovery.workspaceId) {
-                await recovery.db.releaseLease(recovery.workspaceId, recovery.ownerId);
-                recovery.workspaceId = await claimWorkspaceLease(WorkspaceRecovery.createWorkspaceId('workspace'));
-                writeSessionStorageValue(WORKSPACE_SESSION_POINTER_KEY, recovery.workspaceId);
-            }
+            recovery.workspaceId = await claimWorkspaceLease(WorkspaceRecovery.createWorkspaceId('workspace'));
+            targetWorkspaceId = recovery.workspaceId;
+            writeSessionStorageValue(WORKSPACE_SESSION_POINTER_KEY, recovery.workspaceId);
+            recovery.legacyMigrationPending = false;
+            recovery.legacyMigrationFingerprint = null;
         }
 
         const reusingSourceRecord = Boolean(source && source.id === recovery.workspaceId);
@@ -16697,6 +17017,7 @@ async function initializeWorkspaceRecovery() {
                 updatedAt: Date.now(),
                 forkedFrom: restoreSelected && source.id !== recovery.workspaceId ? source.id : null,
                 incompleteRecoveryFrom: incompleteRecoverySourceId
+                    || (restoreSelected ? source?.incompleteRecoveryFrom : null)
             });
         recovery.ready = true;
         startWorkspaceHeartbeat();
@@ -16710,49 +17031,12 @@ async function initializeWorkspaceRecovery() {
                     requireUnleased: true
                 });
             } catch (error) {
-                // The new workspace is already durable. A raced source owner
-                // or metadata cleanup failure must not disable its autosave.
                 console.warn('Unable to archive the migrated workspace source:', error);
             }
         }
-        if (targetWasCommitted && source && !sourceIsLive && !restoreHadWarnings) {
-            try {
-                const resolvedPartialRecords = (await recovery.db.listWorkspaces())
-                    .filter((record) => record.id !== recovery.workspaceId
-                        && record.incompleteRecoveryFrom === source.id);
-                for (const record of resolvedPartialRecords) {
-                    try {
-                        await recovery.db.archiveWorkspace(record.id, true, {
-                            expectedRevision: record.revision,
-                            requireUnleased: true
-                        });
-                    } catch (error) {
-                        console.warn('Unable to archive a resolved partial recovery:', error);
-                    }
-                }
-            } catch (error) {
-                console.warn('Unable to inspect resolved partial recoveries:', error);
-            }
-        }
-        if (targetWasCommitted && incompleteRecoverySourceId) {
-            try {
-                const previousPartialRecords = (await recovery.db.listWorkspaces())
-                    .filter((record) => record.id !== recovery.workspaceId
-                        && record.incompleteRecoveryFrom === incompleteRecoverySourceId);
-                for (const record of previousPartialRecords) {
-                    try {
-                        await recovery.db.archiveWorkspace(record.id, true, {
-                            expectedRevision: record.revision,
-                            requireUnleased: true
-                        });
-                    } catch (error) {
-                        console.warn('Unable to archive an older partial recovery:', error);
-                    }
-                }
-            } catch (error) {
-                console.warn('Unable to inspect older partial recoveries:', error);
-            }
-        }
+        // Partial-recovery descendants stay durable and are collapsed behind
+        // their intact source by the chooser. They are never auto-archived:
+        // a throttled but live window may still own the only newer copy.
         void (async () => {
             await recovery.db.pruneArchivedWorkspaces({ keep: 1 });
             await recovery.db.deleteOrphanAssets({ gracePeriodMs: 600000 });

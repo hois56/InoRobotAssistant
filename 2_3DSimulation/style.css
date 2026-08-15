@@ -440,7 +440,7 @@ input[type="number"]::-webkit-outer-spin-button {
 
 /* ── Workspace recovery dialog ───────────────── */
 .workspace-recovery-dialog {
-    width: min(520px, calc(100vw - 32px));
+    width: min(620px, calc(100vw - 32px));
     max-height: calc(100vh - 32px);
     margin: auto;
     padding: 0;
@@ -505,6 +505,128 @@ input[type="number"]::-webkit-outer-spin-button {
     line-height: 1.6;
 }
 
+.workspace-recovery-options {
+    min-inline-size: 0;
+    margin: 1rem 0 0;
+    padding: 0;
+    border: 0;
+}
+
+.workspace-recovery-options[hidden],
+.workspace-recovery-details[hidden] {
+    display: none;
+}
+
+.workspace-recovery-options legend {
+    margin-bottom: 0.58rem;
+    padding: 0;
+    color: #bfdbfe;
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+.workspace-recovery-list {
+    display: grid;
+    max-height: min(300px, 38vh);
+    gap: 0.58rem;
+    padding: 0.12rem 0.22rem 0.12rem 0.12rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.workspace-recovery-option {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: flex-start;
+    gap: 0.72rem;
+    padding: 0.78rem 0.84rem;
+    color: #e2e8f0;
+    background: rgba(15, 23, 42, 0.72);
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+}
+
+.workspace-recovery-option:hover {
+    border-color: rgba(96, 165, 250, 0.62);
+    background: rgba(30, 41, 59, 0.82);
+}
+
+.workspace-recovery-option:focus-within {
+    outline: 2px solid #93c5fd;
+    outline-offset: 2px;
+}
+
+.workspace-recovery-option.is-selected,
+.workspace-recovery-option:has(input[type="radio"]:checked) {
+    background: rgba(30, 64, 175, 0.24);
+    border-color: #60a5fa;
+    box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.18);
+}
+
+.workspace-recovery-option input[type="radio"] {
+    width: 1rem;
+    height: 1rem;
+    margin: 0.18rem 0 0;
+    accent-color: #3b82f6;
+    cursor: pointer;
+}
+
+.workspace-recovery-option-content {
+    display: grid;
+    min-width: 0;
+    gap: 0.28rem;
+}
+
+.workspace-recovery-option-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.45rem;
+}
+
+.workspace-recovery-option-title {
+    color: #eff6ff;
+    font-size: 0.9rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.workspace-recovery-option-live,
+.workspace-recovery-option-incomplete {
+    padding: 0.18rem 0.45rem;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.workspace-recovery-option-live {
+    color: #bae6fd;
+    background: rgba(3, 105, 161, 0.3);
+    border: 1px solid rgba(56, 189, 248, 0.34);
+}
+
+.workspace-recovery-option-incomplete {
+    color: #fde68a;
+    background: rgba(180, 83, 9, 0.3);
+    border: 1px solid rgba(245, 158, 11, 0.42);
+}
+
+.workspace-recovery-option-meta,
+.workspace-recovery-option-summary {
+    color: #cbd5e1;
+    font-size: 0.78rem;
+    line-height: 1.45;
+}
+
+.workspace-recovery-option-meta {
+    color: #93c5fd;
+}
+
 .workspace-recovery-details {
     display: grid;
     gap: 0.48rem;
@@ -513,6 +635,15 @@ input[type="number"]::-webkit-outer-spin-button {
     background: rgba(15, 23, 42, 0.72);
     border: 1px solid rgba(148, 163, 184, 0.2);
     border-radius: 12px;
+}
+
+.workspace-recovery-details.is-incomplete {
+    background: rgba(180, 83, 9, 0.16);
+    border-color: rgba(245, 158, 11, 0.42);
+}
+
+.workspace-recovery-details.is-incomplete #workspace-recovery-summary {
+    color: #fde68a;
 }
 
 .workspace-recovery-details p {
@@ -619,6 +750,15 @@ input[type="number"]::-webkit-outer-spin-button {
 
     .workspace-recovery-dialog-actions .primary {
         grid-row: 1;
+    }
+
+    .workspace-recovery-list {
+        max-height: min(260px, 36vh);
+    }
+
+    .workspace-recovery-option-header {
+        align-items: flex-start;
+        flex-direction: column;
     }
 }
 

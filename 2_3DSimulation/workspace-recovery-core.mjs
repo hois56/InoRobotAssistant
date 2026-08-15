@@ -55,6 +55,81 @@ export function normalizeWorkspaceRecord(input, { now = Date.now() } = {}) {
     };
 }
 
+export function compareWorkspaceRecoveryRecords(left, right) {
+    const timestampOrder = Number(right?.updatedAt) - Number(left?.updatedAt);
+    if (timestampOrder) return timestampOrder;
+    const revisionOrder = Number(right?.revision) - Number(left?.revision);
+    if (revisionOrder) return revisionOrder;
+    const leftId = String(left?.id || '');
+    const rightId = String(right?.id || '');
+    return leftId < rightId ? -1 : leftId > rightId ? 1 : 0;
+}
+
+function resolveWorkspaceRecoveryLineage(record, recordById) {
+    const path = [];
+    const visitedAt = new Map();
+    let current = record;
+    while (current?.incompleteRecoveryFrom) {
+        if (visitedAt.has(current.id)) {
+            const cycleIds = path.slice(visitedAt.get(current.id))
+                .map((entry) => String(entry.id))
+                .sort();
+            return {
+                representative: null,
+                fallbackKey: `cycle:${cycleIds.join('|')}`
+            };
+        }
+        visitedAt.set(current.id, path.length);
+        path.push(current);
+        const sourceId = String(current.incompleteRecoveryFrom);
+        const source = recordById.get(sourceId);
+        if (!source) {
+            return { representative: null, fallbackKey: `partial:${sourceId}` };
+        }
+        current = source;
+    }
+    return { representative: current, fallbackKey: null };
+}
+
+export function collapseWorkspaceRecoveryRecords(records, { sessionWorkspaceId = null } = {}) {
+    const candidates = (Array.isArray(records) ? records : [])
+        .filter((record) => record?.id);
+    const recordById = new Map(candidates.map((record) => [String(record.id), record]));
+    const groups = new Map();
+    candidates.forEach((record) => {
+        const lineage = resolveWorkspaceRecoveryLineage(record, recordById);
+        const representative = lineage.representative || record;
+        const key = lineage.representative
+            ? `workspace:${representative.id}`
+            : lineage.fallbackKey || `workspace:${record.id}`;
+        const existing = groups.get(key);
+        const memberIds = new Set(existing?.memberIds || []);
+        memberIds.add(String(record.id));
+        memberIds.add(String(representative.id));
+        if (!existing || compareWorkspaceRecoveryRecords(representative, existing.record) < 0) {
+            groups.set(key, {
+                record: representative,
+                incompleteFallback: !lineage.representative,
+                memberIds: [...memberIds]
+            });
+        } else {
+            existing.memberIds = [...memberIds];
+        }
+    });
+    const sessionId = String(sessionWorkspaceId || '');
+    return [...groups.values()]
+        .map((candidate) => ({
+            ...candidate,
+            memberIds: [...candidate.memberIds].sort(),
+            sessionMatch: Boolean(sessionId && candidate.memberIds.includes(sessionId))
+        }))
+        .sort((left, right) => (
+            Number(right.sessionMatch) - Number(left.sessionMatch)
+            || Number(left.incompleteFallback) - Number(right.incompleteFallback)
+            || compareWorkspaceRecoveryRecords(left.record, right.record)
+        ));
+}
+
 export function normalizeWorkspaceAsset(input, { now = Date.now() } = {}) {
     if (!isObject(input)) throw workspaceError('Workspace asset must be an object.', 'INVALID_ASSET');
     const id = String(input.id || input.assetId || '').trim();
@@ -263,7 +338,16 @@ export class WorkspaceRecoveryStore {
         const tx = db.transaction(WORKSPACE_STORE_NAME, 'readonly');
         const values = await requestResult(tx.objectStore(WORKSPACE_STORE_NAME).getAll());
         await transactionDone(tx);
-        return values.map((value) => normalizeWorkspaceRecord(value))
+        const records = [];
+        values.forEach((value) => {
+            try {
+                records.push(normalizeWorkspaceRecord(value));
+            } catch {
+                // Keep malformed records untouched for possible manual
+                // recovery, but never let one record hide every valid choice.
+            }
+        });
+        return records
             .filter((value) => includeArchived || !value.archived)
             .sort((a, b) => b.updatedAt - a.updatedAt || b.revision - a.revision);
     }
