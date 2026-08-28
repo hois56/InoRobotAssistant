@@ -417,6 +417,10 @@
 
 ## Debugging Tool
 
+### Ver 26.08.28
+
+- `[변경]` Project Compare를 `V2.1 → V2.2`로 업데이트했습니다.
+
 ### Ver 26.08.14
 
 - `[변경]` Communication Tester를 `V2.9 → V3.0`로 업데이트했습니다.
