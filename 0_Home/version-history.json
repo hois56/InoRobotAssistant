@@ -567,6 +567,12 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.08.28",
+                "items": [
+                  "`[변경]` Project Compare를 `V2.1 → V2.2`로 업데이트했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.08.14",
                 "items": [
                   "`[변경]` Communication Tester를 `V2.9 → V3.0`로 업데이트했습니다."
@@ -860,6 +866,15 @@
           {
             "title": "projectCompare",
             "versions": [
+              {
+                "title": "Ver 2.2",
+                "items": [
+                  "`[신규]` 동시 스크롤을 켜거나 끄고, 양쪽의 현재 위치를 기준으로 스크롤을 맞출 수 있는 기능을 추가했습니다.",
+                  "`[신규]` 이름이 다른 프로젝트 A/B 파일을 선택하여 직접 비교할 수 있는 기능을 추가했습니다.",
+                  "`[신규]` 프로젝트 한쪽만 불러와도 같은 프로젝트의 프로그램을 양쪽 창에서 확인할 수 있는 보기 전용 모드를 추가했습니다.",
+                  "`[변경]` `MovJ`, `MovL` 등 이동 명령어를 비교 강조색과 구분되는 청록색으로 표시하도록 변경했습니다."
+                ]
+              },
               {
                 "title": "Ver 2.1",
                 "items": [
@@ -1411,6 +1426,12 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.08.28",
+                "items": [
+                  "`[Updated]` Updated Project Compare from `V2.1` to `V2.2`."
+                ]
+              },
+              {
                 "title": "Ver 26.08.14",
                 "items": [
                   "`[Updated]` Communication Tester has been updated from `V2.9` to `V3.0`."
@@ -1704,6 +1725,15 @@
           {
             "title": "projectCompare",
             "versions": [
+              {
+                "title": "Ver 2.2",
+                "items": [
+                  "**[New]** Added an option to enable or disable synchronized scrolling and align scrolling based on the current positions of both sides.",
+                  "**[New]** Added the ability to select Project A/B files with different names for direct comparison.",
+                  "**[New]** Added a read-only view mode that shows programs from the same project in both panes when only one side of the project is loaded.",
+                  "**[Changed]** Changed movement commands such as `MovJ` and `MovL` to display in cyan, distinct from the comparison highlight colors."
+                ]
+              },
               {
                 "title": "Ver 2.1",
                 "items": [
@@ -2255,6 +2285,12 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.08.28",
+                "items": [
+                  "`[更新]` Project Compare 已从 `V2.1` 更新至 `V2.2`。"
+                ]
+              },
+              {
                 "title": "Ver 26.08.14",
                 "items": [
                   "`[更新]` Communication Tester 已从 `V2.9` 更新至 `V3.0`。"
@@ -2548,6 +2584,15 @@
           {
             "title": "projectCompare",
             "versions": [
+              {
+                "title": "Ver 2.2",
+                "items": [
+                  "增加开启或关闭同步滚动，并根据两侧当前位置对齐滚动位置的功能。",
+                  "增加可选择名称不同的项目 A/B 文件进行直接比较的功能。",
+                  "增加仅加载项目一侧时，在两侧窗口查看同一项目程序的只读查看模式。",
+                  "将 `MovJ`、`MovL` 等移动命令显示为区别于比较高亮色的青色。"
+                ]
+              },
               {
                 "title": "Ver 2.1",
                 "items": [
@@ -3099,6 +3144,12 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.08.28",
+                "items": [
+                  "`[Cập nhật]` Đã cập nhật Project Compare từ `V2.1` lên `V2.2`."
+                ]
+              },
+              {
                 "title": "Ver 26.08.14",
                 "items": [
                   "`[Cập nhật]` Đã cập nhật Communication Tester từ `V2.9` lên `V3.0`."
@@ -3392,6 +3443,15 @@
           {
             "title": "projectCompare",
             "versions": [
+              {
+                "title": "Ver 2.2",
+                "items": [
+                  "**[Mới]** Thêm chức năng bật/tắt cuộn đồng bộ và căn chỉnh cuộn theo vị trí hiện tại của hai bên.",
+                  "**[Mới]** Thêm khả năng chọn trực tiếp các tệp dự án A/B có tên khác nhau để so sánh.",
+                  "**[Mới]** Thêm chế độ chỉ xem để xem chương trình của cùng một dự án ở cả hai khung khi chỉ tải một phía của dự án.",
+                  "**[Thay đổi]** Đổi các lệnh chuyển động như `MovJ`, `MovL` sang màu cyan để phân biệt với màu tô sáng so sánh."
+                ]
+              },
               {
                 "title": "Ver 2.1",
                 "items": [
