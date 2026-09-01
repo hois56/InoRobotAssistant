@@ -183,6 +183,12 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.09.01",
+                "items": [
+                  "`[추가]` 암 로드 기능을 추가했습니다. (로봇 팔에 설치되는 부하)"
+                ]
+              },
         {
           "title": "Ver 26.08.13",
             "items": [
@@ -1048,6 +1054,12 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.09.01",
+                "items": [
+                  "`[Added]` Added the arm load feature (payload installed on the robot arm)."
+                ]
+              },
         {
           "title": "Ver 26.08.13",
             "items": [
@@ -1913,6 +1925,12 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.09.01",
+                "items": [
+                  "`[新增]` 添加了臂部负载功能（安装在机器人手臂上的负载）。"
+                ]
+              },
         {
           "title": "Ver 26.08.13",
             "items": [
@@ -2778,6 +2796,12 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.09.01",
+                "items": [
+                  "`[Thêm mới]` Đã thêm chức năng tải trọng cánh tay (tải trọng được lắp trên cánh tay robot)."
+                ]
+              },
         {
           "title": "Ver 26.08.13",
             "items": [
