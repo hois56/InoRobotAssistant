@@ -8,7 +8,7 @@
     <title>3D Simulation | INOVANCE</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=20260815-workspace-selector-1">
+    <link rel="stylesheet" href="style.css?v=20260901-workspace-recovery-actions-1">
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -23,11 +23,19 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/Language/runtime/i18n.css">
-    <script src="/Language/runtime/locales-data.js?v=20260815-workspace-selector-1" defer></script>
+    <script src="/Language/runtime/locales-data.js?v=20260901-workspace-recovery-actions-1" defer></script>
     <script src="/Language/runtime/i18n.js" defer></script>
     <script src="/Language/runtime/icon-fallback.js" defer></script>
     <script src="/analytics-config.js"></script>
     <script src="/analytics.js" defer></script>
+
+
+
+
+
+
+
+
 
 
 
@@ -185,6 +193,14 @@
             <p id="workspace-recovery-description" class="workspace-recovery-description">저장된 3D 시뮬레이션 작업이 있습니다. 불러오시겠습니까?</p>
             <fieldset id="workspace-recovery-options" class="workspace-recovery-options" hidden>
                 <legend id="workspace-recovery-options-label">불러올 작업 선택</legend>
+                <div id="workspace-recovery-management" class="workspace-recovery-management" hidden>
+                    <span id="workspace-recovery-selection-count" class="workspace-recovery-selection-count" aria-live="polite">선택된 작업 0개</span>
+                    <div class="workspace-recovery-management-actions">
+                        <button id="btn-workspace-select-all" type="button">전체 선택</button>
+                        <button id="btn-workspace-clear-selection" type="button">선택 해제</button>
+                        <button id="btn-workspace-delete" type="button" class="danger">선택 삭제</button>
+                    </div>
+                </div>
                 <div id="workspace-recovery-list" class="workspace-recovery-list"></div>
             </fieldset>
             <div id="workspace-recovery-details" class="workspace-recovery-details" aria-live="polite">
@@ -216,9 +232,21 @@
         <div class="import-settings-grid">
             <label class="import-setting" for="import-placement">
                 <span>가져오기 위치</span>
-                <select id="import-placement" aria-label="3D 모델 가져오기 위치">
-                    <option value="tcp">Tool</option>
-                    <option value="scene">3D 모델링</option>
+                    <select id="import-placement" aria-label="3D 모델 가져오기 위치">
+                        <option value="tcp">Tool</option>
+                        <option value="arm-load">암 로드</option>
+                        <option value="scene">3D 모델링</option>
+                    </select>
+                </label>
+            <label id="import-arm-load-axis-setting" class="import-setting hidden" for="import-arm-load-axis">
+                <span data-i18n="legacy.부착 축">부착 축</span>
+                <select id="import-arm-load-axis" aria-label="암 로드 부착 축" data-i18n-aria-label="legacy.암 로드 부착 축">
+                    <option value="0">J1</option>
+                    <option value="1">J2</option>
+                    <option value="2">J3</option>
+                    <option value="3" selected>J4</option>
+                    <option value="4">J5</option>
+                    <option value="5">J6</option>
                 </select>
             </label>
             <label class="import-setting" for="import-quality">
@@ -426,6 +454,77 @@
                         </div>
                     </section>
                 </section>
+            </aside>
+            <aside id="arm-load-panel" class="arm-load-panel panel-user-hidden panel-edge-resizable" aria-label="암 로드 설정" data-i18n-aria-label="legacy.암 로드 설정">
+                <div class="arm-load-panel-header">
+                    <div>
+                        <span data-i18n="legacy.암 로드">암 로드</span>
+                        <h2><i class="fa-solid fa-gears" aria-hidden="true"></i> <span data-i18n="legacy.암 로드">암 로드</span></h2>
+                    </div>
+                    <div class="panel-header-actions">
+                        <button type="button" data-panel-action="popout" data-panel-id="arm-load-panel" title="별도 창으로 분리" aria-label="암 로드 설정을 별도 창으로 분리" data-i18n-title="legacy.별도 창으로 분리" data-i18n-aria-label="legacy.암 로드 설정을 별도 창으로 분리"><i class="fa-solid fa-up-right-from-square"></i></button>
+                        <button type="button" data-panel-action="hide" data-panel-id="arm-load-panel" title="숨기기" aria-label="암 로드 설정 숨기기" data-i18n-title="legacy.숨기기" data-i18n-aria-label="legacy.암 로드 설정 숨기기"><i class="fa-solid fa-eye-slash"></i></button>
+                    </div>
+                </div>
+                <div class="arm-load-content">
+                    <div class="arm-load-list-heading">
+                        <strong data-i18n="legacy.등록된 암 로드">등록된 암 로드</strong>
+                        <span id="arm-load-count" class="arm-load-count">0</span>
+                    </div>
+                    <div id="arm-load-list" class="arm-load-list" role="list"></div>
+                    <p id="arm-load-empty" class="arm-load-empty">3D 파일 불러오기에서 암 로드를 선택하세요.</p>
+                    <section id="arm-load-editor" class="arm-load-editor" hidden aria-label="선택한 암 로드 편집" data-i18n-aria-label="legacy.선택한 암 로드 편집">
+                        <div class="arm-load-editor-heading">
+                            <div>
+                                <span data-i18n="legacy.선택한 암 로드">선택한 암 로드</span>
+                                <strong id="arm-load-selected-name">-</strong>
+                            </div>
+                        </div>
+                        <label class="arm-load-field arm-load-axis-field" for="arm-load-axis">
+                            <span data-i18n="legacy.부착 축">부착 축</span>
+                            <select id="arm-load-axis" aria-label="암 로드 부착 축 변경" data-i18n-aria-label="legacy.암 로드 부착 축 변경">
+                                <option value="0">J1</option>
+                                <option value="1">J2</option>
+                                <option value="2">J3</option>
+                                <option value="3">J4</option>
+                                <option value="4">J5</option>
+                                <option value="5">J6</option>
+                            </select>
+                        </label>
+                        <label class="arm-load-visibility-field">
+                            <input id="arm-load-visible" type="checkbox" checked>
+                            <span data-i18n="legacy.표시">표시</span>
+                            <small data-i18n="legacy.숨기면 간섭 검사에서도 제외">숨기면 간섭 검사에서도 제외</small>
+                        </label>
+                        <div class="arm-load-subheading"><span data-i18n="legacy.위치 (Link 기준)">위치 (Link 기준)</span><small>mm</small></div>
+                        <div class="arm-load-number-grid">
+                            <label class="axis-x"><span>X</span><input type="number" step="0.5" data-arm-load-field="x"></label>
+                            <label class="axis-y"><span>Y</span><input type="number" step="0.5" data-arm-load-field="y"></label>
+                            <label class="axis-z"><span>Z</span><input type="number" step="0.5" data-arm-load-field="z"></label>
+                        </div>
+                        <div class="arm-load-subheading"><span data-i18n="legacy.회전 (Link 기준)">회전 (Link 기준)</span><small>deg</small></div>
+                        <div class="arm-load-number-grid">
+                            <label class="axis-x"><span>RX</span><input type="number" step="0.5" data-arm-load-field="rx"></label>
+                            <label class="axis-y"><span>RY</span><input type="number" step="0.5" data-arm-load-field="ry"></label>
+                            <label class="axis-z"><span>RZ</span><input type="number" step="0.5" data-arm-load-field="rz"></label>
+                        </div>
+                        <details class="arm-load-properties" open>
+                            <summary data-i18n="legacy.물성 입력 (선택)">물성 입력 (선택)</summary>
+                            <div class="arm-load-property-grid">
+                                <label><span data-i18n="legacy.질량">질량</span><input type="number" step="0.001" min="0" data-arm-load-field="mass"><small>kg</small></label>
+                                <div class="arm-load-property-title"><span data-i18n="legacy.무게중심">무게중심</span> <small>mm</small></div>
+                                <label class="axis-x"><span>X</span><input type="number" step="0.1" data-arm-load-field="cogX"></label>
+                                <label class="axis-y"><span>Y</span><input type="number" step="0.1" data-arm-load-field="cogY"></label>
+                                <label class="axis-z"><span>Z</span><input type="number" step="0.1" data-arm-load-field="cogZ"></label>
+                                <div class="arm-load-property-title"><span data-i18n="legacy.관성모멘트">관성모멘트</span> <small>kgm²</small></div>
+                                <label><span>Ixx</span><input type="number" step="0.000001" min="0" data-arm-load-field="ixx"></label>
+                                <label><span>Iyy</span><input type="number" step="0.000001" min="0" data-arm-load-field="iyy"></label>
+                                <label><span>Izz</span><input type="number" step="0.000001" min="0" data-arm-load-field="izz"></label>
+                            </div>
+                        </details>
+                        <p id="arm-load-status" class="arm-load-status" aria-live="polite">위치와 회전은 선택한 Link 기준으로 저장됩니다.</p>
+                    </section>
+                </div>
             </aside>
             <div id="empty-state">
                 <div class="hero-icon-wrap">
@@ -888,6 +987,7 @@
             <button type="button" data-panel-toggle="model-browser-panel" class="active" title="모델 트리 표시/숨김"><i class="fa-solid fa-list-ul"></i> 모델</button>
             <button type="button" data-panel-toggle="jog-panel" disabled title="로봇 JOG 패널 표시/숨김"><i class="fa-solid fa-gamepad"></i> JOG</button>
             <button type="button" data-panel-toggle="tcp-profile-panel" disabled title="TCP 오프셋 설정"><i class="fa-solid fa-crosshairs"></i> <span id="tcp-launcher-label">TCP 1</span></button>
+            <button type="button" data-panel-toggle="arm-load-panel" disabled title="암 로드 설정 표시/숨기기"><i class="fa-solid fa-gears"></i> 암 로드</button>
             <button type="button" data-panel-toggle="view-presets-panel" title="사용자 뷰 표시/숨김"><i class="fa-solid fa-camera"></i> 뷰</button>
             <button type="button" data-panel-toggle="virtual-controller-panel" disabled title="컨트롤러 연결 표시/숨김" aria-label="컨트롤러 연결 표시/숨김"><i id="virtual-controller-launcher-antenna" class="fa-solid fa-tower-broadcast virtual-controller-antenna disconnected"></i> 컨트롤러 연결</button>
             <span class="viewer-control-divider"></span>
@@ -904,7 +1004,7 @@
         </div>
     </footer>
 
-<script type="module" src="main.js?v=20260815-workspace-selector-1"></script>
+<script type="module" src="main.js?v=20260901-workspace-recovery-actions-1"></script>
 <script src="/0_Home/tool-guide-embed.js?v=20260813-10"></script>
 </body>
 </html>

@@ -547,11 +547,26 @@ function isAttachedModelDescendant(object, root) {
 }
 
 function isAttachedToolMountContact(leftRoot, leftMesh, rightRoot, rightMesh) {
-    const leftIsTool = leftRoot?.userData?.attachmentHost === rightRoot;
-    const rightIsTool = rightRoot?.userData?.attachmentHost === leftRoot;
+    const leftIsTool = leftRoot?.userData?.placement !== 'arm-load'
+        && leftRoot?.userData?.attachmentHost === rightRoot;
+    const rightIsTool = rightRoot?.userData?.placement !== 'arm-load'
+        && rightRoot?.userData?.attachmentHost === leftRoot;
     if (!leftIsTool && !rightIsTool) return false;
     const robotMesh = leftIsTool ? rightMesh : leftMesh;
     return robotMesh?.userData?.collisionIgnoreAttachedToolContact === true;
+}
+
+function isAttachedArmLoadHostLinkContact(leftRoot, leftMesh, rightRoot, rightMesh) {
+    const leftIsArmLoad = leftRoot?.userData?.placement === 'arm-load'
+        && leftRoot?.userData?.attachmentHost === rightRoot;
+    const rightIsArmLoad = rightRoot?.userData?.placement === 'arm-load'
+        && rightRoot?.userData?.attachmentHost === leftRoot;
+    if (!leftIsArmLoad && !rightIsArmLoad) return false;
+    const armLoadRoot = leftIsArmLoad ? leftRoot : rightRoot;
+    const robotMesh = leftIsArmLoad ? rightMesh : leftMesh;
+    const jointIndex = Number(armLoadRoot.userData.attachmentJointIndex);
+    return Number.isInteger(jointIndex)
+        && robotMesh?.userData?.robotJointIndex === jointIndex;
 }
 
 export class MeshCollisionSystem {
@@ -758,7 +773,8 @@ export class MeshCollisionSystem {
                 ? rightMeshesByUuid.get(cachedEntry.rightMeshUuid)
                 : null;
             if (cachedRightMesh
-                && !isAttachedToolMountContact(left.root, leftMesh.mesh, right.root, cachedRightMesh.mesh)) {
+                && !isAttachedToolMountContact(left.root, leftMesh.mesh, right.root, cachedRightMesh.mesh)
+                && !isAttachedArmLoadHostLinkContact(left.root, leftMesh.mesh, right.root, cachedRightMesh.mesh)) {
                 const canReuseWarmHit = allowWarmHitReuse
                     && cachedEntry.hit
                     && Number.isFinite(cachedEntry.lastConfirmedAt)
@@ -808,7 +824,8 @@ export class MeshCollisionSystem {
                 // The marked Tool mounting assembly (J6, or SCARA J3
                 // ballscrew/J4) is a shared mechanical interface. Exclude
                 // only that contact; other Tool-to-link combinations remain.
-                if (isAttachedToolMountContact(left.root, leftMesh.mesh, right.root, rightMesh.mesh)) continue;
+                if (isAttachedToolMountContact(left.root, leftMesh.mesh, right.root, rightMesh.mesh)
+                    || isAttachedArmLoadHostLinkContact(left.root, leftMesh.mesh, right.root, rightMesh.mesh)) continue;
                 const hit = this.checkMeshPair(leftMesh, rightMesh, stats);
                 if (hit) {
                     hits.push({ ...hit, objectA: left.root, objectB: right.root });

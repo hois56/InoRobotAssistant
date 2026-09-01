@@ -565,6 +565,40 @@ export class WorkspaceRecoveryStore {
         return true;
     }
 
+    async deleteWorkspaces(workspaceIds, { now = Date.now() } = {}) {
+        const ids = [...new Set((Array.isArray(workspaceIds) ? workspaceIds : [workspaceIds])
+            .map((id) => String(id || '').trim())
+            .filter(Boolean))];
+        if (!ids.length) return { deletedIds: [], skippedIds: [] };
+        const db = await this.open();
+        const tx = db.transaction([WORKSPACE_STORE_NAME, WORKSPACE_LEASE_STORE_NAME], 'readwrite');
+        const workspaces = tx.objectStore(WORKSPACE_STORE_NAME);
+        const leases = tx.objectStore(WORKSPACE_LEASE_STORE_NAME);
+        const deletedIds = [];
+        const skippedIds = [];
+        try {
+            for (const id of ids) {
+                const [record, lease] = await Promise.all([
+                    requestResult(workspaces.get(id)),
+                    requestResult(leases.get(id))
+                ]);
+                if (!record) continue;
+                if (lease && Number(lease.expiresAt) > now) {
+                    skippedIds.push(id);
+                    continue;
+                }
+                workspaces.delete(id);
+                leases.delete(id);
+                deletedIds.push(id);
+            }
+            await transactionDone(tx);
+            return { deletedIds, skippedIds };
+        } catch (error) {
+            try { tx.abort(); } catch { }
+            throw error;
+        }
+    }
+
     async putAsset(input) {
         const asset = normalizeWorkspaceAsset(input);
         const db = await this.open();
