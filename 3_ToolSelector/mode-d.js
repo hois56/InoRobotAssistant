@@ -1356,6 +1356,18 @@ function getPartGroups() {
   });
 }
 
+function getExportCadParts() {
+  return getPartGroups().map((group) => {
+    const firstPart = group.parts[0]?.part;
+    return {
+      name: group.name,
+      sourceName: firstPart?.cadPartName || group.name,
+      color: firstPart?.sourceColorHex,
+      enabled: group.enabled
+    };
+  });
+}
+
 function renderParts() {
   if (!state.parts.length) {
     el.parts.innerHTML = `<div class="cad-empty">${uiText('CAD 파일을 먼저 불러오세요.')}</div>`;
@@ -2144,7 +2156,7 @@ function calculateMassProperties() {
 
 function exportStepInWorker(payload, onProgress) {
   return new Promise((resolve, reject) => {
-    const worker = new Worker(new URL('./step-export-worker.mjs', import.meta.url), { type: 'module' });
+    const worker = new Worker(new URL('./step-export-worker.mjs?v=20260901-xcaf-export-1', import.meta.url), { type: 'module' });
     const finish = (callback, value) => {
       worker.terminate();
       callback(value);
@@ -2186,7 +2198,8 @@ async function exportStepWithToolFrame() {
   if (!state.sourceStepFile || state.exportingStep) return;
   try {
     readCoordinateInputs();
-    const selectedPartCount = state.parts.filter((part) => part.enabled).length;
+    const exportParts = getExportCadParts();
+    const selectedPartCount = exportParts.filter((part) => part.enabled).length;
     if (!selectedPartCount) throw new Error(uiText('내보낼 부품을 하나 이상 선택하세요.'));
     state.exportingStep = true;
     el.exportStep.disabled = true;
@@ -2197,11 +2210,7 @@ async function exportStepWithToolFrame() {
       sourceName: state.sourceStepFile.name,
       originMm: state.origin.toArray(),
       rotationDegrees: state.rotationDegrees.toArray(),
-      cadParts: state.parts.map((part) => ({
-        name: part.name,
-        color: part.sourceColorHex,
-        enabled: part.enabled
-      }))
+      cadParts: exportParts
     }, (message) => setStatus(message));
     downloadStepBuffer(result.buffer, result.fileName);
     setStatus(() => uiFormat('STEP 파일 내보내기 완료 · {count}개 부품 · {name}', {
@@ -2210,7 +2219,7 @@ async function exportStepWithToolFrame() {
     }), 'ok');
   } catch (error) {
     console.error('STEP export failed:', error);
-    setStatus(`${uiText('STEP 파일을 내보낼 수 없습니다.')} ${error.message || ''}`.trim(), 'error');
+    setStatus(uiText('STEP 파일을 내보낼 수 없습니다.'), 'error');
   } finally {
     state.exportingStep = false;
     el.exportStep.disabled = !state.sourceStepFile;

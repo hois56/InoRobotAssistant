@@ -250,6 +250,12 @@
             "title": "Robot Tool Selector",
             "versions": [
               {
+                "title": "Ver 26.09.01",
+                "items": [
+                  "`[수정]` STEP 파일을 불러온 직후 변경 없이 내보내기를 시도해도 모든 파일에서 실패하던 문제를 해결했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.08.14",
                 "items": [
                   "`[수정]` 모드 D에서 CAD 면을 선택해도 마우스 주변의 스냅 후보만 표시되던 문제를 해결했습니다.",
@@ -1108,6 +1114,12 @@
           {
             "title": "Robot Tool Selector",
             "versions": [
+              {
+                "title": "Ver 26.09.01",
+                "items": [
+                  "`[Fixed]` Fixed an issue where exporting any STEP file failed immediately after import, even without changes."
+                ]
+              },
               {
                 "title": "Ver 26.08.14",
                 "items": [
@@ -1968,6 +1980,12 @@
             "title": "Robot Tool Selector",
             "versions": [
               {
+                "title": "Ver 26.09.01",
+                "items": [
+                  "`[修复]` 修复了导入 STEP 文件后即使未进行任何修改也无法导出所有文件的问题。"
+                ]
+              },
+              {
                 "title": "Ver 26.08.14",
                 "items": [
                   "`[修复]` 修复了模式 D 在选择 CAD 面后仅显示鼠标附近捕捉候选点的问题。",
@@ -2826,6 +2844,12 @@
           {
             "title": "Robot Tool Selector",
             "versions": [
+              {
+                "title": "Ver 26.09.01",
+                "items": [
+                  "`[Sửa lỗi]` Đã khắc phục sự cố mọi tệp STEP đều không thể xuất ngay sau khi nhập, ngay cả khi chưa chỉnh sửa."
+                ]
+              },
               {
                 "title": "Ver 26.08.14",
                 "items": [
