@@ -13,7 +13,7 @@ import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { clone as cloneObjectWithSkeletons } from 'three/addons/utils/SkeletonUtils.js';
 import { enableContinuousTransformRotation } from '../3_ToolSelector/continuous-transform-rotation.mjs?v=20260720-rx-continuous-1';
 import { buildStepSnapCandidates } from '../3_ToolSelector/snap-geometry.mjs?v=20260721-face-filter-1';
-import { MeshCollisionSystem } from './collision-system.mjs?v=20260726-collision-smooth-2';
+import { MeshCollisionSystem } from './collision-system.mjs?v=20260901-arm-load-ui-2';
 import {
     MOTION_PROJECT_SCHEMA_VERSION,
     DEFAULT_MOVJ_SPEED,
@@ -74,7 +74,7 @@ import {
     resolveOlpPoint,
     updateOlpFileText
 } from './olp-project-core.mjs?v=20260727-olp-windows-newline-1';
-import * as WorkspaceRecovery from './workspace-recovery-core.mjs?v=20260815-workspace-selector-1';
+import * as WorkspaceRecovery from './workspace-recovery-core.mjs?v=20260901-workspace-recovery-actions-1';
 import {
     BIT_COUNT as OLP_BIT_COUNT,
     BIT_START as OLP_BIT_START,
@@ -104,6 +104,9 @@ const state = {
     models: [], // List of loaded models { group, name, type }
     selectedModel: null,
     selectedModelPart: null,
+    armLoadPanel: {
+        selectedModel: null
+    },
     zeroPointEdit: {
         active: false,
         model: null,
@@ -133,6 +136,7 @@ const state = {
     historySuspended: false,
     pendingTransformHistory: null,
     pendingNumericHistory: null,
+    pendingArmLoadHistory: null,
     pendingJointHistory: null,
     pendingBaseJogHistory: null,
     programStepDragId: null,
@@ -206,6 +210,8 @@ const state = {
         recoveryChoiceResolver: null,
         recoveryCandidates: [],
         selectedRecoveryWorkspaceId: null,
+        selectedRecoveryWorkspaceIds: new Set(),
+        recoveryDeleting: false,
         ownershipTransition: null,
         unloading: false,
         legacyMigrationPending: false,
@@ -415,6 +421,8 @@ const el = {
     workspaceRecoveryDialog: document.getElementById('workspace-recovery-dialog'),
     workspaceRecoveryDescription: document.getElementById('workspace-recovery-description'),
     workspaceRecoveryOptions: document.getElementById('workspace-recovery-options'),
+    workspaceRecoveryManagement: document.getElementById('workspace-recovery-management'),
+    workspaceRecoverySelectionCount: document.getElementById('workspace-recovery-selection-count'),
     workspaceRecoveryList: document.getElementById('workspace-recovery-list'),
     workspaceRecoveryDetails: document.getElementById('workspace-recovery-details'),
     workspaceRecoverySavedAt: document.getElementById('workspace-recovery-saved-at'),
@@ -423,6 +431,9 @@ const el = {
     workspaceRecoveryError: document.getElementById('workspace-recovery-error'),
     btnWorkspaceNew: document.getElementById('btn-workspace-new'),
     btnWorkspaceRestore: document.getElementById('btn-workspace-restore'),
+    btnWorkspaceSelectAll: document.getElementById('btn-workspace-select-all'),
+    btnWorkspaceClearSelection: document.getElementById('btn-workspace-clear-selection'),
+    btnWorkspaceDelete: document.getElementById('btn-workspace-delete'),
     testModelDialog: document.getElementById('test-model-dialog'),
     btnCancelTestModel: document.getElementById('btn-cancel-test-model'),
     btnConfirmTestModel: document.getElementById('btn-confirm-test-model'),
@@ -445,6 +456,8 @@ const el = {
     inputImport3D:   document.getElementById('input-import-3d'),
     importDialog:    document.getElementById('import-3d-dialog'),
     importPlacement: document.getElementById('import-placement'),
+    importArmLoadAxisSetting: document.getElementById('import-arm-load-axis-setting'),
+    importArmLoadAxis: document.getElementById('import-arm-load-axis'),
     importQuality:   document.getElementById('import-quality'),
     importQualityNote: document.getElementById('import-quality-note'),
     modelTree:       document.getElementById('model-tree'),
@@ -459,6 +472,17 @@ const el = {
     modelColorPicker: document.getElementById('model-color-picker'),
     jogPanel:        document.getElementById('jog-panel'),
     tcpProfilePanel: document.getElementById('tcp-profile-panel'),
+    armLoadPanel: document.getElementById('arm-load-panel'),
+    armLoadList: document.getElementById('arm-load-list'),
+    armLoadCount: document.getElementById('arm-load-count'),
+    armLoadEmpty: document.getElementById('arm-load-empty'),
+    armLoadEditor: document.getElementById('arm-load-editor'),
+    armLoadSelectedName: document.getElementById('arm-load-selected-name'),
+    armLoadAxis: document.getElementById('arm-load-axis'),
+    armLoadVisible: document.getElementById('arm-load-visible'),
+    armLoadStatus: document.getElementById('arm-load-status'),
+    armLoadFields: Object.fromEntries([...document.querySelectorAll('[data-arm-load-field]')]
+        .map((input) => [input.dataset.armLoadField, input])),
     tcpLauncherLabel: document.getElementById('tcp-launcher-label'),
     panelLauncher:   document.getElementById('panel-launcher'),
     modelTransformPanel: document.getElementById('model-transform-panel'),
@@ -751,7 +775,8 @@ const TEST_MODEL_FILE_NAMES = new Set([
     'Test_Equipment_CAD.step',
     'Vacuum_Tool_X200mm.stl'
 ]);
-const IMPORT_PLACEMENT_COLORS = { tcp: 0xf97316, scene: 0x65a30d };
+const IMPORT_PLACEMENT_COLORS = { tcp: 0xf97316, 'arm-load': 0x14b8a6, scene: 0x65a30d };
+const ARM_LOAD_PROPERTY_KEYS = Object.freeze(['mass', 'cogX', 'cogY', 'cogZ', 'ixx', 'iyy', 'izz']);
 const MOTION_PROJECT_STORAGE_KEY = 'inorobot.3d-simulation.motion-project.v1';
 const VIEW_PRESETS_STORAGE_KEY = 'inorobot.3d-simulation.view-presets.v1';
 const SIMULATION_STORAGE_KEY_PREFIX = 'inorobot.3d-simulation.';
@@ -836,6 +861,7 @@ const PANEL_MINIMUM_SIZES = Object.freeze({
     'model-browser-panel': { width: 260, height: 220 },
     'jog-panel': { width: 250, height: 300 },
     'tcp-profile-panel': { width: 280, height: 360 },
+    'arm-load-panel': { width: 300, height: 440 },
     'virtual-controller-panel': { width: 250, height: 230 },
     'view-presets-panel': { width: 280, height: 260 },
     'view-window': { width: 360, height: 220 },
@@ -2871,11 +2897,13 @@ function refreshLocalizedControls() {
         record.popup.document.title = getPanelWindowTitle(panelId);
     });
     renderModelTree();
+    renderArmLoadPanel();
     refreshJointControlLabels();
     renderMotionProgramPanel();
     refreshVirtualControllerUi();
     refreshViewPresetsUi();
     renderInterferenceZonePanel();
+    renderWorkspaceRecoverySelection();
     if (state.collision.lastVisualResult || state.collision.lastResult) {
         updateCollisionStatus(state.collision.lastVisualResult || state.collision.lastResult);
     }
@@ -5403,6 +5431,9 @@ function setupEventListeners() {
     });
     el.btnWorkspaceNew?.addEventListener('click', () => resolveWorkspaceRecoveryChoice('new'));
     el.btnWorkspaceRestore?.addEventListener('click', () => resolveWorkspaceRecoveryChoice('restore'));
+    el.btnWorkspaceSelectAll?.addEventListener('click', selectAllWorkspaceRecoveryCandidates);
+    el.btnWorkspaceClearSelection?.addEventListener('click', clearWorkspaceRecoveryCandidateSelection);
+    el.btnWorkspaceDelete?.addEventListener('click', () => void deleteSelectedWorkspaceRecoveryCandidates());
     el.workspaceRecoveryList?.addEventListener('change', handleWorkspaceRecoverySelectionChange);
     el.workspaceRecoveryDialog?.addEventListener('cancel', (event) => {
         // A recovery source must never be silently accepted or overwritten.
@@ -5475,9 +5506,37 @@ function setupEventListeners() {
     el.btnCloseImport?.addEventListener('click', closeImportDialog);
     el.btnCancelImport?.addEventListener('click', closeImportDialog);
     el.btnConfirmImport?.addEventListener('click', handle3DImport);
+    el.importPlacement?.addEventListener('change', refreshImportPlacementOptions);
     el.importDialog?.addEventListener('cancel', (event) => {
         event.preventDefault();
         closeImportDialog();
+    });
+
+    el.armLoadList?.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-arm-load-id]');
+        if (!button) return;
+        const model = state.models.find((candidate) => candidate.userData.workspaceModelId === button.dataset.armLoadId);
+        if (model) selectSceneModel(model);
+    });
+    el.armLoadList?.addEventListener('change', (event) => {
+        const checkbox = event.target.closest('[data-arm-load-visibility]');
+        if (!checkbox) return;
+        const model = state.models.find((candidate) => candidate.userData.workspaceModelId === checkbox.dataset.armLoadVisibility);
+        if (model) setArmLoadVisibility(model, checkbox.checked);
+    });
+    el.armLoadAxis?.addEventListener('change', () => {
+        const model = getSelectedArmLoadModel();
+        if (model) setArmLoadAttachmentAxis(model, Number(el.armLoadAxis.value));
+    });
+    Object.values(el.armLoadFields || {}).forEach((input) => {
+        input?.addEventListener('focus', beginArmLoadPanelHistory);
+        input?.addEventListener('input', applyArmLoadPanelField);
+        input?.addEventListener('change', applyArmLoadPanelField);
+        input?.addEventListener('blur', () => commitPendingHistory('암 로드 설정', 'pendingArmLoadHistory'));
+    });
+    el.armLoadVisible?.addEventListener('change', () => {
+        const model = getSelectedArmLoadModel();
+        if (model) setArmLoadVisibility(model, el.armLoadVisible.checked);
     });
 
     el.modelTree?.addEventListener('click', (event) => {
@@ -5700,9 +5759,9 @@ function setupEventListeners() {
     el.btnRedo?.addEventListener('click', redoLastAction);
     el.viewWindowPopout?.addEventListener('click', popOutViewWindow);
     el.viewWindowHide?.addEventListener('click', hideViewWindow);
-    [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.programPanel, el.viewWindow].forEach(makePanelDraggable);
+    [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.programPanel, el.viewWindow, el.armLoadPanel].forEach(makePanelDraggable);
     [el.tcpProfilePanel].forEach(makePanelDraggable);
-    [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.programPanel, el.viewWindow].forEach(makePanelEdgeResizable);
+    [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.programPanel, el.viewWindow, el.armLoadPanel].forEach(makePanelEdgeResizable);
     [el.tcpProfilePanel].forEach(makePanelEdgeResizable);
     setupInterferenceZoneDialogDragging();
     initializePanelStack();
@@ -6283,6 +6342,13 @@ function captureSceneSnapshot() {
         models: state.models.map((model) => ({
             model,
             host: currentModels.has(model.userData.attachmentHost) ? model.userData.attachmentHost : null,
+            placement: model.userData.placement || 'scene',
+            attachmentFrame: model.userData.attachmentFrame || null,
+            attachmentJointIndex: model.userData.placement === 'arm-load' ? getArmLoadJointIndex(model) : null,
+            visible: model.visible !== false,
+            armLoadProperties: model.userData.placement === 'arm-load'
+                ? normalizeArmLoadProperties(model.userData.armLoadProperties)
+                : null,
             position: model.position.toArray(),
             quaternion: model.quaternion.toArray(),
             scale: model.scale.toArray(),
@@ -6332,7 +6398,12 @@ function sceneSnapshotsEqual(a, b) {
     for (let index = 0; index < a.models.length; index += 1) {
         const left = a.models[index];
         const right = b.models[index];
-        if (left.model !== right.model || left.host !== right.host) return false;
+        if (left.model !== right.model || left.host !== right.host
+            || left.placement !== right.placement
+            || left.attachmentFrame !== right.attachmentFrame
+            || left.attachmentJointIndex !== right.attachmentJointIndex
+            || Boolean(left.visible) !== Boolean(right.visible)
+            || JSON.stringify(left.armLoadProperties || null) !== JSON.stringify(right.armLoadProperties || null)) return false;
         if (!numberArraysEqual(left.position, right.position)
             || !numberArraysEqual(left.quaternion, right.quaternion)
             || !numberArraysEqual(left.scale, right.scale)) return false;
@@ -6425,14 +6496,28 @@ function applySceneSnapshot(snapshot) {
         (entry.partVisibility || []).forEach(({ part, visible }) => {
             part.visible = visible !== false;
         });
-        const toolMountFrame = getRobotToolMountFrame(entry.host);
-        if (toolMountFrame && state.models.includes(entry.host)) {
-            toolMountFrame.add(entry.model);
+        const attachmentFrame = getModelAttachmentFrame(
+            entry.placement,
+            state.models.includes(entry.host) ? entry.host : null,
+            entry.attachmentJointIndex
+        );
+        if (attachmentFrame) {
+            attachmentFrame.add(entry.model);
             entry.model.userData.attachmentHost = entry.host;
-            entry.model.userData.attachmentFrame = 'flange';
+            entry.model.userData.attachmentFrame = entry.attachmentFrame
+                || (entry.placement === 'arm-load' ? 'joint' : 'flange');
+            if (entry.placement === 'arm-load') {
+                entry.model.userData.attachmentJointIndex = normalizeArmLoadJointIndex(entry.attachmentJointIndex);
+                entry.model.userData.attachmentAxis = `J${entry.model.userData.attachmentJointIndex + 1}`;
+                entry.model.userData.armLoadProperties = normalizeArmLoadProperties(entry.armLoadProperties);
+            }
         } else {
             state.scene.add(entry.model);
+            delete entry.model.userData.attachmentHost;
+            delete entry.model.userData.attachmentFrame;
         }
+        entry.model.userData.placement = entry.placement || 'scene';
+        entry.model.visible = entry.visible !== false;
     });
 
     snapshot.joints.forEach(({ robot, angles, tcpProfiles, activeTcpProfileIndex }) => {
@@ -6520,6 +6605,7 @@ function commitAllPendingHistories() {
     stopBaseJogHold();
     endBaseJogGizmoDrag();
     commitPendingHistory('수치 모델 변환', 'pendingNumericHistory');
+    commitPendingHistory('암 로드 설정', 'pendingArmLoadHistory');
     commitPendingHistory('모델 변환', 'pendingTransformHistory');
     commitPendingHistory('관절 JOG', 'pendingJointHistory');
     commitPendingHistory('Base JOG', 'pendingBaseJogHistory');
@@ -6554,6 +6640,7 @@ function getPanelElement(panelId) {
         'model-browser-panel': el.modelBrowserPanel,
         'jog-panel': el.jogPanel,
         'tcp-profile-panel': el.tcpProfilePanel,
+        'arm-load-panel': el.armLoadPanel,
         'virtual-controller-panel': el.virtualControllerPanel,
         'view-presets-panel': el.viewPresetsPanel,
         'program-panel': el.programPanel,
@@ -6599,6 +6686,7 @@ function updatePanelLauncher(panelId) {
     if (!panel || !button) return;
     const unavailable = (panelId === 'jog-panel' && !state.activeArticulatedModel)
         || (panelId === 'tcp-profile-panel' && getArticulatedRobots().length === 0)
+        || (panelId === 'arm-load-panel' && getArticulatedRobots().length === 0)
         || (panelId === 'virtual-controller-panel' && getArticulatedRobots().length === 0)
         || (panelId === 'program-panel' && getArticulatedRobots().length === 0);
     button.disabled = unavailable;
@@ -6701,6 +6789,8 @@ function getPanelWindowTitle(panelId) {
         ? uiText('Program Panel')
         : panelId === 'tcp-profile-panel'
         ? uiText('TCP 설정')
+        : panelId === 'arm-load-panel'
+            ? uiText('암 로드 설정')
         : panelId === 'virtual-controller-panel'
             ? uiText('컨트롤러 연결')
         : panelId === 'view-presets-panel'
@@ -6982,6 +7072,9 @@ function toggleModelTreeNode(model) {
 }
 
 function getModelTreeMeta(model) {
+    if (model.userData.placement === 'arm-load') {
+        return { kind: '암 로드', className: 'arm-load', icon: 'fa-gears' };
+    }
     if (model.userData.placement === 'tcp') {
         return { kind: 'TOOL', className: 'tool', icon: 'fa-screwdriver-wrench' };
     }
@@ -7181,7 +7274,9 @@ function attachTransformControlsToSelectedModel() {
         state.transformControls.detach();
         return;
     }
-    state.transformControls.setSpace(model.userData.placement === 'tcp' ? 'local' : 'world');
+    state.transformControls.setSpace(
+        model.userData.placement === 'tcp' || model.userData.placement === 'arm-load' ? 'local' : 'world'
+    );
     state.transformControls.attach(model);
 }
 
@@ -7307,6 +7402,8 @@ const MODEL_CLIPBOARD_TOOL_PASTE_OFFSET_Y = 100;
 const MODEL_CLIPBOARD_USER_DATA_OMIT_KEYS = new Set([
     'attachmentHost',
     'attachmentFrame',
+    'attachmentJointIndex',
+    'attachmentAxis',
     'collisionGeometry',
     'importedParts',
     'modelPartId',
@@ -7315,6 +7412,7 @@ const MODEL_CLIPBOARD_USER_DATA_OMIT_KEYS = new Set([
     'workspaceModelId',
     'outlineLine',
     'pendingToolAttachment',
+    'pendingArmLoadAttachment',
     'stepBrepFaces'
 ]);
 
@@ -7499,6 +7597,14 @@ function captureObjectClipboardSnapshot(model) {
         kind: 'object',
         template: cloneClipboardObjectTemplate(model),
         attachmentHost: host,
+        placement: model.userData.placement === 'tcp' || model.userData.placement === 'arm-load'
+            ? model.userData.placement
+            : 'scene',
+        attachmentJointIndex: model.userData.placement === 'arm-load' ? getArmLoadJointIndex(model) : null,
+        armLoadProperties: model.userData.placement === 'arm-load'
+            ? normalizeArmLoadProperties(model.userData.armLoadProperties)
+            : null,
+        visible: model.visible !== false,
         localTransform: captureClipboardTransform(model),
         worldTransform: captureClipboardTransform(model, true),
         pasteCount: 0
@@ -7529,7 +7635,13 @@ function captureRobotClipboardSnapshot(robot) {
             .filter((model) => model.userData.uploaded && model.userData.attachmentHost === robot)
             .map((tool) => ({
                 template: cloneClipboardObjectTemplate(tool),
-                localTransform: captureClipboardTransform(tool)
+                localTransform: captureClipboardTransform(tool),
+                placement: tool.userData.placement === 'arm-load' ? 'arm-load' : 'tcp',
+                attachmentJointIndex: tool.userData.placement === 'arm-load' ? getArmLoadJointIndex(tool) : null,
+                armLoadProperties: tool.userData.placement === 'arm-load'
+                    ? normalizeArmLoadProperties(tool.userData.armLoadProperties)
+                    : null,
+                visible: tool.visible !== false
             })),
         pasteCount: 0
     };
@@ -7612,20 +7724,29 @@ function pasteObjectClipboardSnapshot(snapshot, pasteNumber) {
     try {
         if (isMotionActive()) throw new Error('Stop the active motion before pasting a model.');
         historyBefore = beginModelClipboardPasteMutation();
+        const placement = snapshot.placement === 'tcp' || snapshot.placement === 'arm-load'
+            ? snapshot.placement
+            : 'scene';
         const host = state.models.includes(snapshot.attachmentHost)
-            && getRobotToolMountFrame(snapshot.attachmentHost)
+            && getModelAttachmentFrame(placement, snapshot.attachmentHost, snapshot.attachmentJointIndex)
             ? snapshot.attachmentHost
             : null;
         if (host) {
-            getRobotToolMountFrame(host).add(pastedModel);
+            getModelAttachmentFrame(placement, host, snapshot.attachmentJointIndex).add(pastedModel);
             applyClipboardTransform(
                 pastedModel,
                 snapshot.localTransform,
                 MODEL_CLIPBOARD_TOOL_PASTE_OFFSET_Y * pasteNumber
             );
             pastedModel.userData.attachmentHost = host;
-            pastedModel.userData.attachmentFrame = 'flange';
-            pastedModel.userData.placement = 'tcp';
+            pastedModel.userData.attachmentFrame = placement === 'arm-load' ? 'joint' : 'flange';
+            pastedModel.userData.placement = placement;
+            if (placement === 'arm-load') {
+                pastedModel.userData.attachmentJointIndex = normalizeArmLoadJointIndex(snapshot.attachmentJointIndex);
+                pastedModel.userData.attachmentAxis = `J${pastedModel.userData.attachmentJointIndex + 1}`;
+                pastedModel.userData.armLoadProperties = normalizeArmLoadProperties(snapshot.armLoadProperties);
+            }
+            pastedModel.visible = snapshot.visible !== false;
         } else {
             state.scene.add(pastedModel);
             applyClipboardTransform(
@@ -7658,9 +7779,9 @@ async function pasteRobotClipboardSnapshot(snapshot, pasteNumber) {
         robot = await loadArticulatedRobot(snapshot.modelDefinition, (progress) => {
             showLoading(true, uiFormat('모델 붙여넣는 중... {progress}%', { progress }));
         });
-        pastedTools = snapshot.attachedTools.map(({ template, localTransform }) => ({
-            model: cloneClipboardObjectTemplate(template),
-            localTransform
+        pastedTools = snapshot.attachedTools.map((entry) => ({
+            ...entry,
+            model: cloneClipboardObjectTemplate(entry.template)
         }));
         if (isMotionActive()) throw new Error('Stop the active motion before pasting a robot.');
 
@@ -7683,13 +7804,20 @@ async function pasteRobotClipboardSnapshot(snapshot, pasteNumber) {
         state.scene.add(robot);
         state.motionPrograms.set(robot.userData.motionInstanceId, cloneMotionProgram(snapshot.program));
 
-        const mountFrame = getRobotToolMountFrame(robot);
-        pastedTools.forEach(({ model, localTransform }) => {
+        pastedTools.forEach(({ model, localTransform, placement = 'tcp', attachmentJointIndex, armLoadProperties, visible }) => {
+            const mountFrame = getModelAttachmentFrame(placement, robot, attachmentJointIndex);
+            if (!mountFrame) throw new Error('The attached model mount is unavailable.');
             mountFrame.add(model);
             applyClipboardTransform(model, localTransform);
             model.userData.attachmentHost = robot;
-            model.userData.attachmentFrame = 'flange';
-            model.userData.placement = 'tcp';
+            model.userData.attachmentFrame = placement === 'arm-load' ? 'joint' : 'flange';
+            model.userData.placement = placement;
+            if (placement === 'arm-load') {
+                model.userData.attachmentJointIndex = normalizeArmLoadJointIndex(attachmentJointIndex);
+                model.userData.attachmentAxis = `J${model.userData.attachmentJointIndex + 1}`;
+                model.userData.armLoadProperties = normalizeArmLoadProperties(armLoadProperties);
+            }
+            model.visible = visible !== false;
             model.updateMatrixWorld(true);
             assignClipboardModelTreeIds(model);
             state.models.push(model);
@@ -7909,6 +8037,150 @@ function applyZeroPointEditor() {
     setStatus('모델 영점과 좌표계 방향을 적용했습니다.', '#22c55e');
 }
 
+function getArmLoadModels() {
+    return state.models.filter((model) => model.userData.placement === 'arm-load');
+}
+
+function getSelectedArmLoadModel() {
+    const selected = state.selectedModel?.userData?.placement === 'arm-load'
+        ? state.selectedModel
+        : state.armLoadPanel.selectedModel;
+    return selected && getArmLoadModels().includes(selected) ? selected : null;
+}
+
+function formatOptionalArmLoadNumber(value) {
+    return Number.isFinite(Number(value)) ? formatTransformNumber(Number(value)) : '';
+}
+
+function renderArmLoadPanel() {
+    if (!el.armLoadPanel || !el.armLoadList) return;
+    const models = getArmLoadModels();
+    const selectedModel = getSelectedArmLoadModel() || models[0] || null;
+    state.armLoadPanel.selectedModel = selectedModel;
+    el.armLoadCount.textContent = String(models.length);
+    el.armLoadList.replaceChildren();
+    models.forEach((model) => {
+        const row = document.createElement('div');
+        row.className = `arm-load-list-row${model === selectedModel ? ' active' : ''}`;
+        row.setAttribute('role', 'listitem');
+        const id = ensureWorkspaceModelId(model);
+
+        const visibility = document.createElement('input');
+        visibility.type = 'checkbox';
+        visibility.checked = model.visible !== false;
+        visibility.dataset.armLoadVisibility = id;
+        visibility.setAttribute('aria-label', `${displayNameForModelTree(model)} ${uiText('표시')}`);
+
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'arm-load-list-button';
+        button.dataset.armLoadId = id;
+        button.textContent = displayNameForModelTree(model);
+        button.title = `${displayNameForModelTree(model)} ${uiText('선택')}`;
+
+        const axis = document.createElement('span');
+        axis.className = 'arm-load-list-axis';
+        axis.textContent = `J${getArmLoadJointIndex(model) + 1}`;
+        row.append(visibility, button, axis);
+        el.armLoadList.appendChild(row);
+    });
+
+    el.armLoadEmpty.hidden = models.length > 0;
+    el.armLoadEditor.hidden = !selectedModel;
+    if (!selectedModel) return;
+    el.armLoadSelectedName.textContent = displayNameForModelTree(selectedModel);
+    el.armLoadAxis.value = String(getArmLoadJointIndex(selectedModel));
+    el.armLoadVisible.checked = selectedModel.visible !== false;
+    ['x', 'y', 'z'].forEach((axis) => {
+        el.armLoadFields[axis].value = formatOptionalArmLoadNumber(selectedModel.position[axis]);
+        el.armLoadFields[axis].disabled = false;
+        el.armLoadFields[`r${axis}`].value = formatOptionalArmLoadNumber(
+            normalizeDegrees(THREE.MathUtils.radToDeg(selectedModel.rotation[axis]))
+        );
+    });
+    const properties = normalizeArmLoadProperties(selectedModel.userData.armLoadProperties);
+    ARM_LOAD_PROPERTY_KEYS.forEach((key) => {
+        if (el.armLoadFields[key]) el.armLoadFields[key].value = formatOptionalArmLoadNumber(properties[key]);
+    });
+    el.armLoadStatus.textContent = uiFormat(
+        '{axis} Link에 부착됨 · 위치와 회전은 Link 기준으로 저장됩니다.',
+        { axis: `J${getArmLoadJointIndex(selectedModel) + 1}` }
+    );
+}
+
+function beginArmLoadPanelHistory() {
+    if (!state.historySuspended && !state.pendingArmLoadHistory && getSelectedArmLoadModel()) {
+        state.pendingArmLoadHistory = captureSceneSnapshot();
+    }
+}
+
+function applyArmLoadPanelField(event) {
+    if (isMotionActive()) return;
+    const model = getSelectedArmLoadModel();
+    const field = event?.currentTarget?.dataset?.armLoadField;
+    if (!model || !field) return;
+    beginArmLoadPanelHistory();
+    const rawValue = event.currentTarget.value.trim();
+    if (['x', 'y', 'z', 'rx', 'ry', 'rz'].includes(field)) {
+        if (!rawValue || ['-', '.', '-.'].includes(rawValue)) return;
+        const value = Number(rawValue);
+        if (!Number.isFinite(value)) return;
+        if (field.startsWith('r')) model.rotation[field.slice(1)] = THREE.MathUtils.degToRad(value);
+        else model.position[field] = value;
+    } else {
+        const properties = normalizeArmLoadProperties(model.userData.armLoadProperties);
+        properties[field] = rawValue === '' ? null : Number(rawValue);
+        if (rawValue !== '' && !Number.isFinite(properties[field])) return;
+        model.userData.armLoadProperties = properties;
+    }
+    model.updateMatrixWorld(true);
+    markSceneCollisionDirty(model);
+    updateSelectedModelTransformInputs();
+    requestRender();
+    scheduleMotionProjectSave();
+}
+
+function setArmLoadAttachmentAxis(model, jointIndex, recordHistoryChange = true) {
+    if (isMotionActive() || !model || model.userData.placement !== 'arm-load') return false;
+    const normalizedJointIndex = normalizeArmLoadJointIndex(jointIndex);
+    const host = model.userData.attachmentHost;
+    const mountFrame = getRobotJointMountFrame(host, normalizedJointIndex);
+    if (!mountFrame) return false;
+    const historyBefore = recordHistoryChange && !state.historySuspended ? captureSceneSnapshot() : null;
+    mountFrame.add(model);
+    model.userData.attachmentHost = host;
+    model.userData.attachmentFrame = 'joint';
+    model.userData.attachmentJointIndex = normalizedJointIndex;
+    model.userData.attachmentAxis = `J${normalizedJointIndex + 1}`;
+    model.userData.armLoadProperties = normalizeArmLoadProperties(model.userData.armLoadProperties);
+    model.updateMatrixWorld(true);
+    markSceneCollisionDirty(model);
+    renderArmLoadPanel();
+    renderModelTree();
+    requestRender();
+    scheduleMotionProjectSave();
+    if (historyBefore) recordHistory('암 로드 부착 축 변경', historyBefore, captureSceneSnapshot());
+    return true;
+}
+
+function setArmLoadVisibility(model, visible, recordHistoryChange = true) {
+    if (isMotionActive() || !model || model.userData.placement !== 'arm-load') return;
+    const nextVisible = Boolean(visible);
+    if (model.visible === nextVisible) return;
+    const historyBefore = recordHistoryChange && !state.historySuspended ? captureSceneSnapshot() : null;
+    model.visible = nextVisible;
+    if (!nextVisible && state.selectedModel === model) setTransformHandlesEnabled(false);
+    if (nextVisible && state.collision.enabled) state.collision.system?.prepare([model]);
+    markSceneCollisionDirty(model);
+    refreshCollisionDebugOverlays();
+    renderArmLoadPanel();
+    renderModelTree();
+    requestRender();
+    scheduleMotionProjectSave();
+    if (state.collision.enabled) checkSceneCollisions({ force: true });
+    if (historyBefore) recordHistory('암 로드 표시 설정', historyBefore, captureSceneSnapshot());
+}
+
 function selectSceneModelPart(model, part) {
     if (!model || !part || !getImportedModelParts(model).includes(part)) return;
     selectSceneModel(model, { preservePart: true });
@@ -7927,11 +8199,14 @@ function selectSceneModel(model, options = {}) {
         && getImportedModelParts(model).includes(state.selectedModelPart);
     if (!preservePart || !currentPartBelongsToModel) setSelectedModelPart(null);
     state.selectedModel = model || null;
+    if (model?.userData?.placement === 'arm-load') state.armLoadPanel.selectedModel = model;
     renderModelTree();
+    renderArmLoadPanel();
 
     if (!state.selectedModel) {
         setTransformHandlesEnabled(false);
         el.modelTransformPanel.classList.add('hidden');
+        renderArmLoadPanel();
         scheduleMotionProjectSave();
         return;
     }
@@ -8264,6 +8539,7 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
             const isAttachedToolMountAssembly = index === manifest.joints.length - 1
                 || (manifest.robotType === 'scara' && jointDefinition.name === 'J3');
             linkMesh.userData.collisionIgnoreAttachedToolContact = isAttachedToolMountAssembly;
+            linkMesh.userData.robotJointIndex = index;
             jointGroup.add(linkMesh);
         }
 
@@ -8650,6 +8926,57 @@ function getRobotToolMountFrame(robot) {
     return robot?.userData.flangeFrame || robot?.userData.tcpFrame || null;
 }
 
+function normalizeArmLoadJointIndex(value, fallback = 3) {
+    const index = Number(value);
+    if (Number.isInteger(index) && index >= 0 && index < 6) return index;
+    return fallback;
+}
+
+function getArmLoadJointIndex(model) {
+    const axisMatch = String(model?.userData?.attachmentAxis || '').match(/^J([1-6])$/i);
+    const storedIndex = model?.userData?.attachmentJointIndex;
+    return normalizeArmLoadJointIndex(
+        storedIndex !== null && storedIndex !== undefined && Number.isInteger(Number(storedIndex))
+            ? Number(storedIndex)
+            : axisMatch ? Number(axisMatch[1]) - 1 : 3
+    );
+}
+
+function getRobotJointMountFrame(robot, jointIndex = 3) {
+    const index = normalizeArmLoadJointIndex(jointIndex);
+    return robot?.userData?.joints?.[index]?.group || null;
+}
+
+function normalizeArmLoadProperties(value = {}) {
+    return Object.fromEntries(ARM_LOAD_PROPERTY_KEYS.map((key) => {
+        const raw = value?.[key];
+        const number = raw === null || raw === undefined || raw === '' ? NaN : Number(raw);
+        return [key, Number.isFinite(number) ? number : null];
+    }));
+}
+
+function getModelAttachmentFrame(placement, robot, attachmentJointIndex = 3) {
+    if (!robot) return null;
+    if (placement === 'tcp') return getRobotToolMountFrame(robot);
+    if (placement === 'arm-load') return getRobotJointMountFrame(robot, attachmentJointIndex);
+    return null;
+}
+
+function mountArmLoadModelAtJoint(robot, model, jointIndex = 3) {
+    const normalizedJointIndex = normalizeArmLoadJointIndex(jointIndex);
+    const mountFrame = getRobotJointMountFrame(robot, normalizedJointIndex);
+    if (!mountFrame || !model) return false;
+    mountFrame.add(model);
+    model.userData.attachmentHost = robot;
+    model.userData.attachmentFrame = 'joint';
+    model.userData.attachmentJointIndex = normalizedJointIndex;
+    model.userData.attachmentAxis = `J${normalizedJointIndex + 1}`;
+    model.userData.placement = 'arm-load';
+    model.userData.armLoadProperties = normalizeArmLoadProperties(model.userData.armLoadProperties);
+    model.updateMatrixWorld(true);
+    return true;
+}
+
 function mountToolModelAtActiveTcp(robot, model) {
     const tcpFrame = robot?.userData.tcpFrame;
     const mountFrame = getRobotToolMountFrame(robot);
@@ -8719,14 +9046,26 @@ function refreshImportPlacementOptions() {
     if (!el.importPlacement) return;
     const sceneOption = el.importPlacement.querySelector('option[value="scene"]');
     const tcpOption = el.importPlacement.querySelector('option[value="tcp"]');
+    const armLoadOption = el.importPlacement.querySelector('option[value="arm-load"]');
+    const robot = getArticulatedRobotForAttachment();
     if (sceneOption) sceneOption.textContent = uiText('3D 모델링');
     if (tcpOption) {
         tcpOption.textContent = uiText('Tool');
-        tcpOption.disabled = !getArticulatedRobotForAttachment();
+        tcpOption.disabled = !robot;
         if (tcpOption.disabled && el.importPlacement.value === 'tcp') {
             el.importPlacement.value = 'scene';
         }
     }
+    if (armLoadOption) {
+        armLoadOption.textContent = uiText('암 로드');
+        armLoadOption.disabled = !robot;
+        if (armLoadOption.disabled && el.importPlacement.value === 'arm-load') {
+            el.importPlacement.value = 'scene';
+        }
+    }
+    const armLoadSelected = el.importPlacement.value === 'arm-load';
+    el.importArmLoadAxisSetting?.classList.toggle('hidden', !armLoadSelected);
+    if (el.importArmLoadAxis) el.importArmLoadAxis.disabled = !robot || !armLoadSelected;
 }
 
 function getSelectedStepImportQuality() {
@@ -9215,8 +9554,8 @@ function createImportedPlacementMaterial(placement, source = null, performanceMo
     return new MaterialClass({
         color,
         ...(performanceMode ? {} : {
-            roughness: placement === 'tcp' ? 0.48 : 0.64,
-            metalness: placement === 'tcp' ? 0.18 : 0.06
+            roughness: placement === 'scene' ? 0.64 : 0.48,
+            metalness: placement === 'scene' ? 0.06 : 0.18
         }),
         side: source?.side ?? THREE.FrontSide,
         transparent: Boolean(source?.transparent || (source?.opacity ?? 1) < 1),
@@ -9445,11 +9784,19 @@ async function handle3DImport(options = {}) {
     const placement = options.placement || el.importPlacement.value;
     const importQuality = STEP_IMPORT_QUALITY_PRESETS[options.importQuality]
         || getSelectedStepImportQuality();
-    const robot = placement === 'tcp'
+    const robotAttachment = placement === 'tcp' || placement === 'arm-load';
+    const robot = robotAttachment
         ? options.attachmentRobot || getArticulatedRobotForAttachment()
+        : null;
+    const attachmentJointIndex = placement === 'arm-load'
+        ? normalizeArmLoadJointIndex(options.attachmentJointIndex ?? el.importArmLoadAxis?.value)
         : null;
     if (placement === 'tcp' && !robot) {
         alert(uiText('TCP에 장착할 로봇을 먼저 불러와 주세요.'));
+        return null;
+    }
+    if (placement === 'arm-load' && !robot) {
+        alert(uiText('암 로드에 부착할 로봇을 먼저 불러와 주세요.'));
         return null;
     }
 
@@ -9477,8 +9824,14 @@ async function handle3DImport(options = {}) {
         importedModel.userData.uploaded = true;
         importedModel.userData.sourceExtension = extension;
         importedModel.userData.sourceUnit = 'mm';
-        importedModel.userData.sourceUpAxis = placement === 'tcp' ? 'tool' : upAxis;
+        importedModel.userData.sourceUpAxis = placement === 'tcp'
+            ? 'tool'
+            : placement === 'arm-load' ? 'arm-load' : upAxis;
         importedModel.userData.placement = placement;
+        importedModel.userData.armLoadProperties = placement === 'arm-load'
+            ? normalizeArmLoadProperties(options.armLoadProperties)
+            : null;
+        importedModel.visible = options.visible !== false;
         importedModel.userData.sourceFileSize = file.size;
         importedModel.userData.largeModelMode = performanceMode;
         importedModel.userData.importQuality = importQuality.key;
@@ -9500,6 +9853,17 @@ async function handle3DImport(options = {}) {
                 state.activeArticulatedModel = robot;
                 renderJogControls(robot);
             }
+        } else if (placement === 'arm-load') {
+            if (!mountArmLoadModelAtJoint(robot, importedModel, attachmentJointIndex)) {
+                throw new Error('The selected robot joint is unavailable.');
+            }
+            importedModel.position.set(0, 0, 0);
+            importedModel.quaternion.identity();
+            importedModel.scale.set(1, 1, 1);
+            if (!options.preserveSelection && state.activeArticulatedModel !== robot) {
+                state.activeArticulatedModel = robot;
+                renderJogControls(robot);
+            }
         } else {
             // Preserve the source file origin: the 3D model (0, 0, 0) matches the scene Base origin.
             importedModel.position.set(0, 0, 0);
@@ -9507,6 +9871,7 @@ async function handle3DImport(options = {}) {
             state.scene.add(importedModel);
         }
         if (options.transform) applyClipboardTransform(importedModel, options.transform);
+        if (options.visible !== undefined) importedModel.visible = options.visible !== false;
 
         importedModel.updateMatrixWorld(true);
         const bounds = new THREE.Box3().setFromObject(importedModel);
@@ -9533,7 +9898,11 @@ async function handle3DImport(options = {}) {
         updateUIStatus();
         if (!options.preserveSelection) selectSceneModel(importedModel);
         if (historyBefore) {
-            recordHistory(placement === 'tcp' ? 'TCP 툴 불러오기' : '3D 모델링 불러오기', historyBefore, captureSceneSnapshot());
+            recordHistory(
+                placement === 'tcp' ? 'TCP 툴 불러오기' : placement === 'arm-load' ? '암 로드 불러오기' : '3D 모델링 불러오기',
+                historyBefore,
+                captureSceneSnapshot()
+            );
         }
         if (!options.suppressFit) fitCamera();
         if (assetPersistenceFailed) {
@@ -9542,6 +9911,10 @@ async function handle3DImport(options = {}) {
             // Workspace recovery reports a combined result after all models finish.
         } else if (placement === 'tcp') {
             setStatus('Tool이 TCP에 부착되었습니다.', '#22c55e');
+        } else if (placement === 'arm-load') {
+            setStatus('암 로드가 {axis}에 부착되었습니다.', '#22c55e', {
+                axis: `J${attachmentJointIndex + 1}`
+            });
         } else if (performanceMode) {
             setStatus('3D 모델링 불러오기 완료 · {quality}', '#22c55e', {
                 quality: uiText(importQuality.label)
@@ -15635,13 +16008,22 @@ function serializeWorkspaceSceneModel(model) {
     const workspaceModelId = ensureWorkspaceModelId(model);
     const transform = captureClipboardTransform(model);
     if (model.userData.uploaded) {
+        const placement = model.userData.placement === 'tcp' || model.userData.placement === 'arm-load'
+            ? model.userData.placement
+            : 'scene';
         return {
             kind: 'uploaded',
             workspaceModelId,
             assetId: model.userData.workspaceAssetId || null,
             name: model.userData.modelName || model.name || '',
-            placement: model.userData.placement === 'tcp' ? 'tcp' : 'scene',
+            placement,
             hostRobotInstanceId: model.userData.attachmentHost?.userData?.motionInstanceId || null,
+            attachmentJointIndex: placement === 'arm-load' ? getArmLoadJointIndex(model) : null,
+            attachmentAxis: placement === 'arm-load' ? `J${getArmLoadJointIndex(model) + 1}` : null,
+            visible: model.visible !== false,
+            armLoadProperties: placement === 'arm-load'
+                ? normalizeArmLoadProperties(model.userData.armLoadProperties)
+                : null,
             transform,
             sourceExtension: model.userData.sourceExtension || '',
             sourceUnit: model.userData.sourceUnit || 'mm',
@@ -15953,13 +16335,12 @@ async function restoreWorkspaceCatalogModel(entry) {
 
 async function restoreWorkspaceImportedModel(entry, robotsById) {
     const asset = await state.workspaceRecovery.db.getAsset(entry.assetId, { touch: true });
-    if (!asset?.blob) throw new Error(`Imported source asset is unavailable: ${entry?.name || entry?.assetId || ''}`);
-    const attachmentRobot = entry.placement === 'tcp'
+    if (!asset?.blob) return null;
+    const needsRobotAttachment = entry.placement === 'tcp' || entry.placement === 'arm-load';
+    const attachmentRobot = needsRobotAttachment
         ? robotsById.get(entry.hostRobotInstanceId) || null
         : null;
-    if (entry.placement === 'tcp' && !attachmentRobot) {
-        throw new Error(`Tool attachment robot is unavailable: ${entry.hostRobotInstanceId || entry.name || ''}`);
-    }
+    if (needsRobotAttachment && !attachmentRobot) return null;
     const file = new File([asset.blob], asset.name, {
         type: asset.type || asset.blob.type || '',
         lastModified: asset.lastModified || Date.now()
@@ -15968,6 +16349,16 @@ async function restoreWorkspaceImportedModel(entry, robotsById) {
         file,
         placement: entry.placement,
         attachmentRobot,
+        attachmentJointIndex: entry.attachmentJointIndex !== null
+            && entry.attachmentJointIndex !== undefined
+            && Number.isInteger(Number(entry.attachmentJointIndex))
+            ? Number(entry.attachmentJointIndex)
+            : (() => {
+                const match = String(entry.attachmentAxis || '').match(/^J([1-6])$/i);
+                return match ? Number(match[1]) - 1 : 3;
+            })(),
+        armLoadProperties: entry.armLoadProperties,
+        visible: entry.visible !== false,
         importQuality: entry.importQuality,
         workspaceAssetId: asset.id,
         workspaceModelId: entry.workspaceModelId,
@@ -16256,7 +16647,7 @@ function createWorkspaceRecord(workspaceId, snapshot = {}, options = {}) {
 function resolveWorkspaceRecoveryChoice(choice) {
     const recovery = state.workspaceRecovery;
     const resolve = recovery.recoveryChoiceResolver;
-    if (!resolve) return;
+    if (!resolve || recovery.recoveryDeleting) return;
     recovery.recoveryChoiceResolver = null;
     resolve(choice === 'restore'
         ? { action: 'restore', workspaceId: recovery.selectedRecoveryWorkspaceId }
@@ -16309,6 +16700,38 @@ function updateWorkspaceRecoveryIsolationNote(isolatedCopy) {
     if (noteText) noteText.textContent = uiText(message);
 }
 
+function getWorkspaceRecoveryDeleteInputs() {
+    return [...(el.workspaceRecoveryList?.querySelectorAll('input[data-workspace-recovery-delete]') || [])];
+}
+
+function updateWorkspaceRecoveryManagementUi() {
+    const recovery = state.workspaceRecovery;
+    const deleteInputs = getWorkspaceRecoveryDeleteInputs();
+    const eligibleInputs = deleteInputs.filter((input) => !input.disabled);
+    const selectedInputs = deleteInputs.filter((input) => input.checked);
+    const allSelected = eligibleInputs.length > 0
+        && eligibleInputs.every((input) => input.checked);
+    if (el.workspaceRecoveryManagement) {
+        el.workspaceRecoveryManagement.hidden = recovery.recoveryCandidates.length === 0;
+    }
+    if (el.workspaceRecoverySelectionCount) {
+        el.workspaceRecoverySelectionCount.textContent = uiFormat('선택된 작업 {count}개', {
+            count: selectedInputs.length
+        });
+    }
+    if (el.btnWorkspaceSelectAll) {
+        el.btnWorkspaceSelectAll.textContent = uiText(allSelected ? '전체 해제' : '전체 선택');
+        el.btnWorkspaceSelectAll.disabled = eligibleInputs.length === 0 || recovery.recoveryDeleting;
+        el.btnWorkspaceSelectAll.setAttribute('aria-pressed', String(allSelected));
+    }
+    if (el.btnWorkspaceClearSelection) {
+        el.btnWorkspaceClearSelection.disabled = selectedInputs.length === 0 || recovery.recoveryDeleting;
+    }
+    if (el.btnWorkspaceDelete) {
+        el.btnWorkspaceDelete.disabled = selectedInputs.length === 0 || recovery.recoveryDeleting;
+    }
+}
+
 function renderWorkspaceRecoverySelection() {
     const recovery = state.workspaceRecovery;
     const selectedId = recovery.selectedRecoveryWorkspaceId;
@@ -16321,33 +16744,71 @@ function renderWorkspaceRecoverySelection() {
     el.workspaceRecoveryList?.querySelectorAll('.workspace-recovery-option').forEach((option) => {
         const input = option.querySelector('input[type="radio"]');
         option.classList.toggle('is-selected', Boolean(input?.checked));
+        const deleteInput = option.querySelector('input[data-workspace-recovery-delete]');
+        option.classList.toggle('is-delete-selected', Boolean(deleteInput?.checked));
     });
     updateWorkspaceRecoveryIsolationNote(Boolean(selected?.live));
-    if (el.btnWorkspaceRestore) el.btnWorkspaceRestore.disabled = !selected;
+    if (el.btnWorkspaceRestore) {
+        el.btnWorkspaceRestore.disabled = !selected || recovery.recoveryDeleting;
+    }
+    updateWorkspaceRecoveryManagementUi();
 }
 
 function handleWorkspaceRecoverySelectionChange(event) {
+    const deleteInput = event.target?.closest?.('input[data-workspace-recovery-delete]');
+    if (deleteInput) {
+        const recovery = state.workspaceRecovery;
+        if (deleteInput.checked) recovery.selectedRecoveryWorkspaceIds.add(deleteInput.value);
+        else recovery.selectedRecoveryWorkspaceIds.delete(deleteInput.value);
+        renderWorkspaceRecoverySelection();
+        return;
+    }
     const input = event.target?.closest?.('input[name="workspace-recovery-source"]');
     if (!input) return;
     state.workspaceRecovery.selectedRecoveryWorkspaceId = input.value;
     renderWorkspaceRecoverySelection();
 }
 
+function selectAllWorkspaceRecoveryCandidates() {
+    const recovery = state.workspaceRecovery;
+    if (recovery.recoveryDeleting) return;
+    const inputs = getWorkspaceRecoveryDeleteInputs().filter((input) => !input.disabled);
+    if (!inputs.length) return;
+    const selectAll = !inputs.every((input) => input.checked);
+    inputs.forEach((input) => {
+        input.checked = selectAll;
+        if (selectAll) recovery.selectedRecoveryWorkspaceIds.add(input.value);
+        else recovery.selectedRecoveryWorkspaceIds.delete(input.value);
+    });
+    renderWorkspaceRecoverySelection();
+}
+
+function clearWorkspaceRecoveryCandidateSelection() {
+    const recovery = state.workspaceRecovery;
+    if (recovery.recoveryDeleting) return;
+    recovery.selectedRecoveryWorkspaceIds.clear();
+    getWorkspaceRecoveryDeleteInputs().forEach((input) => { input.checked = false; });
+    renderWorkspaceRecoverySelection();
+}
+
 function renderWorkspaceRecoveryCandidates(candidates, preferredWorkspaceId = null) {
     const recovery = state.workspaceRecovery;
     recovery.recoveryCandidates = [...candidates];
+    recovery.selectedRecoveryWorkspaceIds.clear();
     const preferred = candidates.some((candidate) => candidate.record.id === preferredWorkspaceId)
         ? preferredWorkspaceId
         : candidates[0]?.record?.id || null;
     recovery.selectedRecoveryWorkspaceId = preferred;
     const multiple = candidates.length > 1;
+    const hasCandidates = candidates.length > 0;
     if (el.workspaceRecoveryDescription) {
         el.workspaceRecoveryDescription.textContent = uiText(multiple
             ? '저장된 작업이 여러 개 있습니다. 불러올 작업을 선택하세요.'
             : '저장된 3D 시뮬레이션 작업이 있습니다. 불러오시겠습니까?');
     }
-    if (el.workspaceRecoveryOptions) el.workspaceRecoveryOptions.hidden = !multiple;
+    if (el.workspaceRecoveryOptions) el.workspaceRecoveryOptions.hidden = !hasCandidates;
     if (el.workspaceRecoveryDetails) el.workspaceRecoveryDetails.hidden = multiple;
+    if (el.workspaceRecoveryManagement) el.workspaceRecoveryManagement.hidden = !hasCandidates;
     if (el.workspaceRecoveryList) el.workspaceRecoveryList.replaceChildren();
 
     const selected = candidates.find((candidate) => candidate.record.id === preferred)
@@ -16376,22 +16837,25 @@ function renderWorkspaceRecoveryCandidates(candidates, preferredWorkspaceId = nu
         }
     }
 
-    if (multiple && el.workspaceRecoveryList) {
+    if (hasCandidates && el.workspaceRecoveryList) {
         const fragment = document.createDocumentFragment();
         candidates.forEach((candidate, index) => {
             const number = index + 1;
-            const option = document.createElement('label');
+            const option = document.createElement('div');
             option.className = 'workspace-recovery-option';
             const input = document.createElement('input');
             input.type = 'radio';
             input.name = 'workspace-recovery-source';
             input.value = candidate.record.id;
             input.checked = candidate.record.id === preferred;
+            const radioId = `workspace-recovery-source-${number}`;
+            input.id = radioId;
             const metaId = `workspace-recovery-option-meta-${number}`;
             const summaryId = `workspace-recovery-option-summary-${number}`;
             input.setAttribute('aria-label', getWorkspaceRecoveryDisplayName(candidate.record, number));
-            const content = document.createElement('span');
+            const content = document.createElement('label');
             content.className = 'workspace-recovery-option-content';
+            content.htmlFor = radioId;
             const header = document.createElement('span');
             header.className = 'workspace-recovery-option-header';
             const title = document.createElement('span');
@@ -16426,13 +16890,90 @@ function renderWorkspaceRecoveryCandidates(candidates, preferredWorkspaceId = nu
             summary.className = 'workspace-recovery-option-summary';
             summary.textContent = formatWorkspaceRecoverySummary(candidate.record);
             input.setAttribute('aria-describedby', [metaId, summaryId, ...statusDescriptionIds].join(' '));
+            const deleteInput = document.createElement('input');
+            deleteInput.type = 'checkbox';
+            deleteInput.dataset.workspaceRecoveryDelete = 'true';
+            deleteInput.value = candidate.record.id;
+            deleteInput.disabled = Boolean(candidate.live);
+            deleteInput.setAttribute('aria-label', uiFormat('삭제할 작업 선택: {name}', {
+                name: getWorkspaceRecoveryDisplayName(candidate.record, number)
+            }));
+            if (candidate.live) {
+                deleteInput.title = uiText('다른 창에서 사용 중인 작업은 삭제할 수 없습니다.');
+            }
             content.append(header, meta, summary);
-            option.append(input, content);
+            option.append(input, deleteInput, content);
             fragment.append(option);
         });
         el.workspaceRecoveryList.append(fragment);
     }
     renderWorkspaceRecoverySelection();
+}
+
+async function deleteSelectedWorkspaceRecoveryCandidates() {
+    const recovery = state.workspaceRecovery;
+    if (recovery.recoveryDeleting || !recovery.db) return;
+    const selectedIds = new Set(getWorkspaceRecoveryDeleteInputs()
+        .filter((input) => input.checked)
+        .map((input) => input.value));
+    const selectedCandidates = recovery.recoveryCandidates.filter((candidate) => (
+        selectedIds.has(candidate.record.id)
+    ));
+    if (!selectedCandidates.length) {
+        showWorkspaceRecoveryError('선택한 작업이 없습니다.');
+        return;
+    }
+    if (!window.confirm(uiFormat('선택한 작업 {count}개를 삭제하시겠습니까?', {
+        count: selectedCandidates.length
+    }))) return;
+
+    recovery.recoveryDeleting = true;
+    showWorkspaceRecoveryError('');
+    renderWorkspaceRecoverySelection();
+    try {
+        const modernWorkspaceIds = new Set();
+        let deleteLegacyStorage = false;
+        selectedCandidates.forEach((candidate) => {
+            if (candidate.legacy) {
+                deleteLegacyStorage = true;
+                return;
+            }
+            const memberIds = Array.isArray(candidate.memberIds) || candidate.memberIds instanceof Set
+                ? candidate.memberIds
+                : [candidate.record.id];
+            [...memberIds, candidate.record.id].forEach((id) => modernWorkspaceIds.add(String(id)));
+        });
+        const result = await recovery.db.deleteWorkspaces([...modernWorkspaceIds]);
+        if (deleteLegacyStorage) {
+            localStorage.removeItem(MOTION_PROJECT_STORAGE_KEY);
+            localStorage.removeItem(VIEW_PRESETS_STORAGE_KEY);
+        }
+        await recovery.db.deleteOrphanAssets({ gracePeriodMs: 600000 });
+
+        const remainingCandidates = await discoverWorkspaceRecoveryCandidates({
+            sessionWorkspaceId: readSessionStorageValue(WORKSPACE_SESSION_POINTER_KEY)
+        });
+        if (!remainingCandidates.length) {
+            recovery.recoveryCandidates = [];
+            recovery.selectedRecoveryWorkspaceIds.clear();
+            recovery.selectedRecoveryWorkspaceId = null;
+            closeWorkspaceRecoveryDialog();
+            recovery.recoveryDeleting = false;
+            resolveWorkspaceRecoveryChoice('new');
+            return;
+        }
+        const preferredWorkspaceId = remainingCandidates[0]?.record?.id || null;
+        renderWorkspaceRecoveryCandidates(remainingCandidates, preferredWorkspaceId);
+        if (result.skippedIds.length) {
+            showWorkspaceRecoveryError('일부 작업은 다른 창에서 사용 중이라 삭제하지 못했습니다.');
+        }
+    } catch (error) {
+        console.error('Workspace recovery deletion failed:', error);
+        showWorkspaceRecoveryError('선택한 작업을 삭제하지 못했습니다.');
+    } finally {
+        recovery.recoveryDeleting = false;
+        renderWorkspaceRecoverySelection();
+    }
 }
 
 function requestWorkspaceRecoveryChoice(candidates, {
@@ -16687,13 +17228,34 @@ async function findWorkspaceRecoveryCandidates(records, { sessionWorkspaceId = n
             probeLiveWorkspaceOwner(candidate.record.id),
             state.workspaceRecovery.db.getLease(candidate.record.id)
         ]);
+        const memberIds = [...new Set([
+            candidate.record.id,
+            ...(Array.isArray(candidate.memberIds) || candidate.memberIds instanceof Set
+                ? candidate.memberIds
+                : [])
+        ].map((id) => String(id || '').trim()).filter(Boolean))];
+        const additionalMemberStates = await Promise.all(memberIds
+            .filter((id) => id !== candidate.record.id)
+            .map(async (workspaceId) => {
+                const [memberProbe, memberLease] = await Promise.all([
+                    probeLiveWorkspaceOwner(workspaceId),
+                    state.workspaceRecovery.db.getLease(workspaceId)
+                ]);
+                return { probe: memberProbe, lease: memberLease };
+            }));
+        const memberStates = [{ probe, lease }, ...additionalMemberStates];
+        const hasLiveLease = (entry) => Boolean(entry.lease
+            && Number(entry.lease.expiresAt) > Date.now()
+            && entry.lease.ownerId !== state.workspaceRecovery.ownerId);
         const leased = Boolean(lease && Number(lease.expiresAt) > Date.now()
             && lease.ownerId !== state.workspaceRecovery.ownerId);
         return {
             ...candidate,
-            live: probe.live || leased,
-            respondingOwner: probe.live,
-            leased,
+            live: probe.live || leased || additionalMemberStates.some((entry) => (
+                entry.probe.live || hasLiveLease(entry)
+            )),
+            respondingOwner: memberStates.some((entry) => entry.probe.live),
+            leased: leased || additionalMemberStates.some(hasLiveLease),
             observedRevision: probe.revision
         };
     }));
@@ -18245,18 +18807,37 @@ function disposeObjectResources(object, disposed = null) {
 
 function attachPendingToolModels(robot) {
     const mountFrame = getRobotToolMountFrame(robot);
-    if (!mountFrame) return;
     state.models.forEach((model) => {
         const transform = model.userData.pendingToolAttachment;
-        if (!transform) return;
-        mountFrame.add(model);
-        model.position.fromArray(transform.position);
-        model.quaternion.fromArray(transform.quaternion);
-        model.scale.fromArray(transform.scale);
+        if (transform && mountFrame) {
+            mountFrame.add(model);
+            model.position.fromArray(transform.position);
+            model.quaternion.fromArray(transform.quaternion);
+            model.scale.fromArray(transform.scale);
+            model.userData.attachmentHost = robot;
+            model.userData.attachmentFrame = 'flange';
+            model.userData.placement = 'tcp';
+            delete model.userData.pendingToolAttachment;
+            model.updateMatrixWorld(true);
+            return;
+        }
+        const armLoadTransform = model.userData.pendingArmLoadAttachment;
+        if (!armLoadTransform) return;
+        const jointIndex = normalizeArmLoadJointIndex(armLoadTransform.attachmentJointIndex);
+        const armLoadMountFrame = getRobotJointMountFrame(robot, jointIndex);
+        if (!armLoadMountFrame) return;
+        armLoadMountFrame.add(model);
+        model.position.fromArray(armLoadTransform.position);
+        model.quaternion.fromArray(armLoadTransform.quaternion);
+        model.scale.fromArray(armLoadTransform.scale);
         model.userData.attachmentHost = robot;
-        model.userData.attachmentFrame = 'flange';
-        model.userData.placement = 'tcp';
-        delete model.userData.pendingToolAttachment;
+        model.userData.attachmentFrame = 'joint';
+        model.userData.attachmentJointIndex = jointIndex;
+        model.userData.attachmentAxis = `J${jointIndex + 1}`;
+        model.userData.placement = 'arm-load';
+        model.userData.armLoadProperties = normalizeArmLoadProperties(armLoadTransform.armLoadProperties);
+        model.visible = armLoadTransform.visible !== false;
+        delete model.userData.pendingArmLoadAttachment;
         model.updateMatrixWorld(true);
     });
 }
@@ -18276,6 +18857,18 @@ function cleanupScene() {
                 position: model.position.toArray(),
                 quaternion: model.quaternion.toArray(),
                 scale: model.scale.toArray()
+            };
+        }
+        const armLoadHost = model.userData.placement === 'arm-load'
+            && getRobotJointMountFrame(model.userData.attachmentHost, getArmLoadJointIndex(model));
+        if (armLoadHost) {
+            model.userData.pendingArmLoadAttachment = {
+                position: model.position.toArray(),
+                quaternion: model.quaternion.toArray(),
+                scale: model.scale.toArray(),
+                attachmentJointIndex: getArmLoadJointIndex(model),
+                armLoadProperties: normalizeArmLoadProperties(model.userData.armLoadProperties),
+                visible: model.visible !== false
             };
         }
         model.updateMatrixWorld(true);
@@ -18350,6 +18943,9 @@ function updateUIStatus() {
     el.statName.textContent = names.length > 1 ? `${names[0]} (+${names.length-1})` : (names[0] || '-');
     el.emptyState.classList.toggle('hidden', state.models.length > 0);
     renderModelTree();
+    renderArmLoadPanel();
+    refreshImportPlacementOptions();
+    updatePanelLauncher('arm-load-panel');
     refreshInterferenceZoneDialogRobotOptions();
     renderInterferenceZonePanel();
     updateInterferenceZoneVisuals();
