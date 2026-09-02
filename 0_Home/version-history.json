@@ -265,7 +265,8 @@
               {
                 "title": "Ver 26.09.01",
                 "items": [
-                  "`[수정]` STEP 파일을 불러온 직후 변경 없이 내보내기를 시도해도 모든 파일에서 실패하던 문제를 해결했습니다."
+                  "`[수정]` STEP 파일을 불러온 직후 변경 없이 내보내기를 시도해도 모든 파일에서 실패하던 문제를 해결했습니다.",
+                  "`[개선]` 모드 D에서 3D CAD를 불러올 때 발생하던 지연을 개선했습니다."
                 ]
               },
               {
@@ -400,19 +401,6 @@
           {
             "title": "Software",
             "versions": [
-              {
-                "title": "Ver 26.08.11",
-                "items": [
-                  "`[개선]` 방문 기록 시트에 한글·영문 헤더를 함께 표시하고, 정확한 집계가 시작된 2026년 7월 22일 이후 데이터만 제공하며, 기간별 비교 분석 화면을 추가했습니다.",
-                  "`[개선]` 방문 기록의 조회수·방문수·샘플링 간격은 소수점 없이 표시하고, 집계 시각은 한국 시간으로 표시하도록 변경했습니다."
-                ]
-              },
-              {
-                "title": "Ver 26.08.10",
-                "items": [
-                  "`[수정]` 방문 기록이 Cloudflare Analytics 조회 제한으로 수집되지 않아 Google Sheets가 비어 있던 문제를 해결했습니다."
-                ]
-              },
               {
                 "title": "Ver 26.07.24",
                 "items": [
@@ -1143,7 +1131,8 @@
               {
                 "title": "Ver 26.09.01",
                 "items": [
-                  "`[Fixed]` Fixed an issue where exporting any STEP file failed immediately after import, even without changes."
+                  "`[Fixed]` Fixed an issue where exporting any STEP file failed immediately after import, even without changes.",
+                  "`[Improved]` Improved the delay that occurred when loading 3D CAD in Mode D."
                 ]
               },
               {
@@ -1278,19 +1267,6 @@
           {
             "title": "Software",
             "versions": [
-              {
-                "title": "Ver 26.08.11",
-                "items": [
-                  "**[Improved]** Added bilingual Korean/English headers, limited visit records to valid data from July 22, 2026 onward, and added a period-comparison analytics dashboard.",
-                  "**[Improved]** Visit counts and sampling intervals now display without decimal places, and collection timestamps are shown in Korea Standard Time."
-                ]
-              },
-              {
-                "title": "Ver 26.08.10",
-                "items": [
-                  "**[Fixed]** Resolved an issue where visit records were not collected because of the Cloudflare Analytics query limit, leaving Google Sheets empty."
-                ]
-              },
               {
                 "title": "Ver 26.07.24",
                 "items": [
@@ -2021,7 +1997,8 @@
               {
                 "title": "Ver 26.09.01",
                 "items": [
-                  "`[修复]` 修复了导入 STEP 文件后即使未进行任何修改也无法导出所有文件的问题。"
+                  "`[修复]` 修复了导入 STEP 文件后即使未进行任何修改也无法导出所有文件的问题。",
+                  "`[改进]` 改善了模式 D 导入 3D CAD 时出现的延迟问题。"
                 ]
               },
               {
@@ -2156,19 +2133,6 @@
           {
             "title": "Software",
             "versions": [
-              {
-                "title": "Ver 26.08.11",
-                "items": [
-                  "**[改进]** 访问记录表现已同时显示韩文和英文表头，仅提供自 2026 年 7 月 22 日起的有效数据，并新增了期间对比分析仪表板。",
-                  "**[改进]** 访问次数、访问量和采样间隔现以整数显示，统计时间改为韩国标准时间。"
-                ]
-              },
-              {
-                "title": "Ver 26.08.10",
-                "items": [
-                  "**[修复]** 修复了因 Cloudflare Analytics 查询限制导致访问记录无法收集、Google Sheets 保持空白的问题。"
-                ]
-              },
               {
                 "title": "Ver 26.07.24",
                 "items": [
@@ -2899,7 +2863,8 @@
               {
                 "title": "Ver 26.09.01",
                 "items": [
-                  "`[Sửa lỗi]` Đã khắc phục sự cố mọi tệp STEP đều không thể xuất ngay sau khi nhập, ngay cả khi chưa chỉnh sửa."
+                  "`[Sửa lỗi]` Đã khắc phục sự cố mọi tệp STEP đều không thể xuất ngay sau khi nhập, ngay cả khi chưa chỉnh sửa.",
+                  "`[Cải tiến]` Đã cải thiện tình trạng chậm xảy ra khi tải 3D CAD ở Chế độ D."
                 ]
               },
               {
@@ -3034,19 +2999,6 @@
           {
             "title": "Software",
             "versions": [
-              {
-                "title": "Ver 26.08.11",
-                "items": [
-                  "**[Cải tiến]** Đã bổ sung tiêu đề song ngữ Hàn-Anh, chỉ cung cấp dữ liệu hợp lệ từ ngày 22/07/2026 trở đi và thêm bảng phân tích so sánh theo giai đoạn.",
-                  "**[Cải tiến]** Số lượt xem, số lượt truy cập và khoảng lấy mẫu hiện được hiển thị không có phần thập phân; thời gian thống kê được chuyển sang giờ Hàn Quốc."
-                ]
-              },
-              {
-                "title": "Ver 26.08.10",
-                "items": [
-                  "**[Sửa lỗi]** Đã khắc phục sự cố bản ghi lượt truy cập không được thu thập do giới hạn truy vấn Cloudflare Analytics, khiến Google Sheets bị trống."
-                ]
-              },
               {
                 "title": "Ver 26.07.24",
                 "items": [
