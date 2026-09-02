@@ -370,8 +370,8 @@ const state = {
     viewNavigationActive: false,
     snapVisibilityRaycaster: new THREE.Raycaster(),
     collision: {
-        // Collision detection is enabled by default for every new simulation session.
-        enabled: true,
+        // Collision detection is disabled by default for every new simulation session.
+        enabled: false,
         debugVisible: false,
         system: null,
         minCheckIntervalMs: 80,
@@ -9374,7 +9374,7 @@ async function parseStepBufferInWorker(fileBuffer, parameters, engine, fileName,
                 return;
             }
             if (payload.type === 'done') {
-                finish(resolve, payload, true);
+                finish(resolve, payload);
                 return;
             }
             if (payload.type === 'error') {
@@ -9388,18 +9388,22 @@ async function parseStepBufferInWorker(fileBuffer, parameters, engine, fileName,
         worker.addEventListener('message', handleMessage);
         worker.addEventListener('error', handleError);
 
-        worker.postMessage({
-            type: 'parse',
-            requestId,
-            fileBuffer,
-            engine,
-            fileName,
-            parameters: {
-                linearUnit: 'millimeter',
-                linearDeflectionType: 'bounding_box_ratio',
-                ...parameters
-            }
-        }, [fileBuffer]);
+        try {
+            worker.postMessage({
+                type: 'parse',
+                requestId,
+                fileBuffer,
+                engine,
+                fileName,
+                parameters: {
+                    linearUnit: 'millimeter',
+                    linearDeflectionType: 'bounding_box_ratio',
+                    ...parameters
+                }
+            }, [fileBuffer]);
+        } catch (error) {
+            finish(reject, error, true);
+        }
     });
 }
 
@@ -16097,7 +16101,7 @@ function serializeWorkspaceSnapshot() {
         || state.viewPresets.some(Boolean)
         || state.grid?.visible === false
         || state.outlineMode
-        || !state.collision.enabled
+        || state.collision.enabled
         || cameraChanged
         || interferenceChanged
         || monitoringChanged;
@@ -16284,7 +16288,7 @@ function applyWorkspaceDisplayState(snapshot) {
     if (state.baseAxes) state.baseAxes.visible = gridVisible;
     state.labels.forEach((label) => { label.visible = gridVisible; });
     el.btnToggleGrid?.classList.toggle('active', gridVisible);
-    state.collision.enabled = display.collisionEnabled !== false;
+    state.collision.enabled = display.collisionEnabled === true;
     clearCollisionStopNotice();
     updateCollisionUi();
     setModelOutlineMode(Boolean(display.outlineMode));
@@ -16605,7 +16609,7 @@ function workspaceSnapshotHasWork(snapshot) {
     if (snapshot.viewConfiguration?.viewPresets?.some(Boolean)) return true;
     if (snapshot.display?.gridVisible === false
         || snapshot.display?.outlineMode === true
-        || snapshot.display?.collisionEnabled === false) return true;
+        || snapshot.display?.collisionEnabled === true) return true;
     const project = snapshot.motionProject || {};
     const interferenceChanged = Array.isArray(project.interferenceZones)
         && JSON.stringify(normalizeInterferenceZones(project.interferenceZones))
@@ -17347,7 +17351,7 @@ function readLegacyWorkspaceCandidate() {
         assetIds: [],
         selection: {},
         camera: null,
-        display: { gridVisible: true, outlineMode: false, collisionEnabled: true },
+        display: { gridVisible: true, outlineMode: false, collisionEnabled: false },
         viewConfiguration: viewConfiguration || { viewPresets: [] },
         collapsedModelIds: []
     };
@@ -17383,7 +17387,7 @@ async function resetCleanWorkspaceUiState() {
     state.activeViewSlot = null;
     refreshViewPresetsUi();
     applyWorkspaceDisplayState({
-        display: { gridVisible: true, outlineMode: false, collisionEnabled: true }
+        display: { gridVisible: true, outlineMode: false, collisionEnabled: false }
     });
     updateUIStatus();
     renderMotionProgramPanel();

@@ -153,6 +153,7 @@
     "점 찍기를 누른 뒤 CAD 형상 위로 포인터를 이동하세요.": "Nhấn Chọn điểm rồi di chuyển con trỏ trên hình học CAD.",
     "점 찍기를 누른 뒤 스냅할 CAD 면을 클릭하세요.": "Nhấn Chọn điểm rồi nhấp vào mặt CAD cần bắt điểm.",
     "스냅 후보": "Ứng viên bắt điểm",
+    "면을 선택하면 상세 스냅 후보를 계산합니다.": "Các điểm bắt dính chi tiết sẽ được tính khi bạn chọn một mặt CAD.",
     "개가 준비되었습니다.": " đã sẵn sàng.",
     "현재 위치에 선택 가능한 스냅 후보가 없습니다.": "Không có ứng viên bắt điểm nào tại vị trí này.",
     "CAD 형상 위로 이동하면 스냅 후보가 표시됩니다.": "Di chuyển trên hình học CAD để xem trước ứng viên bắt điểm.",

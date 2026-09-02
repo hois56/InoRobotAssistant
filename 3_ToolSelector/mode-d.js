@@ -16,9 +16,13 @@ const OCCT_IMPORT_BASE_URL = './vendor/occt/';
 const OCCT_IMPORT_SCRIPT_URL = `${OCCT_IMPORT_BASE_URL}occt-import-js.js`;
 const KG_PER_MM3_PER_G_PER_CM3 = 1e-6;
 const ROBOT_SELECTION_GRAVITY = 9.8;
-const MAX_DETAILED_SNAP_TRIANGLES = 200000;
 const LARGE_STEP_ENGINE_MIN_BYTES = 100 * 1024 * 1024;
 const LARGE_STEP_ENGINE_WORKER_URL = '../2_3DSimulation/step-import-worker.js?v=20260720-large-xcaf-quality-1';
+const MODE_D_STEP_CACHE_DB_NAME = 'inorobot-tool-mode-d-step-cache';
+const MODE_D_STEP_CACHE_STORE_NAME = 'imports';
+const MODE_D_STEP_CACHE_SCHEMA = 1;
+const MODE_D_STEP_CACHE_MAX_BYTES = 32 * 1024 * 1024;
+const MODE_D_STEP_CACHE_MAX_ENTRIES = 3;
 const DEFAULT_STEP_IMPORT_OPTIONS = Object.freeze({
   linearUnit: 'millimeter',
   linearDeflectionType: 'bounding_box_ratio',
@@ -29,13 +33,11 @@ const STEP_IMPORT_QUALITY_PRESETS = Object.freeze({
   default: Object.freeze({
     key: 'default',
     label: '기본',
-    snapTriangleBudget: MAX_DETAILED_SNAP_TRIANGLES,
     importOptions: DEFAULT_STEP_IMPORT_OPTIONS
   }),
   'ultra-light': Object.freeze({
     key: 'ultra-light',
     label: '초경량',
-    snapTriangleBudget: 25000,
     importOptions: Object.freeze({
       linearUnit: 'millimeter',
       linearDeflectionType: 'absolute_value',
@@ -114,6 +116,7 @@ const state = {
   lastPointer: null,
   snapCandidates: [],
   snapFaceCandidates: [],
+  snapAnalysisMode: 'on-demand-face',
   snapFaceSelection: null,
   snapFaceOverlay: null,
   snapCandidateMarkers: [],
@@ -128,6 +131,10 @@ const state = {
   snapReadoutRenderer: null,
   occtScriptPromise: null,
   occtPromise: null,
+  stepImportWorkerSession: null,
+  largeStepImportWorkerSession: null,
+  stepImportCacheDbPromise: null,
+  cadImportGeneration: 0,
   sourceStepFile: null,
   sourceCadFormat: null,
   selectedPartIndex: null,
@@ -883,15 +890,64 @@ async function createStlMeshDefinition(file) {
   };
 }
 
-function importStepInWorker(buffer, onProgress, importOptions = DEFAULT_STEP_IMPORT_OPTIONS) {
+function createCadImportAbortError() {
+  const error = new Error('CAD import was superseded by a newer file selection.');
+  error.name = 'AbortError';
+  return error;
+}
+
+function resetModeDStepImportWorkerSession(session, error = null) {
+  if (!session) return;
+  if (state.stepImportWorkerSession === session) state.stepImportWorkerSession = null;
+  if (state.largeStepImportWorkerSession === session) state.largeStepImportWorkerSession = null;
+  const pendingReject = session.pendingReject;
+  session.pendingReject = null;
+  session.cancelCurrent = null;
+  session.worker.terminate();
+  if (error && pendingReject) pendingReject(error);
+}
+
+function cancelModeDStepImports() {
+  [state.stepImportWorkerSession, state.largeStepImportWorkerSession].forEach((session) => {
+    if (!session) return;
+    if (typeof session.cancelCurrent === 'function') session.cancelCurrent();
+  });
+}
+
+function getModeDStepImportWorkerSession() {
+  if (state.stepImportWorkerSession) return state.stepImportWorkerSession;
+  const worker = new Worker(new URL('./step-import-worker.js?v=20260720-exact-small-1', import.meta.url));
+  state.stepImportWorkerSession = { worker, pendingReject: null, cancelCurrent: null };
+  return state.stepImportWorkerSession;
+}
+
+function getModeDLargeStepImportWorkerSession() {
+  if (state.largeStepImportWorkerSession) return state.largeStepImportWorkerSession;
+  const worker = new Worker(new URL(LARGE_STEP_ENGINE_WORKER_URL, import.meta.url));
+  state.largeStepImportWorkerSession = { worker, pendingReject: null, cancelCurrent: null };
+  return state.largeStepImportWorkerSession;
+}
+
+function importStepInWorker(buffer, fileName, onProgress, importOptions = DEFAULT_STEP_IMPORT_OPTIONS) {
+  const session = getModeDStepImportWorkerSession();
+  if (session.pendingReject) return Promise.reject(new Error('STEP import worker is already busy.'));
   return new Promise((resolve, reject) => {
-    const worker = new Worker(new URL('./step-import-worker.js?v=20260720-exact-small-1', import.meta.url));
-    const workerBuffer = buffer.slice(0);
-    const finish = (callback, value) => {
-      worker.terminate();
+    const { worker } = session;
+    let settled = false;
+    const cleanup = () => {
+      worker.removeEventListener('message', handleMessage);
+      worker.removeEventListener('error', handleError);
+      session.pendingReject = null;
+      session.cancelCurrent = null;
+    };
+    const finish = (callback, value, resetWorker = false) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      if (resetWorker) resetModeDStepImportWorkerSession(session);
       callback(value);
     };
-    worker.addEventListener('message', (event) => {
+    const handleMessage = (event) => {
       if (event.data?.type === 'progress') {
         onProgress?.(event.data.message);
         return;
@@ -901,29 +957,47 @@ function importStepInWorker(buffer, onProgress, importOptions = DEFAULT_STEP_IMP
         return;
       }
       if (event.data?.type === 'error') {
-        finish(reject, new Error(event.data.message || 'STEP import worker failed.'));
+        finish(reject, new Error(event.data.message || 'STEP import worker failed.'), true);
       }
-    });
-    worker.addEventListener('error', (event) => {
-      finish(reject, new Error(event.message || 'STEP import worker failed.'));
-    });
-    worker.postMessage({
-      buffer: workerBuffer,
-      options: importOptions,
-      fileName: state.sourceStepFile?.name || ''
-    }, [workerBuffer]);
+    };
+    const handleError = (event) => {
+      event.preventDefault();
+      finish(reject, new Error(event.message || 'STEP import worker failed.'), true);
+    };
+    session.pendingReject = reject;
+    session.cancelCurrent = () => finish(reject, createCadImportAbortError(), true);
+    worker.addEventListener('message', handleMessage);
+    worker.addEventListener('error', handleError);
+    try {
+      worker.postMessage({
+        buffer,
+        options: importOptions,
+        fileName: fileName || ''
+      }, [buffer]);
+    } catch (error) {
+      finish(reject, error, true);
+    }
   });
 }
 
 function importLargeStepInWorker(buffer, sourceFile, qualityKey, onMesh, onProgress) {
+  const session = getModeDLargeStepImportWorkerSession();
+  if (session.pendingReject) return Promise.reject(new Error('Large STEP import worker is already busy.'));
   return new Promise((resolve, reject) => {
-    const worker = new Worker(new URL(LARGE_STEP_ENGINE_WORKER_URL, import.meta.url));
+    const { worker } = session;
     const requestId = `tool-mode-d-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     let settled = false;
-    const finish = (callback, value) => {
+    const cleanup = () => {
+      worker.removeEventListener('message', handleMessage);
+      worker.removeEventListener('error', handleError);
+      session.pendingReject = null;
+      session.cancelCurrent = null;
+    };
+    const finish = (callback, value, resetWorker = false) => {
       if (settled) return;
       settled = true;
-      worker.terminate();
+      cleanup();
+      if (resetWorker) resetModeDStepImportWorkerSession(session);
       callback(value);
     };
     const handleMessage = (event) => {
@@ -945,7 +1019,7 @@ function importLargeStepInWorker(buffer, sourceFile, qualityKey, onMesh, onProgr
         try {
           onMesh(normalizeLargeWorkerMesh(payload.mesh, sourceFile));
         } catch (error) {
-          finish(reject, error);
+          finish(reject, error, true);
         }
         return;
       }
@@ -954,23 +1028,29 @@ function importLargeStepInWorker(buffer, sourceFile, qualityKey, onMesh, onProgr
         return;
       }
       if (payload.type === 'error') {
-        finish(reject, new Error(payload.message || 'Large STEP engine failed.'));
+        finish(reject, new Error(payload.message || 'Large STEP engine failed.'), true);
       }
     };
     const handleError = (event) => {
       event.preventDefault();
-      finish(reject, new Error(event.message || 'Large STEP engine failed.'));
+      finish(reject, new Error(event.message || 'Large STEP engine failed.'), true);
     };
+    session.pendingReject = reject;
+    session.cancelCurrent = () => finish(reject, createCadImportAbortError(), true);
     worker.addEventListener('message', handleMessage);
     worker.addEventListener('error', handleError);
-    worker.postMessage({
-      type: 'parse',
-      requestId,
-      engine: 'large',
-      fileBuffer: buffer,
-      fileName: sourceFile.name,
-      parameters: getLargeStepTessellationParameters(sourceFile.size, qualityKey)
-    }, [buffer]);
+    try {
+      worker.postMessage({
+        type: 'parse',
+        requestId,
+        engine: 'large',
+        fileBuffer: buffer,
+        fileName: sourceFile.name,
+        parameters: getLargeStepTessellationParameters(sourceFile.size, qualityKey)
+      }, [buffer]);
+    } catch (error) {
+      finish(reject, error, true);
+    }
   });
 }
 
@@ -1052,13 +1132,125 @@ function annotateStepHierarchy(result) {
   return result;
 }
 
-async function importStepWithFallback(buffer, onProgress, importOptions = DEFAULT_STEP_IMPORT_OPTIONS) {
+async function importStepWithFallback(file, onProgress, importOptions = DEFAULT_STEP_IMPORT_OPTIONS) {
   try {
-    return await importStepInWorker(buffer, onProgress, importOptions);
+    const buffer = await file.arrayBuffer();
+    return await importStepInWorker(buffer, file.name, onProgress, importOptions);
   } catch (workerError) {
+    if (workerError?.name === 'AbortError') throw workerError;
     console.warn('STEP worker import failed; retrying with the main-thread parser.', workerError);
     onProgress?.('STEP 파일을 다시 해석하는 중입니다.');
-    return importStepOnMainThread(buffer, onProgress, importOptions);
+    return importStepOnMainThread(await file.arrayBuffer(), onProgress, importOptions);
+  }
+}
+
+function canUseModeDStepCache(file, useLargeStepEngine = false) {
+  try {
+    return !useLargeStepEngine
+      && file?.size > 0
+      && file.size <= MODE_D_STEP_CACHE_MAX_BYTES
+      && typeof window !== 'undefined'
+      && Boolean(window.indexedDB);
+  } catch {
+    return false;
+  }
+}
+
+function getModeDStepCacheKey(file, importQuality) {
+  return JSON.stringify({
+    schema: MODE_D_STEP_CACHE_SCHEMA,
+    name: file.name,
+    size: file.size,
+    lastModified: file.lastModified || 0,
+    quality: importQuality.key,
+    options: importQuality.importOptions
+  });
+}
+
+function openModeDStepCache() {
+  if (!canUseModeDStepCache({ size: 1 })) {
+    return Promise.reject(new Error('IndexedDB is unavailable.'));
+  }
+  if (state.stepImportCacheDbPromise) return state.stepImportCacheDbPromise;
+  state.stepImportCacheDbPromise = new Promise((resolve, reject) => {
+    const request = window.indexedDB.open(MODE_D_STEP_CACHE_DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      const database = request.result;
+      if (!database.objectStoreNames.contains(MODE_D_STEP_CACHE_STORE_NAME)) {
+        database.createObjectStore(MODE_D_STEP_CACHE_STORE_NAME, { keyPath: 'key' });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error || new Error('STEP cache could not be opened.'));
+  }).catch((error) => {
+    state.stepImportCacheDbPromise = null;
+    throw error;
+  });
+  return state.stepImportCacheDbPromise;
+}
+
+async function readModeDStepCache(key) {
+  try {
+    const database = await openModeDStepCache();
+    return await new Promise((resolve, reject) => {
+      const transaction = database.transaction(MODE_D_STEP_CACHE_STORE_NAME, 'readonly');
+      const request = transaction.objectStore(MODE_D_STEP_CACHE_STORE_NAME).get(key);
+      request.onsuccess = () => resolve(request.result?.result || null);
+      request.onerror = () => reject(request.error || new Error('STEP cache read failed.'));
+    });
+  } catch (error) {
+    console.warn('STEP import cache read skipped.', error);
+    return null;
+  }
+}
+
+async function pruneModeDStepCache(database) {
+  await new Promise((resolve, reject) => {
+    const transaction = database.transaction(MODE_D_STEP_CACHE_STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(MODE_D_STEP_CACHE_STORE_NAME);
+    const request = store.getAll();
+    request.onsuccess = () => {
+      const records = request.result || [];
+      records.sort((left, right) => Number(right.cachedAt) - Number(left.cachedAt));
+      records.slice(MODE_D_STEP_CACHE_MAX_ENTRIES).forEach((record) => store.delete(record.key));
+    };
+    request.onerror = () => reject(request.error || new Error('STEP cache index failed.'));
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error || new Error('STEP cache prune failed.'));
+  });
+}
+
+async function writeModeDStepCache(key, result) {
+  try {
+    const database = await openModeDStepCache();
+    const cacheResult = {
+      success: true,
+      rootName: result.rootName || 'STEP Assembly',
+      meshes: result.meshes
+    };
+    await new Promise((resolve, reject) => {
+      const transaction = database.transaction(MODE_D_STEP_CACHE_STORE_NAME, 'readwrite');
+      transaction.objectStore(MODE_D_STEP_CACHE_STORE_NAME).put({
+        key,
+        cachedAt: Date.now(),
+        result: cacheResult
+      });
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error || new Error('STEP cache write failed.'));
+      transaction.onabort = () => reject(transaction.error || new Error('STEP cache write aborted.'));
+    });
+    await pruneModeDStepCache(database);
+  } catch (error) {
+    console.warn('STEP import cache write skipped.', error);
+  }
+}
+
+function scheduleModeDStepCacheWrite(key, result) {
+  const write = () => { void writeModeDStepCache(key, result); };
+  if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(write, { timeout: 1500 });
+  } else if (typeof window !== 'undefined') {
+    window.setTimeout(write, 500);
   }
 }
 
@@ -1084,31 +1276,14 @@ function createCenterOnlySnapData(geometryProperties, triangleCount, reason = ''
   };
 }
 
-function buildMemoryAwareSnapData(meshDefinition, geometryProperties, remainingDetailedTriangles) {
-  const triangleCount = meshTriangleCount(meshDefinition);
-  if (triangleCount > remainingDetailedTriangles) {
-    return createCenterOnlySnapData(geometryProperties, triangleCount, 'triangle-budget');
-  }
-  try {
-    return buildStepSnapCandidates(meshDefinition, { solidCenter: geometryProperties.centroidMm });
-  } catch (error) {
-    console.warn('Detailed snap analysis failed; using the solid center only.', error);
-    return createCenterOnlySnapData(geometryProperties, triangleCount, error?.message || 'snap-analysis-failed');
-  }
-}
-
 function appendImportedStepMesh(meshDefinition, index, sourceFormat, context) {
   const geometryProperties = integrateStepMesh(meshDefinition);
-  const snapData = buildMemoryAwareSnapData(
-    meshDefinition,
+  const snapData = createCenterOnlySnapData(
     geometryProperties,
-    context.remainingDetailedTriangles
+    meshTriangleCount(meshDefinition),
+    'on-demand-face-analysis'
   );
-  if (snapData.stats.simplified) context.simplifiedSnapPartCount += 1;
-  else context.remainingDetailedTriangles = Math.max(
-    context.remainingDetailedTriangles - (snapData.stats.triangleCount || 0),
-    0
-  );
+  context.simplifiedSnapPartCount += 1;
 
   const geometry = createThreeGeometry(meshDefinition);
   const MaterialClass = context.largeModel ? THREE.MeshLambertMaterial : THREE.MeshStandardMaterial;
@@ -1149,6 +1324,14 @@ function appendImportedStepMesh(meshDefinition, index, sourceFormat, context) {
   return partIndex;
 }
 
+function isCurrentCadImport(generation) {
+  return state.cadImportGeneration === generation;
+}
+
+function throwIfCadImportIsStale(generation) {
+  if (!isCurrentCadImport(generation)) throw createCadImportAbortError();
+}
+
 async function loadCadFile(file) {
   const extension = file.name.split('.').pop()?.toLowerCase();
   if (!['step', 'stp', 'stl'].includes(extension)) {
@@ -1157,9 +1340,14 @@ async function loadCadFile(file) {
     return;
   }
 
+  const importGeneration = ++state.cadImportGeneration;
+  cancelModeDStepImports();
   const sourceFormat = extension === 'stl' ? 'STL' : 'STEP';
   const importQuality = getSelectedStepImportQuality();
   const useLargeStepEngine = sourceFormat === 'STEP' && file.size >= LARGE_STEP_ENGINE_MIN_BYTES;
+  const cacheKey = sourceFormat === 'STEP' && canUseModeDStepCache(file, useLargeStepEngine)
+    ? getModeDStepCacheKey(file, importQuality)
+    : null;
   setStatus(() => uiFormat('{format} {quality} 품질로 불러오는 중입니다.', {
     format: sourceFormat,
     quality: uiText(importQuality.label)
@@ -1174,48 +1362,62 @@ async function loadCadFile(file) {
   try {
     let result;
     const importContext = {
-      remainingDetailedTriangles: importQuality.snapTriangleBudget,
       simplifiedSnapPartCount: 0,
-      largeModel: useLargeStepEngine,
-      importQuality: importQuality.key
+      largeModel: useLargeStepEngine
     };
     if (extension === 'stl') {
       result = { success: true, meshes: [await createStlMeshDefinition(file)] };
     } else {
-      const buffer = await file.arrayBuffer();
-      if (useLargeStepEngine) {
+      if (cacheKey) {
+        const cachedResult = await readModeDStepCache(cacheKey);
+        result = cachedResult?.success && Array.isArray(cachedResult.meshes) ? cachedResult : null;
+      }
+      throwIfCadImportIsStale(importGeneration);
+      if (!result && useLargeStepEngine) {
+        const buffer = await file.arrayBuffer();
         let meshIndex = 0;
         result = await importLargeStepInWorker(
           buffer,
           file,
           importQuality.key,
           (meshDefinition) => {
+            if (!isCurrentCadImport(importGeneration)) return;
             appendImportedStepMesh(meshDefinition, meshIndex, sourceFormat, importContext);
             meshIndex += 1;
           },
-          (message) => setStatus(message)
+          (message) => {
+            if (isCurrentCadImport(importGeneration)) setStatus(message);
+          }
         );
-      } else {
+      } else if (!result) {
         result = await importStepWithFallback(
-          buffer,
-          (message) => setStatus(message),
+          file,
+          (message) => {
+            if (isCurrentCadImport(importGeneration)) setStatus(message);
+          },
           importQuality.importOptions
         );
+        if (cacheKey && result?.success && Array.isArray(result.meshes)) {
+          scheduleModeDStepCacheWrite(cacheKey, result);
+        }
       }
     }
+    throwIfCadImportIsStale(importGeneration);
     if (!result?.success || (sourceFormat === 'STEP' && !useLargeStepEngine && !Array.isArray(result.meshes))) {
       throw new Error('CAD file could not be read.');
     }
 
-    let remainingDetailedTriangles = importContext.remainingDetailedTriangles;
-    let simplifiedSnapPartCount = importContext.simplifiedSnapPartCount;
     for (let index = 0; index < (result.meshes?.length || 0); index += 1) {
+      throwIfCadImportIsStale(importGeneration);
       const meshDefinition = result.meshes[index];
       try {
         const geometryProperties = integrateStepMesh(meshDefinition);
-        const snapData = buildMemoryAwareSnapData(meshDefinition, geometryProperties, remainingDetailedTriangles);
-        if (snapData.stats.simplified) simplifiedSnapPartCount += 1;
-        else remainingDetailedTriangles = Math.max(remainingDetailedTriangles - (snapData.stats.triangleCount || 0), 0);
+        const snapData = createCenterOnlySnapData(
+          geometryProperties,
+          meshTriangleCount(meshDefinition),
+          'on-demand-face-analysis'
+        );
+        importContext.simplifiedSnapPartCount += 1;
         const geometry = createThreeGeometry(meshDefinition);
         const material = new THREE.MeshStandardMaterial({
           color: getDisplayColor(meshDefinition.color),
@@ -1250,15 +1452,18 @@ async function loadCadFile(file) {
         console.warn(`Skipped non-solid ${sourceFormat} mesh ${index + 1}:`, error);
       }
       if (index > 0 && index % 20 === 0) {
-        setStatus(() => uiFormat('{format} 파일을 불러오는 중입니다. ({index}/{total})', {
-          format: sourceFormat,
-          index: index + 1,
-          total: result.meshes.length
-        }));
+        if (isCurrentCadImport(importGeneration)) {
+          setStatus(() => uiFormat('{format} 파일을 불러오는 중입니다. ({index}/{total})', {
+            format: sourceFormat,
+            index: index + 1,
+            total: result.meshes.length
+          }));
+        }
         await new Promise((resolve) => requestAnimationFrame(resolve));
       }
     }
 
+    throwIfCadImportIsStale(importGeneration);
     if (!state.parts.length) throw new Error(uiText('계산 가능한 솔리드가 없습니다.'));
     state.sourceStepFile = extension === 'stl' ? null : file;
     state.sourceCadFormat = sourceFormat;
@@ -1268,8 +1473,8 @@ async function loadCadFile(file) {
     el.calculate.disabled = false;
     el.exportStep.disabled = extension === 'stl';
     setSnapReadout(() => `${uiText('스냅 후보')} ${state.snapCandidates.length.toLocaleString()}${uiText('개가 준비되었습니다.')}`);
-    const simplifiedNote = simplifiedSnapPartCount
-      ? uiFormat(' · 대용량 최적화 {count}개 부품', { count: simplifiedSnapPartCount.toLocaleString() })
+    const simplifiedNote = importContext.simplifiedSnapPartCount
+      ? ` · ${uiText('면을 선택하면 상세 스냅 후보를 계산합니다.')}`
       : '';
     setStatus(() => uiFormat('{format} 파일 분석 완료 · {label} {count}{note}', {
       format: sourceFormat,
@@ -1278,6 +1483,7 @@ async function loadCadFile(file) {
       note: simplifiedNote
     }), 'ok');
   } catch (error) {
+    if (!isCurrentCadImport(importGeneration) || error?.name === 'AbortError') return;
     console.error('STEP import failed:', error);
     clearParts();
     setStatus(() => uiFormat('{format} 파일을 해석할 수 없습니다. {message}', {
@@ -2336,6 +2542,7 @@ function init() {
         type: state.snapType,
         radiusPx: state.snapRadiusPx,
         candidateCount: state.snapCandidates.length,
+        snapAnalysisMode: state.snapAnalysisMode,
         gridVisible: state.gridVisible,
         outlineMode: state.outlineMode,
         pickMode: state.pickMode,

@@ -47,10 +47,10 @@ assert.match(simulationSource, /cached\?\.meshes\?\.length/);
 assert.match(simulationSource, /STEP_IMPORT_CACHE_MAX_ENTRIES\s*=\s*4/);
 assert.match(simulationSource, /STEP_IMPORT_CACHE_MAX_SOURCE_BYTES\s*=\s*32 \* MEBIBYTE/);
 assert.match(simulationSource, /const cacheEnabled = file\.size <= STEP_IMPORT_CACHE_MAX_SOURCE_BYTES/);
-assert.match(simulationSource, /payload\.type === 'done'[\s\S]*?finish\(resolve, payload, true\)/);
+assert.match(simulationSource, /payload\.type === 'done'[\s\S]*?finish\(resolve, payload\);/);
 assert.match(simulationSource, /payload\.type === 'error'[\s\S]*?finish\(reject,[\s\S]*?, true\)/);
 assert.match(simulationSource, /await yieldToAnimationFrame\(\)/);
-assert.match(simulationSource, /getPreparedSimulationSnapMeshes\(\)/);
+assert.match(simulationSource, /function getPreparedSimulationSnapMeshes\(scope = getSimulationSnapScope\(\)\)/);
 assert.match(simulationSource, /function getSimulationSnapModels\(scope = 'scene'\)/);
 assert.match(simulationSource, /const placement = scope === 'tool' \? 'tcp' : 'scene'/);
 const getSimulationSnapMeshesFunction = simulationSource.match(
