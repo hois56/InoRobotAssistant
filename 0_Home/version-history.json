@@ -184,6 +184,13 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.09.02",
+                "items": [
+                  "`[변경]` 새 시뮬레이션을 시작할 때 충돌 감지를 비활성화하도록 기본값을 변경했습니다.",
+                  "`[개선]` 3D 모델을 가져올 때 불필요하게 지연되던 문제를 개선했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.09.01",
                 "items": [
                   "`[추가]` 암 로드 기능을 추가했습니다. (로봇 팔에 설치되는 부하)"
@@ -1054,6 +1061,13 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.09.02",
+                "items": [
+                  "`[Changed]` Changed the default so collision detection is disabled when starting a new simulation.",
+                  "`[Improved]` Improved unnecessary delays during 3D model import."
+                ]
+              },
               {
                 "title": "Ver 26.09.01",
                 "items": [
@@ -1926,6 +1940,13 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.09.02",
+                "items": [
+                  "`[变更]` 更改默认设置，启动新仿真时禁用碰撞检测。",
+                  "`[改进]` 改善了导入 3D 模型时不必要的延迟问题。"
+                ]
+              },
+              {
                 "title": "Ver 26.09.01",
                 "items": [
                   "`[新增]` 添加了臂部负载功能（安装在机器人手臂上的负载）。"
@@ -2796,6 +2817,13 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.09.02",
+                "items": [
+                  "`[Thay đổi]` Đã thay đổi mặc định để tắt phát hiện va chạm khi bắt đầu mô phỏng mới.",
+                  "`[Cải thiện]` Đã cải thiện tình trạng chậm không cần thiết khi nhập mô hình 3D."
+                ]
+              },
               {
                 "title": "Ver 26.09.01",
                 "items": [

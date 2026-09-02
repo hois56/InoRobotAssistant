@@ -302,6 +302,27 @@ assert.equal(
 );
 
 const viewerSource = await readFile(viewerModuleUrl, 'utf8');
+const viewerHtml = await readFile(new URL('../2_3DSimulation/index.html', import.meta.url), 'utf8');
+assert.match(
+    viewerSource,
+    /collision:\s*\{[\s\S]*?enabled:\s*false,/,
+    'New simulation sessions must keep collision detection disabled by default.'
+);
+assert.match(
+    viewerHtml,
+    /id="btn-toggle-collision"(?![^>]*class="active")[^>]*aria-pressed="false"/,
+    'The collision toggle button must render as disabled on the initial page.'
+);
+assert.match(
+    viewerSource,
+    /state\.collision\.enabled\s*=\s*display\.collisionEnabled\s*===\s*true;/,
+    'Workspace restore must preserve explicit collision-on settings while defaulting missing values to off.'
+);
+assert.match(
+    viewerSource,
+    /display:\s*\{ gridVisible: true, outlineMode: false, collisionEnabled: false \}/,
+    'Clean and legacy workspace defaults must keep collision detection disabled.'
+);
 assert.match(
     viewerSource,
     /const COLLISION_VISUAL_CLEAR_DELAY_MS = 180;/,
