@@ -7,25 +7,36 @@ import {
     MOTION_SETTLING_DELAY_SECONDS,
     MAX_MOVL_SPEED,
     DEFAULT_MOVJ_SPEED,
+    DEFAULT_MOVL_SPEED,
     DEFAULT_DELAY_SECONDS,
     MIN_DELAY_SECONDS,
     MAX_DELAY_SECONDS,
     MIN_POINT_INDEX,
     MAX_POINT_INDEX,
+    MIN_WAIT_LINE_NUMBER,
+    MAX_WAIT_LINE_NUMBER,
     MAX_POINT_LABEL_LENGTH,
     formatMotionPointName,
     formatPositionPointRecordLine,
     isMotionPointMotion,
+    isGripObjectMotion,
+    isWaitMotion,
+    isHomeMotion,
     isValidMotionPointLabel,
     sCurveProgress,
     interpolateLinearPosition,
     slerpQuaternion,
     calculateMovjDuration,
+    getRapidMovePostureLoad,
+    createRapidMoveState,
+    advanceRapidMoveState,
     calculateMovlDuration,
     calculateDelayDuration,
     calculateCycleElapsedSeconds,
     advanceMotionCursor,
     resolveDirectionalMotionType,
+    resolveMotionSegmentCommand,
+    getDirectionalGripActions,
     getDirectionalTimerActions,
     cloneMotionProgram,
     reorderMotionSteps,
@@ -75,6 +86,7 @@ closeTo(calculateMovlDuration(0, 180, 1000), 3.75);
 closeTo(calculateMovlDuration(0, 0, 100), 0.1);
 closeTo(MAX_MOVL_SPEED, 2500);
 assert.equal(DEFAULT_MOVJ_SPEED, 100, 'New movement commands must start at 100% speed.');
+assert.equal(DEFAULT_MOVL_SPEED, 1500, 'New MOVL commands must start at 1500 mm/s.');
 closeTo(calculateMovlDuration(1500, 0, MAX_MOVL_SPEED), 1.125);
 closeTo(calculateMovlDuration(1500, 0, 3000), 1.125);
 const asymmetricJoint = {
@@ -177,6 +189,33 @@ assert.equal(resolveDirectionalMotionType('TIME_OUT', 1), 'TIME_OUT');
 assert.equal(resolveDirectionalMotionType('TIME_START', -1), 'TIME_OUT');
 assert.equal(resolveDirectionalMotionType('TIME_OUT', -1), 'TIME_START');
 assert.equal(resolveDirectionalMotionType('MOVJ', -1), 'MOVJ');
+const mixedMotionSteps = [
+    { motion: 'MOVJ', speed: 40 },
+    { motion: 'MOVJ', speed: 50 },
+    { motion: 'MOVL', speed: 120 }
+];
+assert.deepEqual(
+    resolveMotionSegmentCommand(mixedMotionSteps, 1, -1),
+    { motion: 'MOVL', speed: 120 },
+    'A reverse segment must retain the forward segment\'s MOVL type and speed.'
+);
+assert.deepEqual(
+    resolveMotionSegmentCommand(mixedMotionSteps, 1, 1),
+    { motion: 'MOVJ', speed: 50 },
+    'A forward segment must retain its target row\'s motion type and speed.'
+);
+assert.deepEqual(getDirectionalGripActions('GRIP_USE', {
+    cursor: 1, direction: 1, stepCount: 3, reverseRepeat: true
+}), ['GRIP_USE'], 'A forward grip command must execute its declared action away from a boundary.');
+assert.deepEqual(getDirectionalGripActions('GRIP_RELEASE', {
+    cursor: 2, direction: 1, stepCount: 3, reverseRepeat: true
+}), ['GRIP_RELEASE', 'GRIP_USE'], 'The last grip command must be inverted before the returning leg.');
+assert.deepEqual(getDirectionalGripActions('GRIP_USE', {
+    cursor: 0, direction: -1, stepCount: 3, reverseRepeat: true
+}), ['GRIP_RELEASE', 'GRIP_USE'], 'The first grip command must be inverted before the next forward leg.');
+assert.deepEqual(getDirectionalGripActions('GRIP_USE', {
+    cursor: 0, direction: 1, stepCount: 1, reverseRepeat: true
+}), ['GRIP_USE', 'GRIP_RELEASE'], 'A one-row reverse-repeat grip command must alternate its object state.');
 assert.deepEqual(getDirectionalTimerActions('MOVJ', {
     cursor: 2, direction: 1, stepCount: 3, reverseRepeat: true
 }), []);
@@ -206,6 +245,9 @@ assert.equal(formatMotionPointName(0), 'P[0]');
 assert.equal(isMotionPointMotion('MOVJ'), true);
 assert.equal(isMotionPointMotion('MOVL'), true);
 assert.equal(isMotionPointMotion('DELAY'), false);
+assert.equal(isGripObjectMotion('GRIP_USE'), true);
+assert.equal(isGripObjectMotion('GRIP_RELEASE'), true);
+assert.equal(isGripObjectMotion('MOVJ'), false);
 assert.equal(isValidMotionPointLabel('Pickup_01'), true);
 assert.equal(isValidMotionPointLabel(''), true);
 assert.equal(isValidMotionPointLabel('1Pickup'), false);
@@ -261,7 +303,6 @@ const [
     workspaceRecoveryCoreSource,
     htmlSource,
     cssSource,
-    changeLogSource,
     gs60SourceText,
     ...viewerLocaleTexts
 ] = await Promise.all([
@@ -271,7 +312,6 @@ const [
     readFile(new URL('../2_3DSimulation/workspace-recovery-core.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../2_3DSimulation/index.html', import.meta.url), 'utf8'),
     readFile(new URL('../2_3DSimulation/style.css', import.meta.url), 'utf8'),
-    readFile(new URL('../2_3DSimulation/수정사항 정리.txt', import.meta.url), 'utf8'),
     readFile(new URL('../2_3DSimulation/새 폴더/IR-GS60-120Z40S5-C1LNSX-INT_01741178.json', import.meta.url), 'utf8'),
     ...['ko', 'en', 'zh-CN', 'vi'].map((locale) => (
         readFile(new URL(`../Language/${locale}/robot-3d-viewer.json`, import.meta.url), 'utf8')
@@ -279,6 +319,10 @@ const [
 ]);
 const runtimeLocalesSource = await readFile(
     new URL('../Language/runtime/locales-data.js', import.meta.url),
+    'utf8'
+);
+const olpRuntimeSource = await readFile(
+    new URL('../2_3DSimulation/olp-runtime.mjs', import.meta.url),
     'utf8'
 );
 const catalog = JSON.parse(catalogText);
@@ -364,7 +408,7 @@ for (const match of htmlSource.matchAll(/>([^<>]+)</g)) {
     const source = match[1].replace(/\s+/g, ' ').trim();
     if (/[가-힣]/.test(source)) viewerTranslationSources.add(source);
 }
-for (const match of htmlSource.matchAll(/(?:title|aria-label|placeholder|alt)=["']([^"']+)["']/g)) {
+for (const match of htmlSource.matchAll(/(?:^|\s)(?:title|aria-label|placeholder|alt)=["']([^"']+)["']/g)) {
     if (/[가-힣]/.test(match[1])) viewerTranslationSources.add(match[1].trim());
 }
 [
@@ -568,8 +612,8 @@ assert.match(
 );
 assert.deepEqual(
     [...workspaceRecoveryDialogSource.matchAll(/<button[^>]*id="([^"]+)"/g)].map((match) => match[1]),
-    ['btn-workspace-new', 'btn-workspace-restore'],
-    'Recovery must require an explicit New or Restore choice and must not expose a dismiss button.'
+    ['btn-workspace-select-all', 'btn-workspace-clear-selection', 'btn-workspace-delete', 'btn-workspace-new', 'btn-workspace-restore'],
+    'Recovery must require an explicit New or Restore choice, expose saved-workspace management actions, and must not expose a dismiss button.'
 );
 assert.match(workspaceRecoveryDialogSource, /id="workspace-recovery-saved-at">마지막 저장: \{time\}<\/p>/);
 assert.match(workspaceRecoveryDialogSource, /id="workspace-recovery-summary">로봇 \{robots\}대 · 3D 모델 \{models\}개<\/p>/);
@@ -589,26 +633,22 @@ assert.ok(
         && cssSource.includes('.workspace-recovery-dialog-actions button:disabled'),
     'The recovery dialog must provide a modal backdrop, hidden-error semantics, keyboard focus and disabled loading feedback.'
 );
+const simulationCacheVersion = htmlSource.match(/style\.css\?v=([^"']+)/)?.[1] || '';
 assert.ok(
-    htmlSource.includes('style.css?v=20260815-workspace-selector-1')
-        && htmlSource.includes('main.js?v=20260815-workspace-selector-1')
-        && htmlSource.includes('/Language/runtime/locales-data.js?v=20260815-workspace-selector-1'),
+    simulationCacheVersion
+        && htmlSource.includes(`main.js?v=${simulationCacheVersion}`)
+        && htmlSource.includes(`/Language/runtime/locales-data.js?v=${simulationCacheVersion}`),
     'Workspace recovery must invalidate simulation style, module and localized-text caches.'
 );
 assert.ok(
-    changeLogSource.includes('3D 시뮬레이션 작업을 창별로 독립 저장하고, 다시 열 때 이전 모델·위치값·프로그램·화면 설정과 OLP 프로젝트를 선택해 복구할 수 있도록 개선했습니다.'),
-    'The user-facing version record must describe isolated autosave and full startup recovery without implementation detail.'
-);
-assert.ok(
-    changeLogSource.includes('3D 시뮬레이션 시작 시 저장된 작업이 여러 개 있으면 불러올 작업을 선택할 수 있도록 개선했습니다.'),
-    'The user-facing version record must describe choosing among multiple saved workspaces.'
-);
-
-assert.ok(
-    mainSource.includes("import * as WorkspaceRecovery from './workspace-recovery-core.mjs?v=20260815-workspace-selector-1';")
+    /import \* as WorkspaceRecovery from '\.\/workspace-recovery-core\.mjs(?:\?v=[^']+)?';/.test(mainSource)
         && mainSource.includes('workspaceRecovery: {')
         && mainSource.includes('pendingProbes: new Map()'),
-    'The simulation must load the versioned workspace core and keep per-document recovery state.'
+    'The simulation must load the workspace core and keep per-document recovery state.'
+);
+assert.ok(
+    !mainSource.includes('.mjs?v='),
+    'The simulation must not append cache-busting query strings to local module imports.'
 );
 [
     "workspaceRecoveryDialog: document.getElementById('workspace-recovery-dialog')",
@@ -646,14 +686,14 @@ const pageHideSource = mainSource.slice(
     mainSource.indexOf("document.addEventListener('inorobot:i18nready'")
 );
 assert.ok(
-    pageHideSource.includes('if (event.persisted || state.resetInProgress) return;')
+    pageHideSource.includes('if (state.resetInProgress) return;')
         && pageHideSource.includes('void Promise.resolve(saveMotionProjectNow()).catch((error) => {')
         && pageHideSource.includes("console.warn('Final workspace save failed:', error)")
         && pageHideSource.includes('}).finally(() => {')
-        && pageHideSource.includes('releaseWorkspaceOwnership();')
+        && pageHideSource.includes('if (!event.persisted) releaseWorkspaceOwnership();')
         && pageHideSource.indexOf('saveMotionProjectNow()')
             < pageHideSource.indexOf('releaseWorkspaceOwnership();'),
-    'A real page hide must await the final durable save before releasing ownership, while preserving a BFCache document.'
+    'A page hide must save before releasing ownership, and a BFCache document must retain ownership after saving.'
 );
 const beforeUnloadSource = mainSource.slice(
     mainSource.indexOf("window.addEventListener('beforeunload', (event) =>"),
@@ -845,8 +885,26 @@ const olpWorkspaceEventSource = mainSource.slice(
 );
 assert.ok(
     /el\.olpFileSelect\?\.addEventListener\('change',[\s\S]*?flushOlpPendingEdit\(\);[\s\S]*?state\.olp\.selectedFile =[\s\S]*?scheduleMotionProjectSave\(\);/.test(olpWorkspaceEventSource)
-        && /el\.olpFileEditor\?\.addEventListener\('input',[\s\S]*?state\.olp\.projectDirty = true;[\s\S]*?scheduleMotionProjectSave\(\);[\s\S]*?updateOlpFileText\(/.test(olpWorkspaceEventSource),
+        && /el\.olpFileEditor\?\.addEventListener\('input',[\s\S]*?updateOlpFileText\([\s\S]*?state\.olp\.projectDirty = true;[\s\S]*?scheduleMotionProjectSave\(\);/.test(olpWorkspaceEventSource),
     'OLP selection and editor changes must flush pending text, retain dirty state, and trigger workspace autosave.'
+);
+assert.ok(
+    mainSource.includes('function isOlpProgramFile(path)')
+        && mainSource.includes('function canEditOlpFile(path = state.olp.selectedFile)')
+        && mainSource.includes('return !isOlpRunning() || isOlpProgramFile(path);')
+        && mainSource.includes('el.olpFileEditor.disabled = !canEditOlpFile();')
+        && mainSource.includes('if (!state.olp.project || !state.olp.selectedFile || !canEditOlpFile()) return;'),
+    'OLP .pro source files must remain editable during execution and apply to the next runtime snapshot.'
+);
+assert.ok(
+    mainSource.includes('function handleProgramStepListInput(event)')
+        && mainSource.includes('function captureProgramStepInputFocus()')
+        && mainSource.includes('restoreProgramStepInputFocus(focusState);')
+        && mainSource.includes('function refreshMotionSessionSteps(session)')
+        && mainSource.includes('if (!refreshMotionSessionSteps(session))')
+        && olpRuntimeSource.includes('refreshProgramSources()')
+        && olpRuntimeSource.includes('this.refreshProgramSources();'),
+    'Running program edits must apply from the next motion or OLP line while preserving the active program input focus.'
 );
 const toggleOlpWorkspaceSource = mainSource.slice(
     mainSource.indexOf('function toggleOlpWorkspace('),
@@ -893,7 +951,7 @@ const workspaceCandidateRendererSource = mainSource.slice(
 );
 assert.ok(
     workspaceCandidateRendererSource.includes('const multiple = candidates.length > 1;')
-        && workspaceCandidateRendererSource.includes('el.workspaceRecoveryOptions.hidden = !multiple')
+        && workspaceCandidateRendererSource.includes('el.workspaceRecoveryOptions.hidden = !hasCandidates')
         && workspaceCandidateRendererSource.includes('el.workspaceRecoveryDetails.hidden = multiple')
         && workspaceCandidateRendererSource.includes('const singleIncomplete = Boolean(!multiple && selected?.incompleteFallback);')
         && workspaceCandidateRendererSource.includes("el.workspaceRecoveryDetails?.classList.toggle('is-incomplete', singleIncomplete)")
@@ -1322,7 +1380,8 @@ const resetSimulationSource = mainSource.slice(
     mainSource.indexOf('function getInterferenceZoneRuntime(')
 );
 assert.ok(
-    resetSimulationSource.includes('const resetLineageSourceId = recovery.workspace?.incompleteRecoveryFrom')
+    resetSimulationSource.includes('clearSimulationStorage();')
+        && resetSimulationSource.includes('const resetLineageSourceId = recovery.workspace?.incompleteRecoveryFrom')
         && resetSimulationSource.includes('|| recovery.workspaceId;')
         && resetSimulationSource.includes('await recovery.db.deleteWorkspace(recovery.workspaceId, { ownerId: recovery.ownerId });')
         && resetSimulationSource.includes('record.id === resetLineageSourceId')
@@ -1366,6 +1425,13 @@ const s4 = models.find((model) => model.folder === 'IR-S4-40Z15');
 const gs60 = models.find((model) => model.folder === 'IR-GS60-120Z40');
 const r15h = models.find((model) => model.folder === 'IR-R15H-145');
 assert.deepEqual(r7h90.jointSpeeds, [336, 280, 390, 550, 438, 764.7]);
+assert.deepEqual(r7h90.jointAccelerations, [850, 500, 1500, 3500, 4000, 3500]);
+assert.deepEqual(r7h90.jointDecelerations, [850, 500, 1500, 3500, 4000, 3500]);
+assert.deepEqual(r7h90.rapidMove, {
+    enabled: true,
+    minAccelerationScale: 0.95,
+    maxAccelerationScale: 1
+});
 assert.deepEqual(s4.jointSpeeds, [705.9, 747.1, 1325.955556, 2600]);
 const gs60JointSource = gs60Source.stMotion.stPlayback.stJoint;
 const gs60CartesianSource = gs60Source.stMotion.stPlayback.stCartesian;
@@ -1417,6 +1483,48 @@ closeTo(calculateMovjDuration(
     })),
     100
 ), Math.sqrt(90 * S_CURVE_PEAK_ACCELERATION / 600));
+
+const r7h90Joints = r7h90.jointSpeeds.map((maxSpeed, index) => ({
+    definition: {
+        type: 'revolute',
+        maxSpeed,
+        maxAcceleration: r7h90.jointAccelerations[index],
+        maxDeceleration: r7h90.jointDecelerations[index]
+    }
+}));
+const r7h90Structure = r7h90.structure;
+assert.ok(
+    getRapidMovePostureLoad([0, 0, 0, 0, 0, 0], r7h90Structure) > getRapidMovePostureLoad([0, 90, -90, 0, 0, 0], r7h90Structure),
+    'Rapidmove posture load must increase for a horizontally extended arm.'
+);
+const rapidMoveState = createRapidMoveState(
+    [0, 0, 0, 0, 0, 0],
+    [0, -135, 90, 0, 0, 0],
+    r7h90Joints,
+    100,
+    {
+        ...r7h90.rapidMove,
+        structure: r7h90.structure,
+        robotType: r7h90.robotType
+    }
+);
+assert.equal(rapidMoveState.enabled, true);
+assert.equal(rapidMoveState.pathPostureLoads.length, 65);
+assert.equal(rapidMoveState.pathVelocityEnvelope.length, 65);
+assert.ok(rapidMoveState.pathPostureLoads[0] > rapidMoveState.pathPostureLoads.at(-1));
+assert.ok(Math.max(...rapidMoveState.pathVelocityEnvelope) <= rapidMoveState.maxProgressVelocity + 1e-9);
+for (let frame = 0; frame < 1000 && !rapidMoveState.completed; frame += 1) {
+    advanceRapidMoveState(
+        rapidMoveState,
+        1 / 60,
+        [0, 0, 0, 0, 0, 0],
+        [0, -135, 90, 0, 0, 0],
+        r7h90Structure,
+        r7h90.robotType
+    );
+}
+assert.equal(rapidMoveState.completed, true, 'Rapidmove must reach the target pose.');
+closeTo(rapidMoveState.progress, 1);
 
 const r15hJoints = r15h.jointSpeeds.map((maxSpeed, index) => ({
     definition: {
@@ -1553,6 +1661,19 @@ const makeTimerStep = (model, modelIndex, motion) => ({
     }
 });
 
+const makeWaitStep = (model, modelIndex, targetRobotInstanceId, waitLineNumber) => ({
+    id: `${model.folder}-WAIT`,
+    name: 'Wait',
+    motion: 'WAIT',
+    waitRobotInstanceId: targetRobotInstanceId,
+    waitLineNumber,
+    joints: model.limits.map(() => 0),
+    tcp: {
+        position: [modelIndex * 10, 25, 0],
+        quaternion: [0, 0, 0, 1]
+    }
+});
+
 const fullProject = {
     schemaVersion: MOTION_PROJECT_SCHEMA_VERSION,
     repeatCurrentRobot: false,
@@ -1599,6 +1720,47 @@ assert.ok(!('pointIndex' in normalized.robots[0].steps[2]), 'Non-motion commands
 assert.equal(normalized.robots[0].steps[3].motion, 'TIME_START');
 assert.equal(normalized.robots[0].steps[4].motion, 'TIME_OUT');
 assert.ok(!('speed' in normalized.robots[0].steps[3]) && !('delaySeconds' in normalized.robots[0].steps[4]));
+const waitProject = structuredClone(fullProject);
+waitProject.robots[0].steps.push(makeWaitStep(models[0], 0, 'robot-2', 1));
+const normalizedWaitProject = normalizeMotionProject(waitProject);
+const normalizedWait = normalizedWaitProject.robots[0].steps.at(-1);
+assert.ok(isWaitMotion(normalizedWait.motion));
+assert.equal(normalizedWait.waitRobotInstanceId, 'robot-2');
+assert.equal(normalizedWait.waitLineNumber, 1);
+assert.equal(MIN_WAIT_LINE_NUMBER, 1);
+assert.equal(MAX_WAIT_LINE_NUMBER, 9999);
+assert.throws(() => normalizeMotionProject({
+    ...waitProject,
+    robots: waitProject.robots.map((robot, index) => index === 0
+        ? { ...robot, steps: robot.steps.map((step, stepIndex) => stepIndex === robot.steps.length - 1 ? { ...step, waitLineNumber: 0 } : step) }
+        : robot)
+}), /wait line must be 1 to 9999/);
+const homeProject = structuredClone(fullProject);
+homeProject.robots[0].workOrigin = {
+    mode: 'JOINT',
+    joints: models[0].limits.map(() => 0),
+    tcp: { position: [100, 200, 300], quaternion: [0, 0, 0, 1] },
+    outputBit: 519
+};
+homeProject.robots[0].steps.push({
+    id: 'robot-1-HOME',
+    name: 'Home',
+    motion: 'HOME',
+    joints: models[0].limits.map(() => 10),
+    tcp: { position: [10, 20, 30], quaternion: [0, 0, 0, 1] }
+});
+const normalizedHomeProject = normalizeMotionProject(homeProject);
+const normalizedHome = normalizedHomeProject.robots[0].steps.at(-1);
+assert.ok(isHomeMotion(normalizedHome.motion));
+assert.equal(normalizedHome.name, 'Home');
+assert.ok(!('pointIndex' in normalizedHome) && !('speed' in normalizedHome), 'HOME must not receive a P[n] or speed field.');
+assert.deepEqual(normalizedHomeProject.robots[0].workOrigin, homeProject.robots[0].workOrigin);
+const clonedHomeProgram = cloneMotionProgram({
+    workOrigin: normalizedHomeProject.robots[0].workOrigin,
+    steps: [normalizedHome]
+});
+assert.equal(clonedHomeProgram.steps[0].motion, 'HOME');
+assert.equal(clonedHomeProgram.workOrigin.outputBit, 519);
 const viewProject = structuredClone(fullProject);
 viewProject.robots[0].steps.push({
     id: 'robot-1-VIEW',
@@ -1646,6 +1808,10 @@ assert.equal(clonedDelayProgram.steps[2].delaySeconds, 1.5);
 assert.equal(clonedDelayProgram.steps[3].motion, 'TIME_START');
 assert.equal(clonedDelayProgram.steps[4].motion, 'TIME_OUT');
 assert.equal(clonedDelayProgram.lastCycleTimeSeconds, 12.345);
+const clonedWaitProgram = cloneMotionProgram({ included: true, steps: [normalizedWait] });
+assert.equal(clonedWaitProgram.steps[0].motion, 'WAIT');
+assert.equal(clonedWaitProgram.steps[0].waitRobotInstanceId, 'robot-2');
+assert.equal(clonedWaitProgram.steps[0].waitLineNumber, 1);
 const legacyPointStep = structuredClone(normalized.robots[0].steps[0]);
 legacyPointStep.name = 'P001';
 delete legacyPointStep.pointIndex;
@@ -1734,7 +1900,6 @@ assert.throws(() => normalizeMotionProject(invalidActiveTcp), /active TCP index 
     'program-step-list',
     'program-add-delay',
     'program-add-time-start',
-    'program-add-time-out',
     'program-cycle-time',
     'program-step-robot',
     'program-run-robot',
@@ -1746,6 +1911,8 @@ assert.throws(() => normalizeMotionProject(invalidActiveTcp), /active TCP index 
     'program-reverse-repeat',
     'program-import-file'
 ].forEach((id) => assert.match(htmlSource, new RegExp(`id=["']${id}["']`)));
+assert.ok(!htmlSource.includes('id="program-add-time-out"') && !mainSource.includes('btnProgramAddTimeOut'), 'The Program Panel must not expose a separate TIME OUT button.');
+assert.ok(!htmlSource.includes('id="program-add-grip-release"') && !mainSource.includes('btnProgramAddGripRelease'), 'The Program Panel must not expose a separate release button.');
 [
     'tcp-profile-manager',
     'tcp-profile-editor',
@@ -1760,7 +1927,6 @@ assert.throws(() => normalizeMotionProject(invalidActiveTcp), /active TCP index 
     'btn-apply-tcp-profile',
     'btn-reset-tcp-profile',
     'tcp-snap-type',
-    'tcp-snap-radius',
     'btn-tcp-snap',
     'tcp-snap-readout',
     'tcp-multi-center-controls',
@@ -1817,8 +1983,8 @@ const modelTreeContextEventSource = mainSource.slice(
 assert.ok(
     modelTreeContextEventSource.includes("event.target.closest('[data-model-part-id]')")
         && modelTreeContextEventSource.includes("event.target.closest('[data-model-tree-id]')")
-        && modelTreeContextEventSource.indexOf('event.preventDefault();')
-            < modelTreeContextEventSource.indexOf('if (isMotionActive())')
+        && modelTreeContextEventSource.includes('event.preventDefault();')
+        && !modelTreeContextEventSource.includes('if (isMotionActive())')
         && modelTreeContextEventSource.includes('if (!model) return;')
         && !modelTreeContextEventSource.includes('model.userData.uploaded')
         && modelTreeContextEventSource.includes('openModelContextMenu(event, model, partMatch?.part || null);'),
@@ -1829,6 +1995,12 @@ assert.ok(
         && mainSource.includes('row.dataset.modelPartId = part.userData.modelPartId;'),
     'The full model and part row hitboxes, including root toggles, must resolve their context-menu targets.'
 );
+assert.ok(
+    mainSource.includes('function handleCanvasContainerContextMenu(')
+        && mainSource.includes("el.canvasContainer?.addEventListener('contextmenu', handleCanvasContainerContextMenu, { capture: true });")
+        && mainSource.includes('event.stopPropagation();'),
+    'Right-clicks on non-interactive overlays over the 3D canvas must be delegated to the app model context menu.'
+);
 const openModelContextMenuSource = mainSource.slice(
     mainSource.indexOf('function openModelContextMenu('),
     mainSource.indexOf('function closeModelContextMenu(')
@@ -1838,7 +2010,7 @@ assert.ok(
         && openModelContextMenuSource.includes('[el.modelCopy, el.modelPaste, el.modelDelete].forEach((control) =>')
         && openModelContextMenuSource.includes('control.hidden = structuralActionsHidden;')
         && openModelContextMenuSource.includes('el.modelPaste.disabled = state.modelClipboardPastePending || !state.modelClipboard')
-        && openModelContextMenuSource.includes('el.modelChangeColor.hidden = !uploaded'),
+        && openModelContextMenuSource.includes('el.modelChangeColor.hidden = !colorEditable'),
     'Imported parts must retain their color command but hide model-level Copy, Paste and Delete actions.'
 );
 const copyModelContextSource = mainSource.slice(
@@ -1947,7 +2119,6 @@ assert.deepEqual(programControlRows, [
     'function toggleTcpSnapMode(',
     'function applyTcpSnapPoint(',
     'function handleTcpSnapSelection(',
-    'tcpSnapRadiusPx',
     'tcpSnapType',
     'tcpLiveProfile',
     'tcpProfiles: serializeRobotTcpProfiles(robot)',
@@ -1959,7 +2130,7 @@ assert.deepEqual(programControlRows, [
     'maxDeceleration: jointDecelerations[index]',
     'cartesianMotion: normalizedCartesianMotion',
     'Robot joint speeds are invalid for',
-    'if (robot !== state.activeArticulatedModel) return;',
+    'if (robot !== getJogTargetRobot()) return;',
     'function resumePausedRobotMotions(',
     'function createStepIntoPlan(',
     'function stepIntoActiveRobot(',
@@ -1980,7 +2151,7 @@ assert.deepEqual(programControlRows, [
     'slerpQuaternion(',
     'sCurveProgress(linearProgress)',
     'duration: motionDuration + MOTION_SETTLING_DELAY_SECONDS * 1000',
-    'return elapsed >= segment.duration',
+    ': elapsed >= segment.duration;',
     "if (step.motion === 'DELAY')",
     "type: 'DELAY'",
     'timerActions,',
@@ -2012,6 +2183,9 @@ assert.ok(mainSource.includes('maxDeceleration: jointDecelerations[index]'), 'Ro
 assert.ok(mainSource.includes('robot.userData.manifest.cartesianMotion'), 'MOVL must use the selected robot Cartesian limits.');
 assert.match(htmlSource, /main\.js\?v=[^"'\s]+/, 'Viewer cache token must load the current simulation bundle.');
 assert.ok(htmlSource.includes('id="btn-fullscreen-mode"'), 'Viewer must expose the fullscreen UI mode button.');
+assert.match(htmlSource, /id="btn-test-model"[\s\S]*?<i class="fa-solid fa-flask"[^>]*><\/i>\s*<span>/, 'The Test button must place its icon before its text.');
+assert.match(htmlSource, /id="btn-import-3d"[\s\S]*?<i class="fa-solid fa-upload"[^>]*><\/i>\s*<span>/, 'The 3D button must place its icon before its text.');
+assert.match(htmlSource, /id="btn-download-cad"[\s\S]*?<i class="fa-solid fa-download"[^>]*><\/i>\s*<span>/, 'The CAD button must place its icon before its text.');
 assert.ok(mainSource.includes('function setFullscreenUiMode(enabled)') && mainSource.includes('function handleFullscreenUiPointerMove(event)'), 'Fullscreen UI mode must hide and reveal bars from pointer proximity.');
 assert.ok(mainSource.includes("revealFullscreenBar('top')") && mainSource.includes("revealFullscreenBar('bottom')"), 'Fullscreen UI mode must reveal the top and bottom bars independently.');
 assert.ok(mainSource.includes('function attachPendingToolModels(robot)')
@@ -2029,20 +2203,37 @@ const tcpProfileSyncSource = mainSource.slice(
 assert.ok(tcpProfileSyncSource.includes('tcpFrame.position.copy(profile.position)')
     && !tcpProfileSyncSource.includes('attachmentHost'),
 'Changing a TCP profile must move only the TCP frame, not attached tool models.');
-assert.match(mainSource, /else if \(positionEntry\) \{\s*model\.position\[axis\] = value;/, 'Numeric model editing must change only the edited position axis.');
-assert.ok(mainSource.includes("const isScaleMode = state.transformControls?.mode === 'scale';") && mainSource.includes("model.scale[axis] = value;"), 'Scale mode must use the numeric X/Y/Z inputs as scale multipliers.');
+assert.match(mainSource, /else if \(positionEntry\) \{\s*target\.position\[axis\] = value;/, 'Numeric model editing must change only the edited position axis.');
+assert.ok(mainSource.includes("const isScaleMode = state.transformControls?.mode === 'scale';") && mainSource.includes("target.scale[axis] = value;"), 'Scale mode must use the numeric X/Y/Z inputs as scale multipliers.');
 assert.ok(mainSource.includes('function toggleSelectedTransformMode(mode)') && mainSource.includes('setTransformHandlesEnabled(true);'), 'Selecting a transform mode must reveal its transform handles.');
 assert.ok(mainSource.includes('state.transformControls.enabled && state.transformControls.mode === mode') && mainSource.includes('setTransformHandlesEnabled(false);'), 'Selecting the active transform mode must hide its transform handles.');
+assert.ok(mainSource.includes('const MODEL_TRANSFORM_ROTATION_SNAP = THREE.MathUtils.degToRad(5);')
+    && mainSource.includes('const TRANSFORM_TRANSLATION_SNAP = 5;')
+    && mainSource.includes('event?.ctrlKey || event?.shiftKey || event?.altKey')
+    && mainSource.includes('controls.translationSnap = modifierHeld ? TRANSFORM_TRANSLATION_SNAP : null;')
+    && mainSource.includes('controls.rotationSnap = modifierHeld ? MODEL_TRANSFORM_ROTATION_SNAP : null;')
+    && mainSource.includes('state.baseJogTransformControls')
+    && mainSource.includes('state.zeroPointEdit?.transformControls')
+    && mainSource.includes('function snapBaseJogPosition(position, snap, axis = \'XYZ\')')
+    && mainSource.includes('state.baseJogGizmoTranslationSnap')
+    && mainSource.includes('updateTcpPresentation(robot, robot.userData.baseJogTarget)')
+    && mainSource.includes("addEventListener('pointermove', syncModelTransformRotationSnap, true)"),
+'All 3D transform handles must snap translation to 5 mm and rotation to 5 degrees while Ctrl, Shift, or Alt is held, including the final Base JOG TCP value.' );
 assert.doesNotMatch(htmlSource, /id="btn-toggle-transform"/, 'The Model Tree panel must not contain a separate transform handle toggle.');
 assert.doesNotMatch(mainSource, /const mode = \{ w: 'translate', e: 'rotate', r: 'scale' \}\[key\]/, 'Model transform W/E/R keyboard shortcuts must remain disabled.');
 assert.ok(mainSource.includes('const PANEL_DRAG_EXCLUDED_SELECTOR') && mainSource.includes('panel.classList.add(\'panel-drag-anywhere\')'), 'Panels must support dragging from non-interactive areas.');
 assert.ok(mainSource.includes('target.position[editedKey] = editedValue;') && mainSource.includes('positionTolerance: 0.001') && mainSource.includes('updateTcpPresentation(robot, target);'), 'Numeric Base JOG input must preserve other axes and use stable sub-0.01 mm precision.');
 assert.ok(mainSource.includes('function jogTcpInBase(robot, kind, axisName, direction)') && mainSource.includes('const currentTarget = robot.userData.baseJogTarget;') && mainSource.includes('robot.userData.baseJogTarget = target;'), 'Base JOG buttons must preserve exact non-edited target axes.');
-assert.ok(
-    mainSource.includes("allRobotsIncluded ? '전체 해제' : '전체 선택'")
-        && mainSource.includes('function toggleAllProgramRobots()')
-        && mainSource.includes('robots.some((robot) => !ensureMotionProgram(robot).included)'),
-    'The Program Panel select-all control must switch to deselect-all when every robot is included.'
+assert.doesNotMatch(htmlSource, /id="program-select-all"/, 'The Program Panel must not contain a select-all/deselect-all control.');
+assert.ok(htmlSource.includes('id="program-toggle-robot-avoidance"')
+    && htmlSource.includes('id="program-robot-avoidance-priority"')
+    && mainSource.includes('function toggleRobotInterferenceAvoidance()')
+    && mainSource.includes('function isRobotInterferencePathClear(session')
+    && mainSource.includes('ROBOT_INTERFERENCE_SAMPLES_PER_FRAME')
+    && mainSource.includes('interferenceCheck: null')
+    && mainSource.includes('function withCollisionPoseProbe(callback)')
+    && mainSource.includes('poseProbeDepth'),
+    'The Program Panel must expose robot interference avoidance and its priority robot.'
 );
 assert.ok(mainSource.includes('BASE_JOG_GIZMO_MESH_THICKNESS = 1.55'), 'Base JOG axis meshes must remain visually thicker than TCP axes.');
 assert.ok(mainSource.includes('TCP_AXES_SCREEN_PIXELS = 40')
@@ -2087,12 +2278,27 @@ assert.match(cssSource, /\.program-panel\s*\{/);
 assert.match(cssSource, /\.program-panel-content\s*\{[^}]*overflow-y:\s*auto/s);
 assert.doesNotMatch(cssSource, /\.program-robot-row\.collision/);
 assert.match(cssSource, /\.program-step-row\.delay/);
+assert.match(cssSource, /\.program-step-row\.wait/);
 assert.match(cssSource, /\.program-step-row\.timer/);
+assert.match(cssSource, /\.program-step-row:focus-visible/);
 assert.match(cssSource, /\.program-cycle-time\s*\{/);
 assert.match(cssSource, /\.program-step-list\s*\{[^}]*grid-auto-rows:\s*42px[^}]*align-content:\s*start/s, 'Program rows must not stretch when the panel is resized.');
 assert.match(cssSource, /\.program-step-row\s*\{[^}]*height:\s*42px[^}]*min-height:\s*42px[^}]*max-height:\s*42px/s, 'Every program command row must keep a fixed height.');
 assert.ok(mainSource.includes("const row = event.target.closest('[data-program-step-id]')"), 'Program command selection must use the full row hit box.');
+assert.ok(
+    mainSource.includes('function updateMotionProgramPlaybackUi()')
+        && mainSource.includes('if (renderNeeded) updateMotionProgramPlaybackUi();')
+        && !mainSource.includes('if (renderNeeded) renderMotionProgramPanel();'),
+    'Motion playback refreshes must update existing rows without rebuilding the program panel and stealing input selection.'
+);
 assert.ok(mainSource.includes('program.selectedStepId = row.dataset.programStepId'), 'Clicking a program row must select that command.');
+assert.ok(
+    mainSource.includes('row.tabIndex = 0')
+        && mainSource.includes('function focusProgramStepRow(stepId)')
+        && mainSource.includes("event.key === 'Delete'")
+        && mainSource.includes('deleteSelectedMotionStep();'),
+    'The selected program row must support Delete-key removal through the existing delete command.'
+);
 assert.ok(
     mainSource.includes("el.olpPointTable?.addEventListener('contextmenu', handleOlpPointContextMenu)")
         && mainSource.includes("el.olpPointTable?.addEventListener('keydown', handleOlpPointTableActivate)")
@@ -2114,9 +2320,19 @@ assert.ok(
     mainSource.includes("['MOVJ', 'MovJ']")
         && mainSource.includes("['MOVL', 'MovL']")
         && mainSource.includes("['DELAY', 'Delay']")
+        && mainSource.includes("['WAIT', 'Wait']")
         && mainSource.includes("['TIME_START', 'T.Start']")
         && mainSource.includes("['TIME_OUT', 'T.Out']"),
     'Program rows must use the requested command capitalization.'
+);
+assert.ok(
+    mainSource.includes('program-step-line-number')
+        && mainSource.includes('data-program-step-wait-robot')
+        && mainSource.includes('data-program-step-wait-line')
+        && mainSource.includes('function validateMotionWaitTargets')
+        && mainSource.includes("if (segment.type === 'WAIT')")
+        && mainSource.includes('reachedStepIds'),
+    'WAIT synchronization must expose row numbers and release against the target robot row.'
 );
 assert.doesNotMatch(htmlSource, /id="program-step-(?:up|down)"/, 'Drag reordering must replace the Program Panel up/down buttons.');
 assert.ok(!mainSource.includes('btnProgramUp:') && !mainSource.includes('btnProgramDown:'), 'Removed Program Panel arrows must not retain handlers.');
@@ -2131,6 +2347,7 @@ assert.match(cssSource, /\.program-step-speed\s*\{[^}]*width:\s*42px/s, 'Program
 assert.ok(htmlSource.includes('id="btn-position-export"') && htmlSource.includes('id="btn-snap-move"'), 'The simulation must expose position export and Mode D snap movement.');
 assert.ok(htmlSource.includes('id="program-step-context-menu"')
     && htmlSource.includes('id="program-show-position-value"')
+    && htmlSource.includes('id="program-delete-context-step"')
     && htmlSource.includes('id="position-value-dialog"'), 'Movement points must expose the position-value context dialog.');
 assert.equal((htmlSource.match(/data-position-arm=/g) || []).length, 4, 'The position dialog must expose four arm parameters.');
 assert.equal((htmlSource.match(/data-position-external=/g) || []).length, 6, 'The position dialog must expose six external axes.');
@@ -2141,7 +2358,7 @@ assert.ok(mainSource.includes("import { buildStepSnapCandidates } from '../3_Too
 assert.ok(mainSource.includes('formatPositionPointRecordLine({')
     && mainSource.includes("async function saveStandalonePFile(content, suggestedName = 'P.pts')")
     && mainSource.includes('saveAs(blob, suggestedName)'), 'Position export must use the verified record formatter and a browser-compatible fallback download.');
-assert.match(htmlSource, /id="btn-import-3d"[^>]*>[\s\S]*?<span>3D<\/span>[\s\S]*?fa-upload/, 'The 3D import button must show a 3D upload tray icon.');
+assert.match(htmlSource, /id="btn-import-3d"[^>]*>[\s\S]*?fa-upload[\s\S]*?<span>3D<\/span>/, 'The 3D import button must show a 3D upload tray icon before its text.');
 assert.match(htmlSource, /program-file-row[\s\S]*?id="program-import"[\s\S]*?id="program-export"[\s\S]*?id="btn-position-export"/, 'Program files must provide load, save, and point export controls in order.');
 assert.ok(
     htmlSource.indexOf('id="btn-position-export"') > htmlSource.indexOf('id="program-export"'),
@@ -2149,8 +2366,28 @@ assert.ok(
 );
 assert.match(htmlSource, /id="btn-download-cad"[^>]*>[\s\S]*?<span>CAD<\/span>[\s\S]*?fa-download/, 'CAD download must use a labeled download tray icon.');
 assert.match(htmlSource, /jog-mode-tabs[\s\S]*?id="btn-jog-joint-mode"[\s\S]*?id="btn-jog-base-mode"[\s\S]*?id="btn-snap-move"/, 'JOG must group Joint, Base, and Snap Move controls.');
-assert.match(htmlSource, /id="program-update-step"[^>]*>[\s\S]*?program-point-overwrite-mark[\s\S]*?fa-rotate/, 'Position overwrite must use the P refresh icon.');
-assert.ok(mainSource.includes('const available = !isMotionActive();') && !mainSource.includes('if (!getSimulationSnapModels().length)'), 'Snap Move must be activatable without a selected robot or imported 3D model.');
+assert.ok(!htmlSource.includes('id="program-update-step"') && !mainSource.includes('btnProgramUpdate'), 'The Program Panel must not expose a dedicated point-overwrite button.');
+assert.match(
+    htmlSource,
+    /id="program-step-context-menu"[\s\S]*?id="program-overwrite-point"[\s\S]*?fa-rotate[\s\S]*?data-i18n="legacy\.선택 포인트 덮어쓰기"[\s\S]*?id="program-show-position-value"/,
+    'Movement commands must expose point overwrite and position-value actions in their context menu.'
+);
+assert.ok(
+    mainSource.includes('function overwriteContextProgramPoint()')
+        && mainSource.includes('btnProgramOverwritePoint')
+        && mainSource.includes("addEventListener('click', overwriteContextProgramPoint)"),
+    'The movement context menu must handle point overwrite requests.'
+);
+assert.ok(
+    mainSource.includes('function deleteContextProgramStep()')
+        && mainSource.includes('btnProgramDeleteContextStep')
+        && mainSource.includes("addEventListener('click', deleteContextProgramStep)")
+        && mainSource.includes("if (!row || !step) return;"),
+    'Every program command must expose a delete action in its context menu.'
+);
+assert.ok(mainSource.includes('Boolean(getJogTargetRobot()?.userData?.tcpFrame)')
+    && mainSource.includes('!isOlpRunning()')
+    && !mainSource.includes('if (!getSimulationSnapModels().length)'), 'Snap Move must remain available during normal playback when a robot can receive the snap target.');
 assert.ok(mainSource.includes('const baseSeedOffset = polarDelta * jointDirection;') && mainSource.includes('const baseSeedOffsets = ['), 'IK must add J1-oriented seeds for targets that require base rotation.');
 assert.ok(mainSource.includes('const IK_MAX_ITERATIONS = 320;')
     && mainSource.includes('const IK_MIN_DAMPING = 0.00001;')
@@ -2160,9 +2397,11 @@ assert.ok(mainSource.includes('const singularityEscapeSeeds = joints.length >= 6
     && mainSource.includes('[[1, 5], [2, -5]]')
     && mainSource.includes('[[3, 12], [5, -12]]'), 'IK must seed both arm and wrist configurations so it can enter and leave singular poses.');
 assert.ok(!mainSource.includes('near a singularity') && !mainSource.includes('특이점에 가깝습니다'), 'Reachable singular poses must not be reported as errors.');
-assert.ok(mainSource.includes('function showProgramPointOverwriteFeedback(step)') && mainSource.includes("icon?.classList.replace('fa-rotate', 'fa-check')"), 'Point overwrite must provide a successful completion indicator.');
-assert.ok(mainSource.includes('function clearJogModeSelectionForSnap()') && mainSource.includes('clearJogModeSelectionForSnap();'), 'Snap Move must behave as a mutually exclusive JOG mode.');
-assert.ok(mainSource.includes('}, 700);'), 'Point overwrite completion feedback must clear quickly.');
+assert.ok(mainSource.includes('function showProgramPointOverwriteFeedback(step)') && mainSource.includes("setMotionProgramStatus('{name} 위치 값을 수정했습니다.'"), 'Point overwrite must provide a successful completion status.');
+assert.ok(mainSource.includes("function setJogMode(mode, { preserveSnapMove = false } = {})")
+    && mainSource.includes("setJogMode('base', { preserveSnapMove: true })")
+    && mainSource.includes("isBase && !snapMoveActive")
+    && mainSource.includes('&& !state.snapMoveMode'), 'Snap Move must keep its own button active without showing the BASE 3D handle.');
 assert.match(htmlSource, /data-position-value="a"[^>]*><small>deg<\/small><\/label>\s*<label><span>B<\/span><input[^>]*data-position-value="b"[^>]*><small>deg<\/small><\/label>\s*<label><span>C<\/span><input[^>]*data-position-value="c"/, 'Point rotation values must be ordered A/B/C.');
 assert.ok(mainSource.includes('a: rotation.rz') && mainSource.includes('c: rotation.rx') && mainSource.includes('quaternionFromPointRotation(robot, values.c, values.b, values.a)'), 'Point rotation editing must map A/B/C to Rz/Ry/Rx.');
 assert.match(mainSource, /coordinates:\s*\[\s*pose\.position\.x,\s*pose\.position\.y,\s*pose\.position\.z,\s*rotation\.rz,\s*rotation\.ry,\s*rotation\.rx/s, 'Point export must use X/Y/Z/A/B/C order.');
@@ -2194,7 +2433,7 @@ assert.ok(
     'Timer-only live validation must skip kinematics and avoid touching the current robot pose.'
 );
 assert.ok(
-    mainSource.includes('plans.forEach(({ robot, steps, reverseRepeat }) => preflightRobotMotion(robot, steps, { reverseRepeat }));'),
+    mainSource.includes('playablePlans.forEach(({ robot, steps, reverseRepeat }) => preflightRobotMotion(robot, steps, { reverseRepeat }));'),
     'Starting a reverse-repeat program must retain full timer and kinematics preflight.'
 );
 assert.ok(cssSource.includes('width: min(340px, calc(100% - 32px))'), 'Program Panel compact width must remain 340px.');
@@ -2252,11 +2491,12 @@ assert.ok(
 );
 assert.ok(!htmlSource.includes('id="program-panel-resize"'), 'Panel resizing must not require a header button.');
 assert.ok(mainSource.includes('function makePanelEdgeResizable('), 'Panels must support classic edge resizing.');
-assert.ok(mainSource.includes('[el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.programPanel, el.viewWindow].forEach(makePanelEdgeResizable)'), 'Model, JOG, Virtual Controller, Saved Views, Interference, View Window and Program panels must all use edge resizing.');
+assert.ok(mainSource.includes('[el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.collaborationPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.programPanel, el.measurementPanel, el.shapePanel, el.viewWindow, el.armLoadPanel, el.toolLoadInfoPanel].forEach(makePanelEdgeResizable)')
+    && mainSource.includes('[el.tcpProfilePanel].forEach(makePanelEdgeResizable)'), 'Model, JOG, Virtual Controller, Collaboration, Saved Views, Interference, Measurement, Shape, View Window, Arm Load and TCP Profile panels must all use edge resizing.');
 assert.ok(mainSource.includes("'model-browser-panel': { width: 260, height: 220 }")
     && mainSource.includes("'jog-panel': { width: 250, height: 300 }")
     && mainSource.includes("'virtual-controller-panel': { width: 250, height: 230 }")
-    && mainSource.includes("'program-panel': { width: 300, height: 320 }"), 'Resizable panels must preserve usable minimum sizes.');
+    && mainSource.includes("'program-panel': { width: 300, height: 540 }"), 'Resizable panels must preserve usable minimum sizes.');
 assert.ok(mainSource.includes("dataset.userResized === 'true'"), 'Resized panels must be constrained after viewport changes.');
 assert.match(cssSource, /\.panel-edge-resizable:is\(\[data-resize-edge="e"\], \[data-resize-edge="w"\]\)[^{]*\{[^}]*cursor:\s*ew-resize/s);
 assert.match(cssSource, /\.panel-edge-resizable:is\(\[data-resize-edge="n"\], \[data-resize-edge="s"\]\)[^{]*\{[^}]*cursor:\s*ns-resize/s);

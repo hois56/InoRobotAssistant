@@ -43,13 +43,13 @@
             chapters: [
                 [0, '로봇 모델을 선택하세요', '모델과 J5 끝단 플랜지 거리를 설정합니다.'],
                 [7000, '부하 조건을 입력하세요', '질량, 무게중심 거리와 관성값을 입력합니다.'],
-                [23000, '계산 결과를 확인하세요', '계산하기를 눌러 적합성 및 여유율을 확인합니다.']
+                [24000, '계산 결과를 확인하세요', '계산하기를 눌러 적합성 및 여유율을 확인합니다.']
             ],
             cues: [
-                [0, 'tool_reset'], [900, 'tool_model_focus'], [2400, 'tool_model_select'],
-                [7000, 'tool_mass_focus'], [8500, 'tool_mass_value'], [11000, 'tool_distance_focus'], [13000, 'tool_distance_value'],
-                [16000, 'tool_inertia_focus'], [19000, 'tool_inertia_value'], [23000, 'tool_calculate_focus'], [24800, 'tool_calculate_press'],
-                [27500, 'tool_result'], [32000, 'tool_overall']
+                [0, 'tool_reset'], [1900, 'tool_model_open'], [2700, 'tool_model_select'], [5200, 'tool_model_selected'],
+                [7000, 'tool_mass_focus'], [10000, 'tool_distance_x'], [13000, 'tool_distance_z'],
+                [16000, 'tool_inertia_x'], [18500, 'tool_inertia_y'], [21000, 'tool_inertia_z'],
+                [24000, 'tool_calculate_focus'], [25900, 'tool_calculate_press'], [27700, 'tool_result'], [32000, 'tool_overall']
             ]
         },
         project: {
@@ -63,9 +63,12 @@
                 [33000, '프로젝트를 생성하세요', 'Generate를 눌러 컨트롤러용 프로젝트 구조를 만듭니다.']
             ],
             cues: [
-                [0, 'project_reset'], [800, 'project_name_focus'], [1900, 'project_name_value'], [3800, 'project_model_focus'], [5500, 'project_model_select'],
-                [9000, 'project_process_focus'], [10800, 'project_process_add'], [14000, 'project_process_configure'], [18000, 'project_preview'],
-                [22000, 'project_options_focus'], [23800, 'project_options_open'], [26500, 'project_option_speed'], [30000, 'project_options_apply'],
+                [0, 'project_name_focus'], [1850, 'project_name_type'], [4300, 'project_model_focus'], [5220, 'project_model_open'],
+                [6000, 'project_model_option'], [7400, 'project_model_selected'], [9000, 'project_process_add'],
+                [11000, 'project_type_focus'], [11920, 'project_type_open'], [12600, 'project_type_option'], [14000, 'project_type_selected'],
+                [14600, 'project_method_focus'], [15520, 'project_method_open'], [16300, 'project_method_option'], [17700, 'project_method_selected'],
+                [18500, 'project_preview'], [22000, 'project_options_focus'], [23300, 'project_option_speed'],
+                [27300, 'project_options_apply'], [29300, 'project_options_applied'], [30300, 'project_preview_options'],
                 [33000, 'project_generate_focus'], [35000, 'project_generate_press'], [37500, 'project_generate_done']
             ]
         },
@@ -272,7 +275,9 @@
         const preferredScale = compact ? .52 : .68;
         const scale = simulation
             ? fittedScale
-            : Math.max(fittedScale, Math.min(preferredScale, frameStage.clientWidth / FRAME_WIDTH));
+            : config?.key === 'project' && compact
+                ? Math.max(fittedScale, Math.min(.8, frameStage.clientHeight / FRAME_HEIGHT, frameStage.clientWidth / 560))
+                : Math.max(fittedScale, Math.min(preferredScale, frameStage.clientWidth / FRAME_WIDTH));
         const focus = getFrameApi()?.getFocusPoint?.();
         const focusX = Number.isFinite(focus?.x) ? focus.x : FRAME_WIDTH / 2;
         const scaledWidth = FRAME_WIDTH * scale;
@@ -370,7 +375,7 @@
         const api = getFrameApi();
         if (frameReady && api && (force || cue !== activeCue)) {
             activeCue = cue;
-            api.renderTimelineCue(cue);
+            api.renderTimelineCue(cue, config.cues.find(item => item[1] === cue)?.[0] || 0);
             const animateCamera = isPlaying && !isScrubbing && !force
                 && !reducedMotion.matches && config.key !== 'simulation';
             requestAnimationFrame(() => requestAnimationFrame(() => fitFrame({

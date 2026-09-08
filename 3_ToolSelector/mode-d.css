@@ -470,7 +470,7 @@ input[type="number"]::-webkit-outer-spin-button {
   height: 14px;
   transform: translate(-50%, -50%);
   pointer-events: none;
-  color: #f59e0b;
+  color: #ef4444;
   filter: drop-shadow(0 0 2px rgba(0,0,0,.9));
 }
 
@@ -540,13 +540,13 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .cad-snap-marker[data-snap-type="virtual-intersection"] > span,
-.cad-snap-marker[data-snap-type="virtual-intersection"] b { color: #f0abfc; }
+.cad-snap-marker[data-snap-type="virtual-intersection"] b { color: #ef4444; }
 
 #cad-viewport.is-picking canvas { cursor: crosshair; }
 
 .cad-snap-controls {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 8px;
   padding: 10px;
   margin-bottom: 8px;
@@ -579,13 +579,6 @@ input[type="number"]::-webkit-outer-spin-button {
   font: inherit;
   font-size: 10px;
 }
-
-.cad-snap-controls input[type="range"] {
-  width: 100%;
-  accent-color: #f59e0b;
-}
-
-.cad-snap-controls output { color: #fbbf24; }
 
 .cad-snap-readout {
   min-height: 34px;
@@ -826,7 +819,6 @@ input[type="number"]::-webkit-outer-spin-button {
   .cad-result-section.wide { grid-column: auto; }
   .cad-result-values { grid-template-columns: 1fr; }
   .cad-status { width: 100%; margin-left: 0; }
-  .cad-snap-controls { grid-template-columns: 1fr; }
   .cad-parts-head { grid-template-columns: 28px 1fr; }
   .cad-parts-head span:last-child { display: none; }
   .cad-part-row { grid-template-columns: 28px 1fr; }

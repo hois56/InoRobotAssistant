@@ -1,6 +1,6 @@
 export const MOTION_PROJECT_SCHEMA_VERSION = 1;
 export const DEFAULT_MOVJ_SPEED = 100;
-export const DEFAULT_MOVL_SPEED = 100;
+export const DEFAULT_MOVL_SPEED = 1500;
 export const MAX_MOVL_SPEED = 2500;
 export const DEFAULT_DELAY_SECONDS = 1;
 export const MIN_DELAY_SECONDS = 0.1;
@@ -11,8 +11,16 @@ export const MOVL_ROTATION_RATE = 90;
 export const S_CURVE_PEAK_VELOCITY = 15 / 8;
 export const S_CURVE_PEAK_ACCELERATION = 10 / Math.sqrt(3);
 export const MOTION_SETTLING_DELAY_SECONDS = 0.02;
+export const RAPID_MOVE_DEFAULTS = Object.freeze({
+    minAccelerationScale: 0.95,
+    maxAccelerationScale: 1,
+    maxStepSeconds: 0.05
+});
+const RAPID_MOVE_PATH_SAMPLE_COUNT = 65;
 export const MIN_POINT_INDEX = 0;
 export const MAX_POINT_INDEX = 9999;
+export const MIN_WAIT_LINE_NUMBER = 1;
+export const MAX_WAIT_LINE_NUMBER = 9999;
 export const MAX_POINT_LABEL_LENGTH = 19;
 export const POINT_LABEL_PATTERN = /^[A-Za-z][A-Za-z0-9_]{0,18}$/;
 
@@ -84,6 +92,249 @@ export function calculateMovjDuration(startAngles, targetAngles, joints, speedPe
         return Math.max(speedLimitedDuration, accelerationLimitedDuration);
     });
     return Math.max(0.1, ...durations);
+}
+
+function rapidMoveJointRate(joint) {
+    const configuredRate = Number(joint?.definition?.maxSpeed);
+    if (Number.isFinite(configuredRate) && configuredRate > 0) return configuredRate;
+    return joint?.definition?.type === 'prismatic'
+        ? MOVJ_PRISMATIC_RATE
+        : MOVJ_REVOLUTE_RATE;
+}
+
+function rapidMovePostureScale(postureLoad, profile) {
+    const load = clamp(Number(postureLoad) || 0.5, 0, 1);
+    return profile.minAccelerationScale
+        + (profile.maxAccelerationScale - profile.minAccelerationScale) * (1 - load);
+}
+
+function interpolateRapidMovePathSample(samples, progress) {
+    if (!Array.isArray(samples) || samples.length === 0) return 0;
+    if (samples.length === 1) return samples[0];
+    const position = clamp(Number(progress) || 0, 0, 1) * (samples.length - 1);
+    const left = Math.floor(position);
+    const right = Math.min(samples.length - 1, left + 1);
+    const fraction = position - left;
+    return samples[left] + (samples[right] - samples[left]) * fraction;
+}
+
+function buildRapidMoveVelocityEnvelope(
+    postureLoads,
+    maxProgressVelocity,
+    maxProgressAcceleration,
+    maxProgressDeceleration,
+    profile
+) {
+    // Build a forward/backward speed envelope over one shared normalized path.
+    // This keeps every joint synchronized while allowing the path to use the
+    // fastest speed that can still accelerate and brake before each posture.
+    const sampleCount = postureLoads.length;
+    const step = 1 / Math.max(1, sampleCount - 1);
+    const accelerationLimits = postureLoads.map((load) => (
+        maxProgressAcceleration * rapidMovePostureScale(load, profile)
+    ));
+    const decelerationLimits = postureLoads.map((load) => (
+        maxProgressDeceleration * rapidMovePostureScale(load, profile)
+    ));
+    const velocitySquared = Array(sampleCount).fill(maxProgressVelocity ** 2);
+    velocitySquared[0] = 0;
+    for (let index = 1; index < sampleCount; index += 1) {
+        velocitySquared[index] = Math.min(
+            velocitySquared[index],
+            velocitySquared[index - 1] + 2 * accelerationLimits[index - 1] * step
+        );
+    }
+    velocitySquared[sampleCount - 1] = 0;
+    for (let index = sampleCount - 2; index >= 0; index -= 1) {
+        velocitySquared[index] = Math.min(
+            velocitySquared[index],
+            velocitySquared[index + 1] + 2 * decelerationLimits[index] * step
+        );
+    }
+    return velocitySquared.map((value) => Math.sqrt(Math.max(0, value)));
+}
+
+/**
+ * Return a normalized gravity-load proxy for a six-axis posture.
+ *
+ * The controller's Rapidmove implementation is proprietary. The simulator
+ * therefore uses the horizontal projection of the upper-arm and forearm as a
+ * deterministic proxy: a horizontally extended arm needs more torque to
+ * hold against gravity than an upright arm. The result is intentionally a
+ * load score, not a torque measurement.
+ */
+export function getRapidMovePostureLoad(angles, structure, robotType = 'six-axis') {
+    if (robotType !== 'six-axis' || !Array.isArray(angles) || angles.length < 3) return 0.5;
+    const upperArm = Math.max(0, Number(structure?.[1]) || 0);
+    const forearm = Math.max(0, (Number(structure?.[3]) || 0) + (Number(structure?.[4]) || 0));
+    const totalLength = upperArm + forearm;
+    if (totalLength <= 0) return 0.5;
+    const j2 = Number(angles[1]) * Math.PI / 180;
+    const j3 = Number(angles[2]) * Math.PI / 180;
+    const upperHorizontal = Math.abs(Math.cos(j2));
+    const forearmHorizontal = Math.abs(Math.cos(j2 + j3));
+    const projectedLoad = (upperArm * upperHorizontal + forearm * forearmHorizontal) / totalLength;
+    return clamp(0.25 + 0.75 * projectedLoad, 0, 1);
+}
+
+export function createRapidMoveState(startAngles, targetAngles, joints, speedPercent, options = {}) {
+    const {
+        structure = null,
+        robotType = 'six-axis',
+        ...profileOptions
+    } = options && typeof options === 'object' ? options : {};
+    const distances = targetAngles.map((target, index) => Math.abs(
+        Number(target) - (Number(startAngles[index]) || 0)
+    ));
+    const movingIndexes = distances
+        .map((distance, index) => distance > 1e-9 ? index : -1)
+        .filter((index) => index >= 0);
+    const enabled = profileOptions.enabled === true && movingIndexes.length > 0;
+    if (!enabled) {
+        return {
+            enabled: false,
+            progress: 0,
+            velocity: 0,
+            completed: movingIndexes.length === 0,
+            maxProgressVelocity: 0,
+            maxProgressAcceleration: 0,
+            maxProgressDeceleration: 0,
+            distances,
+            profile: { ...RAPID_MOVE_DEFAULTS, ...profileOptions }
+        };
+    }
+
+    const speedScale = clamp(Number(speedPercent) || DEFAULT_MOVJ_SPEED, 1, 100) / 100;
+    const maxProgressVelocity = Math.min(...movingIndexes.map((index) => (
+        rapidMoveJointRate(joints[index]) * speedScale / distances[index]
+    )));
+    const accelerationValues = movingIndexes.map((index) => {
+        const acceleration = Number(joints[index]?.definition?.maxAcceleration);
+        return Number.isFinite(acceleration) && acceleration > 0
+            ? acceleration / distances[index]
+            : Infinity;
+    });
+    const decelerationValues = movingIndexes.map((index) => {
+        const deceleration = Number(joints[index]?.definition?.maxDeceleration);
+        return Number.isFinite(deceleration) && deceleration > 0
+            ? deceleration / distances[index]
+            : Infinity;
+    });
+    const profile = {
+        ...RAPID_MOVE_DEFAULTS,
+        ...profileOptions,
+        minAccelerationScale: clamp(
+            Number(profileOptions.minAccelerationScale) || RAPID_MOVE_DEFAULTS.minAccelerationScale,
+            0.1,
+            1
+        ),
+        maxAccelerationScale: clamp(
+            Number(profileOptions.maxAccelerationScale) || RAPID_MOVE_DEFAULTS.maxAccelerationScale,
+            0.1,
+            1
+        )
+    };
+    if (profile.maxAccelerationScale < profile.minAccelerationScale) {
+        profile.maxAccelerationScale = profile.minAccelerationScale;
+    }
+    const pathPostureLoads = Array.from(
+        { length: RAPID_MOVE_PATH_SAMPLE_COUNT },
+        (_, sampleIndex) => {
+            const progress = sampleIndex / (RAPID_MOVE_PATH_SAMPLE_COUNT - 1);
+            const postureAngles = startAngles.map((start, index) => (
+                Number(start) + (Number(targetAngles[index]) - Number(start)) * progress
+            ));
+            return getRapidMovePostureLoad(postureAngles, structure, robotType);
+        }
+    );
+    const pathVelocityEnvelope = buildRapidMoveVelocityEnvelope(
+        pathPostureLoads,
+        maxProgressVelocity,
+        Math.min(...accelerationValues),
+        Math.min(...decelerationValues),
+        profile
+    );
+    return {
+        enabled: Number.isFinite(maxProgressVelocity)
+            && Number.isFinite(Math.min(...accelerationValues))
+            && Number.isFinite(Math.min(...decelerationValues)),
+        progress: 0,
+        velocity: 0,
+        completed: false,
+        maxProgressVelocity,
+        maxProgressAcceleration: Math.min(...accelerationValues),
+        maxProgressDeceleration: Math.min(...decelerationValues),
+        distances,
+        profile,
+        pathPostureLoads,
+        pathVelocityEnvelope
+    };
+}
+
+export function advanceRapidMoveState(
+    state,
+    deltaSeconds,
+    startAngles,
+    targetAngles,
+    structure,
+    robotType = 'six-axis',
+    accelerationScale = 1
+) {
+    if (!state?.enabled || state.completed) return {
+        progress: state?.completed ? 1 : 0,
+        postureLoad: null,
+        accelerationScale: 1,
+        completed: Boolean(state?.completed)
+    };
+    const delta = clamp(
+        Number(deltaSeconds) || 0,
+        0,
+        Number(state.profile.maxStepSeconds) || RAPID_MOVE_DEFAULTS.maxStepSeconds
+    );
+    if (delta <= 0) return {
+        progress: state.progress,
+        postureLoad: getRapidMovePostureLoad(startAngles, structure, robotType),
+        accelerationScale: 1,
+        completed: false
+    };
+
+    const currentAngles = startAngles.map((start, index) => (
+        Number(start) + (Number(targetAngles[index]) - Number(start)) * state.progress
+    ));
+    const sampledPostureLoad = interpolateRapidMovePathSample(state.pathPostureLoads, state.progress);
+    const postureLoad = state.pathPostureLoads?.length
+        ? sampledPostureLoad
+        : getRapidMovePostureLoad(currentAngles, structure, robotType);
+    const postureScale = rapidMovePostureScale(postureLoad, state.profile);
+    const scale = Math.max(0.1, Number(accelerationScale) || 1) * postureScale;
+    const acceleration = state.maxProgressAcceleration * scale;
+    const deceleration = state.maxProgressDeceleration * scale;
+    const envelopeStep = state.pathVelocityEnvelope?.length > 1
+        ? 1 / (state.pathVelocityEnvelope.length - 1)
+        : 0;
+    const envelopeProgress = envelopeStep > 0
+        ? Math.max(state.progress, envelopeStep)
+        : state.progress;
+    const targetVelocity = Math.min(
+        state.maxProgressVelocity,
+        interpolateRapidMovePathSample(state.pathVelocityEnvelope, envelopeProgress)
+    );
+    const previousVelocity = state.velocity;
+    state.velocity = targetVelocity < state.velocity
+        ? Math.max(targetVelocity, state.velocity - deceleration * delta)
+        : Math.min(targetVelocity, state.velocity + acceleration * delta);
+    state.progress = Math.min(1, state.progress + (previousVelocity + state.velocity) * delta / 2);
+    if (state.progress >= 1 - 1e-9) {
+        state.progress = 1;
+        state.velocity = 0;
+        state.completed = true;
+    }
+    return {
+        progress: state.progress,
+        postureLoad,
+        accelerationScale: scale,
+        completed: state.completed
+    };
 }
 
 export function calculateMovlDuration(
@@ -208,6 +459,39 @@ export function resolveDirectionalMotionType(motion, direction) {
     return motion;
 }
 
+export function resolveMotionSegmentCommand(steps, cursor, direction) {
+    const targetStep = Array.isArray(steps) ? steps[cursor] : null;
+    if (!targetStep) return null;
+    const returning = Number(direction) < 0;
+    const sourceStep = returning ? steps[cursor + 1] : null;
+    const commandStep = returning
+        && isMotionPointMotion(targetStep.motion)
+        && isMotionPointMotion(sourceStep?.motion)
+        ? sourceStep
+        : targetStep;
+    return {
+        motion: commandStep.motion,
+        speed: commandStep.speed
+    };
+}
+
+export function getDirectionalGripActions(motion, playback = {}) {
+    if (!isGripObjectMotion(motion)) return [];
+    const direction = Number(playback.direction) < 0 ? -1 : 1;
+    const action = direction < 0
+        ? motion === 'GRIP_USE' ? 'GRIP_RELEASE' : 'GRIP_USE'
+        : motion;
+    const actions = [action];
+    const advanced = advanceMotionCursor(playback);
+    if (playback.reverseRepeat && advanced.boundary) {
+        // Motion points do not need to be replayed at a ping-pong boundary,
+        // but stateful commands must be inverted there so the next leg starts
+        // with the same object state as the corresponding forward leg.
+        actions.push(action === 'GRIP_USE' ? 'GRIP_RELEASE' : 'GRIP_USE');
+    }
+    return actions;
+}
+
 export function getDirectionalTimerActions(motion, playback = {}) {
     if (motion !== 'TIME_START' && motion !== 'TIME_OUT') return [];
     const stepCount = Math.max(0, Math.trunc(Number(playback.stepCount) || 0));
@@ -225,6 +509,7 @@ export function createEmptyMotionProgram(included = true) {
     return {
         included: Boolean(included),
         selectedStepId: null,
+        workOrigin: null,
         status: 'idle',
         progress: 0,
         cycleTimerStartedAt: null,
@@ -235,6 +520,18 @@ export function createEmptyMotionProgram(included = true) {
 
 export function isMotionPointMotion(motion) {
     return motion === 'MOVJ' || motion === 'MOVL';
+}
+
+export function isGripObjectMotion(motion) {
+    return motion === 'GRIP_USE' || motion === 'GRIP_RELEASE';
+}
+
+export function isWaitMotion(motion) {
+    return motion === 'WAIT';
+}
+
+export function isHomeMotion(motion) {
+    return motion === 'HOME';
 }
 
 export function formatMotionPointName(pointIndex) {
@@ -321,9 +618,29 @@ function clonePointMetadata(step, fallbackPointIndex) {
 
 export function cloneMotionProgram(program) {
     let fallbackPointIndex = 0;
+    const workOrigin = program?.workOrigin && typeof program.workOrigin === 'object'
+        ? {
+            mode: 'JOINT',
+            joints: Array.isArray(program.workOrigin.joints)
+                ? program.workOrigin.joints.map((value) => Number(value))
+                : [],
+            tcp: {
+                position: Array.isArray(program.workOrigin.tcp?.position)
+                    ? program.workOrigin.tcp.position.map((value) => Number(value))
+                    : [],
+                quaternion: Array.isArray(program.workOrigin.tcp?.quaternion)
+                    ? program.workOrigin.tcp.quaternion.map((value) => Number(value))
+                    : []
+            },
+            outputBit: Number.isSafeInteger(Number(program.workOrigin.outputBit)) && Number(program.workOrigin.outputBit) >= 0
+                ? Number(program.workOrigin.outputBit)
+                : 519
+        }
+        : null;
     return {
         included: Boolean(program?.included),
         selectedStepId: typeof program?.selectedStepId === 'string' ? program.selectedStepId : null,
+        workOrigin,
         status: 'idle',
         progress: 0,
         cycleTimerStartedAt: null,
@@ -339,6 +656,14 @@ export function cloneMotionProgram(program) {
                         ? 'DELAY'
                         : step.motion === 'VIEW'
                             ? 'VIEW'
+                        : step.motion === 'GRIP_USE'
+                            ? 'GRIP_USE'
+                        : step.motion === 'GRIP_RELEASE'
+                            ? 'GRIP_RELEASE'
+                        : step.motion === 'WAIT'
+                            ? 'WAIT'
+                        : step.motion === 'HOME'
+                            ? 'HOME'
                         : step.motion === 'MOVL'
                             ? 'MOVL'
                             : 'MOVJ';
@@ -355,7 +680,15 @@ export function cloneMotionProgram(program) {
                     : motion === 'TIME_START'
                         ? 'Time Start'
                         : motion === 'TIME_OUT'
-                            ? 'Time Out'
+                        ? 'Time Out'
+                            : motion === 'GRIP_USE'
+                                ? 'Grip Use'
+                            : motion === 'GRIP_RELEASE'
+                                ? 'Grip Release'
+                            : motion === 'WAIT'
+                                ? 'Wait'
+                            : motion === 'HOME'
+                                ? 'Home'
                             : `View ${viewSlot + 1}`),
                 motion,
                 ...(pointMetadata || {}),
@@ -363,8 +696,19 @@ export function cloneMotionProgram(program) {
                     ? { delaySeconds: Number(step.delaySeconds) }
                     : motion === 'MOVJ' || motion === 'MOVL'
                         ? { speed: Number(step.speed) }
-                        : motion === 'VIEW'
+                    : motion === 'VIEW'
                             ? { viewSlot }
+                        : isGripObjectMotion(motion)
+                            ? { gripObjectRef: String(step.gripObjectRef || '').trim() }
+                        : motion === 'WAIT'
+                            ? {
+                                waitRobotInstanceId: String(step.waitRobotInstanceId || '').trim(),
+                                waitLineNumber: Number.isInteger(Number(step.waitLineNumber))
+                                    ? Number(step.waitLineNumber)
+                                    : MIN_WAIT_LINE_NUMBER
+                            }
+                        : motion === 'HOME'
+                            ? {}
                         : {}),
                 joints: [...step.joints],
                 tcp: {
@@ -408,6 +752,30 @@ function normalizedQuaternion(value, label) {
     return quaternion.map((component) => component / length);
 }
 
+function normalizeWorkOrigin(value, jointCount, robotIndex) {
+    if (value === null || value === undefined) return null;
+    if (!value || typeof value !== 'object') {
+        throw new Error(`Robot ${robotIndex + 1} Work Origin must be an object.`);
+    }
+    const mode = 'JOINT';
+    const outputBit = value.outputBit === undefined ? 519 : Number(value.outputBit);
+    if (!Number.isSafeInteger(outputBit) || outputBit < 0) {
+        throw new Error(`Robot ${robotIndex + 1} Work Origin output bit must be a non-negative integer.`);
+    }
+    return {
+        mode,
+        joints: finiteArray(value.joints, jointCount, `Robot ${robotIndex + 1} Work Origin joints`),
+        tcp: {
+            position: finiteArray(value.tcp?.position, 3, `Robot ${robotIndex + 1} Work Origin TCP position`),
+            quaternion: normalizedQuaternion(
+                value.tcp?.quaternion,
+                `Robot ${robotIndex + 1} Work Origin TCP quaternion`
+            )
+        },
+        outputBit
+    };
+}
+
 function normalizeTcpProfiles(value, robotIndex) {
     if (value === undefined) {
         return Array.from({ length: 3 }, () => ({
@@ -440,6 +808,14 @@ function normalizeStep(step, jointCount, index, fallbackPointIndex) {
                 ? 'DELAY'
                 : step?.motion === 'VIEW'
                     ? 'VIEW'
+                : step?.motion === 'GRIP_USE'
+                    ? 'GRIP_USE'
+                : step?.motion === 'GRIP_RELEASE'
+                    ? 'GRIP_RELEASE'
+                : step?.motion === 'WAIT'
+                    ? 'WAIT'
+                : step?.motion === 'HOME'
+                    ? 'HOME'
                 : step?.motion === 'MOVL'
                     ? 'MOVL'
                     : step?.motion === 'MOVJ'
@@ -449,6 +825,11 @@ function normalizeStep(step, jointCount, index, fallbackPointIndex) {
     const delaySeconds = motion === 'DELAY' ? Number(step.delaySeconds) : null;
     const speed = motion === 'MOVJ' || motion === 'MOVL' ? Number(step.speed) : null;
     const viewSlot = motion === 'VIEW' ? Number(step.viewSlot) : null;
+    const gripObjectRef = isGripObjectMotion(motion) ? requiredString(step.gripObjectRef, `Step ${index + 1} grip object`) : null;
+    const waitRobotInstanceId = motion === 'WAIT'
+        ? requiredString(step.waitRobotInstanceId, `Step ${index + 1} wait target robot`)
+        : null;
+    const waitLineNumber = motion === 'WAIT' ? Number(step.waitLineNumber) : null;
     if (motion === 'DELAY') {
         if (!Number.isFinite(delaySeconds) || delaySeconds < MIN_DELAY_SECONDS || delaySeconds > MAX_DELAY_SECONDS) {
             throw new Error(`Step ${index + 1} delay is outside the supported seconds range.`);
@@ -460,6 +841,11 @@ function normalizeStep(step, jointCount, index, fallbackPointIndex) {
         }
     } else if (motion === 'VIEW' && (!Number.isInteger(viewSlot) || viewSlot < 0 || viewSlot > 3)) {
         throw new Error(`Step ${index + 1} view slot must be 0 to 3.`);
+    } else if (motion === 'WAIT'
+        && (!Number.isInteger(waitLineNumber)
+            || waitLineNumber < MIN_WAIT_LINE_NUMBER
+            || waitLineNumber > MAX_WAIT_LINE_NUMBER)) {
+        throw new Error(`Step ${index + 1} wait line must be ${MIN_WAIT_LINE_NUMBER} to ${MAX_WAIT_LINE_NUMBER}.`);
     }
     const quaternion = normalizedQuaternion(step.tcp?.quaternion, `Step ${index + 1} TCP quaternion`);
     let pointMetadata = null;
@@ -495,8 +881,16 @@ function normalizeStep(step, jointCount, index, fallbackPointIndex) {
             : motion === 'TIME_START'
                 ? 'Time Start'
                 : motion === 'TIME_OUT'
-                    ? 'Time Out'
-                    : `View ${viewSlot + 1}`),
+                ? 'Time Out'
+                : motion === 'GRIP_USE'
+                    ? 'Grip Use'
+                : motion === 'GRIP_RELEASE'
+                    ? 'Grip Release'
+                : motion === 'WAIT'
+                    ? 'Wait'
+                : motion === 'HOME'
+                    ? 'Home'
+                : `View ${viewSlot + 1}`),
         motion,
         ...(pointMetadata || {}),
         ...(motion === 'DELAY'
@@ -505,6 +899,12 @@ function normalizeStep(step, jointCount, index, fallbackPointIndex) {
                 ? { speed }
                 : motion === 'VIEW'
                     ? { viewSlot }
+                : isGripObjectMotion(motion)
+                    ? { gripObjectRef }
+                : motion === 'WAIT'
+                    ? { waitRobotInstanceId, waitLineNumber }
+                : motion === 'HOME'
+                    ? {}
                 : {}),
         joints: finiteArray(step.joints, jointCount, `Step ${index + 1} joints`),
         tcp: {
@@ -556,6 +956,7 @@ export function normalizeMotionProject(input) {
         const baseScale = finiteArray(robot.baseTransform?.scale, 3, `Robot ${index + 1} base scale`);
         if (baseScale.some((value) => value <= 0)) throw new Error(`Robot ${index + 1} base scale must be positive.`);
         const tcpProfiles = normalizeTcpProfiles(robot.tcpProfiles, index);
+        const workOrigin = normalizeWorkOrigin(robot.workOrigin, jointCount, index);
         const activeTcpProfileIndex = robot.activeTcpProfileIndex === undefined
             ? 0
             : Number(robot.activeTcpProfileIndex);
@@ -568,6 +969,10 @@ export function normalizeMotionProject(input) {
             instanceId,
             modelFolder: requiredString(robot.modelFolder, `Robot ${index + 1} modelFolder`),
             displayName: requiredString(robot.displayName, `Robot ${index + 1} displayName`),
+            instanceNumber: Number.isInteger(Number(robot.instanceNumber))
+                && Number(robot.instanceNumber) > 0
+                ? Number(robot.instanceNumber)
+                : null,
             robotType,
             jointCount,
             included: robot.included !== false,
@@ -576,8 +981,12 @@ export function normalizeMotionProject(input) {
                 quaternion: normalizedQuaternion(robot.baseTransform?.quaternion, `Robot ${index + 1} base quaternion`),
                 scale: baseScale
             },
+            externalAxes: robot.externalAxes === undefined
+                ? [0, 0, 0, 0, 0, 0]
+                : finiteArray(robot.externalAxes, 6, `Robot ${index + 1} external axes`),
             tcpProfiles,
             activeTcpProfileIndex,
+            workOrigin,
             steps
         };
     });

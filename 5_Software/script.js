@@ -20,14 +20,14 @@ const softwareGroups = [
                 ]
             },
             {
-                tagName: "Display Version (V4R24C4SPC0L18F121)",
+                tagName: "Display Version (V4R24C4SPC0L23F121)",
                 description: "Display 공정용 특수 버전 소프트웨어",
-                date: "2026-05-14",
+                date: "2026-09-08",
                 isLocked: true,
                 updates: ["Display 모듈 지원"],
                 downloads: [
-                    { label: "Download Install", type: "install", size: "-", disabled: true },
-                    { label: "Download Portable", type: "portable", size: "454MB", assetId: "software.inorobotlab.display.portable" }
+                    { label: "Download Install", type: "install", size: "514MB", assetId: "software.inorobotlab.display.install" },
+                    { label: "Download Portable", type: "portable", size: "506MB", assetId: "software.inorobotlab.display.portable" }
                 ]
             }
         ]
@@ -48,9 +48,9 @@ const softwareGroups = [
                 ]
             },
             {
-                tagName: "Display Version (V4R24C4SPC0L18F121)",
+                tagName: "Display Version (V4R24C4SPC0L23F121)",
                 description: "Display 공정용 TP 소프트웨어",
-                date: "2026-05-14",
+                date: "2026-09-08",
                 isLocked: true,
                 updates: ["Display 최적화"],
                 downloads: [

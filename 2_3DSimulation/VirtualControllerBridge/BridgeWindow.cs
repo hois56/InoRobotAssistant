@@ -26,7 +26,7 @@ internal sealed class BridgeWindow : Form
             AutoSize = false,
             Location = new Point(22, 54),
             Size = new Size(346, 48),
-            Text = "3D 시뮬레이션에서 직접 연결할 수 있습니다.\n연결 주소: ws://127.0.0.1:5055/ws"
+            Text = "3D 시뮬레이션에서 여러 컨트롤러를 동시에 연결할 수 있습니다.\n연결 주소: ws://127.0.0.1:5055/ws"
         };
         Button closeButton = new()
         {

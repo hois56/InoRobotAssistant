@@ -24,7 +24,9 @@ internal static class Program
         Environment.GetEnvironmentVariable("INOROBOT_ALLOW_REAL_CONTROLLER")?.Trim(),
         "false",
         StringComparison.OrdinalIgnoreCase);
-    private static int activeClient;
+    private const int MaxCommunicationIds = 64;
+    private static readonly ConcurrentDictionary<Guid, NativeRobotClient> ActiveSessions = new();
+    private static readonly ConcurrentDictionary<int, byte> ActiveCommunicationIds = new();
 
     [STAThread]
     public static async Task Main(string[] args)
@@ -38,7 +40,6 @@ internal static class Program
         WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
         builder.Logging.ClearProviders();
         builder.WebHost.UseUrls($"http://127.0.0.1:{BridgePort}");
-        builder.Services.AddSingleton<NativeRobotClient>();
 
         await using WebApplication app = builder.Build();
         app.Use(async (context, next) =>
@@ -68,7 +69,7 @@ internal static class Program
             await next();
         });
         app.UseWebSockets(new WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(15) });
-        app.MapGet("/api/health", (HttpContext context, NativeRobotClient robot) =>
+        app.MapGet("/api/health", (HttpContext context) =>
         {
             if (!IsAllowedOrigin(context.Request.Headers.Origin.FirstOrDefault()))
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
@@ -78,7 +79,8 @@ internal static class Program
             {
                 service = "InoRobotVirtualControllerBridge",
                 configured = true,
-                connected = robot.IsConnected,
+                connected = ActiveSessions.Values.Any(robot => robot.IsConnected),
+                connectionCount = ActiveSessions.Count,
                 controllerPort = ControllerPort,
                 sampleIntervalMs = DefaultSampleIntervalMs,
                 pairingToken = PairingToken
@@ -159,13 +161,6 @@ internal static class Program
             context.Response.StatusCode = StatusCodes.Status400BadRequest;
             return;
         }
-        if (Interlocked.CompareExchange(ref activeClient, 1, 0) != 0)
-        {
-            context.Response.StatusCode = StatusCodes.Status409Conflict;
-            return;
-        }
-
-        NativeRobotClient robot = context.RequestServices.GetRequiredService<NativeRobotClient>();
         using WebSocket socket = await context.WebSockets.AcceptWebSocketAsync();
         using CancellationTokenSource sessionCancellation =
             CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted);
@@ -176,6 +171,9 @@ internal static class Program
         string controllerIp = string.Empty;
         bool robotConnectedByThisSession = false;
         bool realControllerByThisSession = false;
+        int communicationId = -1;
+        Guid sessionId = Guid.Empty;
+        NativeRobotClient robot = null!;
 
         async Task SendAsync(object payload)
         {
@@ -205,6 +203,16 @@ internal static class Program
                 await CloseForPolicyAsync(socket, WebSocketCloseStatus.PolicyViolation, "Pairing required");
                 return;
             }
+
+            if (!TryAllocateCommunicationId(out communicationId))
+            {
+                await CloseForPolicyAsync(socket, WebSocketCloseStatus.InternalServerError, "No controller session slots available");
+                return;
+            }
+
+            sessionId = Guid.NewGuid();
+            robot = new NativeRobotClient(communicationId);
+            ActiveSessions[sessionId] = robot;
 
             await SendAsync(new { type = "bridgeReady", sampleIntervalMs = DefaultSampleIntervalMs });
             Task receiveTask = ReceiveCommandsAsync();
@@ -453,7 +461,9 @@ internal static class Program
             sessionCancellation.Cancel();
             Interlocked.Exchange(ref streaming, 0);
             if (robotConnectedByThisSession) robot.Disconnect();
-            Interlocked.Exchange(ref activeClient, 0);
+            if (sessionId != Guid.Empty) ActiveSessions.TryRemove(sessionId, out _);
+            if (communicationId >= 0) ActiveCommunicationIds.TryRemove(communicationId, out _);
+            robot?.Dispose();
             if (socket.State == WebSocketState.Open)
             {
                 try { await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "3D simulation disconnected", CancellationToken.None); }
@@ -479,6 +489,21 @@ internal static class Program
         {
             return false;
         }
+    }
+
+    private static bool TryAllocateCommunicationId(out int communicationId)
+    {
+        for (int candidate = 0; candidate < MaxCommunicationIds; candidate++)
+        {
+            if (ActiveCommunicationIds.TryAdd(candidate, 0))
+            {
+                communicationId = candidate;
+                return true;
+            }
+        }
+
+        communicationId = -1;
+        return false;
     }
 
     private static int ReadBoundedInt(JsonElement root, string propertyName, int minimum, int maximum, int fallback = -1)

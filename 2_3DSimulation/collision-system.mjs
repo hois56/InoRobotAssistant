@@ -378,6 +378,112 @@ function pointInsideMesh(point, mesh, bvh, epsilon, getWorldBounds = null) {
     return uniqueHitCount % 2 === 1;
 }
 
+function pointTriangleDistanceSquared(point, triangle) {
+    const px = point.x;
+    const py = point.y;
+    const pz = point.z;
+    const ax = triangle[0];
+    const ay = triangle[1];
+    const az = triangle[2];
+    const abx = triangle[3] - ax;
+    const aby = triangle[4] - ay;
+    const abz = triangle[5] - az;
+    const acx = triangle[6] - ax;
+    const acy = triangle[7] - ay;
+    const acz = triangle[8] - az;
+    const apx = px - ax;
+    const apy = py - ay;
+    const apz = pz - az;
+    const dotABAP = dot(abx, aby, abz, apx, apy, apz);
+    const dotACAP = dot(acx, acy, acz, apx, apy, apz);
+    if (dotABAP <= 0 && dotACAP <= 0) return apx * apx + apy * apy + apz * apz;
+
+    const bpx = px - triangle[3];
+    const bpy = py - triangle[4];
+    const bpz = pz - triangle[5];
+    const dotABBP = dot(abx, aby, abz, bpx, bpy, bpz);
+    const dotACBP = dot(acx, acy, acz, bpx, bpy, bpz);
+    if (dotABBP >= 0 && dotACBP <= dotABBP) {
+        return bpx * bpx + bpy * bpy + bpz * bpz;
+    }
+
+    const cpx = px - triangle[6];
+    const cpy = py - triangle[7];
+    const cpz = pz - triangle[8];
+    const dotABCP = dot(abx, aby, abz, cpx, cpy, cpz);
+    const dotACCP = dot(acx, acy, acz, cpx, cpy, cpz);
+    if (dotACCP >= 0 && dotABCP <= dotACCP) {
+        return cpx * cpx + cpy * cpy + cpz * cpz;
+    }
+
+    const vc = dotABAP * dotACBP - dotABBP * dotACAP;
+    if (vc <= 0 && dotABAP >= 0 && dotABBP <= 0) {
+        const value = dotABAP / Math.max(dotABAP - dotABBP, Number.EPSILON);
+        const closestX = ax + value * abx;
+        const closestY = ay + value * aby;
+        const closestZ = az + value * abz;
+        return (px - closestX) ** 2 + (py - closestY) ** 2 + (pz - closestZ) ** 2;
+    }
+
+    const vb = dotABCP * dotACAP - dotABAP * dotACCP;
+    if (vb <= 0 && dotACAP >= 0 && dotACCP <= 0) {
+        const value = dotACAP / Math.max(dotACAP - dotACCP, Number.EPSILON);
+        const closestX = ax + value * acx;
+        const closestY = ay + value * acy;
+        const closestZ = az + value * acz;
+        return (px - closestX) ** 2 + (py - closestY) ** 2 + (pz - closestZ) ** 2;
+    }
+
+    const va = dotABBP * dotACCP - dotABCP * dotACBP;
+    if (va <= 0 && dotACBP - dotABBP >= 0 && dotABCP - dotACCP >= 0) {
+        const edgeX = triangle[6] - triangle[3];
+        const edgeY = triangle[7] - triangle[4];
+        const edgeZ = triangle[8] - triangle[5];
+        const value = (dotACBP - dotABBP) / Math.max(
+            (dotACBP - dotABBP) + (dotABCP - dotACCP),
+            Number.EPSILON
+        );
+        const closestX = triangle[3] + value * edgeX;
+        const closestY = triangle[4] + value * edgeY;
+        const closestZ = triangle[5] + value * edgeZ;
+        return (px - closestX) ** 2 + (py - closestY) ** 2 + (pz - closestZ) ** 2;
+    }
+
+    const denominator = Math.max(va + vb + vc, Number.EPSILON);
+    const barycentricB = vb / denominator;
+    const barycentricC = vc / denominator;
+    const closestX = ax + abx * barycentricB + acx * barycentricC;
+    const closestY = ay + aby * barycentricB + acy * barycentricC;
+    const closestZ = az + abz * barycentricB + acz * barycentricC;
+    return (px - closestX) ** 2 + (py - closestY) ** 2 + (pz - closestZ) ** 2;
+}
+
+function pointNearMeshSurface(point, mesh, bvh, getWorldBounds, tolerance) {
+    const toleranceSquared = tolerance ** 2;
+    const rootBounds = getWorldBounds?.(bvh.root) || bvh.root?.bounds.clone().applyMatrix4(mesh.matrixWorld);
+    if (!rootBounds || rootBounds.distanceToPoint(point) > tolerance) return false;
+    const stack = [bvh.root];
+    const triangle = new Float64Array(9);
+    const localTriangle = new Float64Array(9);
+    while (stack.length) {
+        const node = stack.pop();
+        const nodeBounds = getWorldBounds?.(node) || node.bounds.clone().applyMatrix4(mesh.matrixWorld);
+        if (!nodeBounds || nodeBounds.distanceToPoint(point) > tolerance) continue;
+        if (node.triangles) {
+            for (const triangleIndex of node.triangles) {
+                bvh.readTriangleWorld(mesh, triangleIndex, triangle, localTriangle);
+                if (pointTriangleDistanceSquared(point, triangle) <= toleranceSquared) return true;
+            }
+            continue;
+        }
+        if (node.left) stack.push(node.left);
+        if (node.right) stack.push(node.right);
+    }
+    return false;
+}
+
+const POINT_ON_SURFACE_TOLERANCE = 0.25;
+
 function worldBoundsContain(outer, inner, epsilon) {
     return outer.min.x <= inner.min.x + epsilon
         && outer.min.y <= inner.min.y + epsilon
@@ -552,8 +658,25 @@ function isAttachedToolMountContact(leftRoot, leftMesh, rightRoot, rightMesh) {
     const rightIsTool = rightRoot?.userData?.placement !== 'arm-load'
         && rightRoot?.userData?.attachmentHost === leftRoot;
     if (!leftIsTool && !rightIsTool) return false;
+    const toolRoot = leftIsTool ? leftRoot : rightRoot;
+    const robotRoot = leftIsTool ? rightRoot : leftRoot;
     const robotMesh = leftIsTool ? rightMesh : leftMesh;
-    return robotMesh?.userData?.collisionIgnoreAttachedToolContact === true;
+    if (robotMesh?.userData?.collisionIgnoreAttachedToolContact === true) return true;
+
+    // Some CAD Tools include their physical flange collar. That collar is
+    // intentionally embedded in the final wrist stack when mounted, so the
+    // Test Tool must not permanently report a robot/Tool self-collision.
+    // Keep the preceding arm links active: only the configured final wrist
+    // meshes are an allowed mechanical interface.
+    const ignoredWristJointCount = Math.max(0, Math.floor(Number(
+        toolRoot?.userData?.collisionIgnoreHostWristJointCount
+    ) || 0));
+    const jointIndex = Number(robotMesh?.userData?.robotJointIndex);
+    const finalJointIndex = (robotRoot?.userData?.joints?.length || 0) - 1;
+    return ignoredWristJointCount > 0
+        && Number.isInteger(jointIndex)
+        && finalJointIndex >= 0
+        && jointIndex >= Math.max(0, finalJointIndex - ignoredWristJointCount + 1);
 }
 
 function isAttachedArmLoadHostLinkContact(leftRoot, leftMesh, rightRoot, rightMesh) {
@@ -647,6 +770,41 @@ export class MeshCollisionSystem {
             builtGeometryCount,
             triangleCount
         };
+    }
+
+    isPointInside(objects, point) {
+        if (!point
+            || !Number.isFinite(Number(point.x))
+            || !Number.isFinite(Number(point.y))
+            || !Number.isFinite(Number(point.z))) return false;
+
+        const roots = Array.isArray(objects) ? objects.filter(Boolean) : [];
+        for (const root of roots) {
+            root.updateMatrixWorld(true);
+            const colliders = this.collectMeshes(root);
+            for (const collider of colliders) {
+                if (!collider.worldBounds?.containsPoint(point)) continue;
+                const bvh = this.getGeometryBVH(collider.geometry);
+                // Only a closed, two-sided surface can define a solid volume.
+                // This deliberately ignores open shells and the root AABB, so
+                // a point in a frame or other hollow model remains available.
+                if (!bvh?.root || !geometryHasClosedSurface(bvh)) continue;
+                const getBounds = (node) => getWorldNodeBounds(collider, bvh, node);
+                // A target on a CAD face is a valid contact point. Treat only
+                // points meaningfully below the surface as being inside; this
+                // also avoids classifying a tessellated circle center on its
+                // top face as an interior point because of ray parity.
+                if (pointNearMeshSurface(
+                    point,
+                    collider.mesh,
+                    bvh,
+                    getBounds,
+                    POINT_ON_SURFACE_TOLERANCE
+                )) continue;
+                if (pointInsideMesh(point, collider.mesh, bvh, this.epsilon, getBounds)) return true;
+            }
+        }
+        return false;
     }
 
     collectMeshes(root) {
@@ -775,21 +933,11 @@ export class MeshCollisionSystem {
             if (cachedRightMesh
                 && !isAttachedToolMountContact(left.root, leftMesh.mesh, right.root, cachedRightMesh.mesh)
                 && !isAttachedArmLoadHostLinkContact(left.root, leftMesh.mesh, right.root, cachedRightMesh.mesh)) {
-                const canReuseWarmHit = allowWarmHitReuse
-                    && cachedEntry.hit
-                    && Number.isFinite(cachedEntry.lastConfirmedAt)
-                    && now - cachedEntry.lastConfirmedAt < this.persistentHitGraceMs
-                    && leftMesh.worldBounds?.intersectsBox(cachedRightMesh.worldBounds);
-                if (canReuseWarmHit) {
-                    // While a link remains inside the same coarse mesh bounds,
-                    // retain its confirmed contact briefly. Re-running the
-                    // full triangle/BVH walk every render interval is the
-                    // source of visible JOG stutter on complex CAD models.
-                    hits.push({ ...cachedEntry.hit, objectA: left.root, objectB: right.root });
-                    stats.warmHitReuses += 1;
-                    reportedLeftMeshes.add(leftMesh.mesh);
-                    continue;
-                }
+                // AABB overlap is only a broad-phase result. It can remain
+                // true after a moving link has already cleared the obstacle,
+                // so never reuse a previous hit from the bounds alone. The
+                // cached triangle test is constant-time and keeps the JOG
+                // fast without enlarging the effective collision envelope.
                 const cachedSurfaceHit = allowWarmHitReuse
                     ? this.recheckCachedSurfaceHit(
                         leftMesh,

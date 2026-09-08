@@ -246,12 +246,19 @@
         }
 
         const attributes = ['title', 'aria-label', 'placeholder', 'alt'];
+        const explicitAttributeKeys = {
+            title: 'i18nTitle',
+            'aria-label': 'i18nAriaLabel',
+            placeholder: 'i18nPlaceholder',
+            alt: 'i18nAlt'
+        };
         const elements = [];
         if (root.nodeType === Node.ELEMENT_NODE) elements.push(root);
         if (root.querySelectorAll) elements.push.apply(elements, root.querySelectorAll('[title], [aria-label], [placeholder], [alt]'));
         elements.forEach(function (element) {
             if (element.closest('[data-i18n-skip]')) return;
             attributes.forEach(function (attributeName) {
+                if (element.dataset[explicitAttributeKeys[attributeName]]) return;
                 translateAttribute(element, attributeName, captureSource);
             });
         });

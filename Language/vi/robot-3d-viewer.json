@@ -38,11 +38,11 @@
     "Name": "Tên",
     "Edit": "Chỉnh sửa",
     "Save": "Lưu",
-    "모델 추가 모드": "Chế độ thêm model",
     "이동": "Di chuyển",
     "3D Simulation": "3D Simulation",
     "SCENE": "Cảnh",
     "모델 트리": "Cây mô hình",
+    "모델 변환 패널 크기 조절": "Thay đổi kích thước bảng biến đổi mô hình",
     "장면 모델 트리와 위치 편집기": "Cây mô hình cảnh và trình chỉnh sửa vị trí",
     "별도 창으로 분리": "Mở trong cửa sổ riêng",
     "모델 트리를 별도 창으로 분리": "Mở cây mô hình trong cửa sổ riêng",
@@ -93,6 +93,46 @@
     "관절 위치(mm)": "vị trí khớp theo mm",
     "Solving IK...": "Đang giải động học nghịch...",
     "Target is outside the reachable range or joint limits.": "Mục tiêu nằm ngoài vùng với tới hoặc giới hạn khớp của robot.",
+    "스케치": "Phác thảo",
+    "스케치 종료": "Thoát phác thảo",
+    "스케치 모드 시작": "Bắt đầu chế độ phác thảo",
+    "스케치 모드 종료": "Thoát chế độ phác thảo",
+    "스케치 완료": "Hoàn tất phác thảo",
+    "선택한 요소를 드래그하거나 속성을 확인하세요.": "Kéo phần tử đã chọn hoặc xem thuộc tính của phần tử.",
+    "스케치 도구를 선택한 뒤 캔버스에서 드래그하세요.": "Chọn công cụ phác thảo rồi kéo trên vùng vẽ.",
+    "도구를 선택하고 첫 번째 위치를 클릭한 뒤, 크기를 정해 다시 클릭하세요.": "Chọn công cụ, nhấp vào điểm bắt đầu, di chuyển để đặt kích thước rồi nhấp lần nữa.",
+    "마우스를 움직여 크기를 정한 뒤 다시 클릭하면 도형이 생성됩니다.": "Di chuyển chuột để đặt kích thước rồi nhấp lần nữa để tạo hình.",
+    "스케치 크기가 너무 작습니다. 다시 첫 번째 위치를 클릭하세요.": "Kích thước phác thảo quá nhỏ. Hãy nhấp lại vào điểm bắt đầu.",
+    "2D 평면뷰입니다. 도구를 선택하고 첫 번째 위치를 클릭한 뒤, 크기를 정해 다시 클릭하세요.": "Đây là chế độ xem mặt phẳng 2D. Chọn công cụ, nhấp vào điểm bắt đầu, di chuyển để đặt kích thước rồi nhấp lần nữa.",
+    "스케치 원점": "Gốc phác thảo",
+    "로봇 바디 중심점": "Tâm thân robot",
+    "격자점": "Điểm lưới",
+    "끝점": "Điểm cuối",
+    "꼭짓점": "Đỉnh",
+    "중점": "Điểm giữa",
+    "원주점": "Điểm phần tư đường tròn",
+    "원 중심점": "Tâm đường tròn",
+    "도형 중심점": "Tâm hình học",
+    "스냅점": "Điểm bắt",
+    "X축 치수": "Kích thước trục X",
+    "Y축 치수": "Kích thước trục Y",
+    "모델 파츠 선": "Cạnh bộ phận model",
+    "치수 표시 위치를 변경했습니다.": "Đã thay đổi vị trí hiển thị kích thước.",
+    "선과 스냅점 사이 위치 치수로 변경했습니다. 값을 입력하세요.": "Đã đổi thành kích thước vị trí giữa đường và điểm bắt. Nhập giá trị.",
+    "선과 스냅점 사이의 X 또는 Y 축 거리가 너무 짧습니다. 다시 선택하세요.": "Khoảng cách trục X hoặc Y giữa đường và điểm bắt quá ngắn. Hãy chọn lại.",
+    "한 축 위치 치수를 만들었습니다. 값을 입력하면 스냅한 도형 위치가 변경됩니다.": "Đã tạo kích thước vị trí một trục. Nhập giá trị để di chuyển hình học đã bắt điểm.",
+    "한 축 위치 치수를 적용했습니다. 도형 위치가 변경되었습니다.": "Đã áp dụng kích thước vị trí một trục và di chuyển hình học.",
+    "두 스냅 지점의 X 또는 Y 축 거리가 너무 짧습니다. 다시 선택하세요.": "Khoảng cách theo trục X hoặc Y giữa hai điểm bắt quá ngắn. Hãy chọn lại.",
+    "두 번째 치수점은 스냅 지점, 선 또는 모델 파츠의 유효한 점이어야 합니다.": "Điểm kích thước thứ hai phải là điểm bắt, đường hoặc điểm hợp lệ trên bộ phận model.",
+    "첫 번째 치수점을 선택했습니다. 유효한 스냅 지점을 선택해 X 또는 Y 한 축 치수를 완성하세요.": "Đã chọn điểm kích thước thứ nhất. Hãy chọn điểm bắt hợp lệ để hoàn tất kích thước một trục X hoặc Y.",
+    "두 번째 스냅 지점을 클릭해 한 축 위치 치수를 완성하세요.": "Chọn điểm bắt thứ hai để hoàn tất kích thước vị trí một trục.",
+    "선 또는 모서리를 클릭하면 길이 치수를 만들고, 유효한 스냅 지점을 차례로 클릭하면 X 또는 Y 한 축 위치 치수를 만듭니다.": "Nhấp vào đường hoặc cạnh để tạo kích thước chiều dài, hoặc chọn lần lượt các điểm bắt hợp lệ để tạo kích thước vị trí một trục X hoặc Y.",
+    "선 또는 모서리를 클릭하면 길이 치수, 스냅 지점을 차례로 클릭하면 X 또는 Y 한 축 위치 치수를 기입하세요.": "Nhấp vào đường hoặc cạnh để tạo kích thước chiều dài, hoặc chọn lần lượt các điểm bắt để tạo kích thước vị trí một trục X hoặc Y.",
+    "선 또는 유효한 스냅 지점을 클릭하세요.": "Hãy nhấp vào đường hoặc điểm bắt hợp lệ.",
+    "3D 파일": "Tệp 3D",
+    "DXF 삽입": "Chèn DXF",
+    "스케치에 DXF 삽입": "Chèn DXF vào phác thảo",
+    "DXF를 스케치로 삽입": "Chèn DXF vào phác thảo",
     "3D 파일 불러오기": "Nhập tệp 3D",
     "3D 모델 가져오기 방식": "Phương thức nhập mô hình 3D",
     "3D 모델링": "Mô hình 3D",
@@ -111,8 +151,23 @@
     "선택한 암 로드": "Tải trên tay máy đã chọn",
     "{axis} Link에 부착됨 · 위치와 회전은 Link 기준으로 저장됩니다.": "Đã gắn vào Link {axis} · Vị trí và góc xoay được lưu theo Link.",
     "암 로드가 {axis}에 부착되었습니다.": "Đã gắn tải trên tay máy vào {axis}.",
+    "암 로드 등록에 실패했습니다.": "Không thể đăng ký tải trên tay máy.",
+    "선택한 로봇의 암 로드 부착 축을 찾을 수 없습니다.": "Không tìm thấy trục lắp tải trên tay máy của robot đã chọn.",
     "암 로드 불러오기": "Nhập tải trên tay máy",
     "암 로드 부착 축 변경": "Đổi trục gắn tải trên tay máy",
+    "암 로드 위치 이동": "Di chuyển vị trí tải tay",
+    "암 로드 부하 계산 방식": "Phương pháp tính tải tay",
+    "암 로드 계산 재질": "Vật liệu tính tải tay",
+    "재질로 계산": "Tính theo vật liệu",
+    "알루미늄 합금": "Hợp kim nhôm",
+    "강철": "Thép",
+    "스테인리스": "Thép không gỉ",
+    "황동": "Đồng thau",
+    "사용자 정의": "Tùy chỉnh",
+    "물성 계산": "Tính thuộc tính",
+    "모델 형상에서 물성 계산": "Tính thuộc tính từ hình học mô hình",
+    "암 로드 물성 계산": "Tính thuộc tính tải tay",
+    "모델 형상에서 암 로드 물성 계산": "Tính thuộc tính tải tay từ hình học mô hình",
     "암 로드 표시 설정": "Cài đặt hiển thị tải trên tay máy",
     "표시": "Hiển thị",
     "숨기면 간섭 검사에서도 제외": "Tải bị ẩn cũng được loại khỏi kiểm tra va chạm.",
@@ -122,6 +177,12 @@
     "질량": "Khối lượng",
     "무게중심": "Trọng tâm",
     "관성모멘트": "Mô men quán tính",
+    "관성모멘트 (무게중심 기준)": "Mô men quán tính quanh trọng tâm",
+    "질량 입력값을 기준으로 모델 형상의 무게중심과 관성모멘트를 계산해 입력합니다.": "Tính và nhập trọng tâm cùng mô men quán tính của hình học theo khối lượng đã nhập.",
+    "재질을 선택한 뒤 물성 계산을 누르면 모델 형상에서 질량·무게중심·관성모멘트를 입력합니다.": "Chọn vật liệu rồi tính để nhập khối lượng, trọng tâm và mô men quán tính từ hình học mô hình.",
+    "입력한 질량을 기준으로 암 로드 물성을 계산해 입력했습니다.": "Đã tính và nhập thuộc tính tải tay theo khối lượng đã nhập.",
+    "선택한 재질을 기준으로 암 로드 물성을 계산해 입력했습니다.": "Đã tính và nhập thuộc tính tải tay theo vật liệu đã chọn.",
+    "암 로드 질량을 먼저 입력하세요.": "Hãy nhập khối lượng tải tay trước.",
     "위치와 회전은 선택한 Link 기준으로 저장됩니다.": "Vị trí và góc xoay được lưu theo Link đã chọn.",
     "3D 모델링 · 장면에 독립 배치": "Mô hình 3D · Đặt độc lập trong cảnh",
     "툴 · 로봇 TCP에 장착": "Tool · Gắn vào TCP robot",
@@ -130,6 +191,17 @@
   "삭제": "Xóa",
   "복사": "Sao chép",
   "붙여넣기": "Dán",
+  "내보내기": "Xuất",
+  "모델 내보내기": "Xuất mô hình",
+  "선택한 생성 도형을 STL 또는 STEP 파일로 저장합니다.": "Lưu hình dạng đã tạo được chọn thành tệp STL hoặc STEP.",
+  "CAD generated shape export note": "Lưu hình dạng đã tạo được chọn thành tệp STL hoặc STEP.",
+  "내보내기 형식": "Định dạng xuất",
+  "파일 내보내기": "Xuất tệp",
+  "생성된 도형만 내보낼 수 있습니다.": "Chỉ có thể xuất các hình dạng đã tạo.",
+  "모델 내보내는 중...": "Đang xuất mô hình...",
+  "STL 파일 내보내기를 완료했습니다.": "Đã xuất tệp STL.",
+  "STEP 파일 내보내기를 완료했습니다.": "Đã xuất tệp STEP.",
+  "생성 도형을 내보낼 수 없습니다.": "Không thể xuất hình dạng đã tạo.",
   "취소": "Hủy",
   "불러오기": "Nhập",
   "전체 선택": "Chọn tất cả",
@@ -139,6 +211,14 @@
   "체크 로봇": "Robot đã chọn",
   "프로젝트 저장": "Lưu dự án",
   "프로젝트 불러오기": "Tải dự án",
+  "로봇 모델 선택": "Chọn model robot",
+  "로봇 모델을 변경하거나 추가할 수 있습니다. 아래에서 작업을 선택하세요.": "Bạn có thể thay thế hoặc thêm model robot. Hãy chọn thao tác bên dưới.",
+  "현재 로봇 모델이 {count}개 있습니다. 선택한 로봇만 {name}으로 변경할지 새 로봇으로 추가할지 선택하세요.": "Hiện có {count} model robot. Hãy chọn thay thế chỉ robot đang chọn bằng {name} hoặc thêm model này thành robot mới.",
+  "현재 로봇 모델이 {count}개 있습니다. 선택한 로봇을 {name}으로 변경하시겠습니까?\n\n확인: 로봇 변경\n취소: 로봇 추가": "Hiện có {count} model robot. Bạn có muốn chỉ thay thế robot đang chọn bằng {name} không?\n\nOK: Thay thế robot\nHủy: Thêm robot",
+  "선택한 로봇": "Robot đã chọn",
+  "로봇 추가": "Thêm robot",
+  "로봇 변경": "Thay thế robot",
+  "선택된 로봇이 없어 로봇 변경을 사용할 수 없습니다. 로봇 추가를 선택하세요.": "Không thể thay thế robot vì chưa chọn robot. Hãy chọn Thêm robot.",
   "Program": "Chương trình",
   "Program Panel": "Bảng chương trình",
   "Program Panel을 별도 창으로 분리": "Mở Bảng chương trình trong cửa sổ riêng",
@@ -149,6 +229,12 @@
   "가상 컨트롤러 패널 숨기기": "Ẩn bảng Bộ điều khiển ảo",
   "가상 컨트롤러 표시/숨김": "Hiện hoặc ẩn Bộ điều khiển ảo",
   "가상 컨트롤러 대상 로봇": "Robot đích của Bộ điều khiển ảo",
+  "새 컨트롤러 연결": "Kết nối bộ điều khiển mới",
+  "충돌 시 물건 잡기/놓기": "Gắp/thả khi va chạm",
+  "충돌 상태 300ms 유지하면 실행": "Thực hiện sau khi va chạm kéo dài 0,3 giây",
+  "충돌 상태를 0.3초 유지하면 실행": "Thực hiện sau khi va chạm kéo dài 0,3 giây",
+  "충돌 시 물건 잡기/놓기 활성화": "Bật gắp/thả khi va chạm",
+  "충돌 시 물건 잡기/놓기 비활성화": "Tắt gắp/thả khi va chạm",
   "전용 브리지 다운로드": "Tải cầu nối chuyên dụng",
   "전용 브리지를 실행해 주세요.": "Hãy chạy cầu nối chuyên dụng trước.",
   "전용 브리지 · 127.0.0.1:5055": "Cầu nối chuyên dụng · 127.0.0.1:5055",
@@ -195,6 +281,11 @@
   "뷰어 제어 도크": "Thanh điều khiển trình xem",
   "모델 트리 표시/숨김": "Hiện hoặc ẩn Cây mô hình",
   "색상 변경": "Đổi màu",
+  "투명도": "Độ trong suốt",
+  "선택 모델": "Mô hình đã chọn",
+  "선택 모델 기준 배치": "Đặt theo mô hình đã chọn",
+  "모델 배치 스냅 유형": "Kiểu bắt điểm khi đặt mô hình",
+  "전체 모델": "Tất cả mô hình",
   "외곽선 켜기": "Hiện đường viền",
   "외곽선 끄기": "Ẩn đường viền",
   "외곽선 표시/숨김": "Hiện/ẩn đường viền",
@@ -202,8 +293,49 @@
   "되돌리기 (Ctrl+Z)": "Hoàn tác (Ctrl+Z)",
   "다시 실행 (Ctrl+Y)": "Làm lại (Ctrl+Y)",
   "닫기": "Đóng",
+  "Work Origin": "Gốc làm việc",
+  "Work Origin 등록 안내": "Đăng ký vị trí TCP hoặc Joint hiện tại làm Gốc làm việc và bật bit đầu ra khi đạt đến vị trí đã đăng ký.",
+  "작업원점 관절 등록 안내": "Đăng ký vị trí Joint hiện tại của robot làm Gốc làm việc và bật bit đầu ra khi đạt đến vị trí đã đăng ký.",
+  "현재 로봇의 관절 위치를 작업원점으로 등록하고, 등록 위치 도달 시 출력 비트를 ON으로 표시합니다.": "Đăng ký vị trí Joint hiện tại của robot làm Gốc làm việc và bật bit đầu ra khi đạt đến vị trí đã đăng ký.",
+  "등록 기준": "Cơ sở đăng ký",
+  "현재 TCP 위치": "Vị trí TCP hiện tại",
+  "현재 Joint position": "Vị trí Joint hiện tại",
+  "도달 출력 비트": "Bit đầu ra khi đến vị trí",
+  "현재 TCP 위치 또는 Joint position을 Work Origin으로 등록하고, 등록 위치 도달 시 출력 비트를 ON으로 표시합니다.": "Đăng ký vị trí TCP hoặc Joint hiện tại làm Work Origin và bật bit đầu ra khi đạt đến vị trí đã đăng ký.",
+  "Work Origin으로 이동": "Di chuyển đến Gốc làm việc",
+  "등록 해제": "Xóa đăng ký",
+  "현재 위치 등록": "Đăng ký vị trí hiện tại",
+  "등록됨 · {mode} · OUT{bit} · {state}": "Đã đăng ký · {mode} · OUT{bit} · {state}",
+  "등록됨 · {mode} · Out [{bit}] · {state}": "Đã đăng ký · {mode} · Out [{bit}] · {state}",
+  "등록됨 · Out [{bit}] · {state}": "Đã đăng ký · Out [{bit}] · {state}",
+  "아직 Work Origin이 등록되지 않았습니다.": "Chưa đăng ký Work Origin.",
+  "Work Origin을 설정할 로봇을 선택하세요.": "Chọn robot để thiết lập Work Origin.",
+  "현재 TCP 위치를 읽을 수 없습니다.": "Không thể đọc vị trí TCP hiện tại.",
+  "현재 위치를 Work Origin으로 등록했습니다.": "Đã đăng ký vị trí hiện tại làm Work Origin.",
+  "먼저 Work Origin을 등록하세요.": "Hãy đăng ký Work Origin trước.",
+  "Work Origin 등록을 해제했습니다.": "Đã xóa đăng ký Work Origin.",
+  "Work Origin 설정·이동": "Thiết lập hoặc di chuyển đến Work Origin",
+  "Work Origin 등록": "Đăng ký Work Origin",
+  "Work Origin 등록 해제": "Xóa đăng ký Work Origin",
+  "등록된 Work Origin으로 이동": "Di chuyển đến Work Origin đã đăng ký",
+  "Work Origin을 먼저 등록하세요.": "Hãy đăng ký Work Origin trước.",
+  "출력 비트 번호": "Số bit đầu ra",
+  "출력 비트 번호는 0 이상의 숫자만 입력하세요.": "Nhập số không âm cho bit đầu ra.",
+  "ON": "ON",
+  "OFF": "OFF",
   "현재 자세 추가": "Thêm tư thế hiện tại",
   "딜레이 추가": "Thêm độ trễ",
+  "WAIT 명령 추가": "Thêm lệnh WAIT",
+  "프로그램 행 {number}": "Dòng chương trình {number}",
+  "대기 대상 로봇": "Robot cần chờ",
+  "대기할 프로그램 행": "Dòng chương trình cần chờ",
+  "다른 로봇이 없습니다.": "Không có robot khác.",
+  "WAIT 명령에는 다른 로봇이 필요합니다.": "WAIT cần một robot khác.",
+  "대기 대상 로봇을 선택하세요.": "Chọn robot cần chờ.",
+  "WAIT 대상 로봇 변경": "Đổi robot đích của WAIT",
+  "WAIT 대상 행 변경": "Đổi dòng đích của WAIT",
+  "대기 행 번호는 {min}부터 {max} 사이의 정수여야 합니다.": "Dòng chờ phải là số nguyên từ {min} đến {max}.",
+  "자세, 뷰, DELAY, WAIT 또는 타이머 명령을 추가하세요.": "Thêm lệnh tư thế, chế độ xem, DELAY, WAIT hoặc hẹn giờ.",
   "TIME START 추가": "Thêm TIME START",
   "TIME OUT 추가": "Thêm TIME OUT",
   "선택 포인트 덮어쓰기": "Ghi đè điểm đã chọn",
@@ -338,6 +470,7 @@
     "3D 모델링 불러오기": "Nhập mô hình 3D",
     "전체 화면 모드": "Chế độ toàn màn hình",
     "전체 화면 모드 종료": "Thoát chế độ toàn màn hình",
+    "전체 화면": "Toàn màn hình",
   "동시 실행 대상 변경": "Thay đổi lựa chọn chạy đồng thời",
   "모션 명령 편집": "Chỉnh sửa lệnh chuyển động",
   "프로그램 포인트 이름": "Tên điểm chương trình",
@@ -375,14 +508,15 @@
   "TCP 위치 / 회전": "Vị trí / xoay TCP",
   "Arm 파라미터": "Tham số cánh tay",
   "외부 축": "Trục ngoài",
+  "외부 축 (주행축, 내보내기 적용 안됨)": "Trục ngoài (trục chạy; không áp dụng khi xuất)",
   "라벨": "Nhãn",
   "영문자로 시작하며 영문, 숫자, 밑줄만 사용 (19자 이하)": "Bắt đầu bằng chữ cái; chỉ dùng chữ cái, số và dấu gạch dưới (tối đa 19 ký tự)",
   "위치 값 적용": "Áp dụng giá trị vị trí",
   "스냅": "Bắt điểm",
   "스냅 유형": "Loại bắt điểm",
   "자동 스냅": "Bắt điểm tự động",
-  "스냅 반경": "Bán kính bắt điểm",
-  "다중 점 중심점": "Tâm đa điểm",
+    "다중 점 중심점": "Tâm đa điểm",
+    "로봇 바디 중심점": "Tâm thân robot",
   "다중 점 선택": "Chọn nhiều điểm",
   "계산 중심 적용": "Áp dụng tâm đã tính",
   "선택 초기화": "Đặt lại lựa chọn",
@@ -393,6 +527,7 @@
   "최대 4개까지 선택할 수 있습니다.": "Bạn có thể chọn tối đa bốn điểm.",
   "중복된 스냅 점입니다.": "Điểm bắt này đã được chọn.",
   "TCP 스냅할 Tool 모델을 먼저 지정하세요.": "Hãy chỉ định mô hình Tool trước khi bắt TCP.",
+  "TCP 스냅할 Tool 모델 또는 생성 도형을 먼저 준비하세요.": "Hãy chuẩn bị mô hình Tool hoặc hình đã tạo trước khi bắt TCP.",
   "끝점": "Điểm cuối",
   "꼭짓점": "Đỉnh",
   "원/호 중심점": "Tâm đường tròn/cung",
@@ -404,11 +539,80 @@
   "선택한 스냅 위치에 도달할 수 없습니다.": "Không thể đến vị trí bắt điểm đã chọn.",
   "선택한 스냅 위치로 이동했습니다.": "Đã di chuyển đến vị trí bắt điểm đã chọn.",
   "선택 가능한 스냅 지점을 가리켜 주세요.": "Hãy trỏ vào một điểm bắt khả dụng.",
+  "간섭영역에 사용할 스냅 지점을 클릭하세요.": "Hãy nhấp vào điểm bắt sẽ dùng cho vùng can thiệp.",
+  "간섭영역 스냅 위치를 가져왔습니다.": "Đã lấy vị trí bắt điểm của vùng can thiệp.",
   "스냅 이동할 로봇을 먼저 선택하세요.": "Hãy chọn robot cần di chuyển trước.",
   "스냅할 3D 모델링을 먼저 불러오세요.": "Hãy nhập mô hình 3D để bắt điểm trước.",
   "스냅 후보를 계산하는 중입니다...": "Đang tính các điểm bắt dính...",
   "3D 모델링의 스냅 지점을 클릭하세요.": "Nhấp vào một điểm bắt trên mô hình 3D.",
   "스냅 이동을 종료했습니다.": "Đã kết thúc di chuyển bắt điểm.",
+  "선택 면 기준 TCP 방향": "Hướng TCP theo mặt đã chọn",
+  "선택 면과 수평": "Song song với mặt đã chọn",
+  "선택 면과 수직": "Vuông góc với mặt đã chọn",
+  "스냅 이동에서 먼저 면을 선택하세요.": "Trước tiên hãy chọn một mặt trong chế độ di chuyển bắt điểm.",
+  "선택한 면의 방향을 계산할 수 없습니다.": "Không thể tính hướng của mặt đã chọn.",
+  "TCP Z 방향을 선택 면과 수평으로 맞췄습니다.": "Đã căn hướng TCP Z song song với mặt đã chọn.",
+  "TCP Z 방향을 선택 면과 수직으로 맞췄습니다.": "Đã căn hướng TCP Z vuông góc với mặt đã chọn.",
+  "DIMENSION MEASUREMENT": "Đo kích thước",
+  "치수": "Kích thước",
+  "치수 측정 패널": "Bảng đo kích thước",
+  "치수 측정 패널을 별도 창으로 분리": "Mở bảng đo kích thước trong cửa sổ riêng",
+  "치수 측정 패널 숨기기": "Ẩn bảng đo kích thước",
+  "치수 작업 모드": "Chế độ làm việc kích thước",
+  "치수 측정": "Đo kích thước",
+  "스냅 측정": "Đo bằng bắt điểm",
+  "모델 배치": "Đặt mô hình",
+  "P1 선택": "Chọn P1",
+  "P2 선택": "Chọn P2",
+  "측정 점": "Điểm đo",
+  "표시 방식": "Cách hiển thị",
+  "직선 길이": "Chiều dài đường thẳng",
+  "직각 치수 (X/Y/Z)": "Kích thước trực giao (X/Y/Z)",
+  "측정 결과": "Kết quả đo",
+  "Distance": "Khoảng cách",
+  "다시 측정": "Đo lại",
+  "치수 삭제": "Xóa kích thước",
+  "모델을 선택하세요.": "Hãy chọn một mô hình.",
+  "이동 대상": "Đối tượng di chuyển",
+  "P1 기준점": "Điểm chuẩn P1",
+  "P2 방향점": "Điểm hướng P2",
+  "P2 방향점을 선택하세요.": "Hãy chọn điểm hướng P2.",
+  "현재 거리": "Khoảng cách hiện tại",
+  "이동 거리 (mm)": "Khoảng cách di chuyển (mm)",
+  "목표 거리 (mm)": "Khoảng cách mục tiêu (mm)",
+  "P1→P2 거리": "Khoảng cách P1→P2",
+  "목표 좌표": "Tọa độ mục tiêu",
+  "변위": "Độ dịch chuyển",
+  "미리보기 갱신": "Làm mới bản xem trước",
+  "다시 선택": "Chọn lại",
+  "치수 측정 스냅 유형": "Loại bắt điểm đo kích thước",
+  "모델 형상 위로 포인터를 이동하세요.": "Di chuyển con trỏ lên hình học mô hình.",
+  "측정 대상이 숨겨졌거나 삭제되었습니다. 다시 측정하세요.": "Đối tượng đo đã bị ẩn hoặc xóa. Hãy đo lại.",
+  "P1과 P2는 서로 다른 스냅 점이어야 합니다.": "P1 và P2 phải là hai điểm bắt khác nhau.",
+  "측정 완료": "Đo hoàn tất",
+  "선택한 업로드 모델의 기준점을 선택하세요.": "Hãy chọn điểm chuẩn trên mô hình đã tải lên đang chọn.",
+  "선택한 모델의 기준점을 선택하세요.": "Hãy chọn điểm chuẩn trên mô hình đang chọn.",
+  "다시 측정할 P1 스냅 점을 선택하세요.": "Hãy chọn điểm bắt P1 để đo lại.",
+  "치수를 삭제했습니다.": "Đã xóa kích thước.",
+  "배치 미리보기가 적용되었습니다. 적용 또는 취소를 선택하세요.": "Đã áp dụng bản xem trước vị trí. Hãy chọn Áp dụng hoặc Hủy.",
+  "목표 거리는 0 이상의 유한한 값이어야 합니다.": "Khoảng cách mục tiêu phải là giá trị hữu hạn từ 0 trở lên.",
+  "P1 기준점을 선택하세요.": "Hãy chọn điểm chuẩn P1.",
+  "선택 모델의 P1 기준점을 선택하세요.": "Hãy chọn điểm chuẩn P1 của mô hình đã chọn.",
+  "모델 트리 또는 3D 화면에서 업로드 모델을 선택하세요.": "Hãy chọn mô hình đã tải lên trong cây mô hình hoặc chế độ xem 3D.",
+  "스냅 유형을 변경했습니다. P1 또는 P2를 선택하세요.": "Đã đổi loại bắt điểm. Hãy chọn P1 hoặc P2.",
+  "치수 측정 모드입니다. P1 스냅 점을 선택하세요.": "Đang ở chế độ đo kích thước. Hãy chọn điểm bắt P1.",
+  "두 번째 스냅 점 P2를 선택하세요.": "Hãy chọn điểm bắt thứ hai, P2.",
+  "P1을 선택했습니다. 두 번째 스냅 점 P2를 선택하세요.": "Đã chọn P1. Hãy chọn điểm bắt thứ hai, P2.",
+  "두 점 사이의 치수를 표시했습니다.": "Đã hiển thị kích thước giữa hai điểm.",
+  "업로드한 3D 모델의 기준점을 선택하세요.": "Hãy chọn điểm chuẩn trên mô hình 3D đã tải lên.",
+  "P1 기준점을 선택했습니다. 목표 방향의 P2를 선택하세요.": "Đã chọn điểm chuẩn P1. Hãy chọn P2 theo hướng mục tiêu.",
+  "P2 방향점을 선택했습니다. 목표 거리값을 입력하세요.": "Đã chọn điểm hướng P2. Hãy nhập khoảng cách mục tiêu.",
+  "목표 거리값을 입력한 뒤 미리보기를 갱신하세요.": "Nhập khoảng cách mục tiêu rồi làm mới bản xem trước.",
+  "모델 배치는 업로드한 3D 모델만 기준점으로 사용할 수 있습니다.": "Đặt mô hình chỉ có thể dùng mô hình 3D đã tải lên làm tham chiếu.",
+  "입력한 거리 기준으로 모델을 배치했습니다.": "Đã đặt mô hình theo khoảng cách đã nhập.",
+  "모델 배치를 적용했습니다.": "Đã áp dụng vị trí mô hình.",
+  "모델 배치 미리보기를 취소했습니다.": "Đã hủy bản xem trước vị trí mô hình.",
+  "치수 기준 모델 배치": "Đặt mô hình theo kích thước",
   "포인트 번호": "Số điểm",
   "포인트 라벨": "Nhãn điểm",
   "이미 사용 중인 포인트 번호입니다.": "Số điểm này đang được sử dụng.",
@@ -565,6 +769,7 @@
   "충돌 감지: {left} ↔ {right}": "Phát hiện va chạm: {left} ↔ {right}",
   "충돌 감지 켜기/끄기": "Bật/tắt phát hiện va chạm",
   "충돌 감지 켜기": "Bật phát hiện va chạm",
+  "충돌 감지 표시만": "Chỉ hiển thị va chạm",
   "충돌 감지 끄기": "Tắt phát hiện va chạm",
   "충돌 검사 오류": "Lỗi kiểm tra va chạm",
   "충돌이 감지되어 모션을 정지했습니다.": "Đã dừng chuyển động vì phát hiện va chạm.",
@@ -587,7 +792,8 @@
   "모든 설정 및 모델이 초기화됩니다. 정말로 진행하시겠습니까?": "Tất cả cài đặt và mô hình sẽ được đặt lại. Bạn có muốn tiếp tục không?",
   "시뮬레이션 초기화": "Đặt lại mô phỏng",
   "모션 실행 중에는 테스트 모델을 적용할 수 없습니다.": "Không thể áp dụng mô hình kiểm tra khi chuyển động đang chạy.",
-  "시뮬레이션 실행 중에는 Add Mode에서만 모델을 추가할 수 있습니다.": "Chỉ có thể thêm mô hình trong Add Mode khi mô phỏng đang chạy.",
+  "모션 실행 중에는 로봇을 변경할 수 없습니다.": "Không thể thay thế robot khi chuyển động đang chạy.",
+  "모션 실행 중에는 로봇 변경을 선택할 수 없습니다. 로봇 추가만 가능합니다.": "Không thể chọn thay thế robot khi chuyển động đang chạy. Chỉ có thể thêm robot.",
   "시뮬레이션이 시작되어 모델 교체를 취소했습니다.": "Mô phỏng đã bắt đầu nên đã hủy thay thế mô hình.",
   "선택한 면의 스냅 후보를 다시 계산해야 합니다. 면 선택은 유지됩니다.": "Cần tính lại các điểm bắt dính của mặt đã chọn. Lựa chọn mặt được giữ nguyên.",
   "선택한 면의 스냅 후보를 클릭하세요.": "Nhấp vào điểm bắt dính trên mặt đã chọn.",
@@ -617,6 +823,7 @@
   "Datum point (mm)": "Điểm chuẩn (mm)",
   "Offset (mm)": "Độ lệch (mm)",
   "Get current point": "Lấy điểm hiện tại",
+  "Get snap point": "Lấy điểm bắt",
   "Get datum point": "Lấy điểm chuẩn",
   "Previous": "Trước",
   "Next": "Tiếp",
@@ -674,7 +881,7 @@
     "마우스로 회전하고 휠로 확대/축소할 수 있습니다.": "Kéo chuột để xoay và dùng con lăn để thu phóng.",
     "4분할 뷰 닫기": "Đóng chế độ xem 4 khung",
     "저장 뷰로 재설정": "Đặt lại về các chế độ xem đã lưu",
-    "카메라를 원하는 위치로 조정한 뒤 슬롯의 저장 버튼을 누르세요. 뷰 버튼은 페이지 안의 고정 뷰 창으로 열리고, 다른 뷰를 누르면 같은 창에 분할되어 추가됩니다. 패널 헤더의 새 창 버튼은 패널을 화면 밖의 별도 창으로 엽니다.": "Điều chỉnh camera và lưu từng ô. Nút chế độ xem sẽ mở chế độ đã lưu trong cửa sổ cố định ngay trên trang; chọn chế độ xem khác sẽ thêm vào cùng cửa sổ theo bố cục chia ô. Nút cửa sổ mới ở tiêu đề bảng sẽ mở bảng trong cửa sổ trình duyệt riêng.",
+    "카메라를 원하는 위치로 조정한 뒤 슬롯의 저장 버튼을 누르세요. 저장하지 않은 뷰도 화면 버튼으로 실행할 수 있으며, 이 경우 현재 메인 뷰의 각도에서 시작합니다. 뷰 버튼은 페이지 안의 고정 뷰 창으로 열리고, 다른 뷰를 누르면 같은 창에 분할되어 추가됩니다. 패널 헤더의 새 창 버튼은 패널을 화면 밖의 별도 창으로 엽니다.": "Điều chỉnh camera và lưu từng ô. Các chế độ xem chưa lưu cũng có thể mở bằng nút màn hình; trong trường hợp này, chế độ xem sẽ bắt đầu từ góc hiện đang hiển thị trong chế độ xem chính. Nút chế độ xem sẽ mở chế độ xem trong cửa sổ cố định ngay trên trang; chọn chế độ xem khác sẽ thêm vào cùng cửa sổ theo bố cục chia ô. Nút cửa sổ mới ở tiêu đề bảng sẽ mở bảng trong cửa sổ trình duyệt riêng.",
     "고정 뷰 창": "Cửa sổ chế độ xem cố định",
     "고정 뷰 {count}개": "{count} chế độ xem cố định",
     "고정 뷰 창에 보기": "Xem trong cửa sổ chế độ xem cố định",
@@ -924,6 +1131,508 @@
     ,"Work origin": "Gốc làm việc"
     ,"Move robot to Work Origin 0": "Di chuyển robot đến Gốc làm việc 0"
     ,"Edit": "Chỉnh sửa"
+    ,"자동 경로 생성": "Tạo đường đi tự động"
+    ,"시작 위치": "Vị trí bắt đầu"
+    ,"목표 위치": "Vị trí mục tiêu"
+    ,"시작·목표 이동 포인트 선택 안내": "Chọn các điểm chuyển động bắt đầu và mục tiêu để thêm đường tránh va chạm giữa hai lệnh. MOVJ/MOVL được tự động quyết định theo kết quả kiểm tra va chạm. Các điểm chuyển động hiện có giữa chúng sẽ được dùng làm gợi ý tránh va chạm."
+    ,"시작·목표 이동 포인트를 선택하면 두 명령 사이에 우회 경로가 추가됩니다.": "Chọn các điểm chuyển động bắt đầu và mục tiêu để thêm đường tránh va chạm giữa hai lệnh."
+    ,"시작 위치와 목표 위치를 선택한 후 경로 생성 버튼을 누르세요.": "Chọn vị trí bắt đầu và vị trí mục tiêu, sau đó nhấp Tạo đường đi."
+    ,"자동 경로 생성에는 이동 포인트 2개가 필요합니다.": "Tạo đường đi tự động cần hai điểm chuyển động."
+    ,"시작 위치와 목표 위치는 서로 다른 이동 포인트여야 합니다.": "Vị trí bắt đầu và mục tiêu phải là hai điểm chuyển động khác nhau."
+    ,"시작 포인트는 목표 포인트보다 프로그램 앞에 있어야 합니다.": "Điểm bắt đầu phải đứng trước điểm mục tiêu trong chương trình."
+    ,"선택한 시작 포인트의 관절 데이터를 읽을 수 없습니다.": "Không thể đọc dữ liệu khớp của điểm bắt đầu đã chọn."
+    ,"선택한 목표 포인트의 관절 데이터를 읽을 수 없습니다.": "Không thể đọc dữ liệu khớp của điểm mục tiêu đã chọn."
+    ,"선택한 시작 포인트의 관절 제한을 벗어났습니다.": "Điểm bắt đầu đã chọn nằm ngoài giới hạn khớp."
+    ,"선택한 목표 포인트의 관절 제한을 벗어났습니다.": "Điểm mục tiêu đã chọn nằm ngoài giới hạn khớp."
+    ,"선택한 시작 포인트의 자세가 충돌 상태입니다.": "Điểm bắt đầu đã chọn đang ở trạng thái va chạm."
+    ,"선택한 목표 포인트의 자세가 충돌 상태입니다.": "Điểm mục tiêu đã chọn đang ở trạng thái va chạm."
+    ,"시작 포인트와 목표 포인트를 다시 선택하세요.": "Hãy chọn lại điểm bắt đầu và điểm mục tiêu."
+    ,"선택한 목표 포인트 검사 중": "Đang kiểm tra điểm mục tiêu đã chọn"
+    ,"경로 생성 완료 · {count}개 우회 포인트 ({motion})": "Đã tạo đường đi · {count} điểm tránh va chạm ({motion})"
+    ,"경로 생성 완료 · {count}개 우회 포인트 ({motion}) · TCP 자세 유지": "Đã tạo đường đi · {count} điểm tránh va chạm ({motion}) · giữ hướng TCP"
+    ,"충돌 검사 결과 {motion} 경로로 결정되었습니다. 경로 적용을 눌러 목표 명령을 변경하세요.": "Kết quả kiểm tra va chạm đã chọn đường đi {motion}. Hãy nhấn Áp dụng đường đi để cập nhật lệnh mục tiêu."
+    ,"현재 TCP 기준으로 포인트를 보정했습니다. 경로 적용을 누르세요.": "Các điểm đã được hiệu chỉnh theo TCP hiện tại. Hãy áp dụng đường đi để tiếp tục."
+    ,"TCP 자세 유지에 맞춰 목표 포인트를 갱신합니다. 경로 적용을 누르세요.": "Điểm mục tiêu sẽ được cập nhật để giữ hướng TCP. Hãy áp dụng đường đi để tiếp tục."
+    ,"TCP 자세를 유지한 목표 위치의 안전한 관절 자세를 찾지 못했습니다.": "Không tìm thấy tư thế khớp an toàn tại mục tiêu khi giữ hướng TCP."
+    ,"TCP 자세 유지 목표 포인트를 준비하지 못했습니다.": "Không thể chuẩn bị điểm mục tiêu giữ hướng TCP."
+    ,"TCP 자세 유지 목표 포인트를 저장하지 못했습니다.": "Không thể lưu điểm mục tiêu giữ hướng TCP."
+    ,"TCP 자세를 유지하도록 목표 포인트를 갱신했습니다.": "Đã cập nhật điểm mục tiêu để giữ hướng TCP."
+    ,"현재 TCP 기준으로 포인트를 동기화했습니다.": "Các điểm đã được đồng bộ theo TCP hiện tại."
+    ,"두 포인트 사이에 추가할 우회 포인트가 없습니다.": "Không cần thêm điểm tránh va chạm giữa hai điểm."
+    ,"BASE 좌표계 · mm": "Tọa độ BASE · mm"
+    ,"현재 TCP 자세 유지": "Giữ hướng TCP hiện tại"
+    ,"경로 설정을 바꿨습니다. 경로 생성 버튼을 눌러 다시 계산하세요.": "Đã thay đổi cài đặt đường đi. Hãy nhấn Tạo đường đi để tính lại."
+    ,"TCP 자세 유지 경로를 찾지 못했습니다. 이동 방식을 MOVL 또는 자동으로 설정하거나 TCP 자세 유지를 해제하세요.": "Không tìm thấy đường đi giữ hướng TCP. Hãy dùng MOVL hoặc Tự động, hoặc tắt giữ hướng TCP."
+    ,"목표 포인트로 이어지는 최종 접근 경로가 안전하지 않습니다.": "Đường tiếp cận cuối đến điểm mục tiêu không an toàn."
+    ,"자세 직접 입력": "Nhập hướng trực tiếp"
+    ,"이동 방식": "Kiểu chuyển động"
+    ,"자동": "Tự động"
+    ,"속도": "Tốc độ"
+    ,"최대 포인트": "Số điểm tối đa"
+    ,"최대 계산 시간 (초)": "Thời gian tính tối đa (giây)"
+    ,"포인트 삽입 위치": "Vị trí chèn điểm"
+    ,"경로 생성": "Tạo đường đi"
+    ,"경로 다시 계산": "Tính lại đường đi"
+    ,"경로 적용": "Áp dụng đường đi"
+    ,"경로 취소": "Hủy đường đi"
+    ,"현재 TCP 위치를 기준으로 타겟을 입력하세요.": "Nhập mục tiêu dựa trên vị trí TCP hiện tại."
+    ,"직선 경로 검사 중": "Đang kiểm tra đường thẳng"
+    ,"사용자 회피 포인트 검사 중": "Đang kiểm tra các điểm tránh do người dùng cung cấp"
+    ,"최초 간섭점 6방향 탈출 검사 중": "Đang thử sáu hướng thoát từ điểm va chạm đầu tiên"
+    ,"최초 간섭점 6방향 탈출 검사 중 ({current}/{total})": "Đang thử sáu hướng thoát từ điểm va chạm đầu tiên ({current}/{total})"
+    ,"목표 위치 분석 중": "Đang phân tích vị trí mục tiêu"
+    ,"목표 IK 계산 중": "Đang tính IK mục tiêu"
+    ,"우회 경로 탐색 중": "Đang tìm đường vòng"
+    ,"경로 최적화 중": "Đang tối ưu đường đi"
+    ,"안전 전환 자세 탐색 중": "Đang tìm tư thế chuyển tiếp an toàn"
+    ,"안전 전환 자세 탐색 중 ({current}/{total})": "Đang tìm tư thế chuyển tiếp an toàn ({current}/{total})"
+    ,"전환점 연결 검사 중": "Đang kiểm tra kết nối điểm chuyển tiếp"
+    ,"전환점 연결 검사 중 ({nodes} 자세 · {edges} links)": "Đang kiểm tra kết nối điểm chuyển tiếp ({nodes} tư thế · {edges} liên kết)"
+    ,"최종 간섭 검사 중": "Đang kiểm tra va chạm cuối cùng"
+    ,"직선 경로 검사 중 ({current}/{total})": "Đang kiểm tra đường thẳng ({current}/{total})"
+    ,"우회 경로 탐색 중 ({nodes} nodes · {seconds} s)": "Đang tìm đường vòng ({nodes} nút · {seconds} giây)"
+    ,"자동 우회 경로를 {count}개 포인트로 등록했습니다.": "Đã đăng ký {count} điểm đường vòng tự động."
+    ,"자동 경로를 {motion}으로 결정하고 {count}개 우회 포인트를 등록했습니다.": "Đã chọn {motion} và đăng ký {count} điểm đường vòng tự động."
+    ,"자동 경로 모션을 {motion}으로 변경했습니다.": "Đã đổi kiểu chuyển động của đường đi tự động thành {motion}."
+    ,"활성 로봇을 선택하세요.": "Hãy chọn robot đang hoạt động."
+    ,"활성 로봇의 관절과 TCP를 확인하세요.": "Hãy kiểm tra khớp và TCP của robot đang hoạt động."
+    ,"충돌 검사 시스템이 준비되지 않았습니다.": "Hệ thống kiểm tra va chạm chưa sẵn sàng."
+    ,"현재 로봇 자세가 충돌 상태입니다.": "Tư thế robot hiện tại đang va chạm."
+    ,"타겟 자세가 충돌 상태입니다.": "Tư thế mục tiêu đang va chạm."
+    ,"타겟 위치가 3D 모델 내부에 있습니다.": "Vị trí mục tiêu nằm bên trong mô hình 3D."
+    ,"직선 MOVL 경로에 간섭이 있어 우회 경로를 MOVL로 만들 수 없습니다. 이동 방식을 자동으로 선택하세요.": "Đường MOVL thẳng bị cản nên không thể tạo đường vòng bằng MOVL. Hãy chọn chế độ Tự động."
+    ,"제한 시간 안에 안전한 우회 경로를 찾지 못했습니다.": "Không tìm thấy đường vòng an toàn trong thời gian giới hạn."
+    ,"경로 계산을 취소했습니다.": "Đã hủy tính đường đi."
+    ,"경로 생성 완료 · {count}개 포인트 ({motion})": "Đã tạo đường đi · {count} điểm ({motion})"
+    ,"선택 포인트 뒤": "Sau điểm đã chọn"
+    ,"프로그램 마지막": "Cuối chương trình"
+    ,"3D PRIMITIVES": "Hình khối 3D"
+    ,"3D/CAD 파일 불러오기": "Nhập tệp 3D/CAD"
+    ,"도형": "Hình dạng"
+    ,"2D 스케치 치수": "Kích thước phác thảo 2D"
+    ,"2D 스케치 모드 시작": "Bắt đầu chế độ phác thảo 2D"
+    ,"2D 스케치 모드 종료": "Thoát chế độ phác thảo 2D"
+    ,"2D 모드": "Chế độ 2D"
+    ,"2D 종료": "Thoát 2D"
+    ,"2D 스케치": "Phác thảo 2D"
+    ,"평면에서 마우스로 드래그해 사각형을 그리세요.": "Kéo chuột trên mặt phẳng để vẽ hình chữ nhật."
+    ,"스케치 X 치수 (mm)": "Kích thước X của phác thảo (mm)"
+    ,"스케치 Y 치수 (mm)": "Kích thước Y của phác thảo (mm)"
+    ,"Z 높이": "Chiều cao Z"
+    ,"생성할 도형 Z 높이 (mm)": "Chiều cao Z của hình dạng (mm)"
+    ,"다시 그리기": "Vẽ lại"
+    ,"2D 모드 종료": "Thoát chế độ 2D"
+    ,"2D 스케치 도구": "Công cụ phác thảo 2D"
+    ,"선": "Đường thẳng"
+    ,"원": "Hình tròn"
+    ,"모따기": "Vát mép"
+    ,"모따기 거리": "Khoảng cách vát mép"
+    ,"모따기 거리 (mm)": "Khoảng cách vát mép (mm)"
+    ,"작업": "Thao tác"
+    ,"CAD 작업": "Thao tác CAD"
+    ,"스케치 작업": "Thao tác phác thảo"
+    ,"절삭 방향": "Hướng cắt"
+    ,"스케치 돌출 컷 방향": "Hướng cắt đùn phác thảo"
+    ,"CAD 돌출 컷 방향": "Hướng cắt đùn CAD"
+    ,"기준면에서 +Z": "Từ mặt chuẩn theo +Z"
+    ,"상단에서 -Z": "Từ đỉnh theo -Z"
+    ,"CAD 돌출 Z 높이 (mm)": "Chiều cao Z đùn CAD (mm)"
+    ,"CAD 레이어 {layer}": "Lớp {layer}"
+    ,"CAD 속성 형식": "Loại"
+    ,"CAD 속성 핸들": "Handle"
+    ,"CAD 속성 레이어": "Lớp"
+    ,"CAD 속성 경계": "Phạm vi"
+    ,"CAD 속성 길이": "Độ dài"
+    ,"CAD 속성 반지름": "Bán kính"
+    ,"CAD 속성 지름": "Đường kính"
+    ,"CAD 속성 꼭짓점": "Số đỉnh"
+    ,"CAD 속성 닫힘": "Đã đóng"
+    ,"돌출": "Đùn"
+    ,"돌출 컷": "Cắt đùn"
+    ,"돌출 생성": "Tạo đùn"
+    ,"돌출 컷 실행": "Thực hiện cắt đùn"
+    ,"프로파일 선택": "Chọn biên dạng"
+    ,"선택한 스케치 프로파일 돌출": "Đùn biên dạng phác thảo đã chọn"
+    ,"선택한 스케치 프로파일 돌출 컷": "Cắt đùn biên dạng phác thảo đã chọn"
+    ,"돌출할 스케치 항목을 선택하세요.": "Hãy chọn biên dạng phác thảo để đùn."
+    ,"돌출할 닫힌 스케치 항목을 선택하세요. Shift 키로 여러 항목을 선택할 수 있습니다.": "Chọn biên dạng phác thảo kín để đùn. Giữ Shift để chọn nhiều biên dạng."
+    ,"선택된 {count}개 스케치 항목의 Z 높이를 설정하세요.": "Đặt chiều cao Z cho {count} biên dạng phác thảo đã chọn."
+    ,"선택된 {count}개 스케치 항목의 Z 깊이를 설정하세요.": "Đặt độ sâu cắt Z cho {count} biên dạng phác thảo đã chọn."
+    ,"선택한 프로파일의 Z 높이를 설정한 뒤 돌출을 적용하세요.": "Đặt chiều cao Z cho các biên dạng đã chọn rồi áp dụng đùn."
+    ,"선택한 프로파일의 Z 높이를 설정한 뒤 돌출 컷을 적용하세요.": "Đặt chiều cao Z cho biên dạng đã chọn rồi áp dụng cắt đùn."
+    ,"{count}개 프로파일이 선택되었습니다. Extrude를 눌러 Z 높이를 설정하세요.": "Đã chọn {count} biên dạng. Nhấp Đùn để đặt chiều cao Z."
+    ,"{count}개 프로파일이 선택되었습니다. 돌출 컷을 눌러 Z 깊이를 설정하세요.": "Đã chọn {count} biên dạng. Nhấp Cắt đùn để đặt độ sâu cắt Z."
+    ,"돌출할 닫힌 스케치 항목을 먼저 선택하거나 작성하세요.": "Hãy chọn hoặc tạo biên dạng phác thảo kín trước khi đùn."
+    ,"돌출 컷은 한 개의 스케치 항목만 선택하세요.": "Hãy chọn một biên dạng phác thảo cho thao tác cắt đùn."
+    ,"돌출 설정을 취소했습니다. 스케치 편집은 계속됩니다.": "Đã hủy thiết lập đùn. Tiếp tục chỉnh sửa phác thảo."
+    ,"스케치 편집": "Chỉnh sửa phác thảo"
+    ,"피쳐 편집": "Chỉnh sửa feature"
+    ,"스케치 적용": "Áp dụng phác thảo"
+    ,"스케치 편집 중입니다. 수정한 뒤 스케치 완료를 누르세요.": "Đang chỉnh sửa phác thảo. Hãy áp dụng phác thảo sau khi sửa xong."
+    ,"피쳐 편집 중입니다. Z 높이를 변경한 뒤 적용하세요.": "Đang chỉnh sửa feature. Thay đổi chiều cao Z rồi áp dụng feature."
+    ,"기존 스케치 피쳐를 수정했습니다.": "Đã cập nhật feature phác thảo hiện có."
+    ,"장면에 배치된 스케치 도형만 편집할 수 있습니다.": "Chỉ có thể chỉnh sửa hình phác thảo đã đặt trong cảnh."
+    ,"스케치 지우기": "Xóa phác thảo"
+    ,"직경": "Đường kính"
+    ,"길이": "Chiều dài"
+    ,"스케치 요소": "Phần tử phác thảo"
+    ,"스케치 요소 추가": "Thêm phần tử phác thảo"
+    ,"스케치 요소 이동": "Di chuyển phần tử phác thảo"
+    ,"스케치 치수 변경": "Thay đổi kích thước phác thảo"
+    ,"한 축 위치 치수 추가": "Thêm kích thước vị trí một trục"
+    ,"한 축 위치 치수 변경": "Thay đổi kích thước vị trí một trục"
+    ,"치수 생성 또는 위치 변경": "Tạo hoặc di chuyển kích thước"
+    ,"DXF 스케치 삽입": "Chèn phác thảo DXF"
+    ,"스케치 원점 이동": "Di chuyển gốc phác thảo"
+    ,"스케치 원점 초기화": "Đặt lại gốc phác thảo"
+    ,"스케치 사각형": "Hình chữ nhật"
+    ,"Z 컷 깊이": "Độ sâu cắt Z"
+    ,"스케치 돌출": "Đùn phác thảo"
+    ,"돌출 컷은 먼저 대상 사각형 도형을 선택하세요.": "Hãy chọn một khối hộp mục tiêu trước khi dùng cắt đùn."
+    ,"돌출 컷은 먼저 사각형 도형 또는 단일 스케치 돌출 도형을 선택하세요.": "Hãy chọn khối hộp hoặc một hình đùn phác thảo trước khi dùng cắt đùn."
+    ,"돌출 컷은 사각형 도형에만 적용할 수 있습니다.": "Cắt đùn hiện chỉ hỗ trợ khối hộp."
+    ,"돌출 컷은 사각형 도형 또는 단일 스케치 돌출 도형에만 적용할 수 있습니다.": "Cắt đùn hỗ trợ khối hộp và hình đùn phác thảo đơn."
+    ,"돌출 컷 대상은 회전하지 않은 장면 사각형 도형이어야 합니다.": "Đối tượng cắt đùn phải là khối hộp trong cảnh và chưa xoay."
+    ,"돌출 컷 대상은 회전하지 않은 장면 도형이어야 합니다.": "Đối tượng cắt đùn phải là hình trong cảnh và chưa xoay."
+    ,"돌출 컷 프로파일은 대상 도형 안에 있어야 하며 컷 깊이는 도형 높이 이하여야 합니다.": "Biên dạng cắt đùn phải nằm trong đối tượng và độ sâu không được vượt quá chiều cao."
+    ,"이미 돌출 컷이 적용된 스케치 도형에는 추가 컷을 적용할 수 없습니다.": "Không thể cắt thêm trên hình đùn phác thảo đã có cắt đùn."
+    ,"스케치 요소 0개": "0 phần tử phác thảo"
+    ,"스케치 요소를 추가했습니다. 필요하면 다른 도구로 계속 그리세요.": "Đã thêm phần tử phác thảo. Tiếp tục với công cụ khác nếu cần."
+    ,"선택한 스케치 요소를 삭제했습니다.": "Đã xóa phần tử phác thảo đã chọn."
+    ,"마우스를 놓으면 현재 도구의 스케치 요소가 추가됩니다.": "Thả chuột để thêm phần tử phác thảo hiện tại."
+    ,"치수 라벨 또는 입력값을 수정하고, 닫힌 프로파일을 돌출하거나 컷하세요.": "Sửa nhãn hoặc giá trị kích thước, sau đó đùn hoặc cắt biên dạng kín."
+    ,"도구를 선택한 뒤 평면에서 드래그해 스케치 요소를 그리세요.": "Chọn công cụ rồi kéo trên mặt phẳng để vẽ phần tử phác thảo."
+    ,"스케치 크기가 너무 작습니다. 다시 드래그하세요.": "Phác thảo quá nhỏ. Hãy kéo lại."
+    ,"선택한 사각형 도형에 스케치 돌출 컷을 적용했습니다.": "Đã áp dụng cắt đùn phác thảo cho khối hộp đã chọn."
+    ,"선택한 도형에 스케치 돌출 컷을 적용했습니다.": "Đã áp dụng cắt đùn phác thảo cho hình đã chọn."
+    ,"스케치 프로파일을 돌출해 3D 형상을 생성했습니다.": "Đã tạo hình 3D bằng cách đùn biên dạng phác thảo."
+    ,"{tool} 도구를 선택했습니다.": "Đã chọn công cụ {tool}."
+    ,"{tool} 스케치를 추가했습니다. 필요하면 다른 도구로 계속 그리세요.": "Đã thêm phác thảo {tool}. Tiếp tục với công cụ khác nếu cần."
+    ,"치수 라벨 또는 X/Y 입력값을 클릭해 수정하세요. Z 높이를 입력한 뒤 생성하세요.": "Nhấp vào nhãn kích thước hoặc ô nhập X/Y để chỉnh sửa. Nhập chiều cao Z rồi tạo hình dạng."
+    ,"마우스를 놓으면 사각형이 완성됩니다.": "Thả chuột để hoàn tất hình chữ nhật."
+    ,"다른 위치 선택 모드를 먼저 종료하세요.": "Trước tiên hãy thoát chế độ chọn vị trí khác."
+    ,"사각형 스케치를 완성했습니다. 치수와 Z 높이를 입력하세요.": "Đã hoàn tất phác thảo hình chữ nhật. Hãy nhập kích thước và chiều cao Z."
+    ,"사각형 크기가 너무 작습니다. 다시 드래그하세요.": "Hình chữ nhật quá nhỏ. Hãy kéo lại."
+    ,"사각형을 다시 그릴 수 있습니다.": "Bạn có thể vẽ lại hình chữ nhật."
+    ,"Z 높이는 0보다 크고 유효한 숫자여야 합니다.": "Chiều cao Z phải là số hữu hạn lớn hơn 0."
+    ,"2D 평면뷰입니다. 원하는 위치에서 드래그해 사각형을 그리세요.": "Đây là chế độ xem mặt phẳng 2D. Kéo từ vị trí mong muốn để vẽ hình chữ nhật."
+    ,"2D 평면뷰입니다. 도구를 선택하고 원하는 위치에서 드래그해 스케치하세요.": "Đây là chế độ xem mặt phẳng 2D. Chọn công cụ rồi kéo từ vị trí mong muốn để phác thảo."
+    ,"2D 스케치 위치에 도형을 생성했습니다.": "Đã tạo hình dạng tại vị trí phác thảo 2D."
+    ,"2D 스케치 모드를 종료했습니다.": "Đã thoát chế độ phác thảo 2D."
+    ,"뷰 변경": "Đổi chế độ xem"
+    ,"치수 기입": "Ghi kích thước"
+    ,"스냅": "Bắt điểm"
+    ,"스냅 켜기": "Bật bắt điểm"
+    ,"스냅 끄기": "Tắt bắt điểm"
+    ,"스케치 치수": "Kích thước phác thảo"
+    ,"치수 값": "Giá trị kích thước"
+    ,"치수 적용": "Áp dụng kích thước"
+    ,"새 치수": "Kích thước mới"
+    ,"첫 번째 점을 선택했습니다. 두 번째 점을 선택하세요.": "Đã chọn điểm thứ nhất. Hãy chọn điểm thứ hai."
+    ,"두 번째 점을 클릭해 치수를 완성하세요.": "Chọn điểm thứ hai để hoàn tất kích thước."
+    ,"첫 번째 점과 두 번째 점을 클릭해 치수를 입력하세요.": "Chọn điểm thứ nhất và thứ hai để nhập kích thước."
+    ,"치수 값을 입력하고 적용하세요.": "Nhập giá trị kích thước rồi áp dụng."
+    ,"치수 기입 도구를 선택하세요.": "Chọn công cụ ghi kích thước."
+    ,"스냅된 첫 번째 점과 두 번째 점을 차례로 클릭해 치수를 기입하세요.": "Lần lượt chọn điểm thứ nhất và thứ hai đã bắt điểm để ghi kích thước."
+    ,"스냅을 켰습니다.": "Đã bật bắt điểm."
+    ,"스냅을 껐습니다.": "Đã tắt bắt điểm."
+    ,"두 점 사이의 거리가 너무 짧습니다. 다시 선택하세요.": "Khoảng cách giữa hai điểm quá ngắn. Hãy chọn lại."
+    ,"두 점 사이의 치수를 입력할 수 있습니다.": "Bạn có thể nhập kích thước giữa hai điểm."
+    ,"스케치 치수를 적용했습니다.": "Đã áp dụng kích thước phác thảo."
+    ,"선의 길이 치수를 만들었습니다. 값을 입력하면 실제 도형 길이가 변경됩니다.": "Đã tạo kích thước chiều dài đường. Nhập giá trị để thay đổi chiều dài hình học thực tế."
+    ,"치수 위치를 따라가고 있습니다. 원하는 위치에서 클릭해 고정하세요.": "Kích thước đang đi theo con trỏ. Hãy nhấp để cố định vị trí."
+    ,"치수 위치를 고정했습니다. 값을 입력하세요.": "Đã cố định vị trí kích thước. Hãy nhập giá trị."
+    ,"X/Y 위치 치수를 만들었습니다. 값을 입력하면 스냅한 도형 위치가 변경됩니다.": "Đã tạo kích thước vị trí X/Y. Nhập giá trị để di chuyển hình học đã bắt điểm."
+    ,"X/Y 위치 치수를 적용했습니다. 도형 위치가 변경되었습니다.": "Đã áp dụng kích thước vị trí X/Y và di chuyển hình học."
+    ,"두 스냅 지점 사이의 거리가 너무 짧습니다. 다시 선택하세요.": "Khoảng cách giữa hai điểm bắt quá ngắn. Hãy chọn lại."
+    ,"첫 번째 스냅 지점을 선택했습니다. X/Y 위치를 정할 두 번째 지점을 선택하세요.": "Đã chọn điểm bắt thứ nhất. Hãy chọn điểm thứ hai để xác định vị trí X/Y."
+    ,"선 또는 모서리, 또는 스냅 지점을 클릭하세요.": "Hãy nhấp vào đường, cạnh hoặc điểm bắt."
+    ,"선 또는 모서리를 클릭하면 길이 치수를 만들고, 중심점이나 스냅 지점을 차례로 클릭하면 X/Y 위치 치수를 만듭니다.": "Nhấp vào đường hoặc cạnh để tạo kích thước dài, hoặc lần lượt nhấp tâm và điểm bắt khác để tạo vị trí X/Y."
+    ,"두 번째 스냅 지점을 클릭해 X/Y 위치 치수를 완성하세요.": "Hãy chọn điểm bắt thứ hai để hoàn tất kích thước vị trí X/Y."
+    ,"선 또는 모서리를 클릭하면 길이 치수, 중심점과 다른 스냅 지점을 차례로 클릭하면 X/Y 위치 치수를 기입하세요.": "Nhấp đường hoặc cạnh để ghi chiều dài, hoặc lần lượt nhấp tâm và điểm bắt khác để ghi vị trí X/Y."
+    ,"현재 스케치 명령을 취소했습니다. 스케치 편집은 계속됩니다.": "Đã hủy lệnh phác thảo hiện tại. Chế độ chỉnh sửa phác thảo vẫn tiếp tục."
+    ,"도면 위치 스냅": "Bắt vị trí bản vẽ"
+    ,"도면 위치 스냅 종료": "Dừng bắt vị trí bản vẽ"
+    ,"스케치 원점": "Gốc phác thảo"
+    ,"스케치 원점 초기화": "Đặt lại gốc phác thảo"
+    ,"스냅할 3D 모델의 면 또는 표시된 스냅 점을 클릭하세요.": "Nhấp vào mặt hoặc điểm bắt dính hiển thị trên mô hình 3D."
+    ,"스케치 위치를 스냅할 3D 모델의 면 또는 스냅 점을 클릭하세요.": "Nhấp vào mặt hoặc điểm bắt dính trên mô hình 3D để đặt phác thảo."
+    ,"스케치 도면을 선택한 스냅 위치에 배치했습니다.": "Đã đặt bản vẽ phác thảo tại vị trí bắt dính đã chọn."
+    ,"스케치 원점을 초기화했습니다.": "Đã đặt lại gốc phác thảo."
+    ,"왼쪽 드래그로 그립니다. 가운데/오른쪽 드래그와 휠로 뷰를 변경할 수 있습니다.": "Vẽ bằng cách kéo nút trái. Dùng nút giữa/nút phải hoặc con lăn để đổi chế độ xem."
+    ,"도형 생성 및 편집": "Tạo và chỉnh sửa hình dạng"
+    ,"도형 패널을 별도 창으로 분리": "Mở bảng hình dạng trong cửa sổ riêng"
+    ,"도형 패널 숨기기": "Ẩn bảng hình dạng"
+    ,"새 도형": "Hình dạng mới"
+    ,"형상": "Hình dạng"
+    ,"도형 형상": "Hình dạng cơ bản"
+    ,"도형 치수": "Kích thước hình dạng"
+    ,"치수 표시 방식": "Chế độ hiển thị kích thước"
+    ,"X 치수 (mm)": "Kích thước X (mm)"
+    ,"Y 치수 (mm)": "Kích thước Y (mm)"
+    ,"Z 치수 (mm)": "Kích thước Z (mm)"
+    ,"선택 도형 X 치수 (mm)": "Kích thước X của hình dạng đã chọn (mm)"
+    ,"선택 도형 Y 치수 (mm)": "Kích thước Y của hình dạng đã chọn (mm)"
+    ,"선택 도형 Z 치수 (mm)": "Kích thước Z của hình dạng đã chọn (mm)"
+    ,"암 로드 설정 표시/숨기기": "Hiện/ẩn cài đặt tải trên tay máy"
+    ,"암 로드 등록": "Đăng ký tải trên tay máy"
+    ,"치수 측정 패널 표시/숨기기": "Hiện/ẩn bảng đo kích thước"
+    ,"암 로드에 부착할 로봇을 먼저 불러와 주세요.": "Trước tiên hãy tải robot để gắn tải trên tay máy."
+    ,"모델 표시 설정": "Cài đặt hiển thị mô hình"
+    ,"사각형": "Hộp"
+    ,"원뿔형": "Hình nón"
+    ,"원통형": "Hình trụ"
+    ,"구": "Hình cầu"
+    ,"원통형과 원뿔형은 X/Y 지름이 연결되고 구는 세 축이 연결됩니다.": "Đường kính X/Y của hình trụ và hình nón được liên kết; hình cầu liên kết cả ba trục."
+    ,"도형 생성": "Tạo hình dạng"
+    ,"선택 도형": "Hình dạng đã chọn"
+    ,"이름": "Tên"
+    ,"사각형은 X/Y/Z를 독립적으로 설정합니다.": "Kích thước X/Y/Z của hộp được đặt độc lập."
+    ,"원통형과 원뿔형은 X/Y 지름이 연결됩니다.": "Đường kính X/Y của hình trụ và hình nón được liên kết."
+    ,"구는 X/Y/Z가 연결됩니다.": "Kích thước X/Y/Z của hình cầu được liên kết."
+    ,"치수 라벨을 클릭하면 장면에서 바로 편집할 수 있습니다.": "Nhấp vào nhãn kích thước để chỉnh sửa trực tiếp trong cảnh."
+    ,"도형 치수는 0보다 크고 유효한 숫자여야 합니다.": "Kích thước phải là số hữu hạn lớn hơn 0."
+    ,"도형이 생성되었습니다.": "Đã tạo hình dạng."
+    ,"도형 치수가 적용되었습니다.": "Đã áp dụng kích thước hình dạng."
+    ,"도형의 크기는 도형 패널 또는 치수 라벨에서 변경하세요.": "Thay đổi kích thước trong bảng hình dạng hoặc nhãn kích thước."
+    ,"SHAPE POSITION / BASE": "VỊ TRÍ HÌNH DẠNG / BASE"
+    ,"SHAPE ROTATION / BASE": "XOAY HÌNH DẠNG / BASE"
+    ,"도형 Base JOG": "JOG BASE hình dạng"
+    ,"도형 치수 변경": "Đã thay đổi kích thước hình dạng"
+    ,"도형 생성 및 편집 표시/숨기기": "Hiện/ẩn tạo và chỉnh sửa hình dạng"
+    ,"협업": "Cộng tác"
+    ,"협업 안내": "Chia sẻ mã phòng để hai máy tính có thể đồng thời điều khiển các robot khác nhau."
+    ,"참여자 목록 없음": "Người tham gia sẽ hiển thị sau khi vào phòng."
+    ,"로봇 선택 안내": "Chọn robot sau khi vào phòng."
+    ,"2인 협업": "Cộng tác hai người"
+    ,"2인 협업 시뮬레이션": "Mô phỏng 3D cộng tác hai người"
+    ,"2인 협업 패널을 별도 창으로 분리": "Mở bảng cộng tác trong cửa sổ riêng"
+    ,"2인 협업 패널 숨기기": "Ẩn bảng cộng tác"
+    ,"2인 협업 표시/숨김": "Hiện/ẩn cộng tác hai người"
+    ,"방 코드를 공유하면 두 대의 컴퓨터에서 서로 다른 로봇을 동시에 제어할 수 있습니다.": "Chia sẻ mã phòng để hai máy tính có thể điều khiển các robot khác nhau cùng lúc."
+    ,"사용자 이름": "Tên người dùng"
+    ,"예: PC A": "Ví dụ: PC A"
+    ,"방 만들기": "Tạo phòng"
+    ,"방 나가기": "Rời phòng"
+    ,"방 코드": "Mã phòng"
+    ,"4자리 코드": "Mã 4 chữ số"
+    ,"참여": "Tham gia"
+    ,"현재 방": "Phòng hiện tại"
+    ,"방 코드 복사": "Sao chép mã phòng"
+    ,"연결되지 않음": "Chưa kết nối"
+    ,"협업 서버 연결 중": "Đang kết nối máy chủ cộng tác"
+    ,"협업 연결됨": "Đã kết nối cộng tác"
+    ,"협업 서버 재연결 중": "Đang kết nối lại máy chủ cộng tác"
+    ,"협업 연결 오류": "Lỗi kết nối cộng tác"
+    ,"참여자": "Người tham gia"
+    ,"로봇 제어권": "Quyền điều khiển robot"
+    ,"방에 참여하면 표시됩니다.": "Người tham gia sẽ hiển thị sau khi vào phòng."
+    ,"방에 참여하면 로봇을 선택할 수 있습니다.": "Hãy chọn robot sau khi vào phòng."
+    ,"시뮬레이션에 로봇이 없습니다.": "Không có robot trong mô phỏng."
+    ,"호스트": "Máy chủ"
+    ,"나": "Tôi"
+    ,"연결됨": "Đã kết nối"
+    ,"연결 끊김": "Đã ngắt kết nối"
+    ,"내가 제어 중": "Tôi đang điều khiển"
+    ,"제어 중": "đang điều khiển"
+    ,"제어 가능": "Có thể điều khiển"
+    ,"점유": "Nhận quyền"
+    ,"해제": "Giải phóng"
+    ,"사용 중": "Đang sử dụng"
+    ,"방 코드를 찾을 수 없습니다.": "Không tìm thấy mã phòng."
+    ,"협업 방은 최대 2명까지 참여할 수 있습니다.": "Phòng cộng tác chỉ hỗ trợ tối đa hai người."
+    ,"다른 사용자가 제어 중인 로봇입니다.": "Robot này đang được người khác điều khiển."
+    ,"한 사용자는 한 대의 로봇만 점유할 수 있습니다.": "Mỗi người chỉ có thể nhận quyền một robot."
+    ,"점유하지 않은 로봇은 조작할 수 없습니다.": "Bạn không thể điều khiển robot chưa nhận quyền."
+    ,"협업 세션이 만료되었습니다. 방에 다시 참여해 주세요.": "Phiên cộng tác đã hết hạn. Hãy tham gia lại phòng."
+    ,"공유할 작업이 너무 큽니다. 업로드 모델을 제외하고 다시 시도해 주세요.": "Không gian làm việc quá lớn. Hãy bỏ mô hình đã tải lên rồi thử lại."
+    ,"협업 방에 연결되어 있지 않습니다.": "Bạn chưa kết nối với phòng cộng tác."
+    ,"협업 방 인증 정보가 올바르지 않습니다.": "Thông tin xác thực phòng cộng tác không hợp lệ."
+    ,"협업 요청을 처리하지 못했습니다.": "Không thể xử lý yêu cầu cộng tác."
+    ,"협업 메시지가 너무 큽니다.": "Tin nhắn cộng tác quá lớn."
+    ,"방 코드를 복사했습니다.": "Đã sao chép mã phòng."
+    ,"방 코드 복사에 실패했습니다.": "Không thể sao chép mã phòng."
+    ,"방 코드는 숫자로 된 4자리 코드여야 합니다.": "Mã phòng phải có 4 chữ số."
+    ,"협업 서버 주소가 올바르지 않습니다.": "Địa chỉ máy chủ cộng tác không hợp lệ."
+    ,"협업 서버에 연결할 수 없습니다.": "Không thể kết nối máy chủ cộng tác."
+    ,"협업 작업 스냅샷을 불러오지 못했습니다.": "Không thể tải ảnh chụp không gian làm việc cộng tác."
+    ,"먼저 협업 패널에서 제어할 로봇을 점유하세요.": "Trước tiên hãy nhận quyền robot cần điều khiển trong bảng cộng tác."
+    ,"부하 정보": "Thông tin tải"
+    ,"Tool 부하 정보": "Thông tin tải Tool"
+    ,"선택한 Tool": "Tool đã chọn"
+    ,"부하 계산 방식": "Phương pháp tính tải"
+    ,"부품·재질로 계산": "Tính theo bộ phận/vật liệu"
+    ,"질량 직접 입력": "Nhập trực tiếp khối lượng"
+    ,"각 부품의 재질과 밀도를 입력하면 부하 값이 실시간으로 계산됩니다.": "Nhập vật liệu và khối lượng riêng của từng bộ phận để tính tải theo thời gian thực."
+    ,"여러 부품 또는 여러 재질을 하나의 모델로 불러온 경우 총 질량을 직접 입력합니다. 형상의 무게중심과 균일 밀도 기준 관성모멘트를 질량에 맞춰 계산합니다.": "Khi nhiều bộ phận hoặc vật liệu được nhập thành một model, hãy nhập trực tiếp tổng khối lượng. Tâm trọng lượng và mô men quán tính theo mật độ đồng nhất của hình dạng sẽ được quy đổi theo khối lượng đó."
+    ,"툴 총 질량": "Tổng khối lượng Tool"
+    ,"실시간 부하 정보": "Thông tin tải thời gian thực"
+    ,"Tool 좌표계 기준": "Hệ tọa độ Tool"
+    ,"부하 계산 결과": "Kết quả tính tải"
+    ,"무게중심 (Tool 원점 기준)": "Tâm trọng lượng (gốc Tool)"
+    ,"Tool 원점 기준 관성모멘트": "Mô men quán tính quanh gốc Tool"
+    ,"부하중심 기준 관성모멘트": "Mô men quán tính quanh tâm tải"
+    ,"재질": "Vật liệu"
+    ,"밀도": "Khối lượng riêng"
+    ,"계산할 수 있는 닫힌 형상이 없습니다.": "Tool không có khối kín để tính toán."
+    ,"입력한 질량을 기준으로 형상에 맞춰 계산되었습니다.": "Đã tính theo khối lượng đã nhập và hình dạng model."
+    ,"재질 입력값을 기준으로 계산되었습니다.": "Đã tính theo thông số vật liệu đã nhập."
+    ,"툴 총 질량은 0보다 커야 합니다.": "Tổng khối lượng Tool phải lớn hơn 0."
+    ,"Tool 부하 정보를 별도 창으로 분리": "Tách thông tin tải Tool thành cửa sổ riêng"
+    ,"Tool 부하 정보 숨기기": "Ẩn thông tin tải Tool"
+    ,"재질을 선택하면 값을 계산합니다.": "Chọn vật liệu để tính các giá trị."
+    ,"Tool 설치": "Lắp Tool"
+    ,"Tool 설치 로봇 선택": "Chọn robot để lắp Tool"
+    ,"선택한 모델을 Tool로 설치할 로봇을 선택하세요.": "Hãy chọn robot sẽ nhận model đã chọn làm Tool."
+    ,"설치할 모델": "Model cần lắp"
+    ,"설치할 로봇": "Robot cần lắp vào"
+    ,"Tool에 설치": "Lắp thành Tool"
+    ,"Tool 해제": "Nhả Tool"
+    ,"Tool에서 해제": "Tháo Tool"
+    ,"Tool을 설치할 로봇을 먼저 불러와 주세요.": "Trước tiên hãy tải robot để lắp Tool."
+    ,"선택한 로봇의 Tool 장착 위치를 찾을 수 없습니다.": "Không tìm thấy vị trí lắp Tool của robot đã chọn."
+    ,"Tool을 설치할 로봇을 찾을 수 없습니다.": "Không tìm thấy robot để lắp Tool."
+    ,"선택한 {name}을(를) Tool로 설치할 로봇을 선택하세요.": "Hãy chọn robot sẽ nhận {name} làm Tool."
+    ,"Tool을 로봇 TCP에 설치했습니다.": "Đã lắp Tool vào TCP của robot."
+    ,"Tool 설치에 실패했습니다.": "Không thể lắp Tool."
+    ,"Tool을 해제하고 일반 모델로 되돌렸습니다.": "Đã tháo Tool và khôi phục thành model thông thường."
+    ,"그립 오브젝트": "Đối tượng gắp"
+    ,"그립 오브젝트로 사용": "Dùng làm đối tượng gắp"
+    ,"그립 오브젝트 사용 해제": "Nhả đối tượng gắp"
+    ,"그립 오브젝트 사용": "Dùng đối tượng gắp"
+    ,"그립 오브젝트 해제": "Nhả đối tượng gắp"
+    ,"그립 사용": "Gắp"
+    ,"그립 해제": "Nhả gắp"
+    ,"그립 오브젝트 사용 명령 추가": "Thêm lệnh dùng đối tượng gắp"
+    ,"그립 오브젝트 해제 명령 추가": "Thêm lệnh nhả đối tượng gắp"
+    ,"사용할 오브젝트": "Đối tượng cần dùng"
+    ,"오브젝트를 선택하세요": "Chọn đối tượng"
+    ,"그립 오브젝트를 선택하세요.": "Hãy chọn đối tượng gắp."
+    ,"선택한 오브젝트는 이미 사용 중입니다.": "Đối tượng đã chọn đang được dùng."
+    ,"그립 오브젝트를 사용할 로봇을 먼저 불러와 주세요.": "Trước tiên hãy tải robot để dùng đối tượng gắp."
+    ,"선택한 모델은 그립 오브젝트로 사용할 수 없습니다.": "Model đã chọn không thể dùng làm đối tượng gắp."
+    ,"그립 오브젝트를 사용했습니다.": "Đã dùng đối tượng gắp."
+    ,"그립 오브젝트를 해제했습니다.": "Đã nhả đối tượng gắp."
+    ,"그립 오브젝트 대상 변경": "Đã đổi đối tượng gắp"
+    ,"그립 오브젝트 명령 추가": "Đã thêm lệnh đối tượng gắp"
+    ,"그립 오브젝트 명령 대상이 없습니다.": "Không tìm thấy đối tượng của lệnh gắp."
+    ,"그립 오브젝트 사용에 실패했습니다.": "Không thể dùng đối tượng gắp."
+    ,"물건 잡기 대상": "Đối tượng cần gắp"
+    ,"물건 잡기": "Gắp vật"
+    ,"놓기": "Thả vật"
+    ,"물건 잡기 명령 추가": "Thêm lệnh gắp vật"
+    ,"놓기 명령 추가": "Thêm lệnh thả vật"
+    ,"물건 잡기/놓기 명령 추가": "Thêm lệnh gắp/thả vật"
+    ,"물건 잡기/놓기 명령 대상이 없습니다.": "Không tìm thấy đối tượng của lệnh gắp/thả."
+    ,"물건 잡기 대상 변경": "Đã đổi đối tượng cần gắp"
+    ,"물건 잡기 대상 불러오기": "Tải đối tượng cần gắp"
+    ,"물건 잡기 대상을 선택하세요.": "Hãy chọn đối tượng cần gắp."
+    ,"물건 잡기 대상을 사용할 로봇을 먼저 불러와 주세요.": "Trước tiên hãy tải robot để gắp vật."
+    ,"물건 잡기에 실패했습니다.": "Không thể gắp vật."
+    ,"물건 잡기 대상을 찾을 수 없습니다.": "Không tìm thấy đối tượng cần gắp."
+    ,"물건 잡기 대상을 사용할 수 없습니다.": "Không thể sử dụng đối tượng cần gắp."
+    ,"물건 잡기/놓기 명령을 실행할 수 없습니다.": "Không thể thực hiện lệnh gắp/thả."
+    ,"물건을 잡았습니다.": "Đã gắp vật."
+    ,"물건을 놓았습니다.": "Đã thả vật."
+    ,"TCP 경로 선": "Đường TCP"
+    ,"TCP 경로 선 표시": "Hiển thị đường TCP"
+    ,"TCP 경로 선 숨기기": "Ẩn đường TCP"
+    ,"로봇 간섭 회피": "Tránh va chạm giữa robot"
+    ,"로봇 간섭 회피 활성화": "Bật tránh va chạm giữa robot"
+    ,"로봇 간섭 회피 비활성화": "Tắt tránh va chạm giữa robot"
+    ,"간섭 회피 우선 로봇": "Robot ưu tiên tránh va chạm"
+    ,"우선 로봇 없음": "Không có robot ưu tiên"
+    ,"우선: {name}": "Ưu tiên: {name}"
+    ,"로봇 간섭 회피 대기 중": "Đang chờ tránh va chạm giữa robot"
+    ,"2D CAD 파일 가져오기": "Nhập tệp CAD 2D"
+    ,"3D 모델 가져오기 방식": "Tùy chọn nhập mô hình 3D"
+    ,"파일을 선택하세요.": "Hãy chọn tệp."
+    ,"2D CAD 가져오기": "Nhập CAD 2D"
+    ,"3D/CAD 가져오기": "Nhập 3D/CAD"
+    ,"DXF의 LINE, ARC, CIRCLE, POLYLINE을 읽어 평면에 표시합니다.": "Đọc LINE, ARC, CIRCLE và POLYLINE từ DXF để hiển thị trên mặt phẳng."
+    ,"DXF의 블록과 LINE ARC CIRCLE POLYLINE을 전개해 평면에 표시하며 스플라인은 지원하지 않습니다": "Mở rộng block cùng LINE, ARC, CIRCLE và POLYLINE từ DXF để hiển thị trên mặt phẳng. Không hỗ trợ spline."
+    ,"대형 DXF 도면 · {count}개 요소는 캔버스에서 선택하세요.": "Bản vẽ DXF lớn · Hãy chọn {count} phần tử trên canvas."
+    ,"DWG는 로컬 CAD 변환 브리지가 실행 중일 때 가져올 수 있습니다.": "Cần chạy cầu nối chuyển đổi CAD cục bộ để nhập DWG."
+    ,"CAD 가져오는 중": "Đang nhập CAD"
+    ,"CAD 도면에 표시 가능한 엔티티가 없습니다.": "Bản vẽ CAD không có thực thể để hiển thị."
+    ,"DXF 파일을 해석하지 못했습니다.": "Không thể phân tích tệp DXF."
+    ,"Binary DXF는 현재 지원하지 않습니다. ASCII DXF로 저장해 주세요.": "Chưa hỗ trợ Binary DXF. Hãy lưu tệp dưới dạng ASCII DXF."
+    ,"DWG 변환기를 찾을 수 없습니다. 로컬 CAD 변환 브리지를 실행한 뒤 다시 시도해 주세요.": "Không tìm thấy bộ chuyển đổi DWG. Hãy chạy cầu nối chuyển đổi CAD cục bộ rồi thử lại."
+    ,"DWG 변환 브리지가 해당 파일을 지원하지 않거나 올바른 CAD2D 문서를 반환하지 않았습니다.": "Cầu nối DWG không hỗ trợ tệp này hoặc không trả về tài liệu CAD2D hợp lệ."
+    ,"CAD 도면": "Bản vẽ CAD"
+    ,"2D CAD 도면": "Bản vẽ CAD 2D"
+    ,"도면의 선, 원, 호 또는 닫힌 폴리라인을 클릭하세요.": "Nhấp vào đường thẳng, đường tròn, cung hoặc polyline khép kín trong bản vẽ."
+    ,"선택 프로파일 돌출": "Đùn biên dạng đã chọn"
+    ,"닫힌 프로파일 선택": "Chọn biên dạng khép kín"
+    ,"CAD 프로파일을 먼저 선택하세요.": "Trước tiên hãy chọn biên dạng CAD."
+    ,"CAD 돌출 컷은 먼저 대상 사각형 도형과 직사각형/원 프로파일을 선택하세요.": "Hãy chọn hộp đích và biên dạng chữ nhật/tròn trước khi cắt đùn CAD."
+    ,"CAD 돌출": "Đùn CAD"
+    ,"CAD 프로파일 돌출 컷을 적용했습니다.": "Đã áp dụng cắt đùn biên dạng CAD."
+    ,"선택한 CAD 면을 돌출했습니다.": "Đã đùn mặt CAD đã chọn."
+    ,"선택한 CAD 프로파일을 돌출했습니다.": "Đã đùn biên dạng CAD đã chọn."
+    ,"CAD 도면 불러오기 완료 · {count}개 엔티티": "Đã nhập bản vẽ CAD · {count} thực thể"
+    ,"도면 단위": "Đơn vị bản vẽ"
+    ,"자동 (DXF INSUNITS)": "Tự động (DXF INSUNITS)"
+    ,"알 수 없는 단위는 mm로 해석됩니다.": "Đơn vị không xác định được hiểu là mm."
+    ,"도면 중심을 원점에 배치": "Đặt tâm bản vẽ tại gốc tọa độ"
+    ,"화면 맞춤": "Vừa màn hình"
+    ,"상부 보기": "Chế độ xem trên"
+    ,"도면 표시": "Hiển thị bản vẽ"
+    ,"레이어": "Lớp"
+    ,"선택 엔티티": "Thực thể đã chọn"
+    ,"돌출 Z": "Đùn Z"
+    ,"선택 해제": "Bỏ chọn"
+    ,"CAD unit note": "Đơn vị không xác định được hiểu là mm."
+    ,"CAD drawing selection note": "Nhập bản vẽ CAD để xem thông tin chọn thực thể."
+    ,"CAD drawing summary": "{fileName} · {entityCount} thực thể · {layerCount} lớp · {sourceUnit} → mm"
+    ,"CAD 면 선택 안내": "Hãy nhấp vào một mặt kín trong bản vẽ. Các lỗ bên trong sẽ được giữ lại khi đùn."
+    ,"도면의 닫힌 면을 클릭하세요. 내부 구멍은 돌출 시 유지됩니다.": "Hãy nhấp vào một mặt kín trong bản vẽ. Các lỗ bên trong sẽ được giữ lại khi đùn."
+    ,"선택 면 돌출": "Đùn mặt đã chọn"
+    ,"닫힌 면 선택": "Chọn mặt kín"
+    ,"CAD selected face summary": "Đã chọn {count} · mặt · {type} · {holes} lỗ"
+    ,"CAD 선택 면": "Mặt CAD đã chọn"
+    ,"CAD 프로파일 면": "Mặt"
+    ,"CAD 내부 구멍": "Lỗ bên trong"
+    ,"구멍이 있는 CAD 면은 돌출 컷이 아니라 돌출 작업으로 생성하세요.": "Hãy dùng thao tác đùn, không phải cắt đùn, cho mặt CAD có lỗ."
+    ,"CAD selected entity summary": "Đã chọn {count} · {type} · handle {handle}{closed}"
+    ,"CAD closed profile": " · biên dạng kín"
+    ,"도면 기준점 변경": "Đổi điểm gốc bản vẽ"
+    ,"도면 기준점": "Điểm gốc bản vẽ"
+    ,"도면 기준점 및 배치": "Điểm gốc và vị trí bản vẽ"
+    ,"도면 기준점 안내": "Nhấp vào đường, điểm hoặc hình tròn để tự động chọn điểm bắt gần nhất."
+    ,"도면 기준점 스냅 유형": "Kiểu bắt điểm gốc bản vẽ"
+    ,"스냅 기준": "Tham chiếu bắt điểm"
+    ,"기준점 스냅 시작": "Bắt điểm gốc"
+    ,"기준점 스냅 종료": "Thoát bắt điểm gốc"
+    ,"기준점 초기화": "Đặt lại điểm gốc"
+    ,"기준점 오프셋 초기화": "Đặt lại độ lệch điểm gốc"
+    ,"기준점 스냅 안내": "Nhấp vào đường, điểm hoặc hình tròn trên bản vẽ. Bắt điểm luôn bật."
+    ,"도면의 스냅 점을 선택하세요.": "Chọn một điểm bắt trên bản vẽ."
+    ,"현재 기준점 오프셋 · X {x}, Y {y}, Z {z} mm": "Độ lệch điểm gốc hiện tại · X {x}, Y {y}, Z {z} mm"
+    ,"선택 가능한 CAD 스냅 지점을 가리켜 주세요.": "Trỏ tới điểm bắt CAD khả dụng."
+    ,"CAD 기준점을 스냅했습니다.": "Đã bắt điểm gốc CAD."
+    ,"도면 기준점을 초기화했습니다.": "Đã đặt lại điểm gốc bản vẽ."
+    ,"스냅한 점을 CAD 도면의 새 기준점으로 지정합니다. 도면 형상은 현재 화면 위치를 유지합니다.": "Đặt điểm đã bắt làm điểm gốc mới của bản vẽ CAD. Hình học bản vẽ giữ nguyên vị trí hiện tại trên màn hình."
+    ,"기준점 스냅을 시작한 뒤 도면의 점을 선택하세요.": "Bắt điểm gốc, sau đó chọn một điểm trên bản vẽ."
+    ,"도면의 선·점·원 등을 클릭하면 가장 가까운 스냅점이 자동으로 선택됩니다.": "Nhấp vào đường, điểm hoặc hình tròn để tự động chọn điểm bắt gần nhất."
+    ,"도면의 선·점·원 등을 클릭하세요. 스냅은 기본으로 적용됩니다.": "Nhấp vào đường, điểm hoặc hình tròn trên bản vẽ. Bắt điểm luôn bật."
+    ,"선택한 스냅점이 없습니다. 도면의 선·점·원 등을 클릭하세요.": "Chưa chọn điểm bắt. Hãy nhấp vào đường, điểm hoặc hình tròn trên bản vẽ."
+    ,"목표 위치 (mm)": "Vị trí đích (mm)"
+    ,"선택점 이동": "Di chuyển điểm đã chọn"
+    ,"선택한 스냅점 없음": "Chưa chọn điểm bắt. Hãy nhấp vào đường, điểm hoặc hình tròn trên bản vẽ."
+    ,"목표 X": "X"
+    ,"목표 Y": "Y"
+    ,"목표 Z": "Z"
+    ,"CAD 선택점 목표 X": "X đích của điểm CAD"
+    ,"CAD 선택점 목표 Y": "Y đích của điểm CAD"
+    ,"CAD 선택점 목표 Z": "Z đích của điểm CAD"
+    ,"CAD 위치 입력 단위": "Vị trí đích (mm)"
+    ,"선택점을 이 위치로 이동": "Di chuyển điểm đến vị trí này"
+    ,"선택한 CAD 스냅점 · {type} · X {x}, Y {y}, Z {z} mm": "Điểm bắt CAD đã chọn · {type} · X {x}, Y {y}, Z {z} mm"
+    ,"먼저 도면의 선이나 점을 클릭하세요.": "Trước tiên hãy nhấp vào đường hoặc điểm trên bản vẽ."
+    ,"목표 X, Y, Z를 모두 입력하세요.": "Hãy nhập đủ X, Y và Z đích."
+    ,"CAD 선택점이 이미 목표 위치에 있습니다.": "Điểm CAD đã chọn đã ở vị trí đích."
+    ,"CAD 선택점을 목표 위치로 이동했습니다.": "Đã di chuyển điểm CAD đã chọn đến vị trí đích."
   },
   "patterns": []
 }

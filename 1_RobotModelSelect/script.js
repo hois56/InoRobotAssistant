@@ -2276,7 +2276,6 @@ document.addEventListener('DOMContentLoaded', () => {
             { categoryId: 'Manipulator Length(mm)', optionId: '1783' }
         ];
         const demoOptions = [
-            ['cableLenSelection', '10m'],
             ['cableTypeSelection', 'High Flex (유연형)'],
             ['pendantConfig', 'without-cover'],
             ['commSelection', 'IRCB501-2PN-BD']
@@ -2881,13 +2880,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 modalOverlay.querySelector('.modal-content')?.classList.add('model-manual-enter');
                 manualFocusPoint = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-            } else if (cue === 'option_length' || cue === 'option_flex' || cue === 'option_pendant' || cue === 'option_comm') {
-                const optionIndex = { option_length: 0, option_flex: 1, option_pendant: 2, option_comm: 3 }[cue];
+            } else if (cue === 'option_flex' || cue === 'option_pendant' || cue === 'option_comm') {
+                const optionIndex = { option_flex: 0, option_pendant: 1, option_comm: 2 }[cue];
                 prepareManualConfiguredModal(optionIndex + 1);
                 pointAtManualOption(optionIndex);
-            } else if (/^option_(length|flex|pendant|comm)_(focus|press)$/.test(cue)) {
-                const [, optionName, phase] = cue.match(/^option_(length|flex|pendant|comm)_(focus|press)$/);
-                const optionIndex = { length: 0, flex: 1, pendant: 2, comm: 3 }[optionName];
+            } else if (/^option_(flex|pendant|comm)_(focus|press)$/.test(cue)) {
+                const [, optionName, phase] = cue.match(/^option_(flex|pendant|comm)_(focus|press)$/);
+                const optionIndex = { flex: 0, pendant: 1, comm: 2 }[optionName];
                 prepareManualConfiguredModal(optionIndex);
                 pointAtManualOption(optionIndex, {
                     scroll: phase === 'focus',
