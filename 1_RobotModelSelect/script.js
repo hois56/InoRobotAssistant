@@ -796,8 +796,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const cleanClass = (name.includes('R15H') || name.includes('R20H')) ? 'ISO Class 4' : 'ISO Class 3';
+        const standardIp = (name.includes('R15H') || name.includes('R20H')) ? 'IP54' : 'IP40';
         return [
-            { id: 'standard', label: '기본형', spec: 'IP40, 클린 사양 없음' },
+            { id: 'standard', label: '기본형', spec: `${standardIp}, 클린 사양 없음` },
             { id: 'clean', label: '클린형', spec: cleanClass },
             { id: 'ip67', label: '방수방진형', spec: 'IP67' }
         ];
