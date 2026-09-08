@@ -1084,7 +1084,6 @@ async function exportProj() {
 
         const blob = await zip.generateAsync({ type: "blob" });
         saveAs(blob, `${name}.zip`);
-        alert(uiText("Project Generation Completed!"));
     } catch (e) {
         console.error(e);
         alert(uiFormat('Error generating zip: {message}', { message: e.message || e }));

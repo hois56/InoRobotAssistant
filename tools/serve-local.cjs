@@ -4,7 +4,7 @@ const path = require('path');
 const crypto = require('crypto');
 
 const root = path.resolve(__dirname, '..');
-const host = '127.0.0.1';
+const host = process.env.INOROBOT_SERVER_HOST || '127.0.0.1';
 const port = Number(process.argv[2] || 8765);
 const virtualBusToken = String(process.env.INOROBOT_VIRTUAL_BUS_TOKEN || '');
 const maxVirtualBusMessageBytes = 256 * 1024;
@@ -56,7 +56,20 @@ const virtualBus = { olp: null, master: null, lastOlpHello: null, generation: 0 
 
 function allowedOrigin(origin) {
     if (!origin) return false;
-    return origin === `http://127.0.0.1:${port}` || origin === `http://localhost:${port}`;
+    if (origin === `http://127.0.0.1:${port}` || origin === `http://localhost:${port}` || origin === `http://${host}:${port}`) return true;
+    try {
+        const parsed = new URL(origin);
+        const hostname = parsed.hostname.toLowerCase();
+        const privateNetwork = hostname === '::1'
+            || /^127\./.test(hostname)
+            || /^10\./.test(hostname)
+            || /^192\.168\./.test(hostname)
+            || (() => {
+                const match = hostname.match(/^172\.(\d{1,3})\./);
+                return Boolean(match && Number(match[1]) >= 16 && Number(match[1]) <= 31);
+            })();
+        return parsed.protocol === 'http:' && parsed.port === String(port) && privateNetwork;
+    } catch { return false; }
 }
 
 function isActiveVirtualBusPeer(peer) {
@@ -108,8 +121,13 @@ function closeVirtualBusPeer(peer, closeCounterpart = true) {
             }
         });
     }
-    if (closeCounterpart && wasActive && peer.role !== 'master' && counterpart) {
-        closeVirtualBusPeer(counterpart, false);
+    if (peer.role !== 'master' && wasActive && counterpart) {
+        // Keep the tester master alive while the browser OLP reconnects.  An
+        // OLP stop, page refresh, or runtime alarm must not force the tester
+        // to reconnect manually; the next slave hello will be paired again.
+        void sendVirtualBusText(counterpart, JSON.stringify({
+            type: 'busStatus', connected: false, reason: 'olpDisconnected'
+        }));
     }
     console.log(`Virtual Bus ${peer.role || 'unauthorized peer'} disconnected.`);
 }

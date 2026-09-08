@@ -1,34 +1,28 @@
 @echo off
 chcp 65001 > nul
-title InoRobot 3D Simulation Server
+title InoRobot 3D Simulation Collaboration Servers
 
 echo.
-echo  Starting InoRobot 3D Simulation server...
-echo  Open this address in your browser: http://localhost:5173
-echo  To stop the server, close this window or press Ctrl+C.
+echo  Starting InoRobot 3D Simulation servers...
+echo  This computer must be reachable by the second PC on the same network.
 echo.
 
 where node > nul 2> nul
-if %errorlevel%==0 (
-    node server.js
+if %errorlevel% neq 0 (
+    echo  Node.js is required to run the simulation and collaboration servers.
     pause
     exit /b
 )
 
-where py > nul 2> nul
-if %errorlevel%==0 (
-    py server.py
-    pause
-    exit /b
-)
+set "INOROBOT_SERVER_HOST=0.0.0.0"
+set "INOROBOT_COLLAB_HOST=0.0.0.0"
+set "INOROBOT_COLLAB_ALLOWED_ORIGINS=*"
+set "INOROBOT_PROJECT_ROOT=%~dp0.."
 
-where python > nul 2> nul
-if %errorlevel%==0 (
-    python server.py
-    pause
-    exit /b
-)
+start "InoRobot Static Server" cmd /k "cd /d ""%INOROBOT_PROJECT_ROOT%"" && node tools\serve-local.cjs 8765"
+start "InoRobot Collaboration Server" cmd /k "cd /d ""%INOROBOT_PROJECT_ROOT%"" && node tools\collaboration-server.cjs 8787"
 
-echo  Node.js or Python is required to run this simulation.
-echo  Please install Node.js, then run this file again.
-pause
+echo  Static server:        http://localhost:8765/2_3DSimulation/
+echo  Collaboration server: ws://<this-PC-IP>:8787/collaboration
+echo  Share the static server address using this PC's local IP.
+echo  Close the two server windows to stop them.

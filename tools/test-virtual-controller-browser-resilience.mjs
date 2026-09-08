@@ -27,7 +27,7 @@ async function flushAsyncWork() {
 }
 
 const healthCheckSource = sourceBetween(
-    'async function isVirtualControllerBridgeRunning()',
+    'async function isVirtualControllerBridgeRunning(controller = state.virtualController)',
     '\nfunction monitorVirtualControllerBridgeHealth('
 );
 const healthMonitorSource = sourceBetween(
@@ -103,6 +103,7 @@ const disconnectSource = sourceBetween(
         state: { virtualController: controller },
         performance: { now: () => 1_000 },
         setVirtualControllerStatus: (...args) => { statuses.push(args); },
+        getVirtualControllerTargetRobot: () => null,
         uiText: (value) => value,
         console: { warn: (...args) => { warnings.push(args); } }
     });
@@ -307,6 +308,7 @@ const disconnectSource = sourceBetween(
     const context = vm.createContext({
         state: { virtualController: controller },
         WebSocket: FakeWebSocket,
+        getVirtualControllerTargetRobot: () => null,
         getVirtualControllerSourceConfig: () => ({ id: 'bridge', socketUrl: 'ws://bridge.test/ws' }),
         setVirtualControllerStatus: (status) => { statuses.push(status); },
         getVirtualControllerUnavailableMessage: () => 'unavailable',
@@ -380,10 +382,14 @@ const disconnectSource = sourceBetween(
     const context = vm.createContext({
         state: { virtualController: controller },
         WebSocket: { OPEN: 1 },
+        getVirtualControllerTargetRobot: () => null,
         getVirtualControllerSourceConfig: () => ({ stopCommand: 'stopStream' }),
+        resetControllerGripInference: () => {},
+        removeVirtualControllerSession: () => {},
         clearVirtualControllerStreamWatchdog: () => { watchdogClearCount += 1; },
         setVirtualControllerStatus: (status) => { statuses.push(status); },
-        refreshViewPresetsUi: () => {}
+        refreshViewPresetsUi: () => {},
+        refreshVirtualControllerUi: () => {}
     });
     vm.runInContext(disconnectSource, context);
 

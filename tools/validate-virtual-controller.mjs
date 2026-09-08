@@ -120,11 +120,14 @@ const nativeClient = await readFile(new URL('../2_3DSimulation/VirtualController
 const bridgeProject = await readFile(new URL('../2_3DSimulation/VirtualControllerBridge/InoRobotVirtualControllerBridge.csproj', import.meta.url), 'utf8');
 assert.match(html, /id="virtual-controller-panel"/);
 assert.match(html, /data-panel-toggle="virtual-controller-panel"/);
+assert.match(html, /id="virtual-controller-connections"/);
+assert.match(html, /id="virtual-controller-add"/);
 assert.match(html, /bridge\/InoRobotVirtualControllerBridge\.zip/);
 assert.match(html, /id="virtual-controller-source"/);
 assert.match(html, /id="virtual-controller-kind"/);
 assert.match(html, /id="virtual-controller-ip"/);
 assert.match(html, /class="virtual-controller-controller-settings"/);
+assert.match(html, /id="virtual-controller-grip-toggle"/);
 assert.doesNotMatch(html, /virtual-controller-endpoint|127\.0\.0\.1:5055/);
 assert.doesNotMatch(html, /컨트롤러 포트|3333 \(고정\)/);
 assert.match(html, /id="virtual-controller-bridge-start"/);
@@ -137,14 +140,14 @@ assert.doesNotMatch(html, /<span>체크 로봇<\/span>/);
 assert.match(html, /InoRobotTrace_V1\.5\.zip/);
 assert.doesNotMatch(main, /from\s+['"]\.\/virtual-controller-core\.mjs/);
 assert.match(main, /ensureVirtualControllerCore\(\)/);
-assert.match(main, /virtual-controller-core\.mjs\?v=20260725-vc-port-1/);
+assert.match(main, /import\('\.\/virtual-controller-core\.mjs(?:\?v=[^']+)?'\)/);
 assert.match(main, /source\.startCommand/);
 assert.match(main, /startVirtualControllerStream/);
 assert.match(main, /stopVirtualControllerBridge/);
 assert.match(main, /inorobot-vc-bridge:\/\/start/);
-assert.match(main, /function endVirtualControllerSessionForSourceExit\(source\)/);
+assert.match(main, /function endVirtualControllerSessionForSourceExit\(source(?:, controller = state\.virtualController)?\)/);
 assert.match(main, /TRACE_SOURCE_LIVENESS_TIMEOUT_MS = 2500/);
-assert.match(main, /function isVirtualControllerSourceLive\(timestamp\)/);
+assert.match(main, /function isVirtualControllerSourceLive\(timestamp(?:, controller = state\.virtualController)?\)/);
 assert.match(main, /function monitorVirtualControllerBridgeHealth\(silent = false\)/);
 assert.match(main, /VIRTUAL_CONTROLLER_BRIDGE_HEALTH_FAILURE_LIMIT = 3/);
 assert.match(main, /bridgeHealthFailureCount/);
@@ -159,9 +162,30 @@ assert.match(main, /reason: String\(event\.reason \|\| ''\)/);
 assert.match(main, /Virtual controller bridge health check failed\./);
 assert.match(main, /Virtual controller bridge health check returned an unusable response\./);
 assert.match(main, /applyVirtualControllerFrame\(timestamp\)/);
-assert.match(main, /function monitorVirtualControllerStream\(\)/);
+assert.match(main, /function monitorVirtualControllerStream\(controller(?: = state\.virtualController)?\)/);
+assert.match(main, /enabled: false,[\s\S]*?stationaryPose/);
+assert.match(main, /!controller\.gripInference\.enabled/);
+assert.match(main, /CONTROLLER_GRIP_CONTACT_HOLD_MS = 300/);
 assert.match(main, /VIRTUAL_CONTROLLER_STREAM_STALL_MS = 750/);
-assert.match(main, /function scheduleVirtualControllerReconnect\(source, message = ''\)/);
+const sceneSelectionFunction = main.match(
+    /function selectSceneModel\([\s\S]*?(?=\r?\nfunction beginNumericTransformHistory)/
+)?.[0] || '';
+assert.match(
+    sceneSelectionFunction,
+    /if \(!isVirtualControllerActive\(\)\) \{\s*state\.virtualController\.targetRobotId = model\.userData\.motionInstanceId;\s*\}/,
+    'Selecting a robot in the model tree must not retarget an active controller.'
+);
+assert.match(main, /function scheduleVirtualControllerReconnect\(source, message = '', controller = state\.virtualController\)/);
+assert.match(main, /virtualControllers: \[\]/);
+assert.match(main, /function createVirtualControllerSession\(template = null\)/);
+assert.match(main, /function registerVirtualControllerSession\(controller\)/);
+assert.match(main, /getVirtualControllerSessions\(\)\.forEach\(\(controller\) =>/);
+assert.match(main, /function applyVirtualControllerFrameForController\(timestamp, controller\)/);
+assert.match(
+    main,
+    /async function connectVirtualController\(\)[\s\S]*?if \(isRobotMotionActive\(\)\) return;/,
+    'Connecting a second controller must not be blocked by the first controller session.'
+);
 assert.match(main, /controller\.reconnectAttempt/);
 assert.match(main, /parsed\.type === 'controllerReconnectFailed'/);
 assert.match(main, /Virtual controller native feedback interrupted\./);
@@ -169,7 +193,7 @@ assert.match(main, /Virtual controller native reconnect failed\./);
 assert.match(main, /controller\.reconnectMessage/);
 assert.match(
     main,
-    /function disconnectVirtualController\(\)[\s\S]*?pendingInterferenceReads\.clear\(\);[\s\S]*?pendingInterferenceToolReads\.clear\(\);/
+    /function disconnectVirtualController\(controller(?: = state\.virtualController)?\)[\s\S]*?pendingInterferenceReads\.clear\(\);[\s\S]*?pendingInterferenceToolReads\.clear\(\);/
 );
 assert.match(main, /const sample = controller\.samples\.getLatest\(\)/);
 assert.match(main, /sample\.sampleId <= controller\.lastAppliedSampleId/);
@@ -181,6 +205,10 @@ assert.match(main, /Trace에서 관절 위치\(J1~J6\)를 가져올 수 없습�
 assert.doesNotMatch(main, /sampleQuaternionForRobot|isTraceIkSolutionContinuous|TRACE_POSE_FALLBACK_STATUS/);
 assert.match(bridge, /BridgePort = 5055/);
 assert.match(bridge, /ControllerPort = 2222/);
+assert.match(bridge, /ActiveSessions/);
+assert.match(bridge, /ActiveCommunicationIds/);
+assert.match(bridge, /TryAllocateCommunicationId/);
+assert.doesNotMatch(bridge, /activeClient/);
 assert.match(bridge, /INOROBOT_BRIDGE_TOKEN/);
 assert.match(bridge, /INOROBOT_BRIDGE_ORIGINS/);
 assert.match(bridge, /RandomNumberGenerator\.GetBytes/);

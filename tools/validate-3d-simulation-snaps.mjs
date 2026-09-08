@@ -7,12 +7,54 @@ const simulationSource = readFileSync(new URL('../2_3DSimulation/main.js', impor
 const simulationStyles = readFileSync(new URL('../2_3DSimulation/style.css', import.meta.url), 'utf8');
 const simulationHtml = readFileSync(new URL('../2_3DSimulation/index.html', import.meta.url), 'utf8');
 const stepWorkerSource = readFileSync(new URL('../2_3DSimulation/step-import-worker.js', import.meta.url), 'utf8');
+assert.match(simulationHtml, /id="robot-model-choice-dialog"/);
+assert.match(simulationHtml, /id="btn-add-robot-model-choice"/);
+assert.match(simulationHtml, /id="btn-replace-robot-model-choice"/);
+assert.match(simulationHtml, /data-interference-snap-point="p1"/);
+assert.match(simulationHtml, /data-interference-snap-point="p2"/);
+assert.match(simulationHtml, /data-interference-snap-point="datum"/);
+assert.match(simulationSource, /getArticulatedRobots\(\)\.length === 0/);
+assert.match(simulationSource, /openRobotModelChoiceDialog\(model\)/);
+assert.match(simulationSource, /function setInterferenceSnapMode\(enabled/);
+assert.match(simulationSource, /function handleInterferenceSnapSelection\(snap\)/);
+assert.match(simulationSource, /buildSimulationSnapCandidates\('interference'\)/);
+assert.match(simulationSource, /scope === 'interference' && state\.interferenceSnapMode/);
+const simulationSnapButtonFunction = simulationSource.match(
+  /function updateSimulationSnapButton\(\)[\s\S]*?(?=\r?\n(?:async )?function toggleSimulationSnapMoveMode)/
+)?.[0] || '';
+assert.match(simulationSnapButtonFunction, /if \(state\.snapMoveMode\) setBaseJogGizmoEnabled\(false\)/);
+assert.doesNotMatch(simulationSnapButtonFunction, /syncModelOutlines\(\)/);
+assert.match(simulationSource, /function activateModelPlacement\([\s\S]*?updateSimulationSnapButton\(\);\s*syncModelOutlines\(\);/);
+assert.match(simulationSource, /function deactivateModelPlacement\([\s\S]*?updateSimulationSnapButton\(\);\s*syncModelOutlines\(\);/);
+assert.match(simulationSource, /state\.placement\.active && model\.userData\?\.tcpFrame/);
+assert.match(simulationSource, /const snapMoveActive = Boolean\(state\.snapMoveMode\)/);
+assert.match(simulationSource, /btnJogBaseMode\?\.classList\.toggle\('active', isBase && !snapMoveActive\)/);
+const baseJogGizmoFunction = simulationSource.match(
+  /function setBaseJogGizmoEnabled\(enabled\)[\s\S]*?(?=\r?\nfunction getBaseJogRotationAxes)/
+)?.[0] || '';
+assert.match(baseJogGizmoFunction, /&& !state\.snapMoveMode/);
+assert.match(simulationSource, /void loadModelFromServer\(model, \{ append: true \}\)/);
+assert.match(simulationSource, /const selectedRobot = getSelectedRobotModel\(\)/);
+assert.match(simulationSource, /el\.btnReplaceRobotModelChoice\.disabled = motionLocked \|\| !selectedRobot/);
+assert.match(simulationSource, /replaceRobot: pending\.selectedRobot/);
+assert.match(simulationSource, /function removeRobotForReplacement\(robot\)/);
+assert.match(simulationSource, /removeRobotForReplacement\(replaceRobot\)/);
+assert.match(simulationSource, /const replacingRobot = Boolean\(replaceRobot\)/);
+assert.match(simulationSource, /const appendModel = options.append === true/);
+assert.match(simulationSource, /else if \(!appendModel\) \{\s*cleanupScene\(\);\s*\}/);
+assert.doesNotMatch(simulationSource, /btnAddMode|chk-add-mode|add-mode-toggle|모델 추가 모드|Add Mode|forceAddMode/);
+assert.doesNotMatch(simulationHtml, /btnAddMode|chk-add-mode|add-mode-toggle|모델 추가 모드/);
+assert.doesNotMatch(simulationStyles, /add-mode-toggle/);
 const findSimulationSnapFunction = simulationSource.match(
   /function findSimulationSnapAtPointer\(pointerEvent\)[\s\S]*?(?=\r?\nfunction showSimulationSnapMarker)/
  )?.[0] || '';
 
 assert.match(simulationSource, /mesh\.userData\.stepBrepFaces/);
-assert.match(simulationSource, /brep_faces:\s*stepBrepFaces/);
+assert.match(simulationSource, /function getPrimitiveShapeBrepFaces\(mesh\)/);
+assert.match(simulationSource, /const brepFaces = getValidatedStepBrepFaces\(mesh\) \|\| getPrimitiveShapeBrepFaces\(mesh\)/);
+assert.match(simulationSource, /brep_faces:\s*brepFaces/);
+assert.match(simulationSource, /geometry\.groups/);
+assert.match(simulationSource, /function getSimulationSnapFaceTriangleRanges\(mesh, triangleIndex\)[\s\S]*?getPrimitiveShapeBrepFaces\(mesh\)/);
 assert.match(simulationSource, /meshDefinition\.brepFaces/);
 assert.match(stepWorkerSource, /brepFaces:\s*Array\.isArray\(meshDefinition\.brep_faces\)/);
 assert.match(stepWorkerSource, /first:\s*first \+ triangleOffset/);
@@ -52,18 +94,36 @@ assert.match(simulationSource, /payload\.type === 'error'[\s\S]*?finish\(reject,
 assert.match(simulationSource, /await yieldToAnimationFrame\(\)/);
 assert.match(simulationSource, /function getPreparedSimulationSnapMeshes\(scope = getSimulationSnapScope\(\)\)/);
 assert.match(simulationSource, /function getSimulationSnapModels\(scope = 'scene'\)/);
+assert.match(simulationSource, /function isSimulationSnapModel\(model\)[\s\S]*?model\?\.userData\?\.uploaded \|\| isPrimitiveShapeModel\(model\)/);
+assert.match(simulationSource, /scope === 'zero'[\s\S]*?isSimulationSnapModel\(model\)/);
+assert.match(simulationSource, /scope === 'scene'[\s\S]*?isSimulationSnapModel\(model\)/);
+assert.match(simulationSource, /scope === 'placement'[\s\S]*?return getSimulationSnapModels\('scene'\)\.filter\(\(model\) => \(\s*model !== movingModel \|\| !state\.placement\.sourcePoint\s*\)\)/);
+assert.match(simulationSource, /scope === 'tool'[\s\S]*?isPrimitiveShapeModel\(model\)[\s\S]*?model\.userData\.placement === 'scene'/);
 assert.match(simulationSource, /const placement = scope === 'tool' \? 'tcp' : 'scene'/);
 const getSimulationSnapMeshesFunction = simulationSource.match(
   /function getSimulationSnapMeshes\(scope = 'scene'\)[\s\S]*?(?=\r?\nfunction cloneSimulationSnapFaceSelection)/
  )?.[0] || '';
 assert.match(simulationSource, /function getAllSimulationSnapMeshes\(scope = 'scene', \{ includeHidden = false \} = \{\}\)/);
 assert.match(getSimulationSnapMeshesFunction, /getAllSimulationSnapMeshes\(scope, \{ includeHidden: true \}\)/);
-assert.match(getSimulationSnapMeshesFunction, /return \[\];/);
+assert.match(getSimulationSnapMeshesFunction, /return selectedMeshes;/);
+assert.match(getSimulationSnapMeshesFunction, /selected-face scope must never[\s\S]*?expand to unrelated meshes/);
+assert.doesNotMatch(getSimulationSnapMeshesFunction, /return loadedMeshes\.filter\(\(mesh\) => !isSimulationSnapRobotMesh\(mesh\)\)/);
 assert.doesNotMatch(getSimulationSnapMeshesFunction, /clearSimulationSnapFaceSelection/);
+const getAllSimulationSnapMeshesFunction = simulationSource.match(
+  /function getAllSimulationSnapMeshes\(scope = 'scene', \{ includeHidden = false \} = \{\}\)[\s\S]*?(?=\r?\nfunction getSimulationSnapFaceSelections)/
+ )?.[0] || '';
+assert.match(getAllSimulationSnapMeshesFunction, /scope === 'placement'[\s\S]*?findSceneModelAncestor\(child\) === state\.placement\.model/);
 assert.match(simulationSource, /function cloneSimulationSnapFaceSelections\(/);
 assert.match(simulationSource, /\? cloneSimulationSnapFaceSelections\(\) : \[\]/);
+assert.match(simulationSource, /scope === 'placement' && state\.placement\.active/);
+assert.match(simulationSource, /scope === 'measurement' && state\.measurement\.active/);
+assert.match(simulationSource, /scope === 'tool' && state\.tcpSnapMode/);
+assert.match(simulationSource, /const hasSelectedFirstPoint = \(scope === 'placement' && Boolean\(state\.placement\.sourcePoint\)\)[\s\S]*?state\.measurement\.points\[0\]/);
+assert.match(simulationSource, /const meshes = faceSelections\.length \|\| hasSelectedFirstPoint[\s\S]*?getSimulationSnapMeshes\(scope\)[\s\S]*?: \[\]/);
 assert.match(simulationSource, /buildSimulationCombinedSnapCandidates\(candidateGroups, faceSelections\)/);
 assert.match(simulationSource, /Build each selected face independently/);
+assert.match(simulationSource, /Without a face selection, build the complete candidate[\s\S]*?cross-model P2\/measurement point/);
+assert.match(simulationSource, /function getSimulationSnapRobotSpecialCandidates\([\s\S]*?if \(faceSelections\.length\) return \[\];/);
 assert.match(simulationSource, /Multi-face snap combination skipped/);
 assert.match(simulationSource, /Snap candidate marker refresh skipped/);
 assert.match(simulationSource, /Selected face snap candidate generation failed:[\s\S]*?invalidateSimulationSnapCandidates\(\);[\s\S]*?면 선택은 유지됩니다/);
@@ -73,6 +133,9 @@ const selectSimulationSnapFaceFunction = simulationSource.match(
 assert.doesNotMatch(selectSimulationSnapFaceFunction, /catch \([\s\S]*?clearSimulationSnapFaceSelection\(\)/);
 assert.match(simulationSource, /buildSimulationSnapCandidates\('tool'\)/);
 assert.match(simulationSource, /getSimulationSnapMeshes\('tool'\)/);
+assert.match(simulationSource, /function handleSimulationSnapFaceSelectionClick\(event\)[\s\S]*?state\.placement\.active[\s\S]*?handleMeasurementSnapSelection\(snap\)/);
+assert.match(simulationSource, /function handleSimulationSnapFaceSelectionClick\(event\)[\s\S]*?state\.measurement\.active[\s\S]*?handleMeasurementSnapSelection\(snap\)/);
+assert.match(simulationSource, /function handleSimulationSnapFaceSelectionClick\(event\)[\s\S]*?state\.tcpSnapMode[\s\S]*?handleTcpSnapSelection\(snap\)/);
 assert.match(findSimulationSnapFunction, /state\.camera\.updateMatrixWorld\(true\);/);
 assert.doesNotMatch(findSimulationSnapFunction, /state\.scene\.updateMatrixWorld\(true\);/);
 assert.match(simulationSource, /function updateSimulationSnapCandidateMarkers\(\)[\s\S]*?if \(state\.viewNavigationActive\) return;/);
@@ -98,6 +161,29 @@ assert.match(simulationSource, /getSimulationSnapCandidatesNearPointer\([\s\S]*?
 assert.match(simulationSource, /SIMULATION_SNAP_OVERLAP_TOLERANCE_PX\s*=\s*7/);
 assert.match(simulationSource, /'circle-center':\s*\{\s*label:\s*'원\/호 중심점',[^}]*priority:\s*0\s*\}/);
 assert.match(simulationSource, /'rectangle-center':\s*\{\s*label:\s*'사각형 중심점',[^}]*priority:\s*0\s*\}/);
+assert.match(simulationSource, /'robot-base-center':\s*\{\s*label:\s*'로봇 바디 중심점',[^}]*priority:\s*0\s*\}/);
+assert.match(simulationSource, /function getRobotBodyBaseMesh\(robot\)/);
+assert.match(simulationSource, /function getSimulationSnapRobotBodyCenterCandidates\(scope = 'scene', faceSelections = \[\]\)/);
+assert.match(simulationSource, /getExtremeSectionCenter\(baseMesh\.geometry, 2, -1\)/);
+assert.match(simulationSource, /'robot-tcp':\s*\{\s*label:\s*'현재 TCP \(점\)'[^}]*priority:\s*0\s*\}/);
+assert.match(simulationSource, /function getSimulationSnapRobotTcpCandidates\(scope = 'scene', faceSelections = \[\]\)/);
+assert.match(simulationSource, /function getSimulationSnapRobotSpecialCandidates\(scope = 'scene', faceSelections = \[\]\)/);
+assert.match(simulationSource, /function isSimulationSnapRobotMesh\(mesh\)/);
+assert.match(simulationSource, /const excludeMovingModel = scope === 'placement' && state\.placement\.sourcePoint/);
+assert.match(simulationSource, /\(excludeMovingModel && robot === movingModel\)/);
+assert.match(simulationSource, /function isArticulatedRobotModel\(model\)/);
+assert.match(simulationSource, /function getNextRobotInstanceNumber\(\)/);
+assert.doesNotMatch(simulationSource, /const matchingRobots = getArticulatedRobots\(\)/);
+assert.match(simulationSource, /const modelOrder = new Map\(state\.models\.map\(\(model, index\) => \[model, index\]\)\)/);
+assert.match(simulationSource, /Number\(isArticulatedRobotModel\(right\)\) - Number\(isArticulatedRobotModel\(left\)\)/);
+assert.match(simulationSource, /const replacementInstanceNumber = replacingRobot/);
+assert.match(simulationSource, /instanceNumber: replacementInstanceNumber/);
+assert.match(simulationSource, /instanceNumber: robot\.userData\.robotInstanceNumber/);
+assert.match(simulationSource, /selectedMeshes\.every\(\(mesh\) => loadedMeshes\.includes\(mesh\)\)/);
+assert.match(simulationSource, /return getAllSimulationSnapMeshes\(scope\)\.filter\(\(mesh\) => !isSimulationSnapRobotMesh\(mesh\)\)/);
+assert.match(simulationSource, /candidate\.type === 'robot-base-center' \|\| candidate\.type === 'robot-tcp'/);
+assert.equal((simulationHtml.match(/robot-base-center/g) || []).length, 4);
+assert.equal((simulationHtml.match(/robot-tcp/g) || []).length, 4);
 assert.match(simulationSource, /endpoint:\s*\{\s*label:\s*'끝점',[^}]*priority:\s*2\s*\}/);
 assert.match(simulationSource, /'edge-midpoint':\s*\{\s*label:\s*'에지 중심점',[^}]*priority:\s*3\s*\}/);
 assert.match(simulationSource, /function compareSimulationSnapCandidates\(left, right\)/);
@@ -106,9 +192,12 @@ assert.match(simulationSource, /nearby\.sort\(requiredType[\s\S]*?: compareSimul
 assert.match(simulationSource, /if \(isLazySimulationSnapMesh\(mesh\)\) continue;/);
 assert.match(simulationSource, /function scheduleLazySimulationSnapBuild\(mesh\)/);
 assert.match(simulationSource, /getLazySimulationSnapMeshAtPointer\(pointerX, pointerY, bounds, meshes\)/);
+assert.match(simulationSource, /const SIMULATION_SNAP_COLOR = 0xef4444/);
+assert.match(simulationSource, /color:\s*SIMULATION_SNAP_COLOR/);
 assert.match(simulationStyles, /data-snap-type="endpoint"[^}]*> span\s*\{[^}]*background:\s*radial-gradient\(circle at center,/s);
-assert.match(simulationStyles, /\.simulation-snap-marker > span\s*\{[^}]*width:\s*14px;[^}]*height:\s*14px;[^}]*border:\s*1\.25px solid #f59e0b;[^}]*color:\s*#f59e0b;/s);
-assert.match(simulationStyles, /\.simulation-snap-marker > span\s*\{[^}]*box-shadow:\s*0 0 6px rgba\(217, 119, 6, 0\.68\);/s);
+assert.match(simulationStyles, /:root\s*\{[^}]*--simulation-snap-color:\s*#ef4444;/s);
+assert.match(simulationStyles, /\.simulation-snap-marker > span\s*\{[^}]*width:\s*14px;[^}]*height:\s*14px;[^}]*border:\s*1\.25px solid var\(--simulation-snap-color\);[^}]*color:\s*var\(--simulation-snap-color\);/s);
+assert.match(simulationStyles, /\.simulation-snap-marker > span\s*\{[^}]*box-shadow:\s*0 0 6px rgba\(239, 68, 68, 0\.68\);/s);
 assert.doesNotMatch(simulationStyles, /data-snap-type="(?:face-center|shape-center|virtual-intersection)"/);
 assert.match(simulationStyles, /\.simulation-snap-marker\s*\{[^}]*transform:\s*translate\(-7px,\s*-50%\);/s);
 assert.match(simulationStyles, /\.simulation-snap-marker\.label-left\s*\{[^}]*transform:\s*translate\(calc\(-100% \+ 7px\),\s*-50%\);/s);

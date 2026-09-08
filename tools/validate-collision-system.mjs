@@ -42,7 +42,6 @@ assert.ok(
     collisionSystem.check([left, right]),
     'Re-entering an overlap after a transform-cache refresh must be detected.'
 );
-
 const robot = new THREE.Group();
 const robotLinks = [];
 [-3, 0, 3].forEach((x, index) => {
@@ -87,6 +86,33 @@ assert.equal(
         && hit.meshA === robotLinks[2] && hit.meshB === toolMountMesh),
     false,
     'The attached Tool/J6 mounting interface must not be reported as a collision.'
+);
+
+const wristRobot = new THREE.Group();
+wristRobot.userData.joints = Array.from({ length: 4 }, () => ({}));
+for (let index = 0; index < 4; index += 1) {
+    const link = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial());
+    link.userData.robotJointIndex = index;
+    link.position.x = index * 3;
+    wristRobot.add(link);
+}
+const collarTool = new THREE.Group();
+collarTool.userData.attachmentHost = wristRobot;
+collarTool.userData.collisionIgnoreHostWristJointCount = 2;
+collarTool.add(new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), new THREE.MeshBasicMaterial()));
+wristRobot.add(collarTool);
+collarTool.position.x = 7.5;
+[wristRobot, collarTool].forEach((root) => root.updateMatrixWorld(true));
+assert.equal(
+    new MeshCollisionSystem().check([wristRobot, collarTool]),
+    null,
+    'A Test Tool flange collar may overlap the final two wrist-link meshes without a false self-collision.'
+);
+collarTool.position.x = 3;
+[wristRobot, collarTool].forEach((root) => root.updateMatrixWorld(true));
+assert.ok(
+    new MeshCollisionSystem().check([wristRobot, collarTool]),
+    'The Test Tool collision exemption must not hide contact with an earlier arm link.'
 );
 
 const scaraRobot = new THREE.Group();
@@ -220,10 +246,86 @@ assert.equal(
     'An open Tool shell with one vertex inside a body must not be treated as a solid containment collision.'
 );
 
+const hollowFrame = new THREE.Group();
+[
+    [-2, 0, 1, 6, 1],
+    [2, 0, 1, 6, 1],
+    [0, -2, 6, 1, 1],
+    [0, 2, 6, 1, 1]
+].forEach(([x, y, width, height, depth]) => {
+    const bar = new THREE.Mesh(
+        new THREE.BoxGeometry(width, height, depth),
+        new THREE.MeshBasicMaterial()
+    );
+    bar.position.set(x, y, 0);
+    hollowFrame.add(bar);
+});
+hollowFrame.updateMatrixWorld(true);
+const pointInsideSystem = new MeshCollisionSystem();
+assert.equal(
+    pointInsideSystem.isPointInside([hollowFrame], new THREE.Vector3(0, 0, 0)),
+    false,
+    'A point in a hollow frame must not be classified as inside the frame root AABB.'
+);
+assert.equal(
+    pointInsideSystem.isPointInside([enclosingBody], new THREE.Vector3(0, 0, 0)),
+    true,
+    'A point inside a closed solid mesh must be classified as inside.'
+);
+assert.equal(
+    pointInsideSystem.isPointInside([enclosingBody], new THREE.Vector3(0, 0, 0.5)),
+    false,
+    'A point on a solid CAD face must remain a valid target contact point.'
+);
+assert.equal(
+    pointInsideSystem.isPointInside([enclosingBody], new THREE.Vector3(0, 0, 0.2)),
+    true,
+    'A point meaningfully below a solid CAD face must still be classified as inside.'
+);
+
 const cachedCollisionSystem = new MeshCollisionSystem();
 assert.ok(cachedCollisionSystem.check([left, right]), 'The cached collision setup must begin overlapped.');
 assert.equal(cachedCollisionSystem.hitMeshPairCache.size, 1, 'A confirmed collision pair must be retained for continuous JOG checks.');
 assert.ok(cachedCollisionSystem.check([left, right]), 'The cached collision pair must remain detectable on the next frame.');
+
+const cachedFalsePositivePlane = new THREE.BufferGeometry();
+cachedFalsePositivePlane.setAttribute('position', new THREE.Float32BufferAttribute([
+    0, 0, 0,
+    2, 0, 0,
+    0, 2, 0
+], 3));
+const cachedFalsePositiveProbe = new THREE.BufferGeometry();
+cachedFalsePositiveProbe.setAttribute('position', new THREE.Float32BufferAttribute([
+    0.5, 0.5, -1,
+    0.5, 0.5, 1,
+    1.5, 0.5, 0
+], 3));
+const cachedFalsePositiveLeft = new THREE.Group();
+cachedFalsePositiveLeft.add(new THREE.Mesh(cachedFalsePositivePlane, new THREE.MeshBasicMaterial()));
+const cachedFalsePositiveRight = new THREE.Group();
+cachedFalsePositiveRight.add(new THREE.Mesh(cachedFalsePositiveProbe, new THREE.MeshBasicMaterial()));
+[cachedFalsePositiveLeft, cachedFalsePositiveRight].forEach((root) => root.updateMatrixWorld(true));
+const cachedFalsePositiveSystem = new MeshCollisionSystem();
+assert.ok(
+    cachedFalsePositiveSystem.check([cachedFalsePositiveLeft, cachedFalsePositiveRight]),
+    'The cached false-positive setup must begin with an actual triangle contact.'
+);
+cachedFalsePositiveRight.position.set(1, 1, 0);
+cachedFalsePositiveRight.updateMatrixWorld(true);
+const cachedFalsePositiveResult = cachedFalsePositiveSystem.checkAll(
+    [cachedFalsePositiveLeft, cachedFalsePositiveRight],
+    { changedRoots: new Set([cachedFalsePositiveRight]), now: 16 }
+);
+assert.equal(
+    cachedFalsePositiveResult.length,
+    0,
+    'A cached contact must clear when only the broad-phase bounds still overlap.'
+);
+assert.equal(
+    cachedFalsePositiveSystem.lastStats.cachedTriangleRechecks,
+    1,
+    'A cached contact must be verified by its exact triangles before reuse.'
+);
 
 const broadPhaseOnlyTriangle = () => {
     const geometry = new THREE.BufferGeometry();
@@ -303,6 +405,205 @@ assert.equal(
 
 const viewerSource = await readFile(viewerModuleUrl, 'utf8');
 const viewerHtml = await readFile(new URL('../2_3DSimulation/index.html', import.meta.url), 'utf8');
+const autoPathTargetSource = viewerSource.slice(
+    viewerSource.indexOf('function isAutoPathTargetInsideModel('),
+    viewerSource.indexOf('function createAutoPathCollisionEvaluator(')
+);
+assert.match(
+    autoPathTargetSource,
+    /state\.collision\.system\?\.isPointInside\(obstacleModels, worldPoint\)/,
+    'Automatic path planning must use exact mesh containment for target validation.'
+);
+assert.doesNotMatch(
+    autoPathTargetSource,
+    /setFromObject\(model\)/,
+    'Automatic path planning must not classify target points using a model root AABB.'
+);
+assert.match(
+    viewerSource,
+    /const isAutoPathEndpoint = \(angles\) =>[\s\S]*?const isPathStateSafe = \(angles\) => isAutoPathEndpoint\(angles\) \|\| evaluator\.isSafe\(angles\)/,
+    'Automatic path planning must allow taught endpoint contact while retaining collision checks for all non-endpoint states.'
+);
+assert.match(
+    viewerSource,
+    /const linearPath = await solveAutoPathLinear\([\s\S]*?if \(linearPath\)[\s\S]*?else if \(!firstCollision && edgeIsSafe\(startAngles, planningTargetAngles\)\)/,
+    'Automatic path planning must test the TCP straight route before falling back to a direct joint route.'
+);
+assert.match(
+    viewerSource,
+    /const updatedTargetIndex = program\.steps\.findIndex\(\(step\) => step\.id === targetStepId\)[\s\S]*?program\.steps\.splice\(updatedTargetIndex, 0, \.\.\.steps\)/,
+    'Automatic path planning must insert generated detour points immediately before the selected target command.'
+);
+assert.match(
+    viewerSource,
+    /function getAutoPathPointSteps\([\s\S]*?isMotionPointMotion\(step\.motion\)/,
+    'Automatic path planning must populate its endpoints from saved motion points.'
+);
+assert.match(
+    viewerSource,
+    /for \(let index = 1; index < path\.length - 1; index \+= 1\)/,
+    'Automatic path application must keep the selected target command and insert only intermediate detour points.'
+);
+assert.match(
+    viewerSource,
+    /function buildAutoPathAxisEscapePoses\([\s\S]*?label: 'X\+'[\s\S]*?label: 'X-'[\s\S]*?label: 'Y\+'[\s\S]*?label: 'Y-'[\s\S]*?label: 'Z\+'[\s\S]*?label: 'Z-'/,
+    'Automatic path planning must test all six Cartesian escape directions from the first collision.'
+);
+assert.match(
+    viewerSource,
+    /const userHintStates = program\.steps[\s\S]*?planJointWaypointGraph\(\{[\s\S]*?candidates: userHintStates/,
+    'Automatic path planning must use existing motion points between the selected endpoints as avoidance hints.'
+);
+assert.match(
+    viewerSource,
+    /const hintStepIds = new Set\([\s\S]*?if \(hintStepIds\.size\)[\s\S]*?program\.steps\.splice\(updatedTargetIndex, 0, \.\.\.steps\)/,
+    'Applying an optimized hinted route must replace the hint motion points instead of leaving a duplicate route.'
+);
+assert.match(viewerHtml, /id="auto-path-start"/i, 'Automatic path UI must expose a start motion-point selector.');
+assert.match(viewerHtml, /id="auto-path-target"/i, 'Automatic path UI must expose a target motion-point selector.');
+assert.match(
+    viewerHtml,
+    /id="model-transform-resize-handle"[^>]*role="separator"/i,
+    'The model transform editor must expose a draggable split handle.'
+);
+assert.match(
+    viewerSource,
+    /function makeModelTransformSplitResizable\(/,
+    'The model transform editor split handle must resize the model tree and transform editor.'
+);
+assert.match(viewerSource, /setTreeHeight\(treeRect\.height\)/, 'The model transform split handle must apply the dragged tree height.');
+assert.match(viewerSource, /handle\.addEventListener\('pointerdown'/, 'The model transform split handle must receive pointer input.');
+assert.match(viewerHtml, /id="auto-path-hold-orientation"[^>]*checked/i, 'Automatic path UI must enable TCP orientation hold by default.');
+assert.doesNotMatch(
+    viewerHtml,
+    /data-auto-path-target=|data-auto-path-orientation=|data-auto-path-rotation=|id="auto-path-insert"|id="auto-path-motion"/i,
+    'Automatic path UI must not require manual coordinates, insertion-position, or motion-type input.'
+);
+assert.doesNotMatch(
+    viewerSource,
+    /autoPathMotion|settings\.motion/,
+    'Automatic path planning must decide MOVJ or MOVL without a user motion-type setting.'
+);
+assert.match(
+    viewerSource,
+    /holdOrientation:\s*el\.autoPathHoldOrientation\?\.checked !== false/,
+    'Automatic path planning must preserve TCP orientation by default.'
+);
+assert.match(
+    viewerSource,
+    /const routeTargetPose = settings\.holdOrientation[\s\S]*?quaternion: startPose\.quaternion\.clone\(\)/,
+    'Automatic path planning must use a fixed TCP orientation for held-orientation routes.'
+);
+assert.match(
+    viewerSource,
+    /function buildAutoPathCartesianWaypointPoses\([\s\S]*?add\(target\.x, start\.y, z\)[\s\S]*?add\(start\.x, target\.y, z\)/,
+    'Automatic path planning must generate both X-first and Y-first Cartesian transition candidates.'
+);
+assert.match(
+    viewerSource,
+    /function solveAutoPathCartesianWaypointRoute\([\s\S]*?solveAutoPathLinear\([\s\S]*?finalAngles: waypointAngles[\s\S]*?finalAngles: targetAngles[\s\S]*?return \{ path, motion \}/,
+    'Automatic path planning must validate a Cartesian one-waypoint route with exact endpoint joint branches.'
+);
+assert.match(
+    viewerSource,
+    /if \(sampleIndex === samples && Array\.isArray\(finalAngles\)\)[\s\S]*?applyPlanningJointAngles\(robot, finalAngles\)/,
+    'Cartesian path sampling must retain the selected IK branch at exact waypoint and target endpoints.'
+);
+assert.match(
+    viewerSource,
+    /const linearPath = await solveAutoPathLinear\([\s\S]*?if \(linearPath\)[\s\S]*?else if \(!firstCollision && edgeIsSafe\(startAngles, planningTargetAngles\)\)[\s\S]*?path = \[startAngles\.slice\(\), planningTargetAngles\.slice\(\)\]/,
+    'Automatic path planning must test the TCP straight route before falling back to a direct joint route.'
+);
+assert.match(
+    viewerSource,
+    /collectAutoPathTeachingCandidates\([\s\S]*?planJointWaypointGraph\(\{[\s\S]*?candidates: teachingCandidates\.map/,
+    'Automatic path planning must build and connect collision-checked transition poses before random search.'
+);
+assert.match(
+    viewerSource,
+    /const changedRoots = new Set\(collisionModels\.filter\([\s\S]*?model === robot \|\| model\.userData\?\.attachmentHost === robot/,
+    'Automatic path collision sampling must refresh only the moving robot and its attached tooling.'
+);
+assert.doesNotMatch(
+    viewerSource,
+    /splitJointPath\(/,
+    'Automatic path planning must retain only collision-checked turning points instead of registering every sample as a teaching point.'
+);
+assert.match(
+    viewerSource,
+    /let requiredMotion = null;[\s\S]*?requiredMotion = 'MOVL';[\s\S]*?motion = requiredMotion \|\| \(movjPathIsSafe \? 'MOVJ' : 'MOVL'\)/,
+    'A TCP-held Cartesian route must remain MOVL instead of being reclassified as a wrist-turning MOVJ route.'
+);
+assert.match(
+    viewerSource,
+    /const movjPathIsSafe = path\.every\([\s\S]*?motion = requiredMotion \|\| \(movjPathIsSafe \? 'MOVJ' : 'MOVL'\)/,
+    'Automatic path planning must select MOVJ or MOVL from the collision result of the complete candidate path.'
+);
+assert.match(
+    viewerSource,
+    /targetOrientationWillChange[\s\S]*?solveAutoPathGoalCandidates\([\s\S]*?routeTargetPose[\s\S]*?const selectedCandidate = collisionFreeCandidate \|\| goalCandidates\[0\][\s\S]*?planningTargetAngles = selectedCandidate\.angles\.slice\(\)/,
+    'Held-orientation planning must prefer a collision-free target configuration while still accepting a taught endpoint contact.'
+);
+assert.match(
+    viewerSource,
+    /path = appendAutoPathTarget\(path, planningTargetAngles, jointBounds\)/,
+    'Automatic path planning must append the collision-checked target configuration selected for the route.'
+);
+assert.match(
+    viewerSource,
+    /targetConfigurationChanged \|\| endpointTcpSyncChanged[\s\S]*?syncMotionPointTcp\(targetStep, plannedTargetAngles, motion\)/,
+    'Applying a held-orientation or TCP-adjusted route must update the selected target point instead of adding a final wrist-turning command.'
+);
+assert.match(
+    viewerSource,
+    /function resolveAutoPathPointPose\([\s\S]*?getAutoPathPointPoseAtJoints\(robot, angles\)[\s\S]*?needsSync: positionMismatch \|\| orientationMismatch/,
+    'Automatic path planning must derive endpoint TCP poses from the selected joint targets and the active TCP profile.'
+);
+assert.match(
+    viewerSource,
+    /const endpointTcpSyncRequired = startEndpoint\.needsSync \|\| targetEndpoint\.needsSync[\s\S]*?state\.autoPath\.endpointTcpSyncRequired = endpointTcpSyncRequired/,
+    'Automatic path planning must synchronize stale point TCP data when the active TCP profile has changed.'
+);
+assert.match(
+    viewerSource,
+    /verifyAutoPathTargetApproach\(/,
+    'Automatic path planning must validate the final approach using the automatically selected motion.'
+);
+assert.match(
+    viewerSource,
+    /if \(motionChanged\) \{[\s\S]*?targetStep\.motion = motion;/,
+    'Applying an automatic path must update the selected target command to the chosen motion.'
+);
+assert.match(
+    viewerSource,
+    /solveMovlSamples\(robot, motionStepTargetPose\(step\), step\.name, \{[\s\S]*?isStateSafe:/,
+    'Motion preflight must collision-check sampled MOVL states.'
+);
+assert.match(
+    viewerSource,
+    /autoPathJointEdgeChecker\(evaluator, autoPathJointBounds\(robot\)\)/,
+    'Motion preflight must collision-check sampled MOVJ edges.'
+);
+assert.match(
+    viewerSource,
+    /const COLLISION_MODE = Object\.freeze\(\{[\s\S]*?OFF: 'off',[\s\S]*?STOP: 'stop',[\s\S]*?DISPLAY: 'display'/,
+    'Collision detection must expose stop, display-only, and off modes.'
+);
+assert.match(
+    viewerSource,
+    /el\.btnToggleCollision\?\.addEventListener\('click', \(\) => \{[\s\S]*?setCollisionMode\(nextCollisionMode\(\)\)/,
+    'The collision button must cycle through the three collision modes.'
+);
+assert.match(
+    viewerSource,
+    /function setCollisionMode\([\s\S]*?mode === COLLISION_MODE\.DISPLAY \? '충돌 감지 표시만'/,
+    'The display-only mode must keep collision feedback while avoiding the stop action.'
+);
+assert.match(
+    viewerSource,
+    /const blockingMotionCollision = collisionStopsMotion\(\)[\s\S]*?getBlockingMotionCollision\(collision\)[\s\S]*?: null;/,
+    'Display-only collision mode must not produce a blocking motion collision.'
+);
 assert.match(
     viewerSource,
     /collision:\s*\{[\s\S]*?enabled:\s*false,/,
@@ -315,13 +616,42 @@ assert.match(
 );
 assert.match(
     viewerSource,
-    /state\.collision\.enabled\s*=\s*display\.collisionEnabled\s*===\s*true;/,
-    'Workspace restore must preserve explicit collision-on settings while defaulting missing values to off.'
+    /outlineMode:\s*true,/,
+    'New simulation sessions must show model outlines by default.'
+);
+assert.match(
+    viewerHtml,
+    /id="btn-toggle-outline"[^>]*class="active"[^>]*aria-pressed="true"/,
+    'The outline toggle button must render as enabled on the initial page.'
+);
+const setupSceneSource = viewerSource.slice(
+    viewerSource.indexOf('function setupScene()'),
+    viewerSource.indexOf('function preventMiddleButtonAutoscroll')
+);
+assert.match(
+    setupSceneSource,
+    /state\.grid\.position\.z = 0;/,
+    'The simulation grid must stay on the world XY plane.'
+);
+assert.match(
+    setupSceneSource,
+    /state\.grid\.renderOrder = -100;/,
+    'The simulation grid must render before model geometry.'
+);
+assert.match(
+    setupSceneSource,
+    /material\.depthTest = true;[\s\S]*?material\.depthWrite = false;/,
+    'The simulation grid must not write depth so model surfaces cover it.'
 );
 assert.match(
     viewerSource,
-    /display:\s*\{ gridVisible: true, outlineMode: false, collisionEnabled: false \}/,
-    'Clean and legacy workspace defaults must keep collision detection disabled.'
+    /setCollisionModeState\(display\.collisionMode, display\.collisionEnabled === true\);/,
+    'Workspace restore must preserve the three-state collision mode while supporting legacy boolean settings.'
+);
+assert.match(
+    viewerSource,
+    /display:\s*\{[\s\S]*?gridVisible: true,[\s\S]*?outlineMode: true,[\s\S]*?collisionMode: COLLISION_MODE\.OFF,[\s\S]*?collisionEnabled: false[\s\S]*?\}/,
+    'Clean and legacy workspace defaults must show outlines while keeping collision detection disabled.'
 );
 assert.match(
     viewerSource,

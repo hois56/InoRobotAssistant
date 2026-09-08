@@ -55,6 +55,7 @@ const HELPER_SCREEN_PIXELS = Object.freeze({
   multiPointCenter: 14
 });
 const SNAP_MARKER_CAMERA_SCALE = Object.freeze({ min: 0.55, max: 1.25 });
+const CAD_SNAP_RADIUS_PX = 16;
 const MAX_VISIBLE_CAD_SNAP_MARKERS = 256;
 const CAD_SNAP_MARKER_TYPE_ORDER = Object.freeze([
   'rectangle-center',
@@ -122,7 +123,6 @@ const state = {
   snapCandidateMarkers: [],
   snapDisplayedCandidates: [],
   snapType: 'auto',
-  snapRadiusPx: 16,
   snapMarkerReferenceDistance: null,
   hoverSnap: null,
   multiPoints: [],
@@ -206,8 +206,6 @@ function cacheElements() {
     robotTable: document.getElementById('cad-robot-table'),
     robotOverall: document.getElementById('cad-robot-overall'),
     snapType: document.getElementById('cad-snap-type'),
-    snapRadius: document.getElementById('cad-snap-radius'),
-    snapRadiusValue: document.getElementById('cad-snap-radius-value'),
     snapReadout: document.getElementById('cad-snap-readout'),
     snapMarker: document.getElementById('cad-snap-marker'),
     snapSymbol: document.getElementById('cad-snap-symbol'),
@@ -1794,7 +1792,7 @@ function createSnapFaceOverlay(selection) {
   overlayGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
   overlayGeometry.computeVertexNormals();
   const overlay = new THREE.Mesh(overlayGeometry, new THREE.MeshBasicMaterial({
-    color: 0xfacc15,
+    color: 0xef4444,
     transparent: true,
     opacity: 0.2,
     depthWrite: false,
@@ -2007,7 +2005,7 @@ function findSnapAtPointer(pointerEvent) {
     const screenX = (projected.x * 0.5 + 0.5) * bounds.width;
     const screenY = (-projected.y * 0.5 + 0.5) * bounds.height;
     const pixelDistance = Math.hypot(screenX - pointerX, screenY - pointerY);
-    if (pixelDistance > state.snapRadiusPx) return;
+    if (pixelDistance > CAD_SNAP_RADIUS_PX) return;
     const priority = state.snapType === 'auto' ? snapTypeInfo(candidate.type).priority : 0;
     const score = pixelDistance + priority * 0.08;
     const cameraDistance = state.camera.position.distanceTo(candidate.point);
@@ -2452,11 +2450,6 @@ function bindEvents() {
     if (state.pickMode && state.lastPointer) showSnapMarker(findSnapAtPointer(state.lastPointer));
     else setSnapReadout(() => `${uiText('스냅 유형')} · ${uiText(snapTypeLabelKey(state.snapType))}`);
   });
-  el.snapRadius.addEventListener('input', () => {
-    state.snapRadiusPx = Number(el.snapRadius.value);
-    el.snapRadiusValue.textContent = `${state.snapRadiusPx} px`;
-    if (state.pickMode && state.lastPointer) showSnapMarker(findSnapAtPointer(state.lastPointer));
-  });
   el.outlineToggle.addEventListener('click', () => setOutlineMode(!state.outlineMode));
   el.gridToggle.addEventListener('click', toggleGrid);
   el.exportStep.addEventListener('click', exportStepWithToolFrame);
@@ -2515,8 +2508,6 @@ function init() {
   bindEvents();
   renderParts();
   state.snapType = el.snapType.value;
-  state.snapRadiusPx = Number(el.snapRadius.value);
-  el.snapRadiusValue.textContent = `${state.snapRadiusPx} px`;
   writeVectorInputs('origin', state.origin.toArray());
   writeVectorInputs('rotation', state.rotationDegrees.toArray());
   writeVectorInputs('tcp', state.tcp.toArray());
@@ -2540,7 +2531,6 @@ function init() {
     getSnapState() {
       return {
         type: state.snapType,
-        radiusPx: state.snapRadiusPx,
         candidateCount: state.snapCandidates.length,
         snapAnalysisMode: state.snapAnalysisMode,
         gridVisible: state.gridVisible,

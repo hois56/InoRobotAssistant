@@ -8,7 +8,6 @@ namespace InoRobotVirtualControllerBridge;
 
 internal sealed class NativeRobotClient : IDisposable
 {
-    private const int CommunicationId = 0;
     private const long JointReadFailureDisconnectThresholdMs = 100;
     private const string NativeLibraryName = "IMC100API.dll";
     private const string EmbeddedLibraryName = "InoRobotVirtualControllerBridge.IMC100API.dll";
@@ -21,6 +20,13 @@ internal sealed class NativeRobotClient : IDisposable
     private int _consecutiveJointReadFailures;
     private long _jointReadFailureStartedAt;
     private string? _lastConnectionLossDiagnostic;
+
+    private readonly int _communicationId;
+
+    public NativeRobotClient(int communicationId = 0)
+    {
+        _communicationId = communicationId;
+    }
 
     public bool IsConnected { get; private set; }
 
@@ -175,7 +181,7 @@ internal sealed class NativeRobotClient : IDisposable
                     | ((uint)bytes[1] << 16)
                     | ((uint)bytes[2] << 8)
                     | bytes[3];
-                int result = NativeApi.IMC100_Init_ETH(address, checked((ushort)port), timeoutSeconds, CommunicationId);
+                int result = NativeApi.IMC100_Init_ETH(address, checked((ushort)port), timeoutSeconds, _communicationId);
                 if (result < 0)
                 {
                     CloseNativeSessionUnsafe();
@@ -184,7 +190,7 @@ internal sealed class NativeRobotClient : IDisposable
 
                 _nativeSessionOpen = true;
                 RobJointPosition jointPosition = CreateJointPosition();
-                result = NativeApi.IMC100_Get_RobJPosHere(ref jointPosition, CommunicationId);
+                result = NativeApi.IMC100_Get_RobJPosHere(ref jointPosition, _communicationId);
                 if (result < 0)
                 {
                     DisconnectUnsafe();
@@ -212,7 +218,7 @@ internal sealed class NativeRobotClient : IDisposable
             RobJointPosition jointPosition = CreateJointPosition();
             try
             {
-                int jointResult = NativeApi.IMC100_Get_RobJPosHere(ref jointPosition, CommunicationId);
+                int jointResult = NativeApi.IMC100_Get_RobJPosHere(ref jointPosition, _communicationId);
                 if (jointResult < 0)
                 {
                     RegisterJointReadFailureUnsafe($"return code {jointResult}");
@@ -228,7 +234,7 @@ internal sealed class NativeRobotClient : IDisposable
                 RobPosition tcpPosition = CreateTcpPosition();
                 try
                 {
-                    int tcpResult = NativeApi.IMC100_Get_RobPosHere(ref tcpPosition, CommunicationId);
+                    int tcpResult = NativeApi.IMC100_Get_RobPosHere(ref tcpPosition, _communicationId);
                     if (tcpResult >= 0)
                         tcp = tcpPosition.RobotPositionData.ToArray();
                 }
@@ -282,7 +288,7 @@ internal sealed class NativeRobotClient : IDisposable
                 int returnCode = NativeApi.IMC100_Get_InterferZonePara(
                     zoneNumber,
                     ref zone,
-                    CommunicationId);
+                    _communicationId);
 
                 if (returnCode < 0)
                 {
@@ -351,7 +357,7 @@ internal sealed class NativeRobotClient : IDisposable
                 int returnCode = NativeApi.IMC100_Get_InterferToolPara(
                     toolNumber,
                     ref tool,
-                    CommunicationId);
+                    _communicationId);
 
                 if (returnCode < 0)
                 {
@@ -438,8 +444,8 @@ internal sealed class NativeRobotClient : IDisposable
 
     private void CloseNativeSessionUnsafe()
     {
-        try { NativeApi.IMC100_RemovePermit(CommunicationId); } catch { }
-        try { NativeApi.IMC100_Exit_ETH(CommunicationId); } catch { }
+        try { NativeApi.IMC100_RemovePermit(_communicationId); } catch { }
+        try { NativeApi.IMC100_Exit_ETH(_communicationId); } catch { }
         _nativeSessionOpen = false;
     }
 

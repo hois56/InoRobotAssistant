@@ -444,6 +444,117 @@
         });
     }
 
+    // Inputs, pointer, scroll and click feedback share the media clock.
+    const TOOL_INPUTS = [
+        [7000, '#d_m', '5'], [10000, '#d_lx', '35'], [13000, '#d_lz', '120'],
+        [16000, '#d_ixx', '0.018'], [18500, '#d_iyy', '0.021'], [21000, '#d_izz', '0.015']
+    ];
+    const TOOL_SHOTS = [[0, '#robot'], [2700, 'option'], [5200, '#robot'],
+        ...TOOL_INPUTS.map(([at, selector]) => [at, selector]),
+        [24000, '#main-calculate'], [27700, '#summary'], [32000, '#overall']];
+    const TOOL_CLICKS = [1750, 4800, ...TOOL_INPUTS.map(([at]) => at + 800), 25900];
+    let demoTime = -1;
+    let demoCalculated = false;
+    let simulationTarget = null;
+    let simulationCueStart = 0;
+    let simulationCueKey = '';
+
+    function resetDemoMotion() {
+        demoTime = -1;
+        demoCalculated = false;
+        projectShot = -1;
+        projectMotion = null;
+        projectRect = null;
+        closeProjectMenu();
+        projectCaret?.remove();
+        projectCaret = null;
+    }
+
+    function prepareClockEffects() {
+        ensureEffects();
+        ensureProjectStyles();
+        for (const element of [cursor, spotlight, ripple]) {
+            element.style.setProperty('transition', 'none', 'important');
+            element.style.setProperty('animation', 'none', 'important');
+        }
+    }
+
+    function renderToolTime(time) {
+        prepareClockEffects();
+        const snap = demoTime < 0 || time < demoTime || time - demoTime > 250;
+        if (demoTime < 0 || time < demoTime) {
+            toolReset();
+            resetDemoMotion();
+        }
+        if (time >= 4920 && demoTime < 4920) chooseToolDemoModel();
+        for (const [at, selector, text] of TOOL_INPUTS) {
+            const count = Math.max(0, Math.min(text.length, Math.floor((time - at - 1100) / 180)));
+            const value = time < at + 1000 ? '0' : text.slice(0, count);
+            const input = document.querySelector(selector);
+            if (input.value !== value) setValue(input, value);
+        }
+        if (time >= 26020 && !demoCalculated) { calculateToolResult(); demoCalculated = true; }
+        updateProjectMenu(time);
+        let shot = 0;
+        TOOL_SHOTS.forEach(([at], index) => { if (time >= at) shot = index; });
+        drawProjectPointer(time, shot, snap, TOOL_SHOTS, TOOL_CLICKS);
+        const typing = TOOL_INPUTS.find(([at]) => time >= at + 800 && time < at + 2500);
+        projectCaret?.remove(); projectCaret = null;
+        if (typing) {
+            const input = document.querySelector(typing[1]);
+            input.focus({ preventScroll:true });
+            input.style.caretColor = 'transparent';
+            const rect = input.getBoundingClientRect(), style = getComputedStyle(input);
+            const context = document.createElement('canvas').getContext('2d');
+            context.font = style.font;
+            projectCaret = document.createElement('div');
+            projectCaret.className = 'project-guide-caret';
+            const caretX = style.textAlign === 'right' ? rect.right - parseFloat(style.paddingRight) - 2
+                : rect.left + parseFloat(style.paddingLeft) + context.measureText(input.value).width + 2;
+            Object.assign(projectCaret.style, { left:`${caretX}px`, top:`${rect.top + 8}px`, height:`${Math.max(12, rect.height - 16)}px`, opacity:Math.floor(time / 450) % 2 ? '0' : '1' });
+            document.body.appendChild(projectCaret);
+        } else if (document.activeElement?.matches('input')) document.activeElement.blur();
+        demoTime = time;
+    }
+
+    function renderSimulationTime(time) {
+        prepareClockEffects();
+        // Native modal dialogs occupy the top layer, above body z-indexes.
+        const effectHost = document.querySelector('dialog[open]') || document.body;
+        for (const effect of [cursor, spotlight, ripple]) {
+            if (effect.parentElement !== effectHost) effectHost.appendChild(effect);
+        }
+        const snap = demoTime < 0 || time < demoTime || time - demoTime > 250;
+        updateProjectMenu(time);
+        let target = simulationTarget;
+        let start = simulationCueStart;
+        if (/simulation_snap_(face|target)_/.test(activeCue)) {
+            const point = getSimulationApi()?.getSnapScreenPoint?.();
+            if (point) {
+                let anchor = document.getElementById('guide-snap-anchor');
+                if (!anchor) {
+                    anchor = document.createElement('div');
+                    anchor.id = 'guide-snap-anchor';
+                    anchor.style.cssText = 'position:fixed;width:20px;height:20px;pointer-events:none';
+                    document.body.appendChild(anchor);
+                }
+                anchor.style.left = `${point.x - 10}px`;
+                anchor.style.top = `${point.y - 10}px`;
+                target = anchor;
+            }
+        }
+        if (time < 3800) {
+            target = time >= 2300 ? 'option' : '#model-select';
+            start = time >= 2300 ? 2300 : 0;
+        }
+        const key = `${activeCue}:${start}`;
+        if (key !== simulationCueKey) { projectShot = -1; simulationCueKey = key; }
+        const clicks = time < 3800 ? [1380, 3300] : activeCue.endsWith('_press') ? [start] : [];
+        drawProjectPointer(time, 0, snap, [[start, target]], clicks);
+        if (target === '#canvas-container') { cursor.classList.remove('is-visible'); spotlight.classList.remove('is-visible'); }
+        demoTime = time;
+    }
+
     const PROJECT_DEMO_NAME = 'InoRobot_Demo';
     const PROJECT_BASE_NAME = 'InoRobot_';
     const PROJECT_DEMO_MODEL = /R25/i;
@@ -520,86 +631,273 @@
         return document.querySelectorAll('#stepsList > div').length >= 2;
     }
 
-    function configureProjectSecondStep() {
-        ensureProjectSecondStep();
-        setProjectProcessChoice(1, 0, 'Stage');
-        setProjectProcessChoice(1, 1, 'Put');
-    }
-
-    function animateProjectSecondStepConfiguration() {
-        const typeSelect = document.querySelectorAll('#stepsList > div')[1]?.querySelectorAll('select')[0];
-        if (!typeSelect) return;
-        const sequenceToken = effectToken;
-        setProjectProcessChoice(1, 0, 'Stage');
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-            if (sequenceToken !== effectToken) return;
-            const methodSelect = document.querySelectorAll('#stepsList > div')[1]?.querySelectorAll('select')[1];
-            if (!methodSelect) return;
-            highlight(methodSelect, {
-                press: true,
-                hover: true,
-                onActivate: () => setProjectProcessChoice(1, 1, 'Put')
-            });
-        }));
-    }
-
-    const PROJECT_CUES = [
-        'project_reset', 'project_name_focus', 'project_name_value', 'project_model_focus', 'project_model_select',
-        'project_process_focus', 'project_process_add', 'project_process_configure', 'project_preview',
-        'project_options_focus', 'project_options_open', 'project_option_speed', 'project_options_apply',
-        'project_generate_focus', 'project_generate_press', 'project_generate_done'
+    // Every visible effect uses the player's clock; no timeout can finish an
+    // action while paused or leak into a different chapter after seeking.
+    const projectRowSelect = index => document.querySelectorAll('#stepsList > div')[1]?.querySelectorAll('select')[index];
+    const PROJECT_SHOTS = [
+        [0, '#prjName'], [4300, '#cmbRobotModel'], [6000, 'option'],
+        [7400, '#cmbRobotModel'], [9000, '#btnAdd'],
+        [11000, () => projectRowSelect(0)], [12600, 'option'],
+        [14000, () => projectRowSelect(0)], [14600, () => projectRowSelect(1)],
+        [16300, 'option'], [17700, () => projectRowSelect(1)],
+        [18500, '#prismContainer'], [22000, '#btnOption'],
+        [23300, '#chkTcpSpeed'], [27300, '#btnApplyOptions'],
+        [29300, '#btnOption'], [30300, '#prismContainer'], [33000, '#btnGenerate']
     ];
+    const PROJECT_CLICKS = [1600, 5100, 7000, 9800, 11800, 13700, 15400, 17400, 23000, 25100, 28700, 35000];
+    const PROJECT_ACTIONS = [
+        [7120, chooseProjectDemoModel], [9920, ensureProjectSecondStep],
+        [13820, () => setProjectProcessChoice(1, 0, 'Stage')],
+        [17520, () => setProjectProcessChoice(1, 1, 'Put')],
+        [23120, openProjectOptions], [25220, () => setProjectCheckbox('chkTcpSpeed', true)],
+        [28820, applyProjectOptions]
+    ];
+    let projectTime = -1;
+    let projectAction = 0;
+    let projectShot = -1;
+    let projectMotion = null;
+    let projectRect = null;
+    let projectMenu = null;
+    let projectMenuKey = '';
+    let projectCaret = null;
+    let projectPackage = null;
+    let projectPackageStarted = false;
+    let projectGeneration = 0;
+    let projectExportJob = Promise.resolve();
 
-    function renderProject(cue) {
-        const rank = Math.max(0, PROJECT_CUES.indexOf(cue));
+    function closeProjectMenu() {
+        projectMenu?.remove();
+        projectMenu = null;
+        projectMenuKey = '';
+    }
+
+    function resetProjectPlayback() {
+        clearEffects();
+        closeProjectMenu();
+        projectCaret?.remove();
+        projectCaret = null;
+        projectTime = -1;
+        projectAction = 0;
+        projectShot = -1;
+        projectMotion = null;
+        projectRect = null;
+        projectPackage = null;
+        projectPackageStarted = false;
+        projectGeneration += 1;
         projectReset();
-        if (rank > 2) setProjectName(PROJECT_DEMO_NAME);
-        if (rank > 4) chooseProjectDemoModel();
-        if (rank > 6) ensureProjectSecondStep();
-        if (rank > 7) configureProjectSecondStep();
-        if (rank === 11) openProjectOptions();
-        if (rank === 12) {
-            openProjectOptions();
-            setProjectCheckbox('chkTcpSpeed', true);
+        window.scrollTo(0, 0);
+    }
+
+    function ensureProjectStyles() {
+        if (document.querySelector('[data-project-guide-style]')) return;
+        const style = document.createElement('style');
+        style.dataset.projectGuideStyle = 'true';
+        style.textContent = `
+            html[data-tool-guide-embed="project"] .tool-guide-cursor,
+            html[data-tool-guide-embed="project"] .tool-guide-spotlight,
+            html[data-tool-guide-embed="project"] .tool-guide-ripple,
+            html[data-tool-guide-embed="project"] .tool-guide-toast { transition:none !important; animation:none !important; }
+            html[data-tool-guide-embed="project"] #prjName { caret-color:transparent; }
+            html[data-tool-guide-embed="project"] #prismContainer { max-height:410px !important; min-height:0 !important; overflow:auto !important; }
+            .project-guide-menu { position:fixed; z-index:2147483639; overflow:auto; max-height:252px; padding:6px; border:1px solid #64748b; border-radius:10px; background:#111e32; color:#f1f5f9; box-shadow:0 16px 40px #0009; pointer-events:none; font:500 16px/1.4 system-ui,sans-serif; }
+            .project-guide-menu [role="option"] { padding:9px 12px; min-height:40px; border-radius:5px; white-space:nowrap; }
+            .project-guide-menu [aria-selected="true"] { background:#334155; }
+            .project-guide-menu .is-hovered { background:#0369a1; box-shadow:inset 3px 0 #7dd3fc; }
+            .project-guide-group { padding:7px 12px; color:#94a3b8; font-size:12px; }
+            .project-guide-caret { position:fixed; z-index:2147483641; width:2px; background:#7dd3fc; pointer-events:none; }
+        `;
+        document.head.appendChild(style);
+    }
+
+    function projectMenuAt(time) {
+        if (app === 'tool') return time >= 1900 && time < 5200 ? { key:'tool-model', select:document.getElementById('robot'), matches:option => TOOL_DEMO_MODEL.test(option.textContent), hover:2700 } : null;
+        if (app === 'simulation') return time >= 1500 && time < 3800 ? { key:'simulation-model', select:document.getElementById('model-select'), matches:option => /IR-S4/i.test(option.textContent), hover:2300 } : null;
+        if (time >= 5220 && time < 7400) return { key:'model', select:document.getElementById('cmbRobotModel'), matches: option => PROJECT_DEMO_MODEL.test(option.textContent), hover:6000 };
+        if (time >= 11920 && time < 14000) return { key:'type', select:projectRowSelect(0), matches:option => option.value === 'Stage', hover:12600 };
+        if (time >= 15520 && time < 17700) return { key:'method', select:projectRowSelect(1), matches:option => option.value === 'Put', hover:16300 };
+        return null;
+    }
+
+    function updateProjectMenu(time) {
+        // Process vocabulary is the same English vocabulary as the generator.
+        document.querySelectorAll('#stepsList select').forEach(select => {
+            if (select.hasAttribute('data-i18n-skip')) return;
+            select.setAttribute('data-i18n-skip', '');
+            select.classList.add('notranslate');
+            select.setAttribute('translate', 'no');
+            Array.from(select.options).forEach(option => {
+                if (option.textContent !== option.value) option.textContent = option.value;
+            });
+        });
+        const menu = projectMenuAt(time);
+        if (!menu?.select) { closeProjectMenu(); return; }
+        if (projectMenuKey !== menu.key) {
+            closeProjectMenu();
+            projectMenuKey = menu.key;
+            projectMenu = document.createElement('div');
+            projectMenu.className = 'project-guide-menu notranslate';
+            projectMenu.setAttribute('translate', 'no');
+            projectMenu.setAttribute('data-i18n-skip', '');
+            projectMenu.setAttribute('role', 'listbox');
+            projectMenu.setAttribute('aria-label', menu.select.id || menu.key);
+            let group = null;
+            Array.from(menu.select.options).forEach(option => {
+                if (option.parentElement.tagName === 'OPTGROUP' && group !== option.parentElement) {
+                    group = option.parentElement;
+                    const label = document.createElement('div');
+                    label.className = 'project-guide-group';
+                    label.textContent = group.label;
+                    projectMenu.appendChild(label);
+                }
+                const row = document.createElement('div');
+                row.setAttribute('role', 'option');
+                row.setAttribute('aria-selected', String(option.selected));
+                row.textContent = option.textContent;
+                row.dataset.value = option.value;
+                if (menu.matches(option) && !projectMenu.querySelector('[data-demo-option]')) row.dataset.demoOption = 'true';
+                projectMenu.appendChild(row);
+            });
+            document.body.appendChild(projectMenu);
+            const option = projectMenu.querySelector('[data-demo-option]');
+            projectMenu.scrollTop = Math.max(0, (option?.offsetTop || 0) - 100);
         }
-        if (rank > 12) {
-            openProjectOptions();
-            setProjectCheckbox('chkTcpSpeed', true);
-            applyProjectOptions();
+        const rect = menu.select.getBoundingClientRect();
+        const width = Math.min(window.innerWidth - 32, Math.max(260, rect.width));
+        const height = projectMenu.offsetHeight;
+        Object.assign(projectMenu.style, {
+            width:`${width}px`, left:`${Math.max(16, Math.min(rect.left, window.innerWidth - width - 16))}px`,
+            top:`${rect.bottom + height + 12 <= window.innerHeight ? rect.bottom + 6 : Math.max(12, rect.top - height - 6)}px`
+        });
+        const option = projectMenu.querySelector('[data-demo-option]');
+        option?.classList.toggle('is-hovered', time >= menu.hover + 650);
+        for (const row of projectMenu.querySelectorAll('[role="option"]')) row.setAttribute('aria-selected', String(row.dataset.value === menu.select.value));
+    }
+
+    function projectTarget(shot, shots = PROJECT_SHOTS) {
+        const target = shots[shot][1];
+        if (target === 'option') return projectMenu?.querySelector('[data-demo-option]');
+        return resolveTarget(typeof target === 'function' ? target() : target);
+    }
+
+    function projectBounds(target) {
+        const rect = target.getBoundingClientRect();
+        if (app === 'simulation' && target.matches('input[type="range"]')) {
+            const fraction = Math.max(0, Math.min(1, (Number(target.value) - Number(target.min || 0)) / (Number(target.max || 100) - Number(target.min || 0) || 1)));
+            return { left:rect.left + 8 + (rect.width - 16) * fraction - 12, top:rect.top + rect.height / 2 - 12, width:24, height:24 };
         }
-        const rows = document.querySelectorAll('#stepsList > div');
-        const firstRow = rows[0];
-        const secondRow = rows[1];
-        const secondType = secondRow?.querySelectorAll('select')[0];
-        const speedOption = document.getElementById('chkTcpSpeed')?.closest('label') || document.getElementById('chkTcpSpeed');
-        const targets = {
-            project_reset: '#prjName', project_name_focus: '#prjName', project_name_value: '#prjName',
-            project_model_focus: '#cmbRobotModel', project_model_select: '#cmbRobotModel', project_process_focus: firstRow || '#stepsList',
-            project_process_add: '#btnAdd', project_process_configure: secondType || secondRow || '#stepsList', project_options_focus: '#btnOption',
-            project_options_open: '#btnOption', project_option_speed: speedOption, project_options_apply: '#btnApplyOptions',
-            project_preview: '#prismContainer', project_generate_focus: '#btnGenerate', project_generate_press: '#btnGenerate',
-            project_generate_done: '#btnGenerate'
-        };
-        if (cue === 'project_generate_done') {
-            clearEffects();
-            showToast('Project package is ready', 'InoRobot_Demo.zip');
+        const width = target.id === 'prismContainer' ? Math.min(rect.width, 600) : rect.width;
+        return { left:rect.left - 4, top:rect.top - 4, width:width + 8, height:rect.height + 8 };
+    }
+
+    const projectEase = value => { const t = Math.max(0, Math.min(1, value)); return t * t * (3 - 2 * t); };
+
+    function drawProjectPointer(time, shot, snap, shots = PROJECT_SHOTS, clicks = PROJECT_CLICKS) {
+        let target = projectTarget(shot, shots);
+        if (!target) return;
+        if (shot !== projectShot || snap) {
+            const from = projectRect || projectBounds(target);
+            const nodes = target.closest('header,#optionsModal,.project-guide-menu') ? [] : getScrollableNodes(target);
+            const before = getScrollSnapshot(nodes);
+            if (nodes.length) target.scrollIntoView({ behavior:'instant', block:'center', inline:'center' });
+            const after = getScrollSnapshot(nodes);
+            projectMotion = { from, nodes, before, after };
+            projectShot = shot;
+        }
+        const elapsed = time - shots[shot][0];
+        const motion = projectMotion;
+        const scrollProgress = snap || reducedMotion.matches ? 1 : projectEase(elapsed / 260);
+        motion.nodes.forEach((node, index) => {
+            const a = motion.before[index], b = motion.after[index];
+            node.scrollLeft = a.left + (b.left - a.left) * scrollProgress;
+            node.scrollTop = a.top + (b.top - a.top) * scrollProgress;
+        });
+        updateProjectMenu(time);
+        target = projectTarget(shot, shots) || target;
+        const to = projectBounds(target);
+        // A single interpolated rectangle owns both cursor and selection box.
+        const movingScroll = motion.before.some((a, index) => Math.abs(a.top - motion.after[index].top) > 1 || Math.abs(a.left - motion.after[index].left) > 1);
+        const progress = snap || reducedMotion.matches ? 1 : projectEase((elapsed - (movingScroll ? 260 : 0)) / 480);
+        projectRect = Object.fromEntries(Object.keys(to).map(key => [key, motion.from[key] + (to[key] - motion.from[key]) * progress]));
+        const rect = projectRect;
+        Object.assign(spotlight.style, { left:`${rect.left}px`, top:`${rect.top}px`, width:`${rect.width}px`, height:`${rect.height}px`, borderRadius:'8px' });
+        spotlight.classList.add('is-visible');
+        const x = rect.left + Math.min(rect.width * .72, rect.width - 8);
+        const y = rect.top + Math.min(rect.height * .66, rect.height - 6);
+        cursor.style.transform = `translate3d(${x}px,${y}px,0)`;
+        cursor.classList.add('is-visible');
+        focusPoint = { x:to.left + to.width / 2, y:to.top + to.height / 2 };
+        const click = clicks.find(at => time >= at && time < at + 460);
+        const clickProgress = click === undefined ? 1 : (time - click) / 460;
+        Object.assign(ripple.style, { left:`${x}px`, top:`${y}px`, opacity:String(1 - clickProgress), transform:`scale(${.5 + clickProgress * 3.7})` });
+        // Scale the artwork only; scaling the positioned cursor also scales
+        // its translation and moves the click away from the target.
+        const pointerArt = cursor.querySelector('svg');
+        pointerArt.style.transformOrigin = 'top left';
+        pointerArt.style.transform = click !== undefined && clickProgress < .3 ? 'scale(.88)' : 'scale(1)';
+    }
+
+    function drawProjectTyping(time) {
+        const input = document.getElementById('prjName');
+        const count = time < 1850 ? 0 : Math.min(PROJECT_DEMO_NAME.length, Math.floor((time - 1850) / 145));
+        const value = time < 1740 ? PROJECT_BASE_NAME : PROJECT_DEMO_NAME.slice(0, count);
+        if (input.value !== value) setProjectName(value);
+        if (time < 1600 || time >= 4300) {
+            projectCaret?.remove(); projectCaret = null;
+            if (document.activeElement === input) input.blur();
             return;
         }
-        const actions = {
-            project_name_value: () => setProjectName(PROJECT_DEMO_NAME),
-            project_model_select: chooseProjectDemoModel,
-            project_process_add: ensureProjectSecondStep,
-            project_process_configure: animateProjectSecondStepConfiguration,
-            project_options_open: openProjectOptions,
-            project_option_speed: () => setProjectCheckbox('chkTcpSpeed', true),
-            project_options_apply: applyProjectOptions
-        };
-        highlight(targets[cue], {
-            press: /value|select|add|open|speed|apply|press/.test(cue),
-            hover: /focus|press|open|speed|apply/.test(cue),
-            ring: !['project_process_focus', 'project_preview'].includes(cue),
-            onActivate: actions[cue]
-        });
+        input.focus({ preventScroll:true });
+        input.setSelectionRange(value.length, value.length);
+        if (!projectCaret) {
+            projectCaret = document.createElement('div');
+            projectCaret.className = 'project-guide-caret';
+            projectCaret.setAttribute('aria-hidden', 'true');
+            document.body.appendChild(projectCaret);
+        }
+        const rect = input.getBoundingClientRect();
+        const style = getComputedStyle(input);
+        const context = document.createElement('canvas').getContext('2d');
+        context.font = style.font;
+        Object.assign(projectCaret.style, { left:`${rect.left + parseFloat(style.paddingLeft) + context.measureText(value).width + 1}px`, top:`${rect.top + 13}px`, height:`${rect.height - 26}px`, opacity:time < 3800 || Math.floor(time / 450) % 2 === 0 ? '1' : '0' });
+    }
+
+    function generateProjectGuidePackage() {
+        if (projectPackageStarted) return;
+        projectPackageStarted = true;
+        const generation = projectGeneration;
+        projectExportJob = projectExportJob.then(async () => {
+            if (generation !== projectGeneration) return;
+            const originalSaveAs = window.saveAs;
+            // Exercise the real generator, but keep the tutorial ZIP in memory.
+            window.saveAs = (blob, name) => {
+                if (generation === projectGeneration) {
+                    projectPackage = { size:blob.size, name };
+                    if (projectTime >= 37500 && blob.size && !toast) showToast('Project package is ready', name);
+                }
+            };
+            try { await window.exportProj(); }
+            finally { window.saveAs = originalSaveAs; }
+        }).catch(error => console.error('Project guide generation failed:', error));
+    }
+
+    function renderProjectTime(time) {
+        ensureEffects();
+        ensureProjectStyles();
+        const snap = projectTime < 0 || time < projectTime || Math.abs(time - projectTime) > 250;
+        if (snap) resetProjectPlayback();
+        while (projectAction < PROJECT_ACTIONS.length && time >= PROJECT_ACTIONS[projectAction][0]) PROJECT_ACTIONS[projectAction++][1]();
+        if (snap && time >= 11000) {
+            const anchor = time >= 18500 ? document.getElementById('prismContainer') : projectRowSelect(0);
+            anchor?.scrollIntoView({ behavior:'instant', block:'center', inline:'center' });
+        }
+        updateProjectMenu(time);
+        let shot = 0;
+        PROJECT_SHOTS.forEach(([at], index) => { if (time >= at) shot = index; });
+        drawProjectPointer(time, shot, snap);
+        drawProjectTyping(time);
+        if (time >= 35120) generateProjectGuidePackage();
+        if (time >= 37500 && projectPackage?.size && !toast) showToast('Project package is ready', projectPackage.name);
+        projectTime = time;
     }
 
     function documentReset(options = {}) {
@@ -842,12 +1140,7 @@
         };
         const target = targets[cue];
         const canvasCue = target === '#canvas-container';
-        highlight(targets[cue], {
-            press: cue.endsWith('_press'),
-            hover: cue.endsWith('_focus') || cue.endsWith('_press'),
-            ring: !canvasCue,
-            scroll: false
-        });
+        simulationTarget = targets[cue];
         if (cue === 'simulation_test_ready') showToast('Test 모델 배치 완료', 'Test_Equipment_CAD.step · Vacuum_Tool_X200mm.stl');
         if (cue === 'simulation_snap_done') showToast('스냅 이동 완료', '선택한 CAD 스냅 위치');
         if (cue === 'simulation_program_run_started' || cue === 'simulation_program_running') showToast('자동 반복 운전 중', 'P[0] Pick ↔ P[1] Place');
@@ -872,18 +1165,21 @@
         return true;
     }
 
-    function renderTimelineCue(cue) {
+    function renderTimelineCue(cue, cueStart = 0) {
         if (!prepared || !cue) return false;
         activeCue = cue;
+        simulationCueStart = cueStart;
         if (app === 'simulation') renderSimulation(cue);
-        if (app === 'tool') renderTool(cue);
-        if (app === 'project') renderProject(cue);
+        // Project playback is driven by the media clock, including seeks and pauses.
         if (app === 'document') renderDocument(cue);
         return true;
     }
 
     function setTimelineTime(time) {
+        if (app === 'tool' && prepared) renderToolTime(Math.max(0, Number(time) || 0));
+        if (app === 'project' && prepared) renderProjectTime(Math.max(0, Number(time) || 0));
         if (app === 'simulation') getSimulationApi()?.setTimelineTime?.(Number(time) || 0);
+        if (app === 'simulation' && prepared) renderSimulationTime(Math.max(0, Number(time) || 0));
         if (app === 'document' && preview?.isConnected) {
             const pageWrap = preview.querySelector('.tool-guide-document-page-wrap');
             if (pageWrap) {
@@ -896,8 +1192,9 @@
     function resetTimeline() {
         activeCue = '';
         clearEffects();
+        if (app === 'tool' || app === 'simulation') resetDemoMotion();
         if (app === 'tool') toolReset();
-        if (app === 'project') projectReset();
+        if (app === 'project') resetProjectPlayback();
         if (app === 'document') documentReset();
         if (app === 'simulation') simulationResetPose();
     }
@@ -928,6 +1225,7 @@
             prepared,
             activeCue,
             demoModelLoaded,
+            project: app === 'project' ? { time:projectTime, package:projectPackage } : null,
             simulation: app === 'simulation' ? getSimulationApi()?.getState?.() || null : null
         })
     });

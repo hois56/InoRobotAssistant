@@ -27,6 +27,10 @@ for (const [locale, label] of Object.entries(cadRobotSelectionTranslations)) {
   assert.notEqual(localeData.legacy['CAD 계산 결과로 로봇 선정'], 'CAD 계산 결과로 로봇 선정');
 }
 assert.match(modeDSource, /import \{ TrackballControls \} from '.\/vendor\/three\/examples\/jsm\/controls\/TrackballControls\.js'/);
+assert.doesNotMatch(modeDHtml, /id="cad-snap-radius"/);
+assert.doesNotMatch(modeDSource, /snapRadiusPx|snapRadiusValue|cad-snap-radius/);
+assert.match(modeDSource, /const CAD_SNAP_RADIUS_PX = 16/);
+assert.match(modeDSource, /pixelDistance > CAD_SNAP_RADIUS_PX/);
 assert.match(modeDSource, /new TrackballControls\(state\.camera, state\.renderer\.domElement\)/);
 assert.match(modeDSource, /state\.controls\.staticMoving\s*=\s*true/);
 assert.doesNotMatch(modeDSource, /new OrbitControls\(/);
@@ -58,7 +62,7 @@ assert.match(modeDSource, /state\.controls\.addEventListener\('end',[\s\S]*?upda
 assert.match(modeDStyles, /\.cad-snap-candidate-marker\s*\{[^}]*z-index:\s*3;/s);
 assert.match(modeDStyles, /\.cad-snap-candidate-marker > span\s*\{[^}]*opacity:\s*\.82;/s);
 assert.match(modeDStyles, /\.cad-snap-marker\s*\{[^}]*width:\s*14px;[^}]*height:\s*14px;/s);
-assert.match(modeDStyles, /\.cad-snap-marker\s*\{[^}]*color:\s*#f59e0b;/s);
+assert.match(modeDStyles, /\.cad-snap-marker\s*\{[^}]*color:\s*#ef4444;/s);
 assert.match(modeDStyles, /\.cad-snap-marker > span\s*\{[^}]*width:\s*14px;[^}]*height:\s*14px;[^}]*border:\s*1\.25px solid currentColor;/s);
 assert.match(modeDStyles, /\.cad-snap-marker > span\s*\{[^}]*background:\s*transparent;[^}]*font-size:\s*0;/s);
 assert.doesNotMatch(modeDStyles, /\.cad-snap-marker::(?:before|after)/);
@@ -100,6 +104,7 @@ assert.match(modeDSource, /HELPER_SCREEN_PIXELS\.tcp/);
 assert.match(modeDSource, /HELPER_SCREEN_PIXELS\.selectedSnap/);
 assert.match(modeDSource, /function createCenterOfMassMarker/);
 assert.match(modeDSource, /color:\s*0xfacc15/);
+assert.match(modeDSource, /color:\s*0xef4444/);
 assert.match(modeDHtml, /cad-legend-tcp/);
 assert.match(modeDHtml, /cad-legend-cog/);
 assert.match(modeDHtml, /id="cad-grid-toggle"[^>]*aria-pressed="false"[^>]*>그리드 OFF</);

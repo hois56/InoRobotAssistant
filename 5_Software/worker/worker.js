@@ -18,14 +18,19 @@ const MAX_ATTEMPTS_PER_WINDOW = 5;
 // R2 object keys are deployment configuration, not user input. Keep this
 // table small and explicit so a new locked asset requires a reviewed change.
 const LOCKED_ASSETS = Object.freeze({
+    'software.inorobotlab.display.install': {
+        key: 'software/InoRobotLab/Display/InoRobotLabSetUp_V4R24C4SPC0L23F121_x64.exe',
+        fileName: 'InoRobotLabSetUp_V4R24C4SPC0L23F121_x64.exe',
+        contentType: 'application/vnd.microsoft.portable-executable'
+    },
     'software.inorobotlab.display.portable': {
-        key: 'software/InoRobotLab/Display/InoRobotLab_V4R24C4SPC0L18F121_x64.zip',
-        fileName: 'InoRobotLab_V4R24C4SPC0L18F121_x64.zip',
+        key: 'software/InoRobotLab/Display/InoRobotLab_V4R24C4SPC0L23F121_x64.zip',
+        fileName: 'InoRobotLab_V4R24C4SPC0L23F121_x64.zip',
         contentType: 'application/zip'
     },
     'software.inorobottp.display.portable': {
-        key: 'software/InoRobotTP/Display/InoRobotTP_win_x86_V4R24C4SPC0L18F121.zip',
-        fileName: 'InoRobotTP_win_x86_V4R24C4SPC0L18F121.zip',
+        key: 'software/InoRobotTP/Display/InoRobotTP_win_x86_V4R24C4SPC0L23F121.zip',
+        fileName: 'InoRobotTP_win_x86_V4R24C4SPC0L23F121.zip',
         contentType: 'application/zip'
     },
     'document.edu.display.1': {

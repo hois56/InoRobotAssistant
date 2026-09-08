@@ -280,7 +280,12 @@ assert(locales['zh-CN'].legacy.Trace === '轨迹监控', 'Chinese Trace card tit
 assert(locales.vi.legacy.Trace === 'Theo dõi tín hiệu', 'Vietnamese Trace card title is not localized.');
 
 const requiredCoverageSources = [
-    '모델 추가 모드',
+    '로봇 모델 선택',
+    '로봇 모델을 변경하거나 추가할 수 있습니다. 아래에서 작업을 선택하세요.',
+    '현재 로봇 모델이 {count}개 있습니다. 선택한 로봇만 {name}으로 변경할지 새 로봇으로 추가할지 선택하세요.',
+    '선택한 로봇',
+    '로봇 추가',
+    '로봇 변경',
     '엔코더 배터리 방전 등으로 인한 영점 소실 시, 하드웨어 지그 없이 소프트웨어적으로 영점을 보정하는 툴입니다.',
     '로봇 프로그램 검증용으로 상위 제어기 없이 PC에서 로봇과 통신 (Modbus-TCP, EtherNet/IP, MC, Socket)을 테스트 할 수 있는 소프트웨어입니다. 또한 HMI 화면을 사용자가 직접 구성하여 더 쉽게 로봇을 테스트 할 수 있습니다.',
     'InoRobotLab - Work origin 설정',
@@ -340,7 +345,7 @@ assert(fs.existsSync(traceDownloadArchive) && fs.statSync(traceDownloadArchive).
 const traceV14Archive = path.join(root, '7_DebuggingTool', 'Trace', 'InoRobotTrace_V1.4.zip');
 assert(!fs.existsSync(traceV14Archive), 'The retired Trace V1.4 download archive is still present.');
 const releaseAssets = [
-    ['7_DebuggingTool/CommunicationTester/InoRobot_Comm_Test_V3.0.zip', 'Communication Tester V3.0'],
+    ['7_DebuggingTool/CommunicationTester/InoRobot_Comm_Test_V3.1.exe', 'Communication Tester V3.1'],
     ['7_DebuggingTool/Trace/InoRobotTrace_V1.5.zip', 'Trace V1.5'],
     ['7_DebuggingTool/CADLightweight/CAD_Lightweight.zip', 'lightweight CAD archive']
 ];
@@ -349,7 +354,7 @@ releaseAssets.forEach(([relativePath, label]) => {
     assert(fs.existsSync(assetPath) && fs.statSync(assetPath).size > 0, label + ' release asset is missing.');
 });
 const debuggingHtml = read('7_DebuggingTool/index.html');
-assert(debuggingHtml.includes('CommunicationTester/InoRobot_Comm_Test_V3.0.zip')
+assert(debuggingHtml.includes('CommunicationTester/InoRobot_Comm_Test_V3.1.exe')
     && debuggingHtml.includes('Trace/InoRobotTrace_V1.5.zip'), 'Debugging Tool does not link the current release archives.');
 assert(!debuggingHtml.includes('InoRobot_Comm_Test_V2.8.zip') && !debuggingHtml.includes('InoRobotTrace_V1.4.zip'), 'Debugging Tool still links a retired release archive.');
 const simulationHtml = read('2_3DSimulation/index.html');
@@ -583,7 +588,9 @@ assert(projectScript.includes('new JSZip()') && projectScript.includes('zip.gene
 assert(projectScript.includes("uiText('Option Info')") && projectScript.includes('window.InoRobotI18n.apply(description)'), 'Project option guide descriptions are not localized.');
 assert(projectScript.includes('window.InoRobotI18n.apply(optionsModal)'), 'Project option items are not explicitly localized when the modal opens.');
 const viewerScript = read('2_3DSimulation/main.js');
-assert(viewerScript.includes("uiText('모델 추가 모드')") && viewerScript.includes("'inorobot:languagechange', refreshLocalizedControls"), '3D Simulation dynamic controls are not localized.');
+assert(viewerScript.includes("openRobotModelChoiceDialog(model)")
+    && viewerScript.includes("'inorobot:languagechange', refreshLocalizedControls")
+    && !viewerScript.includes('모델 추가 모드'), '3D Simulation robot model choice controls are not localized.');
 const simulationModels = JSON.parse(read('2_3DSimulation/models/models.json'));
 let simulationModelGroup = '';
 let articulatedRobotCount = 0;

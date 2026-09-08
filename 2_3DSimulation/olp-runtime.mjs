@@ -523,6 +523,30 @@ export class OlpRuntime {
             || null;
     }
 
+    refreshProgramSources() {
+        const nextPrograms = new Map((this.project?.programs || [])
+            .filter((program) => program?.path)
+            .map((program) => [program.path, String(program.text || '')]));
+        let changed = nextPrograms.size !== this.programs.size;
+        nextPrograms.forEach((text, path) => {
+            if (this.programs.get(path) === text) return;
+            this.programs.set(path, text);
+            const lines = text.split(/\r?\n/);
+            const currentLines = this.programLines.get(path);
+            if (currentLines) currentLines.splice(0, currentLines.length, ...lines);
+            else this.programLines.set(path, lines);
+            changed = true;
+        });
+        [...this.programs.keys()].forEach((path) => {
+            if (nextPrograms.has(path)) return;
+            this.programs.delete(path);
+            this.programLines.delete(path);
+            changed = true;
+        });
+        if (changed) this.functionCache.clear();
+        return changed;
+    }
+
     getSnapshot() {
         return {
             phase: this.phase,
@@ -1060,6 +1084,11 @@ export class OlpRuntime {
         while (index < end) {
             await this.waitForExecutionPermit();
             await this.yieldExecutionSlice();
+            // The editor updates the shared project while OLP is running. Refresh
+            // the current program line immediately before dispatching it so a
+            // completed command is never changed, while the next command uses
+            // the latest source.
+            this.refreshProgramSources();
             const line = stripComments(lines[index]);
             this.currentFilePath = sourcePath || this.currentFilePath;
             this.currentLineNumber = index + 1;
