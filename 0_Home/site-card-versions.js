@@ -1,7 +1,7 @@
 // Generated from 0_Home/version-history.json by tools/build-version-history.cjs.
 // Edit 0_Home/version-history.json instead.
 window.SITE_CARD_VERSIONS = {
-    robotSelect: '26.09.06',
+    robotSelect: '26.09.09',
     robot3dViewer: '26.09.08',
     toolSelector: '26.09.06',
     projectGenerator: '26.09.06',
