@@ -197,6 +197,12 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.09.10",
+                "items": [
+                  "`[수정]` R11 모델에서 Joint로 J6만 회전할 때 P6 링크와 TCP가 회전 중심에서 벗어나 뒤뚱거리던 문제를 해결했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.09.08",
                 "items": [
                   "`[추가]` DXF 파일을 불러오거나 직접 도면을 그려 돌출/돌출컷할 수 있는 2D CAD 스케치 기능을 추가했습니다.",
@@ -1127,6 +1133,12 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.09.10",
+                "items": [
+                  "`[Fixed]` Fixed an issue where the R11 P6 link and TCP wobbled away from the rotation center when only J6 was rotated in Joint mode."
+                ]
+              },
               {
                 "title": "Ver 26.09.08",
                 "items": [
@@ -2072,6 +2084,12 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.09.10",
+                "items": [
+                  "`[修复]` 修复了 R11 型号在 Joint 模式下仅旋转 J6 时 P6 连杆和 TCP 偏离旋转中心而晃动的问题。"
+                ]
+              },
+              {
                 "title": "Ver 26.09.08",
                 "items": [
                   "`[新增]` 新增了在 3D Simulation 中创建长方体、圆锥、圆柱和球体并编辑尺寸与位置的功能。",
@@ -3015,6 +3033,12 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.09.10",
+                "items": [
+                  "`[Sửa lỗi]` Đã khắc phục sự cố liên kết P6 và TCP của model R11 bị lắc lệch khỏi tâm quay khi chỉ xoay J6 ở chế độ Joint."
+                ]
+              },
               {
                 "title": "Ver 26.09.08",
                 "items": [

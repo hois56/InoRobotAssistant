@@ -221,7 +221,10 @@ function createManifest(model) {
 
     const [shoulderOffset, upperArm, elbowOffset, forearm, wristLength, shoulderHeight] = model.structure;
     const elbowHeight = shoulderHeight + upperArm;
-    const wristHeight = elbowHeight + elbowOffset;
+    const wristAxisZOffset = Number.isFinite(Number(model.wristAxisZOffset))
+        ? Number(model.wristAxisZOffset)
+        : 0;
+    const wristHeight = elbowHeight + elbowOffset + wristAxisZOffset;
     const tcp = [shoulderOffset + forearm + wristLength, 0, wristHeight];
     return {
         tcp,
@@ -304,7 +307,7 @@ assert(viewerSource.includes("toolAxesAtTcp.name = 'Tool axes at TCP'"), 'TCP ax
 assert(viewerSource.includes('tcpFrame.add(toolAxesAtTcp)'), 'TCP axes must inherit the live Tool frame pose');
 assert(viewerSource.includes('robot.userData.toolAxesAtTcp = toolAxesAtTcp'), 'Robot state must retain the Tool axes helper');
 assert(viewerSource.includes('TCP_AXES_SCREEN_PIXELS = 40'), 'TCP axes must use a compact target size on screen');
-assert(viewerSource.includes('function updateCameraScaledTcpAxes()'), 'TCP axes must respond to camera distance and zoom');
+assert(viewerSource.includes('function updateCameraScaledTcpAxes('), 'TCP axes must respond to camera distance and zoom');
 assert(/updateCameraScaledTcpAxes\(\);[\s\S]*?updateSimulationSnapMarkerCameraScale\(\);[\s\S]*?state\.renderer\.render/.test(viewerSource), 'TCP axes must be resized immediately before each render');
 assert(!viewerSource.includes('Base axes at TCP') && !viewerSource.includes('baseAxesAtTcp'), 'TCP axes must not remain fixed to the Base frame');
 const tcpVisualSource = viewerSource.slice(
@@ -455,6 +458,16 @@ const robots = catalog.filter((entry) => entry.type === 'articulated-stl');
 assert(robots.length === 29, `Expected 29 articulated robots, found ${robots.length}`);
 assert(new Set(robots.map((robot) => robot.name)).size === robots.length, 'Robot names must be unique');
 assert(new Set(robots.map((robot) => robot.folder)).size === robots.length, 'Robot folders must be unique');
+
+const r11 = robots.find((robot) => robot.folder === 'IR-R11-90');
+assert(r11 && Math.abs(Number(r11.wristAxisZOffset) + 1.13266) <= 1e-6,
+    'R11 must retain the CAD wrist-axis Z correction');
+const r11Manifest = createManifest(r11);
+const r11WristHeight = r11Manifest.joints[3].pivot[2];
+assert(Math.abs(r11WristHeight - 893.86734) <= 1e-5
+    && r11Manifest.joints.slice(3).every((joint) => Math.abs(joint.pivot[2] - r11WristHeight) <= 1e-9)
+    && Math.abs(r11Manifest.tcp[2] - r11WristHeight) <= 1e-9,
+    'R11 J4-J6 and TCP must share the corrected CAD wrist axis');
 
 const typeCounts = { scara: 0, 'six-axis': 0 };
 let jointCount = 0;
