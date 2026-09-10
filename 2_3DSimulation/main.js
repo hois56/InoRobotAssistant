@@ -22900,7 +22900,8 @@ function createRobotManifest(modelDefinition) {
             maxAccelerationScale: RAPID_MOVE_DEFAULTS.maxAccelerationScale
         },
         j3Mesh = false,
-        j3ControllerLimits = null
+        j3ControllerLimits = null,
+        wristAxisZOffset = 0
     } = modelDefinition;
     if (!Array.isArray(structure) || !Array.isArray(limits) || !Array.isArray(jointSpeeds)) {
         throw new Error(`Robot kinematics are missing for ${name}.`);
@@ -23023,7 +23024,13 @@ function createRobotManifest(modelDefinition) {
 
     const [shoulderOffset, upperArm, elbowOffset, forearm, wristLength, shoulderHeight] = structure;
     const elbowHeight = shoulderHeight + upperArm;
-    const wristHeight = elbowHeight + elbowOffset;
+    // R11's P4-P6 CAD links share a wrist axis that is 1.13266 mm below the
+    // nominal structure height. Keep the correction model-specific so the
+    // linked J4/J5/J6 pivots and TCP remain on the authored CAD axis.
+    const normalizedWristAxisZOffset = Number.isFinite(Number(wristAxisZOffset))
+        ? Number(wristAxisZOffset)
+        : 0;
+    const wristHeight = elbowHeight + elbowOffset + normalizedWristAxisZOffset;
     const tcp = [shoulderOffset + forearm + wristLength, 0, wristHeight];
     return {
         name,
