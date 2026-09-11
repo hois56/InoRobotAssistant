@@ -353,6 +353,16 @@ const COLLISION_MODE_CYCLE = Object.freeze([
     COLLISION_MODE.DISPLAY
 ]);
 
+const SIMULATION_WORKSPACE_FILE_FORMAT = 'inorobot-simulation-workspace';
+const SIMULATION_WORKSPACE_FILE_SCHEMA_VERSION = 1;
+const MOTION_PROGRAM_FILE_FORMAT = 'inorobot-motion-program';
+const MOTION_PROGRAM_FILE_SCHEMA_VERSION = 1;
+const MOTION_PROGRAM_FILE_MOTIONS = new Set([
+    'MOVJ', 'MOVL', 'DELAY', 'TIME_START', 'TIME_OUT', 'VIEW',
+    'GRIP_USE', 'GRIP_RELEASE', 'WAIT', 'HOME'
+]);
+let simulationWorkspaceFileBusy = false;
+
 // Controller-driven grip inference deliberately uses a strict joint-pose
 // tolerance and a real elapsed hold time.  A collision while the robot is
 // moving must never be interpreted as a grip event.
@@ -367,6 +377,8 @@ const state = {
     controls: null, transformControls: null,
     sceneSelectionRaycaster: new THREE.Raycaster(),
     sceneSelectionPointer: null,
+    sceneContextPointer: null,
+    suppressNextSceneContextMenu: false,
     orbitControlPointerIds: new Set(),
     models: [], // List of loaded models { group, name, type }
     selectedModel: null,
@@ -914,6 +926,9 @@ const MODEL_UNIT_SCALE_FIX = {
 const el = {
     modelSelect:     document.getElementById('model-select'),
     btnResetSimulation: document.getElementById('btn-reset-simulation'),
+    btnWorkspaceSave: document.getElementById('btn-workspace-save'),
+    btnWorkspaceLoad: document.getElementById('btn-workspace-load'),
+    inputWorkspaceLoad: document.getElementById('input-workspace-load'),
     simulationResetDialog: document.getElementById('simulation-reset-dialog'),
     btnCancelSimulationReset: document.getElementById('btn-cancel-simulation-reset'),
     btnConfirmSimulationReset: document.getElementById('btn-confirm-simulation-reset'),
@@ -1358,6 +1373,8 @@ const el = {
     programCycleTime: document.getElementById('program-cycle-time'),
     btnProgramExport: document.getElementById('program-export'),
     btnProgramImport: document.getElementById('program-import'),
+    programExportLabel: document.getElementById('program-export-label'),
+    programImportLabel: document.getElementById('program-import-label'),
     inputProgramImport: document.getElementById('program-import-file'),
     virtualControllerPanel: document.getElementById('virtual-controller-panel'),
     interferenceZonePanel: document.getElementById('interference-zone-panel'),
@@ -4344,7 +4361,38 @@ function handleViewPresetListInput(event) {
     }
 }
 
+function refreshSimulationWorkspaceFileUi() {
+    const saveLabel = uiText('시뮬레이션 프로젝트 저장');
+    const loadLabel = uiText('시뮬레이션 프로젝트 불러오기');
+    if (el.btnWorkspaceSave) {
+        el.btnWorkspaceSave.title = saveLabel;
+        el.btnWorkspaceSave.setAttribute('aria-label', saveLabel);
+    }
+    if (el.btnWorkspaceLoad) {
+        el.btnWorkspaceLoad.title = loadLabel;
+        el.btnWorkspaceLoad.setAttribute('aria-label', loadLabel);
+    }
+}
+
+function refreshMotionProgramFileUi() {
+    const isOlpMode = Boolean(state.olp?.enabled);
+    const importLabel = uiText(isOlpMode ? '프로젝트 불러오기' : '프로그램 불러오기');
+    const exportLabel = uiText(isOlpMode ? '프로젝트 저장' : '프로그램 저장');
+    if (el.programImportLabel) el.programImportLabel.textContent = importLabel;
+    if (el.programExportLabel) el.programExportLabel.textContent = exportLabel;
+    if (el.btnProgramImport && !isOlpMode) {
+        el.btnProgramImport.title = importLabel;
+        el.btnProgramImport.setAttribute('aria-label', importLabel);
+    }
+    if (el.btnProgramExport && !isOlpMode) {
+        el.btnProgramExport.title = exportLabel;
+        el.btnProgramExport.setAttribute('aria-label', exportLabel);
+    }
+}
+
 function refreshLocalizedControls() {
+    refreshSimulationWorkspaceFileUi();
+    refreshMotionProgramFileUi();
     refreshPrimitiveShapeNames();
     if (el.robotModelChoiceTitle) el.robotModelChoiceTitle.textContent = uiText('로봇 모델 선택');
     if (el.robotModelChoiceSelectedLabel) el.robotModelChoiceSelectedLabel.textContent = uiText('선택한 로봇');
@@ -12624,6 +12672,8 @@ function resetMainOrbitControlInteraction() {
     });
     state.orbitControlPointerIds.clear();
     state.sceneSelectionPointer = null;
+    state.sceneContextPointer = null;
+    state.suppressNextSceneContextMenu = false;
     if (state.viewNavigationActive) endSimulationViewNavigation();
 }
 
@@ -12753,6 +12803,54 @@ function handleSceneModelPointerCancel(event) {
     if (!pointer || pointer.pointerId === event.pointerId) state.sceneSelectionPointer = null;
 }
 
+function handleSceneContextPointerDown(event) {
+    if (event.button !== 2 || state.sketch.active) return;
+    state.suppressNextSceneContextMenu = false;
+    state.sceneContextPointer = {
+        pointerId: event.pointerId,
+        x: event.clientX,
+        y: event.clientY,
+        moved: false
+    };
+}
+
+function handleSceneContextPointerMove(event) {
+    const pointer = state.sceneContextPointer;
+    if (!pointer || pointer.pointerId !== event.pointerId) return;
+    const dx = event.clientX - pointer.x;
+    const dy = event.clientY - pointer.y;
+    if (dx * dx + dy * dy > 16) pointer.moved = true;
+}
+
+function handleSceneContextPointerUp(event) {
+    const pointer = state.sceneContextPointer;
+    if (!pointer || pointer.pointerId !== event.pointerId) return;
+    if (pointer.moved) state.suppressNextSceneContextMenu = true;
+    state.sceneContextPointer = null;
+}
+
+function handleSceneContextPointerCancel(event) {
+    const pointer = state.sceneContextPointer;
+    if (!pointer || pointer.pointerId !== event.pointerId) return;
+    state.sceneContextPointer = null;
+    state.suppressNextSceneContextMenu = false;
+}
+
+function suppressSceneContextMenuAfterViewDrag(event) {
+    const pointer = state.sceneContextPointer;
+    const shouldSuppress = Boolean(
+        state.suppressNextSceneContextMenu
+        || pointer?.moved
+    );
+    if (!shouldSuppress) return false;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    state.sceneContextPointer = null;
+    state.suppressNextSceneContextMenu = false;
+    closeModelContextMenu();
+    return true;
+}
+
 function isSceneModelObjectPickable(object, model) {
     if (!object || !model || !isModelTreeVisible(model)) return false;
     for (let current = object; current; current = current.parent) {
@@ -12806,6 +12904,7 @@ function handleSceneModelClick(event) {
 }
 
 function handleSceneModelContextMenu(event) {
+    if (suppressSceneContextMenuAfterViewDrag(event)) return;
     event.preventDefault();
     const selection = getSceneModelAtPointer(event);
     if (!selection) {
@@ -17315,6 +17414,13 @@ function setupEventListeners() {
     el.btnResetSimulation?.addEventListener('click', openSimulationResetDialog);
     el.btnCancelSimulationReset?.addEventListener('click', closeSimulationResetDialog);
     el.btnConfirmSimulationReset?.addEventListener('click', () => void resetSimulation());
+    el.btnWorkspaceSave?.addEventListener('click', () => void saveSimulationWorkspaceProject());
+    el.btnWorkspaceLoad?.addEventListener('click', () => el.inputWorkspaceLoad?.click());
+    el.inputWorkspaceLoad?.addEventListener('change', () => {
+        const file = el.inputWorkspaceLoad.files?.[0];
+        el.inputWorkspaceLoad.value = '';
+        if (file) void importSimulationWorkspaceProject(file);
+    });
     el.simulationResetDialog?.addEventListener('cancel', (event) => {
         event.preventDefault();
         closeSimulationResetDialog();
@@ -17413,12 +17519,16 @@ function setupEventListeners() {
     state.renderer.domElement.addEventListener('pointercancel', handleSketchPointerCancel, { passive: false });
     state.renderer.domElement.addEventListener('pointerleave', handleSketchPointerLeave, { passive: true });
     state.renderer.domElement.addEventListener('pointerdown', handleSceneModelPointerDown, { capture: true, passive: true });
+    state.renderer.domElement.addEventListener('pointerdown', handleSceneContextPointerDown, { capture: true, passive: true });
     state.renderer.domElement.addEventListener('pointerdown', requestRender, { passive: true });
     state.renderer.domElement.addEventListener('pointermove', handleSceneModelPointerMove, { capture: true, passive: true });
+    state.renderer.domElement.addEventListener('pointermove', handleSceneContextPointerMove, { capture: true, passive: true });
     state.renderer.domElement.addEventListener('pointermove', handleCadPointerMove, { capture: true, passive: true });
     state.renderer.domElement.addEventListener('pointermove', handleSimulationSnapPointerMove);
     state.renderer.domElement.addEventListener('pointermove', requestRender, { passive: true });
     state.renderer.domElement.addEventListener('pointercancel', handleSceneModelPointerCancel, { passive: true });
+    state.renderer.domElement.addEventListener('pointerup', handleSceneContextPointerUp, { capture: true, passive: true });
+    state.renderer.domElement.addEventListener('pointercancel', handleSceneContextPointerCancel, { capture: true, passive: true });
     state.renderer.domElement.addEventListener('pointerleave', hideSimulationSnapMarker);
     state.renderer.domElement.addEventListener('pointerleave', requestRender);
     state.renderer.domElement.addEventListener('click', handleCadCanvasClick, { capture: true });
@@ -29003,6 +29113,7 @@ function setOlpStatus(status, message = '', replacements = {}) {
 
 function updateOlpProgramPanelUi() {
     const enabled = Boolean(state.olp.enabled);
+    refreshMotionProgramFileUi();
     const activeRobot = getOlpRobot();
     const activeRuntime = getOlpRuntimeForRobot(activeRobot);
     syncActiveOlpRuntime();
@@ -29104,8 +29215,10 @@ function updateOlpProgramPanelUi() {
         // Restore the normal simulation stop controls when leaving OLP.
         if (el.btnProgramPauseGroup) el.btnProgramPauseGroup.disabled = false;
         if (el.btnProgramStopGroup) el.btnProgramStopGroup.disabled = false;
-        el.btnProgramExport?.setAttribute('title', uiText('파일명과 저장 위치 선택'));
-        el.btnProgramImport?.setAttribute('title', uiText('프로젝트 불러오기'));
+        el.btnProgramExport?.setAttribute('title', uiText('프로그램 저장'));
+        el.btnProgramExport?.setAttribute('aria-label', uiText('프로그램 저장'));
+        el.btnProgramImport?.setAttribute('title', uiText('프로그램 불러오기'));
+        el.btnProgramImport?.setAttribute('aria-label', uiText('프로그램 불러오기'));
     }
     updateWorkOriginButtonUi();
     updateMotionProgramPlaybackUi();
@@ -35251,6 +35364,10 @@ function updateMotionUiLock() {
     // Whole-project replacement and automatic path planning still change or
     // temporarily mutate the live scene and remain unavailable while moving.
     if (el.btnProgramImport) el.btnProgramImport.disabled = locked;
+    if (el.btnWorkspaceLoad) {
+        el.btnWorkspaceLoad.disabled = simulationWorkspaceFileBusy || locked || isOlpRunning();
+    }
+    if (el.btnWorkspaceSave) el.btnWorkspaceSave.disabled = simulationWorkspaceFileBusy;
     if (el.btnProgramAutoPath) el.btnProgramAutoPath.disabled = locked;
     el.autoPathPanel?.querySelectorAll('input, select, button')
         .forEach((control) => {
@@ -35300,6 +35417,84 @@ function getWorkspaceObjectAtPath(root, path) {
     return path.reduce((object, index) => (
         object && Number.isInteger(index) ? object.children[index] || null : null
     ), root);
+}
+
+function serializeWorkspaceMeasurementPoint(point) {
+    const model = findSceneModelAncestor(point?.mesh);
+    const objectPath = getWorkspaceObjectPath(model, point?.mesh);
+    if (!model || !objectPath || !point?.localPoint?.toArray) return null;
+    return {
+        workspaceModelId: ensureWorkspaceModelId(model),
+        objectPath,
+        localPoint: point.localPoint.toArray(),
+        snapType: String(point.snapType || 'auto')
+    };
+}
+
+function serializeWorkspaceMeasurement() {
+    return {
+        active: Boolean(state.measurement.active),
+        displayMode: state.measurement.displayMode === 'orthogonal' ? 'orthogonal' : 'diagonal',
+        snapType: String(state.measurement.snapType || 'auto'),
+        points: state.measurement.points
+            .map(serializeWorkspaceMeasurementPoint)
+            .filter(Boolean)
+    };
+}
+
+function restoreWorkspaceMeasurement(snapshot) {
+    const saved = snapshot?.measurement;
+    const savedPoints = Array.isArray(saved?.points) ? saved.points : [];
+    const points = savedPoints.map((entry) => {
+        const model = findModelByWorkspaceId(entry?.workspaceModelId);
+        const mesh = getWorkspaceObjectAtPath(model, entry?.objectPath);
+        const localPoint = Array.isArray(entry?.localPoint) && entry.localPoint.length === 3
+            ? new THREE.Vector3().fromArray(entry.localPoint)
+            : null;
+        if (!model || !mesh || !localPoint) return null;
+        mesh.updateWorldMatrix?.(true, false);
+        const worldPoint = localPoint.clone().applyMatrix4(mesh.matrixWorld);
+        if (![worldPoint.x, worldPoint.y, worldPoint.z].every(Number.isFinite)) return null;
+        return {
+            worldPoint,
+            mesh,
+            localPoint,
+            snapType: String(entry.snapType || 'auto')
+        };
+    });
+
+    state.measurement.active = Boolean(saved?.active && points.some(Boolean));
+    state.measurement.displayMode = saved?.displayMode === 'orthogonal' ? 'orthogonal' : 'diagonal';
+    state.measurement.snapType = String(saved?.snapType || 'auto');
+    state.measurement.points = [points[0] || null, points[1] || null];
+    state.measurement.result = null;
+    state.measurement.hover = null;
+    state.measurement.stale = savedPoints.length > points.filter(Boolean).length;
+    if (state.measurement.points[0] && state.measurement.points[1] && !state.measurement.stale) {
+        const result = calculateMeasurementResult(
+            state.measurement.points[0].worldPoint,
+            state.measurement.points[1].worldPoint
+        );
+        state.measurement.result = result?.isSamePoint ? null : result;
+    }
+    if (state.measurement.active) {
+        el.measurementPanel?.classList.remove('panel-user-hidden');
+        updatePanelLauncher('measurement-panel');
+        updatePanelStack();
+        setMeasurementPanelStatus(state.measurement.points[0] && state.measurement.points[1]
+            ? '측정 완료'
+            : 'P2 선택');
+    } else if (state.measurement.stale) {
+        setMeasurementPanelStatus('측정 대상이 숨겨졌거나 삭제되었습니다. 다시 측정하세요.');
+    } else {
+        setMeasurementPanelStatus('P1 선택');
+    }
+    updateMeasurementUi();
+    updateMeasurementOverlay();
+    return {
+        requested: savedPoints.length,
+        restored: points.filter(Boolean).length
+    };
 }
 
 function captureWorkspaceChildMatrices(model) {
@@ -35652,6 +35847,9 @@ function serializeWorkspaceSnapshot() {
         !== JSON.stringify(normalizeInterferenceZones());
     const monitoringChanged = JSON.stringify(state.endMonitoringObjects)
         !== JSON.stringify(normalizeEndMonitoringObjects());
+    const simulationIoChanged = state.simulationIo.inputs.some(Boolean)
+        || state.simulationIo.outputs.some(Boolean);
+    const measurement = serializeWorkspaceMeasurement();
     const olpProject = serializeWorkspaceOlpProject();
     const hasWork = state.models.length > 0
         || Boolean(olpProject)
@@ -35661,7 +35859,10 @@ function serializeWorkspaceSnapshot() {
         || state.collision.enabled
         || cameraChanged
         || interferenceChanged
-        || monitoringChanged;
+        || monitoringChanged
+        || simulationIoChanged
+        || Boolean(state.tcpPath.enabled)
+        || measurement.points.length > 0;
     return {
         schemaVersion: 1,
         hasWork,
@@ -35673,6 +35874,14 @@ function serializeWorkspaceSnapshot() {
             transparency: getModelTransparencyPercent(robot),
             visible: isModelTreeVisible(robot)
         })),
+        simulationIo: {
+            inputs: state.simulationIo.inputs.map(Boolean),
+            outputs: state.simulationIo.outputs.map(Boolean)
+        },
+        tcpPath: {
+            enabled: Boolean(state.tcpPath.enabled)
+        },
+        measurement,
         programSelection: robots.map((robot) => ({
             instanceId: robot.userData.motionInstanceId,
             selectedStepId: ensureMotionProgram(robot).selectedStepId || null
@@ -36448,6 +36657,21 @@ async function restoreWorkspaceSnapshot(snapshot) {
             }
         });
 
+        const simulationIo = snapshot?.simulationIo || {};
+        state.simulationIo.inputs = Array.from({ length: state.simulationIo.inputs.length }, (_, index) => (
+            simulationIo.inputs?.[index] === true
+        ));
+        state.simulationIo.outputs = Array.from({ length: state.simulationIo.outputs.length }, (_, index) => (
+            simulationIo.outputs?.[index] === true
+        ));
+        renderInterferenceZonePanel();
+        const tcpPathEnabled = snapshot?.tcpPath?.enabled === true;
+        if (state.tcpPath.enabled !== tcpPathEnabled) {
+            if (!tcpPathEnabled) clearTcpPathOverlay();
+            state.tcpPath.enabled = tcpPathEnabled;
+        }
+        updateTcpPathToggleUi();
+
         for (const entry of Array.isArray(snapshot?.catalogModels) ? snapshot.catalogModels : []) {
             try {
                 await restoreWorkspaceCatalogModel(entry);
@@ -36539,6 +36763,11 @@ async function restoreWorkspaceSnapshot(snapshot) {
             }
         }
 
+        const measurementRestore = restoreWorkspaceMeasurement(snapshot);
+        if (measurementRestore.requested > measurementRestore.restored) {
+            warnings.push(uiText('치수 측정'));
+        }
+
         (Array.isArray(snapshot?.robotRuntime) ? snapshot.robotRuntime : []).forEach((runtime) => {
             const robot = robotsById.get(runtime?.instanceId);
             if (robot) applyModelTreeVisibilityVisual(robot, runtime?.visible !== false);
@@ -36614,6 +36843,10 @@ function workspaceSnapshotHasWork(snapshot) {
         || snapshot.display?.outlineMode === true
         || snapshot.display?.collisionEnabled === true
         || [COLLISION_MODE.STOP, COLLISION_MODE.DISPLAY].includes(snapshot.display?.collisionMode)) return true;
+    if (snapshot.simulationIo?.inputs?.some(Boolean)
+        || snapshot.simulationIo?.outputs?.some(Boolean)
+        || snapshot.tcpPath?.enabled === true
+        || snapshot.measurement?.points?.length > 0) return true;
     const project = snapshot.motionProject || {};
     const interferenceChanged = Array.isArray(project.interferenceZones)
         && JSON.stringify(normalizeInterferenceZones(project.interferenceZones))
@@ -37851,6 +38084,266 @@ async function saveActiveProject() {
     await exportMotionProject();
 }
 
+function setSimulationWorkspaceFileBusy(busy) {
+    simulationWorkspaceFileBusy = Boolean(busy);
+    if (el.btnWorkspaceSave) el.btnWorkspaceSave.disabled = simulationWorkspaceFileBusy;
+    if (el.btnWorkspaceLoad) {
+        el.btnWorkspaceLoad.disabled = simulationWorkspaceFileBusy || isMotionActive() || isOlpRunning();
+    }
+}
+
+function sanitizeSimulationWorkspaceFileName(value) {
+    const sanitized = String(value || '')
+        .replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/[. ]+$/g, '');
+    return sanitized.slice(0, 96) || 'InoRobotSimulation';
+}
+
+function getSimulationWorkspaceFileName(snapshot) {
+    const firstRobot = snapshot?.motionProject?.robots?.[0]?.displayName;
+    const firstModel = snapshot?.importedModels?.[0]?.name || snapshot?.catalogModels?.[0]?.name;
+    return `${sanitizeSimulationWorkspaceFileName(firstRobot || firstModel || 'InoRobotSimulation')}.inosim`;
+}
+
+function isSafeSimulationWorkspaceArchivePath(value) {
+    const path = String(value || '').replaceAll('\\', '/');
+    return Boolean(path)
+        && !path.startsWith('/')
+        && !/^[A-Za-z]:/.test(path)
+        && !path.split('/').includes('..');
+}
+
+async function collectSimulationWorkspaceBundleAssets(snapshot) {
+    const recovery = state.workspaceRecovery;
+    if (!recovery.db) throw new Error('시뮬레이션 저장소를 사용할 수 없습니다.');
+    const assetIds = WorkspaceRecovery.collectWorkspaceAssetIds(snapshot);
+    const assets = [];
+    for (const id of assetIds) {
+        const asset = await recovery.db.getAsset(id, { touch: true });
+        if (!asset?.blob) throw new Error(`저장에 필요한 파일을 찾을 수 없습니다: ${asset?.name || id}`);
+        assets.push({
+            id,
+            name: String(asset.name || id),
+            type: String(asset.type || asset.blob.type || 'application/octet-stream'),
+            size: Number(asset.size) || asset.blob.size,
+            extension: String(asset.extension || '').toLowerCase(),
+            lastModified: Number(asset.lastModified) || 0,
+            path: `assets/${encodeURIComponent(id)}.bin`,
+            blob: asset.blob
+        });
+    }
+    return assets;
+}
+
+async function saveSimulationWorkspaceProject() {
+    if (simulationWorkspaceFileBusy) return;
+    if (!state.workspaceRecovery.ready || !state.workspaceRecovery.db) {
+        setStatus('시뮬레이션 저장소가 아직 준비되지 않았습니다.', '#ef4444');
+        return;
+    }
+
+    setSimulationWorkspaceFileBusy(true);
+    showLoading(true, uiText('시뮬레이션 프로젝트 저장 중...'));
+    try {
+        await saveMotionProjectNow();
+        const snapshot = serializeWorkspaceSnapshot();
+        const assets = await collectSimulationWorkspaceBundleAssets(snapshot);
+        const manifest = {
+            format: SIMULATION_WORKSPACE_FILE_FORMAT,
+            schemaVersion: SIMULATION_WORKSPACE_FILE_SCHEMA_VERSION,
+            exportedAt: new Date().toISOString(),
+            workspaceFile: 'workspace.json',
+            projectName: getSimulationWorkspaceFileName(snapshot).replace(/\.inosim$/i, ''),
+            assets: assets.map(({ blob, ...metadata }) => metadata)
+        };
+        const zip = new window.JSZip();
+        zip.file('manifest.json', JSON.stringify(manifest, null, 2));
+        zip.file(manifest.workspaceFile, JSON.stringify(snapshot, null, 2));
+        assets.forEach((asset) => zip.file(asset.path, asset.blob));
+        const blob = await zip.generateAsync({
+            type: 'blob',
+            compression: 'DEFLATE',
+            compressionOptions: { level: 6 }
+        });
+        const suggestedName = getSimulationWorkspaceFileName(snapshot);
+        let savedName = suggestedName;
+        if (typeof window.showSaveFilePicker === 'function') {
+            const fileHandle = await window.showSaveFilePicker({
+                id: 'inorobot-simulation-workspace',
+                suggestedName,
+                startIn: 'documents',
+                excludeAcceptAllOption: true,
+                types: [{
+                    description: 'InoRobot Simulation Workspace',
+                    accept: { 'application/zip': ['.inosim'] }
+                }]
+            });
+            const writable = await fileHandle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+            savedName = fileHandle.name;
+        } else if (typeof window.saveAs === 'function') {
+            window.saveAs(blob, suggestedName);
+        } else {
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = suggestedName;
+            anchor.click();
+            window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+        setStatus('시뮬레이션 프로젝트 저장됨: {name}', '#22c55e', { name: savedName });
+    } catch (error) {
+        if (error?.name === 'AbortError') {
+            setStatus('시뮬레이션 프로젝트 저장을 취소했습니다.', '#60a5fa');
+        } else {
+            console.error('Simulation workspace export failed:', error);
+            setStatus('시뮬레이션 프로젝트 저장에 실패했습니다.', '#ef4444');
+        }
+    } finally {
+        showLoading(false);
+        setSimulationWorkspaceFileBusy(false);
+        updateMotionUiLock();
+    }
+}
+
+function remapSimulationWorkspaceAssetIds(snapshot, assetIdMap) {
+    const cloned = JSON.parse(JSON.stringify(snapshot));
+    const rewrite = (value, key = '') => {
+        if (Array.isArray(value)) return value.map((entry) => rewrite(entry));
+        if (!value || typeof value !== 'object') {
+            return key === 'assetId' && assetIdMap.has(String(value))
+                ? assetIdMap.get(String(value))
+                : value;
+        }
+        Object.entries(value).forEach(([entryKey, entryValue]) => {
+            value[entryKey] = rewrite(entryValue, entryKey);
+        });
+        return value;
+    };
+    rewrite(cloned);
+    if (Array.isArray(cloned.assetIds)) {
+        cloned.assetIds = cloned.assetIds.map((id) => assetIdMap.get(String(id)) || id);
+    }
+    return cloned;
+}
+
+async function readSimulationWorkspaceBundle(file) {
+    if (typeof window.JSZip === 'undefined') throw new Error('ZIP 라이브러리를 불러오지 못했습니다.');
+    const zip = await window.JSZip.loadAsync(await file.arrayBuffer());
+    const manifestEntry = zip.file('manifest.json');
+    if (!manifestEntry) throw new Error('시뮬레이션 프로젝트 manifest.json이 없습니다.');
+    let manifest;
+    try {
+        manifest = JSON.parse(await manifestEntry.async('string'));
+    } catch {
+        throw new Error('시뮬레이션 프로젝트 manifest.json을 읽을 수 없습니다.');
+    }
+    if (manifest?.format !== SIMULATION_WORKSPACE_FILE_FORMAT
+        || Number(manifest?.schemaVersion) !== SIMULATION_WORKSPACE_FILE_SCHEMA_VERSION) {
+        throw new Error('지원하지 않는 시뮬레이션 프로젝트 파일입니다.');
+    }
+    const workspaceFile = String(manifest.workspaceFile || 'workspace.json');
+    if (!isSafeSimulationWorkspaceArchivePath(workspaceFile)) {
+        throw new Error('시뮬레이션 프로젝트 경로가 올바르지 않습니다.');
+    }
+    const workspaceEntry = zip.file(workspaceFile);
+    if (!workspaceEntry) throw new Error('시뮬레이션 프로젝트 workspace.json이 없습니다.');
+    let snapshot;
+    try {
+        snapshot = JSON.parse(await workspaceEntry.async('string'));
+    } catch {
+        throw new Error('시뮬레이션 프로젝트 상태를 읽을 수 없습니다.');
+    }
+    if (!snapshot || typeof snapshot !== 'object') throw new Error('시뮬레이션 프로젝트 상태가 올바르지 않습니다.');
+    const assetMetadata = Array.isArray(manifest.assets) ? manifest.assets : [];
+    const assetById = new Map(assetMetadata.map((asset) => [String(asset?.id || ''), asset]));
+    const requiredAssetIds = WorkspaceRecovery.collectWorkspaceAssetIds(snapshot);
+    const assets = [];
+    for (const id of requiredAssetIds) {
+        const metadata = assetById.get(String(id));
+        if (!metadata || !isSafeSimulationWorkspaceArchivePath(metadata.path)) {
+            throw new Error(`시뮬레이션 프로젝트 파일이 누락되었습니다: ${metadata?.name || id}`);
+        }
+        const entry = zip.file(metadata.path);
+        if (!entry) throw new Error(`시뮬레이션 프로젝트 파일이 누락되었습니다: ${metadata.name || id}`);
+        const blob = await entry.async('blob');
+        if (Number(metadata.size) !== blob.size) {
+            throw new Error(`시뮬레이션 프로젝트 파일 크기가 일치하지 않습니다: ${metadata.name || id}`);
+        }
+        assets.push({
+            id: String(id),
+            name: String(metadata.name || id),
+            type: String(metadata.type || blob.type || 'application/octet-stream'),
+            size: blob.size,
+            extension: String(metadata.extension || '').toLowerCase(),
+            lastModified: Number(metadata.lastModified) || Date.now(),
+            blob
+        });
+    }
+    return { manifest, snapshot, assets };
+}
+
+async function importSimulationWorkspaceProject(file) {
+    if (!file || simulationWorkspaceFileBusy) return;
+    if (!state.workspaceRecovery.ready || !state.workspaceRecovery.db) {
+        setStatus('시뮬레이션 저장소가 아직 준비되지 않았습니다.', '#ef4444');
+        return;
+    }
+    if (isMotionActive() || isOlpRunning()) {
+        setStatus('프로젝트를 불러오기 전에 로봇 모션과 OLP 실행을 정지하세요.', '#f59e0b');
+        return;
+    }
+    const previousSnapshot = serializeWorkspaceSnapshot();
+    if (workspaceSnapshotHasWork(previousSnapshot)
+        && !window.confirm(uiText('현재 시뮬레이션 작업을 새 프로젝트로 바꾸시겠습니까?'))) return;
+
+    setSimulationWorkspaceFileBusy(true);
+    showLoading(true, uiText('시뮬레이션 프로젝트 불러오는 중...'));
+    try {
+        const bundle = await readSimulationWorkspaceBundle(file);
+        const assetIdMap = new Map();
+        for (const asset of bundle.assets) {
+            const newId = WorkspaceRecovery.createWorkspaceId('asset');
+            await state.workspaceRecovery.db.putAsset({
+                id: newId,
+                name: asset.name,
+                type: asset.type,
+                size: asset.size,
+                extension: asset.extension,
+                lastModified: asset.lastModified,
+                blob: asset.blob
+            });
+            assetIdMap.set(asset.id, newId);
+        }
+        const snapshot = remapSimulationWorkspaceAssetIds(bundle.snapshot, assetIdMap);
+        const warnings = await restoreWorkspaceSnapshot(snapshot);
+        await saveMotionProjectNow();
+        if (warnings.length) {
+            setStatus('프로젝트를 불러왔지만 일부 항목을 복원하지 못했습니다.', '#f59e0b');
+        } else {
+            setStatus('{name}을(를) 불러왔습니다.', '#22c55e', {
+                name: bundle.manifest.projectName || file.name
+            });
+        }
+    } catch (error) {
+        console.error('Simulation workspace import failed:', error);
+        try {
+            await restoreWorkspaceSnapshot(previousSnapshot);
+            await saveMotionProjectNow();
+        } catch (restoreError) {
+            console.error('Previous simulation workspace restore failed:', restoreError);
+        }
+        setStatus(error?.message || '시뮬레이션 프로젝트 불러오기에 실패했습니다.', '#ef4444');
+    } finally {
+        showLoading(false);
+        setSimulationWorkspaceFileBusy(false);
+        updateMotionUiLock();
+    }
+}
+
 async function saveStandalonePFile(content, suggestedName = 'P.pts') {
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     if (typeof window.showSaveFilePicker === 'function') {
@@ -38001,41 +38494,357 @@ async function exportPositionPoints() {
     }
 }
 
-async function exportMotionProject() {
-    const suggestedName = `3D-Simulation-Motion-Project-${new Date().toISOString().slice(0, 10)}.json`;
-    try {
-        const rawProject = serializeMotionProject();
-        const project = {
-            ...normalizeMotionProject(rawProject),
-            interferenceZones: normalizeInterferenceZones(rawProject.interferenceZones),
-            endMonitoringObjects: normalizeEndMonitoringObjects(rawProject.endMonitoringObjects)
+function serializeMotionProgramFileWorkOrigin(workOrigin) {
+    if (!workOrigin) return null;
+    return {
+        mode: 'JOINT',
+        joints: [...workOrigin.joints],
+        tcp: {
+            position: [...workOrigin.tcp.position],
+            quaternion: [...workOrigin.tcp.quaternion]
+        },
+        outputBit: Number(workOrigin.outputBit)
+    };
+}
+
+function serializeMotionProgramFileStep(step, robotIndexByInstanceId) {
+    const motion = String(step.motion || 'MOVJ');
+    const record = {
+        id: String(step.id),
+        name: String(step.name || ''),
+        motion,
+        joints: [...step.joints],
+        tcp: {
+            position: [...step.tcp.position],
+            quaternion: [...step.tcp.quaternion]
+        }
+    };
+    if (isMotionPointMotion(motion)) {
+        record.pointIndex = step.pointIndex;
+        record.label = step.label || '';
+        record.armParameters = [...(step.armParameters || [0, 0, 0, 1])];
+        record.externalAxes = [...(step.externalAxes || [0, 0, 0, 0, 0, 0])];
+    }
+    if (motion === 'DELAY') record.delaySeconds = step.delaySeconds;
+    if (motion === 'MOVJ' || motion === 'MOVL') record.speed = step.speed;
+    if (motion === 'VIEW') record.viewSlot = step.viewSlot;
+    if (isGripObjectMotion(motion)) record.gripObjectRef = step.gripObjectRef || '';
+    if (isWaitMotion(motion)) {
+        record.waitRobotIndex = robotIndexByInstanceId.has(step.waitRobotInstanceId)
+            ? robotIndexByInstanceId.get(step.waitRobotInstanceId)
+            : null;
+        record.waitLineNumber = step.waitLineNumber;
+    }
+    return record;
+}
+
+function serializeMotionProgramFile() {
+    const robots = getArticulatedRobots();
+    const robotIndexByInstanceId = new Map(robots.map((robot, index) => (
+        [robot.userData.motionInstanceId, index]
+    )));
+    const priorityRobotIndex = robotIndexByInstanceId.has(state.robotInterferenceAvoidance.priorityRobotId)
+        ? robotIndexByInstanceId.get(state.robotInterferenceAvoidance.priorityRobotId)
+        : null;
+    return {
+        format: MOTION_PROGRAM_FILE_FORMAT,
+        schemaVersion: MOTION_PROGRAM_FILE_SCHEMA_VERSION,
+        exportedAt: new Date().toISOString(),
+        repeatCurrentRobot: Boolean(state.motionRepeatRobot),
+        repeat: Boolean(state.motionRepeat),
+        reverseRepeatCurrentRobot: Boolean(state.motionReverseRepeatRobot),
+        reverseRepeat: Boolean(state.motionReverseRepeat),
+        robotInterferenceAvoidance: {
+            enabled: Boolean(state.robotInterferenceAvoidance.enabled),
+            priorityRobotIndex
+        },
+        robots: robots.map((robot, index) => {
+            const program = ensureMotionProgram(robot);
+            return {
+                index,
+                jointCount: robot.userData.joints.length,
+                included: Boolean(program.included),
+                selectedStepId: program.selectedStepId || null,
+                workOrigin: serializeMotionProgramFileWorkOrigin(program.workOrigin),
+                steps: program.steps.map((step) => serializeMotionProgramFileStep(step, robotIndexByInstanceId))
+            };
+        })
+    };
+}
+
+function normalizeMotionProgramFileArray(value, length, label) {
+    if (!Array.isArray(value) || value.length !== length) {
+        throw new Error(`${label} must contain ${length} values.`);
+    }
+    const numbers = value.map(Number);
+    if (!numbers.every(Number.isFinite)) throw new Error(`${label} must contain finite numbers.`);
+    return numbers;
+}
+
+function normalizeMotionProgramFileWorkOrigin(workOrigin, jointCount) {
+    if (!workOrigin) return null;
+    return {
+        mode: 'JOINT',
+        joints: normalizeMotionProgramFileArray(workOrigin.joints, jointCount, 'Work Origin joints'),
+        tcp: {
+            position: normalizeMotionProgramFileArray(workOrigin.tcp?.position, 3, 'Work Origin TCP position'),
+            quaternion: normalizeMotionProgramFileArray(workOrigin.tcp?.quaternion, 4, 'Work Origin TCP quaternion')
+        },
+        outputBit: Number.isSafeInteger(Number(workOrigin.outputBit))
+            && Number(workOrigin.outputBit) >= 0
+            ? Number(workOrigin.outputBit)
+            : 519
+    };
+}
+
+function normalizeMotionProgramFileStep(step, jointCount, stepIndex) {
+    if (!step || typeof step !== 'object') throw new Error(`Program step ${stepIndex + 1} is invalid.`);
+    const motion = String(step.motion || '').trim();
+    if (!MOTION_PROGRAM_FILE_MOTIONS.has(motion)) throw new Error(`Unsupported program motion: ${motion}`);
+    const id = String(step.id || '').trim();
+    if (!id) throw new Error(`Program step ${stepIndex + 1} has no id.`);
+    const normalized = {
+        id,
+        name: String(step.name || ''),
+        motion,
+        joints: normalizeMotionProgramFileArray(step.joints, jointCount, `Program step ${stepIndex + 1} joints`),
+        tcp: {
+            position: normalizeMotionProgramFileArray(step.tcp?.position, 3, `Program step ${stepIndex + 1} TCP position`),
+            quaternion: normalizeMotionProgramFileArray(step.tcp?.quaternion, 4, `Program step ${stepIndex + 1} TCP quaternion`)
+        }
+    };
+    if (isMotionPointMotion(motion)) {
+        const pointIndex = Number(step.pointIndex);
+        const label = String(step.label || '').trim();
+        if (!Number.isInteger(pointIndex) || pointIndex < MIN_POINT_INDEX || pointIndex > MAX_POINT_INDEX) {
+            throw new Error(`Program step ${stepIndex + 1} has an invalid point index.`);
+        }
+        if (!isValidMotionPointLabel(label)) throw new Error(`Program step ${stepIndex + 1} has an invalid label.`);
+        normalized.pointIndex = pointIndex;
+        normalized.label = label;
+        normalized.armParameters = normalizeMotionProgramFileArray(
+            step.armParameters,
+            4,
+            `Program step ${stepIndex + 1} arm parameters`
+        );
+        normalized.externalAxes = normalizeMotionProgramFileArray(
+            step.externalAxes,
+            6,
+            `Program step ${stepIndex + 1} external axes`
+        );
+    }
+    if (motion === 'DELAY') {
+        const delaySeconds = Number(step.delaySeconds);
+        if (!Number.isFinite(delaySeconds) || delaySeconds < MIN_DELAY_SECONDS || delaySeconds > MAX_DELAY_SECONDS) {
+            throw new Error(`Program step ${stepIndex + 1} has an invalid delay.`);
+        }
+        normalized.delaySeconds = delaySeconds;
+    }
+    if (motion === 'MOVJ' || motion === 'MOVL') {
+        const speed = Number(step.speed);
+        if (!Number.isFinite(speed) || speed <= 0) throw new Error(`Program step ${stepIndex + 1} has an invalid speed.`);
+        normalized.speed = speed;
+    }
+    if (motion === 'VIEW') {
+        const viewSlot = Number(step.viewSlot);
+        if (!Number.isInteger(viewSlot) || viewSlot < 0 || viewSlot >= VIEW_PRESET_COUNT) {
+            throw new Error(`Program step ${stepIndex + 1} has an invalid view slot.`);
+        }
+        normalized.viewSlot = viewSlot;
+    }
+    if (isGripObjectMotion(motion)) normalized.gripObjectRef = String(step.gripObjectRef || '').trim();
+    if (isWaitMotion(motion)) {
+        const waitRobotIndex = step.waitRobotIndex === null || step.waitRobotIndex === undefined
+            ? null
+            : Number(step.waitRobotIndex);
+        if (waitRobotIndex !== null && (!Number.isInteger(waitRobotIndex) || waitRobotIndex < 0)) {
+            throw new Error(`Program step ${stepIndex + 1} has an invalid WAIT target.`);
+        }
+        const waitLineNumber = Number(step.waitLineNumber);
+        if (!Number.isInteger(waitLineNumber)
+            || waitLineNumber < MIN_WAIT_LINE_NUMBER
+            || waitLineNumber > MAX_WAIT_LINE_NUMBER) {
+            throw new Error(`Program step ${stepIndex + 1} has an invalid WAIT line.`);
+        }
+        normalized.waitRobotIndex = waitRobotIndex;
+        normalized.waitLineNumber = waitLineNumber;
+    }
+    return normalized;
+}
+
+function normalizeMotionProgramFile(input) {
+    if (!input || typeof input !== 'object'
+        || input.format !== MOTION_PROGRAM_FILE_FORMAT
+        || Number(input.schemaVersion) !== MOTION_PROGRAM_FILE_SCHEMA_VERSION) {
+        throw new Error('Unsupported motion program file.');
+    }
+    if (!Array.isArray(input.robots)) throw new Error('Motion program file robots must be an array.');
+    const robots = input.robots.map((entry, index) => {
+        const jointCount = Number(entry?.jointCount);
+        if (!Number.isInteger(jointCount) || jointCount < 1 || jointCount > 12) {
+            throw new Error(`Program robot ${index + 1} has an invalid joint count.`);
+        }
+        const steps = (Array.isArray(entry.steps) ? entry.steps : [])
+            .map((step, stepIndex) => normalizeMotionProgramFileStep(step, jointCount, stepIndex));
+        const stepIds = new Set();
+        const pointIndices = new Set();
+        steps.forEach((step) => {
+            if (stepIds.has(step.id)) throw new Error(`Duplicate program step id: ${step.id}`);
+            stepIds.add(step.id);
+            if (isMotionPointMotion(step.motion)) {
+                if (pointIndices.has(step.pointIndex)) throw new Error(`Duplicate program point index: ${step.pointIndex}`);
+                pointIndices.add(step.pointIndex);
+            }
+        });
+        return {
+            index,
+            jointCount,
+            included: entry.included !== false,
+            selectedStepId: stepIds.has(entry.selectedStepId) ? entry.selectedStepId : null,
+            workOrigin: normalizeMotionProgramFileWorkOrigin(entry.workOrigin, jointCount),
+            steps
         };
+    });
+    const priorityRobotIndex = input.robotInterferenceAvoidance?.priorityRobotIndex;
+    return {
+        repeatCurrentRobot: Boolean(input.repeatCurrentRobot),
+        repeat: Boolean(input.repeat),
+        reverseRepeatCurrentRobot: Boolean(input.reverseRepeatCurrentRobot),
+        reverseRepeat: Boolean(input.reverseRepeat),
+        robotInterferenceAvoidance: {
+            enabled: Boolean(input.robotInterferenceAvoidance?.enabled),
+            priorityRobotIndex: priorityRobotIndex === null || priorityRobotIndex === undefined
+                ? null
+                : Number(priorityRobotIndex)
+        },
+        robots
+    };
+}
+
+function captureMotionProgramPanelState() {
+    return {
+        motionPrograms: getArticulatedRobots().map((robot) => ({
+            robot,
+            program: cloneMotionProgram(ensureMotionProgram(robot))
+        })),
+        motionRepeatRobot: state.motionRepeatRobot,
+        motionRepeat: state.motionRepeat,
+        motionReverseRepeatRobot: state.motionReverseRepeatRobot,
+        motionReverseRepeat: state.motionReverseRepeat,
+        robotInterferenceAvoidance: {
+            enabled: Boolean(state.robotInterferenceAvoidance.enabled),
+            priorityRobotId: state.robotInterferenceAvoidance.priorityRobotId || null
+        }
+    };
+}
+
+function restoreMotionProgramPanelState(snapshot) {
+    state.motionPrograms = new Map((snapshot?.motionPrograms || [])
+        .filter((entry) => entry.robot?.userData?.motionInstanceId)
+        .map((entry) => [entry.robot.userData.motionInstanceId, cloneMotionProgram(entry.program)]));
+    state.motionRepeatRobot = Boolean(snapshot?.motionRepeatRobot);
+    state.motionRepeat = Boolean(snapshot?.motionRepeat);
+    state.motionReverseRepeatRobot = Boolean(snapshot?.motionReverseRepeatRobot);
+    state.motionReverseRepeat = Boolean(snapshot?.motionReverseRepeat);
+    state.robotInterferenceAvoidance = {
+        enabled: Boolean(snapshot?.robotInterferenceAvoidance?.enabled),
+        priorityRobotId: snapshot?.robotInterferenceAvoidance?.priorityRobotId || null
+    };
+    syncMotionRepeatControl();
+    syncWorkOriginOutputStates();
+    renderMotionProgramPanel();
+    updateMotionProgramPlaybackUi();
+}
+
+function restoreMotionProgramFileData(input) {
+    if (isMotionActive()) throw new Error('Stop all robot motions before loading a program.');
+    const project = normalizeMotionProgramFile(input);
+    const robots = getArticulatedRobots();
+    const warnings = [];
+    const nextPrograms = new Map();
+    robots.forEach((robot, index) => {
+        const instanceId = ensureMotionProgram(robot) && robot.userData.motionInstanceId;
+        const saved = project.robots[index];
+        if (!saved) {
+            nextPrograms.set(instanceId, createEmptyMotionProgram(false));
+            return;
+        }
+        if (saved.jointCount !== robot.userData.joints.length) {
+            warnings.push(`Robot ${index + 1} joint count mismatch.`);
+            nextPrograms.set(instanceId, createEmptyMotionProgram(false));
+            return;
+        }
+        const steps = saved.steps.map((step) => ({
+            ...step,
+            waitRobotInstanceId: Number.isInteger(step.waitRobotIndex)
+                ? robots[step.waitRobotIndex]?.userData?.motionInstanceId || ''
+                : ''
+        }));
+        if (saved.steps.some((step) => Number.isInteger(step.waitRobotIndex) && !robots[step.waitRobotIndex])) {
+            warnings.push(`Robot ${index + 1} has a WAIT target that is unavailable.`);
+        }
+        nextPrograms.set(instanceId, cloneMotionProgram({
+            included: saved.included,
+            selectedStepId: saved.selectedStepId,
+            workOrigin: saved.workOrigin,
+            steps
+        }));
+    });
+    if (project.robots.length !== robots.length) warnings.push('The number of program robots differs from the current simulation.');
+    const priorityRobotIndex = project.robotInterferenceAvoidance.priorityRobotIndex;
+    if (priorityRobotIndex !== null
+        && (!Number.isInteger(priorityRobotIndex) || !robots[priorityRobotIndex])) {
+        warnings.push('The saved interference-avoidance priority robot is unavailable.');
+    }
+    state.motionPrograms = nextPrograms;
+    state.motionRepeatRobot = project.repeatCurrentRobot;
+    state.motionRepeat = project.repeat;
+    state.motionReverseRepeatRobot = project.reverseRepeatCurrentRobot;
+    state.motionReverseRepeat = project.reverseRepeat;
+    state.robotInterferenceAvoidance = {
+        enabled: project.robotInterferenceAvoidance.enabled,
+        priorityRobotId: robots[priorityRobotIndex]?.userData?.motionInstanceId || null
+    };
+    syncMotionRepeatControl();
+    syncWorkOriginOutputStates();
+    updateUIStatus();
+    renderMotionProgramPanel();
+    updateMotionProgramPlaybackUi();
+    scheduleMotionProjectSave();
+    return { warnings };
+}
+
+async function exportMotionProject() {
+    const suggestedName = `InoRobot-Program-${new Date().toISOString().slice(0, 10)}.json`;
+    try {
+        const project = serializeMotionProgramFile();
         const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json;charset=utf-8' });
         if (typeof window.showSaveFilePicker === 'function') {
             const fileHandle = await window.showSaveFilePicker({
-                id: 'inorobot-motion-project',
+                id: 'inorobot-motion-program',
                 suggestedName,
                 startIn: 'documents',
                 excludeAcceptAllOption: true,
                 types: [{
-                    description: '3D Simulation Motion Project',
+                    description: 'InoRobot Motion Program',
                     accept: { 'application/json': ['.json'] }
                 }]
             });
             const writable = await fileHandle.createWritable();
             await writable.write(blob);
             await writable.close();
-            setMotionProgramStatus('프로젝트 저장됨: {name}', '', { name: fileHandle.name });
+            setMotionProgramStatus('프로그램 저장됨: {name}', '', { name: fileHandle.name });
         } else {
             saveAs(blob, suggestedName);
-            setMotionProgramStatus('프로젝트를 다운로드했습니다. 이 브라우저에서는 폴더를 선택할 수 없습니다.');
+            setMotionProgramStatus('프로그램 저장됨: {name}', '', { name: suggestedName });
         }
     } catch (error) {
         if (error?.name === 'AbortError') {
-            setMotionProgramStatus('프로젝트 저장을 취소했습니다.');
+            setMotionProgramStatus('프로그램 저장을 취소했습니다.');
             return;
         }
-        setMotionProgramStatus('프로젝트 내보내기에 실패했습니다.', 'error');
+        console.error('Motion program export failed:', error);
+        setMotionProgramStatus('프로그램 내보내기에 실패했습니다.', 'error');
     }
 }
 
@@ -38043,16 +38852,22 @@ async function handleMotionProjectImport() {
     const file = el.inputProgramImport?.files?.[0];
     if (el.inputProgramImport) el.inputProgramImport.value = '';
     if (!file || isMotionActive()) return;
-    const before = captureSceneSnapshot();
+    const beforeScene = captureSceneSnapshot();
+    const beforeProgram = captureMotionProgramPanelState();
     try {
         const project = JSON.parse(await file.text());
-        await restoreMotionProjectData(project);
-        recordHistory('모션 프로젝트 불러오기', before, captureSceneSnapshot());
-        setMotionProgramStatus('{name}을(를) 불러왔습니다.', '', { name: file.name });
+        const result = restoreMotionProgramFileData(project);
+        recordHistory('프로그램 불러오기', beforeScene, captureSceneSnapshot());
+        if (result.warnings.length) {
+            setMotionProgramStatus('프로그램을 불러왔지만 일부 항목을 적용하지 못했습니다.', 'error');
+        } else {
+            setMotionProgramStatus('{name} 프로그램을 불러왔습니다.', '', { name: file.name });
+        }
     } catch (error) {
-        applySceneSnapshot(before);
+        console.error('Motion program import failed:', error);
+        restoreMotionProgramPanelState(beforeProgram);
         showLoading(false);
-        setMotionProgramStatus('프로젝트 불러오기에 실패했습니다.', 'error');
+        setMotionProgramStatus('프로그램 불러오기에 실패했습니다.', 'error');
     }
 }
 

@@ -335,6 +335,11 @@ input[type="number"]::-webkit-outer-spin-button {
     box-shadow: 0 4px 12px var(--accent-glow);
 }
 
+.workspace-file-btn {
+    color: #93c5fd;
+    border-color: rgba(96, 165, 250, 0.34);
+}
+
 .ui-btn.active {
     background: var(--accent);
     color: #fff;
