@@ -294,7 +294,7 @@ function joinRoom(peer, message, reconnect = false) {
         }
     } else {
         if (room.participants.size >= collaborationCore.MAX_COLLABORATION_PARTICIPANTS) {
-            return sendError(peer, 'room-full', '협업 방은 최대 2명까지 참여할 수 있습니다.', requestId);
+            return sendError(peer, 'room-full', '협업 방은 최대 4명까지 참여할 수 있습니다.', requestId);
         }
         participant = createUser(room, message.displayName, 'guest');
     }

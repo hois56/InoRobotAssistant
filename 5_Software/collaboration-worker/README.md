@@ -1,9 +1,9 @@
 # InoRobot Collaboration Worker
 
 This Cloudflare Worker provides the public WebSocket backend used by the 3D
-Simulation two-person collaboration feature. A Durable Object keeps the live
-room and participant state together so two browsers can connect to the same
-room code.
+Simulation collaboration feature. A Durable Object keeps the live room and
+participant state together so up to four browsers can connect to the same room
+code.
 
 ## Deploy
 
