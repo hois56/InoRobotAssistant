@@ -5,10 +5,6 @@
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { STLLoader } from 'three/addons/loaders/STLLoader.js';
-import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { clone as cloneObjectWithSkeletons } from 'three/addons/utils/SkeletonUtils.js';
 import { enableContinuousTransformRotation } from '../3_ToolSelector/continuous-transform-rotation.mjs';
@@ -158,6 +154,27 @@ import {
     normalizeRoomCode,
     isValidRoomCode
 } from './collaboration-core.mjs';
+
+const THREE_ADDON_LOADER_IMPORTS = Object.freeze({
+    fbx: 'three/addons/loaders/FBXLoader.js',
+    gltf: 'three/addons/loaders/GLTFLoader.js',
+    obj: 'three/addons/loaders/OBJLoader.js',
+    stl: 'three/addons/loaders/STLLoader.js'
+});
+const threeAddonLoaderPromises = new Map();
+
+function importThreeAddonLoader(kind) {
+    const specifier = THREE_ADDON_LOADER_IMPORTS[kind];
+    if (!specifier) return Promise.reject(new Error(`Unsupported Three.js loader: ${kind}`));
+    if (!threeAddonLoaderPromises.has(kind)) {
+        threeAddonLoaderPromises.set(kind, import(specifier).catch((error) => {
+            threeAddonLoaderPromises.delete(kind);
+            throw error;
+        }));
+    }
+    return threeAddonLoaderPromises.get(kind);
+}
+
 function uiText(value) {
     return window.InoRobotI18n ? window.InoRobotI18n.translate(String(value)) : String(value);
 }
@@ -22826,11 +22843,11 @@ function loadFBX(url, onProgress) {
     return loadFBXInWorker(url, onProgress).catch((workerError) => {
         // Keep compatibility with browsers that cannot start module workers.
         console.warn('FBX worker unavailable; falling back to main-thread loading:', workerError);
-        return new Promise((resolve, reject) => {
+        return importThreeAddonLoader('fbx').then(({ FBXLoader }) => new Promise((resolve, reject) => {
             new FBXLoader().load(url, resolve,
                 (xhr) => { if (xhr.total > 0 && onProgress) onProgress(Math.round(xhr.loaded / xhr.total * 100)); },
                 reject);
-        });
+        }));
     });
 }
 
@@ -23304,9 +23321,9 @@ function loadSTL(url) {
             // Keep the viewer usable if a browser blocks module workers or the
             // worker CDN is unavailable. The fallback remains asynchronous.
             console.warn('STL worker unavailable; falling back to main-thread loading:', workerError);
-            return new Promise((resolve, reject) => {
+            return importThreeAddonLoader('stl').then(({ STLLoader }) => new Promise((resolve, reject) => {
                 new STLLoader().load(url, resolve, undefined, reject);
-            });
+            }));
         }).catch((error) => {
             stlGeometryCache.delete(url);
             throw error;
@@ -24668,6 +24685,7 @@ async function parseUploaded3DFile(file, extension, placement, qualityKey = 'aut
             collisionGeometry = workerResult.collisionGeometry;
         } catch (workerError) {
             console.warn('STL worker unavailable; falling back to main-thread loading:', workerError);
+            const { STLLoader } = await importThreeAddonLoader('stl');
             geometry = new STLLoader().parse(sourceBuffer);
         }
         if (!geometry.getAttribute('normal')) geometry.computeVertexNormals();
@@ -24680,13 +24698,16 @@ async function parseUploaded3DFile(file, extension, placement, qualityKey = 'aut
         return mesh;
     }
     if (extension === 'fbx') {
+        const { FBXLoader } = await importThreeAddonLoader('fbx');
         return new FBXLoader().parse(await file.arrayBuffer(), '');
     }
     if (extension === 'obj') {
+        const { OBJLoader } = await importThreeAddonLoader('obj');
         return new OBJLoader().parse(await file.text());
     }
     if (extension === 'glb' || extension === 'gltf') {
         const data = extension === 'glb' ? await file.arrayBuffer() : await file.text();
+        const { GLTFLoader } = await importThreeAddonLoader('gltf');
         return new Promise((resolve, reject) => {
             new GLTFLoader().parse(data, '', (gltf) => resolve(gltf.scene), reject);
         });
