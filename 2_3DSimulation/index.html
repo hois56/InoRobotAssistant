@@ -473,6 +473,9 @@
 
 
 
+
+
+
     <!-- SUBPAGE-SEO:START -->
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
     <link rel="canonical" href="https://inovancerobot.com/2_3DSimulation/">
@@ -510,6 +513,13 @@
             </div>
         </div>
         <div class="topbar-right">
+            <button id="btn-workspace-save" class="ui-btn workspace-file-btn" type="button" title="시뮬레이션 프로젝트 저장" aria-label="시뮬레이션 프로젝트 저장">
+                <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+            </button>
+            <button id="btn-workspace-load" class="ui-btn workspace-file-btn" type="button" title="시뮬레이션 프로젝트 불러오기" aria-label="시뮬레이션 프로젝트 불러오기">
+                <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
+            </button>
+            <input id="input-workspace-load" class="hidden" type="file" accept=".inosim,.zip,application/zip">
             <button id="btn-fullscreen-mode" class="ui-btn" type="button" title="전체 화면 모드" aria-label="전체 화면 모드" aria-pressed="false">
                 <i class="fa-solid fa-expand" aria-hidden="true"></i>
                 <span data-i18n="legacy.전체 화면">전체 화면</span>
@@ -1847,8 +1857,8 @@
                     <strong id="program-cycle-time">-- s</strong>
                 </div>
                 <div class="program-file-row">
-                    <button id="program-import" type="button" data-program-edit><i class="fa-solid fa-file-import"></i> 프로젝트 불러오기</button>
-                    <button id="program-export" type="button" title="파일명과 저장 위치 선택"><i class="fa-solid fa-file-export"></i> 프로젝트 저장</button>
+                    <button id="program-import" type="button" data-program-edit><i class="fa-solid fa-file-import"></i> <span id="program-import-label">프로그램 불러오기</span></button>
+                    <button id="program-export" type="button" title="프로그램 저장"><i class="fa-solid fa-file-export"></i> <span id="program-export-label">프로그램 저장</span></button>
                     <button id="btn-position-export" type="button" title="P파일 내보내기" aria-label="P파일 내보내기"><i class="fa-solid fa-file-export" aria-hidden="true"></i> P파일 내보내기</button>
                     <input id="program-import-file" type="file" accept="application/json,.json" hidden>
                 </div>
@@ -2059,7 +2069,7 @@
         </div>
     </footer>
 
-    <script type="module" src="main.js?v=20260908-olp-multi-robot-2"></script>
+    <script type="module" src="main.js?v=20260911-simulation-workspace-file-1"></script>
 <script src="/0_Home/tool-guide-embed.js?v=20260906-2"></script>
 </body>
 </html>

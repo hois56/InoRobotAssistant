@@ -2,7 +2,7 @@
 // Edit 0_Home/version-history.json instead.
 window.SITE_CARD_VERSIONS = {
     robotSelect: '26.09.09',
-    robot3dViewer: '26.09.10',
+    robot3dViewer: '26.09.11',
     toolSelector: '26.09.03',
     projectGenerator: '26.09.03',
     software: '26.09.08',
