@@ -1,0 +1,14 @@
+name = "inorobot-collaboration"
+main = "worker.js"
+compatibility_date = "2026-09-11"
+
+[vars]
+ALLOWED_ORIGINS = "https://inovancerobot.com,https://www.inovancerobot.com"
+
+[[durable_objects.bindings]]
+name = "COLLABORATION_HUB"
+class_name = "CollaborationHub"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["CollaborationHub"]

@@ -30,9 +30,11 @@ echo.
 echo Starting the InoRobot virtual environment...
 echo Opening: http://127.0.0.1:8765/2_3DSimulation/
 echo Virtual Bus pairing is enabled for this session.
+echo Collaboration server: ws://127.0.0.1:8787/collaboration
 echo Stop the server by closing this window or pressing Ctrl+C.
 echo.
 
+start "InoRobot Collaboration Server" cmd /k "cd /d ""%~dp0"" && node tools\collaboration-server.cjs 8787"
 start "" "http://127.0.0.1:8765/2_3DSimulation/"
 node tools\serve-local.cjs 8765
 
