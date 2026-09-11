@@ -199,15 +199,16 @@
               {
                 "title": "Ver 26.09.11",
                 "items": [
-                  "`[수정]` 3D 화면에서 우클릭으로 뷰를 전환한 뒤 모델 위에서 마우스를 놓을 때 모델 옵션창이 잘못 표시되던 문제를 해결했습니다.",
+                  "`[수정]` 3D 화면에서 우클릭으로 뷰를 전환한 뒤에 옵션창이 표시되던 문제를 해결했습니다.",
                   "`[추가]` 3D 시뮬레이션 작업 전체를 3D 모델과 함께 `.inosim` 파일로 저장하고 불러올 수 있는 기능을 추가했습니다.",
-                  "`[변경]` 프로그램 패널의 저장·불러오기가 전체 시뮬레이션이 아닌 프로그램 패널에서 작성한 모션 프로그램만 처리하도록 변경했습니다."
+                  "`[변경]` 프로그램 패널의 저장·불러오기가 전체 시뮬레이션이 아닌 프로그램 패널에서 작성한 모션 프로그램만 처리하도록 변경했습니다.",
+                  "`[수정]` 가상환경에서 협업 서버가 실행되지 않아 방을 만들 수 없던 문제를 해결했습니다."
                 ]
               },
               {
                 "title": "Ver 26.09.10",
                 "items": [
-                  "`[수정]` R11 모델에서 Joint로 J6만 회전할 때 P6 링크와 TCP가 회전 중심에서 벗어나 뒤뚱거리던 문제를 해결했습니다."
+                  "`[수정]` R11 모델의 J6 링크 초기 위치가 어긋났던 문제를 해결했습니다."
                 ]
               },
               {
@@ -1144,7 +1145,9 @@
               {
                 "title": "Ver 26.09.11",
                 "items": [
-                  "`[Fixed]` Fixed an issue where the model options menu opened when the right mouse button was released over a model after navigating the 3D view."
+                  "`[Fixed]` Fixed an issue where the model options menu opened when the right mouse button was released over a model after navigating the 3D view.",
+                  "`[Fixed]` Fixed an issue where the collaboration server was not started in the virtual environment, preventing room creation.",
+                  "`[Added]` Added a public collaboration server so two browsers can create and join the same simulation room."
                 ]
               },
               {
@@ -2098,6 +2101,13 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.09.11",
+                "items": [
+                  "`[修复]` 修复了虚拟环境未启动协作服务器、导致无法创建房间的问题。",
+                  "`[新增]` 新增公开协作服务器，使两个浏览器可以创建并加入同一个仿真房间。"
+                ]
+              },
+              {
                 "title": "Ver 26.09.10",
                 "items": [
                   "`[修复]` 修复了 R11 型号在 Joint 模式下仅旋转 J6 时 P6 连杆和 TCP 偏离旋转中心而晃动的问题。"
@@ -3047,6 +3057,13 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.09.11",
+                "items": [
+                  "`[Sửa lỗi]` Đã khắc phục sự cố máy chủ cộng tác không được khởi động trong môi trường ảo khiến không thể tạo phòng.",
+                  "`[Thêm mới]` Đã thêm máy chủ cộng tác công khai để hai trình duyệt có thể tạo và tham gia cùng một phòng mô phỏng."
+                ]
+              },
               {
                 "title": "Ver 26.09.10",
                 "items": [

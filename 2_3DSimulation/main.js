@@ -27322,8 +27322,16 @@ function getCollaborationSocketUrl() {
     const configuredUrl = params.get('collaborationWs') || document.body.dataset.collaborationWs || '';
     if (/^wss?:\/\//i.test(configuredUrl)) return configuredUrl;
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = params.get('collaborationHost') || window.location.hostname || '127.0.0.1';
-    const port = params.get('collaborationPort') || '8787';
+    const configuredHost = params.get('collaborationHost');
+    const configuredPort = params.get('collaborationPort');
+    if (window.location.protocol === 'https:'
+        && !configuredHost
+        && !configuredPort
+        && ['inovancerobot.com', 'www.inovancerobot.com'].includes(window.location.hostname)) {
+        return 'wss://inorobot-collaboration.hois56.workers.dev/collaboration';
+    }
+    const host = configuredHost || window.location.hostname || '127.0.0.1';
+    const port = configuredPort || '8787';
     return `${protocol}//${host}:${port}/collaboration`;
 }
 
