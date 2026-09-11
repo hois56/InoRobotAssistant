@@ -22,7 +22,7 @@ import {
 
 assert.equal(COLLABORATION_PROTOCOL, 'inorobot-collaboration-v1');
 assert.equal(COLLABORATION_WS_PATH, '/collaboration');
-assert.equal(MAX_COLLABORATION_PARTICIPANTS, 2);
+assert.equal(MAX_COLLABORATION_PARTICIPANTS, 4);
 assert.equal(ROOM_CODE_LENGTH, 4);
 assert.equal(ROOM_CODE_ALPHABET, '0123456789');
 assert.equal(createRoomCode(() => 0), ROOM_CODE_ALPHABET[0].repeat(ROOM_CODE_LENGTH));

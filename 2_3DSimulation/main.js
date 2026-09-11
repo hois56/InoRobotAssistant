@@ -19835,8 +19835,7 @@ function updatePanelLauncher(panelId) {
         || (panelId === 'tcp-profile-panel' && getArticulatedRobots().length === 0)
         || (panelId === 'arm-load-panel' && getArticulatedRobots().length === 0)
         || (panelId === 'virtual-controller-panel' && getArticulatedRobots().length === 0)
-        || (panelId === 'program-panel' && getArticulatedRobots().length === 0)
-        || (panelId === 'collaboration-panel' && getArticulatedRobots().length === 0);
+        || (panelId === 'program-panel' && getArticulatedRobots().length === 0);
     button.disabled = unavailable;
     button.classList.toggle('active', !unavailable && !panel.classList.contains('panel-user-hidden'));
 }
@@ -19958,7 +19957,7 @@ function getPanelWindowTitle(panelId) {
         : panelId === 'arm-load-panel'
             ? uiText('암 로드 설정')
         : panelId === 'collaboration-panel'
-            ? uiText('2인 협업')
+            ? uiText('4인 협업')
         : panelId === 'virtual-controller-panel'
             ? uiText('컨트롤러 연결')
         : panelId === 'view-presets-panel'
@@ -27381,7 +27380,7 @@ function collaborationErrorText(code, fallback = '') {
     return uiText(({
         'invalid-room-code': '방 코드는 숫자로 된 4자리 코드여야 합니다.',
         'room-not-found': '방 코드를 찾을 수 없습니다.',
-        'room-full': '협업 방은 최대 2명까지 참여할 수 있습니다.',
+        'room-full': '협업 방은 최대 4명까지 참여할 수 있습니다.',
         'robot-occupied': '다른 사용자가 제어 중인 로봇입니다.',
         'already-owns-robot': '한 사용자는 한 대의 로봇만 점유할 수 있습니다.',
         'robot-not-owned': '점유하지 않은 로봇은 조작할 수 없습니다.',
@@ -28210,11 +28209,15 @@ function refreshVirtualControllerUi() {
         }));
     }
     if (el.btnVirtualControllerAdd) {
-        el.btnVirtualControllerAdd.disabled = !getArticulatedRobots().some((robot) => (
+        const hasAvailableRobot = getArticulatedRobots().some((robot) => (
             isCollaborationRobotLocallyControllable(robot)
             && !sessions.some((candidate) => candidate.wanted
                 && candidate.targetRobotId === robot.userData.motionInstanceId)
         ));
+        // A collaboration room can be joined before this user claims a robot.
+        // Keep the session-creation action available so the controller can be
+        // configured while waiting for a local robot assignment.
+        el.btnVirtualControllerAdd.disabled = !state.collaboration.enabled && !hasAvailableRobot;
     }
     if (el.virtualControllerSource) {
         el.virtualControllerSource.value = source.id;

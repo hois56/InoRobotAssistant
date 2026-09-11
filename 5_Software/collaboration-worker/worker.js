@@ -379,7 +379,7 @@ export class CollaborationHub {
             }
         } else {
             if (room.participants.size >= MAX_COLLABORATION_PARTICIPANTS) {
-                this.sendError(peer, 'room-full', '협업 방은 최대 2명까지 참여할 수 있습니다.', requestId);
+                this.sendError(peer, 'room-full', '협업 방은 최대 4명까지 참여할 수 있습니다.', requestId);
                 return;
             }
             participant = this.createUser(room, message.displayName, 'guest');

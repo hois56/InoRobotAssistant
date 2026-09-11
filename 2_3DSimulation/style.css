@@ -3988,7 +3988,7 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
     cursor: default;
 }
 
-/* Two-person collaboration */
+/* Four-person collaboration */
 .collaboration-panel {
     position: absolute;
     top: 12px;
