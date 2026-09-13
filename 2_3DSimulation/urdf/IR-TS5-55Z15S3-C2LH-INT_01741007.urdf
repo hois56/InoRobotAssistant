@@ -1,0 +1,150 @@
+<?xml version="1.0"?>
+<!-- Generated from IR-TS5-55Z15S3-C2LH-INT_01741007.json and models.json. Coordinates are Z-up; mesh units are millimetres and converted with mesh scale 0.001. -->
+<robot name="IR-TS5-55Z15S3-C2LH-INT_01741007">
+  <!-- Payload limit from controller JSON: 5 kg -->
+  <link name="base_link">
+
+    <visual name="base">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-TS5-55Z15/P0.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="base_material">
+        <color rgba="0.31 0.35 0.41 1"/>
+      </material>
+    </visual>
+    <collision name="base_collision">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-TS5-55Z15/P0.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="link_1">
+
+    <!-- inertial source: bounding-box-fallback -->
+    <inertial>
+      <origin xyz="0.1335 0 0.396950012207" rpy="0 0 0"/>
+      <mass value="7.3392418728"/>
+      <inertia ixx="0.029626225927" ixy="0" ixz="0" iyy="0.128192855883" iyz="0" izz="0.11618081045"/>
+    </inertial>
+
+    <visual name="link_1">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-TS5-55Z15/P1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="link_1_material">
+        <color rgba="0.84 0.86 0.89 1"/>
+      </material>
+    </visual>
+    <collision name="link_1_collision">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-TS5-55Z15/P1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="link_2">
+
+    <!-- inertial source: bounding-box-fallback -->
+    <inertial>
+      <origin xyz="-0.134470184326 0.000028083801 0.191877731323" rpy="0 0 0"/>
+      <mass value="8.5616152603"/>
+      <inertia ixx="0.077794433151" ixy="0" ixz="0" iyy="0.171491451204" iyz="0" izz="0.117876076731"/>
+    </inertial>
+
+    <visual name="link_2">
+      <origin xyz="-0.275 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-TS5-55Z15/P2.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="link_2_material">
+        <color rgba="0.94 0.95 0.96 1"/>
+      </material>
+    </visual>
+    <collision name="link_2_collision">
+      <origin xyz="-0.275 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-TS5-55Z15/P2.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="link_3">
+
+    <!-- inertial source: bounding-box-fallback -->
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.8076148419"/>
+      <inertia ixx="0.000336506184" ixy="0" ixz="0" iyy="0.000336506184" iyz="0" izz="0.000336506184"/>
+    </inertial>
+  </link>
+
+  <link name="link_4">
+
+    <!-- inertial source: bounding-box-fallback -->
+    <inertial>
+      <origin xyz="-0.000001897812 -0.000103839874 0.1655" rpy="0 0 0"/>
+      <mass value="0.8076148419"/>
+      <inertia ixx="0.007482160608" ixy="0" ixz="0" iyy="0.007481243767" iyz="0" izz="0.00021622276"/>
+    </inertial>
+
+    <visual name="link_4">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-TS5-55Z15/P4.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="link_4_material">
+        <color rgba="0.94 0.95 0.96 1"/>
+      </material>
+    </visual>
+    <collision name="link_4_collision">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-TS5-55Z15/P4.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="J1" type="revolute">
+    <parent link="base_link"/>
+    <child link="link_1"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.926990816987" upper="3.926990816987" effort="1.75" velocity="11.498229112139"/>
+  </joint>
+
+  <joint name="J2" type="revolute">
+    <parent link="link_1"/>
+    <child link="link_2"/>
+    <origin xyz="0.275 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.926990816987" upper="3.926990816987" effort="1.27" velocity="12.320279189828"/>
+  </joint>
+
+  <joint name="J3" type="prismatic">
+    <parent link="link_2"/>
+    <child link="link_3"/>
+    <origin xyz="-0.275 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-0.15" upper="0.00125" effort="0" velocity="0.089242283944"/> <!-- source ratedTrq is torque; prismatic force was not supplied -->
+  </joint>
+
+  <joint name="J4" type="revolute">
+    <parent link="link_3"/>
+    <child link="link_4"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-12.566370614359" upper="12.566370614359" effort="0.48" velocity="34.906585039887"/>
+  </joint>
+
+  <link name="tool0"/>
+  <joint name="tool0_fixed" type="fixed">
+    <parent link="link_4"/>
+    <child link="tool0"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+</robot>

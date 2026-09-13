@@ -23,6 +23,30 @@
     <script src="/Language/runtime/icon-fallback.js" defer></script>
     <script src="/analytics-config.js"></script>
     <script src="/analytics.js" defer></script>
+    <script src="cad-data.js?v=20260913-1"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -517,14 +541,42 @@
             </div>
         </section>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 document-content-grid">
             <!-- Sidebar Filters -->
-            <aside class="lg:col-span-3 space-y-5">
-                <div>
-                    <h3
-                        class="text-sm font-bold font-outfit text-white tracking-wider mb-2 flex items-center gap-2">
-                        <i data-lucide="layers" class="w-4 h-4 text-emerald-500"></i> Hardware Manual
-                    </h3>
+            <aside class="lg:col-span-3 document-sidebar">
+                <div class="filter-panel">
+                    <div class="filter-panel-header">
+                        <div>
+                            <p class="filter-panel-kicker">DOCUMENT FILTERS</p>
+                            <h3 class="filter-panel-title">문서 항목 탐색</h3>
+                        </div>
+                        <div class="filter-panel-actions">
+                            <button type="button" id="expandAllFilters" class="filter-panel-action">펼치기</button>
+                            <button type="button" id="collapseAllFilters" class="filter-panel-action">접기</button>
+                        </div>
+                    </div>
+                <section class="filter-section is-collapsed" data-filter-section>
+                    <button type="button" class="filter-section-toggle" aria-expanded="false">
+                        <span class="flex items-center gap-2"><i data-lucide="boxes" class="w-4 h-4 text-emerald-500"></i> CAD</span>
+                        <i data-lucide="chevron-up" class="filter-section-chevron w-4 h-4"></i>
+                    </button>
+                    <div class="filter-section-content">
+                    <div class="space-y-1" id="cadFilters">
+                        <button class="filter-btn w-full text-left" data-cad="cad">All CAD Files</button>
+                        <button class="filter-btn w-full text-left" data-cad="6axis">6-Axis CAD</button>
+                        <button class="filter-btn w-full text-left" data-cad="scara">SCARA CAD</button>
+                        <button class="filter-btn w-full text-left" data-cad="controller">Controller CAD</button>
+                        <button class="filter-btn w-full text-left" data-cad="accessory">Accessory CAD</button>
+                    </div>
+                    </div>
+                </section>
+
+                <section class="filter-section is-collapsed" data-filter-section>
+                    <button type="button" class="filter-section-toggle" aria-expanded="false">
+                        <span class="flex items-center gap-2"><i data-lucide="layers" class="w-4 h-4 text-emerald-500"></i> Hardware Manual</span>
+                        <i data-lucide="chevron-up" class="filter-section-chevron w-4 h-4"></i>
+                    </button>
+                    <div class="filter-section-content">
                     <div class="space-y-1" id="typeFilters">
                         <button class="filter-btn active w-full text-left" data-type="all">All Model</button>
                         <button class="filter-btn w-full text-left" data-type="scara">SCARA Robots</button>
@@ -534,13 +586,15 @@
                         <button class="filter-btn w-full text-left" data-type="safetyFunction">Safety Function</button>
                         <button class="filter-btn w-full text-left" data-type="selection">Selection Guide</button>
                     </div>
-                </div>
+                    </div>
+                </section>
 
-                <div>
-                    <h3
-                        class="text-sm font-bold font-outfit text-white tracking-wider mb-2 flex items-center gap-2">
-                        <i data-lucide="tag" class="w-4 h-4 text-emerald-500"></i> Software Manual
-                    </h3>
+                <section class="filter-section is-collapsed" data-filter-section>
+                    <button type="button" class="filter-section-toggle" aria-expanded="false">
+                        <span class="flex items-center gap-2"><i data-lucide="tag" class="w-4 h-4 text-emerald-500"></i> Software Manual</span>
+                        <i data-lucide="chevron-up" class="filter-section-chevron w-4 h-4"></i>
+                    </button>
+                    <div class="filter-section-content">
                     <div class="space-y-1" id="catFilters">
                         <button class="filter-btn active w-full text-left" data-cat="all">All Category</button>
                         <button class="filter-btn w-full text-left" data-cat="lab">InoRobotLab</button>
@@ -548,13 +602,15 @@
                         <button class="filter-btn w-full text-left" data-cat="comm">Communication</button>
                         <button class="filter-btn w-full text-left" data-cat="api">Instruction</button>
                     </div>
-                </div>
+                    </div>
+                </section>
 
-                <div>
-                    <h3
-                        class="text-sm font-bold font-outfit text-white tracking-wider mb-2 flex items-center gap-2">
-                        <i data-lucide="graduation-cap" class="w-4 h-4 text-emerald-500"></i> Training Manual
-                    </h3>
+                <section class="filter-section is-collapsed" data-filter-section>
+                    <button type="button" class="filter-section-toggle" aria-expanded="false">
+                        <span class="flex items-center gap-2"><i data-lucide="graduation-cap" class="w-4 h-4 text-emerald-500"></i> Training Manual</span>
+                        <i data-lucide="chevron-up" class="filter-section-chevron w-4 h-4"></i>
+                    </button>
+                    <div class="filter-section-content">
                     <div class="space-y-1" id="eduFilters">
                         <button class="filter-btn active w-full text-left" data-cat="all">All Training Manual</button>
                         <button class="filter-btn w-full text-left" data-cat="entry">Beginner Level</button>
@@ -562,26 +618,30 @@
                         <button class="filter-btn w-full text-left" data-cat="advanced">Application Level</button>
                         <button class="filter-btn w-full text-left" data-cat="display">For Display</button>
                     </div>
-                </div>
+                    </div>
+                </section>
 
-                <div>
-                    <h3
-                        class="text-sm font-bold font-outfit text-white tracking-wider mb-2 flex items-center gap-2">
-                        <i data-lucide="network" class="w-4 h-4 text-emerald-500"></i> Communication Profile
-                    </h3>
+                <section class="filter-section is-collapsed" data-filter-section>
+                    <button type="button" class="filter-section-toggle" aria-expanded="false">
+                        <span class="flex items-center gap-2"><i data-lucide="network" class="w-4 h-4 text-emerald-500"></i> Communication Profile</span>
+                        <i data-lucide="chevron-up" class="filter-section-chevron w-4 h-4"></i>
+                    </button>
+                    <div class="filter-section-content">
                     <div class="space-y-1" id="profileFilters">
                         <button class="filter-btn w-full text-left" data-cat="commProfile">All Profile</button>
                         <button class="filter-btn w-full text-left" data-cat="profile-ethercat">EtherCAT</button>
                         <button class="filter-btn w-full text-left" data-cat="profile-profinet">PROFINET</button>
                         <button class="filter-btn w-full text-left" data-cat="profile-ethernetip">EtherNet/IP</button>
                     </div>
-                </div>
+                    </div>
+                </section>
 
-                <div>
-                    <h3
-                        class="text-sm font-bold font-outfit text-white tracking-wider mb-2 flex items-center gap-2">
-                        <i data-lucide="badge-check" class="w-4 h-4 text-emerald-500"></i> Certificate
-                    </h3>
+                <section class="filter-section is-collapsed" data-filter-section>
+                    <button type="button" class="filter-section-toggle" aria-expanded="false">
+                        <span class="flex items-center gap-2"><i data-lucide="badge-check" class="w-4 h-4 text-emerald-500"></i> Certificate</span>
+                        <i data-lucide="chevron-up" class="filter-section-chevron w-4 h-4"></i>
+                    </button>
+                    <div class="filter-section-content">
                     <div class="space-y-1" id="certFilters">
                         <button class="filter-btn w-full text-left" data-cat="cert-kc">KCs</button>
                         <div class="certificate-subfilters space-y-1 ml-3 pl-3 border-l border-white/10" id="kcsFilters">
@@ -599,6 +659,8 @@
                         <button class="filter-btn w-full text-left" data-cat="cert-fs">Safety</button>
                         <button class="filter-btn w-full text-left" data-cat="cert-mtbf">MTBF</button>
                     </div>
+                    </div>
+                </section>
                 </div>
             </aside>
 
@@ -628,6 +690,117 @@
             z-index: -1;
             filter: blur(100px);
             pointer-events: none;
+        }
+
+        .document-content-grid {
+            align-items: start;
+        }
+
+        .document-sidebar {
+            position: sticky;
+            top: 88px;
+            max-height: calc(100vh - 104px);
+            overflow-y: auto;
+            padding-right: 0.35rem;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(100, 116, 139, 0.45) transparent;
+        }
+
+        .filter-panel {
+            padding: 0.85rem;
+            border-radius: 1.25rem;
+            background: rgba(15, 23, 42, 0.52);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        .filter-panel-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.35rem 0.35rem 0.7rem;
+        }
+
+        .filter-panel-kicker {
+            margin: 0 0 0.2rem;
+            color: #10b981;
+            font-size: 0.6rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+        }
+
+        .filter-panel-title {
+            margin: 0;
+            color: #f8fafc;
+            font-size: 0.95rem;
+            font-weight: 800;
+        }
+
+        .filter-panel-actions {
+            display: flex;
+            flex-shrink: 0;
+            gap: 0.3rem;
+        }
+
+        .filter-panel-action {
+            padding: 0.3rem 0.4rem;
+            color: #64748b;
+            font-size: 0.65rem;
+            font-weight: 700;
+            transition: color 0.2s ease;
+        }
+
+        .filter-panel-action:hover {
+            color: #a7f3d0;
+        }
+
+        .filter-section + .filter-section {
+            margin-top: 0.45rem;
+        }
+
+        .filter-section-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0.55rem 0.45rem;
+            border-radius: 0.65rem;
+            color: #e2e8f0;
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-align: left;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        .filter-section-toggle:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.045);
+        }
+
+        .filter-section-chevron {
+            color: #64748b;
+            transition: transform 0.2s ease;
+        }
+
+        .filter-section.is-collapsed .filter-section-chevron {
+            transform: rotate(180deg);
+        }
+
+        .filter-section-content {
+            padding: 0.1rem 0 0.35rem;
+        }
+
+        .filter-section.is-collapsed .filter-section-content {
+            display: none;
+        }
+
+        @media (max-width: 1023px) {
+            .document-sidebar {
+                position: static;
+                max-height: none;
+                overflow: visible;
+                padding-right: 0;
+            }
         }
 
         .filter-btn {
@@ -734,7 +907,7 @@
             }
         }
     </style>
-    <script src="script.js?v=20260729-1"></script>
+    <script src="script.js?v=20260913-1"></script>
     <script src="/0_Home/tool-guide-embed.js?v=20260813-10"></script>
 </body>
 

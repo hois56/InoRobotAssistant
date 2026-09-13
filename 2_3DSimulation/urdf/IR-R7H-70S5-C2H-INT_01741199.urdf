@@ -1,0 +1,234 @@
+<?xml version="1.0"?>
+<!-- Generated from IR-R7H-70S5-C2H-INT_01741199.json and models.json. Coordinates are Z-up; mesh units are millimetres and converted with mesh scale 0.001. -->
+<robot name="IR-R7H-70S5-C2H-INT_01741199">
+  <!-- Payload limit from controller JSON: 7 kg -->
+  <link name="base_link">
+
+    <visual name="base">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R7H-70/P0.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="base_material">
+        <color rgba="0.31 0.35 0.41 1"/>
+      </material>
+    </visual>
+    <collision name="base_collision">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R7H-70/P0.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="link_1">
+
+    <!-- inertial source: bounding-box-fallback -->
+    <inertial>
+      <origin xyz="0.013009899139 -0.000001522064 0.306500595093" rpy="0 0 0"/>
+      <mass value="4.828"/>
+      <inertia ixx="0.042102587524" ixy="0" ixz="0" iyy="0.034982620111" iyz="0" izz="0.041260238816"/>
+    </inertial>
+
+    <visual name="link_1">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R7H-70/P1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="link_1_material">
+        <color rgba="0.84 0.86 0.89 1"/>
+      </material>
+    </visual>
+    <collision name="link_1_collision">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R7H-70/P1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="link_2">
+
+    <!-- inertial source: controller-json -->
+    <inertial>
+      <origin xyz="-0.0077202317 0.1219436084 0.0188713289" rpy="0 0 0"/>
+      <mass value="10.3439124404"/>
+      <inertia ixx="0.1415079199" ixy="0.000722" ixz="-0.000307" iyy="0.0463665039" iyz="0.0074019302" izz="0.1499608914"/>
+    </inertial>
+
+    <visual name="link_2">
+      <origin xyz="-0.05 0 -0.35" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R7H-70/P2.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="link_2_material">
+        <color rgba="0.94 0.95 0.96 1"/>
+      </material>
+    </visual>
+    <collision name="link_2_collision">
+      <origin xyz="-0.05 0 -0.35" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R7H-70/P2.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="link_3">
+
+    <!-- inertial source: controller-json -->
+    <inertial>
+      <origin xyz="0.0097972619 -0.0084625904 0.0097142666" rpy="0 0 0"/>
+      <mass value="3.0792925264"/>
+      <inertia ixx="0.0122419308" ixy="0.001512" ixz="0.000296" iyy="0.0113776961" iyz="-0.0000231613" izz="0.0151689793"/>
+    </inertial>
+
+    <visual name="link_3">
+      <origin xyz="-0.05 0 -0.68" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R7H-70/P3.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="link_3_material">
+        <color rgba="0.84 0.86 0.89 1"/>
+      </material>
+    </visual>
+    <collision name="link_3_collision">
+      <origin xyz="-0.05 0 -0.68" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R7H-70/P3.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="link_4">
+
+    <!-- inertial source: controller-json -->
+    <inertial>
+      <origin xyz="-0.000152 0.0029379066 0.1741207804" rpy="0 0 0"/>
+      <mass value="4.7813750891"/>
+      <inertia ixx="0.033497232" ixy="0.0000477" ixz="-0.0000123" iyy="0.0397227399" iyz="-0.000133" izz="0.0111380103"/>
+    </inertial>
+
+    <visual name="link_4">
+      <origin xyz="-0.05 0 -0.72" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R7H-70/P4.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="link_4_material">
+        <color rgba="0.94 0.95 0.96 1"/>
+      </material>
+    </visual>
+    <collision name="link_4_collision">
+      <origin xyz="-0.05 0 -0.72" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R7H-70/P4.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="link_5">
+
+    <!-- inertial source: controller-json -->
+    <inertial>
+      <origin xyz="-0.0000494 -0.0161822016 0.00223" rpy="0 0 0"/>
+      <mass value="1.3430479759"/>
+      <inertia ixx="0.0024805966" ixy="-0.0000005501" ixz="0.00000127" iyy="0.00163" iyz="-0.0000631" izz="0.0020346096"/>
+    </inertial>
+
+    <visual name="link_5">
+      <origin xyz="-0.39 0 -0.72" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R7H-70/P5.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="link_5_material">
+        <color rgba="0.84 0.86 0.89 1"/>
+      </material>
+    </visual>
+    <collision name="link_5_collision">
+      <origin xyz="-0.39 0 -0.72" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R7H-70/P5.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="link_6">
+
+    <!-- inertial source: controller-json -->
+    <inertial>
+      <origin xyz="-0.0000168 0.00000524 0.0718959753" rpy="0 0 0"/>
+      <mass value="0.5857143936"/>
+      <inertia ixx="0.000371" ixy="-0.00000112" ixz="0.000000168" iyy="0.00037" iyz="-0.000000005" izz="0.0007384"/>
+    </inertial>
+
+    <visual name="link_6">
+      <origin xyz="-0.468 0 -0.72" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R7H-70/P6.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="link_6_material">
+        <color rgba="0.94 0.95 0.96 1"/>
+      </material>
+    </visual>
+    <collision name="link_6_collision">
+      <origin xyz="-0.468 0 -0.72" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R7H-70/P6.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="J1" type="revolute">
+    <parent link="base_link"/>
+    <child link="link_1"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.96705972839" upper="2.96705972839" effort="1.6" velocity="7.330382858376"/>
+  </joint>
+
+  <joint name="J2" type="revolute">
+    <parent link="link_1"/>
+    <child link="link_2"/>
+    <origin xyz="0.05 0 0.35" rpy="0 0 0"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="-2.356194490192" upper="1.396263401595" effort="1.6" velocity="5.864306286701"/>
+  </joint>
+
+  <joint name="J3" type="revolute">
+    <parent link="link_2"/>
+    <child link="link_3"/>
+    <origin xyz="0 0 0.33" rpy="0 0 0"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="-1.221730476396" upper="3.316125578789" effort="1.27" velocity="8.508480103472"/>
+  </joint>
+
+  <joint name="J4" type="revolute">
+    <parent link="link_3"/>
+    <child link="link_4"/>
+    <origin xyz="0 0 0.04" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-3.316125578789" upper="3.316125578789" effort="0.48" velocity="9.599310885969"/>
+  </joint>
+
+  <joint name="J5" type="revolute">
+    <parent link="link_4"/>
+    <child link="link_5"/>
+    <origin xyz="0.34 0 0" rpy="0 0 0"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="-2.094395102393" upper="2.094395102393" effort="0.29" velocity="7.644542123735"/>
+  </joint>
+
+  <joint name="J6" type="revolute">
+    <parent link="link_5"/>
+    <child link="link_6"/>
+    <origin xyz="0.078 0 0" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-6.28318530718" upper="6.28318530718" effort="0.48" velocity="13.346532790001"/>
+  </joint>
+
+  <link name="tool0"/>
+  <joint name="tool0_fixed" type="fixed">
+    <parent link="link_6"/>
+    <child link="tool0"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+</robot>

@@ -41,6 +41,39 @@ document.addEventListener('DOMContentLoaded', () => {
         return match ? `${match[1]} ${uiText('핀')}` : uiText(pin);
     }
 
+    function formatHollowWrist(value) {
+        const normalized = String(value ?? '').trim().toLowerCase();
+        if (normalized === 'yes') return uiText('중공형');
+        if (normalized === 'no') return uiText('비중공형');
+        return uiText(value || '-');
+    }
+
+    function formatCleanTypeFilter(value) {
+        const normalized = String(value ?? '').trim().toLowerCase();
+        if (normalized === 'yes') return uiText('클린형');
+        if (normalized === 'no') return uiText('기본형');
+        return uiText(value || '-');
+    }
+
+    function supportsCleanTypeOption(product) {
+        return product?.specs?.Type === '6-Axis' && !isFixedBodySpecModel(product.name);
+    }
+
+    function matchesFilterOption(product, categoryId, optionId) {
+        const productValue = String(product?.specs?.[categoryId] ?? '');
+        if (categoryId === 'Clean Type' && optionId === 'Yes') {
+            return productValue === 'Yes' || supportsCleanTypeOption(product);
+        }
+        return productValue === optionId;
+    }
+
+    function matchesActiveFilterConstraints(product, constraints, excludedCategoryId = null) {
+        return Object.entries(constraints).every(([categoryId, optionIds]) => {
+            if (categoryId === excludedCategoryId) return true;
+            return optionIds.some(optionId => matchesFilterOption(product, categoryId, optionId));
+        });
+    }
+
     let state = {
         filters: JSON.parse(JSON.stringify(filtersData)),
         products: JSON.parse(JSON.stringify(productsData)),
@@ -118,16 +151,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     isValid = state.products.some(p => {
                         if (isHiddenProduct(p)) return false;
-                        if (String(p.specs[filterCategory.id]) !== opt.id) return false;
-
-                        for (const catId in activeConstraints) {
-                            if (catId === filterCategory.id) continue;
-                            const productVal = String(p.specs[catId]);
-                            if (!activeConstraints[catId].includes(productVal)) {
-                                return false;
-                            }
-                        }
-                        return true;
+                        return matchesFilterOption(p, filterCategory.id, opt.id)
+                            && matchesActiveFilterConstraints(p, activeConstraints, filterCategory.id);
                     });
                 }
 
@@ -136,7 +161,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const btn = document.createElement('button');
                 btn.className = opt.isSelected ? 'filter-option active' : 'filter-option';
-                btn.textContent = uiText(opt.label);
+                btn.textContent = filterCategory.id === 'Hollow Wrist'
+                    ? formatHollowWrist(opt.id)
+                    : filterCategory.id === 'Clean Type'
+                        ? formatCleanTypeFilter(opt.id)
+                        : uiText(opt.label);
                 btn.dataset.filterId = filterCategory.id;
                 btn.dataset.optionId = opt.id;
                 btn.addEventListener('click', () => {
@@ -167,12 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const filteredProducts = state.products.filter(product => {
             if (isHiddenProduct(product)) return false;
 
-            for (const catId in activeConstraints) {
-                const productVal = String(product.specs[catId]);
-                if (!activeConstraints[catId].includes(productVal)) {
-                    return false;
-                }
-            }
+            if (!matchesActiveFilterConstraints(product, activeConstraints)) return false;
             return true;
         });
 
@@ -268,7 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 extraSpecsHTML = `
                     <div class="spec-row">
                         <span>${uiText('중공형')}</span>
-                        <span class="spec-value">${uiText(product.specs['Hollow Wrist'] || '-')}</span>
+                        <span class="spec-value">${formatHollowWrist(product.specs['Hollow Wrist'])}</span>
                     </div>
                 `;
             }
@@ -315,12 +339,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (opt.isSelected) {
                     let isValid = state.products.some(p => {
                         if (isHiddenProduct(p)) return false;
-                        if (String(p.specs[cat.id]) !== opt.id) return false;
-                        for (const cId in activeConstraints) {
-                            if (cId === cat.id) continue;
-                            if (!activeConstraints[cId].includes(String(p.specs[cId]))) return false;
-                        }
-                        return true;
+                        return matchesFilterOption(p, cat.id, opt.id)
+                            && matchesActiveFilterConstraints(p, activeConstraints, cat.id);
                     });
                     if (!isValid) opt.isSelected = false;
                 }
@@ -1147,7 +1167,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>리치(Reach)</strong></td><td colspan="2" style="text-align:right;">${product.specs['Manipulator Length(mm)'] || '-'} mm</td></tr>
                     ${isScara ? `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>로봇 타입</strong></td><td colspan="2" style="text-align:right;">${scaraSubtype}</td></tr>` : ''}
                     ${isScara ? `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>Z축 길이</strong></td><td colspan="2" style="text-align:right;">${product.specs['Z axis Length(mm)'] || '-'} mm</td></tr>` : ''}
-                    ${is6Axis ? `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>중공형(Hollow Wrist)</strong></td><td colspan="2" style="text-align:right;">${product.specs['Hollow Wrist'] || '-'}</td></tr>` : ''}
+                    ${is6Axis ? `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>중공형(Hollow Wrist)</strong></td><td colspan="2" style="text-align:right;">${formatHollowWrist(product.specs['Hollow Wrist'])}</td></tr>` : ''}
                     <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>클린 타입</strong></td><td colspan="2" style="text-align:right;">${getCleanTypeDisplay(product)}</td></tr>
                     <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>${uiText('호환 컨트롤러')}</strong></td><td colspan="2" style="text-align:right; white-space:nowrap;">${getCompatibleController(product)}</td></tr>
                     <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>방수 방진 등급</strong></td><td colspan="2" style="text-align:right;">${ipRating}</td></tr>
@@ -1334,9 +1354,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Arm - Dynamic for multiple pin types
             const armSelections = Array.from(rightCol.querySelectorAll('input[name^="armSelection_"]:checked'));
+            const selectedIoCableSet = rightCol.querySelector('input[name="ioCableSetSelection"]:checked');
             const armHeader = rightCol.querySelector('#header-arm');
             if (armHeader) {
-                const armCodes = armSelections.filter(s => s.value !== 'none').map(s => s.value);
+                const armCodes = selectedIoCableSet
+                    ? [selectedIoCableSet.getAttribute('data-code') || selectedIoCableSet.value]
+                    : armSelections.filter(s => s.value !== 'none').map(s => s.value);
                 const codeHtml = armCodes.length > 0 ? armCodes.map(c => `<span class="code-badge">${c}</span>`).join('') : '';
                 armHeader.innerHTML = `${uiText('Arm I/O 케이블 구성 (유로 옵션)')} ${codeHtml}`;
             }
@@ -1345,7 +1368,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const bodySelections = Array.from(rightCol.querySelectorAll('input[name^="bodySelection_"]:checked'));
             const bodyHeader = rightCol.querySelector('#header-body');
             if (bodyHeader) {
-                const bodyCodes = bodySelections.filter(s => s.value !== 'none').map(s => s.value);
+                const bodyCodes = selectedIoCableSet
+                    ? [selectedIoCableSet.getAttribute('data-code') || selectedIoCableSet.value]
+                    : bodySelections.filter(s => s.value !== 'none').map(s => s.value);
                 const codeHtml = bodyCodes.length > 0 ? bodyCodes.map(c => `<span class="code-badge">${c}</span>`).join('') : '';
                 bodyHeader.innerHTML = `${uiText('Body I/O 케이블 구성 (유로 옵션)')} ${codeHtml}`;
             }
@@ -1555,9 +1580,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 2. Arm / Body Cable Logic (Requirement 4)
         if (product.specs.Type === '6-Axis') {
-            // Group Arm I/O by pins
             const armContainer = rightCol.querySelector('#arm-container');
             const armOptions = accs.filter(a => a.name === 'Robot arm I/O cable' && isModelMatch(a.target_models, prodName));
+            const bodyContainer = rightCol.querySelector('#body-container');
+            const bodyOptions = accs.filter(a => a.name === 'Robot Body I/O cable' && isModelMatch(a.target_models, prodName));
+
+            // R15H/R20H Arm and Body I/O cables are sold as one selectable set.
+            const ioSetGroups = {};
+            [...armOptions, ...bodyOptions].forEach(opt => {
+                if (!opt.setId) return;
+                if (!ioSetGroups[opt.setId]) ioSetGroups[opt.setId] = {};
+                if (opt.name === 'Robot arm I/O cable') ioSetGroups[opt.setId].arm = opt;
+                if (opt.name === 'Robot Body I/O cable') ioSetGroups[opt.setId].body = opt;
+            });
+            const pairedIoCableSets = Object.entries(ioSetGroups)
+                .filter(([, set]) => set.arm && set.body)
+                .map(([setId, set]) => ({ setId, ...set }));
+
+            if (pairedIoCableSets.length > 0) {
+                armContainer.innerHTML = '';
+                const groupDiv = document.createElement('div');
+                groupDiv.style.marginBottom = '12px';
+                groupDiv.innerHTML = `<div style="font-size:12px; margin-bottom:5px; color:#aaa;">${uiText('케이블 선택')}</div>
+                    <div style="display:flex; flex-direction:column; gap:10px;" id="io-cable-set-radios"></div>`;
+                armContainer.appendChild(groupDiv);
+
+                const radios = groupDiv.querySelector('#io-cable-set-radios');
+                pairedIoCableSets.forEach((set, index) => {
+                    const armPin = getPinCount(set.arm.description) || '기본핀';
+                    const bodyPin = getPinCount(set.body.description) || '기본핀';
+                    const armSpec = set.arm.spec === '-' ? uiText('커넥터만') : set.arm.spec;
+                    const bodySpec = set.body.spec === '-' ? uiText('커넥터만') : set.body.spec;
+                    const label = document.createElement('label');
+                    label.className = 'cable-option';
+                    label.style.margin = '0';
+                    label.innerHTML = `<input type="radio" name="ioCableSetSelection" value="${set.setId}" ${index === 0 ? 'checked' : ''} data-code="${set.arm.code}" data-arm-pin="${armPin}" data-arm-desc="${set.arm.description}" data-arm-spec="${set.arm.spec || ''}" data-body-pin="${bodyPin}" data-body-desc="${set.body.description}" data-body-spec="${set.body.spec || ''}">
+                        <span><strong>${set.arm.code}</strong><small style="display:block; margin-top:4px; color:var(--text-muted); line-height:1.5;">${uiText('Arm I/O 케이블')}: ${formatPinCount(armPin)} ${armSpec}<br>${uiText('Body I/O 케이블')}: ${formatPinCount(bodyPin)} ${bodySpec}</small></span>`;
+                    radios.appendChild(label);
+                });
+                radios.addEventListener('change', updateHeaderCodes);
+                bodyContainer.innerHTML = `<span style="font-size:13px; color:#999;">${uiText('Arm/Body I/O 케이블은 세트로 선택됩니다.')}</span>`;
+            } else {
+            // Group Arm I/O by pins
             
             if (armOptions.length > 0) {
                 armContainer.innerHTML = '';
@@ -1593,9 +1657,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Group Body I/O by pins
-            const bodyContainer = rightCol.querySelector('#body-container');
-            const bodyOptions = accs.filter(a => a.name === 'Robot Body I/O cable' && isModelMatch(a.target_models, prodName));
-            
             if (bodyOptions.length > 0) {
                 bodyContainer.innerHTML = '';
                 const bodyPinGroups = {};
@@ -1627,6 +1688,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             } else {
                 bodyContainer.innerHTML = `<span style="font-size:13px; color:#999;">${uiText('해당 모델에 호환되는 Body 케이블 옵션이 없습니다.')}</span>`;
+            }
             }
         }
 
@@ -1806,6 +1868,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Arm / Body I/O (Multi-pin)
+        const selectedIoCableSet = document.querySelector('input[name="ioCableSetSelection"]:checked');
+        if (selectedIoCableSet) {
+            const armPin = selectedIoCableSet.getAttribute('data-arm-pin') || '기본핀';
+            const bodyPin = selectedIoCableSet.getAttribute('data-body-pin') || '기본핀';
+            const armDesc = selectedIoCableSet.getAttribute('data-arm-desc') || '';
+            const bodyDesc = selectedIoCableSet.getAttribute('data-body-desc') || '';
+            const armLen = selectedIoCableSet.getAttribute('data-arm-spec') || '';
+            const bodyLen = selectedIoCableSet.getAttribute('data-body-spec') || '';
+            const code = selectedIoCableSet.getAttribute('data-code') || selectedIoCableSet.value;
+            selectedAccs.push({
+                name: `${uiText('Arm I/O 케이블')} (${formatPinCount(armPin)})`,
+                details: `${uiText(armDesc)}${armLen && armLen !== '-' ? ` (${uiText('길이:')} ${armLen})` : ''}`,
+                code
+            });
+            selectedAccs.push({
+                name: `${uiText('Body I/O 케이블')} (${formatPinCount(bodyPin)})`,
+                details: `${uiText(bodyDesc)}${bodyLen && bodyLen !== '-' ? ` (${uiText('길이:')} ${bodyLen})` : ''}`,
+                code
+            });
+        } else {
         document.querySelectorAll('input[name^="armSelection_"]:checked').forEach(sel => {
             if (sel.value !== 'none') {
                 const pinLabel = sel.name.split('_')[1];
@@ -1832,6 +1914,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         });
+        }
 
         // Other Accs
         document.querySelectorAll('input[name="accSelection"]:checked').forEach(cb => {
@@ -2007,7 +2090,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>리치(Reach)</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${currentActiveProduct.specs['Manipulator Length(mm)'] || '-'} mm</td></tr>
                     ${currentActiveProduct.specs.Type === 'SCARA' ? `<tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>로봇 타입</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${scaraSubtype}</td></tr>` : ''}
                     ${currentActiveProduct.specs.Type === 'SCARA' ? `<tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Z축 길이</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${currentActiveProduct.specs['Z axis Length(mm)'] || '-'} mm</td></tr>` : ''}
-                    ${currentActiveProduct.specs.Type === '6-Axis' ? `<tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>중공형(Hollow Wrist)</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${currentActiveProduct.specs['Hollow Wrist'] || '-'}</td></tr>` : ''}
+                    ${currentActiveProduct.specs.Type === '6-Axis' ? `<tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>중공형(Hollow Wrist)</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${formatHollowWrist(currentActiveProduct.specs['Hollow Wrist'])}</td></tr>` : ''}
                     <tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>클린 타입</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${localizeDisplayText(cleanType)}</td></tr>
                     <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>반복 정밀도</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${formatRepeatability(repeatability)}</td></tr>
                     <tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>방수 방진 등급</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${ipRating}</td></tr>

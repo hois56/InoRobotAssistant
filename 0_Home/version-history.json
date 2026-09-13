@@ -59,6 +59,20 @@
             "title": "Robot Model Select",
             "versions": [
               {
+                "title": "Ver 26.09.12",
+                "items": [
+                  "`[정리]` 실제 기능에 사용되지 않는 `Robot_CAD` 폴더의 FBX 파일 34개를 삭제하여 약 470.5MB의 저장 공간을 정리했습니다.",
+                  "`[변경]` 케이블 구성에서 플렉시블·유연형을 가동형으로, 기본형·논플렉시블을 비가동형으로 표시하도록 변경했습니다.",
+                  "`[추가]` R15H·R20H 모델에 Arm I/O와 Body I/O가 함께 구성되는 케이블 세트 `1504UP81`·`1504CU41`을 추가했습니다.",
+                  "`[수정]` R15H·R20H 모델 상세 화면에서 리치, 속도, 반복 정밀도 등 세부 사양이 누락되던 문제를 수정했습니다.",
+                  "`[수정]` R15H·R20H 모델의 기본 방진·방수 등급이 `IP40`으로 표시되던 문제를 `IP54`로 수정했습니다.",
+                  "`[수정]` R15H·R20H 모델에서 컨트롤러 확장 카드와 리모트 커플러 옵션이 표시되지 않던 문제를 수정했습니다.",
+                  "`[변경]` 6축 로봇의 중공형 표기를 `Yes/없음`에서 `중공형/비중공형`으로 변경했습니다.",
+                  "`[변경]` 클린 타입 필터의 `Yes/No` 표기를 `기본형/클린형`으로 변경했습니다.",
+                  "`[수정]` 클린형 필터를 선택하면 클린형 바디 옵션을 지원하는 6축 로봇도 함께 표시되도록 수정했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.09.09",
                 "items": [
                   "`[수정]` R10H 모델 셀렉트에서 J4·J5·J6 속도가 잘못 표시되던 문제를 `470°/s`·`438°/s`·`764.7°/s`로 수정했습니다.",
@@ -196,6 +210,12 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.09.12",
+                "items": [
+                  "`[정리]` 현재 로봇 모델 로딩에 사용되지 않는 구형 FBX 파일 29개를 삭제하여 약 412.0MB의 저장 공간을 정리했습니다."
+                ]
+              },
               {
                 "title": "Ver 26.09.11",
                 "items": [
@@ -530,6 +550,15 @@
           {
             "title": "Document",
             "versions": [
+              {
+                "title": "Ver 26.09.13",
+                "items": [
+                  "`[추가]` 문서 목록에 모델별 CAD 파일을 다른 문서와 동일한 방식으로 다운로드할 수 있는 CAD 분류를 추가했습니다.",
+                  "`[개선]` 왼쪽 문서 항목 탐색에 CAD 탭을 추가하고, 모든 탐색 그룹이 기본적으로 접힌 상태로 시작하도록 개선했습니다.",
+                  "`[개선]` CAD 문서를 모델별 카드로 묶고 미리보기 대신 2D·3D 다운로드 버튼만 표시하도록 개선했습니다.",
+                  "`[개선]` 왼쪽 문서 항목 탐색에서 CAD 탭이 하드웨어 매뉴얼보다 먼저 표시되도록 순서를 조정했습니다."
+                ]
+              },
               {
                 "title": "Ver 26.08.14",
                 "items": [
@@ -1493,6 +1522,15 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.09.13",
+                "items": [
+                  "**[Added]** Added a CAD category to the document list so model-specific CAD files use the same download cards as other documents.",
+                  "**[Improved]** Added a CAD tab to the left document navigation and made all navigation groups start collapsed while retaining the contained scroll area.",
+                  "**[Improved]** Grouped CAD documents by model and replaced CAD previews with dedicated 2D and 3D download buttons.",
+                  "**[Improved]** Reordered the left document navigation so the CAD tab appears before Hardware Manuals."
+                ]
+              },
+              {
                 "title": "Ver 26.08.14",
                 "items": [
                   "`[Fixed]` Replaced the KCs certificates for seven 6-axis robot models with their recertified 6axis versions, resolving the incorrect 4axis designation."
@@ -2454,6 +2492,15 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.09.13",
+                "items": [
+                  "`[新增]` 在文档列表中添加 CAD 分类，使按型号下载的 CAD 文件使用与其他文档相同的卡片。",
+                  "`[改进]` 在左侧文档导航中添加 CAD 标签，并让所有导航分组默认折叠，同时保留固定滚动区域。",
+                  "`[改进]` 按型号合并 CAD 文档卡片，并将 CAD 预览替换为专用的 2D 和 3D 下载按钮。",
+                  "`[改进]` 调整左侧文档导航顺序，使 CAD 标签显示在硬件手册之前。"
+                ]
+              },
+              {
                 "title": "Ver 26.08.14",
                 "items": [
                   "`[修复]` 已将 7 款六轴机器人型号的 KCs 认证书替换为重新认证的 6axis 版本，解决了错误标注为 4axis 的问题。"
@@ -3414,6 +3461,15 @@
           {
             "title": "Document",
             "versions": [
+              {
+                "title": "Ver 26.09.13",
+                "items": [
+                  "`[Thêm mới]` Thêm nhóm CAD vào danh sách tài liệu để tệp CAD theo model dùng cùng thẻ tải xuống như các tài liệu khác.",
+                  "`[Cải tiến]` Thêm tab CAD vào phần điều hướng tài liệu bên trái và đặt tất cả nhóm ở trạng thái thu gọn mặc định, đồng thời giữ vùng cuộn cố định.",
+                  "`[Cải tiến]` Gộp tài liệu CAD theo model và thay phần xem trước bằng các nút tải xuống 2D và 3D riêng.",
+                  "`[Cải tiến]` Sắp xếp lại điều hướng tài liệu bên trái để tab CAD hiển thị trước Hardware Manuals."
+                ]
+              },
               {
                 "title": "Ver 26.08.14",
                 "items": [

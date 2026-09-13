@@ -1,0 +1,182 @@
+<?xml version="1.0"?>
+<!-- Generated from IR-S60-120Z40S5-A1LSSH-INT_01741335.json and models.json. Coordinates are Z-up; mesh units are millimetres and converted with mesh scale 0.001. -->
+<robot name="IR-S60-120Z40S5-A1LSSH-INT_01741335">
+  <!-- Payload limit from controller JSON: 60 kg -->
+  <link name="base_link">
+
+    <visual name="base">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-S60-120Z40/P0.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="base_material">
+        <color rgba="0.31 0.35 0.41 1"/>
+      </material>
+    </visual>
+    <collision name="base_collision">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-S60-120Z40/P0.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+
+    <visual name="conduit">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-S60-120Z40/TUBE.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="conduit_material">
+        <color rgba="0.16 0.17 0.18 1"/>
+      </material>
+    </visual>
+    <collision name="conduit_collision">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-S60-120Z40/TUBE.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="link_1">
+
+    <!-- inertial source: bounding-box-fallback -->
+    <inertial>
+      <origin xyz="0.30000623703 -0.000000019073 0.098757995605" rpy="0 0 0"/>
+      <mass value="25.7726918119"/>
+      <inertia ixx="0.208427109001" ixy="0" ixz="0" iyy="1.583598688066" iyz="0" izz="1.59802974908"/>
+    </inertial>
+
+    <visual name="link_1">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-S60-120Z40/P1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="link_1_material">
+        <color rgba="0.84 0.86 0.89 1"/>
+      </material>
+    </visual>
+    <collision name="link_1_collision">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-S60-120Z40/P1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="link_2">
+
+    <!-- inertial source: bounding-box-fallback -->
+    <inertial>
+      <origin xyz="0.284180465698 0.000008460999 0.429349967957" rpy="0 0 0"/>
+      <mass value="42.1592263001"/>
+      <inertia ixx="1.931286982529" ixy="0" ixz="0" iyy="3.854300789726" iyz="0" izz="2.374968314679"/>
+    </inertial>
+
+    <visual name="link_2">
+      <origin xyz="-0.6 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-S60-120Z40/P2.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="link_2_material">
+        <color rgba="0.94 0.95 0.96 1"/>
+      </material>
+    </visual>
+    <collision name="link_2_collision">
+      <origin xyz="-0.6 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-S60-120Z40/P2.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="link_3">
+
+    <!-- inertial source: bounding-box-fallback -->
+    <inertial>
+      <origin xyz="-0.030158996582 -0.000002090454 0.365499985695" rpy="0 0 0"/>
+      <mass value="2"/>
+      <inertia ixx="0.092289175962" ixy="0" ixz="0" iyy="0.091724441632" iyz="0" izz="0.005893270319"/>
+    </inertial>
+
+    <visual name="link_3">
+      <origin xyz="-1.2 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-S60-120Z40/P3.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="link_3_material">
+        <color rgba="0.84 0.86 0.89 1"/>
+      </material>
+    </visual>
+    <collision name="link_3_collision">
+      <origin xyz="-1.2 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-S60-120Z40/P3.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="link_4">
+
+    <!-- inertial source: bounding-box-fallback -->
+    <inertial>
+      <origin xyz="0.000000244141 0 0.385" rpy="0 0 0"/>
+      <mass value="1.9156446409"/>
+      <inertia ixx="0.094748582124" ixy="0" ixz="0" iyy="0.094748586022" iyz="0" izz="0.000199550214"/>
+    </inertial>
+
+    <visual name="link_4">
+      <origin xyz="-1.2 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-S60-120Z40/P4.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="link_4_material">
+        <color rgba="0.94 0.95 0.96 1"/>
+      </material>
+    </visual>
+    <collision name="link_4_collision">
+      <origin xyz="-1.2 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-S60-120Z40/P4.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="J1" type="revolute">
+    <parent link="base_link"/>
+    <child link="link_1"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.356194490192" upper="2.356194490192" effort="5.7" velocity="3.895574890451"/>
+  </joint>
+
+  <joint name="J2" type="revolute">
+    <parent link="link_1"/>
+    <child link="link_2"/>
+    <origin xyz="0.6 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.617993877991" upper="2.617993877991" effort="2.39" velocity="4.586725274241"/>
+  </joint>
+
+  <joint name="J3" type="prismatic">
+    <parent link="link_2"/>
+    <child link="link_3"/>
+    <origin xyz="0.6 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-0.4" upper="0.002" effort="0" velocity="0.071222222222"/> <!-- source ratedTrq is torque; prismatic force was not supplied -->
+  </joint>
+
+  <joint name="J4" type="revolute">
+    <parent link="link_3"/>
+    <child link="link_4"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-6.28318530718" upper="6.28318530718" effort="1.27" velocity="10.471975511966"/>
+  </joint>
+
+  <link name="tool0"/>
+  <joint name="tool0_fixed" type="fixed">
+    <parent link="link_4"/>
+    <child link="tool0"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+</robot>
