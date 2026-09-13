@@ -1,0 +1,234 @@
+<?xml version="1.0"?>
+<!-- Generated from IR-R15H-145S5-C1NH-INT_01741446.json and models.json. Coordinates are Z-up; mesh units are millimetres and converted with mesh scale 0.001. -->
+<robot name="IR-R15H-145S5-C1NH-INT_01741446">
+  <!-- Payload limit from controller JSON: 15 kg -->
+  <link name="base_link">
+
+    <visual name="base">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R15H-145/P0.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="base_material">
+        <color rgba="0.31 0.35 0.41 1"/>
+      </material>
+    </visual>
+    <collision name="base_collision">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R15H-145/P0.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="link_1">
+
+    <!-- inertial source: bounding-box-fallback -->
+    <inertial>
+      <origin xyz="0.048762664795 0.004947761536 0.407161254883" rpy="0 0 0"/>
+      <mass value="46.858942412262"/>
+      <inertia ixx="1.353415968912" ixy="0" ixz="0" iyy="1.331756180531" iyz="0" izz="1.383059986295"/>
+    </inertial>
+
+    <visual name="link_1">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R15H-145/P1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="link_1_material">
+        <color rgba="0.84 0.86 0.89 1"/>
+      </material>
+    </visual>
+    <collision name="link_1_collision">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R15H-145/P1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="link_2">
+
+    <!-- inertial source: controller-json -->
+    <inertial>
+      <origin xyz="-0.00534123266 0.28587 0.029611942199" rpy="0 0 0"/>
+      <mass value="43.407"/>
+      <inertia ixx="2.813909177349" ixy="0.000772" ixz="-0.00354" iyy="0.456936791507" iyz="-0.04965409291" izz="2.079214834144"/>
+    </inertial>
+
+    <visual name="link_2">
+      <origin xyz="-0.15 0 -0.5" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R15H-145/P2.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="link_2_material">
+        <color rgba="0.94 0.95 0.96 1"/>
+      </material>
+    </visual>
+    <collision name="link_2_collision">
+      <origin xyz="-0.15 0 -0.5" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R15H-145/P2.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="link_3">
+
+    <!-- inertial source: controller-json -->
+    <inertial>
+      <origin xyz="0.17878 -0.124256079411 0.009219184566" rpy="0 0 0"/>
+      <mass value="7.777"/>
+      <inertia ixx="0.008370004675" ixy="0.00509655945" ixz="0.00826" iyy="0.076343317639" iyz="-0.000162617902" izz="0.074473244367"/>
+    </inertial>
+
+    <visual name="link_3">
+      <origin xyz="-0.15 0 -1.11" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R15H-145/P3.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="link_3_material">
+        <color rgba="0.84 0.86 0.89 1"/>
+      </material>
+    </visual>
+    <collision name="link_3_collision">
+      <origin xyz="-0.15 0 -1.11" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R15H-145/P3.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="link_4">
+
+    <!-- inertial source: controller-json -->
+    <inertial>
+      <origin xyz="0.000353 0.005930255237 0.380408724586" rpy="0 0 0"/>
+      <mass value="7.693"/>
+      <inertia ixx="0.322517426943" ixy="0.0000673" ixz="0.000351" iyy="0.456467709632" iyz="-0.0135" izz="0.032443793233"/>
+    </inertial>
+
+    <visual name="link_4">
+      <origin xyz="-0.15 0 -1.175" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R15H-145/P4.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="link_4_material">
+        <color rgba="0.94 0.95 0.96 1"/>
+      </material>
+    </visual>
+    <collision name="link_4_collision">
+      <origin xyz="-0.15 0 -1.175" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R15H-145/P4.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="link_5">
+
+    <!-- inertial source: controller-json -->
+    <inertial>
+      <origin xyz="0.0000661 -0.021018051067 0.00689" rpy="0 0 0"/>
+      <mass value="1.817585955358"/>
+      <inertia ixx="0.008119701663" ixy="-0.0000042" ixz="-0.0000052" iyy="0.00377" iyz="-0.000297" izz="0.004074254584"/>
+    </inertial>
+
+    <visual name="link_5">
+      <origin xyz="-0.842 0 -1.175" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R15H-145/P5.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="link_5_material">
+        <color rgba="0.84 0.86 0.89 1"/>
+      </material>
+    </visual>
+    <collision name="link_5_collision">
+      <origin xyz="-0.842 0 -1.175" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R15H-145/P5.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="link_6">
+
+    <!-- inertial source: controller-json -->
+    <inertial>
+      <origin xyz="0 0 0.078271588714" rpy="0 0 0"/>
+      <mass value="0.642122129581"/>
+      <inertia ixx="0.000529" ixy="0" ixz="0" iyy="0.000529" iyz="0" izz="0.0011713"/>
+    </inertial>
+
+    <visual name="link_6">
+      <origin xyz="-0.928 0 -1.175" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R15H-145/P6.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="link_6_material">
+        <color rgba="0.94 0.95 0.96 1"/>
+      </material>
+    </visual>
+    <collision name="link_6_collision">
+      <origin xyz="-0.928 0 -1.175" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R15H-145/P6.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="J1" type="revolute">
+    <parent link="base_link"/>
+    <child link="link_1"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.96705972839" upper="2.96705972839" effort="4.9" velocity="4.537856055185"/>
+  </joint>
+
+  <joint name="J2" type="revolute">
+    <parent link="link_1"/>
+    <child link="link_2"/>
+    <origin xyz="0.15 0 0.5" rpy="0 0 0"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="-2.792526803191" upper="1.570796326795" effort="4.9" velocity="4.188790204786"/>
+  </joint>
+
+  <joint name="J3" type="revolute">
+    <parent link="link_2"/>
+    <child link="link_3"/>
+    <origin xyz="0 0 0.61" rpy="0 0 0"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="-1.326450231516" upper="3.665191429188" effort="2.39" velocity="4.537856055185"/>
+  </joint>
+
+  <joint name="J4" type="revolute">
+    <parent link="link_3"/>
+    <child link="link_4"/>
+    <origin xyz="0 0 0.065" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-3.316125578789" upper="3.316125578789" effort="1.27" velocity="8.203047484373"/>
+  </joint>
+
+  <joint name="J5" type="revolute">
+    <parent link="link_4"/>
+    <child link="link_5"/>
+    <origin xyz="0.692 0 0" rpy="0 0 0"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="-2.443460952792" upper="2.443460952792" effort="0.64" velocity="7.853981633974"/>
+  </joint>
+
+  <joint name="J6" type="revolute">
+    <parent link="link_5"/>
+    <child link="link_6"/>
+    <origin xyz="0.086 0 0" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-6.28318530718" upper="6.28318530718" effort="0.64" velocity="12.30457122656"/>
+  </joint>
+
+  <link name="tool0"/>
+  <joint name="tool0_fixed" type="fixed">
+    <parent link="link_6"/>
+    <child link="tool0"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+</robot>

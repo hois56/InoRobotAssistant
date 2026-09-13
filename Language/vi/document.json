@@ -25,6 +25,12 @@
     "Training Manual": "Tài liệu đào tạo",
     "Communication Profile": "Profile truyền thông",
     "Certificate": "Chứng nhận",
+    "CAD": "CAD",
+    "All CAD Files": "Tất cả tệp CAD",
+    "6-Axis CAD": "CAD robot 6 trục",
+    "SCARA CAD": "CAD SCARA",
+    "Controller CAD": "CAD bộ điều khiển",
+    "Accessory CAD": "CAD phụ kiện",
     "All Model": "Tất cả model",
     "SCARA Robots": "Robot SCARA",
     "6-Axis Robots": "Robot 6 trục",
@@ -75,6 +81,10 @@
     ,"1.로봇 소개(Display).pdf": "1. Giới thiệu robot (Display).pdf"
     ,"2.로봇 기초(Display).pdf": "2. Cơ bản về robot (Display).pdf"
     ,"3.로봇 구조 및 초기 배선(Display).pdf": "3. Cấu trúc robot và đấu dây ban đầu (Display).pdf"
+    ,"문서 항목 탐색": "Duyệt các mục tài liệu"
+    ,"펼치기": "Mở rộng"
+    ,"접기": "Thu gọn"
+    ,"항목은 모두 유지되어 있으며, 그룹을 접거나 패널 안에서 스크롤할 수 있습니다.": "Tất cả mục vẫn được giữ lại; có thể thu gọn nhóm hoặc cuộn trong bảng để duyệt."
   },
   "patterns": []
 }

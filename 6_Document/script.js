@@ -664,8 +664,118 @@ function getManualTagLabel(man) {
     return man.robotType;
 }
 
+function getCadFileKind(fileName) {
+    const extension = String(fileName).split('.').pop().toLowerCase();
+    if (extension === 'dwg' || extension === 'dxf') return '2D';
+    if (extension === 'stp' || extension === 'step') return '3D';
+    return extension.toUpperCase();
+}
+
+function getCadDownloadType(fileName) {
+    const extension = String(fileName).split('.').pop().toLowerCase();
+    if (extension === 'dwg' || extension === 'dxf') return '2D';
+    if (extension === 'stp' || extension === 'step' || extension === 'obj' || extension === 'mtl') return '3D';
+    return null;
+}
+
+function createCadDocuments() {
+    const source = Array.isArray(window.InoRobotDocumentCadData)
+        ? window.InoRobotDocumentCadData
+        : [];
+
+    return source.flatMap(entry => (entry.files || []).map(file => ({
+        id: `cad_${entry.model}_${file}`.replace(/[^a-zA-Z0-9]+/g, '_').toLowerCase(),
+        title: file,
+        robotType: 'cad',
+        cadGroup: entry.group,
+        category: ['cad', `cad-${entry.group}`],
+        cadModel: entry.model,
+        cadFolder: entry.folder,
+        date: '2026-09-13',
+        lang: getCadFileKind(file),
+        path: `../1_RobotModelSelect/Robot_CAD/${entry.folder}/${file}`,
+        description: `${entry.model} CAD`,
+        tagLabel: 'CAD',
+        additionalTag: entry.model
+    })));
+}
+
+manualData.push(...createCadDocuments());
+
+function getCadGroupKey(man) {
+    return `${man.cadFolder || ''}|${man.cadModel || man.additionalTag || ''}`;
+}
+
+function renderCadModelCard(list, documents) {
+    const first = documents[0];
+    if (!first) return;
+
+    const twoD = documents.filter(man => getCadDownloadType(man.title) === '2D');
+    const threeD = documents.filter(man => getCadDownloadType(man.title) === '3D');
+    const downloadButtons = [
+        ...twoD.map(man => `
+            <button onclick="handleDownload('${man.id}')" title="${man.title}"
+                    class="download-btn px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 min-w-[112px] justify-center">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i> 2D 다운로드
+            </button>
+        `),
+        ...threeD.map(man => `
+            <button onclick="handleDownload('${man.id}')" title="${man.title}"
+                    class="download-btn px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 min-w-[112px] justify-center">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i> 3D 다운로드
+            </button>
+        `)
+    ].join('');
+
+    const item = document.createElement('div');
+    item.className = 'manual-item p-6 rounded-2xl flex flex-col md:flex-row items-start md:items-center gap-6 group';
+    item.innerHTML = `
+        <div class="w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-cyan-400 flex-shrink-0 group-hover:bg-cyan-500 group-hover:text-white transition-all">
+            <i data-lucide="boxes" class="w-7 h-7"></i>
+        </div>
+
+        <div class="flex-grow">
+            <div class="flex flex-wrap items-center gap-2 mb-2">
+                <span class="text-[12px] font-bold text-slate-500 bg-white/5 px-2.5 py-1 rounded border border-white/5 font-outfit capitalize">CAD</span>
+                <span class="text-[12px] font-bold text-fuchsia-300 bg-fuchsia-500/10 px-2.5 py-1 rounded border border-fuchsia-400/20 font-outfit">${first.cadGroup}</span>
+                <span class="text-[11px] text-slate-600 ml-1 opacity-70">${first.date}</span>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-1 group-hover:text-white transition-colors" style="word-break: break-all;">${first.cadModel}</h3>
+        </div>
+
+        <div class="flex items-center gap-2 pt-4 md:pt-0 shrink-0 w-full md:w-auto">
+            <div class="flex flex-wrap gap-2 ml-auto">
+                ${downloadButtons}
+            </div>
+        </div>
+    `;
+    list.appendChild(item);
+}
+
+function setupFilterSections() {
+    const sections = Array.from(document.querySelectorAll('[data-filter-section]'));
+    const setOpen = (section, open) => {
+        section.classList.toggle('is-collapsed', !open);
+        section.querySelector('.filter-section-toggle')?.setAttribute('aria-expanded', String(open));
+    };
+
+    sections.forEach(section => {
+        section.querySelector('.filter-section-toggle')?.addEventListener('click', () => {
+            setOpen(section, section.classList.contains('is-collapsed'));
+        });
+    });
+
+    document.getElementById('expandAllFilters')?.addEventListener('click', () => {
+        sections.forEach(section => setOpen(section, true));
+    });
+    document.getElementById('collapseAllFilters')?.addEventListener('click', () => {
+        sections.forEach(section => setOpen(section, false));
+    });
+}
+
 function init() {
     renderManuals();
+    setupFilterSections();
     setupFilters();
     setupSearch();
     document.addEventListener('inorobot:languagechange', renderManuals);
@@ -681,19 +791,26 @@ function renderManuals() {
     const activeEduBtn = document.querySelector('#eduFilters .active');
     const activeProfileBtn = document.querySelector('#profileFilters .active');
     const activeCertBtn = document.querySelector('#certFilters .active');
+    const activeCadBtn = document.querySelector('#cadFilters .active');
 
     const activeType = activeTypeBtn ? activeTypeBtn.dataset.type : 'all';
     const activeSoftware = activeSoftwareBtn ? activeSoftwareBtn.dataset.cat : 'all';
     const activeEdu = activeEduBtn ? activeEduBtn.dataset.cat : 'all';
     const activeProfile = activeProfileBtn ? activeProfileBtn.dataset.cat : 'all';
     const activeCert = activeCertBtn ? activeCertBtn.dataset.cat : 'all';
+    const activeCad = activeCadBtn ? activeCadBtn.dataset.cad : 'all';
     
     const searchTerm = document.getElementById('manualSearch').value.toLowerCase();
 
     const filtered = manualData.filter(man => {
-        // Mutual Exclusivity
+        if (activeCad !== 'all') {
+            if (man.robotType !== 'cad') return false;
+            if (activeCad !== 'cad' && man.cadGroup !== activeCad) return false;
+        }
+
         if (activeType !== 'all') {
-            if (man.robotType !== activeType) return false;
+            const matchesCadGroup = man.robotType === 'cad' && man.cadGroup === activeType;
+            if (man.robotType !== activeType && !matchesCadGroup) return false;
         }
 
         if (activeSoftware !== 'all') {
@@ -733,7 +850,16 @@ function renderManuals() {
         return;
     }
 
+    const renderedCadGroups = new Set();
     filtered.forEach(man => {
+        if (hasCategory(man, 'cad')) {
+            const groupKey = getCadGroupKey(man);
+            if (renderedCadGroups.has(groupKey)) return;
+            renderedCadGroups.add(groupKey);
+            renderCadModelCard(list, filtered.filter(candidate => hasCategory(candidate, 'cad') && getCadGroupKey(candidate) === groupKey));
+            return;
+        }
+
         const item = document.createElement('div');
         item.className = 'manual-item p-6 rounded-2xl flex flex-col md:flex-row items-start md:items-center gap-6 group';
         
@@ -748,6 +874,7 @@ function renderManuals() {
         if (hasCategory(man, 'entry') || hasCategory(man, 'basic') || hasCategory(man, 'display')) { iconColor = "text-fuchsia-500"; bgColor = "group-hover:bg-fuchsia-500"; }
         if (hasCategory(man, 'advanced')) { iconColor = "text-orange-400"; bgColor = "group-hover:bg-orange-500"; }
         if (hasCategory(man, 'certificate')) { iconColor = "text-violet-500"; bgColor = "group-hover:bg-violet-500"; }
+        if (hasCategory(man, 'cad')) { iconColor = "text-cyan-400"; bgColor = "group-hover:bg-cyan-500"; }
 
         item.innerHTML = `
             <div class="w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center ${iconColor} flex-shrink-0 ${bgColor} group-hover:text-white transition-all">
@@ -799,7 +926,7 @@ function setupFilters() {
             filterGroup.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
 
-            const groupIds = ['typeFilters', 'catFilters', 'eduFilters', 'profileFilters', 'certFilters'];
+            const groupIds = ['typeFilters', 'catFilters', 'eduFilters', 'profileFilters', 'certFilters', 'cadFilters'];
             groupIds.forEach(gid => {
                 if (gid !== filterGroup.id) {
                     const group = document.getElementById(gid);

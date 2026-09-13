@@ -40,6 +40,16 @@ for sheet_name in ["SCARA", "SCARA (CS)", "SCARA (Clean)"]:
 
 print(f"Loaded specs for {len(spec_data)} models: {list(spec_data.keys())}")
 
+def get_spec_values(model_name):
+    """Return the matching spec column, including K-variant model names."""
+    if model_name in spec_data:
+        return spec_data[model_name]
+
+    # R15H/R20H selection models use the order-code variant `-K-INT`,
+    # while the specification workbook stores the corresponding `-INT` model.
+    normalized_name = re.sub(r'([SPC])-K-INT$', r'\1-INT', model_name)
+    return spec_data.get(normalized_name)
+
 # ============================================================
 # 2) Parse model data from Robot_model.xlsx
 # ============================================================
@@ -51,8 +61,8 @@ def parse_model_name(model_name, robot_type):
     """Parse model name to extract Payload and Manipulator Length specs."""
     info = {}
     # Use spec data if available for reach
-    if model_name in spec_data:
-        sd = spec_data[model_name]
+    sd = get_spec_values(model_name)
+    if sd:
         # 6-axis: Maximum reach (mm)
         if "Maximum reach (mm)" in sd:
             info["Manipulator Length(mm)"] = sd["Maximum reach (mm)"]
@@ -179,8 +189,9 @@ for sheet in ['SCARA Robot', '6-Axis Robot']:
 
         # Build detail specs from spec_data
         details = {}
-        if model in spec_data:
-            details = spec_data[model].copy()
+        matching_specs = get_spec_values(model)
+        if matching_specs:
+            details = matching_specs.copy()
 
         products.append({
             'id': model,
@@ -271,14 +282,52 @@ for _, row in df_acc.iterrows():
     target_models = str(row.get('Robot model', '')).strip() if 'Robot model' in df_acc.columns else ''
     if target_models == 'nan': target_models = ''
 
-    accessories.append({
+    set_id = str(row.get('Set ID', '')).strip() if 'Set ID' in df_acc.columns else ''
+    if set_id == 'nan': set_id = ''
+
+    accessory = {
         'code': acc_code,
         'type': type_name,
         'name': name,
         'description': desc,
         'spec': spec,
-        'target_models': target_models
-    })
+        'target_models': target_models,
+    }
+    if set_id:
+        accessory['setId'] = set_id
+    accessories.append(accessory)
+
+# The workbook keeps controller expansion cards and ECAT remote I/O modules
+# on a separate sheet. Include them in the same accessory list so every
+# compatible robot exposes the same option groups in the selector.
+if 'Expansion Card' in model_xl.sheet_names:
+    df_expansion = model_xl.parse('Expansion Card')
+    df_expansion['Type'] = df_expansion['Type'].ffill()
+    for _, row in df_expansion.iterrows():
+        code = str(row.get('Code', '')).strip()
+        if not code or code == 'nan' or code == '-':
+            continue
+        if code.isdigit():
+            code = code.zfill(8)
+
+        source_type = str(row.get('Type', '')).strip()
+        if source_type == 'Controller slot':
+            type_name = 'Expansion Card'
+        elif source_type == 'ECAT remote IO':
+            type_name = 'Remote Coupler'
+        else:
+            continue
+
+        name = str(row.get('Name', '')).strip()
+        desc = str(row.get('Description', '')).replace('\n', ' ').replace('\ufffd', '').strip()
+        accessories.append({
+            'code': code,
+            'type': type_name,
+            'name': name,
+            'description': desc,
+            'spec': source_type,
+            'target_models': 'All'
+        })
 
 # ============================================================
 # 6) Write data.js

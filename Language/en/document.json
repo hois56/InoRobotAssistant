@@ -25,6 +25,12 @@
     "Training Manual": "Training Materials",
     "Communication Profile": "Communication Profiles",
     "Certificate": "Certificates",
+    "CAD": "CAD",
+    "All CAD Files": "All CAD Files",
+    "6-Axis CAD": "6-Axis CAD",
+    "SCARA CAD": "SCARA CAD",
+    "Controller CAD": "Controller CAD",
+    "Accessory CAD": "Accessory CAD",
     "All Model": "All Models",
     "SCARA Robots": "SCARA Robots",
     "6-Axis Robots": "6-Axis Robots",
@@ -75,6 +81,10 @@
     ,"1.로봇 소개(Display).pdf": "1. Robot Introduction (Display).pdf"
     ,"2.로봇 기초(Display).pdf": "2. Robot Basics (Display).pdf"
     ,"3.로봇 구조 및 초기 배선(Display).pdf": "3. Robot Structure and Initial Wiring (Display).pdf"
+    ,"문서 항목 탐색": "Browse document items"
+    ,"펼치기": "Expand"
+    ,"접기": "Collapse"
+    ,"항목은 모두 유지되어 있으며, 그룹을 접거나 패널 안에서 스크롤할 수 있습니다.": "All items are kept; collapse groups or scroll inside the panel to browse them."
   },
   "patterns": []
 }
