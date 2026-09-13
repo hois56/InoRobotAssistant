@@ -61,12 +61,8 @@
               {
                 "title": "Ver 26.09.12",
                 "items": [
-                  "`[정리]` 실제 기능에 사용되지 않는 `Robot_CAD` 폴더의 FBX 파일 34개를 삭제하여 약 470.5MB의 저장 공간을 정리했습니다.",
                   "`[변경]` 케이블 구성에서 플렉시블·유연형을 가동형으로, 기본형·논플렉시블을 비가동형으로 표시하도록 변경했습니다.",
                   "`[추가]` R15H·R20H 모델에 Arm I/O와 Body I/O가 함께 구성되는 케이블 세트 `1504UP81`·`1504CU41`을 추가했습니다.",
-                  "`[수정]` R15H·R20H 모델 상세 화면에서 리치, 속도, 반복 정밀도 등 세부 사양이 누락되던 문제를 수정했습니다.",
-                  "`[수정]` R15H·R20H 모델의 기본 방진·방수 등급이 `IP40`으로 표시되던 문제를 `IP54`로 수정했습니다.",
-                  "`[수정]` R15H·R20H 모델에서 컨트롤러 확장 카드와 리모트 커플러 옵션이 표시되지 않던 문제를 수정했습니다.",
                   "`[변경]` 6축 로봇의 중공형 표기를 `Yes/없음`에서 `중공형/비중공형`으로 변경했습니다.",
                   "`[변경]` 클린 타입 필터의 `Yes/No` 표기를 `기본형/클린형`으로 변경했습니다.",
                   "`[수정]` 클린형 필터를 선택하면 클린형 바디 옵션을 지원하는 6축 로봇도 함께 표시되도록 수정했습니다."
@@ -211,15 +207,8 @@
             "title": "3D Simulation",
             "versions": [
               {
-                "title": "Ver 26.09.12",
-                "items": [
-                  "`[정리]` 현재 로봇 모델 로딩에 사용되지 않는 구형 FBX 파일 29개를 삭제하여 약 412.0MB의 저장 공간을 정리했습니다."
-                ]
-              },
-              {
                 "title": "Ver 26.09.11",
                 "items": [
-                  "`[수정]` 3D 시뮬레이션이 초기화 중 화면에서 멈추던 문제를 해결했습니다.",
                   "`[수정]` 3D 화면에서 우클릭으로 뷰를 전환한 뒤에 옵션창이 표시되던 문제를 해결했습니다.",
                   "`[추가]` 3D 시뮬레이션 작업 전체를 3D 모델과 함께 `.inosim` 파일로 저장하고 불러올 수 있는 기능을 추가했습니다.",
                   "`[변경]` 프로그램 패널의 저장·불러오기가 전체 시뮬레이션이 아닌 프로그램 패널에서 작성한 모션 프로그램만 처리하도록 변경했습니다.",
@@ -553,10 +542,8 @@
               {
                 "title": "Ver 26.09.13",
                 "items": [
-                  "`[추가]` 문서 목록에 모델별 CAD 파일을 다른 문서와 동일한 방식으로 다운로드할 수 있는 CAD 분류를 추가했습니다.",
-                  "`[개선]` 왼쪽 문서 항목 탐색에 CAD 탭을 추가하고, 모든 탐색 그룹이 기본적으로 접힌 상태로 시작하도록 개선했습니다.",
-                  "`[개선]` CAD 문서를 모델별 카드로 묶고 미리보기 대신 2D·3D 다운로드 버튼만 표시하도록 개선했습니다.",
-                  "`[개선]` 왼쪽 문서 항목 탐색에서 CAD 탭이 하드웨어 매뉴얼보다 먼저 표시되도록 순서를 조정했습니다."
+                  "`[추가]` 2D, 3D CAD 파일을 다운로드할 수 있도록 CAD 탭을 추가했습니다. ",
+                  "`[개선]` 모든 탐색 그룹이 기본적으로 접힌 상태로 시작하도록 개선했습니다."
                 ]
               },
               {
@@ -1178,7 +1165,6 @@
               {
                 "title": "Ver 26.09.11",
                 "items": [
-                  "`[Fixed]` Fixed an issue where 3D Simulation could remain on the initializing screen.",
                   "`[Fixed]` Fixed an issue where the model options menu opened when the right mouse button was released over a model after navigating the 3D view.",
                   "`[Fixed]` Fixed an issue where the collaboration server was not started in the virtual environment, preventing room creation.",
                   "`[Added]` Added a public collaboration server so two browsers can create and join the same simulation room.",
@@ -1524,10 +1510,8 @@
               {
                 "title": "Ver 26.09.13",
                 "items": [
-                  "**[Added]** Added a CAD category to the document list so model-specific CAD files use the same download cards as other documents.",
-                  "**[Improved]** Added a CAD tab to the left document navigation and made all navigation groups start collapsed while retaining the contained scroll area.",
-                  "**[Improved]** Grouped CAD documents by model and replaced CAD previews with dedicated 2D and 3D download buttons.",
-                  "**[Improved]** Reordered the left document navigation so the CAD tab appears before Hardware Manuals."
+                  "**[Added]** Added a CAD tab for downloading 2D and 3D CAD files.",
+                  "**[Improved]** Made all navigation groups start collapsed by default."
                 ]
               },
               {
@@ -2149,7 +2133,6 @@
               {
                 "title": "Ver 26.09.11",
                 "items": [
-                  "`[修复]` 修复了 3D 仿真停留在初始化界面的问题。",
                   "`[修复]` 修复了虚拟环境未启动协作服务器、导致无法创建房间的问题。",
                   "`[新增]` 新增公开协作服务器，使两个浏览器可以创建并加入同一个仿真房间。",
                   "`[修复]` 修复了未选择机器人型号时协作按钮被禁用的问题。",
@@ -2494,10 +2477,8 @@
               {
                 "title": "Ver 26.09.13",
                 "items": [
-                  "`[新增]` 在文档列表中添加 CAD 分类，使按型号下载的 CAD 文件使用与其他文档相同的卡片。",
-                  "`[改进]` 在左侧文档导航中添加 CAD 标签，并让所有导航分组默认折叠，同时保留固定滚动区域。",
-                  "`[改进]` 按型号合并 CAD 文档卡片，并将 CAD 预览替换为专用的 2D 和 3D 下载按钮。",
-                  "`[改进]` 调整左侧文档导航顺序，使 CAD 标签显示在硬件手册之前。"
+                  "`[新增]` 添加 CAD 标签，以便下载 2D 和 3D CAD 文件。",
+                  "`[改进]` 让所有导航分组默认以折叠状态开始。"
                 ]
               },
               {
@@ -3119,7 +3100,6 @@
               {
                 "title": "Ver 26.09.11",
                 "items": [
-                  "`[Sửa lỗi]` Đã khắc phục sự cố 3D Simulation bị kẹt ở màn hình đang khởi tạo.",
                   "`[Sửa lỗi]` Đã khắc phục sự cố máy chủ cộng tác không được khởi động trong môi trường ảo khiến không thể tạo phòng.",
                   "`[Thêm mới]` Đã thêm máy chủ cộng tác công khai để hai trình duyệt có thể tạo và tham gia cùng một phòng mô phỏng.",
                   "`[Sửa lỗi]` Đã khắc phục sự cố nút cộng tác bị vô hiệu hóa cho đến khi chọn model robot.",
@@ -3464,10 +3444,8 @@
               {
                 "title": "Ver 26.09.13",
                 "items": [
-                  "`[Thêm mới]` Thêm nhóm CAD vào danh sách tài liệu để tệp CAD theo model dùng cùng thẻ tải xuống như các tài liệu khác.",
-                  "`[Cải tiến]` Thêm tab CAD vào phần điều hướng tài liệu bên trái và đặt tất cả nhóm ở trạng thái thu gọn mặc định, đồng thời giữ vùng cuộn cố định.",
-                  "`[Cải tiến]` Gộp tài liệu CAD theo model và thay phần xem trước bằng các nút tải xuống 2D và 3D riêng.",
-                  "`[Cải tiến]` Sắp xếp lại điều hướng tài liệu bên trái để tab CAD hiển thị trước Hardware Manuals."
+                  "`[Thêm mới]` Thêm tab CAD để tải xuống tệp CAD 2D và 3D.",
+                  "`[Cải tiến]` Đặt tất cả nhóm điều hướng bắt đầu ở trạng thái thu gọn theo mặc định."
                 ]
               },
               {
