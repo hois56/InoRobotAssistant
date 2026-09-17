@@ -59,6 +59,12 @@
             "title": "Robot Model Select",
             "versions": [
               {
+                "title": "Ver 26.09.14",
+                "items": [
+                  "`[수정]` 모델 셀렉트에서 로봇 바디 RJ45 포트 유료 옵션을 삭제했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.09.12",
                 "items": [
                   "`[변경]` 케이블 구성에서 플렉시블·유연형을 가동형으로, 기본형·논플렉시블을 비가동형으로 표시하도록 변경했습니다.",
@@ -207,6 +213,47 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.09.16",
+                "items": [
+                  "`[수정]` 로봇 모델을 불러온 뒤에도 중앙의 초기 안내 문구가 남고 로드 실패로 표시되던 문제를 해결했습니다.",
+                  "`[변경]` JOG 패널에서 Wobj 좌표계 항목을 제거하고, JOG 이동이 BASE 좌표계에서만 동작하도록 변경했습니다.",
+                  "`[수정]` Wobj 설정에서 다른 좌표계 항목을 선택할 수 없던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.09.15",
+                "items": [
+                  "`[개선]` 화면 폭이 좁아질 때 3D 시뮬레이션 상단·하단 버튼과 상태 정보가 겹치거나 잘리던 문제를 해결했습니다.",
+                  "`[개선]` 모델 트리에서 이미 선택된 항목을 다시 클릭하면 선택 해제되도록 수정했습니다.",
+                  "`[수정]` 3D 시뮬레이션 바닥 그리드의 500mm 단위 치수 글자가 모델 표면 앞에 표시되거나 일부가 걸쳐 보이던 문제를 해결했습니다.",
+                  "`[개선]` 3D 파일을 불러오는 중 다른 모델을 추가로 불러올 수 있도록 수정했습니다.",
+                  "`[추가]` IO 테스트 기능을 추가하여 가상 입력을 프로그램에 반영할 수 있도록 추가했습니다.",
+                  "`[추가]` 치수 측정의 방식에 로봇 위치를 추가하여, 한 점을 스냅하고 선택된 로봇 기준 X/Y/Z 좌표를 표시하도록 했습니다.",
+                  "`[수정]` OLP에서 TCP 경로 선을 활성화해도 이동 경로가 표시되지 않던 문제를 해결했습니다.",
+                  "`[개선]` 여러 로봇이 있는 경우 OLP에서 로봇마다 프로젝트를 개별로 적용할 수 있도록 수정했습니다.",
+                  "`[수정]` OLP에서 전체 모델 제어 버튼을 눌러도 선택된 로봇을 함께 시작·일시정지·정지할 수 없던 문제를 해결했습니다.",
+                  "`[수정]` OLP 프로젝트를 불러올 때 폴더 복사 허용 여부를 묻는 알림이 표시되던 문제를 해결하여, 폴더를 선택하면 바로 불러오도록 수정했습니다.",
+                  "`[수정]` 프로그램 실행 중 상단의 테스트·스케치 모드·3D 파일 불러오기가 동작하지 않던 문제를 해결했습니다.",
+                  "`[수정]` 프로그램 실행 중 모델 트리의 우클릭 메뉴에서 삭제 및 일부 모델 편집 기능을 사용할 수 없던 문제를 해결했습니다.",
+                  "`[추가]` 3D 시뮬레이션에 로봇별 Wobj[1]~[15] 좌표계 설정과 WOBJ JOG를 추가하고, OLP·간섭영역 위치값이 선택한 Wobj 좌표계를 적용하도록 했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.09.14",
+                "items": [
+                  "`[수정]` 스케치 돌출 도형의 내부 구멍에서 스냅 지점이 생성되지 않던 문제를 해결했습니다.",
+                  "`[수정]` 스케치 돌출 도형의 구멍 중심을 가상 중심점 스냅으로 선택할 수 없던 문제를 해결했습니다.",
+                  "`[수정]` 치수 측정과 모델 배치에서 스케치 돌출 도형의 스냅 지점을 인식하지 못하던 문제를 해결했습니다.",
+                  "`[수정]` 다른 모델이나 빈 화면을 선택한 상태에서 활성 로봇이 있어도 로봇 변경이 비활성화되던 문제를 해결했습니다.",
+                  "`[수정]` 스케치 모드에서 로봇 바디 중심점과 영점 위치를 스냅할 수 없던 문제를 해결했습니다.",
+                  "`[수정]` 일부 스케치 프로파일만 돌출한 뒤 다시 스케치를 편집해 다른 프로파일을 돌출할 때 도형이 스케치 위치에서 대각선으로 어긋나 생성되던 문제를 해결했습니다.",
+                  "`[수정]` 스케치로 생성한 3D 도형의 우클릭 메뉴가 일반 도형과 달라 Tool·암 로드 등록과 색상 변경을 사용할 수 없던 문제를 해결했습니다.",
+                  "`[수정]` 로봇 모델을 스냅할 때 로봇 메시의 꼭짓점·에지·면이 스냅 후보로 표시되던 문제를 해결하고, 바디 중심점과 TCP 점만 표시하도록 수정했습니다.",
+                  "`[수정]` 다른 모델의 면을 선택한 뒤 로봇을 다시 클릭하거나 모델 트리에서 재선택할 때 로봇 스냅 후보가 사라지던 문제를 해결했습니다.",
+                  "`[추가]` 3D 모델을 불러오는 동안 단계별 진행 상황을 게이지로 확인할 수 있도록 추가했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.09.11",
                 "items": [
                   "`[수정]` 3D 화면에서 우클릭으로 뷰를 전환한 뒤에 옵션창이 표시되던 문제를 해결했습니다.",
@@ -246,7 +293,6 @@
                   "`[개선]` 충돌 감지 성능을 개선했습니다.",
                   "`[변경]` 모든 스냅 아이콘 색상을 노란색에서 빨간색으로 변경했습니다.",
                   "`[개선]` 스냅 반경 선택 기능을 삭제했습니다."
-
                 ]
               },
               {
@@ -391,7 +437,6 @@
           {
             "title": "Project Generator",
             "versions": [
-  
               {
                 "title": "Ver 26.09.03",
                 "items": [
@@ -483,6 +528,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.09.17",
+                "items": [
+                  "`[수정]` Display 전용 소프트웨어 다운로드가 안되던 문제를 해결했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.09.08",
                 "items": [
                   "`[업데이트]` Display용 InoRobotLab·InoRobotTP를 `V4R24C4SPC0L18F121 → V4R24C4SPC0L23F121`로 업데이트했습니다."
@@ -540,10 +591,17 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.09.14",
+                "items": [
+                  "`[수정]` IR-R16-210의 2D CAD 파일을 영문버전으로 수정했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.09.13",
                 "items": [
-                  "`[추가]` 2D, 3D CAD 파일을 다운로드할 수 있도록 CAD 탭을 추가했습니다. ",
-                  "`[개선]` 모든 탐색 그룹이 기본적으로 접힌 상태로 시작하도록 개선했습니다."
+                  "`[추가]` 2D, 3D CAD 파일을 다운로드할 수 있도록 CAD 탭을 추가했습니다.",
+                  "`[개선]` 모든 탐색 그룹이 기본적으로 접힌 상태로 시작하도록 개선했습니다.",
+                  "`[변경]` SDC 컨트롤러 3D CAD 파일명을 `IRCB501-6-aixs-Highpower_EMO.stp`로 변경했습니다."
                 ]
               },
               {
@@ -1029,8 +1087,56 @@
         "intro": "This file records user-visible feature additions, content updates, display changes, and fixes for each card on the home page.",
         "sections": [
           {
+            "title": "InoRobot Assistant",
+            "versions": [
+              {
+                "title": "Ver 26.09.06",
+                "items": [
+                  "`[변경]` 메인 홈페이지 하단의 제작자 표기를 `Designed & Developed by Jeongchan Lee | INOVANCE Korea`로 변경했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.08.13",
+                "items": [
+                  "`[수정]` 웹사이트 원형 로고의 바깥쪽 흰색 사각형 테두리가 표시되던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.08.12",
+                "items": [
+                  "`[개선]` 이노로봇, 이노밴스 로봇, INOVANCE robot 검색어로 사이트를 더 쉽게 찾을 수 있도록 홈페이지 SEO를 개선했습니다.",
+                  "`[변경]` 홈페이지 검색 제목을 `Inovance Robot Assistant | 이노밴스 코리아`로 변경했습니다.",
+                  "`[추가]` Google 검색 결과에서 웹사이트를 식별할 수 있도록 원형 로고 아이콘을 추가했습니다."
+                ]
+              }
+            ]
+          },
+          {
             "title": "Robot Model Select",
             "versions": [
+              {
+                "title": "Ver 26.09.14",
+                "items": [
+                  "`[수정]` 모델 셀렉트에서 로봇 바디 RJ45 포트 유료 옵션을 삭제했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.09.12",
+                "items": [
+                  "`[변경]` 케이블 구성에서 플렉시블·유연형을 가동형으로, 기본형·논플렉시블을 비가동형으로 표시하도록 변경했습니다.",
+                  "`[추가]` R15H·R20H 모델에 Arm I/O와 Body I/O가 함께 구성되는 케이블 세트 `1504UP81`·`1504CU41`을 추가했습니다.",
+                  "`[변경]` 6축 로봇의 중공형 표기를 `Yes/없음`에서 `중공형/비중공형`으로 변경했습니다.",
+                  "`[변경]` 클린 타입 필터의 `Yes/No` 표기를 `기본형/클린형`으로 변경했습니다.",
+                  "`[수정]` 클린형 필터를 선택하면 클린형 바디 옵션을 지원하는 6축 로봇도 함께 표시되도록 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.09.09",
+                "items": [
+                  "`[수정]` R10H 모델 셀렉트에서 J4·J5·J6 속도가 잘못 표시되던 문제를 `470°/s`·`438°/s`·`764.7°/s`로 수정했습니다.",
+                  "`[수정]` R15H·R20H 모델 셀렉트에서 기본 IP 등급이 잘못 표시되던 문제를 `IP54`로 수정하고 `IP67`을 선택 옵션으로 표시합니다."
+                ]
+              },
               {
                 "title": "Ver 26.08.13",
                 "items": [
@@ -1163,14 +1269,56 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.09.16",
+                "items": [
+                  "`[Fixed]` Fixed an issue where the initial guide text remained in the center and the load was shown as failed after loading a robot model.",
+                  "`[Changed]` Removed the Wobj coordinate option from the JOG panel so JOG movement operates only in the BASE coordinate system.",
+                  "`[Fixed]` Fixed an issue where other coordinate entries could not be selected in Wobj settings."
+                ]
+              },
+              {
+                "title": "Ver 26.09.15",
+                "items": [
+                  "`[개선]` 화면 폭이 좁아질 때 3D 시뮬레이션 상단·하단 버튼과 상태 정보가 겹치거나 잘리던 문제를 해결했습니다.",
+                  "`[개선]` 모델 트리에서 이미 선택된 항목을 다시 클릭하면 선택 해제되도록 수정했습니다.",
+                  "`[수정]` 3D 시뮬레이션 바닥 그리드의 500mm 단위 치수 글자가 모델 표면 앞에 표시되거나 일부가 걸쳐 보이던 문제를 해결했습니다.",
+                  "`[개선]` 3D 파일을 불러오는 중 다른 모델을 추가로 불러올 수 있도록 수정했습니다.",
+                  "`[추가]` IO 테스트 기능을 추가하여 가상 입력을 프로그램에 반영할 수 있도록 추가했습니다.",
+                  "`[추가]` 치수 측정의 방식에 로봇 위치를 추가하여, 한 점을 스냅하고 선택된 로봇 기준 X/Y/Z 좌표를 표시하도록 했습니다.",
+                  "`[수정]` OLP에서 TCP 경로 선을 활성화해도 이동 경로가 표시되지 않던 문제를 해결했습니다.",
+                  "`[개선]` 여러 로봇이 있는 경우 OLP에서 로봇마다 프로젝트를 개별로 적용할 수 있도록 수정했습니다.",
+                  "`[수정]` OLP에서 전체 모델 제어 버튼을 눌러도 선택된 로봇을 함께 시작·일시정지·정지할 수 없던 문제를 해결했습니다.",
+                  "`[수정]` OLP 프로젝트를 불러올 때 폴더 복사 허용 여부를 묻는 알림이 표시되던 문제를 해결하여, 폴더를 선택하면 바로 불러오도록 수정했습니다.",
+                  "`[수정]` 프로그램 실행 중 상단의 테스트·스케치 모드·3D 파일 불러오기가 동작하지 않던 문제를 해결했습니다.",
+                  "`[수정]` 프로그램 실행 중 모델 트리의 우클릭 메뉴에서 삭제 및 일부 모델 편집 기능을 사용할 수 없던 문제를 해결했습니다.",
+                  "`[추가]` 3D 시뮬레이션에 로봇별 Wobj[1]~[15] 좌표계 설정과 WOBJ JOG를 추가하고, OLP·간섭영역 위치값이 선택한 Wobj 좌표계를 적용하도록 했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.09.14",
+                "items": [
+                  "`[수정]` 스케치 돌출 도형의 내부 구멍에서 스냅 지점이 생성되지 않던 문제를 해결했습니다.",
+                  "`[수정]` 스케치 돌출 도형의 구멍 중심을 가상 중심점 스냅으로 선택할 수 없던 문제를 해결했습니다.",
+                  "`[수정]` 치수 측정과 모델 배치에서 스케치 돌출 도형의 스냅 지점을 인식하지 못하던 문제를 해결했습니다.",
+                  "`[수정]` 다른 모델이나 빈 화면을 선택한 상태에서 활성 로봇이 있어도 로봇 변경이 비활성화되던 문제를 해결했습니다.",
+                  "`[수정]` 스케치 모드에서 로봇 바디 중심점과 영점 위치를 스냅할 수 없던 문제를 해결했습니다.",
+                  "`[수정]` 일부 스케치 프로파일만 돌출한 뒤 다시 스케치를 편집해 다른 프로파일을 돌출할 때 도형이 스케치 위치에서 대각선으로 어긋나 생성되던 문제를 해결했습니다.",
+                  "`[수정]` 스케치로 생성한 3D 도형의 우클릭 메뉴가 일반 도형과 달라 Tool·암 로드 등록과 색상 변경을 사용할 수 없던 문제를 해결했습니다.",
+                  "`[수정]` 로봇 모델을 스냅할 때 로봇 메시의 꼭짓점·에지·면이 스냅 후보로 표시되던 문제를 해결하고, 바디 중심점과 TCP 점만 표시하도록 수정했습니다.",
+                  "`[수정]` 다른 모델의 면을 선택한 뒤 로봇을 다시 클릭하거나 모델 트리에서 재선택할 때 로봇 스냅 후보가 사라지던 문제를 해결했습니다.",
+                  "`[추가]` 3D 모델을 불러오는 동안 단계별 진행 상황을 게이지로 확인할 수 있도록 추가했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.09.11",
                 "items": [
-                  "`[Fixed]` Fixed an issue where the model options menu opened when the right mouse button was released over a model after navigating the 3D view.",
-                  "`[Fixed]` Fixed an issue where the collaboration server was not started in the virtual environment, preventing room creation.",
-                  "`[Added]` Added a public collaboration server so two browsers can create and join the same simulation room.",
-                  "`[Fixed]` Fixed an issue where the collaboration button was disabled until a robot model was selected.",
-                  "`[Fixed]` Fixed an issue where the new controller connection button was disabled after creating or joining a collaboration room.",
-                  "`[Changed]` Expanded 3D Simulation collaboration rooms from two participants to up to four participants."
+                  "`[수정]` 3D 화면에서 우클릭으로 뷰를 전환한 뒤에 옵션창이 표시되던 문제를 해결했습니다.",
+                  "`[추가]` 3D 시뮬레이션 작업 전체를 3D 모델과 함께 `.inosim` 파일로 저장하고 불러올 수 있는 기능을 추가했습니다.",
+                  "`[변경]` 프로그램 패널의 저장·불러오기가 전체 시뮬레이션이 아닌 프로그램 패널에서 작성한 모션 프로그램만 처리하도록 변경했습니다.",
+                  "`[수정]` 가상환경에서 협업 서버가 실행되지 않아 방을 만들 수 없던 문제를 해결했습니다.",
+                  "`[수정]` 로봇 모델을 선택하지 않으면 협업 버튼이 비활성화되던 문제를 해결했습니다.",
+                  "`[수정]` 협업 방을 만들거나 참여한 뒤 새 컨트롤러 연결 버튼이 비활성화되던 문제를 해결했습니다.",
+                  "`[변경]` 3D 시뮬레이션 협업 방의 최대 참여 인원을 2명에서 4명으로 확장했습니다."
                 ]
               },
               {
@@ -1182,28 +1330,25 @@
               {
                 "title": "Ver 26.09.08",
                 "items": [
-                  "`[Added]` Added creation of box, cone, cylinder, and sphere shapes with editable dimensions and positions in 3D Simulation.",
-                  "`[Added]` Added an option to set the transparency of the selected model or part from 1% to 100% in the model tree.",
-                  "`[Added]` Added measurement of straight-line and X/Y/Z orthogonal distances between two snapped points, and placement of a 3D model using an entered distance.",
-                  "`[Added]` Added automatic detour path generation by checking interference between the current and target positions, with the result registered as motion points.",
-                  "`[Added]` Added two-person collaboration so two computers can join the same 3D simulation and control different robots simultaneously.",
-                  "`[Added]` Added installation of imported 3D models and shapes as Tools, with robot selection for the installation target.",
-                  "`[Added]` Added a WAIT command and program row numbers to synchronize program execution positions between robots.",
-                  "`[Added]` Added TCP trajectory display during program execution and selectable collision modes for stopping motion, displaying collisions, or disabling detection.",
-                  "`[Added]` Added pick-and-place support using suction tools and grippers for models, shapes, and parts, including program commands.",
-                  "`[Improved]` Improved the simulation to connect a separate controller to each robot and synchronize their positions simultaneously.",
-                  "`[Improved]` Improved the OLP program panel to run, pause, or stop selected robots individually or all robots together.",
-                  "`[Improved]` Improved load information calculation for an attached Tool using each part’s material or entered mass, including mass, center of gravity, and inertia.",
-                  "`[Improved]` Improved 2D sketching to insert and edit DXF drawings and create 3D geometry through extrusion and extrusion cuts.",
-                  "`[Improved]` Improved model-tree movement, snapping, and dimension editing so the position and size of a selected part can be adjusted directly.",
-                  "`[Improved]` Improved model and part selection, hiding, movement, and snapping so the selected target and snap positions remain consistent.",
-                  "`[Improved]` Improved editing of points, commands, target robots, and model placement while a program is running.",
-                  "`[Improved]` Improved the reliability of restoring and initializing saved simulation workspaces and settings.",
-                  "`[Improved]` Improved 3D model export by supporting STL and STEP formats and stabilizing the export operation.",
-                  "`[Improved]` Improved snapping so reference points, faces, and edges on models, shapes, and robots can be selected consistently.",
-                  "`[Improved]` Improved the stability and performance of collision detection and interference-avoidance path calculation.",
-                  "`[Improved]` Improved saving, restoring, and interaction for key simulation windows including Work Origin, fixed views, and model panels.",
-                  "`[Improved]` Improved multilingual display so generated shape names and position, TCP, and collaboration guidance use the current language."
+                  "`[추가]` DXF 파일을 불러오거나 직접 도면을 그려 돌출/돌출컷할 수 있는 2D CAD 스케치 기능을 추가했습니다.",
+                  "`[추가]` 3D 도형을 생성하는 기능을 추가했습니다.",
+                  "`[추가]` 모델 트리에서 선택한 모델 또는 부품의 투명도를 설정할 수 있는 옵션을 추가했습니다.",
+                  "`[추가]` 치수를 측정하는 기능을 추가했습니다.",
+                  "`[추가]` 프로그램 패널에 두개의 위치 사이의 3D 모델 간섭을 확인해 자동 회피 경로를 생성하는 자동 경로 생성 기능을 추가했습니다.",
+                  "`[추가]` 두 대의 컴퓨터가 같은 3D 시뮬레이션에 참여해 각자 다른 로봇을 제어할 수 있는 2인 협업 기능을 추가했습니다.",
+                  "`[추가]` 프로그램 패널에 여러 로봇의 프로그램 실행 위치를 동기화하는 WAIT 명령과 프로그램 행 번호 표시를 추가했습니다.",
+                  "`[추가]` 프로그램 패널과 모델 트리에 Tool로 오브젝트를 잡고 놓는 동작을 구현할 수 있도록 기능 및 프로그램 명령을 추가했습니다.",
+                  "`[추가]` 프로그램 패널에 프로그램 실행 중 TCP 이동 궤적을 표시하는 TCP 경로 선 기능을 추가했습니다.",
+                  "`[개선]` 모델 트리에서 불러온 3D 모델과 도형을 Tool로 등록/해제 할 수 있도록 개선했습니다.",
+                  "`[개선]` 충돌 감지 기능을 개선하여 충돌 발생시 정지하지 않고 표시만 기능을 추가했습니다.",
+                  "`[개선]` 컨트롤러 연결 기능이 동시에 여러 로봇과 연결할 수 있도록 개선했습니다.",
+                  "`[개선]` 프로그램 패널에서 OLP 기능이 여러 로봇을 동시에 제어할 수 있도록 개선했습니다.",
+                  "`[개선]` 로봇에 부착된 Tool의 부품별 재질 또는 입력 질량을 기준으로 질량·무게중심·관성모멘트를 계산할 수 있도록 개선했습니다.",
+                  "`[개선]` 모델 트리의 이동·스냅·치수 편집을 개선해 선택한 부품의 위치와 크기를 직접 조정할 수 있도록 개선했습니다.",
+                  "`[개선]` 프로그램 실행 중에도 기타 프로그램 및 기능들을 편집/사용할 수 있도록 개선했습니다.",
+                  "`[개선]` 충돌 감지 성능을 개선했습니다.",
+                  "`[변경]` 모든 스냅 아이콘 색상을 노란색에서 빨간색으로 변경했습니다.",
+                  "`[개선]` 스냅 반경 선택 기능을 삭제했습니다."
                 ]
               },
               {
@@ -1286,12 +1431,6 @@
             "title": "Robot Tool Selector",
             "versions": [
               {
-                "title": "Ver 26.09.06",
-                "items": [
-                  "`[Fixed]` Fixed unclear dropdown selection and input actions in the home page video guide, and synchronized the pointer, selection highlight, clicks and screen transitions."
-                ]
-              },
-              {
                 "title": "Ver 26.09.03",
                 "items": [
                   "`[Changed]` Removed the no-longer-needed snap-radius setting from Mode D.",
@@ -1354,12 +1493,6 @@
           {
             "title": "Project Generator",
             "versions": [
-              {
-                "title": "Ver 26.09.06",
-                "items": [
-                  "`[Fixed]` Fixed missing dropdown lists and typing in the home page Project Generator video guide, and synchronized clicks, screen transitions, the pointer and selection highlight."
-                ]
-              },
               {
                 "title": "Ver 26.09.03",
                 "items": [
@@ -1451,6 +1584,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.09.17",
+                "items": [
+                  "**[Fixed]** Fixed an issue where Display-only software could not be downloaded because the request format did not match the current download authentication service."
+                ]
+              },
+              {
                 "title": "Ver 26.09.08",
                 "items": [
                   "**[Updated]** Updated the Display editions of InoRobotLab and InoRobotTP from V4R24C4SPC0L18F121 to V4R24C4SPC0L23F121."
@@ -1508,10 +1647,17 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.09.14",
+                "items": [
+                  "**[Fixed]** Fixed the issue where IR-R16-210's 2D CAD file was incorrectly linked as `*_3D_CN.dwg` and could not be downloaded, by linking `IR-R16-210S-INT_2D.dwg`."
+                ]
+              },
+              {
                 "title": "Ver 26.09.13",
                 "items": [
                   "**[Added]** Added a CAD tab for downloading 2D and 3D CAD files.",
-                  "**[Improved]** Made all navigation groups start collapsed by default."
+                  "**[Improved]** Made all navigation groups start collapsed by default.",
+                  "**[Changed]** Renamed the SDC controller 3D CAD file to `IRCB501-6-aixs-Highpower_EMO.stp`."
                 ]
               },
               {
@@ -1997,8 +2143,56 @@
         "intro": "本文记录主页各功能卡片中用户可见的新增功能、资料更新、显示变更与问题修复。",
         "sections": [
           {
+            "title": "InoRobot Assistant",
+            "versions": [
+              {
+                "title": "Ver 26.09.06",
+                "items": [
+                  "`[변경]` 메인 홈페이지 하단의 제작자 표기를 `Designed & Developed by Jeongchan Lee | INOVANCE Korea`로 변경했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.08.13",
+                "items": [
+                  "`[수정]` 웹사이트 원형 로고의 바깥쪽 흰색 사각형 테두리가 표시되던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.08.12",
+                "items": [
+                  "`[개선]` 이노로봇, 이노밴스 로봇, INOVANCE robot 검색어로 사이트를 더 쉽게 찾을 수 있도록 홈페이지 SEO를 개선했습니다.",
+                  "`[변경]` 홈페이지 검색 제목을 `Inovance Robot Assistant | 이노밴스 코리아`로 변경했습니다.",
+                  "`[추가]` Google 검색 결과에서 웹사이트를 식별할 수 있도록 원형 로고 아이콘을 추가했습니다."
+                ]
+              }
+            ]
+          },
+          {
             "title": "Robot Model Select",
             "versions": [
+              {
+                "title": "Ver 26.09.14",
+                "items": [
+                  "`[수정]` 모델 셀렉트에서 로봇 바디 RJ45 포트 유료 옵션을 삭제했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.09.12",
+                "items": [
+                  "`[변경]` 케이블 구성에서 플렉시블·유연형을 가동형으로, 기본형·논플렉시블을 비가동형으로 표시하도록 변경했습니다.",
+                  "`[추가]` R15H·R20H 모델에 Arm I/O와 Body I/O가 함께 구성되는 케이블 세트 `1504UP81`·`1504CU41`을 추가했습니다.",
+                  "`[변경]` 6축 로봇의 중공형 표기를 `Yes/없음`에서 `중공형/비중공형`으로 변경했습니다.",
+                  "`[변경]` 클린 타입 필터의 `Yes/No` 표기를 `기본형/클린형`으로 변경했습니다.",
+                  "`[수정]` 클린형 필터를 선택하면 클린형 바디 옵션을 지원하는 6축 로봇도 함께 표시되도록 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.09.09",
+                "items": [
+                  "`[수정]` R10H 모델 셀렉트에서 J4·J5·J6 속도가 잘못 표시되던 문제를 `470°/s`·`438°/s`·`764.7°/s`로 수정했습니다.",
+                  "`[수정]` R15H·R20H 모델 셀렉트에서 기본 IP 등급이 잘못 표시되던 문제를 `IP54`로 수정하고 `IP67`을 선택 옵션으로 표시합니다."
+                ]
+              },
               {
                 "title": "Ver 26.08.13",
                 "items": [
@@ -2131,13 +2325,56 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.09.16",
+                "items": [
+                  "`[修复]` 修复了加载机器人模型后中央初始提示文字仍然显示且加载状态显示为失败的问题。",
+                  "`[变更]` 删除 JOG 面板中的 Wobj 坐标系选项，使 JOG 移动仅在 BASE 坐标系中运行。",
+                  "`[修复]` 修复了 Wobj 设置中无法选择其他坐标系选项的问题。"
+                ]
+              },
+              {
+                "title": "Ver 26.09.15",
+                "items": [
+                  "`[개선]` 화면 폭이 좁아질 때 3D 시뮬레이션 상단·하단 버튼과 상태 정보가 겹치거나 잘리던 문제를 해결했습니다.",
+                  "`[개선]` 모델 트리에서 이미 선택된 항목을 다시 클릭하면 선택 해제되도록 수정했습니다.",
+                  "`[수정]` 3D 시뮬레이션 바닥 그리드의 500mm 단위 치수 글자가 모델 표면 앞에 표시되거나 일부가 걸쳐 보이던 문제를 해결했습니다.",
+                  "`[개선]` 3D 파일을 불러오는 중 다른 모델을 추가로 불러올 수 있도록 수정했습니다.",
+                  "`[추가]` IO 테스트 기능을 추가하여 가상 입력을 프로그램에 반영할 수 있도록 추가했습니다.",
+                  "`[추가]` 치수 측정의 방식에 로봇 위치를 추가하여, 한 점을 스냅하고 선택된 로봇 기준 X/Y/Z 좌표를 표시하도록 했습니다.",
+                  "`[수정]` OLP에서 TCP 경로 선을 활성화해도 이동 경로가 표시되지 않던 문제를 해결했습니다.",
+                  "`[개선]` 여러 로봇이 있는 경우 OLP에서 로봇마다 프로젝트를 개별로 적용할 수 있도록 수정했습니다.",
+                  "`[수정]` OLP에서 전체 모델 제어 버튼을 눌러도 선택된 로봇을 함께 시작·일시정지·정지할 수 없던 문제를 해결했습니다.",
+                  "`[수정]` OLP 프로젝트를 불러올 때 폴더 복사 허용 여부를 묻는 알림이 표시되던 문제를 해결하여, 폴더를 선택하면 바로 불러오도록 수정했습니다.",
+                  "`[수정]` 프로그램 실행 중 상단의 테스트·스케치 모드·3D 파일 불러오기가 동작하지 않던 문제를 해결했습니다.",
+                  "`[수정]` 프로그램 실행 중 모델 트리의 우클릭 메뉴에서 삭제 및 일부 모델 편집 기능을 사용할 수 없던 문제를 해결했습니다.",
+                  "`[추가]` 3D 시뮬레이션에 로봇별 Wobj[1]~[15] 좌표계 설정과 WOBJ JOG를 추가하고, OLP·간섭영역 위치값이 선택한 Wobj 좌표계를 적용하도록 했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.09.14",
+                "items": [
+                  "`[수정]` 스케치 돌출 도형의 내부 구멍에서 스냅 지점이 생성되지 않던 문제를 해결했습니다.",
+                  "`[수정]` 스케치 돌출 도형의 구멍 중심을 가상 중심점 스냅으로 선택할 수 없던 문제를 해결했습니다.",
+                  "`[수정]` 치수 측정과 모델 배치에서 스케치 돌출 도형의 스냅 지점을 인식하지 못하던 문제를 해결했습니다.",
+                  "`[수정]` 다른 모델이나 빈 화면을 선택한 상태에서 활성 로봇이 있어도 로봇 변경이 비활성화되던 문제를 해결했습니다.",
+                  "`[수정]` 스케치 모드에서 로봇 바디 중심점과 영점 위치를 스냅할 수 없던 문제를 해결했습니다.",
+                  "`[수정]` 일부 스케치 프로파일만 돌출한 뒤 다시 스케치를 편집해 다른 프로파일을 돌출할 때 도형이 스케치 위치에서 대각선으로 어긋나 생성되던 문제를 해결했습니다.",
+                  "`[수정]` 스케치로 생성한 3D 도형의 우클릭 메뉴가 일반 도형과 달라 Tool·암 로드 등록과 색상 변경을 사용할 수 없던 문제를 해결했습니다.",
+                  "`[수정]` 로봇 모델을 스냅할 때 로봇 메시의 꼭짓점·에지·면이 스냅 후보로 표시되던 문제를 해결하고, 바디 중심점과 TCP 점만 표시하도록 수정했습니다.",
+                  "`[수정]` 다른 모델의 면을 선택한 뒤 로봇을 다시 클릭하거나 모델 트리에서 재선택할 때 로봇 스냅 후보가 사라지던 문제를 해결했습니다.",
+                  "`[추가]` 3D 모델을 불러오는 동안 단계별 진행 상황을 게이지로 확인할 수 있도록 추가했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.09.11",
                 "items": [
-                  "`[修复]` 修复了虚拟环境未启动协作服务器、导致无法创建房间的问题。",
-                  "`[新增]` 新增公开协作服务器，使两个浏览器可以创建并加入同一个仿真房间。",
-                  "`[修复]` 修复了未选择机器人型号时协作按钮被禁用的问题。",
-                  "`[修复]` 修复了创建或加入协作房间后新建控制器连接按钮被禁用的问题。",
-                  "`[变更]` 将 3D 仿真协作房间的参与人数从两人扩展至最多四人。"
+                  "`[수정]` 3D 화면에서 우클릭으로 뷰를 전환한 뒤에 옵션창이 표시되던 문제를 해결했습니다.",
+                  "`[추가]` 3D 시뮬레이션 작업 전체를 3D 모델과 함께 `.inosim` 파일로 저장하고 불러올 수 있는 기능을 추가했습니다.",
+                  "`[변경]` 프로그램 패널의 저장·불러오기가 전체 시뮬레이션이 아닌 프로그램 패널에서 작성한 모션 프로그램만 처리하도록 변경했습니다.",
+                  "`[수정]` 가상환경에서 협업 서버가 실행되지 않아 방을 만들 수 없던 문제를 해결했습니다.",
+                  "`[수정]` 로봇 모델을 선택하지 않으면 협업 버튼이 비활성화되던 문제를 해결했습니다.",
+                  "`[수정]` 협업 방을 만들거나 참여한 뒤 새 컨트롤러 연결 버튼이 비활성화되던 문제를 해결했습니다.",
+                  "`[변경]` 3D 시뮬레이션 협업 방의 최대 참여 인원을 2명에서 4명으로 확장했습니다."
                 ]
               },
               {
@@ -2149,28 +2386,25 @@
               {
                 "title": "Ver 26.09.08",
                 "items": [
-                  "`[新增]` 新增了在 3D Simulation 中创建长方体、圆锥、圆柱和球体并编辑尺寸与位置的功能。",
-                  "`[新增]` 新增了在模型树中将所选模型或部件的透明度设置为 1% 至 100% 的选项。",
-                  "`[新增]` 新增了通过捕捉两点测量直线长度和 X/Y/Z 正交尺寸，并按输入距离放置 3D 模型的功能。",
-                  "`[新增]` 新增了检查当前位置与目标位置之间的 3D 模型干涉、生成自动绕行路径并注册为运动点的功能。",
-                  "`[新增]` 新增了双人协作功能，两台计算机可加入同一 3D 仿真并同时控制不同机器人。",
-                  "`[新增]` 新增了将导入的 3D 模型和形状安装为 Tool，并选择安装目标机器人的功能。",
-                  "`[新增]` 新增了用于同步多个机器人程序执行位置的 WAIT 命令和程序行号显示。",
-                  "`[新增]` 新增了程序运行时的 TCP 移动轨迹显示，并支持选择停止运动、显示碰撞或关闭检测的碰撞模式。",
-                  "`[新增]` 新增了使用吸附工具和夹爪抓取、放下模型、形状及部件并通过程序命令控制的功能。",
-                  "`[改进]` 改进了为多个机器人分别连接控制器并同时同步位置的功能。",
-                  "`[改进]` 改进了仿真 OLP 程序面板，可分别或同时控制多个机器人的运行、暂停和停止。",
-                  "`[改进]` 改进了根据已安装 Tool 的部件材质或输入质量计算质量、重心和惯性矩的负载信息功能。",
-                  "`[改进]` 改进了 2D 草图功能，可插入和编辑 DXF 图纸，并通过拉伸和拉伸切除创建 3D 形状。",
-                  "`[改进]` 改进了模型树的移动、捕捉和尺寸编辑，可直接调整所选部件的位置和尺寸。",
-                  "`[改进]` 改进了模型和部件的选择、隐藏、移动及捕捉，使选择对象和捕捉位置保持一致。",
-                  "`[改进]` 改进了程序运行时编辑点位、命令、目标机器人和模型布局的功能。",
-                  "`[改进]` 提高了已保存仿真任务和设置的恢复与初始化稳定性。",
-                  "`[改进]` 改进了 3D 模型导出，支持 STL 和 STEP 格式并提高导出稳定性。",
-                  "`[改进]` 改进了捕捉功能，使模型、形状和机器人上的基准点、面及边可以稳定选择。",
-                  "`[改进]` 提高了碰撞检测和干涉规避路径计算的稳定性与性能。",
-                  "`[改进]` 改进了工作原点、固定视图和模型面板等主要仿真窗口的保存、恢复与操作。",
-                  "`[改进]` 改进了多语言显示，使生成形状名称以及位置、TCP、协作提示使用当前语言显示。"
+                  "`[추가]` DXF 파일을 불러오거나 직접 도면을 그려 돌출/돌출컷할 수 있는 2D CAD 스케치 기능을 추가했습니다.",
+                  "`[추가]` 3D 도형을 생성하는 기능을 추가했습니다.",
+                  "`[추가]` 모델 트리에서 선택한 모델 또는 부품의 투명도를 설정할 수 있는 옵션을 추가했습니다.",
+                  "`[추가]` 치수를 측정하는 기능을 추가했습니다.",
+                  "`[추가]` 프로그램 패널에 두개의 위치 사이의 3D 모델 간섭을 확인해 자동 회피 경로를 생성하는 자동 경로 생성 기능을 추가했습니다.",
+                  "`[추가]` 두 대의 컴퓨터가 같은 3D 시뮬레이션에 참여해 각자 다른 로봇을 제어할 수 있는 2인 협업 기능을 추가했습니다.",
+                  "`[추가]` 프로그램 패널에 여러 로봇의 프로그램 실행 위치를 동기화하는 WAIT 명령과 프로그램 행 번호 표시를 추가했습니다.",
+                  "`[추가]` 프로그램 패널과 모델 트리에 Tool로 오브젝트를 잡고 놓는 동작을 구현할 수 있도록 기능 및 프로그램 명령을 추가했습니다.",
+                  "`[추가]` 프로그램 패널에 프로그램 실행 중 TCP 이동 궤적을 표시하는 TCP 경로 선 기능을 추가했습니다.",
+                  "`[개선]` 모델 트리에서 불러온 3D 모델과 도형을 Tool로 등록/해제 할 수 있도록 개선했습니다.",
+                  "`[개선]` 충돌 감지 기능을 개선하여 충돌 발생시 정지하지 않고 표시만 기능을 추가했습니다.",
+                  "`[개선]` 컨트롤러 연결 기능이 동시에 여러 로봇과 연결할 수 있도록 개선했습니다.",
+                  "`[개선]` 프로그램 패널에서 OLP 기능이 여러 로봇을 동시에 제어할 수 있도록 개선했습니다.",
+                  "`[개선]` 로봇에 부착된 Tool의 부품별 재질 또는 입력 질량을 기준으로 질량·무게중심·관성모멘트를 계산할 수 있도록 개선했습니다.",
+                  "`[개선]` 모델 트리의 이동·스냅·치수 편집을 개선해 선택한 부품의 위치와 크기를 직접 조정할 수 있도록 개선했습니다.",
+                  "`[개선]` 프로그램 실행 중에도 기타 프로그램 및 기능들을 편집/사용할 수 있도록 개선했습니다.",
+                  "`[개선]` 충돌 감지 성능을 개선했습니다.",
+                  "`[변경]` 모든 스냅 아이콘 색상을 노란색에서 빨간색으로 변경했습니다.",
+                  "`[개선]` 스냅 반경 선택 기능을 삭제했습니다."
                 ]
               },
               {
@@ -2253,12 +2487,6 @@
             "title": "Robot Tool Selector",
             "versions": [
               {
-                "title": "Ver 26.09.06",
-                "items": [
-                  "`[修复]` 修复主页视频指南中下拉选择和输入过程显示不清晰，以及鼠标、选择框、点击与画面切换不同步的问题。"
-                ]
-              },
-              {
                 "title": "Ver 26.09.03",
                 "items": [
                   "`[变更]` 删除 Mode D 中不再需要的捕捉半径设置。",
@@ -2321,12 +2549,6 @@
           {
             "title": "Project Generator",
             "versions": [
-              {
-                "title": "Ver 26.09.06",
-                "items": [
-                  "`[修复]` 修复主页项目生成器视频指南中下拉列表和输入过程不可见，以及点击、画面切换、鼠标与选择框动作不同步的问题。"
-                ]
-              },
               {
                 "title": "Ver 26.09.03",
                 "items": [
@@ -2418,6 +2640,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.09.17",
+                "items": [
+                  "**[修复]** 修复了由于请求格式与当前下载认证服务不匹配，导致 Display 专用软件无法下载的问题。"
+                ]
+              },
+              {
                 "title": "Ver 26.09.08",
                 "items": [
                   "**[更新]** 将 Display 版 InoRobotLab 和 InoRobotTP 从 V4R24C4SPC0L18F121 更新至 V4R24C4SPC0L23F121。"
@@ -2475,10 +2703,17 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.09.14",
+                "items": [
+                  "`[修复]` 修正了 IR-R16-210 的 2D CAD 文件错误链接为 `*_3D_CN.dwg` 导致无法下载的问题，改为链接 `IR-R16-210S-INT_2D.dwg`。"
+                ]
+              },
+              {
                 "title": "Ver 26.09.13",
                 "items": [
                   "`[新增]` 添加 CAD 标签，以便下载 2D 和 3D CAD 文件。",
-                  "`[改进]` 让所有导航分组默认以折叠状态开始。"
+                  "`[改进]` 让所有导航分组默认以折叠状态开始。",
+                  "`[变更]` 将 SDC 控制器 3D CAD 文件名更改为 `IRCB501-6-aixs-Highpower_EMO.stp`。"
                 ]
               },
               {
@@ -2964,8 +3199,56 @@
         "intro": "Tệp này ghi lại các tính năng, tài liệu, thay đổi hiển thị và bản sửa lỗi mà người dùng có thể thấy trên từng thẻ ở trang chủ.",
         "sections": [
           {
+            "title": "InoRobot Assistant",
+            "versions": [
+              {
+                "title": "Ver 26.09.06",
+                "items": [
+                  "`[변경]` 메인 홈페이지 하단의 제작자 표기를 `Designed & Developed by Jeongchan Lee | INOVANCE Korea`로 변경했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.08.13",
+                "items": [
+                  "`[수정]` 웹사이트 원형 로고의 바깥쪽 흰색 사각형 테두리가 표시되던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.08.12",
+                "items": [
+                  "`[개선]` 이노로봇, 이노밴스 로봇, INOVANCE robot 검색어로 사이트를 더 쉽게 찾을 수 있도록 홈페이지 SEO를 개선했습니다.",
+                  "`[변경]` 홈페이지 검색 제목을 `Inovance Robot Assistant | 이노밴스 코리아`로 변경했습니다.",
+                  "`[추가]` Google 검색 결과에서 웹사이트를 식별할 수 있도록 원형 로고 아이콘을 추가했습니다."
+                ]
+              }
+            ]
+          },
+          {
             "title": "Robot Model Select",
             "versions": [
+              {
+                "title": "Ver 26.09.14",
+                "items": [
+                  "`[수정]` 모델 셀렉트에서 로봇 바디 RJ45 포트 유료 옵션을 삭제했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.09.12",
+                "items": [
+                  "`[변경]` 케이블 구성에서 플렉시블·유연형을 가동형으로, 기본형·논플렉시블을 비가동형으로 표시하도록 변경했습니다.",
+                  "`[추가]` R15H·R20H 모델에 Arm I/O와 Body I/O가 함께 구성되는 케이블 세트 `1504UP81`·`1504CU41`을 추가했습니다.",
+                  "`[변경]` 6축 로봇의 중공형 표기를 `Yes/없음`에서 `중공형/비중공형`으로 변경했습니다.",
+                  "`[변경]` 클린 타입 필터의 `Yes/No` 표기를 `기본형/클린형`으로 변경했습니다.",
+                  "`[수정]` 클린형 필터를 선택하면 클린형 바디 옵션을 지원하는 6축 로봇도 함께 표시되도록 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.09.09",
+                "items": [
+                  "`[수정]` R10H 모델 셀렉트에서 J4·J5·J6 속도가 잘못 표시되던 문제를 `470°/s`·`438°/s`·`764.7°/s`로 수정했습니다.",
+                  "`[수정]` R15H·R20H 모델 셀렉트에서 기본 IP 등급이 잘못 표시되던 문제를 `IP54`로 수정하고 `IP67`을 선택 옵션으로 표시합니다."
+                ]
+              },
               {
                 "title": "Ver 26.08.13",
                 "items": [
@@ -3098,13 +3381,56 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.09.16",
+                "items": [
+                  "`[Sửa lỗi]` Đã khắc phục sự cố dòng hướng dẫn ban đầu ở giữa màn hình vẫn hiển thị và trạng thái tải hiển thị thất bại sau khi tải model robot.",
+                  "`[Thay đổi]` Đã xóa tùy chọn hệ tọa độ Wobj khỏi bảng JOG để chuyển động JOG chỉ hoạt động theo hệ tọa độ BASE.",
+                  "`[Sửa lỗi]` Đã khắc phục sự cố không thể chọn các mục tọa độ khác trong phần cài đặt Wobj."
+                ]
+              },
+              {
+                "title": "Ver 26.09.15",
+                "items": [
+                  "`[개선]` 화면 폭이 좁아질 때 3D 시뮬레이션 상단·하단 버튼과 상태 정보가 겹치거나 잘리던 문제를 해결했습니다.",
+                  "`[개선]` 모델 트리에서 이미 선택된 항목을 다시 클릭하면 선택 해제되도록 수정했습니다.",
+                  "`[수정]` 3D 시뮬레이션 바닥 그리드의 500mm 단위 치수 글자가 모델 표면 앞에 표시되거나 일부가 걸쳐 보이던 문제를 해결했습니다.",
+                  "`[개선]` 3D 파일을 불러오는 중 다른 모델을 추가로 불러올 수 있도록 수정했습니다.",
+                  "`[추가]` IO 테스트 기능을 추가하여 가상 입력을 프로그램에 반영할 수 있도록 추가했습니다.",
+                  "`[추가]` 치수 측정의 방식에 로봇 위치를 추가하여, 한 점을 스냅하고 선택된 로봇 기준 X/Y/Z 좌표를 표시하도록 했습니다.",
+                  "`[수정]` OLP에서 TCP 경로 선을 활성화해도 이동 경로가 표시되지 않던 문제를 해결했습니다.",
+                  "`[개선]` 여러 로봇이 있는 경우 OLP에서 로봇마다 프로젝트를 개별로 적용할 수 있도록 수정했습니다.",
+                  "`[수정]` OLP에서 전체 모델 제어 버튼을 눌러도 선택된 로봇을 함께 시작·일시정지·정지할 수 없던 문제를 해결했습니다.",
+                  "`[수정]` OLP 프로젝트를 불러올 때 폴더 복사 허용 여부를 묻는 알림이 표시되던 문제를 해결하여, 폴더를 선택하면 바로 불러오도록 수정했습니다.",
+                  "`[수정]` 프로그램 실행 중 상단의 테스트·스케치 모드·3D 파일 불러오기가 동작하지 않던 문제를 해결했습니다.",
+                  "`[수정]` 프로그램 실행 중 모델 트리의 우클릭 메뉴에서 삭제 및 일부 모델 편집 기능을 사용할 수 없던 문제를 해결했습니다.",
+                  "`[추가]` 3D 시뮬레이션에 로봇별 Wobj[1]~[15] 좌표계 설정과 WOBJ JOG를 추가하고, OLP·간섭영역 위치값이 선택한 Wobj 좌표계를 적용하도록 했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.09.14",
+                "items": [
+                  "`[수정]` 스케치 돌출 도형의 내부 구멍에서 스냅 지점이 생성되지 않던 문제를 해결했습니다.",
+                  "`[수정]` 스케치 돌출 도형의 구멍 중심을 가상 중심점 스냅으로 선택할 수 없던 문제를 해결했습니다.",
+                  "`[수정]` 치수 측정과 모델 배치에서 스케치 돌출 도형의 스냅 지점을 인식하지 못하던 문제를 해결했습니다.",
+                  "`[수정]` 다른 모델이나 빈 화면을 선택한 상태에서 활성 로봇이 있어도 로봇 변경이 비활성화되던 문제를 해결했습니다.",
+                  "`[수정]` 스케치 모드에서 로봇 바디 중심점과 영점 위치를 스냅할 수 없던 문제를 해결했습니다.",
+                  "`[수정]` 일부 스케치 프로파일만 돌출한 뒤 다시 스케치를 편집해 다른 프로파일을 돌출할 때 도형이 스케치 위치에서 대각선으로 어긋나 생성되던 문제를 해결했습니다.",
+                  "`[수정]` 스케치로 생성한 3D 도형의 우클릭 메뉴가 일반 도형과 달라 Tool·암 로드 등록과 색상 변경을 사용할 수 없던 문제를 해결했습니다.",
+                  "`[수정]` 로봇 모델을 스냅할 때 로봇 메시의 꼭짓점·에지·면이 스냅 후보로 표시되던 문제를 해결하고, 바디 중심점과 TCP 점만 표시하도록 수정했습니다.",
+                  "`[수정]` 다른 모델의 면을 선택한 뒤 로봇을 다시 클릭하거나 모델 트리에서 재선택할 때 로봇 스냅 후보가 사라지던 문제를 해결했습니다.",
+                  "`[추가]` 3D 모델을 불러오는 동안 단계별 진행 상황을 게이지로 확인할 수 있도록 추가했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.09.11",
                 "items": [
-                  "`[Sửa lỗi]` Đã khắc phục sự cố máy chủ cộng tác không được khởi động trong môi trường ảo khiến không thể tạo phòng.",
-                  "`[Thêm mới]` Đã thêm máy chủ cộng tác công khai để hai trình duyệt có thể tạo và tham gia cùng một phòng mô phỏng.",
-                  "`[Sửa lỗi]` Đã khắc phục sự cố nút cộng tác bị vô hiệu hóa cho đến khi chọn model robot.",
-                  "`[Sửa lỗi]` Đã khắc phục sự cố nút kết nối bộ điều khiển mới bị vô hiệu hóa sau khi tạo hoặc tham gia phòng cộng tác.",
-                  "`[Thay đổi]` Đã mở rộng số người tham gia phòng cộng tác 3D Simulation từ hai lên tối đa bốn người."
+                  "`[수정]` 3D 화면에서 우클릭으로 뷰를 전환한 뒤에 옵션창이 표시되던 문제를 해결했습니다.",
+                  "`[추가]` 3D 시뮬레이션 작업 전체를 3D 모델과 함께 `.inosim` 파일로 저장하고 불러올 수 있는 기능을 추가했습니다.",
+                  "`[변경]` 프로그램 패널의 저장·불러오기가 전체 시뮬레이션이 아닌 프로그램 패널에서 작성한 모션 프로그램만 처리하도록 변경했습니다.",
+                  "`[수정]` 가상환경에서 협업 서버가 실행되지 않아 방을 만들 수 없던 문제를 해결했습니다.",
+                  "`[수정]` 로봇 모델을 선택하지 않으면 협업 버튼이 비활성화되던 문제를 해결했습니다.",
+                  "`[수정]` 협업 방을 만들거나 참여한 뒤 새 컨트롤러 연결 버튼이 비활성화되던 문제를 해결했습니다.",
+                  "`[변경]` 3D 시뮬레이션 협업 방의 최대 참여 인원을 2명에서 4명으로 확장했습니다."
                 ]
               },
               {
@@ -3116,28 +3442,25 @@
               {
                 "title": "Ver 26.09.08",
                 "items": [
-                  "`[Thêm mới]` Thêm chức năng tạo hình hộp, hình nón, hình trụ và hình cầu với khả năng chỉnh sửa kích thước và vị trí trong 3D Simulation.",
-                  "`[Thêm mới]` Thêm tùy chọn đặt độ trong suốt từ 1% đến 100% cho model hoặc bộ phận được chọn trong Cây mô hình.",
-                  "`[Thêm mới]` Thêm chức năng đo chiều dài đường thẳng và kích thước trực giao X/Y/Z giữa hai điểm bắt dính, đồng thời bố trí model 3D theo khoảng cách nhập vào.",
-                  "`[Thêm mới]` Thêm chức năng kiểm tra can nhiễu giữa vị trí hiện tại và mục tiêu, tạo đường vòng tự động và đăng ký thành các điểm chuyển động.",
-                  "`[Thêm mới]` Thêm chức năng cộng tác hai người để hai máy tính tham gia cùng một mô phỏng 3D và đồng thời điều khiển các robot khác nhau.",
-                  "`[Thêm mới]` Thêm chức năng lắp model 3D và hình đã nhập thành Tool, đồng thời chọn robot nhận Tool.",
-                  "`[Thêm mới]` Thêm lệnh WAIT và hiển thị số dòng chương trình để đồng bộ vị trí thực thi chương trình giữa các robot.",
-                  "`[Thêm mới]` Thêm hiển thị quỹ đạo TCP khi chương trình chạy và các chế độ phát hiện va chạm gồm dừng chuyển động, chỉ hiển thị va chạm hoặc tắt phát hiện.",
-                  "`[Thêm mới]` Thêm hỗ trợ gắp và thả model, hình và bộ phận bằng tool hút hoặc gripper, bao gồm cả lệnh chương trình.",
-                  "`[Cải thiện]` Cải thiện khả năng kết nối bộ điều khiển riêng cho từng robot và đồng bộ vị trí của nhiều robot cùng lúc.",
-                  "`[Cải thiện]` Cải thiện bảng chương trình OLP để chạy, tạm dừng hoặc dừng từng robot được chọn hoặc tất cả robot cùng lúc.",
-                  "`[Cải thiện]` Cải thiện tính toán thông tin tải của Tool đã lắp dựa trên vật liệu hoặc khối lượng nhập cho từng bộ phận, gồm khối lượng, trọng tâm và mô men quán tính.",
-                  "`[Cải thiện]` Cải thiện chế độ phác thảo 2D để chèn và chỉnh sửa bản vẽ DXF, sau đó tạo hình 3D bằng đùn và đùn cắt.",
-                  "`[Cải thiện]` Cải thiện thao tác di chuyển, bắt dính và chỉnh sửa kích thước trong Cây mô hình để có thể chỉnh trực tiếp vị trí và kích thước bộ phận được chọn.",
-                  "`[Cải thiện]` Cải thiện việc chọn, ẩn, di chuyển và bắt dính model hoặc bộ phận để đối tượng được chọn và vị trí bắt dính luôn nhất quán.",
-                  "`[Cải thiện]` Cải thiện khả năng chỉnh sửa điểm, lệnh, robot mục tiêu và bố trí model trong khi chương trình đang chạy.",
-                  "`[Cải thiện]` Cải thiện độ ổn định khi khôi phục và khởi tạo các tác vụ mô phỏng cùng cài đặt đã lưu.",
-                  "`[Cải thiện]` Cải thiện xuất model 3D bằng cách hỗ trợ định dạng STL và STEP, đồng thời tăng độ ổn định khi xuất.",
-                  "`[Cải thiện]` Cải thiện bắt dính để có thể chọn nhất quán điểm chuẩn, mặt và cạnh trên model, hình và robot.",
-                  "`[Cải thiện]` Cải thiện độ ổn định và hiệu năng của phát hiện va chạm và tính toán đường tránh can nhiễu.",
-                  "`[Cải thiện]` Cải thiện việc lưu, khôi phục và thao tác các cửa sổ mô phỏng chính như Gốc làm việc, chế độ xem cố định và bảng mô hình.",
-                  "`[Cải thiện]` Cải thiện hiển thị đa ngôn ngữ để tên hình đã tạo và hướng dẫn về vị trí, TCP, cộng tác sử dụng ngôn ngữ hiện tại."
+                  "`[추가]` DXF 파일을 불러오거나 직접 도면을 그려 돌출/돌출컷할 수 있는 2D CAD 스케치 기능을 추가했습니다.",
+                  "`[추가]` 3D 도형을 생성하는 기능을 추가했습니다.",
+                  "`[추가]` 모델 트리에서 선택한 모델 또는 부품의 투명도를 설정할 수 있는 옵션을 추가했습니다.",
+                  "`[추가]` 치수를 측정하는 기능을 추가했습니다.",
+                  "`[추가]` 프로그램 패널에 두개의 위치 사이의 3D 모델 간섭을 확인해 자동 회피 경로를 생성하는 자동 경로 생성 기능을 추가했습니다.",
+                  "`[추가]` 두 대의 컴퓨터가 같은 3D 시뮬레이션에 참여해 각자 다른 로봇을 제어할 수 있는 2인 협업 기능을 추가했습니다.",
+                  "`[추가]` 프로그램 패널에 여러 로봇의 프로그램 실행 위치를 동기화하는 WAIT 명령과 프로그램 행 번호 표시를 추가했습니다.",
+                  "`[추가]` 프로그램 패널과 모델 트리에 Tool로 오브젝트를 잡고 놓는 동작을 구현할 수 있도록 기능 및 프로그램 명령을 추가했습니다.",
+                  "`[추가]` 프로그램 패널에 프로그램 실행 중 TCP 이동 궤적을 표시하는 TCP 경로 선 기능을 추가했습니다.",
+                  "`[개선]` 모델 트리에서 불러온 3D 모델과 도형을 Tool로 등록/해제 할 수 있도록 개선했습니다.",
+                  "`[개선]` 충돌 감지 기능을 개선하여 충돌 발생시 정지하지 않고 표시만 기능을 추가했습니다.",
+                  "`[개선]` 컨트롤러 연결 기능이 동시에 여러 로봇과 연결할 수 있도록 개선했습니다.",
+                  "`[개선]` 프로그램 패널에서 OLP 기능이 여러 로봇을 동시에 제어할 수 있도록 개선했습니다.",
+                  "`[개선]` 로봇에 부착된 Tool의 부품별 재질 또는 입력 질량을 기준으로 질량·무게중심·관성모멘트를 계산할 수 있도록 개선했습니다.",
+                  "`[개선]` 모델 트리의 이동·스냅·치수 편집을 개선해 선택한 부품의 위치와 크기를 직접 조정할 수 있도록 개선했습니다.",
+                  "`[개선]` 프로그램 실행 중에도 기타 프로그램 및 기능들을 편집/사용할 수 있도록 개선했습니다.",
+                  "`[개선]` 충돌 감지 성능을 개선했습니다.",
+                  "`[변경]` 모든 스냅 아이콘 색상을 노란색에서 빨간색으로 변경했습니다.",
+                  "`[개선]` 스냅 반경 선택 기능을 삭제했습니다."
                 ]
               },
               {
@@ -3220,12 +3543,6 @@
             "title": "Robot Tool Selector",
             "versions": [
               {
-                "title": "Ver 26.09.06",
-                "items": [
-                  "`[Sửa lỗi]` Đã khắc phục thao tác chọn danh sách và nhập liệu chưa rõ trong video hướng dẫn trên trang chủ, đồng thời đồng bộ con trỏ, khung chọn, nhấp chuột và chuyển màn hình."
-                ]
-              },
-              {
                 "title": "Ver 26.09.03",
                 "items": [
                   "`[Thay đổi]` Đã xóa tùy chọn bán kính bắt điểm không còn cần thiết khỏi Mode D.",
@@ -3288,12 +3605,6 @@
           {
             "title": "Project Generator",
             "versions": [
-              {
-                "title": "Ver 26.09.06",
-                "items": [
-                  "`[Sửa lỗi]` Đã khắc phục việc không hiển thị danh sách thả xuống và quá trình nhập trong video hướng dẫn Project Generator trên trang chủ, đồng thời đồng bộ thao tác nhấp, chuyển màn hình, con trỏ và khung chọn."
-                ]
-              },
               {
                 "title": "Ver 26.09.03",
                 "items": [
@@ -3385,6 +3696,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.09.17",
+                "items": [
+                  "**[Sửa lỗi]** Đã khắc phục sự cố không thể tải phần mềm chuyên dụng Display xuống do định dạng yêu cầu không khớp với dịch vụ xác thực tải xuống hiện tại."
+                ]
+              },
+              {
                 "title": "Ver 26.09.08",
                 "items": [
                   "**[Cập nhật]** Đã cập nhật InoRobotLab và InoRobotTP bản Display từ V4R24C4SPC0L18F121 lên V4R24C4SPC0L23F121."
@@ -3442,10 +3759,17 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.09.14",
+                "items": [
+                  "`[Sửa lỗi]` Đã sửa lỗi tệp CAD 2D của IR-R16-210 bị liên kết nhầm thành `*_3D_CN.dwg` khiến không thể tải xuống, bằng cách liên kết đến `IR-R16-210S-INT_2D.dwg`."
+                ]
+              },
+              {
                 "title": "Ver 26.09.13",
                 "items": [
                   "`[Thêm mới]` Thêm tab CAD để tải xuống tệp CAD 2D và 3D.",
-                  "`[Cải tiến]` Đặt tất cả nhóm điều hướng bắt đầu ở trạng thái thu gọn theo mặc định."
+                  "`[Cải tiến]` Đặt tất cả nhóm điều hướng bắt đầu ở trạng thái thu gọn theo mặc định.",
+                  "`[Thay đổi]` Đổi tên tệp CAD 3D của bộ điều khiển SDC thành `IRCB501-6-aixs-Highpower_EMO.stp`."
                 ]
               },
               {

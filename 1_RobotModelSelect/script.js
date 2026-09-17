@@ -979,18 +979,6 @@ document.addEventListener('DOMContentLoaded', () => {
             );
         }
 
-        if (fileId === '2D' && ext.toLowerCase() === 'dwg') {
-            paths.splice(2, 0, `${baseUrl}${modelId}_3D_CN.${ext}`);
-            paths.push(`${baseUrl}${modelIdNoInt}_3D_CN.${ext}`);
-            if (modelIdNoK !== modelId) {
-                const modelIdNoKNoInt = modelIdNoK.replace('-INT', '');
-                paths.push(
-                    `${baseUrl}${modelIdNoK}_3D_CN.${ext}`,
-                    `${baseUrl}${modelIdNoKNoInt}_3D_CN.${ext}`
-                );
-            }
-        }
-
         return [...new Set(paths)];
     }
 

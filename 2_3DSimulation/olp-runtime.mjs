@@ -112,7 +112,7 @@ function normalizeAddress(address, labels = {}) {
     if (address && typeof address === 'object') {
         const prefix = String(address.prefix || '').toUpperCase();
         const index = Number(address.index);
-        if (['IN', 'OUT', 'INW', 'OUTW'].includes(prefix) && Number.isInteger(index) && index >= 0) {
+        if (['IN', 'OUT', 'INB', 'OUTB', 'INW', 'OUTW'].includes(prefix) && Number.isInteger(index) && index >= 0) {
             return { prefix, index };
         }
     }
@@ -120,7 +120,7 @@ function normalizeAddress(address, labels = {}) {
     const resolved = labels[raw]
         || Object.entries(labels).find(([label]) => label.toLowerCase() === raw.toLowerCase())?.[1]
         || raw;
-    const match = resolved.match(/^(InW|OutW|In|Out)\s*\[\s*(\d+)\s*\]$/i);
+    const match = resolved.match(/^(InB|OutB|InW|OutW|In|Out)\s*\[\s*(\d+)\s*\]$/i);
     if (!match) return null;
     return { prefix: match[1].toUpperCase(), index: Number(match[2]) };
 }
@@ -397,7 +397,7 @@ function formatPrintExpression(expression, runtime) {
         if (/^"(?:[^"\\]|\\.)*"$/.test(raw) || /^'(?:[^'\\]|\\.)*'$/.test(raw)) return parseLiteral(raw, runtime);
         if (runtime.variables.has(raw)) return runtime.variables.get(raw);
         const address = normalizeAddress(raw, runtime.project?.labels || {});
-        if (address) return runtime.adapter.readAddress?.(address) ?? 0;
+        if (address) return runtime.adapter.readAddress?.(address, runtime) ?? 0;
         if (/^[-+]?\d*\.?\d+$/.test(raw)) return Number(raw);
         return runtime.readSymbol(raw);
     });
@@ -771,7 +771,7 @@ export class OlpRuntime {
             return base;
         }
         const address = normalizeAddress(raw, this.project?.labels || {});
-        if (address) return this.adapter.readAddress?.(address) ?? 0;
+        if (address) return this.adapter.readAddress?.(address, this) ?? 0;
         return 0;
     }
 
@@ -793,7 +793,7 @@ export class OlpRuntime {
         }
         const address = normalizeAddress(raw, this.project?.labels || {});
         if (address) {
-            this.adapter.writeAddress?.(address, value);
+            this.adapter.writeAddress?.(address, value, this);
             return;
         }
         this.variables.set(raw, this.coerceVariableValue(raw, value));
@@ -1021,7 +1021,7 @@ export class OlpRuntime {
                 const symbol = `yP${positionFunction[1]}_${mode}_pos_busy`;
                 positionBusyAddress = normalizeAddress(symbol, this.project?.labels || {});
                 if (positionBusyAddress) {
-                    this.adapter.writeAddress?.(positionBusyAddress, 1);
+                    this.adapter.writeAddress?.(positionBusyAddress, 1, this);
                     this.adapter.log?.(`OLP process busy: ${symbol}=ON`);
                 }
             }
@@ -1038,7 +1038,7 @@ export class OlpRuntime {
             if (positionBusyAddress) {
                 // This is a runtime status output only.  Virtual Bus input
                 // state remains owned by the Communication Tester.
-                this.adapter.writeAddress?.(positionBusyAddress, 0);
+                this.adapter.writeAddress?.(positionBusyAddress, 0, this);
             }
             parameterState.forEach(({ parameter, hadValue, previousValue, hadType, previousType }) => {
                 if (hadValue) this.variables.set(parameter, previousValue);
