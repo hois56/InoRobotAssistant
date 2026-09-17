@@ -538,8 +538,8 @@ assert.ok(
 );
 assert.match(
     workspaceRecoveryCoreSource,
-    /const olpProjects = Array\.isArray\(state\.olpProject\?\.files\)[\s\S]*?return \{ robots, models: imported \+ catalog, olpProjects \};/,
-    'Workspace summaries must count a saved OLP project for the startup recovery dialog.'
+    /const savedOlpProjects = Array\.isArray\(state\.olpProjects\)[\s\S]*?state\.olpProject\?\.files[\s\S]*?return \{ robots, models: imported \+ catalog, olpProjects \};/,
+    'Workspace summaries must count saved per-robot OLP projects for the startup recovery dialog.'
 );
 const workspaceOrphanCleanupCoreSource = workspaceRecoveryCoreSource.slice(
     workspaceRecoveryCoreSource.indexOf('async deleteOrphanAssets(')
@@ -734,16 +734,16 @@ const workspaceSerializeSource = mainSource.slice(
     `Workspace snapshot is missing scene state: ${marker}`
 ));
 const workspaceOlpSerializeSource = mainSource.slice(
-    mainSource.indexOf('function serializeWorkspaceOlpProject()'),
+    mainSource.indexOf('function serializeWorkspaceOlpProject('),
     mainSource.indexOf('function serializeWorkspaceSnapshot()')
 );
 [
     'schemaVersion: 1,',
     "name: String(project.name || 'OLP Project')",
     'programPath: project.programPath || null',
-    "selectedFile: state.olp.selectedFile || ''",
+    'selectedFile: isActiveRobot',
     'enabled: Boolean(state.olp.enabled)',
-    'projectDirty: Boolean(state.olp.projectDirty)',
+    'projectDirty: isActiveRobot',
     'files: [...project.files.values()].map((record) => ({',
     'binary: Boolean(record.binary)',
     "text: record.binary ? null : String(record.text ?? '')",
@@ -758,10 +758,20 @@ assert.doesNotMatch(
     'OLP snapshots must reference binary assets by id instead of embedding their bytes in workspace metadata.'
 );
 assert.ok(
+    mainSource.includes('projects: new Map(),')
+        && mainSource.includes('function getOlpProjectForRobot(')
+        && mainSource.includes('state.olp.projects.set(instanceId, project)')
+        && mainSource.includes('robot: targetRobot,')
+        && olpRuntimeSource.includes('readAddress?.(address, this)')
+        && olpRuntimeSource.includes('writeAddress?.(address, value, this)'),
+    'OLP must keep project files and runtime IO address resolution scoped to each robot instance.'
+);
+assert.ok(
     workspaceSerializeSource.indexOf('flushOlpPendingEdit();')
-        < workspaceSerializeSource.indexOf('const olpProject = serializeWorkspaceOlpProject();')
-        && workspaceSerializeSource.includes('|| Boolean(olpProject)')
+        < workspaceSerializeSource.indexOf('const olpProjects = serializeWorkspaceOlpProjects();')
+        && workspaceSerializeSource.includes('|| olpProjects.length > 0')
         && workspaceSerializeSource.includes('olpProject,')
+        && workspaceSerializeSource.includes('olpProjects,')
         && workspaceSerializeSource.includes('.filter((file) => file.binary && file.assetId)')
         && workspaceSerializeSource.includes('.map((file) => file.assetId)'),
     'Every autosave must flush the visible OLP editor, mark OLP-only work as durable, and retain binary asset references.'
@@ -863,10 +873,10 @@ assert.ok(
         && workspaceRestoreSource.includes('snapshot?.programSelection')
         && workspaceRestoreSource.includes('await restoreWorkspaceCatalogModel(entry);')
         && workspaceRestoreSource.indexOf("model?.placement !== 'tcp'") < workspaceRestoreSource.indexOf("model?.placement === 'tcp'")
-        && workspaceRestoreSource.includes('warnings.push(...await restoreWorkspaceOlpProject(snapshot.olpProject));')
-        && workspaceRestoreSource.indexOf('warnings.push(...await restoreWorkspaceOlpProject(snapshot.olpProject));')
+        && workspaceRestoreSource.includes('warnings.push(...await restoreWorkspaceOlpProjects(snapshot, robotsById));')
+        && workspaceRestoreSource.indexOf('warnings.push(...await restoreWorkspaceOlpProjects(snapshot, robotsById));')
             > workspaceRestoreSource.indexOf("model?.placement === 'tcp'")
-        && workspaceRestoreSource.indexOf('warnings.push(...await restoreWorkspaceOlpProject(snapshot.olpProject));')
+        && workspaceRestoreSource.indexOf('warnings.push(...await restoreWorkspaceOlpProjects(snapshot, robotsById));')
             < workspaceRestoreSource.indexOf('restoreWorkspaceViewConfiguration(snapshot?.viewConfiguration)')
         && workspaceRestoreSource.includes('restoreWorkspaceViewConfiguration(snapshot?.viewConfiguration)')
         && workspaceRestoreSource.includes('applyWorkspaceDisplayState(snapshot)')
@@ -893,7 +903,7 @@ assert.ok(
         && mainSource.includes('function canEditOlpFile(path = state.olp.selectedFile)')
         && mainSource.includes('return !isOlpRunning() || isOlpProgramFile(path);')
         && mainSource.includes('el.olpFileEditor.disabled = !canEditOlpFile();')
-        && mainSource.includes('if (!state.olp.project || !state.olp.selectedFile || !canEditOlpFile()) return;'),
+        && mainSource.includes('if (!project || !state.olp.selectedFile || !canEditOlpFile()) return;'),
     'OLP .pro source files must remain editable during execution and apply to the next runtime snapshot.'
 );
 assert.ok(
@@ -932,7 +942,8 @@ const workspaceHasWorkSource = mainSource.slice(
     mainSource.indexOf('function readSessionStorageValue(')
 );
 assert.ok(
-    workspaceHasWorkSource.includes('Array.isArray(snapshot.olpProject?.files) && snapshot.olpProject.files.length > 0'),
+    workspaceHasWorkSource.includes('snapshot.olpProjects.some((project) => Array.isArray(project?.files) && project.files.length > 0)')
+        && workspaceHasWorkSource.includes('Array.isArray(snapshot.olpProject?.files) && snapshot.olpProject.files.length > 0'),
     'An OLP-only workspace must be offered for startup recovery.'
 );
 
@@ -2484,6 +2495,13 @@ assert.ok(
 );
 assert.ok(!htmlSource.includes('id="program-run-step"'), 'The old selected-row run control must be replaced by Step Into.');
 assert.ok(!htmlSource.includes('fa-play"></i> 동시 시작'), 'Group play must use the compact icon-only button.');
+assert.ok(
+    mainSource.includes("el.btnProgramStepGroup?.addEventListener('click', stepCheckedRobotPrograms);")
+        && mainSource.includes("el.btnProgramRunGroup?.addEventListener('click', runCheckedRobotProgramsOrOlp);")
+        && mainSource.includes("el.btnProgramPauseGroup?.addEventListener('click', pauseCheckedRobotMotionsOrOlp);")
+        && mainSource.includes("el.btnProgramStopGroup?.addEventListener('click', stopCheckedRobotMotionsOrOlp);"),
+    'Group program controls must dispatch to the OLP-aware handlers.'
+);
 assert.ok(
     mainSource.includes("button:not([data-panel-action]), input")
         && mainSource.includes("querySelectorAll('[data-panel-action]')"),

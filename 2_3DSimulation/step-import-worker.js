@@ -405,6 +405,7 @@ function collectXcafParts(document) {
 }
 
 async function parseLargeStepFile(message, requestId) {
+    const startedAt = performance.now();
     const { OcctKernel } = await ensureLargeOcctModule();
     const kernel = await OcctKernel.init({ wasm: LARGE_OCCT_WASM_URL });
     let shape = null;
@@ -469,7 +470,8 @@ async function parseLargeStepFile(message, requestId) {
                                 meshCount,
                                 partCount: parts.length,
                                 failedPartCount,
-                                segmented: true
+                                segmented: true,
+                                timings: { totalMs: performance.now() - startedAt }
                             });
                             return;
                         }
@@ -506,7 +508,8 @@ async function parseLargeStepFile(message, requestId) {
             type: 'done',
             requestId,
             rootName: message.fileName || 'STEP Assembly',
-            meshCount
+            meshCount,
+            timings: { totalMs: performance.now() - startedAt }
         });
     } finally {
         if (shape != null) kernel.release(shape);
@@ -519,6 +522,7 @@ async function parseLargeStepFile(message, requestId) {
 self.addEventListener('message', async (event) => {
     const message = event.data || {};
     const requestId = message.requestId;
+    const startedAt = performance.now();
     try {
         if (message.type === 'parse' && message.engine === 'large') {
             await parseLargeStepFile(message, requestId);
@@ -532,12 +536,15 @@ self.addEventListener('message', async (event) => {
         if (message.type !== 'parse') return;
 
         self.postMessage({ type: 'progress', requestId, phase: 'tessellating' });
+        const tessellationStartedAt = performance.now();
         const result = occt.ReadStepFile(new Uint8Array(message.fileBuffer), message.parameters || null);
+        const tessellationMs = performance.now() - tessellationStartedAt;
         if (!result?.success || !Array.isArray(result.meshes)) {
             throw new Error('OpenCascade could not convert this STEP file.');
         }
 
         self.postMessage({ type: 'progress', requestId, phase: 'packing', sourceMeshCount: result.meshes.length });
+        const packingStartedAt = performance.now();
         const partByMeshIndex = indexStepHierarchy(result.root);
         const buckets = new Map();
         let outputMeshCount = 0;
@@ -581,7 +588,12 @@ self.addEventListener('message', async (event) => {
             type: 'done',
             requestId,
             rootName: result.root?.name || 'STEP Assembly',
-            meshCount: outputMeshCount
+            meshCount: outputMeshCount,
+            timings: {
+                tessellationMs,
+                packingMs: performance.now() - packingStartedAt,
+                totalMs: performance.now() - startedAt
+            }
         });
     } catch (error) {
         self.postMessage({ type: 'error', requestId, message: errorMessage(error) });

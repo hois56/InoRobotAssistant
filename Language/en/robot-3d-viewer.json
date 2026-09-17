@@ -40,6 +40,52 @@
     "Save": "Save",
     "이동": "Move",
     "3D Simulation": "3D Simulation",
+    "IO 테스트": "IO Test",
+    "IO 테스트를 별도 창으로 분리": "Open IO Test in a separate window",
+    "IO 테스트 숨기기": "Hide IO Test",
+    "IO 테스트 표시/숨김": "Show/hide IO Test",
+    "IO 영역": "IO range",
+    "스탠다드 IO": "Standard IO",
+    "필드버스 IO": "Fieldbus IO",
+    "내부 OLP 프로그램의 가상 IO를 직접 제어합니다. 여러 로봇이 실행 중이면 모든 로봇이 같은 IO 메모리를 공유하며, In[512]를 ON하면 대기 중인 프로그램 조건에 반영됩니다.": "Control the internal OLP program's virtual IO directly. When multiple robots are running, they share the same IO memory, and turning In[512] ON is reflected in waiting program conditions.",
+    "IO 방향": "IO direction",
+    "표시 형식": "Display format",
+    "OLP 프로그램을 실행하면 이 패널의 가상 IO가 프로그램 조건과 연결됩니다.": "When an OLP program is running, this panel's virtual IO is connected to its program conditions.",
+    "IO 기능 매핑": "IO function mapping",
+    "기능 매핑": "Function mapping",
+    "매핑": "Mapping",
+    "지정한 IO 신호가 선택한 상태로 바뀌면 물건 잡기·놓기 또는 저장된 뷰 전환을 한 번 실행합니다. In은 IO 테스트에서 직접 변경하고, Out은 OLP 프로그램 출력에도 반응합니다.": "When a specified IO signal changes to the selected state, run the pick-up/release action or saved-view transition once. In signals are changed directly in IO Test, while Out signals also respond to OLP program output.",
+    "기능 매핑 추가": "Add function mapping",
+    "번호": "Number",
+    "트리거": "Trigger",
+    "기능": "Function",
+    "물건": "Object",
+    "사용 가능한 물건이 없습니다.": "No objects are available.",
+    "전환할 뷰": "View to switch to",
+    "매핑 추가": "Add mapping",
+    "등록된 매핑": "Registered mappings",
+    "등록된 기능 매핑이 없습니다.": "No function mappings are registered.",
+    "매핑 대상": "Mapping target",
+    "매핑 사용": "Enable mapping",
+    "매핑 삭제": "Delete mapping",
+    "현재 대상을 찾을 수 없음": "Current target not found",
+    "대상을 찾을 수 없음": "Target not found",
+    "저장되지 않음": "Not saved",
+    "저장된 뷰 없음": "No saved view",
+    "뷰 전환": "View transition",
+    "IO 번호는 0~64 또는 512~2559 범위의 정수여야 합니다.": "The IO number must be an integer from 0–64 or 512–2559.",
+    "뷰 전환 매핑에는 먼저 저장된 뷰가 필요합니다.": "A saved view is required for a view-transition mapping.",
+    "선택한 기능에 사용할 대상을 선택하세요.": "Select a target for the selected function.",
+    "기능 매핑을 추가했습니다.": "Function mapping added.",
+    "기능 매핑을 변경했습니다.": "Function mapping changed.",
+    "기능 매핑을 삭제했습니다.": "Function mapping deleted.",
+    "IO 매핑 실행 실패: {error}": "IO mapping execution failed: {error}",
+    "IO 매핑 실행에 실패했습니다.": "IO mapping execution failed.",
+    "IO 매핑으로 {view} 뷰로 전환했습니다.": "IO mapping switched to {view}.",
+    "IO 매핑으로 {action}을 실행했습니다.": "IO mapping executed {action}.",
+    "IO Simulator → OLP: {address} = {value}": "IO Simulator → OLP: {address} = {value}",
+    "IO Simulator: {address} = {value}": "IO Simulator: {address} = {value}",
+    "IO Simulator input: {address}={value}.": "IO Simulator input: {address}={value}.",
     "SCENE": "Scene",
     "모델 트리": "Model Tree",
     "모델 변환 패널 크기 조절": "Resize model transform panel",
@@ -106,6 +152,7 @@
     "2D 평면뷰입니다. 도구를 선택하고 첫 번째 위치를 클릭한 뒤, 크기를 정해 다시 클릭하세요.": "This is a 2D top view. Select a tool, click the start point, move to set the size, then click again.",
     "스케치 원점": "Sketch origin",
     "로봇 바디 중심점": "Robot body center",
+    "0,0 영점 위치": "0,0 origin",
     "격자점": "Grid point",
     "끝점": "Endpoint",
     "꼭짓점": "Vertex",
@@ -113,6 +160,7 @@
     "원주점": "Quadrant point",
     "원 중심점": "Circle center",
     "도형 중심점": "Geometry center",
+    "구멍 가상 중심점": "Hole virtual center",
     "스냅점": "Snap point",
     "X축 치수": "X-axis dimension",
     "Y축 치수": "Y-axis dimension",
@@ -399,6 +447,9 @@
   "TCP에 장착할 로봇을 먼저 불러와 주세요.": "Load a robot before attaching a model to its TCP.",
   "{name} 가져오는 중...": "Importing {name}...",
   "가져오는 중": "Importing",
+  "형상 변환 중...": "Converting geometry...",
+  "변환 진행률 계산 중...": "Calculating conversion progress...",
+  "부품 {current}/{total} 변환 중...": "Converting part {current}/{total}...",
   "Tool이 TCP에 부착되었습니다.": "Tool attached to TCP.",
     "3D 모델링 불러오기 완료": "3D model import complete.",
   "가져오기 오류": "Import error",
@@ -537,7 +588,8 @@
   "스냅 유형": "Snap type",
   "자동 스냅": "Auto snap",
     "다중 점 중심점": "Multiple point center",
-    "로봇 바디 중심점": "Robot body center",
+  "로봇 바디 중심점": "Robot body center",
+  "0,0 영점 위치": "0,0 origin",
   "다중 점 선택": "Multiple point selection",
   "계산 중심 적용": "Apply calculated center",
   "선택 초기화": "Reset selection",
@@ -555,6 +607,7 @@
   "에지 중심점": "Edge midpoint",
   "면 중심점": "Face center",
   "사각형 중심점": "Rectangle center",
+  "구멍 가상 중심점": "Hole virtual center",
   "형상 중심점": "Shape center",
   "가상 교점": "Virtual intersection",
   "선택한 스냅 위치에 도달할 수 없습니다.": "The selected snap position is unreachable.",
@@ -587,8 +640,10 @@
   "P2 선택": "Select P2",
   "측정 점": "Measurement points",
   "표시 방식": "Display mode",
+  "방식": "Mode",
   "직선 길이": "Straight-line length",
   "직각 치수 (X/Y/Z)": "Orthogonal dimensions (X/Y/Z)",
+  "로봇 위치": "Robot position",
   "측정 결과": "Measurement result",
   "Distance": "Distance",
   "다시 측정": "Measure again",
@@ -610,7 +665,10 @@
   "모델 형상 위로 포인터를 이동하세요.": "Move the pointer over model geometry.",
   "측정 대상이 숨겨졌거나 삭제되었습니다. 다시 측정하세요.": "A measurement target was hidden or deleted. Measure again.",
   "P1과 P2는 서로 다른 스냅 점이어야 합니다.": "P1 and P2 must be different snap points.",
+  "선택된 로봇이 없습니다. 로봇을 선택하세요.": "No robot is selected. Select a robot.",
+  "로봇 위치를 측정하려면 로봇을 선택하세요.": "Select a robot to measure robot position.",
   "측정 완료": "Measurement complete",
+  "선택한 지점의 로봇 위치를 표시했습니다.": "The selected point's robot position is displayed.",
   "선택한 업로드 모델의 기준점을 선택하세요.": "Select a reference point on the selected uploaded model.",
   "선택한 모델의 기준점을 선택하세요.": "Select a reference point on the selected model.",
   "다시 측정할 P1 스냅 점을 선택하세요.": "Select the P1 snap point to measure again.",
@@ -1292,6 +1350,7 @@
     ,"스케치 편집 중입니다. 수정한 뒤 스케치 완료를 누르세요.": "Editing the sketch. Apply the sketch when you finish your changes."
     ,"피쳐 편집 중입니다. Z 높이를 변경한 뒤 적용하세요.": "Editing the feature. Change the Z height and apply the feature."
     ,"기존 스케치 피쳐를 수정했습니다.": "The existing sketch feature was updated."
+    ,"스케치 돌출이 적용된 상태로 스케치를 완료했습니다.": "The sketch was completed with the extrusion applied."
     ,"장면에 배치된 스케치 도형만 편집할 수 있습니다.": "Only sketch shapes placed in the scene can be edited."
     ,"스케치 지우기": "Clear sketch"
     ,"직경": "Diameter"
@@ -1654,6 +1713,29 @@
     ,"목표 X, Y, Z를 모두 입력하세요.": "Enter target X, Y, and Z values."
     ,"CAD 선택점이 이미 목표 위치에 있습니다.": "The CAD selected point is already at the target position."
     ,"CAD 선택점을 목표 위치로 이동했습니다.": "The CAD selected point was moved to the target position."
+    ,"Wobj 대상 로봇": "Wobj target robot"
+    ,"Wobj 목록": "Wobj list"
+    ,"Wobj 선택": "Wobj selection"
+    ,"Wobj 설정": "Wobj settings"
+    ,"Wobj 설정 표시/숨기기": "Show/hide Wobj settings"
+    ,"Wobj 이름": "Wobj name"
+    ,"Wobj 초기화": "Reset Wobj"
+    ,"Wobj는 로봇별로 저장됩니다.": "Wobjs are saved per robot."
+    ,"Wobj 입력값을 확인하세요.": "Check the Wobj values."
+    ,"Wobj를 적용했습니다.": "Wobj applied."
+    ,"Wobj를 초기화했습니다.": "Wobj was reset."
+    ,"현재 TCP로 등록": "Register from current TCP"
+    ,"현재 TCP로 Wobj 등록": "Register Wobj from current TCP"
+    ,"3D 표시": "Show in 3D"
+    ,"위치로 이동": "Go to position"
+    ,"정의됨": "Defined"
+    ,"미설정": "Undefined"
+    ,"활성 좌표계": "Active coordinate system"
+    ,"좌표 기준 로봇": "Coordinate robot"
+    ,"좌표 기준 Wobj": "Coordinate Wobj"
+    ,"Wobj 저장 안내": "Wobjs are saved per robot."
+    ,"선택 Wobj 간섭영역 안내": "Set the interference zone relative to TCP in the selected Wobj coordinate system."
+    ,"선택한 Wobj 좌표계에서 TCP 기준으로 간섭영역을 설정합니다.": "Set the interference zone relative to TCP in the selected Wobj coordinate system."
   },
   "patterns": []
 }

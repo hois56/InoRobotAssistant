@@ -47,16 +47,14 @@ async function readResponseBuffer(response, requestId) {
     return result.buffer;
 }
 
-function cloneTypedArray(source) {
-    return source?.slice ? source.slice() : new source.constructor(source);
-}
-
 function serializeGeometry(geometry, transferredBuffers = new Set()) {
     const attributes = {};
     const transferables = [];
 
     Object.entries(geometry.attributes || {}).forEach(([name, attribute]) => {
-        const array = cloneTypedArray(attribute.array);
+        // The parsed geometry is not reused in this worker after posting. Move
+        // its buffers to the UI thread instead of allocating a full duplicate.
+        const array = attribute.array;
         attributes[name] = {
             array,
             itemSize: attribute.itemSize,
@@ -70,7 +68,7 @@ function serializeGeometry(geometry, transferredBuffers = new Set()) {
 
     let index = null;
     if (geometry.index?.array) {
-        index = cloneTypedArray(geometry.index.array);
+        index = geometry.index.array;
         if (!transferredBuffers.has(index.buffer)) {
             transferredBuffers.add(index.buffer);
             transferables.push(index.buffer);
@@ -253,7 +251,9 @@ self.addEventListener('message', async (event) => {
         }
         if (payload.type === 'parse-stl' || payload.type === 'parse-stl-buffer') {
             const STLLoader = await getSTLLoader();
+            self.postMessage({ type: 'progress', requestId, progress: 35, phase: 'parsing' });
             const geometry = new STLLoader().parse(buffer);
+            self.postMessage({ type: 'progress', requestId, progress: 75, phase: 'optimizing' });
             const serialized = serializeGeometry(geometry);
             const collisionProxy = payload.includeCollisionProxy
                 ? createSTLCollisionProxy(geometry)

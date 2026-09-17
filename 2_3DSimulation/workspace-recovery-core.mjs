@@ -165,6 +165,16 @@ export function collectWorkspaceAssetIds(input) {
         const id = String(model?.assetId || '').trim();
         if (id) ids.add(id);
     });
+    const olpProjects = [
+        ...(Array.isArray(state?.olpProjects) ? state.olpProjects : []),
+        state?.olpProject
+    ];
+    olpProjects.forEach((project) => {
+        (Array.isArray(project?.files) ? project.files : []).forEach((file) => {
+            const id = String(file?.assetId || '').trim();
+            if (file?.binary && id) ids.add(id);
+        });
+    });
     return [...ids].sort();
 }
 
@@ -250,7 +260,12 @@ export function getWorkspaceSummary(record) {
     const robots = Array.isArray(state.motionProject?.robots) ? state.motionProject.robots.length : 0;
     const imported = Array.isArray(state.importedModels) ? state.importedModels.length : 0;
     const catalog = Array.isArray(state.catalogModels) ? state.catalogModels.length : 0;
-    const olpProjects = Array.isArray(state.olpProject?.files) && state.olpProject.files.length ? 1 : 0;
+    const savedOlpProjects = Array.isArray(state.olpProjects)
+        ? state.olpProjects.filter((project) => Array.isArray(project?.files) && project.files.length)
+        : [];
+    const olpProjects = savedOlpProjects.length
+        ? savedOlpProjects.length
+        : (Array.isArray(state.olpProject?.files) && state.olpProject.files.length ? 1 : 0);
     return { robots, models: imported + catalog, olpProjects };
 }
 

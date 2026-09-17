@@ -3996,14 +3996,6 @@ const accessoriesList = [
         "target_models": "R4, R4H, R7H, R10(All), R11, R16, R25"
     },
     {
-        "code": "1504NN47",
-        "type": "Connector",
-        "name": "Robot body RJ45 port",
-        "description": "8pin connector to RJ45 adapter",
-        "spec": "-",
-        "target_models": "R4H, R7H, R10H"
-    },
-    {
         "code": "01660004",
         "type": "break box",
         "name": "Handheld motor break release box",

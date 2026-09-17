@@ -139,6 +139,7 @@ const startSource = sourceBetween(
         motionSessions: new Map(),
         olp: {
             runtime: null,
+            runtimes: new Map(),
             project: { programPath: 'main.pro' },
             workOriginBusy: false,
             manualMoveBusy: false,
@@ -146,7 +147,8 @@ const startSource = sourceBetween(
             virtualBusWanted: true,
             execution: {},
             status: 'connected'
-        }
+        },
+        sharedIoAdapter: null
     };
     const context = vm.createContext({
         state,
@@ -154,6 +156,11 @@ const startSource = sourceBetween(
         isOlpRunning: () => false,
         setOlpStatus: () => { },
         flushOlpPendingEdit: () => { },
+        getOlpSharedIoAdapter: () => ({
+            readAddress: () => 0,
+            writeAddress: () => { }
+        }),
+        getOlpProjectForRobot: () => state.olp.project,
         readOlpAddress: () => 0,
         writeOlpAddress: () => { },
         runOlpMove: () => { },

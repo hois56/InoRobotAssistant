@@ -35,7 +35,7 @@ window.InoRobotDocumentCadData = [
         group: "6axis",
         model: "IR-R16-210",
         folder: "6-axis/IR-R16-210",
-        files: ["IR-R16-210S-INT_3D_CN.dwg", "IR-R16-210S-INT_3D.stp"]
+        files: ["IR-R16-210S-INT_2D.dwg", "IR-R16-210S-INT_3D.stp"]
     },
     {
         group: "6axis",
@@ -224,7 +224,7 @@ window.InoRobotDocumentCadData = [
         group: "controller",
         model: "SDC_Controller",
         folder: "Controller/SDC_Controller",
-        files: ["80181656-WXSTEP_B00(IRCB501-6KD-EM-INT-3D).stp", "小电柜-WX_B00(整机外形图).dxf"]
+        files: ["IRCB501-6-aixs-Highpower_EMO.stp", "小电柜-WX_B00(整机外形图).dxf"]
     },
     {
         group: "accessory",

@@ -49,6 +49,22 @@ assert.deepEqual(getWorkspaceSummary(source), { robots: 2, models: 3, olpProject
 assert.deepEqual(getWorkspaceSummary({
     state: { olpProject: { files: [{ path: 'main.pro', text: 'End;' }] } }
 }), { robots: 0, models: 0, olpProjects: 1 });
+assert.deepEqual(getWorkspaceSummary({
+    state: {
+        olpProjects: [
+            { files: [{ path: 'robot-a/main.pro', text: 'End;' }] },
+            { files: [{ path: 'robot-b/main.pro', text: 'End;' }] }
+        ]
+    }
+}), { robots: 0, models: 0, olpProjects: 2 });
+assert.deepEqual(collectWorkspaceAssetIds({
+    state: {
+        olpProjects: [
+            { files: [{ binary: true, assetId: 'asset-robot-a' }] },
+            { files: [{ binary: true, assetId: 'asset-robot-b' }] }
+        ]
+    }
+}), ['asset-robot-a', 'asset-robot-b']);
 
 const fork = createForkedWorkspaceRecord(source, 'workspace-b', { now: 500 });
 assert.equal(fork.id, 'workspace-b');

@@ -1,3 +1,5 @@
+import { normalizeWorkObjects } from './workobject-core.mjs';
+
 export const MOTION_PROJECT_SCHEMA_VERSION = 1;
 export const DEFAULT_MOVJ_SPEED = 100;
 export const DEFAULT_MOVL_SPEED = 1500;
@@ -956,6 +958,7 @@ export function normalizeMotionProject(input) {
         const baseScale = finiteArray(robot.baseTransform?.scale, 3, `Robot ${index + 1} base scale`);
         if (baseScale.some((value) => value <= 0)) throw new Error(`Robot ${index + 1} base scale must be positive.`);
         const tcpProfiles = normalizeTcpProfiles(robot.tcpProfiles, index);
+        const workObjects = normalizeWorkObjects(robot.workObjects);
         const workOrigin = normalizeWorkOrigin(robot.workOrigin, jointCount, index);
         const activeTcpProfileIndex = robot.activeTcpProfileIndex === undefined
             ? 0
@@ -986,6 +989,10 @@ export function normalizeMotionProject(input) {
                 : finiteArray(robot.externalAxes, 6, `Robot ${index + 1} external axes`),
             tcpProfiles,
             activeTcpProfileIndex,
+            workObjects,
+            activeWorkObjectIndex: Number.isInteger(Number(robot.activeWorkObjectIndex))
+                ? Math.max(0, Math.min(workObjects.length - 1, Number(robot.activeWorkObjectIndex)))
+                : 0,
             workOrigin,
             steps
         };

@@ -8,7 +8,7 @@
     <title>3D Simulation | INOVANCE</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=20260908-olp-multi-robot-2">
+    <link rel="stylesheet" href="style.css?v=20260915-wobj-1">
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -28,6 +28,58 @@
     <script src="/Language/runtime/icon-fallback.js" defer></script>
     <script src="/analytics-config.js"></script>
     <script src="/analytics.js" defer></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -900,6 +952,7 @@
                                     <option value="edge-midpoint">에지 중심점</option>
                                     <option value="circle-center">원/호 중심점</option>
                                     <option value="rectangle-center">사각형 중심점</option>
+                                    <option value="hole-center">구멍 가상 중심점</option>
                                     <option value="multi-point-center">다중 점 중심점</option>
                                     <option value="robot-base-center">로봇 바디 중심점</option>
                                     <option value="robot-tcp">현재 TCP (점)</option>
@@ -957,6 +1010,7 @@
                                     <option value="" data-zero-snap-type="edge-midpoint">모서리 중점</option>
                                     <option value="" data-zero-snap-type="circle-center">원 중심점</option>
                                     <option value="" data-zero-snap-type="rectangle-center">직사각형 중심점</option>
+                                    <option value="" data-zero-snap-type="hole-center">구멍 가상 중심점</option>
                                     <option value="" data-zero-snap-type="multi-point-center">다중 점 중심점</option>
                                     <option value="" data-zero-snap-type="robot-base-center">로봇 바디 중심점</option>
                                     <option value="" data-zero-snap-type="robot-tcp">현재 TCP (점)</option>
@@ -1066,6 +1120,7 @@
                                 <option value="edge-midpoint">에지 중심점</option>
                                 <option value="circle-center">원/호 중심점</option>
                                 <option value="rectangle-center">사각형 중심점</option>
+                                <option value="hole-center">구멍 가상 중심점</option>
                                 <option value="multi-point-center">다중 점 중심점</option>
                                 <option value="robot-base-center">로봇 바디 중심점</option>
                                 <option value="robot-tcp">현재 TCP (점)</option>
@@ -1075,12 +1130,13 @@
                     <div id="measurement-hover-readout" class="measurement-hover-readout" aria-live="polite">모델 형상 위로 포인터를 이동하세요.</div>
                     <section id="measurement-point-readouts" class="measurement-point-readouts" aria-label="측정 점">
                         <div><strong>P1</strong><span id="measurement-p1-readout">-</span></div>
-                        <div><strong>P2</strong><span id="measurement-p2-readout">-</span></div>
+                        <div id="measurement-p2-row"><strong>P2</strong><span id="measurement-p2-readout">-</span></div>
                     </section>
                     <section id="measurement-display-section" class="measurement-display-section" aria-label="치수 표시 방식">
-                        <div class="measurement-section-title">표시 방식</div>
+                        <div class="measurement-section-title">방식</div>
                         <label><input type="radio" name="measurement-display-mode" value="diagonal" checked> 직선 길이</label>
                         <label><input type="radio" name="measurement-display-mode" value="orthogonal"> 직각 치수 (X/Y/Z)</label>
+                        <label><input type="radio" name="measurement-display-mode" value="robot-position"> 로봇 위치</label>
                     </section>
                     <section id="measurement-result" class="measurement-result" aria-label="측정 결과">
                         <div class="measurement-section-title">측정 결과</div>
@@ -1089,6 +1145,11 @@
                             <div>X = - mm <small id="measurement-delta-x">ΔX 0.000</small></div>
                             <div>Y = - mm <small id="measurement-delta-y">ΔY 0.000</small></div>
                             <div>Z = - mm <small id="measurement-delta-z">ΔZ 0.000</small></div>
+                        </div>
+                        <div id="measurement-robot-position-result" class="hidden">
+                            <div>X = - mm</div>
+                            <div>Y = - mm</div>
+                            <div>Z = - mm</div>
                         </div>
                     </section>
                     <div class="measurement-action-row">
@@ -1439,6 +1500,10 @@
             <div id="loading-overlay" class="hidden">
                 <div class="loader-content">
                     <p id="loading-text">Loading model...</p>
+                    <div id="loading-progress" class="loading-progress hidden" role="progressbar" aria-labelledby="loading-text loading-progress-text" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                        <span id="loading-progress-bar"></span>
+                    </div>
+                    <p id="loading-progress-text" class="loading-progress-text hidden" aria-live="polite">0%</p>
                 </div>
             </div>
             <aside id="jog-panel" class="jog-panel hidden" aria-label="JOG Panel">
@@ -1530,6 +1595,7 @@
                                 <option value="edge-midpoint">에지 중심점</option>
                                 <option value="circle-center">원/호 중심점</option>
                                 <option value="rectangle-center">사각형 중심점</option>
+                                <option value="hole-center">구멍 가상 중심점</option>
                                 <option value="multi-point-center">다중 점 중심점</option>
                                 <option value="robot-base-center">로봇 바디 중심점</option>
                                 <option value="robot-tcp">현재 TCP (점)</option>
@@ -1560,6 +1626,50 @@
                             <button id="btn-apply-tcp-profile" type="button" class="primary"><i class="fa-solid fa-check"></i> 적용</button>
                         </div>
                         <p id="tcp-profile-status" class="tcp-profile-status" aria-live="polite">선택한 TCP는 로봇별로 저장됩니다.</p>
+                    </div>
+                </section>
+            </aside>
+            <aside id="workobject-panel" class="tcp-profile-panel workobject-panel panel-user-hidden" aria-label="Wobj 설정" data-i18n-aria-label="legacy.Wobj 설정">
+                <div class="tcp-profile-panel-header">
+                    <h2><i class="fa-solid fa-compass-drafting"></i> <span data-i18n="legacy.Wobj 설정">Wobj 설정</span></h2>
+                    <div class="panel-header-actions">
+                        <button type="button" data-panel-action="popout" data-panel-id="workobject-panel" title="별도 창으로 분리" aria-label="Wobj 설정" data-i18n-aria-label="legacy.Wobj 설정"><i class="fa-solid fa-up-right-from-square"></i></button>
+                        <button type="button" data-panel-action="hide" data-panel-id="workobject-panel" title="숨기기" aria-label="숨기기" data-i18n-aria-label="legacy.숨기기"><i class="fa-solid fa-eye-slash"></i></button>
+                    </div>
+                </div>
+                <section class="tcp-profile-manager workobject-manager" aria-label="Wobj 설정" data-i18n-aria-label="legacy.Wobj 설정">
+                    <label class="workobject-target-field">
+                        <span data-i18n="legacy.대상 로봇">대상 로봇</span>
+                        <select id="workobject-target-robot" aria-label="Wobj 대상 로봇" data-i18n-aria-label="legacy.Wobj 대상 로봇"></select>
+                    </label>
+                    <div class="tcp-profile-heading">
+                        <div>
+                            <span data-i18n="legacy.활성 좌표계">활성 좌표계</span>
+                            <strong id="active-workobject-label">Wobj[0] World</strong>
+                        </div>
+                    </div>
+                    <div id="workobject-list" class="workobject-list" role="listbox" aria-label="Wobj 목록" data-i18n-aria-label="legacy.Wobj 목록"></div>
+                    <div class="workobject-editor">
+                        <div class="tcp-profile-editor-title">
+                            <input id="workobject-name" type="text" maxlength="40" autocomplete="off" aria-label="Wobj 이름" data-i18n-aria-label="legacy.Wobj 이름">
+                            <span id="workobject-defined">정의됨</span>
+                        </div>
+                        <label class="workobject-visible-toggle"><input id="workobject-visible" type="checkbox" checked><span data-i18n="legacy.3D 표시">3D 표시</span></label>
+                        <div class="tcp-profile-fields workobject-fields">
+                            <label><span>X</span><input type="number" min="-1000000" max="1000000" step="0.5" data-workobject-pose="x"><small>mm</small></label>
+                            <label><span>Y</span><input type="number" min="-1000000" max="1000000" step="0.5" data-workobject-pose="y"><small>mm</small></label>
+                            <label><span>Z</span><input type="number" min="-1000000" max="1000000" step="0.5" data-workobject-pose="z"><small>mm</small></label>
+                            <label><span>RX</span><input type="number" min="-360000" max="360000" step="0.5" data-workobject-pose="rx"><small>deg</small></label>
+                            <label><span>RY</span><input type="number" min="-360000" max="360000" step="0.5" data-workobject-pose="ry"><small>deg</small></label>
+                            <label><span>RZ</span><input type="number" min="-360000" max="360000" step="0.5" data-workobject-pose="rz"><small>deg</small></label>
+                        </div>
+                        <div class="tcp-profile-actions workobject-actions">
+                            <button id="btn-register-workobject" type="button"><i class="fa-solid fa-crosshairs"></i> <span data-i18n="legacy.현재 TCP로 등록">현재 TCP로 등록</span></button>
+                            <button id="btn-focus-workobject" type="button"><i class="fa-solid fa-location-crosshairs"></i> <span data-i18n="legacy.위치로 이동">위치로 이동</span></button>
+                            <button id="btn-reset-workobject" type="button"><i class="fa-solid fa-rotate-left"></i> <span data-i18n="legacy.초기화">초기화</span></button>
+                            <button id="btn-apply-workobject" type="button" class="primary"><i class="fa-solid fa-check"></i> <span data-i18n="legacy.적용">적용</span></button>
+                        </div>
+                        <p id="workobject-status" class="tcp-profile-status" aria-live="polite" data-i18n="legacy.Wobj 저장 안내">Wobj는 로봇별로 저장됩니다.</p>
                     </div>
                 </section>
             </aside>
@@ -1734,7 +1844,7 @@
                     </div>
                 </div>
                 <div class="interference-zone-content">
-                    <p class="interference-zone-help">World 좌표계(Wobj[0] 대체)에서 TCP 기준으로 간섭영역을 설정합니다.</p>
+                    <p class="interference-zone-help" data-i18n="legacy.선택 Wobj 간섭영역 안내">선택한 Wobj 좌표계에서 TCP 기준으로 간섭영역을 설정합니다.</p>
                     <div class="interference-zone-toolbar">
                         <strong id="interference-zone-active-count">0 / 16 활성</strong>
                     </div>
@@ -1750,6 +1860,100 @@
                     </section>
                 </div>
             </aside>
+            <aside id="io-simulator-panel" class="io-simulator-panel panel-user-hidden panel-edge-resizable" aria-label="IO 테스트">
+                <div class="io-simulator-header">
+                    <h2><i class="fa-solid fa-toggle-on" aria-hidden="true"></i> IO 테스트</h2>
+                    <div class="panel-header-actions">
+                        <button type="button" data-panel-action="popout" data-panel-id="io-simulator-panel" title="별도 창으로 분리" aria-label="IO 테스트를 별도 창으로 분리"><i class="fa-solid fa-up-right-from-square"></i></button>
+                        <button type="button" data-panel-action="hide" data-panel-id="io-simulator-panel" title="숨기기" aria-label="IO 테스트 숨기기"><i class="fa-solid fa-eye-slash"></i></button>
+                    </div>
+                </div>
+                <div class="io-simulator-content">
+                    <p class="io-simulator-help">내부 OLP 프로그램의 가상 IO를 직접 제어합니다. 여러 로봇이 실행 중이면 모든 로봇이 같은 IO 메모리를 공유하며, In[512]를 ON하면 대기 중인 프로그램 조건에 반영됩니다.</p>
+                    <div class="io-simulator-toolbar">
+                        <div class="io-simulator-direction" role="group" aria-label="IO 방향">
+                            <button type="button" data-io-simulator-direction="IN" class="active" aria-pressed="true">In</button>
+                            <button type="button" data-io-simulator-direction="OUT" aria-pressed="false">Out</button>
+                        </div>
+                        <button id="io-function-mapping-button" class="io-simulator-mapping-button" type="button" title="기능 매핑" aria-label="IO 기능 매핑">
+                            <i class="fa-solid fa-link" aria-hidden="true"></i>
+                            <span>매핑</span>
+                        </button>
+                        <label class="io-simulator-mode-field" for="io-simulator-mode">
+                            <span>표시 형식</span>
+                            <select id="io-simulator-mode">
+                                <option value="bit">Bit</option>
+                                <option value="byte">Byte</option>
+                                <option value="word">Word</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="io-simulator-range-tabs" role="tablist" aria-label="IO 영역" data-i18n-aria-label="legacy.IO 영역">
+                        <button type="button" role="tab" data-io-simulator-range="standard" class="active" aria-selected="true" tabindex="0" data-i18n="legacy.스탠다드 IO" data-i18n-aria-label="legacy.스탠다드 IO">스탠다드 IO</button>
+                        <button type="button" role="tab" data-io-simulator-range="fieldbus" aria-selected="false" tabindex="-1" data-i18n="legacy.필드버스 IO" data-i18n-aria-label="legacy.필드버스 IO">필드버스 IO</button>
+                    </div>
+                    <div id="io-simulator-list" class="io-simulator-list"></div>
+                    <p id="io-simulator-status" class="io-simulator-status" role="status" aria-live="polite"></p>
+                </div>
+            </aside>
+            <dialog id="io-function-mapping-dialog" class="io-function-mapping-dialog" aria-labelledby="io-function-mapping-title">
+                <form method="dialog">
+                    <div class="io-function-mapping-header">
+                        <div>
+                            <span>IO FUNCTION MAPPING</span>
+                            <h2 id="io-function-mapping-title"><i class="fa-solid fa-link" aria-hidden="true"></i> 기능 매핑</h2>
+                        </div>
+                        <button id="io-function-mapping-close" type="button" aria-label="닫기" title="닫기"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <p class="io-function-mapping-help">지정한 IO 신호가 선택한 상태로 바뀌면 물건 잡기·놓기 또는 저장된 뷰 전환을 한 번 실행합니다. In은 IO 테스트에서 직접 변경하고, Out은 OLP 프로그램 출력에도 반응합니다.</p>
+                    <section class="io-function-mapping-editor" aria-label="기능 매핑 추가">
+                        <label>
+                            <span>IO</span>
+                            <select id="io-function-mapping-direction" aria-label="IO 방향">
+                                <option value="IN">In</option>
+                                <option value="OUT">Out</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span>번호</span>
+                            <input id="io-function-mapping-address" type="number" min="0" max="2559" step="1" value="512" inputmode="numeric" aria-label="IO 번호">
+                        </label>
+                        <label>
+                            <span>트리거</span>
+                            <select id="io-function-mapping-trigger" aria-label="트리거 상태">
+                                <option value="1">ON</option>
+                                <option value="0">OFF</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span>기능</span>
+                            <select id="io-function-mapping-action" aria-label="매핑 기능">
+                                <option value="GRIP_USE">물건 잡기</option>
+                                <option value="GRIP_RELEASE">놓기</option>
+                                <option value="VIEW">뷰 전환</option>
+                            </select>
+                        </label>
+                        <label id="io-function-mapping-grip-field">
+                            <span>물건</span>
+                            <select id="io-function-mapping-grip-target" aria-label="물건 잡기 대상"></select>
+                        </label>
+                        <label id="io-function-mapping-view-field" hidden>
+                            <span>뷰</span>
+                            <select id="io-function-mapping-view-target" aria-label="전환할 뷰"></select>
+                        </label>
+                        <button id="io-function-mapping-add" class="primary" type="button"><i class="fa-solid fa-plus" aria-hidden="true"></i> 매핑 추가</button>
+                    </section>
+                    <div class="io-function-mapping-list-heading">
+                        <strong>등록된 매핑</strong>
+                        <span id="io-function-mapping-count">0</span>
+                    </div>
+                    <div id="io-function-mapping-list" class="io-function-mapping-list"></div>
+                    <p id="io-function-mapping-status" class="io-function-mapping-status" role="status" aria-live="polite"></p>
+                    <div class="io-function-mapping-actions">
+                        <button id="io-function-mapping-done" class="primary" type="submit">닫기</button>
+                    </div>
+                </form>
+            </dialog>
             <aside id="program-panel" class="program-panel panel-user-hidden" aria-label="Program Panel">
                 <div class="program-panel-header">
                     <h2>Program Panel</h2>
@@ -1909,6 +2113,8 @@
                 <div class="interference-zone-field-grid">
                     <label class="wide"><span>Remarks</span><input id="interference-zone-remarks" type="text" maxlength="120" autocomplete="off"></label>
                     <label><span>적용 로봇</span><select id="interference-zone-target-robot"></select></label>
+                    <label><span data-i18n="legacy.좌표 기준 로봇">좌표 기준 로봇</span><select id="interference-zone-coordinate-robot"></select></label>
+                    <label><span data-i18n="legacy.좌표 기준 Wobj">좌표 기준 Wobj</span><select id="interference-zone-coordinate-wobj"></select></label>
                     <label><span>Inside and outside</span><select id="interference-zone-inside-outside"><option value="inside">Inside</option><option value="outside">Outside</option></select></label>
                     <label><span>Trigger alarm and stop</span><select id="interference-zone-trigger"><option value="yes">YES</option><option value="no">NO</option></select></label>
                     <label><span>Safety distance</span><input id="interference-zone-safety" type="number" min="0" max="10000" step="0.001"><small>mm</small></label>
@@ -1922,13 +2128,13 @@
             <section class="interference-zone-step hidden" data-interference-step="geometry">
                 <label class="interference-zone-method"><span>Setting method</span><select id="interference-zone-method"><option value="diagonal">Diagonal point</option><option value="datumOffset">Datum point + offset</option></select></label>
                 <div id="interference-zone-diagonal-fields" class="interference-point-block">
-                    <div class="interference-point-heading"><strong>P1 (mm)</strong><div class="interference-point-actions"><button type="button" data-interference-get-point="p1">Get current point</button><button type="button" data-interference-snap-point="p1">Get snap point</button></div></div>
+                    <div class="interference-point-heading"><strong data-interference-point-title="p1">P1 (World mm)</strong><div class="interference-point-actions"><button type="button" data-interference-get-point="p1">Get current point</button><button type="button" data-interference-snap-point="p1">Get snap point</button></div></div>
                     <div class="interference-coordinate-grid"><label>X<input data-interference-point="p1" data-axis="0" type="number" min="-10000" max="10000" step="0.001"></label><label>Y<input data-interference-point="p1" data-axis="1" type="number" min="-10000" max="10000" step="0.001"></label><label>Z<input data-interference-point="p1" data-axis="2" type="number" min="-10000" max="10000" step="0.001"></label></div>
-                    <div class="interference-point-heading"><strong>P2 (mm)</strong><div class="interference-point-actions"><button type="button" data-interference-get-point="p2">Get current point</button><button type="button" data-interference-snap-point="p2">Get snap point</button></div></div>
+                    <div class="interference-point-heading"><strong data-interference-point-title="p2">P2 (World mm)</strong><div class="interference-point-actions"><button type="button" data-interference-get-point="p2">Get current point</button><button type="button" data-interference-snap-point="p2">Get snap point</button></div></div>
                     <div class="interference-coordinate-grid"><label>X<input data-interference-point="p2" data-axis="0" type="number" min="-10000" max="10000" step="0.001"></label><label>Y<input data-interference-point="p2" data-axis="1" type="number" min="-10000" max="10000" step="0.001"></label><label>Z<input data-interference-point="p2" data-axis="2" type="number" min="-10000" max="10000" step="0.001"></label></div>
                 </div>
                 <div id="interference-zone-datum-fields" class="interference-point-block hidden">
-                    <div class="interference-point-heading"><strong>Datum point (mm)</strong><div class="interference-point-actions"><button type="button" data-interference-get-point="datum">Get datum point</button><button type="button" data-interference-snap-point="datum">Get snap point</button></div></div>
+                    <div class="interference-point-heading"><strong data-interference-point-title="datum">Datum point (World mm)</strong><div class="interference-point-actions"><button type="button" data-interference-get-point="datum">Get datum point</button><button type="button" data-interference-snap-point="datum">Get snap point</button></div></div>
                     <div class="interference-coordinate-grid"><label>X<input data-interference-point="datum" data-axis="0" type="number" min="-10000" max="10000" step="0.001"></label><label>Y<input data-interference-point="datum" data-axis="1" type="number" min="-10000" max="10000" step="0.001"></label><label>Z<input data-interference-point="datum" data-axis="2" type="number" min="-10000" max="10000" step="0.001"></label></div>
                     <div class="interference-point-heading"><strong>Offset (mm)</strong></div>
                     <div class="interference-coordinate-grid"><label>Lx<input data-interference-point="offset" data-axis="0" type="number" min="-10000" max="10000" step="0.001"></label><label>Ly<input data-interference-point="offset" data-axis="1" type="number" min="-10000" max="10000" step="0.001"></label><label>Lz<input data-interference-point="offset" data-axis="2" type="number" min="-10000" max="10000" step="0.001"></label></div>
@@ -2079,6 +2285,7 @@
             <button type="button" data-panel-toggle="view-presets-panel" title="사용자 뷰 표시/숨김"><i class="fa-solid fa-camera"></i> 뷰</button>
             <button type="button" data-panel-toggle="collaboration-panel" title="4인 협업 표시/숨김" aria-label="4인 협업 표시/숨김"><i class="fa-solid fa-people-arrows"></i> <span data-i18n="legacy.협업">협업</span></button>
             <button type="button" data-panel-toggle="virtual-controller-panel" disabled title="컨트롤러 연결 표시/숨김" aria-label="컨트롤러 연결 표시/숨김"><i id="virtual-controller-launcher-antenna" class="fa-solid fa-tower-broadcast virtual-controller-antenna disconnected"></i> 컨트롤러 연결</button>
+            <button id="btn-io-simulator" type="button" data-panel-toggle="io-simulator-panel" title="IO 테스트 표시/숨김" aria-label="IO 테스트 표시/숨김"><i class="fa-solid fa-toggle-on"></i> IO 테스트</button>
             <span class="viewer-control-divider"></span>
             <button id="btn-undo" type="button" disabled title="되돌리기 (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
             <button id="btn-redo" type="button" disabled title="다시 실행 (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i></button>
@@ -2093,7 +2300,7 @@
         </div>
     </footer>
 
-    <script type="module" src="main.js?v=20260911-lazy-model-loaders-1"></script>
+    <script type="module" src="main.js?v=20260916-jog-base-1"></script>
 <script src="/0_Home/tool-guide-embed.js?v=20260906-2"></script>
 </body>
 </html>

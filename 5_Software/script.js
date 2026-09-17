@@ -26,8 +26,8 @@ const softwareGroups = [
                 isLocked: true,
                 updates: ["Display 모듈 지원"],
                 downloads: [
-                    { label: "Download Install", type: "install", size: "514MB", assetId: "software.inorobotlab.display.install" },
-                    { label: "Download Portable", type: "portable", size: "506MB", assetId: "software.inorobotlab.display.portable" }
+                    { label: "Download Install", type: "install", size: "514MB", assetId: "software.inorobotlab.display.install", path: "InoRobotLab/Display/InoRobotLabSetUp_V4R24C4SPC0L23F121_x64.exe" },
+                    { label: "Download Portable", type: "portable", size: "506MB", assetId: "software.inorobotlab.display.portable", path: "InoRobotLab/Display/InoRobotLab_V4R24C4SPC0L23F121_x64.zip" }
                 ]
             }
         ]
@@ -54,7 +54,7 @@ const softwareGroups = [
                 isLocked: true,
                 updates: ["Display 최적화"],
                 downloads: [
-                    { label: "Download Portable", type: "portable", size: "57MB", assetId: "software.inorobottp.display.portable" }
+                    { label: "Download Portable", type: "portable", size: "57MB", assetId: "software.inorobottp.display.portable", path: "InoRobotTP/Display/InoRobotTP_win_x86_V4R24C4SPC0L23F121.zip" }
                 ]
             }
         ]
@@ -119,7 +119,7 @@ function renderSoftwareList(filterType = 'all', searchTerm = '') {
                 const isDisabled = dl.disabled || !downloadKey;
                 const downloadDataAttrs = isDisabled
                     ? ''
-                    : `data-download-key="${encodeURIComponent(downloadKey)}" data-download-locked="${ver.isLocked}"`;
+                    : `data-download-key="${encodeURIComponent(downloadKey)}" data-download-locked="${ver.isLocked}"${dl.path ? ` data-download-path="${encodeURIComponent(dl.path)}"` : ''}`;
                 const disabledAttr = isDisabled ? 'disabled aria-disabled="true"' : '';
                 const buttonClass = isDisabled ? 'disabled-btn' : (ver.isLocked ? 'locked-btn' : 'download-btn');
                 const icon = isDisabled ? 'ban' : (ver.isLocked ? 'key' : 'download');
@@ -163,7 +163,8 @@ function renderSoftwareList(filterType = 'all', searchTerm = '') {
                 button.addEventListener('click', () => {
                     handleDownload(
                         decodeURIComponent(button.dataset.downloadKey),
-                        button.dataset.downloadLocked === 'true'
+                        button.dataset.downloadLocked === 'true',
+                        button.dataset.downloadPath ? decodeURIComponent(button.dataset.downloadPath) : ''
                     );
                 });
             });
@@ -214,8 +215,9 @@ const WORKER_URL = 'https://ino-robot-display-auth.hois56.workers.dev/';
  * 다운로드 핸들러
  * @param {string} downloadKey 공개 경로 또는 Worker assetId
  * @param {boolean} isLocked 잠김 여부
+ * @param {string} legacyPath 이전 Worker 호환용 Software 경로
  */
-async function handleDownload(downloadKey, isLocked) {
+async function handleDownload(downloadKey, isLocked, legacyPath = '') {
     if (isLocked) {
         const password = prompt(translateUiText("[기능 제한 안내] 이 버전은 전용 배포판입니다. 비밀번호를 입력해 주세요:"));
         if (password === null) return;
@@ -224,11 +226,26 @@ async function handleDownload(downloadKey, isLocked) {
             const res = await fetch(WORKER_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password, assetId: downloadKey, mode: 'download' })
+                body: JSON.stringify({
+                    password,
+                    assetId: downloadKey,
+                    path: legacyPath,
+                    folder: 'Software',
+                    mode: 'download'
+                })
             });
             if (!res.ok) {
                 alert(translateUiText("다운로드 권한을 확인할 수 없습니다. 관리자에게 문의하세요."));
                 return;
+            }
+            const responseType = res.headers.get('Content-Type') || '';
+            if (responseType.includes('application/json')) {
+                const result = await res.json();
+                if (result?.url) {
+                    downloadFile(result.url);
+                    return;
+                }
+                throw new Error('Download URL was not returned.');
             }
             const blob = await res.blob();
             downloadBlob(blob, getResponseFileName(res) || 'InoRobot-download.zip');

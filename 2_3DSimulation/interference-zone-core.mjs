@@ -1,3 +1,5 @@
+import { normalizeWorkObjectReference } from './workobject-core.mjs';
+
 export const INTERFERENCE_ZONE_COUNT = 16;
 export const INTERFERENCE_COORDINATE_MIN = -10000;
 export const INTERFERENCE_COORDINATE_MAX = 10000;
@@ -35,6 +37,10 @@ export function createDefaultInterferenceZone(id = 0) {
         activate: false,
         remarks: '',
         targetRobotId: 'all',
+        coordinateReference: {
+            robotId: null,
+            workObjectIndex: 0
+        },
         monitoringObjectId: 'currentTcp',
         inSignal: -1,
         outSignal: -1,
@@ -67,6 +73,12 @@ export function normalizeInterferenceZone(input, id = 0) {
         targetRobotId: typeof source.targetRobotId === 'string' && source.targetRobotId
             ? source.targetRobotId
             : 'all',
+        coordinateReference: normalizeWorkObjectReference(
+            source.coordinateReference,
+            source.targetRobotId !== 'all' && typeof source.targetRobotId === 'string'
+                ? source.targetRobotId
+                : null
+        ),
         monitoringObjectId: source.monitoringObjectId === 'currentTcp'
             ? 'currentTcp'
             : Number.isInteger(Number(source.monitoringObjectId)) && Number(source.monitoringObjectId) >= 0
@@ -102,6 +114,7 @@ export function normalizeInterferenceZones(input) {
 export function cloneInterferenceZones(zones) {
     return normalizeInterferenceZones(zones).map((zone) => ({
         ...zone,
+        coordinateReference: { ...zone.coordinateReference },
         geometry: {
             ...zone.geometry,
             p1: [...zone.geometry.p1],

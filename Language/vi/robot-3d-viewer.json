@@ -40,6 +40,52 @@
     "Save": "Lưu",
     "이동": "Di chuyển",
     "3D Simulation": "3D Simulation",
+    "IO 테스트": "Kiểm tra IO",
+    "IO 테스트를 별도 창으로 분리": "Mở kiểm tra IO trong cửa sổ riêng",
+    "IO 테스트 숨기기": "Ẩn kiểm tra IO",
+    "IO 테스트 표시/숨김": "Hiện/ẩn kiểm tra IO",
+    "IO 영역": "Phạm vi IO",
+    "스탠다드 IO": "IO tiêu chuẩn",
+    "필드버스 IO": "IO Fieldbus",
+    "내부 OLP 프로그램의 가상 IO를 직접 제어합니다. 여러 로봇이 실행 중이면 모든 로봇이 같은 IO 메모리를 공유하며, In[512]를 ON하면 대기 중인 프로그램 조건에 반영됩니다.": "Điều khiển trực tiếp IO ảo của chương trình OLP nội bộ. Khi chạy nhiều robot, tất cả dùng chung bộ nhớ IO; bật In[512] sẽ được phản ánh vào điều kiện chương trình đang chờ.",
+    "IO 방향": "Hướng IO",
+    "표시 형식": "Định dạng hiển thị",
+    "OLP 프로그램을 실행하면 이 패널의 가상 IO가 프로그램 조건과 연결됩니다.": "Khi chạy chương trình OLP, IO ảo trong bảng này được kết nối với điều kiện chương trình.",
+    "IO 기능 매핑": "Ánh xạ chức năng IO",
+    "기능 매핑": "Ánh xạ chức năng",
+    "매핑": "Ánh xạ",
+    "지정한 IO 신호가 선택한 상태로 바뀌면 물건 잡기·놓기 또는 저장된 뷰 전환을 한 번 실행합니다. In은 IO 테스트에서 직접 변경하고, Out은 OLP 프로그램 출력에도 반응합니다.": "Khi tín hiệu IO đã chỉ định chuyển sang trạng thái đã chọn, thao tác gắp/thả vật thể hoặc chuyển chế độ xem đã lưu sẽ được thực hiện một lần. Tín hiệu In được thay đổi trực tiếp trong Kiểm tra IO, còn tín hiệu Out cũng phản hồi đầu ra của chương trình OLP.",
+    "기능 매핑 추가": "Thêm ánh xạ chức năng",
+    "번호": "Số",
+    "트리거": "Kích hoạt",
+    "기능": "Chức năng",
+    "물건": "Vật thể",
+    "사용 가능한 물건이 없습니다.": "Không có vật thể khả dụng.",
+    "전환할 뷰": "Chế độ xem cần chuyển",
+    "매핑 추가": "Thêm ánh xạ",
+    "등록된 매핑": "Ánh xạ đã đăng ký",
+    "등록된 기능 매핑이 없습니다.": "Chưa đăng ký ánh xạ chức năng nào.",
+    "매핑 대상": "Đối tượng ánh xạ",
+    "매핑 사용": "Bật ánh xạ",
+    "매핑 삭제": "Xóa ánh xạ",
+    "현재 대상을 찾을 수 없음": "Không tìm thấy đối tượng hiện tại",
+    "대상을 찾을 수 없음": "Không tìm thấy đối tượng",
+    "저장되지 않음": "Chưa lưu",
+    "저장된 뷰 없음": "Chưa có chế độ xem được lưu",
+    "뷰 전환": "Chuyển chế độ xem",
+    "IO 번호는 0~64 또는 512~2559 범위의 정수여야 합니다.": "Số IO phải là số nguyên trong phạm vi 0–64 hoặc 512–2559.",
+    "뷰 전환 매핑에는 먼저 저장된 뷰가 필요합니다.": "Ánh xạ chuyển chế độ xem cần có chế độ xem đã lưu trước.",
+    "선택한 기능에 사용할 대상을 선택하세요.": "Hãy chọn đối tượng cho chức năng đã chọn.",
+    "기능 매핑을 추가했습니다.": "Đã thêm ánh xạ chức năng.",
+    "기능 매핑을 변경했습니다.": "Đã thay đổi ánh xạ chức năng.",
+    "기능 매핑을 삭제했습니다.": "Đã xóa ánh xạ chức năng.",
+    "IO 매핑 실행 실패: {error}": "Thực thi ánh xạ IO thất bại: {error}",
+    "IO 매핑 실행에 실패했습니다.": "Thực thi ánh xạ IO thất bại.",
+    "IO 매핑으로 {view} 뷰로 전환했습니다.": "Ánh xạ IO đã chuyển sang {view}.",
+    "IO 매핑으로 {action}을 실행했습니다.": "Ánh xạ IO đã thực hiện {action}.",
+    "IO Simulator → OLP: {address} = {value}": "IO Simulator → OLP: {address} = {value}",
+    "IO Simulator: {address} = {value}": "IO Simulator: {address} = {value}",
+    "IO Simulator input: {address}={value}.": "Đầu vào IO Simulator: {address}={value}.",
     "SCENE": "Cảnh",
     "모델 트리": "Cây mô hình",
     "모델 변환 패널 크기 조절": "Thay đổi kích thước bảng biến đổi mô hình",
@@ -106,6 +152,7 @@
     "2D 평면뷰입니다. 도구를 선택하고 첫 번째 위치를 클릭한 뒤, 크기를 정해 다시 클릭하세요.": "Đây là chế độ xem mặt phẳng 2D. Chọn công cụ, nhấp vào điểm bắt đầu, di chuyển để đặt kích thước rồi nhấp lần nữa.",
     "스케치 원점": "Gốc phác thảo",
     "로봇 바디 중심점": "Tâm thân robot",
+    "0,0 영점 위치": "Vị trí gốc 0,0",
     "격자점": "Điểm lưới",
     "끝점": "Điểm cuối",
     "꼭짓점": "Đỉnh",
@@ -113,6 +160,7 @@
     "원주점": "Điểm phần tư đường tròn",
     "원 중심점": "Tâm đường tròn",
     "도형 중심점": "Tâm hình học",
+    "구멍 가상 중심점": "Tâm ảo của lỗ",
     "스냅점": "Điểm bắt",
     "X축 치수": "Kích thước trục X",
     "Y축 치수": "Kích thước trục Y",
@@ -399,6 +447,9 @@
   "TCP에 장착할 로봇을 먼저 불러와 주세요.": "Hãy tải robot trước khi gắn mô hình vào TCP.",
   "{name} 가져오는 중...": "Đang nhập {name}...",
   "가져오는 중": "Đang nhập",
+  "형상 변환 중...": "Đang chuyển đổi hình học...",
+  "변환 진행률 계산 중...": "Đang tính tiến độ chuyển đổi...",
+  "부품 {current}/{total} 변환 중...": "Đang chuyển đổi bộ phận {current}/{total}...",
   "Tool이 TCP에 부착되었습니다.": "Đã gắn Tool vào TCP.",
     "3D 모델링 불러오기 완료": "Đã nhập mô hình 3D.",
   "가져오기 오류": "Lỗi nhập tệp",
@@ -537,7 +588,8 @@
   "스냅 유형": "Loại bắt điểm",
   "자동 스냅": "Bắt điểm tự động",
     "다중 점 중심점": "Tâm đa điểm",
-    "로봇 바디 중심점": "Tâm thân robot",
+  "로봇 바디 중심점": "Tâm thân robot",
+  "0,0 영점 위치": "Vị trí gốc 0,0",
   "다중 점 선택": "Chọn nhiều điểm",
   "계산 중심 적용": "Áp dụng tâm đã tính",
   "선택 초기화": "Đặt lại lựa chọn",
@@ -555,6 +607,7 @@
   "에지 중심점": "Trung điểm cạnh",
   "면 중심점": "Tâm mặt",
   "사각형 중심점": "Tâm hình chữ nhật",
+  "구멍 가상 중심점": "Tâm ảo của lỗ",
   "형상 중심점": "Tâm hình",
   "가상 교점": "Giao điểm ảo",
   "선택한 스냅 위치에 도달할 수 없습니다.": "Không thể đến vị trí bắt điểm đã chọn.",
@@ -587,8 +640,10 @@
   "P2 선택": "Chọn P2",
   "측정 점": "Điểm đo",
   "표시 방식": "Cách hiển thị",
+  "방식": "Cách thức",
   "직선 길이": "Chiều dài đường thẳng",
   "직각 치수 (X/Y/Z)": "Kích thước trực giao (X/Y/Z)",
+  "로봇 위치": "Vị trí robot",
   "측정 결과": "Kết quả đo",
   "Distance": "Khoảng cách",
   "다시 측정": "Đo lại",
@@ -610,7 +665,10 @@
   "모델 형상 위로 포인터를 이동하세요.": "Di chuyển con trỏ lên hình học mô hình.",
   "측정 대상이 숨겨졌거나 삭제되었습니다. 다시 측정하세요.": "Đối tượng đo đã bị ẩn hoặc xóa. Hãy đo lại.",
   "P1과 P2는 서로 다른 스냅 점이어야 합니다.": "P1 và P2 phải là hai điểm bắt khác nhau.",
+  "선택된 로봇이 없습니다. 로봇을 선택하세요.": "Chưa chọn robot. Hãy chọn một robot.",
+  "로봇 위치를 측정하려면 로봇을 선택하세요.": "Hãy chọn robot để đo vị trí robot.",
   "측정 완료": "Đo hoàn tất",
+  "선택한 지점의 로봇 위치를 표시했습니다.": "Đã hiển thị vị trí robot của điểm đã chọn.",
   "선택한 업로드 모델의 기준점을 선택하세요.": "Hãy chọn điểm chuẩn trên mô hình đã tải lên đang chọn.",
   "선택한 모델의 기준점을 선택하세요.": "Hãy chọn điểm chuẩn trên mô hình đang chọn.",
   "다시 측정할 P1 스냅 점을 선택하세요.": "Hãy chọn điểm bắt P1 để đo lại.",
@@ -1292,6 +1350,7 @@
     ,"스케치 편집 중입니다. 수정한 뒤 스케치 완료를 누르세요.": "Đang chỉnh sửa phác thảo. Hãy áp dụng phác thảo sau khi sửa xong."
     ,"피쳐 편집 중입니다. Z 높이를 변경한 뒤 적용하세요.": "Đang chỉnh sửa feature. Thay đổi chiều cao Z rồi áp dụng feature."
     ,"기존 스케치 피쳐를 수정했습니다.": "Đã cập nhật feature phác thảo hiện có."
+    ,"스케치 돌출이 적용된 상태로 스케치를 완료했습니다.": "Đã hoàn tất phác thảo với phần đùn được giữ lại."
     ,"장면에 배치된 스케치 도형만 편집할 수 있습니다.": "Chỉ có thể chỉnh sửa hình phác thảo đã đặt trong cảnh."
     ,"스케치 지우기": "Xóa phác thảo"
     ,"직경": "Đường kính"
@@ -1654,6 +1713,29 @@
     ,"목표 X, Y, Z를 모두 입력하세요.": "Hãy nhập đủ X, Y và Z đích."
     ,"CAD 선택점이 이미 목표 위치에 있습니다.": "Điểm CAD đã chọn đã ở vị trí đích."
     ,"CAD 선택점을 목표 위치로 이동했습니다.": "Đã di chuyển điểm CAD đã chọn đến vị trí đích."
+    ,"Wobj 대상 로봇": "Robot Wobj mục tiêu"
+    ,"Wobj 목록": "Danh sách Wobj"
+    ,"Wobj 선택": "Chọn Wobj"
+    ,"Wobj 설정": "Cài đặt Wobj"
+    ,"Wobj 설정 표시/숨기기": "Hiện/ẩn cài đặt Wobj"
+    ,"Wobj 이름": "Tên Wobj"
+    ,"Wobj 초기화": "Đặt lại Wobj"
+    ,"Wobj는 로봇별로 저장됩니다.": "Wobj được lưu riêng cho từng robot."
+    ,"Wobj 입력값을 확인하세요.": "Hãy kiểm tra các giá trị Wobj."
+    ,"Wobj를 적용했습니다.": "Đã áp dụng Wobj."
+    ,"Wobj를 초기화했습니다.": "Đã đặt lại Wobj."
+    ,"현재 TCP로 등록": "Đăng ký từ TCP hiện tại"
+    ,"현재 TCP로 Wobj 등록": "Đăng ký Wobj từ TCP hiện tại"
+    ,"3D 표시": "Hiển thị 3D"
+    ,"위치로 이동": "Di chuyển đến vị trí"
+    ,"정의됨": "Đã định nghĩa"
+    ,"미설정": "Chưa thiết lập"
+    ,"활성 좌표계": "Hệ tọa độ đang hoạt động"
+    ,"좌표 기준 로봇": "Robot tọa độ"
+    ,"좌표 기준 Wobj": "Wobj tọa độ"
+    ,"Wobj 저장 안내": "Wobj được lưu riêng cho từng robot."
+    ,"선택 Wobj 간섭영역 안내": "Thiết lập vùng giao thoa theo TCP trong hệ tọa độ Wobj đã chọn."
+    ,"선택한 Wobj 좌표계에서 TCP 기준으로 간섭영역을 설정합니다.": "Thiết lập vùng giao thoa theo TCP trong hệ tọa độ Wobj đã chọn."
   },
   "patterns": []
 }
