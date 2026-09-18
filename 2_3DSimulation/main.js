@@ -19126,8 +19126,8 @@ function setupEventListeners() {
         updateInterferenceZoneVisuals();
     });
     el.workObjectList?.addEventListener('click', (event) => {
-        const button = event.target.closest('[data-workobject-index]');
-        if (button) selectWorkObject(Number(button.dataset.workobjectIndex));
+        const button = event.target.closest('[data-work-object-index]');
+        if (button) selectWorkObject(Number(button.dataset.workObjectIndex));
     });
     el.btnApplyWorkObject?.addEventListener('click', applyWorkObjectEditor);
     el.btnResetWorkObject?.addEventListener('click', resetWorkObjectEditor);
