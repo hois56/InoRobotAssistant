@@ -217,7 +217,8 @@
                 "items": [
                   "`[수정]` 로봇 모델을 불러온 뒤에도 중앙의 초기 안내 문구가 남고 로드 실패로 표시되던 문제를 해결했습니다.",
                   "`[변경]` JOG 패널에서 Wobj 좌표계 항목을 제거하고, JOG 이동이 BASE 좌표계에서만 동작하도록 변경했습니다.",
-                  "`[수정]` Wobj 설정에서 다른 좌표계 항목을 선택할 수 없던 문제를 해결했습니다."
+                  "`[수정]` Wobj 설정에서 다른 좌표계 항목을 선택할 수 없던 문제를 해결했습니다.",
+                  "`[수정]` Wobj[1]~[15] 버튼을 눌러도 좌표계를 선택할 수 없던 문제를 해결했습니다."
                 ]
               },
               {
@@ -1273,7 +1274,8 @@
                 "items": [
                   "`[Fixed]` Fixed an issue where the initial guide text remained in the center and the load was shown as failed after loading a robot model.",
                   "`[Changed]` Removed the Wobj coordinate option from the JOG panel so JOG movement operates only in the BASE coordinate system.",
-                  "`[Fixed]` Fixed an issue where other coordinate entries could not be selected in Wobj settings."
+                  "`[Fixed]` Fixed an issue where other coordinate entries could not be selected in Wobj settings.",
+                  "`[Fixed]` Fixed an issue where the Wobj[1]~[15] buttons did not select a coordinate frame when clicked."
                 ]
               },
               {
@@ -2329,7 +2331,8 @@
                 "items": [
                   "`[修复]` 修复了加载机器人模型后中央初始提示文字仍然显示且加载状态显示为失败的问题。",
                   "`[变更]` 删除 JOG 面板中的 Wobj 坐标系选项，使 JOG 移动仅在 BASE 坐标系中运行。",
-                  "`[修复]` 修复了 Wobj 设置中无法选择其他坐标系选项的问题。"
+                  "`[修复]` 修复了 Wobj 设置中无法选择其他坐标系选项的问题。",
+                  "`[修复]` 修复了点击 Wobj[1]~[15] 按钮时无法选择坐标系的问题。"
                 ]
               },
               {
@@ -3385,7 +3388,8 @@
                 "items": [
                   "`[Sửa lỗi]` Đã khắc phục sự cố dòng hướng dẫn ban đầu ở giữa màn hình vẫn hiển thị và trạng thái tải hiển thị thất bại sau khi tải model robot.",
                   "`[Thay đổi]` Đã xóa tùy chọn hệ tọa độ Wobj khỏi bảng JOG để chuyển động JOG chỉ hoạt động theo hệ tọa độ BASE.",
-                  "`[Sửa lỗi]` Đã khắc phục sự cố không thể chọn các mục tọa độ khác trong phần cài đặt Wobj."
+                  "`[Sửa lỗi]` Đã khắc phục sự cố không thể chọn các mục tọa độ khác trong phần cài đặt Wobj.",
+                  "`[Sửa lỗi]` Đã khắc phục sự cố các nút Wobj[1]~[15] không chọn được hệ tọa độ khi nhấp vào."
                 ]
               },
               {
