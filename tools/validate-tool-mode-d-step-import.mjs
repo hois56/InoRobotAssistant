@@ -45,7 +45,7 @@ assert.match(worker, /occt\.ReadStepFile\(new Uint8Array\(buffer\), options \|\|
 assert.match(worker, /toTypedArray\(mesh\?\.attributes\?\.position\?\.array, Float32Array\)/);
 assert.match(worker, /toTypedArray\(mesh\?\.index\?\.array, Uint32Array\)/);
 assert.match(worker, /self\.postMessage\(\{ type: 'complete', result: compactResult \}, transferables\)/);
-assert.match(largeWorker, /occt-wasm@3\.7\.0\/dist\/index\.js/);
+assert.match(largeWorker, /occt-wasm@5\.3\.4\/dist\/index\.js/);
 assert.match(largeWorker, /async function parseLargeStepFile\(message, requestId\)/);
 assert.match(largeWorker, /kernel\.importXCAFFromSTEP\(sourceBuffer\)/);
 assert.match(largeWorker, /function collectXcafParts\(document\)/);

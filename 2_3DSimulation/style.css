@@ -1711,6 +1711,11 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
     position: relative;
 }
 
+#canvas-container.file-drop-active {
+    outline: 3px dashed rgba(96, 165, 250, 0.9);
+    outline-offset: -8px;
+}
+
 .viewer-control-dock {
     position: static;
     flex: none;

@@ -152,6 +152,7 @@
     "2D 평면뷰입니다. 도구를 선택하고 첫 번째 위치를 클릭한 뒤, 크기를 정해 다시 클릭하세요.": "This is a 2D top view. Select a tool, click the start point, move to set the size, then click again.",
     "스케치 원점": "Sketch origin",
     "로봇 바디 중심점": "Robot body center",
+    "표면 위치": "Surface position",
     "0,0 영점 위치": "0,0 origin",
     "격자점": "Grid point",
     "끝점": "Endpoint",
