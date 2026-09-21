@@ -912,6 +912,8 @@ const state = {
         }
     },
     pendingImportFile: null,
+    pendingImportFiles: [],
+    fileDragDepth: 0,
     resetInProgress: false,
     testModelConfirmationResolver: null,
     stepImportWorkerSession: null,
@@ -929,6 +931,7 @@ const state = {
     tcpSnapMode: false,
     tcpSnapType: 'auto',
     tcpSnapPoints: [],
+    tcpSurfaceSnapMeshes: null,
     tcpSnapReadoutMessage: '3D 모델링의 스냅 지점을 클릭하세요.',
     snapCandidates: [],
     snapCandidateModelsSignature: '',
@@ -1641,7 +1644,7 @@ const TRACE_SOURCE_LIVENESS_TIMEOUT_MS = 2500;
 const VIRTUAL_CONTROLLER_STREAM_STALL_MS = 750;
 const VIRTUAL_CONTROLLER_STREAM_WATCHDOG_MS = 250;
 const VIRTUAL_CONTROLLER_BRIDGE_HEALTH_FAILURE_LIMIT = 3;
-const SUPPORTED_IMPORT_EXTENSIONS = new Set(['stl', 'fbx', 'obj', 'glb', 'gltf', 'stp', 'step']);
+const SUPPORTED_IMPORT_EXTENSIONS = new Set(['stl', 'fbx', 'obj', 'glb', 'gltf', 'stp', 'step', 'dxf']);
 const Y_UP_IMPORT_EXTENSIONS = new Set(['fbx', 'glb', 'gltf']);
 const TEST_MODEL_ASSET_PATHS = Object.freeze({
     scene: './test-assets/Test_Equipment_CAD.step',
@@ -1733,7 +1736,10 @@ const STL_GEOMETRY_CACHE_VERSION = 1;
 const STL_GEOMETRY_CACHE_ASSET_REVISION = '20260914-robot-proxy-1';
 const STL_GEOMETRY_CACHE_MAX_ENTRIES = 48;
 const STL_GEOMETRY_CACHE_MAX_BYTES = 256 * MEBIBYTE;
-const STEP_LARGE_FILE_ENGINE_MIN_BYTES = 64 * MEBIBYTE;
+// The standard importer can report success for large assemblies while
+// returning only empty mesh records. Route those files to the robust OCCT
+// engine before the standard path discards them as non-renderable.
+const STEP_LARGE_FILE_ENGINE_MIN_BYTES = 50 * MEBIBYTE;
 const LARGE_MODEL_PERFORMANCE_MIN_BYTES = 100 * MEBIBYTE;
 const STEP_IMPORT_QUALITY_PRESETS = Object.freeze({
     auto: Object.freeze({ key: 'auto', label: '자동 (권장)' }),
@@ -1776,6 +1782,7 @@ const SNAP_TYPES = Object.freeze({
     'robot-base-center': { label: '로봇 바디 중심점', symbol: '◎', priority: 0 },
     'scene-origin': { label: '0,0 영점 위치', symbol: '⊙', priority: 0 },
     'robot-tcp': { label: '현재 TCP (점)', symbol: '✦', priority: 0 },
+    surface: { label: '표면 위치', symbol: '•', priority: 4 },
     'circle-center': { label: '원/호 중심점', symbol: '⊙', priority: 0 },
     'hole-center': { label: '구멍 가상 중심점', symbol: '⊗', priority: -1 },
     'rectangle-center': { label: '사각형 중심점', symbol: '▣', priority: 0 },
@@ -14057,8 +14064,9 @@ function getSimulationSnapFaceSelections() {
     const selections = Array.isArray(state.snapFaceSelections) && state.snapFaceSelections.length
         ? state.snapFaceSelections
         : (state.snapFaceSelection ? [state.snapFaceSelection] : []);
-    // Robot links are never valid face-snap targets. Their only snap
-    // references are the body center and the current TCP point.
+    // Robot links are not valid face-snap targets. Their dedicated reference
+    // points are still available, and TCP auto-snap can additionally use the
+    // exact surface point under the pointer.
     return selections.filter((selection) => !isSimulationSnapRobotMesh(selection?.mesh));
 }
 
@@ -14890,6 +14898,7 @@ function invalidateSimulationSnapCandidates() {
     state.snapWorldIndexSignature = '';
     state.snapLazyReadyMeshes.clear();
     state.snapLazyBuildPromises.clear();
+    state.tcpSurfaceSnapMeshes = null;
     clearSimulationSnapCandidateMarkers();
 }
 
@@ -15299,7 +15308,7 @@ function handleSimulationSnapFaceSelectionClick(event) {
         || Boolean(state.snapFaceSelections?.length)
         || Boolean(state.snapFaceSelection);
     const robot = pickSimulationSnapRobotAtPointer(event);
-    if (robot && (hasFaceContext || !state.snapCandidatesReady)) {
+    if (robot && !state.tcpSnapMode && (hasFaceContext || !state.snapCandidatesReady)) {
         event.preventDefault();
         event.stopPropagation();
         resetSimulationSnapFaceContextAndRebuild(scope);
@@ -15340,7 +15349,7 @@ function handleSimulationSnapFaceSelectionClick(event) {
         return;
     }
 
-    if (robot) {
+    if (robot && !state.tcpSnapMode) {
         event.preventDefault();
         event.stopPropagation();
         setStatus('로봇 바디 중심점 또는 TCP 점을 가리켜 주세요.', '#60a5fa');
@@ -16622,7 +16631,10 @@ function cancelMeasurementPlacement() {
 }
 
 function activateMeasurementPanel() {
-    if (isMotionActive()) return;
+    // A connected controller only streams the robot pose; it does not make
+    // read-only scene inspection unavailable. Keep measurement usable while a
+    // controller is connected, but still block it during active robot motion.
+    if (isRobotMotionActive()) return;
     if (state.placement.active) deactivateModelPlacement();
     state.measurement.active = true;
     state.measurement.points = [null, null];
@@ -16805,10 +16817,6 @@ function toggleTcpSnapMode() {
     if (state.placement.active) deactivateModelPlacement();
     if (!getJogTargetRobot()?.userData?.tcpFrame) {
         setStatus('스냅 이동할 로봇을 먼저 선택하세요.', '#ef4444');
-        return;
-    }
-    if (!state.tcpSnapMode && getSimulationSnapMeshes('tool').length === 0) {
-        setStatus('TCP 스냅할 Tool 모델 또는 생성 도형을 먼저 준비하세요.', '#f59e0b');
         return;
     }
     setTcpSnapMode(!state.tcpSnapMode);
@@ -17084,6 +17092,49 @@ function getSimulationSnapCandidatesNearPointer(meshes, bounds, pointerX, pointe
     return nearby;
 }
 
+function getTcpSurfaceSnapMeshes() {
+    // TCP placement is allowed to use the visible robot itself as a depth
+    // source. The normal `tool` snap scope intentionally excludes robot links
+    // so the other snap workflows keep their reference-point behavior.
+    if (!Array.isArray(state.tcpSurfaceSnapMeshes)) {
+        state.tcpSurfaceSnapMeshes = getAllSimulationSnapMeshes('measurement', { includeHidden: true });
+    }
+    return state.tcpSurfaceSnapMeshes.filter((mesh) => isVisibleSceneObject(mesh));
+}
+
+function findTcpSurfaceSnapAtPointer(pointerEvent) {
+    const rect = state.renderer?.domElement?.getBoundingClientRect();
+    if (!rect || rect.width <= 0 || rect.height <= 0 || !state.camera) return null;
+    const meshes = getTcpSurfaceSnapMeshes();
+    if (!meshes.length) return null;
+
+    const pointer = new THREE.Vector2(
+        ((pointerEvent.clientX - rect.left) / rect.width) * 2 - 1,
+        -((pointerEvent.clientY - rect.top) / rect.height) * 2 + 1
+    );
+    state.scene?.updateMatrixWorld(true);
+    state.camera.updateMatrixWorld(true);
+    state.snapVisibilityRaycaster.setFromCamera(pointer, state.camera);
+    const hit = state.snapVisibilityRaycaster.intersectObjects(meshes, false)[0];
+    if (!hit?.object || !hit.point) return null;
+
+    const worldPoint = hit.point.clone();
+    hit.object.updateWorldMatrix?.(true, false);
+    const localPoint = hit.object.worldToLocal(worldPoint.clone());
+    const projected = worldPoint.clone().project(state.camera);
+    return {
+        type: 'surface',
+        mesh: hit.object,
+        localPoint,
+        worldPoint,
+        projected,
+        screenX: (projected.x * 0.5 + 0.5) * rect.width,
+        screenY: (-projected.y * 0.5 + 0.5) * rect.height,
+        pixelDistance: 0,
+        cameraDistance: state.camera.position.distanceTo(worldPoint)
+    };
+}
+
 function findSimulationSnapAtPointer(pointerEvent) {
     if (!isSimulationSnapInteractionActive()) return null;
     if (isCadOriginSnapPicking()) return findCadOriginSnapAtPointer(pointerEvent);
@@ -17096,15 +17147,6 @@ function findSimulationSnapAtPointer(pointerEvent) {
     const bounds = state.renderer.domElement.getBoundingClientRect();
     const pointerX = pointerEvent.clientX - bounds.left;
     const pointerY = pointerEvent.clientY - bounds.top;
-    const lazyMesh = getLazySimulationSnapMeshAtPointer(pointerX, pointerY, bounds, meshes);
-    if (lazyMesh) {
-        const lazyKey = simulationSnapMeshKey(lazyMesh);
-        if (!state.snapLazyReadyMeshes.has(lazyKey)) {
-            scheduleLazySimulationSnapBuild(lazyMesh);
-            return null;
-        }
-    }
-    if (!state.snapCandidates.length) return null;
     const placementPicking = state.placement.active;
     const measurementPicking = state.measurement.active && !placementPicking;
     const tcpPicking = state.tcpSnapMode;
@@ -17113,6 +17155,21 @@ function findSimulationSnapAtPointer(pointerEvent) {
         ? state.zeroPointEdit.snapType
         : placementPicking ? state.placement.snapType
         : measurementPicking ? state.measurement.snapType : state.tcpSnapType;
+    const allowTcpSurfaceSnap = tcpPicking
+        && requestedType === 'auto'
+        && getSimulationSnapFaceSelections().length === 0;
+    const tcpSurfaceSnap = allowTcpSurfaceSnap
+        ? findTcpSurfaceSnapAtPointer(pointerEvent)
+        : null;
+    const lazyMesh = getLazySimulationSnapMeshAtPointer(pointerX, pointerY, bounds, meshes);
+    if (lazyMesh) {
+        const lazyKey = simulationSnapMeshKey(lazyMesh);
+        if (!state.snapLazyReadyMeshes.has(lazyKey)) {
+            scheduleLazySimulationSnapBuild(lazyMesh);
+            if (!allowTcpSurfaceSnap) return null;
+        }
+    }
+    if (!state.snapCandidates.length) return tcpSurfaceSnap;
     const requiredType = (placementPicking || measurementPicking || tcpPicking || zeroPointPicking)
         && requestedType !== 'auto' && requestedType !== 'multi-point-center'
         ? requestedType
@@ -17168,7 +17225,7 @@ function findSimulationSnapAtPointer(pointerEvent) {
         candidate.projected,
         visibilityMeshes
     ));
-    return visibleSnap || null;
+    return visibleSnap || tcpSurfaceSnap;
 }
 
 function showSimulationSnapMarker(snap) {
@@ -18238,15 +18295,20 @@ function setupEventListeners() {
     state.renderer.domElement.addEventListener('contextmenu', handleSceneModelContextMenu);
     el.canvasContainer?.addEventListener('contextmenu', handleSketchContextMenu, { capture: true, passive: false });
     el.canvasContainer?.addEventListener('contextmenu', handleCanvasContainerContextMenu, { capture: true });
+    el.canvasContainer?.addEventListener('dragenter', handle3DFileDragEnter);
+    el.canvasContainer?.addEventListener('dragover', handle3DFileDragOver);
+    el.canvasContainer?.addEventListener('dragleave', handle3DFileDragLeave);
+    el.canvasContainer?.addEventListener('drop', handle3DFileDrop);
+    window.addEventListener('blur', clearFileDropState);
     el.btnTestModel?.addEventListener('click', handleTestModelImport);
     el.btnToggleCollision?.addEventListener('click', () => {
         setCollisionMode(nextCollisionMode());
     });
     el.btnImport3D?.addEventListener('click', () => el.inputImport3D?.click());
     el.inputImport3D?.addEventListener('change', () => {
-        const file = el.inputImport3D.files?.[0];
+        const files = Array.from(el.inputImport3D.files || []);
         el.inputImport3D.value = '';
-        if (file) openImportDialog(file);
+        if (files.length) openImportDialog(files);
     });
     el.inputImportSketchCad?.addEventListener('change', () => {
         const file = el.inputImportSketchCad.files?.[0];
@@ -18256,13 +18318,18 @@ function setupEventListeners() {
     el.btnCloseImport?.addEventListener('click', closeImportDialog);
     el.btnCancelImport?.addEventListener('click', closeImportDialog);
     el.btnConfirmImport?.addEventListener('click', () => {
-        const file = state.pendingImportFile;
-        if (!file) return;
-        const extension = getFileExtension(file.name || '');
+        const files = getPendingImportFiles();
+        if (!files.length) return;
+        const importOptions = {
+            placement: el.importPlacement?.value,
+            attachmentJointIndex: el.importArmLoadAxis?.value,
+            importQuality: el.importQuality?.value,
+            unitOverride: el.cadImportUnit?.value,
+            centerDrawing: el.cadImportCenter?.checked
+        };
         if (el.btnConfirmImport) el.btnConfirmImport.disabled = true;
         closeImportDialog();
-        if (isCadImportExtension(extension)) void handleCad2DImport({ file });
-        else void handle3DImport({ file });
+        void handleSelectedImportFiles(files, importOptions);
     });
     el.importPlacement?.addEventListener('change', refreshImportPlacementOptions);
     el.cadLayerList?.addEventListener('change', (event) => {
@@ -25219,20 +25286,92 @@ function rejectOversizedModelImport(file) {
     return true;
 }
 
-function openImportDialog(file) {
-    const extension = getFileExtension(file.name);
-    if (!SUPPORTED_IMPORT_EXTENSIONS.has(extension)) {
-        alert(uiText('지원하지 않는 형식입니다. STL, FBX, OBJ, GLB, GLTF, STP, STEP 파일을 선택해 주세요.'));
+function hasFileDropPayload(event) {
+    const dataTransfer = event?.dataTransfer;
+    if (!dataTransfer) return false;
+    const hasFileItem = Array.from(dataTransfer.items || [])
+        .some((item) => item.kind === 'file');
+    const hasFilesType = Array.from(dataTransfer.types || []).includes('Files');
+    return hasFileItem || hasFilesType || Boolean(dataTransfer.files?.length);
+}
+
+function clearFileDropState() {
+    state.fileDragDepth = 0;
+    el.canvasContainer?.classList.remove('file-drop-active');
+}
+
+function handle3DFileDragEnter(event) {
+    if (!hasFileDropPayload(event)) return;
+    event.preventDefault();
+    state.fileDragDepth += 1;
+    el.canvasContainer?.classList.add('file-drop-active');
+}
+
+function handle3DFileDragOver(event) {
+    if (!hasFileDropPayload(event)) return;
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+    el.canvasContainer?.classList.add('file-drop-active');
+}
+
+function handle3DFileDragLeave(event) {
+    if (!hasFileDropPayload(event)) return;
+    event.preventDefault();
+    state.fileDragDepth = Math.max(0, state.fileDragDepth - 1);
+    if (state.fileDragDepth === 0) el.canvasContainer?.classList.remove('file-drop-active');
+}
+
+function handle3DFileDrop(event) {
+    if (!hasFileDropPayload(event)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    clearFileDropState();
+    const files = Array.from(event.dataTransfer?.files || []);
+    if (files.length) openImportDialog(files);
+}
+
+function getImportFiles(input) {
+    if (!input) return [];
+    if (typeof input.name === 'string') return [input];
+    return Array.from(input).filter((file) => file && typeof file.name === 'string');
+}
+
+function getPendingImportFiles() {
+    if (state.pendingImportFiles?.length) return [...state.pendingImportFiles];
+    return state.pendingImportFile ? [state.pendingImportFile] : [];
+}
+
+function openImportDialog(input) {
+    const files = getImportFiles(input);
+    const supportedFiles = files.filter((file) => SUPPORTED_IMPORT_EXTENSIONS.has(getFileExtension(file.name)));
+    const unsupportedCount = files.length - supportedFiles.length;
+    if (!supportedFiles.length) {
+        alert(uiText('지원하지 않는 형식입니다. STL, FBX, OBJ, GLB, GLTF, STP, STEP, DXF 파일을 선택해 주세요.'));
         return;
     }
 
-    if (rejectOversizedModelImport(file)) return;
+    const oversizedFiles = supportedFiles.filter(isModelImportFileTooLarge);
+    const importFiles = supportedFiles.filter((file) => !isModelImportFileTooLarge(file));
+    if (oversizedFiles.length) {
+        alert(uiFormat(
+            '{count}개 파일은 크기 제한({limit})을 초과하여 제외했습니다.',
+            {
+                count: oversizedFiles.length,
+                limit: `${MAX_MODEL_IMPORT_SIZE_BYTES / MEBIBYTE}MB`
+            }
+        ));
+    }
+    if (unsupportedCount) {
+        alert(uiFormat('{count}개 파일은 지원하지 않는 형식이라 제외했습니다.', { count: unsupportedCount }));
+    }
+    if (!importFiles.length) return;
 
-    state.pendingImportFile = file;
+    state.pendingImportFiles = importFiles;
+    state.pendingImportFile = importFiles[0];
     el.importPlacement.value = 'scene';
     refreshImportPlacementOptions();
-    refreshImportQualityOptions(extension);
-    refreshImportDialogForFile(file, extension);
+    refreshImportQualityOptions(importFiles.map((file) => getFileExtension(file.name)));
+    refreshImportDialogForFiles(importFiles);
     if (el.btnConfirmImport) el.btnConfirmImport.disabled = false;
 
     if (el.importDialog.open) el.importDialog.close();
@@ -25242,29 +25381,42 @@ function openImportDialog(file) {
 function closeImportDialog() {
     if (el.importDialog?.open) el.importDialog.close();
     state.pendingImportFile = null;
-    refreshImportDialogForFile(null, '');
+    state.pendingImportFiles = [];
+    refreshImportDialogForFiles([]);
 }
 
 function isCadImportExtension(extension) {
     return extension === 'dxf';
 }
 
-function refreshImportDialogForFile(file, extension = getFileExtension(file?.name || '')) {
-    const isCad = isCadImportExtension(extension);
+function refreshImportDialogForFiles(files = []) {
+    const normalizedFiles = getImportFiles(files);
+    const extensions = normalizedFiles.map((file) => getFileExtension(file.name));
+    const allCad = normalizedFiles.length > 0 && extensions.every(isCadImportExtension);
+    const hasCad = extensions.some(isCadImportExtension);
     if (el.importFileSummary) {
-        el.importFileSummary.textContent = file
-            ? `${file.name} · ${formatModelImportFileSize(file.size)}`
-            : uiText('파일을 선택하세요.');
+        if (normalizedFiles.length === 0) {
+            el.importFileSummary.textContent = uiText('파일을 선택하세요.');
+        } else if (normalizedFiles.length === 1) {
+            const file = normalizedFiles[0];
+            el.importFileSummary.textContent = `${file.name} · ${formatModelImportFileSize(file.size)}`;
+        } else {
+            const preview = normalizedFiles.slice(0, 3).map((file) => file.name).join(', ');
+            const remainder = normalizedFiles.length - Math.min(normalizedFiles.length, 3);
+            el.importFileSummary.textContent = `${normalizedFiles.length}개 파일 · ${preview}${remainder ? ` 외 ${remainder}개` : ''}`;
+        }
     }
-    if (el.importDialogTitle) el.importDialogTitle.textContent = uiText(isCad ? '2D CAD 파일 가져오기' : '3D 모델 가져오기 방식');
-    el.importPlacementSetting?.classList.toggle('hidden', isCad);
-    el.importQualitySetting?.classList.toggle('hidden', isCad);
-    if (el.cadImportSettings) el.cadImportSettings.hidden = !isCad;
-    if (el.cadImportNote && isCad) {
+    if (el.importDialogTitle) {
+        el.importDialogTitle.textContent = uiText(allCad ? '2D CAD 파일 가져오기' : '3D 모델 가져오기 방식');
+    }
+    el.importPlacementSetting?.classList.toggle('hidden', allCad);
+    el.importQualitySetting?.classList.toggle('hidden', allCad);
+    if (el.cadImportSettings) el.cadImportSettings.hidden = !hasCad;
+    if (el.cadImportNote && hasCad) {
         el.cadImportNote.textContent = uiText('DXF의 블록과 LINE ARC CIRCLE POLYLINE을 전개해 평면에 표시하며 스플라인은 지원하지 않습니다');
     }
     if (el.btnConfirmImport) {
-        el.btnConfirmImport.innerHTML = `<i class="fa-solid fa-file-import"></i> ${uiText(isCad ? '2D CAD 가져오기' : '3D/CAD 가져오기')}`;
+        el.btnConfirmImport.innerHTML = `<i class="fa-solid fa-file-import"></i> ${uiText(allCad ? '2D CAD 가져오기' : '3D/CAD 가져오기')}`;
     }
 }
 
@@ -25300,7 +25452,8 @@ function getSelectedStepImportQuality() {
 
 function refreshImportQualityOptions(extension = getFileExtension(state.pendingImportFile?.name || '')) {
     if (!el.importQuality) return;
-    const isStep = extension === 'stp' || extension === 'step';
+    const extensions = Array.isArray(extension) ? extension : [extension];
+    const isStep = extensions.some((item) => item === 'stp' || item === 'step');
     el.importQuality.disabled = !isStep;
     if (!isStep) el.importQuality.value = 'auto';
     if (el.importQualityNote) {
@@ -25491,7 +25644,7 @@ function resetStepImportWorkerSession(session = state.stepImportWorkerSession) {
 function getStepImportWorkerSession() {
     if (state.stepImportWorkerSession) return state.stepImportWorkerSession;
 
-    const workerUrl = new URL('./step-import-worker.js?v=20260721-large-step-chunked-snap-face-groups-3-navigation-snap-1', import.meta.url);
+    const workerUrl = new URL('./step-import-worker.js?v=20260921-large-step-occt-5-3-4-1', import.meta.url);
     const worker = new Worker(workerUrl);
     let readySettled = false;
     let resolveReady;
@@ -26585,6 +26738,67 @@ async function handle3DImport(options = {}) {
         if (!options.file && state.pendingImportFile === file) state.pendingImportFile = null;
         finishFileImportLoading(importRequestId);
     }
+}
+
+async function handleSelectedImportFiles(files, options = {}) {
+    const importFiles = getImportFiles(files);
+    if (!importFiles.length) return [];
+    if (importFiles.length === 1) {
+        const file = importFiles[0];
+        return [isCadImportExtension(getFileExtension(file.name))
+            ? await handleCad2DImport({ file, ...options })
+            : await handle3DImport({ file, ...options })];
+    }
+
+    const imported = [];
+    const failed = [];
+    let importedCadCount = 0;
+    let importedModelCount = 0;
+    for (const file of importFiles) {
+        const extension = getFileExtension(file.name);
+        try {
+            const model = isCadImportExtension(extension)
+                ? await handleCad2DImport({
+                    file,
+                    unitOverride: options.unitOverride,
+                    centerDrawing: options.centerDrawing,
+                    suppressFit: true,
+                    suppressSuccessStatus: true
+                })
+                : await handle3DImport({
+                    file,
+                    placement: options.placement,
+                    attachmentJointIndex: options.attachmentJointIndex,
+                    importQuality: options.importQuality,
+                    suppressFit: true,
+                    suppressSuccessStatus: true
+                });
+            if (model) {
+                imported.push(model);
+                if (isCadImportExtension(extension)) importedCadCount += 1;
+                else importedModelCount += 1;
+            } else {
+                failed.push(file);
+            }
+        } catch (error) {
+            console.error('Batch import failed:', error);
+            failed.push(file);
+        }
+    }
+
+    if (imported.length) {
+        if (importedCadCount && !importedModelCount) fitCadDocument(true);
+        else fitCamera();
+    }
+    if (failed.length) {
+        setStatus('{success}개 파일 불러오기 완료 · {failed}개 파일 실패', '#f59e0b', {
+            success: imported.length,
+            failed: failed.length
+        });
+    } else if (imported.length) {
+        setStatus('{count}개 파일 불러오기 완료', '#22c55e', { count: imported.length });
+    }
+    return imported;
 }
 
 function isTestModel(model) {

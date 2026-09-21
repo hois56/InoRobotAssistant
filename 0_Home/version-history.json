@@ -213,6 +213,15 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.09.21",
+                "items": [
+                  "`[수정]` 일부 복잡한 STEP 파일이 표시 가능한 메시 없음으로 처리되어 불러오지 않던 문제를 해결했습니다.",
+                  "`[수정]` 컨트롤러 연결 중 치수 측정 패널에서 직선 길이·직각 치수·로봇 위치 선택 항목이 표시되지 않던 문제를 해결했습니다.",
+                  "`[개선]` 3D 시뮬레이션에서 여러 3D 파일을 한 번에 드래그하여 불러올 수 있도록 개선했습니다.",
+                  "`[수정]` TCP 위치 스냅이 로봇 바디 중심점과 TCP 점에만 고정되지 않고 3D 표면의 원하는 위치를 선택할 수 있도록 수정했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.09.16",
                 "items": [
                   "`[수정]` 로봇 모델을 불러온 뒤에도 중앙의 초기 안내 문구가 남고 로드 실패로 표시되던 문제를 해결했습니다.",
@@ -1269,6 +1278,15 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.09.21",
+                "items": [
+                  "`[Fixed]` Fixed an issue where some complex STEP files were treated as having no displayable mesh and could not be imported.",
+                  "`[Fixed]` Fixed an issue where the straight-line length, orthogonal dimension, and robot position options were not displayed in the dimension measurement panel while a controller was connected.",
+                  "`[Improved]` Improved 3D Simulation so multiple 3D files can be imported by dragging them in at once.",
+                  "`[Fixed]` Fixed an issue where TCP position snapping was limited to the robot body center and TCP point instead of allowing any desired position on a 3D surface."
+                ]
+              },
               {
                 "title": "Ver 26.09.16",
                 "items": [
@@ -2327,6 +2345,15 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.09.21",
+                "items": [
+                  "`[修复]` 修复了部分复杂 STEP 文件被判定为没有可显示网格而无法导入的问题。",
+                  "`[修复]` 修复了连接控制器时，尺寸测量面板中不显示直线长度、正交尺寸和机器人位置选项的问题。",
+                  "`[改进]` 改进了 3D 仿真，使其可以通过一次拖放导入多个 3D 文件。",
+                  "`[修复]` 修复了 TCP 位置捕捉仅限于机器人机身中心点和 TCP 点、无法选择 3D 表面任意位置的问题。"
+                ]
+              },
+              {
                 "title": "Ver 26.09.16",
                 "items": [
                   "`[修复]` 修复了加载机器人模型后中央初始提示文字仍然显示且加载状态显示为失败的问题。",
@@ -3383,6 +3410,15 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.09.21",
+                "items": [
+                  "`[Sửa lỗi]` Đã khắc phục sự cố một số tệp STEP phức tạp bị xử lý là không có lưới hiển thị và không thể nhập.",
+                  "`[Sửa lỗi]` Đã khắc phục sự cố các tùy chọn chiều dài đường thẳng, kích thước vuông góc và vị trí robot không hiển thị trong bảng đo kích thước khi kết nối bộ điều khiển.",
+                  "`[Cải tiến]` Đã cải tiến Mô phỏng 3D để có thể nhập nhiều tệp 3D bằng cách kéo thả cùng lúc.",
+                  "`[Sửa lỗi]` Đã khắc phục sự cố bắt vị trí TCP chỉ giới hạn ở tâm thân robot và điểm TCP, thay vì cho phép chọn vị trí bất kỳ trên bề mặt 3D."
+                ]
+              },
               {
                 "title": "Ver 26.09.16",
                 "items": [

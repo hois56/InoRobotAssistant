@@ -1,8 +1,8 @@
 /* global importScripts, occtimportjs */
 
 const OCCT_IMPORT_BASE_URL = 'https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/';
-const LARGE_OCCT_MODULE_URL = 'https://cdn.jsdelivr.net/npm/occt-wasm@3.7.0/dist/index.js';
-const LARGE_OCCT_WASM_URL = 'https://cdn.jsdelivr.net/npm/occt-wasm@3.7.0/dist/occt-wasm.wasm';
+const LARGE_OCCT_MODULE_URL = 'https://cdn.jsdelivr.net/npm/occt-wasm@5.3.4/dist/index.js';
+const LARGE_OCCT_WASM_URL = 'https://cdn.jsdelivr.net/npm/occt-wasm@5.3.4/dist/occt-wasm.wasm';
 const STEP_MESH_CHUNK_TARGET_BYTES = 6 * 1024 * 1024;
 const LARGE_STEP_MESH_CHUNK_TARGET_BYTES = 4 * 1024 * 1024;
 const DEFAULT_COLOR = [0.749, 0.78, 0.835];
