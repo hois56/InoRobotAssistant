@@ -539,6 +539,10 @@ html[data-model-select-embed="manual"] .model-manual-document-icon {
     letter-spacing: 0.04em;
 }
 
+html[data-model-select-embed="manual"] .model-manual-spreadsheet-icon {
+    background: #16a34a;
+}
+
 html[data-model-select-embed="manual"] .model-manual-document-viewer header span:nth-child(2) {
     min-width: 0;
     flex: 1;

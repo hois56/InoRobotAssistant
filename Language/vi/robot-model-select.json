@@ -2,7 +2,7 @@
   "pages": {
     "robotSelect": {
       "title": "Chọn model robot INOVANCE",
-      "description": "Chọn robot INOVANCE và tùy chọn phù hợp, sau đó tải CAD và bảng cấu hình."
+      "description": "Chọn robot INOVANCE và tùy chọn phù hợp, sau đó tải CAD và danh sách cấu hình Excel."
     }
   },
   "legacy": {
@@ -246,8 +246,25 @@
     "개": "cái",
     "수량은 1개 이상이어야 합니다.": "Số lượng phải ít nhất là 1.",
     "선택한 모델 구성을 장바구니에 담을 수 있습니다.": "Thêm cấu hình model đã chọn vào danh sách.",
-    "구성서 생성 중...": "Đang tạo bảng cấu hình...",
-    "기본 케이블": "Cáp cơ bản"
+    "구성서 생성 중...": "Đang tạo tệp Excel...",
+    "엑셀 파일 생성 중 오류가 발생했습니다.": "Đã xảy ra lỗi khi tạo tệp Excel.",
+    "순번": "STT",
+    "형번": "Model",
+    "로봇": "Robot",
+    "펜던트": "Tay dạy",
+    "악세서리": "Phụ kiện",
+    "케이블": "Cáp",
+    "구성 요소 엑셀 다운로드": "Tải danh sách linh kiện (Excel)",
+    "구성 내역 엑셀 다운로드": "Tải cấu hình (Excel)",
+    "기본 케이블": "Cáp cơ bản",
+    "다관절": "Robot đa khớp",
+    "SCARA": "SCARA",
+    "천장형 SCARA 로봇": "Robot SCARA gắn trần",
+    "Arm I/O (J4)": "Arm I/O (J4)",
+    "Arm I/O (Base)": "Arm I/O (Base)",
+    "가동형": "Có thể chuyển động",
+    "비가동형": "Không thể chuyển động",
+    "티칭 펜던트 연장 케이블": "Cáp nối dài tay dạy"
   },
   "patterns": [
     {

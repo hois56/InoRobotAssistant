@@ -59,6 +59,14 @@
             "title": "Robot Model Select",
             "versions": [
               {
+                "title": "Ver 26.09.24",
+                "items": [
+                  "`[변경]` 모델 셀렉트의 구성 요소와 구성 내역을 엑셀 파일로 다운로드하도록 변경했습니다.",
+                  "`[변경]` 엑셀 구성 목록에 타입 열을 추가해 로봇·펜던트·악세서리·케이블을 구분하도록 했습니다.",
+                  "`[변경]` 엑셀 목록에서 다관절·SCARA 로봇 종류와 Arm I/O 연결 위치를 구분하고, 로봇 상세정보에 파워/엔코더 케이블의 가동형·비가동형과 길이를 표시하도록 변경했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.09.23",
                 "items": [
                   "`[수정]` 펜던트 연장 케이블 형번에 5m·15m·25m 길이가 표시되지 않던 문제를 해결했습니다.",
@@ -231,8 +239,28 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.09.24",
+                "items": [
+                  "`[수정]` OLP에서 `WaitInPos;` 명령이 오류로 중단되고 실행 중 `P.pts` 우클릭에 브라우저 메뉴가 표시되던 문제를 해결했습니다.",
+                  "`[수정]` JOG 패널에서 BASE 버튼을 다시 눌러도 핸들러 표시 상태가 전환되지 않던 문제를 해결했습니다.",
+                  "`[수정]` OLP의 포인트 이동, 프로그램 동작 및 IO 변경에서 불필요한 반복 텍스트 로그가 표시되던 문제를 해결했습니다.",
+                  "`[수정]` 시뮬레이션 가상환경을 실행할 때 CMD 창이 2개 열리던 문제를 해결했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.09.23",
                 "items": [
+                  "`[추가]` 시뮬레이션에서 여러 로봇의 프로그램·OLP·컨트롤러 상태를 선택한 주기로 측정하고 그래프와 CSV로 저장할 수 있는 Trace 기능을 추가했습니다.",
+                  "`[개선]` 기존 Trace와 동일하게 그래프의 Pan·Zoom·Move·Scale·Measure·Dots, 커서 측정, 채널 그룹 선택 및 CSV 조작을 사용할 수 있도록 개선했습니다.",
+                  "`[수정]` 시뮬레이션 화면에서 사용하지 않는 Trace 실행 버튼을 제거했습니다.",
+                  "`[수정]` 프로그램 실행 중 치수 측정을 사용할 수 없던 문제를 해결했습니다.",
+                  "`[수정]` 두 대의 로봇 중 한 로봇에 컨트롤러가 연결된 상태에서 다른 로봇의 프로그램 패널 모션이 실행되지 않던 문제를 해결했습니다.",
+                  "`[수정]` 한 로봇에 컨트롤러가 연결된 상태에서 다른 로봇의 OLP 프로젝트를 불러오거나 실행할 수 없고, 선택 로봇의 일시정지·정지 제어가 동작하지 않던 문제를 해결했습니다.",
+                  "`[수정]` 컨트롤러가 연결된 로봇의 프로그램 패널 상태가 '프로그램 대기'로 표시되던 문제를 해결했습니다.",
+                  "`[수정]` OLP에서 `Wobj[0]` 위치값에 로봇 모델의 설치 높이가 중복 적용되어 Z가 실제 포인트보다 낮게 이동하고, JUMP의 `LH/MH/RH` 설정이 반영되지 않던 문제를 해결했습니다.",
+                  "`[수정]` JUMP에서 실제로 이동하지 않는 구간이 최소 대기 시간만큼 실행 시간을 소모하던 문제를 해결했습니다.",
+                  "`[수정]` OLP에서 `Z[CP]` 코너링과 JUMP 연속 경로가 실제 이동에 반영되지 않던 문제를 해결했습니다.",
+                  "`[수정]` OLP가 포인트의 암 파라미터를 IK에 반영하지 않아 SCARA 자세가 왼팔·오른팔 사이에서 바뀌던 문제를 해결했습니다.",
                   "`[수정]` 텍스트 입력에서 불필요한 회전 각도 항목을 제거하고 문자 높이 기본값을 100으로 변경했습니다.",
                   "`[개선]` 스케치 선택 상태에서 도형을 드래그하면 마우스 위치를 따라 실시간으로 이동하고, 선택한 텍스트에는 외곽선이 표시되도록 개선했습니다.",
                   "`[수정]` 모델 이동을 시작할 때 면을 선택하기 전부터 기존 도형의 스냅 지점이 모두 표시되던 문제를 해결했습니다.",
@@ -242,7 +270,8 @@
                   "`[수정]` 스케치 편집 화면에서 돌출을 시작할 때 돌출 높이가 0으로 표시되던 문제를 해결하고 기본값을 100으로 설정했습니다.",
                   "`[수정]` 협업 방에 참여한 게스트가 로봇을 점유한 뒤에도 컨트롤러에 연결할 수 없고, 방 생성 후 추가한 로봇이 표시되지 않던 문제를 해결했습니다.",
                   "`[개선]` 협업 중 원격 로봇 상태를 보간하고 협업 패널의 불필요한 반복 갱신을 줄여 화면이 끊기던 문제를 개선했습니다.",
-                  "`[수정]` 협업에서 점유한 로봇이 원격 상태 갱신에 의해 덮어써져 움직이지 않거나 수동 JOG 위치가 상대 화면에 반영되지 않던 문제를 해결했습니다."
+                  "`[수정]` 협업에서 점유한 로봇이 원격 상태 갱신에 의해 덮어써져 움직이지 않거나 수동 JOG 위치가 상대 화면에 반영되지 않던 문제를 해결했습니다.",
+                  "`[수정]` 여러 포인트 파일에 같은 P 포인트 번호가 있을 때 활성 포인트 파일의 위치값 대신 다른 파일의 Z 위치로 이동하던 문제를 해결했습니다."
                 ]
               },
               {
@@ -1169,6 +1198,14 @@
             "title": "Robot Model Select",
             "versions": [
               {
+                "title": "Ver 26.09.24",
+                "items": [
+                  "`[Changed]` Component lists and saved configurations in Robot Model Select now download as Excel files.",
+                  "`[Changed]` Added a Type column to distinguish robots, pendants, accessories, and cables in the Excel list.",
+                  "`[Changed]` The Excel list now distinguishes articulated, SCARA, and ceiling-mounted SCARA robots and Arm I/O connection locations; robot details show whether the Power/Encoder cable is movable or non-movable and its length."
+                ]
+              },
+              {
                 "title": "Ver 26.09.14",
                 "items": [
                   "`[수정]` 모델 셀렉트에서 로봇 바디 RJ45 포트 유료 옵션을 삭제했습니다."
@@ -1323,8 +1360,24 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.09.24",
+                "items": [
+                  "`[Fixed]` Fixed OLP runs stopping on `WaitInPos;` and native browser context menus appearing for P.pts rows during OLP execution.",
+                  "`[Fixed]` Fixed the BASE button in the JOG panel not toggling the handler visibility when clicked again.",
+                  "`[Fixed]` Fixed excessive OLP text logs for routine motion, status, and IO changes.",
+                  "`[Fixed]` Fixed the issue where starting the simulation virtual environment opened two CMD windows."
+                ]
+              },
+              {
                 "title": "Ver 26.09.23",
                 "items": [
+                  "`[Fixed]` Fixed an issue where dimension measurement could not be used while a program was running.",
+                  "`[Fixed]` Fixed the issue where a controller-connected robot prevented motion from running in the Program Panel on another robot.",
+                  "`[Fixed]` Fixed an issue where a controller connected to one robot blocked OLP project import and execution on another robot, leaving its selected-robot pause and stop controls unavailable.",
+                  "`[Fixed]` Fixed the controller-connected robot being shown as Program ready in the Program Panel.",
+                  "`[Fixed]` Fixed JUMP segments with no actual movement still consuming the minimum motion time.",
+                  "`[Fixed]` Fixed OLP `Z[CP]` corner blending and continuous JUMP paths not being reflected in the robot motion.",
+                  "`[Fixed]` Fixed SCARA arm posture switching between left and right because OLP did not apply point arm parameters to IK.",
                   "`[Fixed]` Removed the unnecessary text rotation field and changed the default text height to 100.",
                   "`[Improved]` Sketch entities now follow the pointer in real time while dragging in Select mode, and selected text shows an outline.",
                   "`[Fixed]` Fixed all existing snap points being displayed before a face was selected when starting model placement.",
@@ -2257,6 +2310,14 @@
             "title": "Robot Model Select",
             "versions": [
               {
+                "title": "Ver 26.09.24",
+                "items": [
+                  "`[变更]` 将机器人选型工具中的组件清单和配置清单改为 Excel 文件下载。",
+                  "`[变更]` 在 Excel 配置清单中添加类型列，用于区分机器人、示教器、附件和电缆。",
+                  "`[变更]` Excel 清单现在区分多关节、SCARA 和天吊式 SCARA 机器人及 Arm I/O 连接位置；机器人详情显示 Power/Encoder 电缆是否可移动及其长度。"
+                ]
+              },
+              {
                 "title": "Ver 26.09.14",
                 "items": [
                   "`[수정]` 모델 셀렉트에서 로봇 바디 RJ45 포트 유료 옵션을 삭제했습니다."
@@ -2411,8 +2472,24 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.09.24",
+                "items": [
+                  "`[修复]` 修复了 OLP 因 `WaitInPos;` 命令而停止，以及 OLP 运行时右键单击 P.pts 行显示浏览器菜单的问题。",
+                  "`[修复]` 修复了 JOG 面板中的 BASE 按钮再次点击时无法切换手柄显示状态的问题。",
+                  "`[修复]` 修复了 OLP 日常运动、状态和 IO 变化产生过多文本日志的问题。",
+                  "`[修复]` 修复了启动仿真虚拟环境时会打开两个 CMD 窗口的问题。"
+                ]
+              },
+              {
                 "title": "Ver 26.09.23",
                 "items": [
+                  "`[修复]` 修复了仿真程序运行期间无法使用尺寸测量功能的问题。",
+                  "`[修复]` 修复了两台机器人中一台连接控制器时，另一台机器人的程序面板运动无法执行的问题。",
+                  "`[修复]` 修复了一台机器人连接控制器时，无法为另一台机器人导入或运行 OLP 项目，且所选机器人的暂停和停止控制不可用的问题。",
+                  "`[修复]` 修复了已连接控制器的机器人在程序面板中显示为“程序就绪”的问题。",
+                  "`[修复]` 修复了 JUMP 中没有实际移动的区段仍会消耗最短运动时间的问题。",
+                  "`[修复]` 修复了 OLP 中 `Z[CP]` 圆角过渡和 JUMP 连续路径未反映到实际运动的问题。",
+                  "`[修复]` 修复了 OLP 未将点位臂参数用于逆运动学、导致 SCARA 左右臂姿态切换的问题。",
                   "`[修复]` 删除不需要的文本旋转角度项，并将文字高度默认值改为 100。",
                   "`[改进]` 在草图选择模式下拖动图形时，图形会实时跟随鼠标移动，选中的文本也会显示外框。",
                   "`[修复]` 修复了开始移动模型时尚未选择面就显示所有现有捕捉点的问题。",
@@ -3345,6 +3422,14 @@
             "title": "Robot Model Select",
             "versions": [
               {
+                "title": "Ver 26.09.24",
+                "items": [
+                  "`[Thay đổi]` Danh sách linh kiện và cấu hình trong Robot Model Select hiện được tải xuống dưới dạng tệp Excel.",
+                  "`[Thay đổi]` Thêm cột Loại vào danh sách Excel để phân biệt robot, tay dạy, phụ kiện và cáp.",
+                  "`[Thay đổi]` Danh sách Excel phân biệt robot đa khớp, SCARA, SCARA gắn trần và vị trí kết nối Arm I/O; chi tiết robot hiển thị cáp Power/Encoder có thể chuyển động hay không và chiều dài cáp."
+                ]
+              },
+              {
                 "title": "Ver 26.09.14",
                 "items": [
                   "`[수정]` 모델 셀렉트에서 로봇 바디 RJ45 포트 유료 옵션을 삭제했습니다."
@@ -3499,8 +3584,24 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.09.24",
+                "items": [
+                  "`[Sửa lỗi]` Đã khắc phục lỗi OLP dừng do lệnh `WaitInPos;` và menu chuột phải của trình duyệt xuất hiện trên hàng P.pts khi OLP đang chạy.",
+                  "`[Sửa lỗi]` Đã khắc phục lỗi nút BASE trong bảng JOG không chuyển đổi trạng thái hiển thị tay cầm khi được nhấn lại.",
+                  "`[Sửa lỗi]` Đã khắc phục tình trạng OLP ghi quá nhiều nhật ký văn bản cho chuyển động, trạng thái và thay đổi IO thông thường.",
+                  "`[Sửa lỗi]` Đã khắc phục lỗi khởi động môi trường mô phỏng làm mở hai cửa sổ CMD."
+                ]
+              },
+              {
                 "title": "Ver 26.09.23",
                 "items": [
+                  "`[Sửa lỗi]` Đã khắc phục lỗi không thể sử dụng chức năng đo kích thước khi chương trình mô phỏng đang chạy.",
+                  "`[Sửa lỗi]` Đã khắc phục lỗi khi một trong hai robot được kết nối với bộ điều khiển thì chuyển động của robot còn lại không thể chạy từ Bảng chương trình.",
+                  "`[Sửa lỗi]` Đã khắc phục lỗi bộ điều khiển kết nối với một robot khiến không thể nhập hoặc chạy dự án OLP trên robot khác, đồng thời các nút tạm dừng và dừng robot đang chọn không khả dụng.",
+                  "`[Sửa lỗi]` Đã khắc phục lỗi robot đã kết nối bộ điều khiển bị hiển thị là Chương trình sẵn sàng trong Bảng chương trình.",
+                  "`[Sửa lỗi]` Đã khắc phục lỗi các đoạn JUMP không di chuyển thực tế vẫn tiêu tốn thời gian chuyển động tối thiểu.",
+                  "`[Sửa lỗi]` Đã khắc phục lỗi bo góc `Z[CP]` và đường chạy liên tục JUMP không được phản ánh trong chuyển động OLP.",
+                  "`[Sửa lỗi]` Đã khắc phục lỗi tư thế SCARA chuyển đổi giữa tay trái và tay phải do OLP không áp dụng tham số tay của điểm vào IK.",
                   "`[Sửa lỗi]` Đã xóa mục góc xoay văn bản không cần thiết và đặt chiều cao văn bản mặc định là 100.",
                   "`[Cải tiến]` Khi kéo hình trong chế độ Chọn của phác thảo, hình sẽ di chuyển theo con trỏ theo thời gian thực và văn bản được chọn sẽ hiển thị khung viền.",
                   "`[Sửa lỗi]` Đã khắc phục sự cố tất cả điểm bắt dính hiện có hiển thị trước khi chọn mặt khi bắt đầu di chuyển model.",

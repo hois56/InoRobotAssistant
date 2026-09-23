@@ -2,7 +2,7 @@ const WORD_START = 32;
 const WORD_COUNT = 128;
 const BIT_START = 512;
 const BIT_COUNT = WORD_COUNT * 16;
-export const OLP_RUNTIME_BUILD = 'R28';
+export const OLP_RUNTIME_BUILD = 'R33';
 
 export class OlpRuntimeError extends Error {
     constructor(message, runtime = null) {
@@ -507,7 +507,6 @@ export class OlpRuntime {
         this.breakRequested = false;
         this.stepMode = false;
         this.stepPermit = 0;
-        this.lastProcessGateTrace = '';
         this.velocityRate = 100;
         // `Velset Rate[n]` is the controller-wide override.  `Velset [n]`
         // separately replaces V[n] on following motion commands until OFF.
@@ -623,7 +622,9 @@ export class OlpRuntime {
             this.lastError = runtimeError.message;
             this.phase = this.cancelled ? 'stopped' : 'error';
             this.adapter.status?.(runtimeError.message);
-            this.adapter.log?.(`OLP error: ${runtimeError.message}`);
+            if (!this.cancelled && !/^OLP stopped/i.test(runtimeError.message)) {
+                this.adapter.log?.(`OLP error: ${runtimeError.message}`);
+            }
             throw runtimeError;
         } finally {
             if (this.cancelled) this.phase = 'stopped';
@@ -711,7 +712,6 @@ export class OlpRuntime {
         this.phase = 'waiting';
         this.waitCondition = condition;
         this.notifyCursor();
-        this.adapter.log?.(`OLP waiting: ${condition}${timeout ? ` (timeout ${timeout / 1000}s)` : ''}`);
         while (!this.evaluate(condition)) {
             await this.waitForExecutionPermit();
             if (timeout && performance.now() - startedAt >= timeout) return false;
@@ -720,7 +720,6 @@ export class OlpRuntime {
         this.phase = 'running';
         this.waitCondition = '';
         this.notifyCursor();
-        this.adapter.log?.(`OLP condition satisfied: ${condition}`);
         return true;
     }
 
@@ -799,6 +798,17 @@ export class OlpRuntime {
         this.variables.set(raw, this.coerceVariableValue(raw, value));
     }
 
+    getPointRecordsForActiveFile() {
+        const activePointFileName = this.activePointFile ? fileName(this.activePointFile).toLowerCase() : '';
+        const activePointRecords = activePointFileName
+            ? this.project?.pointFiles?.find((file) => fileName(file.path).toLowerCase() === activePointFileName)?.records || []
+            : [];
+        return [
+            ...activePointRecords,
+            ...(this.project?.pointRecords || []).filter((entry) => !activePointRecords.includes(entry))
+        ];
+    }
+
     readPositionSymbol(symbol) {
         const position = getPositionSymbol(symbol, this);
         if (!position) return null;
@@ -806,7 +816,7 @@ export class OlpRuntime {
         if (saved) return [...saved];
         if (position.kind === 'PR' || position.kind === 'LPR') return zeroPose();
         const kind = position.kind === 'JP' ? 'jointPoint' : 'point';
-        const point = this.project?.pointRecords?.find((entry) => (
+        const point = this.getPointRecordsForActiveFile().find((entry) => (
             entry.kind === kind
             && Number(entry.index) === position.index
             && (!entry.sourceSymbol || entry.sourceSymbol === position.kind)
@@ -816,17 +826,29 @@ export class OlpRuntime {
 
     findProjectPoint(expression) {
         const raw = normalizeRuntimeSymbol(String(expression || '').trim().replace(/[;,]$/, ''), this);
+        const offsetMatch = raw.match(/^Offset\s*\(\s*([^,]+?)(?:\s*,\s*[^\)]+)?\s*\)$/i);
+        if (offsetMatch) {
+            const basePoint = this.findProjectPoint(offsetMatch[1]);
+            return basePoint ? { ...basePoint, name: raw } : null;
+        }
+        const records = this.getPointRecordsForActiveFile();
         const direct = this.readPositionSymbol(raw);
         if (direct) {
             const position = getPositionSymbol(raw, this);
-            return { kind: position?.kind === 'JP' ? 'jointPoint' : 'point', values: direct, name: raw };
+            const kind = position?.kind === 'JP' ? 'jointPoint' : 'point';
+            const record = position
+                ? records.find((entry) => entry.kind === kind
+                    && Number(entry.index) === position.index
+                    && (!entry.sourceSymbol || entry.sourceSymbol === position.kind))
+                : null;
+            return { ...(record || {}), kind, values: direct, name: record?.name || raw };
         }
         const normalized = raw.replace(/^(?:LP|JP|P)\[/i, (prefix) => prefix.slice(0, -1)).replace(/\]$/, '');
-        const point = this.project?.pointRecords?.find((entry) => (
+        const point = records.find((entry) => (
             String(entry.name || '').toLowerCase() === raw.toLowerCase()
             || String(entry.name || '').toLowerCase() === normalized.toLowerCase()
         ));
-        return point?.values ? { kind: point.kind, values: [...point.values], name: point.name } : null;
+        return point?.values ? { ...point, values: [...point.values], name: point.name } : null;
     }
 
     readPositionExpression(expression) {
@@ -870,10 +892,24 @@ export class OlpRuntime {
         const values = this.readPositionExpression(raw);
         if (!values) return null;
         return {
+            ...(point || {}),
             kind: point?.kind || (getPositionSymbol(raw, this)?.kind === 'JP' ? 'jointPoint' : 'point'),
             values,
             name: point?.name || raw
         };
+    }
+
+    peekNextMotion() {
+        const lines = this.programLines.get(this.currentFilePath) || [];
+        // currentLineNumber is one-based, so it is also the next line's array index.
+        for (let index = this.currentLineNumber; index < lines.length; index += 1) {
+            const rawLine = String(lines[index] || '').trim();
+            if (!rawLine || rawLine.startsWith('//')) continue;
+            const line = stripComments(rawLine).trim();
+            if (!line) continue;
+            return this.parseMotion(line);
+        }
+        return null;
     }
 
     runtimeError(message) {
@@ -909,17 +945,6 @@ export class OlpRuntime {
             }
         }
         return Boolean(parseLiteral(value, this));
-    }
-
-    traceProcessGate(branches, selected) {
-        if (!branches?.some((branch) => /\bxwProcess_(?:work|wait)_pos\b/i.test(branch.condition || ''))) return;
-        const work = this.readSymbol('xwProcess_work_pos');
-        const wait = this.readSymbol('xwProcess_wait_pos');
-        const active = selected?.condition || 'idle';
-        const signature = `${work}:${wait}:${active}`;
-        if (signature === this.lastProcessGateTrace) return;
-        this.lastProcessGateTrace = signature;
-        this.adapter.log?.(`OLP process gate: InW work=${work}, wait=${wait}; branch=${active}`);
     }
 
     findFunctions(path) {
@@ -1006,7 +1031,6 @@ export class OlpRuntime {
             if (type) this.declareVariable(parameter, type);
             this.writeSymbol(parameter, value);
         });
-        this.adapter.log?.(`OLP call: ${fileName(path)}.${functionName}(${argumentsList.map((value) => String(value)).join(', ')})`);
         // Some generated projects expose a global process busy word in main.pro,
         // while the position subprogram checks its own yP{n}_{mode}_pos_busy bit.
         // Mirror that controller-side handoff so the imported project follows the
@@ -1022,7 +1046,6 @@ export class OlpRuntime {
                 positionBusyAddress = normalizeAddress(symbol, this.project?.labels || {});
                 if (positionBusyAddress) {
                     this.adapter.writeAddress?.(positionBusyAddress, 1, this);
-                    this.adapter.log?.(`OLP process busy: ${symbol}=ON`);
                 }
             }
         }
@@ -1059,6 +1082,21 @@ export class OlpRuntime {
         await Promise.all(pending);
     }
 
+    async waitForInPosition() {
+        if (!this.pendingMotions.size) return;
+        this.phase = 'waiting';
+        this.waitCondition = 'InPos';
+        this.notifyCursor();
+        try {
+            await this.awaitPendingMotions();
+            await this.waitIfPaused();
+        } finally {
+            this.waitCondition = '';
+            if (!this.cancelled) this.phase = this.paused ? 'paused' : 'running';
+            this.notifyCursor();
+        }
+    }
+
     startMotion(motionPromise, { nwait = false } = {}) {
         const pending = Promise.resolve(motionPromise);
         if (!nwait) return pending;
@@ -1067,7 +1105,6 @@ export class OlpRuntime {
             () => this.pendingMotions.delete(pending),
             () => this.pendingMotions.delete(pending)
         );
-        this.adapter.log?.('OLP motion started with Nwait.');
         return null;
     }
 
@@ -1121,7 +1158,6 @@ export class OlpRuntime {
                 }
                 branches.push({ condition: branchCondition, start: branchStart, end: close });
                 const selected = branches.find((branch) => branch.condition === null || this.evaluate(branch.condition));
-                this.traceProcessGate(branches, selected);
                 const result = selected ? await this.executeLines(lines, selected.start, selected.end, labels, sourcePath) : null;
                 if (result) return result;
                 index = close + 1;
@@ -1302,7 +1338,6 @@ export class OlpRuntime {
             if (shouldFire) {
                 this.writeSymbol(event.address, event.value);
                 event.fired = true;
-                this.adapter.log?.(`OLP motion Out: ${event.address}=${event.value}`);
             }
         });
     }
@@ -1326,6 +1361,9 @@ export class OlpRuntime {
             vibrationMode: null,
             pallet: null,
             jumpHeight: null,
+            jumpLiftHeight: null,
+            jumpMiddleHeight: null,
+            jumpReturnHeight: null,
             rawArguments: [...argumentsList]
         };
         let speed = 100;
@@ -1343,6 +1381,9 @@ export class OlpRuntime {
             const until = raw.match(/^Until\s+(.+)$/i);
             const pallet = raw.match(/^Pallet\s*\((.*)\)$/i);
             const jumpHeight = raw.match(/^(?:H|Height|Lift)\s*\[\s*([^\]]+)\s*\]$/i);
+            const jumpLiftHeight = raw.match(/^LH\s*\[\s*([^\]]+)\s*\]$/i);
+            const jumpMiddleHeight = raw.match(/^MH\s*\[\s*([^\]]+)\s*\]$/i);
+            const jumpReturnHeight = raw.match(/^RH\s*\[\s*([^\]]+)\s*\]$/i);
             const outEvent = this.parseOutEvent(raw);
             if (velocity) {
                 speed = Number(parseLiteral(velocity[1], this)) || speed;
@@ -1364,6 +1405,9 @@ export class OlpRuntime {
             else if (outEvent) options.outEvents.push(outEvent);
             else if (pallet) options.pallet = splitArguments(pallet[1]);
             else if (jumpHeight) options.jumpHeight = Number(parseLiteral(jumpHeight[1], this)) || 0;
+            else if (jumpLiftHeight) options.jumpLiftHeight = Number(parseLiteral(jumpLiftHeight[1], this)) || 0;
+            else if (jumpMiddleHeight) options.jumpMiddleHeight = Number(parseLiteral(jumpMiddleHeight[1], this));
+            else if (jumpReturnHeight) options.jumpReturnHeight = Number(parseLiteral(jumpReturnHeight[1], this)) || 0;
             else targets.push(raw);
         });
         if (motion === 'MOVC' && targets.length < 3) return null;
@@ -1371,7 +1415,9 @@ export class OlpRuntime {
         if ((motion === 'MOVJ' || motion === 'MOVABSJ' || motion === 'JUMP') && options.speedMode === 'absolute') {
             throw new Error(`${motion} does not support Speed[n]; use V[n].`);
         }
-        if ((motion === 'JUMP' || motion === 'JUMPL') && options.jumpHeight === null) {
+        const hasJumpProfile = [options.jumpLiftHeight, options.jumpMiddleHeight, options.jumpReturnHeight]
+            .some((value) => value !== null);
+        if ((motion === 'JUMP' || motion === 'JUMPL') && options.jumpHeight === null && !hasJumpProfile) {
             const legacyHeight = options.zone !== null ? Number(parseLiteral(options.zone, this)) : 0;
             options.jumpHeight = Number.isFinite(legacyHeight) && legacyHeight > 0 ? legacyHeight : 100;
         }
@@ -1491,7 +1537,6 @@ export class OlpRuntime {
             const matched = this.project?.pointFiles?.find((file) => fileName(file.path).toLowerCase() === fileName(requested).toLowerCase());
             if (!matched) throw this.runtimeError(`Point file not found: ${requested}`);
             this.activePointFile = matched?.path || requested;
-            this.adapter.log?.(`OLP point file selected: ${fileName(this.activePointFile)}`);
             return;
         }
         const include = value.match(/^Include\s+["']?([^"';]+)["']?\s*;?$/i);
@@ -1499,7 +1544,6 @@ export class OlpRuntime {
             const requested = include[1].trim();
             const present = this.project?.programFiles?.some((path) => fileName(path).toLowerCase() === fileName(requested).toLowerCase());
             if (!present) throw this.runtimeError(`Included program file not found: ${requested}`);
-            this.adapter.log?.(`OLP module included: ${fileName(requested)}`);
             return;
         }
         if (/^Open\s+Socket\b/i.test(value)) {
@@ -1509,7 +1553,15 @@ export class OlpRuntime {
             if (resultVariable) this.writeSymbol(resultVariable, 1);
             return;
         }
-        if (/^(?:Close\s+Socket|Send\s+|SetPortBuf|WaitInPos\s*\()/i.test(value)) {
+        const waitInPos = value.match(/^WaitInPos(?:\s*\(\s*[-+]?(?:\d+(?:\.\d*)?|\.\d+)\s*\))?\s*;?$/i);
+        if (waitInPos) {
+            // Controller exports use both WaitInPos; and WaitInPos(100);.
+            // Both forms are an in-position barrier in the simulator; motion
+            // completion, rather than an added delay, determines when it ends.
+            await this.waitForInPosition();
+            return;
+        }
+        if (/^(?:Close\s+Socket|Send\s+|SetPortBuf)/i.test(value)) {
             if (!this.adapter.socketCommand) throw this.runtimeError(`Unsupported OLP socket command: ${value}`);
             await this.adapter.socketCommand(value, this);
             return;
@@ -1536,7 +1588,6 @@ export class OlpRuntime {
                 this.motionSettings.gripLoad = null;
         this.velocitySet = null;
             }
-            this.adapter.log?.(`OLP clear: ${clear[1]}`);
             return;
         }
         const group = value.match(/^Group\s+(.+?)\s*;?$/i);
@@ -1548,7 +1599,6 @@ export class OlpRuntime {
             const index = Math.trunc(Number(parseLiteral(definition[2], this)) || 0);
             const addresses = argumentsList.slice(0, 8).map((entry) => `${direction === 'IN' ? 'In' : 'Out'}[${Math.trunc(Number(parseLiteral(entry, this)) || 0)}]`);
             this.ioGroups.set(`${direction === 'IN' ? 'IG' : 'OG'}[${index}]`, { direction, addresses });
-            this.adapter.log?.(`OLP group ${direction === 'IN' ? 'IG' : 'OG'}[${index}] configured.`);
             return;
         }
         const get = value.match(/^Get\s+(.+?)\s*;?$/i);
@@ -1614,13 +1664,10 @@ export class OlpRuntime {
         if (velsetRate || velsetValue || /^Velset\s+OFF\s*;?$/i.test(value)) {
             if (velsetRate) {
                 this.velocityRate = Math.max(1, Math.min(100, Number(parseLiteral(velsetRate[1], this)) || 100));
-                this.adapter.log?.(`OLP velocity rate: ${this.velocityRate}% (${value})`);
             } else if (velsetValue) {
                 this.velocitySet = Math.max(1, Math.min(100, Number(parseLiteral(velsetValue[1] || velsetValue[2], this)) || 100));
-                this.adapter.log?.(`OLP V override: ${this.velocitySet}% (${value})`);
             } else {
                 this.velocitySet = null;
-                this.adapter.log?.('OLP V override cleared (Velset OFF).');
             }
             this.notifyCursor();
             return;
@@ -1649,7 +1696,6 @@ export class OlpRuntime {
             const easyGo = Boolean(alarm[2]);
             this.lastAlarm = { code, easyGo };
             this.adapter.alarm?.(code, easyGo, this);
-            this.adapter.log?.(`OLP alarm ${code}${easyGo ? ' (EasyGo)' : ''}.`);
             if (!easyGo) throw new Error(`OLP Alarm[${code}]`);
             return;
         }
@@ -1672,7 +1718,6 @@ export class OlpRuntime {
                     layers: Number(parseLiteral(argumentsList[6], this)) || 1,
                     layerHeight: Number(parseLiteral(argumentsList[7], this)) || 0
                 });
-                this.adapter.log?.(`OLP pallet ${key} configured.`);
             }
             return;
         }

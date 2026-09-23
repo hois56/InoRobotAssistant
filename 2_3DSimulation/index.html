@@ -23,11 +23,28 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/Language/runtime/i18n.css">
-    <script src="/Language/runtime/locales-data.js?v=1dded1b9ac8e" defer></script>
+    <script src="/Language/runtime/locales-data.js?v=853c475ce9d9" defer></script>
     <script src="/Language/runtime/i18n.js" defer></script>
     <script src="/Language/runtime/icon-fallback.js" defer></script>
     <script src="/analytics-config.js"></script>
     <script src="/analytics.js" defer></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2123,6 +2140,87 @@
                 <p id="program-status" class="program-status">Ready</p>
                 </div>
             </aside>
+            <aside id="trace-panel" class="trace-panel panel-user-hidden panel-edge-resizable" aria-label="Trace">
+                <div class="trace-panel-header">
+                    <h2><i class="fa-solid fa-chart-line" aria-hidden="true"></i> Trace</h2>
+                    <div class="panel-header-actions">
+                        <button type="button" data-panel-action="popout" data-panel-id="trace-panel" title="별도 창으로 분리" aria-label="Trace를 별도 창으로 분리"><i class="fa-solid fa-up-right-from-square"></i></button>
+                        <button type="button" data-panel-action="hide" data-panel-id="trace-panel" title="숨기기" aria-label="Trace 숨기기"><i class="fa-solid fa-eye-slash"></i></button>
+                    </div>
+                </div>
+                <div class="trace-panel-content">
+                    <div class="trace-toolbar" data-panel-drag-ignore>
+                        <div class="trace-toolbar-group">
+                            <button id="trace-start" type="button" class="trace-btn">▶ Start</button>
+                            <button id="trace-stop" type="button" class="trace-btn">■ Stop</button>
+                            <button id="trace-reset" type="button" class="trace-btn">↻ Reset</button>
+                            <span id="trace-status-badge" class="trace-status-badge">IDLE</span>
+                        </div>
+                        <div class="trace-toolbar-group">
+                            <button id="trace-mode-move" type="button" class="trace-btn trace-icon-btn" title="Move (V)">↕<span>Move</span></button>
+                            <button id="trace-mode-pan" type="button" class="trace-btn trace-icon-btn active" title="Pan (P)">✋</button>
+                            <button id="trace-mode-zoom" type="button" class="trace-btn trace-icon-btn" title="Zoom (Z)">⊞</button>
+                            <button id="trace-mode-scale" type="button" class="trace-btn trace-icon-btn" title="Scale (S)">∿</button>
+                            <button id="trace-mode-measure" type="button" class="trace-btn trace-icon-btn" title="Measure (M)">⌗</button>
+                            <button id="trace-toggle-dots" type="button" class="trace-btn trace-icon-btn" title="Dots">•••</button>
+                            <span class="trace-toolbar-divider"></span>
+                            <button id="trace-save" type="button" class="trace-btn trace-small-btn">▣ Save</button>
+                            <button id="trace-load" type="button" class="trace-btn trace-small-btn">▤ Load</button>
+                            <input id="trace-file-input" type="file" accept=".csv,text/csv" hidden>
+                            <span class="trace-toolbar-divider"></span>
+                            <label class="trace-interval-label" for="trace-interval">
+                                <select id="trace-interval" aria-label="Trace sampling interval"></select>
+                            </label>
+                            <span class="trace-toolbar-divider"></span>
+                            <button id="trace-toggle-log" type="button" class="trace-btn trace-small-btn">▤ Log</button>
+                        </div>
+                    </div>
+                    <div class="trace-main-area" data-panel-drag-ignore>
+                        <section class="trace-channel-panel" aria-label="Trace channels">
+                            <div class="trace-channel-header">
+                                <span class="trace-channel-title">Channels</span>
+                                <div class="trace-channel-actions">
+                                    <button id="trace-reset-channels" type="button">Reset</button>
+                                    <span id="trace-channel-count">0 selected</span>
+                                </div>
+                                <button id="trace-toggle-channels" type="button" title="채널 목록 접기" aria-expanded="true">‹</button>
+                            </div>
+                            <div class="trace-robot-heading">Robots</div>
+                            <div id="trace-robot-list" class="trace-option-list trace-robot-list"></div>
+                            <div id="trace-channel-list" class="trace-channel-list"></div>
+                        </section>
+                        <section class="trace-chart-area" aria-label="Trace chart">
+                            <div id="trace-chart-container" class="trace-chart-container">
+                                <div id="trace-measure-panel" class="trace-measure-panel">
+                                    <div class="trace-measure-header">
+                                        <span>Cursors Delta</span>
+                                        <button id="trace-close-measure" type="button">×</button>
+                                    </div>
+                                    <div class="trace-measure-row"><span>Time</span><strong id="trace-delta-time">0.000s</strong></div>
+                                    <div id="trace-measure-body" class="trace-measure-body"></div>
+                                    <span class="trace-measure-resizer trace-measure-resizer-left"></span>
+                                    <span class="trace-measure-resizer trace-measure-resizer-right"></span>
+                                </div>
+                                <canvas id="trace-canvas"></canvas>
+                                <div id="trace-chart-empty" class="trace-chart-empty">채널을 선택하세요</div>
+                            </div>
+                            <div id="trace-cursor-readout" class="trace-cursor-readout"></div>
+                        </section>
+                    </div>
+                    <div id="trace-log-panel" class="trace-log-panel">
+                        <div class="trace-log-header"><span>Communication Log</span><button id="trace-clear-log" type="button">Clear</button></div>
+                        <div id="trace-log-body" class="trace-log-body"></div>
+                    </div>
+                    <div class="trace-footer" data-panel-drag-ignore>
+                        <strong>InoRobotTrace</strong>
+                        <span id="trace-footer-source">Simulation Trace</span>
+                        <span class="trace-footer-spacer"></span>
+                        <span id="trace-footer-interval">4ms interval</span>
+                        <span id="trace-footer-channel-count">0 ch</span>
+                        <span id="trace-point-count">0 pts</span>
+                    </div>
+                </div>
+            </aside>
         </div>
     </main>
 
@@ -2330,7 +2428,7 @@
         </div>
     </footer>
 
-    <script type="module" src="main.js?v=20260923-collaboration-motion-fix-1"></script>
+    <script type="module" src="main.js?v=20260924-olp-waitinpos-context-jog-base-toggle-1"></script>
 <script src="/0_Home/tool-guide-embed.js?v=20260906-2"></script>
 </body>
 </html>

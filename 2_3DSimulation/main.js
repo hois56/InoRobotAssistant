@@ -150,11 +150,10 @@ import {
     BIT_START as OLP_BIT_START,
     WORD_COUNT as OLP_WORD_COUNT,
     WORD_START as OLP_WORD_START,
-    OLP_RUNTIME_BUILD,
     OlpRuntime,
     clampWord,
     normalizeAddress as normalizeOlpAddress
-} from './olp-runtime.mjs';
+} from './olp-runtime.mjs?v=20260924-olp-runtime-r33';
 import {
     COLLABORATION_STATE_INTERVAL_MS,
     MAX_COLLABORATION_MESSAGE_BYTES,
@@ -182,6 +181,18 @@ import {
     normalizeIoFunctionMapping,
     normalizeIoFunctionMappings
 } from './io-function-mapping-core.mjs';
+import {
+    TRACE_INTERVALS,
+    TRACE_MAX_POINTS,
+    TRACE_CHANNELS,
+    createTraceChannelKey,
+    getTraceChannel,
+    isTraceChannelAvailable,
+    normalizedTraceInterval,
+    parseTraceCsv,
+    serializeTraceCsv,
+    splitTraceChannelKey
+} from './trace-core.mjs';
 
 const THREE_ADDON_LOADER_IMPORTS = Object.freeze({
     fbx: 'three/addons/loaders/FBXLoader.js',
@@ -582,6 +593,52 @@ const state = {
         labelAnchors: [],
         stale: false,
         statusMessage: 'P1 선택'
+    },
+    trace: {
+        running: false,
+        paused: false,
+        intervalMs: 4,
+        points: [],
+        clockSec: 0,
+        lastSampleAt: 0,
+        lastRenderAt: 0,
+        robotCache: new Map(),
+        previousValues: new Map(),
+        captureStartAt: 0,
+        lastRobotSignature: '',
+        lastSelectorRenderAt: 0,
+        importedChannelKeys: new Set(),
+        selectedRobotIds: new Set(),
+        selectedChannelKeys: new Set(),
+        selectionInitialized: false,
+        selectedChannelKey: null,
+        expandedGroups: new Set([
+            'Speed', 'Joint Speed', 'Joint Position', 'Current Position', 'Error',
+            'Line Monitor', 'System', 'Tool Number', 'B Var', 'R Var', 'D Var', 'DI', 'DO', 'OLP', 'Controller'
+        ]),
+        channelOffsets: new Map(),
+        navMode: 'pan',
+        showDots: false,
+        independentScale: false,
+        independentValueZoom: 1,
+        independentValueZoomCenter: 0.5,
+        drag: { active: false, startX: 0, startY: 0, currentX: 0, currentY: 0 },
+        move: { active: false, startY: 0, startOffset: 0 },
+        cursorDrag: null,
+        cursorTime: null,
+        cursorTimeB: null,
+        hoverTime: null,
+        measuring: false,
+        showLog: false,
+        logs: [],
+        chart: {
+            tMin: 0,
+            tMax: 5,
+            vMin: -10,
+            vMax: 10,
+            auto: true,
+            zoomed: false
+        }
     },
     placement: {
         active: false,
@@ -1097,6 +1154,45 @@ const el = {
     modelTreeCount:  document.getElementById('model-tree-count'),
     modelBrowserPanel: document.getElementById('model-browser-panel'),
     measurementPanel: document.getElementById('measurement-panel'),
+    tracePanel: document.getElementById('trace-panel'),
+    traceRobotList: document.getElementById('trace-robot-list'),
+    traceChannelList: document.getElementById('trace-channel-list'),
+    traceCanvas: document.getElementById('trace-canvas'),
+    traceStatus: document.getElementById('trace-status'),
+    tracePointCount: document.getElementById('trace-point-count'),
+    traceInterval: document.getElementById('trace-interval'),
+    traceStart: document.getElementById('trace-start'),
+    traceStop: document.getElementById('trace-stop'),
+    traceReset: document.getElementById('trace-reset'),
+    traceSave: document.getElementById('trace-save'),
+    traceLoad: document.getElementById('trace-load'),
+    traceFileInput: document.getElementById('trace-file-input'),
+    traceMeasure: document.getElementById('trace-measure'),
+    traceAutoScale: document.getElementById('trace-auto-scale'),
+    traceStatusBadge: document.getElementById('trace-status-badge'),
+    traceModeMove: document.getElementById('trace-mode-move'),
+    traceModePan: document.getElementById('trace-mode-pan'),
+    traceModeZoom: document.getElementById('trace-mode-zoom'),
+    traceModeScale: document.getElementById('trace-mode-scale'),
+    traceModeMeasure: document.getElementById('trace-mode-measure'),
+    traceToggleDots: document.getElementById('trace-toggle-dots'),
+    traceToggleLog: document.getElementById('trace-toggle-log'),
+    traceResetChannels: document.getElementById('trace-reset-channels'),
+    traceChannelCount: document.getElementById('trace-channel-count'),
+    traceFooterInterval: document.getElementById('trace-footer-interval'),
+    traceFooterChannelCount: document.getElementById('trace-footer-channel-count'),
+    traceFooterSource: document.getElementById('trace-footer-source'),
+    traceToggleChannels: document.getElementById('trace-toggle-channels'),
+    traceChartContainer: document.getElementById('trace-chart-container'),
+    traceChartEmpty: document.getElementById('trace-chart-empty'),
+    traceMeasurePanel: document.getElementById('trace-measure-panel'),
+    traceCloseMeasure: document.getElementById('trace-close-measure'),
+    traceDeltaTime: document.getElementById('trace-delta-time'),
+    traceMeasureBody: document.getElementById('trace-measure-body'),
+    traceCursorReadout: document.getElementById('trace-cursor-readout'),
+    traceLogPanel: document.getElementById('trace-log-panel'),
+    traceLogBody: document.getElementById('trace-log-body'),
+    traceClearLog: document.getElementById('trace-clear-log'),
     shapePanel: document.getElementById('shape-panel'),
     btnShapePanel: document.querySelector('[data-panel-toggle="shape-panel"]'),
     shapeType: document.getElementById('shape-type'),
@@ -1822,6 +1918,7 @@ const PANEL_MINIMUM_SIZES = Object.freeze({
     'view-presets-panel': { width: 280, height: 260 },
     'view-window': { width: 360, height: 220 },
     'program-panel': { width: 300, height: 540 },
+    'trace-panel': { width: 620, height: 480 },
     'io-simulator-panel': { width: 390, height: 620 },
     'interference-zone-panel': { width: 350, height: 420 },
     'measurement-panel': { width: 300, height: 520 },
@@ -17099,10 +17196,8 @@ function cancelMeasurementPlacement() {
 }
 
 function activateMeasurementPanel() {
-    // A connected controller only streams the robot pose; it does not make
-    // read-only scene inspection unavailable. Keep measurement usable while a
-    // controller is connected, but still block it during active robot motion.
-    if (isRobotMotionActive()) return;
+    // Dimension measurement inspects scene geometry without changing robot motion,
+    // so keep it available while a program is running or a controller is connected.
     if (state.placement.active) deactivateModelPlacement();
     state.measurement.active = true;
     state.measurement.points = [null, null];
@@ -18583,6 +18678,1451 @@ function setupOlpEditorScroll() {
     }, { passive: false });
 }
 
+const TRACE_CHART_COLORS = Object.freeze([
+    '#38bdf8', '#fb7185', '#a78bfa', '#34d399', '#fbbf24', '#f97316',
+    '#22d3ee', '#c084fc', '#f472b6', '#84cc16', '#60a5fa', '#facc15'
+]);
+
+function traceNumber(value) {
+    if (typeof value === 'boolean') return value ? 1 : 0;
+    if (value === null || value === undefined || value === '') return null;
+    const number = typeof value === 'string' && /^0x[0-9a-f]+$/i.test(value.trim())
+        ? Number.parseInt(value.trim(), 16)
+        : Number(value);
+    return Number.isFinite(number) ? number : null;
+}
+
+function getTraceRobotId(robot) {
+    return String(robot?.userData?.motionInstanceId || '');
+}
+
+function getTraceRobotName(robot) {
+    return String(robot?.userData?.motionDisplayName || robot?.userData?.motionModelName || robot?.name || 'Robot');
+}
+
+function getTraceSource(robot) {
+    const controller = getVirtualControllerForRobot(robot);
+    if (controller) return controller.controllerKind === 'real' ? 'real' : 'virtual';
+    const runtime = getOlpRuntimeForRobot(robot);
+    if (runtime || getOlpProjectForRobot(robot)) return 'olp';
+    return 'program';
+}
+
+function getTraceControllerSample(robot) {
+    const controller = getVirtualControllerForRobot(robot);
+    const sample = controller?.samples?.getLatest?.() || null;
+    return { controller, sample };
+}
+
+function getTraceChannelDefinitions() {
+    const robots = getArticulatedRobots();
+    const definitions = [];
+    robots.forEach((robot) => {
+        const robotId = getTraceRobotId(robot);
+        const source = getTraceSource(robot);
+        TRACE_CHANNELS.forEach((channel) => {
+            if (!isTraceChannelAvailable(channel.id, source)) return;
+            definitions.push({
+                ...channel,
+                key: createTraceChannelKey(robotId, channel.id),
+                robotId,
+                robotName: getTraceRobotName(robot),
+                source
+            });
+        });
+    });
+    const knownKeys = new Set(definitions.map((channel) => channel.key));
+    (state.trace.importedChannelKeys || new Set()).forEach((key) => {
+        if (knownKeys.has(key)) return;
+        const { robotId, channelId } = splitTraceChannelKey(key);
+        const base = getTraceChannel(channelId);
+        definitions.push({
+            ...(base || { id: channelId, group: 'Loaded', name: channelId, unit: '' }),
+            key,
+            robotId,
+            robotName: robots.find((robot) => getTraceRobotId(robot) === robotId)
+                ? getTraceRobotName(robots.find((robot) => getTraceRobotId(robot) === robotId))
+                : robotId || 'Loaded',
+            source: 'loaded'
+        });
+    });
+    const groupOrder = new Map([
+        'Speed', 'Joint Speed', 'Joint Position', 'Current Position', 'Error', 'Line Monitor',
+        'System', 'Tool Number', 'B Var', 'R Var', 'D Var', 'DI', 'DO', 'OLP', 'Controller', 'Loaded'
+    ].map((group, index) => [group, index]));
+    const robotOrder = new Map();
+    definitions.forEach((channel) => {
+        if (!robotOrder.has(channel.robotId)) robotOrder.set(channel.robotId, robotOrder.size);
+    });
+    return definitions.sort((a, b) => (
+        (robotOrder.get(a.robotId) ?? Number.MAX_SAFE_INTEGER) - (robotOrder.get(b.robotId) ?? Number.MAX_SAFE_INTEGER)
+        || (groupOrder.get(a.group) ?? Number.MAX_SAFE_INTEGER) - (groupOrder.get(b.group) ?? Number.MAX_SAFE_INTEGER)
+    ));
+}
+
+function getTraceSelectedChannels() {
+    const definitions = getTraceChannelDefinitions();
+    const byKey = new Map(definitions.map((channel) => [channel.key, channel]));
+    return [...state.trace.selectedChannelKeys]
+        .map((key) => byKey.get(key))
+        .filter(Boolean);
+}
+
+function ensureTraceSelections() {
+    const robots = getArticulatedRobots();
+    const robotIds = new Set(robots.map(getTraceRobotId).filter(Boolean));
+    if (!state.trace.selectionInitialized && robotIds.size) {
+        if (!state.trace.selectedRobotIds.size) robotIds.forEach((robotId) => state.trace.selectedRobotIds.add(robotId));
+    } else {
+        [...state.trace.selectedRobotIds].forEach((robotId) => {
+            if (!robotIds.has(robotId)) state.trace.selectedRobotIds.delete(robotId);
+        });
+    }
+    const definitions = getTraceChannelDefinitions();
+    const available = new Set(definitions.map((channel) => channel.key));
+    if (!state.trace.selectionInitialized && definitions.length && !state.trace.selectedChannelKeys.size) {
+        definitions.forEach((channel) => {
+            if (['tcp_speed', 'joint_speed_j1', 'joint_speed_j2', 'joint_speed_j3', 'joint_speed_j4', 'joint_speed_j5', 'joint_speed_j6', 'pos_x', 'pos_y', 'pos_z', 'program_line', 'motion_state', 'di_0', 'do_0'].includes(channel.id)) {
+                state.trace.selectedChannelKeys.add(channel.key);
+            }
+        });
+    } else if (state.trace.selectionInitialized) {
+        [...state.trace.selectedChannelKeys].forEach((key) => {
+            if (!available.has(key) && !state.trace.importedChannelKeys.has(key)) state.trace.selectedChannelKeys.delete(key);
+        });
+    }
+    if (!state.trace.selectionInitialized && robotIds.size) state.trace.selectionInitialized = true;
+    return { robots, definitions };
+}
+
+function traceReadTelemetryValue(telemetry, channelId) {
+    if (!telemetry || typeof telemetry !== 'object') return null;
+    const direct = traceNumber(telemetry[channelId]);
+    if (direct !== null) return direct;
+    const match = String(channelId).match(/^(b_var|r_var|d_var|di|do)_(\d+)$/);
+    if (!match) return null;
+    const collectionName = {
+        b_var: 'bVars', r_var: 'rVars', d_var: 'dVars', di: 'dIs', do: 'dOs'
+    }[match[1]];
+    const collection = telemetry[collectionName] || telemetry[collectionName?.replace(/s$/, '')];
+    return traceNumber(collection?.[match[2]] ?? collection?.[Number(match[2])]);
+}
+
+function traceReadOlpVariable(runtime, prefix, index) {
+    if (!runtime?.readSymbol) return null;
+    try {
+        return traceNumber(runtime.readSymbol(`${prefix}[${index}]`));
+    } catch (_) {
+        return null;
+    }
+}
+
+function traceMotionStateCode(status) {
+    return ({ idle: 0, running: 1, paused: 2, completed: 3, error: 4, stopped: 5 })[
+        String(status || '').toLowerCase()
+    ] ?? 0;
+}
+
+function traceOlpPhaseCode(phase) {
+    return ({ ready: 0, starting: 1, running: 2, waiting: 3, paused: 4, stopping: 5, stopped: 6, completed: 7, error: 8 })[
+        String(phase || '').toLowerCase()
+    ] ?? 0;
+}
+
+function traceCommandCode(command) {
+    const text = String(command || '').trim().toUpperCase();
+    if (!text) return 0;
+    let hash = 0;
+    for (let index = 0; index < text.length; index += 1) hash = ((hash * 31) + text.charCodeAt(index)) >>> 0;
+    return hash % 100000;
+}
+
+function getTraceRobotValues(robot, sampleTimeSec) {
+    const robotId = getTraceRobotId(robot);
+    const source = getTraceSource(robot);
+    const { controller, sample } = getTraceControllerSample(robot);
+    const cache = state.trace.robotCache.get(robotId) || { lastTime: null, joints: null, position: null };
+    const values = {};
+    const joints = (robot.userData.joints || []).map((joint) => {
+        try {
+            return traceNumber(getJointJogDisplaySpec(joint).toDisplay(joint.angle));
+        } catch (_) {
+            return traceNumber(joint.angle);
+        }
+    });
+    joints.forEach((value, index) => {
+        if (value !== null) values[`joint_pos_j${index + 1}`] = value;
+    });
+
+    const pose = getCurrentTcpPoseBase(robot);
+    const position = pose?.position ? [pose.position.x, pose.position.y, pose.position.z] : null;
+    if (position) {
+        values.pos_x = position[0];
+        values.pos_y = position[1];
+        values.pos_z = position[2];
+        const rotation = getTcpRotationDegrees(robot, pose);
+        values.pos_a = rotation.rz;
+        values.pos_b = rotation.ry;
+        values.pos_c = rotation.rx;
+    }
+
+    const elapsed = cache.lastTime === null ? null : Math.max(0.001, sampleTimeSec - cache.lastTime);
+    if (elapsed && Array.isArray(cache.joints)) {
+        joints.forEach((value, index) => {
+            if (value !== null && Number.isFinite(cache.joints[index])) {
+                values[`joint_speed_j${index + 1}`] = (value - cache.joints[index]) / elapsed;
+            }
+        });
+    } else {
+        for (let index = 1; index <= 6; index += 1) values[`joint_speed_j${index}`] = 0;
+    }
+    if (elapsed && Array.isArray(cache.position) && position) {
+        values.tcp_speed = Math.hypot(
+            position[0] - cache.position[0],
+            position[1] - cache.position[1],
+            position[2] - cache.position[2]
+        ) / elapsed;
+    } else {
+        values.tcp_speed = 0;
+    }
+    cache.lastTime = sampleTimeSec;
+    cache.joints = joints;
+    cache.position = position;
+    state.trace.robotCache.set(robotId, cache);
+
+    const session = getMotionSession(robot);
+    const program = ensureMotionProgram(robot);
+    const runtime = getOlpRuntimeForRobot(robot);
+    const execution = getOlpExecutionForRobot(robot) || runtime?.getSnapshot?.() || {};
+    if (source === 'olp') {
+        const line = traceNumber(execution.lineNumber);
+        if (line !== null) values.program_line = line;
+        if (line !== null) values.motion_line = line;
+        values.motion_state = traceMotionStateCode(execution.paused ? 'paused' : execution.running ? 'running' : execution.phase);
+        values.olp_phase = traceOlpPhaseCode(execution.phase);
+        values.olp_command = traceCommandCode(execution.command);
+        values.olp_wait = execution.waitCondition ? 1 : 0;
+        values.collision_status = asCollisionResults(state.collision.lastResult).length ? 1 : 0;
+        for (let index = 0; index <= 10; index += 1) {
+            ['B', 'R', 'D'].forEach((prefix) => {
+                const value = traceReadOlpVariable(runtime, prefix, index);
+                if (value !== null) values[`${prefix.toLowerCase()}_var_${index}`] = value;
+            });
+        }
+        for (let index = 0; index < 16; index += 1) {
+            values[`di_${index}`] = readOlpSimulatorBit(IO_SIMULATOR_DIRECTIONS.INPUT, index);
+            values[`do_${index}`] = readOlpSimulatorBit(IO_SIMULATOR_DIRECTIONS.OUTPUT, index);
+        }
+    } else if (source === 'program') {
+        const cursor = traceNumber(session?.cursor);
+        if (cursor !== null) {
+            values.program_line = cursor + 1;
+            values.motion_line = cursor + 1;
+        }
+        values.motion_state = traceMotionStateCode(getMotionStatus(robot));
+        values.cycle_time = traceNumber(program?.lastCycleTimeSeconds);
+        if (program?.cycleTimerStartedAt) {
+            values.cycle_time = calculateCycleElapsedSeconds(program.cycleTimerStartedAt, performance.now());
+        }
+        values.collision_status = asCollisionResults(state.collision.lastResult).length ? 1 : 0;
+        state.simulationIo.inputs.forEach((value, index) => { values[`di_${index}`] = value ? 1 : 0; });
+        state.simulationIo.outputs.forEach((value, index) => { values[`do_${index}`] = value ? 1 : 0; });
+    }
+
+    if (source === 'virtual' || source === 'real') {
+        values.controller_time = traceNumber(sample?.controllerTime);
+        values.sequence = traceNumber(sample?.sequence);
+        values.receive_rate = traceNumber(controller?.samples?.getRateHz?.(performance.now()));
+    }
+    const telemetry = sample?.telemetry;
+    if (telemetry) {
+        TRACE_CHANNELS.forEach((channel) => {
+            const value = traceReadTelemetryValue(telemetry, channel.id);
+            if (value !== null) values[channel.id] = value;
+        });
+    }
+    return values;
+}
+
+function renderTraceRobotList() {
+    if (!el.traceRobotList) return;
+    const { robots } = ensureTraceSelections();
+    if (!robots.length) {
+        el.traceRobotList.textContent = uiText('로봇 없음');
+        return;
+    }
+    const fragment = document.createDocumentFragment();
+    robots.forEach((robot) => {
+        const label = document.createElement('label');
+        label.className = 'trace-option-row';
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.dataset.traceRobotId = getTraceRobotId(robot);
+        input.checked = state.trace.selectedRobotIds.has(getTraceRobotId(robot));
+        const name = document.createElement('span');
+        name.textContent = getTraceRobotName(robot);
+        label.append(input, name);
+        fragment.append(label);
+    });
+    el.traceRobotList.replaceChildren(fragment);
+}
+
+function renderTraceChannelList() {
+    if (!el.traceChannelList) return;
+    const definitions = getTraceChannelDefinitions();
+    if (!definitions.length) {
+        el.traceChannelList.textContent = uiText('로봇 없음');
+        return;
+    }
+    const grouped = new Map();
+    definitions.forEach((channel) => {
+        const groupKey = `${channel.robotId}::${channel.group}`;
+        if (!grouped.has(groupKey)) grouped.set(groupKey, { robotName: channel.robotName, group: channel.group, channels: [] });
+        grouped.get(groupKey).channels.push(channel);
+    });
+    const fragment = document.createDocumentFragment();
+    grouped.forEach((entry, groupKey) => {
+        const allSelected = entry.channels.every((channel) => state.trace.selectedChannelKeys.has(channel.key));
+        const someSelected = entry.channels.some((channel) => state.trace.selectedChannelKeys.has(channel.key));
+        const expanded = state.trace.expandedGroups.has(groupKey) || state.trace.expandedGroups.has(entry.group);
+        const groupRow = document.createElement('div');
+        groupRow.className = `trace-group-row${someSelected ? ' selected' : ''}`;
+        const chevron = document.createElement('span');
+        chevron.className = 'trace-group-chevron';
+        chevron.textContent = expanded ? '⌄' : '›';
+        const checkbox = document.createElement('span');
+        checkbox.className = `trace-group-checkbox${allSelected ? ' checked' : someSelected ? ' partial' : ''}`;
+        checkbox.textContent = allSelected ? '✓' : '';
+        const title = document.createElement('span');
+        title.className = 'trace-group-title';
+        title.textContent = `${entry.robotName} · ${entry.group}`;
+        groupRow.append(chevron, checkbox, title);
+        chevron.addEventListener('click', (event) => {
+            event.stopPropagation();
+            if (state.trace.expandedGroups.has(groupKey)) state.trace.expandedGroups.delete(groupKey);
+            else state.trace.expandedGroups.add(groupKey);
+            renderTraceChannelList();
+        });
+        checkbox.addEventListener('click', (event) => {
+            event.stopPropagation();
+            entry.channels.forEach((channel) => {
+                if (allSelected) state.trace.selectedChannelKeys.delete(channel.key);
+                else state.trace.selectedChannelKeys.add(channel.key);
+            });
+            updateTraceControls();
+            renderTraceChannelList();
+            drawTraceChart();
+        });
+        groupRow.addEventListener('click', () => {
+            if (state.trace.expandedGroups.has(groupKey)) state.trace.expandedGroups.delete(groupKey);
+            else state.trace.expandedGroups.add(groupKey);
+            renderTraceChannelList();
+        });
+        fragment.append(groupRow);
+        if (!expanded) return;
+        entry.channels.forEach((channel, channelIndex) => {
+            const selected = state.trace.selectedChannelKeys.has(channel.key);
+            const row = document.createElement('div');
+            row.className = `trace-channel-row${selected ? ' selected' : ''}${state.trace.selectedChannelKey === channel.key ? ' focused' : ''}`;
+            const mark = document.createElement('span');
+            mark.className = `trace-channel-checkbox${selected ? ' checked' : ''}`;
+            mark.textContent = selected ? '•' : '';
+            const bar = document.createElement('span');
+            bar.className = 'trace-channel-bar';
+            bar.style.background = TRACE_CHART_COLORS[channelIndex % TRACE_CHART_COLORS.length];
+            const name = document.createElement('span');
+            name.className = 'trace-channel-name';
+            name.textContent = channel.name;
+            const unit = document.createElement('span');
+            unit.className = 'trace-channel-unit';
+            unit.textContent = channel.unit || '';
+            row.append(mark, bar, name, unit);
+            mark.addEventListener('click', (event) => {
+                event.stopPropagation();
+                if (state.trace.selectedChannelKeys.has(channel.key)) state.trace.selectedChannelKeys.delete(channel.key);
+                else state.trace.selectedChannelKeys.add(channel.key);
+                updateTraceControls();
+                renderTraceChannelList();
+                drawTraceChart();
+            });
+            row.addEventListener('click', () => {
+                state.trace.selectedChannelKey = channel.key;
+                updateTraceControls();
+                renderTraceChannelList();
+                drawTraceChart();
+            });
+            fragment.append(row);
+        });
+    });
+    el.traceChannelList.replaceChildren(fragment);
+}
+
+function traceRobotSignature() {
+    return getArticulatedRobots().map((robot) => `${getTraceRobotId(robot)}:${getTraceSource(robot)}`).join('|');
+}
+
+function refreshTraceSelectors(force = false) {
+    const signature = traceRobotSignature();
+    if (!force && signature === state.trace.lastRobotSignature) return;
+    state.trace.lastRobotSignature = signature;
+    ensureTraceSelections();
+    renderTraceRobotList();
+    renderTraceChannelList();
+}
+
+function updateTraceStatus(message, type = '') {
+    const status = el.traceStatusBadge || el.traceStatus;
+    if (!status) return;
+    if (status === el.traceStatusBadge) {
+        const running = type === 'running';
+        const paused = type === 'paused' || /pause|stopped|중지|정지/i.test(String(message));
+        status.textContent = running ? '● REC' : paused ? '■ PAUSED' : 'IDLE';
+        status.classList.toggle('running', running);
+        status.classList.toggle('error', type === 'error');
+        return;
+    }
+    status.textContent = message;
+    status.classList.toggle('running', type === 'running');
+    status.classList.toggle('error', type === 'error');
+}
+
+function addTraceLog(message) {
+    const text = String(message || '').trim();
+    if (!text) return;
+    const now = new Date();
+    const timestamp = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}.${String(now.getMilliseconds()).padStart(3, '0')}`;
+    state.trace.logs.push({ timestamp, message: text });
+    if (state.trace.logs.length > 500) state.trace.logs.splice(0, state.trace.logs.length - 500);
+    renderTraceLog();
+}
+
+function renderTraceLog() {
+    if (!el.traceLogBody) return;
+    el.traceLogBody.replaceChildren();
+    state.trace.logs.slice(-100).forEach((entry) => {
+        const row = document.createElement('div');
+        row.className = 'trace-log-line';
+        const timestamp = document.createElement('span');
+        timestamp.className = 'trace-log-time';
+        timestamp.textContent = entry.timestamp;
+        const message = document.createElement('span');
+        message.textContent = entry.message;
+        row.append(timestamp, message);
+        el.traceLogBody.append(row);
+    });
+    el.traceLogBody.scrollTop = el.traceLogBody.scrollHeight;
+}
+
+function setTraceNavMode(mode) {
+    const nextMode = ['move', 'pan', 'zoom'].includes(mode) ? mode : 'pan';
+    state.trace.navMode = nextMode;
+    state.trace.drag.active = false;
+    state.trace.move.active = false;
+    state.trace.cursorDrag = null;
+    addTraceLog(`Navigation mode: ${nextMode}`);
+    updateTraceControls();
+    drawTraceChart();
+}
+
+function setTraceMeasureMode(enabled = !state.trace.measuring) {
+    state.trace.measuring = Boolean(enabled);
+    state.trace.cursorDrag = null;
+    if (state.trace.measuring && state.trace.points.length) {
+        const bounds = state.trace.chart.auto ? traceChartBounds() : state.trace.chart;
+        const range = Math.max(0.001, bounds.tMax - bounds.tMin);
+        if (!Number.isFinite(state.trace.cursorTime)) state.trace.cursorTime = bounds.tMin + range * 0.33;
+        if (!Number.isFinite(state.trace.cursorTimeB)) state.trace.cursorTimeB = bounds.tMin + range * 0.66;
+    } else if (!state.trace.measuring) {
+        state.trace.cursorTimeB = null;
+    }
+    addTraceLog(state.trace.measuring ? 'Measurement mode enabled' : 'Measurement mode disabled');
+    updateTraceControls();
+    drawTraceChart();
+}
+
+function updateTraceControls() {
+    const running = state.trace.running;
+    if (el.traceStart) el.traceStart.disabled = running;
+    if (el.traceStop) el.traceStop.disabled = !running;
+    if (el.traceReset) el.traceReset.disabled = running;
+    if (el.traceInterval) el.traceInterval.disabled = running;
+    if (el.tracePointCount) el.tracePointCount.textContent = `${state.trace.points.length.toLocaleString()} pts`;
+    if (el.traceChannelCount) el.traceChannelCount.textContent = `${state.trace.selectedChannelKeys.size} selected`;
+    if (el.traceFooterInterval) el.traceFooterInterval.textContent = `${state.trace.intervalMs}ms interval`;
+    if (el.traceFooterChannelCount) el.traceFooterChannelCount.textContent = `${state.trace.selectedChannelKeys.size} ch`;
+    if (el.traceMeasure) {
+        el.traceMeasure.classList.toggle('active', state.trace.measuring);
+        el.traceMeasure.setAttribute('aria-pressed', String(state.trace.measuring));
+    }
+    if (el.traceSave) el.traceSave.disabled = !state.trace.points.length;
+    [el.traceModeMove, el.traceModePan, el.traceModeZoom, el.traceModeScale, el.traceModeMeasure, el.traceToggleDots]
+        .filter(Boolean)
+        .forEach((button) => button.classList.toggle('active',
+            (button === el.traceModeMove && state.trace.navMode === 'move')
+            || (button === el.traceModePan && state.trace.navMode === 'pan')
+            || (button === el.traceModeZoom && state.trace.navMode === 'zoom')
+            || (button === el.traceModeScale && state.trace.independentScale)
+            || (button === el.traceModeMeasure && state.trace.measuring)
+            || (button === el.traceToggleDots && state.trace.showDots)));
+    if (el.traceMeasurePanel) el.traceMeasurePanel.classList.toggle('visible', state.trace.measuring);
+    if (el.traceToggleLog) {
+        el.traceToggleLog.classList.toggle('active', state.trace.showLog);
+        el.traceToggleLog.setAttribute('aria-pressed', String(state.trace.showLog));
+    }
+    if (el.traceLogPanel) el.traceLogPanel.classList.toggle('visible', state.trace.showLog);
+    renderTraceLog();
+}
+
+function tracePushPoint(time, values) {
+    state.trace.points.push({ time, values });
+    if (state.trace.points.length > TRACE_MAX_POINTS) {
+        state.trace.points.splice(0, state.trace.points.length - TRACE_MAX_POINTS);
+    }
+}
+
+function interpolateTraceValues(previous, current, ratio) {
+    const values = {};
+    const keys = new Set([...Object.keys(previous || {}), ...Object.keys(current || {})]);
+    keys.forEach((key) => {
+        const a = traceNumber(previous?.[key]);
+        const b = traceNumber(current?.[key]);
+        if (a !== null && b !== null) values[key] = a + (b - a) * ratio;
+        else if (b !== null) values[key] = b;
+        else if (a !== null) values[key] = a;
+    });
+    return values;
+}
+
+function sampleTrace(timestamp = performance.now(), immediate = false) {
+    if (!state.trace.running) return;
+    const intervalSec = state.trace.intervalMs / 1000;
+    const elapsedSinceStart = Math.max(0, (timestamp - state.trace.captureStartAt) / 1000);
+    const robots = getArticulatedRobots().filter((robot) => state.trace.selectedRobotIds.has(getTraceRobotId(robot)));
+    const currentValues = {};
+    robots.forEach((robot) => {
+        const values = getTraceRobotValues(robot, elapsedSinceStart);
+        const robotId = getTraceRobotId(robot);
+        Object.keys(values).forEach((channelId) => {
+            currentValues[createTraceChannelKey(robotId, channelId)] = values[channelId];
+        });
+    });
+    if (!state.trace.points.length || immediate) {
+        tracePushPoint(0, currentValues);
+        state.trace.clockSec = 0;
+        state.trace.previousValues = currentValues;
+        state.trace.lastSampleAt = timestamp;
+        updateTraceControls();
+        drawTraceChart();
+        return;
+    }
+    if (timestamp - state.trace.lastSampleAt < state.trace.intervalMs) return;
+    const previousTime = state.trace.lastSampleAt;
+    while (state.trace.clockSec + intervalSec <= elapsedSinceStart + 1e-9) {
+        const targetTime = state.trace.clockSec + intervalSec;
+        const ratio = THREE.MathUtils.clamp(
+            (targetTime * 1000 + state.trace.captureStartAt - previousTime)
+                / Math.max(1, timestamp - previousTime),
+            0,
+            1
+        );
+        tracePushPoint(targetTime, interpolateTraceValues(state.trace.previousValues, currentValues, ratio));
+        state.trace.clockSec = targetTime;
+    }
+    state.trace.previousValues = currentValues;
+    state.trace.lastSampleAt = timestamp;
+    if (timestamp - state.trace.lastRenderAt >= 50) {
+        state.trace.lastRenderAt = timestamp;
+        updateTraceControls();
+        drawTraceChart();
+    }
+}
+
+function traceChartBounds() {
+    const points = state.trace.points;
+    const channels = getTraceSelectedChannels();
+    if (!points.length) return { tMin: 0, tMax: 5, vMin: -10, vMax: 10 };
+    const tMin = Number(points[0].time) || 0;
+    const tMax = Math.max(tMin + 0.1, Number(points.at(-1).time) || tMin);
+    let vMin = Infinity;
+    let vMax = -Infinity;
+    points.forEach((point) => channels.forEach((channel) => {
+        const value = traceNumber(point.values?.[channel.key]);
+        if (value === null) return;
+        vMin = Math.min(vMin, value + getTraceChannelOffset(channel.key));
+        vMax = Math.max(vMax, value + getTraceChannelOffset(channel.key));
+    }));
+    if (!Number.isFinite(vMin) || !Number.isFinite(vMax)) return { tMin, tMax, vMin: -10, vMax: 10 };
+    const span = Math.max(0, vMax - vMin);
+    const binary = channels.length > 0 && channels.every((channel) => channel.unit === 'ON/OFF' || channel.id.startsWith('di_') || channel.id.startsWith('do_'));
+    const minimumSpan = binary ? 1.2 : Math.max(Math.abs((vMin + vMax) * 0.5) * 0.2, 1);
+    const paddedSpan = Math.max(span, minimumSpan);
+    const center = (vMin + vMax) * 0.5;
+    return { tMin, tMax, vMin: center - paddedSpan * 0.56, vMax: center + paddedSpan * 0.56 };
+}
+
+function getTraceChannelOffset(key) {
+    const value = Number(state.trace.channelOffsets.get(key));
+    return Number.isFinite(value) ? value : 0;
+}
+
+function setTraceChannelOffset(key, value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric) || Math.abs(numeric) < 1e-12) state.trace.channelOffsets.delete(key);
+    else state.trace.channelOffsets.set(key, numeric);
+}
+
+function resetTraceChannelOffsets() {
+    state.trace.channelOffsets.clear();
+}
+
+function getTraceCanvasBounds() {
+    const rect = el.traceCanvas?.getBoundingClientRect();
+    const width = Math.max(260, Math.floor(rect?.width || 0));
+    const height = Math.max(200, Math.floor(rect?.height || 0));
+    const padding = { top: 26, right: 20, bottom: 36, left: 60 };
+    return { width, height, padding, chartWidth: Math.max(1, width - padding.left - padding.right), chartHeight: Math.max(1, height - padding.top - padding.bottom) };
+}
+
+function traceNiceInterval(range, count) {
+    const raw = Math.max(1e-9, range / count);
+    const magnitude = 10 ** Math.floor(Math.log10(raw));
+    const residual = raw / magnitude;
+    return (residual < 1.5 ? 1 : residual < 3.5 ? 2 : residual < 7.5 ? 5 : 10) * magnitude;
+}
+
+function getTraceVisiblePoints(bounds) {
+    const points = state.trace.points;
+    if (!points.length) return [];
+    const margin = Math.max(0.001, (bounds.tMax - bounds.tMin) * 0.1);
+    let start = 0;
+    let end = points.length - 1;
+    let low = 0;
+    let high = points.length - 1;
+    while (low <= high) {
+        const mid = (low + high) >> 1;
+        if (points[mid].time < bounds.tMin - margin) { start = mid + 1; low = mid + 1; }
+        else high = mid - 1;
+    }
+    low = start; high = points.length - 1;
+    while (low <= high) {
+        const mid = (low + high) >> 1;
+        if (points[mid].time <= bounds.tMax + margin) { end = mid; low = mid + 1; }
+        else high = mid - 1;
+    }
+    return points.slice(Math.max(0, start - 1), Math.min(points.length, end + 2));
+}
+
+function traceIndependentLayouts(channels, points, chartHeight) {
+    const gap = Math.min(16, Math.max(5, chartHeight * 0.015));
+    const bandHeight = Math.max(12, (chartHeight - gap * Math.max(0, channels.length - 1)) / Math.max(1, channels.length));
+    const layouts = new Map();
+    channels.forEach((channel, index) => {
+        let min = Infinity;
+        let max = -Infinity;
+        points.forEach((point) => {
+            const value = traceNumber(point.values?.[channel.key]);
+            if (value === null) return;
+            min = Math.min(min, value + getTraceChannelOffset(channel.key));
+            max = Math.max(max, value + getTraceChannelOffset(channel.key));
+        });
+        if (!Number.isFinite(min) || !Number.isFinite(max)) { min = -1; max = 1; }
+        const span = Math.max(1e-6, max - min);
+        const padding = Math.max(span * 0.08, channel.unit === 'ON/OFF' ? 0.6 : 0.001);
+        const expandedMin = min - padding;
+        const expandedMax = max + padding;
+        const expandedSpan = Math.max(1e-6, expandedMax - expandedMin);
+        const zoom = Math.max(0.1, state.trace.independentValueZoom || 1);
+        const center = expandedMin + expandedSpan * THREE.MathUtils.clamp(state.trace.independentValueZoomCenter ?? 0.5, 0, 1);
+        const zoomedSpan = expandedSpan / zoom;
+        layouts.set(channel.key, {
+            min: center - zoomedSpan * 0.5,
+            max: center + zoomedSpan * 0.5,
+            top: index * (bandHeight + gap),
+            height: bandHeight
+        });
+    });
+    return layouts;
+}
+
+function traceNearestPoint(time) {
+    if (!state.trace.points.length) return null;
+    let low = 0;
+    let high = state.trace.points.length - 1;
+    let best = state.trace.points[0];
+    while (low <= high) {
+        const mid = (low + high) >> 1;
+        const point = state.trace.points[mid];
+        if (Math.abs(point.time - time) < Math.abs(best.time - time)) best = point;
+        if (point.time < time) low = mid + 1;
+        else high = mid - 1;
+    }
+    return best;
+}
+
+function traceFormatChannelValue(channel, value) {
+    const numeric = traceNumber(value);
+    if (numeric === null) return '--';
+    if (channel.unit === 'hex') return `0x${Math.trunc(numeric).toString(16).toUpperCase()}`;
+    if (channel.unit === 'ON/OFF') return numeric ? 'ON' : 'OFF';
+    return Math.abs(numeric) >= 1000 ? numeric.toFixed(1) : numeric.toFixed(3);
+}
+
+function traceUpdateMeasurePanel(bounds, channels, visiblePoints) {
+    if (!el.traceMeasurePanel || !state.trace.measuring) return;
+    const hasBoth = Number.isFinite(state.trace.cursorTime) && Number.isFinite(state.trace.cursorTimeB);
+    if (el.traceDeltaTime) el.traceDeltaTime.textContent = hasBoth ? `${Math.abs(state.trace.cursorTimeB - state.trace.cursorTime).toFixed(3)}s` : '0.000s';
+    if (!el.traceMeasureBody || !hasBoth) {
+        if (el.traceMeasureBody) el.traceMeasureBody.replaceChildren();
+        return;
+    }
+    const low = Math.min(state.trace.cursorTime, state.trace.cursorTimeB);
+    const high = Math.max(state.trace.cursorTime, state.trace.cursorTimeB);
+    const pointA = traceNearestPoint(state.trace.cursorTime);
+    const pointB = traceNearestPoint(state.trace.cursorTimeB);
+    const fragment = document.createDocumentFragment();
+    channels.forEach((channel) => {
+        let rangeMin = Infinity;
+        let rangeMax = -Infinity;
+        visiblePoints.forEach((point) => {
+            if (point.time < low || point.time > high) return;
+            const value = traceNumber(point.values?.[channel.key]);
+            if (value === null) return;
+            rangeMin = Math.min(rangeMin, value);
+            rangeMax = Math.max(rangeMax, value);
+        });
+        const item = document.createElement('div');
+        item.className = 'trace-measure-channel';
+        const title = document.createElement('div');
+        title.className = 'trace-measure-channel-title';
+        title.textContent = `${channel.robotName} · ${channel.name}`;
+        const grid = document.createElement('div');
+        grid.className = 'trace-measure-grid';
+        [['Val A', pointA?.values?.[channel.key]], ['Val B', pointB?.values?.[channel.key]], ['Min', rangeMin], ['Max', rangeMax]]
+            .forEach(([label, value]) => {
+                const cell = document.createElement('span');
+                cell.innerHTML = `<small>${label}</small><strong>${traceFormatChannelValue(channel, value)}</strong>`;
+                grid.append(cell);
+            });
+        item.append(title, grid);
+        fragment.append(item);
+    });
+    el.traceMeasureBody.replaceChildren(fragment);
+}
+
+function drawTraceChart() {
+    const canvas = el.traceCanvas;
+    if (!canvas) return;
+    const { width, height, padding, chartWidth, chartHeight } = getTraceCanvasBounds();
+    const ratio = Math.max(1, el.traceCanvas.ownerDocument?.defaultView?.devicePixelRatio || window.devicePixelRatio || 1);
+    const pixelWidth = Math.round(width * ratio);
+    const pixelHeight = Math.round(height * ratio);
+    if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+        canvas.width = pixelWidth;
+        canvas.height = pixelHeight;
+    }
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    context.clearRect(0, 0, width, height);
+    context.fillStyle = '#0b1220';
+    context.fillRect(0, 0, width, height);
+    const bounds = state.trace.chart.auto ? traceChartBounds() : state.trace.chart;
+    const tRange = Math.max(0.000001, bounds.tMax - bounds.tMin);
+    const vRange = Math.max(0.000001, bounds.vMax - bounds.vMin);
+    const xOf = (time) => padding.left + ((time - bounds.tMin) / tRange) * chartWidth;
+    const yOf = (value) => padding.top + (1 - (value - bounds.vMin) / vRange) * chartHeight;
+    const channels = getTraceSelectedChannels();
+    const visiblePoints = getTraceVisiblePoints(bounds);
+    if (el.traceChartEmpty) {
+        el.traceChartEmpty.style.display = channels.length && state.trace.points.length ? 'none' : 'flex';
+        el.traceChartEmpty.textContent = channels.length ? '데이터 없음' : '채널을 선택하세요';
+    }
+    context.font = '10px JetBrains Mono, monospace';
+    context.lineWidth = 1;
+    context.strokeStyle = 'rgba(148, 163, 184, 0.14)';
+    context.fillStyle = '#64748b';
+    const timeInterval = traceNiceInterval(tRange, 10);
+    const valueInterval = traceNiceInterval(vRange, 8);
+    context.textAlign = 'center';
+    for (let time = Math.ceil(bounds.tMin / timeInterval) * timeInterval; time <= bounds.tMax + timeInterval * 0.01; time += timeInterval) {
+        const x = xOf(time);
+        context.beginPath(); context.moveTo(x, padding.top); context.lineTo(x, padding.top + chartHeight); context.stroke();
+        context.fillText(`${time.toFixed(timeInterval >= 1 ? 1 : Math.max(2, Math.ceil(-Math.log10(timeInterval))))}s`, x, height - 8);
+    }
+    if (!state.trace.independentScale) {
+        context.textAlign = 'right';
+        for (let value = Math.ceil(bounds.vMin / valueInterval) * valueInterval; value <= bounds.vMax + valueInterval * 0.01; value += valueInterval) {
+            const y = yOf(value);
+            context.beginPath(); context.moveTo(padding.left, y); context.lineTo(padding.left + chartWidth, y); context.stroke();
+            context.fillText(value.toPrecision(valueInterval >= 1 ? 4 : 3), padding.left - 8, y + 3);
+        }
+    } else {
+        context.textAlign = 'right';
+        context.fillStyle = 'rgba(255,255,255,0.25)';
+        context.fillText('IND.', padding.left - 8, padding.top + 10);
+    }
+    const layouts = state.trace.independentScale ? traceIndependentLayouts(channels, visiblePoints, chartHeight) : null;
+    channels.forEach((channel, channelIndex) => {
+        let started = false;
+        context.beginPath();
+        context.strokeStyle = TRACE_CHART_COLORS[channelIndex % TRACE_CHART_COLORS.length];
+        context.lineWidth = state.trace.selectedChannelKey === channel.key ? 2.8 : 1.5;
+        const layout = layouts?.get(channel.key);
+        visiblePoints.forEach((point) => {
+            const raw = traceNumber(point.values?.[channel.key]);
+            const value = raw === null ? null : raw + getTraceChannelOffset(channel.key);
+            if (value === null) { started = false; return; }
+            const x = xOf(Number(point.time) || 0);
+            const y = layout
+                ? padding.top + layout.top + (1 - (value - layout.min) / Math.max(1e-9, layout.max - layout.min)) * layout.height
+                : yOf(value);
+            if (!started) { context.moveTo(x, y); started = true; } else context.lineTo(x, y);
+        });
+        context.stroke();
+        if (state.trace.showDots && visiblePoints.length < 1000) {
+            context.fillStyle = TRACE_CHART_COLORS[channelIndex % TRACE_CHART_COLORS.length];
+            visiblePoints.forEach((point) => {
+                const raw = traceNumber(point.values?.[channel.key]);
+                if (raw === null) return;
+                const value = raw + getTraceChannelOffset(channel.key);
+                const x = xOf(Number(point.time) || 0);
+                const y = layout
+                    ? padding.top + layout.top + (1 - (value - layout.min) / Math.max(1e-9, layout.max - layout.min)) * layout.height
+                    : yOf(value);
+                context.beginPath(); context.arc(x, y, 2, 0, Math.PI * 2); context.fill();
+            });
+        }
+    });
+    context.strokeStyle = 'rgba(255,255,255,0.08)';
+    context.strokeRect(padding.left, padding.top, chartWidth, chartHeight);
+    if (state.trace.drag.active && state.trace.navMode === 'zoom') {
+        context.fillStyle = 'rgba(105,240,174,0.1)';
+        context.strokeStyle = 'rgba(105,240,174,0.6)';
+        const x = Math.min(state.trace.drag.startX, state.trace.drag.currentX);
+        const y = Math.min(state.trace.drag.startY, state.trace.drag.currentY);
+        const w = Math.abs(state.trace.drag.currentX - state.trace.drag.startX);
+        const h = Math.abs(state.trace.drag.currentY - state.trace.drag.startY);
+        context.fillRect(x, y, w, h); context.strokeRect(x, y, w, h);
+    }
+    if (state.trace.measuring && Number.isFinite(state.trace.cursorTime) && Number.isFinite(state.trace.cursorTimeB)) {
+        const cursorStart = Math.max(padding.left, Math.min(padding.left + chartWidth, xOf(Math.min(state.trace.cursorTime, state.trace.cursorTimeB))));
+        const cursorEnd = Math.max(padding.left, Math.min(padding.left + chartWidth, xOf(Math.max(state.trace.cursorTime, state.trace.cursorTimeB))));
+        context.fillStyle = 'rgba(105, 240, 174, 0.06)';
+        if (cursorEnd > cursorStart) context.fillRect(cursorStart, padding.top, cursorEnd - cursorStart, chartHeight);
+    }
+    const cursors = [state.trace.cursorTime, state.trace.measuring ? state.trace.cursorTimeB : null].filter(Number.isFinite);
+    cursors.forEach((time, index) => {
+        const x = xOf(time);
+        context.strokeStyle = index ? '#fbbf24' : '#f8fafc';
+        context.fillStyle = index ? '#fbbf24' : '#f8fafc';
+        context.font = '700 10px Inter, system-ui, sans-serif';
+        context.textAlign = 'center';
+        context.fillText(index ? 'B' : 'A', x, padding.top - 8);
+        context.setLineDash([4, 3]);
+        context.beginPath(); context.moveTo(x, padding.top); context.lineTo(x, padding.top + chartHeight); context.stroke();
+        context.setLineDash([]);
+    });
+    traceUpdateMeasurePanel(bounds, channels, visiblePoints);
+    if (el.traceCursorReadout && Number.isFinite(state.trace.hoverTime)) {
+        const nearest = traceNearestPoint(state.trace.hoverTime);
+        if (nearest) {
+            el.traceCursorReadout.style.display = 'flex';
+            el.traceCursorReadout.replaceChildren();
+            const timeLabel = document.createElement('strong');
+            timeLabel.textContent = `${Number(nearest.time).toFixed(3)}s`;
+            el.traceCursorReadout.append(timeLabel);
+            channels.forEach((channel, channelIndex) => {
+                const valueLabel = document.createElement('span');
+                const marker = document.createElement('i');
+                marker.style.background = TRACE_CHART_COLORS[channelIndex % TRACE_CHART_COLORS.length];
+                valueLabel.append(marker, document.createTextNode(`${channel.robotName} · ${channel.name}: ${traceFormatChannelValue(channel, nearest.values?.[channel.key])}`));
+                el.traceCursorReadout.append(valueLabel);
+            });
+        }
+    } else if (el.traceCursorReadout) el.traceCursorReadout.style.display = 'none';
+}
+
+function traceTimeFromCanvasEvent(event) {
+    const canvas = el.traceCanvas;
+    const rect = canvas?.getBoundingClientRect();
+    if (!rect || !state.trace.points.length) return null;
+    const { padding, chartWidth } = getTraceCanvasBounds();
+    const bounds = state.trace.chart.auto ? traceChartBounds() : state.trace.chart;
+    const x = THREE.MathUtils.clamp(event.clientX - rect.left, padding.left, padding.left + chartWidth);
+    return bounds.tMin + ((x - padding.left) / chartWidth) * (bounds.tMax - bounds.tMin);
+}
+
+function traceCursorReadout() {
+    if (!Number.isFinite(state.trace.cursorTime) || !state.trace.points.length) return '';
+    const nearest = state.trace.points.reduce((best, point) => (
+        Math.abs(point.time - state.trace.cursorTime) < Math.abs(best.time - state.trace.cursorTime) ? point : best
+    ), state.trace.points[0]);
+    const first = getTraceSelectedChannels()[0];
+    const value = first ? traceNumber(nearest.values?.[first.key]) : null;
+    const delta = state.trace.measuring && Number.isFinite(state.trace.cursorTimeB)
+        ? ` Δt=${Math.abs(state.trace.cursorTimeB - state.trace.cursorTime).toFixed(4)}s`
+        : '';
+    return `t=${Number(nearest.time).toFixed(4)}s${value === null ? '' : ` · ${first.name}=${value.toFixed(4)}`}${delta}`;
+}
+
+function startTraceCapture() {
+    refreshTraceSelectors(true);
+    state.trace.intervalMs = normalizedTraceInterval(el.traceInterval?.value, state.trace.intervalMs);
+    state.trace.points = [];
+    state.trace.clockSec = 0;
+    state.trace.captureStartAt = performance.now();
+    state.trace.lastSampleAt = state.trace.captureStartAt;
+    state.trace.lastRenderAt = 0;
+    state.trace.previousValues = new Map();
+    state.trace.robotCache.clear();
+    state.trace.cursorTime = null;
+    state.trace.cursorTimeB = null;
+    state.trace.hoverTime = null;
+    state.trace.importedChannelKeys.clear();
+    state.trace.chart.auto = true;
+    state.trace.chart.zoomed = false;
+    state.trace.running = true;
+    state.trace.paused = false;
+    addTraceLog(`Trace started (${state.trace.intervalMs} ms)`);
+    sampleTrace(state.trace.captureStartAt, true);
+    updateTraceStatus(uiText('Sampling'), 'running');
+    updateTraceControls();
+    requestRender();
+}
+
+function stopTraceCapture() {
+    if (!state.trace.running) return;
+    state.trace.running = false;
+    state.trace.paused = true;
+    addTraceLog(`Trace stopped (${state.trace.points.length} samples)`);
+    updateTraceStatus(uiFormat('Stopped ({count} samples)', { count: state.trace.points.length }), 'paused');
+    updateTraceControls();
+    drawTraceChart();
+}
+
+function resetTraceCapture() {
+    state.trace.running = false;
+    state.trace.paused = false;
+    state.trace.points = [];
+    state.trace.clockSec = 0;
+    state.trace.lastSampleAt = 0;
+    state.trace.previousValues = new Map();
+    state.trace.robotCache.clear();
+    state.trace.cursorTime = null;
+    state.trace.cursorTimeB = null;
+    state.trace.hoverTime = null;
+    state.trace.importedChannelKeys.clear();
+    resetTraceChannelOffsets();
+    state.trace.selectedChannelKey = null;
+    state.trace.independentValueZoom = 1;
+    state.trace.independentValueZoomCenter = 0.5;
+    state.trace.chart.auto = true;
+    state.trace.chart.zoomed = false;
+    addTraceLog('Trace reset');
+    updateTraceStatus(uiText('Ready'));
+    updateTraceControls();
+    drawTraceChart();
+}
+
+function saveTraceCsv() {
+    if (!state.trace.points.length) return;
+    const channels = getTraceSelectedChannels();
+    const robotIds = new Set(channels.map((channel) => channel.robotId).filter(Boolean));
+    const exportChannels = robotIds.size === 1
+        ? channels.map((channel) => ({ ...channel, exportKey: channel.id }))
+        : channels;
+    const csv = serializeTraceCsv(state.trace.points, exportChannels);
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `trace-${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+    anchor.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    addTraceLog(`CSV saved (${state.trace.points.length} samples)`);
+    updateTraceStatus(uiText('CSV 저장 완료'));
+}
+
+function loadTraceCsv(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+        const parsed = parseTraceCsv(reader.result);
+        const activeRobotIds = getArticulatedRobots().map((robot) => getTraceRobotId(robot)).filter(Boolean);
+        const headerMap = new Map();
+        parsed.headers.forEach((header) => {
+            if (!header || header === 'time') return;
+            const mapped = header.includes('::') || activeRobotIds.length !== 1
+                ? header
+                : createTraceChannelKey(activeRobotIds[0], header);
+            headerMap.set(header, mapped);
+        });
+        const points = parsed.points.map((point) => ({
+            time: point.time,
+            values: Object.fromEntries(Object.entries(point.values || {}).map(([key, value]) => [headerMap.get(key) || key, value]))
+        }));
+        const importedKeys = [...new Set(parsed.headers
+            .filter((header) => header && header !== 'time')
+            .map((header) => headerMap.get(header) || header))];
+        state.trace.running = false;
+        state.trace.paused = false;
+        state.trace.points = points.slice(-TRACE_MAX_POINTS);
+        state.trace.importedChannelKeys = new Set(importedKeys);
+        state.trace.selectedChannelKeys = new Set(state.trace.importedChannelKeys);
+        state.trace.selectedRobotIds = new Set([...state.trace.importedChannelKeys]
+            .map((key) => splitTraceChannelKey(key).robotId).filter(Boolean));
+        state.trace.hoverTime = null;
+        state.trace.chart.auto = true;
+        state.trace.chart.zoomed = false;
+        addTraceLog(`CSV loaded (${state.trace.points.length} samples)`);
+        updateTraceStatus(uiFormat('CSV loaded ({count} samples)', { count: state.trace.points.length }));
+        refreshTraceSelectors(true);
+        updateTraceControls();
+        drawTraceChart();
+    };
+    reader.onerror = () => updateTraceStatus(uiText('CSV 읽기 실패'), 'error');
+    reader.readAsText(file);
+}
+
+function traceCanvasPoint(event) {
+    const rect = el.traceCanvas?.getBoundingClientRect();
+    if (!rect) return null;
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top, rect };
+}
+
+function traceCanvasTimeAtX(x, bounds = state.trace.chart.auto ? traceChartBounds() : state.trace.chart) {
+    const { padding, chartWidth } = getTraceCanvasBounds();
+    const clamped = THREE.MathUtils.clamp(Number(x) || 0, padding.left, padding.left + chartWidth);
+    return bounds.tMin + ((clamped - padding.left) / chartWidth) * Math.max(0.000001, bounds.tMax - bounds.tMin);
+}
+
+function traceCanvasValueAtY(y, bounds = state.trace.chart.auto ? traceChartBounds() : state.trace.chart) {
+    const { padding, chartHeight } = getTraceCanvasBounds();
+    const clamped = THREE.MathUtils.clamp(Number(y) || 0, padding.top, padding.top + chartHeight);
+    return bounds.vMin + (1 - (clamped - padding.top) / chartHeight) * Math.max(0.000001, bounds.vMax - bounds.vMin);
+}
+
+function traceChannelPlotY(channel, value, bounds, layouts) {
+    const { padding, chartHeight } = getTraceCanvasBounds();
+    const layout = layouts?.get(channel.key);
+    if (layout) {
+        return padding.top + layout.top + (1 - (value - layout.min) / Math.max(1e-9, layout.max - layout.min)) * layout.height;
+    }
+    return padding.top + (1 - (value - bounds.vMin) / Math.max(1e-9, bounds.vMax - bounds.vMin)) * chartHeight;
+}
+
+function traceDistanceToSegmentSq(px, py, x1, y1, x2, y2) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    if (!dx && !dy) return (px - x1) ** 2 + (py - y1) ** 2;
+    const length = dx * dx + dy * dy;
+    const ratio = THREE.MathUtils.clamp(((px - x1) * dx + (py - y1) * dy) / length, 0, 1);
+    const cx = x1 + ratio * dx;
+    const cy = y1 + ratio * dy;
+    return (px - cx) ** 2 + (py - cy) ** 2;
+}
+
+function hitTraceChannel(x, y, bounds) {
+    const channels = getTraceSelectedChannels();
+    const visiblePoints = getTraceVisiblePoints(bounds);
+    if (!channels.length || !visiblePoints.length) return null;
+    const { padding, chartWidth } = getTraceCanvasBounds();
+    const timeRange = Math.max(0.000001, bounds.tMax - bounds.tMin);
+    const valueLayouts = state.trace.independentScale
+        ? traceIndependentLayouts(channels, visiblePoints, getTraceCanvasBounds().chartHeight)
+        : null;
+    let best = null;
+    let bestDistance = 64;
+    channels.forEach((channel) => {
+        let previous = null;
+        visiblePoints.forEach((point) => {
+            const raw = traceNumber(point.values?.[channel.key]);
+            if (raw === null) {
+                previous = null;
+                return;
+            }
+            const value = raw + getTraceChannelOffset(channel.key);
+            const pointX = padding.left + ((point.time - bounds.tMin) / timeRange) * chartWidth;
+            const pointY = traceChannelPlotY(channel, value, bounds, valueLayouts);
+            if (previous) {
+                const distance = traceDistanceToSegmentSq(x, y, previous.x, previous.y, pointX, pointY);
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    best = channel;
+                }
+            }
+            previous = { x: pointX, y: pointY };
+        });
+    });
+    return best;
+}
+
+function updateTraceCursorReadoutPosition(point) {
+    if (!el.traceCursorReadout || !point) return;
+    const areaRect = el.traceChartContainer?.parentElement?.getBoundingClientRect?.();
+    const offsetX = areaRect ? point.rect.left - areaRect.left : point.x;
+    const offsetY = areaRect ? point.rect.top - areaRect.top : point.y;
+    el.traceCursorReadout.style.left = `${Math.max(4, offsetX + point.x + 14)}px`;
+    el.traceCursorReadout.style.top = `${Math.max(4, offsetY + point.y + 14)}px`;
+}
+
+function handleTraceKeyDown(event) {
+    const traceOpen = state.panelWindows?.has('trace-panel')
+        || (el.tracePanel && !el.tracePanel.classList.contains('panel-user-hidden'));
+    if (!traceOpen) return;
+    if (event.target?.matches?.('input, textarea, select, [contenteditable="true"]')) return;
+    const key = String(event.key || '').toLowerCase();
+    if (key === 'v') setTraceNavMode('move');
+    else if (key === 'p') setTraceNavMode('pan');
+    else if (key === 'z') setTraceNavMode('zoom');
+    else if (key === 's') {
+        state.trace.independentScale = !state.trace.independentScale;
+        addTraceLog(`Independent scale ${state.trace.independentScale ? 'enabled' : 'disabled'}`);
+        updateTraceControls();
+        drawTraceChart();
+    } else if (key === 'm') setTraceMeasureMode();
+    else if (key === 'escape' && state.trace.measuring) setTraceMeasureMode(false);
+    else return;
+    event.preventDefault();
+}
+
+function setupTraceChartInteractions() {
+    const canvas = el.traceCanvas;
+    if (!canvas || canvas.dataset.traceInteractionsReady === 'true') return;
+    canvas.dataset.traceInteractionsReady = 'true';
+    canvas.addEventListener('pointerdown', (event) => {
+        if (event.button !== 0 || !state.trace.points.length) return;
+        const point = traceCanvasPoint(event);
+        if (!point) return;
+        const bounds = state.trace.chart.auto ? traceChartBounds() : state.trace.chart;
+        const { padding, chartWidth, chartHeight } = getTraceCanvasBounds();
+        if (state.trace.navMode === 'move') {
+            const hit = hitTraceChannel(point.x, point.y, bounds);
+            if (hit) state.trace.selectedChannelKey = hit.key;
+            const selected = state.trace.selectedChannelKey
+                ? getTraceSelectedChannels().find((channel) => channel.key === state.trace.selectedChannelKey)
+                : null;
+            if (!selected) {
+                updateTraceStatus(uiText('이동할 채널을 먼저 선택하세요'));
+                return;
+            }
+            state.trace.move.active = true;
+            state.trace.move.startY = point.y;
+            state.trace.move.startOffset = getTraceChannelOffset(selected.key);
+            renderTraceChannelList();
+            event.preventDefault();
+            if (Number.isFinite(event.pointerId)) canvas.setPointerCapture?.(event.pointerId);
+            drawTraceChart();
+            return;
+        }
+        if (state.trace.measuring && point.y < padding.top + 16) {
+            const cursorCandidates = [
+                ['A', state.trace.cursorTime, '#f8fafc'],
+                ['B', state.trace.cursorTimeB, '#fbbf24']
+            ];
+            const nearest = cursorCandidates
+                .filter(([, time]) => Number.isFinite(time))
+                .map(([name, time]) => ({ name, distance: Math.abs(point.x - (padding.left + ((time - bounds.tMin) / Math.max(0.000001, bounds.tMax - bounds.tMin)) * chartWidth)) }))
+                .sort((a, b) => a.distance - b.distance)[0];
+            if (nearest && nearest.distance < 20) {
+                state.trace.cursorDrag = nearest.name;
+                event.preventDefault();
+                if (Number.isFinite(event.pointerId)) canvas.setPointerCapture?.(event.pointerId);
+                return;
+            }
+        }
+        state.trace.drag = { active: true, startX: point.x, startY: point.y, currentX: point.x, currentY: point.y };
+        if (Number.isFinite(event.pointerId)) canvas.setPointerCapture?.(event.pointerId);
+        event.preventDefault();
+    });
+    canvas.addEventListener('pointermove', (event) => {
+        const point = traceCanvasPoint(event);
+        if (!point) return;
+        const bounds = state.trace.chart.auto ? traceChartBounds() : state.trace.chart;
+        const { padding, chartWidth, chartHeight } = getTraceCanvasBounds();
+        if (state.trace.cursorDrag) {
+            const time = traceCanvasTimeAtX(point.x, bounds);
+            if (state.trace.cursorDrag === 'A') state.trace.cursorTime = time;
+            else state.trace.cursorTimeB = time;
+            updateTraceCursorReadoutPosition(point);
+            drawTraceChart();
+            return;
+        }
+        if (state.trace.move.active) {
+            const selected = getTraceSelectedChannels().find((channel) => channel.key === state.trace.selectedChannelKey);
+            if (selected) {
+                const layouts = state.trace.independentScale
+                    ? traceIndependentLayouts(getTraceSelectedChannels(), getTraceVisiblePoints(bounds), chartHeight)
+                    : null;
+                const layout = layouts?.get(selected.key);
+                const span = layout?.max - layout?.min || bounds.vMax - bounds.vMin;
+                setTraceChannelOffset(selected.key, state.trace.move.startOffset + ((state.trace.move.startY - point.y) / chartHeight) * span);
+            }
+            drawTraceChart();
+            return;
+        }
+        if (state.trace.drag.active) {
+            if (state.trace.navMode === 'pan') {
+                const previousX = state.trace.drag.currentX;
+                const previousY = state.trace.drag.currentY;
+                const deltaTime = traceCanvasTimeAtX(previousX, bounds) - traceCanvasTimeAtX(point.x, bounds);
+                const deltaValue = traceCanvasValueAtY(previousY, bounds) - traceCanvasValueAtY(point.y, bounds);
+                state.trace.chart = {
+                    ...bounds,
+                    tMin: bounds.tMin + deltaTime,
+                    tMax: bounds.tMax + deltaTime,
+                    vMin: bounds.vMin + deltaValue,
+                    vMax: bounds.vMax + deltaValue,
+                    auto: false,
+                    zoomed: true
+                };
+            }
+            state.trace.drag.currentX = point.x;
+            state.trace.drag.currentY = point.y;
+            drawTraceChart();
+            return;
+        }
+        const insidePlot = point.x >= padding.left && point.x <= padding.left + chartWidth
+            && point.y >= padding.top && point.y <= padding.top + chartHeight;
+        state.trace.hoverTime = insidePlot ? traceCanvasTimeAtX(point.x, bounds) : null;
+        if (insidePlot) updateTraceCursorReadoutPosition(point);
+        drawTraceChart();
+    });
+    canvas.addEventListener('pointerup', (event) => {
+        const point = traceCanvasPoint(event);
+        const drag = state.trace.drag;
+        if (state.trace.move.active) {
+            state.trace.move.active = false;
+            if (Number.isFinite(event.pointerId)) canvas.releasePointerCapture?.(event.pointerId);
+            drawTraceChart();
+            return;
+        }
+        if (state.trace.cursorDrag) {
+            state.trace.cursorDrag = null;
+            if (Number.isFinite(event.pointerId)) canvas.releasePointerCapture?.(event.pointerId);
+            drawTraceChart();
+            return;
+        }
+        if (!drag || !point) return;
+        const distance = Math.hypot(drag.currentX - drag.startX, drag.currentY - drag.startY);
+        const bounds = state.trace.chart.auto ? traceChartBounds() : state.trace.chart;
+        if (distance < 5 && state.trace.measuring) {
+            const time = traceCanvasTimeAtX(drag.startX, bounds);
+            if (!Number.isFinite(state.trace.cursorTime)) state.trace.cursorTime = time;
+            else if (!Number.isFinite(state.trace.cursorTimeB)) state.trace.cursorTimeB = time;
+            else {
+                const aDistance = Math.abs(drag.startX - (getTraceCanvasBounds().padding.left + ((state.trace.cursorTime - bounds.tMin) / Math.max(0.000001, bounds.tMax - bounds.tMin)) * getTraceCanvasBounds().chartWidth));
+                const bDistance = Math.abs(drag.startX - (getTraceCanvasBounds().padding.left + ((state.trace.cursorTimeB - bounds.tMin) / Math.max(0.000001, bounds.tMax - bounds.tMin)) * getTraceCanvasBounds().chartWidth));
+                if (aDistance <= bDistance) state.trace.cursorTime = time;
+                else state.trace.cursorTimeB = time;
+            }
+        } else if (state.trace.navMode === 'zoom' && distance >= 5) {
+            const { padding, chartWidth, chartHeight } = getTraceCanvasBounds();
+            const t1 = traceCanvasTimeAtX(drag.startX, bounds);
+            const t2 = traceCanvasTimeAtX(drag.currentX, bounds);
+            const v1 = traceCanvasValueAtY(drag.startY, bounds);
+            const v2 = traceCanvasValueAtY(drag.currentY, bounds);
+            if (Math.abs(t1 - t2) > state.trace.intervalMs / 1000 && Math.abs(v1 - v2) > 1e-6) {
+                state.trace.chart = {
+                    ...bounds,
+                    tMin: Math.min(t1, t2),
+                    tMax: Math.max(t1, t2),
+                    vMin: Math.min(v1, v2),
+                    vMax: Math.max(v1, v2),
+                    auto: false,
+                    zoomed: true
+                };
+            }
+        }
+        state.trace.drag.active = false;
+        if (Number.isFinite(event.pointerId)) canvas.releasePointerCapture?.(event.pointerId);
+        drawTraceChart();
+    });
+    canvas.addEventListener('pointercancel', () => {
+        state.trace.drag.active = false;
+        state.trace.move.active = false;
+        state.trace.cursorDrag = null;
+        drawTraceChart();
+    });
+    canvas.addEventListener('wheel', (event) => {
+        if (!state.trace.points.length) return;
+        event.preventDefault();
+        const point = traceCanvasPoint(event);
+        if (!point) return;
+        const { padding, chartWidth, chartHeight } = getTraceCanvasBounds();
+        const bounds = state.trace.chart.auto ? traceChartBounds() : state.trace.chart;
+        const factor = event.deltaY > 0 ? 1.1 : 0.9;
+        const overValueAxis = point.x >= 0 && point.x < padding.left && point.y >= padding.top && point.y <= padding.top + chartHeight;
+        if (overValueAxis) {
+            if (state.trace.independentScale) {
+                state.trace.independentValueZoomCenter = THREE.MathUtils.clamp((point.y - padding.top) / chartHeight, 0, 1);
+                state.trace.independentValueZoom = THREE.MathUtils.clamp(state.trace.independentValueZoom / factor, 0.1, 50);
+            } else {
+                const center = traceCanvasValueAtY(point.y, bounds);
+                const range = Math.max(1e-6, bounds.vMax - bounds.vMin) * factor;
+                state.trace.chart = { ...bounds, vMin: center - range * 0.5, vMax: center + range * 0.5, auto: false, zoomed: true };
+            }
+            drawTraceChart();
+            return;
+        }
+        const range = Math.max(state.trace.intervalMs / 1000, bounds.tMax - bounds.tMin) * factor;
+        const center = state.trace.chart.auto ? bounds.tMax : traceCanvasTimeAtX(point.x, bounds);
+        state.trace.chart = {
+            ...bounds,
+            tMin: state.trace.chart.auto ? center - range : center - (center - bounds.tMin) * factor,
+            tMax: state.trace.chart.auto ? center : center + (bounds.tMax - center) * factor,
+            auto: false,
+            zoomed: true
+        };
+        drawTraceChart();
+    }, { passive: false });
+    canvas.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+        state.trace.drag.active = false;
+        state.trace.move.active = false;
+        state.trace.cursorDrag = null;
+        state.trace.hoverTime = null;
+        resetTraceChannelOffsets();
+        state.trace.independentValueZoom = 1;
+        state.trace.independentValueZoomCenter = 0.5;
+        state.trace.chart.auto = true;
+        state.trace.chart.zoomed = false;
+        addTraceLog('Chart view reset');
+        drawTraceChart();
+    });
+    canvas.addEventListener('mouseleave', () => {
+        if (!state.trace.drag.active && !state.trace.move.active && !state.trace.cursorDrag) {
+            state.trace.hoverTime = null;
+            drawTraceChart();
+        }
+    });
+}
+
+function setupTraceMeasurePanelInteractions() {
+    const panel = el.traceMeasurePanel;
+    if (!panel || panel.dataset.traceInteractionsReady === 'true') return;
+    panel.dataset.traceInteractionsReady = 'true';
+    let interaction = null;
+    panel.addEventListener('pointerdown', (event) => {
+        if (event.target.closest('button')) return;
+        const rect = panel.getBoundingClientRect();
+        const mode = event.target.closest('.trace-measure-resizer-left') ? 'resize-left'
+            : event.target.closest('.trace-measure-resizer-right') ? 'resize-right' : 'drag';
+        interaction = { mode, startX: event.clientX, startY: event.clientY, left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+        panel.setPointerCapture?.(event.pointerId);
+        event.preventDefault();
+    });
+    panel.addEventListener('pointermove', (event) => {
+        if (!interaction) return;
+        const dx = event.clientX - interaction.startX;
+        const dy = event.clientY - interaction.startY;
+        if (interaction.mode === 'drag') {
+            panel.style.right = 'auto';
+            panel.style.left = `${Math.max(0, interaction.left - (el.traceChartContainer?.getBoundingClientRect?.().left || 0) + dx)}px`;
+            panel.style.top = `${Math.max(0, interaction.top - (el.traceChartContainer?.getBoundingClientRect?.().top || 0) + dy)}px`;
+        } else {
+            const width = THREE.MathUtils.clamp(interaction.width + (interaction.mode === 'resize-left' ? -dx : dx), 240, 760);
+            panel.style.width = `${width}px`;
+            panel.style.height = `${Math.max(150, interaction.height + dy)}px`;
+        }
+    });
+    panel.addEventListener('pointerup', (event) => {
+        interaction = null;
+        panel.releasePointerCapture?.(event.pointerId);
+    });
+}
+
+function setupTracePanel() {
+    if (!el.tracePanel) return;
+    if (el.traceInterval && !el.traceInterval.options.length) {
+        TRACE_INTERVALS.forEach((interval) => {
+            const option = document.createElement('option');
+            option.value = String(interval);
+            option.textContent = `${interval} ms`;
+            el.traceInterval.append(option);
+        });
+        el.traceInterval.value = String(state.trace.intervalMs);
+    }
+    el.traceStart?.addEventListener('click', startTraceCapture);
+    el.traceStop?.addEventListener('click', stopTraceCapture);
+    el.traceReset?.addEventListener('click', resetTraceCapture);
+    el.traceSave?.addEventListener('click', saveTraceCsv);
+    el.traceLoad?.addEventListener('click', () => el.traceFileInput?.click());
+    el.traceFileInput?.addEventListener('change', () => {
+        loadTraceCsv(el.traceFileInput.files?.[0]);
+        el.traceFileInput.value = '';
+    });
+    el.traceInterval?.addEventListener('change', () => {
+        state.trace.intervalMs = normalizedTraceInterval(el.traceInterval.value, state.trace.intervalMs);
+        addTraceLog(`Sampling interval: ${state.trace.intervalMs} ms`);
+        updateTraceControls();
+    });
+    el.traceRobotList?.addEventListener('change', (event) => {
+        const input = event.target.closest('[data-trace-robot-id]');
+        if (!input) return;
+        if (input.checked) state.trace.selectedRobotIds.add(input.dataset.traceRobotId);
+        else state.trace.selectedRobotIds.delete(input.dataset.traceRobotId);
+        addTraceLog(`Robot ${input.checked ? 'selected' : 'unselected'}: ${input.dataset.traceRobotId}`);
+        renderTraceChannelList();
+        drawTraceChart();
+    });
+    el.traceModeMove?.addEventListener('click', () => setTraceNavMode('move'));
+    el.traceModePan?.addEventListener('click', () => setTraceNavMode('pan'));
+    el.traceModeZoom?.addEventListener('click', () => setTraceNavMode('zoom'));
+    el.traceModeScale?.addEventListener('click', () => {
+        state.trace.independentScale = !state.trace.independentScale;
+        addTraceLog(`Independent scale ${state.trace.independentScale ? 'enabled' : 'disabled'}`);
+        updateTraceControls();
+        drawTraceChart();
+    });
+    el.traceModeMeasure?.addEventListener('click', () => setTraceMeasureMode());
+    el.traceToggleDots?.addEventListener('click', () => {
+        state.trace.showDots = !state.trace.showDots;
+        addTraceLog(`Dots ${state.trace.showDots ? 'enabled' : 'disabled'}`);
+        updateTraceControls();
+        drawTraceChart();
+    });
+    el.traceToggleLog?.addEventListener('click', () => {
+        state.trace.showLog = !state.trace.showLog;
+        updateTraceControls();
+    });
+    el.traceClearLog?.addEventListener('click', () => {
+        state.trace.logs = [];
+        renderTraceLog();
+    });
+    el.traceResetChannels?.addEventListener('click', () => {
+        state.trace.selectedChannelKeys.clear();
+        state.trace.selectedChannelKey = null;
+        resetTraceChannelOffsets();
+        ensureTraceSelections();
+        renderTraceChannelList();
+        addTraceLog('Channel selection reset');
+        updateTraceControls();
+        drawTraceChart();
+    });
+    el.traceToggleChannels?.addEventListener('click', () => {
+        const panel = el.traceToggleChannels.closest('.trace-channel-panel');
+        panel?.classList.toggle('is-collapsed');
+        const expanded = !panel?.classList.contains('is-collapsed');
+        el.traceToggleChannels.setAttribute('aria-expanded', String(expanded));
+    });
+    el.traceCloseMeasure?.addEventListener('click', () => setTraceMeasureMode(false));
+    el.traceAutoScale?.addEventListener('click', () => {
+        state.trace.chart.auto = true;
+        state.trace.chart.zoomed = false;
+        drawTraceChart();
+    });
+    setupTraceChartInteractions();
+    setupTraceMeasurePanelInteractions();
+    document.addEventListener('keydown', handleTraceKeyDown);
+    if (typeof ResizeObserver === 'function') {
+        const observer = new ResizeObserver(() => drawTraceChart());
+        observer.observe(el.traceChartContainer || el.tracePanel);
+    }
+    refreshTraceSelectors(true);
+    updateTraceControls();
+    addTraceLog('Trace panel ready');
+}
+
 function setupEventListeners() {
     state.tcpSnapType = el.tcpSnapType?.value || state.tcpSnapType;
     state.zeroPointEdit.snapType = readZeroPointSnapType();
@@ -18590,6 +20130,7 @@ function setupEventListeners() {
     window.addEventListener('resize', onResize);
     setupOlpConsoleScroll();
     setupOlpEditorScroll();
+    setupTracePanel();
     document.addEventListener('pointermove', handleFullscreenUiPointerMove);
     document.addEventListener('click', requestRender);
     document.addEventListener('input', requestRender);
@@ -19120,7 +20661,12 @@ function setupEventListeners() {
         button.addEventListener('click', () => handlePanelAction(button.dataset.panelAction, button.dataset.panelId));
     });
     document.querySelectorAll('[data-panel-toggle]').forEach((button) => {
-        button.addEventListener('click', () => togglePanelVisibility(button.dataset.panelToggle));
+        button.addEventListener('click', () => {
+            if (button.dataset.panelToggle === 'trace-panel') {
+                if (popOutPanel('trace-panel') === false) togglePanelVisibility('trace-panel');
+            }
+            else togglePanelVisibility(button.dataset.panelToggle);
+        });
     });
     el.shapeType?.addEventListener('change', () => {
         const dimensions = Object.fromEntries(Object.entries(el.shapeCreateDimensions || {})
@@ -19451,9 +20997,9 @@ function setupEventListeners() {
     el.btnRedo?.addEventListener('click', redoLastAction);
     el.viewWindowPopout?.addEventListener('click', popOutViewWindow);
     el.viewWindowHide?.addEventListener('click', hideViewWindow);
-    [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.collaborationPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.ioSimulatorPanel, el.programPanel, el.measurementPanel, el.shapePanel, el.viewWindow, el.armLoadPanel, el.toolLoadInfoPanel, el.workOriginDialog].forEach(makePanelDraggable);
+    [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.collaborationPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.ioSimulatorPanel, el.programPanel, el.tracePanel, el.measurementPanel, el.shapePanel, el.viewWindow, el.armLoadPanel, el.toolLoadInfoPanel, el.workOriginDialog].forEach(makePanelDraggable);
     [el.tcpProfilePanel, el.workObjectPanel].forEach(makePanelDraggable);
-    [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.collaborationPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.ioSimulatorPanel, el.programPanel, el.measurementPanel, el.shapePanel, el.viewWindow, el.armLoadPanel, el.toolLoadInfoPanel, el.workOriginDialog].forEach(makePanelEdgeResizable);
+    [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.collaborationPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.ioSimulatorPanel, el.programPanel, el.tracePanel, el.measurementPanel, el.shapePanel, el.viewWindow, el.armLoadPanel, el.toolLoadInfoPanel, el.workOriginDialog].forEach(makePanelEdgeResizable);
     [el.tcpProfilePanel, el.workObjectPanel].forEach(makePanelEdgeResizable);
     renderIoSimulatorPanel();
     makeModelTransformSplitResizable(el.modelBrowserPanel);
@@ -19704,6 +21250,14 @@ function setupEventListeners() {
         setJogMode('joint');
     });
     el.btnJogBaseMode?.addEventListener('click', () => {
+        if (state.jogCoordinateMode === 'base' && !state.snapMoveMode) {
+            const handlerVisible = Boolean(
+                state.baseJogTransformControls?.visible
+                && state.baseJogTransformControls?.enabled
+            );
+            setBaseJogGizmoEnabled(!handlerVisible);
+            return;
+        }
         setJogMode('base');
     });
     el.btnBaseGizmoTranslate?.addEventListener('click', () => setBaseJogGizmoMode('translate'));
@@ -21005,6 +22559,7 @@ function getPanelElement(panelId) {
         'view-presets-panel': el.viewPresetsPanel,
         'view-window': el.viewWindow,
         'program-panel': el.programPanel,
+        'trace-panel': el.tracePanel,
         'io-simulator-panel': el.ioSimulatorPanel,
         'measurement-panel': el.measurementPanel,
         'shape-panel': el.shapePanel,
@@ -21254,6 +22809,11 @@ function togglePanelVisibility(panelId) {
         state.ioSimulator.renderedKey = '';
         renderIoSimulatorPanel();
     }
+    if (panelId === 'trace-panel' && isVisible) {
+        refreshTraceSelectors(true);
+        updateTraceControls();
+        drawTraceChart();
+    }
     updatePanelLauncher(panelId);
     if (isVisible) bringPanelToFront(panelId);
     else updatePanelStack();
@@ -21286,21 +22846,23 @@ function handlePanelAction(action, panelId) {
 
 function popOutPanel(panelId) {
     const panel = getPanelElement(panelId);
-    if (!panel) return;
+    if (!panel) return false;
     const existing = state.panelWindows.get(panelId);
     if (existing && !existing.popup.closed) {
         existing.popup.focus();
-        return;
+        return true;
     }
 
     const isOlpProgramPanel = panelId === 'program-panel' && state.olp.enabled;
-    const popupFeatures = isOlpProgramPanel
+    const popupFeatures = panelId === 'trace-panel'
+        ? 'popup=yes,width=1180,height=760,resizable=yes'
+        : isOlpProgramPanel
         ? 'popup=yes,width=400,height=900,resizable=yes'
         : 'popup=yes,width=380,height=760,resizable=yes';
     const popup = window.open('', `InoRobot-${panelId}`, popupFeatures);
     if (!popup) {
         setStatus('팝업이 차단되었습니다. 패널 분리를 위해 팝업을 허용하세요.', '#ef4444');
-        return;
+        return false;
     }
 
     popup.document.open();
@@ -21315,6 +22877,7 @@ function popOutPanel(panelId) {
     popup.document.body.className = 'panel-popout-body';
     popup.addEventListener('keydown', handleGlobalKeyDown);
     popup.addEventListener('keyup', handleGlobalKeyUp);
+    if (panelId === 'trace-panel') popup.document.addEventListener('keydown', handleTraceKeyDown);
 
     const placeholder = document.createComment(`${panelId} placeholder`);
     panel.parentNode.insertBefore(placeholder, panel);
@@ -21325,17 +22888,25 @@ function popOutPanel(panelId) {
     panel.classList.add('panel-popout');
     popup.document.body.appendChild(panel);
     setupPopupSimulationTooltips(popup);
+    if (panelId === 'trace-panel') {
+        refreshTraceSelectors(true);
+        updateTraceControls();
+        drawTraceChart();
+    }
 
     const record = { popup, panel, placeholder, savedStyle, restoring: false };
     state.panelWindows.set(panelId, record);
     popup.addEventListener('beforeunload', () => restorePanelFromWindow(panelId, false, true));
     updatePanelStack();
     updatePanelLauncher(panelId);
+    return true;
 }
 
 function getPanelWindowTitle(panelId) {
     const panelName = panelId === 'program-panel'
         ? uiText('Program Panel')
+        : panelId === 'trace-panel'
+        ? uiText('Trace')
         : panelId === 'tcp-profile-panel'
         ? uiText('TCP 설정')
         : panelId === 'arm-load-panel'
@@ -29256,11 +30827,19 @@ function equivalentJointAngles(angle, joint) {
     return values;
 }
 
-function solveScaraIK(robot, target) {
+function solveScaraIK(robot, target, precision = {}) {
     const joints = robot.userData.joints || [];
     const manifest = robot.userData.manifest;
     const homeQuaternion = robot.userData.toolHomeQuaternion;
     const tcpFrame = robot.userData.tcpFrame;
+    const secondArmDirection = Math.sign(manifest?.secondArmDirection || 1);
+    const armSide = Number(precision.armParameters?.[0]);
+    const requestedElbowSign = (armSide === -1 || armSide === 1) ? armSide * secondArmDirection : 0;
+    const armTurn = Number(precision.armParameters?.[3]);
+    const armTurnRange = armTurn === -1 ? [-360, -180]
+        : armTurn === 0 ? [-180, 180]
+            : armTurn === 1 ? [180, 360]
+                : null;
     if (joints.length !== 4 || !homeQuaternion || !tcpFrame || !Array.isArray(manifest?.structure)) {
         return {
             success: false,
@@ -29279,9 +30858,15 @@ function solveScaraIK(robot, target) {
 
     const currentPose = getCurrentTcpPoseBase(robot);
     const rzOnlyError = quaternionErrorVector(target.quaternion, currentPose.quaternion);
+    const currentArmMatches = !requestedElbowSign
+        || Math.abs(joints[1].angle) < 1e-7
+        || Math.sign(joints[1].angle) === requestedElbowSign;
+    const currentTurnMatches = !armTurnRange
+        || (joints[3].angle >= armTurnRange[0] - 1e-7 && joints[3].angle <= armTurnRange[1] + 1e-7);
     if (currentPose.position.distanceTo(target.position) < 0.01
         && Math.hypot(tcpFrame.position.x, tcpFrame.position.y) < 1e-9
-        && Math.hypot(rzOnlyError.x, rzOnlyError.y) < THREE.MathUtils.degToRad(0.01)) {
+        && Math.hypot(rzOnlyError.x, rzOnlyError.y) < THREE.MathUtils.degToRad(0.01)
+        && currentArmMatches && currentTurnMatches) {
         const requestedJ4 = joints[3].angle + THREE.MathUtils.radToDeg(rzOnlyError.z);
         if (requestedJ4 >= joints[3].definition.min - 1e-7
             && requestedJ4 <= joints[3].definition.max + 1e-7) {
@@ -29328,7 +30913,11 @@ function solveScaraIK(robot, target) {
     }
 
     const elbowMagnitude = Math.acos(THREE.MathUtils.clamp(rawCosine, -1, 1));
-    const elbowSolutions = elbowMagnitude < 1e-9 ? [0] : [elbowMagnitude, -elbowMagnitude];
+    // In the standard SCARA frame, controller arm side -1 (left) maps to a
+    // negative elbow solution and +1 (right) to positive; ceiling variants
+    // invert the mechanism's second-link direction.
+    const elbowSolutions = (elbowMagnitude < 1e-9 ? [0] : [elbowMagnitude, -elbowMagnitude])
+        .filter((angle) => !requestedElbowSign || Math.abs(angle) < 1e-9 || Math.sign(angle) === requestedElbowSign);
     const desiredYawDegrees = THREE.MathUtils.radToDeg(targetRotation.z);
     let best = null;
 
@@ -29343,11 +30932,19 @@ function solveScaraIK(robot, target) {
         equivalentJointAngles(baseJ1, joints[0]).forEach((j1) => {
             equivalentJointAngles(baseJ2, joints[1]).forEach((j2) => {
                 const baseJ4 = desiredYawDegrees - j1 - j2;
-                equivalentJointAngles(baseJ4, joints[3]).forEach((j4) => {
+                const j4Candidates = equivalentJointAngles(baseJ4, joints[3]);
+                const preferredTurnCandidates = armTurnRange
+                    ? j4Candidates.filter((j4) => j4 >= armTurnRange[0] - 1e-7 && j4 <= armTurnRange[1] + 1e-7)
+                    : [];
+                // Prefer the point's requested J4 turn band, but keep a valid
+                // mechanical solution when the selected model's calibrated
+                // joint limits do not contain an equivalent angle in that band.
+                (preferredTurnCandidates.length ? preferredTurnCandidates : j4Candidates)
+                    .forEach((j4) => {
                     const candidate = [j1, j2, prismaticTarget, j4];
                     const score = candidate.reduce((sum, value, index) => sum + (value - joints[index].angle) ** 2, 0);
                     if (!best || score < best.score) best = { angles: candidate, score };
-                });
+                    });
             });
         });
     });
@@ -29382,7 +30979,7 @@ function solveScaraIK(robot, target) {
 
 function solveRobotIK(robot, target, precision = {}) {
     const joints = robot.userData.joints || [];
-    if (robot.userData.manifest?.robotType === 'scara') return solveScaraIK(robot, target);
+    if (robot.userData.manifest?.robotType === 'scara') return solveScaraIK(robot, target, precision);
     const tolerance = {
         position: precision.positionTolerance ?? 0.45,
         rotation: precision.rotationTolerance ?? THREE.MathUtils.degToRad(0.2),
@@ -30545,8 +32142,7 @@ function getVirtualControllerForRobot(robot) {
     )) || null;
 }
 
-async function ensureVirtualControllerCore() {
-    const controller = state.virtualController;
+async function ensureVirtualControllerCore(controller = state.virtualController) {
     if (controller.core) return controller.core;
     if (!controller.corePromise) {
         controller.corePromise = import('./virtual-controller-core.mjs')
@@ -30588,6 +32184,10 @@ function getVirtualControllerUnavailableMessage(controller = state.virtualContro
 function isVirtualControllerActive() {
     return getVirtualControllerSessions().some((controller) => controller.wanted)
         || Boolean(state.virtualController?.wanted);
+}
+
+function isVirtualControllerActiveForRobot(robot) {
+    return Boolean(robot && getVirtualControllerForRobot(robot));
 }
 
 function refreshVirtualControllerRobotOptions(controller = state.virtualController) {
@@ -31704,6 +33304,8 @@ function updateOlpProgramPanelUi() {
     refreshMotionProgramFileUi();
     const activeRobot = getOlpRobot();
     const activeRuntime = getOlpRuntimeForRobot(activeRobot);
+    const activeRobotController = isVirtualControllerActiveForRobot(activeRobot);
+    const activeRobotMotionSession = Boolean(getMotionSession(activeRobot));
     syncActiveOlpRuntime();
     const running = isOlpRuntimeRunning(activeRuntime);
     const manualMoveBusy = Boolean(state.olp.manualMoveBusy);
@@ -31716,7 +33318,8 @@ function updateOlpProgramPanelUi() {
     const stopAvailable = hasProject && !motionBusy
         && (running || ['error', 'alarm', 'stopped', 'completed'].includes(phase));
     const stepAvailable = hasProject && !motionBusy
-        && !isVirtualControllerActive()
+        && !activeRobotController
+        && !activeRobotMotionSession
         && (!activeRuntime || phase === 'paused');
     const pauseAvailable = Boolean(activeRuntime) && !motionBusy
         && !stopping && ['starting', 'running', 'waiting', 'paused'].includes(phase);
@@ -31740,8 +33343,8 @@ function updateOlpProgramPanelUi() {
         if (el.btnProgramRunRobot) el.btnProgramRunRobot.disabled = !hasProject
             || (running && !paused)
             || motionBusy
-            || state.motionSessions.size > 0
-            || isVirtualControllerActive();
+            || activeRobotMotionSession
+            || activeRobotController;
         if (el.btnProgramRunRobot) {
             el.btnProgramRunRobot.title = uiText(paused ? 'OLP 계속 실행' : '현재 로봇 시작');
             el.btnProgramRunRobot.setAttribute('aria-label', uiText(paused ? 'OLP 계속 실행' : '현재 로봇 시작'));
@@ -31761,14 +33364,16 @@ function updateOlpProgramPanelUi() {
         const checkedRuntimes = checkedRobots
             .map((robot) => getOlpRuntimeForRobot(robot))
             .filter(Boolean);
-        const groupCanStep = projectsReady && !motionBusy && !isVirtualControllerActive()
+        const groupCanStep = projectsReady && !motionBusy
             && !checkedRuntimes.some((runtime) => isOlpRuntimeRunning(runtime) && !runtime.paused)
             && checkedRobots.some((robot) => {
+                if (isVirtualControllerActiveForRobot(robot) || getMotionSession(robot)) return false;
                 const runtime = getOlpRuntimeForRobot(robot);
                 return !runtime || runtime.paused;
             });
-        const groupCanRun = projectsReady && !motionBusy && !isVirtualControllerActive()
+        const groupCanRun = projectsReady && !motionBusy
             && checkedRobots.some((robot) => {
+                if (isVirtualControllerActiveForRobot(robot) || getMotionSession(robot)) return false;
                 const runtime = getOlpRuntimeForRobot(robot);
                 return !runtime || runtime.paused;
             })
@@ -31787,7 +33392,8 @@ function updateOlpProgramPanelUi() {
             button.setAttribute('aria-pressed', 'false');
         });
         if (el.btnProgramExport) el.btnProgramExport.disabled = !hasProject || running || manualMoveBusy;
-        if (el.btnProgramImport) el.btnProgramImport.disabled = running || manualMoveBusy;
+        if (el.btnProgramImport) el.btnProgramImport.disabled = running || manualMoveBusy
+            || activeRobotController || activeRobotMotionSession;
         el.btnProgramExport?.setAttribute('title', uiText('전체 OLP 프로젝트 ZIP 저장'));
         el.btnProgramImport?.setAttribute('title', uiText('전체 OLP 프로젝트 폴더 불러오기'));
         if (el.btnPositionExport) {
@@ -31918,14 +33524,14 @@ function toggleOlpWorkspace(force = null, { connectBus = true, saveWorkspace = t
     el.olpModeButton?.setAttribute('aria-pressed', String(enabled));
     renderMotionProgramPanel();
     updateOlpProgramPanelUi();
-    setOlpStatus(state.olp.status, enabled ? 'OLP workspace opened' : 'OLP workspace closed');
+    setOlpStatus(state.olp.status);
     if (enabled && connectBus && !isVirtualControllerActive()) connectOlpVirtualBus();
     if (saveWorkspace) scheduleMotionProjectSave();
 }
 
-const OLP_SYNTAX_ADDRESS_PATTERN = /^(?:InB|OutB|InW|OutW|In|Out|JP|P|J|L|V|Z|Tool|Wobj|T|B|R|D)\s*\[\s*[-+]?\d+(?:\.\d+)?\s*\]$/i;
+const OLP_SYNTAX_ADDRESS_PATTERN = /^(?:InB|OutB|InW|OutW|In|Out|JP|P|J|L|V|Z|LH|MH|RH|Tool|Wobj|T|B|R|D)\s*\[\s*[-+]?\d+(?:\.\d+)?\s*\]$/i;
 const OLP_SYNTAX_COMMAND_PATTERN = /^(?:ABS|CALL|DELAY|ELSE|END|ENDIF|GOTO|HOME|IF|JUMP|JUMPL|LABEL|MOVABS|MOVC|MOVJ|MOVL|MOVS|OUT|PRINT|RETURN|SET|START|STOP|THEN|TIME|TIMEOUT|TIMESTART|UNTIL|VELSET|WAIT)$/i;
-const OLP_SYNTAX_TOKEN_PATTERN = /("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|(?:#|\/\/).*|(?:InB|OutB|InW|OutW|In|Out|JP|P|J|L|V|Z|Tool|Wobj|T|B|R|D)\s*\[\s*[-+]?\d+(?:\.\d+)?\s*\]|\b(?:ABS|CALL|DELAY|ELSE|END|ENDIF|GOTO|HOME|IF|JUMP|JUMPL|LABEL|MOVABS|MOVC|MOVJ|MOVL|MOVS|OUT|PRINT|RETURN|SET|START|STOP|THEN|TIME|TIMEOUT|TIMESTART|UNTIL|VELSET|WAIT)\b|[-+]?(?:\d+(?:\.\d*)?|\.\d+)|[A-Za-z_][\w]*|[=<>!]+|[+\-*/%]|[()[\]{},;:.])/gi;
+const OLP_SYNTAX_TOKEN_PATTERN = /("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|(?:#|\/\/).*|(?:InB|OutB|InW|OutW|In|Out|JP|P|J|L|V|Z|LH|MH|RH|Tool|Wobj|T|B|R|D)\s*\[\s*[-+]?\d+(?:\.\d+)?\s*\]|\b(?:ABS|CALL|DELAY|ELSE|END|ENDIF|GOTO|HOME|IF|JUMP|JUMPL|LABEL|MOVABS|MOVC|MOVJ|MOVL|MOVS|OUT|PRINT|RETURN|SET|START|STOP|THEN|TIME|TIMEOUT|TIMESTART|UNTIL|VELSET|WAIT)\b|[-+]?(?:\d+(?:\.\d*)?|\.\d+)|[A-Za-z_][\w]*|[=<>!]+|[+\-*/%]|[()[\]{},;:.])/gi;
 
 function escapeOlpHtml(value) {
     return String(value)
@@ -32287,27 +33893,9 @@ function activateOlpProject(project, {
         state.olp.executions.set(instanceId, { ...execution });
         if (targetRobot === getOlpRobot()) state.olp.execution = { ...execution };
     }
-    appendOlpConsole('Loaded {name}', { name: project.name });
-    appendOlpConsole('OLP runtime {build} loaded.', { build: OLP_RUNTIME_BUILD });
-    appendOlpConsole('JP.pts: {count} JointPoints', { count: project.pointFiles.filter((entry) => entry.kind === 'jointPoint').reduce((sum, entry) => sum + entry.records.length, 0) });
-    appendOlpConsole('Point files: {count}', { count: project.pointFiles.filter((entry) => entry.kind === 'point').length });
-    appendOlpConsole('Program files: {count}', { count: project.programFiles.length });
-    appendOlpConsole(project.remoteIoMapping?.length
-        ? 'Remote IO mapping: {path} ({count} entries)'
-        : 'Remote IO mapping: not found; use simulation Run/Stop controls.',
-        project.remoteIoMapping?.length
-            ? { path: project.remoteIoMappingPath, count: project.remoteIoMapping.length }
-            : {});
-    const homeStatus = getOlpHomeStatusOutput(project);
-    appendOlpConsole(homeStatus
-        ? 'Home status: {label} ({address}), pose-driven.'
-        : 'Home status: no Home_sts output label found in this project.',
-        homeStatus ? { label: homeStatus.label, address: homeStatus.address } : {});
     if (targetRobot === getOlpRobot()) renderOlpProjectUi();
     toggleOlpWorkspace(enabled, { connectBus: false, saveWorkspace: false });
-    setOlpStatus('connected', 'Project ready for {robot}.', {
-        robot: targetRobot?.userData?.motionDisplayName || targetRobot?.userData?.modelName || targetRobot?.name || 'Robot'
-    });
+    setOlpStatus('connected');
     if (enabled && connectBus && !isVirtualControllerActive()) {
         connectOlpVirtualBus({ refreshMetadata: true });
     }
@@ -32315,10 +33903,16 @@ function activateOlpProject(project, {
 
 async function handleOlpFolderImport(selectedFiles = null, options = {}) {
     const files = selectedFiles?.target?.files || selectedFiles || el.olpImportFolderInput?.files;
-    if (!files?.length || state.olp.importInProgress || (isMotionActive() && !isOlpRunning())) return;
+    if (!files?.length || state.olp.importInProgress) return;
     const targetRobot = getOlpRobot();
     if (!targetRobot) {
         setOlpStatus('error', 'Select one robot before loading an OLP project.');
+        return;
+    }
+    if (isVirtualControllerActiveForRobot(targetRobot) || getMotionSession(targetRobot)) {
+        setOlpStatus('error', isVirtualControllerActiveForRobot(targetRobot)
+            ? 'Disconnect the controller from this robot before loading an OLP project.'
+            : 'Stop this robot motion before loading an OLP project.');
         return;
     }
     syncActiveOlpProjectView();
@@ -32329,7 +33923,7 @@ async function handleOlpFolderImport(selectedFiles = null, options = {}) {
     flushOlpPendingEdit();
     const filesArray = [...files];
     state.olp.importInProgress = true;
-    setOlpStatus('working', 'Loading robot project folder...');
+    setOlpStatus('working');
     try {
         validateOlpImportFiles(filesArray);
         await stopOlpSession('Loading a new OLP project', { closeBus: false, robot: targetRobot });
@@ -33142,10 +34736,6 @@ function setOlpInputFromIoSimulator(entry, value) {
         address: entry.runtimeAddress,
         value: formatIoSimulatorValue(numeric, entry.mode)
     });
-    appendOlpConsole('IO Simulator input: {address}={value}.', {
-        address: entry.runtimeAddress,
-        value: formatIoSimulatorValue(numeric, entry.mode)
-    });
     setIoSimulatorStatus('IO Simulator → OLP: {address} = {value}', {
         address: entry.runtimeAddress,
         value: formatIoSimulatorValue(numeric, entry.mode)
@@ -33254,11 +34844,16 @@ async function animateOlpJointMove(robot, targetAngles, speed, {
     const starts = robot.userData.joints.map((joint) => joint.angle);
     const targets = robot.userData.joints.map((joint, index) => Number(targetAngles[index] ?? starts[index]));
     const isLinear = motion === 'MOVL' && startPose && targetPose;
-    // Z[CP] is the controller's continuous-path zone.  The previous OLP
-    // implementation parsed it but still used the exact-stop S-curve for
-    // every segment, which made generated P1/P2 routes visibly tap between
-    // points.  Keep CP at a constant path rate so the next segment starts
-    // without the artificial stop-and-restart profile used by Z[0]/Z[n].
+    if (targets.every((target, index) => Math.abs(target - starts[index]) <= 1e-7)) {
+        if (runtime?.cancelled) throw new Error('OLP stopped');
+        if (shouldStop?.()) {
+            captureCurrentTcpTarget(robot);
+            return { interrupted: true, progress: 0 };
+        }
+        captureCurrentTcpTarget(robot);
+        onProgress?.({ progress: 1, elapsedSeconds: 0, durationSeconds: 0, distance: 0 });
+        return { interrupted: false, progress: 1 };
+    }
     const continuousPath = String(zone || '').trim().toUpperCase() === 'CP';
     const pathDistance = isLinear ? startPose.position.distanceTo(targetPose.position) : 0;
     const getDuration = () => {
@@ -33347,6 +34942,7 @@ async function animateOlpJointMove(robot, targetAngles, speed, {
 function getOlpMotionTarget(project, pointExpression, runtime = null, options = {}) {
     if (options?.targetOverride?.values) {
         return {
+            ...options.targetOverride,
             kind: options.targetOverride.kind === 'jointPoint' ? 'jointPoint' : 'point',
             values: [...options.targetOverride.values],
             name: options.targetOverride.name || pointExpression
@@ -33431,19 +35027,26 @@ function buildOlpCartesianTarget(robot, values, options = {}) {
 
     if (options.coordinateSpace !== 'base') {
         const workObjectIndex = resolveOlpWorkObjectIndex(robot, options);
-        robot.updateMatrixWorld(true);
-        const workObjectPose = getWorkObjectWorldPose(robot, workObjectIndex);
-        const worldPosition = position.clone()
-            .applyQuaternion(workObjectPose.quaternion)
-            .add(workObjectPose.position);
-        const worldQuaternion = workObjectPose.quaternion.clone()
-            .multiply(quaternion)
-            .normalize();
-        position.copy(robot.worldToLocal(worldPosition));
-        quaternion = robot.getWorldQuaternion(new THREE.Quaternion())
-            .invert()
-            .multiply(worldQuaternion)
-            .normalize();
+        // OLP Wobj[0] points are already expressed in the selected robot's
+        // controller BASE frame. The robot root may be lifted in the scene so
+        // its CAD mounting surface rests on the floor; converting Wobj[0]
+        // through worldToLocal would subtract that visual elevation a second
+        // time and turn Z=-15 into values such as Z=-190.5.
+        if (workObjectIndex !== WOBJ_WORLD_INDEX) {
+            robot.updateMatrixWorld(true);
+            const workObjectPose = getWorkObjectWorldPose(robot, workObjectIndex);
+            const worldPosition = position.clone()
+                .applyQuaternion(workObjectPose.quaternion)
+                .add(workObjectPose.position);
+            const worldQuaternion = workObjectPose.quaternion.clone()
+                .multiply(quaternion)
+                .normalize();
+            position.copy(robot.worldToLocal(worldPosition));
+            quaternion = robot.getWorldQuaternion(new THREE.Quaternion())
+                .invert()
+                .multiply(worldQuaternion)
+                .normalize();
+        }
     }
 
     return {
@@ -33552,7 +35155,11 @@ async function moveOlpTarget(robot, motion, point, speed, runtime = null, option
     }
     const startPose = getCurrentTcpPoseBase(robot);
     const starts = robot.userData.joints.map((joint) => joint.angle);
-    const solved = solveRobotIK(robot, target, { positionTolerance: 0.8, rotationTolerance: THREE.MathUtils.degToRad(0.5) });
+    const solved = solveRobotIK(robot, target, {
+        positionTolerance: 0.8,
+        rotationTolerance: THREE.MathUtils.degToRad(0.5),
+        armParameters: point.armParameters
+    });
     if (!solved.success) {
         restoreRobotJointAngles(robot, starts);
         throw new Error(formatOlpIkFailure(robot, point, target, solved));
@@ -33575,6 +35182,7 @@ async function moveOlpCartesianPose(robot, motion, target, speed, runtime = null
     const point = {
         kind: 'point',
         name: options.segmentName || motion,
+        armParameters: target.armParameters,
         values: [
             target.position.x,
             target.position.y,
@@ -33591,6 +35199,178 @@ async function moveOlpCartesianPose(robot, motion, target, speed, runtime = null
     });
 }
 
+function buildOlpRoundedPath(poses, radiusForCorner) {
+    if (!Array.isArray(poses) || poses.length < 2) return poses || [];
+    const corners = poses.map((pose, index) => {
+        if (index === 0 || index === poses.length - 1) return null;
+        const incoming = poses[index].position.clone().sub(poses[index - 1].position);
+        const outgoing = poses[index + 1].position.clone().sub(poses[index].position);
+        const inLength = incoming.length();
+        const outLength = outgoing.length();
+        const requested = radiusForCorner(index, inLength, outLength);
+        const inDistance = Math.max(0, Math.min(Number(requested?.incoming ?? requested) || 0, inLength / 2));
+        const outDistance = Math.max(0, Math.min(Number(requested?.outgoing ?? requested) || 0, outLength / 2));
+        if (inLength < 1e-5 || outLength < 1e-5 || inDistance < 1e-5 || outDistance < 1e-5) return null;
+        incoming.normalize();
+        outgoing.normalize();
+        return {
+            radius: Math.max(inDistance, outDistance),
+            entry: poses[index].position.clone().addScaledVector(incoming, -inDistance),
+            exit: poses[index].position.clone().addScaledVector(outgoing, outDistance),
+            incoming,
+            outgoing
+        };
+    });
+    const samples = [poses[0]];
+    const pushLine = (fromPose, toPose, fromPosition, toPosition) => {
+        const length = fromPosition.distanceTo(toPosition);
+        const steps = Math.max(1, Math.ceil(length / 30));
+        for (let step = 1; step <= steps; step += 1) {
+            const t = step / steps;
+            samples.push({
+                position: fromPosition.clone().lerp(toPosition, t),
+                quaternion: fromPose.quaternion.clone().slerp(toPose.quaternion, t).normalize(),
+                armParameters: toPose.armParameters || fromPose.armParameters
+            });
+        }
+    };
+    let cursor = poses[0].position.clone();
+    let cursorPose = poses[0];
+    for (let index = 1; index < poses.length; index += 1) {
+        const corner = corners[index];
+        const endpoint = corner ? corner.entry : poses[index].position;
+        pushLine(cursorPose, poses[index], cursor, endpoint);
+        if (corner) {
+            const vertex = poses[index].position;
+            const steps = Math.max(8, Math.min(32, Math.ceil(corner.radius / 4)));
+            for (let step = 1; step <= steps; step += 1) {
+                const t = step / steps;
+                const oneMinus = 1 - t;
+                const position = corner.entry.clone().multiplyScalar(oneMinus * oneMinus)
+                    .addScaledVector(vertex, 2 * oneMinus * t)
+                    .addScaledVector(corner.exit, t * t);
+                const quaternion = poses[index].quaternion.clone().slerp(poses[index + 1].quaternion, t).normalize();
+                samples.push({ position, quaternion, armParameters: poses[index].armParameters });
+            }
+            cursor = corner.exit.clone();
+            cursorPose = { position: cursor, quaternion: poses[index].quaternion.clone() };
+        } else {
+            cursor = poses[index].position.clone();
+            cursorPose = poses[index];
+        }
+    }
+    return samples;
+}
+
+async function animateOlpCartesianPath(robot, motion, poses, speed, runtime = null, options = {}) {
+    const startAngles = robot.userData.joints.map((joint) => joint.angle);
+    const solvedPath = [startAngles];
+    try {
+        for (const pose of poses.slice(1)) {
+            const solved = solveRobotIK(robot, pose, {
+                positionTolerance: 0.8,
+                rotationTolerance: THREE.MathUtils.degToRad(0.5),
+                armParameters: pose.armParameters
+            });
+            if (!solved.success) throw new Error(formatOlpIkFailure(robot, { name: options.segmentName || motion, values: [pose.position.x, pose.position.y, pose.position.z] }, pose, solved));
+            solvedPath.push(robot.userData.joints.map((joint) => joint.angle));
+        }
+    } finally {
+        restoreRobotJointAngles(robot, startAngles);
+    }
+    if (solvedPath.length < 2) return { interrupted: false, progress: 1 };
+    const segmentWeights = solvedPath.slice(1).map((angles, index) => Math.max(1e-5, ...angles.map((angle, jointIndex) => Math.abs(angle - solvedPath[index][jointIndex]))));
+    const totalWeight = segmentWeights.reduce((sum, value) => sum + value, 0);
+    const speedProvider = () => getOlpEffectiveMotionSpeed(robot, motion, speed, runtime, options);
+    const accelerationScale = getOlpAccelerationScale(options);
+    let pathDuration;
+    if (motion === 'MOVL') {
+        const distance = poses.slice(1).reduce((sum, pose, index) => sum + pose.position.distanceTo(poses[index].position), 0);
+        const rotation = poses.slice(1).reduce((sum, pose, index) => sum + THREE.MathUtils.radToDeg(pose.quaternion.angleTo(poses[index].quaternion)), 0);
+        pathDuration = calculateMovlDuration(distance, rotation, speedProvider(), robot.userData.manifest?.cartesianMotion);
+    } else {
+        const accumulatedJointTravel = solvedPath[0].map((_angle, jointIndex) => solvedPath.slice(1)
+            .reduce((distance, angles, index) => distance + Math.abs(angles[jointIndex] - solvedPath[index][jointIndex]), 0));
+        const equivalentTargets = startAngles.map((angle, index) => angle + accumulatedJointTravel[index]);
+        pathDuration = calculateMovjDuration(startAngles, equivalentTargets, robot.userData.joints, speedProvider());
+    }
+    const duration = THREE.MathUtils.clamp(
+        pathDuration / accelerationScale,
+        0.1,
+        8
+    );
+    const callbacks = getOlpMotionCallbacks(runtime, options);
+    const startAt = performance.now();
+    let progress = 0;
+    while (progress < 1) {
+        if (runtime?.cancelled) throw new Error('OLP stopped');
+        if (options.until && runtime?.evaluate?.(options.until)) {
+            captureCurrentTcpTarget(robot);
+            return { interrupted: true, progress };
+        }
+        progress = Math.min(1, (performance.now() - startAt) / (duration * 1000));
+        let remaining = progress * totalWeight;
+        let segment = 0;
+        while (segment < segmentWeights.length - 1 && remaining > segmentWeights[segment]) {
+            remaining -= segmentWeights[segment++];
+        }
+        const local = segmentWeights[segment] > 0 ? Math.min(1, remaining / segmentWeights[segment]) : 1;
+        const from = solvedPath[segment];
+        const to = solvedPath[segment + 1];
+        from.forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle + (to[index] - angle) * local, false));
+        robot.updateMatrixWorld(true);
+        syncJointControls(robot);
+        appendTcpPathPoint(robot);
+        requestRender();
+        callbacks.onProgress?.({ progress, elapsedSeconds: (performance.now() - startAt) / 1000, durationSeconds: duration, distance: 0 });
+        if (progress < 1) await new Promise((resolve) => window.setTimeout(resolve, 16));
+    }
+    captureCurrentTcpTarget(robot);
+    return { interrupted: false, progress: 1 };
+}
+
+async function tryOlpZoneBlend(robot, motion, point, speed, project, runtime, options) {
+    const zone = String(options.zone || '').trim().toUpperCase();
+    const numericZone = Number(zone);
+    if (!(zone === 'CP' || (Number.isFinite(numericZone) && numericZone > 0)) || point.kind === 'jointPoint'
+        || options.until || options.nwait || options.outEvents?.length) return null;
+    const next = runtime?.peekNextMotion?.();
+    if (!next || !['MOVJ', 'MOVL'].includes(next.motion) || next.options?.until || next.options?.nwait || next.options?.outEvents?.length) return null;
+    if (next.options?.tool !== options.tool || next.options?.wobj !== options.wobj || next.speed !== speed
+        || next.options?.speedMode !== options.speedMode) return null;
+    const nextTarget = next.options?.targetOverride || runtime.getMotionTarget(next.targets?.[0]);
+    if (!nextTarget || nextTarget.kind === 'jointPoint') return null;
+    const currentArm = point.armParameters || [];
+    const nextArm = nextTarget.armParameters || [];
+    const armSideOf = (parameters) => Number(parameters[0]) || 0;
+    const armTurnOf = (parameters) => Number(parameters[3]) || 0;
+    if (robot.userData.manifest?.robotType === 'scara'
+        && (armSideOf(currentArm) !== armSideOf(nextArm) || armTurnOf(currentArm) !== armTurnOf(nextArm))) return null;
+    const start = getCurrentTcpPoseBase(robot);
+    const corner = buildOlpCartesianTarget(robot, point.values, options);
+    corner.armParameters = currentArm;
+    const end = buildOlpCartesianTarget(robot, nextTarget.values, next.options);
+    end.armParameters = nextArm;
+    const inLength = start.position.distanceTo(corner.position);
+    const outLength = corner.position.distanceTo(end.position);
+    const radius = zone === 'CP' ? null : Math.min(numericZone * 10, inLength / 2, outLength / 2);
+    if (zone !== 'CP' && radius < 1e-3) return null;
+    if (zone === 'CP' && Math.min(inLength, outLength) < 1e-3) return null;
+    const path = buildOlpRoundedPath([start, corner, end], () => zone === 'CP'
+        ? { incoming: inLength / 2, outgoing: outLength / 2 }
+        : radius);
+    try {
+        const result = await animateOlpCartesianPath(robot, motion, path, speed, runtime, options);
+        return { ...result, blendedNext: true };
+    } catch (error) {
+        if (!String(error?.message || error).startsWith('IK failed for ')) throw error;
+        appendOlpConsole('Zone blend unavailable for {point}; using the exact target because the curve is outside the reachable path.', {
+            point: point.name
+        });
+        return null;
+    }
+}
+
 async function runOlpMove(motion, pointExpression, speed, project, runtime = null, options = {}) {
     const robot = getOlpRuntimeRobot(runtime);
     if (!robot) throw new Error('Select one robot before running OLP.');
@@ -33602,18 +35382,19 @@ async function runOlpMove(motion, pointExpression, speed, project, runtime = nul
         setOlpLastMotion('MOVC {targets} started (linear arc approximation).', {
             targets: arcTargets.map((entry) => entry.expression).join(' → ')
         });
-        appendOlpConsole('Executing {motion}', { motion: getOlpLastMotionText() });
         renderOlpIoMonitor();
         const middleResult = await moveOlpTarget(robot, 'MOVL', {
             kind: middle.targetOverride.kind === 'jointPoint' ? 'jointPoint' : 'point',
             values: middle.targetOverride.values,
-            name: middle.targetOverride.name || middle.expression
+            name: middle.targetOverride.name || middle.expression,
+            armParameters: middle.targetOverride.armParameters
         }, speed, runtime, { ...options, outEvents: [] });
         if (!middleResult?.interrupted) {
             await moveOlpTarget(robot, 'MOVL', {
                 kind: end.targetOverride.kind === 'jointPoint' ? 'jointPoint' : 'point',
                 values: end.targetOverride.values,
-                name: end.targetOverride.name || end.expression
+                name: end.targetOverride.name || end.expression,
+                armParameters: end.targetOverride.armParameters
             }, speed, runtime, options);
         }
         setOlpLastMotion('MOVC completed.');
@@ -33626,11 +35407,13 @@ async function runOlpMove(motion, pointExpression, speed, project, runtime = nul
         motion: motion.toUpperCase(),
         point: pointExpression
     });
-    appendOlpConsole('Executing {motion}', { motion: getOlpLastMotionText() });
     // Home status is pose-driven and project-specific.  The first changed joint
     // during this motion will update the detected Home_sts output accordingly.
     renderOlpIoMonitor();
-    const result = await moveOlpTarget(robot, motion, point, speed, runtime, options);
+    const blendResult = motion === 'MOVJ' || motion === 'MOVL'
+        ? await tryOlpZoneBlend(robot, motion, point, speed, project, runtime, options)
+        : null;
+    const result = blendResult || await moveOlpTarget(robot, motion, point, speed, runtime, options);
     setOlpLastMotion(result?.interrupted
         ? '{motion} {point} stopped by Until condition.'
         : '{motion} {point} completed.', {
@@ -33648,25 +35431,47 @@ async function runOlpJump(motion, pointExpression, speed, project, runtime = nul
     if (!point || point.kind === 'jointPoint') throw new Error(`${motion} requires a Cartesian P point.`);
     const start = getCurrentTcpPoseBase(robot);
     const target = buildOlpCartesianTarget(robot, point.values, options);
-    const requestedHeight = Math.max(0, Number(options.jumpHeight) || 100);
+    const hasJumpProfile = [options.jumpLiftHeight, options.jumpMiddleHeight, options.jumpReturnHeight]
+        .some((value) => value !== null && value !== undefined);
+    const finiteOr = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
+    const requestedHeight = Math.max(0, finiteOr(options.jumpHeight, 100));
+    const liftHeight = hasJumpProfile
+        ? Math.max(0, finiteOr(options.jumpLiftHeight, 0))
+        : requestedHeight;
+    const returnHeight = hasJumpProfile
+        ? Math.max(0, finiteOr(options.jumpReturnHeight, 0))
+        : 0;
     const highestPoseZ = Math.max(start.position.z, target.position.z);
     const prismaticJoint = robot.userData.joints?.[2];
     const zMin = Number(prismaticJoint?.definition?.min);
     const zMax = Number(prismaticJoint?.definition?.max);
+    const clampZ = (value) => Number.isFinite(zMin) && Number.isFinite(zMax)
+        ? THREE.MathUtils.clamp(value, zMin, zMax)
+        : value;
     const requestedTravelZ = highestPoseZ + requestedHeight;
     // SCARA projects use the controller's prismatic range directly for the
     // Cartesian Z axis. In the upright model, Z=0 is already the highest
     // reachable height, so blindly adding 100 mm creates an impossible lift
     // and aborts the whole OLP runtime before the first real move.
-    const travelZ = Number.isFinite(zMin) && Number.isFinite(zMax)
-        ? THREE.MathUtils.clamp(requestedTravelZ, zMin, zMax)
-        : requestedTravelZ;
-    const height = Math.max(0, travelZ - highestPoseZ);
+    const fallbackTravelZ = clampZ(requestedTravelZ);
+    const liftZ = clampZ(hasJumpProfile ? start.position.z + liftHeight : fallbackTravelZ);
+    const returnZ = clampZ(hasJumpProfile ? target.position.z + returnHeight : target.position.z);
+    const middleZ = clampZ(hasJumpProfile && Number.isFinite(Number(options.jumpMiddleHeight))
+        ? Number(options.jumpMiddleHeight)
+        : hasJumpProfile
+            ? Math.max(liftZ, returnZ)
+            : fallbackTravelZ);
+    const height = hasJumpProfile
+        ? Math.max(0, liftZ - start.position.z)
+        : Math.max(0, fallbackTravelZ - highestPoseZ);
     const lift = { position: start.position.clone(), quaternion: start.quaternion.clone() };
     const travel = { position: target.position.clone(), quaternion: target.quaternion.clone() };
-    lift.position.z = travelZ;
-    travel.position.z = travelZ;
-    if (height + 1e-6 < requestedHeight) {
+    const returnPose = { position: target.position.clone(), quaternion: target.quaternion.clone() };
+    target.armParameters = point.armParameters;
+    lift.position.z = liftZ;
+    travel.position.z = middleZ;
+    returnPose.position.z = returnZ;
+    if (height + 1e-6 < liftHeight) {
         appendOlpConsole('JUMP clearance limited to {height} mm by the selected SCARA Z range.', { height });
     }
     setOlpLastMotion('{motion} {point} started (lift {height} mm).', {
@@ -33674,14 +35479,42 @@ async function runOlpJump(motion, pointExpression, speed, project, runtime = nul
         point: pointExpression,
         height
     });
-    appendOlpConsole('Executing {motion}', { motion: getOlpLastMotionText() });
     renderOlpIoMonitor();
-    const liftResult = await moveOlpCartesianPose(robot, 'MOVL', lift, speed, runtime, { ...options, outEvents: [], segmentName: `${motion} lift` });
-    if (liftResult?.interrupted) return;
-    const traverseResult = await moveOlpCartesianPose(robot, motion === 'JUMPL' ? 'MOVL' : 'MOVJ', travel, speed, runtime, { ...options, outEvents: [], segmentName: `${motion} traverse` });
-    if (traverseResult?.interrupted) return;
-    const descendResult = await moveOlpCartesianPose(robot, 'MOVL', target, speed, runtime, { ...options, segmentName: `${motion} descend` });
-    setOlpLastMotion(descendResult?.interrupted
+    const jumpPoses = [start, lift, travel];
+    if (hasJumpProfile && Math.abs(returnPose.position.z - target.position.z) > 1e-6) jumpPoses.push(returnPose);
+    jumpPoses.push(target);
+    const roundedJumpPath = buildOlpRoundedPath(jumpPoses, (_index, incoming, outgoing) => ({
+        incoming: incoming / 2,
+        outgoing: outgoing / 2
+    }));
+    const runSegmentedJump = async () => {
+        const liftResult = await moveOlpCartesianPose(robot, 'MOVL', lift, speed, runtime, { ...options, outEvents: [], segmentName: `${motion} lift` });
+        if (liftResult?.interrupted) return;
+        const traverseResult = await moveOlpCartesianPose(robot, motion === 'JUMPL' ? 'MOVL' : 'MOVJ', travel, speed, runtime, { ...options, outEvents: [], segmentName: `${motion} traverse` });
+        if (traverseResult?.interrupted) return;
+        if (hasJumpProfile && Math.abs(returnPose.position.z - target.position.z) > 1e-6) {
+            const returnResult = await moveOlpCartesianPose(robot, 'MOVL', returnPose, speed, runtime, { ...options, outEvents: [], segmentName: `${motion} return height` });
+            if (returnResult?.interrupted) return;
+        }
+        return moveOlpCartesianPose(robot, 'MOVL', target, speed, runtime, { ...options, segmentName: `${motion} descend` });
+    };
+    let jumpResult;
+    if (options.until || options.outEvents?.length) {
+        // Preserve the original phase-local Until/output-event semantics.
+        jumpResult = await runSegmentedJump();
+    } else {
+        try {
+            jumpResult = await animateOlpCartesianPath(robot, motion === 'JUMPL' ? 'MOVL' : 'MOVJ', roundedJumpPath, speed, runtime, {
+                ...options,
+                segmentName: `${motion} trajectory`
+            });
+        } catch (error) {
+            if (!String(error?.message || error).startsWith('IK failed for ')) throw error;
+            appendOlpConsole('JUMP curve unavailable; using the reachable lift, traverse, and descend path.');
+            jumpResult = await runSegmentedJump();
+        }
+    }
+    setOlpLastMotion(jumpResult?.interrupted
         ? '{motion} {point} stopped by Until condition.'
         : '{motion} {point} completed.', {
             motion,
@@ -33767,7 +35600,6 @@ async function runOlpHome(homeIndex, speed, project, runtime = null) {
         index: homeIndex,
         origin: originDescription
     });
-    appendOlpConsole('Executing {motion}', { motion: getOlpLastMotionText() });
     renderOlpIoMonitor();
     await animateOlpJointMove(robot, getOlpHomeTargetAngles(robot, homeIndex), speed, {
         speedProvider: () => runtime?.getEffectiveMotionSpeed?.(speed, 'percent') ?? speed,
@@ -33775,7 +35607,6 @@ async function runOlpHome(homeIndex, speed, project, runtime = null) {
     });
     syncOlpHomeStatus(robot, project);
     setOlpLastMotion('HOME[{index}] completed.', { index: homeIndex });
-    appendOlpConsole('OLP Home[{index}] complete.', { index: homeIndex });
     renderOlpIoMonitor();
 }
 
@@ -33817,7 +35648,6 @@ async function resetOlpFromRemoteIo() {
     state.olp.execution = { ...state.olp.execution, alarm: null };
     state.olp.lastOutputAt = Date.now();
         setOlpLastMotion('No OLP motion command executed yet.');
-    appendOlpConsole('Remote IO reset received; OLP is ready.');
     renderOlpIoMonitor();
     sendOlpOutputSnapshot();
 }
@@ -33850,11 +35680,6 @@ function monitorOlpPositionInputs(previousValues, rawValues = null) {
                     state.olp.lastRawInputWordAddress = `INW[${OLP_WORD_START + Math.floor(bit / 16)}]`;
                 }
             }
-            appendOlpConsole('Tester raw position input: {address}={value} ({label}).', {
-                address: entry.address,
-                value: current,
-                label: entry.label
-            });
         }
     }
     state.olp.positionCommandValues = nextValues;
@@ -33872,15 +35697,12 @@ async function handleOlpRemoteIoCommands(previousValues) {
     state.olp.remoteCommandBusy = true;
     try {
         if (rising.command === 'start') {
-            appendOlpConsole('Remote IO start: {address} ON', { address: rising.entry.address });
             if (!isOlpRunning()) void startOlpSession();
         } else if (rising.command === 'stop') {
-            appendOlpConsole('Remote IO stop: {address} ON', { address: rising.entry.address });
             await stopOlpSession('Remote IO program stop', { resetCursor: true });
         } else if (rising.command === 'reset') {
             await resetOlpFromRemoteIo();
         } else {
-            appendOlpConsole('Remote IO clear alarm: {address} ON', { address: rising.entry.address });
             const runningAfterClear = isOlpRunning();
             state.olp.executions.forEach((execution, instanceId) => {
                 const phase = String(execution?.phase || '').toLowerCase();
@@ -33924,9 +35746,7 @@ function connectOlpVirtualBusLegacy() {
         updateOlpBusStatus('Virtual Bus connected · OLP slave');
         const running = isOlpRunning();
         updateOlpBusStatus('Virtual Bus connected · OLP slave');
-        setOlpStatus(running ? 'running' : 'connected', running
-            ? 'Virtual Bus connected as OLP slave.'
-            : 'Virtual Bus connected; waiting for OLP Run or Remote IO start.');
+        setOlpStatus(running ? 'running' : 'connected');
         socket.send(JSON.stringify({
             type: 'hello',
             role: 'slave',
@@ -33963,8 +35783,8 @@ function connectOlpVirtualBusLegacy() {
                 state.olp.lastInputAt = Date.now();
                 state.olp.lastInputSignature = nextSignature;
                 if (changed) processIoFunctionMappings({ direction: IO_SIMULATOR_DIRECTIONS.INPUT });
-                // OLP receives raw tester IO only.  Position inputs are logged
-                // for diagnosis, but never latched, queued, or synthesized here.
+                // OLP receives raw tester IO only. Position inputs are tracked
+                // for the monitor, but never latched, queued, or synthesized here.
                 const rawPositionValues = new Map(getOlpPositionCommandEntries()
                     .map((entry) => [entry.address, readOlpRawInputAddress(entry.address) ? 1 : 0]));
                 monitorOlpPositionInputs(previousPositionValues, rawPositionValues);
@@ -33983,7 +35803,6 @@ function connectOlpVirtualBusLegacy() {
                         const entry = getOlpRemoteCommand(command);
                         return [command, entry ? readOlpAddress(entry.address) : 0];
                     }));
-                if (changed) appendOlpConsole(state.olp.lastIoSource, state.olp.lastIoReplacements);
                 renderOlpIoMonitor();
                 void handleOlpRemoteIoCommands(previousRemoteValues);
             }
@@ -34176,7 +35995,6 @@ function connectOlpVirtualBus({ refreshMetadata = false } = {}) {
                     const entry = getOlpRemoteCommand(command);
                     return [command, entry ? readOlpAddress(entry.address) : 0];
                 }));
-            if (changed) appendOlpConsole(state.olp.lastIoSource, state.olp.lastIoReplacements);
             renderOlpIoMonitor();
             void handleOlpRemoteIoCommands(previousRemoteValues);
         } catch (error) { console.warn('OLP Virtual Bus message ignored:', error); }
@@ -34229,9 +36047,6 @@ async function startOlpSession({ step = false, robot = null } = {}) {
     const syncRuntime = () => {
         if (typeof syncActiveOlpRuntime === 'function') syncActiveOlpRuntime();
     };
-    const controllerIsActive = () => typeof isVirtualControllerActive === 'function'
-        ? isVirtualControllerActive()
-        : Boolean(state.virtualController?.wanted);
     const targetRobot = resolveRobot(robot);
     const targetProject = getOlpProjectForRobot(targetRobot);
     const existingRuntime = resolveRuntime(targetRobot);
@@ -34241,7 +36056,7 @@ async function startOlpSession({ step = false, robot = null } = {}) {
     }
     if (!step && existingRuntime?.running && existingRuntime.paused) {
         existingRuntime.togglePause();
-        setOlpStatus('running', 'OLP resumed.');
+        setOlpStatus('running');
         return;
     }
     if (runtimeIsRunning(existingRuntime)) return;
@@ -34249,8 +36064,14 @@ async function startOlpSession({ step = false, robot = null } = {}) {
     if (!targetRobot) { setOlpStatus('error', 'Select one robot before running OLP.'); return; }
     if (state.olp.workOriginBusy) { setOlpStatus('error', 'Wait until Work Origin movement is complete.'); return; }
     if (state.olp.manualMoveBusy) { setOlpStatus('error', 'Wait until the manual point movement is complete.'); return; }
-    if (controllerIsActive()) { setOlpStatus('error', 'OLP is unavailable while a controller is connected.'); return; }
-    if (state.motionSessions.size) { setOlpStatus('error', 'Stop the normal motion program before running OLP.'); return; }
+    if (isVirtualControllerActiveForRobot(targetRobot)) {
+        setOlpStatus('error', 'OLP is unavailable while a controller is connected to this robot.');
+        return;
+    }
+    if (getMotionSession(targetRobot)) {
+        setOlpStatus('error', 'Stop the normal motion program on this robot before running OLP.');
+        return;
+    }
     flushOlpPendingEdit();
     const wasAnyRuntimeRunning = isOlpRunning();
     const robotInstanceId = targetRobot.userData?.motionInstanceId || 'active-robot';
@@ -34269,7 +36090,6 @@ async function startOlpSession({ step = false, robot = null } = {}) {
         alarm: (code, easyGo, currentRuntime) => handleOlpAlarm(code, easyGo, currentRuntime),
         delay: (milliseconds) => new Promise((resolve) => window.setTimeout(resolve, Math.max(0, milliseconds))),
         log: appendOlpConsole,
-        status: appendOlpConsole,
         cursor: (snapshot) => queueOlpRuntimeView(runtime, snapshot),
         onStopped: (snapshot) => {
             setExecution(targetRobot, snapshot);
@@ -34286,7 +36106,7 @@ async function startOlpSession({ step = false, robot = null } = {}) {
             if (runtimeMap?.get(robotInstanceId) === runtime) runtimeMap.delete(robotInstanceId);
             syncRuntime();
             if (!isOlpRunning()) {
-                setOlpStatus('connected', snapshot?.phase === 'completed' ? 'OLP cycle completed.' : 'OLP stopped.');
+                setOlpStatus('connected');
                 updateMotionUiLock();
                 requestRender();
             } else {
@@ -34313,10 +36133,7 @@ async function startOlpSession({ step = false, robot = null } = {}) {
         writeOlpAddress('Out[512]', 1);
         writeOlpAddress('Out[513]', 0);
     }
-    setOlpStatus('running', 'Running {program} locally on {robot}.', {
-        program: targetProject.programPath || 'main.pro',
-        robot: targetRobot.userData?.motionDisplayName || targetRobot.userData?.modelName || targetRobot.name || 'Robot'
-    });
+    setOlpStatus('running');
     // Start the OLP interpreter first. The tester connection is deliberately
     // detached from program execution, so a missing Virtual Bus can never
     // prevent main.pro from running on the selected robot.
@@ -34331,12 +36148,12 @@ async function startOlpSession({ step = false, robot = null } = {}) {
     catch (error) {
         if (!/OLP stopped/i.test(error?.message || '')) {
             setExecution(targetRobot, { phase: 'error', running: false });
-            setOlpStatus('error', 'OLP error: {error}', { error: error.message || error });
+            setOlpStatus('error');
         }
     }
     if (runtimeMap?.get(robotInstanceId) === runtime) runtimeMap.delete(robotInstanceId);
     syncRuntime();
-    if (!isOlpRunning()) setOlpStatus(state.olp.status === 'error' ? 'error' : 'connected', state.olp.status === 'error' ? '' : 'OLP ready.');
+    if (!isOlpRunning()) setOlpStatus(state.olp.status === 'error' ? 'error' : 'connected');
 }
 
 async function stopOlpSession(reason = 'OLP stopped', { closeBus = false, resetCursor = false, robot = null, robots = null } = {}) {
@@ -34388,7 +36205,6 @@ async function stopOlpSession(reason = 'OLP stopped', { closeBus = false, resetC
     updateOlpBusStatus(closeBus
         ? 'Virtual Bus closed'
         : (state.olp.busConnected ? 'Virtual Bus connected · tester master; OLP stopped' : 'Virtual Bus disconnected; OLP stopped'), reason);
-    if (runtimes.length || reason) appendOlpConsole(reason);
     if (runtimes.length) {
         const deadline = performance.now() + 1200;
         while (runtimes.some((candidate) => candidate.running) && performance.now() < deadline) {
@@ -34402,7 +36218,7 @@ async function stopOlpSession(reason = 'OLP stopped', { closeBus = false, resetC
             resetOlpProgramCursor();
             state.olp.resetCursorOnStop = false;
         }
-        setOlpStatus(getOlpProject() ? 'connected' : 'disconnected', reason);
+        setOlpStatus(getOlpProject() ? 'connected' : 'disconnected');
         if (!closeBus && state.olp.virtualBusWanted && !state.olp.socket) connectOlpVirtualBus();
     } else {
         state.olp.status = 'running';
@@ -34415,7 +36231,6 @@ async function stopOlpSession(reason = 'OLP stopped', { closeBus = false, resetC
 async function connectVirtualController() {
     const controller = state.virtualController;
     if (isOlpRunning() || state.olp.socket) await stopOlpSession('Controller connection requested; OLP and Virtual Bus closed.', { closeBus: true });
-    if (isRobotMotionActive()) return;
     refreshVirtualControllerRobotOptions();
     const isRealController = controller.controllerKind === 'real';
     const ipAddress = isRealController ? (el.virtualControllerIp?.value.trim() || '') : '127.0.0.1';
@@ -34433,6 +36248,13 @@ async function connectVirtualController() {
         );
         return;
     }
+    if (getMotionSession(targetRobot)
+        || isOlpRuntimeRunning(getOlpRuntimeForRobot(targetRobot))
+        || (state.olp.workOriginBusy && getOlpRobot() === targetRobot)
+        || (state.olp.manualMoveBusy && getOlpRobot() === targetRobot)) {
+        setVirtualControllerStatus('error', '현재 실행 중인 로봇은 모션을 정지한 후 컨트롤러를 연결할 수 있습니다.', controller);
+        return;
+    }
     const duplicate = getVirtualControllerSessions().find((candidate) => (
         candidate !== controller
         && candidate.wanted
@@ -34443,7 +36265,7 @@ async function connectVirtualController() {
         return;
     }
     try {
-        await ensureVirtualControllerCore();
+        await ensureVirtualControllerCore(controller);
     } catch (error) {
         console.error('Virtual controller support failed to load:', error);
         setVirtualControllerStatus('error', '가상 컨트롤러 기능을 불러올 수 없습니다.');
@@ -35111,10 +36933,7 @@ function isModelMotionActive(model) {
     if (isOlpRuntimeRunning(runtime)) return true;
     if (state.olp.runtime?.robot === model && isOlpRuntimeRunning(state.olp.runtime)) return true;
     if ((state.olp.workOriginBusy || state.olp.manualMoveBusy) && getOlpRobot() === model) return true;
-    return Boolean(
-        isVirtualControllerActive()
-        && (state.activeArticulatedModel === model || state.activeProgramRobot === model)
-    );
+    return isVirtualControllerActiveForRobot(model);
 }
 
 function getMotionStatus(robot) {
@@ -37112,7 +38931,7 @@ function updateWorkOriginButtonUi() {
         || Boolean(popupRecord && !popupRecord.popup.closed);
     const disabled = isOlp
         ? !getOlpProject(robot) || isOlpRunning() || Boolean(state.olp.workOriginBusy || state.olp.manualMoveBusy)
-            || isVirtualControllerActive()
+            || isVirtualControllerActiveForRobot(robot)
         : !robot || isMotionActive();
     button.classList.toggle('hidden', !visible);
     button.classList.toggle('active', !isOlp && dialogOpen);
@@ -37237,10 +39056,13 @@ function updateMotionProgramPlaybackUi() {
         const candidateSession = getMotionSession(candidate);
         const statusText = row.querySelector('.program-robot-status');
         if (!statusText) return;
+        const controllerConnected = isVirtualControllerActiveForRobot(candidate);
         if (state.olp.enabled) {
             const olpStatus = getOlpRobotStatus(candidate);
             statusText.className = `program-robot-status ${olpStatus}`;
-            statusText.textContent = olpStatusLabel(olpStatus);
+            statusText.textContent = controllerConnected
+                ? uiText('컨트롤러 연결됨')
+                : olpStatusLabel(olpStatus);
             const projectText = row.querySelector('.program-robot-project');
             if (projectText) {
                 const project = getOlpProjectForRobot(candidate);
@@ -37252,9 +39074,11 @@ function updateMotionProgramPlaybackUi() {
         const isInterferenceWaiting = Boolean(candidateSession?.waitingForInterference);
         const status = getMotionStatus(candidate);
         statusText.className = `program-robot-status ${isInterferenceWaiting ? 'interference-waiting' : status}`;
-        statusText.textContent = isInterferenceWaiting
-            ? uiText('로봇 간섭 회피 대기 중')
-            : motionStatusLabel(status);
+        statusText.textContent = controllerConnected
+            ? uiText('컨트롤러 연결됨')
+            : isInterferenceWaiting
+                ? uiText('로봇 간섭 회피 대기 중')
+                : motionStatusLabel(status);
     });
 }
 
@@ -37329,6 +39153,7 @@ function renderMotionProgramPanel() {
     robots.forEach((robot) => {
         const program = ensureMotionProgram(robot);
         const status = state.olp.enabled ? getOlpRobotStatus(robot) : getMotionStatus(robot);
+        const controllerConnected = isVirtualControllerActiveForRobot(robot);
         const session = getMotionSession(robot);
         const isInterferenceWaiting = Boolean(session?.waitingForInterference);
         const row = document.createElement('div');
@@ -37353,11 +39178,13 @@ function renderMotionProgramPanel() {
         statusText.className = `program-robot-status ${state.olp.enabled
             ? status
             : isInterferenceWaiting ? 'interference-waiting' : status}`;
-        statusText.textContent = state.olp.enabled
-            ? olpStatusLabel(status)
-            : isInterferenceWaiting
-                ? uiText('로봇 간섭 회피 대기 중')
-                : motionStatusLabel(status);
+        statusText.textContent = controllerConnected
+            ? uiText('컨트롤러 연결됨')
+            : state.olp.enabled
+                ? olpStatusLabel(status)
+                : isInterferenceWaiting
+                    ? uiText('로봇 간섭 회피 대기 중')
+                    : motionStatusLabel(status);
         if (state.olp.enabled) {
             const projectText = document.createElement('span');
             const project = getOlpProjectForRobot(robot);
@@ -37613,22 +39440,27 @@ function renderMotionProgramPanel() {
     syncMotionRepeatControl();
     const selected = program?.steps.find((step) => step.id === program.selectedStepId) || null;
     const activeRobotSession = getMotionSession(robot);
+    const activeRobotController = isVirtualControllerActiveForRobot(robot);
     if (el.btnProgramDelete) el.btnProgramDelete.disabled = !selected;
     if (el.btnProgramAddWait) el.btnProgramAddWait.disabled = getWaitTargetRobots(robot).length === 0;
     if (el.btnProgramStepRobot) el.btnProgramStepRobot.disabled = !program?.steps.length
         || Boolean(activeRobotSession)
-        || isVirtualControllerActive();
+        || activeRobotController;
     if (el.btnProgramRunRobot) el.btnProgramRunRobot.disabled = !program?.steps.length
         || (Boolean(activeRobotSession) && activeRobotSession.status !== 'paused')
-        || isVirtualControllerActive();
-    if (el.btnProgramStepGroup) el.btnProgramStepGroup.disabled = isVirtualControllerActive() || !robots.some((candidate) => {
+        || activeRobotController;
+    if (el.btnProgramStepGroup) el.btnProgramStepGroup.disabled = !robots.some((candidate) => {
         const candidateProgram = ensureMotionProgram(candidate);
-        return candidateProgram.included && candidateProgram.steps.length && !getMotionSession(candidate);
+        return candidateProgram.included
+            && candidateProgram.steps.length
+            && !getMotionSession(candidate)
+            && !isVirtualControllerActiveForRobot(candidate);
     });
-    if (el.btnProgramRunGroup) el.btnProgramRunGroup.disabled = isVirtualControllerActive() || !robots.some((candidate) => {
+    if (el.btnProgramRunGroup) el.btnProgramRunGroup.disabled = !robots.some((candidate) => {
         const candidateProgram = ensureMotionProgram(candidate);
         const session = getMotionSession(candidate);
         return candidateProgram.included && candidateProgram.steps.length
+            && !isVirtualControllerActiveForRobot(candidate)
             && (!session || session.status === 'paused');
     });
     if (el.btnPositionExport) {
@@ -37738,6 +39570,11 @@ function closeOlpPointContextMenu() {
 function openOlpPointContextMenu(event, record) {
     const menu = el.olpPointContextMenu;
     if (!menu || !record) return;
+    const actionsBusy = isOlpRunning() || state.olp.manualMoveBusy || state.olp.workOriginBusy;
+    if (el.olpPointWriteCurrent) el.olpPointWriteCurrent.disabled = actionsBusy;
+    if (el.olpPointMoveTarget) {
+        el.olpPointMoveTarget.disabled = actionsBusy || isVirtualControllerActive() || state.motionSessions.size > 0;
+    }
     closeOlpPointContextMenu();
     state.olp.pointContextTarget = {
         path: record.path,
@@ -37753,20 +39590,20 @@ function openOlpPointContextMenu(event, record) {
 }
 
 function handleOlpPointContextMenu(event) {
-    if (isOlpRunning() || state.olp.manualMoveBusy || state.olp.workOriginBusy || !getOlpProject()) return;
     const row = event.target.closest('[data-olp-point-row]');
     if (!row) return;
+    event.preventDefault();
+    if (!getOlpProject()) return;
     const pointFile = getOlpSelectedPointFile();
     const record = pointFile?.records?.find((candidate) => candidate.index === Number(row.dataset.olpPointIndex)
         && (candidate.sourceSymbol || 'P').toUpperCase() === String(row.dataset.olpPointSymbol || 'P').toUpperCase());
     if (!record) return;
-    event.preventDefault();
     openOlpPointContextMenu(event, record);
 }
 
 function handleOlpPointTableActivate(event) {
     if (event.type === 'keydown' && !['Enter', ' '].includes(event.key)) return;
-    if (isOlpRunning() || state.olp.manualMoveBusy || state.olp.workOriginBusy || !getOlpProject()) return;
+    if (!getOlpProject()) return;
     const row = event.target.closest('[data-olp-point-row]');
     if (!row) return;
     const pointFile = getOlpSelectedPointFile();
@@ -37791,23 +39628,23 @@ function getOlpPointContextRecord(target = state.olp.pointContextTarget) {
 
 async function moveOlpPointFromContext() {
     const target = state.olp.pointContextTarget;
+    const robot = getOlpRobot();
     closeOlpPointContextMenu();
-    if (!target || !getOlpProject()) return;
+    if (!target || !getOlpProject(robot)) return;
     if (isOlpRunning()) {
         setOlpStatus('error', 'Stop OLP before moving to a point.');
         return;
     }
     if (state.olp.manualMoveBusy || state.olp.workOriginBusy) return;
-    if (isVirtualControllerActive()) {
-        setOlpStatus('error', 'Point movement is unavailable while a controller is connected.');
+    if (isVirtualControllerActiveForRobot(robot)) {
+        setOlpStatus('error', 'Point movement is unavailable while a controller is connected to this robot.');
         return;
     }
-    if (state.motionSessions.size) {
-        setOlpStatus('error', 'Stop the normal motion program before moving to a point.');
+    if (getMotionSession(robot)) {
+        setOlpStatus('error', 'Stop this robot motion before moving to a point.');
         return;
     }
 
-    const robot = state.activeProgramRobot || state.activeArticulatedModel;
     const record = getOlpPointContextRecord(target);
     if (!robot) {
         setOlpStatus('error', 'Select one robot before moving to a point.');
@@ -37826,18 +39663,13 @@ async function moveOlpPointFromContext() {
     updateMotionUiLock();
     try {
         setOlpLastMotion('Moving to {point}.', { point: pointName });
-        appendOlpConsole('Moving {point} from {path}.', {
-            point: pointName,
-            path: record.path
-        });
         setOlpStatus('working');
         await moveOlpTarget(robot, 'MOVJ', record, 100, null, {
             segmentName: pointName,
             armParameters: record.armParameters || []
         });
         setOlpLastMotion('{point} reached.', { point: pointName });
-        appendOlpConsole('{point} reached.', { point: pointName });
-        setOlpStatus('connected', 'Moved to {point}.', { point: pointName });
+        setOlpStatus('connected');
     } catch (error) {
         setOlpStatus('error', 'Point move failed: {error}', {
             error: error?.message || error
@@ -37876,7 +39708,7 @@ function writeOlpPointFromCurrentRobot() {
     const target = state.olp.pointContextTarget;
     closeOlpPointContextMenu();
     const project = getOlpProject();
-    if (!target || isOlpRunning() || !project) return;
+    if (!target || isOlpRunning() || state.olp.manualMoveBusy || state.olp.workOriginBusy || !project) return;
     const robot = state.activeProgramRobot || state.activeArticulatedModel;
     const pointFile = project.pointFiles?.find((file) => file.path === target.path && file.kind === 'point');
     const record = pointFile?.records?.find((candidate) => candidate.index === Number(target.index)
@@ -38762,7 +40594,20 @@ function updateMotionUiLock() {
     // session snapshot, so edits are safe and take effect on the next run.
     // Whole-project replacement and automatic path planning still change or
     // temporarily mutate the live scene and remain unavailable while moving.
-    if (el.btnProgramImport) el.btnProgramImport.disabled = locked;
+    if (el.btnProgramImport) {
+        if (state.olp.enabled) {
+            const robot = getOlpRobot();
+            const runtime = getOlpRuntimeForRobot(robot);
+            el.btnProgramImport.disabled = !robot
+                || state.olp.importInProgress
+                || isOlpRuntimeRunning(runtime)
+                || Boolean(state.olp.workOriginBusy || state.olp.manualMoveBusy)
+                || isVirtualControllerActiveForRobot(robot)
+                || Boolean(getMotionSession(robot));
+        } else {
+            el.btnProgramImport.disabled = locked;
+        }
+    }
     if (el.btnWorkspaceLoad) {
         el.btnWorkspaceLoad.disabled = simulationWorkspaceFileBusy || locked || isOlpRunning();
     }
@@ -42789,10 +44634,13 @@ function startRobotMotionPlans(plans) {
     if (plans.length === 0
         || isOlpRunning()
         || state.olp.workOriginBusy
-        || state.olp.manualMoveBusy
-        || isVirtualControllerActive()) return;
+        || state.olp.manualMoveBusy) return;
     const playablePlans = plans.filter(({ robot, steps }) => (
-        robot && Array.isArray(steps) && steps.length > 0 && !getMotionSession(robot)
+        robot
+        && Array.isArray(steps)
+        && steps.length > 0
+        && !getMotionSession(robot)
+        && !isVirtualControllerActiveForRobot(robot)
     ));
     if (playablePlans.length === 0) return;
     const hadActiveMotion = state.motionSessions.size > 0;
@@ -42881,10 +44729,6 @@ function startOlpCheckedSessions({ step = false } = {}) {
         setOlpStatus('error', 'Load an OLP project for every selected robot before group execution.');
         return;
     }
-    if (state.motionSessions.size) {
-        setOlpStatus('error', 'Stop the normal motion program before running OLP.');
-        return;
-    }
     robots.forEach((robot) => { void startOlpSession({ step, robot }); });
 }
 
@@ -42909,7 +44753,7 @@ function pauseOlpCheckedSessions() {
         .map((robot) => getOlpRuntimeForRobot(robot))
         .filter((runtime) => isOlpRuntimeRunning(runtime) && !runtime.paused);
     runtimes.forEach((runtime) => runtime.togglePause());
-    if (runtimes.length) setOlpStatus('running', 'OLP group paused.');
+    if (runtimes.length) setOlpStatus('running');
 }
 
 function pauseCheckedRobotMotionsOrOlp() {
@@ -42964,7 +44808,7 @@ function pauseActiveProgramOrOlp() {
 
 function stopActiveProgramOrOlp() {
     if (state.olp.enabled) {
-        void stopOlpSession('OLP stopped by user', { resetCursor: true });
+        void stopOlpSession('OLP stopped by user', { resetCursor: true, robot: getOlpRobot() });
         return;
     }
     stopActiveRobotMotion();
@@ -42972,7 +44816,8 @@ function stopActiveProgramOrOlp() {
 
 async function moveOlpToWorkOrigin() {
     if (state.olp.workOriginBusy || state.olp.manualMoveBusy) return;
-    const project = getOlpProject();
+    const robot = getWorkOriginRobot();
+    const project = getOlpProject(robot);
     if (!project) {
         setOlpStatus('error', 'Load a robot project folder before moving to Work Origin.');
         return;
@@ -42981,8 +44826,8 @@ async function moveOlpToWorkOrigin() {
         setOlpStatus('error', 'Stop OLP before moving to Work Origin.');
         return;
     }
-    if (isVirtualControllerActive()) {
-        setOlpStatus('error', 'Work Origin is unavailable while a controller is connected.');
+    if (isVirtualControllerActiveForRobot(robot)) {
+        setOlpStatus('error', 'Work Origin is unavailable while a controller is connected to this robot.');
         return;
     }
 
@@ -42990,7 +44835,7 @@ async function moveOlpToWorkOrigin() {
     updateOlpProgramPanelUi();
     updateMotionUiLock();
     try {
-        setOlpExecutionForRobot(getOlpRobot(), {
+        setOlpExecutionForRobot(robot, {
             phase: 'stopped',
             running: false,
             paused: false,
@@ -43002,11 +44847,11 @@ async function moveOlpToWorkOrigin() {
             callStack: [],
             alarm: null
         });
-        setOlpStatus('connected', 'Moving to Work Origin 0.');
+        setOlpStatus('connected');
         await runOlpHome(0, 100, project, null);
-        setOlpStatus('connected', 'Work Origin 0 reached.');
+        setOlpStatus('connected');
     } catch (error) {
-        setOlpExecutionForRobot(getOlpRobot(), { phase: 'error', running: false, alarm: null });
+        setOlpExecutionForRobot(robot, { phase: 'error', running: false, alarm: null });
         setOlpStatus('error', 'Work Origin move failed: {error}', { error: error?.message || error });
     } finally {
         state.olp.workOriginBusy = false;
@@ -44881,6 +46726,7 @@ function installSimulationManualGuide() {
 
 function requiresContinuousRendering() {
     return isViewWindowOpen()
+        || state.trace.running
         || isVirtualControllerActive()
         || state.collaboration.remoteMotionStates.size > 0
         // OLP itself does not need a 60 FPS scene loop while it is waiting on
@@ -44951,6 +46797,8 @@ function animate(timestamp = performance.now()) {
     updateCameraScaledWorkObjectAxes();
     updateSimulationSnapMarkerCameraScale();
     updateSimulationSnapCandidateMarkers();
+    refreshTraceSelectors();
+    sampleTrace(timestamp);
     updateMeasurementOverlay();
     updatePrimitiveDimensionOverlay();
     updateSketchPreview();
@@ -44977,7 +46825,7 @@ function onResize() {
     }
     state.camera.updateProjectionMatrix();
     state.renderer.setSize(w, h);
-    [el.modelBrowserPanel, el.jogPanel, el.tcpProfilePanel, el.workObjectPanel, el.virtualControllerPanel, el.collaborationPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.ioSimulatorPanel, el.programPanel, el.measurementPanel, el.shapePanel, el.toolLoadInfoPanel, el.workOriginDialog].forEach((panel) => {
+    [el.modelBrowserPanel, el.jogPanel, el.tcpProfilePanel, el.workObjectPanel, el.virtualControllerPanel, el.collaborationPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.ioSimulatorPanel, el.programPanel, el.tracePanel, el.measurementPanel, el.shapePanel, el.toolLoadInfoPanel, el.workOriginDialog].forEach((panel) => {
         if (panel?.dataset.userResized === 'true') normalizePanelResizeBox(panel);
         else if (panel === el.workOriginDialog) constrainWorkOriginDialogToLayoutBounds();
     });
