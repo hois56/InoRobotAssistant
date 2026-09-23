@@ -825,6 +825,7 @@ const state = {
         applyingRemoteState: false,
         hasRestoredRoomSnapshot: false,
         pendingRoomSnapshot: null,
+        roomSyncTimer: null,
         pendingAction: null,
         error: '',
         socketUrl: ''
@@ -24247,6 +24248,7 @@ async function loadModelFromServer(modelDefinition, options = {}) {
         }
 
         updateUIStatus();
+        if (type === 'articulated-stl') scheduleCollaborationRoomSync();
         if (!options.preserveSelection) selectSceneModel(model);
         renderMotionProgramPanel();
         if (historyBefore) recordHistory('모델 불러오기', historyBefore, captureSceneSnapshot());
@@ -29813,6 +29815,34 @@ function getCollaborationRobotDescriptors() {
     }));
 }
 
+function syncCollaborationRoom() {
+    const collaboration = state.collaboration;
+    if (!collaboration.enabled || collaboration.role !== 'host') return false;
+    if (!collaboration.socket || collaboration.socket.readyState !== WebSocket.OPEN) return false;
+    let workspaceSnapshot;
+    try {
+        workspaceSnapshot = captureCollaborationWorkspaceSnapshot();
+    } catch (error) {
+        setCollaborationError(collaborationErrorText(error?.message));
+        return false;
+    }
+    return sendCollaborationMessage({
+        type: 'syncRoom',
+        robots: getCollaborationRobotDescriptors(),
+        workspaceSnapshot
+    });
+}
+
+function scheduleCollaborationRoomSync() {
+    const collaboration = state.collaboration;
+    if (!collaboration.enabled || collaboration.role !== 'host') return;
+    if (collaboration.roomSyncTimer) clearTimeout(collaboration.roomSyncTimer);
+    collaboration.roomSyncTimer = window.setTimeout(() => {
+        collaboration.roomSyncTimer = null;
+        syncCollaborationRoom();
+    }, 120);
+}
+
 function captureCollaborationWorkspaceSnapshot() {
     const snapshot = serializeWorkspaceSnapshot();
     snapshot.camera = null;
@@ -29999,6 +30029,27 @@ async function applyCollaborationRoomSnapshot(message) {
         .forEach((robot) => queueCollaborationRobotState(robot));
 }
 
+async function applyCollaborationWorkspaceSync(message) {
+    const collaboration = state.collaboration;
+    updateCollaborationRobotSnapshot(message.robots, message.participants);
+    refreshCollaborationUi();
+    try {
+        await restoreWorkspaceSnapshot(message.workspaceSnapshot);
+    } catch (error) {
+        console.error('Collaboration workspace update failed:', error);
+        setCollaborationError('협업 작업 스냅샷을 불러오지 못했습니다.');
+    }
+    refreshCollaborationUi();
+    getVirtualControllerSessions().slice().forEach((controller) => {
+        if (controller.wanted && !getVirtualControllerTargetRobot(controller)) {
+            disconnectVirtualController(controller);
+        }
+    });
+    getArticulatedRobots()
+        .filter(isCollaborationRobotLocallyControllable)
+        .forEach((robot) => queueCollaborationRobotState(robot));
+}
+
 function applyCollaborationSceneCommand(command) {
     if (!isCollaborationRecord(command)) return;
     const model = findModelByWorkspaceId(command.workspaceModelId);
@@ -30075,9 +30126,17 @@ function handleCollaborationMessage(raw) {
         collaboration.pendingAction = null;
         setCollaborationStatus('connected');
         void applyCollaborationRoomSnapshot(message);
+        scheduleCollaborationRoomSync();
         return;
     }
     if (message.type === 'roomState' || message.type === 'participantJoined' || message.type === 'participantLeft' || message.type === 'robotAssignment') {
+        if (message.type === 'roomState'
+            && message.workspaceSnapshot
+            && message.sourceUserId
+            && message.sourceUserId !== collaboration.userId) {
+            void applyCollaborationWorkspaceSync(message);
+            return;
+        }
         updateCollaborationRobotSnapshot(message.robots, message.participants);
         refreshCollaborationUi();
         getVirtualControllerSessions().slice().forEach((controller) => {
@@ -30255,6 +30314,10 @@ function leaveCollaborationRoom() {
 
 function closeCollaborationSocket(resetState = true) {
     const collaboration = state.collaboration;
+    if (collaboration.roomSyncTimer) {
+        clearTimeout(collaboration.roomSyncTimer);
+        collaboration.roomSyncTimer = null;
+    }
     if (collaboration.reconnectTimer) {
         clearTimeout(collaboration.reconnectTimer);
         collaboration.reconnectTimer = null;
@@ -40124,6 +40187,7 @@ async function restoreWorkspaceSnapshot(snapshot) {
         state.historySuspended = false;
         recovery.restoring = false;
         showLoading(false);
+        scheduleCollaborationRoomSync();
     }
 }
 
@@ -44027,6 +44091,7 @@ function cleanupScene() {
     renderMotionProgramPanel();
     refreshCollisionDebugOverlays();
     checkSceneCollisions({ force: true });
+    scheduleCollaborationRoomSync();
 }
 
 function deleteSelectedModel({ allowDuringMotion = false } = {}) {
@@ -44100,6 +44165,7 @@ function deleteSelectedModel({ allowDuringMotion = false } = {}) {
     selectSceneModel(nextSelection);
     renderMotionProgramPanel();
     recordHistory('모델 삭제', historyBefore, captureSceneSnapshot());
+    scheduleCollaborationRoomSync();
     sendCollaborationSceneCommand({
         kind: 'delete',
         workspaceModelId: ensureWorkspaceModelId(model)

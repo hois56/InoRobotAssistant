@@ -6,6 +6,7 @@ import {
     createRobotStatePayload,
     createRoomCode,
     getRobotById,
+    mergeRobotDescriptors,
     isNewerSequence,
     isSupportedCollaborationMessage,
     isValidRoomCode,
@@ -464,6 +465,31 @@ export class CollaborationHub {
         });
     }
 
+    handleRoomSync(peer, message) {
+        const room = this.getRoomForPeer(peer);
+        if (!room) return this.sendError(peer, 'not-in-room', '협업 방에 연결되어 있지 않습니다.');
+        if (peer.participant.userId !== room.hostUserId) {
+            return this.sendError(peer, 'host-only', '협업 방 상태 변경은 호스트만 요청할 수 있습니다.');
+        }
+        const snapshotResult = normalizeWorkspaceSnapshot(message.workspaceSnapshot);
+        if (!snapshotResult.ok) {
+            return this.sendError(peer, snapshotResult.reason, '공유할 시뮬레이션 스냅샷을 확인할 수 없습니다.');
+        }
+        room.robots = mergeRobotDescriptors(room.robots, message.robots);
+        room.workspaceSnapshot = snapshotResult.snapshot;
+        this.touchRoom(room);
+        this.broadcastRoom(room, {
+            type: 'roomState',
+            roomCode: room.roomCode,
+            hostUserId: room.hostUserId,
+            sourceUserId: peer.participant.userId,
+            participants: this.getPublicParticipants(room),
+            robots: this.getPublicRobots(room, false),
+            workspaceSnapshot: room.workspaceSnapshot,
+            serverTime: Date.now()
+        });
+    }
+
     handleRobotState(peer, message) {
         const { room, robot } = this.requireOwnedRobot(peer, message.robotId);
         if (!room || !robot) {
@@ -621,6 +647,7 @@ export class CollaborationHub {
         if (type === 'leaveRoom') return this.removeParticipant(peer);
         if (type === 'robotClaim') return this.handleRobotClaim(peer, message);
         if (type === 'robotRelease') return this.handleRobotRelease(peer, message);
+        if (type === 'syncRoom') return this.handleRoomSync(peer, message);
         if (type === 'robotState') return this.handleRobotState(peer, message);
         if (type === 'robotCommand') return this.handleRobotCommand(peer, message);
         if (type === 'sceneCommand') return this.handleSceneCommand(peer, message);
