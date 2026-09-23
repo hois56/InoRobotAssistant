@@ -209,6 +209,7 @@ export function claimRobot(robots, userId, robotId, displayName = '') {
         candidate.ownerUserId === normalizedUserId && candidate.robotId !== robot.robotId
     ));
     if (previousRobot) return { ok: false, reason: 'already-owns-robot', previousRobotId: previousRobot.robotId };
+    if (!robot.ownerUserId) robot.lastSequence = 0;
     robot.ownerUserId = normalizedUserId;
     robot.ownerDisplayName = normalizeDisplayName(displayName, normalizedUserId);
     return { ok: true, robot };
@@ -223,6 +224,7 @@ export function releaseRobot(robots, userId, robotId = null) {
     released.forEach((robot) => {
         robot.ownerUserId = null;
         robot.ownerDisplayName = null;
+        robot.lastSequence = 0;
     });
     return released.map((robot) => robot.robotId);
 }

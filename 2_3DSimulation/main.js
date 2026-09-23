@@ -16062,6 +16062,7 @@ function applySnapFaceOrientation(mode) {
     syncJointControls(robot);
     updateTcpPresentation(robot, target);
     syncBaseJogGizmoFromRobot(robot, target);
+    queueCollaborationRobotState(robot);
     setBaseJogStatus('');
     recordHistory(
         mode === 'horizontal' ? '선택 면과 수평 정렬' : '선택 면과 수직 정렬',
@@ -28383,6 +28384,7 @@ function renderJogControls(robot) {
             clearJogCollisionLock();
             setJointAngle(joint, display.fromDisplay(Number(rawValue)));
             captureCurrentTcpTarget(robot);
+            queueCollaborationRobotState(robot);
         };
 
         const beginJointHistory = () => {
@@ -28443,6 +28445,7 @@ function resetArticulatedJoints(robot) {
     });
     syncJointControls(robot);
     captureCurrentTcpTarget(robot);
+    queueCollaborationRobotState(robot);
     setBaseJogStatus('Ready');
 }
 
@@ -28748,6 +28751,7 @@ function applyBaseJogGizmoTarget() {
             robot.userData.baseJogTarget = desired;
             syncJointControls(robot);
             updateTcpPresentation(robot);
+            queueCollaborationRobotState(robot);
             setBaseJogStatus('');
             clearJogCollisionLock();
         }
@@ -29090,6 +29094,7 @@ function applyBaseJogNumericTarget(event) {
     syncJointControls(robot);
     updateTcpPresentation(robot, target);
     syncBaseJogGizmoFromRobot(robot);
+    queueCollaborationRobotState(robot);
     setBaseJogStatus('');
     clearJogCollisionLock();
 }
@@ -29234,6 +29239,7 @@ function jogTcpInBase(robot, kind, axisName, direction) {
     syncJointControls(robot);
     updateTcpPresentation(robot, target);
     syncBaseJogGizmoFromRobot(robot);
+    queueCollaborationRobotState(robot);
     setBaseJogStatus('');
     clearJogCollisionLock();
     return true;
@@ -29968,6 +29974,12 @@ function updateCollaborationRobotSnapshot(robotRecords = [], participants = []) 
         participant.userId === state.collaboration.userId
     ));
     if (self?.role) state.collaboration.role = self.role;
+    state.collaboration.remoteMotionStates.forEach((motion, robotId) => {
+        const robot = findProgramRobot(robotId);
+        if (robot && isCollaborationRobotLocallyControllable(robot)) {
+            state.collaboration.remoteMotionStates.delete(robotId);
+        }
+    });
 }
 
 function applyRemoteCollaborationRobotPose(robot, normalizedState) {
@@ -29990,6 +30002,10 @@ function applyRemoteCollaborationMotion(timestamp = performance.now()) {
     collaboration.remoteMotionStates.forEach((motion, robotId) => {
         const robot = findProgramRobot(robotId);
         if (!robot) {
+            collaboration.remoteMotionStates.delete(robotId);
+            return;
+        }
+        if (isCollaborationRobotLocallyControllable(robot)) {
             collaboration.remoteMotionStates.delete(robotId);
             return;
         }
@@ -30031,11 +30047,16 @@ function applyRemoteCollaborationRobotState(message) {
     collaboration.lastServerSequence.set(robotId, serverSequence);
     const descriptor = getCollaborationRobotDescriptor(robotId);
     if (descriptor) descriptor.lastState = { ...(message.payload || {}), sequence: Number(message.sequence) || 0 };
+    const robot = findProgramRobot(robotId);
+    if (robot && isCollaborationRobotLocallyControllable(robot)) {
+        collaboration.remoteMotionStates.delete(robotId);
+        scheduleCollaborationUiRefresh();
+        return;
+    }
     if (message.userId === collaboration.userId) {
         scheduleCollaborationUiRefresh();
         return;
     }
-    const robot = findProgramRobot(robotId);
     if (!robot) {
         collaboration.pendingRemoteStates.set(robotId, message);
         return;

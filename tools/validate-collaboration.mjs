@@ -55,7 +55,12 @@ assert.equal(robots.length, 2, 'robot descriptors must be unique by robotId');
 assert.equal(claimRobot(robots, 'user-a', 'robot-1', 'PC A').ok, true);
 assert.equal(claimRobot(robots, 'user-b', 'robot-1', 'PC B').reason, 'robot-occupied');
 assert.equal(claimRobot(robots, 'user-a', 'robot-2', 'PC A').reason, 'already-owns-robot');
+robots[0].lastSequence = 12;
 assert.deepEqual(releaseRobot(robots, 'user-a', 'robot-1'), ['robot-1']);
+assert.equal(robots[0].lastSequence, 0, 'releasing a robot must reset the owner-local state sequence');
+assert.equal(claimRobot(robots, 'user-b', 'robot-1', 'PC B').ok, true);
+assert.equal(robots[0].lastSequence, 0, 'a new robot owner must start with a fresh state sequence');
+assert.deepEqual(releaseRobot(robots, 'user-b', 'robot-1'), ['robot-1']);
 assert.equal(claimRobot(robots, 'user-b', 'robot-2', 'PC B').ok, true);
 const mergedRobots = mergeRobotDescriptors(robots, [
     { robotId: 'robot-1', name: 'Robot 1 updated', jointCount: 2, jointLimits: [[-90, 90], [0, 100]] },
