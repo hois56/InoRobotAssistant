@@ -13,6 +13,7 @@ import {
     isNewerSequence,
     isSupportedCollaborationMessage,
     isValidRoomCode,
+    mergeRobotDescriptors,
     normalizeRobotDescriptors,
     normalizeRobotState,
     normalizeRoomCode,
@@ -56,6 +57,13 @@ assert.equal(claimRobot(robots, 'user-b', 'robot-1', 'PC B').reason, 'robot-occu
 assert.equal(claimRobot(robots, 'user-a', 'robot-2', 'PC A').reason, 'already-owns-robot');
 assert.deepEqual(releaseRobot(robots, 'user-a', 'robot-1'), ['robot-1']);
 assert.equal(claimRobot(robots, 'user-b', 'robot-2', 'PC B').ok, true);
+const mergedRobots = mergeRobotDescriptors(robots, [
+    { robotId: 'robot-1', name: 'Robot 1 updated', jointCount: 2, jointLimits: [[-90, 90], [0, 100]] },
+    { robotId: 'robot-3', name: 'Robot 3', jointCount: 2, jointLimits: [[-180, 180], [-180, 180]] }
+]);
+assert.equal(mergedRobots.length, 2, 'room robot synchronization must replace removed descriptors');
+assert.equal(mergedRobots[0].ownerUserId, null, 'released robot ownership must remain released after synchronization');
+assert.equal(mergedRobots[1].robotId, 'robot-3');
 
 const robot = robots[0];
 const validState = normalizeRobotState({
@@ -97,16 +105,17 @@ assert.deepEqual(normalizedSnapshot.snapshot.viewConfiguration, { viewPresets: [
 assert.deepEqual(normalizedSnapshot.snapshot.collapsedModelIds, []);
 assert.equal(normalizeWorkspaceSnapshot({ payload: 'too large' }, 8).reason, 'snapshot-too-large');
 
-const [serverSource, pageSource, htmlSource, styleSource] = await Promise.all([
+const [serverSource, workerSource, pageSource, htmlSource, styleSource] = await Promise.all([
     readFile(new URL('./collaboration-server.cjs', import.meta.url), 'utf8'),
+    readFile(new URL('../5_Software/collaboration-worker/worker.js', import.meta.url), 'utf8'),
     readFile(new URL('../2_3DSimulation/main.js', import.meta.url), 'utf8'),
     readFile(new URL('../2_3DSimulation/index.html', import.meta.url), 'utf8'),
     readFile(new URL('../2_3DSimulation/style.css', import.meta.url), 'utf8')
 ]);
 const snapshotRestoreStart = pageSource.indexOf('async function applyCollaborationRoomSnapshot');
-const sceneCommandStart = pageSource.indexOf('function applyCollaborationSceneCommand', snapshotRestoreStart);
-assert.ok(snapshotRestoreStart >= 0 && sceneCommandStart > snapshotRestoreStart);
-const snapshotRestoreSource = pageSource.slice(snapshotRestoreStart, sceneCommandStart);
+const workspaceSyncStart = pageSource.indexOf('async function applyCollaborationWorkspaceSync', snapshotRestoreStart);
+assert.ok(snapshotRestoreStart >= 0 && workspaceSyncStart > snapshotRestoreStart);
+const snapshotRestoreSource = pageSource.slice(snapshotRestoreStart, workspaceSyncStart);
 const restoreAwaitIndex = snapshotRestoreSource.indexOf('await restoreWorkspaceSnapshot');
 assert.ok(restoreAwaitIndex >= 0);
 assert.equal(
@@ -124,13 +133,19 @@ assert.equal(
     'isNewerSequence',
     'createRoomSnapshotMessage'
 ].forEach((token) => assert.match(serverSource, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))));
+['handleRoomSync', 'mergeRobotDescriptors', "type === 'syncRoom'"].forEach((token) => {
+    assert.match(serverSource, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.match(workerSource, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+});
 [
     'state.collaboration',
     'isCollaborationRobotLocallyControllable',
     'applyRemoteCollaborationRobotState',
     'applyCollaborationRoomSnapshot',
     'requestCollaborationConnection',
-    'sendCollaborationRobotCommand'
+    'sendCollaborationRobotCommand',
+    'scheduleCollaborationRoomSync',
+    'applyCollaborationWorkspaceSync'
 ].forEach((token) => assert.match(pageSource, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))));
 [
     'collaboration-panel',

@@ -381,6 +381,31 @@ function handleRobotRelease(peer, message) {
     });
 }
 
+function handleRoomSync(peer, message) {
+    const room = getRoomForPeer(peer);
+    if (!room) return sendError(peer, 'not-in-room', '협업 방에 연결되어 있지 않습니다.');
+    if (peer.participant.userId !== room.hostUserId) {
+        return sendError(peer, 'host-only', '협업 방 상태 변경은 호스트만 요청할 수 있습니다.');
+    }
+    const snapshotResult = collaborationCore.normalizeWorkspaceSnapshot(message.workspaceSnapshot);
+    if (!snapshotResult.ok) {
+        return sendError(peer, snapshotResult.reason, '공유할 시뮬레이션 스냅샷을 확인할 수 없습니다.');
+    }
+    room.robots = collaborationCore.mergeRobotDescriptors(room.robots, message.robots);
+    room.workspaceSnapshot = snapshotResult.snapshot;
+    touchRoom(room);
+    broadcastRoom(room, {
+        type: 'roomState',
+        roomCode: room.roomCode,
+        hostUserId: room.hostUserId,
+        sourceUserId: peer.participant.userId,
+        participants: getPublicParticipants(room),
+        robots: getPublicRobots(room, false),
+        workspaceSnapshot: room.workspaceSnapshot,
+        serverTime: Date.now()
+    });
+}
+
 function handleRobotState(peer, message) {
     const { room, robot } = requireOwnedRobot(peer, message.robotId);
     if (!room || !robot) return sendError(peer, 'robot-not-owned', '점유하지 않은 로봇의 상태는 전송할 수 없습니다.', message.requestId);
@@ -507,6 +532,7 @@ function handleMessage(peer, message) {
     if (type === 'leaveRoom') return removeParticipant(peer);
     if (type === 'robotClaim') return handleRobotClaim(peer, message);
     if (type === 'robotRelease') return handleRobotRelease(peer, message);
+    if (type === 'syncRoom') return handleRoomSync(peer, message);
     if (type === 'robotState') return handleRobotState(peer, message);
     if (type === 'robotCommand') return handleRobotCommand(peer, message);
     if (type === 'sceneCommand') return handleSceneCommand(peer, message);

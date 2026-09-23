@@ -18,6 +18,7 @@ const COLLABORATION_MESSAGE_TYPES = new Set([
     'robotState',
     'robotCommand',
     'sceneCommand',
+    'syncRoom',
     'resyncRequest',
     'heartbeat',
     'heartbeatAck',
@@ -103,6 +104,23 @@ export function normalizeRobotDescriptors(values) {
         .slice(0, MAX_COLLABORATION_ROBOTS)
         .map(normalizeRobotDescriptor)
         .filter((robot) => robot && !seen.has(robot.robotId) && seen.add(robot.robotId));
+}
+
+export function mergeRobotDescriptors(previousValues, nextValues) {
+    const previous = Array.isArray(previousValues) ? previousValues : [];
+    return normalizeRobotDescriptors(nextValues).map((robot) => {
+        const previousRobot = getRobotById(previous, robot.robotId);
+        if (!previousRobot) return robot;
+        const sameJointShape = previousRobot.jointCount === robot.jointCount;
+        return {
+            ...robot,
+            ownerUserId: previousRobot.ownerUserId || null,
+            ownerDisplayName: previousRobot.ownerDisplayName || null,
+            lastState: sameJointShape ? previousRobot.lastState || null : null,
+            lastSequence: sameJointShape ? Number(previousRobot.lastSequence) || 0 : 0,
+            serverSequence: sameJointShape ? Number(previousRobot.serverSequence) || 0 : 0
+        };
+    });
 }
 
 function normalizeTcpPose(value) {
