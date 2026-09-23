@@ -241,7 +241,8 @@
                   "`[개선]` 스케치와 돌출 스케치의 스냅 후보에 사각형 중심점이 표시되고 선택되도록 개선했습니다.",
                   "`[수정]` 스케치 편집 화면에서 돌출을 시작할 때 돌출 높이가 0으로 표시되던 문제를 해결하고 기본값을 100으로 설정했습니다.",
                   "`[수정]` 협업 방에 참여한 게스트가 로봇을 점유한 뒤에도 컨트롤러에 연결할 수 없고, 방 생성 후 추가한 로봇이 표시되지 않던 문제를 해결했습니다.",
-                  "`[개선]` 협업 중 원격 로봇 상태를 보간하고 협업 패널의 불필요한 반복 갱신을 줄여 화면이 끊기던 문제를 개선했습니다."
+                  "`[개선]` 협업 중 원격 로봇 상태를 보간하고 협업 패널의 불필요한 반복 갱신을 줄여 화면이 끊기던 문제를 개선했습니다.",
+                  "`[수정]` 협업에서 점유한 로봇이 원격 상태 갱신에 의해 덮어써져 움직이지 않거나 수동 JOG 위치가 상대 화면에 반영되지 않던 문제를 해결했습니다."
                 ]
               },
               {
@@ -1332,7 +1333,8 @@
                   "`[Improved]` Added visible and selectable rectangle-center snap candidates to sketches and extruded sketches.",
                   "`[Fixed]` Fixed the extrusion height showing as 0 when starting extrusion from the sketch editor and set the default to 100.",
                   "`[Fixed]` Fixed an issue where a guest who joined a collaboration room could not claim a robot or connect a controller, and robots added after room creation were not displayed.",
-                  "`[Improved]` Improved collaboration performance by interpolating remote robot states and reducing unnecessary repeated collaboration-panel updates that caused visual stuttering."
+                  "`[Improved]` Improved collaboration performance by interpolating remote robot states and reducing unnecessary repeated collaboration-panel updates that caused visual stuttering.",
+                  "`[Fixed]` Fixed claimed collaboration robots being overwritten by remote state updates and manual JOG positions not appearing on the other participant's screen."
                 ]
               },
               {
@@ -2419,7 +2421,8 @@
                   "`[改进]` 改进了草图和拉伸草图的捕捉候选，使矩形中心点可显示并可选择。",
                   "`[修复]` 修复了从草图编辑器开始拉伸时拉伸高度显示为 0 的问题，并将默认值设为 100。",
                   "`[修复]` 修复了加入协作房间的访客无法占用机器人或连接控制器，以及创建房间后添加的机器人不显示的问题。",
-                  "`[改进]` 通过插值远程机器人状态并减少协作面板的不必要重复更新，改善了协作过程中的画面卡顿问题。"
+                  "`[改进]` 通过插值远程机器人状态并减少协作面板的不必要重复更新，改善了协作过程中的画面卡顿问题。",
+                  "`[修复]` 修复了协作中已占用的机器人被远程状态更新覆盖而无法移动，以及手动 JOG 位置未同步到其他参与者画面的问题。"
                 ]
               },
               {
@@ -3506,7 +3509,8 @@
                   "`[Cải tiến]` Cải thiện ứng viên bắt dính của phác thảo và phác thảo đùn để điểm tâm hình chữ nhật được hiển thị và có thể chọn.",
                   "`[Sửa lỗi]` Đã khắc phục lỗi chiều cao đùn hiển thị là 0 khi bắt đầu đùn từ trình chỉnh sửa phác thảo và đặt giá trị mặc định là 100.",
                   "`[Sửa lỗi]` Đã khắc phục sự cố khách tham gia phòng cộng tác không thể nhận quyền robot hoặc kết nối bộ điều khiển, đồng thời robot được thêm sau khi tạo phòng không hiển thị.",
-                  "`[Cải tiến]` Đã cải thiện hiệu suất cộng tác bằng cách nội suy trạng thái robot từ xa và giảm các lần cập nhật lặp không cần thiết của bảng cộng tác gây giật hình."
+                  "`[Cải tiến]` Đã cải thiện hiệu suất cộng tác bằng cách nội suy trạng thái robot từ xa và giảm các lần cập nhật lặp không cần thiết của bảng cộng tác gây giật hình.",
+                  "`[Sửa lỗi]` Đã khắc phục lỗi robot đã nhận quyền trong cộng tác bị trạng thái từ xa ghi đè khiến không thể di chuyển và vị trí JOG thủ công không đồng bộ trên màn hình của người tham gia khác."
                 ]
               },
               {
