@@ -190,6 +190,10 @@ const THREE_ADDON_LOADER_IMPORTS = Object.freeze({
     stl: 'three/addons/loaders/STLLoader.js'
 });
 const threeAddonLoaderPromises = new Map();
+const COLLABORATION_UI_REFRESH_INTERVAL_MS = 160;
+const COLLABORATION_REMOTE_INTERPOLATION_MIN_MS = 16;
+const COLLABORATION_REMOTE_INTERPOLATION_MAX_MS = 120;
+const COLLABORATION_REMOTE_ACTIVITY_TIMEOUT_MS = 180;
 
 function importThreeAddonLoader(kind) {
     const specifier = THREE_ADDON_LOADER_IMPORTS[kind];
@@ -822,7 +826,11 @@ const state = {
         pendingStates: new Map(),
         transmitTimers: new Map(),
         pendingRemoteStates: new Map(),
+        remoteMotionStates: new Map(),
         applyingRemoteState: false,
+        lastRemoteStateAt: 0,
+        lastUiRefreshAt: 0,
+        uiRefreshTimer: null,
         hasRestoredRoomSnapshot: false,
         pendingRoomSnapshot: null,
         roomSyncTimer: null,
@@ -29658,6 +29666,16 @@ function setCollaborationStatus(status, message = '') {
     refreshCollaborationUi();
 }
 
+function scheduleCollaborationUiRefresh() {
+    const collaboration = state.collaboration;
+    if (collaboration.uiRefreshTimer) return;
+    const elapsed = performance.now() - (collaboration.lastUiRefreshAt || 0);
+    collaboration.uiRefreshTimer = window.setTimeout(() => {
+        collaboration.uiRefreshTimer = null;
+        refreshCollaborationUi();
+    }, Math.max(0, COLLABORATION_UI_REFRESH_INTERVAL_MS - elapsed));
+}
+
 function getCollaborationStatusText() {
     const collaboration = state.collaboration;
     if (collaboration.statusMessage) return collaboration.statusMessage;
@@ -29687,6 +29705,11 @@ function collaborationErrorText(code, fallback = '') {
 
 function refreshCollaborationUi() {
     const collaboration = state.collaboration;
+    if (collaboration.uiRefreshTimer) {
+        clearTimeout(collaboration.uiRefreshTimer);
+        collaboration.uiRefreshTimer = null;
+    }
+    collaboration.lastUiRefreshAt = performance.now();
     const connected = collaboration.enabled && collaboration.status === 'connected';
     const inRoom = Boolean(collaboration.roomCode && collaboration.userId);
     const statusClass = collaboration.status === 'connected'
@@ -29947,6 +29970,59 @@ function updateCollaborationRobotSnapshot(robotRecords = [], participants = []) 
     if (self?.role) state.collaboration.role = self.role;
 }
 
+function applyRemoteCollaborationRobotPose(robot, normalizedState) {
+    if (!robot || !normalizedState) return;
+    applyRobotTravelAxis(robot, normalizedState.externalAxes, { syncPresentation: false });
+    normalizedState.jointAngles.forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle, false));
+    robot.updateMatrixWorld(true);
+    captureCurrentTcpTarget(robot);
+    updateTcpPresentation(robot);
+    if (robot === state.activeArticulatedModel) {
+        syncJointControls(robot);
+        const pose = getCurrentTcpPoseBase(robot);
+        if (pose && !el.baseJogView?.classList.contains('hidden')) syncBaseJogGizmoFromRobot(robot, pose);
+    }
+}
+
+function applyRemoteCollaborationMotion(timestamp = performance.now()) {
+    const collaboration = state.collaboration;
+    let active = false;
+    collaboration.remoteMotionStates.forEach((motion, robotId) => {
+        const robot = findProgramRobot(robotId);
+        if (!robot) {
+            collaboration.remoteMotionStates.delete(robotId);
+            return;
+        }
+        const elapsed = Math.max(0, timestamp - motion.receivedAt);
+        const progress = Math.min(1, elapsed / motion.durationMs);
+        const jointAngles = motion.fromJointAngles.map((value, index) => (
+            value + (motion.toJointAngles[index] - value) * progress
+        ));
+        const externalAxes = motion.fromExternalAxes.map((value, index) => (
+            value + (motion.toExternalAxes[index] - value) * progress
+        ));
+        if (progress < 1 || !motion.targetApplied) {
+            collaboration.applyingRemoteState = true;
+            try {
+                applyRemoteCollaborationRobotPose(robot, {
+                    ...motion.targetState,
+                    jointAngles,
+                    externalAxes
+                });
+            } finally {
+                collaboration.applyingRemoteState = false;
+            }
+            motion.targetApplied = progress >= 1;
+        }
+        if (progress < 1 || timestamp - collaboration.lastRemoteStateAt <= COLLABORATION_REMOTE_ACTIVITY_TIMEOUT_MS) {
+            active = true;
+        } else {
+            collaboration.remoteMotionStates.delete(robotId);
+        }
+    });
+    return active;
+}
+
 function applyRemoteCollaborationRobotState(message) {
     const collaboration = state.collaboration;
     const robotId = String(message.robotId || '');
@@ -29956,7 +30032,7 @@ function applyRemoteCollaborationRobotState(message) {
     const descriptor = getCollaborationRobotDescriptor(robotId);
     if (descriptor) descriptor.lastState = { ...(message.payload || {}), sequence: Number(message.sequence) || 0 };
     if (message.userId === collaboration.userId) {
-        refreshCollaborationUi();
+        scheduleCollaborationUiRefresh();
         return;
     }
     const robot = findProgramRobot(robotId);
@@ -29966,23 +30042,26 @@ function applyRemoteCollaborationRobotState(message) {
     }
     const normalized = normalizeRobotState(message.payload, descriptor);
     if (!normalized.ok || normalized.state.jointAngles.length !== robot.userData.joints.length) return;
-    collaboration.applyingRemoteState = true;
-    try {
-        applyRobotTravelAxis(robot, normalized.state.externalAxes, { syncPresentation: false });
-        normalized.state.jointAngles.forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle, false));
-        robot.updateMatrixWorld(true);
-        captureCurrentTcpTarget(robot);
-        updateTcpPresentation(robot);
-        if (robot === state.activeArticulatedModel) {
-            syncJointControls(robot);
-            const pose = getCurrentTcpPoseBase(robot);
-            if (pose && !el.baseJogView?.classList.contains('hidden')) syncBaseJogGizmoFromRobot(robot, pose);
-        }
-    } finally {
-        collaboration.applyingRemoteState = false;
-    }
+    const receivedAt = performance.now();
+    const previous = collaboration.remoteMotionStates.get(robotId);
+    const lastReceivedAt = previous?.receivedAt || receivedAt - COLLABORATION_REMOTE_INTERPOLATION_MIN_MS;
+    const durationMs = Math.min(
+        COLLABORATION_REMOTE_INTERPOLATION_MAX_MS,
+        Math.max(COLLABORATION_REMOTE_INTERPOLATION_MIN_MS, receivedAt - lastReceivedAt)
+    );
+    collaboration.remoteMotionStates.set(robotId, {
+        receivedAt,
+        durationMs,
+        fromJointAngles: robot.userData.joints.map((joint) => Number(joint.angle) || 0),
+        toJointAngles: normalized.state.jointAngles.slice(),
+        fromExternalAxes: getRobotExternalAxes(robot),
+        toExternalAxes: normalizeExternalAxisValues(normalized.state.externalAxes),
+        targetState: normalized.state,
+        targetApplied: false
+    });
+    collaboration.lastRemoteStateAt = receivedAt;
     requestRender();
-    refreshCollaborationUi();
+    scheduleCollaborationUiRefresh();
 }
 
 function applyPendingRemoteCollaborationStates() {
@@ -30325,6 +30404,10 @@ function closeCollaborationSocket(resetState = true) {
     const socket = collaboration.socket;
     collaboration.socket = null;
     collaboration.socketGeneration += 1;
+    if (collaboration.uiRefreshTimer) {
+        clearTimeout(collaboration.uiRefreshTimer);
+        collaboration.uiRefreshTimer = null;
+    }
     if (resetState && socket?.readyState === WebSocket.OPEN) {
         try { socket.send(JSON.stringify({ type: 'leaveRoom' })); } catch (_) { }
     }
@@ -30347,6 +30430,9 @@ function closeCollaborationSocket(resetState = true) {
     collaboration.nextSequence.clear();
     collaboration.lastTransmitAt.clear();
     collaboration.pendingRemoteStates.clear();
+    collaboration.remoteMotionStates.clear();
+    collaboration.lastRemoteStateAt = 0;
+    collaboration.lastUiRefreshAt = 0;
     collaboration.pendingAction = null;
     collaboration.error = '';
 }
@@ -44775,6 +44861,7 @@ function installSimulationManualGuide() {
 function requiresContinuousRendering() {
     return isViewWindowOpen()
         || isVirtualControllerActive()
+        || state.collaboration.remoteMotionStates.size > 0
         // OLP itself does not need a 60 FPS scene loop while it is waiting on
         // IO or executing non-motion lines. Motion functions call
         // requestRender() for each animation frame, so keep continuous
@@ -44807,6 +44894,7 @@ function animate(timestamp = performance.now()) {
     state.renderFramePending = false;
     if (!state.collision.lastCheckSkipped) captureCollisionSafeRobotPoses();
     applyVirtualControllerFrame(timestamp);
+    applyRemoteCollaborationMotion(timestamp);
     updateMotionSessions(timestamp);
     updateCycleTimeReadout(timestamp);
     const collision = checkSceneCollisions();
