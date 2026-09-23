@@ -59,6 +59,24 @@
             "title": "Robot Model Select",
             "versions": [
               {
+                "title": "Ver 26.09.23",
+                "items": [
+                  "`[수정]` 펜던트 연장 케이블 형번에 5m·15m·25m 길이가 표시되지 않던 문제를 해결했습니다.",
+                  "`[수정]` 액세서리 기본 수량이 3개로 표시되던 문제를 해결하고 1개로 표시되도록 수정했습니다.",
+                  "`[수정]` 구성 목록 버튼이 상단 헤더 밖에 표시되던 문제를 해결하고 언어 선택 버튼 왼쪽에 배치했습니다.",
+                  "`[변경]` 기존 구성 목록 다운로드 버튼의 문구를 전체 구성 목록 다운로드로 변경했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.09.22",
+                "items": [
+                  "`[추가]` 로봇 모델과 유료 액세서리의 수량을 설정하고 여러 구성을 목록에 담아 최종 구성 내역으로 다운로드할 수 있도록 했습니다.",
+                  "`[수정]` 구성 목록 버튼이 언어 변경 버튼과 겹쳐 보이지 않도록 위치를 조정했습니다.",
+                  "`[수정]` 통신 옵션 확장 카드에서 PROFINET과 CC-Link를 함께 선택할 수 없던 문제를 해결하고, 보호 커버가 있는 펜던트의 수량 표시와 로봇 바디 옵션의 로봇 수량 집계를 수정했습니다.",
+                  "`[수정]` 비상정지 보호 커버가 있는 펜던트의 5m·10m·15m 모델이 표시되지 않고 구매 코드가 잘못 표시되던 문제를 해결했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.09.14",
                 "items": [
                   "`[수정]` 모델 셀렉트에서 로봇 바디 RJ45 포트 유료 옵션을 삭제했습니다."
@@ -212,6 +230,30 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.09.23",
+                "items": [
+                  "`[수정]` 텍스트 입력에서 불필요한 회전 각도 항목을 제거하고 문자 높이 기본값을 100으로 변경했습니다.",
+                  "`[개선]` 스케치 선택 상태에서 도형을 드래그하면 마우스 위치를 따라 실시간으로 이동하고, 선택한 텍스트에는 외곽선이 표시되도록 개선했습니다.",
+                  "`[수정]` 모델 이동을 시작할 때 면을 선택하기 전부터 기존 도형의 스냅 지점이 모두 표시되던 문제를 해결했습니다.",
+                  "`[수정]` 스케치 돌출 후 원본 스케치가 모델 트리에 별도 항목으로 중복 표시되던 문제를 해결했습니다.",
+                  "`[수정]` 치수가 고정된 스케치 도형을 드래그할 때 고정된 축으로 이동하지 않고, 구속되지 않은 방향으로만 이동하도록 수정했습니다.",
+                  "`[개선]` 스케치와 돌출 스케치의 스냅 후보에 사각형 중심점이 표시되고 선택되도록 개선했습니다.",
+                  "`[수정]` 스케치 편집 화면에서 돌출을 시작할 때 돌출 높이가 0으로 표시되던 문제를 해결하고 기본값을 100으로 설정했습니다.",
+                  "`[수정]` 협업 방에 참여한 게스트가 로봇을 점유한 뒤에도 컨트롤러에 연결할 수 없던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.09.22",
+                "items": [
+                  "`[개선]` DXF 도면을 불러올 때 `TEXT`와 `MTEXT` 텍스트도 위치·크기·회전 정보를 유지해 함께 표시하도록 개선했습니다.",
+                  "`[수정]` DXF 가져오기에서 도면 안의 텍스트가 누락되던 문제를 해결했습니다.",
+                  "`[추가]` 스케치 모드에서 텍스트를 직접 입력하고 위치·문자 높이·회전 각도를 지정할 수 있는 텍스트 도구를 추가했습니다.",
+                  "`[수정]` 스케치 텍스트가 돌출 프로파일로 잘못 처리되지 않도록 수정했습니다.",
+                  "`[수정]` 스케치 돌출 도형에서 사각형 중심점 스냅이 표시되지 않던 문제를 해결했습니다.",
+                  "`[수정]` 도형을 이동할 때 이동 대상 도형과 생성된 기본 도형의 스냅 지점이 표시되지 않던 문제를 해결했습니다."
+                ]
+              },
               {
                 "title": "Ver 26.09.21",
                 "items": [
@@ -1279,6 +1321,26 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.09.23",
+                "items": [
+                  "`[Fixed]` Removed the unnecessary text rotation field and changed the default text height to 100.",
+                  "`[Improved]` Sketch entities now follow the pointer in real time while dragging in Select mode, and selected text shows an outline.",
+                  "`[Fixed]` Fixed all existing snap points being displayed before a face was selected when starting model placement.",
+                  "`[Fixed]` Fixed the source sketch being shown as a separate duplicate model-tree item after sketch extrusion.",
+                  "`[Fixed]` Fixed dimension-constrained sketch geometry moving along a locked axis when dragged, so it moves only along unconstrained directions.",
+                  "`[Improved]` Added visible and selectable rectangle-center snap candidates to sketches and extruded sketches.",
+                  "`[Fixed]` Fixed the extrusion height showing as 0 when starting extrusion from the sketch editor and set the default to 100.",
+                  "`[Fixed]` Fixed an issue where a guest who joined a collaboration room could not claim a robot or connect a controller."
+                ]
+              },
+              {
+                "title": "Ver 26.09.22",
+                "items": [
+                  "`[Improved]` Added a sketch text tool so users can enter text directly and set its position, text height, and rotation angle.",
+                  "`[Fixed]` Fixed sketch text being treated as an extrusion profile."
+                ]
+              },
+              {
                 "title": "Ver 26.09.21",
                 "items": [
                   "`[Fixed]` Fixed an issue where some complex STEP files were treated as having no displayable mesh and could not be imported.",
@@ -2345,6 +2407,26 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.09.23",
+                "items": [
+                  "`[修复]` 删除不需要的文本旋转角度项，并将文字高度默认值改为 100。",
+                  "`[改进]` 在草图选择模式下拖动图形时，图形会实时跟随鼠标移动，选中的文本也会显示外框。",
+                  "`[修复]` 修复了开始移动模型时尚未选择面就显示所有现有捕捉点的问题。",
+                  "`[修复]` 修复了草图拉伸后源草图在模型树中重复单独显示的问题。",
+                  "`[修复]` 修复了尺寸固定的草图图形拖动时仍沿锁定轴移动的问题，使其仅沿未约束方向移动。",
+                  "`[改进]` 改进了草图和拉伸草图的捕捉候选，使矩形中心点可显示并可选择。",
+                  "`[修复]` 修复了从草图编辑器开始拉伸时拉伸高度显示为 0 的问题，并将默认值设为 100。",
+                  "`[修复]` 修复了加入协作房间的访客无法占用机器人或连接控制器的问题。"
+                ]
+              },
+              {
+                "title": "Ver 26.09.22",
+                "items": [
+                  "`[改进]` 添加草图文本工具，可直接输入文本并设置位置、文字高度和旋转角度。",
+                  "`[修复]` 修复了草图文本被当作拉伸轮廓处理的问题。"
+                ]
+              },
+              {
                 "title": "Ver 26.09.21",
                 "items": [
                   "`[修复]` 修复了部分复杂 STEP 文件被判定为没有可显示网格而无法导入的问题。",
@@ -3410,6 +3492,26 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.09.23",
+                "items": [
+                  "`[Sửa lỗi]` Đã xóa mục góc xoay văn bản không cần thiết và đặt chiều cao văn bản mặc định là 100.",
+                  "`[Cải tiến]` Khi kéo hình trong chế độ Chọn của phác thảo, hình sẽ di chuyển theo con trỏ theo thời gian thực và văn bản được chọn sẽ hiển thị khung viền.",
+                  "`[Sửa lỗi]` Đã khắc phục sự cố tất cả điểm bắt dính hiện có hiển thị trước khi chọn mặt khi bắt đầu di chuyển model.",
+                  "`[Sửa lỗi]` Đã khắc phục sự cố phác thảo nguồn hiển thị lặp riêng trong cây mô hình sau khi đùn phác thảo.",
+                  "`[Sửa lỗi]` Đã khắc phục lỗi hình học phác thảo đã khóa kích thước vẫn di chuyển theo trục bị khóa khi kéo, để chỉ di chuyển theo hướng chưa bị ràng buộc.",
+                  "`[Cải tiến]` Cải thiện ứng viên bắt dính của phác thảo và phác thảo đùn để điểm tâm hình chữ nhật được hiển thị và có thể chọn.",
+                  "`[Sửa lỗi]` Đã khắc phục lỗi chiều cao đùn hiển thị là 0 khi bắt đầu đùn từ trình chỉnh sửa phác thảo và đặt giá trị mặc định là 100.",
+                  "`[Sửa lỗi]` Đã khắc phục sự cố khách tham gia phòng cộng tác không thể chiếm quyền robot hoặc kết nối bộ điều khiển."
+                ]
+              },
+              {
+                "title": "Ver 26.09.22",
+                "items": [
+                  "`[Cải tiến]` Thêm công cụ văn bản phác thảo để nhập văn bản trực tiếp và đặt vị trí, chiều cao văn bản, góc xoay.",
+                  "`[Sửa lỗi]` Đã khắc phục sự cố văn bản phác thảo bị xử lý như biên dạng đùn."
+                ]
+              },
               {
                 "title": "Ver 26.09.21",
                 "items": [

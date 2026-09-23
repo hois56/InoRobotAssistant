@@ -8,7 +8,7 @@
     <title>3D Simulation | INOVANCE</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=20260915-wobj-1">
+    <link rel="stylesheet" href="style.css?v=20260922-sketch-snap-center-2">
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -23,11 +23,23 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/Language/runtime/i18n.css">
-    <script src="/Language/runtime/locales-data.js?v=1dded1b9ac8d" defer></script>
+    <script src="/Language/runtime/locales-data.js?v=1dded1b9ac8e" defer></script>
     <script src="/Language/runtime/i18n.js" defer></script>
     <script src="/Language/runtime/icon-fallback.js" defer></script>
     <script src="/analytics-config.js"></script>
     <script src="/analytics.js" defer></script>
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -790,7 +802,7 @@
                 <input id="cad-import-center" type="checkbox" checked>
                 <span data-i18n="legacy.도면 중심을 원점에 배치">도면 중심을 원점에 배치</span>
             </label>
-            <p id="cad-import-note" class="cad-import-note" data-i18n="legacy.DXF의 블록과 LINE ARC CIRCLE POLYLINE을 전개해 평면에 표시하며 스플라인은 지원하지 않습니다">DXF의 블록과 LINE ARC CIRCLE POLYLINE을 전개해 평면에 표시하며 스플라인은 지원하지 않습니다</p>
+            <p id="cad-import-note" class="cad-import-note" data-i18n="legacy.DXF의 블록과 LINE ARC CIRCLE POLYLINE을 전개해 평면에 표시하며 스플라인은 지원하지 않습니다">DXF의 블록과 LINE ARC CIRCLE POLYLINE TEXT MTEXT를 전개해 평면에 표시하며 스플라인은 지원하지 않습니다</p>
         </div>
         <div class="import-dialog-actions">
             <button id="btn-cancel-import" type="button" class="import-secondary-btn">취소</button>
@@ -1061,6 +1073,7 @@
                             <button type="button" class="sketch-workbench-tool" data-sketch-workbench-tool="rectangle" aria-pressed="false" title="Rectangle"><i class="fa-regular fa-square"></i><span>Rectangle</span></button>
                             <button type="button" class="sketch-workbench-tool" data-sketch-workbench-tool="circle" aria-pressed="false" title="Circle"><i class="fa-regular fa-circle"></i><span>Circle</span></button>
                             <button type="button" class="sketch-workbench-tool" data-sketch-workbench-tool="chamfer" aria-pressed="false" title="Chamfer"><i class="fa-solid fa-draw-polygon"></i><span>Chamfer</span></button>
+                            <button type="button" class="sketch-workbench-tool" data-sketch-workbench-tool="text" aria-pressed="false" title="텍스트" data-i18n-title="legacy.텍스트"><i class="fa-solid fa-font"></i><span data-i18n="legacy.텍스트">텍스트</span></button>
                             <button type="button" class="sketch-workbench-tool" data-sketch-workbench-tool="dimension" aria-pressed="false" title="Dimension" data-i18n-title="legacy.치수 기입"><i class="fa-solid fa-ruler"></i><span data-i18n="legacy.치수 기입">Dimension</span></button>
                             <button id="sketch-workbench-import-cad" type="button" class="sketch-workbench-tool" title="DXF를 스케치로 삽입" aria-label="DXF를 스케치로 삽입" data-i18n-title="legacy.DXF를 스케치로 삽입" data-i18n-aria-label="legacy.DXF를 스케치로 삽입"><i class="fa-solid fa-file-import"></i><span data-i18n="legacy.DXF 삽입">DXF 삽입</span></button>
                             <button id="sketch-workbench-snap" type="button" class="sketch-workbench-tool" title="스냅 켜기" aria-label="스냅 켜기" data-i18n-title="legacy.스냅 켜기" data-i18n-aria-label="legacy.스냅 켜기" aria-pressed="true"><i class="fa-solid fa-magnet"></i><span data-i18n="legacy.스냅">Snap</span></button>
@@ -1081,6 +1094,21 @@
                         <button id="sketch-workbench-finish" type="button" class="sketch-workbench-finish" disabled><i class="fa-solid fa-check"></i> <span data-i18n="legacy.스케치 완료">스케치 완료</span></button>
                     </div>
                 </header>
+                <section id="sketch-text-editor" class="sketch-text-editor" hidden aria-label="스케치 텍스트 입력" data-i18n-aria-label="legacy.스케치 텍스트 입력">
+                    <div class="sketch-text-editor-title"><i class="fa-solid fa-font" aria-hidden="true"></i><span data-i18n="legacy.스케치 텍스트 입력">스케치 텍스트 입력</span></div>
+                    <label>
+                        <span data-i18n="legacy.텍스트 내용">텍스트 내용</span>
+                        <textarea id="sketch-text-content" rows="3" maxlength="500" placeholder="텍스트를 입력하세요." data-i18n-placeholder="legacy.텍스트를 입력하세요."></textarea>
+                    </label>
+                    <div class="sketch-text-editor-grid">
+                        <label><span data-i18n="legacy.문자 높이">문자 높이</span><span class="sketch-workbench-input-with-unit"><input id="sketch-text-height" type="number" min="0.5" max="100000" step="0.5" value="100"><small>mm</small></span></label>
+                    </div>
+                    <p id="sketch-text-editor-error" class="sketch-editor-error" role="alert"></p>
+                    <div class="sketch-text-editor-actions">
+                        <button id="sketch-text-cancel" type="button" class="sketch-workbench-extrude-cancel"><i class="fa-solid fa-xmark"></i><span data-i18n="legacy.취소">취소</span></button>
+                        <button id="sketch-text-apply" type="button" class="sketch-workbench-extrude-apply"><i class="fa-solid fa-check"></i><span data-i18n="legacy.텍스트 삽입">텍스트 삽입</span></button>
+                    </div>
+                </section>
                 <aside class="sketch-workbench-browser" aria-label="Sketch Browser">
                     <div class="sketch-workbench-panel-heading"><span>SKETCH BROWSER</span><i class="fa-solid fa-diagram-project"></i></div>
                     <div class="sketch-workbench-tree-section"><span>Elements</span><strong id="sketch-workbench-element-count">0</strong></div>
@@ -1212,6 +1240,7 @@
                             <button id="sketch-tool-rectangle" type="button" class="sketch-tool-button active" data-sketch-tool="rectangle" aria-pressed="true" title="사각형" data-i18n-title="legacy.스케치 사각형"><i class="fa-regular fa-square"></i><span data-i18n="legacy.스케치 사각형">사각형</span></button>
                             <button id="sketch-tool-circle" type="button" class="sketch-tool-button" data-sketch-tool="circle" aria-pressed="false" title="원" data-i18n-title="legacy.원"><i class="fa-regular fa-circle"></i><span data-i18n="legacy.원">원</span></button>
                             <button id="sketch-tool-chamfer" type="button" class="sketch-tool-button" data-sketch-tool="chamfer" aria-pressed="false" title="모따기" data-i18n-title="legacy.모따기"><i class="fa-solid fa-draw-polygon"></i><span data-i18n="legacy.모따기">모따기</span></button>
+                            <button id="sketch-tool-text" type="button" class="sketch-tool-button" data-sketch-tool="text" aria-pressed="false" title="텍스트" data-i18n-title="legacy.텍스트"><i class="fa-solid fa-font"></i><span data-i18n="legacy.텍스트">텍스트</span></button>
                         </div>
                         <div class="shape-dimension-grid sketch-dimension-grid">
                             <label class="axis-x"><span id="sketch-width-label">X</span><input id="sketch-width" type="number" min="0.5" max="100000" step="0.5" disabled aria-label="스케치 X 치수 (mm)" data-i18n-aria-label="legacy.스케치 X 치수 (mm)"><small>mm</small></label>
@@ -2300,7 +2329,7 @@
         </div>
     </footer>
 
-    <script type="module" src="main.js?v=20260918-wobj-click-1"></script>
+    <script type="module" src="main.js?v=20260922-sketch-snap-center-2"></script>
 <script src="/0_Home/tool-guide-embed.js?v=20260906-2"></script>
 </body>
 </html>

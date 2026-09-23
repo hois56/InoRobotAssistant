@@ -4,7 +4,7 @@ import {
     normalizeCadLineTypeName,
     normalizeCadUnit,
     normalizeCad2dDocument
-} from './cad2d-core.mjs?v=20260907-cad-style-1';
+} from './cad2d-core.mjs?v=20260922-cad-text-1';
 import {
     boundsFromPoints,
     sampleArc,
@@ -222,7 +222,7 @@ function transformEntity(entity, transform, blockPath = []) {
     if (!entity) return null;
     const renderPoints = (entity.renderPoints || []).map((point) => transformPoint(point, transform));
     const geometry = { ...(entity.geometry || {}) };
-    ['start', 'end', 'center'].forEach((key) => {
+    ['start', 'end', 'center', 'point', 'insertionPoint', 'alignmentPoint'].forEach((key) => {
         if (Array.isArray(geometry[key])) geometry[key] = transformPoint(geometry[key], transform);
     });
     ['majorAxis', 'direction'].forEach((key) => {
@@ -241,6 +241,26 @@ function transformEntity(entity, transform, blockPath = []) {
     if (Number.isFinite(geometry.radius) && Math.abs(scaleX - scaleY) <= 1e-7) {
         geometry.radius = Math.abs(geometry.radius * scaleX);
     }
+    if (geometry.kind === 'text') {
+        const sourceRotation = Number(geometry.rotation) || 0;
+        const textXAxis = transformVector([Math.cos(sourceRotation), Math.sin(sourceRotation)], transform);
+        const textYAxis = transformVector([-Math.sin(sourceRotation), Math.cos(sourceRotation)], transform);
+        const textScaleX = Math.hypot(textXAxis[0], textXAxis[1]) || 1;
+        const textScaleY = Math.hypot(textYAxis[0], textYAxis[1]) || 1;
+        geometry.rotation = Math.atan2(textXAxis[1], textXAxis[0]);
+        ['height', 'textHeight'].forEach((key) => {
+            if (Number.isFinite(geometry[key])) geometry[key] = Math.abs(geometry[key] * textScaleY);
+        });
+        ['textWidth', 'referenceWidth'].forEach((key) => {
+            if (Number.isFinite(geometry[key])) geometry[key] = Math.abs(geometry[key] * textScaleX);
+        });
+        if (Array.isArray(geometry.anchorOffset)) {
+            geometry.anchorOffset = [
+                geometry.anchorOffset[0] * textScaleX,
+                geometry.anchorOffset[1] * textScaleY
+            ];
+        }
+    }
     if (Number.isFinite(geometry.elevation)) geometry.elevation = 0;
 
     return {
@@ -250,6 +270,140 @@ function transformEntity(entity, transform, blockPath = []) {
         geometry,
         renderPoints,
         bounds: boundsFromPoints(renderPoints)
+    };
+}
+
+function cleanDxfText(value, multiline = false) {
+    let text = String(value ?? '');
+    if (!multiline) return text.replace(/%%d/gi, '°');
+    text = text
+        .replace(/\\P/gi, '\n')
+        .replace(/\\~/g, ' ')
+        .replace(/\\\{/g, '{')
+        .replace(/\\\}/g, '}')
+        .replace(/\\S([^;]*?)([\\^#/])([^;]*);/gi, '$1/$3')
+        .replace(/\\[A-Za-z][^;]*;/g, '')
+        .replace(/\\\\/g, '\\')
+        .replace(/%%d/gi, '°');
+    return text.replace(/[{}]/g, '');
+}
+
+function estimateTextLineWidth(line, height, widthFactor = 1) {
+    const safeHeight = Math.max(Number(height) || 1, 1e-6);
+    const safeWidthFactor = Math.max(Number(widthFactor) || 1, 0.05);
+    return Array.from(String(line ?? '')).reduce((width, character) => {
+        if (character === '\t') return width + safeHeight * 2.4;
+        if (character === ' ') return width + safeHeight * 0.35;
+        return width + safeHeight * (character.charCodeAt(0) > 0x7f ? 0.95 : 0.6);
+    }, 0) * safeWidthFactor;
+}
+
+function textBounds(insertionPoint, anchorOffset, width, height, rotation) {
+    const angle = Number(rotation) || 0;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const origin = [
+        Number(insertionPoint?.[0]) || 0,
+        Number(insertionPoint?.[1]) || 0
+    ];
+    const corners = [
+        [anchorOffset[0], anchorOffset[1]],
+        [anchorOffset[0] + width, anchorOffset[1]],
+        [anchorOffset[0] + width, anchorOffset[1] + height],
+        [anchorOffset[0], anchorOffset[1] + height]
+    ].map(([x, y]) => [
+        origin[0] + x * cos - y * sin,
+        origin[1] + x * sin + y * cos
+    ]);
+    return { corners, bounds: boundsFromPoints(corners) };
+}
+
+function parseTextEntity(base, record) {
+    const multiline = record.type === 'MTEXT';
+    const textParts = multiline
+        ? record.records.filter((item) => item.code === 3 || item.code === 1).map((item) => item.value)
+        : [firstValue(record.records, 1, '')];
+    const text = cleanDxfText(textParts.join(''), multiline);
+    if (!text.trim()) return null;
+
+    const insertionPoint = [firstNumber(record.records, 10, 0), firstNumber(record.records, 20, 0)];
+    const height = Math.max(Math.abs(firstNumber(record.records, 40, 1)), 1e-6);
+    const widthFactor = Math.max(Math.abs(firstNumber(record.records, 41, 1)), 0.05);
+    const rotation = firstNumber(record.records, 50, 0) * Math.PI / 180;
+    const lines = text.split('\n');
+    const lineSpacingFactor = multiline
+        ? Math.max(0.5, firstNumber(record.records, 44, 1.2))
+        : 1;
+    const lineHeight = height * lineSpacingFactor;
+    const textHeight = height + Math.max(0, lines.length - 1) * lineHeight;
+    const referenceWidth = multiline ? Math.max(0, firstNumber(record.records, 41, 0)) : 0;
+    const measuredWidth = Math.max(
+        ...lines.map((line) => estimateTextLineWidth(line, height, multiline ? 1 : widthFactor)),
+        height * 0.1
+    );
+    // MTEXT group code 41 is the reference/wrap width, not the visible glyph
+    // width.  Using it as the rendered width can make short labels appear
+    // almost invisible when a CAD author stores a wide text box.
+    const textWidth = measuredWidth;
+
+    let horizontal = multiline ? 'left' : ({
+        0: 'left', 1: 'center', 2: 'right', 3: 'aligned', 4: 'center', 5: 'fit'
+    })[firstNumber(record.records, 72, 0)] || 'left';
+    let vertical = multiline ? 'top' : ({
+        0: 'baseline', 1: 'bottom', 2: 'middle', 3: 'top'
+    })[firstNumber(record.records, 73, 0)] || 'baseline';
+    if (multiline) {
+        const attachment = ({
+            1: ['left', 'top'], 2: ['center', 'top'], 3: ['right', 'top'],
+            4: ['left', 'middle'], 5: ['center', 'middle'], 6: ['right', 'middle'],
+            7: ['left', 'bottom'], 8: ['center', 'bottom'], 9: ['right', 'bottom']
+        })[firstNumber(record.records, 71, 1)];
+        if (attachment) [horizontal, vertical] = attachment;
+    }
+
+    const alignmentPoint = [
+        firstNumber(record.records, 11, insertionPoint[0]),
+        firstNumber(record.records, 21, insertionPoint[1])
+    ];
+    const hasAlignmentPoint = record.records.some((item) => item.code === 11)
+        && record.records.some((item) => item.code === 21);
+    const usesAlignmentPoint = !multiline && (horizontal !== 'left' || vertical !== 'baseline') && hasAlignmentPoint;
+    const anchorPoint = usesAlignmentPoint ? alignmentPoint : insertionPoint;
+    let effectiveRotation = rotation;
+    if (!multiline && ['aligned', 'fit'].includes(horizontal) && hasAlignmentPoint) {
+        const dx = alignmentPoint[0] - insertionPoint[0];
+        const dy = alignmentPoint[1] - insertionPoint[1];
+        if (Math.hypot(dx, dy) > 1e-9) effectiveRotation = Math.atan2(dy, dx);
+    }
+    const alignedWidth = !multiline && ['aligned', 'fit'].includes(horizontal) && hasAlignmentPoint
+        ? Math.hypot(alignmentPoint[0] - insertionPoint[0], alignmentPoint[1] - insertionPoint[1])
+        : 0;
+    const finalWidth = alignedWidth > 1e-9 ? alignedWidth : textWidth;
+    const anchorOffset = [
+        horizontal === 'center' ? -finalWidth / 2 : horizontal === 'right' ? -finalWidth : 0,
+        vertical === 'top' ? -textHeight : vertical === 'middle' ? -textHeight / 2 : 0
+    ];
+    const { corners, bounds } = textBounds(anchorPoint, anchorOffset, finalWidth, textHeight, effectiveRotation);
+    return {
+        ...base,
+        renderType: 'text',
+        geometry: {
+            kind: 'text',
+            text,
+            insertionPoint: anchorPoint,
+            height,
+            textWidth: finalWidth,
+            textHeight,
+            lineHeight,
+            widthFactor,
+            referenceWidth,
+            rotation: effectiveRotation,
+            horizontalAlign: horizontal,
+            verticalAlign: vertical,
+            anchorOffset
+        },
+        renderPoints: corners,
+        bounds
     };
 }
 
@@ -378,6 +532,9 @@ function parseEntity(record, index, layerMap, lineTypes, curveSegments) {
             const point = [x(10), y(20)];
             return { ...base, renderType: 'point', geometry: { kind: 'point', point }, renderPoints: [point], bounds: boundsFromPoints([point]) };
         }
+        case 'TEXT':
+        case 'MTEXT':
+            return parseTextEntity(base, record);
         case 'RAY':
         case 'XLINE': {
             const origin = [x(10), y(20)];
@@ -407,6 +564,40 @@ export function isBinaryDxfBuffer(buffer) {
     const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer || []);
     const signature = new TextDecoder().decode(bytes.slice(0, 22));
     return signature.startsWith('AutoCAD Binary DXF');
+}
+
+function detectDxfCodePage(bytes) {
+    const probe = new TextDecoder('latin1', { fatal: false }).decode(bytes);
+    const lines = probe.replace(/\r\n?/g, '\n').split('\n');
+    for (let index = 0; index + 3 < lines.length; index += 2) {
+        if (lines[index].trim() !== '9' || lines[index + 1].trim().toUpperCase() !== '$DWGCODEPAGE') continue;
+        if (lines[index + 2].trim() !== '3') continue;
+        return lines[index + 3].trim().toUpperCase();
+    }
+    return '';
+}
+
+function decodeDxfBuffer(buffer) {
+    const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+    // Some CAD exporters leave ANSI_949 in the header while writing the
+    // actual text as UTF-8.  Prefer a valid UTF-8 payload before honoring the
+    // legacy code-page hint so those files retain their Korean labels.
+    try {
+        return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    } catch {
+        // Fall through to the declared legacy code page.
+    }
+    const codePage = detectDxfCodePage(bytes);
+    const encoding = ({
+        ANSI_949: 'euc-kr',
+        CP949: 'euc-kr',
+        ANSI_1252: 'windows-1252'
+    })[codePage] || 'utf-8';
+    try {
+        return new TextDecoder(encoding, { fatal: false }).decode(bytes);
+    } catch {
+        return new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+    }
 }
 
 export function parseDxfText(text, options = {}) {
@@ -572,6 +763,6 @@ export async function parseDxfBuffer(buffer, options = {}) {
         error.code = 'CAD_DXF_BINARY_UNSUPPORTED';
         throw error;
     }
-    const text = new TextDecoder('utf-8', { fatal: false }).decode(buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer));
+    const text = decodeDxfBuffer(buffer);
     return parseDxfText(text, options);
 }

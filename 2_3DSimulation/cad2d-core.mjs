@@ -118,12 +118,13 @@ function scalePoint(point, scale) {
 function scaleGeometry(geometry, scale) {
     if (!geometry || typeof geometry !== 'object') return {};
     const result = { ...geometry };
-    ['start', 'end', 'center', 'majorAxis', 'direction'].forEach((key) => {
+    ['start', 'end', 'center', 'point', 'majorAxis', 'direction', 'insertionPoint', 'alignmentPoint'].forEach((key) => {
         if (Array.isArray(result[key])) result[key] = scalePoint(clonePoint(result[key]), scale);
     });
-    ['radius', 'majorRadius', 'minorRadius', 'elevation'].forEach((key) => {
+    ['radius', 'majorRadius', 'minorRadius', 'elevation', 'height', 'textHeight', 'textWidth', 'referenceWidth', 'lineHeight'].forEach((key) => {
         if (result[key] !== undefined) result[key] = (Number(result[key]) || 0) * scale;
     });
+    if (Array.isArray(result.anchorOffset)) result.anchorOffset = scalePoint(clonePoint(result.anchorOffset), scale);
     if (Array.isArray(result.points)) result.points = clonePoints(result.points).map((point) => scalePoint(point, scale));
     if (Array.isArray(result.vertices)) {
         result.vertices = result.vertices.map((vertex) => ({

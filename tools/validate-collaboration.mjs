@@ -103,6 +103,17 @@ const [serverSource, pageSource, htmlSource, styleSource] = await Promise.all([
     readFile(new URL('../2_3DSimulation/index.html', import.meta.url), 'utf8'),
     readFile(new URL('../2_3DSimulation/style.css', import.meta.url), 'utf8')
 ]);
+const snapshotRestoreStart = pageSource.indexOf('async function applyCollaborationRoomSnapshot');
+const sceneCommandStart = pageSource.indexOf('function applyCollaborationSceneCommand', snapshotRestoreStart);
+assert.ok(snapshotRestoreStart >= 0 && sceneCommandStart > snapshotRestoreStart);
+const snapshotRestoreSource = pageSource.slice(snapshotRestoreStart, sceneCommandStart);
+const restoreAwaitIndex = snapshotRestoreSource.indexOf('await restoreWorkspaceSnapshot');
+assert.ok(restoreAwaitIndex >= 0);
+assert.equal(
+    snapshotRestoreSource.indexOf('updateCollaborationRobotSnapshot(message.robots, message.participants)', restoreAwaitIndex),
+    -1,
+    'workspace restore must not reapply the stale pre-claim room snapshot'
+);
 [
     'COLLABORATION_WS_PATH',
     'MAX_COLLABORATION_PARTICIPANTS',

@@ -27,9 +27,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalOverlay = document.getElementById('options-modal');
     const closeModalBtn = document.getElementById('close-modal-btn');
     const downloadPdfBtn = document.getElementById('download-pdf-btn');
+    const addToCartBtn = document.getElementById('add-to-cart-btn');
     const modalBody = document.getElementById('modal-body');
+    const cartToggleBtn = document.getElementById('cart-toggle-btn');
+    const cartBadge = document.getElementById('cart-badge');
+    const cartOverlay = document.getElementById('cart-overlay');
+    const cartCloseBtn = document.getElementById('cart-close-btn');
+    const cartList = document.getElementById('cart-list');
+    const cartSummaryText = document.getElementById('cart-summary-text');
+    const cartTotalItems = document.getElementById('cart-total-items');
+    const cartTotalRobots = document.getElementById('cart-total-robots');
+    const cartClearBtn = document.getElementById('cart-clear-btn');
+    const cartDownloadBtn = document.getElementById('cart-download-btn');
 
     let currentActiveProduct = null;
+    let editingCartItemId = null;
+    const cartStorageKey = 'inorobot.robotModelSelect.cart.v1';
 
     function getCad3dPath(product) {
         const entry = window.InoRobotCadManifest?.[product?.id];
@@ -80,6 +93,74 @@ document.addEventListener('DOMContentLoaded', () => {
         accessories: (typeof accessoriesList !== 'undefined') ? JSON.parse(JSON.stringify(accessoriesList)) : []
     };
 
+    function loadCartItems() {
+        try {
+            const raw = localStorage.getItem(cartStorageKey);
+            const parsed = raw ? JSON.parse(raw) : [];
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (error) {
+            console.warn('Could not restore saved model configurations:', error);
+            return [];
+        }
+    }
+
+    let cartItems = loadCartItems();
+
+    function persistCartItems() {
+        try {
+            localStorage.setItem(cartStorageKey, JSON.stringify(cartItems));
+        } catch (error) {
+            console.warn('Could not save model configurations:', error);
+        }
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
+
+    function parsePositiveQuantity(value, fallback = 1) {
+        const parsed = Number.parseInt(value, 10);
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+    }
+
+    function getDisplayModelName(product, bodyOptionValue = 'standard') {
+        if (!product) return '';
+
+        let displayName = product.name;
+        if (product.specs?.Type === 'SCARA' && product.specs['Clean Type'] === 'Yes') {
+            displayName = displayName.replace(/\s*\(Clean Type\)\s*/gi, '');
+            displayName = displayName.replace(/Z(\d+)([S])/gi, (match, p1, p2) => `Z${parseInt(p1, 10) - 3}C`);
+        }
+        if (product.specs?.Type === '6-Axis') {
+            return getBodyOptionModelName(product.name, bodyOptionValue);
+        }
+        return displayName;
+    }
+
+    function getMatchedCableSelection(product, root = modalBody) {
+        const lenEl = root.querySelector('input[name="cableLenSelection"]:checked');
+        const typeEl = root.querySelector('input[name="cableTypeSelection"]:checked');
+        const length = lenEl ? lenEl.value : 'N/A';
+        const type = typeEl ? typeEl.value : 'Standard (표준형)';
+        const isFlex = type.includes('High Flex');
+        const matched = (product?.cables || []).find(cable => {
+            const text = String(cable.cable || '');
+            return (isFlex ? text.includes('High flex') : !text.includes('High flex')) && text.includes(length);
+        });
+
+        return {
+            length,
+            type,
+            code: matched?.code || product?.cables?.[0]?.code || 'N/A',
+            description: matched?.cable || ''
+        };
+    }
+
     // Initialize Sub Type for each product
     state.products.forEach(product => {
         if (!product || !product.specs) return;
@@ -114,6 +195,350 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function isHiddenProduct(product) {
         return product?.specs?.Type === 'SCARA' && String(product.name || '').toUpperCase().startsWith('IR-CS');
+    }
+
+    function getModalRobotQuantity() {
+        const input = modalBody.querySelector('input[name="robotQuantity"]');
+        return parsePositiveQuantity(input ? input.value : 1);
+    }
+
+    function getSelectionQuantity(input, fallback = 1) {
+        const quantityInput = input?.closest('label')?.querySelector('.accessory-quantity');
+        return parsePositiveQuantity(quantityInput ? quantityInput.value : fallback, fallback);
+    }
+
+    function splitAccessoryDescription(fullDescription, fallbackName) {
+        const source = String(fullDescription || '');
+        if (!source.includes(' - ')) {
+            return { name: fallbackName, detail: source };
+        }
+        const parts = source.split(' - ');
+        return { name: parts.shift() || fallbackName, detail: parts.join(' - ') };
+    }
+
+    function createCartAccessoryRow({ category, name, detail, code, quantity, input }) {
+        return {
+            category,
+            name: name || category,
+            detail: detail || '',
+            code: code || '-',
+            quantity: parsePositiveQuantity(quantity),
+            inputName: input?.name || '',
+            inputValue: input?.value || ''
+        };
+    }
+
+    function collectCurrentAccessoryRows(robotQuantity) {
+        const rows = [];
+        const addRow = row => rows.push(createCartAccessoryRow(row));
+
+        const bodyOption = modalBody.querySelector('input[name="robotBodyOption"]:checked');
+        if (bodyOption && bodyOption.value !== 'standard') {
+            addRow({
+                category: 'Robot Body',
+                name: '로봇 바디 옵션',
+                detail: `${bodyOption.dataset.label || bodyOption.value}${bodyOption.dataset.spec ? ` (${bodyOption.dataset.spec})` : ''}`,
+                code: getBodyOptionPurchaseCode(currentActiveProduct, bodyOption.value),
+                quantity: robotQuantity,
+                input: bodyOption
+            });
+        }
+
+        const pendantConfig = modalBody.querySelector('input[name="pendantConfig"]:checked');
+        const pendantLength = modalBody.querySelector('input[name="pendantLength"]:checked:not(:disabled)');
+        if (pendantConfig && pendantConfig.value !== 'none' && pendantLength) {
+            const pendantSpec = pendantLength.dataset.spec || '';
+            addRow({
+                category: 'Pendant',
+                name: '티칭 펜던트',
+                detail: `${pendantConfig.dataset.label || pendantConfig.value}${pendantSpec && pendantSpec !== '-' ? ` (길이: ${pendantSpec})` : ''}`,
+                code: pendantLength.value,
+                quantity: getSelectionQuantity(pendantLength),
+                input: pendantLength
+            });
+        }
+
+        const selectedIoCableSet = modalBody.querySelector('input[name="ioCableSetSelection"]:checked');
+        if (selectedIoCableSet) {
+            const quantity = getSelectionQuantity(selectedIoCableSet);
+            addRow({
+                category: 'Arm I/O Cable',
+                name: `Arm I/O 케이블 (${selectedIoCableSet.dataset.armPin || '기본핀'})`,
+                detail: `${selectedIoCableSet.dataset.armDesc || ''}${selectedIoCableSet.dataset.armSpec && selectedIoCableSet.dataset.armSpec !== '-' ? ` (길이: ${selectedIoCableSet.dataset.armSpec})` : ''}`,
+                code: selectedIoCableSet.dataset.code || selectedIoCableSet.value,
+                quantity,
+                input: selectedIoCableSet
+            });
+            addRow({
+                category: 'Body I/O Cable',
+                name: `Body I/O 케이블 (${selectedIoCableSet.dataset.bodyPin || '기본핀'})`,
+                detail: `${selectedIoCableSet.dataset.bodyDesc || ''}${selectedIoCableSet.dataset.bodySpec && selectedIoCableSet.dataset.bodySpec !== '-' ? ` (길이: ${selectedIoCableSet.dataset.bodySpec})` : ''}`,
+                code: selectedIoCableSet.dataset.code || selectedIoCableSet.value,
+                quantity,
+                input: selectedIoCableSet
+            });
+        } else {
+            modalBody.querySelectorAll('input[name^="armSelection_"]:checked, input[name^="bodySelection_"]:checked').forEach(input => {
+                if (input.value === 'none') return;
+                const isArm = input.name.startsWith('armSelection_');
+                const pin = input.name.split('_')[1] || '기본핀';
+                const spec = input.dataset.spec || '';
+                addRow({
+                    category: isArm ? 'Arm I/O Cable' : 'Body I/O Cable',
+                    name: `${isArm ? 'Arm' : 'Body'} I/O 케이블 (${pin})`,
+                    detail: `${input.dataset.desc || ''}${spec && spec !== '-' ? ` (길이: ${spec})` : ''}`,
+                    code: input.value,
+                    quantity: getSelectionQuantity(input),
+                    input
+                });
+            });
+        }
+
+        modalBody.querySelectorAll('input[name="accSelection"]:checked').forEach(input => {
+            const descriptor = splitAccessoryDescription(input.dataset.desc, '기타 악세서리');
+            const spec = input.dataset.spec || '';
+            addRow({
+                category: 'Accessory',
+                name: descriptor.name,
+                detail: `${descriptor.detail}${spec && spec !== '-' ? ` (길이: ${spec})` : ''}`,
+                code: input.value,
+                quantity: getSelectionQuantity(input),
+                input
+            });
+        });
+
+        const communication = modalBody.querySelector('input[name="commSelection"]:checked');
+        if (communication && communication.value !== 'none') {
+            addRow({
+                category: 'Communication',
+                name: communication.dataset.label || communication.value,
+                detail: '확장 카드',
+                code: communication.dataset.code || '-',
+                quantity: getSelectionQuantity(communication),
+                input: communication
+            });
+        }
+
+        const communicationCode = communication && communication.value !== 'none'
+            ? communication.dataset.code
+            : '';
+        modalBody.querySelectorAll('input[name="expSelection"]:checked').forEach(input => {
+            if (communicationCode && input.value === communicationCode) return;
+            const descriptor = splitAccessoryDescription(input.dataset.desc, '확장 카드');
+            addRow({
+                category: 'Expansion Card',
+                name: descriptor.name,
+                detail: descriptor.detail,
+                code: input.value,
+                quantity: getSelectionQuantity(input),
+                input
+            });
+        });
+
+        modalBody.querySelectorAll('input[name="remoteCouplerSelection"]:checked').forEach(input => {
+            const descriptor = splitAccessoryDescription(input.dataset.desc, '리모트 커플러');
+            addRow({
+                category: 'Remote Coupler',
+                name: descriptor.name,
+                detail: descriptor.detail,
+                code: input.value,
+                quantity: getSelectionQuantity(input),
+                input
+            });
+        });
+
+        return rows;
+    }
+
+    function collectCurrentCartItem() {
+        if (!currentActiveProduct) return null;
+
+        const robotQuantity = getModalRobotQuantity();
+        const cable = getMatchedCableSelection(currentActiveProduct);
+        const bodyOption = modalBody.querySelector('input[name="robotBodyOption"]:checked');
+        const pendantConfig = modalBody.querySelector('input[name="pendantConfig"]:checked');
+        const pendantLength = modalBody.querySelector('input[name="pendantLength"]:checked:not(:disabled)');
+        const communication = modalBody.querySelector('input[name="commSelection"]:checked');
+        const bodyOptionValue = bodyOption ? bodyOption.value : 'standard';
+
+        const armSelections = Array.from(modalBody.querySelectorAll('input[name^="armSelection_"]:checked'))
+            .filter(input => input.value !== 'none')
+            .map(input => ({ name: input.name, value: input.value }));
+        const bodySelections = Array.from(modalBody.querySelectorAll('input[name^="bodySelection_"]:checked'))
+            .filter(input => input.value !== 'none')
+            .map(input => ({ name: input.name, value: input.value }));
+
+        return {
+            id: editingCartItemId || `cart-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            modelId: currentActiveProduct.id,
+            productName: currentActiveProduct.name,
+            modelName: getDisplayModelName(currentActiveProduct, bodyOptionValue),
+            robotQuantity,
+            cable,
+            bodyOptionValue,
+            purchaseCode: bodyOptionValue !== 'standard'
+                ? getBodyOptionPurchaseCode(currentActiveProduct, bodyOptionValue)
+                : cable.code,
+            accessories: collectCurrentAccessoryRows(robotQuantity),
+            selections: {
+                cableLength: cable.length,
+                cableType: cable.type,
+                bodyOption: bodyOptionValue,
+                pendantConfig: pendantConfig ? pendantConfig.value : 'none',
+                pendantLength: pendantLength ? pendantLength.value : '',
+                ioCableSet: (modalBody.querySelector('input[name="ioCableSetSelection"]:checked') || {}).value || '',
+                armSelections,
+                bodySelections,
+                accessories: Array.from(modalBody.querySelectorAll('input[name="accSelection"]:checked')).map(input => input.value),
+                communication: communication ? communication.value : 'none',
+                expansion: Array.from(modalBody.querySelectorAll('input[name="expSelection"]:checked')).map(input => input.value),
+                remoteCouplers: Array.from(modalBody.querySelectorAll('input[name="remoteCouplerSelection"]:checked')).map(input => input.value)
+            }
+        };
+    }
+
+    function renderCart() {
+        if (!cartList) return;
+
+        const totalRobots = cartItems.reduce((sum, item) => sum + parsePositiveQuantity(item.robotQuantity), 0);
+        cartBadge.textContent = String(cartItems.length);
+        cartTotalItems.textContent = String(cartItems.length);
+        cartTotalRobots.textContent = String(totalRobots);
+        cartSummaryText.textContent = `${uiText('총 구성 수')}: ${cartItems.length} · ${uiText('총 로봇 수량')}: ${totalRobots}`;
+        cartClearBtn.disabled = cartItems.length === 0;
+        cartDownloadBtn.disabled = cartItems.length === 0;
+
+        if (cartItems.length === 0) {
+            cartList.innerHTML = `<div class="cart-empty">${escapeHtml(uiText('구성 목록이 비어 있습니다.'))}</div>`;
+            return;
+        }
+
+        cartList.innerHTML = cartItems.map((item, index) => {
+            const cable = item.cable || {};
+            const accessories = Array.isArray(item.accessories) ? item.accessories : [];
+            const detailRows = [
+                { name: uiText('기본 케이블'), detail: `${uiText(cable.type || '-')}${cable.length ? ` / ${cable.length}` : ''}`, code: cable.code || '-', quantity: item.robotQuantity },
+                ...accessories.map(option => ({
+                    name: uiText(option.name || option.category),
+                    detail: localizeDisplayText(option.detail || ''),
+                    code: option.code || '-',
+                    quantity: option.quantity || 1
+                }))
+            ];
+
+            return `
+                <article class="cart-item" data-cart-id="${escapeHtml(item.id)}">
+                    <div class="cart-item-header">
+                        <div>
+                            <div class="cart-item-title">${index + 1}. ${escapeHtml(item.modelName || item.productName || item.modelId)}</div>
+                            <div class="cart-item-meta">${escapeHtml(uiText('로봇 수량'))}: ${escapeHtml(item.robotQuantity)} · ${escapeHtml(item.purchaseCode || item.modelId)}</div>
+                        </div>
+                        <div class="cart-item-actions">
+                            <button class="cart-item-action" type="button" data-cart-action="edit" data-cart-id="${escapeHtml(item.id)}">${escapeHtml(uiText('구성 수정'))}</button>
+                            <button class="cart-item-action" type="button" data-cart-action="delete" data-cart-id="${escapeHtml(item.id)}">${escapeHtml(uiText('구성 삭제'))}</button>
+                        </div>
+                    </div>
+                    <div class="cart-item-details">
+                        ${detailRows.map(row => `
+                            <span class="cart-item-detail-name">${escapeHtml(row.name)}</span>
+                            <span>${escapeHtml(row.detail)} <span class="cart-item-detail-code">${escapeHtml(row.code)}</span></span>
+                            <span class="cart-item-detail-qty">${escapeHtml(row.quantity)}${escapeHtml(uiText('개'))}</span>
+                        `).join('')}
+                    </div>
+                </article>
+            `;
+        }).join('');
+    }
+
+    function setCartOpen(isOpen) {
+        if (!cartOverlay) return;
+        cartOverlay.style.display = isOpen ? 'flex' : 'none';
+        cartOverlay.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+    }
+
+    function syncAccessoryQuantityControls() {
+        modalBody.querySelectorAll('.accessory-quantity-wrap').forEach(wrapper => {
+            const selectionInput = wrapper.closest('label')?.querySelector('input[type="checkbox"], input[type="radio"]');
+            const visible = Boolean(selectionInput && selectionInput.checked && !selectionInput.disabled);
+            wrapper.classList.toggle('is-hidden', !visible);
+        });
+    }
+
+    function setupAccessoryQuantityControls() {
+        const selector = [
+            'input[name="pendantLength"]',
+            'input[name="ioCableSetSelection"]',
+            'input[name^="armSelection_"]',
+            'input[name^="bodySelection_"]',
+            'input[name="accSelection"]',
+            'input[name="commSelection"]',
+            'input[name="expSelection"]',
+            'input[name="remoteCouplerSelection"]'
+        ].join(',');
+
+        modalBody.querySelectorAll(selector).forEach(selectionInput => {
+            if (selectionInput.value === 'none' || selectionInput.disabled) return;
+            const label = selectionInput.closest('label');
+            if (!label || label.querySelector('.accessory-quantity-wrap')) return;
+
+            const wrapper = document.createElement('span');
+            wrapper.className = 'accessory-quantity-wrap is-hidden';
+            wrapper.innerHTML = `<span>${escapeHtml(uiText('수량'))}</span><input class="accessory-quantity" type="number" min="1" step="1" value="1" aria-label="${escapeHtml(uiText('수량'))}">`;
+            const quantityInput = wrapper.querySelector('.accessory-quantity');
+            quantityInput.addEventListener('change', () => {
+                quantityInput.value = String(parsePositiveQuantity(quantityInput.value));
+            });
+            quantityInput.addEventListener('click', event => event.stopPropagation());
+            quantityInput.addEventListener('keydown', event => event.stopPropagation());
+            label.appendChild(wrapper);
+
+            selectionInput.addEventListener('change', syncAccessoryQuantityControls);
+        });
+
+        syncAccessoryQuantityControls();
+    }
+
+    function findModalSelectionInput(name, value) {
+        return Array.from(modalBody.querySelectorAll('input')).find(input => input.name === name && input.value === value) || null;
+    }
+
+    function restoreCartItemToModal(cartItem) {
+        if (!cartItem) return;
+        const selections = cartItem.selections || {};
+        const setInput = (name, value, dispatch = true) => {
+            if (!value) return null;
+            const input = findModalSelectionInput(name, value);
+            if (!input) return null;
+            input.checked = true;
+            if (dispatch) input.dispatchEvent(new Event('change', { bubbles: true }));
+            return input;
+        };
+
+        const robotQuantityInput = modalBody.querySelector('input[name="robotQuantity"]');
+        if (robotQuantityInput) robotQuantityInput.value = String(parsePositiveQuantity(cartItem.robotQuantity));
+        setInput('cableLenSelection', selections.cableLength, false);
+        setInput('cableTypeSelection', selections.cableType, false);
+        setInput('robotBodyOption', selections.bodyOption || 'standard', false);
+        setInput('pendantConfig', selections.pendantConfig || 'none', true);
+        setInput('pendantLength', selections.pendantLength, false);
+        setInput('ioCableSetSelection', selections.ioCableSet, false);
+
+        (selections.armSelections || []).forEach(item => setInput(item.name, item.value, false));
+        (selections.bodySelections || []).forEach(item => setInput(item.name, item.value, false));
+        (selections.accessories || []).forEach(value => setInput('accSelection', value, false));
+        setInput('commSelection', selections.communication || 'none', true);
+        (selections.expansion || []).forEach(value => setInput('expSelection', value, false));
+        (selections.remoteCouplers || []).forEach(value => setInput('remoteCouplerSelection', value, false));
+
+        setupAccessoryQuantityControls();
+        (cartItem.accessories || []).forEach(option => {
+            const input = findModalSelectionInput(option.inputName, option.inputValue);
+            const quantityInput = input?.closest('label')?.querySelector('.accessory-quantity');
+            if (quantityInput) {
+                quantityInput.value = String(parsePositiveQuantity(option.quantity));
+            }
+        });
+        syncAccessoryQuantityControls();
     }
 
     function renderFilters() {
@@ -983,11 +1408,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Modal Logic
-    function openOptionsModal(productId) {
+    function openOptionsModal(productId, cartItem = null) {
         const product = state.products.find(p => p.id === productId);
         if (!product) return;
 
         currentActiveProduct = product;
+        editingCartItemId = cartItem ? cartItem.id : null;
 
         // CAD availability is known from the static manifest, so opening the
         // modal does not require one or more network HEAD requests.
@@ -1185,6 +1611,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 <strong>${uiText('예상 납기')}:</strong> <span id="lead-time-value" style="color:var(--secondary-orange); font-weight:bold;">TBD</span>
             </div>
             <h2 id="modal-model-name" style="color:var(--text-main);margin-bottom:12px;">${displayName}</h2>
+
+            <div class="robot-quantity-panel" style="margin-bottom:18px; padding:12px; border:1px solid rgba(56,189,248,0.25); border-radius:8px; background:rgba(56,189,248,0.05);">
+                <label for="robot-quantity" style="display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--text-main); font-size:13px; font-weight:700;">
+                    <span>${uiText('로봇 수량')}</span>
+                    <input id="robot-quantity" name="robotQuantity" type="number" min="1" step="1" value="1" class="accessory-quantity" aria-label="로봇 수량">
+                </label>
+                <small style="display:block; margin-top:6px; color:var(--text-muted);">${uiText('선택한 모델 구성을 장바구니에 담을 수 있습니다.')}</small>
+            </div>
             
             <h4 style="margin-bottom: 12px; color: var(--text-main);">로봇 구성 선택</h4>
             
@@ -1256,6 +1690,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         modalBody.appendChild(leftCol);
         modalBody.appendChild(rightCol);
+
+        const robotQuantityInput = rightCol.querySelector('input[name="robotQuantity"]');
+        if (robotQuantityInput) {
+            robotQuantityInput.addEventListener('change', () => {
+                robotQuantityInput.value = String(parsePositiveQuantity(robotQuantityInput.value));
+            });
+        }
 
         // Process Cables
         const lenContainer = rightCol.querySelector('#cable-len-container');
@@ -1380,7 +1821,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            // Comm & Auto-check Expansion (Requirement 3)
+            // Communication and expansion-card selections are independent.
             const commSel = rightCol.querySelector('input[name="commSelection"]:checked');
             const commHeader = rightCol.querySelector('#header-comm');
             if (commHeader) {
@@ -1388,25 +1829,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const codeHtml = (commSel && commSel.value !== 'none' && commCode) ? ` <span class="code-badge">${commCode}</span>` : '';
                 commHeader.innerHTML = `${uiText('통신 프로토콜 옵션 (확장카드 옵션)')}${codeHtml}`;
 
-                // Requirement 3 Fix: Sync and Clear siblings
-                const commCodesToSync = ['01650028', '01650040'];
-                if (commCode) {
-                    commCodesToSync.forEach(c => {
-                        if (c !== commCode) {
-                            const cb = rightCol.querySelector(`input[name="expSelection"][value="${c}"]`);
-                            if (cb) cb.checked = false;
-                        }
-                    });
-                    const expCheckbox = rightCol.querySelector(`input[name="expSelection"][value="${commCode}"]`);
-                    if (expCheckbox && !expCheckbox.checked) {
-                        expCheckbox.checked = true;
-                    }
-                } else {
-                    commCodesToSync.forEach(c => {
-                        const cb = rightCol.querySelector(`input[name="expSelection"][value="${c}"]`);
-                        if (cb) cb.checked = false;
-                    });
-                }
+                // The large protocol selector and the expansion-card checklist are
+                // intentionally independent so PROFINET and CC-Link can coexist.
             }
 
             // Expansion
@@ -1441,6 +1865,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
             }
+            syncAccessoryQuantityControls();
         }
 
         // Function to update dynamic code display
@@ -1543,8 +1968,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const config = pConfigRadios.querySelector('input[name="pendantConfig"]:checked');
             const isEnabled = config && config.value !== 'none';
             const hasCover = config && config.value === 'with-cover';
+            const hasCoverMetadata = pendantOptions.some(option => option.emergency_stop_cover !== undefined && option.emergency_stop_cover !== null);
+            const optionHasCover = option => option.emergency_stop_cover === true
+                || ['true', 'yes', '1', 'with-cover'].includes(String(option.emergency_stop_cover || '').toLowerCase());
             const availableOptions = pendantOptions
-                .filter(option => Boolean(option.emergency_stop_cover) === hasCover)
+                .filter(option => !hasCoverMetadata || optionHasCover(option) === hasCover)
                 .sort((a, b) => parseLen(a.spec) - parseLen(b.spec));
 
             pLengthRadios.innerHTML = availableOptions.map((opt, index) => `
@@ -1553,6 +1981,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span>${opt.spec || uiText(opt.name)}</span>
                 </label>
             `).join('');
+            setupAccessoryQuantityControls();
             updateHeaderCodes();
         }
 
@@ -1676,7 +2105,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             } else {
                 bodyContainer.innerHTML = `<span style="font-size:13px; color:#999;">${uiText('해당 모델에 호환되는 Body 케이블 옵션이 없습니다.')}</span>`;
-            }
+                }
             }
         }
 
@@ -1760,7 +2189,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         rightCol.querySelector('#comm-radios').addEventListener('change', updateHeaderCodes);
 
+        setupAccessoryQuantityControls();
         updateDynamicCode();
+        if (cartItem) {
+            restoreCartItemToModal(cartItem);
+            updateDynamicCode();
+        }
+        if (addToCartBtn) {
+            addToCartBtn.textContent = uiText(cartItem ? '구성 수정' : '구성 담기');
+        }
         if (window.InoRobotI18n) {
             window.InoRobotI18n.apply(modalBody);
         }
@@ -1770,9 +2207,81 @@ document.addEventListener('DOMContentLoaded', () => {
     function closeOptionsModal() {
         modalOverlay.style.display = 'none';
         currentActiveProduct = null;
+        editingCartItemId = null;
     }
 
     closeModalBtn.addEventListener('click', closeOptionsModal);
+
+    function addCurrentConfigurationToCart() {
+        if (!currentActiveProduct) return;
+
+        const robotQuantityInput = modalBody.querySelector('input[name="robotQuantity"]');
+        const rawRobotQuantity = robotQuantityInput ? Number.parseInt(robotQuantityInput.value, 10) : NaN;
+        if (!Number.isFinite(rawRobotQuantity) || rawRobotQuantity < 1) {
+            alert(uiText('수량은 1개 이상이어야 합니다.'));
+            return;
+        }
+        const invalidAccessoryQuantity = Array.from(modalBody.querySelectorAll('.accessory-quantity-wrap:not(.is-hidden) .accessory-quantity'))
+            .some(input => {
+                const value = Number.parseInt(input.value, 10);
+                return !Number.isFinite(value) || value < 1;
+            });
+        if (invalidAccessoryQuantity) {
+            alert(uiText('수량은 1개 이상이어야 합니다.'));
+            return;
+        }
+
+        const cartItem = collectCurrentCartItem();
+        if (!cartItem) return;
+
+        if (editingCartItemId) {
+            const index = cartItems.findIndex(item => item.id === editingCartItemId);
+            if (index >= 0) cartItems[index] = cartItem;
+            else cartItems.push(cartItem);
+        } else {
+            cartItems.push(cartItem);
+        }
+
+        persistCartItems();
+        renderCart();
+        closeOptionsModal();
+        setCartOpen(true);
+    }
+
+    addToCartBtn?.addEventListener('click', addCurrentConfigurationToCart);
+    cartToggleBtn?.addEventListener('click', () => setCartOpen(true));
+    cartCloseBtn?.addEventListener('click', () => setCartOpen(false));
+    cartOverlay?.addEventListener('click', event => {
+        if (event.target === cartOverlay) setCartOpen(false);
+    });
+    cartClearBtn?.addEventListener('click', () => {
+        if (cartItems.length === 0) return;
+        if (!window.confirm(uiText('전체 구성 삭제') + '?')) return;
+        cartItems = [];
+        persistCartItems();
+        renderCart();
+    });
+    cartList?.addEventListener('click', event => {
+        const button = event.target.closest('[data-cart-action]');
+        if (!button) return;
+
+        const item = cartItems.find(entry => entry.id === button.dataset.cartId);
+        if (!item) return;
+
+        if (button.dataset.cartAction === 'delete') {
+            cartItems = cartItems.filter(entry => entry.id !== item.id);
+            persistCartItems();
+            renderCart();
+            return;
+        }
+
+        if (button.dataset.cartAction === 'edit') {
+            const product = state.products.find(entry => entry.id === item.modelId);
+            if (!product) return;
+            setCartOpen(false);
+            openOptionsModal(product.id, item);
+        }
+    });
 
         function buildConfigurationSheet(options = {}) {
         if (!currentActiveProduct) return;
@@ -2147,19 +2656,132 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     downloadPdfBtn.addEventListener('click', () => {
-        const sheet = buildConfigurationSheet();
+        if (cartItems.length > 0) {
+            downloadCartConfigurationSheet();
+            return;
+        }
+
+        const draft = collectCurrentCartItem();
+        if (draft) downloadCartConfigurationSheet([draft]);
+    });
+
+    function buildCartConfigurationSheet(items = cartItems) {
+        if (items.length === 0) {
+            alert(uiText('구성 목록이 비어 있습니다.'));
+            return null;
+        }
+
+        const pdfWrapper = document.createElement('div');
+        pdfWrapper.id = 'cart-pdf-render-wrapper';
+        pdfWrapper.style.position = 'absolute';
+        pdfWrapper.style.left = '0';
+        pdfWrapper.style.top = '0';
+        pdfWrapper.style.width = '800px';
+        pdfWrapper.style.height = 'auto';
+        pdfWrapper.style.backgroundColor = '#ffffff';
+        pdfWrapper.style.zIndex = '-99999';
+        pdfWrapper.style.opacity = '0';
+        pdfWrapper.style.pointerEvents = 'none';
+
+        const pdfContainer = document.createElement('div');
+        pdfContainer.style.padding = '40px';
+        pdfContainer.style.paddingBottom = '80px';
+        pdfContainer.style.fontFamily = '"Noto Sans KR", "Noto Sans SC", Inter, sans-serif, "Malgun Gothic"';
+        pdfContainer.style.width = '720px';
+        pdfContainer.style.color = '#222';
+        pdfContainer.style.backgroundColor = '#fff';
+        pdfContainer.style.lineHeight = '1.5';
+
+        const totalRobots = items.reduce((sum, item) => sum + parsePositiveQuantity(item.robotQuantity), 0);
+        const generatedDate = new Date();
+        const generatedAt = window.InoRobotI18n
+            ? window.InoRobotI18n.formatDate(generatedDate, { dateStyle: 'medium', timeStyle: 'medium' })
+            : generatedDate.toLocaleString('ko-KR');
+
+        const itemSections = items.map((item, index) => {
+            const product = state.products.find(entry => entry.id === item.modelId);
+            const displayName = item.modelName || (product ? getDisplayModelName(product, item.bodyOptionValue) : item.modelId);
+            const specs = product?.specs || {};
+            const cable = item.cable || {};
+            const optionRows = [
+                {
+                    name: uiText('기본 케이블'),
+                    code: cable.code || '-',
+                    detail: `${uiText(cable.type || '-')} ${cable.length ? `/ ${cable.length}` : ''}`,
+                    quantity: item.robotQuantity
+                },
+                ...(item.accessories || []).map(option => ({
+                    name: uiText(option.name || option.category),
+                    code: option.code || '-',
+                    detail: localizeDisplayText(option.detail || ''),
+                    quantity: option.quantity || 1
+                }))
+            ];
+
+            return `
+                <section style="page-break-inside: avoid; margin-bottom: 30px;">
+                    <h2 style="margin:0 0 12px; padding:10px; color:#222; background:#eee; font-size:17px;">${escapeHtml(`${index + 1}. ${displayName}`)}</h2>
+                    <p style="margin:0 0 10px 10px; font-size:13px;"><strong>${escapeHtml(uiText('로봇 수량'))}:</strong> ${escapeHtml(item.robotQuantity)} · <strong>${escapeHtml(uiText('현재 구매 코드'))}:</strong> ${escapeHtml(item.purchaseCode || cable.code || '-')}</p>
+                    <table style="width:100%; border-collapse:collapse; font-size:12px; margin-bottom:12px;"><tbody>
+                        <tr><td style="padding:7px; border:1px solid #ddd;">${escapeHtml(uiText('가반 하중(Payload)'))}</td><td style="padding:7px; border:1px solid #ddd; text-align:right;">${escapeHtml(specs['Payload(kg)'] || '-')} kg</td></tr>
+                        <tr><td style="padding:7px; border:1px solid #ddd;">${escapeHtml(uiText('리치(Reach)'))}</td><td style="padding:7px; border:1px solid #ddd; text-align:right;">${escapeHtml(specs['Manipulator Length(mm)'] || '-')} mm</td></tr>
+                    </tbody></table>
+                    <table style="width:100%; border-collapse:collapse; font-size:12px;"><thead><tr style="background:#eee;">
+                        <th style="padding:7px; border:1px solid #ddd; text-align:left;">${escapeHtml(uiText('항목'))}</th>
+                        <th style="padding:7px; border:1px solid #ddd; text-align:left;">${escapeHtml(uiText('코드'))}</th>
+                        <th style="padding:7px; border:1px solid #ddd; text-align:left;">${escapeHtml(uiText('상세 정보'))}</th>
+                        <th style="padding:7px; border:1px solid #ddd; text-align:right;">${escapeHtml(uiText('수량'))}</th>
+                    </tr></thead><tbody>${optionRows.map(row => `
+                        <tr><td style="padding:7px; border:1px solid #ddd;">${escapeHtml(row.name)}</td><td style="padding:7px; border:1px solid #ddd; font-family:monospace;">${escapeHtml(row.code)}</td><td style="padding:7px; border:1px solid #ddd;">${escapeHtml(row.detail)}</td><td style="padding:7px; border:1px solid #ddd; text-align:right;">${escapeHtml(row.quantity)}</td></tr>
+                    `).join('')}</tbody></table>
+                </section>
+            `;
+        }).join('<div style="border-top:1px solid #ddd; margin:25px 0;"></div>');
+
+        pdfContainer.innerHTML = `
+            <div style="border-bottom:2px solid #f7941d; padding-bottom:15px; margin-bottom:20px;">
+                <h1 style="color:#222; margin:0; font-size:24px;">${escapeHtml(uiText('Inovance 로봇 구성서'))}</h1>
+            <p style="margin:6px 0 0; color:#666; font-size:12px;">${escapeHtml(uiText('총 구성 수'))}: ${items.length} · ${escapeHtml(uiText('총 로봇 수량'))}: ${totalRobots}</p>
+            </div>
+            ${itemSections}
+            <div style="margin-top:30px; font-size:11px; color:#888; text-align:center; border-top:1px solid #ddd; padding-top:15px;">${escapeHtml(uiText('본 구성서는 선택된 옵션 기반의 가이드입니다. 제조사 사정에 따라 사양이 변경될 수 있습니다. 생성일시:'))} ${escapeHtml(generatedAt)}</div>
+        `;
+        pdfWrapper.appendChild(pdfContainer);
+        document.body.appendChild(pdfWrapper);
+        if (window.InoRobotI18n) window.InoRobotI18n.apply(pdfContainer);
+
+        const dlObj = {
+            margin: [15, 15, 15, 15],
+            filename: `Inovance_Configurations_${generatedDate.toISOString().slice(0, 10)}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 1.5, useCORS: true, letterRendering: true, backgroundColor: '#ffffff', logging: false, width: 720, scrollX: 0, scrollY: 0 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        };
+        return { pdfWrapper, pdfContainer, dlObj };
+    }
+
+    function downloadCartConfigurationSheet(itemsOverride = null) {
+        const sheet = buildCartConfigurationSheet(Array.isArray(itemsOverride) ? itemsOverride : cartItems);
         if (!sheet) return;
 
-        setTimeout(() => {
-            const fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
-            fontsReady.then(() => html2pdf().set(sheet.dlObj).from(sheet.pdfContainer).save()).then(() => {
+        const oldText = cartDownloadBtn.textContent;
+        cartDownloadBtn.disabled = true;
+        cartDownloadBtn.textContent = uiText('구성서 생성 중...');
+        const fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+        fontsReady.then(() => html2pdf().set(sheet.dlObj).from(sheet.pdfContainer).save())
+            .then(() => sheet.pdfWrapper.remove())
+            .catch(error => {
+                console.error('Cart PDF Generation Error:', error);
                 sheet.pdfWrapper.remove();
-            }).catch(err => {
-                console.error("PDF Generation Error:", err);
-                sheet.pdfWrapper.remove();
+            })
+            .finally(() => {
+                cartDownloadBtn.disabled = false;
+                cartDownloadBtn.textContent = oldText;
             });
-        }, 800);
-    });
+    }
+
+    cartDownloadBtn?.addEventListener('click', downloadCartConfigurationSheet);
 
     document.getElementById('download-cad-btn').addEventListener('click', async () => {
         if (!currentActiveProduct) return;
@@ -2324,22 +2946,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const activeProductId = currentActiveProduct && modalOverlay.style.display !== 'none'
             ? currentActiveProduct.id
             : null;
-        const selected = activeProductId ? captureModalSelections() : null;
+        const draft = activeProductId ? collectCurrentCartItem() : null;
         renderFilters();
         renderProducts();
-        if (activeProductId && selected) {
-            openOptionsModal(activeProductId);
-            restoreModalSelections(selected);
-            const pendantConfig = modalBody.querySelector('input[name="pendantConfig"]:checked');
-            if (pendantConfig) pendantConfig.dispatchEvent(new Event('change', { bubbles: true }));
-            restoreModalSelections(selected);
-            const cableLength = modalBody.querySelector('input[name="cableLenSelection"]:checked');
-            if (cableLength) cableLength.dispatchEvent(new Event('change', { bubbles: true }));
+        renderCart();
+        if (activeProductId && draft) {
+            openOptionsModal(activeProductId, draft);
         }
     });
 
     renderFilters();
     renderProducts();
+    renderCart();
 
     if (isManualEmbed) {
         const demoFilters = [
