@@ -4076,9 +4076,36 @@ const accessoriesList = [
         "target_models": "All"
     },
     {
+        "code": "01640069",
+        "type": "Pendant",
+        "name": "IR-TP200-L5-EMO-INT",
+        "description": "Robot teach pendant with emergency stop protective cover",
+        "spec": "5m",
+        "target_models": "All",
+        "emergency_stop_cover": true
+    },
+    {
+        "code": "01640072",
+        "type": "Pendant",
+        "name": "IR-TP200-L10-EMO-INT",
+        "description": "Robot teach pendant with emergency stop protective cover",
+        "spec": "10m",
+        "target_models": "All",
+        "emergency_stop_cover": true
+    },
+    {
+        "code": "01640073",
+        "type": "Pendant",
+        "name": "IR-TP200-L15-EMO-INT",
+        "description": "Robot teach pendant with emergency stop protective cover",
+        "spec": "15m",
+        "target_models": "All",
+        "emergency_stop_cover": true
+    },
+    {
         "code": "1504R444",
         "type": "Cable & Connector",
-        "name": "IR-TP200 Teach Pendant Extension Cable",
+        "name": "IR-TP200 Teach Pendant Extension Cable (5m)",
         "description": "Robot teach pendant Extension Cable",
         "spec": "5m",
         "target_models": "All"
@@ -4086,7 +4113,7 @@ const accessoriesList = [
     {
         "code": "1504R445",
         "type": "Cable & Connector",
-        "name": "IR-TP200 Teach Pendant Extension Cable",
+        "name": "IR-TP200 Teach Pendant Extension Cable (15m)",
         "description": "Robot teach pendant Extension Cable",
         "spec": "15m",
         "target_models": "All"
@@ -4094,7 +4121,7 @@ const accessoriesList = [
     {
         "code": "1504R446",
         "type": "Cable & Connector",
-        "name": "IR-TP200 Teach Pendant Extension Cable",
+        "name": "IR-TP200 Teach Pendant Extension Cable (25m)",
         "description": "Robot teach pendant Extension Cable",
         "spec": "25m",
         "target_models": "All"

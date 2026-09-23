@@ -1,4 +1,4 @@
-import { parseDxfBuffer } from './dxf-parser-core.mjs?v=20260907-cad-dxf-3';
+import { parseDxfBuffer } from './dxf-parser-core.mjs?v=20260922-cad-dxf-text-1';
 
 self.addEventListener('message', async (event) => {
     const payload = event.data || {};

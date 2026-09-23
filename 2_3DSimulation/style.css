@@ -6514,7 +6514,10 @@ button.io-simulator-entry:hover {
 
 .simulation-snap-marker[data-snap-type="rectangle-center"] > span {
     border-radius: 2px;
-    background: radial-gradient(circle at center, currentColor 0 1.25px, transparent 1.75px);
+    background:
+        linear-gradient(currentColor, currentColor) center / 2px 100% no-repeat,
+        linear-gradient(currentColor, currentColor) center / 100% 2px no-repeat;
+    box-shadow: 0 0 7px rgba(239, 68, 68, 0.9);
 }
 
 .simulation-snap-marker[data-snap-type="multi-point-center"] > span {
@@ -8102,7 +8105,7 @@ button.io-simulator-entry:hover {
 .sketch-snap-location .shape-text-button i { margin-right: 0.16rem; }
 .sketch-tool-row {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 0.3rem;
 }
 .sketch-tool-button {
@@ -8180,6 +8183,57 @@ button.io-simulator-entry:hover {
     flex: 0 0 auto;
     gap: 0.5rem;
 }
+.sketch-text-editor {
+    position: absolute;
+    top: 78px;
+    right: 1rem;
+    z-index: 4;
+    display: grid;
+    gap: 0.55rem;
+    width: min(330px, calc(100vw - 2rem));
+    padding: 0.8rem;
+    border: 1px solid rgba(167, 139, 250, 0.55);
+    border-radius: 0.55rem;
+    background: rgba(15, 23, 42, 0.97);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
+}
+.sketch-text-editor[hidden] { display: none; }
+.sketch-text-editor-title {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #ddd6fe;
+    font-size: 0.74rem;
+    font-weight: 800;
+}
+.sketch-text-editor-title i { color: #c4b5fd; }
+.sketch-text-editor label {
+    display: grid;
+    gap: 0.22rem;
+    color: #cbd5e1;
+    font-size: 0.63rem;
+    font-weight: 700;
+}
+.sketch-text-editor textarea,
+.sketch-text-editor input {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid rgba(148, 163, 184, 0.32);
+    border-radius: 0.3rem;
+    padding: 0.4rem;
+    color: #f8fafc;
+    background: #111827;
+    font: 600 0.7rem 'Inter', 'Malgun Gothic', sans-serif;
+}
+.sketch-text-editor textarea { min-height: 4.2rem; resize: vertical; line-height: 1.35; }
+.sketch-text-editor textarea:focus,
+.sketch-text-editor input:focus { border-color: #a78bfa; outline: none; box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.16); }
+.sketch-text-editor-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.45rem; }
+.sketch-text-editor-grid .sketch-workbench-input-with-unit { display: flex; align-items: center; gap: 0.25rem; }
+.sketch-text-editor-grid small { color: #94a3b8; }
+.sketch-text-editor-error { min-height: 1rem; margin: 0; color: #fca5a5; font-size: 0.62rem; }
+.sketch-text-editor-actions { display: flex; justify-content: flex-end; gap: 0.4rem; }
+.sketch-text-editor-actions button { min-height: 1.9rem; padding: 0.35rem 0.55rem; }
 .sketch-workbench-extrude {
     min-height: 2rem;
     border: 1px solid rgba(45, 212, 191, 0.62);

@@ -114,7 +114,7 @@ import {
     serializePrimitiveShapeRecord,
     updatePrimitiveShapeDimension
 } from './primitive-shape-core.mjs';
-import { parseDxfBuffer } from './dxf-parser-core.mjs?v=20260907-cad-dxf-3';
+import { parseDxfBuffer } from './dxf-parser-core.mjs?v=20260922-cad-dxf-text-1';
 import {
     addSketchImportSource,
     createSketchDocument,
@@ -124,7 +124,7 @@ import {
     getCadLineDashSpec,
     normalizeCadLinePattern,
     normalizeCadLineTypeName
-} from './cad2d-core.mjs?v=20260907-cad-style-1';
+} from './cad2d-core.mjs?v=20260922-cad-text-1';
 import { polygonSignedArea } from './cad2d-geometry.mjs';
 import { getExtrudeCutLayout, normalizeExtrudeCutDirection } from './extrude-cut-core.mjs';
 import {
@@ -137,7 +137,7 @@ import {
     getCadEntityVisual,
     setCadEntityVisualState,
     setCadLayerVisibility
-} from './cad2d-renderer.mjs?v=20260908-cad-dxf-snap-1';
+} from './cad2d-renderer.mjs?v=20260922-cad-dxf-text-1';
 import { pickCadEntity } from './cad2d-picker.mjs';
 import {
     createSeededRandom,
@@ -473,6 +473,8 @@ const state = {
         pointerId: null,
         draggingEntityId: null,
         draggingEntityBefore: null,
+        draggingMoved: false,
+        draggingConstraints: null,
         previewGroup: null,
         dimensionLabels: new Map(),
         dimensionAnnotationLabels: new Map(),
@@ -497,6 +499,8 @@ const state = {
             target: null
         },
         previewRevision: 0,
+        textEditorOpen: false,
+        textPlacementPoint: null,
         dimensionEditing: null,
         cutDirection: 'positive',
         editingModel: null,
@@ -1173,6 +1177,12 @@ const el = {
     sketchHeight: document.getElementById('sketch-height'),
     sketchCoordinateReadout: document.getElementById('sketch-coordinate-readout'),
     sketchEditorError: document.getElementById('sketch-editor-error'),
+    sketchTextEditor: document.getElementById('sketch-text-editor'),
+    sketchTextContent: document.getElementById('sketch-text-content'),
+    sketchTextHeight: document.getElementById('sketch-text-height'),
+    sketchTextEditorError: document.getElementById('sketch-text-editor-error'),
+    sketchTextApply: document.getElementById('sketch-text-apply'),
+    sketchTextCancel: document.getElementById('sketch-text-cancel'),
     sketchRedrawButton: document.getElementById('sketch-redraw'),
     sketchFinishButton: document.getElementById('sketch-finish'),
     sketchCancelButton: document.getElementById('sketch-cancel'),
@@ -5291,11 +5301,14 @@ function handlePrimitiveShapeCreate() {
 
 const SKETCH_MIN_SIZE = 0.5;
 const SKETCH_MAX_SIZE = 100000;
-const SKETCH_TOOL_TYPES = Object.freeze(['select', 'line', 'rectangle', 'circle', 'chamfer', 'polyline']);
+const SKETCH_TOOL_TYPES = Object.freeze(['select', 'line', 'rectangle', 'circle', 'chamfer', 'polyline', 'text']);
 const SKETCH_COMMAND_TOOL_TYPES = Object.freeze([...SKETCH_TOOL_TYPES, 'dimension']);
 const SKETCH_POINTER_STEP_MM = 1;
 const SKETCH_DIMENSION_GREEN = 0x4ade80;
 const SKETCH_SNAP_TOLERANCE = 12;
+const SKETCH_DEFAULT_EXTRUDE_HEIGHT = 100;
+const SKETCH_TEXT_DEFAULT_HEIGHT = 100;
+const SKETCH_TEXT_MIN_HEIGHT = 0.5;
 
 const normalizeCutDirection = normalizeExtrudeCutDirection;
 
@@ -5310,6 +5323,8 @@ function sketchToolDisplayName(type) {
                 ? '원'
                 : type === 'chamfer'
                     ? '모따기'
+                    : type === 'text'
+                        ? '텍스트'
                     : '스케치 사각형');
 }
 
@@ -6245,6 +6260,118 @@ function sketchVector(value) {
         : null;
 }
 
+function getSketchTextLines(text) {
+    return String(text || '').replace(/\r\n?/g, '\n').split('\n');
+}
+
+function getSketchTextMetrics(entity) {
+    const height = THREE.MathUtils.clamp(
+        Number(entity?.height) || SKETCH_TEXT_DEFAULT_HEIGHT,
+        SKETCH_TEXT_MIN_HEIGHT,
+        SKETCH_MAX_SIZE
+    );
+    const lines = getSketchTextLines(entity?.text);
+    const maxCharacters = Math.max(1, ...lines.map((line) => [...line].reduce(
+        (total, character) => total + (/^[\x00-\x7F]$/.test(character) ? 0.62 : 1),
+        0
+    )));
+    return {
+        width: Math.max(height * 0.8, maxCharacters * height),
+        height: Math.max(height, lines.length * height * 1.2)
+    };
+}
+
+function getSketchTextCenter(entity) {
+    return sketchVector(entity?.position || entity?.center);
+}
+
+function getSketchTextBounds(entity) {
+    const center = getSketchTextCenter(entity);
+    if (!center) return null;
+    const metrics = getSketchTextMetrics(entity);
+    return {
+        minX: center.x - metrics.height * 0.5,
+        maxX: center.x + metrics.height * 0.5,
+        minY: center.y - metrics.width * 0.5,
+        maxY: center.y + metrics.width * 0.5
+    };
+}
+
+function isSketchPointInsideText(entity, point) {
+    const center = getSketchTextCenter(entity);
+    if (!center || !point) return false;
+    const metrics = getSketchTextMetrics(entity);
+    const screenU = -(point.y - center.y);
+    const screenV = point.x - center.x;
+    return Math.abs(screenU) <= metrics.width * 0.5
+        && Math.abs(screenV) <= metrics.height * 0.5;
+}
+
+function createSketchTextSprite(entity, color = 0xc4b5fd, z = 0.35) {
+    const center = getSketchTextCenter(entity);
+    if (!center || !String(entity?.text || '').trim()) return null;
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (!context) return null;
+    const fontSize = 64;
+    const lineHeight = 80;
+    const padding = 16;
+    const lines = getSketchTextLines(entity.text);
+    context.font = `600 ${fontSize}px Arial, "Malgun Gothic", sans-serif`;
+    const contentWidth = Math.max(32, ...lines.map((line) => context.measureText(line || ' ').width));
+    canvas.width = Math.ceil(contentWidth + padding * 2);
+    canvas.height = Math.ceil(lines.length * lineHeight + padding * 2);
+    context.font = `600 ${fontSize}px Arial, "Malgun Gothic", sans-serif`;
+    context.textAlign = 'left';
+    context.textBaseline = 'middle';
+    context.fillStyle = color?.isColor ? `#${color.getHexString()}` : new THREE.Color(color).getStyle();
+    lines.forEach((line, index) => {
+        context.fillText(line, padding, padding + lineHeight * (index + 0.5));
+    });
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.needsUpdate = true;
+    const material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthTest: false,
+        depthWrite: false,
+        toneMapped: false
+    });
+    const sprite = new THREE.Sprite(material);
+    const worldHeight = getSketchTextMetrics(entity).height;
+    const worldPerPixel = worldHeight / canvas.height;
+    sprite.scale.set(canvas.width * worldPerPixel, canvas.height * worldPerPixel, 1);
+    sprite.position.set(center.x, center.y, z);
+    sprite.frustumCulled = false;
+    sprite.renderOrder = 37;
+    sprite.userData.sketchTextSprite = true;
+    sprite.userData.sketchEntityId = entity.id;
+    return sprite;
+}
+
+function createSketchTextSelectionOutline(entity, color = 0x7dd3fc, z = 0.39) {
+    const center = getSketchTextCenter(entity);
+    const metrics = getSketchTextMetrics(entity);
+    if (!center || !metrics) return null;
+    const padding = Math.max(metrics.height * 0.12, 1);
+    const halfWidth = metrics.width * 0.5 + padding;
+    const halfHeight = metrics.height * 0.5 + padding;
+    const outline = createSketchLine(color, 1, true);
+    setSketchLinePoints(outline, [
+        new THREE.Vector3(center.x - halfHeight, center.y - halfWidth, z),
+        new THREE.Vector3(center.x + halfHeight, center.y - halfWidth, z),
+        new THREE.Vector3(center.x + halfHeight, center.y + halfWidth, z),
+        new THREE.Vector3(center.x - halfHeight, center.y + halfWidth, z)
+    ]);
+    outline.userData.sketchTextSelectionOutline = true;
+    outline.userData.sketchEntityId = entity.id;
+    outline.renderOrder = 38;
+    return outline;
+}
+
 function serializeSketchEntity(entity) {
     if (!entity || !SKETCH_TOOL_TYPES.includes(entity.type)) return null;
     const pointArray = (point) => point?.toArray ? point.toArray() : Array.isArray(point) ? point.slice(0, 3) : null;
@@ -6262,6 +6389,14 @@ function serializeSketchEntity(entity) {
     if (Array.isArray(entity.points)) {
         result.points = entity.points.map(pointArray).filter(Boolean);
         result.closed = entity.closed !== false;
+    }
+    if (entity.type === 'text') {
+        const position = pointArray(entity.position || entity.center);
+        const text = String(entity.text || '').replace(/\r\n?/g, '\n');
+        if (!position || !text.trim()) return null;
+        result.position = position;
+        result.text = text;
+        result.height = Number.isFinite(entity.height) ? Number(entity.height) : SKETCH_TEXT_DEFAULT_HEIGHT;
     }
     if (Array.isArray(entity.holes) && entity.holes.length) {
         result.holes = entity.holes.map(serializeSketchEntity).filter(Boolean);
@@ -6470,6 +6605,8 @@ function applySketchEditSnapshot(snapshot) {
     sketch.rectangleCenterMode = false;
     sketch.draggingEntityId = null;
     sketch.draggingEntityBefore = null;
+    sketch.draggingMoved = false;
+    sketch.draggingConstraints = null;
     clearSketchSelectionBox();
     sketch.historyBefore = null;
     sketch.snapCandidate = null;
@@ -6556,6 +6693,15 @@ function normalizeSketchEntityRecord(record) {
         entity.center = sketchVector(record.center);
         entity.radius = Number(record.radius);
         if (!entity.center || !Number.isFinite(entity.radius) || entity.radius < SKETCH_MIN_SIZE) return null;
+    } else if (type === 'text') {
+        entity.position = sketchVector(record.position || record.center);
+        entity.text = String(record.text ?? record.content ?? '').replace(/\r\n?/g, '\n');
+        entity.height = THREE.MathUtils.clamp(
+            Number(record.height) || SKETCH_TEXT_DEFAULT_HEIGHT,
+            SKETCH_TEXT_MIN_HEIGHT,
+            SKETCH_MAX_SIZE
+        );
+        if (!entity.position || !entity.text.trim()) return null;
     }
     if (Array.isArray(record.holes)) {
         entity.holes = record.holes
@@ -6580,6 +6726,7 @@ function scaleSketchEntity(entity, center, scaleX, scaleY) {
     scalePoint(scaled.start);
     scalePoint(scaled.end);
     scalePoint(scaled.center);
+    scalePoint(scaled.position);
     scaled.points?.forEach(scalePoint);
     if (Number.isFinite(scaled.radius)) {
         // The sketch schema stores circles as a radius rather than an ellipse.
@@ -6589,6 +6736,9 @@ function scaleSketchEntity(entity, center, scaleX, scaleY) {
     }
     if (Number.isFinite(scaled.chamfer)) {
         scaled.chamfer *= (Math.abs(scaleX) + Math.abs(scaleY)) / 2;
+    }
+    if (scaled.type === 'text') {
+        scaled.height *= (Math.abs(scaleX) + Math.abs(scaleY)) / 2;
     }
     if (Array.isArray(scaled.holes)) {
         scaled.holes = scaled.holes
@@ -6633,6 +6783,7 @@ function translateSketchEntity(entity, offset) {
     if (translated.start) translated.start.add(offset);
     if (translated.end) translated.end.add(offset);
     if (translated.points) translated.points.forEach((point) => point.add(offset));
+    if (translated.position) translated.position.add(offset);
     if (translated.holes) {
         translated.holes = translated.holes
             .map((hole) => translateSketchEntity(hole, offset))
@@ -6654,6 +6805,7 @@ function isSketchEntitySelected(entityId) {
 
 function getSketchEntityDimensions(entity) {
     if (!entity) return null;
+    if (entity.type === 'text') return { x: null, y: null };
     if (entity.type === 'circle') return { x: entity.radius * 2, y: null };
     if (entity.type === 'line') return { x: entity.start.distanceTo(entity.end), y: null };
     if (entity.type === 'polyline') {
@@ -7212,7 +7364,7 @@ function getSketchFeatureProfiles(model) {
     return (Array.isArray(model?.userData?.sketchProfiles) ? model.userData.sketchProfiles : [])
         .map(normalizeSketchEntityRecord)
         .filter(Boolean)
-        .filter((profile) => profile.type !== 'line');
+        .filter((profile) => !['line', 'text'].includes(profile.type));
 }
 
 function getSketchFeatureMaterial(model, fallbackColor = '#bfc7d5') {
@@ -7271,7 +7423,7 @@ function rebuildSketchOnlyVisual(model, { materialColor = '#c4b5fd' } = {}) {
             child.removeFromParent();
         });
     model.children
-        .filter((child) => child.userData?.sketchFeatureLine)
+        .filter((child) => child.userData?.sketchFeatureLine || child.userData?.sketchFeatureText)
         .forEach((child) => {
             disposeObjectResources(child);
             child.removeFromParent();
@@ -7279,6 +7431,15 @@ function rebuildSketchOnlyVisual(model, { materialColor = '#c4b5fd' } = {}) {
     getSketchFeatureEntities(model).forEach((entity) => {
         const entities = [entity, ...(entity.holes || [])];
         entities.forEach((entry, entityIndex) => {
+            if (entry.type === 'text') {
+                const sprite = createSketchTextSprite(entry, materialColor, 0.04);
+                if (!sprite) return;
+                sprite.name = `${model.userData.modelName || model.name} ${entry.id}`;
+                sprite.userData.sketchFeatureText = true;
+                sprite.userData.sketchEntityId = entry.id;
+                model.add(sprite);
+                return;
+            }
             const points = getSketchFeatureEntityPoints(entry);
             if (points.length < 2) return;
             const closed = entry.type !== 'line' && entry.closed !== false;
@@ -7343,7 +7504,7 @@ function createSketchFeatureRoot(profiles, depth, options = {}) {
     const normalizedEntities = (Array.isArray(profiles) ? profiles : [profiles])
         .map(normalizeSketchEntityRecord)
         .filter(Boolean);
-    const normalizedProfiles = normalizedEntities.filter((entity) => entity.type !== 'line');
+    const normalizedProfiles = normalizedEntities.filter((entity) => !['line', 'text'].includes(entity.type));
     if (!(sketchOnly ? normalizedEntities.length : normalizedProfiles.length)) {
         throw new Error(sketchOnly ? 'A sketch entity is required.' : 'A closed sketch profile is required.');
     }
@@ -7507,9 +7668,85 @@ function applySketchFeatureDimensions(model, dimensions, {
     return true;
 }
 
+function closeSketchTextEditor() {
+    const sketch = state.sketch;
+    const wasOpen = Boolean(sketch.textEditorOpen || sketch.textPlacementPoint);
+    sketch.textEditorOpen = false;
+    sketch.textPlacementPoint = null;
+    if (el.sketchTextEditorError) el.sketchTextEditorError.textContent = '';
+    return wasOpen;
+}
+
+function openSketchTextEditor(point) {
+    const sketch = state.sketch;
+    if (!sketch.active || !point?.isVector3) return false;
+    sketch.textPlacementPoint = point.clone();
+    sketch.textEditorOpen = true;
+    if (el.sketchTextContent) el.sketchTextContent.value = '';
+    if (el.sketchTextHeight) el.sketchTextHeight.value = String(SKETCH_TEXT_DEFAULT_HEIGHT);
+    if (el.sketchTextEditorError) el.sketchTextEditorError.textContent = '';
+    renderSketchEditorUi();
+    window.setTimeout(() => {
+        if (!state.sketch.textEditorOpen) return;
+        el.sketchTextContent?.focus({ preventScroll: true });
+    }, 0);
+    setStatus(uiText('텍스트 내용을 입력한 뒤 삽입하세요.'), '#a78bfa');
+    return true;
+}
+
+function cancelSketchTextEditor() {
+    const sketch = state.sketch;
+    const wasOpen = closeSketchTextEditor();
+    if (!wasOpen) return false;
+    selectSketchTool('select', { remember: false });
+    setStatus(uiText('텍스트 입력을 취소했습니다.'), '#94a3b8');
+    return true;
+}
+
+function applySketchTextEditor() {
+    const sketch = state.sketch;
+    const point = sketch.textPlacementPoint?.clone();
+    const text = String(el.sketchTextContent?.value || '').replace(/\r\n?/g, '\n').trim();
+    const height = Number(el.sketchTextHeight?.value);
+    if (!point || !text) {
+        if (el.sketchTextEditorError) el.sketchTextEditorError.textContent = uiText('텍스트 내용을 입력하세요.');
+        el.sketchTextContent?.focus({ preventScroll: true });
+        return false;
+    }
+    if (!Number.isFinite(height) || height < SKETCH_TEXT_MIN_HEIGHT || height > SKETCH_MAX_SIZE) {
+        if (el.sketchTextEditorError) el.sketchTextEditorError.textContent = uiText('문자 높이는 0.5보다 크고 유효한 숫자여야 합니다.');
+        el.sketchTextHeight?.focus({ preventScroll: true });
+        return false;
+    }
+    const historyBefore = captureSketchEditSnapshot();
+    const entity = normalizeSketchEntityRecord({
+        id: `text-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        type: 'text',
+        position: point.toArray(),
+        text,
+        height
+    });
+    if (!entity) return false;
+    sketch.entities.push(entity);
+    sketch.selectedEntityId = entity.id;
+    sketch.selectedEntityIds = new Set([entity.id]);
+    sketch.hoverEntityId = entity.id;
+    closeSketchTextEditor();
+    sketch.activeTool = 'select';
+    sketch.phase = 'draw';
+    syncSketchDocumentEntities();
+    recordSketchHistory('스케치 텍스트 추가', historyBefore);
+    updateSketchPreview();
+    renderSketchEditorUi();
+    setStatus(uiText('스케치 텍스트를 추가했습니다.'), '#22c55e');
+    requestRender();
+    return true;
+}
+
 function selectSketchTool(tool, { remember = true } = {}) {
     const sketch = state.sketch;
     const nextTool = isSketchCommandTool(tool) ? tool : 'select';
+    if (nextTool !== 'text' && sketch.textEditorOpen) closeSketchTextEditor();
     if (remember && nextTool !== 'select') sketch.lastSketchTool = nextTool;
     cancelSketchDimensionLineDrag();
     if (cancelSketchDimensionPlacement({ remove: true })) syncSketchDocumentEntities();
@@ -7520,8 +7757,12 @@ function selectSketchTool(tool, { remember = true } = {}) {
     sketch.startPoint = null;
     sketch.endPoint = null;
     sketch.pointerId = null;
+    sketch.textEditorOpen = false;
+    sketch.textPlacementPoint = null;
     sketch.draggingEntityId = null;
     sketch.draggingEntityBefore = null;
+    sketch.draggingMoved = false;
+    sketch.draggingConstraints = null;
     sketch.dimensionDraft = createEmptySketchDimensionDraft();
     sketch.snapCandidate = null;
     sketch.dimensionHoverTarget = null;
@@ -7542,6 +7783,8 @@ function getSketchWorkbenchEntityLabel(entity, index) {
                 ? 'Line'
                 : entity?.type === 'chamfer'
                     ? 'Chamfer'
+                    : entity?.type === 'text'
+                        ? 'Text'
                     : 'Rectangle';
     return `${type} ${index + 1}`;
 }
@@ -7553,6 +7796,8 @@ function getSketchWorkbenchEntityIcon(type) {
             ? 'fa-minus'
             : type === 'polyline'
                 ? 'fa-draw-polygon'
+                : type === 'text'
+                    ? 'fa-font'
                 : 'fa-square';
 }
 
@@ -7563,6 +7808,7 @@ function renderSketchWorkbenchUi() {
     const selectedProfiles = getSelectedSketchProfiles();
     document.body.classList.toggle('sketch-workbench-active', active);
     if (el.sketchWorkbench) el.sketchWorkbench.hidden = !active;
+    if (el.sketchTextEditor) el.sketchTextEditor.hidden = !active || !sketch.textEditorOpen;
     el.sketchWorkbenchToolButtons?.forEach((button) => {
         const selected = button.dataset.sketchWorkbenchTool === sketch.activeTool;
         button.classList.toggle('active', selected);
@@ -7651,7 +7897,12 @@ function renderSketchWorkbenchUi() {
     if (el.sketchWorkbenchOriginReset) el.sketchWorkbenchOriginReset.disabled = !active || origin.lengthSq() < 1e-8;
     if (el.sketchWorkbenchOperation) el.sketchWorkbenchOperation.value = sketch.operation;
     if (el.sketchWorkbenchHeight && el.sketchWorkbenchHeight !== document.activeElement && el.sketchHeight) {
-        el.sketchWorkbenchHeight.value = el.sketchHeight.value;
+        const height = Number(el.sketchHeight.value);
+        const resolvedHeight = Number.isFinite(height) && height > 0
+            ? height
+            : SKETCH_DEFAULT_EXTRUDE_HEIGHT;
+        el.sketchHeight.value = String(resolvedHeight);
+        el.sketchWorkbenchHeight.value = String(resolvedHeight);
     }
     if (el.sketchWorkbenchSnap) {
         const snapEnabled = Boolean(active && sketch.snapEnabled !== false);
@@ -7806,10 +8057,12 @@ function renderSketchEditorUi() {
     const hasXY = Boolean(entity && ['rectangle', 'chamfer'].includes(type));
     const isCircle = type === 'circle';
     const isLine = type === 'line';
-    if (el.sketchWidthLabel) el.sketchWidthLabel.textContent = isCircle ? uiText('직경') : isLine ? uiText('길이') : 'X';
+    const isText = type === 'text';
+    if (el.sketchWidthLabel) el.sketchWidthLabel.textContent = isCircle ? uiText('직경') : isLine ? uiText('길이') : isText ? uiText('텍스트') : 'X';
     if (el.sketchDepthLabel) el.sketchDepthLabel.textContent = hasXY ? 'Y' : '';
+    if (el.sketchWidth?.parentElement) el.sketchWidth.parentElement.hidden = isText;
     if (el.sketchWidth) {
-        el.sketchWidth.disabled = !entity || sketch.phase === 'drawing';
+        el.sketchWidth.disabled = !entity || isText || sketch.phase === 'drawing';
         if (dimensions?.x !== null && dimensions?.x !== undefined && el.sketchWidth !== document.activeElement) {
             el.sketchWidth.value = formatJogValue(dimensions.x);
         }
@@ -7849,7 +8102,9 @@ function renderSketchEditorUi() {
             ? '스냅할 3D 모델의 면 또는 표시된 스냅 점을 클릭하세요.'
             : sketch.phase === 'drawing'
             ? '마우스를 움직여 크기를 정한 뒤 다시 클릭하면 도형이 생성됩니다.'
-            : ready
+            : sketch.activeTool === 'text'
+                ? '텍스트 도구를 선택한 뒤 평면에서 위치를 클릭해 텍스트를 입력하세요.'
+                : ready
                 ? '치수 라벨 또는 입력값을 수정하고, 닫힌 프로파일을 돌출하거나 컷하세요.'
                 : '도구를 선택하고 첫 번째 위치를 클릭한 뒤, 크기를 정해 다시 클릭하세요. 가운데/오른쪽 드래그와 휠로 뷰를 변경할 수 있습니다.';
         el.sketchModeStatus.textContent = uiText(status);
@@ -8949,6 +9204,10 @@ function createDenseSketchPreview(entitiesGroup, sketch) {
     line.frustumCulled = false;
     line.renderOrder = 36;
     base.add(line);
+    sketch.entities.filter((entity) => entity.type === 'text').forEach((entity) => {
+        const sprite = createSketchTextSprite(entity, 0xc4b5fd, 0.35);
+        if (sprite) base.add(sprite);
+    });
     entitiesGroup.add(base);
     return base;
 }
@@ -8983,6 +9242,15 @@ function updateDenseSketchPreview(entitiesGroup, sketch) {
     nextOverlay.userData.denseSketchOverlay = true;
     selectedEntities.forEach((entity) => {
         const selected = isSketchEntitySelected(entity.id);
+        if (entity.type === 'text') {
+            const sprite = createSketchTextSprite(entity, selected ? 0x7dd3fc : 0xfde047, 0.36);
+            if (sprite) nextOverlay.add(sprite);
+            if (selected) {
+                const outline = createSketchTextSelectionOutline(entity, 0x7dd3fc, 0.39);
+                if (outline) nextOverlay.add(outline);
+            }
+            return;
+        }
         const closed = entity.type !== 'line' && entity.closed !== false;
         const line = createSketchLine(selected ? 0x7dd3fc : 0xfde047, 1, closed, entity);
         setSketchLinePoints(line, getDenseSketchEntityPoints(entity));
@@ -9071,6 +9339,18 @@ function updateSketchPreview() {
             entitiesGroup.add(fill);
         });
         sketch.entities.forEach((entity) => {
+        if (entity.type === 'text') {
+            const selected = isSketchEntitySelected(entity.id);
+            const hovered = !selected && entity.id === sketch.hoverEntityId;
+            const color = selected ? 0x7dd3fc : hovered ? 0xfde047 : 0xc4b5fd;
+            const textSprite = createSketchTextSprite(entity, color, z);
+            if (textSprite) entitiesGroup.add(textSprite);
+            if (selected) {
+                const selectionOutline = createSketchTextSelectionOutline(entity, 0x7dd3fc, z + 0.04);
+                if (selectionOutline) entitiesGroup.add(selectionOutline);
+            }
+            return;
+        }
         const containingRegion = profileRegions.find((profile) => (
             profile.holeEntityIds?.includes(entity.id)
             || getSketchProfileSelectionIds(profile).includes(entity.id)
@@ -9124,6 +9404,7 @@ function updateSketchPreview() {
     renderSketchSnapIndicators(snapGroup);
     const entity = sketch.phase === 'drawing' ? previewEntity : getSketchEntity();
     if (!entity) return;
+    if (entity.type === 'text') return;
     const formatDimensionValue = sketch.phase === 'drawing'
         ? formatSketchPreviewDimensionValue
         : formatJogValue;
@@ -9348,6 +9629,7 @@ function getSketchSnapCandidateLabel(candidate) {
     if (candidate.type === 'midpoint') return uiText('중점');
     if (candidate.type === 'quadrant') return uiText('원주점');
     if (candidate.type === 'hole-center') return uiText('구멍 가상 중심점');
+    if (candidate.type === 'rectangle-center') return uiText('사각형 중심점');
     if (candidate.type === 'center') {
         const entity = candidate.entityId
             ? state.sketch.entities.find((entry) => entry.id === candidate.entityId)
@@ -9372,6 +9654,7 @@ function addSketchSnapCandidate(candidates, point, type, entityId = null, refere
 function getSketchEntityCenterPoint(entity) {
     if (!entity) return null;
     if (entity.type === 'circle' && entity.center?.isVector3) return entity.center.clone();
+    if (entity.type === 'text') return getSketchTextCenter(entity);
     const rawPoints = entity.type === 'line'
         ? [entity.start, entity.end]
         : entity.type === 'polyline'
@@ -9450,8 +9733,8 @@ function getSketchExternalSnapCandidateType(type) {
     if (type === 'endpoint' || type === 'vertex') return type;
     if (type === 'edge-midpoint') return 'midpoint';
     if (type === 'hole-center') return 'hole-center';
+    if (type === 'rectangle-center') return 'rectangle-center';
     if (type === 'circle-center'
-        || type === 'rectangle-center'
         || type === 'face-center'
         || type === 'shape-center') return 'center';
     return 'vertex';
@@ -9573,10 +9856,17 @@ function getSketchSnapCandidates() {
         }
         const center = getSketchEntityCenterPoint(entity);
         if (center) {
-            addSketchSnapCandidate(candidates, center, 'center', entity.id, {
-                kind: 'center',
-                entityId: entity.id
-            });
+            if (entity.type === 'rectangle') {
+                addSketchSnapCandidate(candidates, center, 'rectangle-center', entity.id, {
+                    kind: 'center',
+                    entityId: entity.id
+                });
+            } else {
+                addSketchSnapCandidate(candidates, center, 'center', entity.id, {
+                    kind: 'center',
+                    entityId: entity.id
+                });
+            }
         }
         const points = entity.type === 'line'
             ? [entity.start, entity.end]
@@ -9759,6 +10049,7 @@ function getSketchReferencePoint(reference) {
     if (!entity) return storedPoint;
     if (reference.kind === 'center') {
         if (entity.center) return entity.center.clone();
+        if (entity.type === 'text' && entity.position) return entity.position.clone();
         if (entity.type === 'line' && entity.start && entity.end) {
             return entity.start.clone().add(entity.end).multiplyScalar(0.5);
         }
@@ -9896,13 +10187,13 @@ function getSketchDimensionTargetAtPoint(point, tolerance = getSketchHitToleranc
 
 function isSketchDimensionPointIntent(candidate) {
     return Boolean(candidate && [
-        'origin', 'robot-body-center', 'model-edge', 'center', 'endpoint', 'vertex', 'quadrant'
+        'origin', 'robot-body-center', 'model-edge', 'center', 'rectangle-center', 'endpoint', 'vertex', 'quadrant'
     ].includes(candidate.type));
 }
 
 function isSketchDimensionReferenceIntent(candidate) {
     return Boolean(candidate?.reference && [
-        'origin', 'robot-body-center', 'model-edge', 'center', 'endpoint', 'midpoint', 'vertex', 'quadrant', 'line-point'
+        'origin', 'robot-body-center', 'model-edge', 'center', 'rectangle-center', 'endpoint', 'midpoint', 'vertex', 'quadrant', 'line-point'
     ].includes(candidate.type));
 }
 
@@ -10470,6 +10761,8 @@ function finishSketchDrawing(endPoint, { continuous = false, snapPoint = null } 
     sketch.pointerId = null;
     sketch.draggingEntityId = null;
     sketch.draggingEntityBefore = null;
+    sketch.draggingMoved = false;
+    sketch.draggingConstraints = null;
     sketch.hoverEntityId = entity?.id || null;
     if (entity) {
         sketch.entities.push(entity);
@@ -10511,6 +10804,7 @@ function distanceToSketchSegment(point, start, end) {
 
 function getSketchEntityHitDistance(entity, point) {
     if (!entity || !point) return Infinity;
+    if (entity.type === 'text') return isSketchPointInsideText(entity, point) ? 0 : Infinity;
     if (entity.type === 'circle' && entity.center) {
         return Math.abs(point.distanceTo(entity.center) - entity.radius);
     }
@@ -10534,6 +10828,7 @@ function getSketchEntityHitDistance(entity, point) {
 
 function isSketchPointInsideEntity(entity, point) {
     if (!entity || !point || entity.type === 'line') return false;
+    if (entity.type === 'text') return isSketchPointInsideText(entity, point);
     if (entity.type === 'circle' && entity.center) {
         return point.distanceTo(entity.center) <= entity.radius;
     }
@@ -10644,11 +10939,59 @@ function translateSketchEntityInPlace(entity, offset) {
     if (entity.start) entity.start.add(offset);
     if (entity.end) entity.end.add(offset);
     if (entity.center) entity.center.add(offset);
+    if (entity.position) entity.position.add(offset);
     if (Array.isArray(entity.points)) entity.points.forEach((point) => point.add(offset));
+}
+
+function getSketchDimensionDragAxis(dimension) {
+    const normalized = normalizeSketchDimensionRecord(dimension);
+    if (!normalized) return null;
+    if (normalized.type === 'position') return normalized.axis;
+    const delta = normalized.end.clone().sub(normalized.start);
+    if (delta.lengthSq() < 1e-12) return null;
+    return Math.abs(delta.x) >= Math.abs(delta.y) ? 'x' : 'y';
+}
+
+function getSketchEntityDragConstraints(entityIds) {
+    const selectedIds = new Set((Array.isArray(entityIds) ? entityIds : [entityIds])
+        .map(String)
+        .filter(Boolean));
+    const constraints = {
+        lockX: false,
+        lockY: false,
+        dimensions: []
+    };
+    if (!selectedIds.size) return constraints;
+    refreshSketchDimensionReferences();
+    state.sketch.dimensions.forEach((dimension) => {
+        // Reference dimensions describe geometry but do not constrain it.
+        if (dimension?.reference === true) return;
+        const referencedIds = new Set([
+            ...(dimension?.referenceEntityIds || []),
+            dimension?.entityId,
+            dimension?.startRef?.entityId,
+            dimension?.endRef?.entityId
+        ].filter(Boolean).map(String));
+        if (![...selectedIds].some((id) => referencedIds.has(id))) return;
+        const axis = getSketchDimensionDragAxis(dimension);
+        if (axis === 'x') constraints.lockX = true;
+        if (axis === 'y') constraints.lockY = true;
+        if (axis) constraints.dimensions.push(dimension.id);
+    });
+    return constraints;
+}
+
+function constrainSketchDragPoint(point, anchor, constraints) {
+    if (!point || !anchor) return point;
+    const constrained = point.clone();
+    if (constraints?.lockX) constrained.x = anchor.x;
+    if (constraints?.lockY) constrained.y = anchor.y;
+    return constrained;
 }
 
 function getSketchEntityBounds(entity) {
     if (!entity) return null;
+    if (entity.type === 'text') return getSketchTextBounds(entity);
     if (entity.type === 'circle' && entity.center && Number.isFinite(entity.radius)) {
         return {
             minX: entity.center.x - entity.radius,
@@ -10870,6 +11213,11 @@ function handleSketchPointerDown(event) {
         return;
     }
     if (!sketch.active || sketch.snapMode || event.button !== 0 || !['draw', 'drawing'].includes(sketch.phase)) return;
+    if (sketch.textEditorOpen) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        return;
+    }
     // A primary click starts or finishes geometry. Alt/Meta and unsupported
     // Ctrl-assisted clicks, middle clicks and the wheel remain available to
     // OrbitControls for view changes. A right click cancels the active sketch
@@ -10912,6 +11260,12 @@ function handleSketchPointerDown(event) {
     const point = snapped.point;
     sketch.hoverPoint = rawPoint.clone();
     sketch.snapCandidate = snapped.candidate;
+    if (sketch.activeTool === 'text') {
+        openSketchTextEditor(point);
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        return;
+    }
     if (sketch.activeTool === 'dimension') {
         const candidate = snapped.candidate;
         const target = getSketchDimensionTargetAtPoint(rawPoint);
@@ -11031,6 +11385,11 @@ function handleSketchPointerDown(event) {
     if (sketch.activeTool === 'select') {
         // Select mode only selects or moves sketch entities. Dimension
         // creation is intentionally owned by the dedicated dimension tool.
+        sketch.draggingConstraints = null;
+        const dragEntityId = selectedEntityIds.length === 1 ? selectedEntityIds[0] : null;
+        const dragEntity = dragEntityId
+            ? sketch.entities.find((entity) => entity.id === dragEntityId)
+            : null;
         if (selected) {
             if (event.shiftKey) {
                 const selectedIds = new Set(sketch.selectedEntityIds || []);
@@ -11044,6 +11403,20 @@ function handleSketchPointerDown(event) {
             } else {
                 sketch.selectedEntityId = selectedEntityIds.at(-1) || null;
                 sketch.selectedEntityIds = new Set(selectedEntityIds);
+            }
+            if (!event.shiftKey && dragEntity && !sketch.extrudeSelectionMode) {
+                sketch.draggingConstraints = getSketchEntityDragConstraints([dragEntity.id]);
+                sketch.draggingEntityId = dragEntity.id;
+                sketch.draggingEntityBefore = serializeSketchEntity(dragEntity);
+                sketch.draggingMoved = false;
+                sketch.historyBefore = captureSketchEditSnapshot();
+                // Use the unsnapped pointer location as the drag anchor so a
+                // click near an edge or vertex does not make the entity jump.
+                sketch.startPoint = rawPoint.clone();
+                sketch.endPoint = rawPoint.clone();
+                sketch.pointerId = event.pointerId;
+                sketch.phase = 'moving';
+                state.renderer.domElement.setPointerCapture?.(event.pointerId);
             }
         } else if (!event.shiftKey) {
             sketch.selectedEntityId = null;
@@ -11085,11 +11458,13 @@ function handleSketchPointerDown(event) {
     if (selected) {
         sketch.selectedEntityId = selected.id;
         sketch.selectedEntityIds = new Set([selected.id]);
+        sketch.draggingConstraints = getSketchEntityDragConstraints([selected.id]);
         sketch.draggingEntityId = selected.id;
         sketch.draggingEntityBefore = serializeSketchEntity(selected);
+        sketch.draggingMoved = false;
         sketch.historyBefore = captureSketchEditSnapshot();
-        sketch.startPoint = point;
-        sketch.endPoint = point.clone();
+        sketch.startPoint = rawPoint.clone();
+        sketch.endPoint = rawPoint.clone();
         sketch.pointerId = event.pointerId;
         sketch.phase = 'moving';
         state.renderer.domElement.setPointerCapture?.(event.pointerId);
@@ -11171,8 +11546,10 @@ function handleSketchPointerMove(event) {
     if (sketch.phase === 'drawing' && sketch.activeTool === 'rectangle') {
         sketch.rectangleCenterMode = Boolean(event.ctrlKey);
     }
+    const isDrawing = sketch.phase === 'drawing';
+    const isMoving = sketch.phase === 'moving' && sketch.pointerId === event.pointerId;
     sketch.hoverPoint = rawPoint.clone();
-    sketch.snapCandidate = snapped.candidate;
+    sketch.snapCandidate = isMoving ? null : snapped.candidate;
     if (sketch.activeTool === 'dimension') {
         const dimensionTarget = getSketchDimensionTargetAtPoint(rawPoint);
         const lineSnapCandidate = snapped.candidate
@@ -11193,6 +11570,12 @@ function handleSketchPointerMove(event) {
         renderSketchEditorUi();
         requestRender();
         if (sketch.dimensionDraft?.start) return;
+    } else if (isMoving) {
+        sketch.hoverEntityId = sketch.draggingEntityId;
+        sketch.dimensionHoverTarget = null;
+        updateSketchPreview();
+        renderSketchEditorUi();
+        requestRender();
     } else {
         const hovered = pickSketchEntityAtPoint(
             sketch.activeTool === 'select' ? rawPoint : point,
@@ -11205,20 +11588,26 @@ function handleSketchPointerMove(event) {
         renderSketchEditorUi();
         requestRender();
     }
-    const isDrawing = sketch.phase === 'drawing';
-    const isMoving = sketch.phase === 'moving' && sketch.pointerId === event.pointerId;
     if (!isDrawing && !isMoving) return;
     event.preventDefault();
     event.stopImmediatePropagation();
     const previewPoint = sketch.phase === 'drawing'
         ? getSketchDrawingEndPoint(sketch.startPoint, point, event)
-        : point;
-    sketch.endPoint.copy(previewPoint);
+        : isMoving
+            ? rawPoint
+            : point;
+    const dragPoint = isMoving
+        ? constrainSketchDragPoint(previewPoint, sketch.startPoint, sketch.draggingConstraints)
+        : previewPoint;
+    sketch.endPoint.copy(dragPoint);
+    if (isMoving && dragPoint.distanceToSquared(sketch.startPoint) > 1e-8) {
+        sketch.draggingMoved = true;
+    }
     if (isMoving && sketch.draggingEntityBefore) {
         const index = sketch.entities.findIndex((entity) => entity.id === sketch.draggingEntityId);
         const before = normalizeSketchEntityRecord(sketch.draggingEntityBefore);
         if (index >= 0 && before) {
-            translateSketchEntityInPlace(before, previewPoint.clone().sub(sketch.startPoint));
+            translateSketchEntityInPlace(before, dragPoint.clone().sub(sketch.startPoint));
             sketch.entities[index] = before;
             sketch.selectedEntityId = before.id;
             syncSketchDocumentEntities();
@@ -11243,25 +11632,36 @@ function handleSketchPointerUp(event) {
     }
     if (!sketch.active || sketch.snapMode || sketch.phase !== 'moving' || sketch.pointerId !== event.pointerId) return;
     const rawPoint = getSketchPlanePoint(event);
-    const snapped = getSketchSnappedPoint(rawPoint, event);
-    const point = snapped.point;
+    const point = rawPoint
+        ? constrainSketchDragPoint(rawPoint, sketch.startPoint, sketch.draggingConstraints)
+        : null;
     if (point) sketch.endPoint.copy(point);
     sketch.hoverPoint = rawPoint?.clone() || sketch.hoverPoint;
-    sketch.snapCandidate = snapped.candidate;
+    sketch.snapCandidate = null;
     state.renderer.domElement.releasePointerCapture?.(event.pointerId);
     sketch.pointerId = null;
     if (sketch.phase === 'moving') {
+        const moved = sketch.draggingMoved;
         sketch.phase = 'draw';
         sketch.startPoint = null;
         sketch.endPoint = null;
         sketch.draggingEntityId = null;
         sketch.draggingEntityBefore = null;
-        syncSketchDocumentEntities();
-        recordSketchHistory('스케치 요소 이동', sketch.historyBefore);
+        sketch.draggingConstraints = null;
+        if (moved) {
+            syncSketchDocumentEntities();
+            recordSketchHistory('스케치 요소 이동', sketch.historyBefore);
+        }
+        sketch.draggingMoved = false;
         sketch.historyBefore = null;
         updateSketchPreview();
         renderSketchEditorUi();
-        setStatus(uiText('스케치 요소를 이동했습니다.'), '#22c55e');
+        setStatus(
+            moved
+                ? uiText('스케치 요소를 이동했습니다.')
+                : uiText('스케치 요소를 선택했습니다.'),
+            moved ? '#22c55e' : '#60a5fa'
+        );
         requestRender();
         return;
     }
@@ -11288,10 +11688,20 @@ function handleSketchPointerCancel(event) {
         return;
     }
     if (!sketch.active || sketch.pointerId !== event.pointerId) return;
+    if (sketch.phase === 'moving' && sketch.draggingEntityBefore) {
+        const index = sketch.entities.findIndex((entity) => entity.id === sketch.draggingEntityId);
+        const restored = normalizeSketchEntityRecord(sketch.draggingEntityBefore);
+        if (index >= 0 && restored) sketch.entities[index] = restored;
+        syncSketchDocumentEntities();
+    }
     sketch.pointerId = null;
     sketch.startPoint = null;
     sketch.endPoint = null;
     sketch.phase = 'draw';
+    sketch.draggingEntityId = null;
+    sketch.draggingEntityBefore = null;
+    sketch.draggingMoved = false;
+    sketch.draggingConstraints = null;
     sketch.historyBefore = null;
     sketch.snapCandidate = null;
     sketch.dimensionHoverTarget = null;
@@ -11517,6 +11927,8 @@ function enterSketchMode({ editModel = null, editMode = 'sketch' } = {}) {
         });
     sketch.phase = 'draw';
     sketch.activeTool = 'select';
+    sketch.textEditorOpen = false;
+    sketch.textPlacementPoint = null;
     sketch.entities = storedEdit ? storedEdit.entities : [];
     sketch.closedLineLoopsCache = null;
     sketch.closedLineLoopsRevision = -1;
@@ -11574,6 +11986,8 @@ function enterSketchMode({ editModel = null, editMode = 'sketch' } = {}) {
     sketch.pointerId = null;
     sketch.draggingEntityId = null;
     sketch.draggingEntityBefore = null;
+    sketch.draggingMoved = false;
+    sketch.draggingConstraints = null;
     state.sceneSelectionPointer = null;
     state.controls.enabled = true;
     state.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 1e8);
@@ -11630,6 +12044,7 @@ function enterSketchMode({ editModel = null, editMode = 'sketch' } = {}) {
 function exitSketchMode({ restoreCamera = true, status = null } = {}) {
     const sketch = state.sketch;
     if (!sketch.active) return false;
+    closeSketchTextEditor();
     const editingModel = sketch.editingModel;
     const editingModelVisibility = sketch.editingModelVisibility;
     if (sketch.pointerId !== null) state.renderer.domElement.releasePointerCapture?.(sketch.pointerId);
@@ -11661,8 +12076,12 @@ function exitSketchMode({ restoreCamera = true, status = null } = {}) {
     sketch.startPoint = null;
     sketch.endPoint = null;
     sketch.pointerId = null;
+    sketch.textEditorOpen = false;
+    sketch.textPlacementPoint = null;
     sketch.draggingEntityId = null;
     sketch.draggingEntityBefore = null;
+    sketch.draggingMoved = false;
+    sketch.draggingConstraints = null;
     sketch.origin.set(0, 0, 0);
     sketch.snapMode = false;
     sketch.snapEnabled = true;
@@ -11742,7 +12161,7 @@ function updateExistingSketchFeatureFromEdit(model, profiles, depth, sketchDocum
     const normalizedProfiles = (Array.isArray(profiles) ? profiles : [profiles])
         .map(normalizeSketchEntityRecord)
         .filter(Boolean)
-        .filter((profile) => profile.type !== 'line');
+        .filter((profile) => !['line', 'text'].includes(profile.type));
     const normalizedDepth = Number(depth);
     if (!normalizedProfiles.length
         || !Number.isFinite(normalizedDepth)
@@ -11890,9 +12309,21 @@ function finishSketch() {
         if (sketch.editingMode === 'feature') return finishSketchAndCreateShape();
         const historyBefore = sketch.editingHistoryBefore || captureSceneSnapshot();
         if (sketch.extrudeAppliedDuringEdit) {
-            // The extrusion was already applied while this sketch edit was
-            // active. Preserve the generated feature instead of converting it
-            // back to a sketch-only model when the user finishes editing.
+            // Preserve an already generated extrusion instead of converting
+            // it back to a sketch-only model when the user finishes editing.
+            editingModel.userData.sketchDocument = sketchDocument;
+            editingModel.updateMatrixWorld(true);
+            renderModelTree();
+            updateModelSelectionOutlines();
+            exitSketchMode({ restoreCamera: true });
+            updateUIStatus();
+            selectSceneModel(editingModel);
+            if (historyBefore) recordHistory('스케치 피쳐 편집', historyBefore, captureSceneSnapshot());
+            if (el.sketchEditorError) el.sketchEditorError.textContent = '';
+            setStatus(uiText('스케치 돌출이 적용된 상태로 스케치를 완료했습니다.'), '#22c55e');
+            return true;
+        }
+        if (sketch.editingMode === 'sketch' && !isSketchOnlyModel(editingModel)) {
             editingModel.userData.sketchDocument = sketchDocument;
             editingModel.updateMatrixWorld(true);
             renderModelTree();
@@ -12052,6 +12483,16 @@ function finishSketchAndCreateShape(options = {}) {
     model.updateMatrixWorld(true);
     state.scene.add(model);
     state.models.push(model);
+    if (keepSketchActive) {
+        // Keep the editable source document on the generated extrusion while
+        // the workbench remains open. Finishing the workbench then closes the
+        // edit session instead of creating a second standalone sketch node.
+        sketch.editingModel = model;
+        sketch.editingMode = 'sketch';
+        sketch.extrudeAppliedDuringEdit = true;
+        sketch.editingModelVisibility = model.visible !== false;
+        sketch.editingHistoryBefore = historyBefore;
+    }
     if (state.collision.enabled) state.collision.system?.prepare([model]);
     markSceneCollisionDirty(model);
     updateModelRenderComplexity(model);
@@ -13901,14 +14342,10 @@ function getSimulationSnapModels(scope = 'scene') {
         return isSimulationSnapModel(model) && isModelTreeVisible(model) ? [model] : [];
     }
     if (scope === 'placement') {
-        // Placement must snap against the complete scene. Exclude only the
-        // model currently being moved after P1 is selected. During the first
-        // point selection, the moving model is also available so its own
-        // reference point can be used as P1.
-        const movingModel = state.placement.model;
-        return getSimulationSnapModels('scene').filter((model) => (
-            model !== movingModel || !state.placement.sourcePoint
-        ));
+        // Placement must snap against the complete scene, including the
+        // model currently being moved. Its P1 reference and its other snap
+        // points remain useful after P1 is selected while choosing P2.
+        return getSimulationSnapModels('scene');
     }
     if (scope === 'measurement') {
         // Measurement can target robot geometry and every visible scene model.
@@ -13981,11 +14418,8 @@ function getSimulationSnapSceneOriginCandidates(scope = 'scene', faceSelections 
 }
 
 function getSimulationSnapRobotBodyCenterCandidates(scope = 'scene', faceSelections = []) {
-    const movingModel = scope === 'placement' ? state.placement.model : null;
-    const excludeMovingModel = scope === 'placement' && state.placement.sourcePoint;
     return getArticulatedRobots().flatMap((robot) => {
-        if (!isModelTreeVisible(robot) || (excludeMovingModel && robot === movingModel)
-            || (scope === 'zero' && !robot.userData.uploaded)) return [];
+        if (!isModelTreeVisible(robot) || (scope === 'zero' && !robot.userData.uploaded)) return [];
         const baseMesh = getRobotBodyBaseMesh(robot);
         if (!baseMesh?.geometry?.getAttribute?.('position') || baseMesh.visible === false) return [];
         const localPoint = getExtremeSectionCenter(baseMesh.geometry, 2, -1);
@@ -13999,11 +14433,8 @@ function getSimulationSnapRobotBodyCenterCandidates(scope = 'scene', faceSelecti
 }
 
 function getSimulationSnapRobotTcpCandidates(scope = 'scene', faceSelections = []) {
-    const movingModel = scope === 'placement' ? state.placement.model : null;
-    const excludeMovingModel = scope === 'placement' && state.placement.sourcePoint;
     return getArticulatedRobots().flatMap((robot) => {
-        if (!isModelTreeVisible(robot) || (excludeMovingModel && robot === movingModel)
-            || (scope === 'zero' && !robot.userData.uploaded)) return [];
+        if (!isModelTreeVisible(robot) || (scope === 'zero' && !robot.userData.uploaded)) return [];
         const tcpFrame = robot.userData?.tcpFrame;
         if (!tcpFrame || tcpFrame.visible === false) return [];
         return [{
@@ -14041,9 +14472,6 @@ function isLargeModelSnapPerformanceMode(scope = 'scene') {
 function getAllSimulationSnapMeshes(scope = 'scene', { includeHidden = false } = {}) {
     const meshes = [];
     getSimulationSnapModels(scope).forEach((model) => model.traverse((child) => {
-        if (scope === 'placement'
-            && state.placement.sourcePoint
-            && findSceneModelAncestor(child) === state.placement.model) return;
         if ((child.isMesh
             || child.userData?.sketchFeatureLine
             || child.userData?.cad2dSnapLine)
@@ -14057,7 +14485,8 @@ function getAllSimulationSnapMeshes(scope = 'scene', { includeHidden = false } =
 function isDirectSimulationSnapMesh(mesh) {
     return Boolean(mesh?.userData?.sketchFeatureLine
         || mesh?.userData?.cad2dSnapLine
-        || mesh?.userData?.sketchFeatureMesh);
+        || mesh?.userData?.sketchFeatureMesh
+        || mesh?.userData?.primitiveShapeMesh);
 }
 
 function getSimulationSnapFaceSelections() {
@@ -14492,6 +14921,23 @@ function buildSketchFeatureSnapResultForMesh(mesh, faceSelection = null) {
     )).filter((point, index, all) => (
         index < all.length - 1 || all.length < 2 || point.distanceTo(all[0]) > 1e-6
     ));
+    const isRectangleBoundary = (boundary, polygon) => {
+        if (boundary?.type === 'rectangle') return true;
+        if (boundary?.type !== 'polyline' || polygon.length !== 4) return false;
+        const sideLengths = polygon.map((point, index) => (
+            point.distanceTo(polygon[(index + 1) % polygon.length])
+        ));
+        if (sideLengths.some((length) => length <= 1e-6)
+            || Math.abs(sideLengths[0] - sideLengths[2]) > 1e-4
+            || Math.abs(sideLengths[1] - sideLengths[3]) > 1e-4) return false;
+        return polygon.every((point, index) => {
+            const previous = polygon[(index + polygon.length - 1) % polygon.length];
+            const next = polygon[(index + 1) % polygon.length];
+            const incoming = previous.clone().sub(point).normalize();
+            const outgoing = next.clone().sub(point).normalize();
+            return Math.abs(incoming.dot(outgoing)) <= 1e-4;
+        });
+    };
 
     profiles.forEach((profile, profileIndex) => {
         const selectedProfileMatches = !selectedSideEdge
@@ -14564,7 +15010,7 @@ function buildSketchFeatureSnapResultForMesh(mesh, faceSelection = null) {
                         { profileIndex, holeIndex, edgeIndex: pointIndex }
                     );
                 });
-                if (!selectedSideEdge && holeIndex < 0 && boundary.type === 'rectangle') {
+                if (!selectedSideEdge && holeIndex < 0 && isRectangleBoundary(boundary, polygon)) {
                     const bounds = new THREE.Box2().setFromPoints(polygon);
                     const center = bounds.getCenter(new THREE.Vector2());
                     addCandidate(
@@ -15104,6 +15550,18 @@ function updateSimulationSnapCandidateMarkers() {
     // selected face remains intact; markers are rebuilt once navigation ends.
     if (state.viewNavigationActive) return;
     const scope = getSimulationSnapScope();
+    const placementWaitingForFace = scope === 'placement'
+        && state.placement.active
+        && !getSimulationSnapFaceSelections().length
+        && !state.placement.sourcePoint;
+    if (placementWaitingForFace) {
+        // The first placement click must choose a face. Direct candidates
+        // may already be prepared for the next step, but showing them now
+        // makes every existing sketch extrusion look selected before the
+        // user has picked any geometry.
+        clearSimulationSnapCandidateMarkers();
+        return;
+    }
     const hasDirectSnapCandidates = state.snapCandidates.some((candidate) => (
         isDirectSimulationSnapMesh(candidate.mesh)
     ));
@@ -18699,6 +19157,28 @@ function setupEventListeners() {
             selectSketchTool(button.dataset.sketchTool);
         });
     });
+    el.sketchTextApply?.addEventListener('click', () => applySketchTextEditor());
+    el.sketchTextCancel?.addEventListener('click', () => cancelSketchTextEditor());
+    el.sketchTextContent?.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            cancelSketchTextEditor();
+        } else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+            event.preventDefault();
+            applySketchTextEditor();
+        }
+    });
+    [el.sketchTextHeight].forEach((input) => {
+        input?.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                cancelSketchTextEditor();
+            } else if (event.key === 'Enter') {
+                event.preventDefault();
+                applySketchTextEditor();
+            }
+        });
+    });
     el.sketchWorkbenchToolButtons?.forEach((button) => {
         button.addEventListener('click', () => selectSketchTool(button.dataset.sketchWorkbenchTool));
     });
@@ -19472,6 +19952,8 @@ function cancelSketchCurrentAction() {
     if (sketch.pointerId !== null) state.renderer.domElement.releasePointerCapture?.(sketch.pointerId);
     const hadDimensionLineDrag = Boolean(sketch.dimensionLineDrag);
     const hadExtrudeFlow = sketch.extrudeSelectionMode || sketch.extrudePanelOpen;
+    const hadTextEditor = Boolean(sketch.textEditorOpen);
+    if (hadTextEditor) closeSketchTextEditor();
     if (hadDimensionLineDrag) cancelSketchDimensionLineDrag();
     if (sketch.phase === 'moving' && sketch.draggingEntityBefore) {
         const index = sketch.entities.findIndex((entity) => entity.id === sketch.draggingEntityId);
@@ -19487,6 +19969,7 @@ function cancelSketchCurrentAction() {
         || sketch.pointerId !== null
         || hadDimensionLineDrag
         || hadExtrudeFlow
+        || hadTextEditor
         || hadDimensionPlacement
         || hadSelectionBox;
     sketch.phase = 'draw';
@@ -19495,6 +19978,8 @@ function cancelSketchCurrentAction() {
     sketch.pointerId = null;
     sketch.draggingEntityId = null;
     sketch.draggingEntityBefore = null;
+    sketch.draggingMoved = false;
+    sketch.draggingConstraints = null;
     sketch.extrudeSelectionMode = false;
     sketch.extrudePanelOpen = false;
     sketch.snapCandidate = null;
@@ -20660,7 +21145,7 @@ function applySketchFeatureSnapshot(model, entry) {
     const entities = entry.sketchFeatureProfiles
         .map(normalizeSketchEntityRecord)
         .filter(Boolean);
-    const profiles = entities.filter((profile) => profile.type !== 'line');
+    const profiles = entities.filter((profile) => !['line', 'text'].includes(profile.type));
     const depth = Number(entry.sketchFeatureDepth);
     if (!entities.length || (!sketchOnly && (
         !profiles.length || !Number.isFinite(depth) || depth < SKETCH_MIN_SIZE
@@ -26284,7 +26769,7 @@ async function parseCadFile(file, extension, options = {}) {
         curveSegments: 64
     };
     const requestId = ++state.cad2d.requestId;
-    const workerUrl = new URL('./dxf-import-worker.js?v=20260907-cad-dxf-3', import.meta.url);
+    const workerUrl = new URL('./dxf-import-worker.js?v=20260922-cad-dxf-text-1', import.meta.url);
     let worker;
     try {
         worker = new Worker(workerUrl, { type: 'module' });
@@ -26339,6 +26824,7 @@ function limitCadSketchPolylinePoints(points, maximum = 16) {
 
 function cadEntityToSketchEntity(entity, index, documentId, { dense = false } = {}) {
     if (!entity) return null;
+    if (['TEXT', 'MTEXT'].includes(String(entity.type || '').toUpperCase())) return null;
     const id = `cad-sketch-${documentId}-${entity.id || index}`;
     const geometry = entity.geometry || {};
     if (entity.type === 'LINE' && geometry.start && geometry.end) {
@@ -29478,6 +29964,12 @@ function applyPendingRemoteCollaborationStates() {
 async function applyCollaborationRoomSnapshot(message) {
     const collaboration = state.collaboration;
     updateCollaborationRobotSnapshot(message.robots, message.participants);
+    // The room snapshot is captured before the workspace restore starts. A
+    // guest can claim a robot while that restore is still running, so keep
+    // the live assignment/participant state received by later messages.
+    // Re-applying message.robots here would restore the stale pre-claim
+    // snapshot and make the guest lose both control ownership and the
+    // controller target.
     refreshCollaborationUi();
     if (message.restoreWorkspace && message.workspaceSnapshot) {
         try {
@@ -29491,7 +29983,6 @@ async function applyCollaborationRoomSnapshot(message) {
     (message.sceneCommands || []).forEach((entry) => {
         if (entry?.userId !== collaboration.userId) applyCollaborationSceneCommand(entry?.command);
     });
-    updateCollaborationRobotSnapshot(message.robots, message.participants);
     (message.robots || []).forEach((robot) => {
         if (robot.lastState) applyRemoteCollaborationRobotState({
             robotId: robot.robotId,
@@ -39021,7 +39512,7 @@ function restoreWorkspaceSketchFeature(entry) {
     const entities = (Array.isArray(entry?.sketchProfiles) ? entry.sketchProfiles : [])
         .map(normalizeSketchEntityRecord)
         .filter(Boolean);
-    const profiles = entities.filter((profile) => profile.type !== 'line');
+    const profiles = entities.filter((profile) => !['line', 'text'].includes(profile.type));
     const depth = Number(entry?.sketchExtrudeDepth);
     if (!entities.length || (!sketchOnly && (
         !profiles.length || !Number.isFinite(depth) || depth < SKETCH_MIN_SIZE || depth > SKETCH_MAX_SIZE

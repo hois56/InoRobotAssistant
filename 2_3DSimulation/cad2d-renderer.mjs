@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { getCadLineDashSpec } from './cad2d-core.mjs?v=20260907-cad-style-1';
+import { getCadLineDashSpec } from './cad2d-core.mjs?v=20260922-cad-text-1';
 import { buildCadProfileRegions } from './cad2d-geometry.mjs';
 
 export const CAD_RENDER_LAYER = 5;
@@ -31,6 +31,94 @@ function makePointGeometry(point, size = 5) {
         new THREE.Vector3(x - size, y, 0), new THREE.Vector3(x + size, y, 0),
         new THREE.Vector3(x, y - size, 0), new THREE.Vector3(x, y + size, 0)
     ]);
+}
+
+function isCadTextEntity(entity) {
+    return entity?.geometry?.kind === 'text'
+        || ['TEXT', 'MTEXT'].includes(String(entity?.type || '').toUpperCase());
+}
+
+function createCadTextVisual(entity, layerGroup, settings) {
+    const geometryData = entity?.geometry || {};
+    const text = String(geometryData.text || '');
+    const width = Math.max(Number(geometryData.textWidth) || 0, 0.001);
+    const height = Math.max(Number(geometryData.textHeight || geometryData.height) || 0, 0.001);
+    const lineHeight = Math.max(Number(geometryData.lineHeight) || Number(geometryData.height) || 1, 0.001);
+    const lines = text.split('\n');
+    const maxTextureDimension = 2048;
+    const pixelsPerUnit = Math.min(32, maxTextureDimension / Math.max(width, height));
+    const padding = Math.max(4, Math.ceil((Number(geometryData.height) || 1) * pixelsPerUnit * 0.08));
+    const canvas = globalThis.document?.createElement?.('canvas');
+    if (!canvas) return null;
+    canvas.width = Math.max(32, Math.ceil(width * pixelsPerUnit) + padding * 2);
+    canvas.height = Math.max(32, Math.ceil(height * pixelsPerUnit) + padding * 2);
+    const context = canvas.getContext('2d');
+    if (!context) return null;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.font = `${Math.max(1, (Number(geometryData.height) || 1) * pixelsPerUnit)}px Arial, sans-serif`;
+    context.textAlign = 'left';
+    context.textBaseline = 'top';
+    context.fillStyle = '#ffffff';
+    const pixelLineHeight = lineHeight * pixelsPerUnit;
+    lines.forEach((line, index) => {
+        context.fillText(line, padding, padding + index * pixelLineHeight);
+    });
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+    const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        color: colorValue(entity.color, settings.color || CAD_DEFAULT_COLOR),
+        transparent: true,
+        opacity: Number(settings.opacity) > 0 ? Number(settings.opacity) : 1,
+        depthTest: false,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        toneMapped: false
+    });
+    const textFrame = new THREE.Group();
+    const insertionPoint = geometryData.insertionPoint || entity.renderPoints?.[0] || [0, 0];
+    textFrame.position.set(Number(insertionPoint[0]) || 0, Number(insertionPoint[1]) || 0, 0.04);
+    textFrame.rotation.z = Number(geometryData.rotation) || 0;
+    const anchorOffset = Array.isArray(geometryData.anchorOffset) ? geometryData.anchorOffset : [0, -height];
+    const planeGeometry = new THREE.PlaneGeometry(width, height);
+    const textMesh = new THREE.Mesh(planeGeometry, material);
+    textMesh.position.set(anchorOffset[0] + width / 2, anchorOffset[1] + height / 2, 0);
+    textMesh.name = `${entity.type} · ${entity.handle} · visual`;
+    textMesh.userData.cadEntityId = entity.id;
+    textMesh.userData.cadTextVisual = true;
+    textMesh.userData.cadVisual = true;
+    textMesh.renderOrder = 25;
+    textMesh.layers.set(0);
+    textFrame.add(textMesh);
+
+    const hitMaterial = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0,
+        depthTest: false,
+        depthWrite: false,
+        side: THREE.DoubleSide
+    });
+    const hitProxy = new THREE.Mesh(planeGeometry.clone(), hitMaterial);
+    hitProxy.position.copy(textMesh.position);
+    hitProxy.name = `${entity.type} · ${entity.handle} · hit`;
+    hitProxy.userData.cadEntityId = entity.id;
+    hitProxy.userData.cadHitProxy = true;
+    hitProxy.renderOrder = 26;
+    hitProxy.layers.set(0);
+    textFrame.add(hitProxy);
+
+    const group = new THREE.Group();
+    group.name = `${entity.type} · ${entity.handle}`;
+    group.userData.cadEntityId = entity.id;
+    group.userData.cadEntity = entity;
+    group.userData.cadLayerId = entity.layerId;
+    group.userData.cadEntityType = entity.type;
+    group.userData.cadEntityGroup = true;
+    group.add(textFrame);
+    layerGroup.add(group);
+    return { group, text: textMesh, hitProxy, material, texture };
 }
 
 function drawPolygonPath(path, points) {
@@ -95,10 +183,14 @@ function createCadFaceVisual(region, layerGroup, settings) {
 
 function disposeMaterial(material) {
     if (Array.isArray(material)) material.forEach(disposeMaterial);
-    else material?.dispose?.();
+    else {
+        material?.map?.dispose?.();
+        material?.dispose?.();
+    }
 }
 
 function createCadEntityVisual(entity, layerGroup, settings) {
+    if (isCadTextEntity(entity)) return createCadTextVisual(entity, layerGroup, settings);
     const group = new THREE.Group();
     group.name = `${entity.type} · ${entity.handle}`;
     group.userData.cadEntityId = entity.id;
@@ -164,7 +256,7 @@ function createCadBatchVisual(entities, layerGroup, settings) {
     const segmentEntityIds = [];
     const entitySegments = new Map();
     const pointSize = Number(settings.pointSize) || 5;
-    (Array.isArray(entities) ? entities : []).forEach((entity) => {
+    (Array.isArray(entities) ? entities : []).filter((entity) => !isCadTextEntity(entity)).forEach((entity) => {
         const sourcePoints = Array.isArray(entity.renderPoints) ? entity.renderPoints : [];
         const segments = [];
         if (entity.renderType === 'point' || sourcePoints.length === 1) {
@@ -290,6 +382,7 @@ export function createCadDocumentRoot(document, options = {}) {
     if (useBatchedRendering) {
         const entitiesByLayer = new Map();
         entities.forEach((entity) => {
+            if (isCadTextEntity(entity)) return;
             const layerEntities = entitiesByLayer.get(entity.layerId) || [];
             layerEntities.push(entity);
             entitiesByLayer.set(entity.layerId, layerEntities);
@@ -305,6 +398,23 @@ export function createCadDocumentRoot(document, options = {}) {
                     segmentIndices: entry.segmentIndices
                 });
             });
+        });
+        entities.filter(isCadTextEntity).forEach((entity) => {
+            let layerGroup = root.userData.cadLayerGroups.get(entity.layerId);
+            if (!layerGroup) {
+                layerGroup = new THREE.Group();
+                layerGroup.name = `Layer: ${entity.layerName || '0'}`;
+                layerGroup.userData.cadLayerId = entity.layerId;
+                layerGroup.userData.cadLayerName = entity.layerName || '0';
+                layerGroup.userData.cadLayerGroup = true;
+                layerGroup.visible = true;
+                layerGroup.layers.enable(CAD_RENDER_LAYER);
+                root.userData.cadLayerGroups.set(entity.layerId, layerGroup);
+                root.userData.cadLayerVisibility[entity.layerId] = true;
+                root.add(layerGroup);
+            }
+            const visual = createCadEntityVisual(entity, layerGroup, settings);
+            if (visual) root.userData.cadEntityVisuals.set(entity.id, visual);
         });
     } else {
         entities.forEach((entity) => {

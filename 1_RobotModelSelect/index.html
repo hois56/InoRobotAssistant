@@ -14,7 +14,7 @@
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=20260813-5">
+    <link rel="stylesheet" href="style.css?v=20260923-3">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -24,6 +24,18 @@
     <script src="/Language/runtime/icon-fallback.js" defer></script>
     <script src="/analytics-config.js"></script>
     <script src="/analytics.js" defer></script>
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -571,6 +583,11 @@
             <h1 class="app-title">Inovance Robot Select</h1>
         </div>
         <div class="topbar-right">
+            <button id="cart-toggle-btn" class="cart-toggle-btn" type="button" aria-label="구성 목록 열기">
+                <span class="cart-toggle-label">구성 목록</span>
+                <span id="cart-badge" class="cart-badge" aria-live="polite">0</span>
+            </button>
+            <div data-i18n-language-slot></div>
         </div>
     </header>
 
@@ -620,15 +637,44 @@
                 <button id="download-cad-btn" class="primary-btn"
                     style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 4px 15px rgba(16,185,129,0.3);">CAD
                     다운로드</button>
-                <button id="download-pdf-btn" class="primary-btn">구성 내역 다운로드</button>
+                <button id="add-to-cart-btn" class="primary-btn">구성 담기</button>
+                <button id="download-pdf-btn" class="primary-btn">전체 구성 목록 다운로드</button>
             </div>
         </div>
     </div>
 
+    <!-- Saved robot configurations -->
+    <div id="cart-overlay" class="cart-overlay" style="display:none;" aria-hidden="true">
+        <aside class="cart-panel" role="dialog" aria-modal="true" aria-labelledby="cart-title">
+            <div class="cart-panel-header">
+                <div>
+                    <h2 id="cart-title">구성 목록</h2>
+                    <p id="cart-summary-text" class="cart-summary-text"></p>
+                </div>
+                <button id="cart-close-btn" class="close-btn" type="button" aria-label="구성 목록 닫기">&times;</button>
+            </div>
+            <div id="cart-list" class="cart-list"></div>
+            <div class="cart-panel-footer">
+                <div class="cart-total-row">
+                    <span>총 구성 수</span>
+                    <strong id="cart-total-items">0</strong>
+                </div>
+                <div class="cart-total-row">
+                    <span>총 로봇 수량</span>
+                    <strong id="cart-total-robots">0</strong>
+                </div>
+                <div class="cart-actions">
+                    <button id="cart-clear-btn" class="secondary-btn" type="button">전체 구성 삭제</button>
+                    <button id="cart-download-btn" class="primary-btn" type="button">구성 내역 전체 다운로드</button>
+                </div>
+            </div>
+        </aside>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="data.js?v=20260914-1"></script>
+    <script src="data.js?v=20260923-1"></script>
     <script src="cad-manifest.js?v=20260726-1"></script>
-    <script src="script.js?v=20260914-1"></script>
+    <script src="script.js?v=20260923-2"></script>
 </body>
 
 </html>

@@ -278,7 +278,10 @@ for _, row in df_acc.iterrows():
     
     spec = str(row.get('Cable length', '')).strip() if 'Cable length' in df_acc.columns else ''
     if spec == 'nan': spec = ''
-    
+
+    if name == 'IR-TP200 Teach Pendant Extension Cable' and spec:
+        name = f'{name} ({spec})'
+
     target_models = str(row.get('Robot model', '')).strip() if 'Robot model' in df_acc.columns else ''
     if target_models == 'nan': target_models = ''
 
@@ -296,6 +299,41 @@ for _, row in df_acc.iterrows():
     if set_id:
         accessory['setId'] = set_id
     accessories.append(accessory)
+
+# Keep the emergency-stop-cover pendant variants available even when the
+# source workbook omits the legacy accessory rows. These are the order-code
+# variants used by the selector and must remain paired with the cover filter.
+emergency_stop_pendants = [
+    {
+        'code': '01640069',
+        'type': 'Pendant',
+        'name': 'IR-TP200-L5-EMO-INT',
+        'description': 'Robot teach pendant with emergency stop protective cover',
+        'spec': '5m',
+        'target_models': 'All',
+        'emergency_stop_cover': True,
+    },
+    {
+        'code': '01640072',
+        'type': 'Pendant',
+        'name': 'IR-TP200-L10-EMO-INT',
+        'description': 'Robot teach pendant with emergency stop protective cover',
+        'spec': '10m',
+        'target_models': 'All',
+        'emergency_stop_cover': True,
+    },
+    {
+        'code': '01640073',
+        'type': 'Pendant',
+        'name': 'IR-TP200-L15-EMO-INT',
+        'description': 'Robot teach pendant with emergency stop protective cover',
+        'spec': '15m',
+        'target_models': 'All',
+        'emergency_stop_cover': True,
+    },
+]
+accessory_codes = {item['code'] for item in accessories}
+accessories.extend(item for item in emergency_stop_pendants if item['code'] not in accessory_codes)
 
 # The workbook keeps controller expansion cards and ECAT remote I/O modules
 # on a separate sheet. Include them in the same accessory list so every
