@@ -13,6 +13,8 @@ export const MOVL_ROTATION_RATE = 90;
 export const S_CURVE_PEAK_VELOCITY = 15 / 8;
 export const S_CURVE_PEAK_ACCELERATION = 10 / Math.sqrt(3);
 export const MOTION_SETTLING_DELAY_SECONDS = 0.02;
+// Simulation-only acceleration tuning; robot catalog values remain unchanged.
+export const RAPID_MOVE_ACCELERATION_BOOST = 1.1;
 export const RAPID_MOVE_DEFAULTS = Object.freeze({
     minAccelerationScale: 0.95,
     maxAccelerationScale: 1,
@@ -213,13 +215,13 @@ export function createRapidMoveState(startAngles, targetAngles, joints, speedPer
     const accelerationValues = movingIndexes.map((index) => {
         const acceleration = Number(joints[index]?.definition?.maxAcceleration);
         return Number.isFinite(acceleration) && acceleration > 0
-            ? acceleration / distances[index]
+            ? acceleration * RAPID_MOVE_ACCELERATION_BOOST / distances[index]
             : Infinity;
     });
     const decelerationValues = movingIndexes.map((index) => {
         const deceleration = Number(joints[index]?.definition?.maxDeceleration);
         return Number.isFinite(deceleration) && deceleration > 0
-            ? deceleration / distances[index]
+            ? deceleration * RAPID_MOVE_ACCELERATION_BOOST / distances[index]
             : Infinity;
     });
     const profile = {

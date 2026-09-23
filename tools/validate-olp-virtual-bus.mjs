@@ -154,6 +154,8 @@ const startSource = sourceBetween(
         state,
         OlpRuntime: FakeOlpRuntime,
         isOlpRunning: () => false,
+        isVirtualControllerActiveForRobot: () => false,
+        getMotionSession: () => null,
         setOlpStatus: () => { },
         flushOlpPendingEdit: () => { },
         getOlpSharedIoAdapter: () => ({

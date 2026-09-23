@@ -183,9 +183,12 @@ assert.match(main, /getVirtualControllerSessions\(\)\.forEach\(\(controller\) =>
 assert.match(main, /function applyVirtualControllerFrameForController\(timestamp, controller\)/);
 assert.match(
     main,
-    /async function connectVirtualController\(\)[\s\S]*?if \(isRobotMotionActive\(\)\) return;/,
-    'Connecting a second controller must not be blocked by the first controller session.'
+    /async function connectVirtualController\(\)[\s\S]*?getMotionSession\(targetRobot\)[\s\S]*?isOlpRuntimeRunning\(getOlpRuntimeForRobot\(targetRobot\)\)/,
+    'A controller connection must only be blocked by motion on its target robot.'
 );
+assert.match(main, /function isVirtualControllerActiveForRobot\(robot\)/);
+assert.match(main, /!isVirtualControllerActiveForRobot\(robot\)/);
+assert.match(main, /const activeRobotController = isVirtualControllerActiveForRobot\(robot\)/);
 assert.match(main, /controller\.reconnectAttempt/);
 assert.match(main, /parsed\.type === 'controllerReconnectFailed'/);
 assert.match(main, /Virtual controller native feedback interrupted\./);

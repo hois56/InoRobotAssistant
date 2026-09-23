@@ -5,6 +5,7 @@ import {
     S_CURVE_PEAK_VELOCITY,
     S_CURVE_PEAK_ACCELERATION,
     MOTION_SETTLING_DELAY_SECONDS,
+    RAPID_MOVE_ACCELERATION_BOOST,
     MAX_MOVL_SPEED,
     DEFAULT_MOVJ_SPEED,
     DEFAULT_MOVL_SPEED,
@@ -1524,6 +1525,18 @@ assert.equal(rapidMoveState.pathPostureLoads.length, 65);
 assert.equal(rapidMoveState.pathVelocityEnvelope.length, 65);
 assert.ok(rapidMoveState.pathPostureLoads[0] > rapidMoveState.pathPostureLoads.at(-1));
 assert.ok(Math.max(...rapidMoveState.pathVelocityEnvelope) <= rapidMoveState.maxProgressVelocity + 1e-9);
+closeTo(
+    rapidMoveState.maxProgressAcceleration,
+    Math.min(...rapidMoveState.distances.map((distance, index) => (
+        distance > 1e-9 ? r7h90Joints[index].definition.maxAcceleration / distance : Infinity
+    ))) * RAPID_MOVE_ACCELERATION_BOOST
+);
+closeTo(
+    rapidMoveState.maxProgressDeceleration,
+    Math.min(...rapidMoveState.distances.map((distance, index) => (
+        distance > 1e-9 ? r7h90Joints[index].definition.maxDeceleration / distance : Infinity
+    ))) * RAPID_MOVE_ACCELERATION_BOOST
+);
 for (let frame = 0; frame < 1000 && !rapidMoveState.completed; frame += 1) {
     advanceRapidMoveState(
         rapidMoveState,

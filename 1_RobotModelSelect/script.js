@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Modal elements
     const modalOverlay = document.getElementById('options-modal');
     const closeModalBtn = document.getElementById('close-modal-btn');
-    const downloadPdfBtn = document.getElementById('download-pdf-btn');
+    const downloadComponentsBtn = document.getElementById('download-components-btn');
     const addToCartBtn = document.getElementById('add-to-cart-btn');
     const modalBody = document.getElementById('modal-body');
     const cartToggleBtn = document.getElementById('cart-toggle-btn');
@@ -2283,506 +2283,321 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-        function buildConfigurationSheet(options = {}) {
-        if (!currentActiveProduct) return;
+    function buildConfigurationWorkbookRows(items) {
+        return items.flatMap(item => {
+            const product = state.products.find(entry => entry.id === item.modelId);
+            const modelNumber = item.modelName || (product ? getDisplayModelName(product, item.bodyOptionValue) : item.modelId || item.productName || '-');
+            const cable = item.cable || {};
+            const accessories = Array.isArray(item.accessories) ? item.accessories : [];
+            const bodyOption = accessories.find(option => option.category === 'Robot Body');
+            const robotCode = item.purchaseCode || cable.code || '-';
+            const cableMovement = getPowerEncoderCableMovement(cable);
+            const cableDetail = cableMovement
+                ? [cableMovement, cable.length].filter(Boolean).join(' / ')
+                : cable.description || [cable.type, cable.length].filter(Boolean).join(' / ');
+            const robotCableDetail = cableMovement
+                ? `${uiText('파워/엔코더 케이블')}: ${cableDetail}`
+                : localizeDisplayText(cableDetail);
+            const hasSeparateCableCode = Boolean(cable.code && cable.code !== robotCode);
+            const robotDetails = [
+                robotCableDetail,
+                bodyOption ? localizeDisplayText(bodyOption.detail || bodyOption.name) : ''
+            ].filter(Boolean).join(' / ');
+            const rows = [{
+                modelNumber: modelNumber || '-',
+                code: robotCode,
+                type: getConfigurationRobotType(product),
+                details: robotDetails,
+                quantity: parsePositiveQuantity(item.robotQuantity)
+            }];
 
-        const bodyCodeInput = document.getElementById('bodySelectionCode');
-        const flexNode = document.querySelector('input[name="bodyFlexTemp"]:checked');
-        const wantsBody = flexNode && flexNode.value !== 'none';
-
-        if (wantsBody && bodyCodeInput && bodyCodeInput.value === "") {
-            alert(uiText("선택하신 Body I/O 케이블 타입 및 길이 조합은 사용할 수 없습니다.\n다른 조합을 선택해 주세요."));
-            return;
-        }
-
-        const pdfWrapper = document.createElement('div');
-        pdfWrapper.id = 'pdf-render-wrapper';
-        pdfWrapper.style.position = 'absolute';
-        pdfWrapper.style.left = '0';
-        pdfWrapper.style.top = '0';
-        pdfWrapper.style.width = '800px';
-        pdfWrapper.style.height = 'auto';
-        pdfWrapper.style.backgroundColor = '#ffffff';
-        pdfWrapper.style.zIndex = '-99999';
-        pdfWrapper.style.opacity = '0';
-        pdfWrapper.style.pointerEvents = 'none';
-
-        // Prepare a hidden container to render PDF content nicely to HTML2PDF
-        const pdfContainer = document.createElement('div');
-        pdfContainer.style.padding = '40px';
-        pdfContainer.style.paddingBottom = '80px';
-        pdfContainer.style.fontFamily = '"Noto Sans KR", "Noto Sans SC", Inter, sans-serif, "Malgun Gothic"';
-        pdfContainer.style.width = '720px';
-        pdfContainer.style.color = '#222';
-        pdfContainer.style.backgroundColor = '#fff';
-        pdfContainer.style.lineHeight = '1.5';
-
-        const lenEl = document.querySelector('input[name="cableLenSelection"]:checked');
-        const typeEl = document.querySelector('input[name="cableTypeSelection"]:checked');
-        const robotBodySelected = document.querySelector('input[name="robotBodyOption"]:checked');
-
-        const cableLen = lenEl ? lenEl.value : 'N/A';
-        const cableType = typeEl ? typeEl.value : 'Standard';
-        const robotBodyOptionValue = robotBodySelected ? robotBodySelected.value : 'standard';
-
-        const isFlex = cableType.includes('High Flex');
-        let foundCode = 'N/A';
-        if (currentActiveProduct.cables) {
-            let matched = currentActiveProduct.cables.find(c => {
-                let txt = c.cable;
-                let matchFlex = isFlex ? txt.includes('High flex') : !txt.includes('High flex');
-                let matchLen = txt.includes(cableLen);
-                return matchFlex && matchLen;
-            });
-            if (matched) foundCode = matched.code;
-            else if (currentActiveProduct.cables.length > 0) foundCode = currentActiveProduct.cables[0].code;
-        }
-        if (robotBodyOptionValue !== 'standard') foundCode = getBodyOptionPurchaseCode(currentActiveProduct, robotBodyOptionValue);
-
-        const selectedAccs = [];
-
-        if (robotBodySelected && robotBodySelected.value !== 'standard') {
-            const bodyLabel = robotBodySelected.getAttribute('data-label') || robotBodySelected.value;
-            const bodySpec = robotBodySelected.getAttribute('data-spec') || '';
-            selectedAccs.push({
-                name: uiText('로봇 바디 옵션'),
-                details: `${uiText(bodyLabel)}${bodySpec ? ' (' + localizeDisplayText(bodySpec) + ')' : ''}`,
-                code: getBodyOptionPurchaseCode(currentActiveProduct, robotBodyOptionValue) || '-'
-            });
-        }
-
-        // Pendant
-        const pConfig = document.querySelector('input[name="pendantConfig"]:checked');
-        let pSelected = document.querySelector('input[name="pendantLength"]:checked');
-        if (pConfig && pConfig.value !== 'none' && pSelected) {
-            const pLen = pSelected.getAttribute('data-spec') || '';
-            const showLen = pLen && pLen !== '-';
-            selectedAccs.push({ 
-                name: uiText('티칭 펜던트'),
-                details: `${uiText(pConfig.getAttribute('data-label'))}${showLen ? ` (${uiText('길이:')} ${pLen})` : ''}`,
-                code: pSelected.value 
-            });
-        }
-
-        // Arm / Body I/O (Multi-pin)
-        const selectedIoCableSet = document.querySelector('input[name="ioCableSetSelection"]:checked');
-        if (selectedIoCableSet) {
-            const armPin = selectedIoCableSet.getAttribute('data-arm-pin') || '기본핀';
-            const bodyPin = selectedIoCableSet.getAttribute('data-body-pin') || '기본핀';
-            const armDesc = selectedIoCableSet.getAttribute('data-arm-desc') || '';
-            const bodyDesc = selectedIoCableSet.getAttribute('data-body-desc') || '';
-            const armLen = selectedIoCableSet.getAttribute('data-arm-spec') || '';
-            const bodyLen = selectedIoCableSet.getAttribute('data-body-spec') || '';
-            const code = selectedIoCableSet.getAttribute('data-code') || selectedIoCableSet.value;
-            selectedAccs.push({
-                name: `${uiText('Arm I/O 케이블')} (${formatPinCount(armPin)})`,
-                details: `${uiText(armDesc)}${armLen && armLen !== '-' ? ` (${uiText('길이:')} ${armLen})` : ''}`,
-                code
-            });
-            selectedAccs.push({
-                name: `${uiText('Body I/O 케이블')} (${formatPinCount(bodyPin)})`,
-                details: `${uiText(bodyDesc)}${bodyLen && bodyLen !== '-' ? ` (${uiText('길이:')} ${bodyLen})` : ''}`,
-                code
-            });
-        } else {
-        document.querySelectorAll('input[name^="armSelection_"]:checked').forEach(sel => {
-            if (sel.value !== 'none') {
-                const pinLabel = sel.name.split('_')[1];
-                const armDesc = sel.getAttribute('data-desc') || (sel.nextElementSibling ? sel.nextElementSibling.textContent : '해당 호환 모델');
-                const armLen = sel.getAttribute('data-spec') || '';
-                const showLen = armLen && armLen !== '-';
-                selectedAccs.push({ 
-                    name: `${uiText('Arm I/O 케이블')} (${formatPinCount(pinLabel)})`,
-                    details: `${uiText(armDesc)}${showLen ? ` (${uiText('길이:')} ${armLen})` : ''}`,
-                    code: sel.value 
+            if (hasSeparateCableCode) {
+                rows.push({
+                    modelNumber: uiText('기본 케이블'),
+                    code: cable.code,
+                    type: uiText('파워/엔코더 케이블'),
+                    details: cableMovement ? cableDetail : localizeDisplayText(cableDetail),
+                    quantity: parsePositiveQuantity(item.robotQuantity)
                 });
             }
-        });
-        document.querySelectorAll('input[name^="bodySelection_"]:checked').forEach(sel => {
-            if (sel.value !== 'none') {
-                const pinLabel = sel.name.split('_')[1];
-                const bodyDesc = sel.getAttribute('data-desc') || (sel.nextElementSibling ? sel.nextElementSibling.textContent : '해당 호환 모델');
-                const bodyLen = sel.getAttribute('data-spec') || '';
-                const showLen = bodyLen && bodyLen !== '-';
-                selectedAccs.push({ 
-                    name: `${uiText('Body I/O 케이블')} (${formatPinCount(pinLabel)})`,
-                    details: `${uiText(bodyDesc)}${showLen ? ` (${uiText('길이:')} ${bodyLen})` : ''}`,
-                    code: sel.value 
+
+            accessories.forEach(option => {
+                if (option.category === 'Robot Body') return;
+                rows.push({
+                    modelNumber: uiText(option.name || option.category || '-'),
+                    code: option.code || '-',
+                    type: getConfigurationComponentType(option.category, option.name),
+                    details: localizeDisplayText(option.detail || ''),
+                    quantity: parsePositiveQuantity(option.quantity)
                 });
-            }
-        });
-        }
-
-        // Other Accs
-        document.querySelectorAll('input[name="accSelection"]:checked').forEach(cb => {
-            const fullDesc = cb.getAttribute('data-desc') || "";
-            const itemLen = cb.getAttribute('data-spec') || "";
-            const showLen = itemLen && itemLen !== '-';
-            let namePart = "기타 악세서리";
-            let detailPart = fullDesc;
-
-            if (fullDesc.includes(' - ')) {
-                const parts = fullDesc.split(' - ');
-                namePart = parts[0];
-                detailPart = parts.slice(1).join(' - ');
-            }
-
-            selectedAccs.push({
-                name: uiText(namePart),
-                details: `${uiText(detailPart)}${showLen ? ` (${uiText('길이:')} ${itemLen})` : ''}`,
-                code: cb.value
             });
+
+            return rows;
         });
-
-        // Communication
-        const selComm = document.querySelector('input[name="commSelection"]:checked');
-        if (selComm && selComm.value !== 'none') {
-            const commLabel = selComm.getAttribute('data-label') || selComm.value;
-            selectedAccs.push({ 
-                name: selComm.value, 
-                details: `${commLabel} ${uiText('확장 카드')}`,
-                code: selComm.getAttribute('data-code') || '-' 
-            });
-        }
-
-        // Expansion Cards
-        document.querySelectorAll('input[name="expSelection"]:checked').forEach(cb => {
-            const selectedCommunicationCode = selComm && selComm.value !== 'none'
-                ? selComm.getAttribute('data-code')
-                : '';
-            if (selectedCommunicationCode && cb.value === selectedCommunicationCode) return;
-            const fullDesc = cb.getAttribute('data-desc') || "";
-            let namePart = "확장 카드";
-            let detailPart = fullDesc;
-
-            if (fullDesc.includes(' - ')) {
-                const parts = fullDesc.split(' - ');
-                namePart = parts[0];
-                detailPart = parts.slice(1).join(' - ');
-            }
-
-            selectedAccs.push({
-                name: uiText(namePart),
-                details: uiText(detailPart),
-                code: cb.value
-            });
-        });
-
-        // Remote Couplers
-        document.querySelectorAll('input[name="remoteCouplerSelection"]:checked').forEach(cb => {
-            const fullDesc = cb.getAttribute('data-desc') || "";
-            let namePart = "리모트 커플러";
-            let detailPart = fullDesc;
-
-            if (fullDesc.includes(' - ')) {
-                const parts = fullDesc.split(' - ');
-                namePart = parts[0];
-                detailPart = parts.slice(1).join(' - ');
-            }
-
-            selectedAccs.push({
-                name: uiText(namePart),
-                details: uiText(detailPart),
-                code: cb.value
-            });
-        });
-
-        // Rename for PDF
-        let pdfDisplayName = currentActiveProduct.name;
-        let scaraSubtype = '';
-        if (currentActiveProduct.specs.Type === 'SCARA') {
-            const upperName = currentActiveProduct.name.toUpperCase();
-            scaraSubtype = uiText((upperName.includes('TS4') || upperName.includes('TS5')) ? '천장형' : '일반형');
-
-            if (currentActiveProduct.specs['Clean Type'] === 'Yes') {
-                pdfDisplayName = pdfDisplayName.replace(/\s*\(Clean Type\)\s*/gi, '');
-                pdfDisplayName = pdfDisplayName.replace(/Z(\d+)([S])/gi, (match, p1, p2) => {
-                    let newNum = parseInt(p1) - 3;
-                    return 'Z' + newNum + 'C';
-                });
-            }
-        } else if (currentActiveProduct.specs.Type === '6-Axis') {
-            pdfDisplayName = getBodyOptionModelName(currentActiveProduct.name, robotBodyOptionValue);
-        }
-
-        const tech = getTechSpecs(currentActiveProduct.name);
-        const repeatability = tech ? tech.repeatability : (currentActiveProduct.specs.Type === 'SCARA' ? "±0.01mm" : "±0.02mm");
-        const ioPins = formatSignalPins(tech ? (tech.signals || tech.io) : (currentActiveProduct.specs.Type === 'SCARA' ? "24 입력 / 16 출력" : "20 Signal lines"));
-        
-        // IP rating with safety check for detailSpecs and correct newline regex
-        let ipRating = "IP40";
-        if (currentActiveProduct.detailSpecs && currentActiveProduct.detailSpecs['IP rating']) {
-            ipRating = currentActiveProduct.detailSpecs['IP rating'];
-        } else if (tech && tech.ip) {
-            ipRating = tech.ip;
-        } else if (currentActiveProduct.specs.Type === 'SCARA') {
-            ipRating = "IP20";
-        }
-        ipRating = formatIpRating(ipRating);
-        
-        const weight = tech ? tech.weight : (currentActiveProduct.specs.Type === '6-Axis' ? "~130kg" : "12~56kg");
-        const cleanType = getCleanTypeDisplay(currentActiveProduct);
-        const air = tech ? tech.air : (currentActiveProduct.detailSpecs ? (currentActiveProduct.detailSpecs['Customer air piping (0.59Mpa)'] || '-') : '-');
-
-        let axesRowsHtml = '';
-        if (tech && tech.axes) {
-            const isScara = currentActiveProduct.specs.Type === 'SCARA';
-            const ds = currentActiveProduct.detailSpecs || {};
-            const dks = Object.keys(ds);
-
-            let displayAxes = [...tech.axes];
-
-            // Requirement 1 & 6: Split J1/J2 Range and show Combined Speed for PDF
-            if (isScara) {
-                const j1RangeKey = dks.find(k => k.toLowerCase().includes('range') && k.toLowerCase().includes('j1'));
-                const j2RangeKey = dks.find(k => k.toLowerCase().includes('range') && k.toLowerCase().includes('j2'));
-                const j1j2SpeedKey = dks.find(k => k.toLowerCase().includes('speed') && k.toLowerCase().includes('j1+j2'));
-                const j1Range = ds[j1RangeKey];
-                const j2Range = ds[j2RangeKey];
-                const j1j2Speed = ds[j1j2SpeedKey];
-
-                // Remove existing J1, J2, J1+J2 to avoid duplicates
-                displayAxes = displayAxes.filter(a => !["J1+J2", "J1", "J2"].includes(a.axis));
-
-                const newRows = [];
-                if (j1j2Speed) newRows.push({ axis: "J1+J2 합산 속도", speed: formatAxisSpecValue(j1j2Speed, j1j2SpeedKey), range: "-" });
-                if (j1Range) newRows.push({ axis: "J1", speed: "-", range: formatAxisSpecValue(j1Range, j1RangeKey) });
-                if (j2Range) newRows.push({ axis: "J2", speed: "-", range: formatAxisSpecValue(j2Range, j2RangeKey) });
-
-                displayAxes = [...newRows, ...displayAxes];
-            }
-
-            axesRowsHtml = `
-                <tr style="border-bottom: 1px solid #eee; font-size: 11px; background: #f2f2f2; page-break-inside: avoid;">
-                    <td style="padding: 8px; border: 1px solid #ddd;"></td>
-                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">속도</td>
-                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">가동범위</td>
-                </tr>
-            ` + displayAxes.map(ax => `
-                <tr style="border-bottom: 1px solid #eee; page-break-inside: avoid;">
-                    <td style="padding: 8px; border: 1px solid #ddd;"><strong>${formatAxisLabel(ax.axis)}</strong></td>
-                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${ax.speed}</td>
-                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${ax.range}</td>
-                </tr>
-            `).join('');
-        }
-
-        const generatedDate = options.generatedAt instanceof Date ? options.generatedAt : new Date();
-        const generatedAt = window.InoRobotI18n
-            ? window.InoRobotI18n.formatDate(generatedDate, { dateStyle: 'medium', timeStyle: 'medium' })
-            : generatedDate.toLocaleString('ko-KR');
-        const pdfFooterText = uiText('본 구성서는 선택된 옵션 기반의 가이드입니다. 제조사 사정에 따라 사양이 변경될 수 있습니다. 생성일시:');
-
-        pdfContainer.innerHTML = `
-            <div style="border-bottom: 2px solid #f7941d; padding-bottom: 15px; margin-bottom: 20px;">
-                <h1 style="color: #222; margin: 0; font-size: 24px;">Inovance 로봇 구성서</h1>
-            </div>
-
-            <h3 style="color: #333; margin-bottom: 10px; background: #eee; padding: 10px; border-radius: 4px;">제품 기본 정보</h3>
-            <p style="margin: 0 0 15px 10px;"><strong>모델 명:</strong> ${pdfDisplayName} / <strong>주문 코드:</strong> ${foundCode}</p>
-
-            <table style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #ddd; margin-bottom: 30px; page-break-inside: avoid;">
-                <tbody>
-                    <tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>가반 하중(Payload)</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${currentActiveProduct.specs['Payload(kg)'] || '-'} kg</td></tr>
-                    <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>리치(Reach)</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${currentActiveProduct.specs['Manipulator Length(mm)'] || '-'} mm</td></tr>
-                    ${currentActiveProduct.specs.Type === 'SCARA' ? `<tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>로봇 타입</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${scaraSubtype}</td></tr>` : ''}
-                    ${currentActiveProduct.specs.Type === 'SCARA' ? `<tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Z축 길이</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${currentActiveProduct.specs['Z axis Length(mm)'] || '-'} mm</td></tr>` : ''}
-                    ${currentActiveProduct.specs.Type === '6-Axis' ? `<tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>중공형(Hollow Wrist)</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${formatHollowWrist(currentActiveProduct.specs['Hollow Wrist'])}</td></tr>` : ''}
-                    <tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>클린 타입</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${localizeDisplayText(cleanType)}</td></tr>
-                    <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>반복 정밀도</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${formatRepeatability(repeatability)}</td></tr>
-                    <tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>방수 방진 등급</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${ipRating}</td></tr>
-                    <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>중량</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${formatWeight(weight)}</td></tr>
-                    ${axesRowsHtml}
-                    <tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>사용자 배선</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${ioPins}</td></tr>
-                    <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>사용자 공압</strong></td><td colspan="2" style="text-align: right; border: 1px solid #ddd;">${air}</td></tr>
-                </tbody>
-            </table>
-
-            <div class="html2pdf__page-break"></div>
-            <div style="height: 50px; width: 100%;"></div>
-            <h3 style="color: #333; margin-top: 10px; margin-bottom: 10px; background: #eee; padding: 10px; border-radius: 4px;">옵션 및 악세서리 구성</h3>
-            <div style="margin-left: 10px; margin-bottom: 15px;">
-                <p style="margin: 0; font-size: 13px;"><strong>기본 케이블 구성:</strong> ${uiText('파워/엔코더 케이블')} ${cableLen} (${uiText(cableType)})</p>
-            </div>
-            
-            <table style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #ddd; margin-top: 10px; page-break-inside: avoid;">
-                <thead>
-                    <tr style="background: #eee;">
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">항목</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">코드</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">상세 정보</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${selectedAccs.length > 0 ? selectedAccs.map(acc => `
-                        <tr>
-                            <td style="border: 1px solid #ddd; padding: 8px;">${acc.name}</td>
-                            <td style="border: 1px solid #ddd; padding: 8px; font-family: monospace;">${acc.code}</td>
-                            <td style="border: 1px solid #ddd; padding: 8px;">${acc.details}</td>
-                        </tr>
-                    `).join('') : '<tr style="page-break-inside: avoid;"><td colspan="3" style="border: 1px solid #ddd; padding: 8px; text-align: center; color: #888;">추가 선택 옵션 없음</td></tr>'}
-                </tbody>
-            </table>
-
-            <div style="margin-top: 30px; font-size: 11px; color: #888; text-align: center; border-top: 1px solid #ddd; padding-top: 15px; page-break-inside: avoid;">
-                ${pdfFooterText} ${generatedAt}
-            </div>
-        `;
-        pdfWrapper.appendChild(pdfContainer);
-        document.body.appendChild(pdfWrapper);
-        if (window.InoRobotI18n) {
-            window.InoRobotI18n.apply(pdfContainer);
-        }
-
-        const dlObj = {
-            margin: [15, 15, 15, 15],
-            filename: `Inovance_Config_${pdfDisplayName}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: {
-                scale: 1.5,
-                useCORS: true,
-                letterRendering: true,
-                backgroundColor: '#ffffff',
-                logging: false,
-                width: 720,
-                scrollX: 0,
-                scrollY: 0
-            },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-        };
-
-        return { pdfWrapper, pdfContainer, dlObj, filename: dlObj.filename };
     }
 
-    downloadPdfBtn.addEventListener('click', () => {
-        if (cartItems.length > 0) {
-            downloadCartConfigurationSheet();
+    function getPowerEncoderCableMovement(cable) {
+        const cableText = `${cable?.type || ''} ${cable?.description || ''}`.toLowerCase();
+        if (/non[-\s]?flexible/.test(cableText)) return uiText('비가동형');
+        if (/high[-\s]?flex|flexible|유연형|가동형/.test(cableText)) return uiText('가동형');
+        if (/standard|표준형|비가동형/.test(cableText)) return uiText('비가동형');
+        return '';
+    }
+
+    function getConfigurationRobotType(product) {
+        if (product?.specs?.Type === '6-Axis') return uiText('다관절');
+        if (product?.specs?.Type === 'SCARA') {
+            const isCeilingMounted = product.specs['Sub Type'] === '천장형'
+                || /\bTS[45]\b/i.test(String(product.name || ''));
+            return uiText(isCeilingMounted ? '천장형 SCARA 로봇' : 'SCARA');
+        }
+        return uiText('로봇');
+    }
+
+    function getConfigurationComponentType(category, name = '') {
+        if (category === 'Pendant') return uiText('펜던트');
+        if (category === 'Arm I/O Cable') return uiText('Arm I/O (J4)');
+        if (category === 'Body I/O Cable') return uiText('Arm I/O (Base)');
+        if (/teach pendant extension cable/i.test(String(name))) return uiText('티칭 펜던트 연장 케이블');
+        return uiText('악세서리');
+    }
+
+    function escapeXml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&apos;');
+    }
+
+    function getExcelColumnName(index) {
+        let value = index + 1;
+        let name = '';
+        while (value > 0) {
+            const remainder = (value - 1) % 26;
+            name = String.fromCharCode(65 + remainder) + name;
+            value = Math.floor((value - 1) / 26);
+        }
+        return name;
+    }
+
+    function buildConfigurationWorkbookFiles(rows) {
+        const headers = ['순번', '형번', '코드', '타입', '상세 정보', '수량'].map(uiText);
+        const values = [headers, ...rows.map((row, index) => [index + 1, row.modelNumber, row.code, row.type, row.details, row.quantity])];
+        const sheetRows = values.map((cells, rowIndex) => {
+            const rowNumber = rowIndex + 1;
+            const cellXml = cells.map((value, columnIndex) => {
+                const reference = `${getExcelColumnName(columnIndex)}${rowNumber}`;
+                const style = rowIndex === 0 ? ' s="1"' : '';
+                if (typeof value === 'number' && Number.isFinite(value)) {
+                    return `<c r="${reference}"${style}><v>${value}</v></c>`;
+                }
+                return `<c r="${reference}"${style} t="inlineStr"><is><t xml:space="preserve">${escapeXml(value)}</t></is></c>`;
+            }).join('');
+            return `<row r="${rowNumber}">${cellXml}</row>`;
+        }).join('');
+        const lastRow = values.length;
+        const worksheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+            `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">` +
+            `<dimension ref="A1:F${lastRow}"/><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="A2" sqref="A2"/></sheetView></sheetViews>` +
+            `<sheetFormatPr defaultRowHeight="20"/><cols><col min="1" max="1" width="8" customWidth="1"/><col min="2" max="2" width="32" customWidth="1"/><col min="3" max="3" width="18" customWidth="1"/><col min="4" max="4" width="16" customWidth="1"/><col min="5" max="5" width="60" customWidth="1"/><col min="6" max="6" width="12" customWidth="1"/></cols>` +
+            `<sheetData>${sheetRows}</sheetData><autoFilter ref="A1:F${lastRow}"/><pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/></worksheet>`;
+        const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+            `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${escapeXml(uiText('구성 목록'))}" sheetId="1" r:id="rId1"/></sheets></workbook>`;
+        const workbookRelationships = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+            `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
+        const rootRelationships = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+            `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`;
+        const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+            `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`;
+        const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+            `<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><color rgb="FFFFFFFF"/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF7941D"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFD9E2F3"/></left><right style="thin"><color rgb="FFD9E2F3"/></right><top style="thin"><color rgb="FFD9E2F3"/></top><bottom style="thin"><color rgb="FFD9E2F3"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+
+        return {
+            '[Content_Types].xml': contentTypes,
+            '_rels/.rels': rootRelationships,
+            'xl/workbook.xml': workbook,
+            'xl/_rels/workbook.xml.rels': workbookRelationships,
+            'xl/worksheets/sheet1.xml': worksheet,
+            'xl/styles.xml': styles
+        };
+    }
+
+    function createStoredZipBlob(files, mimeType) {
+        const encoder = new TextEncoder();
+        const crcTable = new Uint32Array(256);
+        for (let index = 0; index < crcTable.length; index++) {
+            let value = index;
+            for (let bit = 0; bit < 8; bit++) {
+                value = value & 1 ? 0xedb88320 ^ (value >>> 1) : value >>> 1;
+            }
+            crcTable[index] = value >>> 0;
+        }
+
+        const getCrc32 = bytes => {
+            let crc = 0xffffffff;
+            for (const byte of bytes) crc = crcTable[(crc ^ byte) & 0xff] ^ (crc >>> 8);
+            return (crc ^ 0xffffffff) >>> 0;
+        };
+        const localParts = [];
+        const centralParts = [];
+        let localOffset = 0;
+        let entryCount = 0;
+
+        Object.entries(files).forEach(([path, content]) => {
+            const name = encoder.encode(path);
+            const data = encoder.encode(content);
+            const crc32 = getCrc32(data);
+            const localHeader = new Uint8Array(30 + name.length);
+            const localView = new DataView(localHeader.buffer);
+            localView.setUint32(0, 0x04034b50, true);
+            localView.setUint16(4, 20, true);
+            localView.setUint16(6, 0x0800, true);
+            localView.setUint16(8, 0, true);
+            localView.setUint16(10, 0, true);
+            localView.setUint16(12, 0x0021, true);
+            localView.setUint32(14, crc32, true);
+            localView.setUint32(18, data.length, true);
+            localView.setUint32(22, data.length, true);
+            localView.setUint16(26, name.length, true);
+            localView.setUint16(28, 0, true);
+            localHeader.set(name, 30);
+            localParts.push(localHeader, data);
+
+            const centralHeader = new Uint8Array(46 + name.length);
+            const centralView = new DataView(centralHeader.buffer);
+            centralView.setUint32(0, 0x02014b50, true);
+            centralView.setUint16(4, 20, true);
+            centralView.setUint16(6, 20, true);
+            centralView.setUint16(8, 0x0800, true);
+            centralView.setUint16(10, 0, true);
+            centralView.setUint16(12, 0, true);
+            centralView.setUint16(14, 0x0021, true);
+            centralView.setUint32(16, crc32, true);
+            centralView.setUint32(20, data.length, true);
+            centralView.setUint32(24, data.length, true);
+            centralView.setUint16(28, name.length, true);
+            centralView.setUint16(30, 0, true);
+            centralView.setUint16(32, 0, true);
+            centralView.setUint16(34, 0, true);
+            centralView.setUint16(36, 0, true);
+            centralView.setUint32(38, 0, true);
+            centralView.setUint32(42, localOffset, true);
+            centralHeader.set(name, 46);
+            centralParts.push(centralHeader);
+
+            localOffset += localHeader.length + data.length;
+            entryCount++;
+        });
+
+        const centralDirectorySize = centralParts.reduce((total, part) => total + part.length, 0);
+        const endRecord = new Uint8Array(22);
+        const endView = new DataView(endRecord.buffer);
+        endView.setUint32(0, 0x06054b50, true);
+        endView.setUint16(4, 0, true);
+        endView.setUint16(6, 0, true);
+        endView.setUint16(8, entryCount, true);
+        endView.setUint16(10, entryCount, true);
+        endView.setUint32(12, centralDirectorySize, true);
+        endView.setUint32(16, localOffset, true);
+        endView.setUint16(20, 0, true);
+
+        return new Blob([...localParts, ...centralParts, endRecord], { type: mimeType });
+    }
+
+    function getConfigurationWorkbookFilename(items) {
+        const safeModel = String(items[0]?.modelId || items[0]?.modelName || 'Robot')
+            .replace(/[\\/:*?"<>|]+/g, '_');
+        const date = new Date().toISOString().slice(0, 10);
+        return items.length === 1
+            ? `Inovance_Config_${safeModel}_${date}.xlsx`
+            : `Inovance_Configurations_${date}.xlsx`;
+    }
+
+    function renderConfigurationWorkbookPreview(rows) {
+        const preview = document.createElement('div');
+        preview.className = 'model-manual-configuration-sheet';
+        preview.style.cssText = 'box-sizing:border-box; max-width:1120px; min-height:440px; padding:30px; background:#fff; color:#1f2937; font:13px/1.5 "Malgun Gothic", Arial, sans-serif;';
+        const table = document.createElement('table');
+        table.style.cssText = 'width:100%; border-collapse:collapse; table-layout:fixed;';
+        const headers = ['순번', '형번', '코드', '타입', '상세 정보', '수량'].map(uiText);
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        headers.forEach(label => {
+            const cell = document.createElement('th');
+            cell.textContent = label;
+            cell.style.cssText = 'padding:10px; border:1px solid #d9e2f3; background:#f7941d; color:white; text-align:left;';
+            headerRow.appendChild(cell);
+        });
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+        const tbody = document.createElement('tbody');
+        rows.forEach((row, index) => {
+            const values = [index + 1, row.modelNumber, row.code, row.type, row.details, row.quantity];
+            const tr = document.createElement('tr');
+            values.forEach(value => {
+                const cell = document.createElement('td');
+                cell.textContent = String(value ?? '');
+                cell.style.cssText = 'padding:9px 10px; border:1px solid #d9e2f3; vertical-align:top; overflow-wrap:anywhere;';
+                tr.appendChild(cell);
+            });
+            tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        preview.appendChild(table);
+        return preview;
+    }
+
+    async function downloadConfigurationWorkbook(items, button) {
+        const selectedItems = Array.isArray(items) ? items.filter(Boolean) : [];
+        if (selectedItems.length === 0) {
+            alert(uiText('구성 목록이 비어 있습니다.'));
             return;
         }
 
-        const draft = collectCurrentCartItem();
-        if (draft) downloadCartConfigurationSheet([draft]);
+        const rows = buildConfigurationWorkbookRows(selectedItems);
+        if (rows.length === 0) return;
+
+        const oldText = button?.textContent;
+        if (button) {
+            button.disabled = true;
+            button.textContent = uiText('구성서 생성 중...');
+        }
+
+        try {
+            const mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+            const blob = createStoredZipBlob(buildConfigurationWorkbookFiles(rows), mimeType);
+            const filename = getConfigurationWorkbookFilename(selectedItems);
+            if (window.saveAs) {
+                window.saveAs(blob, filename);
+            } else {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }
+        } catch (error) {
+            console.error('Configuration Excel Generation Error:', error);
+            alert(uiText('엑셀 파일 생성 중 오류가 발생했습니다.'));
+        } finally {
+            if (button) {
+                button.disabled = false;
+                button.textContent = oldText;
+            }
+        }
+    }
+
+    downloadComponentsBtn.addEventListener('click', () => {
+        const items = cartItems.length > 0 ? cartItems : [collectCurrentCartItem()].filter(Boolean);
+        downloadConfigurationWorkbook(items, downloadComponentsBtn);
     });
 
-    function buildCartConfigurationSheet(items = cartItems) {
-        if (items.length === 0) {
-            alert(uiText('구성 목록이 비어 있습니다.'));
-            return null;
-        }
-
-        const pdfWrapper = document.createElement('div');
-        pdfWrapper.id = 'cart-pdf-render-wrapper';
-        pdfWrapper.style.position = 'absolute';
-        pdfWrapper.style.left = '0';
-        pdfWrapper.style.top = '0';
-        pdfWrapper.style.width = '800px';
-        pdfWrapper.style.height = 'auto';
-        pdfWrapper.style.backgroundColor = '#ffffff';
-        pdfWrapper.style.zIndex = '-99999';
-        pdfWrapper.style.opacity = '0';
-        pdfWrapper.style.pointerEvents = 'none';
-
-        const pdfContainer = document.createElement('div');
-        pdfContainer.style.padding = '40px';
-        pdfContainer.style.paddingBottom = '80px';
-        pdfContainer.style.fontFamily = '"Noto Sans KR", "Noto Sans SC", Inter, sans-serif, "Malgun Gothic"';
-        pdfContainer.style.width = '720px';
-        pdfContainer.style.color = '#222';
-        pdfContainer.style.backgroundColor = '#fff';
-        pdfContainer.style.lineHeight = '1.5';
-
-        const totalRobots = items.reduce((sum, item) => sum + parsePositiveQuantity(item.robotQuantity), 0);
-        const generatedDate = new Date();
-        const generatedAt = window.InoRobotI18n
-            ? window.InoRobotI18n.formatDate(generatedDate, { dateStyle: 'medium', timeStyle: 'medium' })
-            : generatedDate.toLocaleString('ko-KR');
-
-        const itemSections = items.map((item, index) => {
-            const product = state.products.find(entry => entry.id === item.modelId);
-            const displayName = item.modelName || (product ? getDisplayModelName(product, item.bodyOptionValue) : item.modelId);
-            const specs = product?.specs || {};
-            const cable = item.cable || {};
-            const optionRows = [
-                {
-                    name: uiText('기본 케이블'),
-                    code: cable.code || '-',
-                    detail: `${uiText(cable.type || '-')} ${cable.length ? `/ ${cable.length}` : ''}`,
-                    quantity: item.robotQuantity
-                },
-                ...(item.accessories || []).map(option => ({
-                    name: uiText(option.name || option.category),
-                    code: option.code || '-',
-                    detail: localizeDisplayText(option.detail || ''),
-                    quantity: option.quantity || 1
-                }))
-            ];
-
-            return `
-                <section style="page-break-inside: avoid; margin-bottom: 30px;">
-                    <h2 style="margin:0 0 12px; padding:10px; color:#222; background:#eee; font-size:17px;">${escapeHtml(`${index + 1}. ${displayName}`)}</h2>
-                    <p style="margin:0 0 10px 10px; font-size:13px;"><strong>${escapeHtml(uiText('로봇 수량'))}:</strong> ${escapeHtml(item.robotQuantity)} · <strong>${escapeHtml(uiText('현재 구매 코드'))}:</strong> ${escapeHtml(item.purchaseCode || cable.code || '-')}</p>
-                    <table style="width:100%; border-collapse:collapse; font-size:12px; margin-bottom:12px;"><tbody>
-                        <tr><td style="padding:7px; border:1px solid #ddd;">${escapeHtml(uiText('가반 하중(Payload)'))}</td><td style="padding:7px; border:1px solid #ddd; text-align:right;">${escapeHtml(specs['Payload(kg)'] || '-')} kg</td></tr>
-                        <tr><td style="padding:7px; border:1px solid #ddd;">${escapeHtml(uiText('리치(Reach)'))}</td><td style="padding:7px; border:1px solid #ddd; text-align:right;">${escapeHtml(specs['Manipulator Length(mm)'] || '-')} mm</td></tr>
-                    </tbody></table>
-                    <table style="width:100%; border-collapse:collapse; font-size:12px;"><thead><tr style="background:#eee;">
-                        <th style="padding:7px; border:1px solid #ddd; text-align:left;">${escapeHtml(uiText('항목'))}</th>
-                        <th style="padding:7px; border:1px solid #ddd; text-align:left;">${escapeHtml(uiText('코드'))}</th>
-                        <th style="padding:7px; border:1px solid #ddd; text-align:left;">${escapeHtml(uiText('상세 정보'))}</th>
-                        <th style="padding:7px; border:1px solid #ddd; text-align:right;">${escapeHtml(uiText('수량'))}</th>
-                    </tr></thead><tbody>${optionRows.map(row => `
-                        <tr><td style="padding:7px; border:1px solid #ddd;">${escapeHtml(row.name)}</td><td style="padding:7px; border:1px solid #ddd; font-family:monospace;">${escapeHtml(row.code)}</td><td style="padding:7px; border:1px solid #ddd;">${escapeHtml(row.detail)}</td><td style="padding:7px; border:1px solid #ddd; text-align:right;">${escapeHtml(row.quantity)}</td></tr>
-                    `).join('')}</tbody></table>
-                </section>
-            `;
-        }).join('<div style="border-top:1px solid #ddd; margin:25px 0;"></div>');
-
-        pdfContainer.innerHTML = `
-            <div style="border-bottom:2px solid #f7941d; padding-bottom:15px; margin-bottom:20px;">
-                <h1 style="color:#222; margin:0; font-size:24px;">${escapeHtml(uiText('Inovance 로봇 구성서'))}</h1>
-            <p style="margin:6px 0 0; color:#666; font-size:12px;">${escapeHtml(uiText('총 구성 수'))}: ${items.length} · ${escapeHtml(uiText('총 로봇 수량'))}: ${totalRobots}</p>
-            </div>
-            ${itemSections}
-            <div style="margin-top:30px; font-size:11px; color:#888; text-align:center; border-top:1px solid #ddd; padding-top:15px;">${escapeHtml(uiText('본 구성서는 선택된 옵션 기반의 가이드입니다. 제조사 사정에 따라 사양이 변경될 수 있습니다. 생성일시:'))} ${escapeHtml(generatedAt)}</div>
-        `;
-        pdfWrapper.appendChild(pdfContainer);
-        document.body.appendChild(pdfWrapper);
-        if (window.InoRobotI18n) window.InoRobotI18n.apply(pdfContainer);
-
-        const dlObj = {
-            margin: [15, 15, 15, 15],
-            filename: `Inovance_Configurations_${generatedDate.toISOString().slice(0, 10)}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 1.5, useCORS: true, letterRendering: true, backgroundColor: '#ffffff', logging: false, width: 720, scrollX: 0, scrollY: 0 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-        };
-        return { pdfWrapper, pdfContainer, dlObj };
-    }
-
-    function downloadCartConfigurationSheet(itemsOverride = null) {
-        const sheet = buildCartConfigurationSheet(Array.isArray(itemsOverride) ? itemsOverride : cartItems);
-        if (!sheet) return;
-
-        const oldText = cartDownloadBtn.textContent;
-        cartDownloadBtn.disabled = true;
-        cartDownloadBtn.textContent = uiText('구성서 생성 중...');
-        const fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
-        fontsReady.then(() => html2pdf().set(sheet.dlObj).from(sheet.pdfContainer).save())
-            .then(() => sheet.pdfWrapper.remove())
-            .catch(error => {
-                console.error('Cart PDF Generation Error:', error);
-                sheet.pdfWrapper.remove();
-            })
-            .finally(() => {
-                cartDownloadBtn.disabled = false;
-                cartDownloadBtn.textContent = oldText;
-            });
-    }
-
-    cartDownloadBtn?.addEventListener('click', downloadCartConfigurationSheet);
-
+    cartDownloadBtn?.addEventListener('click', () => downloadConfigurationWorkbook(cartItems, cartDownloadBtn));
     document.getElementById('download-cad-btn').addEventListener('click', async () => {
         if (!currentActiveProduct) return;
         const btn = document.getElementById('download-cad-btn');
@@ -2971,7 +2786,6 @@ document.addEventListener('DOMContentLoaded', () => {
             ['commSelection', 'IRCB501-2PN-BD']
         ];
         const demoProductId = 'IR-R25-178S-INT';
-        const demoGeneratedAt = new Date('2026-08-13T09:00:00+09:00');
         let manualTargets = [];
         let manualCursor = null;
         let manualSpotlight = null;
@@ -3306,13 +3120,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function highlightManualDownloads(targetName = 'both') {
             const cadButton = document.getElementById('download-cad-btn');
-            const pdfButton = document.getElementById('download-pdf-btn');
+            const componentsButton = document.getElementById('download-components-btn');
             const targets = targetName === 'cad'
                 ? [cadButton]
                 : targetName === 'pdf'
-                    ? [pdfButton]
-                    : [cadButton, pdfButton];
-            const pointTarget = targetName === 'cad' ? cadButton : pdfButton;
+                    ? [componentsButton]
+                    : [cadButton, componentsButton];
+            const pointTarget = targetName === 'cad' ? cadButton : componentsButton;
             return highlightManualTargets(targets, pointTarget, { ring: false, hover: true, scroll: false });
         }
 
@@ -3386,24 +3200,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function showManualPreview(progress = 0) {
             closeManualPreview();
-            const sheet = buildConfigurationSheet({ generatedAt: demoGeneratedAt });
-            if (!sheet) return false;
-
-            sheet.pdfWrapper.remove();
+            const item = collectCurrentCartItem();
+            if (!item) return false;
+            const rows = buildConfigurationWorkbookRows([item]);
+            const filename = getConfigurationWorkbookFilename([item]);
             const viewer = document.createElement('section');
             viewer.className = 'model-manual-document-viewer';
             viewer.innerHTML = `
                 <header>
-                    <span class="model-manual-document-icon" aria-hidden="true">PDF</span>
+                    <span class="model-manual-document-icon model-manual-spreadsheet-icon" aria-hidden="true">XLSX</span>
                     <span><strong>${uiText('구성 내역 확인')}</strong><small></small></span>
                     <button type="button" tabindex="-1" aria-hidden="true">×</button>
                 </header>
                 <div class="model-manual-document-scroll"></div>
             `;
-            viewer.querySelector('header small').textContent = sheet.filename;
+            viewer.querySelector('header small').textContent = filename;
             const scrollArea = viewer.querySelector('.model-manual-document-scroll');
-            sheet.pdfContainer.classList.add('model-manual-configuration-sheet');
-            scrollArea.appendChild(sheet.pdfContainer);
+            scrollArea.appendChild(renderConfigurationWorkbookPreview(rows));
             document.body.appendChild(viewer);
             manualPreview = { element: viewer, scrollArea };
             manualFocusPoint = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
@@ -3421,15 +3234,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function resetManualDownloadButtons() {
             const cadButton = document.getElementById('download-cad-btn');
-            const pdfButton = document.getElementById('download-pdf-btn');
+            const componentsButton = document.getElementById('download-components-btn');
             if (cadButton && currentActiveProduct) {
                 const hasCad = Boolean(getCad3dPath(currentActiveProduct));
                 cadButton.textContent = uiText(hasCad ? 'CAD 다운로드' : 'CAD 파일 없음');
                 cadButton.disabled = !hasCad;
             }
-            if (pdfButton) {
-                pdfButton.textContent = uiText('구성 내역 다운로드');
-                pdfButton.disabled = false;
+            if (componentsButton) {
+                componentsButton.textContent = uiText('구성 요소 엑셀 다운로드');
+                componentsButton.disabled = false;
             }
         }
 
@@ -3492,7 +3305,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function pointAtManualDownload(kind, options = {}) {
-            const button = document.getElementById(kind === 'cad' ? 'download-cad-btn' : 'download-pdf-btn');
+            const button = document.getElementById(kind === 'cad' ? 'download-cad-btn' : 'download-components-btn');
             return highlightManualTargets(button ? [button] : [], button, {
                 ring: false,
                 hover: true,
@@ -3603,16 +3416,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } else if (cue === 'pdf_focus' || cue === 'pdf_press' || cue === 'pdf_done') {
                 prepareManualConfiguredModal(4);
-                const button = document.getElementById('download-pdf-btn');
+                const button = document.getElementById('download-components-btn');
                 pointAtManualDownload('pdf', {
                     pressed: cue === 'pdf_press',
                     onActivate: cue === 'pdf_press' && button
-                        ? () => { button.textContent = uiText('구성 내역 생성 중...'); }
+                        ? () => { button.textContent = uiText('구성서 생성 중...'); }
                         : null,
                     keepFocus: cue === 'pdf_done'
                 });
                 if (cue === 'pdf_done') {
-                    showManualToast(`Inovance_Config_${demoProductId}.pdf`);
+                    showManualToast(`Inovance_Config_${demoProductId}.xlsx`);
                     manualFocusPoint = { x: window.innerWidth - 180, y: window.innerHeight - 78 };
                 }
             } else if (cue === 'preview') {
@@ -3624,7 +3437,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         document.addEventListener('click', event => {
-            if (event.target.closest('#download-cad-btn, #download-pdf-btn')) {
+            if (event.target.closest('#download-cad-btn, #download-components-btn')) {
                 event.preventDefault();
                 event.stopImmediatePropagation();
             }

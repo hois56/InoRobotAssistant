@@ -83,7 +83,8 @@ export function parseVirtualControllerMessage(raw, receivedAt = 0) {
             sequence: readFiniteNumber(data, ['sequence', 'Sequence']),
             joints,
             position: hasTcp ? tcp.slice(0, 3) : null,
-            rotation: hasTcp ? tcp.slice(3, 6) : null
+            rotation: hasTcp ? tcp.slice(3, 6) : null,
+            telemetry: null
         };
     }
 
@@ -102,7 +103,12 @@ export function parseVirtualControllerMessage(raw, receivedAt = 0) {
         controllerTime: readFiniteNumber(data, ['time', 'Time']),
         joints,
         position: null,
-        rotation: null
+        rotation: null,
+        // Keep the legacy Trace payload available to the simulation trace
+        // recorder. The controller synchronizer only needs the normalized
+        // joint sample, but Trace also exposes errors, variables, I/O and
+        // line-monitor values that must not be discarded here.
+        telemetry: { ...data }
     };
 }
 
