@@ -576,6 +576,19 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
     <!-- SUBPAGE-SEO:START -->
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
     <link rel="canonical" href="https://inovancerobot.com/6_Document/">
@@ -596,16 +609,16 @@
 
     <!-- Header Section -->
     <header
-        class="sticky top-0 w-full flex flex-row justify-between items-center bg-[rgba(15,19,28,0.9)] backdrop-blur-xl border-b border-white/[0.05] px-8 py-0 shrink-0 h-[72px] z-50">
-        <div class="flex flex-row items-center gap-6">
+        class="inorobot-responsive-header sticky top-0 w-full flex flex-row justify-between items-center bg-[rgba(15,19,28,0.9)] backdrop-blur-xl border-b border-white/[0.05] px-8 py-0 shrink-0 h-[72px] z-50">
+        <div class="inorobot-header-brand flex flex-row items-center gap-6">
             <a href="/" class="logo-link group" title="메인 페이지로">
                 <img src="../1_RobotModelSelect/INOVANCE_Logo.png" alt="Inovance"
                     class="logo-img h-[60px] w-auto transition-transform group-hover:scale-105">
             </a>
-            <div class="header-divider h-8 w-px bg-white/[0.1] mx-2"></div>
+            <div class="header-separator header-divider h-8 w-px bg-white/[0.1] mx-2"></div>
             <h1 class="text-xl font-bold font-outfit text-white tracking-tight" data-i18n-skip>Technical Manual Center</h1>
         </div>
-        <div class="flex items-center gap-4">
+        <div class="inorobot-header-actions flex items-center gap-4" data-i18n-language-slot>
         </div>
     </header>
 
@@ -883,6 +896,15 @@
                 overflow: visible;
                 padding-right: 0;
             }
+
+            .manual-item {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .document-action-row {
+                flex: 1 1 100% !important;
+            }
         }
 
         .filter-btn {
@@ -975,6 +997,34 @@
             border-color: #f59e0b;
             color: #f59e0b;
             background: rgba(245, 158, 11, 0.05);
+        }
+
+        @media (max-width: 1023px) {
+            .document-action-row,
+            .document-action-buttons {
+                box-sizing: border-box;
+                width: 100%;
+                min-width: 0;
+                max-width: 100%;
+                flex: 1 1 100% !important;
+                flex-wrap: wrap;
+            }
+
+            .document-action-buttons {
+                margin-left: 0 !important;
+            }
+
+            .document-action-button {
+                box-sizing: border-box;
+                flex: 1 1 7rem;
+                min-width: 0 !important;
+                max-width: 100%;
+                justify-content: center;
+                padding: 0.6rem 0.65rem !important;
+                white-space: normal;
+                line-height: 1.25;
+                text-align: center;
+            }
         }
 
         @keyframes fadeInUp {

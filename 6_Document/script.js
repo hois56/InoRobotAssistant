@@ -898,14 +898,14 @@ function renderManuals() {
                 <h3 class="text-lg font-bold text-white mb-1 group-hover:text-white transition-colors" style="word-break: break-all;">${man.title}</h3>
             </div>
             
-            <div class="flex items-center gap-2 pt-4 md:pt-0 shrink-0 w-full md:w-auto">
-                <div class="flex gap-2 ml-auto">
+            <div class="document-action-row flex items-center gap-2 pt-4 md:pt-0 shrink-0 w-full md:w-auto">
+                <div class="document-action-buttons flex gap-2 ml-auto">
                     <button onclick="handleView('${man.id}')"
-                            class="px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 min-w-[100px] justify-center ${man.isLocked ? 'locked-btn' : 'view-btn'}">
+                            class="document-action-button px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 min-w-[100px] justify-center ${man.isLocked ? 'locked-btn' : 'view-btn'}">
                         <i data-lucide="eye" class="w-3.5 h-3.5"></i> 미리보기
                     </button>
                     <button onclick="handleDownload('${man.id}')"
-                            class="px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 min-w-[100px] justify-center ${man.isLocked ? 'locked-btn' : 'download-btn'}">
+                            class="document-action-button px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 min-w-[100px] justify-center ${man.isLocked ? 'locked-btn' : 'download-btn'}">
                         <i data-lucide="download" class="w-3.5 h-3.5"></i> 다운로드
                     </button>
                 </div>

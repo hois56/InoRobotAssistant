@@ -67,7 +67,8 @@
     ,"Zero Calibration Tool": "零点校准工具"
     ,"Zero Calibration Tool | Inovance": "零点校准工具 | Inovance"
     ,"Calibration Mode": "校准模式"
-    ,"내장된 디버깅 툴 버전 기록을 읽지 못했습니다.": "无法读取内置调试工具版本记录。"
+    ,"내장된 디버깅 툴 버전 기록을 읽지 못했습니다.": "无法读取内置调试工具版本记录。",
+    "Embedded history data is unavailable": "嵌入的版本记录数据不可用。"
   },
   "patterns": []
 }

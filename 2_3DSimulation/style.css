@@ -4432,6 +4432,25 @@ button.io-simulator-entry:hover {
     }
 }
 
+@media (max-width: 520px) {
+    :root {
+        --topbar-h: 154px;
+    }
+
+    #topbar {
+        grid-template-rows: 42px 42px 42px;
+    }
+
+    .topbar-center {
+        grid-column: 1 / -1;
+        grid-row: 2;
+    }
+
+    .topbar-right {
+        grid-row: 3;
+    }
+}
+
 /* Virtual controller */
 .virtual-controller-panel {
     position: absolute;
@@ -9986,5 +10005,296 @@ button:not(:disabled).success {
     .trace-channel-panel {
         flex-basis: 190px;
         min-width: 190px;
+    }
+}
+
+.io-simulator-panel,
+.collaboration-panel,
+.jog-panel,
+.interference-zone-panel {
+    box-sizing: border-box;
+    min-width: 0;
+    container-type: inline-size;
+}
+
+@container (max-width: 480px) {
+
+    .io-simulator-content,
+    .collaboration-content,
+    .interference-zone-content {
+        min-width: 0;
+    }
+
+    .io-simulator-content {
+        overflow-x: hidden;
+    }
+
+    .io-simulator-help,
+    .io-simulator-status {
+        min-width: 0;
+        max-width: 100%;
+        overflow-wrap: anywhere;
+    }
+
+    .io-simulator-toolbar {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: stretch;
+    }
+
+    .io-simulator-direction {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .io-simulator-direction button,
+    .io-simulator-range-tabs button {
+        min-width: 0;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.2;
+    }
+
+    .io-simulator-mapping-button {
+        grid-column: 2;
+        grid-row: 1;
+        width: 100%;
+        min-width: 0;
+        padding-inline: 0.3rem;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .io-simulator-mode-field {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+        min-width: 0;
+    }
+
+    .io-simulator-mode-field select {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .io-simulator-range-tabs {
+        min-width: 0;
+    }
+
+    .io-simulator-range-tabs button {
+        padding-inline: 0.3rem;
+    }
+
+    .collaboration-header,
+    .collaboration-content,
+    .collaboration-room-actions,
+    .collaboration-join-row {
+        min-width: 0;
+    }
+
+    .collaboration-header h2 {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .collaboration-help {
+        overflow-wrap: anywhere;
+    }
+
+    .collaboration-room-actions {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 5.2rem);
+    }
+
+    .collaboration-join-row {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 5.2rem);
+    }
+
+    .collaboration-room-actions button,
+    .collaboration-join-row > button {
+        box-sizing: border-box;
+        width: 100%;
+        min-width: 0;
+        padding-inline: 0.25rem;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.15;
+        font-size: 0.6rem;
+    }
+
+    .collaboration-room-actions #collaboration-leave-room,
+    .collaboration-join-row > #collaboration-join-room {
+        white-space: normal;
+    }
+
+    .jog-panel-header,
+    .jog-panel-header > div,
+    .jog-mode-tabs {
+        min-width: 0;
+    }
+
+    .jog-panel-header {
+        gap: 0.4rem;
+    }
+
+    .jog-panel-header h2 {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .jog-mode-btn {
+        min-width: 0;
+        padding: 0.45rem 0.2rem;
+        font-size: 0.68rem;
+        letter-spacing: 0.01em;
+        line-height: 1.2;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .interference-zone-content {
+        overflow-x: hidden;
+    }
+
+    .interference-zone-row {
+        box-sizing: border-box;
+        width: 100%;
+        min-width: 0;
+        grid-template-columns: 20px 22px minmax(0, 1fr) 48px 48px 54px;
+        gap: 3px;
+        padding: 3px 4px;
+    }
+
+    .interference-zone-row > * {
+        min-width: 0;
+    }
+
+    .interference-zone-read,
+    .interference-zone-edit {
+        box-sizing: border-box;
+        width: 100%;
+        min-width: 0;
+        padding-inline: 2px !important;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.1;
+        font-size: 9px;
+    }
+}
+
+/* Russian labels need more room in the default desktop panels. */
+html[data-locale="ru"] .work-origin-dialog:not(.panel-edge-resized) {
+    width: min(450px, calc(100vw - 24px));
+}
+
+html[data-locale="ru"] .transform-mode-buttons button {
+    flex-wrap: wrap;
+    min-height: 36px;
+    line-height: 1.15;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+html[data-locale="ru"] .snap-face-orientation-actions button {
+    height: auto;
+    min-height: 38px;
+    line-height: 1.2;
+    white-space: normal;
+}
+
+html[data-locale="ru"] .snap-face-orientation-actions button span {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+html[data-locale="ru"] .program-file-row button {
+    line-height: 1.15;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+html[data-locale="ru"] .jog-panel .base-step-settings {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+html[data-locale="ru"] .workobject-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-content: initial;
+    gap: 0.35rem;
+}
+
+html[data-locale="ru"] .workobject-actions button {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 36px;
+    padding: 0.32rem 0.35rem;
+    line-height: 1.15;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+html[data-locale="ru"] .workobject-actions button span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+html[data-locale="ru"] .workobject-actions button.primary {
+    grid-column: auto;
+}
+
+html[data-locale="ru"] .virtual-controller-bridge-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+html[data-locale="ru"] .virtual-controller-bridge-download {
+    grid-column: 1 / -1;
+}
+
+html[data-locale="ru"] .virtual-controller-bridge-download,
+html[data-locale="ru"] .virtual-controller-bridge-actions button {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 36px;
+    padding: 0.25rem 0.4rem;
+    line-height: 1.15;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+@media (min-width: 769px) {
+    html[data-locale="ru"] .model-browser-panel:not(.panel-edge-resized) {
+        width: 360px;
+    }
+
+    html[data-locale="ru"] .jog-panel:not(.panel-edge-resized) {
+        width: 340px;
+    }
+
+    html[data-locale="ru"] .program-panel:not(.panel-edge-resized) {
+        left: 372px;
+        width: min(390px, calc(100vw - 396px));
+    }
+
+    html[data-locale="ru"] .tcp-profile-panel:not(.panel-edge-resized),
+    html[data-locale="ru"] .collaboration-panel:not(.panel-edge-resized) {
+        width: 350px;
+    }
+
+    html[data-locale="ru"] .workobject-panel:not(.panel-edge-resized) {
+        width: 420px;
+    }
+
+    html[data-locale="ru"] .virtual-controller-panel:not(.panel-edge-resized) {
+        width: 360px;
+    }
+
+    html[data-locale="ru"] .io-simulator-panel:not(.panel-edge-resized),
+    html[data-locale="ru"] .interference-zone-panel:not(.panel-edge-resized) {
+        width: 420px;
     }
 }

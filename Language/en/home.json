@@ -190,7 +190,16 @@
     "Debugging Tool 버전 기록 보기": "Open Debugging Tool version history",
     "No": "No",
     "Client": "Client",
-    "프로젝트 파일": "Project File"
+    "프로젝트 파일": "Project File",
+    "Project package is ready": "Project package is ready",
+    "Document download is ready": "Document download is ready",
+    "Test 모델 배치 완료": "Test model deployment completed",
+    "스냅 이동 완료": "Snap move complete",
+    "자동 반복 운전 중": "During automatic repeat operation",
+    "패널을 닫고 반복 동작 확인": "Close the panel and confirm the repeat action",
+    "Guide target timed out.": "Guide target timed out.",
+    "Embedded history data is unavailable": "Embedded history data is unavailable",
+    "내장된 버전 기록을 읽지 못했습니다.": "Failed to read embedded version history."
   },
   "patterns": [
     {

@@ -14,6 +14,7 @@
   .ambient-glow{position:fixed;bottom:10%;right:10%;width:50vw;height:50vh;background:radial-gradient(circle,rgba(37,99,235,.05) 0%,rgba(15,23,42,0) 70%);z-index:-1;filter:blur(100px);pointer-events:none}
   #topbar { position: sticky; top: 0; height: 72px; background: rgba(15, 19, 28, 0.95); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.09); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; z-index: 200; }
   .topbar-left { display: flex; align-items: center; gap: 1.5rem; }
+  .topbar-right { display: flex; align-items: center; }
   .logo-link { transition: transform 0.3s ease; text-decoration: none; }
   .logo-link:hover { transform: scale(1.05); }
   .logo { height: 60px; width: auto; object-fit: contain; }
@@ -37,6 +38,7 @@
   .row select{text-align:left}
   .row .unit{font-size:12px;color:#64748b}
   .grid3{display:grid;gap:8px;align-items:center;font-size:12px;margin-bottom:8px}
+  .tool-grid-scroll{width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
   .grid3 input{padding:7px;background:rgba(15,23,42,.6);border:1px solid rgba(255,255,255,.08);border-radius:8px;font-size:12px;text-align:right;width:100%;color:#fff;font-family:inherit}
   .grid3 input:focus{outline:none;border-color:rgba(37,99,235,.5)}
   .grid3 .hd{font-weight:600;color:#64748b;text-align:center;text-transform:uppercase;font-size:11px;letter-spacing:.05em}
@@ -646,6 +648,19 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
     <!-- SUBPAGE-SEO:START -->
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
     <link rel="canonical" href="https://inovancerobot.com/3_ToolSelector/">
@@ -662,13 +677,14 @@
 </head>
 <body>
 <div class="ambient-glow"></div>
-<header id="topbar">
-    <div class="topbar-left">
+<header id="topbar" class="inorobot-responsive-header">
+    <div class="topbar-left inorobot-header-brand">
         <a href="/" class="logo-link" title="메인 페이지로 이동">
             <img src="../1_RobotModelSelect/INOVANCE_Logo.png" alt="Inovance" class="logo">
         </a>
         <h1 class="app-title">InoRobot Tool Select</h1>
     </div>
+    <div class="topbar-right inorobot-header-actions" data-i18n-language-slot></div>
 </header>
 
 <div class="wrap">
@@ -707,8 +723,10 @@
   <div id="mode-shape" class="hide">
     <div class="card">
       <h2>블록 정보 <span class="info-wrap"><span class="info-icon">i</span><span class="info-tip wide"><span class="img-row"><img src="tool_coord_ref.png" alt="Tool coordinate"><img src="block_ref.png" data-localized-help-image="block-ref" alt="Block example"></span><p>X·Y·Z 치수는 Tool 좌표계 방향(빨강=X, 초록=Y, 파랑=Z)을 기준으로 입력합니다. Tool 전체를 여러 직육면체 블록으로 분할해 각 블록의 무게와 치수를 입력하세요.</p></span></span></h2>
-      <div class="grid3" style="grid-template-columns:60px 1fr 1fr 1fr 1fr 40px"><span class="hd">블록</span><span class="hd">무게(kg)</span><span class="hd">X(mm)</span><span class="hd">Y(mm)</span><span class="hd">Z(mm)</span><span class="hd"></span></div>
-      <div id="sblocks"></div>
+      <div class="tool-grid-scroll">
+        <div class="grid3" style="grid-template-columns:60px 1fr 1fr 1fr 1fr 40px"><span class="hd">블록</span><span class="hd">무게(kg)</span><span class="hd">X(mm)</span><span class="hd">Y(mm)</span><span class="hd">Z(mm)</span><span class="hd"></span></div>
+        <div id="sblocks"></div>
+      </div>
       <button class="btn sec" onclick="addSBlock()" style="margin-top:8px;font-size:12px;padding:8px 14px">+ 블록 추가</button>
       <div class="hint">※ 균질 직육면체로 근사해 자체 무게중심 기준 Ixx/Iyy/Izz 계산</div>
     </div>
@@ -717,15 +735,19 @@
   <div id="mode-calc" class="hide">
     <div class="card">
       <h2>1. Tool 블록 치수 <span class="info-wrap"><span class="info-icon">i</span><span class="info-tip wide"><span class="img-row"><img src="tool_coord_ref.png" alt="Tool coordinate"><img src="block_ref.png" data-localized-help-image="block-ref" alt="Block example"></span><p>각 블록의 X·Y·Z 치수는 Tool 좌표계 방향(빨강=X, 초록=Y, 파랑=Z)을 기준으로 입력합니다. Tool 전체를 여러 개의 직육면체 블록으로 분할해 각 블록의 재질과 치수를 입력하세요.</p></span></span></h2>
-      <div class="grid3" style="grid-template-columns:60px 140px repeat(3,1fr) 40px"><span class="hd">블록</span><span class="hd">재질</span><span class="hd">X(mm)</span><span class="hd">Y(mm)</span><span class="hd">Z(mm)</span><span class="hd"></span></div>
-      <div id="blocks"></div>
+      <div class="tool-grid-scroll">
+        <div class="grid3" style="grid-template-columns:60px 140px repeat(3,1fr) 40px"><span class="hd">블록</span><span class="hd">재질</span><span class="hd">X(mm)</span><span class="hd">Y(mm)</span><span class="hd">Z(mm)</span><span class="hd"></span></div>
+        <div id="blocks"></div>
+      </div>
       <button class="btn sec" onclick="addBlock()" style="margin-top:8px;font-size:12px;padding:8px 14px">+ 블록 추가</button>
       <div class="hint">알루미늄 합금 ≈ 2.7 · 강철 ≈ 7.87 · 스테인리스 ≈ 7.93 · 황동 ≈ 8.5 g/cm³</div>
     </div>
     <div class="card">
       <h2>2. 끝단 플랜지 → 각 블록 무게중심 거리 <span class="info-wrap"><span class="info-icon">i</span><span class="info-tip"><img src="tool_coord_ref.png" alt="Tool coordinate"><p>각 블록 무게중심의 위치를 <b>끝단 플랜지 원점으로부터의 거리(mm)</b>로 Tool 좌표계 기준 입력합니다. 빨강=X, 초록=Y, 파랑=Z. 끝단 바깥쪽(+)·안쪽(−) 부호를 유지하세요.</p></span></span><span class="info-wrap" style="margin-left:6px"><span class="info-icon">i</span><span class="info-tip"><img src="Tool_Block_CoG.png" data-localized-help-image="tool-block-cog" alt="Tool Block CoG"><p>블록 무게중심 위치 참조용 도면</p></span></span></h2>
-      <div class="grid3" style="grid-template-columns:60px 140px repeat(3,1fr) 40px"><span class="hd">블록</span><span class="hd"></span><span class="hd">Dx (mm)</span><span class="hd">Dy (mm)</span><span class="hd">Dz (mm)</span><span class="hd"></span></div>
-      <div id="coms"></div>
+      <div class="tool-grid-scroll">
+        <div class="grid3" style="grid-template-columns:60px 140px repeat(3,1fr) 40px"><span class="hd">블록</span><span class="hd"></span><span class="hd">Dx (mm)</span><span class="hd">Dy (mm)</span><span class="hd">Dz (mm)</span><span class="hd"></span></div>
+        <div id="coms"></div>
+      </div>
     </div>
   </div>
 

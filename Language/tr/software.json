@@ -1,0 +1,48 @@
+{
+  "pages": {
+    "software": {
+      "title": "INOVANCE Robot Yazılım Merkezi",
+      "description": "En son INOVANCE robot yazılımını kontrol edin ve indirin."
+    }
+  },
+  "legacy": {
+    "안내": "Bilgi",
+    "Download": "İndir",
+    "Download Install": "Yükleyiciyi İndir",
+    "Download Portable": "Taşınabilir İndir",
+    "다운로드": "İndir",
+    "메인 페이지로": "Ana sayfaya git",
+    "전체보기": "Tümünü Görüntüle",
+    "Model": "Modeli",
+    "Name": "Ad",
+    "Type": "Tip",
+    "서버 연결에 실패했습니다.": "Sunucuya bağlanılamadı.",
+    "Software Download Center": "Yazılım İndirme Merkezi",
+    "최신 소프트웨어를 확인하세요": "En Son Yazılımı Edinin",
+    "로봇 제어 및 설정을 위한 최신 소프트웨어를 다운로드하세요.": "Robot kontrolü ve konfigürasyonu için en son yazılımı indirin.",
+    "소프트웨어 버전 또는 키워드를 입력하세요...": "Bir yazılım sürümü veya anahtar kelime girin...",
+    "Software Type": "Yazılım Türü",
+    "알림": "Bildirim",
+    "Display 버전은 배포가 제한되어 있으며, 별도의 비밀번호가 필요합니다. 권한이 있는 사용자만 다운로드해 주세요.": "Ekran versiyonlarının dağıtımı kısıtlıdır ve ayrı bir şifre gerektirir. Bunları yalnızca yetkiliyseniz indirin.",
+    "해당 조건에 맞는 소프트웨어가 없습니다.": "Seçilen kriterlere uyan hiçbir yazılım yok.",
+    "시스템 안정성 개선": "Geliştirilmiş sistem kararlılığı",
+    "Display 모듈 지원": "Ekran modülü desteği eklendi",
+    "Display 최적화": "Ekran uygulamaları için optimize edildi",
+    "[기능 제한 안내] 이 버전은 전용 배포판입니다. 비밀번호를 입력해 주세요:": "[Kısıtlı özellik] Bu sürüm özel bir dağıtımdır. Şifreyi girin:",
+    "비밀번호가 올바르지 않습니다. 관리자에게 문의하세요.": "Şifre yanlış. Yöneticiyle iletişime geç.",
+    "서버 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.": "Sunucuya bağlanılamadı. Lütfen kısa süre sonra tekrar deneyin.",
+    "비밀번호가 올바르지 않습니다.": "Şifre yanlış.",
+    "InoRobotLab 소프트웨어 (설치/무설치)": "InoRobotLab yazılımı (yükleyici/taşınabilir)",
+    "Display 공정용 특수 버전 소프트웨어": "Ekran işlemleri için özel yazılım sürümü",
+    "InoRobotTP 소프트웨어": "InoRobotTP yazılımı",
+    "Display 공정용 TP 소프트웨어": "Görüntüleme işlemleri için TP yazılımı",
+    "개": "öğeler",
+    "Pendant": "Kolye",
+    "No": "Hayır",
+    "Port": "Bağlantı Noktası",
+    "Inovance Robot Software Center": "İnovasyon Robot Yazılım Merkezi",
+    "다운로드 권한을 확인할 수 없습니다. 관리자에게 문의하세요.": "İndirme izni doğrulanamadı. Yöneticiyle iletişime geç.",
+    "Download URL was not returned.": "İndirme URL'si döndürülmedi."
+  },
+  "patterns": []
+}

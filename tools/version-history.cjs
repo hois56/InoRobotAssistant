@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const localeCodes = ['ko', 'en', 'zh-CN', 'vi'];
+const localeCodes = ['ko', 'en', 'zh-CN', 'vi', 'tr', 'ru'];
 const cardSections = {
     robotSelect: 'Robot Model Select',
     robot3dViewer: '3D Simulation',

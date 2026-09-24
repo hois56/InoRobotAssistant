@@ -5,12 +5,41 @@ document.addEventListener('DOMContentLoaded', () => {
     const uiText = (value) => window.InoRobotI18n
         ? window.InoRobotI18n.translate(String(value))
         : String(value);
+    let displayTranslationLocale = '';
+    let displayTranslationFragments = [];
+    const getDisplayTranslationFragments = () => {
+        const i18n = window.InoRobotI18n;
+        const locale = i18n?.locale || 'ko';
+        if (locale === displayTranslationLocale) return displayTranslationFragments;
+
+        const dictionaries = [
+            i18n?.get?.('legacy', {}),
+            i18n?.get?.('pageTranslations.robotSelect.legacy', {})
+        ];
+        const translations = Object.assign({}, ...dictionaries.filter(value => value && typeof value === 'object'));
+        displayTranslationFragments = Object.entries(translations)
+            .filter(([source, target]) => {
+                if (typeof source !== 'string' || typeof target !== 'string' || source === target) return false;
+                return source.length >= 8 || /[가-힣]/u.test(source) && source.length >= 2;
+            })
+            .sort(([left], [right]) => right.length - left.length)
+            .map(([source, target]) => {
+                const escaped = source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const startsWithWord = /^[\p{L}\p{N}]/u.test(source);
+                const endsWithWord = /[\p{L}\p{N}]$/u.test(source);
+                const leadingBoundary = startsWithWord ? '(?<![\\p{L}\\p{N}])' : '';
+                const trailingBoundary = endsWithWord ? '(?![\\p{L}\\p{N}])' : '';
+                return { expression: new RegExp(`${leadingBoundary}${escaped}${trailingBoundary}`, 'giu'), target };
+            });
+        displayTranslationLocale = locale;
+        return displayTranslationFragments;
+    };
     const localizeDisplayText = (value) => {
         const source = String(value ?? '');
         const exact = uiText(source);
         if (exact !== source) return exact;
-        return ['클린 사양 없음', 'Option :'].reduce(
-            (text, fragment) => text.replaceAll(fragment, uiText(fragment)),
+        return getDisplayTranslationFragments().reduce(
+            (text, fragment) => text.replace(fragment.expression, fragment.target),
             source
         );
     };
@@ -419,7 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const detailRows = [
                 { name: uiText('기본 케이블'), detail: `${uiText(cable.type || '-')}${cable.length ? ` / ${cable.length}` : ''}`, code: cable.code || '-', quantity: item.robotQuantity },
                 ...accessories.map(option => ({
-                    name: uiText(option.name || option.category),
+                    name: localizeDisplayText(option.name || option.category),
                     detail: localizeDisplayText(option.detail || ''),
                     code: option.code || '-',
                     quantity: option.quantity || 1
@@ -2324,7 +2353,7 @@ document.addEventListener('DOMContentLoaded', () => {
             accessories.forEach(option => {
                 if (option.category === 'Robot Body') return;
                 rows.push({
-                    modelNumber: uiText(option.name || option.category || '-'),
+                    modelNumber: localizeDisplayText(option.name || option.category || '-'),
                     code: option.code || '-',
                     type: getConfigurationComponentType(option.category, option.name),
                     details: localizeDisplayText(option.detail || ''),
@@ -2389,19 +2418,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const rowNumber = rowIndex + 1;
             const cellXml = cells.map((value, columnIndex) => {
                 const reference = `${getExcelColumnName(columnIndex)}${rowNumber}`;
-                const style = rowIndex === 0 ? ' s="1"' : '';
+                const style = rowIndex === 0 ? ' s="1"' : ' s="2"';
                 if (typeof value === 'number' && Number.isFinite(value)) {
                     return `<c r="${reference}"${style}><v>${value}</v></c>`;
                 }
                 return `<c r="${reference}"${style} t="inlineStr"><is><t xml:space="preserve">${escapeXml(value)}</t></is></c>`;
             }).join('');
-            return `<row r="${rowNumber}">${cellXml}</row>`;
+            const rowHeight = rowIndex === 0 ? ' ht="30" customHeight="1"' : '';
+            return `<row r="${rowNumber}"${rowHeight}>${cellXml}</row>`;
         }).join('');
         const lastRow = values.length;
         const worksheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
             `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">` +
             `<dimension ref="A1:F${lastRow}"/><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="A2" sqref="A2"/></sheetView></sheetViews>` +
-            `<sheetFormatPr defaultRowHeight="20"/><cols><col min="1" max="1" width="8" customWidth="1"/><col min="2" max="2" width="32" customWidth="1"/><col min="3" max="3" width="18" customWidth="1"/><col min="4" max="4" width="16" customWidth="1"/><col min="5" max="5" width="60" customWidth="1"/><col min="6" max="6" width="12" customWidth="1"/></cols>` +
+            `<sheetFormatPr defaultRowHeight="20"/><cols><col min="1" max="1" width="14" customWidth="1"/><col min="2" max="2" width="32" customWidth="1"/><col min="3" max="3" width="18" customWidth="1"/><col min="4" max="4" width="20" customWidth="1"/><col min="5" max="5" width="60" customWidth="1"/><col min="6" max="6" width="18" customWidth="1"/></cols>` +
             `<sheetData>${sheetRows}</sheetData><autoFilter ref="A1:F${lastRow}"/><pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/></worksheet>`;
         const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
             `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${escapeXml(uiText('구성 목록'))}" sheetId="1" r:id="rId1"/></sheets></workbook>`;
@@ -2412,7 +2442,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
             `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`;
         const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
-            `<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><color rgb="FFFFFFFF"/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF7941D"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFD9E2F3"/></left><right style="thin"><color rgb="FFD9E2F3"/></right><top style="thin"><color rgb="FFD9E2F3"/></top><bottom style="thin"><color rgb="FFD9E2F3"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+            `<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><color rgb="FFFFFFFF"/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF7941D"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFD9E2F3"/></left><right style="thin"><color rgb="FFD9E2F3"/></right><top style="thin"><color rgb="FFD9E2F3"/></top><bottom style="thin"><color rgb="FFD9E2F3"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
 
         return {
             '[Content_Types].xml': contentTypes,

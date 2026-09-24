@@ -70,7 +70,7 @@
     "도달": "Đã đến",
     "No": "Không",
     "Get": "Get",
-    "Put": "Đặt",
+    "Put": "Put",
     "Process": "Quy trình",
     "Multi Recipe": "Đa công thức",
     "TCP Speed Monitoring": "Giám sát tốc độ TCP",
@@ -188,7 +188,7 @@
     ,"Process names must be unique.": "Tên công đoạn phải là duy nhất."
     ,"Error generating zip: {message}": "Lỗi khi tạo ZIP: {message}"
     ,"Processes (": "Quy trình ("
-    ,"Tray": "Khay"
+    ,"Tray": "Tray"
     ,"Stage": "Bệ"
     ,"MCR": "MCR"
     ,"Vision": "Thị giác"
@@ -201,7 +201,10 @@
     ,"PLC (IO)": "PLC (IO)"
     ,"Vision (Socket)": "Vision (Socket)"
     ,"Use - IO": "Dùng - IO"
-    ,"Use - Socket": "Dùng - Socket"
+    ,"Use - Socket": "Dùng - Socket",
+    "Vision port must be an integer from 1 to 65535.": "Cổng Vision phải là số nguyên từ 1 đến 65535.",
+    "Vision client host must be a valid IPv4 address or DNS host name.": "Máy chủ của máy khách Vision phải là địa chỉ IPv4 hoặc tên máy chủ DNS hợp lệ.",
+    "At least one process step is required.": "Cần có ít nhất một bước quy trình."
   },
   "patterns": [
     {

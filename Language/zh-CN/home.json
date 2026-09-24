@@ -190,7 +190,16 @@
     "Debugging Tool 버전 기록 보기": "打开 Debugging Tool 版本记录",
     "No": "无",
     "Client": "客户端",
-    "프로젝트 파일": "项目文件"
+    "프로젝트 파일": "项目文件",
+    "Project package is ready": "项目包已准备好",
+    "Document download is ready": "文档下载已准备就绪",
+    "Test 모델 배치 완료": "测试模型部署完成",
+    "스냅 이동 완료": "快速移动完成",
+    "자동 반복 운전 중": "自动重复运行期间",
+    "패널을 닫고 반복 동작 확인": "关闭面板并确认重复操作",
+    "Guide target timed out.": "引导目标超时。",
+    "Embedded history data is unavailable": "嵌入的版本记录数据不可用。",
+    "내장된 버전 기록을 읽지 못했습니다.": "无法读取嵌入版本历史记录。"
   },
   "patterns": [
     {

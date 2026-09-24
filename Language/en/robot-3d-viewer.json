@@ -32,7 +32,7 @@
     "Toggle Grid": "Toggle Grid",
     "현재 열린 모든 모델 CAD 다운로드": "Download CAD for all open models",
     "다운로드할 모델이 없습니다.": "There are no models to download.",
-    "-- 로봇 모델을 선택하세요 --": "-- Select a robot model --",
+    "-- 로봇 모델을 선택하세요 --": "-- Select model --",
     "CAD 다운로드": "Download CAD",
     "모델": "Model",
     "Name": "Name",
@@ -183,7 +183,7 @@
     "스케치에 DXF 삽입": "Insert DXF into Sketch",
     "DXF를 스케치로 삽입": "Insert DXF into Sketch",
     "3D 파일 불러오기": "Import 3D File",
-    "3D 모델 가져오기 방식": "3D Model Import Method",
+    "3D 모델 가져오기 방식": "3D model import options",
     "3D 모델링": "3D Model",
     "3D 모델": "3D Model",
     "카탈로그 모델": "Catalog Model",
@@ -237,683 +237,674 @@
     "툴 · 로봇 TCP에 장착": "Tool · Attach to robot TCP",
     "원본 단위": "Source unit",
     "3D 모델링은 자동으로 뷰어 좌표계에 맞춘 뒤 바닥 중심에 배치되며 이동 핸들로 위치를 조정할 수 있습니다.": "The 3D model is aligned to the viewer coordinates, placed at floor center, and can be positioned with the transform handle.",
-  "삭제": "Delete",
-  "복사": "Copy",
-  "붙여넣기": "Paste",
-  "내보내기": "Export",
-  "모델 내보내기": "Export Model",
-  "선택한 생성 도형을 STL 또는 STEP 파일로 저장합니다.": "Save the selected generated shape as an STL or STEP file.",
-  "CAD generated shape export note": "Save the selected generated shape as an STL or STEP file.",
-  "내보내기 형식": "Export format",
-  "파일 내보내기": "Export file",
-  "생성된 도형만 내보낼 수 있습니다.": "Only generated shapes can be exported.",
-  "모델 내보내는 중...": "Exporting model...",
-  "STL 파일 내보내기를 완료했습니다.": "The STL file was exported.",
-  "STEP 파일 내보내기를 완료했습니다.": "The STEP file was exported.",
-  "생성 도형을 내보낼 수 없습니다.": "The generated shape could not be exported.",
-  "취소": "Cancel",
-  "불러오기": "Import",
-  "전체 선택": "Select All",
-  "전체 해제": "Deselect All",
-  "로봇을 선택하세요": "Select a robot",
-  "현재 로봇": "Current Robot",
-  "체크 로봇": "Checked Robots",
-  "프로젝트 저장": "Save Project",
-  "프로젝트 불러오기": "Load Project",
-  "시뮬레이션 프로젝트 저장": "Save Simulation Project",
-  "시뮬레이션 프로젝트 불러오기": "Load Simulation Project",
-  "프로그램 저장": "Save Program",
-  "프로그램 불러오기": "Load Program",
-  "프로그램 저장됨: {name}": "Program saved: {name}",
-  "프로그램 저장을 취소했습니다.": "Program saving was canceled.",
-  "프로그램 내보내기에 실패했습니다.": "The program could not be saved.",
-  "{name} 프로그램을 불러왔습니다.": "Loaded program {name}.",
-  "프로그램을 불러왔지만 일부 항목을 적용하지 못했습니다.": "The program was loaded, but some items could not be applied.",
-  "프로그램 불러오기에 실패했습니다.": "The program could not be loaded.",
-  "시뮬레이션 프로젝트 저장 중...": "Saving simulation project...",
-  "시뮬레이션 프로젝트 불러오는 중...": "Loading simulation project...",
-  "시뮬레이션 저장소가 아직 준비되지 않았습니다.": "The simulation storage is not ready yet.",
-  "시뮬레이션 프로젝트 저장됨: {name}": "Simulation project saved: {name}",
-  "시뮬레이션 프로젝트 저장을 취소했습니다.": "Simulation project saving was canceled.",
-  "시뮬레이션 프로젝트 저장에 실패했습니다.": "The simulation project could not be saved.",
-  "프로젝트를 불러오기 전에 로봇 모션과 OLP 실행을 정지하세요.": "Stop robot motion and OLP execution before loading a project.",
-  "현재 시뮬레이션 작업을 새 프로젝트로 바꾸시겠습니까?": "Replace the current simulation work with a new project?",
-  "프로젝트를 불러왔지만 일부 항목을 복원하지 못했습니다.": "The project was loaded, but some items could not be restored.",
-  "{name}을(를) 불러왔습니다.": "Loaded {name}.",
-  "시뮬레이션 프로젝트 불러오기에 실패했습니다.": "The simulation project could not be loaded.",
-  "로봇 모델 선택": "Robot Model Selection",
-  "로봇 모델을 변경하거나 추가할 수 있습니다. 아래에서 작업을 선택하세요.": "You can replace or add a robot model. Choose an action below.",
-  "현재 로봇 모델이 {count}개 있습니다. 선택한 로봇만 {name}으로 변경할지 새 로봇으로 추가할지 선택하세요.": "There are currently {count} robot models. Choose whether to replace only the selected robot with {name} or add it as a new robot.",
-  "현재 로봇 모델이 {count}개 있습니다. 선택한 로봇을 {name}으로 변경하시겠습니까?\n\n확인: 로봇 변경\n취소: 로봇 추가": "There are currently {count} robot models. Do you want to replace only the selected robot with {name}?\n\nOK: Replace Robot\nCancel: Add Robot",
-  "선택한 로봇": "Selected Robot",
-  "로봇 추가": "Add Robot",
-  "로봇 변경": "Replace Robot",
-  "선택된 로봇이 없어 로봇 변경을 사용할 수 없습니다. 로봇 추가를 선택하세요.": "Robot replacement is unavailable because no robot is selected. Choose Add Robot.",
-  "Program": "Program",
-  "Program Panel": "Program Panel",
-  "Program Panel을 별도 창으로 분리": "Open the Program Panel in a separate window",
-  "Program Panel 숨기기": "Hide Program Panel",
-  "모션 프로그램 표시/숨김": "Show or hide Motion Program",
-  "가상 컨트롤러": "Virtual Controller",
-  "가상 컨트롤러 패널을 별도 창으로 분리": "Open the Virtual Controller panel in a separate window",
-  "가상 컨트롤러 패널 숨기기": "Hide Virtual Controller panel",
-  "가상 컨트롤러 표시/숨김": "Show or hide Virtual Controller",
-  "가상 컨트롤러 대상 로봇": "Virtual Controller target robot",
-  "새 컨트롤러 연결": "New controller connection",
-  "충돌 시 물건 잡기/놓기": "Collision grip/release",
-  "충돌 상태 300ms 유지하면 실행": "Runs after a collision is held for 0.3 seconds",
-  "충돌 상태를 0.3초 유지하면 실행": "Runs after a collision is held for 0.3 seconds",
-  "충돌 시 물건 잡기/놓기 활성화": "Enable collision grip/release",
-  "충돌 시 물건 잡기/놓기 비활성화": "Disable collision grip/release",
-  "전용 브리지 다운로드": "Download Dedicated Bridge",
-  "전용 브리지를 실행해 주세요.": "Run the dedicated bridge first.",
-  "전용 브리지 · 127.0.0.1:5055": "Dedicated Bridge · 127.0.0.1:5055",
-  "연결 방식": "Connection method",
-  "가상 컨트롤러 연결 방식": "Virtual controller connection method",
-  "전용 브리지": "Dedicated Bridge",
-  "전용 브리지 (직접 연결)": "Dedicated Bridge (Direct)",
-  "Trace 도구": "Trace Tool",
-  "Trace 도구 연결": "Connect to Trace Tool",
-  "브리지 다운로드": "Download Bridge",
-  "설치된 전용 브리지 실행": "Launch the installed dedicated bridge",
-  "실행 중인 전용 브리지 종료": "Stop the running dedicated bridge",
-  "실행": "Run",
-  "종료": "Stop",
-  "Trace 도구 다운로드 및 실행": "Download and run Trace Tool",
-  "Trace 도구를 실행한 뒤 연결해 주세요.": "Run the Trace Tool, then connect.",
-  "전용 브리지를 시작하는 중...": "Starting the dedicated bridge...",
-  "브리지를 먼저 다운로드하여 한 번 실행해 주세요.": "Download the bridge and run it once first.",
-  "전용 브리지가 종료되었습니다.": "The dedicated bridge has stopped.",
-  "전용 브리지가 실행 중입니다.": "The dedicated bridge is running.",
-  "전용 브리지를 시작하지 못했습니다. 먼저 다운로드한 브리지를 한 번 실행해 주세요.": "Unable to start the dedicated bridge. Run the downloaded bridge once first.",
-  "전용 브리지가 종료되어 3D 동기화를 해제했습니다.": "The dedicated bridge stopped, so 3D synchronization was disconnected.",
-  "Trace 도구 연결이 종료되어 3D 동기화를 해제했습니다.": "The Trace Tool connection ended, so 3D synchronization was disconnected.",
-  "실행 중인 전용 브리지를 찾을 수 없습니다.": "No running dedicated bridge was found.",
-  "가상 컨트롤러 기능을 불러올 수 없습니다.": "Unable to load Virtual Controller support.",
-  "대상 로봇": "Target Robot",
-  "연결": "Connect",
-  "연결 해제": "Disconnect",
-  "연결 안 됨": "Disconnected",
-  "연결 중": "Connecting",
-  "연결됨": "Connected",
-  "위치 동기화 중": "Synchronizing position",
-  "재연결 중": "Reconnecting",
-  "가상 컨트롤러 연결 실패": "Virtual Controller connection failed",
-  "가상 컨트롤러 위치를 적용할 수 없습니다.": "Unable to apply the Virtual Controller pose.",
-  "가상 컨트롤러 동기화": "Virtual Controller synchronization",
-  "Virtual": "Virtual",
-  "ROBOTS": "Robots",
-  "CYCLE TIME": "Cycle Time",
-  "사이클 타임 (실제와 다름)": "Cycle Time (not actual)",
-  "그리드 표시/숨김": "Show or hide grid",
-  "뷰 초기화": "Reset view",
-  "선택 모델 변환 핸들 표시/숨김": "Show or hide selected model transform handle",
-  "뷰어 제어 도크": "Viewer control dock",
-  "모델 트리 표시/숨김": "Show or hide Model Tree",
-  "색상 변경": "Change color",
-  "투명도": "Transparency",
-  "선택 모델": "Selected Model",
-  "선택 모델 기준 배치": "Place from selected model",
-  "모델 배치 스냅 유형": "Model placement snap type",
-  "전체 모델": "All Models",
-  "외곽선 켜기": "Show outlines",
-  "외곽선 끄기": "Hide outlines",
-  "외곽선 표시/숨김": "Show/hide outlines",
-  "로봇 JOG 패널 표시/숨김": "Show or hide robot JOG Panel",
-  "되돌리기 (Ctrl+Z)": "Undo (Ctrl+Z)",
-  "다시 실행 (Ctrl+Y)": "Redo (Ctrl+Y)",
-  "닫기": "Close",
-  "Work Origin": "Work Origin",
-  "Work Origin 등록 안내": "Register the current TCP or Joint position as Work Origin and turn the output bit ON when the position is reached.",
-  "작업원점 관절 등록 안내": "Register the robot's current joint position as Work Origin and turn the output bit ON when the registered position is reached.",
-  "현재 로봇의 관절 위치를 작업원점으로 등록하고, 등록 위치 도달 시 출력 비트를 ON으로 표시합니다.": "Register the robot's current joint position as Work Origin and turn the output bit ON when the registered position is reached.",
-  "등록 기준": "Registration basis",
-  "현재 TCP 위치": "Current TCP position",
-  "현재 Joint position": "Current Joint position",
-  "도달 출력 비트": "Arrival output bit",
-  "현재 TCP 위치 또는 Joint position을 Work Origin으로 등록하고, 등록 위치 도달 시 출력 비트를 ON으로 표시합니다.": "Register the current TCP or Joint position as Work Origin and turn the output bit ON when the position is reached.",
-  "Work Origin으로 이동": "Move to Work Origin",
-  "등록 해제": "Clear registration",
-  "현재 위치 등록": "Register current position",
-  "등록됨 · {mode} · OUT{bit} · {state}": "Registered · {mode} · OUT{bit} · {state}",
-  "등록됨 · {mode} · Out [{bit}] · {state}": "Registered · {mode} · Out [{bit}] · {state}",
-  "등록됨 · Out [{bit}] · {state}": "Registered · Out [{bit}] · {state}",
-  "아직 Work Origin이 등록되지 않았습니다.": "Work Origin is not registered yet.",
-  "Work Origin을 설정할 로봇을 선택하세요.": "Select a robot to configure Work Origin.",
-  "현재 TCP 위치를 읽을 수 없습니다.": "The current TCP position is unavailable.",
-  "현재 위치를 Work Origin으로 등록했습니다.": "The current position is registered as Work Origin.",
-  "먼저 Work Origin을 등록하세요.": "Register Work Origin first.",
-  "Work Origin 등록을 해제했습니다.": "Work Origin registration was cleared.",
-  "Work Origin 설정·이동": "Configure or move to Work Origin",
-  "Work Origin 등록": "Register Work Origin",
-  "Work Origin 등록 해제": "Clear Work Origin registration",
-  "등록된 Work Origin으로 이동": "Move to the registered Work Origin",
-  "Work Origin을 먼저 등록하세요.": "Register Work Origin first.",
-  "출력 비트 번호": "Output bit number",
-  "출력 비트 번호는 0 이상의 숫자만 입력하세요.": "Enter a non-negative number for the output bit.",
-  "ON": "ON",
-  "OFF": "OFF",
-  "현재 자세 추가": "Add current pose",
-  "딜레이 추가": "Add delay",
-  "WAIT 명령 추가": "Add WAIT command",
-  "프로그램 행 {number}": "Program row {number}",
-  "대기 대상 로봇": "Robot to wait for",
-  "대기할 프로그램 행": "Program row to wait for",
-  "다른 로봇이 없습니다.": "No other robots.",
-  "WAIT 명령에는 다른 로봇이 필요합니다.": "WAIT requires another robot.",
-  "대기 대상 로봇을 선택하세요.": "Select a robot to wait for.",
-  "WAIT 대상 로봇 변경": "Change WAIT target robot",
-  "WAIT 대상 행 변경": "Change WAIT target row",
-  "대기 행 번호는 {min}부터 {max} 사이의 정수여야 합니다.": "The wait row must be an integer from {min} to {max}.",
-  "자세, 뷰, DELAY, WAIT 또는 타이머 명령을 추가하세요.": "Add a pose, view, DELAY, WAIT, or timer command.",
-  "TIME START 추가": "Add TIME START",
-  "TIME OUT 추가": "Add TIME OUT",
-  "선택 포인트 덮어쓰기": "Overwrite selected point",
-  "위로 이동": "Move up",
-  "아래로 이동": "Move down",
-  "드래그하여 순서 변경": "Drag to reorder",
-  "포인트 삭제": "Delete point",
-  "현재 로봇 Step Into": "Step Into current robot",
-  "현재 로봇 다음 명령 한 스텝 실행": "Run the next command for the current robot",
-  "현재 로봇 시작": "Start current robot",
-  "현재 로봇 일시정지": "Pause current robot",
-  "현재 로봇 정지": "Stop current robot",
-  "반복 실행": "Repeat",
-  "현재 로봇 반복 실행": "Repeat current robot",
-  "역순 반복": "Ping-pong repeat",
-  "현재 로봇 역순 반복": "Ping-pong repeat current robot",
-  "체크 로봇 Step Into": "Step Into checked robots",
-  "체크 로봇 다음 명령 동시 한 스텝 실행": "Run the next command for checked robots together",
-  "체크 로봇 동시 시작": "Start checked robots together",
-  "체크 로봇 일시정지": "Pause checked robots",
-  "체크 로봇 정지": "Stop checked robots",
-  "체크 로봇 반복 실행": "Repeat checked robots",
-  "체크 로봇 역순 반복": "Ping-pong repeat checked robots",
-  "파일명과 저장 위치 선택": "Choose file name and save location",
-  "초기화 오류: {message}": "Initialization error: {message}",
-  "초기화 중 오류가 발생했습니다.": "An initialization error occurred.",
-  "되돌리기: {action} (Ctrl+Z)": "Undo: {action} (Ctrl+Z)",
-  "다시 실행: {action} (Ctrl+Y)": "Redo: {action} (Ctrl+Y)",
-  "되돌리기: {action}": "Undo: {action}",
-  "다시 실행: {action}": "Redo: {action}",
-  "팝업이 차단되었습니다. 패널 분리를 위해 팝업을 허용하세요.": "Pop-up blocked. Allow pop-ups to detach panels.",
-  "모델 변환이 적용되었습니다.": "Model transform updated.",
-  "{name} 불러오는 중...": "Loading {name}...",
-  "불러오는 중": "Loading",
-  "불러오는 중...": "Loading...",
-  "로봇 링크: {progress}%": "Robot links: {progress}%",
-  "모델: {progress}%": "Model: {progress}%",
-  "오류": "Error",
-  "지원하지 않는 형식입니다. STL, FBX, OBJ, GLB, GLTF, STP, STEP 파일을 선택해 주세요.": "Unsupported format. Select an STL, FBX, OBJ, GLB, GLTF, STP, or STEP file.",
-  "TCP에 장착할 로봇을 먼저 불러와 주세요.": "Load a robot before attaching a model to its TCP.",
-  "{name} 가져오는 중...": "Importing {name}...",
-  "가져오는 중": "Importing",
-  "형상 변환 중...": "Converting geometry...",
-  "변환 진행률 계산 중...": "Calculating conversion progress...",
-  "부품 {current}/{total} 변환 중...": "Converting part {current}/{total}...",
-  "Tool이 TCP에 부착되었습니다.": "Tool attached to TCP.",
+    "삭제": "Delete",
+    "복사": "Copy",
+    "붙여넣기": "Paste",
+    "내보내기": "Export",
+    "모델 내보내기": "Export Model",
+    "선택한 생성 도형을 STL 또는 STEP 파일로 저장합니다.": "Save the selected generated shape as an STL or STEP file.",
+    "CAD generated shape export note": "Save the selected generated shape as an STL or STEP file.",
+    "내보내기 형식": "Export format",
+    "파일 내보내기": "Export file",
+    "생성된 도형만 내보낼 수 있습니다.": "Only generated shapes can be exported.",
+    "모델 내보내는 중...": "Exporting model...",
+    "STL 파일 내보내기를 완료했습니다.": "The STL file was exported.",
+    "STEP 파일 내보내기를 완료했습니다.": "The STEP file was exported.",
+    "생성 도형을 내보낼 수 없습니다.": "The generated shape could not be exported.",
+    "취소": "Cancel",
+    "불러오기": "Import",
+    "전체 선택": "Select All",
+    "전체 해제": "Deselect All",
+    "로봇을 선택하세요": "Select a robot",
+    "현재 로봇": "Current Robot",
+    "체크 로봇": "Checked Robots",
+    "프로젝트 저장": "Save Project",
+    "프로젝트 불러오기": "Load Project",
+    "시뮬레이션 프로젝트 저장": "Save Simulation Project",
+    "시뮬레이션 프로젝트 불러오기": "Load Simulation Project",
+    "프로그램 저장": "Save Program",
+    "프로그램 불러오기": "Load Program",
+    "프로그램 저장됨: {name}": "Program saved: {name}",
+    "프로그램 저장을 취소했습니다.": "Program saving was canceled.",
+    "프로그램 내보내기에 실패했습니다.": "The program could not be saved.",
+    "{name} 프로그램을 불러왔습니다.": "Loaded program {name}.",
+    "프로그램을 불러왔지만 일부 항목을 적용하지 못했습니다.": "The program was loaded, but some items could not be applied.",
+    "프로그램 불러오기에 실패했습니다.": "The program could not be loaded.",
+    "시뮬레이션 프로젝트 저장 중...": "Saving simulation project...",
+    "시뮬레이션 프로젝트 불러오는 중...": "Loading simulation project...",
+    "시뮬레이션 저장소가 아직 준비되지 않았습니다.": "The simulation storage is not ready yet.",
+    "시뮬레이션 프로젝트 저장됨: {name}": "Simulation project saved: {name}",
+    "시뮬레이션 프로젝트 저장을 취소했습니다.": "Simulation project saving was canceled.",
+    "시뮬레이션 프로젝트 저장에 실패했습니다.": "The simulation project could not be saved.",
+    "프로젝트를 불러오기 전에 로봇 모션과 OLP 실행을 정지하세요.": "Stop robot motion and OLP execution before loading a project.",
+    "현재 시뮬레이션 작업을 새 프로젝트로 바꾸시겠습니까?": "Replace the current simulation work with a new project?",
+    "프로젝트를 불러왔지만 일부 항목을 복원하지 못했습니다.": "The project was loaded, but some items could not be restored.",
+    "{name}을(를) 불러왔습니다.": "Loaded {name}.",
+    "시뮬레이션 프로젝트 불러오기에 실패했습니다.": "The simulation project could not be loaded.",
+    "로봇 모델 선택": "Robot Model Selection",
+    "로봇 모델을 변경하거나 추가할 수 있습니다. 아래에서 작업을 선택하세요.": "You can replace or add a robot model. Choose an action below.",
+    "현재 로봇 모델이 {count}개 있습니다. 선택한 로봇만 {name}으로 변경할지 새 로봇으로 추가할지 선택하세요.": "There are currently {count} robot models. Choose whether to replace only the selected robot with {name} or add it as a new robot.",
+    "현재 로봇 모델이 {count}개 있습니다. 선택한 로봇을 {name}으로 변경하시겠습니까?\n\n확인: 로봇 변경\n취소: 로봇 추가": "There are currently {count} robot models. Do you want to replace only the selected robot with {name}?\n\nOK: Replace Robot\nCancel: Add Robot",
+    "선택한 로봇": "Selected Robot",
+    "로봇 추가": "Add Robot",
+    "로봇 변경": "Replace Robot",
+    "선택된 로봇이 없어 로봇 변경을 사용할 수 없습니다. 로봇 추가를 선택하세요.": "Robot replacement is unavailable because no robot is selected. Choose Add Robot.",
+    "Program": "Program",
+    "Program Panel": "Program Panel",
+    "Program Panel을 별도 창으로 분리": "Open the Program Panel in a separate window",
+    "Program Panel 숨기기": "Hide Program Panel",
+    "모션 프로그램 표시/숨김": "Show or hide Motion Program",
+    "가상 컨트롤러": "Virtual Controller",
+    "가상 컨트롤러 패널을 별도 창으로 분리": "Open the Virtual Controller panel in a separate window",
+    "가상 컨트롤러 패널 숨기기": "Hide Virtual Controller panel",
+    "가상 컨트롤러 표시/숨김": "Show or hide Virtual Controller",
+    "가상 컨트롤러 대상 로봇": "Virtual Controller target robot",
+    "새 컨트롤러 연결": "New controller connection",
+    "충돌 시 물건 잡기/놓기": "Collision grip/release",
+    "충돌 상태 300ms 유지하면 실행": "Runs after a collision is held for 0.3 seconds",
+    "충돌 상태를 0.3초 유지하면 실행": "Runs after a collision is held for 0.3 seconds",
+    "충돌 시 물건 잡기/놓기 활성화": "Enable collision grip/release",
+    "충돌 시 물건 잡기/놓기 비활성화": "Disable collision grip/release",
+    "전용 브리지 다운로드": "Download Dedicated Bridge",
+    "전용 브리지를 실행해 주세요.": "Run the dedicated bridge first.",
+    "전용 브리지 · 127.0.0.1:5055": "Dedicated Bridge · 127.0.0.1:5055",
+    "연결 방식": "Connection method",
+    "가상 컨트롤러 연결 방식": "Virtual controller connection method",
+    "전용 브리지": "Dedicated Bridge",
+    "전용 브리지 (직접 연결)": "Dedicated Bridge (Direct)",
+    "Trace 도구": "Trace Tool",
+    "Trace 도구 연결": "Connect to Trace Tool",
+    "브리지 다운로드": "Download Bridge",
+    "설치된 전용 브리지 실행": "Launch the installed dedicated bridge",
+    "실행 중인 전용 브리지 종료": "Stop the running dedicated bridge",
+    "실행": "Run",
+    "종료": "Stop",
+    "Trace 도구 다운로드 및 실행": "Download and run Trace Tool",
+    "Trace 도구를 실행한 뒤 연결해 주세요.": "Run the Trace Tool, then connect.",
+    "전용 브리지를 시작하는 중...": "Starting the dedicated bridge...",
+    "브리지를 먼저 다운로드하여 한 번 실행해 주세요.": "Download the bridge and run it once first.",
+    "전용 브리지가 종료되었습니다.": "The dedicated bridge has stopped.",
+    "전용 브리지가 실행 중입니다.": "The dedicated bridge is running.",
+    "전용 브리지를 시작하지 못했습니다. 먼저 다운로드한 브리지를 한 번 실행해 주세요.": "Unable to start the dedicated bridge. Run the downloaded bridge once first.",
+    "전용 브리지가 종료되어 3D 동기화를 해제했습니다.": "The dedicated bridge stopped, so 3D synchronization was disconnected.",
+    "Trace 도구 연결이 종료되어 3D 동기화를 해제했습니다.": "The Trace Tool connection ended, so 3D synchronization was disconnected.",
+    "실행 중인 전용 브리지를 찾을 수 없습니다.": "No running dedicated bridge was found.",
+    "가상 컨트롤러 기능을 불러올 수 없습니다.": "Unable to load Virtual Controller support.",
+    "대상 로봇": "Target Robot",
+    "연결": "Connect",
+    "연결 해제": "Disconnect",
+    "연결 안 됨": "Disconnected",
+    "연결 중": "Connecting",
+    "연결됨": "Connected",
+    "위치 동기화 중": "Synchronizing position",
+    "재연결 중": "Reconnecting",
+    "가상 컨트롤러 연결 실패": "Virtual Controller connection failed",
+    "가상 컨트롤러 위치를 적용할 수 없습니다.": "Unable to apply the Virtual Controller pose.",
+    "가상 컨트롤러 동기화": "Virtual Controller synchronization",
+    "Virtual": "Virtual",
+    "ROBOTS": "Robots",
+    "CYCLE TIME": "Cycle Time",
+    "사이클 타임 (실제와 다름)": "Cycle Time (not actual)",
+    "그리드 표시/숨김": "Show or hide grid",
+    "뷰 초기화": "Reset view",
+    "선택 모델 변환 핸들 표시/숨김": "Show or hide selected model transform handle",
+    "뷰어 제어 도크": "Viewer control dock",
+    "모델 트리 표시/숨김": "Show or hide Model Tree",
+    "색상 변경": "Change color",
+    "투명도": "Transparency",
+    "선택 모델": "Selected Model",
+    "선택 모델 기준 배치": "Place from selected model",
+    "모델 배치 스냅 유형": "Model placement snap type",
+    "전체 모델": "All Models",
+    "외곽선 켜기": "Show outlines",
+    "외곽선 끄기": "Hide outlines",
+    "외곽선 표시/숨김": "Show/hide outlines",
+    "로봇 JOG 패널 표시/숨김": "Show or hide robot JOG Panel",
+    "되돌리기 (Ctrl+Z)": "Undo (Ctrl+Z)",
+    "다시 실행 (Ctrl+Y)": "Redo (Ctrl+Y)",
+    "닫기": "Close",
+    "Work Origin": "Work Origin",
+    "Work Origin 등록 안내": "Register the current TCP or Joint position as Work Origin and turn the output bit ON when the position is reached.",
+    "작업원점 관절 등록 안내": "Register the robot's current joint position as Work Origin and turn the output bit ON when the registered position is reached.",
+    "현재 로봇의 관절 위치를 작업원점으로 등록하고, 등록 위치 도달 시 출력 비트를 ON으로 표시합니다.": "Register the robot's current joint position as Work Origin and turn the output bit ON when the registered position is reached.",
+    "등록 기준": "Registration basis",
+    "현재 TCP 위치": "Current TCP position",
+    "현재 Joint position": "Current Joint position",
+    "도달 출력 비트": "Arrival output bit",
+    "현재 TCP 위치 또는 Joint position을 Work Origin으로 등록하고, 등록 위치 도달 시 출력 비트를 ON으로 표시합니다.": "Register the current TCP or Joint position as Work Origin and turn the output bit ON when the position is reached.",
+    "Work Origin으로 이동": "Move to Work Origin",
+    "등록 해제": "Clear registration",
+    "현재 위치 등록": "Register current position",
+    "등록됨 · {mode} · OUT{bit} · {state}": "Registered · {mode} · OUT{bit} · {state}",
+    "등록됨 · {mode} · Out [{bit}] · {state}": "Registered · {mode} · Out [{bit}] · {state}",
+    "등록됨 · Out [{bit}] · {state}": "Registered · Out [{bit}] · {state}",
+    "아직 Work Origin이 등록되지 않았습니다.": "Work Origin is not registered yet.",
+    "Work Origin을 설정할 로봇을 선택하세요.": "Select a robot to configure Work Origin.",
+    "현재 TCP 위치를 읽을 수 없습니다.": "The current TCP position is unavailable.",
+    "현재 위치를 Work Origin으로 등록했습니다.": "The current position is registered as Work Origin.",
+    "먼저 Work Origin을 등록하세요.": "Register Work Origin first.",
+    "Work Origin 등록을 해제했습니다.": "Work Origin registration was cleared.",
+    "Work Origin 설정·이동": "Configure or move to Work Origin",
+    "Work Origin 등록": "Register Work Origin",
+    "Work Origin 등록 해제": "Clear Work Origin registration",
+    "등록된 Work Origin으로 이동": "Move to the registered Work Origin",
+    "Work Origin을 먼저 등록하세요.": "Register Work Origin first.",
+    "출력 비트 번호": "Output bit number",
+    "출력 비트 번호는 0 이상의 숫자만 입력하세요.": "Enter a non-negative number for the output bit.",
+    "ON": "ON",
+    "OFF": "OFF",
+    "현재 자세 추가": "Add current pose",
+    "딜레이 추가": "Add delay",
+    "WAIT 명령 추가": "Add WAIT command",
+    "프로그램 행 {number}": "Program row {number}",
+    "대기 대상 로봇": "Robot to wait for",
+    "대기할 프로그램 행": "Program row to wait for",
+    "다른 로봇이 없습니다.": "No other robots.",
+    "WAIT 명령에는 다른 로봇이 필요합니다.": "WAIT requires another robot.",
+    "대기 대상 로봇을 선택하세요.": "Select a robot to wait for.",
+    "WAIT 대상 로봇 변경": "Change WAIT target robot",
+    "WAIT 대상 행 변경": "Change WAIT target row",
+    "대기 행 번호는 {min}부터 {max} 사이의 정수여야 합니다.": "The wait row must be an integer from {min} to {max}.",
+    "자세, 뷰, DELAY, WAIT 또는 타이머 명령을 추가하세요.": "Add a pose, view, DELAY, WAIT, or timer command.",
+    "TIME START 추가": "Add TIME START",
+    "TIME OUT 추가": "Add TIME OUT",
+    "선택 포인트 덮어쓰기": "Overwrite selected point",
+    "위로 이동": "Move up",
+    "아래로 이동": "Move down",
+    "드래그하여 순서 변경": "Drag to reorder",
+    "포인트 삭제": "Delete point",
+    "현재 로봇 Step Into": "Step Into current robot",
+    "현재 로봇 다음 명령 한 스텝 실행": "Run the next command for the current robot",
+    "현재 로봇 시작": "Start current robot",
+    "현재 로봇 일시정지": "Pause current robot",
+    "현재 로봇 정지": "Stop current robot",
+    "반복 실행": "Repeat",
+    "현재 로봇 반복 실행": "Repeat current robot",
+    "역순 반복": "Ping-pong repeat",
+    "현재 로봇 역순 반복": "Ping-pong repeat current robot",
+    "체크 로봇 Step Into": "Step Into checked robots",
+    "체크 로봇 다음 명령 동시 한 스텝 실행": "Run the next command for checked robots together",
+    "체크 로봇 동시 시작": "Start checked robots together",
+    "체크 로봇 일시정지": "Pause checked robots",
+    "체크 로봇 정지": "Stop checked robots",
+    "체크 로봇 반복 실행": "Repeat checked robots",
+    "체크 로봇 역순 반복": "Ping-pong repeat checked robots",
+    "파일명과 저장 위치 선택": "Choose a file name and save location",
+    "초기화 오류: {message}": "Initialization error: {message}",
+    "초기화 중 오류가 발생했습니다.": "An initialization error occurred.",
+    "되돌리기: {action} (Ctrl+Z)": "Undo: {action} (Ctrl+Z)",
+    "다시 실행: {action} (Ctrl+Y)": "Redo: {action} (Ctrl+Y)",
+    "되돌리기: {action}": "Undo: {action}",
+    "다시 실행: {action}": "Redo: {action}",
+    "팝업이 차단되었습니다. 패널 분리를 위해 팝업을 허용하세요.": "Pop-up blocked. Allow pop-ups to detach panels.",
+    "모델 변환이 적용되었습니다.": "Model transform updated.",
+    "{name} 불러오는 중...": "Loading {name}...",
+    "불러오는 중": "Loading",
+    "불러오는 중...": "Loading...",
+    "로봇 링크: {progress}%": "Robot links: {progress}%",
+    "모델: {progress}%": "Model: {progress}%",
+    "오류": "Error",
+    "지원하지 않는 형식입니다. STL, FBX, OBJ, GLB, GLTF, STP, STEP 파일을 선택해 주세요.": "Unsupported format. Select an STL, FBX, OBJ, GLB, GLTF, STP, or STEP file.",
+    "TCP에 장착할 로봇을 먼저 불러와 주세요.": "Load a robot before attaching a model to its TCP.",
+    "{name} 가져오는 중...": "Importing {name}...",
+    "가져오는 중": "Importing",
+    "형상 변환 중...": "Converting geometry...",
+    "변환 진행률 계산 중...": "Calculating conversion progress...",
+    "부품 {current}/{total} 변환 중...": "Converting part {current}/{total}...",
+    "Tool이 TCP에 부착되었습니다.": "Tool attached to TCP.",
     "3D 모델링 불러오기 완료": "3D model import complete.",
-  "가져오기 오류": "Import error",
-  "3D 파일을 불러오지 못했습니다.\n{message}\n\n외부 파일을 참조하는 GLTF는 GLB로 변환해서 사용해 주세요.": "Could not import the 3D file.\n{message}\n\nConvert GLTF files with external references to GLB before importing.",
-  "3D 파일을 불러오지 못했습니다.\n외부 파일을 참조하는 GLTF는 GLB로 변환해서 사용해 주세요.": "Could not import the 3D file.\nConvert GLTF files with external references to GLB before importing.",
-  "3D 파일을 불러오지 못했습니다.\n{message}": "Could not import the 3D file.\n{message}",
-  "STEP 파일을 불러오지 못했습니다.\n{message}\n\n파일이 매우 크거나 형상이 복잡한 경우 CAD에서 불필요한 부품을 제거하거나 GLB/STL로 내보낸 뒤 다시 시도해 주세요.": "Could not import the STEP file.\n{message}\n\nIf the file is very large or complex, remove unnecessary parts in CAD or export it as GLB/STL, then try again.",
-  "브라우저 메모리가 부족하거나 STEP 형상이 너무 복잡합니다.": "The browser is low on memory or the STEP geometry is too complex.",
-  "STEP 파일에 표시 가능한 메시가 없습니다.": "The STEP file contains no displayable mesh.",
-  "STEP 형상을 해석하지 못했습니다.": "Could not parse the STEP geometry.",
-  "STEP 변환 엔진을 불러오지 못했습니다. 네트워크 연결을 확인해 주세요.": "Could not load the STEP conversion engine. Check your network connection.",
-  "알 수 없는 오류가 발생했습니다.": "An unknown error occurred.",
-  "대기": "Waiting",
-  "실행 중": "Running",
-  "일시정지": "Paused",
-  "완료": "Completed",
-  "정지됨": "Stopped",
-  "사이클 타임 측정 중": "Measuring cycle time",
-  "사이클 타임": "Cycle time",
-  "대기 {seconds} s": "WAIT {seconds} s",
-  "타이머 시작": "TIMER START",
-  "타이머 종료": "TIMER OUT",
-  "{name} 동시 실행 대상": "Include {name} in simultaneous run",
-  "자세, DELAY 또는 타이머 명령을 추가하세요.": "Add a pose, DELAY, or timer command.",
-  "프로그램 가능한 로봇이 없습니다.": "No programmable robot is loaded.",
-  "반복 실행 켜짐": "Repeat enabled",
-  "반복 실행 꺼짐": "Repeat disabled",
-  "역순 반복 켜짐": "Ping-pong repeat enabled",
-  "역순 반복 꺼짐": "Ping-pong repeat disabled",
-  "이전 작업 복구": "Recover Previous Work",
-  "저장된 3D 시뮬레이션 작업이 있습니다. 불러오시겠습니까?": "A saved 3D Simulation workspace is available. Would you like to load it?",
-  "저장된 작업이 여러 개 있습니다. 불러올 작업을 선택하세요.": "Multiple saved workspaces are available. Choose the one you want to load.",
-  "불러올 작업 선택": "Choose a Workspace to Load",
-  "선택된 작업 {count}개": "{count} workspaces selected",
-  "선택된 작업 0개": "0 workspaces selected",
-  "선택 삭제": "Delete Selected",
-  "선택 해제": "Clear Selection",
-  "삭제할 작업 선택: {name}": "Select workspace to delete: {name}",
-  "다른 창에서 사용 중인 작업은 삭제할 수 없습니다.": "A workspace in use by another window cannot be deleted.",
-  "선택한 작업 {count}개를 삭제하시겠습니까?": "Delete {count} selected workspace(s)?",
-  "선택한 작업을 삭제하지 못했습니다.": "Could not delete the selected workspaces.",
-  "일부 작업은 다른 창에서 사용 중이라 삭제하지 못했습니다.": "Some workspaces could not be deleted because they are in use by another window.",
-  "선택한 작업이 없습니다.": "No workspaces are selected.",
-  "저장된 작업 {number}": "Saved Work {number}",
-  "다른 창에서 열려 있음": "Open in Another Window",
-  "일부만 복구된 작업": "Partially Recovered",
-  "마지막 저장: {time}": "Last saved: {time}",
-  "로봇 {robots}대 · 3D 모델 {models}개": "{robots} robots · {models} 3D models",
-  "OLP 프로젝트 {projects}개": "{projects} OLP projects",
-  "다른 창에서 연 작업은 독립된 복사본으로 저장되어 서로 덮어쓰지 않습니다.": "Work opened in another window is saved as an independent copy, so the windows do not overwrite each other.",
-  "새 작업 시작": "Start New Work",
-  "이전 작업 불러오기": "Load Previous Work",
-  "같은 작업이 다른 창에서 열려 있어 이 창은 독립된 복사본으로 시작합니다.": "The same work is open in another window, so this window will start with an independent copy.",
-  "작업을 자동 저장하지 못했습니다.": "Could not autosave the work.",
-  "이전 작업을 불러오지 못했습니다.": "Could not load the previous work.",
-  "자동 복구 저장 공간이 부족합니다. 프로젝트를 파일로 저장해 주세요.": "There is not enough storage for automatic recovery. Please save the project to a file.",
-  "저장된 작업 파일 일부를 찾을 수 없어 이전 작업을 모두 복구하지 못했습니다.": "Some saved workspace files are missing, so the previous work could not be fully restored.",
-  "3D 모델은 불러왔지만 원본 파일을 작업 복구 저장소에 저장하지 못했습니다.": "The 3D model was loaded, but its source file could not be saved for workspace recovery.",
-  "OLP 프로젝트는 불러왔지만 일부 바이너리 파일을 작업 복구 저장소에 저장하지 못했습니다.": "The OLP project was loaded, but some binary files could not be saved for workspace recovery.",
-  "이전 작업 불러오는 중...": "Loading previous work...",
-  "이전 작업을 불러왔습니다.": "Previous work loaded.",
-  "이 브라우저에서는 자동 복구 저장소를 사용할 수 없습니다.": "Automatic recovery storage is unavailable in this browser.",
-  "자동 저장된 프로젝트를 복원했습니다.": "Autosaved project restored.",
-  "프로젝트 복원에 실패했습니다.": "Project restore failed.",
-  "프로젝트 저장됨: {name}": "Project saved: {name}",
-  "프로젝트를 다운로드했습니다. 이 브라우저에서는 폴더를 선택할 수 없습니다.": "Project downloaded. Folder selection is unavailable in this browser.",
-  "프로젝트 저장을 취소했습니다.": "Project save canceled.",
-  "프로젝트 내보내기에 실패했습니다.": "Project export failed.",
-  "{name}을(를) 불러왔습니다.": "Loaded {name}.",
-  "프로젝트 불러오기에 실패했습니다.": "Project import failed.",
-  "모션 경로 검증에 실패했습니다.": "Motion path validation failed.",
-  "{count}대의 로봇 모션을 시작했습니다.": "Started motion for {count} robot(s).",
-  "모션이 일시정지되었습니다.": "Motion paused.",
-  "모션을 재개했습니다.": "Motion resumed.",
-  "{count}대의 로봇 모션을 정지했습니다.": "Stopped motion for {count} robot(s).",
-  "{name} 사이클 타임: {seconds} s": "{name} cycle time: {seconds} s",
-  "{name} 완료.": "{name} completed.",
-  "{name}: {message}": "{name}: {message}",
-  "모션 실행에 실패했습니다.": "Motion failed.",
-  "다운로드할 기본 로봇 CAD 모델이 없습니다. 업로드한 파일은 원본 파일을 사용해주세요.": "No default robot CAD model is available to download. Use the original file for uploaded models.",
-  "모델 변환": "Model transform",
-  "수치 모델 변환": "Numeric model transform",
-  "관절 원점 복귀": "Reset joints",
-  "관절 JOG": "Joint JOG",
-  "Base JOG": "Base JOG",
-  "Base 3D JOG": "Base 3D JOG",
-  "Base 좌표 입력": "Base coordinate input",
-  "모델 불러오기": "Load model",
-  "TCP 툴 불러오기": "Import TCP tool",
+    "가져오기 오류": "Import error",
+    "3D 파일을 불러오지 못했습니다.\n{message}\n\n외부 파일을 참조하는 GLTF는 GLB로 변환해서 사용해 주세요.": "Could not import the 3D file.\n{message}\n\nConvert GLTF files with external references to GLB before importing.",
+    "3D 파일을 불러오지 못했습니다.\n외부 파일을 참조하는 GLTF는 GLB로 변환해서 사용해 주세요.": "Could not import the 3D file.\nConvert GLTF files with external references to GLB before importing.",
+    "3D 파일을 불러오지 못했습니다.\n{message}": "Could not import the 3D file.\n{message}",
+    "STEP 파일을 불러오지 못했습니다.\n{message}\n\n파일이 매우 크거나 형상이 복잡한 경우 CAD에서 불필요한 부품을 제거하거나 GLB/STL로 내보낸 뒤 다시 시도해 주세요.": "Could not import the STEP file.\n{message}\n\nIf the file is very large or complex, remove unnecessary parts in CAD or export it as GLB/STL, then try again.",
+    "브라우저 메모리가 부족하거나 STEP 형상이 너무 복잡합니다.": "The browser is low on memory or the STEP geometry is too complex.",
+    "STEP 파일에 표시 가능한 메시가 없습니다.": "The STEP file contains no displayable mesh.",
+    "STEP 형상을 해석하지 못했습니다.": "Could not parse the STEP geometry.",
+    "STEP 변환 엔진을 불러오지 못했습니다. 네트워크 연결을 확인해 주세요.": "Could not load the STEP conversion engine. Check your network connection.",
+    "알 수 없는 오류가 발생했습니다.": "An unknown error occurred.",
+    "대기": "Waiting",
+    "실행 중": "Running",
+    "일시정지": "Paused",
+    "완료": "Completed",
+    "정지됨": "Stopped",
+    "사이클 타임 측정 중": "Measuring cycle time",
+    "사이클 타임": "Cycle time",
+    "대기 {seconds} s": "WAIT {seconds} s",
+    "타이머 시작": "TIMER START",
+    "타이머 종료": "TIMER OUT",
+    "{name} 동시 실행 대상": "Include {name} in simultaneous run",
+    "자세, DELAY 또는 타이머 명령을 추가하세요.": "Add a pose, DELAY, or timer command.",
+    "프로그램 가능한 로봇이 없습니다.": "No programmable robot is loaded.",
+    "반복 실행 켜짐": "Repeat enabled",
+    "반복 실행 꺼짐": "Repeat disabled",
+    "역순 반복 켜짐": "Ping-pong repeat enabled",
+    "역순 반복 꺼짐": "Ping-pong repeat disabled",
+    "이전 작업 복구": "Recover Previous Work",
+    "저장된 3D 시뮬레이션 작업이 있습니다. 불러오시겠습니까?": "A saved 3D Simulation workspace is available. Would you like to load it?",
+    "저장된 작업이 여러 개 있습니다. 불러올 작업을 선택하세요.": "Multiple saved workspaces are available. Choose the one you want to load.",
+    "불러올 작업 선택": "Choose a Workspace to Load",
+    "선택된 작업 {count}개": "{count} workspaces selected",
+    "선택된 작업 0개": "0 workspaces selected",
+    "선택 삭제": "Delete Selected",
+    "선택 해제": "Clear selection",
+    "삭제할 작업 선택: {name}": "Select workspace to delete: {name}",
+    "다른 창에서 사용 중인 작업은 삭제할 수 없습니다.": "A workspace in use by another window cannot be deleted.",
+    "선택한 작업 {count}개를 삭제하시겠습니까?": "Delete {count} selected workspace(s)?",
+    "선택한 작업을 삭제하지 못했습니다.": "Could not delete the selected workspaces.",
+    "일부 작업은 다른 창에서 사용 중이라 삭제하지 못했습니다.": "Some workspaces could not be deleted because they are in use by another window.",
+    "선택한 작업이 없습니다.": "No workspaces are selected.",
+    "저장된 작업 {number}": "Saved Work {number}",
+    "다른 창에서 열려 있음": "Open in Another Window",
+    "일부만 복구된 작업": "Partially Recovered",
+    "마지막 저장: {time}": "Last saved: {time}",
+    "로봇 {robots}대 · 3D 모델 {models}개": "{robots} robots · {models} 3D models",
+    "OLP 프로젝트 {projects}개": "{projects} OLP projects",
+    "다른 창에서 연 작업은 독립된 복사본으로 저장되어 서로 덮어쓰지 않습니다.": "Work opened in another window is saved as an independent copy, so the windows do not overwrite each other.",
+    "새 작업 시작": "Start New Work",
+    "이전 작업 불러오기": "Load Previous Work",
+    "같은 작업이 다른 창에서 열려 있어 이 창은 독립된 복사본으로 시작합니다.": "The same work is open in another window, so this window will start with an independent copy.",
+    "작업을 자동 저장하지 못했습니다.": "Could not autosave the work.",
+    "이전 작업을 불러오지 못했습니다.": "Could not load the previous work.",
+    "자동 복구 저장 공간이 부족합니다. 프로젝트를 파일로 저장해 주세요.": "There is not enough storage for automatic recovery. Please save the project to a file.",
+    "저장된 작업 파일 일부를 찾을 수 없어 이전 작업을 모두 복구하지 못했습니다.": "Some saved workspace files are missing, so the previous work could not be fully restored.",
+    "3D 모델은 불러왔지만 원본 파일을 작업 복구 저장소에 저장하지 못했습니다.": "The 3D model was loaded, but its source file could not be saved for workspace recovery.",
+    "OLP 프로젝트는 불러왔지만 일부 바이너리 파일을 작업 복구 저장소에 저장하지 못했습니다.": "The OLP project was loaded, but some binary files could not be saved for workspace recovery.",
+    "이전 작업 불러오는 중...": "Loading previous work...",
+    "이전 작업을 불러왔습니다.": "Previous work loaded.",
+    "이 브라우저에서는 자동 복구 저장소를 사용할 수 없습니다.": "Automatic recovery storage is unavailable in this browser.",
+    "자동 저장된 프로젝트를 복원했습니다.": "Autosaved project restored.",
+    "프로젝트 복원에 실패했습니다.": "Project restore failed.",
+    "프로젝트 저장됨: {name}": "Project saved: {name}",
+    "프로젝트를 다운로드했습니다. 이 브라우저에서는 폴더를 선택할 수 없습니다.": "Project downloaded. Folder selection is unavailable in this browser.",
+    "프로젝트 저장을 취소했습니다.": "Project save canceled.",
+    "프로젝트 내보내기에 실패했습니다.": "Project export failed.",
+    "프로젝트 불러오기에 실패했습니다.": "Project import failed.",
+    "모션 경로 검증에 실패했습니다.": "Motion path validation failed.",
+    "{count}대의 로봇 모션을 시작했습니다.": "Started motion for {count} robot(s).",
+    "모션이 일시정지되었습니다.": "Motion paused.",
+    "모션을 재개했습니다.": "Motion resumed.",
+    "{count}대의 로봇 모션을 정지했습니다.": "Stopped motion for {count} robot(s).",
+    "{name} 사이클 타임: {seconds} s": "{name} cycle time: {seconds} s",
+    "{name} 완료.": "{name} completed.",
+    "{name}: {message}": "{name}: {message}",
+    "모션 실행에 실패했습니다.": "Motion failed.",
+    "다운로드할 기본 로봇 CAD 모델이 없습니다. 업로드한 파일은 원본 파일을 사용해주세요.": "No default robot CAD model is available to download. Use the original file for uploaded models.",
+    "모델 변환": "Model transform",
+    "수치 모델 변환": "Numeric model transform",
+    "관절 원점 복귀": "Reset joints",
+    "관절 JOG": "Joint JOG",
+    "Base JOG": "Base JOG",
+    "Base 3D JOG": "Base 3D JOG",
+    "Base 좌표 입력": "Base coordinate input",
+    "모델 불러오기": "Load model",
+    "TCP 툴 불러오기": "Import TCP tool",
     "3D 모델링 불러오기": "Import 3D model",
     "전체 화면 모드": "Fullscreen mode",
     "전체 화면 모드 종료": "Exit fullscreen mode",
     "전체 화면": "Fullscreen",
-  "동시 실행 대상 변경": "Change simultaneous run selection",
-  "모션 명령 편집": "Edit motion command",
-  "프로그램 포인트 이름": "Program point name",
-  "프로그램 포인트 이름을 변경합니다.": "Change the program point name.",
-  "프로그램 포인트 이름 변경": "Change program point name",
-  "동시 실행 로봇 전체 선택": "Select all simultaneous robots",
-  "동시 실행 로봇 전체 해제": "Deselect all simultaneous robots",
-  "모션 포인트 추가": "Add motion point",
-  "딜레이 명령 추가": "Add delay command",
-  "TIME START 명령 추가": "Add TIME START command",
-  "TIME OUT 명령 추가": "Add TIME OUT command",
-  "모션 포인트 덮어쓰기": "Overwrite motion point",
-  "모션 포인트 순서 변경": "Reorder motion point",
-  "모션 포인트 삭제": "Delete motion point",
-  "반복 실행 변경": "Change repeat setting",
-  "역순 반복 변경": "Change ping-pong repeat setting",
-  "모션 프로젝트 불러오기": "Load motion project",
-  "멀티 로봇 모션": "Multi-robot motion",
-  "모델 삭제": "Delete model",
-  "모델 복사": "Copy model",
-  "모델 붙여넣기": "Paste model",
-  "모델을 복사했습니다.": "Model copied.",
-  "모델을 복사하지 못했습니다.": "Could not copy model.",
-  "모델 붙여넣는 중...": "Pasting model...",
-  "모델 붙여넣는 중... {progress}%": "Pasting model... {progress}%",
-  "모델을 붙여넣었습니다.": "Model pasted.",
-  "모델을 붙여넣지 못했습니다.": "Could not paste model.",
-  "위치 값 내보내기": "Export position values",
-  "포인트 파일 내보내기": "Export point file",
-  "P파일 내보내기": "Export P file",
-  "스냅 이동": "Snap move",
-  "스냅 이동 종료": "Exit snap move",
-  "위치 값 확인": "Check position values",
-  "활성 툴": "Active Tool",
-  "TCP 위치 / 회전": "TCP position / rotation",
-  "Arm 파라미터": "Arm parameters",
-  "외부 축": "External axes",
-  "외부 축 (주행축, 내보내기 적용 안됨)": "External axes (Travel axis; not exported)",
-  "라벨": "Label",
-  "영문자로 시작하며 영문, 숫자, 밑줄만 사용 (19자 이하)": "Start with a letter; use letters, numbers, and underscores only (up to 19 characters)",
-  "위치 값 적용": "Apply position values",
-  "스냅": "Snap",
-  "스냅 유형": "Snap type",
-  "자동 스냅": "Auto snap",
+    "동시 실행 대상 변경": "Change simultaneous run selection",
+    "모션 명령 편집": "Edit motion command",
+    "프로그램 포인트 이름": "Program point name",
+    "프로그램 포인트 이름을 변경합니다.": "Change the program point name.",
+    "프로그램 포인트 이름 변경": "Change program point name",
+    "동시 실행 로봇 전체 선택": "Select all simultaneous robots",
+    "동시 실행 로봇 전체 해제": "Deselect all simultaneous robots",
+    "모션 포인트 추가": "Add motion point",
+    "딜레이 명령 추가": "Add delay command",
+    "TIME START 명령 추가": "Add TIME START command",
+    "TIME OUT 명령 추가": "Add TIME OUT command",
+    "모션 포인트 덮어쓰기": "Overwrite motion point",
+    "모션 포인트 순서 변경": "Reorder motion point",
+    "모션 포인트 삭제": "Delete motion point",
+    "반복 실행 변경": "Change repeat setting",
+    "역순 반복 변경": "Change ping-pong repeat setting",
+    "모션 프로젝트 불러오기": "Load motion project",
+    "멀티 로봇 모션": "Multi-robot motion",
+    "모델 삭제": "Delete model",
+    "모델 복사": "Copy model",
+    "모델 붙여넣기": "Paste model",
+    "모델을 복사했습니다.": "Model copied.",
+    "모델을 복사하지 못했습니다.": "Could not copy model.",
+    "모델 붙여넣는 중...": "Pasting model...",
+    "모델 붙여넣는 중... {progress}%": "Pasting model... {progress}%",
+    "모델을 붙여넣었습니다.": "Model pasted.",
+    "모델을 붙여넣지 못했습니다.": "Could not paste model.",
+    "위치 값 내보내기": "Export position values",
+    "포인트 파일 내보내기": "Export point file",
+    "P파일 내보내기": "Export P file",
+    "스냅 이동": "Snap move",
+    "스냅 이동 종료": "Exit snap move",
+    "위치 값 확인": "Check position values",
+    "활성 툴": "Active Tool",
+    "TCP 위치 / 회전": "TCP position / rotation",
+    "Arm 파라미터": "Arm parameters",
+    "외부 축": "External axes",
+    "외부 축 (주행축, 내보내기 적용 안됨)": "External axes (Travel axis; not exported)",
+    "라벨": "Label",
+    "영문자로 시작하며 영문, 숫자, 밑줄만 사용 (19자 이하)": "Start with a letter; use letters, numbers, and underscores only (up to 19 characters)",
+    "위치 값 적용": "Apply position values",
+    "스냅": "Snap",
+    "스냅 유형": "Snap type",
+    "자동 스냅": "Auto snap",
     "다중 점 중심점": "Multiple point center",
-  "로봇 바디 중심점": "Robot body center",
-  "0,0 영점 위치": "0,0 origin",
-  "다중 점 선택": "Multiple point selection",
-  "계산 중심 적용": "Apply calculated center",
-  "선택 초기화": "Reset selection",
-  "TCP 위치 스냅": "Snap TCP position",
-  "TCP 위치 스냅 종료": "Exit TCP position snap",
-  "TCP 위치를 스냅했습니다. 적용을 눌러 저장하세요.": "TCP position snapped. Press Apply to save it.",
-  "스냅 점 2~4개를 선택하세요.": "Select 2–4 snap points.",
-  "최대 4개까지 선택할 수 있습니다.": "You can select up to four points.",
-  "중복된 스냅 점입니다.": "This snap point is already selected.",
-  "TCP 스냅할 Tool 모델을 먼저 지정하세요.": "Assign a Tool model before snapping the TCP.",
-  "TCP 스냅할 Tool 모델 또는 생성 도형을 먼저 준비하세요.": "Prepare a Tool model or generated shape before snapping the TCP.",
-  "끝점": "Endpoint",
-  "꼭짓점": "Vertex",
-  "원/호 중심점": "Circle/arc center",
-  "에지 중심점": "Edge midpoint",
-  "면 중심점": "Face center",
-  "사각형 중심점": "Rectangle center",
-  "구멍 가상 중심점": "Hole virtual center",
-  "형상 중심점": "Shape center",
-  "가상 교점": "Virtual intersection",
-  "선택한 스냅 위치에 도달할 수 없습니다.": "The selected snap position is unreachable.",
-  "선택한 스냅 위치로 이동했습니다.": "Moved to the selected snap position.",
-  "선택 가능한 스냅 지점을 가리켜 주세요.": "Point to an available snap point.",
-  "간섭영역에 사용할 스냅 지점을 클릭하세요.": "Click a snap point to use for the interference zone.",
-  "간섭영역 스냅 위치를 가져왔습니다.": "The interference-zone snap position was imported.",
-  "스냅 이동할 로봇을 먼저 선택하세요.": "Select the robot to move first.",
-  "스냅할 3D 모델링을 먼저 불러오세요.": "Import a 3D model to snap to first.",
-  "스냅 후보를 계산하는 중입니다...": "Calculating snap candidates...",
-  "3D 모델링의 스냅 지점을 클릭하세요.": "Click a snap point on the 3D model.",
-  "스냅 이동을 종료했습니다.": "Snap move ended.",
-  "선택 면 기준 TCP 방향": "TCP direction relative to selected face",
-  "선택 면과 수평": "Parallel to selected face",
-  "선택 면과 수직": "Perpendicular to selected face",
-  "스냅 이동에서 먼저 면을 선택하세요.": "Select a face first in Snap move.",
-  "선택한 면의 방향을 계산할 수 없습니다.": "The selected face direction could not be calculated.",
-  "TCP Z 방향을 선택 면과 수평으로 맞췄습니다.": "Aligned TCP Z parallel to the selected face.",
-  "TCP Z 방향을 선택 면과 수직으로 맞췄습니다.": "Aligned TCP Z perpendicular to the selected face.",
-  "DIMENSION MEASUREMENT": "Dimension Measurement",
-  "치수": "Dimension",
-  "치수 측정 패널": "Dimension measurement panel",
-  "치수 측정 패널을 별도 창으로 분리": "Open the dimension measurement panel in a separate window",
-  "치수 측정 패널 숨기기": "Hide the dimension measurement panel",
-  "치수 작업 모드": "Dimension work mode",
-  "치수 측정": "Measure dimensions",
-  "스냅 측정": "Snap measurement",
-  "모델 배치": "Model placement",
-  "P1 선택": "Select P1",
-  "P2 선택": "Select P2",
-  "측정 점": "Measurement points",
-  "표시 방식": "Display mode",
-  "방식": "Mode",
-  "직선 길이": "Straight-line length",
-  "직각 치수 (X/Y/Z)": "Orthogonal dimensions (X/Y/Z)",
-  "로봇 위치": "Robot position",
-  "측정 결과": "Measurement result",
-  "Distance": "Distance",
-  "다시 측정": "Measure again",
-  "치수 삭제": "Delete dimension",
-  "모델을 선택하세요.": "Select a model.",
-  "이동 대상": "Target model",
-  "P1 기준점": "P1 reference point",
-  "P2 방향점": "P2 direction point",
-  "P2 방향점을 선택하세요.": "Select the P2 direction point.",
-  "현재 거리": "Current distance",
-  "이동 거리 (mm)": "Movement distance (mm)",
-  "목표 거리 (mm)": "Target distance (mm)",
-  "P1→P2 거리": "P1→P2 distance",
-  "목표 좌표": "Target coordinate",
-  "변위": "Translation",
-  "미리보기 갱신": "Refresh preview",
-  "다시 선택": "Select again",
-  "치수 측정 스냅 유형": "Dimension measurement snap type",
-  "모델 형상 위로 포인터를 이동하세요.": "Move the pointer over model geometry.",
-  "측정 대상이 숨겨졌거나 삭제되었습니다. 다시 측정하세요.": "A measurement target was hidden or deleted. Measure again.",
-  "P1과 P2는 서로 다른 스냅 점이어야 합니다.": "P1 and P2 must be different snap points.",
-  "선택된 로봇이 없습니다. 로봇을 선택하세요.": "No robot is selected. Select a robot.",
-  "로봇 위치를 측정하려면 로봇을 선택하세요.": "Select a robot to measure robot position.",
-  "측정 완료": "Measurement complete",
-  "선택한 지점의 로봇 위치를 표시했습니다.": "The selected point's robot position is displayed.",
-  "선택한 업로드 모델의 기준점을 선택하세요.": "Select a reference point on the selected uploaded model.",
-  "선택한 모델의 기준점을 선택하세요.": "Select a reference point on the selected model.",
-  "다시 측정할 P1 스냅 점을 선택하세요.": "Select the P1 snap point to measure again.",
-  "치수를 삭제했습니다.": "The dimension was deleted.",
-  "배치 미리보기가 적용되었습니다. 적용 또는 취소를 선택하세요.": "The placement preview is applied. Choose Apply or Cancel.",
-  "목표 거리는 0 이상의 유한한 값이어야 합니다.": "The target distance must be a finite value of 0 or greater.",
-  "P1 기준점을 선택하세요.": "Select the P1 reference point.",
-  "선택 모델의 P1 기준점을 선택하세요.": "Select the P1 reference point for the selected model.",
-  "모델 트리 또는 3D 화면에서 업로드 모델을 선택하세요.": "Select an uploaded model in the model tree or 3D view.",
-  "스냅 유형을 변경했습니다. P1 또는 P2를 선택하세요.": "The snap type changed. Select P1 or P2.",
-  "치수 측정 모드입니다. P1 스냅 점을 선택하세요.": "Dimension measurement mode is active. Select the P1 snap point.",
-  "두 번째 스냅 점 P2를 선택하세요.": "Select the second snap point, P2.",
-  "P1을 선택했습니다. 두 번째 스냅 점 P2를 선택하세요.": "P1 selected. Select the second snap point, P2.",
-  "두 점 사이의 치수를 표시했습니다.": "The dimension between the two points is displayed.",
-  "업로드한 3D 모델의 기준점을 선택하세요.": "Select a reference point on the uploaded 3D model.",
-  "P1 기준점을 선택했습니다. 목표 방향의 P2를 선택하세요.": "P1 reference point selected. Select P2 in the target direction.",
-  "P2 방향점을 선택했습니다. 목표 거리값을 입력하세요.": "P2 direction point selected. Enter the target distance.",
-  "목표 거리값을 입력한 뒤 미리보기를 갱신하세요.": "Enter the target distance, then refresh the preview.",
-  "모델 배치는 업로드한 3D 모델만 기준점으로 사용할 수 있습니다.": "Model placement can use only an uploaded 3D model as its reference.",
-  "입력한 거리 기준으로 모델을 배치했습니다.": "The model was placed using the entered distance.",
-  "모델 배치를 적용했습니다.": "Model placement was applied.",
-  "모델 배치 미리보기를 취소했습니다.": "The model placement preview was canceled.",
-  "치수 기준 모델 배치": "Dimension-based model placement",
-  "포인트 번호": "Point number",
-  "포인트 라벨": "Point label",
-  "이미 사용 중인 포인트 번호입니다.": "That point number is already in use.",
-  "포인트 번호는 0부터 9999 사이의 정수여야 합니다.": "The point number must be an integer from 0 to 9999.",
-  "사용 가능한 포인트 번호가 없습니다.": "No point numbers are available.",
-  "라벨은 영문자로 시작하고 영문, 숫자, 밑줄만 사용하여 19자 이하로 입력하세요.": "The label must start with a letter and contain up to 19 letters, numbers, or underscores.",
-  "프로그램 포인트 번호 변경": "Change program point number",
-  "프로그램 포인트 라벨 변경": "Change program point label",
-  "프로그램 포인트 위치 값 변경": "Change program point position values",
-  "수정할 위치 포인트를 찾을 수 없습니다.": "The position point to edit could not be found.",
-  "위치 값, Arm 파라미터 및 외부 축 값을 올바르게 입력하세요.": "Enter valid position, arm parameter, and external-axis values.",
-  "입력한 위치가 로봇의 도달 범위 또는 관절 제한을 벗어났습니다.": "The entered position is outside the robot's reachable range or joint limits.",
-  "{name} 위치 값을 수정했습니다.": "Updated the position values for {name}.",
-  "내보낼 위치 포인트가 없습니다.": "There are no position points to export.",
-  "포인트 번호를 확인하세요. 중복되거나 범위를 벗어난 번호가 있습니다.": "Check the point numbers; one is duplicated or outside the valid range.",
-  "{name} 라벨 형식이 올바르지 않습니다.": "The label format for {name} is invalid.",
-  "위치 값 내보내기 완료: {name}": "Position values exported: {name}",
-  "위치 값 파일 P.pts를 다운로드했습니다.": "Downloaded the P.pts position value file.",
-  "위치 값 내보내기 완료": "Position value export complete",
-  "위치 값 내보내기를 취소했습니다.": "Position value export was canceled.",
-  "위치 값 내보내기에 실패했습니다.": "Position value export failed.",
-  "스냅 위치 이동": "Snap position move",
-  "TCP 설정": "TCP setup",
-  "설정": "Setup",
-  "활성 TCP 선택": "Select active TCP",
-  "플랜지 기준 오프셋": "Flange-relative offset",
-  "TCP 오프셋 실시간 미리보기": "Live TCP offset preview",
-  "초기화": "Reset",
-  "적용": "Apply",
-  "선택한 TCP는 로봇별로 저장됩니다.": "TCP profiles are saved separately for each robot.",
-  "TCP {number} 선택": "Select TCP {number}",
-  "선택한 TCP가 활성화되었습니다.": "The selected TCP is now active.",
-  "TCP {number} 활성화": "TCP {number} activated",
-  "TCP 선택": "Select TCP",
-  "TCP 오프셋 입력값을 확인하세요.": "Check the TCP offset values.",
-  "TCP 오프셋을 적용했습니다.": "TCP offset applied.",
-  "TCP {number} 오프셋 적용": "TCP {number} offset applied",
-  "TCP 오프셋 설정": "Set TCP offset",
-  "TCP 오프셋을 초기화했습니다.": "TCP offset reset.",
-  "TCP 오프셋 초기화": "Reset TCP offset",
-  "입력 중 미리보기": "Editing preview",
-  "현재 저장값": "Saved value",
-  "입력 중인 TCP 오프셋을 미리 보는 중입니다.": "Previewing the TCP offset while editing.",
-  "No": "No",
-  "모델 영점 변경": "Change model zero point",
-  "영점 변경": "Change zero point",
-  "영점 변경 닫기": "Close zero point editing",
-  "모델 형상은 현재 위치에 유지하고, 선택한 점을 새 모델 영점으로 지정합니다. 회전 핸들 또는 좌표값으로 축 방향을 조절할 수 있습니다.": "The model moves in real time as the zero point is edited. Cancel restores the previous state.",
-  "입력하거나 스냅한 영점 기준으로 모델 형상이 실시간 이동합니다. 취소하면 이전 상태로 복원됩니다.": "The model moves in real time as the zero point is edited. Cancel restores the previous state.",
-  "현재 영점": "Current zero point",
-  "모서리 중점": "Edge midpoint",
-  "원 중심점": "Circle center",
-  "직사각형 중심점": "Rectangle center",
-  "가상 교차점": "Virtual intersection",
-  "스냅 위치 선택을 누른 뒤 모델 형상 위로 포인터를 이동하세요.": "Press Select snap position, then move the pointer over the model geometry.",
-  "다중 점 선택 0/4": "Multiple point selection 0/4",
-  "중심 적용": "Apply center",
-  "스냅 위치 선택": "Select snap position",
-  "모델 영점 (mm)": "Model zero point (mm)",
-  "좌표계 방향 (deg)": "Coordinate direction (deg)",
-  "회전 핸들은 로컬 축 기준": "Rotation handle uses local axes",
-  "영점 스냅 후보를 계산하는 중입니다...": "Calculating zero-point snap candidates...",
-  "모델 형상 위로 이동하면 스냅 후보가 표시됩니다.": "Move over the model geometry to show snap candidates.",
-  "영점으로 지정할 모델 스냅 위치를 선택하세요.": "Select the model snap position to use as the zero point.",
-  "선택 가능한 스냅 지점을 계산하지 못했습니다.": "Could not calculate selectable snap points.",
-  "영점 위치에 적용되었습니다.": "Applied as the zero-point position.",
-  "영점 변경 중입니다. 모델 영점과 좌표계 방향을 설정하세요.": "Editing the zero point. Set the model zero point and coordinate direction.",
-  "영점 좌표와 회전값을 확인하세요.": "Check the zero-point coordinates and rotation values.",
-  "모델 영점과 좌표계 방향을 적용했습니다.": "Applied the model zero point and coordinate direction.",
-  "영점 적용": "Apply zero point",
-  "사용자 뷰 저장": "Save user views",
-  "사용자 뷰": "User Views",
-  "사용자 뷰 창을 별도로 분리": "Pop out user views window",
-  "사용자 뷰 창 숨기기": "Hide user views window",
-  "카메라를 원하는 위치로 조정한 뒤 슬롯의 저장 버튼을 누르세요.": "Adjust the camera, then press a slot's save button.",
-  "뷰 1 이름": "View 1 name",
-  "뷰 2 이름": "View 2 name",
-  "뷰 3 이름": "View 3 name",
-  "뷰 4 이름": "View 4 name",
-  "현재 뷰 저장": "Save current view",
-  "뷰 적용": "Apply view",
-  "뷰 1에 현재 뷰 저장": "Save current view to View 1",
-  "뷰 2에 현재 뷰 저장": "Save current view to View 2",
-  "뷰 3에 현재 뷰 저장": "Save current view to View 3",
-  "뷰 4에 현재 뷰 저장": "Save current view to View 4",
-  "뷰 1 적용": "Apply View 1",
-  "뷰 2 적용": "Apply View 2",
-  "뷰 3 적용": "Apply View 3",
-  "뷰 4 적용": "Apply View 4",
-  "화면 뷰 전환 추가": "Add view transition",
-  "사용자 뷰 표시/숨김": "Show/hide user views",
-  "뷰": "Views",
-  "저장된 뷰가 없습니다.": "No saved view.",
-  "자세, 뷰, DELAY 또는 타이머 명령을 추가하세요.": "Add a pose, view, DELAY, or timer command.",
-  "전환할 화면 뷰": "View to switch to",
-  "화면 뷰 전환 대상 변경": "Change view transition target",
-  "화면 뷰 전환 명령 추가": "Add view transition command",
-  "0 / 16 활성": "0 / 16 Active",
-  "{count} / {total} 활성": "{count} / {total} Active",
-  "1 기본 설정": "1 Basic settings",
-  "2 영역 형상": "2 Zone geometry",
-  "3D 모델 가져오기 위치": "3D model import location",
-  "3D 모델 파일은 최대 {limit}까지 불러올 수 있습니다.": "3D model files up to {limit} can be imported.",
-  "3D 모델 파일은 최대 {limit}까지 불러올 수 있습니다.\n선택한 파일: {size}": "3D model files up to {limit} can be imported.\nSelected file: {size}",
-  "선택한 파일: {size}": "Selected file: {size}",
-  "IN 신호를 시험하려면 토글하세요.": "Toggle to test IN signals.",
-  "IN이 ON이면 해당 영역은 비활성화됩니다. OUT은 영역 밖에서 ON, 영역 안에서 OFF입니다.": "When IN is ON, the zone is disabled. OUT is ON outside the zone and OFF inside.",
-  "STEP/STP 가져오기에만 적용됩니다.": "Applies only to STEP/STP imports.",
-  "STEP/STP의 메시 정밀도와 처리 속도를 조절합니다.": "Adjusts STEP/STP mesh precision and processing speed.",
-  "TCP 감지 범위": "TCP Detection Range",
-  "도구에 부착된 감지 체적을 설정합니다.": "Set the detection volume attached to the Tool.",
-  "Test TCP 1 설정": "Test TCP 1 setup",
-  "Test TCP 1 값을 적용했습니다.": "Test TCP 1 values applied.",
-  "Test 모델 적용 오류": "Test model apply error",
-  "Test 모델과 Tool 적용 완료": "Test model and Tool applied.",
-  "기존 Test 모델 삭제": "Existing Test models deleted",
-  "World 좌표계(Wobj[0] 대체)에서 TCP 기준으로 간섭영역을 설정합니다.": "Set an interference zone relative to TCP in the World coordinate system (in place of Wobj[0]).",
-  "{name}: 로봇 링크": "{name}: robot links",
-  "{name}: 모델": "{name}: model",
-  "{progress}% · 남은 {remaining}%": "{progress}% · {remaining}% remaining",
-  "{name} 추가 완료": "{name} added.",
-  "{name} 불러오기 완료": "{name} loaded.",
-  "{name} 불러오기 실패": "Failed to load {name}.",
-  "뷰 {number}: {name}": "View {number}: {name}",
-  "뷰 {number}을 저장했습니다.": "View {number} saved.",
-  "{name} 적용": "Apply {name}",
-  "{label} TCP 위치 스냅": "{label} TCP position snapped",
-  "{count} 다중 점 선택": "{count} snap points selected",
-  "{label} 영점 위치에 적용되었습니다.": "{label} applied as the zero-point position.",
-  "가져오기 위치": "Import location",
-  "가져올 3D 모델 품질": "3D model import quality",
-  "간섭영역": "Interference Zone",
-  "간섭영역 0 설정": "Interference Zone 0 setup",
-  "간섭영역 {id} 설정": "Interference Zone {id} setup",
-  "간섭영역 설정": "Interference Zone Setup",
-  "간섭영역 설정 숨기기": "Hide Interference Zone Setup",
-  "간섭영역 설정 표시/숨기기": "Show or hide Interference Zone Setup",
-  "간섭영역 설정을 별도 창으로 분리": "Open Interference Zone Setup in a separate window",
-  "간섭영역 활성화 변경": "Change interference zone activation",
-  "간섭영역 {id} 설정을 저장했습니다.": "Interference Zone {id} settings saved.",
-  "간섭영역 {id} 진입으로 {robot}를 정지했습니다.": "{robot} stopped after entering Interference Zone {id}.",
-  "간섭영역 {id} 알람: {robot}": "Interference Zone {id} alarm: {robot}",
-  "비활성화": "Inactive",
-  "활성화": "Active",
-  "간섭": "Interference",
-  "정지": "Stopped",
-  "전체 로봇": "All robots",
-  "알 수 없음": "Unknown",
-  "설정값이 없습니다.": "No settings were provided.",
-  "좌표는 {min}~{max} mm 범위의 숫자여야 합니다.": "Coordinates must be numbers from {min} to {max} mm.",
-  "I/O 신호 번호는 -1 또는 0~255여야 합니다.": "I/O signal numbers must be -1 or from 0 to 255.",
-  "Safety distance는 0~{max} mm여야 합니다.": "Safety distance must be from 0 to {max} mm.",
-  "충돌": "Collision",
-  "충돌 감지: {left} ↔ {right}": "Collision detected: {left} ↔ {right}",
-  "충돌 감지 켜기/끄기": "Toggle collision detection",
-  "충돌 감지 켜기": "Enable collision detection",
-  "충돌 감지 표시만": "Display collisions only",
-  "충돌 감지 끄기": "Disable collision detection",
-  "충돌 검사 오류": "Collision check error",
-  "충돌이 감지되어 모션을 정지했습니다.": "Motion stopped because a collision was detected.",
-  "충돌이 감지되어 가상 컨트롤러 자세를 거부했습니다.": "The Virtual Controller pose was rejected because a collision was detected.",
-  "가져오기 오류: {message}": "Import error: {message}",
-  "3D 모델링 불러오기 완료 · {quality}": "3D model import complete · {quality}",
-  "테스트 모델링 불러오기": "Load Test Models",
-  "테스트용 모델 적용": "Apply Test Models",
-  "테스트용 모델링을 적용하시겠습니까?": "Apply the test models?",
-  "테스트용 모델링을 적용하시겠습니까?\nTCP 1번은 Test 값으로 덮어쓰기됩니다.": "Apply the test models?\nTCP 1 will be overwritten with Test values.",
-  "TCP 1번은 Test 값으로 덮어쓰기됩니다.": "TCP 1 will be overwritten with Test values.",
-  "테스트 모델을 불러오지 못했습니다.\n{message}": "Could not load the test models.\n{message}",
-  "Tool을 장착할 로봇을 먼저 불러와 주세요.": "Load a robot before attaching a Tool.",
-  "모델 품질": "Model quality",
-  "경량 (빠른 가져오기)": "Lightweight (faster import)",
-  "고품질 (느림)": "High quality (slower)",
-  "표준": "Standard",
-  "자동 (권장)": "Automatic (recommended)",
-  "모든 설정 및 모델 초기화": "Reset all settings and models",
-  "모든 설정 및 모델이 초기화됩니다. 정말로 진행하시겠습니까?": "All settings and models will be reset. Do you want to continue?",
-  "시뮬레이션 초기화": "Reset Simulation",
-  "모션 실행 중에는 테스트 모델을 적용할 수 없습니다.": "Test models cannot be applied while motion is running.",
-  "모션 실행 중에는 로봇을 변경할 수 없습니다.": "Robots cannot be replaced while motion is running.",
-  "모션 실행 중에는 로봇 변경을 선택할 수 없습니다. 로봇 추가만 가능합니다.": "Robot replacement is unavailable while motion is running. You can only add a robot.",
-  "시뮬레이션이 시작되어 모델 교체를 취소했습니다.": "The simulation started, so model replacement was canceled.",
-  "선택한 면의 스냅 후보를 다시 계산해야 합니다. 면 선택은 유지됩니다.": "Snap candidates for the selected face must be recalculated. The face selection is preserved.",
-  "선택한 면의 스냅 후보를 클릭하세요.": "Click a snap candidate on the selected face.",
-  "면을 선택했습니다. 선택된 면의 스냅 후보를 계산하는 중입니다...": "Face selected. Calculating snap candidates for the selected face...",
-  "스냅할 3D 모델의 면을 클릭하세요.": "Click a face on the 3D model to snap.",
-  "현재 TCP를 읽을 로봇을 선택하세요.": "Select a robot to read the current TCP.",
-  "실제 컨트롤러": "Real Controller",
-  "아니오": "No",
-  "예": "Yes",
-  "예: 192.168.0.10": "Example: 192.168.0.10",
-  "적용 로봇": "Target robot",
-  "컨트롤러 IP": "Controller IP",
-  "컨트롤러 IP 주소": "Controller IP address",
-  "컨트롤러 연결": "Controller Connection",
-  "컨트롤러 연결 패널 숨기기": "Hide Controller Connection panel",
-  "컨트롤러 연결 패널을 별도 창으로 분리": "Open Controller Connection panel in a separate window",
-  "컨트롤러 연결 표시/숨김": "Show or hide Controller Connection",
-  "컨트롤러 종류": "Controller type",
-  "Collision": "Collision",
-  "Simulation I/O": "Simulation I/O",
-  "Inside and outside": "Inside and outside",
-  "Trigger alarm and stop": "Trigger alarm and stop",
-  "Safety distance": "Safety distance",
-  "Setting method": "Setting method",
-  "Diagonal point": "Diagonal point",
-  "Datum point + offset": "Datum point + offset",
-  "Datum point (mm)": "Datum point (mm)",
-  "Offset (mm)": "Offset (mm)",
-  "Get current point": "Get current point",
-  "Get snap point": "Get snap point",
-  "Get datum point": "Get datum point",
-  "Previous": "Previous",
-  "Next": "Next",
-  "Done": "Done",
-  "ZERO POINT": "Zero",
-  "Client": "Client",
-    "Server": "Server",
-    "TCP detection range": "TCP detection range",
+    "다중 점 선택": "Multiple point selection",
+    "계산 중심 적용": "Apply calculated center",
+    "선택 초기화": "Reset selection",
+    "TCP 위치 스냅": "Snap TCP position",
+    "TCP 위치 스냅 종료": "Exit TCP position snap",
+    "TCP 위치를 스냅했습니다. 적용을 눌러 저장하세요.": "TCP position snapped. Press Apply to save it.",
+    "스냅 점 2~4개를 선택하세요.": "Select 2–4 snap points.",
+    "최대 4개까지 선택할 수 있습니다.": "You can select up to four points.",
+    "중복된 스냅 점입니다.": "This snap point is already selected.",
+    "TCP 스냅할 Tool 모델을 먼저 지정하세요.": "Assign a Tool model before snapping the TCP.",
+    "TCP 스냅할 Tool 모델 또는 생성 도형을 먼저 준비하세요.": "Prepare a Tool model or generated shape before snapping the TCP.",
+    "원/호 중심점": "Circle/arc center",
+    "에지 중심점": "Edge midpoint",
+    "면 중심점": "Face center",
+    "사각형 중심점": "Rectangle center",
+    "형상 중심점": "Shape center",
+    "가상 교점": "Virtual intersection",
+    "선택한 스냅 위치에 도달할 수 없습니다.": "The selected snap position is unreachable.",
+    "선택한 스냅 위치로 이동했습니다.": "Moved to the selected snap position.",
+    "선택 가능한 스냅 지점을 가리켜 주세요.": "Point to an available snap point.",
+    "간섭영역에 사용할 스냅 지점을 클릭하세요.": "Click a snap point to use for the interference zone.",
+    "간섭영역 스냅 위치를 가져왔습니다.": "The interference-zone snap position was imported.",
+    "스냅 이동할 로봇을 먼저 선택하세요.": "Select the robot to move first.",
+    "스냅할 3D 모델링을 먼저 불러오세요.": "Import a 3D model to snap to first.",
+    "스냅 후보를 계산하는 중입니다...": "Calculating snap candidates...",
+    "3D 모델링의 스냅 지점을 클릭하세요.": "Click a snap point on the 3D model.",
+    "스냅 이동을 종료했습니다.": "Snap move ended.",
+    "선택 면 기준 TCP 방향": "TCP direction relative to selected face",
+    "선택 면과 수평": "Parallel to selected face",
+    "선택 면과 수직": "Perpendicular to selected face",
+    "스냅 이동에서 먼저 면을 선택하세요.": "Select a face first in Snap move.",
+    "선택한 면의 방향을 계산할 수 없습니다.": "The selected face direction could not be calculated.",
+    "TCP Z 방향을 선택 면과 수평으로 맞췄습니다.": "Aligned TCP Z parallel to the selected face.",
+    "TCP Z 방향을 선택 면과 수직으로 맞췄습니다.": "Aligned TCP Z perpendicular to the selected face.",
+    "DIMENSION MEASUREMENT": "Dimension Measurement",
+    "치수": "Dimension",
+    "치수 측정 패널": "Dimension measurement panel",
+    "치수 측정 패널을 별도 창으로 분리": "Open the dimension measurement panel in a separate window",
+    "치수 측정 패널 숨기기": "Hide the dimension measurement panel",
+    "치수 작업 모드": "Dimension work mode",
+    "치수 측정": "Measure dimensions",
+    "스냅 측정": "Snap measurement",
+    "모델 배치": "Model placement",
+    "P1 선택": "Select P1",
+    "P2 선택": "Select P2",
+    "측정 점": "Measurement points",
+    "표시 방식": "Display mode",
+    "방식": "Mode",
+    "직선 길이": "Straight-line length",
+    "직각 치수 (X/Y/Z)": "Orthogonal dimensions (X/Y/Z)",
+    "로봇 위치": "Robot position",
+    "측정 결과": "Measurement result",
+    "Distance": "Distance",
+    "다시 측정": "Measure again",
+    "치수 삭제": "Delete dimension",
+    "모델을 선택하세요.": "Select a model.",
+    "이동 대상": "Target model",
+    "P1 기준점": "P1 reference point",
+    "P2 방향점": "P2 direction point",
+    "P2 방향점을 선택하세요.": "Select the P2 direction point.",
+    "현재 거리": "Current distance",
+    "이동 거리 (mm)": "Movement distance (mm)",
+    "목표 거리 (mm)": "Target distance (mm)",
+    "P1→P2 거리": "P1→P2 distance",
+    "목표 좌표": "Target coordinate",
+    "변위": "Translation",
+    "미리보기 갱신": "Refresh preview",
+    "다시 선택": "Select again",
+    "치수 측정 스냅 유형": "Dimension measurement snap type",
+    "모델 형상 위로 포인터를 이동하세요.": "Move the pointer over model geometry.",
+    "측정 대상이 숨겨졌거나 삭제되었습니다. 다시 측정하세요.": "A measurement target was hidden or deleted. Measure again.",
+    "P1과 P2는 서로 다른 스냅 점이어야 합니다.": "P1 and P2 must be different snap points.",
+    "선택된 로봇이 없습니다. 로봇을 선택하세요.": "No robot is selected. Select a robot.",
+    "로봇 위치를 측정하려면 로봇을 선택하세요.": "Select a robot to measure robot position.",
+    "측정 완료": "Measurement complete",
+    "선택한 지점의 로봇 위치를 표시했습니다.": "The selected point's robot position is displayed.",
+    "선택한 업로드 모델의 기준점을 선택하세요.": "Select a reference point on the selected uploaded model.",
+    "선택한 모델의 기준점을 선택하세요.": "Select a reference point on the selected model.",
+    "다시 측정할 P1 스냅 점을 선택하세요.": "Select the P1 snap point to measure again.",
+    "치수를 삭제했습니다.": "The dimension was deleted.",
+    "배치 미리보기가 적용되었습니다. 적용 또는 취소를 선택하세요.": "The placement preview is applied. Choose Apply or Cancel.",
+    "목표 거리는 0 이상의 유한한 값이어야 합니다.": "The target distance must be a finite value of 0 or greater.",
+    "P1 기준점을 선택하세요.": "Select the P1 reference point.",
+    "선택 모델의 P1 기준점을 선택하세요.": "Select the P1 reference point for the selected model.",
+    "모델 트리 또는 3D 화면에서 업로드 모델을 선택하세요.": "Select an uploaded model in the model tree or 3D view.",
+    "스냅 유형을 변경했습니다. P1 또는 P2를 선택하세요.": "The snap type changed. Select P1 or P2.",
+    "치수 측정 모드입니다. P1 스냅 점을 선택하세요.": "Dimension measurement mode is active. Select the P1 snap point.",
+    "두 번째 스냅 점 P2를 선택하세요.": "Select the second snap point, P2.",
+    "P1을 선택했습니다. 두 번째 스냅 점 P2를 선택하세요.": "P1 selected. Select the second snap point, P2.",
+    "두 점 사이의 치수를 표시했습니다.": "The dimension between the two points is displayed.",
+    "업로드한 3D 모델의 기준점을 선택하세요.": "Select a reference point on the uploaded 3D model.",
+    "P1 기준점을 선택했습니다. 목표 방향의 P2를 선택하세요.": "P1 reference point selected. Select P2 in the target direction.",
+    "P2 방향점을 선택했습니다. 목표 거리값을 입력하세요.": "P2 direction point selected. Enter the target distance.",
+    "목표 거리값을 입력한 뒤 미리보기를 갱신하세요.": "Enter the target distance, then refresh the preview.",
+    "모델 배치는 업로드한 3D 모델만 기준점으로 사용할 수 있습니다.": "Model placement can use only an uploaded 3D model as its reference.",
+    "입력한 거리 기준으로 모델을 배치했습니다.": "The model was placed using the entered distance.",
+    "모델 배치를 적용했습니다.": "Model placement was applied.",
+    "모델 배치 미리보기를 취소했습니다.": "The model placement preview was canceled.",
+    "치수 기준 모델 배치": "Dimension-based model placement",
+    "포인트 번호": "Point number",
+    "포인트 라벨": "Point label",
+    "이미 사용 중인 포인트 번호입니다.": "That point number is already in use.",
+    "포인트 번호는 0부터 9999 사이의 정수여야 합니다.": "The point number must be an integer from 0 to 9999.",
+    "사용 가능한 포인트 번호가 없습니다.": "No point numbers are available.",
+    "라벨은 영문자로 시작하고 영문, 숫자, 밑줄만 사용하여 19자 이하로 입력하세요.": "The label must start with a letter and contain up to 19 letters, numbers, or underscores.",
+    "프로그램 포인트 번호 변경": "Change program point number",
+    "프로그램 포인트 라벨 변경": "Change program point label",
+    "프로그램 포인트 위치 값 변경": "Change program point position values",
+    "수정할 위치 포인트를 찾을 수 없습니다.": "The position point to edit could not be found.",
+    "위치 값, Arm 파라미터 및 외부 축 값을 올바르게 입력하세요.": "Enter valid position, arm parameter, and external-axis values.",
+    "입력한 위치가 로봇의 도달 범위 또는 관절 제한을 벗어났습니다.": "The entered position is outside the robot's reachable range or joint limits.",
+    "{name} 위치 값을 수정했습니다.": "Updated the position values for {name}.",
+    "내보낼 위치 포인트가 없습니다.": "There are no position points to export.",
+    "포인트 번호를 확인하세요. 중복되거나 범위를 벗어난 번호가 있습니다.": "Check the point numbers; one is duplicated or outside the valid range.",
+    "{name} 라벨 형식이 올바르지 않습니다.": "The label format for {name} is invalid.",
+    "위치 값 내보내기 완료: {name}": "Position values exported: {name}",
+    "위치 값 파일 P.pts를 다운로드했습니다.": "Downloaded the P.pts position value file.",
+    "위치 값 내보내기 완료": "Position value export complete",
+    "위치 값 내보내기를 취소했습니다.": "Position value export was canceled.",
+    "위치 값 내보내기에 실패했습니다.": "Position value export failed.",
+    "스냅 위치 이동": "Snap position move",
+    "TCP 설정": "TCP setup",
+    "설정": "Setup",
+    "활성 TCP 선택": "Select active TCP",
+    "플랜지 기준 오프셋": "Flange-relative offset",
+    "TCP 오프셋 실시간 미리보기": "Live TCP offset preview",
+    "초기화": "Reset",
+    "적용": "Apply",
+    "선택한 TCP는 로봇별로 저장됩니다.": "TCP profiles are saved separately for each robot.",
+    "TCP {number} 선택": "Select TCP {number}",
+    "선택한 TCP가 활성화되었습니다.": "The selected TCP is now active.",
+    "TCP {number} 활성화": "TCP {number} activated",
+    "TCP 선택": "Select TCP",
+    "TCP 오프셋 입력값을 확인하세요.": "Check the TCP offset values.",
+    "TCP 오프셋을 적용했습니다.": "TCP offset applied.",
+    "TCP {number} 오프셋 적용": "TCP {number} offset applied",
+    "TCP 오프셋 설정": "Set TCP offset",
+    "TCP 오프셋을 초기화했습니다.": "TCP offset reset.",
+    "TCP 오프셋 초기화": "Reset TCP offset",
+    "입력 중 미리보기": "Editing preview",
+    "현재 저장값": "Saved value",
+    "입력 중인 TCP 오프셋을 미리 보는 중입니다.": "Previewing the TCP offset while editing.",
+    "No": "No",
+    "모델 영점 변경": "Change model zero point",
+    "영점 변경": "Change zero point",
+    "영점 변경 닫기": "Close zero point editing",
+    "모델 형상은 현재 위치에 유지하고, 선택한 점을 새 모델 영점으로 지정합니다. 회전 핸들 또는 좌표값으로 축 방향을 조절할 수 있습니다.": "The model moves in real time as the zero point is edited. Cancel restores the previous state.",
+    "입력하거나 스냅한 영점 기준으로 모델 형상이 실시간 이동합니다. 취소하면 이전 상태로 복원됩니다.": "The model moves in real time as the zero point is edited. Cancel restores the previous state.",
+    "현재 영점": "Current zero point",
+    "모서리 중점": "Edge midpoint",
+    "직사각형 중심점": "Rectangle center",
+    "가상 교차점": "Virtual intersection",
+    "스냅 위치 선택을 누른 뒤 모델 형상 위로 포인터를 이동하세요.": "Press Select snap position, then move the pointer over the model geometry.",
+    "다중 점 선택 0/4": "Multiple point selection 0/4",
+    "중심 적용": "Apply center",
+    "스냅 위치 선택": "Select snap position",
+    "모델 영점 (mm)": "Model zero point (mm)",
+    "좌표계 방향 (deg)": "Coordinate direction (deg)",
+    "회전 핸들은 로컬 축 기준": "Rotation handle uses local axes",
+    "영점 스냅 후보를 계산하는 중입니다...": "Calculating zero-point snap candidates...",
+    "모델 형상 위로 이동하면 스냅 후보가 표시됩니다.": "Move over the model geometry to show snap candidates.",
+    "영점으로 지정할 모델 스냅 위치를 선택하세요.": "Select the model snap position to use as the zero point.",
+    "선택 가능한 스냅 지점을 계산하지 못했습니다.": "Could not calculate selectable snap points.",
+    "영점 위치에 적용되었습니다.": "Applied as the zero-point position.",
+    "영점 변경 중입니다. 모델 영점과 좌표계 방향을 설정하세요.": "Editing the zero point. Set the model zero point and coordinate direction.",
+    "영점 좌표와 회전값을 확인하세요.": "Check the zero-point coordinates and rotation values.",
+    "모델 영점과 좌표계 방향을 적용했습니다.": "Applied the model zero point and coordinate direction.",
+    "영점 적용": "Apply zero point",
+    "사용자 뷰 저장": "Save user views",
+    "사용자 뷰": "User Views",
+    "사용자 뷰 창을 별도로 분리": "Pop out user views window",
+    "사용자 뷰 창 숨기기": "Hide user views window",
+    "카메라를 원하는 위치로 조정한 뒤 슬롯의 저장 버튼을 누르세요.": "Adjust the camera, then press a slot's save button.",
+    "뷰 1 이름": "View 1 name",
+    "뷰 2 이름": "View 2 name",
+    "뷰 3 이름": "View 3 name",
+    "뷰 4 이름": "View 4 name",
+    "현재 뷰 저장": "Save current view",
+    "뷰 적용": "Apply view",
+    "뷰 1에 현재 뷰 저장": "Save current view to View 1",
+    "뷰 2에 현재 뷰 저장": "Save current view to View 2",
+    "뷰 3에 현재 뷰 저장": "Save current view to View 3",
+    "뷰 4에 현재 뷰 저장": "Save current view to View 4",
+    "뷰 1 적용": "Apply View 1",
+    "뷰 2 적용": "Apply View 2",
+    "뷰 3 적용": "Apply View 3",
+    "뷰 4 적용": "Apply View 4",
+    "화면 뷰 전환 추가": "Add view transition",
+    "사용자 뷰 표시/숨김": "Show/hide user views",
+    "뷰": "Views",
+    "저장된 뷰가 없습니다.": "No saved view.",
+    "자세, 뷰, DELAY 또는 타이머 명령을 추가하세요.": "Add a pose, view, DELAY, or timer command.",
+    "전환할 화면 뷰": "View to switch to",
+    "화면 뷰 전환 대상 변경": "Change view transition target",
+    "화면 뷰 전환 명령 추가": "Add view transition command",
+    "0 / 16 활성": "0 / 16 Active",
+    "{count} / {total} 활성": "{count} / {total} Active",
+    "1 기본 설정": "1 Basic settings",
+    "2 영역 형상": "2 Zone geometry",
+    "3D 모델 가져오기 위치": "3D model import location",
+    "3D 모델 파일은 최대 {limit}까지 불러올 수 있습니다.": "3D model files up to {limit} can be imported.",
+    "3D 모델 파일은 최대 {limit}까지 불러올 수 있습니다.\n선택한 파일: {size}": "3D model files up to {limit} can be imported.\nSelected file: {size}",
+    "선택한 파일: {size}": "Selected file: {size}",
+    "IN 신호를 시험하려면 토글하세요.": "Toggle to test IN signals.",
+    "IN이 ON이면 해당 영역은 비활성화됩니다. OUT은 영역 밖에서 ON, 영역 안에서 OFF입니다.": "When IN is ON, the zone is disabled. OUT is ON outside the zone and OFF inside.",
+    "STEP/STP 가져오기에만 적용됩니다.": "Applies only to STEP/STP imports.",
+    "STEP/STP의 메시 정밀도와 처리 속도를 조절합니다.": "Adjusts STEP/STP mesh precision and processing speed.",
     "TCP 감지 범위": "TCP Detection Range",
     "도구에 부착된 감지 체적을 설정합니다.": "Set the detection volume attached to the Tool.",
+    "Test TCP 1 설정": "Test TCP 1 setup",
+    "Test TCP 1 값을 적용했습니다.": "Test TCP 1 values applied.",
+    "Test 모델 적용 오류": "Test model apply error",
+    "Test 모델과 Tool 적용 완료": "Test model and Tool applied.",
+    "기존 Test 모델 삭제": "Existing Test models deleted",
+    "World 좌표계(Wobj[0] 대체)에서 TCP 기준으로 간섭영역을 설정합니다.": "Set an interference zone relative to TCP in the World coordinate system (in place of Wobj[0]).",
+    "{name}: 로봇 링크": "{name}: robot links",
+    "{name}: 모델": "{name}: model",
+    "{progress}% · 남은 {remaining}%": "{progress}% · {remaining}% remaining",
+    "{name} 추가 완료": "{name} added.",
+    "{name} 불러오기 완료": "{name} loaded.",
+    "{name} 불러오기 실패": "Failed to load {name}.",
+    "뷰 {number}: {name}": "View {number}: {name}",
+    "뷰 {number}을 저장했습니다.": "View {number} saved.",
+    "{name} 적용": "Apply {name}",
+    "{label} TCP 위치 스냅": "{label} TCP position snapped",
+    "{count} 다중 점 선택": "{count} snap points selected",
+    "{label} 영점 위치에 적용되었습니다.": "{label} applied as the zero-point position.",
+    "가져오기 위치": "Import location",
+    "가져올 3D 모델 품질": "3D model import quality",
+    "간섭영역": "Interference Zone",
+    "간섭영역 0 설정": "Interference Zone 0 setup",
+    "간섭영역 {id} 설정": "Interference Zone {id} setup",
+    "간섭영역 설정": "Interference Zone Setup",
+    "간섭영역 설정 숨기기": "Hide Interference Zone Setup",
+    "간섭영역 설정 표시/숨기기": "Show or hide Interference Zone Setup",
+    "간섭영역 설정을 별도 창으로 분리": "Open Interference Zone Setup in a separate window",
+    "간섭영역 활성화 변경": "Change interference zone activation",
+    "간섭영역 {id} 설정을 저장했습니다.": "Interference Zone {id} settings saved.",
+    "간섭영역 {id} 진입으로 {robot}를 정지했습니다.": "{robot} stopped after entering Interference Zone {id}.",
+    "간섭영역 {id} 알람: {robot}": "Interference Zone {id} alarm: {robot}",
+    "비활성화": "Inactive",
+    "활성화": "Active",
+    "간섭": "Interference",
+    "정지": "Stopped",
+    "전체 로봇": "All robots",
+    "알 수 없음": "Unknown",
+    "설정값이 없습니다.": "No settings were provided.",
+    "좌표는 {min}~{max} mm 범위의 숫자여야 합니다.": "Coordinates must be numbers from {min} to {max} mm.",
+    "I/O 신호 번호는 -1 또는 0~255여야 합니다.": "I/O signal numbers must be -1 or from 0 to 255.",
+    "Safety distance는 0~{max} mm여야 합니다.": "Safety distance must be from 0 to {max} mm.",
+    "충돌": "Collision",
+    "충돌 감지: {left} ↔ {right}": "Collision detected: {left} ↔ {right}",
+    "충돌 감지 켜기/끄기": "Toggle collision detection",
+    "충돌 감지 켜기": "Enable collision detection",
+    "충돌 감지 표시만": "Display collisions only",
+    "충돌 감지 끄기": "Disable collision detection",
+    "충돌 검사 오류": "Collision check error",
+    "충돌이 감지되어 모션을 정지했습니다.": "Motion stopped because a collision was detected.",
+    "충돌이 감지되어 가상 컨트롤러 자세를 거부했습니다.": "The Virtual Controller pose was rejected because a collision was detected.",
+    "가져오기 오류: {message}": "Import error: {message}",
+    "3D 모델링 불러오기 완료 · {quality}": "3D model import complete · {quality}",
+    "테스트 모델링 불러오기": "Load Test Models",
+    "테스트용 모델 적용": "Apply Test Models",
+    "테스트용 모델링을 적용하시겠습니까?": "Apply the test models?",
+    "테스트용 모델링을 적용하시겠습니까?\nTCP 1번은 Test 값으로 덮어쓰기됩니다.": "Apply the test models?\nTCP 1 will be overwritten with Test values.",
+    "TCP 1번은 Test 값으로 덮어쓰기됩니다.": "TCP 1 will be overwritten with Test values.",
+    "테스트 모델을 불러오지 못했습니다.\n{message}": "Could not load the test models.\n{message}",
+    "Tool을 장착할 로봇을 먼저 불러와 주세요.": "Load a robot before attaching a Tool.",
+    "모델 품질": "Model quality",
+    "경량 (빠른 가져오기)": "Lightweight (faster import)",
+    "고품질 (느림)": "High quality (slower)",
+    "표준": "Standard",
+    "자동 (권장)": "Automatic (recommended)",
+    "모든 설정 및 모델 초기화": "Reset all settings and models",
+    "모든 설정 및 모델이 초기화됩니다. 정말로 진행하시겠습니까?": "All settings and models will be reset. Do you want to continue?",
+    "시뮬레이션 초기화": "Reset Simulation",
+    "모션 실행 중에는 테스트 모델을 적용할 수 없습니다.": "Test models cannot be applied while motion is running.",
+    "모션 실행 중에는 로봇을 변경할 수 없습니다.": "Robots cannot be replaced while motion is running.",
+    "모션 실행 중에는 로봇 변경을 선택할 수 없습니다. 로봇 추가만 가능합니다.": "Robot replacement is unavailable while motion is running. You can only add a robot.",
+    "시뮬레이션이 시작되어 모델 교체를 취소했습니다.": "The simulation started, so model replacement was canceled.",
+    "선택한 면의 스냅 후보를 다시 계산해야 합니다. 면 선택은 유지됩니다.": "Snap candidates for the selected face must be recalculated. The face selection is preserved.",
+    "선택한 면의 스냅 후보를 클릭하세요.": "Click a snap candidate on the selected face.",
+    "면을 선택했습니다. 선택된 면의 스냅 후보를 계산하는 중입니다...": "Face selected. Calculating snap candidates for the selected face...",
+    "스냅할 3D 모델의 면을 클릭하세요.": "Click a face on the 3D model to snap.",
+    "현재 TCP를 읽을 로봇을 선택하세요.": "Select a robot to read the current TCP.",
+    "실제 컨트롤러": "Real Controller",
+    "아니오": "No",
+    "예": "Yes",
+    "예: 192.168.0.10": "Example: 192.168.0.10",
+    "적용 로봇": "Target robot",
+    "컨트롤러 IP": "Controller IP",
+    "컨트롤러 IP 주소": "Controller IP address",
+    "컨트롤러 연결": "Controller Connection",
+    "컨트롤러 연결 패널 숨기기": "Hide Controller Connection panel",
+    "컨트롤러 연결 패널을 별도 창으로 분리": "Open Controller Connection panel in a separate window",
+    "컨트롤러 연결 표시/숨김": "Show or hide Controller Connection",
+    "컨트롤러 종류": "Controller type",
+    "Collision": "Collision",
+    "Simulation I/O": "Simulation I/O",
+    "Inside and outside": "Inside and outside",
+    "Trigger alarm and stop": "Trigger alarm and stop",
+    "Safety distance": "Safety distance",
+    "Setting method": "Setting method",
+    "Diagonal point": "Diagonal point",
+    "Datum point + offset": "Datum point + offset",
+    "Datum point (mm)": "Datum point (mm)",
+    "Offset (mm)": "Offset (mm)",
+    "Get current point": "Get current point",
+    "Get snap point": "Get snap point",
+    "Get datum point": "Get datum point",
+    "Previous": "Previous",
+    "Next": "Next",
+    "Done": "Done",
+    "ZERO POINT": "Zero",
+    "Client": "Client",
+    "Server": "Server",
+    "TCP detection range": "TCP detection range",
     "감지 대상": "Detection target",
     "END MONITORING OBJECT": "End Monitoring Object",
     "TCP 감지 범위 설정": "Configure TCP detection range",
@@ -1076,7 +1067,6 @@
     "Controller connection requested; OLP and Virtual Bus closed.": "Controller connection requested; OLP and Virtual Bus closed.",
     "전체 OLP 프로젝트 ZIP 저장": "Save entire OLP project as a ZIP",
     "전체 OLP 프로젝트 폴더 불러오기": "Load entire OLP project folder",
-    "파일명과 저장 위치 선택": "Choose a file name and save location",
     "Execute one OLP program line": "Execute one OLP program line",
     "Single-step is available when OLP is stopped or paused": "Single-step is available when OLP is stopped or paused",
     "Stop OLP and reset cursor to the first line of main.pro": "Stop OLP and reset the cursor to the first line of main.pro",
@@ -1167,589 +1157,733 @@
     "P.pts 내보내기에 실패했습니다.": "P.pts export failed.",
     "P.pts 내보내기 실패": "P.pts export failed",
     "컨트롤러 간섭영역 설정 가져오기": "Import controller interference-zone settings",
-    "컨트롤러 TCP 감지 범위 설정 가져오기": "Import controller TCP detection range settings"
-    ,"Test": "Test"
-    ,"POSITION POINT": "POSITION POINT"
-    ,"SAVED VIEWS": "SAVED VIEWS"
-    ,"INTERFERENCE ZONE": "INTERFERENCE ZONE"
-    ,"Inside": "Inside"
-    ,"Outside": "Outside"
-    ,"YES": "YES"
-    ,"NO": "NO"
-    ,"-1: OFF": "-1: OFF"
-    ,"X · Y · Z": "X · Y · Z"
-    ,"RZ · RY · RX": "RZ · RY · RX"
-    ,"{name} · labels In {input} / Out {output} · Remote IO: {mapped}/{total} mapped": "{name} · input labels {input} / output labels {output} · Remote IO: {mapped}/{total} mapped"
-    ,"{name}: {progress}%": "{name}: {progress}%"
-    ,"PART": "PART"
-    ,"Part {index}": "Part {index}"
-    ,"Point {point}": "Point {point}"
-    ,"3D 모델 파일은 최대 {limit}까지 불러올 수 있습니다. 선택한 파일: {size}": "3D model files can be loaded up to {limit}. Selected file: {size}"
-    ,"3D 파일을 불러오지 못했습니다. {message}": "Could not load the 3D file. {message}"
-    ,"3D 파일을 불러오지 못했습니다. {message}\n\n외부 파일을 참조하는 GLTF는 GLB로 변환해서 사용해 주세요.": "Could not load the 3D file. {message}\n\nConvert GLTF files that reference external files to GLB before using them."
-    ,"STEP 파일을 불러오지 못했습니다. {message}\n\n파일이 매우 크거나 형상이 복잡한 경우 CAD에서 불필요한 부품을 제거하거나 GLB/STL로 내보낸 뒤 다시 시도해 주세요.": "Could not load the STEP file. {message}\n\nIf the file is very large or its geometry is complex, remove unnecessary parts in CAD or export it as GLB/STL and try again."
-    ,"테스트용 모델링을 적용하시겠습니까? TCP 1번은 Test 값으로 덮어쓰기됩니다.": "Apply the test model? TCP 1 will be overwritten with the Test value."
-    ,"실제 컨트롤러에서 Tool 설정 가져오기": "Import Tool settings from the real controller"
-    ,"실제 컨트롤러에서 설정 가져오기": "Import settings from the real controller"
-    ,"간섭영역 설정을 가져오지 못했습니다.": "Could not import interference-zone settings."
-    ,"TCP 감지 범위 설정을 가져오지 못했습니다.": "Could not import TCP detection-range settings."
-    ,"선택된 면의 스냅 후보를 가리켜 주세요.": "Point to a snap candidate on the selected face."
-    ,"읽는 중": "Reading"
-    ,"가져오기": "Import"
-    ,"브리지 인증 토큰을 확인할 수 없습니다.": "Could not verify the bridge authentication token."
-    ,"브리지 인증 설정이 없어 연결할 수 없습니다. 운영 Origin과 토큰을 설정해 주세요.": "Cannot connect because bridge authentication is not configured. Set the production Origin and token."
-    ,"충돌이 감지되어 OLP 모션을 정지했습니다.": "A collision was detected, so OLP motion was stopped."
-    ,"Files in {name} may be overwritten. Continue?": "Files in {name} may be overwritten. Continue?"
-    ,"Unsaved OLP edits will be discarded. Continue?": "Unsaved OLP edits will be discarded. Continue?"
-    ,"Waiting for pending NWait motions": "Waiting for pending NWait motions"
-    ,"Load a robot project folder before moving to Work Origin.": "Load a robot project folder before moving to Work Origin."
-    ,"OLP resumed.": "OLP resumed."
-    ,"Stop OLP before moving to Work Origin.": "Stop OLP before moving to Work Origin."
-    ,"Work Origin is unavailable while a controller is connected.": "Work Origin is unavailable while a controller is connected."
-    ,"TCP RX (deg)": "TCP RX (deg)"
-    ,"TCP RY (deg)": "TCP RY (deg)"
-    ,"TCP RZ (deg)": "TCP RZ (deg)"
-    ,"Work origin": "Work origin"
-    ,"Move robot to Work Origin 0": "Move robot to Work Origin 0"
-    ,"Edit": "Edit"
-    ,"자동 경로 생성": "Automatic path"
-    ,"시작 위치": "Start position"
-    ,"목표 위치": "Target position"
-    ,"시작·목표 이동 포인트 선택 안내": "Select the start and target motion points to add a detour between the two commands. MOVJ/MOVL is selected automatically from collision results. Existing motion points between them are used as avoidance hints."
-    ,"시작·목표 이동 포인트를 선택하면 두 명령 사이에 우회 경로가 추가됩니다.": "Select the start and target motion points to add a detour between the two commands."
-    ,"시작 위치와 목표 위치를 선택한 후 경로 생성 버튼을 누르세요.": "Select a start and target position, then click Generate path."
-    ,"자동 경로 생성에는 이동 포인트 2개가 필요합니다.": "Automatic path generation requires two motion points."
-    ,"시작 위치와 목표 위치는 서로 다른 이동 포인트여야 합니다.": "The start and target positions must be different motion points."
-    ,"시작 포인트는 목표 포인트보다 프로그램 앞에 있어야 합니다.": "The start point must appear before the target point in the program."
-    ,"선택한 시작 포인트의 관절 데이터를 읽을 수 없습니다.": "The selected start point's joint data could not be read."
-    ,"선택한 목표 포인트의 관절 데이터를 읽을 수 없습니다.": "The selected target point's joint data could not be read."
-    ,"선택한 시작 포인트의 관절 제한을 벗어났습니다.": "The selected start point is outside the joint limits."
-    ,"선택한 목표 포인트의 관절 제한을 벗어났습니다.": "The selected target point is outside the joint limits."
-    ,"선택한 시작 포인트의 자세가 충돌 상태입니다.": "The selected start point is in collision."
-    ,"선택한 목표 포인트의 자세가 충돌 상태입니다.": "The selected target point is in collision."
-    ,"시작 포인트와 목표 포인트를 다시 선택하세요.": "Select the start and target points again."
-    ,"선택한 목표 포인트 검사 중": "Checking the selected target point"
-    ,"경로 생성 완료 · {count}개 우회 포인트 ({motion})": "Path generated · {count} detour points ({motion})"
-    ,"경로 생성 완료 · {count}개 우회 포인트 ({motion}) · TCP 자세 유지": "Path generated · {count} detour points ({motion}) · TCP orientation preserved"
-    ,"충돌 검사 결과 {motion} 경로로 결정되었습니다. 경로 적용을 눌러 목표 명령을 변경하세요.": "Collision checking selected {motion}. Apply the path to update the target command."
-    ,"현재 TCP 기준으로 포인트를 보정했습니다. 경로 적용을 누르세요.": "The points were corrected to the current TCP. Apply the path to continue."
-    ,"TCP 자세 유지에 맞춰 목표 포인트를 갱신합니다. 경로 적용을 누르세요.": "The target point will be updated to preserve TCP orientation. Apply the path to continue."
-    ,"TCP 자세를 유지한 목표 위치의 안전한 관절 자세를 찾지 못했습니다.": "No safe joint posture was found at the target while preserving TCP orientation."
-    ,"TCP 자세 유지 목표 포인트를 준비하지 못했습니다.": "The TCP-orientation-preserving target point could not be prepared."
-    ,"TCP 자세 유지 목표 포인트를 저장하지 못했습니다.": "The TCP-orientation-preserving target point could not be saved."
-    ,"TCP 자세를 유지하도록 목표 포인트를 갱신했습니다.": "The target point was updated to preserve TCP orientation."
-    ,"현재 TCP 기준으로 포인트를 동기화했습니다.": "The points were synchronized to the current TCP."
-    ,"두 포인트 사이에 추가할 우회 포인트가 없습니다.": "No detour points are needed between the two points."
-    ,"BASE 좌표계 · mm": "BASE coordinates · mm"
-    ,"현재 TCP 자세 유지": "Keep current TCP orientation"
-    ,"경로 설정을 바꿨습니다. 경로 생성 버튼을 눌러 다시 계산하세요.": "Path settings changed. Generate the path again to recalculate it."
-    ,"TCP 자세 유지 경로를 찾지 못했습니다. 이동 방식을 MOVL 또는 자동으로 설정하거나 TCP 자세 유지를 해제하세요.": "No TCP-orientation-preserving path was found. Use MOVL or Automatic, or turn off TCP orientation hold."
-    ,"목표 포인트로 이어지는 최종 접근 경로가 안전하지 않습니다.": "The final approach to the target point is not safe."
-    ,"자세 직접 입력": "Enter orientation directly"
-    ,"이동 방식": "Motion type"
-    ,"자동": "Automatic"
-    ,"속도": "Speed"
-    ,"최대 포인트": "Maximum points"
-    ,"최대 계산 시간 (초)": "Maximum calculation time (s)"
-    ,"포인트 삽입 위치": "Point insertion"
-    ,"경로 생성": "Generate path"
-    ,"경로 다시 계산": "Recalculate path"
-    ,"경로 적용": "Apply path"
-    ,"경로 취소": "Cancel path"
-    ,"현재 TCP 위치를 기준으로 타겟을 입력하세요.": "Enter a target based on the current TCP position."
-    ,"직선 경로 검사 중": "Checking straight path"
-    ,"사용자 회피 포인트 검사 중": "Checking user avoidance points"
-    ,"최초 간섭점 6방향 탈출 검사 중": "Testing six escape directions from the first collision"
-    ,"최초 간섭점 6방향 탈출 검사 중 ({current}/{total})": "Testing six escape directions from the first collision ({current}/{total})"
-    ,"목표 위치 분석 중": "Analyzing target position"
-    ,"목표 IK 계산 중": "Calculating target IK"
-    ,"우회 경로 탐색 중": "Searching for a detour"
-    ,"경로 최적화 중": "Optimizing path"
-    ,"안전 전환 자세 탐색 중": "Finding safe transition poses"
-    ,"안전 전환 자세 탐색 중 ({current}/{total})": "Finding safe transition poses ({current}/{total})"
-    ,"전환점 연결 검사 중": "Checking transition connections"
-    ,"전환점 연결 검사 중 ({nodes} 자세 · {edges} links)": "Checking transition connections ({nodes} poses · {edges} links)"
-    ,"최종 간섭 검사 중": "Running final collision check"
-    ,"직선 경로 검사 중 ({current}/{total})": "Checking straight path ({current}/{total})"
-    ,"우회 경로 탐색 중 ({nodes} nodes · {seconds} s)": "Searching for a detour ({nodes} nodes · {seconds} s)"
-    ,"자동 우회 경로를 {count}개 포인트로 등록했습니다.": "Registered {count} automatic detour points."
-    ,"자동 경로를 {motion}으로 결정하고 {count}개 우회 포인트를 등록했습니다.": "Selected {motion} and registered {count} automatic detour points."
-    ,"자동 경로 모션을 {motion}으로 변경했습니다.": "Changed the automatic path motion to {motion}."
-    ,"활성 로봇을 선택하세요.": "Select an active robot."
-    ,"활성 로봇의 관절과 TCP를 확인하세요.": "Check the active robot joints and TCP."
-    ,"충돌 검사 시스템이 준비되지 않았습니다.": "The collision system is not ready."
-    ,"현재 로봇 자세가 충돌 상태입니다.": "The current robot pose is in collision."
-    ,"타겟 자세가 충돌 상태입니다.": "The target pose is in collision."
-    ,"타겟 위치가 3D 모델 내부에 있습니다.": "The target is inside a 3D model."
-    ,"직선 MOVL 경로에 간섭이 있어 우회 경로를 MOVL로 만들 수 없습니다. 이동 방식을 자동으로 선택하세요.": "The straight MOVL path is obstructed and cannot be detoured as MOVL. Choose Automatic mode."
-    ,"제한 시간 안에 안전한 우회 경로를 찾지 못했습니다.": "No safe detour was found within the time limit."
-    ,"경로 계산을 취소했습니다.": "Path calculation was cancelled."
-    ,"경로 생성 완료 · {count}개 포인트 ({motion})": "Path generated · {count} points ({motion})"
-    ,"선택 포인트 뒤": "After selected point"
-    ,"프로그램 마지막": "End of program"
-    ,"3D PRIMITIVES": "3D primitives"
-    ,"3D/CAD 파일 불러오기": "Import 3D/CAD file"
-    ,"도형": "Shapes"
-    ,"2D 스케치 치수": "2D sketch dimensions"
-    ,"2D 스케치 모드 시작": "Start 2D sketch mode"
-    ,"2D 스케치 모드 종료": "Exit 2D sketch mode"
-    ,"2D 모드": "2D mode"
-    ,"2D 종료": "Exit 2D"
-    ,"2D 스케치": "2D sketch"
-    ,"평면에서 마우스로 드래그해 사각형을 그리세요.": "Drag on the plane to draw a rectangle."
-    ,"스케치 X 치수 (mm)": "Sketch X dimension (mm)"
-    ,"스케치 Y 치수 (mm)": "Sketch Y dimension (mm)"
-    ,"Z 높이": "Z height"
-    ,"생성할 도형 Z 높이 (mm)": "Shape Z height (mm)"
-    ,"다시 그리기": "Redraw"
-    ,"2D 모드 종료": "Exit 2D mode"
-    ,"2D 스케치 도구": "2D sketch tools"
-    ,"선": "Line"
-    ,"원": "Circle"
-    ,"모따기": "Chamfer"
-    ,"모따기 거리": "Chamfer distance"
-    ,"모따기 거리 (mm)": "Chamfer distance (mm)"
-    ,"작업": "Operation"
-    ,"CAD 작업": "CAD operation"
-    ,"스케치 작업": "Sketch operation"
-    ,"절삭 방향": "Cut direction"
-    ,"스케치 돌출 컷 방향": "Sketch extrude-cut direction"
-    ,"CAD 돌출 컷 방향": "CAD extrude-cut direction"
-    ,"기준면에서 +Z": "From base toward +Z"
-    ,"상단에서 -Z": "From top toward -Z"
-    ,"CAD 돌출 Z 높이 (mm)": "CAD extrude Z height (mm)"
-    ,"CAD 레이어 {layer}": "Layer {layer}"
-    ,"CAD 속성 형식": "Type"
-    ,"CAD 속성 핸들": "Handle"
-    ,"CAD 속성 레이어": "Layer"
-    ,"CAD 속성 경계": "Bounds"
-    ,"CAD 속성 길이": "Length"
-    ,"CAD 속성 반지름": "Radius"
-    ,"CAD 속성 지름": "Diameter"
-    ,"CAD 속성 꼭짓점": "Vertices"
-    ,"CAD 속성 닫힘": "Closed"
-    ,"돌출": "Extrude"
-    ,"돌출 컷": "Extrude cut"
-    ,"돌출 생성": "Create extrude"
-    ,"돌출 컷 실행": "Apply extrude cut"
-    ,"프로파일 선택": "Select profiles"
-    ,"선택한 스케치 프로파일 돌출": "Extrude selected sketch profiles"
-    ,"선택한 스케치 프로파일 돌출 컷": "Cut selected sketch profiles"
-    ,"돌출할 스케치 항목을 선택하세요.": "Select a sketch profile to extrude."
-    ,"돌출할 닫힌 스케치 항목을 선택하세요. Shift 키로 여러 항목을 선택할 수 있습니다.": "Select a closed sketch profile to extrude. Hold Shift to select multiple profiles."
-    ,"선택된 {count}개 스케치 항목의 Z 높이를 설정하세요.": "Set the Z height for the {count} selected sketch profile(s)."
-    ,"선택된 {count}개 스케치 항목의 Z 깊이를 설정하세요.": "Set the Z cut depth for the {count} selected sketch profile(s)."
-    ,"선택한 프로파일의 Z 높이를 설정한 뒤 돌출을 적용하세요.": "Set the Z height for the selected profiles, then apply the extrusion."
-    ,"선택한 프로파일의 Z 높이를 설정한 뒤 돌출 컷을 적용하세요.": "Set the Z height for the selected profile, then apply the extrude cut."
-    ,"{count}개 프로파일이 선택되었습니다. Extrude를 눌러 Z 높이를 설정하세요.": "{count} profile(s) selected. Click Extrude to set the Z height."
-    ,"{count}개 프로파일이 선택되었습니다. 돌출 컷을 눌러 Z 깊이를 설정하세요.": "{count} profile(s) selected. Click Extrude cut to set the Z cut depth."
-    ,"돌출할 닫힌 스케치 항목을 먼저 선택하거나 작성하세요.": "Select or create a closed sketch profile before extruding."
-    ,"돌출 컷은 한 개의 스케치 항목만 선택하세요.": "Select one sketch profile for an extrude cut."
-    ,"돌출 설정을 취소했습니다. 스케치 편집은 계속됩니다.": "Extrusion setup was cancelled. Sketch editing continues."
-    ,"스케치 편집": "Edit Sketch"
-    ,"피쳐 편집": "Edit Feature"
-    ,"스케치 적용": "Apply Sketch"
-    ,"스케치 편집 중입니다. 수정한 뒤 스케치 완료를 누르세요.": "Editing the sketch. Apply the sketch when you finish your changes."
-    ,"피쳐 편집 중입니다. Z 높이를 변경한 뒤 적용하세요.": "Editing the feature. Change the Z height and apply the feature."
-    ,"기존 스케치 피쳐를 수정했습니다.": "The existing sketch feature was updated."
-    ,"스케치 돌출이 적용된 상태로 스케치를 완료했습니다.": "The sketch was completed with the extrusion applied."
-    ,"장면에 배치된 스케치 도형만 편집할 수 있습니다.": "Only sketch shapes placed in the scene can be edited."
-    ,"스케치 지우기": "Clear sketch"
-    ,"직경": "Diameter"
-    ,"길이": "Length"
-    ,"스케치 요소": "Sketch entities"
-    ,"스케치 요소 추가": "Add sketch entity"
-    ,"스케치 요소 이동": "Move sketch entity"
-    ,"스케치 치수 변경": "Change sketch dimension"
-    ,"한 축 위치 치수 추가": "Add one-axis position dimension"
-    ,"한 축 위치 치수 변경": "Change one-axis position dimension"
-    ,"치수 생성 또는 위치 변경": "Create or move dimension"
-    ,"DXF 스케치 삽입": "Insert DXF sketch"
-    ,"스케치 원점 이동": "Move sketch origin"
-    ,"스케치 원점 초기화": "Reset sketch origin"
-    ,"스케치 사각형": "Rectangle"
-    ,"텍스트": "Text"
-    ,"스케치 텍스트 입력": "Enter sketch text"
-    ,"텍스트 내용": "Text content"
-    ,"텍스트를 입력하세요.": "Enter text."
-    ,"문자 높이": "Text height"
-    ,"텍스트 삽입": "Insert text"
-    ,"텍스트 내용 입력한 뒤 삽입하세요.": "Enter the text content, then insert it."
-    ,"텍스트 내용을 입력하세요.": "Enter text content."
-    ,"문자 높이는 0.5보다 크고 유효한 숫자여야 합니다.": "Text height must be a valid number greater than or equal to 0.5."
-    ,"텍스트 입력을 취소했습니다.": "Text entry was cancelled."
-    ,"스케치 텍스트를 추가했습니다.": "Added sketch text."
-    ,"스케치 텍스트 추가": "Add sketch text"
-    ,"Z 컷 깊이": "Z cut depth"
-    ,"스케치 돌출": "Sketch extrude"
-    ,"돌출 컷은 먼저 대상 사각형 도형을 선택하세요.": "Select a target box before using extrude cut."
-    ,"돌출 컷은 먼저 사각형 도형 또는 단일 스케치 돌출 도형을 선택하세요.": "Select a box or a single sketch-extruded shape before using extrude cut."
-    ,"돌출 컷은 사각형 도형에만 적용할 수 있습니다.": "Extrude cut currently supports box shapes only."
-    ,"돌출 컷은 사각형 도형 또는 단일 스케치 돌출 도형에만 적용할 수 있습니다.": "Extrude cut supports box shapes and single sketch-extruded shapes."
-    ,"돌출 컷 대상은 회전하지 않은 장면 사각형 도형이어야 합니다.": "The extrude-cut target must be an unrotated scene box."
-    ,"돌출 컷 대상은 회전하지 않은 장면 도형이어야 합니다.": "The extrude-cut target must be an unrotated scene shape."
-    ,"돌출 컷 프로파일은 대상 도형 안에 있어야 하며 컷 깊이는 도형 높이 이하여야 합니다.": "The extrude-cut profile must be inside the target and its depth cannot exceed the target height."
-    ,"이미 돌출 컷이 적용된 스케치 도형에는 추가 컷을 적용할 수 없습니다.": "A sketch-extruded shape that already has an extrude cut cannot receive another cut."
-    ,"스케치 요소 0개": "0 sketch entities"
-    ,"스케치 요소를 추가했습니다. 필요하면 다른 도구로 계속 그리세요.": "Sketch entity added. Continue with another tool if needed."
-    ,"선택한 스케치 요소를 삭제했습니다.": "Deleted the selected sketch entity."
-    ,"마우스를 놓으면 현재 도구의 스케치 요소가 추가됩니다.": "Release the mouse to add the current sketch entity."
-    ,"치수 라벨 또는 입력값을 수정하고, 닫힌 프로파일을 돌출하거나 컷하세요.": "Edit a dimension label or input, then extrude or cut a closed profile."
-    ,"도구를 선택한 뒤 평면에서 드래그해 스케치 요소를 그리세요.": "Choose a tool, then drag on the plane to draw sketch entities."
-    ,"스케치 크기가 너무 작습니다. 다시 드래그하세요.": "The sketch is too small. Drag again."
-    ,"선택한 사각형 도형에 스케치 돌출 컷을 적용했습니다.": "Applied the sketch extrude cut to the selected box."
-    ,"선택한 도형에 스케치 돌출 컷을 적용했습니다.": "Applied the sketch extrude cut to the selected shape."
-    ,"스케치 프로파일을 돌출해 3D 형상을 생성했습니다.": "Created a 3D shape by extruding the sketch profile."
-    ,"{tool} 도구를 선택했습니다.": "Selected the {tool} tool."
-    ,"{tool} 스케치를 추가했습니다. 필요하면 다른 도구로 계속 그리세요.": "Added a {tool} sketch. Continue with another tool if needed."
-    ,"치수 라벨 또는 X/Y 입력값을 클릭해 수정하세요. Z 높이를 입력한 뒤 생성하세요.": "Click a dimension label or X/Y input to edit it. Enter the Z height, then create the shape."
-    ,"마우스를 놓으면 사각형이 완성됩니다.": "Release the mouse to finish the rectangle."
-    ,"다른 위치 선택 모드를 먼저 종료하세요.": "Exit the other position-selection mode first."
-    ,"사각형 스케치를 완성했습니다. 치수와 Z 높이를 입력하세요.": "Rectangle sketch completed. Edit the dimensions and Z height."
-    ,"사각형 크기가 너무 작습니다. 다시 드래그하세요.": "The rectangle is too small. Drag again."
-    ,"사각형을 다시 그릴 수 있습니다.": "You can draw the rectangle again."
-    ,"Z 높이는 0보다 크고 유효한 숫자여야 합니다.": "Z height must be a finite number greater than zero."
-    ,"2D 평면뷰입니다. 원하는 위치에서 드래그해 사각형을 그리세요.": "2D top view. Drag from the desired position to draw a rectangle."
-    ,"2D 평면뷰입니다. 도구를 선택하고 원하는 위치에서 드래그해 스케치하세요.": "2D top view. Choose a tool and drag from the desired position to sketch."
-    ,"2D 스케치 위치에 도형을 생성했습니다.": "Created the shape at the 2D sketch position."
-    ,"2D 스케치 모드를 종료했습니다.": "Exited 2D sketch mode."
-    ,"뷰 변경": "Change view"
-    ,"치수 기입": "Dimension"
-    ,"스냅": "Snap"
-    ,"스냅 켜기": "Snap on"
-    ,"스냅 끄기": "Snap off"
-    ,"스케치 치수": "Sketch dimension"
-    ,"치수 값": "Dimension value"
-    ,"치수 적용": "Apply dimension"
-    ,"새 치수": "New dimension"
-    ,"첫 번째 점을 선택했습니다. 두 번째 점을 선택하세요.": "First point selected. Select the second point."
-    ,"두 번째 점을 클릭해 치수를 완성하세요.": "Select the second point to finish the dimension."
-    ,"첫 번째 점과 두 번째 점을 클릭해 치수를 입력하세요.": "Select the first and second points to enter a dimension."
-    ,"치수 값을 입력하고 적용하세요.": "Enter a dimension value and apply it."
-    ,"치수 기입 도구를 선택하세요.": "Select the dimension tool."
-    ,"스냅된 첫 번째 점과 두 번째 점을 차례로 클릭해 치수를 기입하세요.": "Select the snapped first and second points in order to add a dimension."
-    ,"스냅을 켰습니다.": "Snap enabled."
-    ,"스냅을 껐습니다.": "Snap disabled."
-    ,"두 점 사이의 거리가 너무 짧습니다. 다시 선택하세요.": "The distance between the points is too short. Select them again."
-    ,"두 점 사이의 치수를 입력할 수 있습니다.": "You can enter the dimension between the two points."
-    ,"스케치 치수를 적용했습니다.": "Sketch dimension applied."
-    ,"선의 길이 치수를 만들었습니다. 값을 입력하면 실제 도형 길이가 변경됩니다.": "A length dimension was created. Enter a value to change the actual geometry length."
-    ,"치수 위치를 따라가고 있습니다. 원하는 위치에서 클릭해 고정하세요.": "The dimension is following the cursor. Click to fix its position."
-    ,"치수 위치를 고정했습니다. 값을 입력하세요.": "The dimension position is fixed. Enter a value."
-    ,"X/Y 위치 치수를 만들었습니다. 값을 입력하면 스냅한 도형 위치가 변경됩니다.": "An X/Y position dimension was created. Enter values to move the snapped geometry."
-    ,"X/Y 위치 치수를 적용했습니다. 도형 위치가 변경되었습니다.": "The X/Y position dimension was applied and the geometry was moved."
-    ,"두 스냅 지점 사이의 거리가 너무 짧습니다. 다시 선택하세요.": "The distance between the snap points is too short. Select them again."
-    ,"첫 번째 스냅 지점을 선택했습니다. X/Y 위치를 정할 두 번째 지점을 선택하세요.": "The first snap point was selected. Select the second point for the X/Y position."
-    ,"선 또는 모서리, 또는 스냅 지점을 클릭하세요.": "Click a line or edge, or a snap point."
-    ,"선 또는 모서리를 클릭하면 길이 치수를 만들고, 중심점이나 스냅 지점을 차례로 클릭하면 X/Y 위치 치수를 만듭니다.": "Click a line or edge for a length dimension, or click a center and another snap point for an X/Y position dimension."
-    ,"두 번째 스냅 지점을 클릭해 X/Y 위치 치수를 완성하세요.": "Select the second snap point to finish the X/Y position dimension."
-    ,"선 또는 모서리를 클릭하면 길이 치수, 중심점과 다른 스냅 지점을 차례로 클릭하면 X/Y 위치 치수를 기입하세요.": "Click a line or edge for length, or click a center and another snap point for X/Y position."
-    ,"현재 스케치 명령을 취소했습니다. 스케치 편집은 계속됩니다.": "The current sketch command was canceled. Sketch editing continues."
-    ,"도면 위치 스냅": "Snap drawing position"
-    ,"도면 위치 스냅 종료": "Stop drawing position snap"
-    ,"스케치 원점": "Sketch origin"
-    ,"스케치 원점 초기화": "Reset sketch origin"
-    ,"스냅할 3D 모델의 면 또는 표시된 스냅 점을 클릭하세요.": "Click a face or visible snap point on a 3D model."
-    ,"스케치 위치를 스냅할 3D 모델의 면 또는 스냅 점을 클릭하세요.": "Click a face or snap point on a 3D model to place the sketch."
-    ,"스케치 도면을 선택한 스냅 위치에 배치했습니다.": "Placed the sketch at the selected snap position."
-    ,"스케치 원점을 초기화했습니다.": "Reset the sketch origin."
-    ,"왼쪽 드래그로 그립니다. 가운데/오른쪽 드래그와 휠로 뷰를 변경할 수 있습니다.": "Draw with the left drag. Use the middle/right drag or wheel to change the view."
-    ,"도형 생성 및 편집": "Shape creation and editing"
-    ,"도형 패널을 별도 창으로 분리": "Pop out the shape panel"
-    ,"도형 패널 숨기기": "Hide the shape panel"
-    ,"새 도형": "New shape"
-    ,"형상": "Shape"
-    ,"도형 형상": "Primitive shape"
-    ,"도형 치수": "Shape dimensions"
-    ,"치수 표시 방식": "Dimension display mode"
-    ,"X 치수 (mm)": "X dimension (mm)"
-    ,"Y 치수 (mm)": "Y dimension (mm)"
-    ,"Z 치수 (mm)": "Z dimension (mm)"
-    ,"선택 도형 X 치수 (mm)": "Selected shape X dimension (mm)"
-    ,"선택 도형 Y 치수 (mm)": "Selected shape Y dimension (mm)"
-    ,"선택 도형 Z 치수 (mm)": "Selected shape Z dimension (mm)"
-    ,"암 로드 설정 표시/숨기기": "Show/hide arm load settings"
-    ,"암 로드 등록": "Register arm load"
-    ,"치수 측정 패널 표시/숨기기": "Show/hide measurement panel"
-    ,"암 로드에 부착할 로봇을 먼저 불러와 주세요.": "Load a robot to attach the arm load first."
-    ,"모델 표시 설정": "Model display settings"
-    ,"사각형": "Box"
-    ,"원뿔형": "Cone"
-    ,"원통형": "Cylinder"
-    ,"구": "Sphere"
-    ,"원통형과 원뿔형은 X/Y 지름이 연결되고 구는 세 축이 연결됩니다.": "Cylinder and cone X/Y diameters are linked; a sphere links all three axes."
-    ,"도형 생성": "Create shape"
-    ,"선택 도형": "Selected shape"
-    ,"이름": "Name"
-    ,"사각형은 X/Y/Z를 독립적으로 설정합니다.": "Box X/Y/Z dimensions are independent."
-    ,"원통형과 원뿔형은 X/Y 지름이 연결됩니다.": "Cylinder and cone X/Y diameters are linked."
-    ,"구는 X/Y/Z가 연결됩니다.": "Sphere X/Y/Z dimensions are linked."
-    ,"치수 라벨을 클릭하면 장면에서 바로 편집할 수 있습니다.": "Click a dimension label to edit it directly in the scene."
-    ,"도형 치수는 0보다 크고 유효한 숫자여야 합니다.": "Shape dimensions must be finite numbers greater than zero."
-    ,"도형이 생성되었습니다.": "Shape created."
-    ,"도형 치수가 적용되었습니다.": "Shape dimensions applied."
-    ,"도형의 크기는 도형 패널 또는 치수 라벨에서 변경하세요.": "Change shape size in the shape panel or dimension labels."
-    ,"SHAPE POSITION / BASE": "SHAPE POSITION / BASE"
-    ,"SHAPE ROTATION / BASE": "SHAPE ROTATION / BASE"
-    ,"도형 Base JOG": "Shape Base JOG"
-    ,"도형 치수 변경": "Shape dimensions changed"
-    ,"도형 생성 및 편집 표시/숨기기": "Show/hide shape creation and editing"
-    ,"협업": "Collaboration"
-    ,"협업 안내": "Share the room code so up to four computers can control different robots at the same time."
-    ,"참여자 목록 없음": "Participants appear after joining a room."
-    ,"로봇 선택 안내": "Select a robot after joining a room."
-    ,"4인 협업": "Four-person collaboration"
-    ,"4인 협업 시뮬레이션": "Four-person 3D Simulation collaboration"
-    ,"4인 협업 패널을 별도 창으로 분리": "Pop out the collaboration panel"
-    ,"4인 협업 패널 숨기기": "Hide the collaboration panel"
-    ,"4인 협업 표시/숨김": "Show/hide four-person collaboration"
-    ,"방 코드를 공유하면 최대 4대의 컴퓨터에서 서로 다른 로봇을 동시에 제어할 수 있습니다.": "Share the room code so up to four computers can control different robots at the same time."
-    ,"사용자 이름": "User name"
-    ,"예: PC A": "Example: PC A"
-    ,"방 만들기": "Create room"
-    ,"방 나가기": "Leave room"
-    ,"방 코드": "Room code"
-    ,"4자리 코드": "4-digit code"
-    ,"참여": "Join"
-    ,"현재 방": "Current room"
-    ,"방 코드 복사": "Copy room code"
-    ,"연결되지 않음": "Not connected"
-    ,"협업 서버 연결 중": "Connecting to collaboration server"
-    ,"협업 연결됨": "Collaboration connected"
-    ,"협업 서버 재연결 중": "Reconnecting to collaboration server"
-    ,"협업 연결 오류": "Collaboration connection error"
-    ,"참여자": "Participants"
-    ,"로봇 제어권": "Robot control"
-    ,"방에 참여하면 표시됩니다.": "Participants appear after joining a room."
-    ,"방에 참여하면 로봇을 선택할 수 있습니다.": "Select a robot after joining a room."
-    ,"시뮬레이션에 로봇이 없습니다.": "There are no robots in the simulation."
-    ,"호스트": "Host"
-    ,"나": "Me"
-    ,"연결됨": "Connected"
-    ,"연결 끊김": "Disconnected"
-    ,"내가 제어 중": "Controlled by me"
-    ,"제어 중": "controlling"
-    ,"제어 가능": "Available"
-    ,"점유": "Claim"
-    ,"해제": "Release"
-    ,"사용 중": "In use"
-    ,"방 코드를 찾을 수 없습니다.": "Room code not found."
-    ,"협업 방은 최대 4명까지 참여할 수 있습니다.": "A collaboration room supports up to four participants."
-    ,"다른 사용자가 제어 중인 로봇입니다.": "This robot is controlled by another participant."
-    ,"한 사용자는 한 대의 로봇만 점유할 수 있습니다.": "Each participant can claim only one robot."
-    ,"점유하지 않은 로봇은 조작할 수 없습니다.": "You cannot control a robot you have not claimed."
-    ,"협업 세션이 만료되었습니다. 방에 다시 참여해 주세요.": "The collaboration session expired. Join the room again."
-    ,"공유할 작업이 너무 큽니다. 업로드 모델을 제외하고 다시 시도해 주세요.": "The shared workspace is too large. Remove uploaded models and try again."
-    ,"협업 방에 연결되어 있지 않습니다.": "You are not connected to a collaboration room."
-    ,"협업 방 인증 정보가 올바르지 않습니다.": "The collaboration room credentials are invalid."
-    ,"협업 요청을 처리하지 못했습니다.": "The collaboration request could not be completed."
-    ,"협업 메시지가 너무 큽니다.": "The collaboration message is too large."
-    ,"방 코드를 복사했습니다.": "Room code copied."
-    ,"방 코드 복사에 실패했습니다.": "Could not copy the room code."
-    ,"방 코드는 숫자로 된 4자리 코드여야 합니다.": "The room code must be four digits."
-    ,"협업 서버 주소가 올바르지 않습니다.": "The collaboration server address is invalid."
-    ,"협업 서버에 연결할 수 없습니다.": "Could not connect to the collaboration server."
-    ,"협업 작업 스냅샷을 불러오지 못했습니다.": "The collaboration workspace snapshot could not be loaded."
-    ,"먼저 협업 패널에서 제어할 로봇을 점유하세요.": "Claim a robot in the collaboration panel first."
-    ,"부하 정보": "Load information"
-    ,"Tool 부하 정보": "Tool load information"
-    ,"선택한 Tool": "Selected Tool"
-    ,"부하 계산 방식": "Load calculation method"
-    ,"부품·재질로 계산": "Calculate from parts/materials"
-    ,"질량 직접 입력": "Enter mass directly"
-    ,"각 부품의 재질과 밀도를 입력하면 부하 값이 실시간으로 계산됩니다.": "Enter each part's material and density to calculate the load values in real time."
-    ,"여러 부품 또는 여러 재질을 하나의 모델로 불러온 경우 총 질량을 직접 입력합니다. 형상의 무게중심과 균일 밀도 기준 관성모멘트를 질량에 맞춰 계산합니다.": "When multiple parts or materials are imported as one model, enter the total mass directly. The geometric center of gravity and uniform-density inertia are scaled to that mass."
-    ,"툴 총 질량": "Total Tool mass"
-    ,"실시간 부하 정보": "Live load information"
-    ,"Tool 좌표계 기준": "Tool coordinate system"
-    ,"부하 계산 결과": "Load calculation result"
-    ,"무게중심 (Tool 원점 기준)": "Center of gravity (Tool origin)"
-    ,"Tool 원점 기준 관성모멘트": "Inertia about Tool origin"
-    ,"부하중심 기준 관성모멘트": "Inertia about center of load"
-    ,"재질": "Material"
-    ,"밀도": "Density"
-    ,"계산할 수 있는 닫힌 형상이 없습니다.": "The Tool has no closed solid that can be calculated."
-    ,"입력한 질량을 기준으로 형상에 맞춰 계산되었습니다.": "Calculated from the entered mass and the model shape."
-    ,"재질 입력값을 기준으로 계산되었습니다.": "Calculated from the entered material values."
-    ,"툴 총 질량은 0보다 커야 합니다.": "Total Tool mass must be greater than zero."
-    ,"Tool 부하 정보를 별도 창으로 분리": "Pop out Tool load information"
-    ,"Tool 부하 정보 숨기기": "Hide Tool load information"
-    ,"재질을 선택하면 값을 계산합니다.": "Select a material to calculate the values."
-    ,"Tool 설치": "Tool installation"
-    ,"Tool 설치 로봇 선택": "Select a robot for Tool installation"
-    ,"선택한 모델을 Tool로 설치할 로봇을 선택하세요.": "Select the robot that will receive the selected model as a Tool."
-    ,"설치할 모델": "Model to install"
-    ,"설치할 로봇": "Robot to install on"
-    ,"Tool에 설치": "Install as Tool"
-    ,"Tool 해제": "Tool release"
-    ,"Tool에서 해제": "Detach Tool"
-    ,"Tool을 설치할 로봇을 먼저 불러와 주세요.": "Load a robot before installing a Tool."
-    ,"선택한 로봇의 Tool 장착 위치를 찾을 수 없습니다.": "The selected robot's Tool mount could not be found."
-    ,"Tool을 설치할 로봇을 찾을 수 없습니다.": "The robot for Tool installation could not be found."
-    ,"선택한 {name}을(를) Tool로 설치할 로봇을 선택하세요.": "Select the robot that will receive {name} as a Tool."
-    ,"Tool을 로봇 TCP에 설치했습니다.": "Installed the Tool on the robot TCP."
-    ,"Tool 설치에 실패했습니다.": "Could not install the Tool."
-    ,"Tool을 해제하고 일반 모델로 되돌렸습니다.": "Detached the Tool and returned it to a regular model."
-    ,"그립 오브젝트": "Grip object"
-    ,"그립 오브젝트로 사용": "Use as grip object"
-    ,"그립 오브젝트 사용 해제": "Release grip object"
-    ,"그립 오브젝트 사용": "Grip object use"
-    ,"그립 오브젝트 해제": "Grip object release"
-    ,"그립 사용": "Grip use"
-    ,"그립 해제": "Grip release"
-    ,"그립 오브젝트 사용 명령 추가": "Add grip object use command"
-    ,"그립 오브젝트 해제 명령 추가": "Add grip object release command"
-    ,"사용할 오브젝트": "Object to use"
-    ,"오브젝트를 선택하세요": "Select an object"
-    ,"그립 오브젝트를 선택하세요.": "Select a grip object."
-    ,"선택한 오브젝트는 이미 사용 중입니다.": "The selected object is already in use."
-    ,"그립 오브젝트를 사용할 로봇을 먼저 불러와 주세요.": "Load a robot before using a grip object."
-    ,"선택한 모델은 그립 오브젝트로 사용할 수 없습니다.": "The selected model cannot be used as a grip object."
-    ,"그립 오브젝트를 사용했습니다.": "Used the grip object."
-    ,"그립 오브젝트를 해제했습니다.": "Released the grip object."
-    ,"그립 오브젝트 대상 변경": "Changed the grip object target"
-    ,"그립 오브젝트 명령 추가": "Added a grip object command"
-    ,"그립 오브젝트 명령 대상이 없습니다.": "The grip object command target is unavailable."
-    ,"그립 오브젝트 사용에 실패했습니다.": "Could not use the grip object."
-    ,"물건 잡기 대상": "Pick-up target"
-    ,"물건 잡기": "Pick up"
-    ,"놓기": "Release"
-    ,"물건 잡기 명령 추가": "Add pick-up command"
-    ,"놓기 명령 추가": "Add release command"
-    ,"물건 잡기/놓기 명령 추가": "Add pick-up/release command"
-    ,"물건 잡기/놓기 명령 대상이 없습니다.": "The pick-up/release command target is unavailable."
-    ,"물건 잡기 대상 변경": "Changed the pick-up target"
-    ,"물건 잡기 대상 불러오기": "Load pick-up target"
-    ,"물건 잡기 대상을 선택하세요.": "Select a pick-up target."
-    ,"물건 잡기 대상을 사용할 로봇을 먼저 불러와 주세요.": "Load a robot before using a pick-up target."
-    ,"물건 잡기에 실패했습니다.": "Could not pick up the object."
-    ,"물건 잡기 대상을 찾을 수 없습니다.": "The pick-up target could not be found."
-    ,"물건 잡기 대상을 사용할 수 없습니다.": "The pick-up target cannot be used."
-    ,"물건 잡기/놓기 명령을 실행할 수 없습니다.": "Could not execute the pick-up/release command."
-    ,"물건을 잡았습니다.": "Picked up the object."
-    ,"물건을 놓았습니다.": "Released the object."
-    ,"TCP 경로 선": "TCP Path"
-    ,"TCP 경로 선 표시": "Show TCP path"
-    ,"TCP 경로 선 숨기기": "Hide TCP path"
-    ,"로봇 간섭 회피": "Robot interference avoidance"
-    ,"로봇 간섭 회피 활성화": "Enable robot interference avoidance"
-    ,"로봇 간섭 회피 비활성화": "Disable robot interference avoidance"
-    ,"간섭 회피 우선 로봇": "Priority robot for interference avoidance"
-    ,"우선 로봇 없음": "No priority robot"
-    ,"우선: {name}": "Priority: {name}"
-    ,"로봇 간섭 회피 대기 중": "Waiting for robot interference avoidance"
-    ,"2D CAD 파일 가져오기": "Import 2D CAD file"
-    ,"3D 모델 가져오기 방식": "3D model import options"
-    ,"파일을 선택하세요.": "Select a file."
-    ,"2D CAD 가져오기": "Import 2D CAD"
-    ,"3D/CAD 가져오기": "Import 3D/CAD"
-    ,"DXF의 LINE, ARC, CIRCLE, POLYLINE을 읽어 평면에 표시합니다.": "Reads LINE, ARC, CIRCLE, and POLYLINE from DXF and displays them on the plane."
-    ,"DXF의 블록과 LINE ARC CIRCLE POLYLINE을 전개해 평면에 표시하며 스플라인은 지원하지 않습니다": "Expands blocks and LINE, ARC, CIRCLE, POLYLINE, TEXT, and MTEXT from DXF and displays them on the plane. Splines are not supported."
-    ,"대형 DXF 도면 · {count}개 요소는 캔버스에서 선택하세요.": "Large DXF drawing · Select its {count} elements on the canvas."
-    ,"DWG는 로컬 CAD 변환 브리지가 실행 중일 때 가져올 수 있습니다.": "DWG import requires a running local CAD conversion bridge."
-    ,"CAD 가져오는 중": "Importing CAD"
-    ,"CAD 도면에 표시 가능한 엔티티가 없습니다.": "The CAD drawing has no visible entities."
-    ,"DXF 파일을 해석하지 못했습니다.": "The DXF file could not be parsed."
-    ,"Binary DXF는 현재 지원하지 않습니다. ASCII DXF로 저장해 주세요.": "Binary DXF is not supported. Save the file as ASCII DXF."
-    ,"DWG 변환기를 찾을 수 없습니다. 로컬 CAD 변환 브리지를 실행한 뒤 다시 시도해 주세요.": "The DWG converter is unavailable. Start the local CAD conversion bridge and try again."
-    ,"DWG 변환 브리지가 해당 파일을 지원하지 않거나 올바른 CAD2D 문서를 반환하지 않았습니다.": "The DWG bridge does not support this file or did not return a valid CAD2D document."
-    ,"CAD 도면": "CAD drawing"
-    ,"2D CAD 도면": "2D CAD drawing"
-    ,"도면의 선, 원, 호 또는 닫힌 폴리라인을 클릭하세요.": "Click a line, circle, arc, or closed polyline in the drawing."
-    ,"선택 프로파일 돌출": "Extrude selected profile"
-    ,"닫힌 프로파일 선택": "Select a closed profile"
-    ,"CAD 프로파일을 먼저 선택하세요.": "Select a CAD profile first."
-    ,"CAD 돌출 컷은 먼저 대상 사각형 도형과 직사각형/원 프로파일을 선택하세요.": "Select a target box and a rectangular or circular profile before using CAD extrude cut."
-    ,"CAD 돌출": "CAD extrude"
-    ,"CAD 프로파일 돌출 컷을 적용했습니다.": "Applied the CAD profile extrude cut."
-    ,"선택한 CAD 면을 돌출했습니다.": "Extruded the selected CAD face."
-    ,"선택한 CAD 프로파일을 돌출했습니다.": "Extruded the selected CAD profile."
-    ,"CAD 도면 불러오기 완료 · {count}개 엔티티": "CAD drawing imported · {count} entities"
-    ,"도면 단위": "Drawing units"
-    ,"자동 (DXF INSUNITS)": "Automatic (DXF INSUNITS)"
-    ,"알 수 없는 단위는 mm로 해석됩니다.": "Unknown units are interpreted as mm."
-    ,"도면 중심을 원점에 배치": "Place drawing center at the origin"
-    ,"화면 맞춤": "Fit view"
-    ,"상부 보기": "Top view"
-    ,"도면 표시": "Show drawing"
-    ,"레이어": "Layers"
-    ,"선택 엔티티": "Selected entity"
-    ,"돌출 Z": "Extrude Z"
-    ,"선택 해제": "Clear selection"
-    ,"CAD unit note": "Unknown units are interpreted as mm."
-    ,"CAD drawing selection note": "Import a CAD drawing to see entity selection details."
-    ,"CAD drawing summary": "{fileName} · {entityCount} entities · {layerCount} layers · {sourceUnit} → mm"
-    ,"CAD 면 선택 안내": "Click a closed face in the drawing. Inner holes are preserved when extruded."
-    ,"도면의 닫힌 면을 클릭하세요. 내부 구멍은 돌출 시 유지됩니다.": "Click a closed face in the drawing. Inner holes are preserved when extruded."
-    ,"선택 면 돌출": "Extrude selected face"
-    ,"닫힌 면 선택": "Select a closed face"
-    ,"CAD selected face summary": "{count} selected · face · {type} · {holes} hole(s)"
-    ,"CAD 선택 면": "Selected CAD face"
-    ,"CAD 프로파일 면": "Face"
-    ,"CAD 내부 구멍": "Inner holes"
-    ,"구멍이 있는 CAD 면은 돌출 컷이 아니라 돌출 작업으로 생성하세요.": "Use the extrude operation for a CAD face with holes, not extrude cut."
-    ,"CAD selected entity summary": "{count} selected · {type} · handle {handle}{closed}"
-    ,"CAD closed profile": " · closed profile"
-    ,"도면 기준점 변경": "Change drawing base point"
-    ,"도면 기준점": "Drawing base point"
-    ,"도면 기준점 및 배치": "Drawing base point and placement"
-    ,"도면 기준점 안내": "Click a line, point, or circle in the drawing to automatically select the nearest snap point."
-    ,"도면 기준점 스냅 유형": "Drawing base point snap type"
-    ,"스냅 기준": "Snap reference"
-    ,"기준점 스냅 시작": "Start base point snap"
-    ,"기준점 스냅 종료": "Exit base point snap"
-    ,"기준점 초기화": "Reset base point"
-    ,"기준점 오프셋 초기화": "Reset base point offset"
-    ,"기준점 스냅 안내": "Click a line, point, or circle in the drawing. Snapping is always on."
-    ,"도면의 스냅 점을 선택하세요.": "Select a snap point on the drawing."
-    ,"현재 기준점 오프셋 · X {x}, Y {y}, Z {z} mm": "Current base point offset · X {x}, Y {y}, Z {z} mm"
-    ,"선택 가능한 CAD 스냅 지점을 가리켜 주세요.": "Point to an available CAD snap point."
-    ,"CAD 기준점을 스냅했습니다.": "The CAD base point was snapped."
-    ,"도면 기준점을 초기화했습니다.": "The drawing base point was reset."
-    ,"스냅한 점을 CAD 도면의 새 기준점으로 지정합니다. 도면 형상은 현재 화면 위치를 유지합니다.": "Set a snapped point as the new CAD drawing base point. The drawing geometry stays in its current screen position."
-    ,"기준점 스냅을 시작한 뒤 도면의 점을 선택하세요.": "Start base point snap, then select a point on the drawing."
-    ,"도면의 선·점·원 등을 클릭하면 가장 가까운 스냅점이 자동으로 선택됩니다.": "Click a line, point, or circle in the drawing to automatically select the nearest snap point."
-    ,"도면의 선·점·원 등을 클릭하세요. 스냅은 기본으로 적용됩니다.": "Click a line, point, or circle in the drawing. Snapping is always on."
-    ,"선택한 스냅점이 없습니다. 도면의 선·점·원 등을 클릭하세요.": "No snap point selected. Click a line, point, or circle in the drawing."
-    ,"목표 위치 (mm)": "Target position (mm)"
-    ,"선택점 이동": "Move selected point"
-    ,"선택한 스냅점 없음": "No snap point selected. Click a line, point, or circle in the drawing."
-    ,"목표 X": "X"
-    ,"목표 Y": "Y"
-    ,"목표 Z": "Z"
-    ,"CAD 선택점 목표 X": "CAD selected point target X"
-    ,"CAD 선택점 목표 Y": "CAD selected point target Y"
-    ,"CAD 선택점 목표 Z": "CAD selected point target Z"
-    ,"CAD 위치 입력 단위": "Target position (mm)"
-    ,"선택점을 이 위치로 이동": "Move point to this position"
-    ,"선택한 CAD 스냅점 · {type} · X {x}, Y {y}, Z {z} mm": "Selected CAD snap point · {type} · X {x}, Y {y}, Z {z} mm"
-    ,"먼저 도면의 선이나 점을 클릭하세요.": "Click a line or point in the drawing first."
-    ,"목표 X, Y, Z를 모두 입력하세요.": "Enter target X, Y, and Z values."
-    ,"CAD 선택점이 이미 목표 위치에 있습니다.": "The CAD selected point is already at the target position."
-    ,"CAD 선택점을 목표 위치로 이동했습니다.": "The CAD selected point was moved to the target position."
-    ,"Wobj 대상 로봇": "Wobj target robot"
-    ,"Wobj 목록": "Wobj list"
-    ,"Wobj 선택": "Wobj selection"
-    ,"Wobj 설정": "Wobj settings"
-    ,"Wobj 설정 표시/숨기기": "Show/hide Wobj settings"
-    ,"Wobj 이름": "Wobj name"
-    ,"Wobj 초기화": "Reset Wobj"
-    ,"Wobj는 로봇별로 저장됩니다.": "Wobjs are saved per robot."
-    ,"Wobj 입력값을 확인하세요.": "Check the Wobj values."
-    ,"Wobj를 적용했습니다.": "Wobj applied."
-    ,"Wobj를 초기화했습니다.": "Wobj was reset."
-    ,"현재 TCP로 등록": "Register from current TCP"
-    ,"현재 TCP로 Wobj 등록": "Register Wobj from current TCP"
-    ,"3D 표시": "Show in 3D"
-    ,"위치로 이동": "Go to position"
-    ,"정의됨": "Defined"
-    ,"미설정": "Undefined"
-    ,"활성 좌표계": "Active coordinate system"
-    ,"좌표 기준 로봇": "Coordinate robot"
-    ,"좌표 기준 Wobj": "Coordinate Wobj"
-    ,"Wobj 저장 안내": "Wobjs are saved per robot."
-    ,"선택 Wobj 간섭영역 안내": "Set the interference zone relative to TCP in the selected Wobj coordinate system."
-    ,"선택한 Wobj 좌표계에서 TCP 기준으로 간섭영역을 설정합니다.": "Set the interference zone relative to TCP in the selected Wobj coordinate system."
+    "컨트롤러 TCP 감지 범위 설정 가져오기": "Import controller TCP detection range settings",
+    "Test": "Test",
+    "POSITION POINT": "POSITION POINT",
+    "SAVED VIEWS": "SAVED VIEWS",
+    "INTERFERENCE ZONE": "INTERFERENCE ZONE",
+    "Inside": "Inside",
+    "Outside": "Outside",
+    "YES": "YES",
+    "NO": "NO",
+    "-1: OFF": "-1: OFF",
+    "X · Y · Z": "X · Y · Z",
+    "RZ · RY · RX": "RZ · RY · RX",
+    "{name} · labels In {input} / Out {output} · Remote IO: {mapped}/{total} mapped": "{name} · input labels {input} / output labels {output} · Remote IO: {mapped}/{total} mapped",
+    "{name}: {progress}%": "{name}: {progress}%",
+    "PART": "PART",
+    "Part {index}": "Part {index}",
+    "Point {point}": "Point {point}",
+    "3D 모델 파일은 최대 {limit}까지 불러올 수 있습니다. 선택한 파일: {size}": "3D model files can be loaded up to {limit}. Selected file: {size}",
+    "3D 파일을 불러오지 못했습니다. {message}": "Could not load the 3D file. {message}",
+    "3D 파일을 불러오지 못했습니다. {message}\n\n외부 파일을 참조하는 GLTF는 GLB로 변환해서 사용해 주세요.": "Could not load the 3D file. {message}\n\nConvert GLTF files that reference external files to GLB before using them.",
+    "STEP 파일을 불러오지 못했습니다. {message}\n\n파일이 매우 크거나 형상이 복잡한 경우 CAD에서 불필요한 부품을 제거하거나 GLB/STL로 내보낸 뒤 다시 시도해 주세요.": "Could not load the STEP file. {message}\n\nIf the file is very large or its geometry is complex, remove unnecessary parts in CAD or export it as GLB/STL and try again.",
+    "테스트용 모델링을 적용하시겠습니까? TCP 1번은 Test 값으로 덮어쓰기됩니다.": "Apply the test model? TCP 1 will be overwritten with the Test value.",
+    "실제 컨트롤러에서 Tool 설정 가져오기": "Import Tool settings from the real controller",
+    "실제 컨트롤러에서 설정 가져오기": "Import settings from the real controller",
+    "간섭영역 설정을 가져오지 못했습니다.": "Could not import interference-zone settings.",
+    "TCP 감지 범위 설정을 가져오지 못했습니다.": "Could not import TCP detection-range settings.",
+    "선택된 면의 스냅 후보를 가리켜 주세요.": "Point to a snap candidate on the selected face.",
+    "읽는 중": "Reading",
+    "가져오기": "Import",
+    "브리지 인증 토큰을 확인할 수 없습니다.": "Could not verify the bridge authentication token.",
+    "브리지 인증 설정이 없어 연결할 수 없습니다. 운영 Origin과 토큰을 설정해 주세요.": "Cannot connect because bridge authentication is not configured. Set the production Origin and token.",
+    "충돌이 감지되어 OLP 모션을 정지했습니다.": "A collision was detected, so OLP motion was stopped.",
+    "Files in {name} may be overwritten. Continue?": "Files in {name} may be overwritten. Continue?",
+    "Unsaved OLP edits will be discarded. Continue?": "Unsaved OLP edits will be discarded. Continue?",
+    "Waiting for pending NWait motions": "Waiting for pending NWait motions",
+    "Load a robot project folder before moving to Work Origin.": "Load a robot project folder before moving to Work Origin.",
+    "OLP resumed.": "OLP resumed.",
+    "Stop OLP before moving to Work Origin.": "Stop OLP before moving to Work Origin.",
+    "Work Origin is unavailable while a controller is connected.": "Work Origin is unavailable while a controller is connected.",
+    "TCP RX (deg)": "TCP RX (deg)",
+    "TCP RY (deg)": "TCP RY (deg)",
+    "TCP RZ (deg)": "TCP RZ (deg)",
+    "Work origin": "Work origin",
+    "Move robot to Work Origin 0": "Move robot to Work Origin 0",
+    "자동 경로 생성": "Automatic path",
+    "시작 위치": "Start position",
+    "목표 위치": "Target position",
+    "시작·목표 이동 포인트 선택 안내": "Select the start and target motion points to add a detour between the two commands. MOVJ/MOVL is selected automatically from collision results. Existing motion points between them are used as avoidance hints.",
+    "시작·목표 이동 포인트를 선택하면 두 명령 사이에 우회 경로가 추가됩니다.": "Select the start and target motion points to add a detour between the two commands.",
+    "시작 위치와 목표 위치를 선택한 후 경로 생성 버튼을 누르세요.": "Select a start and target position, then click Generate path.",
+    "자동 경로 생성에는 이동 포인트 2개가 필요합니다.": "Automatic path generation requires two motion points.",
+    "시작 위치와 목표 위치는 서로 다른 이동 포인트여야 합니다.": "The start and target positions must be different motion points.",
+    "시작 포인트는 목표 포인트보다 프로그램 앞에 있어야 합니다.": "The start point must appear before the target point in the program.",
+    "선택한 시작 포인트의 관절 데이터를 읽을 수 없습니다.": "The selected start point's joint data could not be read.",
+    "선택한 목표 포인트의 관절 데이터를 읽을 수 없습니다.": "The selected target point's joint data could not be read.",
+    "선택한 시작 포인트의 관절 제한을 벗어났습니다.": "The selected start point is outside the joint limits.",
+    "선택한 목표 포인트의 관절 제한을 벗어났습니다.": "The selected target point is outside the joint limits.",
+    "선택한 시작 포인트의 자세가 충돌 상태입니다.": "The selected start point is in collision.",
+    "선택한 목표 포인트의 자세가 충돌 상태입니다.": "The selected target point is in collision.",
+    "시작 포인트와 목표 포인트를 다시 선택하세요.": "Select the start and target points again.",
+    "선택한 목표 포인트 검사 중": "Checking the selected target point",
+    "경로 생성 완료 · {count}개 우회 포인트 ({motion})": "Path generated · {count} detour points ({motion})",
+    "경로 생성 완료 · {count}개 우회 포인트 ({motion}) · TCP 자세 유지": "Path generated · {count} detour points ({motion}) · TCP orientation preserved",
+    "충돌 검사 결과 {motion} 경로로 결정되었습니다. 경로 적용을 눌러 목표 명령을 변경하세요.": "Collision checking selected {motion}. Apply the path to update the target command.",
+    "현재 TCP 기준으로 포인트를 보정했습니다. 경로 적용을 누르세요.": "The points were corrected to the current TCP. Apply the path to continue.",
+    "TCP 자세 유지에 맞춰 목표 포인트를 갱신합니다. 경로 적용을 누르세요.": "The target point will be updated to preserve TCP orientation. Apply the path to continue.",
+    "TCP 자세를 유지한 목표 위치의 안전한 관절 자세를 찾지 못했습니다.": "No safe joint posture was found at the target while preserving TCP orientation.",
+    "TCP 자세 유지 목표 포인트를 준비하지 못했습니다.": "The TCP-orientation-preserving target point could not be prepared.",
+    "TCP 자세 유지 목표 포인트를 저장하지 못했습니다.": "The TCP-orientation-preserving target point could not be saved.",
+    "TCP 자세를 유지하도록 목표 포인트를 갱신했습니다.": "The target point was updated to preserve TCP orientation.",
+    "현재 TCP 기준으로 포인트를 동기화했습니다.": "The points were synchronized to the current TCP.",
+    "두 포인트 사이에 추가할 우회 포인트가 없습니다.": "No detour points are needed between the two points.",
+    "BASE 좌표계 · mm": "BASE coordinates · mm",
+    "현재 TCP 자세 유지": "Keep current TCP orientation",
+    "경로 설정을 바꿨습니다. 경로 생성 버튼을 눌러 다시 계산하세요.": "Path settings changed. Generate the path again to recalculate it.",
+    "TCP 자세 유지 경로를 찾지 못했습니다. 이동 방식을 MOVL 또는 자동으로 설정하거나 TCP 자세 유지를 해제하세요.": "No TCP-orientation-preserving path was found. Use MOVL or Automatic, or turn off TCP orientation hold.",
+    "목표 포인트로 이어지는 최종 접근 경로가 안전하지 않습니다.": "The final approach to the target point is not safe.",
+    "자세 직접 입력": "Enter orientation directly",
+    "이동 방식": "Motion type",
+    "자동": "Automatic",
+    "속도": "Speed",
+    "최대 포인트": "Maximum points",
+    "최대 계산 시간 (초)": "Maximum calculation time (s)",
+    "포인트 삽입 위치": "Point insertion",
+    "경로 생성": "Generate path",
+    "경로 다시 계산": "Recalculate path",
+    "경로 적용": "Apply path",
+    "경로 취소": "Cancel path",
+    "현재 TCP 위치를 기준으로 타겟을 입력하세요.": "Enter a target based on the current TCP position.",
+    "직선 경로 검사 중": "Checking straight path",
+    "사용자 회피 포인트 검사 중": "Checking user avoidance points",
+    "최초 간섭점 6방향 탈출 검사 중": "Testing six escape directions from the first collision",
+    "최초 간섭점 6방향 탈출 검사 중 ({current}/{total})": "Testing six escape directions from the first collision ({current}/{total})",
+    "목표 위치 분석 중": "Analyzing target position",
+    "목표 IK 계산 중": "Calculating target IK",
+    "우회 경로 탐색 중": "Searching for a detour",
+    "경로 최적화 중": "Optimizing path",
+    "안전 전환 자세 탐색 중": "Finding safe transition poses",
+    "안전 전환 자세 탐색 중 ({current}/{total})": "Finding safe transition poses ({current}/{total})",
+    "전환점 연결 검사 중": "Checking transition connections",
+    "전환점 연결 검사 중 ({nodes} 자세 · {edges} links)": "Checking transition connections ({nodes} poses · {edges} links)",
+    "최종 간섭 검사 중": "Running final collision check",
+    "직선 경로 검사 중 ({current}/{total})": "Checking straight path ({current}/{total})",
+    "우회 경로 탐색 중 ({nodes} nodes · {seconds} s)": "Searching for a detour ({nodes} nodes · {seconds} s)",
+    "자동 우회 경로를 {count}개 포인트로 등록했습니다.": "Registered {count} automatic detour points.",
+    "자동 경로를 {motion}으로 결정하고 {count}개 우회 포인트를 등록했습니다.": "Selected {motion} and registered {count} automatic detour points.",
+    "자동 경로 모션을 {motion}으로 변경했습니다.": "Changed the automatic path motion to {motion}.",
+    "활성 로봇을 선택하세요.": "Select an active robot.",
+    "활성 로봇의 관절과 TCP를 확인하세요.": "Check the active robot joints and TCP.",
+    "충돌 검사 시스템이 준비되지 않았습니다.": "The collision system is not ready.",
+    "현재 로봇 자세가 충돌 상태입니다.": "The current robot pose is in collision.",
+    "타겟 자세가 충돌 상태입니다.": "The target pose is in collision.",
+    "타겟 위치가 3D 모델 내부에 있습니다.": "The target is inside a 3D model.",
+    "직선 MOVL 경로에 간섭이 있어 우회 경로를 MOVL로 만들 수 없습니다. 이동 방식을 자동으로 선택하세요.": "The straight MOVL path is obstructed and cannot be detoured as MOVL. Choose Automatic mode.",
+    "제한 시간 안에 안전한 우회 경로를 찾지 못했습니다.": "No safe detour was found within the time limit.",
+    "경로 계산을 취소했습니다.": "Path calculation was cancelled.",
+    "경로 생성 완료 · {count}개 포인트 ({motion})": "Path generated · {count} points ({motion})",
+    "선택 포인트 뒤": "After selected point",
+    "프로그램 마지막": "End of program",
+    "3D PRIMITIVES": "3D primitives",
+    "3D/CAD 파일 불러오기": "Import 3D/CAD file",
+    "도형": "Shapes",
+    "2D 스케치 치수": "2D sketch dimensions",
+    "2D 스케치 모드 시작": "Start 2D sketch mode",
+    "2D 스케치 모드 종료": "Exit 2D sketch mode",
+    "2D 모드": "2D mode",
+    "2D 종료": "Exit 2D",
+    "2D 스케치": "2D sketch",
+    "평면에서 마우스로 드래그해 사각형을 그리세요.": "Drag on the plane to draw a rectangle.",
+    "스케치 X 치수 (mm)": "Sketch X dimension (mm)",
+    "스케치 Y 치수 (mm)": "Sketch Y dimension (mm)",
+    "Z 높이": "Z height",
+    "생성할 도형 Z 높이 (mm)": "Shape Z height (mm)",
+    "다시 그리기": "Redraw",
+    "2D 모드 종료": "Exit 2D mode",
+    "2D 스케치 도구": "2D sketch tools",
+    "선": "Line",
+    "원": "Circle",
+    "모따기": "Chamfer",
+    "모따기 거리": "Chamfer distance",
+    "모따기 거리 (mm)": "Chamfer distance (mm)",
+    "작업": "Operation",
+    "CAD 작업": "CAD operation",
+    "스케치 작업": "Sketch operation",
+    "절삭 방향": "Cut direction",
+    "스케치 돌출 컷 방향": "Sketch extrude-cut direction",
+    "CAD 돌출 컷 방향": "CAD extrude-cut direction",
+    "기준면에서 +Z": "From base toward +Z",
+    "상단에서 -Z": "From top toward -Z",
+    "CAD 돌출 Z 높이 (mm)": "CAD extrude Z height (mm)",
+    "CAD 레이어 {layer}": "Layer {layer}",
+    "CAD 속성 형식": "Type",
+    "CAD 속성 핸들": "Handle",
+    "CAD 속성 레이어": "Layer",
+    "CAD 속성 경계": "Bounds",
+    "CAD 속성 길이": "Length",
+    "CAD 속성 반지름": "Radius",
+    "CAD 속성 지름": "Diameter",
+    "CAD 속성 꼭짓점": "Vertices",
+    "CAD 속성 닫힘": "Closed",
+    "돌출": "Extrude",
+    "돌출 컷": "Extrude cut",
+    "돌출 생성": "Create extrude",
+    "돌출 컷 실행": "Apply extrude cut",
+    "프로파일 선택": "Select profiles",
+    "선택한 스케치 프로파일 돌출": "Extrude selected sketch profiles",
+    "선택한 스케치 프로파일 돌출 컷": "Cut selected sketch profiles",
+    "돌출할 스케치 항목을 선택하세요.": "Select a sketch profile to extrude.",
+    "돌출할 닫힌 스케치 항목을 선택하세요. Shift 키로 여러 항목을 선택할 수 있습니다.": "Select a closed sketch profile to extrude. Hold Shift to select multiple profiles.",
+    "선택된 {count}개 스케치 항목의 Z 높이를 설정하세요.": "Set the Z height for the {count} selected sketch profile(s).",
+    "선택된 {count}개 스케치 항목의 Z 깊이를 설정하세요.": "Set the Z cut depth for the {count} selected sketch profile(s).",
+    "선택한 프로파일의 Z 높이를 설정한 뒤 돌출을 적용하세요.": "Set the Z height for the selected profiles, then apply the extrusion.",
+    "선택한 프로파일의 Z 높이를 설정한 뒤 돌출 컷을 적용하세요.": "Set the Z height for the selected profile, then apply the extrude cut.",
+    "{count}개 프로파일이 선택되었습니다. Extrude를 눌러 Z 높이를 설정하세요.": "{count} profile(s) selected. Click Extrude to set the Z height.",
+    "{count}개 프로파일이 선택되었습니다. 돌출 컷을 눌러 Z 깊이를 설정하세요.": "{count} profile(s) selected. Click Extrude cut to set the Z cut depth.",
+    "돌출할 닫힌 스케치 항목을 먼저 선택하거나 작성하세요.": "Select or create a closed sketch profile before extruding.",
+    "돌출 컷은 한 개의 스케치 항목만 선택하세요.": "Select one sketch profile for an extrude cut.",
+    "돌출 설정을 취소했습니다. 스케치 편집은 계속됩니다.": "Extrusion setup was cancelled. Sketch editing continues.",
+    "스케치 편집": "Edit Sketch",
+    "피쳐 편집": "Edit Feature",
+    "스케치 적용": "Apply Sketch",
+    "스케치 편집 중입니다. 수정한 뒤 스케치 완료를 누르세요.": "Editing the sketch. Apply the sketch when you finish your changes.",
+    "피쳐 편집 중입니다. Z 높이를 변경한 뒤 적용하세요.": "Editing the feature. Change the Z height and apply the feature.",
+    "기존 스케치 피쳐를 수정했습니다.": "The existing sketch feature was updated.",
+    "스케치 돌출이 적용된 상태로 스케치를 완료했습니다.": "The sketch was completed with the extrusion applied.",
+    "장면에 배치된 스케치 도형만 편집할 수 있습니다.": "Only sketch shapes placed in the scene can be edited.",
+    "스케치 지우기": "Clear sketch",
+    "직경": "Diameter",
+    "길이": "Length",
+    "스케치 요소": "Sketch entities",
+    "스케치 요소 추가": "Add sketch entity",
+    "스케치 요소 이동": "Move sketch entity",
+    "스케치 치수 변경": "Change sketch dimension",
+    "한 축 위치 치수 추가": "Add one-axis position dimension",
+    "한 축 위치 치수 변경": "Change one-axis position dimension",
+    "치수 생성 또는 위치 변경": "Create or move dimension",
+    "DXF 스케치 삽입": "Insert DXF sketch",
+    "스케치 원점 이동": "Move sketch origin",
+    "스케치 원점 초기화": "Reset sketch origin",
+    "스케치 사각형": "Rectangle",
+    "텍스트": "Text",
+    "스케치 텍스트 입력": "Enter sketch text",
+    "텍스트 내용": "Text content",
+    "텍스트를 입력하세요.": "Enter text.",
+    "문자 높이": "Text height",
+    "텍스트 삽입": "Insert text",
+    "텍스트 내용 입력한 뒤 삽입하세요.": "Enter the text content, then insert it.",
+    "텍스트 내용을 입력하세요.": "Enter text content.",
+    "문자 높이는 0.5보다 크고 유효한 숫자여야 합니다.": "Text height must be a valid number greater than or equal to 0.5.",
+    "텍스트 입력을 취소했습니다.": "Text entry was cancelled.",
+    "스케치 텍스트를 추가했습니다.": "Added sketch text.",
+    "스케치 텍스트 추가": "Add sketch text",
+    "Z 컷 깊이": "Z cut depth",
+    "스케치 돌출": "Sketch extrude",
+    "돌출 컷은 먼저 대상 사각형 도형을 선택하세요.": "Select a target box before using extrude cut.",
+    "돌출 컷은 먼저 사각형 도형 또는 단일 스케치 돌출 도형을 선택하세요.": "Select a box or a single sketch-extruded shape before using extrude cut.",
+    "돌출 컷은 사각형 도형에만 적용할 수 있습니다.": "Extrude cut currently supports box shapes only.",
+    "돌출 컷은 사각형 도형 또는 단일 스케치 돌출 도형에만 적용할 수 있습니다.": "Extrude cut supports box shapes and single sketch-extruded shapes.",
+    "돌출 컷 대상은 회전하지 않은 장면 사각형 도형이어야 합니다.": "The extrude-cut target must be an unrotated scene box.",
+    "돌출 컷 대상은 회전하지 않은 장면 도형이어야 합니다.": "The extrude-cut target must be an unrotated scene shape.",
+    "돌출 컷 프로파일은 대상 도형 안에 있어야 하며 컷 깊이는 도형 높이 이하여야 합니다.": "The extrude-cut profile must be inside the target and its depth cannot exceed the target height.",
+    "이미 돌출 컷이 적용된 스케치 도형에는 추가 컷을 적용할 수 없습니다.": "A sketch-extruded shape that already has an extrude cut cannot receive another cut.",
+    "스케치 요소 0개": "0 sketch entities",
+    "스케치 요소를 추가했습니다. 필요하면 다른 도구로 계속 그리세요.": "Sketch entity added. Continue with another tool if needed.",
+    "선택한 스케치 요소를 삭제했습니다.": "Deleted the selected sketch entity.",
+    "마우스를 놓으면 현재 도구의 스케치 요소가 추가됩니다.": "Release the mouse to add the current sketch entity.",
+    "치수 라벨 또는 입력값을 수정하고, 닫힌 프로파일을 돌출하거나 컷하세요.": "Edit a dimension label or input, then extrude or cut a closed profile.",
+    "도구를 선택한 뒤 평면에서 드래그해 스케치 요소를 그리세요.": "Choose a tool, then drag on the plane to draw sketch entities.",
+    "스케치 크기가 너무 작습니다. 다시 드래그하세요.": "The sketch is too small. Drag again.",
+    "선택한 사각형 도형에 스케치 돌출 컷을 적용했습니다.": "Applied the sketch extrude cut to the selected box.",
+    "선택한 도형에 스케치 돌출 컷을 적용했습니다.": "Applied the sketch extrude cut to the selected shape.",
+    "스케치 프로파일을 돌출해 3D 형상을 생성했습니다.": "Created a 3D shape by extruding the sketch profile.",
+    "{tool} 도구를 선택했습니다.": "Selected the {tool} tool.",
+    "{tool} 스케치를 추가했습니다. 필요하면 다른 도구로 계속 그리세요.": "Added a {tool} sketch. Continue with another tool if needed.",
+    "치수 라벨 또는 X/Y 입력값을 클릭해 수정하세요. Z 높이를 입력한 뒤 생성하세요.": "Click a dimension label or X/Y input to edit it. Enter the Z height, then create the shape.",
+    "마우스를 놓으면 사각형이 완성됩니다.": "Release the mouse to finish the rectangle.",
+    "다른 위치 선택 모드를 먼저 종료하세요.": "Exit the other position-selection mode first.",
+    "사각형 스케치를 완성했습니다. 치수와 Z 높이를 입력하세요.": "Rectangle sketch completed. Edit the dimensions and Z height.",
+    "사각형 크기가 너무 작습니다. 다시 드래그하세요.": "The rectangle is too small. Drag again.",
+    "사각형을 다시 그릴 수 있습니다.": "You can draw the rectangle again.",
+    "Z 높이는 0보다 크고 유효한 숫자여야 합니다.": "Z height must be a finite number greater than zero.",
+    "2D 평면뷰입니다. 원하는 위치에서 드래그해 사각형을 그리세요.": "2D top view. Drag from the desired position to draw a rectangle.",
+    "2D 평면뷰입니다. 도구를 선택하고 원하는 위치에서 드래그해 스케치하세요.": "2D top view. Choose a tool and drag from the desired position to sketch.",
+    "2D 스케치 위치에 도형을 생성했습니다.": "Created the shape at the 2D sketch position.",
+    "2D 스케치 모드를 종료했습니다.": "Exited 2D sketch mode.",
+    "뷰 변경": "Change view",
+    "치수 기입": "Dimension",
+    "스냅 켜기": "Snap on",
+    "스냅 끄기": "Snap off",
+    "스케치 치수": "Sketch dimension",
+    "치수 값": "Dimension value",
+    "치수 적용": "Apply dimension",
+    "새 치수": "New dimension",
+    "첫 번째 점을 선택했습니다. 두 번째 점을 선택하세요.": "First point selected. Select the second point.",
+    "두 번째 점을 클릭해 치수를 완성하세요.": "Select the second point to finish the dimension.",
+    "첫 번째 점과 두 번째 점을 클릭해 치수를 입력하세요.": "Select the first and second points to enter a dimension.",
+    "치수 값을 입력하고 적용하세요.": "Enter a dimension value and apply it.",
+    "치수 기입 도구를 선택하세요.": "Select the dimension tool.",
+    "스냅된 첫 번째 점과 두 번째 점을 차례로 클릭해 치수를 기입하세요.": "Select the snapped first and second points in order to add a dimension.",
+    "스냅을 켰습니다.": "Snap enabled.",
+    "스냅을 껐습니다.": "Snap disabled.",
+    "두 점 사이의 거리가 너무 짧습니다. 다시 선택하세요.": "The distance between the points is too short. Select them again.",
+    "두 점 사이의 치수를 입력할 수 있습니다.": "You can enter the dimension between the two points.",
+    "스케치 치수를 적용했습니다.": "Sketch dimension applied.",
+    "선의 길이 치수를 만들었습니다. 값을 입력하면 실제 도형 길이가 변경됩니다.": "A length dimension was created. Enter a value to change the actual geometry length.",
+    "치수 위치를 따라가고 있습니다. 원하는 위치에서 클릭해 고정하세요.": "The dimension is following the cursor. Click to fix its position.",
+    "치수 위치를 고정했습니다. 값을 입력하세요.": "The dimension position is fixed. Enter a value.",
+    "X/Y 위치 치수를 만들었습니다. 값을 입력하면 스냅한 도형 위치가 변경됩니다.": "An X/Y position dimension was created. Enter values to move the snapped geometry.",
+    "X/Y 위치 치수를 적용했습니다. 도형 위치가 변경되었습니다.": "The X/Y position dimension was applied and the geometry was moved.",
+    "두 스냅 지점 사이의 거리가 너무 짧습니다. 다시 선택하세요.": "The distance between the snap points is too short. Select them again.",
+    "첫 번째 스냅 지점을 선택했습니다. X/Y 위치를 정할 두 번째 지점을 선택하세요.": "The first snap point was selected. Select the second point for the X/Y position.",
+    "선 또는 모서리, 또는 스냅 지점을 클릭하세요.": "Click a line or edge, or a snap point.",
+    "선 또는 모서리를 클릭하면 길이 치수를 만들고, 중심점이나 스냅 지점을 차례로 클릭하면 X/Y 위치 치수를 만듭니다.": "Click a line or edge for a length dimension, or click a center and another snap point for an X/Y position dimension.",
+    "두 번째 스냅 지점을 클릭해 X/Y 위치 치수를 완성하세요.": "Select the second snap point to finish the X/Y position dimension.",
+    "선 또는 모서리를 클릭하면 길이 치수, 중심점과 다른 스냅 지점을 차례로 클릭하면 X/Y 위치 치수를 기입하세요.": "Click a line or edge for length, or click a center and another snap point for X/Y position.",
+    "현재 스케치 명령을 취소했습니다. 스케치 편집은 계속됩니다.": "The current sketch command was canceled. Sketch editing continues.",
+    "도면 위치 스냅": "Snap drawing position",
+    "도면 위치 스냅 종료": "Stop drawing position snap",
+    "스냅할 3D 모델의 면 또는 표시된 스냅 점을 클릭하세요.": "Click a face or visible snap point on a 3D model.",
+    "스케치 위치를 스냅할 3D 모델의 면 또는 스냅 점을 클릭하세요.": "Click a face or snap point on a 3D model to place the sketch.",
+    "스케치 도면을 선택한 스냅 위치에 배치했습니다.": "Placed the sketch at the selected snap position.",
+    "스케치 원점을 초기화했습니다.": "Reset the sketch origin.",
+    "왼쪽 드래그로 그립니다. 가운데/오른쪽 드래그와 휠로 뷰를 변경할 수 있습니다.": "Draw with the left drag. Use the middle/right drag or wheel to change the view.",
+    "도형 생성 및 편집": "Shape creation and editing",
+    "도형 패널을 별도 창으로 분리": "Pop out the shape panel",
+    "도형 패널 숨기기": "Hide the shape panel",
+    "새 도형": "New shape",
+    "형상": "Shape",
+    "도형 형상": "Primitive shape",
+    "도형 치수": "Shape dimensions",
+    "치수 표시 방식": "Dimension display mode",
+    "X 치수 (mm)": "X dimension (mm)",
+    "Y 치수 (mm)": "Y dimension (mm)",
+    "Z 치수 (mm)": "Z dimension (mm)",
+    "선택 도형 X 치수 (mm)": "Selected shape X dimension (mm)",
+    "선택 도형 Y 치수 (mm)": "Selected shape Y dimension (mm)",
+    "선택 도형 Z 치수 (mm)": "Selected shape Z dimension (mm)",
+    "암 로드 설정 표시/숨기기": "Show/hide arm load settings",
+    "암 로드 등록": "Register arm load",
+    "치수 측정 패널 표시/숨기기": "Show/hide measurement panel",
+    "암 로드에 부착할 로봇을 먼저 불러와 주세요.": "Load a robot to attach the arm load first.",
+    "모델 표시 설정": "Model display settings",
+    "사각형": "Box",
+    "원뿔형": "Cone",
+    "원통형": "Cylinder",
+    "구": "Sphere",
+    "원통형과 원뿔형은 X/Y 지름이 연결되고 구는 세 축이 연결됩니다.": "Cylinder and cone X/Y diameters are linked; a sphere links all three axes.",
+    "도형 생성": "Create shape",
+    "선택 도형": "Selected shape",
+    "이름": "Name",
+    "사각형은 X/Y/Z를 독립적으로 설정합니다.": "Box X/Y/Z dimensions are independent.",
+    "원통형과 원뿔형은 X/Y 지름이 연결됩니다.": "Cylinder and cone X/Y diameters are linked.",
+    "구는 X/Y/Z가 연결됩니다.": "Sphere X/Y/Z dimensions are linked.",
+    "치수 라벨을 클릭하면 장면에서 바로 편집할 수 있습니다.": "Click a dimension label to edit it directly in the scene.",
+    "도형 치수는 0보다 크고 유효한 숫자여야 합니다.": "Shape dimensions must be finite numbers greater than zero.",
+    "도형이 생성되었습니다.": "Shape created.",
+    "도형 치수가 적용되었습니다.": "Shape dimensions applied.",
+    "도형의 크기는 도형 패널 또는 치수 라벨에서 변경하세요.": "Change shape size in the shape panel or dimension labels.",
+    "SHAPE POSITION / BASE": "SHAPE POSITION / BASE",
+    "SHAPE ROTATION / BASE": "SHAPE ROTATION / BASE",
+    "도형 Base JOG": "Shape Base JOG",
+    "도형 치수 변경": "Shape dimensions changed",
+    "도형 생성 및 편집 표시/숨기기": "Show/hide shape creation and editing",
+    "협업": "Collaboration",
+    "협업 안내": "Share the room code so up to four computers can control different robots at the same time.",
+    "참여자 목록 없음": "Participants appear after joining a room.",
+    "로봇 선택 안내": "Select a robot after joining a room.",
+    "4인 협업": "Four-person collaboration",
+    "4인 협업 시뮬레이션": "Four-person 3D Simulation collaboration",
+    "4인 협업 패널을 별도 창으로 분리": "Pop out the collaboration panel",
+    "4인 협업 패널 숨기기": "Hide the collaboration panel",
+    "4인 협업 표시/숨김": "Show/hide four-person collaboration",
+    "방 코드를 공유하면 최대 4대의 컴퓨터에서 서로 다른 로봇을 동시에 제어할 수 있습니다.": "Share the room code so up to four computers can control different robots at the same time.",
+    "사용자 이름": "User name",
+    "예: PC A": "Example: PC A",
+    "방 만들기": "Create room",
+    "방 나가기": "Leave room",
+    "방 코드": "Room code",
+    "4자리 코드": "4-digit code",
+    "참여": "Join",
+    "현재 방": "Current room",
+    "방 코드 복사": "Copy room code",
+    "연결되지 않음": "Not connected",
+    "협업 서버 연결 중": "Connecting to collaboration server",
+    "협업 연결됨": "Collaboration connected",
+    "협업 서버 재연결 중": "Reconnecting to collaboration server",
+    "협업 연결 오류": "Collaboration connection error",
+    "참여자": "Participants",
+    "로봇 제어권": "Robot control",
+    "방에 참여하면 표시됩니다.": "Participants appear after joining a room.",
+    "방에 참여하면 로봇을 선택할 수 있습니다.": "Select a robot after joining a room.",
+    "시뮬레이션에 로봇이 없습니다.": "There are no robots in the simulation.",
+    "호스트": "Host",
+    "나": "Me",
+    "연결 끊김": "Disconnected",
+    "내가 제어 중": "Controlled by me",
+    "제어 중": "controlling",
+    "제어 가능": "Available",
+    "점유": "Claim",
+    "해제": "Release",
+    "사용 중": "In use",
+    "방 코드를 찾을 수 없습니다.": "Room code not found.",
+    "협업 방은 최대 4명까지 참여할 수 있습니다.": "A collaboration room supports up to four participants.",
+    "다른 사용자가 제어 중인 로봇입니다.": "This robot is controlled by another participant.",
+    "한 사용자는 한 대의 로봇만 점유할 수 있습니다.": "Each participant can claim only one robot.",
+    "점유하지 않은 로봇은 조작할 수 없습니다.": "You cannot control a robot you have not claimed.",
+    "협업 세션이 만료되었습니다. 방에 다시 참여해 주세요.": "The collaboration session expired. Join the room again.",
+    "공유할 작업이 너무 큽니다. 업로드 모델을 제외하고 다시 시도해 주세요.": "The shared workspace is too large. Remove uploaded models and try again.",
+    "협업 방에 연결되어 있지 않습니다.": "You are not connected to a collaboration room.",
+    "협업 방 인증 정보가 올바르지 않습니다.": "The collaboration room credentials are invalid.",
+    "협업 요청을 처리하지 못했습니다.": "The collaboration request could not be completed.",
+    "협업 메시지가 너무 큽니다.": "The collaboration message is too large.",
+    "방 코드를 복사했습니다.": "Room code copied.",
+    "방 코드 복사에 실패했습니다.": "Could not copy the room code.",
+    "방 코드는 숫자로 된 4자리 코드여야 합니다.": "The room code must be four digits.",
+    "협업 서버 주소가 올바르지 않습니다.": "The collaboration server address is invalid.",
+    "협업 서버에 연결할 수 없습니다.": "Could not connect to the collaboration server.",
+    "협업 작업 스냅샷을 불러오지 못했습니다.": "The collaboration workspace snapshot could not be loaded.",
+    "먼저 협업 패널에서 제어할 로봇을 점유하세요.": "Claim a robot in the collaboration panel first.",
+    "부하 정보": "Load information",
+    "Tool 부하 정보": "Tool load information",
+    "선택한 Tool": "Selected Tool",
+    "부하 계산 방식": "Load calculation method",
+    "부품·재질로 계산": "Calculate from parts/materials",
+    "질량 직접 입력": "Enter mass directly",
+    "각 부품의 재질과 밀도를 입력하면 부하 값이 실시간으로 계산됩니다.": "Enter each part's material and density to calculate the load values in real time.",
+    "여러 부품 또는 여러 재질을 하나의 모델로 불러온 경우 총 질량을 직접 입력합니다. 형상의 무게중심과 균일 밀도 기준 관성모멘트를 질량에 맞춰 계산합니다.": "When multiple parts or materials are imported as one model, enter the total mass directly. The geometric center of gravity and uniform-density inertia are scaled to that mass.",
+    "툴 총 질량": "Total Tool mass",
+    "실시간 부하 정보": "Live load information",
+    "Tool 좌표계 기준": "Tool coordinate system",
+    "부하 계산 결과": "Load calculation result",
+    "무게중심 (Tool 원점 기준)": "Center of gravity (Tool origin)",
+    "Tool 원점 기준 관성모멘트": "Inertia about Tool origin",
+    "부하중심 기준 관성모멘트": "Inertia about center of load",
+    "재질": "Material",
+    "밀도": "Density",
+    "계산할 수 있는 닫힌 형상이 없습니다.": "The Tool has no closed solid that can be calculated.",
+    "입력한 질량을 기준으로 형상에 맞춰 계산되었습니다.": "Calculated from the entered mass and the model shape.",
+    "재질 입력값을 기준으로 계산되었습니다.": "Calculated from the entered material values.",
+    "툴 총 질량은 0보다 커야 합니다.": "Total Tool mass must be greater than zero.",
+    "Tool 부하 정보를 별도 창으로 분리": "Pop out Tool load information",
+    "Tool 부하 정보 숨기기": "Hide Tool load information",
+    "재질을 선택하면 값을 계산합니다.": "Select a material to calculate the values.",
+    "Tool 설치": "Tool installation",
+    "Tool 설치 로봇 선택": "Select a robot for Tool installation",
+    "선택한 모델을 Tool로 설치할 로봇을 선택하세요.": "Select the robot that will receive the selected model as a Tool.",
+    "설치할 모델": "Model to install",
+    "설치할 로봇": "Robot to install on",
+    "Tool에 설치": "Install as Tool",
+    "Tool 해제": "Tool release",
+    "Tool에서 해제": "Detach Tool",
+    "Tool을 설치할 로봇을 먼저 불러와 주세요.": "Load a robot before installing a Tool.",
+    "선택한 로봇의 Tool 장착 위치를 찾을 수 없습니다.": "The selected robot's Tool mount could not be found.",
+    "Tool을 설치할 로봇을 찾을 수 없습니다.": "The robot for Tool installation could not be found.",
+    "선택한 {name}을(를) Tool로 설치할 로봇을 선택하세요.": "Select the robot that will receive {name} as a Tool.",
+    "Tool을 로봇 TCP에 설치했습니다.": "Installed the Tool on the robot TCP.",
+    "Tool 설치에 실패했습니다.": "Could not install the Tool.",
+    "Tool을 해제하고 일반 모델로 되돌렸습니다.": "Detached the Tool and returned it to a regular model.",
+    "그립 오브젝트": "Grip object",
+    "그립 오브젝트로 사용": "Use as grip object",
+    "그립 오브젝트 사용 해제": "Release grip object",
+    "그립 오브젝트 사용": "Grip object use",
+    "그립 오브젝트 해제": "Grip object release",
+    "그립 사용": "Grip use",
+    "그립 해제": "Grip release",
+    "그립 오브젝트 사용 명령 추가": "Add grip object use command",
+    "그립 오브젝트 해제 명령 추가": "Add grip object release command",
+    "사용할 오브젝트": "Object to use",
+    "오브젝트를 선택하세요": "Select an object",
+    "그립 오브젝트를 선택하세요.": "Select a grip object.",
+    "선택한 오브젝트는 이미 사용 중입니다.": "The selected object is already in use.",
+    "그립 오브젝트를 사용할 로봇을 먼저 불러와 주세요.": "Load a robot before using a grip object.",
+    "선택한 모델은 그립 오브젝트로 사용할 수 없습니다.": "The selected model cannot be used as a grip object.",
+    "그립 오브젝트를 사용했습니다.": "Used the grip object.",
+    "그립 오브젝트를 해제했습니다.": "Released the grip object.",
+    "그립 오브젝트 대상 변경": "Changed the grip object target",
+    "그립 오브젝트 명령 추가": "Added a grip object command",
+    "그립 오브젝트 명령 대상이 없습니다.": "The grip object command target is unavailable.",
+    "그립 오브젝트 사용에 실패했습니다.": "Could not use the grip object.",
+    "물건 잡기 대상": "Pick-up target",
+    "물건 잡기": "Pick up",
+    "놓기": "Release",
+    "물건 잡기 명령 추가": "Add pick-up command",
+    "놓기 명령 추가": "Add release command",
+    "물건 잡기/놓기 명령 추가": "Add pick-up/release command",
+    "물건 잡기/놓기 명령 대상이 없습니다.": "The pick-up/release command target is unavailable.",
+    "물건 잡기 대상 변경": "Changed the pick-up target",
+    "물건 잡기 대상 불러오기": "Load pick-up target",
+    "물건 잡기 대상을 선택하세요.": "Select a pick-up target.",
+    "물건 잡기 대상을 사용할 로봇을 먼저 불러와 주세요.": "Load a robot before using a pick-up target.",
+    "물건 잡기에 실패했습니다.": "Could not pick up the object.",
+    "물건 잡기 대상을 찾을 수 없습니다.": "The pick-up target could not be found.",
+    "물건 잡기 대상을 사용할 수 없습니다.": "The pick-up target cannot be used.",
+    "물건 잡기/놓기 명령을 실행할 수 없습니다.": "Could not execute the pick-up/release command.",
+    "물건을 잡았습니다.": "Picked up the object.",
+    "물건을 놓았습니다.": "Released the object.",
+    "TCP 경로 선": "TCP Path",
+    "TCP 경로 선 표시": "Show TCP path",
+    "TCP 경로 선 숨기기": "Hide TCP path",
+    "로봇 간섭 회피": "Robot interference avoidance",
+    "로봇 간섭 회피 활성화": "Enable robot interference avoidance",
+    "로봇 간섭 회피 비활성화": "Disable robot interference avoidance",
+    "간섭 회피 우선 로봇": "Priority robot for interference avoidance",
+    "우선 로봇 없음": "No priority robot",
+    "우선: {name}": "Priority: {name}",
+    "로봇 간섭 회피 대기 중": "Waiting for robot interference avoidance",
+    "2D CAD 파일 가져오기": "Import 2D CAD file",
+    "파일을 선택하세요.": "Select a file.",
+    "2D CAD 가져오기": "Import 2D CAD",
+    "3D/CAD 가져오기": "Import 3D/CAD",
+    "DXF의 LINE, ARC, CIRCLE, POLYLINE을 읽어 평면에 표시합니다.": "Reads LINE, ARC, CIRCLE, and POLYLINE from DXF and displays them on the plane.",
+    "DXF의 블록과 LINE ARC CIRCLE POLYLINE을 전개해 평면에 표시하며 스플라인은 지원하지 않습니다": "Expands blocks and LINE, ARC, CIRCLE, POLYLINE, TEXT, and MTEXT from DXF and displays them on the plane. Splines are not supported.",
+    "대형 DXF 도면 · {count}개 요소는 캔버스에서 선택하세요.": "Large DXF drawing · Select its {count} elements on the canvas.",
+    "DWG는 로컬 CAD 변환 브리지가 실행 중일 때 가져올 수 있습니다.": "DWG import requires a running local CAD conversion bridge.",
+    "CAD 가져오는 중": "Importing CAD",
+    "CAD 도면에 표시 가능한 엔티티가 없습니다.": "The CAD drawing has no visible entities.",
+    "DXF 파일을 해석하지 못했습니다.": "The DXF file could not be parsed.",
+    "Binary DXF는 현재 지원하지 않습니다. ASCII DXF로 저장해 주세요.": "Binary DXF is not supported. Save the file as ASCII DXF.",
+    "DWG 변환기를 찾을 수 없습니다. 로컬 CAD 변환 브리지를 실행한 뒤 다시 시도해 주세요.": "The DWG converter is unavailable. Start the local CAD conversion bridge and try again.",
+    "DWG 변환 브리지가 해당 파일을 지원하지 않거나 올바른 CAD2D 문서를 반환하지 않았습니다.": "The DWG bridge does not support this file or did not return a valid CAD2D document.",
+    "CAD 도면": "CAD drawing",
+    "2D CAD 도면": "2D CAD drawing",
+    "도면의 선, 원, 호 또는 닫힌 폴리라인을 클릭하세요.": "Click a line, circle, arc, or closed polyline in the drawing.",
+    "선택 프로파일 돌출": "Extrude selected profile",
+    "닫힌 프로파일 선택": "Select a closed profile",
+    "CAD 프로파일을 먼저 선택하세요.": "Select a CAD profile first.",
+    "CAD 돌출 컷은 먼저 대상 사각형 도형과 직사각형/원 프로파일을 선택하세요.": "Select a target box and a rectangular or circular profile before using CAD extrude cut.",
+    "CAD 돌출": "CAD extrude",
+    "CAD 프로파일 돌출 컷을 적용했습니다.": "Applied the CAD profile extrude cut.",
+    "선택한 CAD 면을 돌출했습니다.": "Extruded the selected CAD face.",
+    "선택한 CAD 프로파일을 돌출했습니다.": "Extruded the selected CAD profile.",
+    "CAD 도면 불러오기 완료 · {count}개 엔티티": "CAD drawing imported · {count} entities",
+    "도면 단위": "Drawing units",
+    "자동 (DXF INSUNITS)": "Automatic (DXF INSUNITS)",
+    "알 수 없는 단위는 mm로 해석됩니다.": "Unknown units are interpreted as mm.",
+    "도면 중심을 원점에 배치": "Place drawing center at the origin",
+    "화면 맞춤": "Fit view",
+    "상부 보기": "Top view",
+    "도면 표시": "Show drawing",
+    "레이어": "Layers",
+    "선택 엔티티": "Selected entity",
+    "돌출 Z": "Extrude Z",
+    "CAD unit note": "Unknown units are interpreted as mm.",
+    "CAD drawing selection note": "Import a CAD drawing to see entity selection details.",
+    "CAD drawing summary": "{fileName} · {entityCount} entities · {layerCount} layers · {sourceUnit} → mm",
+    "CAD 면 선택 안내": "Click a closed face in the drawing. Inner holes are preserved when extruded.",
+    "도면의 닫힌 면을 클릭하세요. 내부 구멍은 돌출 시 유지됩니다.": "Click a closed face in the drawing. Inner holes are preserved when extruded.",
+    "선택 면 돌출": "Extrude selected face",
+    "닫힌 면 선택": "Select a closed face",
+    "CAD selected face summary": "{count} selected · face · {type} · {holes} hole(s)",
+    "CAD 선택 면": "Selected CAD face",
+    "CAD 프로파일 면": "Face",
+    "CAD 내부 구멍": "Inner holes",
+    "구멍이 있는 CAD 면은 돌출 컷이 아니라 돌출 작업으로 생성하세요.": "Use the extrude operation for a CAD face with holes, not extrude cut.",
+    "CAD selected entity summary": "{count} selected · {type} · handle {handle}{closed}",
+    "CAD closed profile": " · closed profile",
+    "도면 기준점 변경": "Change drawing base point",
+    "도면 기준점": "Drawing base point",
+    "도면 기준점 및 배치": "Drawing base point and placement",
+    "도면 기준점 안내": "Click a line, point, or circle in the drawing to automatically select the nearest snap point.",
+    "도면 기준점 스냅 유형": "Drawing base point snap type",
+    "스냅 기준": "Snap reference",
+    "기준점 스냅 시작": "Start base point snap",
+    "기준점 스냅 종료": "Exit base point snap",
+    "기준점 초기화": "Reset base point",
+    "기준점 오프셋 초기화": "Reset base point offset",
+    "기준점 스냅 안내": "Click a line, point, or circle in the drawing. Snapping is always on.",
+    "도면의 스냅 점을 선택하세요.": "Select a snap point on the drawing.",
+    "현재 기준점 오프셋 · X {x}, Y {y}, Z {z} mm": "Current base point offset · X {x}, Y {y}, Z {z} mm",
+    "선택 가능한 CAD 스냅 지점을 가리켜 주세요.": "Point to an available CAD snap point.",
+    "CAD 기준점을 스냅했습니다.": "The CAD base point was snapped.",
+    "도면 기준점을 초기화했습니다.": "The drawing base point was reset.",
+    "스냅한 점을 CAD 도면의 새 기준점으로 지정합니다. 도면 형상은 현재 화면 위치를 유지합니다.": "Set a snapped point as the new CAD drawing base point. The drawing geometry stays in its current screen position.",
+    "기준점 스냅을 시작한 뒤 도면의 점을 선택하세요.": "Start base point snap, then select a point on the drawing.",
+    "도면의 선·점·원 등을 클릭하면 가장 가까운 스냅점이 자동으로 선택됩니다.": "Click a line, point, or circle in the drawing to automatically select the nearest snap point.",
+    "도면의 선·점·원 등을 클릭하세요. 스냅은 기본으로 적용됩니다.": "Click a line, point, or circle in the drawing. Snapping is always on.",
+    "선택한 스냅점이 없습니다. 도면의 선·점·원 등을 클릭하세요.": "No snap point selected. Click a line, point, or circle in the drawing.",
+    "목표 위치 (mm)": "Target position (mm)",
+    "선택점 이동": "Move selected point",
+    "선택한 스냅점 없음": "No snap point selected. Click a line, point, or circle in the drawing.",
+    "목표 X": "X",
+    "목표 Y": "Y",
+    "목표 Z": "Z",
+    "CAD 선택점 목표 X": "CAD selected point target X",
+    "CAD 선택점 목표 Y": "CAD selected point target Y",
+    "CAD 선택점 목표 Z": "CAD selected point target Z",
+    "CAD 위치 입력 단위": "Target position (mm)",
+    "선택점을 이 위치로 이동": "Move point to this position",
+    "선택한 CAD 스냅점 · {type} · X {x}, Y {y}, Z {z} mm": "Selected CAD snap point · {type} · X {x}, Y {y}, Z {z} mm",
+    "먼저 도면의 선이나 점을 클릭하세요.": "Click a line or point in the drawing first.",
+    "목표 X, Y, Z를 모두 입력하세요.": "Enter target X, Y, and Z values.",
+    "CAD 선택점이 이미 목표 위치에 있습니다.": "The CAD selected point is already at the target position.",
+    "CAD 선택점을 목표 위치로 이동했습니다.": "The CAD selected point was moved to the target position.",
+    "Wobj 대상 로봇": "Wobj target robot",
+    "Wobj 목록": "Wobj list",
+    "Wobj 선택": "Wobj selection",
+    "Wobj 설정": "Wobj settings",
+    "Wobj 설정 표시/숨기기": "Show/hide Wobj settings",
+    "Wobj 이름": "Wobj name",
+    "Wobj 초기화": "Reset Wobj",
+    "Wobj는 로봇별로 저장됩니다.": "Wobjs are saved per robot.",
+    "Wobj 입력값을 확인하세요.": "Check the Wobj values.",
+    "Wobj를 적용했습니다.": "Wobj applied.",
+    "Wobj를 초기화했습니다.": "Wobj was reset.",
+    "현재 TCP로 등록": "Register from current TCP",
+    "현재 TCP로 Wobj 등록": "Register Wobj from current TCP",
+    "3D 표시": "Show in 3D",
+    "위치로 이동": "Go to position",
+    "정의됨": "Defined",
+    "미설정": "Undefined",
+    "활성 좌표계": "Active coordinate system",
+    "좌표 기준 로봇": "Coordinate robot",
+    "좌표 기준 Wobj": "Coordinate Wobj",
+    "Wobj 저장 안내": "Wobjs are saved per robot.",
+    "선택 Wobj 간섭영역 안내": "Set the interference zone relative to TCP in the selected Wobj coordinate system.",
+    "선택한 Wobj 좌표계에서 TCP 기준으로 간섭영역을 설정합니다.": "Set the interference zone relative to TCP in the selected Wobj coordinate system.",
+    "스케치 모드에서는 메인 뷰를 회전할 수 없습니다. 고정 뷰 창을 사용하세요.": "The main view cannot be rotated in sketch mode. Use a fixed view window.",
+    "CAD 면을 먼저 선택하세요.": "CAD Select the side first.",
+    "텍스트 내용을 입력한 뒤 삽입하세요.": "Enter the text and insert it.",
+    "치수 방향과 위치를 정한 뒤 클릭하면 치수를 고정하고 값을 입력할 수 있습니다.": "After determining the direction and position of the dimension, click to fix the dimension and enter the value.",
+    "현재 방향의 치수 거리가 너무 짧습니다. 수평 또는 수직 방향을 바꿔 다시 위치를 정하세요.": "The dimension distance in the current direction is too short. Reposition it by changing the horizontal or vertical direction.",
+    "선 투영점": "line projection point",
+    "선과 스냅 지점 사이의 X 또는 Y 축 거리가 너무 짧습니다. 다시 선택하세요.": "The X or Y axis distance between the line and the snap point is too short. Please select again.",
+    "선과 스냅점 사이 수평 치수의 위치를 정한 뒤 클릭하면 값을 입력할 수 있습니다.": "You can enter a value by determining the position of the horizontal dimension between the line and the snap point and then clicking.",
+    "선과 스냅점 사이 수직 치수의 위치를 정한 뒤 클릭하면 값을 입력할 수 있습니다.": "After determining the position of the vertical dimension between the line and the snap point, you can click to enter the value.",
+    "기존 치수 값을 입력하세요.": "Enter existing dimension values.",
+    "다음 선의 끝점을 클릭하세요. Shift를 누르면 계속 연결합니다.": "Click the endpoint of the next line. Press Shift to continue connecting.",
+    "{tool} 스케치를 추가했습니다. 다음 도형을 클릭하세요. Shift를 누르면 계속 생성합니다.": "Added {tool} sketch. Click the following shape. Press Shift to continue creating.",
+    "선택 영역에 포함된 스케치 요소가 없습니다.": "The selection contains no sketch elements.",
+    "스케치 요소를 이동했습니다.": "Sketch elements have been moved.",
+    "스케치 요소를 선택했습니다.": "You have selected a sketch entity.",
+    "스케치를 지웠습니다. 도구를 선택해 다시 그리세요.": "I deleted the sketch. Select a tool to redraw.",
+    "스케치 요소를 먼저 작성하세요.": "Create sketch elements first.",
+    "이동 치수는 유효한 숫자여야 합니다.": "The move dimension must be a valid number.",
+    "로봇 바디 중심점 또는 TCP 점을 가리켜 주세요.": "Please point to the robot body center point or point TCP.",
+    "모델 위치를 변경했습니다.": "The model position has changed.",
+    "모델 위치를 직접 조정했습니다.": "I adjusted the model position myself.",
+    "이동 거리는 0 이상의 유한한 값이어야 합니다.": "The distance moved must be a finite value greater than or equal to 0.",
+    "모델 트리에서 이동할 모델을 먼저 선택하세요.": "First select the model you want to move from the model tree.",
+    "로봇 없음": "no robot",
+    "Stopped ({count} samples)": "Stopped ({count} samples)",
+    "CSV 저장 완료": "CSV Save completed",
+    "CSV loaded ({count} samples)": "CSV loaded ({count} samples)",
+    "CSV 읽기 실패": "CSV read failure",
+    "이동할 채널을 먼저 선택하세요": "First select the channel you want to move to",
+    "암 로드 물성을 계산할 수 없습니다.": "Arm rod properties could not be calculated.",
+    "지원하지 않는 형식입니다. STL, FBX, OBJ, GLB, GLTF, STP, STEP, DXF 파일을 선택해 주세요.": "This format is not supported. Please select files STL, FBX, OBJ, GLB, GLTF, STP, STEP, DXF.",
+    "{count}개 파일은 크기 제한({limit})을 초과하여 제외했습니다.": "{count} files were excluded because they exceeded the size limit ({limit}).",
+    "{count}개 파일은 지원하지 않는 형식이라 제외했습니다.": "{count} files were excluded because they were in an unsupported format.",
+    "2D CAD 파일을 불러오지 못했습니다.\n{message}": "Failed to load 2D CAD file.\n{message}",
+    "{name} 스케치로 가져오는 중...": "{name} Importing into Sketch...",
+    "DXF를 스케치로 변환하는 중": "Converting DXF to Sketch",
+    "DXF 스케치 삽입 완료 · {count}개 요소 · {skipped}개 제외": "DXF Sketch insertion completed · {count} elements · {skipped} elements excluded",
+    "DXF 스케치 삽입 완료 · {count}개 요소": "DXF Sketch insertion complete {count} elements",
+    "스케치 DXF 가져오기 오류: {message}": "Error importing sketch DXF: {message}",
+    "{success}개 파일 불러오기 완료 · {failed}개 파일 실패": "{success} files loaded · {failed} files failed",
+    "{count}개 파일 불러오기 완료": "{count} files have been loaded",
+    "현재 TCP 위치를 Wobj 원점으로 등록했습니다.": "The current TCP location has been registered as the Wobj origin.",
+    "로봇 미선택": "Robot not selected",
+    "Connection lost; reconnecting automatically...": "Connection lost; reconnecting automatically...",
+    "Select one robot before loading an OLP project.": "Select one robot before loading an OLP project.",
+    "Disconnect the controller from this robot before loading an OLP project.": "Disconnect the controller from this robot before loading an OLP project.",
+    "Stop this robot motion before loading an OLP project.": "Stop this robot motion before loading an OLP project.",
+    "IO 번호": "IO number",
+    "트리거 상태": "trigger state",
+    "매핑 기능": "mapping function",
+    "Load a robot project folder for the selected robot first.": "Load a robot project folder for the selected robot first.",
+    "OLP is unavailable while a controller is connected to this robot.": "OLP is unavailable while a controller is connected to this robot.",
+    "Stop the normal motion program on this robot before running OLP.": "Stop the normal motion program on this robot before running OLP.",
+    "현재 실행 중인 로봇은 모션을 정지한 후 컨트롤러를 연결할 수 있습니다.": "The currently running robot can be connected to a controller after stopping its motion.",
+    "해당 로봇에는 이미 컨트롤러가 연결되어 있습니다.": "The robot already has a controller connected to it.",
+    "Cartesian 전환점 탐색 중": "Exploring Cartesian turning points",
+    "Cartesian 전환점 탐색 중 ({current}/{total})": "Searching for Cartesian turning points ({current}/{total})",
+    "안전 높이 경로 검사 중": "Checking safe height path",
+    "안전 높이 경로 검사 중 ({current}/{total})": "Checking safe height path ({current}/{total})",
+    "자동 경로 생성에 실패했습니다.": "Automatic route creation failed.",
+    "시작 이동 포인트를 다시 선택하세요.": "Select the starting movement point again.",
+    "목표 이동 포인트를 다시 선택하세요.": "Select the target movement point again.",
+    "자동 경로 포인트 등록에 실패했습니다.": "Automatic route point registration failed.",
+    "Point movement is unavailable while a controller is connected to this robot.": "Point movement is unavailable while a controller is connected to this robot.",
+    "Stop this robot motion before moving to a point.": "Stop this robot motion before moving to a point.",
+    "Select at least one robot for the OLP group.": "Select at least one robot for the OLP group.",
+    "Load an OLP project for every selected robot before group execution.": "Load an OLP project for every selected robot before group execution.",
+    "Work Origin is unavailable while a controller is connected to this robot.": "Work Origin is unavailable while a controller is connected to this robot.",
+    "현재 실행 중인 로봇은 모션을 정지한 후 삭제할 수 있습니다.": "The currently running robot can be deleted after stopping its motion.",
+    "A closed CAD profile is required.": "A closed CAD profile is required.",
+    "A sketch entity is required.": "A sketch entity is required.",
+    "The selected model cannot be cloned.": "The selected model cannot be cloned.",
+    "The cloned model hierarchy is incomplete.": "The cloned model hierarchy is incomplete.",
+    "The robot model definition is unavailable.": "The robot model definition is unavailable.",
+    "The attached model mount is unavailable.": "The attached model mount is unavailable.",
+    "No exportable triangles were found.": "No exportable triangles were found.",
+    "Tool에 계산할 수 있는 닫힌 형상이 없습니다.": "Tool has no closed geometry that can be calculated.",
+    "Robot toolAxes must define an orthogonal right-handed coordinate system.": "Robot toolAxes must define an orthogonal right-handed coordinate system.",
+    "Model worker failed.": "Model worker failed.",
+    "STL worker stopped unexpectedly.": "STL worker stopped unexpectedly.",
+    "The STL worker returned invalid geometry data.": "The STL worker returned invalid geometry data.",
+    "The FBX worker returned invalid model data.": "The FBX worker returned invalid model data.",
+    "The selected robot tool mount is unavailable.": "The selected robot tool mount is unavailable.",
+    "The selected robot joint is unavailable.": "The selected robot joint is unavailable.",
+    "STEP worker initialization failed.": "STEP worker initialization failed.",
+    "The STEP worker returned invalid mesh data.": "The STEP worker returned invalid mesh data.",
+    "STEP worker restarted before the import began.": "STEP worker restarted before the import began.",
+    "STEP worker stopped unexpectedly.": "STEP worker stopped unexpectedly.",
+    "The STEP file contains no triangulated mesh.": "The STEP file contains no triangulated mesh.",
+    "The model file exceeds the 500 MB import limit.": "The model file exceeds the 500 MB import limit.",
+    "Only DXF files are officially supported for 2D CAD import.": "Only DXF files are officially supported for 2D CAD import.",
+    "DXF parsing failed.": "DXF parsing failed.",
+    "DXF worker failed.": "DXF worker failed.",
+    "The DXF drawing has no supported sketch entities.": "The DXF drawing has no supported sketch entities.",
+    "The CAD drawing contains no renderable entities.": "The CAD drawing contains no renderable entities.",
+    "The file contains no renderable mesh.": "The file contains no renderable mesh.",
+    "The imported mesh has invalid bounds.": "The imported mesh has invalid bounds.",
+    "TCP 1 is not available.": "TCP 1 is not available.",
+    "Test equipment import failed.": "Test equipment import failed.",
+    "Vacuum tool import failed.": "Vacuum tool import failed.",
+    "SCARA CD conduit geometry has no vertices.": "SCARA CD conduit geometry has no vertices.",
+    "SCARA CD conduit has no fixed endpoint.": "SCARA CD conduit has no fixed endpoint.",
+    "Bridge pairing is not configured.": "Bridge pairing is not configured.",
+    "Bridge shutdown timed out.": "Bridge shutdown timed out.",
+    "Bridge rejected shutdown.": "Bridge rejected shutdown.",
+    "Bridge is not running.": "Bridge is not running.",
+    "시작 위치와 목표 위치를 선택하세요.": "Choose your starting location and target location.",
+    "TCP 자세를 읽을 수 없습니다.": "TCP The posture cannot be read.",
+    "활성 로봇을 충돌 검사 대상으로 준비할 수 없습니다.": "The active robot cannot be prepared for collision checking.",
+    "최종 경로 간섭 검사에 실패했습니다.": "Final path interference check failed.",
+    "자동 경로 포인트를 생성하지 못했습니다.": "Failed to create auto route point.",
+    "현재 TCP 기준의 포인트 자세를 준비하지 못했습니다.": "Currently, the point posture based on TCP has not been prepared.",
+    "현재 TCP 기준의 포인트를 저장하지 못했습니다.": "Failed to save points for current TCP criterion.",
+    "Workspace recovery storage is not ready.": "Workspace recovery storage is not ready.",
+    "Saved primitive shape data is invalid.": "Saved primitive shape data is invalid.",
+    "The saved robot attachment point is unavailable.": "The saved robot attachment point is unavailable.",
+    "Saved sketch feature data is invalid.": "Saved sketch feature data is invalid.",
+    "The source CAD document is unavailable.": "The source CAD document is unavailable.",
+    "The saved CAD profile is unavailable.": "The saved CAD profile is unavailable.",
+    "Saved Tool part source data is invalid.": "Saved Tool part source data is invalid.",
+    "The saved Tool source part or robot is unavailable.": "The saved Tool source part or robot is unavailable.",
+    "Saved grip object part source data is invalid.": "Saved grip object part source data is invalid.",
+    "The saved grip object source part is unavailable.": "The saved grip object source part is unavailable.",
+    "The saved grip object robot is unavailable.": "The saved grip object robot is unavailable.",
+    "Unsupported saved OLP project schema.": "Unsupported saved OLP project schema.",
+    "The saved OLP project has no recoverable files.": "The saved OLP project has no recoverable files.",
+    "Unable to claim an isolated simulation workspace.": "Unable to claim an isolated simulation workspace.",
+    "The selected legacy workspace is no longer available.": "The selected legacy workspace is no longer available.",
+    "The selected workspace is no longer available.": "The selected workspace is no longer available.",
+    "Stop all robot motions before loading a project.": "Stop all robot motions before loading a project.",
+    "시뮬레이션 저장소를 사용할 수 없습니다.": "Simulation repository is not available.",
+    "ZIP 라이브러리를 불러오지 못했습니다.": "Failed to load library ZIP.",
+    "시뮬레이션 프로젝트 manifest.json이 없습니다.": "Simulation project manifest.json does not exist.",
+    "시뮬레이션 프로젝트 manifest.json을 읽을 수 없습니다.": "Unable to read simulation project manifest.json.",
+    "지원하지 않는 시뮬레이션 프로젝트 파일입니다.": "This is an unsupported simulation project file.",
+    "시뮬레이션 프로젝트 경로가 올바르지 않습니다.": "The simulation project path is incorrect.",
+    "시뮬레이션 프로젝트 workspace.json이 없습니다.": "Simulation project workspace.json does not exist.",
+    "시뮬레이션 프로젝트 상태를 읽을 수 없습니다.": "Unable to read simulation project status.",
+    "시뮬레이션 프로젝트 상태가 올바르지 않습니다.": "Simulation project status is incorrect.",
+    "Unsupported motion program file.": "Unsupported motion program file.",
+    "Motion program file robots must be an array.": "Motion program file robots must be an array.",
+    "Stop all robot motions before loading a program.": "Stop all robot motions before loading a program.",
+    "This model does not provide articulated kinematics.": "This model does not provide articulated kinematics.",
+    "3D Simulation manual preparation timed out.": "3D Simulation manual preparation timed out.",
+    "The manual robot is not ready.": "The manual robot is not ready.",
+    "Test TCP 1 is not available.": "Test TCP 1 is not available.",
+    "The Test assets could not be prepared.": "The Test assets could not be prepared.",
+    "IR-S4-40Z15 is not available.": "IR-S4-40Z15 is not available.",
+    "OpenCascade STEP parser is unavailable.": "OpenCascade STEP parser is unavailable.",
+    "The STEP file could not be imported.": "The STEP file could not be imported.",
+    "OpenCascade could not convert this STEP file.": "OpenCascade could not convert this STEP file."
   },
   "patterns": []
 }
