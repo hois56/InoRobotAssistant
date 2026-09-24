@@ -461,7 +461,7 @@ permalink: /cn/
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/Language/runtime/i18n.css">
     <link rel="stylesheet" href="/0_Home/robot-select-guide.css?v=20260813-5">
-    <script src="/Language/runtime/locales-data.js?v=3bc95a56a5bd" defer></script>
+    <script src="/Language/runtime/locales-data.js?v=beae0a7cb288" defer></script>
     <script src="/Language/runtime/i18n.js" defer></script>
     <script src="/analytics-config.js"></script>
     <script src="/analytics.js" defer></script>
@@ -473,6 +473,8 @@ permalink: /cn/
     <link rel="alternate" hreflang="en" href="https://inovancerobot.com/en/">
     <link rel="alternate" hreflang="zh-CN" href="https://inovancerobot.com/cn/">
     <link rel="alternate" hreflang="vi" href="https://inovancerobot.com/vn/">
+    <link rel="alternate" hreflang="tr" href="https://inovancerobot.com/tr/">
+    <link rel="alternate" hreflang="ru" href="https://inovancerobot.com/ru/">
     <link rel="alternate" hreflang="x-default" href="https://inovancerobot.com/">
     <!-- I18N-SEO:END -->
 </head>
@@ -486,13 +488,15 @@ permalink: /cn/
             <option value="en">English</option>
             <option value="zh-CN" selected>简体中文</option>
             <option value="vi">Tiếng Việt</option>
+            <option value="tr">Türkçe</option>
+            <option value="ru">Русский</option>
         </select>
     </div>
     <script>
         // Keep route switching functional even when the shared translation runtime is delayed.
         (() => {
             const select = document.getElementById('inorobot-language-select');
-            const routes = { ko: '/', en: '/en/', 'zh-CN': '/cn/', vi: '/vn/' };
+            const routes = { ko: '/', en: '/en/', 'zh-CN': '/cn/', vi: '/vn/', tr: '/tr/', ru: '/ru/' };
             if (!select) return;
             select.addEventListener('change', () => {
                 const locale = select.value;
@@ -640,7 +644,7 @@ permalink: /cn/
                     <button type="button" class="manual-info-button tool-manual-open" data-tool-guide="project"
                         aria-label="查看 Project Generator 使用指南" aria-haspopup="dialog" aria-controls="tool-guide-modal" aria-expanded="false" title="使用方法">i</button>
                     <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg"
-                        data-site-card-version="projectGenerator">Ver 26.09.03</span>
+                        data-site-card-version="projectGenerator">Ver 26.09.24</span>
                     <button type="button" class="history-button" data-history-card="projectGenerator"
                         aria-label="打开项目生成器版本记录">
                         <i data-lucide="history" class="w-3.5 h-3.5"></i>
@@ -938,9 +942,9 @@ permalink: /cn/
         }
     </style>
 
-    <script src="/0_Home/site-card-versions.js?v=9e50ba3e58dd"></script>
-    <script src="/0_Home/site-card-history-data.js?v=9e50ba3e58dd"></script>
-    <script src="/0_Home/site-card-history.js?v=9e50ba3e58dd"></script>
+    <script src="/0_Home/site-card-versions.js?v=abb7640e3a79"></script>
+    <script src="/0_Home/site-card-history-data.js?v=abb7640e3a79"></script>
+    <script src="/0_Home/site-card-history.js?v=abb7640e3a79"></script>
     <script src="/0_Home/robot-select-guide.js?v=20260906-1"></script>
     <script src="/0_Home/tool-guide.js?v=20260906-2"></script>
     <script>

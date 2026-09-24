@@ -67,7 +67,8 @@
     ,"Zero Calibration Tool": "Zero Calibration Tool"
     ,"Zero Calibration Tool | Inovance": "Zero Calibration Tool | Inovance"
     ,"Calibration Mode": "Calibration Mode"
-    ,"내장된 디버깅 툴 버전 기록을 읽지 못했습니다.": "Could not read the embedded debugging-tool version history."
+    ,"내장된 디버깅 툴 버전 기록을 읽지 못했습니다.": "Could not read the embedded debugging-tool version history.",
+    "Embedded history data is unavailable": "Embedded history data is unavailable"
   },
   "patterns": []
 }

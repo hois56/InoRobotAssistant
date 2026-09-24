@@ -41,7 +41,8 @@
     "No": "Không",
     "Port": "Cổng"
     ,"Inovance Robot Software Center": "Trung tâm phần mềm robot Inovance"
-    ,"다운로드 권한을 확인할 수 없습니다. 관리자에게 문의하세요.": "Không thể xác minh quyền tải xuống. Hãy liên hệ quản trị viên."
+    ,"다운로드 권한을 확인할 수 없습니다. 관리자에게 문의하세요.": "Không thể xác minh quyền tải xuống. Hãy liên hệ quản trị viên.",
+    "Download URL was not returned.": "URL tải xuống không được trả lại."
   },
   "patterns": []
 }

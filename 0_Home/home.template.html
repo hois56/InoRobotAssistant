@@ -470,13 +470,15 @@
             <option value="en">English</option>
             <option value="zh-CN">简体中文</option>
             <option value="vi">Tiếng Việt</option>
+            <option value="tr">Türkçe</option>
+            <option value="ru">Русский</option>
         </select>
     </div>
     <script>
         // Keep route switching functional even when the shared translation runtime is delayed.
         (() => {
             const select = document.getElementById('inorobot-language-select');
-            const routes = { ko: '/', en: '/en/', 'zh-CN': '/cn/', vi: '/vn/' };
+            const routes = { ko: '/', en: '/en/', 'zh-CN': '/cn/', vi: '/vn/', tr: '/tr/', ru: '/ru/' };
             if (!select) return;
             select.addEventListener('change', () => {
                 const locale = select.value;

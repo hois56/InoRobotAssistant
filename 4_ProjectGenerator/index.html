@@ -81,6 +81,65 @@
         #stepsListParent {
             overflow-x: auto;
             scrollbar-width: thin;
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        .generator-main-grid,
+        .generator-main-grid > * {
+            min-width: 0;
+        }
+
+        .generator-settings-row,
+        .generator-settings-row > * {
+            min-width: 0;
+        }
+
+        #prismContainer {
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        #fileSelector {
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        @media (max-width: 1300px) {
+            .generator-preview-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .generator-preview-toolbar-actions {
+                box-sizing: border-box;
+                display: flex;
+                flex-wrap: wrap;
+                width: 100%;
+                min-width: 0;
+                max-width: 100%;
+            }
+
+            .generator-preview-toolbar-actions > button,
+            .generator-preview-toolbar-actions > select {
+                box-sizing: border-box;
+                flex: 1 1 9rem;
+                width: auto;
+                min-width: 0;
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .generator-settings-row {
+                flex-direction: column;
+            }
+
+            .generator-settings-row > .glass {
+                width: 100%;
+                max-width: 100%;
+                flex: 1 1 auto;
+            }
         }
 
         pre[class*="language-"] {
@@ -653,6 +712,19 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
     <!-- SUBPAGE-SEO:START -->
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
     <link rel="canonical" href="https://inovancerobot.com/4_ProjectGenerator/">
@@ -670,18 +742,18 @@
 
 <body class="p-0">
     <header
-        class="sticky top-0 w-full flex flex-row justify-between items-center bg-[rgba(15,19,28,0.95)] backdrop-blur-xl border-b border-white/[0.09] px-8 shrink-0 gap-6 h-[72px] z-50">
-        <div class="flex flex-row items-center gap-6 flex-shrink-0">
+        class="inorobot-responsive-header sticky top-0 w-full flex flex-row justify-between items-center bg-[rgba(15,19,28,0.95)] backdrop-blur-xl border-b border-white/[0.09] px-8 shrink-0 gap-6 h-[72px] z-50">
+        <div class="inorobot-header-brand flex flex-row items-center gap-6 flex-shrink-0">
             <a href="/" class="logo-link" title="메인 페이지로 이동">
                 <img id="appLogo" src="../1_RobotModelSelect/INOVANCE_Logo.png" class="logo-img" alt="Inovance">
             </a>
             <div class="header-divider">
-                <h1 data-i18n-skip class="text-xl font-bold font-[Outfit] text-white whitespace-nowrap">
+                <h1 class="text-xl font-bold font-[Outfit] text-white">
                     Inovance Robot Project Generator</h1>
-                <p data-i18n-skip class="text-sm text-slate-400 font-mono tracking-wide">Based on R24.C4</p>
+                <p class="text-sm text-slate-400 font-mono tracking-wide">Based on R24.C4</p>
             </div>
         </div>
-        <div class="flex flex-row items-center gap-3 flex-shrink-0">
+        <div class="inorobot-header-actions flex flex-row items-center gap-3 flex-shrink-0">
             <div data-i18n-language-slot class="flex items-center flex-shrink-0"></div>
             <button id="btnGuide"
                 class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-xl font-medium transition-colors flex items-center gap-2 text-sm h-10">
@@ -698,10 +770,10 @@
         </div>
     </header>
     <div class="max-w-[1500px] mx-auto space-y-6 p-4 md:p-8">
-        <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 h-auto xl:h-[760px]">
-            <div class="xl:col-span-6 flex flex-col space-y-4 h-auto xl:h-full">
+        <div class="generator-main-grid grid grid-cols-1 xl:grid-cols-12 gap-6 h-auto xl:h-[760px]">
+            <div class="min-w-0 xl:col-span-6 flex flex-col space-y-4 h-auto xl:h-full">
                 <!-- Project Settings -->
-                <div class="flex gap-4">
+                <div class="generator-settings-row flex gap-4">
                     <div class="glass p-5 rounded-2xl flex-shrink-0 space-y-3 flex-1">
                         <div class="flex items-center gap-2 text-slate-200"><i data-lucide="folder" class="w-5 h-5"></i>
                             <h2 class="font-semibold px-1">Project Name</h2>
@@ -831,11 +903,11 @@
 
             <!-- Preview -->
             <div class="xl:col-span-6 glass rounded-2xl p-5 flex flex-col h-full min-h-[600px]">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                <div class="generator-preview-toolbar flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                     <div class="flex items-center gap-2 text-slate-200"><i data-lucide="code" class="w-5 h-5"></i>
                         <h2 class="font-semibold">Live Source Preview</h2>
                     </div>
-                    <div class="flex flex-row gap-2 w-full sm:w-auto">
+                    <div class="generator-preview-toolbar-actions flex flex-row gap-2 w-full sm:w-auto">
                         <button id="btnToggleEdit"
                             class="flex-1 sm:flex-none justify-center text-xs px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-slate-200 transition-colors flex items-center gap-1">
                             <i data-lucide="edit-3" class="w-3 h-3"></i> <span>Edit Mode</span>

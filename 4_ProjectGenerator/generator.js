@@ -304,9 +304,9 @@ const Generator = {
                 }
                 sb += `        Case ${n * 100 + 16}:\n            Movl P${n}_Peel_end,V[100],Z[2],Tool[B_Tool],Wobj[B_Wobj];\n            R_Cur_pos = ${n * 100 + 20};\n        Case ${n * 100 + 20}:\n            Movj P${n}_Safe,V[100],Z[CP],Tool[B_Tool],Wobj[B_Wobj];\n            R_Cur_pos = ${n * 100};\n            Break;\n`;
             }
-            sb += `        Case ${n * 100 + 11}:\n            Movl Offset(P${n}_Up, PR[B_PR]),V[100],Z[${zUp}],Tool[B_Tool],Wobj[B_Wobj]${accUp};\n            R_Cur_pos = ${n * 100 + 10};\n            If return_path == 10\n                Break;\n            EndIf;\n        Case ${n * 100 + 10}:\n            R_Cur_pos = ${n * 100 + 1};\n            Movj P${n}_Wait,V[100],Z[CP],Tool[B_Tool],Wobj[B_Wobj];\n`;
+            sb += `        Case ${n * 100 + 11}:\n            Movl Offset(P${n}_Up, PR[B_PR]),V[100],Z[${zUp}],Tool[B_Tool],Wobj[B_Wobj]${accUp};\n            R_Cur_pos = ${n * 100 + 10};\n            If return_path == 10\n                Break;\n            EndIf;\n        Case ${n * 100 + 10}:\n            Movj P${n}_Wait,V[100],Z[CP],Tool[B_Tool],Wobj[B_Wobj];\n            R_Cur_pos = ${n * 100 + 1};\n`;
             for (let i = 2; i <= lastWait; i++) {
-                sb += `            R_Cur_pos = ${n * 100 + i};\n            Movj P${n}_Wait${i},V[100],Z[CP],Tool[B_Tool],Wobj[B_Wobj];\n`;
+                sb += `            Movj P${n}_Wait${i},V[100],Z[CP],Tool[B_Tool],Wobj[B_Wobj];\n            R_Cur_pos = ${n * 100 + i};\n`;
             }
             sb += `            If return_path == 1\n                Break;\n            EndIf;\n        Case ${n * 100} To ${n * 100 + lastWait}:\n            Movj P${n}_Safe,V[100],Z[CP],Tool[B_Tool],Wobj[B_Wobj];\n            R_Cur_pos = ${n * 100};\n            Break;\n`;
         });

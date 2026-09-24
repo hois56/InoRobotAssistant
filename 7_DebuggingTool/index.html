@@ -349,6 +349,15 @@
         }
 
         @media (max-width: 640px) {
+            .download-button {
+                flex: 0 1 auto;
+                min-width: 0;
+                max-width: 100%;
+                white-space: normal;
+                text-align: center;
+                line-height: 1.25;
+            }
+
             .history-modal {
                 padding: 0.75rem;
             }
@@ -948,6 +957,19 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
     <!-- SUBPAGE-SEO:START -->
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
     <link rel="canonical" href="https://inovancerobot.com/7_DebuggingTool/">
@@ -967,16 +989,15 @@
     <div class="ambient-glow"></div>
 
     <!-- Header -->
-    <header id="topbar">
-        <div class="flex items-center gap-6">
+    <header id="topbar" class="inorobot-responsive-header">
+        <div class="inorobot-header-brand flex items-center gap-6">
             <a href="/" class="transition-transform hover:scale-105">
                 <img src="../1_RobotModelSelect/INOVANCE_Logo.png" alt="Inovance" class="h-[60px] w-auto">
             </a>
             <div class="h-8 w-px bg-white/10 mx-2 hidden md:block"></div>
             <h1 class="font-outfit text-xl font-bold text-white hidden md:block tracking-tight" data-i18n-skip>Debugging Tool</h1>
         </div>
-        <div class="flex items-center gap-4">
-        </div>
+        <div class="inorobot-header-actions flex items-center gap-4" data-i18n-language-slot></div>
     </header>
 
     <main class="w-full max-w-7xl mx-auto px-6 py-12 flex-grow">

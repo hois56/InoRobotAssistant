@@ -4,31 +4,39 @@
     const STORAGE_KEY = 'inorobot.locale';
     const CHANNEL_NAME = 'inorobot.locale.sync';
     const DEFAULT_LOCALE = 'ko';
-    const SUPPORTED_LOCALES = ['ko', 'en', 'zh-CN', 'vi'];
+    const SUPPORTED_LOCALES = ['ko', 'en', 'zh-CN', 'vi', 'tr', 'ru'];
     const LANDING_ROUTES = {
         ko: '/',
         en: '/en/',
         'zh-CN': '/cn/',
-        vi: '/vn/'
+        vi: '/vn/',
+        tr: '/tr/',
+        ru: '/ru/'
     };
     const ROUTE_LOCALES = {
         '/': 'ko',
         '/kr/': 'ko',
         '/en/': 'en',
         '/cn/': 'zh-CN',
-        '/vn/': 'vi'
+        '/vn/': 'vi',
+        '/tr/': 'tr',
+        '/ru/': 'ru'
     };
     const HTML_LANGS = {
         ko: 'ko',
         en: 'en',
         'zh-CN': 'zh-CN',
-        vi: 'vi'
+        vi: 'vi',
+        tr: 'tr',
+        ru: 'ru'
     };
     const LOCALE_FORMATS = {
         ko: 'ko-KR',
         en: 'en-US',
         'zh-CN': 'zh-CN',
-        vi: 'vi-VN'
+        vi: 'vi-VN',
+        tr: 'tr-TR',
+        ru: 'ru-RU'
     };
 
     const localeData = window.INOROBOT_LOCALES || {};
@@ -314,7 +322,9 @@
             'a[href="/kr/"]',
             'a[href="/en/"]',
             'a[href="/cn/"]',
-            'a[href="/vn/"]'
+            'a[href="/vn/"]',
+            'a[href="/tr/"]',
+            'a[href="/ru/"]'
         ];
         document.querySelectorAll(landingSelectors.join(', ')).forEach(function (link) {
             link.setAttribute('data-i18n-home-link', '');
@@ -341,7 +351,9 @@
                 ['ko', '한국어'],
                 ['en', 'English'],
                 ['zh-CN', '简体中文'],
-                ['vi', 'Tiếng Việt']
+                ['vi', 'Tiếng Việt'],
+                ['tr', 'Türkçe'],
+                ['ru', 'Русский']
             ].forEach(function (entry) {
                 const option = document.createElement('option');
                 option.value = entry[0];

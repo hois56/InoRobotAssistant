@@ -5,8 +5,8 @@ const crypto = require('crypto');
 const { historyToMarkdown: renderVersionHistory, loadVersionHistory } = require('./version-history.cjs');
 
 const root = path.resolve(__dirname, '..');
-const localeCodes = ['ko', 'en', 'zh-CN', 'vi'];
-const targetLocaleCodes = ['en', 'zh-CN', 'vi'];
+const localeCodes = ['ko', 'en', 'zh-CN', 'vi', 'tr', 'ru'];
+const targetLocaleCodes = ['en', 'zh-CN', 'vi', 'tr', 'ru'];
 const localeFileDefinitions = [
     { file: 'home.json', pageKeys: ['home'] },
     { file: 'robot-model-select.json', pageKeys: ['robotSelect'] },
@@ -96,7 +96,7 @@ function validateStandaloneLanguageSwitch(html, file) {
 
     assert(select.dataset.localeListener === 'true' && typeof changeHandler === 'function', file + ' does not attach the language change event.');
     if (typeof changeHandler !== 'function') return;
-    Object.entries({ ko: '/', en: '/en/', 'zh-CN': '/cn/', vi: '/vn/' }).forEach(([locale, route]) => {
+    Object.entries({ ko: '/', en: '/en/', 'zh-CN': '/cn/', vi: '/vn/', tr: '/tr/', ru: '/ru/' }).forEach(([locale, route]) => {
         select.value = locale;
         changeHandler();
         assert(assignments.at(-1) === route, file + ' does not navigate ' + locale + ' to ' + route + '.');
@@ -183,6 +183,8 @@ assert(fs.existsSync(path.join(root, 'favicon.png')), 'favicon.png is missing.')
     '0_Home/en/index.html',
     '0_Home/zh-CN/index.html',
     '0_Home/vi/index.html',
+    '0_Home/tr/index.html',
+    '0_Home/ru/index.html',
     '1_RobotModelSelect/index.html',
     '2_3DSimulation/index.html',
     '3_ToolSelector/index.html',
@@ -239,7 +241,7 @@ localeCodes.forEach(code => {
         assert(Object.prototype.hasOwnProperty.call(locales[code].legacy, source.trim()), code + ' is missing Robot Select option text: ' + source);
     });
 });
-['ko', 'zh-CN', 'vi'].forEach(code => {
+['ko', 'zh-CN', 'vi', 'tr', 'ru'].forEach(code => {
     accessorySources.filter(source => !technicalOptionName.test(source.trim())).forEach(source => {
         assert(locales[code].legacy[source.trim()] !== source.trim(), code + ' leaves a Robot Select option untranslated: ' + source);
     });
@@ -263,7 +265,7 @@ targetLocaleCodes.forEach(code => {
         assert(locales[code].legacy[source] !== source, code + ' leaves a Project option tooltip untranslated: ' + source);
     });
 });
-['ko', 'zh-CN', 'vi'].forEach(code => {
+['ko', 'zh-CN', 'vi', 'tr', 'ru'].forEach(code => {
     optionLabelSources.forEach(source => {
         assert(locales[code].legacy[source] !== source, code + ' leaves a Project option label untranslated: ' + source);
     });
@@ -336,7 +338,7 @@ const expectedToolFolders = [
 expectedToolFolders.forEach(folder => {
     assert(fs.existsSync(path.join(root, folder, 'index.html')), folder + ' is missing its entry page.');
 });
-['Languge', 'i18n', 'templates', 'InoRobotSelect', 'InoRobot3DView', 'InoRobotToolSelect', 'InoRobotProjectGen', 'Software', 'Manual', 'DebuggingSupport', 'cn', 'en', 'kr', 'vn'].forEach(oldPath => {
+['Languge', 'i18n', 'templates', 'InoRobotSelect', 'InoRobot3DView', 'InoRobotToolSelect', 'InoRobotProjectGen', 'Software', 'Manual', 'DebuggingSupport', 'cn', 'en', 'kr', 'vn', 'tr', 'ru'].forEach(oldPath => {
     assert(!fs.existsSync(path.join(root, oldPath)), 'Obsolete root path still exists: ' + oldPath + '.');
 });
 assert(!fs.existsSync(path.join(root, 'index.html')), 'The generated Korean index must live under Language/ko.');
@@ -370,9 +372,11 @@ const routes = [
     { file: '0_Home/kr/index.html', route: '/kr/', locale: 'ko', canonical: 'https://inovancerobot.com/' },
     { file: '0_Home/en/index.html', route: '/en/', locale: 'en', canonical: 'https://inovancerobot.com/en/' },
     { file: '0_Home/zh-CN/index.html', route: '/cn/', locale: 'zh-CN', canonical: 'https://inovancerobot.com/cn/' },
-    { file: '0_Home/vi/index.html', route: '/vn/', locale: 'vi', canonical: 'https://inovancerobot.com/vn/' }
+    { file: '0_Home/vi/index.html', route: '/vn/', locale: 'vi', canonical: 'https://inovancerobot.com/vn/' },
+    { file: '0_Home/tr/index.html', route: '/tr/', locale: 'tr', canonical: 'https://inovancerobot.com/tr/' },
+    { file: '0_Home/ru/index.html', route: '/ru/', locale: 'ru', canonical: 'https://inovancerobot.com/ru/' }
 ];
-const requiredAlternates = ['ko', 'en', 'zh-CN', 'vi', 'x-default'];
+const requiredAlternates = ['ko', 'en', 'zh-CN', 'vi', 'tr', 'ru', 'x-default'];
 
 routes.forEach(route => {
     const html = read(route.file);
@@ -394,7 +398,7 @@ routes.forEach(route => {
     assert(html.includes('<span class="inorobot-language-label" aria-hidden="true">Language</span>'), route.file + ' does not show the Language label.');
     assert(!html.includes('>文</span>'), route.file + ' still shows the Chinese language symbol.');
     assert(html.includes('position: fixed !important') && html.includes('top: calc(16px + env(safe-area-inset-top, 0px)) !important') && html.includes('right: 18px !important'), route.file + ' does not align the language UI with subpages.');
-    assert(html.includes("const routes = { ko: '/', en: '/en/', 'zh-CN': '/cn/', vi: '/vn/' }") && html.includes('window.location.assign(target)'), route.file + ' is missing the standalone route switch handler.');
+    assert(html.includes("const routes = { ko: '/', en: '/en/', 'zh-CN': '/cn/', vi: '/vn/', tr: '/tr/', ru: '/ru/' }") && html.includes('window.location.assign(target)'), route.file + ' is missing the standalone route switch handler.');
     validateStandaloneLanguageSwitch(html, route.file);
     assert(html.includes('<option value="' + route.locale + '" selected>'), route.file + ' does not preselect its route language.');
     const debuggingCardTitle = locales[route.locale].sources['home.json'].legacy['Debugging Tool'];
@@ -453,14 +457,15 @@ assert(runtime.includes('const storedLocale = readSharedLocale() || readSessionL
     && runtime.includes('const initialLocale = storedLocale || DEFAULT_LOCALE;'), 'Direct tool access does not prioritize the shared locale with a Korean fallback.');
 assert(runtime.includes("currentPath === '/' && storedLocale && storedLocale !== DEFAULT_LOCALE")
     && runtime.includes('window.location.replace(targetPath)'), 'The canonical Korean landing route can overwrite a stored non-Korean locale.');
-assert(runtime.includes("'/kr/': 'ko'") && runtime.includes("'/cn/': 'zh-CN'") && runtime.includes("'/vn/': 'vi'"), 'Landing route map is incomplete.');
+assert(runtime.includes("'/kr/': 'ko'") && runtime.includes("'/cn/': 'zh-CN'") && runtime.includes("'/vn/': 'vi'")
+    && runtime.includes("'/tr/': 'tr'") && runtime.includes("'/ru/': 'ru'"), 'Landing route map is incomplete.');
 assert(runtime.includes('function formatNumber') && runtime.includes('function formatDate'), 'Locale number/date formatters are missing.');
 assert(runtime.includes('window.location.assign(LANDING_ROUTES[nextLocale])'), 'Landing language changes do not navigate to their localized route.');
 assert(runtime.includes('new BroadcastChannel(CHANNEL_NAME)') && runtime.includes("window.addEventListener('storage'") && runtime.includes("window.addEventListener('pageshow'"), 'Locale changes are not synchronized across pages, tabs, and back-forward restoration.');
 assert(runtime.includes('window.location.replace(targetPath)'), 'A restored landing page does not move to the current locale route.');
 assert(runtime.includes("label.textContent = 'Language'") && !runtime.includes("icon.textContent = '文'"), 'Runtime language switcher has the wrong label.');
 assert(runtime.includes("document.querySelector('[data-i18n-language-slot]')") && runtime.includes("container.dataset.embedded = languageSlot ? 'true' : 'false'"), 'Runtime does not support page-specific language switcher slots.');
-['/', '/kr/', '/en/', '/cn/', '/vn/'].forEach(route => {
+['/', '/kr/', '/en/', '/cn/', '/vn/', '/tr/', '/ru/'].forEach(route => {
     assert(runtime.includes(`a[href="${route}"]`), 'Runtime does not refresh home links already pointing to ' + route + '.');
 });
 assert(runtime.includes("link.setAttribute('data-i18n-home-link', '')"), 'Runtime does not retain home links for later locale changes.');
@@ -477,7 +482,7 @@ if (resolveInitialLocaleSource) {
                 }
             },
             DEFAULT_LOCALE: 'ko',
-            LANDING_ROUTES: { ko: '/', en: '/en/', 'zh-CN': '/cn/', vi: '/vn/' },
+            LANDING_ROUTES: { ko: '/', en: '/en/', 'zh-CN': '/cn/', vi: '/vn/', tr: '/tr/', ru: '/ru/' },
             getRouteLocale: () => routeLocale,
             readSharedLocale: () => sharedLocale,
             readSessionLocale: () => sessionLocale,
@@ -523,7 +528,7 @@ if (resolveInitialLocaleSource) {
         && explicitEnglishRoute.replacements.length === 0, 'An explicit localized landing route does not override the stored locale.');
 }
 const localServer = read('tools/serve-local.cjs');
-['0_Home/ko/index.html', '0_Home/kr/index.html', '0_Home/en/index.html', '0_Home/zh-CN/index.html', '0_Home/vi/index.html'].forEach(file => {
+['0_Home/ko/index.html', '0_Home/kr/index.html', '0_Home/en/index.html', '0_Home/zh-CN/index.html', '0_Home/vi/index.html', '0_Home/tr/index.html', '0_Home/ru/index.html'].forEach(file => {
     assert(localServer.includes(file), 'Local server is missing landing-page mapping for ' + file + '.');
 });
 ['.git', '.wrangler', 'backups', 'publish-stability', 'tmp'].forEach(segment => {
@@ -538,7 +543,7 @@ if (updateHomeLinksSource) {
     };
     vm.runInNewContext(`
         let currentLocale = 'zh-CN';
-        const LANDING_ROUTES = { ko: '/', en: '/en/', 'zh-CN': '/cn/', vi: '/vn/' };
+        const LANDING_ROUTES = { ko: '/', en: '/en/', 'zh-CN': '/cn/', vi: '/vn/', tr: '/tr/', ru: '/ru/' };
         ${updateHomeLinksSource}
         updateHomeLinks();
         currentLocale = 'en';
@@ -642,7 +647,9 @@ const homeTemplate = read('0_Home/home.template.html');
     '0_Home/kr/index.html',
     '0_Home/en/index.html',
     '0_Home/zh-CN/index.html',
-    '0_Home/vi/index.html'
+    '0_Home/vi/index.html',
+    '0_Home/tr/index.html',
+    '0_Home/ru/index.html'
 ].forEach(file => {
     const source = read(file);
     const scriptCount = (source.match(/src=["']\/visitor-counter\.js\?v=20260812-1["']/g) || []).length;
@@ -673,7 +680,7 @@ assert(homeTemplate.includes('src="/0_Home/site-card-versions.js') && homeTempla
     assert(!fs.existsSync(path.join(root, file)), 'Home-only file still exists at the repository root: ' + file + '.');
     assert(fs.existsSync(path.join(root, '0_Home', file)), '0_Home is missing ' + file + '.');
 });
-['ko', 'kr', 'en', 'zh-CN', 'vi'].forEach(code => {
+['ko', 'kr', 'en', 'zh-CN', 'vi', 'tr', 'ru'].forEach(code => {
     assert(!fs.existsSync(path.join(root, 'Language', code, 'index.html')), 'Generated home page still exists inside Language/' + code + '.');
 });
 assert(read('7_DebuggingTool/index.html').includes('data-i18n-skip>Debugging Tool</h1>'), 'Debugging Tool page heading is not fixed in English.');
@@ -729,7 +736,7 @@ targetLocaleCodes.forEach(code => {
 });
 
 const sitemap = read('sitemap.xml');
-['/', '/en/', '/cn/', '/vn/', '/1_RobotModelSelect/', '/2_3DSimulation/', '/3_ToolSelector/', '/4_ProjectGenerator/', '/5_Software/', '/6_Document/', '/7_DebuggingTool/', '/7_DebuggingTool/ZeroCalibration/'].forEach(route => assert(sitemap.includes('<loc>https://inovancerobot.com' + route + '</loc>'), 'Sitemap is missing ' + route + '.'));
+['/', '/en/', '/cn/', '/vn/', '/tr/', '/ru/', '/1_RobotModelSelect/', '/2_3DSimulation/', '/3_ToolSelector/', '/4_ProjectGenerator/', '/5_Software/', '/6_Document/', '/7_DebuggingTool/', '/7_DebuggingTool/ZeroCalibration/'].forEach(route => assert(sitemap.includes('<loc>https://inovancerobot.com' + route + '</loc>'), 'Sitemap is missing ' + route + '.'));
 assert(!sitemap.includes('/kr/'), 'The non-canonical /kr/ route must not be in the sitemap.');
 const robots = read('robots.txt');
 assert(robots.includes('User-agent: *') && robots.includes('Allow: /') && robots.includes('Sitemap: https://inovancerobot.com/sitemap.xml'), 'robots.txt does not allow crawling or advertise the sitemap.');
@@ -739,4 +746,4 @@ if (failures.length) {
     process.exit(1);
 }
 
-console.log('Multilingual validation passed: 5 landing routes, 8 shared tool pages, 4 locales, complete version histories.');
+console.log('Multilingual validation passed: 7 landing routes, 8 shared tool pages, 6 locales, complete version histories.');

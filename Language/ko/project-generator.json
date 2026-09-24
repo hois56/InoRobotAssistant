@@ -70,7 +70,7 @@
     "도달": "도달",
     "No": "번호",
     "Get": "Get",
-    "Put": "넣기",
+    "Put": "Put",
     "Process": "프로세스",
     "Multi Recipe": "다중 레시피",
     "TCP Speed Monitoring": "TCP 속도 모니터링",
@@ -188,7 +188,7 @@
     ,"Process names must be unique.": "공정 이름은 중복될 수 없습니다."
     ,"Error generating zip: {message}": "ZIP 생성 오류: {message}"
     ,"Processes (": "프로세스 ("
-    ,"Tray": "트레이"
+    ,"Tray": "Tray"
     ,"Stage": "스테이지"
     ,"MCR": "MCR"
     ,"Vision": "비전"
@@ -201,7 +201,10 @@
     ,"PLC (IO)": "PLC (IO)"
     ,"Vision (Socket)": "Vision (Socket)"
     ,"Use - IO": "IO 사용"
-    ,"Use - Socket": "Socket 사용"
+    ,"Use - Socket": "Socket 사용",
+    "Vision port must be an integer from 1 to 65535.": "Vision 포트는 1~65535 사이의 정수여야 합니다.",
+    "Vision client host must be a valid IPv4 address or DNS host name.": "Vision 클라이언트 호스트는 유효한 IPv4 주소 또는 DNS 호스트 이름이어야 합니다.",
+    "At least one process step is required.": "하나 이상의 프로세스 단계가 필요합니다."
   },
   "patterns": [
     {

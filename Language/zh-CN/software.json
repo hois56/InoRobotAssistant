@@ -41,7 +41,8 @@
     "No": "无",
     "Port": "端口"
     ,"Inovance Robot Software Center": "Inovance 机器人软件中心"
-    ,"다운로드 권한을 확인할 수 없습니다. 관리자에게 문의하세요.": "无法确认下载权限。请联系管理员。"
+    ,"다운로드 권한을 확인할 수 없습니다. 관리자에게 문의하세요.": "无法确认下载权限。请联系管理员。",
+    "Download URL was not returned.": "未返回下载 URL。"
   },
   "patterns": []
 }

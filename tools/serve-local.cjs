@@ -14,7 +14,9 @@ const landingFiles = new Map([
     ['/kr/', '0_Home/kr/index.html'],
     ['/en/', '0_Home/en/index.html'],
     ['/cn/', '0_Home/zh-CN/index.html'],
-    ['/vn/', '0_Home/vi/index.html']
+    ['/vn/', '0_Home/vi/index.html'],
+    ['/tr/', '0_Home/tr/index.html'],
+    ['/ru/', '0_Home/ru/index.html']
 ]);
 
 const publicTopLevelDirectories = new Set([

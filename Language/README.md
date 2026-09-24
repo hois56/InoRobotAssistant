@@ -8,6 +8,8 @@
 | 영어 | `Language/en` |
 | 중국어 간체 | `Language/zh-CN` |
 | 베트남어 | `Language/vi` |
+| 터키어 | `Language/tr` |
+| 러시아어 | `Language/ru` |
 
 ## 사이트별 번역 파일
 
@@ -21,8 +23,9 @@
 | Software | `software.json` | 설명, 툴팁, 다운로드 및 오류 문구 |
 | Document | `document.json` | 탭, 문서 설명, 검색 및 오류 문구 |
 | Debugging Tool | `debugging-tool.json` | Debugging Tool과 Zero Calibration UI |
+| Privacy Policy | `privacy.json` | 개인정보처리방침 |
 
-각 언어 폴더에는 위의 JSON 파일 8개만 번역 원본으로 둡니다. `index.html`은 빌드할 때 자동 생성되므로 직접 수정하지 않습니다.
+각 언어 폴더에는 위의 JSON 파일 9개만 번역 원본으로 둡니다. `index.html`은 빌드할 때 자동 생성되므로 직접 수정하지 않습니다.
 
 ## 수정 방법
 
@@ -42,7 +45,7 @@ node tools\build-localized-site.cjs
 node tools\validate-localized-site.cjs
 ```
 
-첫 번째 명령은 버전 기록 파생 파일, 브라우저용 번역 데이터, 언어별 메인 페이지와 사이트맵을 다시 만듭니다. 두 번째 명령은 네 언어의 파일 구조, 키, 변수, 페이지별 번역 범위와 버전 기록을 검사합니다.
+첫 번째 명령은 버전 기록 파생 파일, 브라우저용 번역 데이터, 언어별 메인 페이지와 사이트맵을 다시 만듭니다. 두 번째 명령은 모든 언어의 파일 구조, 키, 변수, 페이지별 번역 범위와 버전 기록을 검사합니다.
 
 새 버전 기록을 추가할 때는 `0_Home/version-history.json`만 수정하고, `UPDATE_HISTORY.md`, `site-card-versions.js`, `site-card-history-data.js`, `Language/runtime/locales-data.js`, 언어별 홈페이지는 직접 수정하지 않습니다.
 
@@ -57,4 +60,6 @@ node tools\validate-localized-site.cjs
 - `0_Home/en/index.html`
 - `0_Home/zh-CN/index.html`
 - `0_Home/vi/index.html`
+- `0_Home/tr/index.html`
+- `0_Home/ru/index.html`
 - `sitemap.xml`

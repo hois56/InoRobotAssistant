@@ -190,7 +190,16 @@
     "Debugging Tool 버전 기록 보기": "Debugging Tool 버전 기록 보기",
     "No": "없음",
     "Client": "클라이언트",
-    "프로젝트 파일": "프로젝트 파일"
+    "프로젝트 파일": "프로젝트 파일",
+    "Project package is ready": "프로젝트 패키지가 준비되었습니다",
+    "Document download is ready": "문서 다운로드가 준비되었습니다",
+    "Test 모델 배치 완료": "Test 모델 배치 완료",
+    "스냅 이동 완료": "스냅 이동 완료",
+    "자동 반복 운전 중": "자동 반복 운전 중",
+    "패널을 닫고 반복 동작 확인": "패널을 닫고 반복 동작 확인",
+    "Guide target timed out.": "가이드 타겟 시간이 초과되었습니다.",
+    "Embedded history data is unavailable": "내장된 버전 기록 데이터를 사용할 수 없습니다.",
+    "내장된 버전 기록을 읽지 못했습니다.": "내장된 버전 기록을 읽지 못했습니다."
   },
   "patterns": [
     {

@@ -190,7 +190,16 @@
     "Debugging Tool 버전 기록 보기": "Mở lịch sử phiên bản Debugging Tool",
     "No": "Không",
     "Client": "Client",
-    "프로젝트 파일": "Tệp dự án"
+    "프로젝트 파일": "Tệp dự án",
+    "Project package is ready": "Gói dự án đã sẵn sàng",
+    "Document download is ready": "Tải xuống tài liệu đã sẵn sàng",
+    "Test 모델 배치 완료": "Triển khai mô hình thử nghiệm đã hoàn tất",
+    "스냅 이동 완료": "Di chuyển nhanh hoàn tất",
+    "자동 반복 운전 중": "Trong quá trình vận hành lặp lại tự động",
+    "패널을 닫고 반복 동작 확인": "Đóng bảng điều khiển và xác nhận hành động lặp lại",
+    "Guide target timed out.": "Mục tiêu hướng dẫn đã hết thời gian.",
+    "Embedded history data is unavailable": "Dữ liệu lịch sử phiên bản được nhúng không khả dụng.",
+    "내장된 버전 기록을 읽지 못했습니다.": "Không đọc được lịch sử phiên bản được nhúng."
   },
   "patterns": [
     {

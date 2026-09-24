@@ -70,7 +70,7 @@
     "도달": "已到达",
     "No": "无",
     "Get": "Get",
-    "Put": "放置",
+    "Put": "Put",
     "Process": "工艺",
     "Multi Recipe": "多配方",
     "TCP Speed Monitoring": "TCP 速度监控",
@@ -188,7 +188,7 @@
     ,"Process names must be unique.": "工艺名称必须唯一。"
     ,"Error generating zip: {message}": "生成 ZIP 时出错：{message}"
     ,"Processes (": "工艺流程（"
-    ,"Tray": "托盘"
+    ,"Tray": "Tray"
     ,"Stage": "工作台"
     ,"MCR": "MCR"
     ,"Vision": "视觉"
@@ -201,7 +201,10 @@
     ,"PLC (IO)": "PLC (IO)"
     ,"Vision (Socket)": "视觉（Socket）"
     ,"Use - IO": "使用 - IO"
-    ,"Use - Socket": "使用 - Socket"
+    ,"Use - Socket": "使用 - Socket",
+    "Vision port must be an integer from 1 to 65535.": "Vision 端口必须是 1 到 65535 之间的整数。",
+    "Vision client host must be a valid IPv4 address or DNS host name.": "Vision 客户端主机必须是有效的 IPv4 地址或 DNS 主机名。",
+    "At least one process step is required.": "至少需要一个处理步骤。"
   },
   "patterns": [
     {

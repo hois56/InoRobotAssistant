@@ -67,7 +67,8 @@
     ,"Zero Calibration Tool": "영점 보정 툴"
     ,"Zero Calibration Tool | Inovance": "영점 보정 툴 | Inovance"
     ,"Calibration Mode": "보정 모드"
-    ,"내장된 디버깅 툴 버전 기록을 읽지 못했습니다.": "내장된 디버깅 툴 버전 기록을 읽지 못했습니다."
+    ,"내장된 디버깅 툴 버전 기록을 읽지 못했습니다.": "내장된 디버깅 툴 버전 기록을 읽지 못했습니다.",
+    "Embedded history data is unavailable": "내장된 버전 기록 데이터를 사용할 수 없습니다."
   },
   "patterns": []
 }

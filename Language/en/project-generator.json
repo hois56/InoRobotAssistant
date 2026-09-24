@@ -201,7 +201,10 @@
     ,"PLC (IO)": "PLC (IO)"
     ,"Vision (Socket)": "Vision (Socket)"
     ,"Use - IO": "Use - IO"
-    ,"Use - Socket": "Use - Socket"
+    ,"Use - Socket": "Use - Socket",
+    "Vision port must be an integer from 1 to 65535.": "Vision port must be an integer from 1 to 65535.",
+    "Vision client host must be a valid IPv4 address or DNS host name.": "Vision client host must be a valid IPv4 address or DNS host name.",
+    "At least one process step is required.": "At least one process step is required."
   },
   "patterns": [
     {
