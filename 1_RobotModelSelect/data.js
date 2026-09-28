@@ -865,7 +865,7 @@ const productsData = [
                 "cable": "3m"
             },
             {
-                "code": "1741446",
+                "code": "01741446",
                 "cable": "5m (Default)"
             },
             {
