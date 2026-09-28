@@ -67,7 +67,7 @@
               {
                 "title": "Ver 26.09.28",
                 "items": [
-                  "`[수정]` R15H 기본형 구매 코드를 `01741446`으로 수정하고, R15H·R20H 방수방진형에 잘못 표시되던 구매 코드를 제거했습니다."
+                  "`[수정]` R15H, R20H 구매 코드 표기 오류를 해결했습니다."
                 ]
               },
               {
@@ -1210,7 +1210,7 @@
               {
                 "title": "Ver 26.09.28",
                 "items": [
-                  "`[Fixed]` Corrected the R15H standard model purchase code to `01741446` and removed the incorrect purchase codes from the R15H and R20H IP67 options."
+                  "`[Fixed]` Resolved incorrect purchase-code display for R15H and R20H."
                 ]
               },
               {
@@ -2353,7 +2353,7 @@
               {
                 "title": "Ver 26.09.28",
                 "items": [
-                  "`[修复]` 将 R15H 标准型购买代码更正为 `01741446`，并移除了 R15H、R20H IP67 选项中错误显示的购买代码。"
+                  "`[修复]` 修复了 R15H、R20H 购买代码显示错误的问题。"
                 ]
               },
               {
@@ -3496,7 +3496,7 @@
               {
                 "title": "Ver 26.09.28",
                 "items": [
-                  "`[Đã sửa]` Sửa mã mua hàng của mẫu R15H tiêu chuẩn thành `01741446` và xóa các mã mua hàng hiển thị sai ở tùy chọn IP67 của R15H và R20H."
+                  "`[Đã sửa]` Khắc phục lỗi hiển thị mã mua hàng của R15H và R20H."
                 ]
               },
               {
@@ -4639,7 +4639,7 @@
               {
                 "title": "Ver 26.09.28",
                 "items": [
-                  "`[Düzeltildi]` R15H standart modelinin satın alma kodu `01741446` olarak düzeltildi ve R15H ile R20H IP67 seçeneklerinde yanlış görüntülenen satın alma kodları kaldırıldı."
+                  "`[Düzeltildi]` R15H ve R20H satın alma kodlarının yanlış görüntülenmesi düzeltildi."
                 ]
               },
               {
@@ -5782,7 +5782,7 @@
               {
                 "title": "Ver 26.09.28",
                 "items": [
-                  "`[Исправлено]` Код заказа стандартной модели R15H исправлен на `01741446`, а ошибочные коды заказа удалены из вариантов IP67 моделей R15H и R20H."
+                  "`[Исправлено]` Исправлено неправильное отображение кодов заказа R15H и R20H."
                 ]
               },
               {
