@@ -1354,13 +1354,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getBodyOptionPurchaseCode(product, bodyOptionId) {
         if (!product || bodyOptionId === 'standard') return '';
-
-        const bodyOptionCodeMap = {
-            'IR-R15H-145P-K-INT': '01741446',
-            'IR-R20H-120P-K-INT': '01741597'
-        };
-        const optionModelName = getBodyOptionModelName(product.name, bodyOptionId).toUpperCase();
-        return bodyOptionCodeMap[optionModelName] || '-';
+        return '-';
     }
 
     function getCircuitBreaker(name) {
