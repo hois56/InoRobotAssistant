@@ -34,6 +34,12 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.09.30",
+                "items": [
+                  "`[수정]` Communication Tester 실행 파일이 다운로드되지 않던 문제를 ZIP 파일 다운로드로 해결했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.09.24",
                 "items": [
                   "웹사이트에 터키어와 러시아어 지원을 추가했습니다."
