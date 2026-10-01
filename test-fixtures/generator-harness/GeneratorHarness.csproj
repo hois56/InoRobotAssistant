@@ -4,13 +4,23 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <GeneratorSourceRoot Condition="'$(GeneratorSourceRoot)' == ''">$(MSBuildThisFileDirectory)..\..\..\InoRobot_Proejct_Gen_for_SDC\InoRobot_Proejct_Gen_for_SDC</GeneratorSourceRoot>
   </PropertyGroup>
+  <Target Name="CheckGeneratorSourceRoot" BeforeTargets="PrepareForBuild">
+    <Error Condition="!Exists('$(GeneratorSourceRoot)\InoRobot_Project_Gen_for_SDC.csproj')"
+           Text="Generator source was not found at '$(GeneratorSourceRoot)'. Set GeneratorSourceRoot to the InoRobot Project Generator source directory." />
+  </Target>
   <ItemGroup>
-    <Compile Include="D:\04_made_C#\InoRobot_Proejct_Gen_for_SDC\InoRobot_Proejct_Gen_for_SDC\00_Models\ProcessStep.cs" Link="Generator\Models\ProcessStep.cs" />
-    <Compile Include="D:\04_made_C#\InoRobot_Proejct_Gen_for_SDC\InoRobot_Proejct_Gen_for_SDC\00_Models\ProjectOptions.cs" Link="Generator\Models\ProjectOptions.cs" />
-    <Compile Include="D:\04_made_C#\InoRobot_Proejct_Gen_for_SDC\InoRobot_Proejct_Gen_for_SDC\01_Data\*.cs" LinkBase="Generator\Data" />
-    <Compile Include="D:\04_made_C#\InoRobot_Proejct_Gen_for_SDC\InoRobot_Proejct_Gen_for_SDC\02_Program\*.cs" LinkBase="Generator\Programs" />
-    <Compile Include="D:\04_made_C#\InoRobot_Proejct_Gen_for_SDC\InoRobot_Proejct_Gen_for_SDC\03_Generators\ProgramGenerator.cs" Link="Generator\ProgramGenerator.cs" />
-    <Compile Include="D:\04_made_C#\InoRobot_Proejct_Gen_for_SDC\InoRobot_Proejct_Gen_for_SDC\03_Generators\DataFileGenerator.cs" Link="Generator\DataFileGenerator.cs" />
+    <Content Include="$(GeneratorSourceRoot)\Templates\SDC\**\*">
+      <Link>Templates\SDC\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Compile Include="$(GeneratorSourceRoot)\TemplateProvider.cs" Link="Generator\TemplateProvider.cs" />
+    <Compile Include="$(GeneratorSourceRoot)\00_Models\*.cs" LinkBase="Generator\Models" />
+    <Compile Include="$(GeneratorSourceRoot)\01_Data\*.cs" LinkBase="Generator\Data" />
+    <Compile Include="$(GeneratorSourceRoot)\02_Program\*.cs" LinkBase="Generator\Programs" />
+    <Compile Include="$(GeneratorSourceRoot)\03_Generators\*.cs"
+             Exclude="$(GeneratorSourceRoot)\03_Generators\ErrorCodeGenerator.cs"
+             LinkBase="Generator\Generators" />
   </ItemGroup>
 </Project>

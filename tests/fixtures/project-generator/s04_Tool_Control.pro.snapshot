@@ -1,0 +1,71 @@
+ProgramInfo
+    Version = "S4.24"
+    VRC = "V4R24"
+    Time = "<TIMESTAMP>"
+    RobotName = "IR-R10-140S5-D1NH-INT_01741041"
+EndProgramInfo
+Func Tool_Vac_ON()
+    Set yTool_vac_off,OFF;
+    Set yTool_vac_on,ON;
+    Wait xTool_vac_on_chk == ON, T[60], Goto L[900];
+    Set yTool_vac_on,OFF;
+    Ret;
+    L[900]:
+    s01_initial.Init_signal();
+    Alarm[0];
+EndFunc;
+#====================================================================================
+Func Tool_Vac_OFF()
+    Set yTool_vac_on,OFF;
+    Set yTool_vac_off,ON;
+    Wait xTool_vac_off_chk == ON, T[60], Goto L[901];
+    Set yTool_vac_off,OFF;
+    Ret;
+    L[901]:
+    s01_initial.Init_signal();
+    Alarm[1];
+EndFunc;
+#====================================================================================
+Func Tool_Grip()
+    Set yTool_ungrip,OFF;
+    Set yTool_grip,ON;
+    Wait xTool_grip_chk == ON, T[60], Goto L[902];
+    Set yTool_grip,OFF;
+    Ret;
+    L[902]:
+    s01_initial.Init_signal();
+    Alarm[2];
+EndFunc;
+#====================================================================================
+Func Tool_Ungrip()
+    Set yTool_grip,OFF;
+    Set yTool_ungrip,ON;
+    Wait xTool_ungrip_chk == ON, T[60], Goto L[903];
+    Set yTool_ungrip,OFF;
+    Ret;
+    L[903]:
+    s01_initial.Init_signal();
+    Alarm[3];
+EndFunc;
+#====================================================================================
+Func Stage_Vac_ON()
+    Set yStage_vac_off,OFF;
+    Set yStage_vac_on,ON;
+    Wait xStage_vac_on_chk == ON, T[60], Goto L[906];
+    Set yStage_vac_on,OFF;
+    Ret;
+    L[906]:
+    s01_initial.Init_signal();
+    Alarm[6];
+EndFunc;
+#====================================================================================
+Func Stage_Vac_OFF()
+    Set yStage_vac_on,OFF;
+    Set yStage_vac_off,ON;
+    Wait xStage_vac_off_chk == ON, T[60], Goto L[907];
+    Set yStage_vac_off,OFF;
+    Ret;
+    L[907]:
+    s01_initial.Init_signal();
+    Alarm[7];
+EndFunc;

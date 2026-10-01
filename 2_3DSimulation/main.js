@@ -2392,7 +2392,7 @@ function setupUI() {
         workObjectButton.type = 'button';
         workObjectButton.dataset.panelToggle = 'workobject-panel';
         workObjectButton.title = uiText('Wobj 설정 표시/숨기기');
-        workObjectButton.innerHTML = `<i class="fa-solid fa-compass-drafting"></i> Wobj`;
+        workObjectButton.innerHTML = `<i class="fa-solid fa-compass-drafting"></i> <span id="wobj-launcher-label">Wobj 0</span>`;
         const tcpButton = el.panelLauncher.querySelector('[data-panel-toggle="tcp-profile-panel"]');
         const divider = el.panelLauncher.querySelector('.viewer-control-divider');
         el.panelLauncher.insertBefore(workObjectButton, tcpButton || divider);
@@ -13858,7 +13858,11 @@ function handleSceneModelClick(event) {
 
     const selection = getSceneModelAtPointer(event);
     if (!selection) return;
-    if (selection.part) selectSceneModelPart(selection.model, selection.part);
+    if (event.ctrlKey) {
+        // Select the clicked model as a whole. Its attachment host belongs
+        // to a separate model, even when both share the robot hierarchy.
+        selectSceneModel(selection.model);
+    } else if (selection.part) selectSceneModelPart(selection.model, selection.part);
     else selectSceneModel(selection.model);
 }
 
@@ -14468,7 +14472,7 @@ function getSimulationSnapModels(scope = 'scene') {
     if (scope === 'interference') return getSimulationSnapModels('scene');
     if (scope === 'scene') {
         const sceneModels = state.models.filter((model) => isSimulationSnapModel(model)
-            && model.userData.placement === 'scene'
+            && (model.userData.placement === 'scene' || model.userData.placement === 'tcp')
             && isModelTreeVisible(model));
         // Snap move can target the robot's fixed J1 base center as well as
         // uploaded scene models and generated primitive shapes. Robot links
@@ -14582,10 +14586,11 @@ function getAllSimulationSnapMeshes(scope = 'scene', { includeHidden = false } =
             || child.userData?.sketchFeatureLine
             || child.userData?.cad2dSnapLine)
             && !child.userData.simulationSnapFaceOverlay
-            && (includeHidden || child.visible !== false)
+            && (includeHidden || isSceneModelObjectPickable(child, findSceneModelAncestor(child)))
             && child.geometry?.getAttribute('position')) meshes.push(child);
     }));
-    return meshes;
+    // An attached Tool can be reached through both its robot and its own root.
+    return [...new Set(meshes)];
 }
 
 function isDirectSimulationSnapMesh(mesh) {
@@ -15833,10 +15838,10 @@ function pickSimulationSnapRobotAtPointer(pointerEvent) {
     const robots = getArticulatedRobots().filter((robot) => isModelTreeVisible(robot));
     const hit = state.snapVisibilityRaycaster.intersectObjects(robots, true)[0];
     if (!hit?.object) return null;
-    for (let current = hit.object; current; current = current.parent) {
-        if (robots.includes(current)) return current;
-    }
-    return null;
+    // Tool geometry belongs to the nearest model root, even when it is
+    // parented under a robot link. Let it enter the normal face-snap flow.
+    const model = findSceneModelAncestor(hit.object);
+    return robots.includes(model) ? model : null;
 }
 
 function rebuildSimulationSnapCandidatesForCurrentInteraction(scope = getSimulationSnapScope()) {
@@ -29784,6 +29789,9 @@ function renderWorkObjectPanel(robot = getWorkObjectEditorRobot()) {
     if (el.btnFocusWorkObject) el.btnFocusWorkObject.disabled = !available;
     updatePanelLauncher('workobject-panel');
     syncWorkObjectVisuals(robot);
+    const jogRobot = getJogTargetRobot();
+    if (jogRobot) updateTcpPresentation(jogRobot);
+    else updateJogWorkObjectUi(null);
 }
 
 function selectWorkObject(index) {
@@ -30026,6 +30034,7 @@ function hideJogPanel() {
     el.jogPanel.classList.add('hidden');
     el.jogControls.replaceChildren();
     refreshTcpProfileUi(null);
+    updateJogWorkObjectUi(null);
     updatePanelLauncher('jog-panel');
 }
 
@@ -30583,11 +30592,18 @@ function updateTcpPresentation(robot, pose = getCurrentTcpPoseBase(robot)) {
     syncTcpVisualAtPose(robot, pose);
     if (robot !== getJogTargetRobot()) return;
 
-    const rotation = getTcpRotationDegrees(robot, pose);
+    updateJogWorkObjectUi(robot);
+    const displayPose = getJogReadoutPose(robot, pose);
+    const euler = new THREE.Euler().setFromQuaternion(displayPose.quaternion, 'ZYX');
+    const rotation = {
+        rx: normalizeDegrees(THREE.MathUtils.radToDeg(euler.x)),
+        ry: normalizeDegrees(THREE.MathUtils.radToDeg(euler.y)),
+        rz: normalizeDegrees(THREE.MathUtils.radToDeg(euler.z))
+    };
     const values = {
-        x: pose.position.x.toFixed(2),
-        y: pose.position.y.toFixed(2),
-        z: pose.position.z.toFixed(2),
+        x: displayPose.position.x.toFixed(2),
+        y: displayPose.position.y.toFixed(2),
+        z: displayPose.position.z.toFixed(2),
         rx: rotation.rx.toFixed(2),
         ry: rotation.ry.toFixed(2),
         rz: rotation.rz.toFixed(2)
@@ -30597,6 +30613,54 @@ function updateTcpPresentation(robot, pose = getCurrentTcpPoseBase(robot)) {
             el.tcpReadouts[key].value = value;
         }
     });
+}
+
+function updateJogWorkObjectUi(robot = getJogTargetRobot()) {
+    const index = resolveWorkObjectIndex(robot?.userData?.activeWorkObjectIndex);
+    const label = document.getElementById('wobj-launcher-label');
+    if (label) label.textContent = `Wobj ${index}`;
+    const titles = el.baseJogView?.querySelectorAll('.base-jog-title') || [];
+    const coordinate = index === WOBJ_WORLD_INDEX ? 'BASE' : `Wobj[${index}]`;
+    if (titles[0]) titles[0].childNodes[0].textContent = `${uiText('TCP POSITION /')} ${coordinate}`;
+    if (titles[1]) titles[1].firstChild.textContent = `${uiText('TCP ROTATION /')} ${coordinate}`;
+}
+
+function getJogReadoutPose(robot, basePose) {
+    const rotation = getTcpRotationDegrees(robot, basePose);
+    const quaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+        THREE.MathUtils.degToRad(rotation.rx),
+        THREE.MathUtils.degToRad(rotation.ry),
+        THREE.MathUtils.degToRad(rotation.rz), 'ZYX'
+    ));
+    const index = resolveWorkObjectIndex(robot.userData.activeWorkObjectIndex);
+    if (index === WOBJ_WORLD_INDEX) return { position: basePose.position.clone(), quaternion };
+    robot.updateMatrixWorld(true);
+    const workObject = getWorkObjectWorldPose(robot, index);
+    const inverse = workObject.quaternion.clone().invert();
+    return {
+        position: robot.localToWorld(basePose.position.clone()).sub(workObject.position).applyQuaternion(inverse),
+        quaternion: inverse.clone().multiply(robot.getWorldQuaternion(new THREE.Quaternion()))
+            .multiply(quaternion).normalize()
+    };
+}
+
+function getBasePoseFromJogReadout(robot, displayPose) {
+    const position = displayPose.position.clone();
+    const quaternion = displayPose.quaternion.clone();
+    const index = resolveWorkObjectIndex(robot.userData.activeWorkObjectIndex);
+    if (index !== WOBJ_WORLD_INDEX) {
+        robot.updateMatrixWorld(true);
+        const workObject = getWorkObjectWorldPose(robot, index);
+        robot.worldToLocal(position.applyQuaternion(workObject.quaternion).add(workObject.position));
+        quaternion.premultiply(workObject.quaternion)
+            .premultiply(robot.getWorldQuaternion(new THREE.Quaternion()).invert()).normalize();
+    }
+    const euler = new THREE.Euler().setFromQuaternion(quaternion, 'ZYX');
+    return {
+        position,
+        quaternion: quaternionFromTcpRotationDegrees(robot,
+            THREE.MathUtils.radToDeg(euler.x), THREE.MathUtils.radToDeg(euler.y), THREE.MathUtils.radToDeg(euler.z))
+    };
 }
 
 function beginBaseJogNumericHistory() {
@@ -30626,26 +30690,23 @@ function applyBaseJogNumericTarget(event) {
             quaternion: robot.userData.baseJogTarget.quaternion.clone()
         }
         : getCurrentTcpPoseBase(robot);
-    const target = {
-        position: previousBaseTarget.position.clone(),
-        quaternion: previousBaseTarget.quaternion.clone()
-    };
+    const displayTarget = getJogReadoutPose(robot, previousBaseTarget);
 
     if (['x', 'y', 'z'].includes(editedKey)) {
-        target.position[editedKey] = editedValue;
+        displayTarget.position[editedKey] = editedValue;
     } else {
         const rotationValues = Object.fromEntries(['rx', 'ry', 'rz'].map((key) => [
             key,
             Number(el.tcpReadouts[key]?.value.trim())
         ]));
         if (!Object.values(rotationValues).every(Number.isFinite)) return;
-        target.quaternion.copy(quaternionFromTcpRotationDegrees(
-            robot,
-            rotationValues.rx,
-            rotationValues.ry,
-            rotationValues.rz
+        displayTarget.quaternion.setFromEuler(new THREE.Euler(
+            THREE.MathUtils.degToRad(rotationValues.rx),
+            THREE.MathUtils.degToRad(rotationValues.ry),
+            THREE.MathUtils.degToRad(rotationValues.rz), 'ZYX'
         ));
     }
+    const target = getBasePoseFromJogReadout(robot, displayTarget);
 
     const result = solveRobotIK(robot, target, {
         positionTolerance: 0.001,
@@ -30772,10 +30833,7 @@ function jogTcpInBase(robot, kind, axisName, direction) {
         position: currentBaseTarget.position.clone(),
         quaternion: currentBaseTarget.quaternion.clone()
     };
-    const target = {
-        position: previousBaseTarget.position.clone(),
-        quaternion: previousBaseTarget.quaternion.clone()
-    };
+    const displayTarget = getJogReadoutPose(robot, previousBaseTarget);
     const previousAngles = (robot.userData.joints || []).map((joint) => joint.angle);
 
     if (kind === 'rotate') {
@@ -30785,10 +30843,11 @@ function jogTcpInBase(robot, kind, axisName, direction) {
             axisName === 'z' ? 1 : 0
         );
         const delta = new THREE.Quaternion().setFromAxisAngle(axis, THREE.MathUtils.degToRad(step * direction));
-        target.quaternion.premultiply(delta).normalize();
+        displayTarget.quaternion.premultiply(delta).normalize();
     } else {
-        target.position[axisName] += step * direction;
+        displayTarget.position[axisName] += step * direction;
     }
+    const target = getBasePoseFromJogReadout(robot, displayTarget);
 
     setBaseJogStatus('Solving IK...', 'working');
     const result = solveRobotIK(robot, target, {

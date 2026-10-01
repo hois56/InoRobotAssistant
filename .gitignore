@@ -5,6 +5,11 @@
 # Microsoft Office temporary lock files.
 ~$*.xlsx
 
+# Local JavaScript test tooling.
+/node_modules/
+/test-results/
+/playwright-report/
+
 # Local .NET build intermediates.
 **/bin/
 **/obj/
@@ -28,3 +33,6 @@
 
 # Local Cloudflare API token notes.
 /API_토큰*.txt
+
+# Offline installer is kept locally and is not uploaded.
+/7_DebuggingTool/InoRobotAssistantOfflineVersion/

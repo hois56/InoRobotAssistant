@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+
+npm run verify:full
+git lfs pre-push "$@"
