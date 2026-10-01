@@ -1,0 +1,19 @@
+{
+  "name": "inorobot-assistant-quality-checks",
+  "private": true,
+  "scripts": {
+    "test:fast": "node --test tests/fast/*.test.mjs",
+    "test:watch": "node tools/watch-tests.mjs",
+    "test:ui": "playwright test",
+    "test:syntax": "node tools/check-js-syntax.mjs",
+    "test:dotnet-generator": "node tools/test-generator.mjs",
+    "verify:portable": "npm run test:fast && npm run test:syntax && dotnet build 2_3DSimulation/VirtualControllerBridge/InoRobotVirtualControllerBridge.csproj",
+    "verify:ci": "npm run verify:portable && npm run test:ui",
+    "verify:full": "npm run verify:portable && npm run test:dotnet-generator && npm run test:ui",
+    "test:dotnet-generator:update-baseline": "node tools/test-generator.mjs --write-baseline",
+    "test:project-generator:update-baseline": "node tools/update-project-generator-baseline.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1"
+  }
+}

@@ -1,0 +1,119 @@
+ProgramInfo
+    Version = "S4.24"
+    VRC = "V4R24"
+    Time = "<TIMESTAMP>"
+    RobotName = "IR-R10-140S5-D1NH-INT_01741041"
+EndProgramInfo
+Func P3_pos()
+    #================================================================================
+    #  Path setting - Same process
+    #================================================================================
+    If yP3_work_pos_busy And R_Cur_pos == 301
+        B_path = 10; #Starting position = Up
+    ElseIf yP3_work_pos_busy And R_Cur_pos == 311
+        B_path = 10; #Starting position = Up
+        s01_initial.Return_move(10); #UP pos Return from before Process Pos
+    ElseIf yP3_wait_pos_busy And R_Cur_pos == 311
+        B_path = 1; #Starting position = Wait
+        s01_initial.Return_move(10); #Go back Up position of before process
+    #================================================================================
+    #  Path setting - other process
+    #================================================================================
+    Else
+        B_path = 0; #Starting position = Safe
+        s01_initial.Return_move(0); #Return from Previous Process Pos
+    EndIf;
+    #================================================================================
+    #  Set signal
+    #================================================================================
+    B_Cur_process = 3;
+    B_Tool = 1;
+    B_Wobj = 0;
+    B_PR = 30;
+    #================================================================================
+    If xTeach_mode
+        s03_teach_mode.Teaching_mode();
+        Goto L[0];
+    EndIf;
+    #================================================================================
+    #  Move
+    #================================================================================
+    s02_offset.Set_PR();
+    #================================================================================
+    Switch B_path
+        Case 0:
+            R_Cur_pos = 300;
+            Movj P3_Safe,V[100],Z[CP],Tool[B_Tool],Wobj[B_Wobj];
+        Case 1:
+            R_Cur_pos = 301;
+            Movj P3_Wait,V[100],Z[CP],Tool[B_Tool],Wobj[B_Wobj];
+            If yP3_wait_pos_busy
+                Break;
+            EndIf;
+        Case 10:
+            R_Cur_pos = 310;
+            Movj Offset(P3_Up, PR[B_PR]),V[100],Z[1],Tool[B_Tool],Wobj[B_Wobj];
+            R_Cur_pos = 311;
+            Movl Offset(P3_Down, PR[B_PR]),V[100],Z[0],Tool[B_Tool],Wobj[B_Wobj];
+            Break;
+    EndSwitch;
+    #================================================================================
+    #  Vision Check Shot
+    #================================================================================
+    Connect_socket();
+    Send_data("Shot");
+    Str[0] = Receive_data();
+    LB[0] = StrGetData(Str[0],",",LD[0]);
+    PR[0] = (LD[0],LD[1],0,LD[2],0,0);
+    #================================================================================
+    #  Process Complete
+    #================================================================================
+    L[0]:
+    Print "P3 - Vision Check pos End";
+    If yP3_wait_pos_busy
+        Set yP3_wait_pos_comp,ON;
+    ElseIf yP3_work_pos_busy
+        Set yP3_work_pos_comp,ON;
+    EndIf;
+EndFunc;
+
+#====================================================================================
+#  Open Socket
+#====================================================================================
+Func Connect_socket()
+    Print "P3 - Vision Socket Connect Start";
+    #================================================================================
+    Close Socket,2;
+    Int i;
+    Int error_count = 5;
+    String server_IP = "192.168.10.12";
+    Int server_port = 5001;
+    #================================================================================
+    For i=1,i <= error_count,Step[1]
+        Open Socket(server_IP,server_port,2,Single,LB[0]);
+        If LB[0] == 1
+            Break;
+        ElseIf LB[0] == 0 And i >= error_count
+            Alarm[13]; #Socket COMM Error
+        EndIf;
+        Delay T[0.5];
+    EndFor;
+    Print "P3 - Vision Socket Connect End";
+EndFunc;
+#====================================================================================
+#  Send data
+#====================================================================================
+Func Send_data(String send_data)
+    Send Port[2],send_data;
+    Print "P3 - Vision Socket Sent data : " + send_data;
+EndFunc;
+#====================================================================================
+#  Receive data
+#====================================================================================
+Func String Receive_data()
+    L[800]:
+    Get Port[2],T[100],Goto L[800];
+    String received_data = GetPortbuf(0,100,2);
+    Print "P3 - Vision Socket Received data : " + received_data;
+    Return received_data;
+EndFunc;

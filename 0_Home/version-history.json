@@ -40,6 +40,12 @@
                 ]
               },
               {
+                "title": "Ver 26.09.28",
+                "items": [
+                  "주요 화면의 구매 코드·다운로드 연결과 프로그램 생성 결과를 자동으로 확인하도록 점검을 보완했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.09.24",
                 "items": [
                   "웹사이트에 터키어와 러시아어 지원을 추가했습니다."
@@ -247,6 +253,19 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.10.01",
+                "items": [
+                  "`[개선]` JOG 패널의 TCP 위치·회전 표시와 좌표 입력 및 이동 버튼에 선택한 Wobj 좌표계를 반영하고, 하단 Wobj 버튼에 현재 사용 중인 번호를 표시하도록 개선했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.09.30",
+                "items": [
+                  "`[추가]` Ctrl을 누른 채 부품을 클릭하면 해당 모델링 항목 전체를 선택할 수 있습니다. Tool·암 로드·그립 오브젝트는 각각의 부착 모델 전체를 선택합니다.",
+                  "`[수정]` 치수 측정과 이동 등 스냅을 사용하는 기능에서 로봇에 부착된 Tool의 스냅점이 표시되지 않던 문제를 해결했습니다."
+                ]
+              },
               {
                 "title": "Ver 26.09.24",
                 "items": [
@@ -620,6 +639,12 @@
           {
             "title": "Software",
             "versions": [
+              {
+                "title": "Ver 26.10.01",
+                "items": [
+                  "`[업데이트]` InoRobotLab·InoRobotTP를 `V4R24C4SPC22 → V4R24C4SPC25`로 업데이트했습니다."
+                ]
+              },
               {
                 "title": "Ver 26.09.17",
                 "items": [
@@ -1183,6 +1208,12 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.09.28",
+                "items": [
+                  "Added automatic checks for purchase-code and download mappings and generated robot programs."
+                ]
+              },
+              {
                 "title": "Ver 26.09.24",
                 "items": [
                   "Added Turkish and Russian language support to the website."
@@ -1390,6 +1421,19 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.10.01",
+                "items": [
+                  "`[Improved]` JOG TCP position and rotation readouts, coordinate entry, and movement buttons now use the selected Wobj frame. The bottom Wobj button shows the active number."
+                ]
+              },
+              {
+                "title": "Ver 26.09.30",
+                "items": [
+                  "`[Added]` Ctrl-click a part to select its whole model. Tools, arm loads, and grip objects select their own attached model.",
+                  "`[Fixed]` Snap points on robot-mounted Tools were not displayed during dimension measurement, movement, and other snapping operations."
+                ]
+              },
               {
                 "title": "Ver 26.09.24",
                 "items": [
@@ -1763,6 +1807,12 @@
           {
             "title": "Software",
             "versions": [
+              {
+                "title": "Ver 26.10.01",
+                "items": [
+                  "Updated InoRobotLab and InoRobotTP from `V4R24C4SPC22` to `V4R24C4SPC25`."
+                ]
+              },
               {
                 "title": "Ver 26.09.17",
                 "items": [
@@ -2326,6 +2376,12 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.09.28",
+                "items": [
+                  "新增自动检查，用于核对购买代码、下载文件关联和机器人程序生成结果。"
+                ]
+              },
+              {
                 "title": "Ver 26.09.24",
                 "items": [
                   "网站新增土耳其语和俄语支持。"
@@ -2533,6 +2589,19 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.10.01",
+                "items": [
+                  "`[改进]` JOG 面板的 TCP 位置、旋转显示、坐标输入和移动按钮现在使用所选 Wobj 坐标系，底部 Wobj 按钮显示当前编号。"
+                ]
+              },
+              {
+                "title": "Ver 26.09.30",
+                "items": [
+                  "`[新增]` 按住 Ctrl 点击部件可选择其所属的整个模型。Tool、臂负载和抓取对象分别选择各自的附加模型。",
+                  "`[修复]` 修复了尺寸测量、移动等吸附操作中不显示机器人所安装 Tool 的吸附点的问题。"
+                ]
+              },
               {
                 "title": "Ver 26.09.24",
                 "items": [
@@ -2906,6 +2975,12 @@
           {
             "title": "Software",
             "versions": [
+              {
+                "title": "Ver 26.10.01",
+                "items": [
+                  "InoRobotLab 和 InoRobotTP 已从 `V4R24C4SPC22` 更新至 `V4R24C4SPC25`。"
+                ]
+              },
               {
                 "title": "Ver 26.09.17",
                 "items": [
@@ -3469,6 +3544,12 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.09.28",
+                "items": [
+                  "Bổ sung kiểm tra tự động cho mã mua hàng, liên kết tệp tải xuống và kết quả tạo chương trình robot."
+                ]
+              },
+              {
                 "title": "Ver 26.09.24",
                 "items": [
                   "Đã thêm hỗ trợ tiếng Thổ Nhĩ Kỳ và tiếng Nga cho trang web."
@@ -3676,6 +3757,19 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.10.01",
+                "items": [
+                  "`[Cải tiến]` Hiển thị vị trí và góc TCP, nhập tọa độ và nút di chuyển trong JOG sử dụng hệ tọa độ Wobj đã chọn. Nút Wobj phía dưới hiển thị số đang dùng."
+                ]
+              },
+              {
+                "title": "Ver 26.09.30",
+                "items": [
+                  "`[Thêm]` Giữ Ctrl và nhấp vào bộ phận để chọn toàn bộ mô hình chứa bộ phận đó. Tool, tải cánh tay và đối tượng kẹp chọn mô hình gắn tương ứng.",
+                  "`[Sửa]` Đã khắc phục lỗi không hiển thị điểm bắt dính của Tool gắn trên robot khi đo kích thước, di chuyển và các thao tác bắt dính khác."
+                ]
+              },
               {
                 "title": "Ver 26.09.24",
                 "items": [
@@ -4049,6 +4143,12 @@
           {
             "title": "Software",
             "versions": [
+              {
+                "title": "Ver 26.10.01",
+                "items": [
+                  "Đã cập nhật InoRobotLab và InoRobotTP từ `V4R24C4SPC22` lên `V4R24C4SPC25`."
+                ]
+              },
               {
                 "title": "Ver 26.09.17",
                 "items": [
@@ -4612,6 +4712,12 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.09.28",
+                "items": [
+                  "Satın alma kodu, indirme dosyası eşleştirmeleri ve robot programı çıktıları için otomatik kontroller eklendi."
+                ]
+              },
+              {
                 "title": "Ver 26.09.24",
                 "items": [
                   "Web sitesine Türkçe ve Rusça dil desteği eklendi."
@@ -4819,6 +4925,19 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.10.01",
+                "items": [
+                  "`[İyileştirildi]` JOG TCP konum ve dönüş göstergeleri, koordinat girişi ve hareket düğmeleri seçili Wobj koordinat sistemini kullanır. Alt Wobj düğmesi etkin numarayı gösterir."
+                ]
+              },
+              {
+                "title": "Ver 26.09.30",
+                "items": [
+                  "`[Eklendi]` Bir parçaya Ctrl tuşuyla tıklayarak modelin tamamını seçebilirsiniz. Tool, kol yükü ve kavrama nesnesi kendi bağlı modellerini seçer.",
+                  "`[Düzeltildi]` Boyut ölçümü, taşıma ve diğer yakalama işlemlerinde robota bağlı Tool yakalama noktalarının görünmemesi giderildi."
+                ]
+              },
               {
                 "title": "Ver 26.09.24",
                 "items": [
@@ -5192,6 +5311,12 @@
           {
             "title": "Software",
             "versions": [
+              {
+                "title": "Ver 26.10.01",
+                "items": [
+                  "InoRobotLab ve InoRobotTP, `V4R24C4SPC22` sürümünden `V4R24C4SPC25` sürümüne güncellendi."
+                ]
+              },
               {
                 "title": "Ver 26.09.17",
                 "items": [
@@ -5755,6 +5880,12 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.09.28",
+                "items": [
+                  "Добавлены автоматические проверки кодов заказа, сопоставления загружаемых файлов и результатов создания программ роботов."
+                ]
+              },
+              {
                 "title": "Ver 26.09.24",
                 "items": [
                   "На сайт добавлена поддержка турецкого и русского языков."
@@ -5962,6 +6093,19 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.10.01",
+                "items": [
+                  "`[Улучшено]` Показания положения и ориентации TCP, ввод координат и кнопки перемещения JOG используют выбранную систему Wobj. Нижняя кнопка Wobj показывает активный номер."
+                ]
+              },
+              {
+                "title": "Ver 26.09.30",
+                "items": [
+                  "`[Добавлено]` Нажмите на деталь, удерживая Ctrl, чтобы выбрать всю её модель. Tool, нагрузка на руку и захватываемый объект выбирают собственную прикреплённую модель.",
+                  "`[Исправлено]` Исправлено отсутствие точек привязки установленного на роботе Tool при измерении размеров, перемещении и других операциях привязки."
+                ]
+              },
               {
                 "title": "Ver 26.09.24",
                 "items": [
@@ -6335,6 +6479,12 @@
           {
             "title": "Software",
             "versions": [
+              {
+                "title": "Ver 26.10.01",
+                "items": [
+                  "InoRobotLab и InoRobotTP обновлены с `V4R24C4SPC22` до `V4R24C4SPC25`."
+                ]
+              },
               {
                 "title": "Ver 26.09.17",
                 "items": [

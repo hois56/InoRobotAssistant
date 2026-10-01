@@ -1,0 +1,1815 @@
+[
+  {
+    "modelId": "IR-R4H-54S-INT",
+    "cables": [
+      {
+        "cable": "3m",
+        "code": "-"
+      },
+      {
+        "cable": "5m (Default)",
+        "code": "01741093*M00011"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-R4-56S-INT",
+    "cables": [
+      {
+        "cable": "3m",
+        "code": "-"
+      },
+      {
+        "cable": "5m (Default)",
+        "code": "01741094*M00010"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-R7H-70S-INT",
+    "cables": [
+      {
+        "cable": "3m",
+        "code": "-"
+      },
+      {
+        "cable": "5m (Default)",
+        "code": "01741237*M00009"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-R7H-90S-INT",
+    "cables": [
+      {
+        "cable": "3m",
+        "code": "01741238*M00019"
+      },
+      {
+        "cable": "5m (Default)",
+        "code": "01741238*M00014"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-R10-110S-INT",
+    "cables": [
+      {
+        "cable": "3m",
+        "code": "-"
+      },
+      {
+        "cable": "5m (Default)",
+        "code": "01741091*M00009"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-R10H-120S-INT",
+    "cables": [
+      {
+        "cable": "3m",
+        "code": "-"
+      },
+      {
+        "cable": "5m (Default)",
+        "code": "01741239*M00008"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-R10-140S-INT",
+    "cables": [
+      {
+        "cable": "3m",
+        "code": "01741086*M00008"
+      },
+      {
+        "cable": "5m (Default)",
+        "code": "01741086*M00005"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-R11-90S-INT",
+    "cables": [
+      {
+        "cable": "3m",
+        "code": "-"
+      },
+      {
+        "cable": "5m (Default)",
+        "code": "01741092*M00010"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-R15H-145S-K-INT",
+    "cables": [
+      {
+        "cable": "3m",
+        "code": "-"
+      },
+      {
+        "cable": "5m (Default)",
+        "code": "01741446"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-R16-210S-INT",
+    "cables": [
+      {
+        "cable": "3m",
+        "code": "-"
+      },
+      {
+        "cable": "5m (Default)",
+        "code": "01741090"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-R20H-120S-K-INT",
+    "cables": [
+      {
+        "cable": "3m",
+        "code": "-"
+      },
+      {
+        "cable": "5m (Default)",
+        "code": "1741447"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-R25-178S-INT",
+    "cables": [
+      {
+        "cable": "3m",
+        "code": "01741222*M00010"
+      },
+      {
+        "cable": "5m (Default)",
+        "code": "01741222*M00007"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "01741222*M00009"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-TS4-35Z15S-INT",
+    "cables": [
+      {
+        "cable": "3m (Default)",
+        "code": "01741098*M00017"
+      },
+      {
+        "cable": "5m",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-CS4-40Z15S-INT",
+    "cables": [
+      {
+        "cable": "3m (Default)",
+        "code": "-"
+      },
+      {
+        "cable": "5m",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S4-40Z12C-INT",
+    "cables": [
+      {
+        "cable": "3m (Default)",
+        "code": "-"
+      },
+      {
+        "cable": "5m",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S4-40Z15S-INT",
+    "cables": [
+      {
+        "cable": "3m (Default)",
+        "code": "01741084*M00015"
+      },
+      {
+        "cable": "5m",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "01741084*M00017"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-TS5-55Z15S-INT",
+    "cables": [
+      {
+        "cable": "3m (Default)",
+        "code": "01741097*M00010"
+      },
+      {
+        "cable": "5m",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-CS7-50Z20S-INT",
+    "cables": [
+      {
+        "cable": "3m (Default)",
+        "code": "-"
+      },
+      {
+        "cable": "5m",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S7-50Z17C-INT",
+    "cables": [
+      {
+        "cable": "3m (Default)",
+        "code": "-"
+      },
+      {
+        "cable": "5m",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S7-50Z20S-INT",
+    "cables": [
+      {
+        "cable": "3m (Default)",
+        "code": "01741078*M00013"
+      },
+      {
+        "cable": "5m",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-CS7-60Z20S-INT",
+    "cables": [
+      {
+        "cable": "3m (Default)",
+        "code": "-"
+      },
+      {
+        "cable": "5m",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S7-60Z17C-INT",
+    "cables": [
+      {
+        "cable": "3m (Default)",
+        "code": "-"
+      },
+      {
+        "cable": "5m",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S7-60Z20S-INT",
+    "cables": [
+      {
+        "cable": "3m (Default)",
+        "code": "01741079*M00014"
+      },
+      {
+        "cable": "5m",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-CS7-70Z20S-INT",
+    "cables": [
+      {
+        "cable": "3m (Default)",
+        "code": "-"
+      },
+      {
+        "cable": "5m",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S7-70Z17C-INT",
+    "cables": [
+      {
+        "cable": "3m (Default)",
+        "code": "-"
+      },
+      {
+        "cable": "5m",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S7-70Z20S-INT",
+    "cables": [
+      {
+        "cable": "3m (Default)",
+        "code": "01741080*M00011"
+      },
+      {
+        "cable": "5m",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-CS10-60Z20S-INT",
+    "cables": [
+      {
+        "cable": "3m (Default)",
+        "code": "-"
+      },
+      {
+        "cable": "5m",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S10-60Z17C-INT",
+    "cables": [
+      {
+        "cable": "3m (Default)",
+        "code": "-"
+      },
+      {
+        "cable": "5m",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S10-60Z20S-INT",
+    "cables": [
+      {
+        "cable": "3m (Default)",
+        "code": "01741081*M00010"
+      },
+      {
+        "cable": "5m",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-CS10-70Z20S-INT",
+    "cables": [
+      {
+        "cable": "3m (Default)",
+        "code": "-"
+      },
+      {
+        "cable": "5m",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S10-70Z17C-INT",
+    "cables": [
+      {
+        "cable": "3m (Default)",
+        "code": "-"
+      },
+      {
+        "cable": "5m",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S10-70Z20S-INT",
+    "cables": [
+      {
+        "cable": "3m (Default)",
+        "code": "01741080*M00012"
+      },
+      {
+        "cable": "5m",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-CS10-80Z20S-INT",
+    "cables": [
+      {
+        "cable": "3m (Default)",
+        "code": "-"
+      },
+      {
+        "cable": "5m",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S10-80Z17C-INT",
+    "cables": [
+      {
+        "cable": "3m (Default)",
+        "code": "-"
+      },
+      {
+        "cable": "5m",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S10-80Z20S-INT",
+    "cables": [
+      {
+        "cable": "3m (Default)",
+        "code": "01741083*M00016"
+      },
+      {
+        "cable": "5m",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S25-80Z36C-INT",
+    "cables": [
+      {
+        "cable": "3m",
+        "code": "-"
+      },
+      {
+        "cable": "5m (Default)",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S25-80Z42S-INT",
+    "cables": [
+      {
+        "cable": "3m",
+        "code": "-"
+      },
+      {
+        "cable": "5m (Default)",
+        "code": "01741435*M00001"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S25-100Z36C-INT",
+    "cables": [
+      {
+        "cable": "3m",
+        "code": "-"
+      },
+      {
+        "cable": "5m (Default)",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S25-100Z42S-INT",
+    "cables": [
+      {
+        "cable": "3m",
+        "code": "01741436*M00002"
+      },
+      {
+        "cable": "5m (Default)",
+        "code": "01741436*M00001"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S25-120Z36C-INT",
+    "cables": [
+      {
+        "cable": "3m",
+        "code": "-"
+      },
+      {
+        "cable": "5m (Default)",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S25-120Z42S-INT",
+    "cables": [
+      {
+        "cable": "3m",
+        "code": "-"
+      },
+      {
+        "cable": "5m (Default)",
+        "code": "01741364"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S35-80Z35C-INT",
+    "cables": [
+      {
+        "cable": "3m",
+        "code": "-"
+      },
+      {
+        "cable": "5m (Default)",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S35-80Z42S-INT",
+    "cables": [
+      {
+        "cable": "3m",
+        "code": "-"
+      },
+      {
+        "cable": "5m (Default)",
+        "code": "01741332*M00002"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S35-100Z35C-INT",
+    "cables": [
+      {
+        "cable": "3m",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S35-100Z42S-INT",
+    "cables": [
+      {
+        "cable": "3m",
+        "code": "-"
+      },
+      {
+        "cable": "5m (Default)",
+        "code": "01741332*M00003"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m (Default)",
+        "code": "01741363"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m (Default)",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m (Default)",
+        "code": "-"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S35-120Z35C-INT",
+    "cables": [
+      {
+        "cable": "3m",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S35-120Z42S-INT",
+    "cables": [
+      {
+        "cable": "3m",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-GS60-120Z40S-INT",
+    "cables": [
+      {
+        "cable": "3m",
+        "code": "-"
+      },
+      {
+        "cable": "5m (Default)",
+        "code": "01741340*M00003"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "-"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  },
+  {
+    "modelId": "IR-S60-120Z40S-INT",
+    "cables": [
+      {
+        "cable": "3m",
+        "code": "-"
+      },
+      {
+        "cable": "5m (Default)",
+        "code": "01741367*M00002"
+      },
+      {
+        "cable": "10m",
+        "code": "-"
+      },
+      {
+        "cable": "15m",
+        "code": "01741367*M00003"
+      },
+      {
+        "cable": "3m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "5m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "10m（High flex cables）",
+        "code": "-"
+      },
+      {
+        "cable": "15m（High flex cables）",
+        "code": "-"
+      }
+    ]
+  }
+]
