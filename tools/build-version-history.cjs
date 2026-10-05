@@ -1,7 +1,2 @@
-const path = require('path');
-const { loadVersionHistory, writeGeneratedArtifacts } = require('./version-history.cjs');
-
-const root = path.resolve(__dirname, '..');
-const versionHistory = loadVersionHistory(root);
-writeGeneratedArtifacts(root, versionHistory);
-console.log('Built version history artifacts from 0_Home/version-history.json.');
+// Rebuild the locale history bundle and homepage cache URLs with the history files.
+require('./build-localized-site.cjs');
