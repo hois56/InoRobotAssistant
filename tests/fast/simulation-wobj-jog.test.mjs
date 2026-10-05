@@ -6,7 +6,7 @@ import vm from 'node:vm';
 const threeSource = readFileSync(new URL('../../3_ToolSelector/vendor/three/three.module.js', import.meta.url), 'utf8');
 const THREE = await import(`data:text/javascript;base64,${Buffer.from(threeSource).toString('base64')}`);
 const source = readFileSync(new URL('../../2_3DSimulation/main.js', import.meta.url), 'utf8');
-const names = ['getJogReadoutPose', 'getBasePoseFromJogReadout', 'getTcpRotationDegrees',
+const names = ['getRobotControllerBaseFrame', 'getJogReadoutPose', 'getBasePoseFromJogReadout', 'getTcpRotationDegrees',
   'quaternionFromTcpRotationDegrees', 'normalizeDegrees', 'updateJogWorkObjectUi', 'updateTcpPresentation',
   'applyBaseJogNumericTarget', 'jogTcpInBase'];
 const functions = names.map(name => source.match(new RegExp(`function ${name}\\([^]*?\\n\\}`))[0]).join('\n');
@@ -71,6 +71,18 @@ test('Wobj 0은 기존 BASE 표시와 하단 번호로 복귀한다', () => {
   assert.equal(inputs.y.value, '220.00');
   assert.equal(label.textContent, 'Wobj 0');
   assert.ok(titles[0].firstChild.textContent.endsWith('BASE'));
+});
+
+test('SCARA 설치면 원점과 분리된 BASE 높이를 Wobj 변환에 반영한다', () => {
+  const { context, robot, pose, inputs } = fixture();
+  const frame = new THREE.Group();
+  frame.position.z = 175.5;
+  robot.add(frame);
+  robot.userData.controllerBaseFrame = frame;
+  context.updateTcpPresentation(robot, pose);
+  assert.equal(inputs.z.value, '180.50');
+  const restored = context.getBasePoseFromJogReadout(robot, context.getJogReadoutPose(robot, pose));
+  assert.ok(restored.position.distanceTo(pose.position) < 1e-8);
 });
 
 test('JOG 위치 직접 입력은 선택 Wobj에서 BASE로 변환하여 이동한다', () => {

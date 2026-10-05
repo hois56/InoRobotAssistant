@@ -254,9 +254,94 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.05",
+                "items": [
+                  "`[수정]` 필름 박리 설정에서 손잡이 제목과 부품 추가 버튼이 세로로 찌그러지던 문제를 해결하고, 안내문과 검색창을 전체 폭으로 표시하도록 개선했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.10.04",
+                "items": [
+                  "`[수정]` 그룹 폴더를 선택할 때 모델 트리 스크롤이 자동으로 이동하던 문제를 해결했습니다.",
+                  "`[개선]` 3D에서 선택한 부품이 접힌 폴더 안에 있으면 폴더 위치로 이동하고 내부 선택을 강조하며, 펼쳐진 폴더는 해당 항목으로 이동하도록 개선했습니다.",
+                  "`[개선]` 테스트 모델링 불러오기에서 항목을 선택하면 수량 전체가 선택되어 숫자를 바로 입력해 변경할 수 있도록 개선했습니다.",
+                  "`[수정]` 모델 트리 이동·회전과 JOG 등 숫자 입력칸을 두 번 눌러야 편집할 수 있던 문제를 해결하고, 한 번 클릭하면 전체 선택 없이 값의 맨 앞에 커서를 표시하도록 개선했습니다.",
+                  "`[수정]` 3D에서 부품을 선택할 때 접힌 상위 모델이 자동으로 펼쳐지던 문제를 해결하고, 내부에 선택된 부품이 있음을 강조 표시하도록 개선했습니다.",
+                  "`[개선]` 동일한 모델을 여러 번 불러오면 모델 트리에 순번을 표시하고, 프로젝트 저장·복원 후에도 기존 순번을 유지하도록 개선했습니다.",
+                  "`[추가]` 모델 트리에서 모델·부품·그룹 폴더를 드래그하여 순서를 변경하고, 다중 선택 이동과 실행 취소 및 프로젝트 저장·복원을 지원하도록 개선했습니다.",
+                  "`[개선]` 모델 트리 하단 안내 문구와 선택 모델 제목을 제거하여 트리 항목을 더 넓게 표시하도록 개선했습니다.",
+                  "`[개선]` 3D 모델링을 불러올 때 모델 트리의 하위 항목을 기본으로 접어 표시하도록 개선했습니다.",
+                  "`[개선]` 테스트 모델링을 불러오면 모델·Tool의 부품을 미리 정리된 그룹 폴더로 표시하고, 공작물은 Object 폴더에 모으도록 개선했습니다.",
+                  "`[추가]` 동작 설정에 진공과 오브젝트를 추가했습니다. 진공은 Output 신호로 접촉한 오브젝트를 흡착·해제하고 Tool의 이동과 회전을 따라갑니다.",
+                  "`[수정]` 그리퍼·진공·컨베이어가 오브젝트로 등록한 모델과 부품만 대상으로 동작하도록 변경했습니다.",
+                  "`[수정]` 3D 화면에서 선택한 부품이 모델 트리에 파란 선택 배경으로 표시되지 않던 문제를 해결했습니다.",
+                  "`[수정]` 모델 트리의 모델과 부품 이름에서 파일 확장자를 숨기도록 변경했습니다.",
+                  "`[개선]` 동작 설정에서 오브젝트를 선택하면 방향·거리·속도·IO 연결을 제거하고 대상 등록만 표시하도록 변경했습니다.",
+                  "`[개선]` 진공 설정에는 흡착 패드와 흡착·파기 Output 및 감지 Input 연결을 표시하고, 불필요한 이동·속도·추가 옵션을 제거했습니다.",
+                  "`[변경]` 기존 물건 잡기·놓기와 프로그램 명령 및 컨트롤러 자동 잡기 기능을 제거하고, 진공·그리퍼의 동작 설정으로 제어하도록 변경했습니다.",
+                  "`[개선]` IO 테스트 기능 매핑에 진공과 동작 종류별 명령을 표시하고, 진공 흡착·파기 Output을 각각 연결하도록 개선했습니다.",
+                  "`[수정]` 동작 설정 창이 항상 다른 창보다 위에 표시되던 문제를 해결하고, 최근 열거나 클릭한 창이 앞으로 오도록 변경했습니다.",
+                  "`[수정]` 그룹 폴더의 오브젝트를 흡착한 뒤 파기하면 폴더 밖으로 빠져나오던 문제를 해결하고, 흡착 상태의 프로젝트 저장·복원에서도 원래 그룹 소속을 유지하도록 개선했습니다.",
+                  "`[개선]` IO 테스트 기능 매핑의 기능 목록에 파기를 추가하여 등록된 진공 동작의 파기 Output을 직접 연결하고 편집할 수 있도록 개선했습니다.",
+                  "`[개선]` Wobj 설정 창에서 위치로 이동 버튼을 제거했습니다.",
+                  "`[추가]` 프로그램 패널에 1~100% 전체 속도를 추가하여 각 이동 명령의 저장 속도에 별도 비율을 곱해 적용하고, 실행 중 변경 및 프로젝트·프로그램 저장을 지원하도록 개선했습니다.",
+                  "`[개선]` 충돌 감지를 로봇 하위 Tool·오브젝트 등과 주변 모델의 접촉으로 제한하고, 고정 설비끼리 및 Tool·오브젝트와 오브젝트끼리의 접촉은 제외하도록 개선했습니다. Tool과 로봇 본체의 충돌 및 J6 설치부 접촉 제외는 유지합니다.",
+                  "`[추가]` 모델 트리에서 모델과 하위 부품을 우클릭해 이름을 변경하고, 실행 취소와 프로젝트 저장·불러오기에서도 변경한 이름을 유지하도록 추가했습니다.",
+                  "`[변경]` 프로그램 패널의 전체 속도 왼쪽에 표시되던 로봇 제목을 제거했습니다.",
+                  "`[추가]` 뷰 초기화 오른쪽에 선택 중심 ON/OFF 아이콘 버튼을 추가하여 선택한 모델이나 하위 부품을 기준으로 화면을 이동·회전하고, 이동하는 모델도 따라가도록 개선했습니다.",
+                  "`[개선]` SCARA 어댑터를 새 모델로 교체하고 SCARA의 테스트 툴 불러오기에서 자동 장착하도록 개선했습니다. 교육용 모델링에는 SCARA 높이 베이스를 추가하고 선택한 로봇을 Z=200 mm에 배치하도록 개선했습니다.",
+                  "`[개선]` 그룹 폴더 밖에 있는 로봇은 모델 트리 최상단에 고정하고, 폴더 안의 로봇은 해당 그룹의 순서를 유지하도록 개선했습니다.",
+                  "`[개선]` S4·S7·S10(S10-80 제외) 및 R4·R4H·R7H-70의 교육용 모델링 배치를 리치와 실제 모듈 크기에 맞춰 조정하여, 모듈 간 20 mm 이상의 간격과 트레이 정렬을 유지하면서 트레이 슬롯과 컨베이어 벨트 작업 위치에 도달하도록 개선했습니다.",
+                  "`[수정]` 그룹 폴더 선택 후 이동·회전할 때 마지막 항목만 변환되던 문제를 해결하여, 그룹 전체가 상대 위치를 유지하며 함께 이동·회전하도록 개선했습니다.",
+                  "`[변경]` 교육용 모델링 불러오기 구성에서 스테이지 버큠 모듈을 제외했습니다.",
+                  "`[수정]` 필름 박리가 시작 전부터 들리거나 끊겨 움직이던 문제를 해결하고, 전체 길이를 완전히 벗긴 뒤에만 완료 신호를 보내며 필름 놓기 전까지 파지 상태를 유지하도록 개선했습니다.",
+                  "`[개선]` 하나의 필름에 여러 손잡이를 등록하고, 그리퍼로 가까운 손잡이를 잡아 당긴 위치에 따라 박리할 수 있도록 개선했습니다. 나머지 손잡이도 같은 필름과 함께 움직이며, 완전히 벗긴 뒤 그리퍼를 열어 놓을 수 있습니다.",
+                  "`[개선]` SCARA 로봇에 테스트 툴을 불러올 때 어댑터를 포함한 툴의 초기 Ry를 180°로 설정하도록 개선했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.10.03",
+                "items": [
+                  "`[개선]` 모델 트리와 3D 화면에 Shift 다중 선택과 부품 그룹 기능을 추가하고 트리 간격과 동작 종류 표시를 개선했습니다.",
+                  "`[개선]` 동작 설정 창과 이동 대상 트리를 정리하고 외곽선 선택·우클릭 대상 지정·동작 이름 표시를 개선했습니다.",
+                  "`[변경]` 실린더·그리퍼 속도를 하나로 통합하고 동작 제어는 Output, 완료 신호는 Input으로 고정했습니다.",
+                  "`[수정]` 동작 부품이 상위 모델·로봇 Tool·외부 축의 이동과 회전 방향을 따라가지 못하던 문제를 해결했습니다.",
+                  "`[개선]` 부품 그룹 폴더에 우클릭 이름 변경·그룹 해제와 드래그 앤 드롭을 추가하고, 그룹 안의 부품을 개별 해제할 수 있도록 개선했습니다.",
+                  "`[개선]` 동작 편집 상태와 변경 저장 버튼을 명확히 표시하고, 모델 트리 우클릭으로 기존 동작을 편집할 수 있도록 개선했습니다.",
+                  "`[수정]` 동작 설정 창이 상단·하단 헤더를 넘던 문제와 그룹 내부 들여쓰기를 수정하고 스크롤 모양을 다른 창과 통일했습니다.",
+                  "`[개선]` 동작 설정의 사용 신호 항목을 제거하고 완료·감지 Input 번호를 IO 연결 영역으로 옮겼습니다.",
+                  "`[개선]` 이동 대상 목록에 선택한 항목만 표시하고 동작 버튼을 한 줄로 배치하며 시험 문구를 정리했습니다.",
+                  "`[수정]` 접힌 그룹에 부품을 넣으면 자동으로 펼쳐지던 문제를 해결하고 그룹 메뉴 문구·아이콘·글자색을 정리했습니다.",
+                  "`[추가]` 부품 그룹 폴더를 우클릭하여 그룹 안의 부품 전체에 동작을 설정하고 기존 그룹 동작을 편집할 수 있습니다.",
+                  "`[수정]` 여러 부품을 선택한 뒤 항목 그룹에서 해제를 눌러도 한 부품만 해제되던 문제를 해결했습니다.",
+                  "`[개선]` 그룹 폴더 이름을 클릭하면 포함된 부품 전체가 선택되며, 왼쪽 화살표로만 폴더를 펼치거나 접도록 개선했습니다.",
+                  "`[추가]` 모델 트리의 최상위 모델도 그룹 폴더로 정리하고 이름 변경·다중 선택·드래그 이동·그룹 해제·저장 및 실행 취소를 사용할 수 있습니다.",
+                  "`[개선]` 모델 트리 기본 창이 상단·하단 헤더 사이의 높이를 채우도록 변경하고, 모니터 이동이나 화면 크기 변경 후 창이 작아진 채로 남던 문제를 해결했습니다.",
+                  "`[수정]` 프로젝트를 불러온 뒤 로봇이 있어도 Wobj 버튼이 비활성화되던 문제를 해결하고 저장된 Wobj 선택과 설정을 다시 표시하도록 개선했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.10.02",
+                "items": [
+                  "`[개선]` 파츠가 하나인 모델은 모델 트리에서 하위 파츠 없이 상위 항목만 표시하도록 개선했습니다.",
+                  "`[개선]` 가져온 모델을 종류별 색상으로 구분하고 테스트 모델 미리보기에도 같은 색상을 적용해 모델을 쉽게 식별하도록 개선했습니다.",
+                  "`[개선]` STL 로봇의 외곽선 표시에서 곡면의 불필요한 분할선과 잡선을 줄이고, 윤곽선이 끊겨 보이던 문제를 개선했습니다.",
+                  "`[수정]` 고정 뷰 창에서 스냅 클릭이 메인 화면 기준으로 처리되던 문제를 해결하고, 분리된 뷰 창에서도 스냅 선택과 표시가 동작하도록 개선했습니다.",
+                  "`[추가]` 컨베이어의 방향·속도와 IO를 설정하여 상면의 물체를 이송하는 기능을 추가했습니다.",
+                  "`[추가]` 모델 트리 우클릭으로 실린더, 직선·회전 외부 축, 그리퍼와 곡선 필름 박리를 설정하고, 여러 부품을 체크하여 동작과 IO를 함께 연결할 수 있습니다. 완료 센서, 로봇 연결과 저장·복구를 지원하며 설정 중 다른 창도 사용할 수 있습니다.",
+                  "`[추가]` 프로그램 패널에 IO 출력·입력 대기 명령을 추가했습니다. OLP와 같은 IO로 설비를 제어하며, 프로그램 실행 없이 IO 테스트에서도 매핑된 동작을 운전할 수 있습니다.",
+                  "`[개선]` STEP 모델의 형상 정밀도를 유지하면서 가져오기 처리 속도를 개선했습니다.",
+                  "`[수정]` 모델 트리 창의 높이를 조절하면 선택 모델의 이동·회전·크기 편집 영역이 지나치게 작아지던 문제를 해결했습니다.",
+                  "`[수정]` 동작 설정의 부품 선택 중 모델 트리 클릭이 반영되지 않던 문제를 해결했습니다. 컨베이어는 IO 없이 저장·시험할 수 있으며 조립 모델의 벨트 부품을 지정할 수 있습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.10.01",
                 "items": [
-                  "`[개선]` JOG 패널의 TCP 위치·회전 표시와 좌표 입력 및 이동 버튼에 선택한 Wobj 좌표계를 반영하고, 하단 Wobj 버튼에 현재 사용 중인 번호를 표시하도록 개선했습니다."
+                  "`[개선]` JOG 패널의 TCP 위치·회전 표시와 좌표 입력 및 이동 버튼에 선택한 Wobj 좌표계를 반영하고, 하단 Wobj 버튼에 현재 사용 중인 번호를 표시하도록 개선했습니다.",
+                  "`[수정]` SCARA 로봇의 설치 원점을 베이스 설치면 중심으로 옮기고, TCP 좌표 기준과 분리하여 설치 원점과 TCP 기준이 함께 묶여 있던 문제를 해결했습니다.",
+                  "`[추가]` 테스트 모델을 3D 모델링과 툴로 구분하고, 이미지·이름·수량을 선택해 일괄 가져오는 창을 추가했습니다. 모델은 원점에 생성하고 툴은 선택된 로봇 또는 마지막으로 선택한 로봇에 부착합니다.",
+                  "`[추가]` 원점의 로봇 베이스, 지정된 위치의 교육용 모듈 5개와 첫 번째 트레이에 꽂힌 사각형 오브젝트 9개를 함께 생성하는 버튼을 추가했습니다."
                 ]
               },
               {
@@ -1422,9 +1507,45 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.03",
+                "items": [
+                  "Improved model-tree spacing and motion-type labels, and added Shift multi-selection and part groups in the tree and 3D view.",
+                  "Unified the motion settings panel and hierarchical target list, with outline selection, right-click target assignment, and automatic motion names.",
+                  "Unified cylinder and gripper speeds, with Output signals controlling motion and Input signals reporting completion.",
+                  "Fixed moving parts failing to follow the position and orientation of their parent model, robot Tool, or external axis.",
+                  "Added group-folder renaming and ungrouping from the context menu, drag-and-drop into groups, and individual part ungrouping.",
+                  "Made motion editing and Save changes explicit, and added editing existing motions from the model-tree context menu.",
+                  "Fixed motion settings crossing the top and bottom headers and missing indentation inside groups; unified scrollbar appearance with other panels.",
+                  "Removed the signal-type field from motion settings and moved completion and detection Input addresses into IO connections.",
+                  "The motion target list now shows only selected items; motion buttons are arranged in one row with shorter labels.",
+                  "Fixed collapsed groups expanding after a drop and unified group menu labels, icons and text colors.",
+                  "Added motion settings to the part-group context menu to configure all group members together and edit an existing group motion.",
+                  "Fixed ungrouping only one part when multiple parts were selected.",
+                  "Clicking a group name now selects all its parts; only the left arrow expands or collapses the folder."
+                ]
+              },
+              {
+                "title": "Ver 26.10.02",
+                "items": [
+                  "`[Improved]` Models with a single part now show only the parent item in the model tree.",
+                  "`[Improved]` Imported models now use distinct colors by model, with matching test model previews for easier identification.",
+                  "`[Improved]` Reduced unnecessary facet edges and stray lines on STL robot outlines and improved broken-looking contours.",
+                  "`[Fixed]` Fixed snap clicks in fixed view windows using the main viewport and enabled snap selection and markers in detached view windows.",
+                  "`[Added]` Conveyor transport with direction, speed and IO settings for objects on the belt.",
+                  "`[Added]` Right-click model tree items to configure cylinders, linear/rotary external axes, grippers and curved film peeling. Select multiple parts with checkboxes and connect motion and IO together, with completion sensors, robot links and save/restore. Other windows remain usable during setup.",
+                  "`[Added]` IO output and input wait commands in the Program panel. Equipment uses the same IO as OLP and mapped motions can also run from IO tests without running a program.",
+                  "`[Improved]` Improved STEP model import processing speed while preserving geometry precision.",
+                  "`[Fixed]` Fixed the selected model move, rotate and scale editor becoming too small when resizing the model tree panel height.",
+                  "`[Fixed]` Model tree clicks now select parts during motion setup. Conveyors can be saved and tested without IO, and belt parts in assemblies can be selected."
+                ]
+              },
+              {
                 "title": "Ver 26.10.01",
                 "items": [
-                  "`[Improved]` JOG TCP position and rotation readouts, coordinate entry, and movement buttons now use the selected Wobj frame. The bottom Wobj button shows the active number."
+                  "`[Improved]` JOG TCP position and rotation readouts, coordinate entry, and movement buttons now use the selected Wobj frame. The bottom Wobj button shows the active number.",
+                  "`[Fixed]` Moved the SCARA hardware origin to the centre of the base mounting surface and separated it from the TCP coordinate reference.",
+                  "`[Added]` Added a test model picker with separate 3D model and tool lists, image previews, names, quantities, and batch import. Models appear at the origin; tools attach to the selected or last selected robot.",
+                  "`[Added]` Added a button to create a robot base at the origin, five educational modules at preset positions, and nine square objects seated in the first tray."
                 ]
               },
               {
@@ -2590,9 +2711,45 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.03",
+                "items": [
+                  "改进模型树间距和动作类型显示，新增树及3D视图中的Shift多选和零件分组。",
+                  "统一动作设置窗口及分层目标列表，支持轮廓选择、右键指定目标和自动动作名称。",
+                  "统一气缸和夹爪速度，使用Output控制动作，并使用Input报告完成信号。",
+                  "修复动作零件未跟随上级模型、机器人Tool或外部轴的位置和旋转方向的问题。",
+                  "新增零件组文件夹右键重命名和解组、拖放加入组以及单个零件移出组。",
+                  "明确显示动作编辑状态和保存更改按钮，支持在模型树右键编辑已有动作。",
+                  "修复动作设置窗口越过上下栏及组内缺少缩进的问题，并统一滚动条样式。",
+                  "移除动作设置的信号类型项，将完成和检测Input地址移至IO连接区域。",
+                  "移动目标列表仅显示选中项，动作按钮单行排列并简化文字。",
+                  "修复折叠组拖入零件后自动展开的问题，统一组菜单文字、图标和字体颜色。",
+                  "新增零件组文件夹右键动作设置，可同时配置组内全部零件并编辑已有组动作。",
+                  "修复选中多个零件后移出组时仅移出一个零件的问题。",
+                  "点击组文件夹名称可选中组内全部零件，仅通过左侧箭头展开或折叠文件夹。"
+                ]
+              },
+              {
+                "title": "Ver 26.10.02",
+                "items": [
+                  "`[改进]` 单零件模型在模型树中仅显示上级项，不再显示下级零件。",
+                  "`[改进]` 导入模型按模型使用不同颜色，测试模型预览使用相同颜色，便于识别。",
+                  "`[改进]` 减少STL机器人轮廓中的不必要曲面分割线和杂线，改善轮廓断续显示的问题。",
+                  "`[修复]` 修复固定视图窗口中的捕捉点击按主视图处理的问题，并支持在独立视图窗口中选择和显示捕捉点。",
+                  "`[新增]` 可设置输送带方向、速度与IO，输送带面上的物体。",
+                  "`[新增]` 右键模型树设置气缸、直线/旋转外部轴、夹爪与曲线薄膜剥离，通过复选框选择多个零件并同时连接动作与IO。支持到位传感器、机器人连接及保存恢复，设置时可操作其他窗口。",
+                  "`[新增]` 程序面板支持IO输出与输入等待命令，与OLP共用IO；无需运行程序也可通过IO测试驱动映射动作。",
+                  "`[改进]` 在保持几何精度的同时，提高了 STEP 模型导入处理速度。",
+                  "`[修复]` 修复调整模型树窗口高度时，所选模型的移动、旋转和缩放编辑区域过度缩小的问题。",
+                  "`[修复]` 修复动作设置中点击模型树无法选择零件的问题。输送带可无需IO保存和测试，并可指定装配模型中的皮带零件。"
+                ]
+              },
+              {
                 "title": "Ver 26.10.01",
                 "items": [
-                  "`[改进]` JOG 面板的 TCP 位置、旋转显示、坐标输入和移动按钮现在使用所选 Wobj 坐标系，底部 Wobj 按钮显示当前编号。"
+                  "`[改进]` JOG 面板的 TCP 位置、旋转显示、坐标输入和移动按钮现在使用所选 Wobj 坐标系，底部 Wobj 按钮显示当前编号。",
+                  "`[修复]` 将 SCARA 机器人的安装原点移至底座安装面的中心，并将其与 TCP 坐标基准分离，解决了两个基准绑定的问题。",
+                  "`[新增]` 新增测试模型选择窗口，分别显示3D模型与工具，支持图片预览、名称、数量选择和批量导入。模型在原点生成，工具安装到当前或最后选择的机器人。",
+                  "`[新增]` 新增教育模型生成按钮，在原点创建机器人底座，在指定位置创建五个模块，并在第一个托盘中放置九个方形物体。"
                 ]
               },
               {
@@ -3758,9 +3915,45 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.03",
+                "items": [
+                  "Cải thiện khoảng cách và nhãn loại chuyển động trong cây mô hình, thêm chọn nhiều bằng Shift và nhóm chi tiết trong cây và khung nhìn 3D.",
+                  "Thống nhất cửa sổ cài đặt chuyển động và danh sách đối tượng dạng cây, hỗ trợ chọn bằng đường viền, gán đối tượng qua chuột phải và tên chuyển động tự động.",
+                  "Thống nhất tốc độ xi lanh và kẹp, dùng Output điều khiển chuyển động và Input báo hoàn tất.",
+                  "Sửa lỗi chi tiết chuyển động không theo vị trí và hướng xoay của mô hình cha, Tool robot hoặc trục ngoài.",
+                  "Thêm đổi tên và giải nhóm bằng menu chuột phải, kéo thả vào nhóm và đưa từng chi tiết ra khỏi nhóm.",
+                  "Hiển thị rõ trạng thái chỉnh sửa và nút lưu thay đổi; cho phép sửa chuyển động hiện có từ menu cây mô hình.",
+                  "Sửa cửa sổ cài đặt chuyển động vượt thanh trên/dưới và thiếu thụt lề trong nhóm; thống nhất giao diện thanh cuộn.",
+                  "Bỏ mục loại tín hiệu trong cài đặt chuyển động, chuyển số Input hoàn tất và phát hiện sang kết nối IO.",
+                  "Danh sách đối tượng chuyển động chỉ hiển thị mục đã chọn; nút chuyển động được xếp một hàng với nhãn ngắn hơn.",
+                  "Sửa nhóm thu gọn tự mở khi thả chi tiết vào, thống nhất nhãn menu, biểu tượng và màu chữ nhóm.",
+                  "Thêm cài đặt chuyển động vào menu nhóm chi tiết để cấu hình tất cả thành viên và sửa chuyển động nhóm hiện có.",
+                  "Sửa lỗi chỉ đưa một chi tiết ra khỏi nhóm khi đã chọn nhiều chi tiết.",
+                  "Nhấp tên nhóm để chọn tất cả chi tiết; chỉ mũi tên bên trái mở hoặc thu gọn thư mục."
+                ]
+              },
+              {
+                "title": "Ver 26.10.02",
+                "items": [
+                  "`[Cải thiện]` Mô hình chỉ có một bộ phận chỉ hiển thị mục cấp trên trong cây mô hình.",
+                  "`[Cải thiện]` Mô hình nhập vào có màu riêng theo mô hình, với ảnh xem trước cùng màu để dễ phân biệt.",
+                  "`[Cải thiện]` Giảm đường chia mặt và đường thừa trên đường viền robot STL, cải thiện đường viền bị đứt đoạn.",
+                  "`[Đã sửa]` Khắc phục nhấp bắt điểm trong cửa sổ góc nhìn bị xử lý theo màn hình chính và hỗ trợ chọn, hiển thị điểm bắt trong cửa sổ tách riêng.",
+                  "`[Thêm]` Vận chuyển vật thể trên băng tải với cài đặt hướng, tốc độ và IO.",
+                  "`[Thêm]` Nhấp phải cây mô hình để thiết lập xi lanh, trục ngoài tuyến tính/quay, kẹp và bóc phim uốn cong. Chọn nhiều bộ phận bằng hộp kiểm và kết nối chuyển động với IO, hỗ trợ cảm biến hoàn tất, liên kết robot và lưu/khôi phục. Vẫn sử dụng được cửa sổ khác khi thiết lập.",
+                  "`[Thêm]` Lệnh xuất IO và chờ đầu vào trong bảng chương trình. Thiết bị dùng chung IO với OLP và có thể chạy từ kiểm tra IO mà không cần chạy chương trình.",
+                  "`[Cải tiến]` Cải thiện tốc độ xử lý nhập mô hình STEP trong khi giữ nguyên độ chính xác hình học.",
+                  "`[Sửa]` Khắc phục vùng chỉnh sửa di chuyển, xoay và kích thước của mô hình đã chọn bị thu nhỏ quá mức khi thay đổi chiều cao cửa sổ cây mô hình.",
+                  "`[Sửa]` Khắc phục thao tác nhấp cây mô hình không chọn bộ phận khi thiết lập chuyển động. Băng tải có thể lưu và chạy thử không cần IO, hỗ trợ chọn bộ phận dây băng trong mô hình lắp ráp."
+                ]
+              },
+              {
                 "title": "Ver 26.10.01",
                 "items": [
-                  "`[Cải tiến]` Hiển thị vị trí và góc TCP, nhập tọa độ và nút di chuyển trong JOG sử dụng hệ tọa độ Wobj đã chọn. Nút Wobj phía dưới hiển thị số đang dùng."
+                  "`[Cải tiến]` Hiển thị vị trí và góc TCP, nhập tọa độ và nút di chuyển trong JOG sử dụng hệ tọa độ Wobj đã chọn. Nút Wobj phía dưới hiển thị số đang dùng.",
+                  "`[Sửa lỗi]` Đã chuyển gốc lắp đặt của robot SCARA về tâm mặt lắp đế và tách khỏi hệ quy chiếu tọa độ TCP.",
+                  "`[Thêm]` Thêm cửa sổ chọn mô hình thử nghiệm, tách mô hình 3D và công cụ, có ảnh xem trước, tên, số lượng và nhập hàng loạt. Mô hình đặt tại gốc; công cụ gắn vào robot đang chọn hoặc được chọn gần nhất.",
+                  "`[Thêm]` Thêm nút tạo đế robot tại gốc, năm mô-đun đào tạo tại vị trí định sẵn và chín vật thể vuông trong khay thứ nhất."
                 ]
               },
               {
@@ -4926,9 +5119,45 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.03",
+                "items": [
+                  "Model ağacı aralıkları ve hareket türü etiketleri iyileştirildi; ağaçta ve 3D görünümde Shift ile çoklu seçim ve parça grupları eklendi.",
+                  "Hareket ayarları ve hiyerarşik hedef listesi birleştirildi; kenar çizgisiyle seçim, sağ tıkla hedef atama ve otomatik hareket adları eklendi.",
+                  "Silindir ve tutucu hızları birleştirildi; hareket kontrolü Output, tamamlanma sinyalleri Input olarak sabitlendi.",
+                  "Hareketli parçaların üst modelin, robot Tool öğesinin veya harici eksenin konumunu ve dönüş yönünü izlememesi sorunu giderildi.",
+                  "Grup klasörlerine sağ tıkla ad değiştirme ve grubu çözme, sürükleyip bırakma ve tek parçayı gruptan çıkarma eklendi.",
+                  "Hareket düzenleme durumu ve değişiklikleri kaydetme düğmesi belirginleştirildi; model ağacı menüsünden mevcut hareketler düzenlenebilir.",
+                  "Hareket ayarlarının üst/alt çubukları aşması ve grup içi girinti eksikliği giderildi; kaydırma çubukları diğer pencerelerle aynı görünüme getirildi.",
+                  "Hareket ayarlarındaki sinyal türü alanı kaldırıldı; tamamlanma ve algılama Input adresleri IO bağlantılarına taşındı.",
+                  "Hareket hedefi listesi yalnızca seçilen öğeleri gösterir; hareket düğmeleri kısa etiketlerle tek satırda düzenlendi.",
+                  "Kapalı grupların parça bırakılınca açılması düzeltildi; grup menüsü etiketleri, simgeleri ve yazı renkleri düzenlendi.",
+                  "Parça grubu menüsüne tüm grup üyelerini birlikte yapılandırma ve mevcut grup hareketini düzenleme için hareket ayarları eklendi.",
+                  "Birden fazla parça seçildiğinde gruptan çıkarma işleminin yalnızca bir parçaya uygulanması düzeltildi.",
+                  "Grup adına tıklamak tüm parçaları seçer; klasör yalnızca soldaki ok ile açılır veya kapanır."
+                ]
+              },
+              {
+                "title": "Ver 26.10.02",
+                "items": [
+                  "`[İyileştirildi]` Tek parçalı modeller artık model ağacında yalnızca üst öğeyi gösterir.",
+                  "`[İyileştirildi]` İçe aktarılan modelleri ayırt etmek için modele göre farklı renkler ve aynı renkli test modeli önizlemeleri eklendi.",
+                  "`[İyileştirildi]` STL robotların dış çizgilerindeki gereksiz yüzey bölme çizgileri ve parazitler azaltıldı, kesik görünen konturlar iyileştirildi.",
+                  "`[Düzeltildi]` Sabit görünüm pencerelerindeki yakalama tıklamalarının ana görünüme göre işlenmesi düzeltildi; ayrılmış pencerelerde yakalama seçimi ve işaretleri desteklendi.",
+                  "`[Eklendi]` Bant üzerindeki nesneler için yön, hız ve IO ayarlı konveyör taşıması.",
+                  "`[Eklendi]` Silindir, doğrusal/döner harici eksen, tutucu ve kavisli film soyma ayarları model ağacında sağ tıkla açılır. Onay kutularıyla birden fazla parça seçilip hareket ve IO birlikte bağlanabilir; tamamlanma sensörleri, robot bağlantıları ve kaydetme/geri yükleme desteklenir. Ayar sırasında diğer pencereler kullanılabilir.",
+                  "`[Eklendi]` Program paneline IO çıkışı ve giriş bekleme komutları eklendi. Ekipman OLP ile aynı IO durumunu kullanır; eşlenen hareketler program çalıştırılmadan IO testinden de çalışır.",
+                  "`[İyileştirme]` Geometri hassasiyeti korunarak STEP modeli içe aktarma işlem hızı iyileştirildi.",
+                  "`[Düzeltildi]` Model ağacı panelinin yüksekliği değiştirildiğinde seçili modelin taşıma, döndürme ve ölçek düzenleyicisinin aşırı küçülmesi düzeltildi.",
+                  "`[Düzeltildi]` Hareket ayarlarında model ağacı tıklamalarıyla parça seçimi düzeltildi. Konveyörler IO olmadan kaydedilip denenebilir ve montaj içindeki bant parçaları seçilebilir."
+                ]
+              },
+              {
                 "title": "Ver 26.10.01",
                 "items": [
-                  "`[İyileştirildi]` JOG TCP konum ve dönüş göstergeleri, koordinat girişi ve hareket düğmeleri seçili Wobj koordinat sistemini kullanır. Alt Wobj düğmesi etkin numarayı gösterir."
+                  "`[İyileştirildi]` JOG TCP konum ve dönüş göstergeleri, koordinat girişi ve hareket düğmeleri seçili Wobj koordinat sistemini kullanır. Alt Wobj düğmesi etkin numarayı gösterir.",
+                  "`[Düzeltildi]` SCARA kurulum başlangıç noktası taban montaj yüzeyinin merkezine taşındı ve TCP koordinat referansından ayrıldı.",
+                  "`[Eklendi]` 3D modelleri ve araçları ayrı listeleyen, resim önizlemeleri, adlar, miktarlar ve toplu içe aktarma sunan test modeli seçim penceresi eklendi. Modeller başlangıç noktasında oluşturulur; araçlar seçili veya son seçilen robota bağlanır.",
+                  "`[Eklendi]` Başlangıç noktasında robot tabanı, belirlenen konumlarda beş eğitim modülü ve ilk tepsiye yerleştirilmiş dokuz kare nesne oluşturma düğmesi eklendi."
                 ]
               },
               {
@@ -6094,9 +6323,45 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.03",
+                "items": [
+                  "Улучшены интервалы в дереве моделей и отображение типов движения; добавлены множественный выбор с Shift и группы деталей в дереве и 3D-виде.",
+                  "Унифицированы окно настройки движения и иерархический список объектов; добавлены выбор с контурной подсветкой, назначение через правую кнопку и автоматические имена движений.",
+                  "Объединены скорости цилиндра и захвата; управление движением закреплено за Output, сигналы завершения — за Input.",
+                  "Исправлена ошибка, из-за которой движущиеся детали не следовали положению и повороту родительской модели, Tool робота или внешней оси.",
+                  "Добавлены переименование и расформирование групп через контекстное меню, перетаскивание деталей в группы и исключение отдельных деталей.",
+                  "Явно обозначены режим редактирования движения и сохранение изменений; существующие движения можно редактировать через меню дерева моделей.",
+                  "Исправлены выход окна настроек за верхнюю/нижнюю панели и отсутствие отступов внутри групп; унифицирован вид полос прокрутки.",
+                  "Удалено поле типа сигнала; адреса Input завершения и обнаружения перенесены в раздел подключения IO.",
+                  "Список объектов движения показывает только выбранные элементы; кнопки движения размещены в одну строку с короткими названиями.",
+                  "Исправлено автоматическое раскрытие свёрнутой группы после перетаскивания детали; унифицированы подписи меню, значки и цвет текста групп.",
+                  "В меню группы деталей добавлена настройка движения для всех её элементов и редактирование существующего движения группы.",
+                  "Исправлена ошибка, при которой при выборе нескольких деталей из группы исключалась только одна.",
+                  "Щелчок по имени группы выбирает все её детали; раскрытие и сворачивание выполняются только стрелкой слева."
+                ]
+              },
+              {
+                "title": "Ver 26.10.02",
+                "items": [
+                  "`[Улучшено]` Модели с одной деталью теперь отображают только родительский элемент в дереве моделей.",
+                  "`[Улучшено]` Импортированные модели теперь имеют разные цвета по типу модели; предварительные изображения тестовых моделей используют те же цвета.",
+                  "`[Улучшено]` Уменьшены лишние линии граней и случайные штрихи в контурах STL-роботов, улучшено отображение прерывистых контуров.",
+                  "`[Исправлено]` Исправлена обработка щелчков привязки в окне вида по основному экрану; выбор и отображение точек привязки доступны также в отдельном окне.",
+                  "`[Добавлено]` Перемещение объектов на конвейере с настройкой направления, скорости и IO.",
+                  "`[Добавлено]` Настройка цилиндров, линейных/поворотных внешних осей, захватов и изогнутого отслаивания плёнки через правую кнопку в дереве моделей. Несколько деталей выбираются флажками, движение и IO настраиваются вместе. Поддерживаются датчики завершения, связь с роботом и сохранение/восстановление; другие окна доступны во время настройки.",
+                  "`[Добавлено]` Команды вывода IO и ожидания входа в панели программы. Оборудование использует общие с OLP сигналы; сопоставленные движения доступны из теста IO без запуска программы.",
+                  "`[Улучшение]` Повышена скорость обработки импорта моделей STEP с сохранением точности геометрии.",
+                  "`[Исправлено]` Исправлено чрезмерное уменьшение области перемещения, вращения и масштаба выбранной модели при изменении высоты дерева моделей.",
+                  "`[Исправлено]` Исправлен выбор деталей щелчком в дереве моделей при настройке движения. Конвейер можно сохранять и испытывать без IO, выбирая деталь ленты в сборке."
+                ]
+              },
+              {
                 "title": "Ver 26.10.01",
                 "items": [
-                  "`[Улучшено]` Показания положения и ориентации TCP, ввод координат и кнопки перемещения JOG используют выбранную систему Wobj. Нижняя кнопка Wobj показывает активный номер."
+                  "`[Улучшено]` Показания положения и ориентации TCP, ввод координат и кнопки перемещения JOG используют выбранную систему Wobj. Нижняя кнопка Wobj показывает активный номер.",
+                  "`[Исправлено]` Установочный ноль SCARA перенесён в центр монтажной поверхности основания и отделён от системы отсчёта координат TCP.",
+                  "`[Добавлено]` Добавлено окно выбора тестовых моделей с отдельными списками 3D-моделей и инструментов, изображениями, названиями, количеством и пакетным импортом. Модели создаются в начале координат; инструменты крепятся к выбранному или последнему выбранному роботу.",
+                  "`[Добавлено]` Добавлена кнопка создания основания робота в начале координат, пяти учебных модулей в заданных позициях и девяти квадратных объектов в первом лотке."
                 ]
               },
               {

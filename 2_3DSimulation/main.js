@@ -4,6 +4,9 @@
  */
 
 import * as THREE from 'three';
+import { buildCleanOutlinePositions } from './outline-geometry-core.mjs';
+import { TEST_MODEL_CATALOG, getTestModelSelection, getTestModelSelectionForRobot, getEducationalModelSelection, getImportedModelColor } from './test-model-catalog.mjs';
+import { getTestModelTreePreset } from './test-model-tree-presets.mjs';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { clone as cloneObjectWithSkeletons } from 'three/addons/utils/SkeletonUtils.js';
@@ -15,6 +18,7 @@ import {
     integrateStepMesh
 } from '../3_ToolSelector/mass-properties.mjs';
 import { MeshCollisionSystem } from './collision-system.mjs';
+import { isSimulationCollisionPair, shouldReportSimulationCollision } from './collision-policy-core.mjs';
 import {
     MOTION_PROJECT_SCHEMA_VERSION,
     DEFAULT_MOVJ_SPEED,
@@ -31,13 +35,17 @@ import {
     formatMotionPointName,
     formatPositionPointRecordLine,
     isMotionPointMotion,
-    isGripObjectMotion,
+
+    isIoMotion,
+    normalizeProgramIoStep,
     isWaitMotion,
     isHomeMotion,
     isValidMotionPointLabel,
     sCurveProgress,
     interpolateLinearPosition,
     slerpQuaternion,
+    normalizeProgramSpeedOverride,
+    advanceMotionSpeedClock,
     calculateMovjDuration,
     RAPID_MOVE_DEFAULTS,
     createRapidMoveState,
@@ -46,7 +54,7 @@ import {
     calculateDelayDuration,
     calculateCycleElapsedSeconds,
     advanceMotionCursor,
-    getDirectionalGripActions,
+
     getDirectionalTimerActions,
     resolveMotionSegmentCommand,
     createEmptyMotionProgram,
@@ -95,6 +103,11 @@ import {
     resolveOlpPoint,
     updateOlpFileText
 } from './olp-project-core.mjs';
+import { createEquipmentApp } from './equipment-app.mjs';
+import { EQUIPMENT_TYPES, EQUIPMENT_IO_TYPES, EQUIPMENT_LABELS, normalizeEquipmentDefinition, equipmentMotionGroups, equipmentReferences, equipmentCommandOptions } from './equipment-core.mjs';
+import { equipmentObjectRef } from './equipment-scene.mjs';
+import { conveyorElapsedSeconds } from './conveyor-core.mjs';
+import { moveConveyorObjects } from './conveyor-scene.mjs';
 import * as WorkspaceRecovery from './workspace-recovery-core.mjs';
 import {
     calculateMeasurementResult,
@@ -240,7 +253,7 @@ function isNumericInputTarget(target) {
 }
 
 function prepareNumericInputForEditing(input) {
-    if (!(input instanceof HTMLInputElement) || input.type !== 'number') return;
+    if (!(input instanceof HTMLInputElement) || input.type !== 'number' || input.hasAttribute('data-test-quantity')) return;
     if (!input.dataset.numericInputType) input.dataset.numericInputType = 'number';
     if (input.dataset.numericInputOriginalMode === undefined) {
         input.dataset.numericInputOriginalMode = input.inputMode || '';
@@ -368,7 +381,16 @@ function handleNumericInputChange(event) {
 }
 
 function handleNumericInputPointerDown(event) {
-    prepareNumericInputForEditing(event.target);
+    const input = event.target;
+    if (!isNumericInputTarget(input) || event.button !== 0 || input.disabled || input.readOnly
+        || input.hasAttribute('data-test-quantity')) return;
+    const needsFocus = document.activeElement !== input;
+    prepareNumericInputForEditing(input);
+    if (needsFocus) {
+        event.preventDefault();
+        input.focus({ preventScroll: true });
+        setNumericInputSelection(input, 0);
+    }
 }
 
 function handleNumericInputFocus(event) {
@@ -419,15 +441,15 @@ const MOTION_PROGRAM_FILE_FORMAT = 'inorobot-motion-program';
 const MOTION_PROGRAM_FILE_SCHEMA_VERSION = 1;
 const MOTION_PROGRAM_FILE_MOTIONS = new Set([
     'MOVJ', 'MOVL', 'DELAY', 'TIME_START', 'TIME_OUT', 'VIEW',
-    'GRIP_USE', 'GRIP_RELEASE', 'WAIT', 'HOME'
+      'WAIT', 'HOME', 'IO_OUT', 'IO_WAIT'
 ]);
 let simulationWorkspaceFileBusy = false;
 
 // Controller-driven grip inference deliberately uses a strict joint-pose
 // tolerance and a real elapsed hold time.  A collision while the robot is
 // moving must never be interpreted as a grip event.
-const CONTROLLER_GRIP_POSITION_TOLERANCE = 0.001;
-const CONTROLLER_GRIP_CONTACT_HOLD_MS = 300;
+
+
 
 const IS_MANUAL_GUIDE_EMBED = window.self !== window.top
     && new URLSearchParams(window.location.search).get('embed') === 'manual-guide';
@@ -435,6 +457,7 @@ const IS_MANUAL_GUIDE_EMBED = window.self !== window.top
 const state = {
     scene: null, camera: null, renderer: null,
     controls: null, transformControls: null,
+    selectedViewPivot: { enabled: false, object: null, center: null },
     sceneSelectionRaycaster: new THREE.Raycaster(),
     sceneSelectionPointer: null,
     sceneContextPointer: null,
@@ -443,6 +466,13 @@ const state = {
     models: [], // List of loaded models { group, name, type }
     selectedModel: null,
     selectedModelPart: null,
+    modelSelection: new Map(),
+    selectedTransformBasis: null,
+    modelGroups: [],
+    modelTreeOrder: {},
+    modelTreeDragParent: null,
+    modelTreeScrollSuppressed: false,
+    selectionBatch: false,
     primitiveShapeOverlay: {
         group: null,
         labels: new Map(),
@@ -708,6 +738,7 @@ const state = {
     motionPrograms: new Map(),
     motionSessions: new Map(),
     activeProgramRobot: null,
+    programSpeedOverride: 100,
     motionRepeatRobot: false,
     motionRepeat: false,
     motionReverseRepeatRobot: false,
@@ -773,6 +804,7 @@ const state = {
         dirtyAll: false,
         dirtyRanges: new Set()
     },
+    equipmentDefinitions: [],
     ioFunctionMappings: [],
     ioFunctionMappingRuntimeValues: new Map(),
     workOriginOutputStates: new Map(),
@@ -848,17 +880,7 @@ const state = {
         reconnectAttempt: 0,
         reconnectMessage: '',
         streamWatchdogTimer: null,
-        socketGeneration: 0,
-        gripInference: {
-            enabled: false,
-            robot: null,
-            stationaryPose: null,
-            stationarySince: 0,
-            contactKey: '',
-            contactSince: 0,
-            actionDone: false,
-            blockedUntilContactClears: false
-        }
+        socketGeneration: 0
     },
     collaboration: {
         enabled: false,
@@ -1021,6 +1043,8 @@ const state = {
     snapDisplayedCandidates: [],
     snapMarkerReferenceDistance: null,
     snapPointerMoveFrame: null,
+    snapPointerMoveWindow: null,
+    snapViewport: null,
     snapLastPointerEvent: null,
     viewNavigationActive: false,
     snapVisibilityRaycaster: new THREE.Raycaster(),
@@ -1126,6 +1150,7 @@ const el = {
     statusDot:       document.getElementById('status-dot'),
     canvasContainer: document.getElementById('canvas-container'),
     btnResetView:    document.getElementById('btn-reset-view'),
+    btnSelectedViewPivot: document.getElementById('btn-selected-view-pivot'),
     btnToggleOutline: document.getElementById('btn-toggle-outline'),
     btnToggleGrid:   document.getElementById('btn-toggle-grid'),
     btnFullscreenMode: document.getElementById('btn-fullscreen-mode'),
@@ -1343,8 +1368,8 @@ const el = {
     modelDetachTool: document.getElementById('model-detach-tool'),
     modelArmLoad: document.getElementById('model-arm-load'),
     modelArmLoadLabel: document.getElementById('model-arm-load-label'),
-    modelUseGripObject: document.getElementById('model-use-grip-object'),
-    modelReleaseGripObject: document.getElementById('model-release-grip-object'),
+
+
     modelTransparency: document.getElementById('model-transparency'),
     modelTransparencyValue: document.getElementById('model-transparency-value'),
     modelDelete: document.getElementById('model-delete'),
@@ -1378,7 +1403,6 @@ const el = {
     btnApplyWorkObject: document.getElementById('btn-apply-workobject'),
     btnResetWorkObject: document.getElementById('btn-reset-workobject'),
     btnRegisterWorkObject: document.getElementById('btn-register-workobject'),
-    btnFocusWorkObject: document.getElementById('btn-focus-workobject'),
     workObjectStatus: document.getElementById('workobject-status'),
     armLoadPanel: document.getElementById('arm-load-panel'),
     armLoadList: document.getElementById('arm-load-list'),
@@ -1558,6 +1582,7 @@ const el = {
     programStatus: document.getElementById('program-status'),
     btnProgramRobotAvoidance: document.getElementById('program-toggle-robot-avoidance'),
     btnProgramToggleTcpPath: document.getElementById('program-toggle-tcp-path'),
+    programSpeedOverride: document.getElementById('program-speed-override'),
     programRobotAvoidancePriority: document.getElementById('program-robot-avoidance-priority'),
     programRobotAvoidanceStatus: document.getElementById('program-robot-avoidance-status'),
     btnProgramAdd: document.getElementById('program-add-step'),
@@ -1565,7 +1590,7 @@ const el = {
     btnProgramAddWait: document.getElementById('program-add-wait'),
     btnProgramAddTimeStart: document.getElementById('program-add-time-start'),
     btnProgramAddView: document.getElementById('program-add-view'),
-    btnProgramAddGripUse: document.getElementById('program-add-grip-use'),
+
     btnProgramDelete: document.getElementById('program-delete-step'),
     btnProgramStepRobot: document.getElementById('program-step-robot'),
     btnProgramRunRobot: document.getElementById('program-run-robot'),
@@ -1606,6 +1631,9 @@ const el = {
     ioFunctionMappingGripTarget: document.getElementById('io-function-mapping-grip-target'),
     ioFunctionMappingViewField: document.getElementById('io-function-mapping-view-field'),
     ioFunctionMappingViewTarget: document.getElementById('io-function-mapping-view-target'),
+    ioFunctionMappingConveyorField: document.getElementById('io-function-mapping-conveyor-field'),
+    ioFunctionMappingConveyorAxis: document.getElementById('io-function-mapping-conveyor-axis'),
+    ioFunctionMappingConveyorSpeed: document.getElementById('io-function-mapping-conveyor-speed'),
     ioFunctionMappingAdd: document.getElementById('io-function-mapping-add'),
     ioFunctionMappingCount: document.getElementById('io-function-mapping-count'),
     ioFunctionMappingStatus: document.getElementById('io-function-mapping-status'),
@@ -1676,7 +1704,7 @@ const el = {
     virtualControllerAntenna: document.getElementById('virtual-controller-antenna'),
     virtualControllerLauncherAntenna: document.getElementById('virtual-controller-launcher-antenna'),
     virtualControllerRate: document.getElementById('virtual-controller-rate'),
-    virtualControllerGripToggle: document.getElementById('virtual-controller-grip-toggle'),
+
     collaborationPanel: document.getElementById('collaboration-panel'),
     collaborationAntenna: document.getElementById('collaboration-antenna'),
     collaborationDisplayName: document.getElementById('collaboration-display-name'),
@@ -2403,13 +2431,12 @@ function setupUI() {
     updateInterferenceZoneVisuals();
     resetIoFunctionMappingRuntimeValues();
     renderIoFunctionMappingList();
-    
+
     setupSimulationTooltips();
     updateCollisionUi();
 }
 
 const SIMULATION_RESET_MESSAGE = '모든 설정 및 모델이 초기화됩니다. 정말로 진행하시겠습니까?';
-const TEST_MODEL_CONFIRMATION_MESSAGE = '테스트용 모델링을 적용하시겠습니까?\nTCP 1번은 Test 값으로 덮어쓰기됩니다.';
 
 function closeSimulationResetDialog() {
     if (el.simulationResetDialog?.open) el.simulationResetDialog.close();
@@ -2428,17 +2455,70 @@ function resolveTestModelConfirmation(confirmed) {
     const resolve = state.testModelConfirmationResolver;
     state.testModelConfirmationResolver = null;
     if (el.testModelDialog?.open) el.testModelDialog.close();
-    resolve?.(Boolean(confirmed));
+    resolve?.(confirmed);
+}
+
+function refreshTestModelSelection() {
+    const inputs = [...el.testModelDialog.querySelectorAll('[data-test-quantity]')];
+    const total = inputs.reduce((sum, input) => sum + (Number(input.value) || 0), 0);
+    el.testModelDialog.querySelector('#test-model-total').textContent = uiFormat('선택 수량: {count}개', { count: total });
+    el.btnConfirmTestModel.disabled = total === 0 || total > 100 || inputs.some(input => !input.checkValidity());
 }
 
 function requestTestModelConfirmation() {
-    if (typeof el.testModelDialog?.showModal !== 'function') {
-        return Promise.resolve(window.confirm(uiText(TEST_MODEL_CONFIRMATION_MESSAGE)));
+    if (state.testModelConfirmationResolver) return Promise.resolve(false);
+    for (const category of ['model', 'tool']) {
+        const list = el.testModelDialog.querySelector('[data-test-category="' + category + '"]');
+        list.replaceChildren();
+        for (const asset of TEST_MODEL_CATALOG.filter(item => item.category === category)) {
+            const card = document.createElement('label');
+            card.className = 'test-model-card';
+            const image = document.createElement('img');
+            image.src = asset.image;
+            image.alt = asset.name;
+            image.width = 240;
+            image.height = 160;
+            const name = document.createElement('strong');
+            name.textContent = asset.name;
+            const quantityLabel = document.createElement('span');
+            quantityLabel.textContent = uiText('가져올 수량');
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.min = '0';
+            input.max = '20';
+            input.step = '1';
+            input.value = '0';
+            input.required = true;
+            input.dataset.testQuantity = asset.id;
+            input.setAttribute('aria-label', asset.name + ' ' + uiText('가져올 수량'));
+            input.addEventListener('input', refreshTestModelSelection);
+            input.addEventListener('focus', () => input.select());
+            input.addEventListener('click', () => input.select());
+            card.append(image, name, quantityLabel, input);
+            list.append(card);
+        }
     }
-    return new Promise((resolve) => {
+    refreshTestModelSelection();
+    return new Promise(resolve => {
         state.testModelConfirmationResolver = resolve;
         el.testModelDialog.showModal();
     });
+}
+
+function confirmTestModelSelection() {
+    try {
+        const quantities = Object.fromEntries([...el.testModelDialog.querySelectorAll('[data-test-quantity]')]
+            .map(input => [input.dataset.testQuantity, input.value]));
+        const selection = getTestModelSelection(quantities);
+        if (!selection.length) return;
+        if (selection.some(item => item.asset.category === 'tool') && !getArticulatedRobotForAttachment()) {
+            alert(uiText('Tool을 장착할 로봇을 먼저 불러와 주세요.'));
+            return;
+        }
+        resolveTestModelConfirmation({ selection });
+    } catch (error) {
+        alert(uiText(error.message));
+    }
 }
 
 function getCurrentRobotCatalogKey() {
@@ -4035,7 +4115,9 @@ function recomputeInterferenceOutputs() {
         if (hasViolation) nextOutputs[zone.outSignal] = false;
     });
     applyWorkOriginOutputStates(nextOutputs);
-    state.simulationIo.outputs = nextOutputs;
+    const controlled = new Set(state.interferenceZones.filter(zone => isInterferenceZoneEnabled(zone)).map(zone => zone.outSignal));
+    for (const index of controlled) if (index >= 0 && index < nextOutputs.length) writeOlpAddress('Out[' + index + ']', nextOutputs[index] ? 1 : 0);
+    state.simulationIo.outputs = state.simulationIo.outputs.map((value, index) => controlled.has(index) ? nextOutputs[index] : value);
     renderInterferenceZoneIo();
 }
 
@@ -4589,6 +4671,23 @@ function createViewWindowCell(slot, fallbackPreset = null) {
     controls.addEventListener('start', requestRender);
     controls.addEventListener('end', requestRender);
     const cell = { slot: Number(slot), element, renderer, camera, controls, canvas, preset };
+    canvas.addEventListener('pointermove', handleSimulationSnapPointerMove);
+    canvas.addEventListener('pointerleave', hideSimulationSnapMarker);
+    // Keep orbit gestures, but never commit a snap at the end of a drag.
+    let snapPointerDown = null;
+    canvas.addEventListener('pointerdown', (event) => {
+        snapPointerDown = { x: event.clientX, y: event.clientY, moved: false };
+    }, { capture: true });
+    canvas.addEventListener('pointermove', (event) => {
+        if (snapPointerDown && Math.hypot(event.clientX - snapPointerDown.x,
+            event.clientY - snapPointerDown.y) > 4) snapPointerDown.moved = true;
+    }, { capture: true });
+    canvas.addEventListener('pointercancel', () => { snapPointerDown = null; });
+    canvas.addEventListener('click', (event) => {
+        event.stopPropagation();
+        if (!snapPointerDown?.moved) handleSimulationSnapClick(event);
+        snapPointerDown = null;
+    });
     viewWindow.cells.set(Number(slot), cell);
     viewWindow.resizeObserver?.observe(element);
     return cell;
@@ -4611,6 +4710,8 @@ function restoreViewWindowFromPopup(closePopup = false, hideWindow = false) {
     viewWindow.savedStyle = '';
     if (hideWindow) {
         viewWindow.root.classList.add('hidden');
+        hideSimulationSnapMarker();
+        activateSimulationSnapViewport();
         updatePanelStack();
     }
     refreshViewWindowLocalizedUi();
@@ -4622,6 +4723,10 @@ function closeViewWindow() {
     const viewWindow = state.viewWindow;
     if (!viewWindow) return;
     restoreViewWindowFromPopup(true);
+    state.snapViewport = null;
+    hideSimulationSnapMarker();
+    el.canvasContainer?.appendChild(el.snapMarker);
+    state.snapCandidateMarkers.forEach((marker) => el.canvasContainer?.appendChild(marker));
     state.viewWindow = null;
     viewWindow.resizeObserver?.disconnect();
     viewWindow.cells.forEach((cell) => {
@@ -4638,6 +4743,8 @@ function hideViewWindow() {
     if (!viewWindow) return;
     restoreViewWindowFromPopup(true);
     viewWindow.root.classList.add('hidden');
+    hideSimulationSnapMarker();
+    activateSimulationSnapViewport();
     requestRender();
 }
 
@@ -4659,6 +4766,16 @@ function popOutViewWindow() {
     popup.document.write(`<!doctype html><html lang="${document.documentElement.lang || 'ko'}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>3D Simulation - ${uiText('고정 뷰 창')}</title></head><body></body></html>`);
     popup.document.close();
     document.querySelectorAll('link[rel="stylesheet"]').forEach((source) => {
+        // Reuse loaded same-origin styles immediately in the detached document.
+        // External font/icon styles remain links because their CSS rules are private.
+        try {
+            if (source.sheet) {
+                const style = popup.document.createElement('style');
+                style.textContent = Array.from(source.sheet.cssRules, (rule) => rule.cssText).join('\n');
+                popup.document.head.appendChild(style);
+                return;
+            }
+        } catch (_) { /* Cross-origin stylesheet: keep its original URL. */ }
         const link = popup.document.createElement('link');
         link.rel = 'stylesheet';
         link.href = source.href;
@@ -5228,7 +5345,7 @@ function createPrimitiveShapeRoot(type, dimensions, options = {}) {
     const primitiveShapeNameIndex = normalizePrimitiveShapeNameIndex(options.primitiveShapeNameIndex)
         || parsePrimitiveShapeNameIndex(options.name)
         || getNextPrimitiveShapeNameIndex(primitiveShapeType);
-    const modelName = getPrimitiveShapeName(primitiveShapeType, primitiveShapeNameIndex);
+    const modelName = options.name || getPrimitiveShapeName(primitiveShapeType, primitiveShapeNameIndex);
     const root = new THREE.Group();
     root.name = `Primitive: ${modelName}`;
     root.userData = {
@@ -5714,9 +5831,10 @@ function getCadOriginSnapCandidates(root = getCadDocumentModel()) {
 }
 
 function findCadSnapAtPointer(pointerEvent, { entityId = null, allowOutsideRadius = false } = {}) {
-    if (!state.camera || !state.renderer || !pointerEvent) return null;
+    const { camera, domElement } = getSimulationSnapViewport(pointerEvent);
+    if (!camera || !state.renderer || !pointerEvent) return null;
     const root = getCadDocumentModel();
-    const bounds = state.renderer.domElement.getBoundingClientRect();
+    const bounds = domElement.getBoundingClientRect();
     if (!root || bounds.width <= 0 || bounds.height <= 0) return null;
     const edit = syncCadOriginEditRoot(root);
     const requestedType = edit.snapType === 'auto' ? null : edit.snapType;
@@ -5724,7 +5842,7 @@ function findCadSnapAtPointer(pointerEvent, { entityId = null, allowOutsideRadiu
     const pointerY = pointerEvent.clientY - bounds.top;
     const nearby = [];
     root.updateMatrixWorld(true);
-    state.camera.updateMatrixWorld(true);
+    camera.updateMatrixWorld(true);
     const candidates = getCadOriginSnapCandidates(root);
     candidates.forEach((candidate) => {
         const layerGroup = candidate.layerGroup || root;
@@ -5732,7 +5850,7 @@ function findCadSnapAtPointer(pointerEvent, { entityId = null, allowOutsideRadiu
         if (entityId && candidate.entityId !== entityId) return;
         if (requestedType && candidate.type !== requestedType) return;
         const worldPoint = candidate.sourcePoint.clone().applyMatrix4(layerGroup.matrixWorld);
-        const projected = worldPoint.clone().project(state.camera);
+        const projected = worldPoint.clone().project(camera);
         if (!Number.isFinite(projected.x) || !Number.isFinite(projected.y)
             || projected.z < -1 || projected.z > 1) return;
         const screenX = (projected.x * 0.5 + 0.5) * bounds.width;
@@ -5746,7 +5864,7 @@ function findCadSnapAtPointer(pointerEvent, { entityId = null, allowOutsideRadiu
             screenX,
             screenY,
             pixelDistance,
-            cameraDistance: state.camera.position.distanceTo(worldPoint)
+            cameraDistance: camera.position.distanceTo(worldPoint)
         });
     });
     nearby.sort(requestedType
@@ -5765,10 +5883,12 @@ function showCadSnapMarker(snap) {
         if (el.snapMarker && !isSimulationSnapPicking()) el.snapMarker.classList.add('hidden');
         return;
     }
+    const container = el.canvasContainer;
+    if (container && el.snapMarker.parentElement !== container) container.appendChild(el.snapMarker);
     state.cad2d.originEdit.hoveredCandidate = snap;
     el.snapMarker.style.left = `${snap.screenX}px`;
     el.snapMarker.style.top = `${snap.screenY}px`;
-    el.snapMarker.classList.toggle('label-left', snap.screenX > el.canvasContainer.clientWidth - 190);
+    el.snapMarker.classList.toggle('label-left', snap.screenX > container.clientWidth - 190);
     el.snapMarker.dataset.snapType = snap.type;
     const info = snapTypeInfo(snap.type);
     const symbol = el.snapMarker.querySelector('span');
@@ -13710,7 +13830,52 @@ function findSceneModelPartAncestor(object, model) {
 function getSelectedModelTransformTarget() {
     const model = state.selectedModel;
     const part = state.selectedModelPart;
-    return model && part && getImportedModelParts(model).includes(part) ? part : model;
+    const target = model && part && getImportedModelParts(model).includes(part) ? part : model;
+    for (let parent = target?.parent; parent; parent = parent.parent) {
+        if (state.modelSelection.has(parent)) return parent;
+    }
+    return target;
+}
+
+function getSelectedModelTransformObjects() {
+    const objects = [...state.modelSelection].filter(([object, model]) => state.models.includes(model)
+        && (object === model || getImportedModelParts(model).includes(object))).map(([object]) => object);
+    // A selected child already follows its selected parent; do not move it twice.
+    return objects.filter(object => {
+        for (let parent = object.parent; parent; parent = parent.parent) {
+            if (objects.includes(parent)) return false;
+        }
+        return true;
+    });
+}
+
+function captureSelectedModelTransformBasis() {
+    const target = getSelectedModelTransformTarget();
+    if (!target) { state.selectedTransformBasis = null; return; }
+    target.updateWorldMatrix(true, false);
+    state.selectedTransformBasis = { target, matrix: target.matrixWorld.clone(), objects: getSelectedModelTransformObjects() };
+}
+
+function applySelectedModelTransformDelta(target, before, objects = getSelectedModelTransformObjects()) {
+    if (!target || !before || !objects.includes(target)) return;
+    target.updateMatrix();
+    target.updateWorldMatrix(true, false);
+    const delta = target.matrixWorld.clone().multiply(before.clone().invert());
+    const others = objects.filter(object => object !== target && object.parent).map(object => {
+        object.updateWorldMatrix(true, false);
+        return { object, world: object.matrixWorld.clone() };
+    });
+    for (const { object, world } of others) {
+        object.parent.updateWorldMatrix(true, false);
+        const local = object.parent.matrixWorld.clone().invert().multiply(delta).multiply(world);
+        local.decompose(object.position, object.quaternion, object.scale);
+        if (object.matrixAutoUpdate === false) object.matrix.copy(local);
+        else object.updateMatrix();
+        object.updateMatrixWorld(true);
+        markSceneCollisionDirty(findSceneModelAncestor(object) || object);
+    }
+    markSceneCollisionDirty(findSceneModelAncestor(target) || target);
+    captureSelectedModelTransformBasis();
 }
 
 function getPlacementTransformTarget() {
@@ -13858,6 +14023,7 @@ function handleSceneModelClick(event) {
 
     const selection = getSceneModelAtPointer(event);
     if (!selection) return;
+    if (event.shiftKey) { toggleSceneSelection(selection.model, event.ctrlKey ? null : selection.part); return; }
     if (event.ctrlKey) {
         // Select the clicked model as a whole. Its attachment host belongs
         // to a separate model, even when both share the robot hierarchy.
@@ -13874,8 +14040,10 @@ function handleSceneModelContextMenu(event) {
         closeModelContextMenu();
         return;
     }
-    if (selection.part) selectSceneModelPart(selection.model, selection.part);
-    else selectSceneModel(selection.model);
+    if (!state.modelSelection.has(selection.part || selection.model)) {
+        if (selection.part) selectSceneModelPart(selection.model, selection.part);
+        else selectSceneModel(selection.model);
+    }
     openModelContextMenu(event, selection.model, selection.part);
 }
 
@@ -14126,15 +14294,7 @@ function setCollisionMode(value, { announce = true, persist = true } = {}) {
     return mode;
 }
 
-function enableControllerGripCollisionWarning() {
-    if (state.collision.mode !== COLLISION_MODE.OFF && state.collision.enabled) return false;
-    // Grip inference consumes the same collision results as the warning
-    // banner. Enable warning-only detection so controller input can pick or
-    // release an object without turning the controller into a motion stop
-    // interlock.
-    setCollisionMode(COLLISION_MODE.DISPLAY, { announce: false, persist: false });
-    return true;
-}
+
 
 function collisionResultKey(result) {
     if (!result?.meshA?.uuid || !result?.meshB?.uuid) return '';
@@ -14359,6 +14519,11 @@ function getBlockingMotionCollision(result) {
     )) || null;
 }
 
+function shouldCheckSceneCollisionMeshes(left, meshA, right, meshB) {
+    return shouldReportSimulationCollision({ objectA: left, meshA, objectB: right, meshB },
+        (model, mesh) => Boolean(model) && equipmentApp.isRegistered(model, mesh));
+}
+
 function checkSceneCollisions({ force = false } = {}) {
     if (!state.collision.enabled || !state.collision.system || state.collision.checking) {
         if (!state.collision.enabled) {
@@ -14396,9 +14561,12 @@ function checkSceneCollisions({ force = false } = {}) {
             state.scene?.updateMatrixWorld(true);
         }
         if (force) state.collision.system.prepare(collisionModels);
-        const result = force || changedRoots.size === 0
-            ? state.collision.system.checkAll(collisionModels, { allowWarmHitReuse: false })
-            : state.collision.system.checkAll(collisionModels, { changedRoots, allowWarmHitReuse: true });
+        const rawResult = force || changedRoots.size === 0
+            ? state.collision.system.checkAll(collisionModels, { allowWarmHitReuse: false, pairFilter: isSimulationCollisionPair, meshPairFilter: shouldCheckSceneCollisionMeshes })
+            : state.collision.system.checkAll(collisionModels, { changedRoots, allowWarmHitReuse: true, pairFilter: isSimulationCollisionPair, meshPairFilter: shouldCheckSceneCollisionMeshes });
+        const result = asCollisionResults(rawResult).filter(hit => shouldReportSimulationCollision(hit,
+            (model, mesh) => Boolean(model) && equipmentApp.isRegistered(model, mesh))
+            && !equipmentApp.expectedContact(hit));
         state.collision.dirty = false;
         state.collision.dirtyRoots.clear();
         state.collision.lastResult = result;
@@ -15651,11 +15819,12 @@ function createSimulationSnapCandidateMarker() {
     marker.className = 'simulation-snap-marker simulation-snap-candidate-marker';
     marker.setAttribute('aria-hidden', 'true');
     marker.innerHTML = '<span></span>';
-    el.canvasContainer?.appendChild(marker);
+    getSimulationSnapViewport().container?.appendChild(marker);
     return marker;
 }
 
 function updateSimulationSnapCandidateMarkers() {
+    const { camera, domElement } = getSimulationSnapViewport();
     // Projecting every candidate and doing depth tests while the camera is
     // moving was the main source of the large-model orbit/pan hitch. The
     // selected face remains intact; markers are rebuilt once navigation ends.
@@ -15684,18 +15853,18 @@ function updateSimulationSnapCandidateMarkers() {
             && !hasDirectSnapCandidates
             && !hasReferenceSnapCandidates)
         || !state.snapCandidatesReady
-        || !el.canvasContainer || !state.renderer || !state.camera) {
+        || !el.canvasContainer || !state.renderer || !camera) {
         clearSimulationSnapCandidateMarkers();
         return;
     }
     const meshes = getSimulationSnapMeshes(scope);
-    const bounds = state.renderer.domElement.getBoundingClientRect();
+    const bounds = domElement.getBoundingClientRect();
     if ((!meshes.length && !hasReferenceSnapCandidates)
         || bounds.width <= 0 || bounds.height <= 0) {
         clearSimulationSnapCandidateMarkers();
         return;
     }
-    state.camera.updateMatrixWorld(true);
+    camera.updateMatrixWorld(true);
     getSimulationSnapWorldIndex(meshes);
     // Selected-face candidates are intentional snap targets. Do not let the
     // model's depth occlusion hide them while face-selection mode is active; the
@@ -15736,7 +15905,7 @@ function updateSimulationSnapCandidateMarkers() {
         if (!candidate.mesh.visible || !candidate.snapWorldPoint) continue;
         const isCenterMarker = SIMULATION_SNAP_CENTER_MARKER_TYPES.has(candidate.type);
         if (isCenterMarker && centerMarkerCount >= MAX_VISIBLE_SIMULATION_SNAP_CENTER_MARKERS) continue;
-        projected.copy(candidate.snapWorldPoint).project(state.camera);
+        projected.copy(candidate.snapWorldPoint).project(camera);
         if (projected.z < -1 || projected.z > 1) continue;
         const screenX = (projected.x * 0.5 + 0.5) * bounds.width;
         const screenY = (-projected.y * 0.5 + 0.5) * bounds.height;
@@ -15799,20 +15968,50 @@ function updateSimulationSnapCandidateMarkers() {
     });
 }
 
+function getSimulationSnapViewport(pointerEvent = null) {
+    const target = pointerEvent?.currentTarget || pointerEvent?.target;
+    const viewWindow = state.viewWindow;
+    if (viewWindow?.root?.isConnected && !viewWindow.root.classList.contains('hidden')) {
+        for (const cell of viewWindow.cells.values()) {
+            if (target ? target === cell.canvas : state.snapViewport === cell) {
+                return { ...cell, domElement: cell.canvas, container: cell.element };
+            }
+        }
+    }
+    return { camera: state.camera, domElement: state.renderer?.domElement,
+        controls: state.controls, container: el.canvasContainer };
+}
+
+function activateSimulationSnapViewport(event) {
+    const viewport = getSimulationSnapViewport(event);
+    const previous = state.snapViewport;
+    state.snapViewport = viewport.canvas
+        ? state.viewWindow.cells.get(viewport.slot) : null;
+    if (viewport.container && el.snapMarker?.parentElement !== viewport.container) {
+        viewport.container.appendChild(el.snapMarker);
+    }
+    if (previous !== state.snapViewport) {
+        state.snapCandidateMarkers.forEach((marker) => viewport.container?.appendChild(marker));
+    }
+    if (previous !== state.snapViewport) updateSimulationSnapCandidateMarkers();
+    return viewport;
+}
+
 function pickSimulationSnapFaceAtPointer(pointerEvent, scope = getSimulationSnapScope()) {
+    const { camera, domElement } = getSimulationSnapViewport(pointerEvent);
     // Clicking a robot must not enter mesh-face snapping. Robot snapping is
     // limited to the body-center and TCP reference candidates.
     const meshes = getAllSimulationSnapMeshes(scope)
         .filter((mesh) => !isSimulationSnapRobotMesh(mesh));
     if (!meshes.length) return null;
-    const bounds = state.renderer.domElement.getBoundingClientRect();
+    const bounds = domElement.getBoundingClientRect();
     if (bounds.width <= 0 || bounds.height <= 0) return null;
     const pointer = new THREE.Vector2(
         ((pointerEvent.clientX - bounds.left) / bounds.width) * 2 - 1,
         -((pointerEvent.clientY - bounds.top) / bounds.height) * 2 + 1
     );
-    state.camera.updateMatrixWorld(true);
-    state.snapVisibilityRaycaster.setFromCamera(pointer, state.camera);
+    camera.updateMatrixWorld(true);
+    state.snapVisibilityRaycaster.setFromCamera(pointer, camera);
     const hit = state.snapVisibilityRaycaster.intersectObjects(meshes, false)[0];
     if (!hit?.object || !Number.isInteger(hit.faceIndex)) return null;
     const face = getSimulationSnapFaceTriangleRanges(hit.object, hit.faceIndex);
@@ -15827,14 +16026,15 @@ function pickSimulationSnapFaceAtPointer(pointerEvent, scope = getSimulationSnap
 }
 
 function pickSimulationSnapRobotAtPointer(pointerEvent) {
-    const rect = state.renderer?.domElement?.getBoundingClientRect();
-    if (!rect || rect.width <= 0 || rect.height <= 0 || !state.camera) return null;
+    const { camera, domElement } = getSimulationSnapViewport(pointerEvent);
+    const rect = domElement?.getBoundingClientRect();
+    if (!rect || rect.width <= 0 || rect.height <= 0 || !camera) return null;
     const pointer = new THREE.Vector2(
         ((pointerEvent.clientX - rect.left) / rect.width) * 2 - 1,
         -((pointerEvent.clientY - rect.top) / rect.height) * 2 + 1
     );
-    state.camera.updateMatrixWorld(true);
-    state.snapVisibilityRaycaster.setFromCamera(pointer, state.camera);
+    camera.updateMatrixWorld(true);
+    state.snapVisibilityRaycaster.setFromCamera(pointer, camera);
     const robots = getArticulatedRobots().filter((robot) => isModelTreeVisible(robot));
     const hit = state.snapVisibilityRaycaster.intersectObjects(robots, true)[0];
     if (!hit?.object) return null;
@@ -16057,7 +16257,7 @@ function applySnapFaceOrientation(mode) {
     const currentPose = getCurrentTcpPoseBase(robot);
     if (!currentPose) return false;
 
-    const baseWorldQuaternion = robot.getWorldQuaternion(new THREE.Quaternion());
+    const baseWorldQuaternion = getRobotControllerBaseFrame(robot).getWorldQuaternion(new THREE.Quaternion());
     const currentWorldQuaternion = baseWorldQuaternion.clone()
         .multiply(currentPose.quaternion.clone())
         .normalize();
@@ -16208,6 +16408,7 @@ function isSimulationSnapInteractionActive() {
 
 function beginSimulationViewNavigation() {
     if (state.viewNavigationActive) return;
+    updateSelectedViewPivot(true);
     state.viewNavigationActive = true;
     // Camera movement can generate a pointermove for every orbit/pan step.
     // Cancel any pending snap work before those events reach the snap picker.
@@ -16282,7 +16483,7 @@ function calculateRobotPositionMeasurement(point) {
     const robot = getMeasurementRobot();
     if (!robot || !point?.worldPoint?.clone) return null;
     robot.updateMatrixWorld(true);
-    const position = robot.worldToLocal(point.worldPoint.clone());
+    const position = getRobotControllerBaseFrame(robot).worldToLocal(point.worldPoint.clone());
     if (!['x', 'y', 'z'].every((axis) => Number.isFinite(position[axis]))) return null;
     return {
         robot,
@@ -16701,7 +16902,7 @@ function updateMeasurementUi() {
     if (el.btnMeasurementResetPlacement) el.btnMeasurementResetPlacement.disabled = !p1 && !p2;
 }
 
-function capturePlacementModelTransform(model) {
+function capturePlacementModelTransform(model, includeSelection = true) {
     if (!model) return null;
     if (model.matrixAutoUpdate !== false) model.updateMatrix();
     return {
@@ -16709,7 +16910,10 @@ function capturePlacementModelTransform(model) {
         quaternion: model.quaternion.clone(),
         scale: model.scale.clone(),
         matrix: model.matrix.clone(),
-        matrixAutoUpdate: model.matrixAutoUpdate !== false
+        matrixAutoUpdate: model.matrixAutoUpdate !== false,
+        selectionTransforms: includeSelection && model === getSelectedModelTransformTarget()
+            ? getSelectedModelTransformObjects().filter(object => object !== model).map(object => ({ object, transform: capturePlacementModelTransform(object, false) }))
+            : []
     };
 }
 
@@ -16723,6 +16927,8 @@ function restorePlacementModelTransform(model, snapshot) {
     else model.matrix.copy(snapshot.matrix);
     model.updateMatrixWorld(true);
     markSceneCollisionDirty(model);
+    for (const { object, transform } of snapshot.selectionTransforms || []) restorePlacementModelTransform(object, transform);
+    captureSelectedModelTransformBasis();
 }
 
 function getPlacementTargetWorldPosition(target = getPlacementTransformTarget()) {
@@ -16817,11 +17023,15 @@ function isPlacementTransformUnchanged(model, snapshot) {
 function applyWorldTranslationToModel(model, sourceWorldPoint, targetWorldPoint) {
     if (!model?.parent || !sourceWorldPoint || !targetWorldPoint) return false;
     const parent = model.parent;
+    model.updateWorldMatrix(true, false);
+    const before = model.matrixWorld.clone();
     parent.updateMatrixWorld(true);
     const sourceLocal = parent.worldToLocal(sourceWorldPoint.clone());
     const targetLocal = parent.worldToLocal(targetWorldPoint.clone());
     model.position.add(targetLocal.sub(sourceLocal));
+    model.updateMatrix();
     model.updateMatrixWorld(true);
+    if (model === getSelectedModelTransformTarget()) applySelectedModelTransformDelta(model, before);
     markSceneCollisionDirty(model);
     return true;
 }
@@ -17086,7 +17296,7 @@ function handleMeasurementSnapSelection(snap) {
 
     const placement = state.placement;
     if (!placement.sourcePoint || placement.directionPoint) {
-        selectSceneModel(placement.model, { preservePart: true });
+        selectSceneModel(placement.model, { preservePart: true, preserveSelection: true });
         placement.sourcePoint = point;
         placement.directionPoint = null;
         placement.sourceWorldPoint = point.worldPoint.clone();
@@ -17399,17 +17609,19 @@ function hideSimulationSnapMarker() {
     if (state.placement.active) state.placement.hover = null;
     if (state.measurement.active || state.placement.active) updateMeasurementUi();
     if (state.snapPointerMoveFrame !== null) {
-        cancelAnimationFrame(state.snapPointerMoveFrame);
+        (state.snapPointerMoveWindow || window).cancelAnimationFrame(state.snapPointerMoveFrame);
+        state.snapPointerMoveWindow = null;
         state.snapPointerMoveFrame = null;
     }
     el.snapMarker?.classList.add('hidden');
 }
 
 function updateSimulationSnapMarkerCameraScale() {
+    const { camera, controls } = getSimulationSnapViewport();
     if (!isSimulationSnapInteractionActive()) return;
-    if (!el.snapMarker || !state.camera || !state.controls) return;
-    const cameraZoom = Math.max(state.camera.zoom || 1, Number.EPSILON);
-    const cameraDistance = state.camera.position.distanceTo(state.controls.target) / cameraZoom;
+    if (!el.snapMarker || !camera || !controls) return;
+    const cameraZoom = Math.max(camera.zoom || 1, Number.EPSILON);
+    const cameraDistance = camera.position.distanceTo(controls.target) / cameraZoom;
     const referenceDistance = state.snapMarkerReferenceDistance;
     if (!Number.isFinite(cameraDistance) || !Number.isFinite(referenceDistance) || referenceDistance <= 0) return;
 
@@ -17422,9 +17634,10 @@ function updateSimulationSnapMarkerCameraScale() {
 }
 
 function captureSimulationSnapMarkerReferenceDistance() {
-    if (!state.camera || !state.controls) return;
-    state.snapMarkerReferenceDistance = state.camera.position.distanceTo(state.controls.target)
-        / Math.max(state.camera.zoom || 1, Number.EPSILON);
+    const { camera, controls } = getSimulationSnapViewport();
+    if (!camera || !controls) return;
+    state.snapMarkerReferenceDistance = camera.position.distanceTo(controls.target)
+        / Math.max(camera.zoom || 1, Number.EPSILON);
     updateSimulationSnapMarkerCameraScale();
 }
 
@@ -17490,30 +17703,32 @@ function scheduleLazySimulationSnapBuild(mesh) {
 }
 
 function getLazySimulationSnapMeshAtPointer(pointerX, pointerY, bounds, meshes) {
+    const { camera } = getSimulationSnapViewport();
     const lazyMeshes = meshes.filter(isLazySimulationSnapMesh);
     if (!lazyMeshes.length || bounds.width <= 0 || bounds.height <= 0) return null;
     const pointer = new THREE.Vector2(
         (pointerX / bounds.width) * 2 - 1,
         -(pointerY / bounds.height) * 2 + 1
     );
-    state.snapVisibilityRaycaster.setFromCamera(pointer, state.camera);
+    state.snapVisibilityRaycaster.setFromCamera(pointer, camera);
     return state.snapVisibilityRaycaster.intersectObjects(lazyMeshes, false)[0]?.object || null;
 }
 
 function isSimulationSnapCandidateVisible(candidate, projected, meshes) {
+    const { camera, domElement } = getSimulationSnapViewport();
     if (isSimulationSnapReferenceCandidate(candidate)) return true;
-    state.snapVisibilityRaycaster.setFromCamera(new THREE.Vector2(projected.x, projected.y), state.camera);
+    state.snapVisibilityRaycaster.setFromCamera(new THREE.Vector2(projected.x, projected.y), camera);
     const frontHit = state.snapVisibilityRaycaster.intersectObjects(meshes, false)[0] || null;
     if (!frontHit) return true;
     const candidateOffset = candidate.worldPoint.clone().sub(state.snapVisibilityRaycaster.ray.origin);
     const candidateDistance = candidateOffset.dot(state.snapVisibilityRaycaster.ray.direction);
     if (!Number.isFinite(candidateDistance) || candidateDistance <= 0) return false;
-    const viewportHeight = Math.max(state.renderer.domElement.clientHeight, 1);
-    const worldUnitsPerPixel = state.camera.isOrthographicCamera
-        ? (state.camera.top - state.camera.bottom)
-            / (viewportHeight * Math.max(state.camera.zoom || 1, Number.EPSILON))
+    const viewportHeight = Math.max(domElement.clientHeight, 1);
+    const worldUnitsPerPixel = camera.isOrthographicCamera
+        ? (camera.top - camera.bottom)
+            / (viewportHeight * Math.max(camera.zoom || 1, Number.EPSILON))
         : (
-            2 * candidateDistance * Math.tan(THREE.MathUtils.degToRad(state.camera.fov * 0.5))
+            2 * candidateDistance * Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5))
         ) / viewportHeight;
     return candidateDistance <= frontHit.distance + Math.max(worldUnitsPerPixel * 2.5, 0.001);
 }
@@ -17610,15 +17825,16 @@ function getSimulationSnapWorldIndex(meshes) {
 }
 
 function isSimulationSnapOctreeNodeNearPointer(node, bounds, pointerX, pointerY, radius) {
-    const cameraPoint = node.center.clone().applyMatrix4(state.camera.matrixWorldInverse);
+    const { camera } = getSimulationSnapViewport();
+    const cameraPoint = node.center.clone().applyMatrix4(camera.matrixWorldInverse);
     const depth = -cameraPoint.z;
-    if (depth + node.radius <= state.camera.near || depth - node.radius >= state.camera.far) return false;
+    if (depth + node.radius <= camera.near || depth - node.radius >= camera.far) return false;
     if (depth <= node.radius) return true;
 
-    const projected = node.center.clone().project(state.camera);
+    const projected = node.center.clone().project(camera);
     if (!Number.isFinite(projected.x) || !Number.isFinite(projected.y) || !Number.isFinite(projected.z)) return true;
-    const focalPixels = bounds.height * Math.max(state.camera.zoom || 1, Number.EPSILON)
-        / (2 * Math.tan(THREE.MathUtils.degToRad(state.camera.fov * 0.5)));
+    const focalPixels = bounds.height * Math.max(camera.zoom || 1, Number.EPSILON)
+        / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5)));
     const screenRadius = node.radius * focalPixels
         / Math.max(depth - node.radius, Number.EPSILON) + radius;
     const screenX = (projected.x * 0.5 + 0.5) * bounds.width;
@@ -17635,6 +17851,7 @@ function getSimulationSnapScreenIndex(meshes, bounds) {
 }
 
 function getSimulationSnapCandidatesNearPointer(meshes, bounds, pointerX, pointerY, radius) {
+    const { camera } = getSimulationSnapViewport();
     const nearby = [];
     const index = getSimulationSnapScreenIndex(meshes, bounds);
     if (!index.root) return nearby;
@@ -17648,7 +17865,7 @@ function getSimulationSnapCandidatesNearPointer(meshes, bounds, pointerX, pointe
         }
         node.candidates.forEach((candidate) => {
             if (!candidate.mesh.visible || !candidate.snapWorldPoint) return;
-            projected.copy(candidate.snapWorldPoint).project(state.camera);
+            projected.copy(candidate.snapWorldPoint).project(camera);
             if (projected.z < -1 || projected.z > 1) return;
             const screenX = (projected.x * 0.5 + 0.5) * bounds.width;
             const screenY = (-projected.y * 0.5 + 0.5) * bounds.height;
@@ -17671,8 +17888,9 @@ function getTcpSurfaceSnapMeshes() {
 }
 
 function findTcpSurfaceSnapAtPointer(pointerEvent) {
-    const rect = state.renderer?.domElement?.getBoundingClientRect();
-    if (!rect || rect.width <= 0 || rect.height <= 0 || !state.camera) return null;
+    const { camera, domElement } = getSimulationSnapViewport(pointerEvent);
+    const rect = domElement?.getBoundingClientRect();
+    if (!rect || rect.width <= 0 || rect.height <= 0 || !camera) return null;
     const meshes = getTcpSurfaceSnapMeshes();
     if (!meshes.length) return null;
 
@@ -17681,15 +17899,15 @@ function findTcpSurfaceSnapAtPointer(pointerEvent) {
         -((pointerEvent.clientY - rect.top) / rect.height) * 2 + 1
     );
     state.scene?.updateMatrixWorld(true);
-    state.camera.updateMatrixWorld(true);
-    state.snapVisibilityRaycaster.setFromCamera(pointer, state.camera);
+    camera.updateMatrixWorld(true);
+    state.snapVisibilityRaycaster.setFromCamera(pointer, camera);
     const hit = state.snapVisibilityRaycaster.intersectObjects(meshes, false)[0];
     if (!hit?.object || !hit.point) return null;
 
     const worldPoint = hit.point.clone();
     hit.object.updateWorldMatrix?.(true, false);
     const localPoint = hit.object.worldToLocal(worldPoint.clone());
-    const projected = worldPoint.clone().project(state.camera);
+    const projected = worldPoint.clone().project(camera);
     return {
         type: 'surface',
         mesh: hit.object,
@@ -17699,11 +17917,12 @@ function findTcpSurfaceSnapAtPointer(pointerEvent) {
         screenX: (projected.x * 0.5 + 0.5) * rect.width,
         screenY: (-projected.y * 0.5 + 0.5) * rect.height,
         pixelDistance: 0,
-        cameraDistance: state.camera.position.distanceTo(worldPoint)
+        cameraDistance: camera.position.distanceTo(worldPoint)
     };
 }
 
 function findSimulationSnapAtPointer(pointerEvent) {
+    const { camera, domElement } = getSimulationSnapViewport(pointerEvent);
     if (!isSimulationSnapInteractionActive()) return null;
     if (isCadOriginSnapPicking()) return findCadOriginSnapAtPointer(pointerEvent);
     const scope = getSimulationSnapScope();
@@ -17711,8 +17930,8 @@ function findSimulationSnapAtPointer(pointerEvent) {
     const visibilityMeshes = isSimulationSnapFaceSelectionActive(scope)
         ? getAllSimulationSnapMeshes(scope)
         : meshes;
-    state.camera.updateMatrixWorld(true);
-    const bounds = state.renderer.domElement.getBoundingClientRect();
+    camera.updateMatrixWorld(true);
+    const bounds = domElement.getBoundingClientRect();
     const pointerX = pointerEvent.clientX - bounds.left;
     const pointerY = pointerEvent.clientY - bounds.top;
     const placementPicking = state.placement.active;
@@ -17757,7 +17976,7 @@ function findSimulationSnapAtPointer(pointerEvent) {
         const worldPoint = candidate.snapWorldPoint
             ? candidate.snapWorldPoint.clone()
             : candidate.localPoint.clone().applyMatrix4(candidate.mesh.matrixWorld);
-        const projected = worldPoint.clone().project(state.camera);
+        const projected = worldPoint.clone().project(camera);
         if (projected.z < -1 || projected.z > 1) return;
         const screenX = (projected.x * 0.5 + 0.5) * bounds.width;
         const screenY = (-projected.y * 0.5 + 0.5) * bounds.height;
@@ -17771,7 +17990,7 @@ function findSimulationSnapAtPointer(pointerEvent) {
             screenX,
             screenY,
             pixelDistance,
-            cameraDistance: state.camera.position.distanceTo(worldPoint)
+            cameraDistance: camera.position.distanceTo(worldPoint)
         });
     });
     nearby.sort(requiredType
@@ -17809,10 +18028,12 @@ function showSimulationSnapMarker(snap) {
         state.measurement.hover = snap;
         updateMeasurementUi();
     }
+    const { container } = getSimulationSnapViewport();
+    if (container && el.snapMarker.parentElement !== container) container.appendChild(el.snapMarker);
     const info = snapTypeInfo(snap.type);
     el.snapMarker.style.left = `${snap.screenX}px`;
     el.snapMarker.style.top = `${snap.screenY}px`;
-    el.snapMarker.classList.toggle('label-left', snap.screenX > el.canvasContainer.clientWidth - 190);
+    el.snapMarker.classList.toggle('label-left', snap.screenX > container.clientWidth - 190);
     el.snapMarker.dataset.snapType = snap.type;
     const symbol = el.snapMarker.querySelector('span');
     if (symbol) symbol.textContent = info.symbol;
@@ -17824,7 +18045,8 @@ function showSimulationSnapMarker(snap) {
 
 function handleSimulationSnapPointerMove(event) {
     if (!isSimulationSnapInteractionActive()) return;
-    state.snapLastPointerEvent = { clientX: event.clientX, clientY: event.clientY };
+    activateSimulationSnapViewport(event);
+    state.snapLastPointerEvent = { clientX: event.clientX, clientY: event.clientY, target: event.currentTarget || event.target };
     scheduleSimulationSnapPreview();
 }
 
@@ -17832,8 +18054,10 @@ function scheduleSimulationSnapPreview() {
     if (!isSimulationSnapInteractionActive()
         || !state.snapLastPointerEvent
         || state.snapPointerMoveFrame !== null) return;
-    state.snapPointerMoveFrame = requestAnimationFrame(() => {
+    state.snapPointerMoveWindow = getSimulationSnapViewport().domElement?.ownerDocument?.defaultView || window;
+    state.snapPointerMoveFrame = state.snapPointerMoveWindow.requestAnimationFrame(() => {
         state.snapPointerMoveFrame = null;
+        state.snapPointerMoveWindow = null;
         const pointerEvent = state.snapLastPointerEvent;
         if (pointerEvent && isSimulationSnapInteractionActive()) {
             showSimulationSnapMarker(findSimulationSnapAtPointer(pointerEvent));
@@ -18171,7 +18395,7 @@ function moveRobotTcpToSimulationSnap(snap) {
     if (!currentPose) return false;
     robot.updateMatrixWorld(true);
     const target = {
-        position: robot.worldToLocal(snap.worldPoint.clone()),
+        position: getRobotControllerBaseFrame(robot).worldToLocal(snap.worldPoint.clone()),
         quaternion: currentPose.quaternion.clone()
     };
     const previousAngles = robot.userData.joints.map((joint) => joint.angle);
@@ -18206,6 +18430,7 @@ function moveRobotTcpToSimulationSnap(snap) {
 
 function handleSimulationSnapClick(event) {
     if (!isSimulationSnapInteractionActive() || event.button !== 0) return;
+    activateSimulationSnapViewport(event);
     if (isCadOriginSnapPicking()) {
         const snap = findCadOriginSnapAtPointer(event);
         event.preventDefault();
@@ -18468,6 +18693,54 @@ function configureMainOrbitControlDefaults(controls) {
     if ('zoomToCursor' in controls) controls.zoomToCursor = false;
 }
 
+function updateSelectedViewPivot(force = false) {
+    const pivot = state.selectedViewPivot;
+    if (!pivot.enabled || state.sketch.active || !state.camera || !state.controls) {
+        pivot.object = null;
+        pivot.center = null;
+        return;
+    }
+    const object = state.selectedModelPart || state.selectedModel;
+    if (!object || !state.models.includes(state.selectedModel)) {
+        pivot.object = null;
+        pivot.center = null;
+        return;
+    }
+    object.updateWorldMatrix(true, true);
+    const bounds = new THREE.Box3();
+    object.traverse(child => {
+        // Camera-scaled axes and selection outlines must not move the pivot.
+        if (!(child.isMesh || child.userData?.sketchFeatureLine || child.userData?.cad2dSnapLine)
+            || child.userData?.simulationSnapFaceOverlay || !child.geometry?.getAttribute('position')) return;
+        if (!child.geometry.boundingBox) child.geometry.computeBoundingBox();
+        if (child.geometry.boundingBox) bounds.union(child.geometry.boundingBox.clone().applyMatrix4(child.matrixWorld));
+    });
+    const center = bounds.isEmpty() ? object.getWorldPosition(new THREE.Vector3()) : bounds.getCenter(new THREE.Vector3());
+    const origin = force || pivot.object !== object || !pivot.center ? state.controls.target : pivot.center;
+    const delta = center.clone().sub(origin);
+    pivot.object = object;
+    pivot.center = center;
+    if (delta.lengthSq() < 1e-12) return;
+    state.camera.position.add(delta);
+    state.controls.target.add(delta);
+    requestRender();
+}
+
+function setSelectedViewPivotEnabled(enabled) {
+    state.selectedViewPivot.enabled = Boolean(enabled);
+    state.selectedViewPivot.object = null;
+    state.selectedViewPivot.center = null;
+    const button = el.btnSelectedViewPivot;
+    if (button) {
+        button.classList.toggle('active', state.selectedViewPivot.enabled);
+        button.setAttribute('aria-pressed', String(state.selectedViewPivot.enabled));
+        button.title = state.selectedViewPivot.enabled ? '선택 모델 중심 회전 끄기' : '선택 모델 중심 회전 켜기';
+        button.setAttribute('aria-label', button.title);
+    }
+    updateSelectedViewPivot(true);
+    requestRender();
+}
+
 function recreateMainOrbitControls(previousState = undefined) {
     const previous = state.controls;
     const restoredState = previousState === undefined
@@ -18524,6 +18797,10 @@ function setupControls() {
         }
     });
     state.transformControls.addEventListener('objectChange', () => {
+        const basis = state.selectedTransformBasis;
+        if (basis?.target === state.transformControls.object) {
+            applySelectedModelTransformDelta(basis.target, basis.matrix, basis.objects);
+        }
         handlePlacementTransformObjectChange(state.transformControls.object);
         markSceneCollisionDirty(state.selectedModel || state.transformControls.object);
         updateSelectedModelTransformInputs();
@@ -20141,6 +20418,8 @@ function setupEventListeners() {
     document.addEventListener('input', requestRender);
     document.addEventListener('change', requestRender);
     document.addEventListener('visibilitychange', () => {
+        conveyorLastTimestamp = null;
+        equipmentApp.runtime.lastTime = null;
         if (document.hidden) void saveMotionProjectNow();
         else requestRender();
     });
@@ -20191,7 +20470,14 @@ function setupEventListeners() {
         event.preventDefault();
     });
     el.btnCancelTestModel?.addEventListener('click', () => resolveTestModelConfirmation(false));
-    el.btnConfirmTestModel?.addEventListener('click', () => resolveTestModelConfirmation(true));
+    el.btnConfirmTestModel?.addEventListener('click', confirmTestModelSelection);
+    document.getElementById('btn-educational-test-model')?.addEventListener('click', () => {
+        resolveTestModelConfirmation({ educational: true });
+    });
+    el.testModelDialog?.querySelector('form')?.addEventListener('submit', event => {
+        event.preventDefault();
+        confirmTestModelSelection();
+    });
     el.testModelDialog?.addEventListener('cancel', (event) => {
         event.preventDefault();
         resolveTestModelConfirmation(false);
@@ -20458,7 +20744,9 @@ function setupEventListeners() {
         if (partButton) {
             const match = findImportedModelPart(partButton.dataset.modelPartId);
             if (match) {
+                if (equipmentApp.ui.pendingRole) { equipmentApp.ui.addPart(equipmentObjectRef(ensureWorkspaceModelId(match.model), getImportedModelParts(match.model).indexOf(match.part))); return; }
                 commitPendingHistory('수치 모델 변환', 'pendingNumericHistory');
+                if (event.shiftKey) { toggleSceneSelection(match.model, match.part); return; }
                 if (state.selectedModel === match.model && state.selectedModelPart === match.part) {
                     setSelectedModelPart(null);
                 } else {
@@ -20471,7 +20759,9 @@ function setupEventListeners() {
         if (!button) return;
         commitPendingHistory('수치 모델 변환', 'pendingNumericHistory');
         const model = state.models.find((candidate) => candidate.userData.modelTreeId === button.dataset.modelTreeId);
-        if (model) selectSceneModel(state.selectedModel === model ? null : model);
+        if (model && equipmentApp.ui.pendingRole) { equipmentApp.ui.addPart(equipmentObjectRef(ensureWorkspaceModelId(model))); return; }
+        if (model && event.shiftKey) toggleSceneSelection(model);
+        else if (model) selectSceneModel(isModelTreeModelSelected(model) ? null : model);
     });
     el.modelTree?.addEventListener('change', (event) => {
         const checkbox = event.target.closest('[data-model-part-visibility]');
@@ -20495,8 +20785,10 @@ function setupEventListeners() {
         const model = partMatch?.model || state.models.find((candidate) => candidate.userData.modelTreeId === button?.dataset.modelTreeId);
         if (!model) return;
         commitPendingHistory('수치 모델 변환', 'pendingNumericHistory');
-        if (partMatch) selectSceneModelPart(partMatch.model, partMatch.part);
-        else selectSceneModel(model);
+        if (!state.modelSelection.has(partMatch?.part || model)) {
+            if (partMatch) selectSceneModelPart(partMatch.model, partMatch.part);
+            else selectSceneModel(model);
+        }
         openModelContextMenu(event, model, partMatch?.part || null);
     }, { capture: true });
     el.modelExport?.addEventListener('click', () => {
@@ -20558,23 +20850,8 @@ function setupEventListeners() {
         closeModelContextMenu();
         if (target?.model && !target.part) detachToolModel(target.model, { allowDuringMotion: true });
     });
-    el.modelUseGripObject?.addEventListener('click', () => {
-        const target = getModelContextTarget();
-        closeModelContextMenu();
-        if (target?.model) useGripObject(target.model, target.part, getGripObjectRobot(), {
-            allowDuringMotion: true
-        });
-    });
-    el.modelReleaseGripObject?.addEventListener('click', () => {
-        const target = getModelContextTarget();
-        closeModelContextMenu();
-        if (target?.model) {
-            const activeGripObject = target.part
-                ? findActiveGripObjectForSource(target.model, target.part)
-                : target.model;
-            if (activeGripObject) releaseGripObject(activeGripObject, { allowDuringMotion: true });
-        }
-    });
+
+
     el.modelTransparency?.addEventListener('input', () => {
         updateModelTransparencyFromContextMenu(el.modelTransparency.value);
     });
@@ -20899,7 +21176,7 @@ function setupEventListeners() {
         if (!input) return;
         const index = Number(input.dataset.interferenceInput);
         if (!Number.isInteger(index) || index < 0 || index >= state.simulationIo.inputs.length) return;
-        state.simulationIo.inputs[index] = input.checked;
+        setOlpInputFromIoSimulator({ direction: 'IN', bitStart: index, bitEnd: index, bitWidth: 1, runtimeAddress: 'In[' + index + ']', mode: 'bit' }, input.checked ? 1 : 0);
         evaluateInterferenceZones(performance.now());
     });
     el.ioSimulatorDirectionButtons.forEach((button) => {
@@ -20945,7 +21222,104 @@ function setupEventListeners() {
     });
     el.ioFunctionMappingButton?.addEventListener('click', openIoFunctionMappingDialog);
     el.ioFunctionMappingClose?.addEventListener('click', closeIoFunctionMappingDialog);
+    el.ioFunctionMappingDialog?.addEventListener('keydown', event => {
+        if (event.key === 'Escape') { event.stopPropagation(); closeIoFunctionMappingDialog(); }
+    });
     el.ioFunctionMappingAction?.addEventListener('change', handleIoFunctionMappingActionChange);
+    document.getElementById('model-motion-settings')?.addEventListener('click', () => {
+        const target = getModelContextTarget(); closeModelContextMenu();
+        if (target) equipmentApp.ui.open(equipmentObjectRef(ensureWorkspaceModelId(target.model), target.part ? getImportedModelParts(target.model).indexOf(target.part) : -1));
+    });
+    document.getElementById('model-motion-add-part')?.addEventListener('click', () => {
+        const target = getModelContextTarget(); closeModelContextMenu();
+        if (target) {
+            const ref = equipmentObjectRef(ensureWorkspaceModelId(target.model), target.part ? getImportedModelParts(target.model).indexOf(target.part) : -1);
+            if (!equipmentApp.ui.dialog.open) equipmentApp.ui.open(ref);
+            equipmentApp.ui.addPart(ref);
+        }
+    });
+    document.getElementById('io-equipment-settings')?.addEventListener('click', () => equipmentApp.ui.open());
+    document.getElementById('model-group-parts')?.addEventListener('click', () => { groupSelectedModelParts(); closeModelContextMenu(); });
+    document.getElementById('model-group-motion-settings')?.addEventListener('click', () => {
+        const modelGroup = getContextModelGroup();
+        if (modelGroup) {
+            const refs = getModelGroupMembers(modelGroup).map(model => equipmentObjectRef(ensureWorkspaceModelId(model), -1));
+            closeModelContextMenu();
+            if (refs.length) equipmentApp.ui.openGroup(refs);
+            return;
+        }
+        const target = getModelContextTarget(), group = target?.model.userData.modelPartGroups?.[Number(el.modelContextMenu.dataset.partGroup)];
+        closeModelContextMenu();
+        if (!group) return;
+        const parts = getImportedModelParts(target.model), modelId = ensureWorkspaceModelId(target.model);
+        const refs = [...new Set(group.parts)].filter(index => parts[index]).map(index => equipmentObjectRef(modelId, index));
+        if (refs.length) equipmentApp.ui.openGroup(refs);
+    });
+    document.getElementById('model-rename')?.addEventListener('click', () => {
+        const target = getModelContextTarget();
+        closeModelContextMenu();
+        if (!target) return;
+        const object = target.part || target.model;
+        const currentName = target.part
+            ? object.userData.modelTreeName || modelTreeDisplayName(object.userData.modelPartName || object.name)
+            : displayNameForModelTree(target.model);
+        const name = window.prompt(uiText('이름 변경'), currentName)?.trim();
+        if (!name || name === currentName) return;
+        const before = captureSceneSnapshot();
+        object.userData.modelTreeName = name;
+        updateUIStatus();
+        recordHistory('모델 이름 변경', before, captureSceneSnapshot());
+        scheduleMotionProjectSave();
+    });
+    document.getElementById('model-group-rename')?.addEventListener('click', () => {
+        const modelGroup = getContextModelGroup();
+        if (modelGroup) {
+            closeModelContextMenu();
+            const name = window.prompt('모델 그룹 이름', modelGroup.name)?.trim();
+            if (name && name !== modelGroup.name) changeModelGroups('모델 그룹 이름 변경', () => { modelGroup.name = name; });
+            return;
+        }
+        const target = getModelContextTarget(), group = target?.model.userData.modelPartGroups?.[Number(el.modelContextMenu.dataset.partGroup)];
+        closeModelContextMenu();
+        if (!group) return;
+        const name = window.prompt('부품 그룹 이름', group.name)?.trim();
+        if (name && name !== group.name) changeModelPartGroups(target.model, '부품 그룹 이름 변경', () => { group.name = name; });
+    });
+    document.getElementById('model-group-dissolve')?.addEventListener('click', () => {
+        const modelGroup = getContextModelGroup();
+        if (modelGroup) {
+            closeModelContextMenu();
+            changeModelGroups('모델 그룹 해제', () => { state.modelGroups = state.modelGroups.filter(group => group !== modelGroup); });
+            return;
+        }
+        const target = getModelContextTarget(), index = Number(el.modelContextMenu.dataset.partGroup);
+        closeModelContextMenu();
+        if (target) changeModelPartGroups(target.model, '부품 그룹 해제', () => { target.model.userData.modelPartGroups.splice(index, 1); });
+    });
+    document.getElementById('model-ungroup-part')?.addEventListener('click', () => {
+        const target = getModelContextTarget(); closeModelContextMenu();
+        if (target && !target.part) {
+            const ids = new Set([...getSelectedGroupableModels(), target.model].map(ensureWorkspaceModelId));
+            changeModelGroups('항목 그룹에서 해제', () => {
+                state.modelGroups.forEach(group => { group.modelIds = group.modelIds.filter(id => !ids.has(id)); });
+            });
+            return;
+        }
+        if (!target?.part) return;
+        const selectedParts = new Map();
+        for (const [part, model] of [...state.modelSelection, [target.part, target.model]]) {
+            const index = getImportedModelParts(model).indexOf(part);
+            if (index < 0 || !model.userData.modelPartGroups?.some(group => group.parts.includes(index))) continue;
+            if (!selectedParts.has(model)) selectedParts.set(model, new Set());
+            selectedParts.get(model).add(index);
+        }
+        if (!selectedParts.size) return;
+        changeModelPartGroups([...selectedParts.keys()], '부품 그룹 해제', () => {
+            for (const [model, indexes] of selectedParts) {
+                model.userData.modelPartGroups.forEach(group => { group.parts = group.parts.filter(member => !indexes.has(member)); });
+            }
+        });
+    });
     el.ioFunctionMappingAdd?.addEventListener('click', addIoFunctionMapping);
     el.ioFunctionMappingList?.addEventListener('change', handleIoFunctionMappingListChange);
     el.ioFunctionMappingList?.addEventListener('click', handleIoFunctionMappingListClick);
@@ -21041,16 +21415,7 @@ function setupEventListeners() {
         if (state.virtualController.controllerKind !== 'real') return;
         state.virtualController.ipAddress = el.virtualControllerIp.value.trim();
     });
-    el.virtualControllerGripToggle?.addEventListener('click', () => {
-        const controller = state.virtualController;
-        if (!controller.gripInference) return;
-        controller.gripInference.enabled = !controller.gripInference.enabled;
-        if (controller.gripInference.enabled && controller.wanted) {
-            enableControllerGripCollisionWarning();
-        }
-        resetControllerGripInference(controller);
-        refreshVirtualControllerUi();
-    });
+
     el.btnVirtualControllerConnect?.addEventListener('click', () => {
         if (state.virtualController.wanted) disconnectVirtualController();
         else void connectVirtualController();
@@ -21106,11 +21471,25 @@ function setupEventListeners() {
     el.programStepList?.addEventListener('input', handleProgramStepListInput);
     el.programStepList?.addEventListener('change', handleProgramStepListChange);
     el.programStepList?.addEventListener('contextmenu', handleProgramStepContextMenu);
+    document.getElementById('program-add-io-output')?.addEventListener('click', () => addIoMotionStep('IO_OUT'));
+    document.getElementById('program-add-io-wait')?.addEventListener('click', () => addIoMotionStep('IO_WAIT'));
     el.programStepList?.addEventListener('dragstart', handleProgramStepDragStart);
     el.programStepList?.addEventListener('dragover', handleProgramStepDragOver);
     el.programStepList?.addEventListener('drop', handleProgramStepDrop);
     el.programStepList?.addEventListener('dragend', handleProgramStepDragEnd);
     el.btnProgramRobotAvoidance?.addEventListener('click', toggleRobotInterferenceAvoidance);
+    el.programSpeedOverride?.addEventListener('input', () => {
+        const value = Number(el.programSpeedOverride.value);
+        if (el.programSpeedOverride.value !== '' && Number.isFinite(value) && value >= 1 && value <= 100) {
+            state.programSpeedOverride = normalizeProgramSpeedOverride(value);
+            scheduleMotionProjectSave();
+        }
+    });
+    el.programSpeedOverride?.addEventListener('change', () => {
+        state.programSpeedOverride = normalizeProgramSpeedOverride(el.programSpeedOverride.value);
+        el.programSpeedOverride.value = String(state.programSpeedOverride);
+        scheduleMotionProjectSave();
+    });
     el.programRobotAvoidancePriority?.addEventListener('change', handleRobotInterferencePriorityChange);
     el.btnProgramToggleTcpPath?.addEventListener('click', toggleTcpPathDisplay);
     el.btnProgramAdd?.addEventListener('click', addCurrentMotionStep);
@@ -21118,7 +21497,7 @@ function setupEventListeners() {
     el.btnProgramAddWait?.addEventListener('click', addWaitMotionStep);
     el.btnProgramAddTimeStart?.addEventListener('click', () => addTimerMotionStep('TIME_START'));
     el.btnProgramAddView?.addEventListener('click', addViewMotionStep);
-    el.btnProgramAddGripUse?.addEventListener('click', () => addGripObjectMotionStep('GRIP_USE'));
+
     el.btnProgramAutoPath?.addEventListener('click', openAutoPathPanel);
     el.btnAutoPathGenerate?.addEventListener('click', () => void generateAutoPath());
     el.btnAutoPathApply?.addEventListener('click', applyAutoPath);
@@ -21240,7 +21619,6 @@ function setupEventListeners() {
     el.btnApplyWorkObject?.addEventListener('click', applyWorkObjectEditor);
     el.btnResetWorkObject?.addEventListener('click', resetWorkObjectEditor);
     el.btnRegisterWorkObject?.addEventListener('click', registerCurrentTcpAsWorkObject);
-    el.btnFocusWorkObject?.addEventListener('click', focusWorkObject);
     el.workObjectInputs && Object.values(el.workObjectInputs).forEach((input) => {
         input?.addEventListener('keydown', (event) => {
             if (event.key !== 'Enter') return;
@@ -21311,7 +21689,11 @@ function setupEventListeners() {
     });
     el.btnResetView.addEventListener('click', () => {
         fitCamera();
+        updateSelectedViewPivot(true);
         scheduleMotionProjectSave();
+    });
+    el.btnSelectedViewPivot?.addEventListener('click', () => {
+        setSelectedViewPivotEnabled(!state.selectedViewPivot.enabled);
     });
     el.btnToggleOutline?.addEventListener('click', () => {
         setModelOutlineMode(!state.outlineMode);
@@ -22018,8 +22400,11 @@ function updateModelTransparencyFromContextMenu(value) {
 function captureSceneSnapshot() {
     const currentModels = new Set(state.models);
     return {
+        modelGroups: JSON.parse(JSON.stringify(state.modelGroups)),
+        modelTreeOrder: normalizeModelTreeOrder(state.modelTreeOrder),
         models: state.models.map((model) => ({
             model,
+            treeNames: { name: model.userData.modelTreeName || '', parts: getImportedModelParts(model).map(part => part.userData.modelTreeName || '') },
             host: currentModels.has(model.userData.attachmentHost) ? model.userData.attachmentHost : null,
             placement: model.userData.placement || 'scene',
             attachmentFrame: model.userData.attachmentFrame || null,
@@ -22125,8 +22510,10 @@ function captureSceneSnapshot() {
         motionRepeat: state.motionRepeat,
         motionReverseRepeatRobot: state.motionReverseRepeatRobot,
         motionReverseRepeat: state.motionReverseRepeat,
+        programSpeedOverride: state.programSpeedOverride,
         interferenceZones: cloneInterferenceZones(state.interferenceZones),
         endMonitoringObjects: cloneEndMonitoringObjects(state.endMonitoringObjects),
+        equipmentDefinitions: JSON.parse(JSON.stringify(state.equipmentDefinitions)),
         ioFunctionMappings: cloneIoFunctionMappings(state.ioFunctionMappings),
         motionPrograms: getArticulatedRobots().map((robot) => ({
             robot,
@@ -22141,10 +22528,13 @@ function numberArraysEqual(a, b, epsilon = 1e-7) {
 
 function sceneSnapshotsEqual(a, b) {
     if (!a || !b || a.models.length !== b.models.length || a.joints.length !== b.joints.length) return false;
+    if (JSON.stringify(a.modelGroups || []) !== JSON.stringify(b.modelGroups || [])) return false;
+    if (JSON.stringify(a.modelTreeOrder || {}) !== JSON.stringify(b.modelTreeOrder || {})) return false;
     for (let index = 0; index < a.models.length; index += 1) {
         const left = a.models[index];
         const right = b.models[index];
         if (left.model !== right.model || left.host !== right.host
+            || JSON.stringify(left.treeNames) !== JSON.stringify(right.treeNames)
             || left.placement !== right.placement
             || left.attachmentFrame !== right.attachmentFrame
             || left.attachmentJointIndex !== right.attachmentJointIndex
@@ -22229,7 +22619,8 @@ function sceneSnapshotsEqual(a, b) {
         || Boolean(a.motionRepeatRobot) !== Boolean(b.motionRepeatRobot)
         || Boolean(a.motionRepeat) !== Boolean(b.motionRepeat)
         || Boolean(a.motionReverseRepeatRobot) !== Boolean(b.motionReverseRepeatRobot)
-        || Boolean(a.motionReverseRepeat) !== Boolean(b.motionReverseRepeat)) return false;
+        || Boolean(a.motionReverseRepeat) !== Boolean(b.motionReverseRepeat)
+        || normalizeProgramSpeedOverride(a.programSpeedOverride) !== normalizeProgramSpeedOverride(b.programSpeedOverride)) return false;
     if (JSON.stringify(a.interferenceZones || []) !== JSON.stringify(b.interferenceZones || [])) return false;
     if (JSON.stringify(a.endMonitoringObjects || []) !== JSON.stringify(b.endMonitoringObjects || [])) return false;
     if (JSON.stringify(a.ioFunctionMappings || []) !== JSON.stringify(b.ioFunctionMappings || [])) return false;
@@ -22309,6 +22700,8 @@ function applySceneSnapshot(snapshot) {
     });
 
     state.models = snapshot.models.map((entry) => entry.model);
+    state.modelGroups = JSON.parse(JSON.stringify(snapshot.modelGroups || []));
+    state.modelTreeOrder = normalizeModelTreeOrder(snapshot.modelTreeOrder);
     // History snapshots can remove and later restore a CAD root. Rebuild the
     // document index from the restored roots so selection and layer controls
     // continue to work after undo/redo of CAD import or deletion.
@@ -22333,6 +22726,8 @@ function applySceneSnapshot(snapshot) {
     );
     markSceneCollisionDirty();
     snapshot.models.forEach((entry) => {
+        entry.model.userData.modelTreeName = entry.treeNames?.name || '';
+        getImportedModelParts(entry.model).forEach((part, index) => { part.userData.modelTreeName = entry.treeNames?.parts?.[index] || ''; });
         applyPrimitiveShapeSnapshot(entry.model, entry);
         applySketchFeatureSnapshot(entry.model, entry);
         entry.model.position.fromArray(entry.position);
@@ -22440,9 +22835,12 @@ function applySceneSnapshot(snapshot) {
     state.motionRepeat = Boolean(snapshot.motionRepeat);
     state.motionReverseRepeatRobot = Boolean(snapshot.motionReverseRepeatRobot);
     state.motionReverseRepeat = Boolean(snapshot.motionReverseRepeat);
+    state.programSpeedOverride = normalizeProgramSpeedOverride(snapshot.programSpeedOverride);
     state.interferenceZones = normalizeInterferenceZones(snapshot.interferenceZones);
     state.endMonitoringObjects = normalizeEndMonitoringObjects(snapshot.endMonitoringObjects);
+    state.equipmentDefinitions = (snapshot.equipmentDefinitions || []).map(normalizeEquipmentDefinition);
     state.ioFunctionMappings = normalizeIoFunctionMappings(snapshot.ioFunctionMappings);
+    equipmentApp.restore();
     resetIoFunctionMappingRuntimeValues();
     state.interferenceRuntime.forEach((runtime, index) => {
         if (!runtime) return;
@@ -22571,13 +22969,15 @@ function getPanelElement(panelId) {
         'interference-zone-panel': el.interferenceZonePanel,
         'interference-zone-dialog': el.interferenceZoneDialog,
         'tool-load-info-panel': el.toolLoadInfoPanel,
-        'work-origin-dialog': el.workOriginDialog
+        'work-origin-dialog': el.workOriginDialog,
+        'equipment-dialog': document.getElementById('equipment-dialog'),
+        'io-function-mapping-dialog': el.ioFunctionMappingDialog
     }[panelId] || null;
 }
 
 function isPanelOpenInDocument(panel) {
     if (!panel || panel.ownerDocument !== document) return false;
-    if (panel.id === 'interference-zone-dialog' || panel.id === 'work-origin-dialog') return panel.open;
+    if (panel.id === 'interference-zone-dialog' || panel.id === 'work-origin-dialog' || panel.id === 'equipment-dialog' || panel.id === 'io-function-mapping-dialog') return panel.open;
     return !panel.classList.contains('panel-user-hidden')
         && !panel.classList.contains('hidden');
 }
@@ -22788,6 +23188,9 @@ function togglePanelVisibility(panelId) {
     }
     panel.classList.toggle('panel-user-hidden');
     const isVisible = !panel.classList.contains('panel-user-hidden');
+    if (panel === el.modelBrowserPanel && isVisible && panel.dataset.userResized === 'true') {
+        normalizePanelResizeBox(panel, { viewportResize: true });
+    }
     if (panelId === 'model-browser-panel' && panel.classList.contains('panel-user-hidden')) {
         setTransformHandlesEnabled(false);
     }
@@ -22908,7 +23311,9 @@ function popOutPanel(panelId) {
 }
 
 function getPanelWindowTitle(panelId) {
-    const panelName = panelId === 'program-panel'
+    const panelName = panelId === 'equipment-dialog'
+        ? uiText('동작 설정')
+        : panelId === 'program-panel'
         ? uiText('Program Panel')
         : panelId === 'trace-panel'
         ? uiText('Trace')
@@ -22967,6 +23372,9 @@ function restorePanelFromWindow(panelId, closePopup = false, hidePanel = false) 
         if (panelId === 'work-origin-dialog' && record.panel.open) record.panel.close();
     }
     if (closePopup && !record.popup.closed) record.popup.close();
+    if (panelId === 'model-browser-panel' && !hidePanel && record.panel.dataset.userResized === 'true') {
+        normalizePanelResizeBox(record.panel, { viewportResize: true });
+    }
     bringPanelToFront(panelId);
     updatePanelLauncher(panelId);
 }
@@ -23114,17 +23522,27 @@ function getPanelResizeEdge(panel, clientX, clientY) {
     return `${vertical}${horizontal}`;
 }
 
-function normalizePanelResizeBox(panel) {
+function normalizePanelResizeBox(panel, { viewportResize = false } = {}) {
     if (!panel || panel.ownerDocument !== document) return null;
+    if (panel === el.modelBrowserPanel && !isPanelOpenInDocument(panel)) return null;
     const canvasRect = getPanelLayoutBounds(panel);
     const panelRect = panel.getBoundingClientRect();
     const minimum = PANEL_MINIMUM_SIZES[panel.id] || { width: 220, height: 180 };
     const maxWidth = Math.max(1, canvasRect.width);
     const maxHeight = Math.max(1, canvasRect.height);
     const minWidth = Math.min(minimum.width, maxWidth);
-    const minHeight = Math.min(minimum.height, maxHeight);
-    const width = THREE.MathUtils.clamp(panelRect.width, minWidth, maxWidth);
-    const height = THREE.MathUtils.clamp(panelRect.height, minHeight, maxHeight);
+    const modelEditorVisible = panel === el.modelBrowserPanel && !el.modelTransformPanel.classList.contains('hidden');
+    const modelMinimumHeight = modelEditorVisible
+        ? (panel.querySelector('.model-browser-header')?.getBoundingClientRect().height || 0)
+            + MODEL_TREE_SPLIT_MIN_HEIGHT + MODEL_TRANSFORM_SPLIT_MIN_HEIGHT
+            + (el.modelTransformResizeHandle.classList.contains('hidden') ? 0 : 10) + 2
+        : 0;
+    const minHeight = Math.min(Math.max(minimum.height, modelMinimumHeight), maxHeight);
+    const restoreModelSize = viewportResize && panel === el.modelBrowserPanel;
+    const preferredWidth = restoreModelSize ? Number(panel.dataset.preferredResizeWidth) || panelRect.width : panelRect.width;
+    const preferredHeight = restoreModelSize ? Number(panel.dataset.preferredResizeHeight) || panelRect.height : panelRect.height;
+    const width = THREE.MathUtils.clamp(preferredWidth, minWidth, maxWidth);
+    const height = THREE.MathUtils.clamp(preferredHeight, minHeight, maxHeight);
     const left = THREE.MathUtils.clamp(panelRect.left - canvasRect.left, 0, Math.max(0, canvasRect.width - width));
     const top = THREE.MathUtils.clamp(panelRect.top - canvasRect.top, 0, Math.max(0, canvasRect.height - height));
     const viewportPanel = panel === el.workOriginDialog;
@@ -23209,6 +23627,10 @@ function makePanelEdgeResizable(panel) {
         panel.style.top = `${top + (viewportPanel ? resize.canvasRect.top : 0)}px`;
         panel.style.width = `${width}px`;
         panel.style.height = `${height}px`;
+        if (panel === el.modelBrowserPanel) {
+            panel.dataset.preferredResizeWidth = String(width);
+            panel.dataset.preferredResizeHeight = String(height);
+        }
     });
 
     const stopResize = (event) => {
@@ -23258,10 +23680,7 @@ function makeModelTransformSplitResizable(panel) {
     };
     const freezePanelHeightForSplit = () => {
         if (panel.classList.contains('panel-edge-resized')) return;
-        const canvasRect = el.canvasContainer?.getBoundingClientRect();
-        const panelRect = panel.getBoundingClientRect();
-        const maxHeight = Math.max(1, canvasRect?.height || panelRect.height);
-        panel.style.height = `${Math.min(panelRect.height, maxHeight)}px`;
+        panel.style.height = '100%';
         panel.style.maxHeight = '100%';
     };
     const stopResize = (event) => {
@@ -23305,6 +23724,14 @@ function makeModelTransformSplitResizable(panel) {
         event.preventDefault();
         event.stopPropagation();
     });
+    // Re-clamp a previously enlarged list when the outer panel becomes shorter.
+    const observer = new ResizeObserver(() => {
+        if (panel.classList.contains('transform-mode-active') && !transformPanel.classList.contains('hidden')) {
+            setTreeHeight(tree.getBoundingClientRect().height);
+        }
+    });
+    observer.observe(panel);
+    observer.observe(tree);
 }
 
 function ensureModelTreeId(model) {
@@ -23417,7 +23844,12 @@ function findModelByWorkspaceId(workspaceModelId) {
 
 function shouldDisplayModelTreeParts(model) {
     const parts = getImportedModelParts(model);
-    return !(model?.userData?.placement === 'tcp' && parts.length === 1);
+    return parts.length > 1;
+}
+
+function isModelTreeModelSelected(model) {
+    return state.modelSelection.has(model)
+        || !shouldDisplayModelTreeParts(model) && getImportedModelParts(model).some(part => state.modelSelection.has(part));
 }
 
 function modelTreeHasChildren(model) {
@@ -23438,19 +23870,23 @@ function toggleModelTreeNode(model) {
     scheduleMotionProjectSave();
 }
 
-function expandModelTreePath(model) {
-    let current = model;
-    while (current) {
-        state.modelTreeCollapsedIds.delete(ensureModelTreeId(current));
-        current = current.userData?.attachmentHost || null;
+function modelTreeContainsSelectedDescendant(model) {
+    for (const [selected, owner] of state.modelSelection) {
+        if (owner === model && selected !== model) return true;
+        for (let host = owner?.userData?.attachmentHost; host; host = host.userData?.attachmentHost) {
+            if (host === model) return true;
+        }
     }
+    return false;
 }
 
 function scrollSelectedModelTreeNodeIntoView() {
-    if (!el.modelTree) return;
-    const partId = state.selectedModelPart?.userData?.modelPartId || null;
+    if (!el.modelTree || state.modelTreeScrollSuppressed) return;
+    const partId = shouldDisplayModelTreeParts(state.selectedModel)
+        ? state.selectedModelPart?.userData?.modelPartId || null
+        : null;
     const treeId = state.selectedModel ? ensureModelTreeId(state.selectedModel) : null;
-    const target = partId
+    let target = partId
         ? [...el.modelTree.querySelectorAll('[data-model-part-id]')]
             .find((element) => element.dataset.modelPartId === partId)
         : treeId
@@ -23458,6 +23894,12 @@ function scrollSelectedModelTreeNodeIntoView() {
                 .find((element) => element.dataset.modelTreeId === treeId)
             : null;
     if (!target) return;
+    for (let parent = target.parentElement; parent && parent !== el.modelTree; parent = parent.parentElement) {
+        if (parent.tagName === 'DETAILS' && !parent.open) target = parent.querySelector(':scope > summary') || target;
+        if (parent.classList.contains('model-tree-children') && parent.hidden) {
+            target = parent.parentElement.querySelector(':scope > .model-tree-node-row') || target;
+        }
+    }
     target.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' });
     const treeRect = el.modelTree.getBoundingClientRect();
     if (!treeRect.width || !treeRect.height) return;
@@ -23468,6 +23910,25 @@ function scrollSelectedModelTreeNodeIntoView() {
     } else if (targetRect.bottom > treeRect.bottom - edgePadding) {
         el.modelTree.scrollTop += targetRect.bottom - (treeRect.bottom - edgePadding);
     }
+}
+
+function preserveModelTreeScroll(action) {
+    const scrollTop = el.modelTree?.scrollTop || 0, previous = state.modelTreeScrollSuppressed;
+    state.modelTreeScrollSuppressed = true;
+    try { action(); }
+    finally {
+        state.modelTreeScrollSuppressed = previous;
+        if (el.modelTree) el.modelTree.scrollTop = scrollTop;
+    }
+}
+
+function markModelTreeGroupSelection(name, details, containsSelection) {
+    const update = () => {
+        const contained = !details.open && containsSelection();
+        name.classList.toggle('contains-selection', contained);
+        name.title = contained ? '선택한 항목이 이 폴더 안에 있습니다.' : '';
+    };
+    details.addEventListener('toggle', update); update();
 }
 
 function getModelTreeMeta(model) {
@@ -23517,28 +23978,44 @@ function localizedGeneratedModelName(model) {
     return legacyMatch ? `${uiText(legacyMatch[1])} ${legacyMatch[2]}` : rawName;
 }
 
+function modelMotionKind(model, part = null) {
+    const ref = equipmentObjectRef(ensureWorkspaceModelId(model), part ? getImportedModelParts(model).indexOf(part) : -1);
+    const kinds = state.equipmentDefinitions.filter(def => def.bodyRef === ref || [...equipmentReferences(def), ...equipmentMotionGroups(def).map(([value]) => value)].some(value => value === ref || !part && value.startsWith(`equipment-model:${ensureWorkspaceModelId(model)}/`))).map(def => EQUIPMENT_LABELS[def.type]);
+    if (getConveyorMotionDefinition(ref)) kinds.push('컨베이어 이송');
+    return [...new Set(kinds)].join(', ');
+}
+
 function createModelTreePartNode(model, part) {
     const item = document.createElement('li');
     item.className = 'model-tree-part-node';
+    item.dataset.treeOrderKey = `part:${ensureWorkspaceModelId(model)}:${getImportedModelParts(model).indexOf(part)}`;
     item.setAttribute('role', 'treeitem');
-    item.setAttribute('aria-selected', String(part === state.selectedModelPart));
+    item.setAttribute('aria-selected', String(state.modelSelection.has(part)));
 
     const row = document.createElement('div');
     row.className = 'model-tree-part-row';
     row.dataset.modelPartId = part.userData.modelPartId;
+    row.draggable = true;
+    row.addEventListener('dragstart', event => {
+        const parts = getImportedModelParts(model);
+        const indexes = state.modelSelection.has(part) ? parts.map((candidate, index) => state.modelSelection.has(candidate) ? index : -1).filter(index => index >= 0) : [parts.indexOf(part)];
+        event.dataTransfer.setData('application/x-inorobot-parts', JSON.stringify({ modelId: ensureModelTreeId(model), indexes }));
+        event.dataTransfer.effectAllowed = 'move';
+        closeModelContextMenu();
+    });
 
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.className = 'model-tree-part-visibility';
     checkbox.checked = part.visible !== false;
     checkbox.dataset.modelPartVisibility = part.userData.modelPartId;
-    checkbox.setAttribute('aria-label', part.userData.modelPartName || 'PART');
+    checkbox.setAttribute('aria-label', part.userData.modelTreeName || part.userData.modelPartName || 'PART');
 
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = `model-tree-part-button${part === state.selectedModelPart ? ' active' : ''}`;
+    button.className = `model-tree-part-button${state.modelSelection.has(part) ? ' active' : ''}`;
     button.dataset.modelPartId = part.userData.modelPartId;
-    button.title = `${part.userData.modelPartName || uiText('PART')} ${uiText('선택')}`;
+    button.title = `${part.userData.modelTreeName || modelTreeDisplayName(part.userData.modelPartName) || uiText('PART')} ${uiText('선택')}`;
 
     const icon = document.createElement('span');
     icon.className = 'model-tree-part-icon';
@@ -23546,9 +24023,11 @@ function createModelTreePartNode(model, part) {
 
     const name = document.createElement('span');
     name.className = 'model-tree-part-name';
-    name.textContent = part.userData.modelPartName || uiText('PART');
+    name.textContent = part.userData.modelTreeName || modelTreeDisplayName(part.userData.modelPartName) || uiText('PART');
 
     button.append(icon, name);
+    const motion = modelMotionKind(model, part);
+    if (motion) { const kind = document.createElement('span'); kind.className = 'model-tree-kind'; kind.textContent = motion; button.append(kind); }
     row.append(checkbox, button);
     item.appendChild(row);
     return item;
@@ -23562,14 +24041,23 @@ function createModelTreeNode(model) {
     const collapsed = hasChildren && isModelTreeNodeCollapsed(model);
     const item = document.createElement('li');
     item.className = 'model-tree-node';
+    item.dataset.treeOrderKey = `model:${ensureWorkspaceModelId(model)}`;
     item.classList.toggle('model-tree-node-hidden', !modelVisible);
     item.setAttribute('role', 'treeitem');
-    item.setAttribute('aria-selected', String(model === state.selectedModel));
+    item.setAttribute('aria-selected', String(isModelTreeModelSelected(model)));
     if (hasChildren) item.setAttribute('aria-expanded', String(!collapsed));
 
     const row = document.createElement('div');
     row.className = 'model-tree-node-row';
     row.dataset.modelTreeId = treeId;
+    if (isGroupableModel(model)) {
+        row.draggable = true;
+        row.addEventListener('dragstart', event => {
+            const models = state.modelSelection.has(model) ? getSelectedGroupableModels() : [model];
+            event.dataTransfer.setData('application/x-inorobot-models', JSON.stringify(models.map(ensureWorkspaceModelId)));
+            event.dataTransfer.effectAllowed = 'move'; closeModelContextMenu();
+        });
+    }
 
     if (hasChildren) {
         const toggle = document.createElement('button');
@@ -23595,12 +24083,15 @@ function createModelTreeNode(model) {
 
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = `model-tree-button${model === state.selectedModel ? ' active' : ''}`;
+    button.className = `model-tree-button${isModelTreeModelSelected(model) ? ' active' : ''}`;
     button.classList.add(`model-tree-button-${meta.className}`);
     button.classList.toggle('model-tree-button-hidden', !modelVisible);
+    const containsSelection = collapsed && modelTreeContainsSelectedDescendant(model);
+    button.classList.toggle('contains-selection', containsSelection);
     button.dataset.modelTreeId = treeId;
     const displayName = displayNameForModelTree(model);
     button.title = `${displayName} ${uiText(modelVisible ? '선택' : '표시')}`;
+    if (containsSelection) button.title += ' · 선택한 항목이 이 모델 안에 있습니다.';
 
     const icon = document.createElement('span');
     icon.className = 'model-tree-icon';
@@ -23612,7 +24103,7 @@ function createModelTreeNode(model) {
 
     const kind = document.createElement('span');
     kind.className = 'model-tree-kind';
-    kind.textContent = uiText(meta.kind);
+    kind.textContent = modelMotionKind(model) || uiText(meta.kind);
 
     const visibilityIndicator = document.createElement('span');
     visibilityIndicator.className = 'model-tree-visibility-indicator';
@@ -23634,21 +24125,298 @@ function createModelTreeNode(model) {
         childList.hidden = collapsed;
         children.forEach((child) => childList.appendChild(createModelTreeNode(child)));
         if (parts.length > 0) {
-            parts.forEach((part) => childList.appendChild(createModelTreePartNode(model, part)));
+            const grouped = new Set();
+            for (const group of model.userData.modelPartGroups || []) {
+                const members = group.parts.map(index => parts[index]).filter(Boolean);
+                members.forEach(part => grouped.add(part));
+                if (!members.length) continue;
+                const item = document.createElement('li'), details = document.createElement('details'), summary = document.createElement('summary');
+                item.className = 'model-tree-part-group'; details.open = !group.collapsed;
+                group.treeOrderId ||= createWorkspaceObjectId('tree-group');
+                item.dataset.treeOrderKey = `folder:${group.treeOrderId}`;
+                summary.tabIndex = -1;
+                const toggle = document.createElement('button'); toggle.type = 'button'; toggle.className = 'model-tree-toggle model-tree-group-toggle';
+                const updateToggle = () => {
+                    toggle.setAttribute('aria-expanded', String(details.open));
+                    toggle.setAttribute('aria-label', `${group.name} ${uiText(details.open ? '접기' : '펼치기')}`);
+                    toggle.innerHTML = `<i class="fa-solid fa-chevron-${details.open ? 'down' : 'right'}"></i>`;
+                };
+                updateToggle();
+                toggle.addEventListener('click', event => {
+                    event.preventDefault(); event.stopPropagation();
+                    details.open = !details.open; group.collapsed = !details.open;
+                    updateToggle(); scheduleMotionProjectSave();
+                });
+                const name = document.createElement('button'); name.type = 'button'; name.className = 'model-tree-group-name';
+                name.textContent = `📁 ${group.name} (${members.length})`;
+                const selected = members.every(part => state.modelSelection.has(part));
+                name.classList.toggle('active', selected); name.setAttribute('aria-pressed', String(selected));
+                markModelTreeGroupSelection(name, details, () => members.some(part => state.modelSelection.has(part)));
+                summary.append(toggle, name);
+                summary.addEventListener('click', event => {
+                    event.preventDefault(); event.stopPropagation();
+                    preserveModelTreeScroll(() => {
+                    if (!event.shiftKey) state.modelSelection.clear();
+                    members.forEach(part => state.modelSelection.set(part, model));
+                    state.selectionBatch = true;
+                    try { selectSceneModelPart(model, members.at(-1)); }
+                    finally { state.selectionBatch = false; }
+                    updateModelSelectionOutlines(); renderModelTree(); requestRender();
+                    });
+                });
+                summary.addEventListener('contextmenu', event => {
+                    event.preventDefault(); event.stopPropagation();
+                    openModelContextMenu(event, model);
+                    el.modelContextMenu.dataset.partGroup = String(model.userData.modelPartGroups.indexOf(group));
+                    el.modelContextMenu.classList.add('model-group-menu');
+                    positionModelContextMenu(event);
+                });
+                summary.addEventListener('dragover', event => {
+                    if (!event.dataTransfer.types.includes('application/x-inorobot-parts')) return;
+                    event.preventDefault(); event.dataTransfer.dropEffect = 'move'; summary.classList.add('model-group-drop-target');
+                });
+                summary.addEventListener('dragleave', () => summary.classList.remove('model-group-drop-target'));
+                summary.addEventListener('drop', event => {
+                    event.preventDefault(); event.stopPropagation(); summary.classList.remove('model-group-drop-target');
+                    let payload; try { payload = JSON.parse(event.dataTransfer.getData('application/x-inorobot-parts')); } catch { return; }
+                    if (payload.modelId !== treeId || !Array.isArray(payload.indexes)) { setStatus('같은 모델의 부품만 그룹에 넣을 수 있습니다.', '#fbbf24'); return; }
+                    const indexes = [...new Set(payload.indexes)].filter(index => Number.isInteger(index) && index >= 0 && index < parts.length);
+                    if (!indexes.length || indexes.every(index => group.parts.includes(index))) return;
+                    changeModelPartGroups(model, '부품 그룹으로 이동', () => {
+                        model.userData.modelPartGroups.forEach(candidate => { candidate.parts = candidate.parts.filter(index => !indexes.includes(index)); });
+                        group.parts.push(...indexes);
+                    });
+                });
+                details.append(summary);
+                const list = document.createElement('ul'); list.className = 'model-tree-children'; members.forEach(part => list.append(createModelTreePartNode(model, part))); details.append(list);
+                details.addEventListener('toggle', () => { group.collapsed = !details.open; scheduleMotionProjectSave(); });
+                item.append(details); childList.append(item);
+            }
+            parts.filter(part => !grouped.has(part)).forEach(part => childList.appendChild(createModelTreePartNode(model, part)));
         }
         item.appendChild(childList);
     }
     return item;
 }
 
+function modelTreeDisplayName(name) {
+    return String(name || '').replace(/\.(?:stl|fbx|obj|glb|gltf|stp|step|dxf)(?=\s*(?:#\d+|\(\d+\))?$)/i, '');
+}
+
 function displayNameForModelTree(model) {
-    if (model.userData.motionDisplayName) return formatRobotPanelName(model.userData.motionDisplayName);
+    if (model.userData.modelTreeName) return model.userData.modelTreeName;
+    if (model.userData.motionDisplayName) return formatRobotPanelName(modelTreeDisplayName(model.userData.motionDisplayName));
     const generatedName = localizedGeneratedModelName(model);
-    return generatedName || uiText('MODEL');
+    const index = ensureModelTreeInstanceIndex(model);
+    const name = modelTreeDisplayName(generatedName) || uiText('MODEL');
+    return index ? `${name} #${index}` : name;
+}
+
+function ensureModelTreeInstanceIndex(model) {
+    const sourceName = String(model.userData.modelName || model.name || '').trim();
+    const peers = state.models.filter(candidate => !candidate.userData.motionDisplayName
+        && String(candidate.userData.modelName || candidate.name || '').trim() === sourceName);
+    if (!peers.includes(model)) return null;
+    if (peers.length === 1 && !Number.isSafeInteger(model.userData.modelTreeInstanceIndex)) return null;
+    const used = new Set();
+    let next = Math.max(0, ...peers.map(peer => Number.isSafeInteger(peer.userData.modelTreeInstanceIndex)
+        && peer.userData.modelTreeInstanceIndex > 0 ? peer.userData.modelTreeInstanceIndex : 0)) + 1;
+    for (const peer of peers) {
+        const index = peer.userData.modelTreeInstanceIndex;
+        if (Number.isSafeInteger(index) && index > 0 && !used.has(index)) used.add(index);
+        else {
+            peer.userData.modelTreeInstanceIndex = next++;
+            used.add(peer.userData.modelTreeInstanceIndex);
+        }
+    }
+    return model.userData.modelTreeInstanceIndex;
+}
+
+function isGroupableModel(model) {
+    return state.models.includes(model) && !state.models.includes(model.userData.attachmentHost);
+}
+
+function getSelectedGroupableModels() {
+    return [...state.modelSelection].filter(([object, model]) => object === model && isGroupableModel(model)).map(([, model]) => model);
+}
+
+function normalizeModelGroups(groups) {
+    // Held objects appear under the robot temporarily; retain their home folder membership.
+    const available = new Set(state.models.filter(model => isGroupableModel(model)
+        || model.userData.placement === 'grip-object').map(ensureWorkspaceModelId)), used = new Set();
+    return (Array.isArray(groups) ? groups : []).flatMap(group => {
+        if (!group || typeof group.name !== 'string' || !group.name.trim() || !Array.isArray(group.modelIds)) return [];
+        const modelIds = group.modelIds.filter(id => {
+            if (!available.has(id) || used.has(id)) return false;
+            used.add(id); return true;
+        });
+        return modelIds.length ? [{ name: group.name.trim(), modelIds, collapsed: Boolean(group.collapsed),
+            ...(typeof group.treeOrderId === 'string' ? { treeOrderId: group.treeOrderId } : {}) }] : [];
+    });
+}
+
+function getModelGroupMembers(group) {
+    return group.modelIds.map(id => state.models.find(model => ensureWorkspaceModelId(model) === id)).filter(model => model && isGroupableModel(model));
+}
+
+function getContextModelGroup() {
+    const index = el.modelContextMenu?.dataset.modelGroup;
+    return index === undefined ? null : state.modelGroups[Number(index)] || null;
+}
+
+function changeModelGroups(label, change) {
+    const before = captureSceneSnapshot();
+    change(); state.modelGroups = normalizeModelGroups(state.modelGroups);
+    renderModelTree(); equipmentApp.ui.updateStatus();
+    recordHistory(label, before, captureSceneSnapshot()); scheduleMotionProjectSave();
+}
+
+function createModelTreeModelGroup(group, members) {
+    const item = document.createElement('li'), details = document.createElement('details'), summary = document.createElement('summary');
+    item.className = 'model-tree-part-group model-tree-model-group'; item.setAttribute('role', 'treeitem');
+    group.treeOrderId ||= createWorkspaceObjectId('tree-group');
+    item.dataset.treeOrderKey = `folder:${group.treeOrderId}`;
+    details.open = !group.collapsed; summary.tabIndex = -1;
+    const toggle = document.createElement('button'); toggle.type = 'button'; toggle.className = 'model-tree-toggle model-tree-group-toggle';
+    const updateToggle = () => {
+        toggle.setAttribute('aria-expanded', String(details.open));
+        toggle.setAttribute('aria-label', `${group.name} ${uiText(details.open ? '접기' : '펼치기')}`);
+        item.setAttribute('aria-expanded', String(details.open));
+        toggle.innerHTML = `<i class="fa-solid fa-chevron-${details.open ? 'down' : 'right'}"></i>`;
+    };
+    updateToggle();
+    toggle.addEventListener('click', event => {
+        event.preventDefault(); event.stopPropagation();
+        details.open = !details.open; group.collapsed = !details.open;
+        updateToggle(); scheduleMotionProjectSave();
+    });
+    const name = document.createElement('button'); name.type = 'button'; name.className = 'model-tree-group-name';
+    name.textContent = `📁 ${group.name} (${members.length})`;
+    const selected = members.length > 0 && members.every(model => state.modelSelection.has(model));
+    name.classList.toggle('active', selected); name.setAttribute('aria-pressed', String(selected)); item.setAttribute('aria-selected', String(selected));
+    markModelTreeGroupSelection(name, details, () => [...state.modelSelection.values()].some(owner => {
+        for (let current = owner; current; current = current.userData.attachmentHost) {
+            if (members.includes(current)) return true;
+        }
+        return false;
+    }));
+    summary.append(toggle, name);
+    summary.addEventListener('click', event => {
+        event.preventDefault(); event.stopPropagation();
+        preserveModelTreeScroll(() => {
+        if (!event.shiftKey) state.modelSelection.clear();
+        members.forEach(model => state.modelSelection.set(model, model));
+        state.selectionBatch = true;
+        try { selectSceneModel(members.at(-1)); } finally { state.selectionBatch = false; }
+        updateModelSelectionOutlines(); renderModelTree(); requestRender();
+        });
+    });
+    summary.addEventListener('contextmenu', event => {
+        event.preventDefault(); event.stopPropagation();
+        openModelContextMenu(event, members[0]);
+        el.modelContextMenu.dataset.modelGroup = String(state.modelGroups.indexOf(group));
+        el.modelContextMenu.classList.add('model-group-menu'); positionModelContextMenu(event);
+    });
+    summary.addEventListener('dragover', event => {
+        if (!event.dataTransfer.types.includes('application/x-inorobot-models')) return;
+        event.preventDefault(); event.dataTransfer.dropEffect = 'move'; summary.classList.add('model-group-drop-target');
+    });
+    summary.addEventListener('dragleave', () => summary.classList.remove('model-group-drop-target'));
+    summary.addEventListener('drop', event => {
+        event.preventDefault(); event.stopPropagation(); summary.classList.remove('model-group-drop-target');
+        let ids; try { ids = JSON.parse(event.dataTransfer.getData('application/x-inorobot-models')); } catch { return; }
+        if (!Array.isArray(ids)) return;
+        ids = [...new Set(ids)].filter(id => state.models.some(model => ensureWorkspaceModelId(model) === id && isGroupableModel(model)));
+        if (!ids.length || ids.every(id => group.modelIds.includes(id))) return;
+        changeModelGroups('모델 그룹으로 이동', () => {
+            state.modelGroups.forEach(candidate => { candidate.modelIds = candidate.modelIds.filter(id => !ids.includes(id)); });
+            group.modelIds.push(...ids);
+        });
+    });
+    const children = document.createElement('ul'); children.className = 'model-tree-children'; children.setAttribute('role', 'group');
+    members.forEach(model => children.appendChild(createModelTreeNode(model)));
+    details.append(summary, children); item.append(details); return item;
+}
+
+function normalizeModelTreeOrder(value) {
+    return Object.fromEntries(Object.entries(value && typeof value === 'object' && !Array.isArray(value) ? value : {})
+        .filter(([, keys]) => Array.isArray(keys))
+        .map(([parent, keys]) => [parent, [...new Set(keys.filter(key => typeof key === 'string'))]]));
+}
+
+function configureModelTreeOrdering(list, parentKey = 'root') {
+    const items = [...list.children];
+    const saved = state.modelTreeOrder[parentKey] || [];
+    const rank = new Map(saved.map((key, index) => [key, index]));
+    const pinnedKeys = parentKey === 'root'
+        ? new Set(state.models.filter(isArticulatedRobotModel).map(model => `model:${ensureWorkspaceModelId(model)}`))
+        : new Set();
+    items.sort((a, b) => Number(pinnedKeys.has(b.dataset.treeOrderKey)) - Number(pinnedKeys.has(a.dataset.treeOrderKey))
+        || (rank.get(a.dataset.treeOrderKey) ?? saved.length) - (rank.get(b.dataset.treeOrderKey) ?? saved.length));
+    items.forEach(item => list.appendChild(item));
+    for (const item of items) {
+        const row = item.querySelector(':scope > .model-tree-node-row, :scope > .model-tree-part-row, :scope > details > summary');
+        const key = item.dataset.treeOrderKey;
+        if (!row || !key) continue;
+        row.draggable = true;
+        row.addEventListener('dragstart', event => {
+            event.stopPropagation();
+            state.modelTreeDragParent = parentKey;
+            const keys = item.classList.contains('model-tree-part-group') ? [key] : items
+                .filter(sibling => sibling === item || (item.getAttribute('aria-selected') === 'true'
+                    && sibling.getAttribute('aria-selected') === 'true'
+                    && sibling.className === item.className))
+                .map(sibling => sibling.dataset.treeOrderKey);
+            event.dataTransfer.setData('application/x-inorobot-tree-order', JSON.stringify({ parentKey, keys }));
+            event.dataTransfer.effectAllowed = 'move';
+        });
+        const placement = event => {
+            if (state.modelTreeDragParent !== parentKey || !event.dataTransfer.types.includes('application/x-inorobot-tree-order')) return null;
+            const rect = row.getBoundingClientRect(), offset = event.clientY - rect.top;
+            // Folder centers retain the existing operation for moving items into a group.
+            if (item.classList.contains('model-tree-part-group') && offset > rect.height * .25 && offset < rect.height * .75) return null;
+            return offset < rect.height / 2 ? 'before' : 'after';
+        };
+        const clear = () => row.classList.remove('model-tree-drop-before', 'model-tree-drop-after');
+        row.addEventListener('dragover', event => {
+            const side = placement(event); clear();
+            if (!side) return;
+            event.preventDefault(); event.stopImmediatePropagation();
+            event.dataTransfer.dropEffect = 'move'; row.classList.add(`model-tree-drop-${side}`);
+        }, true);
+        row.addEventListener('dragleave', clear);
+        row.addEventListener('dragend', () => {
+            state.modelTreeDragParent = null;
+            el.modelTree.querySelectorAll('.model-tree-drop-before, .model-tree-drop-after').forEach(node => node.classList.remove('model-tree-drop-before', 'model-tree-drop-after'));
+        });
+        row.addEventListener('drop', event => {
+            const side = placement(event); clear();
+            if (!side) return;
+            event.preventDefault(); event.stopImmediatePropagation();
+            let payload;
+            try { payload = JSON.parse(event.dataTransfer.getData('application/x-inorobot-tree-order')); } catch { return; }
+            if (payload?.parentKey !== parentKey || !Array.isArray(payload.keys) || payload.keys.includes(key)) return;
+            const current = [...list.children].map(child => child.dataset.treeOrderKey);
+            const moved = current.filter(candidate => payload.keys.includes(candidate));
+            if (!moved.length) return;
+            const order = current.filter(candidate => !moved.includes(candidate));
+            order.splice(order.indexOf(key) + Number(side === 'after'), 0, ...moved);
+            order.sort((a, b) => Number(pinnedKeys.has(b)) - Number(pinnedKeys.has(a)));
+            if (JSON.stringify(order) === JSON.stringify(current)) return;
+            const before = captureSceneSnapshot();
+            state.modelTreeDragParent = null;
+            state.modelTreeOrder[parentKey] = order;
+            preserveModelTreeScroll(renderModelTree);
+            recordHistory('모델 트리 순서 변경', before, captureSceneSnapshot()); scheduleMotionProjectSave();
+        }, true);
+        const children = item.querySelector(':scope > .model-tree-children, :scope > details > .model-tree-children');
+        if (children) configureModelTreeOrdering(children, key);
+    }
 }
 
 function renderModelTree() {
     if (!el.modelTree) return;
+    const scrollTop = el.modelTree.scrollTop;
     el.modelTree.replaceChildren();
     el.modelTreeCount.textContent = String(state.models.length);
     updatePanelLauncher('measurement-panel');
@@ -23672,8 +24440,17 @@ function renderModelTree() {
     const list = document.createElement('ul');
     list.className = 'model-tree-list';
     list.setAttribute('role', 'group');
-    topLevelModels.forEach((model) => list.appendChild(createModelTreeNode(model)));
+    state.modelGroups = normalizeModelGroups(state.modelGroups);
+    const grouped = new Set();
+    for (const group of state.modelGroups) {
+        const members = getModelGroupMembers(group);
+        members.forEach(model => grouped.add(model));
+        list.appendChild(createModelTreeModelGroup(group, members));
+    }
+    topLevelModels.filter(model => !grouped.has(model)).forEach((model) => list.appendChild(createModelTreeNode(model)));
+    configureModelTreeOrdering(list);
     el.modelTree.appendChild(list);
+    el.modelTree.scrollTop = scrollTop;
 }
 
 function formatTransformNumber(value) {
@@ -23688,6 +24465,7 @@ function updateSelectedModelTransformInputs() {
         updateZeroPointCurrentMarker();
         return;
     }
+    captureSelectedModelTransformBasis();
     const isScaleMode = state.transformControls?.mode === 'scale';
     if (el.modelNumericTransformTitle) el.modelNumericTransformTitle.textContent = uiText(isScaleMode ? 'SCALE' : 'POSITION');
     if (el.modelNumericTransformUnit) el.modelNumericTransformUnit.textContent = isScaleMode ? '×' : 'mm';
@@ -23696,8 +24474,10 @@ function updateSelectedModelTransformInputs() {
         input.value = formatTransformNumber(isScaleMode ? target.scale[axis] : target.position[axis]);
         input.min = isScaleMode ? '0.001' : '';
         input.step = isScaleMode ? '0.01' : '0.5';
+        const degrees = THREE.MathUtils.radToDeg(target.rotation[axis]);
+        const normalized = normalizeDegrees(degrees);
         el.modelRotationInputs[axis].value = formatTransformNumber(
-            normalizeDegrees(THREE.MathUtils.radToDeg(target.rotation[axis]))
+            normalized === -180 && degrees > 0 ? 180 : normalized
         );
     });
     updateZeroPointCurrentMarker();
@@ -23750,6 +24530,7 @@ function attachTransformControlsToSelectedModel() {
             || model.userData.placement === 'grip-object' ? 'local' : 'world'
     );
     state.transformControls.attach(target);
+    captureSelectedModelTransformBasis();
 }
 
 function setTransformHandlesEnabled(enabled) {
@@ -24619,6 +25400,20 @@ function openModelContextMenu(event, model, part = null) {
     menu.dataset.modelTreeId = model.userData.modelTreeId;
     if (part) menu.dataset.modelPartId = part.userData.modelPartId;
     else delete menu.dataset.modelPartId;
+    document.getElementById('model-motion-add-part').hidden = false;
+    document.getElementById('model-group-parts').hidden = part ? !getImportedModelParts(model).length : !isGroupableModel(model);
+    document.getElementById('model-ungroup-part').hidden = part
+        ? !model.userData.modelPartGroups?.some(group => group.parts.includes(getImportedModelParts(model).indexOf(part)))
+        : !state.modelGroups.some(group => group.modelIds.includes(ensureWorkspaceModelId(model)));
+    const ref = equipmentObjectRef(ensureWorkspaceModelId(model), part ? getImportedModelParts(model).indexOf(part) : -1);
+    const edits = document.getElementById('model-motion-edit-options'); edits.replaceChildren();
+    const motions = equipmentApp.ui.findDefinitions(ref);
+    for (const motion of motions) {
+        const button = document.createElement('button'); button.type = 'button'; button.setAttribute('role', 'menuitem');
+        const icon = document.createElement('i'); icon.className = 'fa-solid fa-pen-to-square';
+        button.append(icon, document.createTextNode(motions.length === 1 ? '동작 편집' : `동작 편집 · ${motion.name}`));
+        button.addEventListener('click', () => { closeModelContextMenu(); equipmentApp.ui.open(ref, motion); }); edits.append(button);
+    }
     const uploaded = Boolean(model.userData.uploaded);
     const colorEditable = uploaded || isPrimitiveShapeModel(model) || isSketchExtrusionModel(model);
     const structuralActionsHidden = Boolean(part);
@@ -24671,18 +25466,19 @@ function openModelContextMenu(event, model, part = null) {
     }
     const activeGripSource = part ? findActiveGripObjectForSource(model, part) : null;
     const gripInUse = part ? Boolean(activeGripSource) : isGripObjectModelInUse(model);
-    if (el.modelUseGripObject) {
-        el.modelUseGripObject.hidden = gripInUse || !isGripObjectTarget(model, part);
-    }
-    if (el.modelReleaseGripObject) {
-        el.modelReleaseGripObject.hidden = !gripInUse;
-    }
+
+
     if (el.modelChangeColor) el.modelChangeColor.hidden = !colorEditable;
     if (colorEditable && el.modelColorPicker) {
         el.modelColorPicker.value = getModelColorHex(part || model);
     }
     menu.classList.remove('hidden');
     menu.style.left = '0px';
+    positionModelContextMenu(event);
+}
+
+function positionModelContextMenu(event) {
+    const menu = el.modelContextMenu;
     menu.style.top = '0px';
     const bounds = menu.getBoundingClientRect();
     menu.style.left = `${Math.max(8, Math.min(event.clientX, window.innerWidth - bounds.width - 8))}px`;
@@ -24693,6 +25489,9 @@ function closeModelContextMenu() {
     commitPendingHistory('모델 투명도 변경', 'pendingModelTransparencyHistory');
     if (!el.modelContextMenu) return;
     el.modelContextMenu.classList.add('hidden');
+    el.modelContextMenu.classList.remove('model-group-menu');
+    delete el.modelContextMenu.dataset.partGroup;
+    delete el.modelContextMenu.dataset.modelGroup;
     delete el.modelContextMenu.dataset.modelTreeId;
     delete el.modelContextMenu.dataset.modelPartId;
     if (el.modelChangeZeroPoint) el.modelChangeZeroPoint.hidden = false;
@@ -25409,9 +26208,58 @@ function setArmLoadVisibility(model, visible, recordHistoryChange = true) {
     if (historyBefore) recordHistory('암 로드 표시 설정', historyBefore, captureSceneSnapshot());
 }
 
+function toggleSceneSelection(model, part = null) {
+    const object = part || model;
+    if (!object || !state.models.includes(model)) return;
+    if (state.modelSelection.has(object)) state.modelSelection.delete(object);
+    else state.modelSelection.set(object, model);
+    const last = [...state.modelSelection].at(-1);
+    state.selectionBatch = true;
+    try {
+        if (last && last[0] !== last[1]) selectSceneModelPart(last[1], last[0]);
+        else selectSceneModel(last?.[1] || null);
+    } finally { state.selectionBatch = false; }
+    updateModelSelectionOutlines(); renderModelTree(); requestRender();
+}
+
+function changeModelPartGroups(model, label, change) {
+    const before = captureSceneSnapshot();
+    change();
+    for (const owner of Array.isArray(model) ? model : [model]) {
+        owner.userData.modelPartGroups = (owner.userData.modelPartGroups || []).filter(group => group.parts.length);
+    }
+    renderModelTree(); equipmentApp.ui.updateStatus();
+    recordHistory(label, before, captureSceneSnapshot()); scheduleMotionProjectSave();
+}
+
+function groupSelectedModelParts() {
+    if (!getModelContextTarget()?.part && !state.selectedModelPart) {
+        const models = getSelectedGroupableModels();
+        if (!models.length) { setStatus('Shift를 누르고 묶을 모델을 선택하세요.', '#fbbf24'); return; }
+        const name = window.prompt('모델 그룹 이름', '모델 그룹')?.trim();
+        if (!name) return;
+        const ids = models.map(ensureWorkspaceModelId);
+        changeModelGroups('모델 그룹 만들기', () => {
+            state.modelGroups.forEach(group => { group.modelIds = group.modelIds.filter(id => !ids.includes(id)); });
+            state.modelGroups.push({ name, modelIds: ids, collapsed: false });
+        });
+        return;
+    }
+    const model = state.selectedModel;
+    if (!model) return;
+    const parts = getImportedModelParts(model);
+    const indexes = parts.map((part, index) => state.modelSelection.has(part) ? index : -1).filter(index => index >= 0);
+    if (!indexes.length) { setStatus('Shift를 누르고 묶을 하위 부품을 선택하세요.', '#fbbf24'); return; }
+    const name = window.prompt('부품 그룹 이름', '부품 그룹');
+    if (!name?.trim()) return;
+    const before = captureSceneSnapshot();
+    model.userData.modelPartGroups = (model.userData.modelPartGroups || []).map(group => ({ ...group, parts: group.parts.filter(index => !indexes.includes(index)) })).filter(group => group.parts.length);
+    model.userData.modelPartGroups.push({ name: name.trim(), parts: indexes, collapsed: false });
+    renderModelTree(); recordHistory('부품 그룹 만들기', before, captureSceneSnapshot()); scheduleMotionProjectSave();
+}
+
 function selectSceneModelPart(model, part) {
     if (!model || !part || !getImportedModelParts(model).includes(part)) return;
-    expandModelTreePath(model);
     selectSceneModel(model, { preservePart: true });
     setSelectedModelPart(part);
     scrollSelectedModelTreeNodeIntoView();
@@ -25448,6 +26296,10 @@ function selectSceneModel(model, options = {}) {
         && getImportedModelParts(model).includes(state.selectedModelPart);
     if (!preservePart || !currentPartBelongsToModel) setSelectedModelPart(null);
     state.selectedModel = model || null;
+    if (!state.selectionBatch && !options.preserveSelection) {
+        state.modelSelection.clear();
+        if (model) state.modelSelection.set(options.preservePart && state.selectedModelPart || model, model);
+    }
     const jogRobot = getJogTargetRobot();
     if (jogRobot && state.activeArticulatedModel !== jogRobot) {
         state.activeArticulatedModel = jogRobot;
@@ -25480,7 +26332,7 @@ function selectSceneModel(model, options = {}) {
     el.modelTransformPanel.classList.remove('hidden');
     setTransformHandlesEnabled(false);
     setModelPlacementUiVisibility(true);
-    el.selectedModelName.textContent = model.userData.motionDisplayName || model.userData.modelName || model.name || uiText('Unnamed model');
+    el.selectedModelName.textContent = displayNameForModelTree(model);
     if (model.userData.tcpFrame && state.activeArticulatedModel !== model) {
         state.activeArticulatedModel = model;
         renderJogControls(model);
@@ -25546,6 +26398,8 @@ function applySelectedModelNumericTransform(event) {
     if (!Number.isFinite(value)) return;
 
     const isScaleMode = state.transformControls?.mode === 'scale';
+    target.updateWorldMatrix(true, false);
+    const before = target.matrixWorld.clone();
     if (positionEntry && isScaleMode) {
         if (value <= 0) return;
         target.scale[axis] = value;
@@ -25554,7 +26408,9 @@ function applySelectedModelNumericTransform(event) {
     } else {
         target.rotation[axis] = THREE.MathUtils.degToRad(value);
     }
+    target.updateMatrix();
     target.updateMatrixWorld(true);
+    applySelectedModelTransformDelta(target, before);
     markSceneCollisionDirty(model);
     setSelectedTransformMode(rotationEntry ? 'rotate' : isScaleMode ? 'scale' : 'translate', false);
     if (state.toolLoadInfo.selectedModel === model) calculateToolLoadInfo();
@@ -25869,6 +26725,27 @@ function loadFBX(url, onProgress) {
     });
 }
 
+function getScaraMountingSurfaceCenterX(geometry) {
+    geometry.computeBoundingBox();
+    const bounds = geometry.boundingBox;
+    const positions = geometry.getAttribute('position');
+    if (!bounds || !positions) return 0;
+    // Use the bottom mounting face so rear connectors and the conduit do not
+    // bias the hardware origin away from the base plate's centre.
+    const tolerance = Math.max(0.01, (bounds.max.z - bounds.min.z) * 1e-6);
+    let minX = Infinity;
+    let maxX = -Infinity;
+    for (let index = 0; index < positions.count; index += 1) {
+        if (positions.getZ(index) > bounds.min.z + tolerance) continue;
+        const x = positions.getX(index);
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x);
+    }
+    return Number.isFinite(minX) && Number.isFinite(maxX)
+        ? (minX + maxX) / 2
+        : (bounds.min.x + bounds.max.x) / 2;
+}
+
 async function loadArticulatedRobot(modelDefinition, onProgress) {
     const loadStartedAt = performance.now();
     const manifest = createRobotManifest(modelDefinition);
@@ -25893,12 +26770,19 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
     robot.userData.workObjects = normalizeWorkObjects();
     robot.userData.activeWorkObjectIndex = WOBJ_WORLD_INDEX;
 
+    // Model placement uses the mounting surface; controller coordinates keep
+    // the authored J1/TCP datum independently of that hardware origin.
+    const controllerBaseFrame = new THREE.Group();
+    controllerBaseFrame.name = 'Robot controller BASE';
+    robot.add(controllerBaseFrame);
+    robot.userData.controllerBaseFrame = controllerBaseFrame;
+
     const baseMesh = createSTLMesh(geometries[0], manifest.base, meshAssets[0]?.collisionGeometry);
     // P0 is the fixed mounting/base plate below J1. It is assembled to the
     // equipment in the real installation, so it must not report a collision.
     baseMesh.userData.collisionDisabled = true;
     baseMesh.userData.collisionRole = 'robot-mounted-base';
-    robot.add(baseMesh);
+    controllerBaseFrame.add(baseMesh);
     if (manifest.tube) {
         const tubeGeometry = geometries[manifest.joints.length + 1];
         const tubeMesh = createScaraTubeMesh(
@@ -25907,17 +26791,18 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
             geometries[0],
             manifest.joints[1]?.pivot?.[0]
         );
-        robot.add(tubeMesh);
+        controllerBaseFrame.add(tubeMesh);
         robot.userData.scaraTube = tubeMesh;
     }
     if (manifest.robotType === 'scara' && manifest.kinematicVariant !== 'ceiling-scara') {
         geometries[0].computeBoundingBox();
         const mountingSurfaceOffset = Math.max(0, -(geometries[0].boundingBox?.min.z || 0));
-        robot.position.z = mountingSurfaceOffset;
+        controllerBaseFrame.position.x = -getScaraMountingSurfaceCenterX(geometries[0]);
+        controllerBaseFrame.position.z = mountingSurfaceOffset;
         robot.userData.baseElevation = mountingSurfaceOffset;
     }
 
-    let parent = robot;
+    let parent = controllerBaseFrame;
     let parentPivot = new THREE.Vector3();
 
     manifest.joints.forEach((jointDefinition, index) => {
@@ -26477,7 +27362,8 @@ function getFileExtension(fileName) {
 }
 
 function getArticulatedRobotForAttachment() {
-    if (state.activeArticulatedModel?.userData.tcpFrame) return state.activeArticulatedModel;
+    if (state.models.includes(state.selectedModel) && state.selectedModel?.userData.tcpFrame) return state.selectedModel;
+    if (state.models.includes(state.activeArticulatedModel) && state.activeArticulatedModel?.userData.tcpFrame) return state.activeArticulatedModel;
     return [...state.models].reverse().find((model) => model.userData.tcpFrame) || null;
 }
 
@@ -26573,7 +27459,7 @@ function normalizeToolAttachmentSource(value) {
 }
 
 function isToolAttachableSceneTarget(model, part = null) {
-    if (!model || model.userData?.tcpFrame || model.userData?.placement !== 'scene') return false;
+    if (!model || model.userData?.equipmentOwner || model.userData?.tcpFrame || model.userData?.placement !== 'scene') return false;
     if (part) {
         return Boolean(model.userData.uploaded)
             && getImportedModelParts(model).includes(part);
@@ -26907,7 +27793,7 @@ function findReleasedGripObjectForSource(model, part = null) {
     const sourcePartIndex = getImportedModelParts(model).indexOf(part);
     if (sourcePartIndex < 0) return null;
     return state.models.find((candidate) => {
-        if (candidate === model || isGripObjectModelInUse(candidate)
+        if (candidate === modelObjectModelInUse(candidate)
             || candidate.userData?.placement !== 'scene') return false;
         const source = normalizeGripObjectSource(candidate.userData?.gripObjectSource);
         return source?.mode === 'part-copy'
@@ -26968,21 +27854,6 @@ function getGripObjectReferences() {
     return references.filter((reference) => reference.value);
 }
 
-function getSelectedGripObjectReference() {
-    if (isGripObjectModelInUse(state.selectedModel)) {
-        return createGripObjectModelRef(state.selectedModel);
-    }
-    const part = state.selectedModelPart;
-    if (part) {
-        const match = findImportedModelPart(part.userData.modelPartId);
-        if (match && isGripObjectTarget(match.model, match.part)) {
-            return createGripObjectPartRef(match.model, match.part);
-        }
-    }
-    return isGripObjectTarget(state.selectedModel)
-        ? createGripObjectModelRef(state.selectedModel)
-        : null;
-}
 
 function parseGripObjectReference(reference) {
     const parts = String(reference || '').split('|');
@@ -27049,7 +27920,7 @@ function restoreModelTreeSelection(selection) {
     if (part) setSelectedModelPart(part);
 }
 
-function useGripObject(sourceModel, sourcePart = null, robot = getGripObjectRobot(), options = {}) {
+function attachEquipmentObject(sourceModel, sourcePart = null, robot = getGripObjectRobot(), options = {}) {
     const {
         recordHistory: shouldRecordHistory = true,
         select = true,
@@ -27059,6 +27930,10 @@ function useGripObject(sourceModel, sourcePart = null, robot = getGripObjectRobo
     } = options;
     const selectionBefore = select ? captureModelTreeSelection() : null;
     if ((!allowDuringMotion && isMotionActive()) || !isGripObjectTarget(sourceModel, sourcePart)) return false;
+    if (!equipmentApp.isRegistered(sourceModel, sourcePart)) {
+        if (announce) setStatus('동작 설정에서 오브젝트로 등록한 항목만 잡을 수 있습니다.', '#f59e0b');
+        return false;
+    }
     if (sourcePart && sourcePart.visible === false && !sourcePart.userData?.modelPartId) return false;
     if (sourceModel.userData?.placement === 'grip-object') {
         if (announce) setStatus('선택한 오브젝트는 이미 사용 중입니다.', '#f59e0b');
@@ -27076,7 +27951,7 @@ function useGripObject(sourceModel, sourcePart = null, robot = getGripObjectRobo
     if (sourcePart) {
         const releasedGripObject = findReleasedGripObjectForSource(sourceModel, sourcePart);
         if (releasedGripObject) {
-            return useGripObject(releasedGripObject, null, robot, {
+            return attachEquipmentObject(releasedGripObject, null, robot, {
                 ...options,
                 preserveGripObjectSource: true
             });
@@ -27171,7 +28046,7 @@ function useGripObject(sourceModel, sourcePart = null, robot = getGripObjectRobo
     }
 }
 
-function releaseGripObject(model, options = {}) {
+function detachEquipmentObject(model, options = {}) {
     const {
         recordHistory: shouldRecordHistory = true,
         select = true,
@@ -27199,39 +28074,9 @@ function releaseGripObject(model, options = {}) {
     return true;
 }
 
-function applyProgramGripObjectAction(robot, step, motion = step.motion) {
-    const action = motion === 'GRIP_USE' ? 'use' : 'release';
-    const resolved = resolveGripObjectReference(step.gripObjectRef, action);
-    if (!resolved) throw new Error(`${step.name}: 물건 잡기 대상을 찾을 수 없습니다.`);
-    if (action === 'use') {
-        return useGripObject(resolved.model, resolved.part, robot, {
-            recordHistory: false,
-            select: false,
-            announce: false,
-            allowDuringMotion: true
-        });
-    }
-    return releaseGripObject(resolved.model, {
-        recordHistory: false,
-        select: false,
-        announce: false,
-        allowDuringMotion: true
-    });
-}
 
-function validateGripObjectProgramStep(robot, step) {
-    if (!isGripObjectMotion(step.motion) || !step.gripObjectRef) {
-        throw new Error(`${step.name}: 물건 잡기 대상을 선택하세요.`);
-    }
-    const resolved = resolveGripObjectReference(step.gripObjectRef, step.motion === 'GRIP_USE' ? 'use' : 'release');
-    if (!resolved) throw new Error(`${step.name}: 물건 잡기 대상을 찾을 수 없습니다.`);
-    if (step.motion === 'GRIP_USE' && (
-        isGripObjectModelInUse(resolved.model)
-        || (resolved.part && findActiveGripObjectForSource(resolved.model, resolved.part))
-    )) {
-        throw new Error(`${step.name}: 선택한 오브젝트는 이미 사용 중입니다.`);
-    }
-}
+
+
 
 function mountArmLoadModelAtJoint(robot, model, jointIndex = 3) {
     const normalizedJointIndex = normalizeArmLoadJointIndex(jointIndex);
@@ -27716,7 +28561,7 @@ function resetStepImportWorkerSession(session = state.stepImportWorkerSession) {
 function getStepImportWorkerSession() {
     if (state.stepImportWorkerSession) return state.stepImportWorkerSession;
 
-    const workerUrl = new URL('./step-import-worker.js?v=20260921-large-step-occt-5-3-4-1', import.meta.url);
+    const workerUrl = new URL('./step-import-worker.js?v=20261002-large-step-quality-preserving-1', import.meta.url);
     const worker = new Worker(workerUrl);
     let readySettled = false;
     let resolveReady;
@@ -28265,6 +29110,10 @@ function setSelectedModelPart(part) {
     if (state.selectedModelPart === part) return;
     setModelPartHighlight(state.selectedModelPart, false);
     state.selectedModelPart = part || null;
+    if (!state.selectionBatch) {
+        state.modelSelection.clear();
+        if (state.selectedModel) state.modelSelection.set(part || state.selectedModel, state.selectedModel);
+    }
     setModelPartHighlight(state.selectedModelPart, true);
     syncActivePlacementTargetToSelection();
     updateSelectedModelTransformInputs();
@@ -28670,6 +29519,13 @@ async function handle3DImport(options = {}) {
         if (extension !== 'stp' && extension !== 'step') {
             applyImportedPlacementColor(content, placement, performanceMode);
         }
+        const modelColor = new THREE.Color(getImportedModelColor(file.name));
+        content.traverse(child => {
+            if (!child.isMesh) return;
+            getMeshMaterials(child).forEach(material => {
+                if (material?.color) material.color.copy(modelColor);
+            });
+        });
 
         importedModel = new THREE.Group();
         importedModel.name = `Imported: ${file.name}`;
@@ -28713,8 +29569,8 @@ async function handle3DImport(options = {}) {
                 importedModel.userData.attachmentFrame = 'grip';
             }
             if (options.testToolPositionZero) importedModel.position.set(0, 0, 0);
-            if (options.testToolRotationX && robot.userData.manifest?.robotType === 'scara') {
-                importedModel.rotateX(Math.PI);
+            if (placement === 'tcp' && options.testModel && robot.userData.manifest?.robotType === 'scara') {
+                importedModel.rotation.y = Math.PI;
             }
             if (!options.preserveSelection && state.activeArticulatedModel !== robot) {
                 state.activeArticulatedModel = robot;
@@ -28753,6 +29609,21 @@ async function handle3DImport(options = {}) {
         refreshCollisionDebugOverlays();
         ensureModelTreeId(importedModel);
         registerImportedModelParts(importedModel, content, performanceMode);
+        if (options.testModel && !options.workspaceModelId) {
+            const preset = getTestModelTreePreset(file.name, getImportedModelParts(importedModel).length);
+            if (preset) {
+                importedModel.userData.modelPartGroups = preset.groups;
+                if (preset.folder && isGroupableModel(importedModel)) {
+                    let folder = state.modelGroups.find(group => group.name === preset.folder);
+                    if (!folder) {
+                        folder = { name: preset.folder, modelIds: [], collapsed: true };
+                        state.modelGroups.push(folder);
+                    }
+                    folder.modelIds.push(ensureWorkspaceModelId(importedModel));
+                }
+            }
+        }
+        if (modelTreeHasChildren(importedModel)) state.modelTreeCollapsedIds.add(ensureModelTreeId(importedModel));
 
         if (!options.skipAssetPersistence && !IS_MANUAL_GUIDE_EMBED) {
             try {
@@ -28964,45 +29835,54 @@ async function importTestModelFile(file, placement, options = {}) {
 }
 
 async function handleTestModelImport() {
-    if (!await requestTestModelConfirmation()) return;
-
+    if (el.btnTestModel.disabled) return;
+    const choice = await requestTestModelConfirmation();
+    if (!choice) return;
     const robot = getArticulatedRobotForAttachment();
-    if (!robot) {
-        alert(uiText('Tool을 장착할 로봇을 먼저 불러와 주세요.'));
-        return;
-    }
-
+    const robotType = robot?.userData?.manifest?.robotType;
+    const selection = choice.educational
+        ? getEducationalModelSelection({ robotType, robotModel: robot?.userData.motionModelFolder, robotPosition: robot?.position.toArray() })
+        : getTestModelSelectionForRobot(choice.selection, robotType, state.models.some(model =>
+            model.userData.placement === 'tcp' && model.userData.attachmentHost === robot
+            && model.userData.modelName === 'Scara_adapter.step'));
     el.btnTestModel.disabled = true;
+    let completed = 0;
+    const failures = [];
     try {
-        const [equipmentFile, toolFile] = await Promise.all([
-            loadTestModelAssetFile(TEST_MODEL_ASSET_PATHS.scene),
-            loadTestModelAssetFile(TEST_MODEL_ASSET_PATHS.tcp)
-        ]);
-        const replacementBefore = captureSceneSnapshot();
-        if (removeExistingTestModels()) {
-            recordHistory('기존 Test 모델 삭제', replacementBefore, captureSceneSnapshot());
+        for (const { asset, quantity, position = [0, 0, 0] } of selection) {
+            try {
+                const file = await loadTestModelAssetFile(asset.path);
+                const placement = asset.category === 'tool' ? 'tcp' : 'scene';
+                for (let index = 0; index < quantity; index++) {
+                    const model = await importTestModelFile(file, placement, {
+                        file, placement, attachmentRobot: robot, testModel: true,
+                        suppressFit: true, suppressSuccessStatus: true,
+                        transform: placement === 'scene' ? { position, quaternion: [0, 0, 0, 1], scale: [1, 1, 1] } : undefined,
+                        throwOnError: true
+                    });
+                    if (!model) throw new Error(asset.name);
+                    if (choice.educational && robotType === 'scara' && asset.id === 'scara-height-base') {
+                        const before = captureSceneSnapshot();
+                        robot.position.z = 200;
+                        robot.updateMatrixWorld(true);
+                        captureCurrentTcpTarget(robot);
+                        markSceneCollisionDirty(robot);
+                        recordHistory('SCARA 교육용 높이 설정', before, captureSceneSnapshot());
+                        updateSelectedModelTransformInputs();
+                        scheduleMotionProjectSave();
+                        requestRender();
+                    }
+                    completed++;
+                }
+            } catch (error) {
+                console.error('Test asset import failed:', asset.path, error);
+                failures.push(asset.name + ': ' + (error.message || error));
+            }
         }
-        if (!applyTestTcpProfile(robot)) throw new Error('TCP 1 is not available.');
-
-        const equipment = await importTestModelFile(equipmentFile, 'scene', {
-            testModel: true
-        });
-        if (!equipment) throw new Error('Test equipment import failed.');
-        const tool = await importTestModelFile(toolFile, 'tcp', {
-            testModel: true,
-            testToolPositionZero: true,
-            testToolRotationX: robot.userData.manifest?.robotType === 'scara'
-        });
-        if (!tool) throw new Error('Vacuum tool import failed.');
-        applyTestToolCollisionProfile(tool);
-        setStatus('Test 모델과 Tool 적용 완료', '#22c55e');
+        fitCamera();
         checkSceneCollisions({ force: true });
-    } catch (error) {
-        console.error('Test model import failed:', error);
-        setStatus('Test 모델 적용 오류', '#ef4444');
-        alert(uiFormat('테스트 모델을 불러오지 못했습니다.\n{message}', {
-            message: error.message || error
-        }));
+        setStatus('{count}개 파일 불러오기 완료', failures.length ? '#f59e0b' : '#22c55e', { count: completed });
+        if (failures.length) alert(uiFormat('테스트 모델을 불러오지 못했습니다.\n{message}', { message: failures.join('\n') }));
     } finally {
         state.pendingImportFile = null;
         el.btnTestModel.disabled = false;
@@ -29176,14 +30056,15 @@ function updateScaraTube(robot) {
     // The P0-side endpoint is fixed. The authored TUBE.stl curve and connector
     // geometry are retained while its longitudinal axis is mapped into the one
     // vertical plane shared by the fixed socket and the moving J2 socket.
-    if (tube.parent !== robot) robot.add(tube);
+    const controllerBaseFrame = getRobotControllerBaseFrame(robot);
+    if (tube.parent !== controllerBaseFrame) controllerBaseFrame.add(tube);
     tube.position.set(0, 0, 0);
     tube.quaternion.identity();
 
     robot.updateMatrixWorld(true);
     const fixedEnd = new THREE.Vector3().fromArray(tube.userData.scaraTubeFixedEnd);
     const movingEndWorld = j2.group.getWorldPosition(new THREE.Vector3());
-    const movingEnd = robot.worldToLocal(movingEndWorld.clone());
+    const movingEnd = getRobotControllerBaseFrame(robot).worldToLocal(movingEndWorld.clone());
     const targetDeltaX = movingEnd.x - fixedEnd.x;
     const targetDeltaY = movingEnd.y - fixedEnd.y;
     const targetPlanLength = Math.hypot(targetDeltaX, targetDeltaY);
@@ -29786,7 +30667,6 @@ function renderWorkObjectPanel(robot = getWorkObjectEditorRobot()) {
     if (el.btnApplyWorkObject) el.btnApplyWorkObject.disabled = readOnly;
     if (el.btnResetWorkObject) el.btnResetWorkObject.disabled = readOnly;
     if (el.btnRegisterWorkObject) el.btnRegisterWorkObject.disabled = readOnly;
-    if (el.btnFocusWorkObject) el.btnFocusWorkObject.disabled = !available;
     updatePanelLauncher('workobject-panel');
     syncWorkObjectVisuals(robot);
     const jogRobot = getJogTargetRobot();
@@ -29876,20 +30756,6 @@ function registerCurrentTcpAsWorkObject() {
     scheduleMotionProjectSave();
     setWorkObjectStatus('현재 TCP 위치를 Wobj 원점으로 등록했습니다.', 'success');
     recordHistory('현재 TCP로 Wobj 등록', before, captureSceneSnapshot());
-}
-
-function focusWorkObject() {
-    const robot = getWorkObjectEditorRobot();
-    const index = resolveWorkObjectIndex(state.workObjectEditor.index);
-    if (!robot || !state.camera || !state.controls) return;
-    const pose = getWorkObjectWorldPose(robot, index);
-    state.controls.target.copy(pose.position);
-    const direction = state.camera.position.clone().sub(state.controls.target);
-    if (direction.lengthSq() < 1e-6) direction.set(500, -500, 300);
-    state.camera.position.copy(pose.position).add(direction.normalize().multiplyScalar(500));
-    state.camera.lookAt(state.controls.target);
-    state.controls.update();
-    requestRender();
 }
 
 function updateTcpProfileLive() {
@@ -30191,7 +31057,7 @@ function setBaseJogGizmoEnabled(enabled) {
 
     setTransformHandlesEnabled(false);
     target.removeFromParent();
-    robot.add(target);
+    getRobotControllerBaseFrame(robot).add(target);
     state.baseJogGizmoRobot = robot;
 
     const pose = getCurrentTcpPoseBase(robot);
@@ -30245,7 +31111,7 @@ function updateBaseJogTransformAxes(robot = getJogTargetRobot()) {
 function syncBaseJogGizmoFromRobot(robot, pose = null) {
     if (state.baseJogGizmoDragging || robot !== state.baseJogGizmoRobot) return;
     const target = state.baseJogGizmoTarget;
-    if (!target || target.parent !== robot) return;
+    if (!target || target.parent !== getRobotControllerBaseFrame(robot)) return;
     const resolvedPose = pose || getCurrentTcpPoseBase(robot);
     if (!resolvedPose) return;
     target.position.copy(resolvedPose.position);
@@ -30377,6 +31243,27 @@ function snapBaseJogPosition(position, snap, axis = 'XYZ') {
     return snapped;
 }
 
+function getRobotControllerBaseFrame(robot) {
+    return robot.userData.controllerBaseFrame || robot;
+}
+
+function getRobotControllerBasePosition(robot) {
+    // Project files retain their controller BASE transform for compatibility.
+    robot.updateMatrix();
+    const frame = getRobotControllerBaseFrame(robot);
+    return (frame === robot ? new THREE.Vector3() : frame.position.clone()).applyMatrix4(robot.matrix);
+}
+
+function restoreRobotControllerBaseTransform(robot, transform) {
+    robot.quaternion.fromArray(transform.quaternion);
+    robot.scale.fromArray(transform.scale);
+    robot.position.fromArray(transform.position);
+    const frame = getRobotControllerBaseFrame(robot);
+    if (frame !== robot) {
+        robot.position.sub(frame.position.clone().multiply(robot.scale).applyQuaternion(robot.quaternion));
+    }
+}
+
 function getCurrentTcpPoseBase(robot) {
     const tcpFrame = robot.userData.tcpFrame;
     if (!tcpFrame) return null;
@@ -30384,9 +31271,9 @@ function getCurrentTcpPoseBase(robot) {
     robot.updateMatrixWorld(true);
     const worldPosition = tcpFrame.getWorldPosition(new THREE.Vector3());
     const worldQuaternion = tcpFrame.getWorldQuaternion(new THREE.Quaternion());
-    const baseWorldQuaternion = robot.getWorldQuaternion(new THREE.Quaternion());
+    const baseWorldQuaternion = getRobotControllerBaseFrame(robot).getWorldQuaternion(new THREE.Quaternion());
     return {
-        position: robot.worldToLocal(worldPosition.clone()),
+        position: getRobotControllerBaseFrame(robot).worldToLocal(worldPosition.clone()),
         quaternion: baseWorldQuaternion.clone().invert().multiply(worldQuaternion).normalize()
     };
 }
@@ -30416,9 +31303,13 @@ function applyRobotTravelAxis(robot, values, { syncPresentation = true } = {}) {
     if (!robot?.userData?.tcpFrame) return false;
     const previous = getRobotExternalAxes(robot);
     const next = normalizeExternalAxisValues(values);
-    const positionChanged = next.slice(0, 3).some((value, index) => value !== previous[index]);
+    const moduleAxes = state.equipmentDefinitions.filter(def => def.enabled && def.externalAxis && equipmentApp.resolve(def.robotRef)?.object === robot);
+    const travel = [...next];
+    moduleAxes.forEach(def => { travel[def.externalAxis - 1] = previous[def.externalAxis - 1]; });
+    if (moduleAxes.length) { equipmentApp.runtime.start(); requestRender(); }
+    const positionChanged = travel.slice(0, 3).some((value, index) => value !== previous[index]);
     const previousRotation = externalAxisRotationQuaternion(previous);
-    const nextRotation = externalAxisRotationQuaternion(next);
+    const nextRotation = externalAxisRotationQuaternion(travel);
     const rotationDelta = previousRotation.clone().invert().multiply(nextRotation).normalize();
     const rotationChanged = previousRotation.angleTo(nextRotation) > 1e-10;
     if (!positionChanged && !rotationChanged) {
@@ -30428,9 +31319,9 @@ function applyRobotTravelAxis(robot, values, { syncPresentation = true } = {}) {
 
     // E1/E2/E3 are linear travel-axis positions in X/Y/Z. E4/E5/E6 are
     // A/B/C rotations around X/Y/Z and move the complete robot root.
-    robot.position.x += next[0] - previous[0];
-    robot.position.y += next[1] - previous[1];
-    robot.position.z += next[2] - previous[2];
+    robot.position.x += travel[0] - previous[0];
+    robot.position.y += travel[1] - previous[1];
+    robot.position.z += travel[2] - previous[2];
     robot.quaternion.multiply(rotationDelta).normalize();
     robot.userData.externalAxes = next;
     robot.updateMatrixWorld(true);
@@ -30638,8 +31529,8 @@ function getJogReadoutPose(robot, basePose) {
     const workObject = getWorkObjectWorldPose(robot, index);
     const inverse = workObject.quaternion.clone().invert();
     return {
-        position: robot.localToWorld(basePose.position.clone()).sub(workObject.position).applyQuaternion(inverse),
-        quaternion: inverse.clone().multiply(robot.getWorldQuaternion(new THREE.Quaternion()))
+        position: getRobotControllerBaseFrame(robot).localToWorld(basePose.position.clone()).sub(workObject.position).applyQuaternion(inverse),
+        quaternion: inverse.clone().multiply(getRobotControllerBaseFrame(robot).getWorldQuaternion(new THREE.Quaternion()))
             .multiply(quaternion).normalize()
     };
 }
@@ -30651,9 +31542,9 @@ function getBasePoseFromJogReadout(robot, displayPose) {
     if (index !== WOBJ_WORLD_INDEX) {
         robot.updateMatrixWorld(true);
         const workObject = getWorkObjectWorldPose(robot, index);
-        robot.worldToLocal(position.applyQuaternion(workObject.quaternion).add(workObject.position));
+        getRobotControllerBaseFrame(robot).worldToLocal(position.applyQuaternion(workObject.quaternion).add(workObject.position));
         quaternion.premultiply(workObject.quaternion)
-            .premultiply(robot.getWorldQuaternion(new THREE.Quaternion()).invert()).normalize();
+            .premultiply(getRobotControllerBaseFrame(robot).getWorldQuaternion(new THREE.Quaternion()).invert()).normalize();
     }
     const euler = new THREE.Euler().setFromQuaternion(quaternion, 'ZYX');
     return {
@@ -31140,8 +32031,8 @@ function solveRobotIKAttempt(robot, target, tolerance) {
     if (joints.length === 0 || !tcpFrame) return { success: false };
 
     robot.updateMatrixWorld(true);
-    const targetWorldPosition = target.position.clone().applyMatrix4(robot.matrixWorld);
-    const baseWorldQuaternion = robot.getWorldQuaternion(new THREE.Quaternion());
+    const targetWorldPosition = target.position.clone().applyMatrix4(getRobotControllerBaseFrame(robot).matrixWorld);
+    const baseWorldQuaternion = getRobotControllerBaseFrame(robot).getWorldQuaternion(new THREE.Quaternion());
     const targetWorldQuaternion = baseWorldQuaternion.clone().multiply(target.quaternion.clone()).normalize();
     const rotationTasks = getBaseJogRotationAxes(robot).map((axisName) => {
         const axis = new THREE.Vector3(
@@ -32154,17 +33045,7 @@ function createVirtualControllerSession(template = null) {
         reconnectAttempt: 0,
         reconnectMessage: '',
         streamWatchdogTimer: null,
-        socketGeneration: 0,
-        gripInference: {
-            enabled: false,
-            robot: null,
-            stationaryPose: null,
-            stationarySince: 0,
-            contactKey: '',
-            contactSince: 0,
-            actionDone: false,
-            blockedUntilContactClears: false
-        }
+        socketGeneration: 0
     };
 }
 
@@ -32413,17 +33294,7 @@ function refreshVirtualControllerUi() {
         const rate = controller.samples?.getRateHz(performance.now()) || 0;
         el.virtualControllerRate.textContent = rate > 0 ? `${Math.round(rate)} Hz` : '-- Hz';
     }
-    if (el.virtualControllerGripToggle) {
-        const enabled = Boolean(controller.gripInference?.enabled);
-        el.virtualControllerGripToggle.classList.toggle('active', enabled);
-        el.virtualControllerGripToggle.setAttribute('aria-pressed', String(enabled));
-        el.virtualControllerGripToggle.title = uiText(
-            enabled ? '충돌 시 물건 잡기/놓기 비활성화' : '충돌 시 물건 잡기/놓기 활성화'
-        );
-        el.virtualControllerGripToggle.setAttribute('aria-label', el.virtualControllerGripToggle.title);
-        const stateLabel = el.virtualControllerGripToggle.querySelector('.virtual-controller-grip-toggle-state');
-        if (stateLabel) stateLabel.textContent = uiText(enabled ? 'ON' : 'OFF');
-    }
+
     const canReadInterferenceZone = canReadInterferenceZoneFromController(controller);
     el.interferenceZoneList?.querySelectorAll('[data-interference-zone-read]').forEach((button) => {
         const zoneId = Number(button.closest('[data-interference-zone-row]')?.dataset.interferenceZoneRow);
@@ -34157,6 +35028,8 @@ function writeOlpSimulatorBit(directionValue, bitAddress, enabled) {
     const bit = Number(bitAddress);
     if (!Number.isInteger(bit)) return;
     const numeric = enabled ? 1 : 0;
+    const bank = direction === IO_SIMULATOR_DIRECTIONS.OUTPUT ? state.simulationIo.outputs : state.simulationIo.inputs;
+    if (bit >= 0 && bit < bank.length) bank[bit] = !!numeric;
     if (bit >= OLP_BIT_START && bit < OLP_BIT_START + OLP_BIT_COUNT) {
         const words = getOlpSimulatorMemory(direction);
         const wordIndex = Math.floor((bit - OLP_BIT_START) / 16);
@@ -34364,27 +35237,161 @@ function renderIoSimulatorPanel() {
     }
 }
 
+
+let conveyorTransportSuspended = false;
+const conveyorResetTransforms = new Map();
+const conveyorManualCommands = new Map();
+const equipmentApp = createEquipmentApp({
+    models: () => state.models, definitions: () => state.equipmentDefinitions,
+    setDefinitions: definitions => { state.equipmentDefinitions = definitions; },
+    modelId: model => ensureWorkspaceModelId(model), modelLabel: displayNameForModelTree, parts: getImportedModelParts,
+    selectedReferences: () => [...state.modelSelection].map(([object, model]) => equipmentObjectRef(ensureWorkspaceModelId(model), object === model ? -1 : getImportedModelParts(model).indexOf(object))),
+    select(ref, additive = false) {
+        const target = equipmentApp.resolve(ref);
+        if (!target) return;
+        if (additive) toggleSceneSelection(target.model, target.object === target.model ? null : target.object);
+        else if (target.object !== target.model) selectSceneModelPart(target.model, target.object);
+        else selectSceneModel(target.model);
+    },
+    front() { bindPanelFocusOnPointerDown(getPanelElement('equipment-dialog')); bringPanelToFront('equipment-dialog'); },
+    popout: () => popOutPanel('equipment-dialog'),
+    hide() { if (state.panelWindows.has('equipment-dialog')) restorePanelFromWindow('equipment-dialog', true, true); },
+    read: readOlpSimulatorBit,
+    sensor(address, value) {
+        if (readOlpSimulatorBit('IN', address) === (value ? 1 : 0)) return;
+        writeOlpSimulatorBit('IN', address, value);
+        markIoSimulatorDirty('IN', address, 1);
+        processIoFunctionMappings({ direction: 'IN', bitStart: address, bitWidth: 1 });
+    },
+    mount: getRobotToolMountFrame,
+    externalDriven: def => !!def.robotRef && isVirtualControllerActive(),
+    externalAxis: (robot, index) => getRobotExternalAxes(robot)[index],
+    dirty(model) {
+        markSceneCollisionDirty(model);
+        if (model.userData.tcpFrame) { updateTcpPresentation(model); syncBaseJogGizmoFromRobot(model); }
+    },
+    isWorkpiece: model => isGripObjectTarget(model) && !model.userData.equipmentFilm,
+    grab: (candidate, robot) => attachEquipmentObject(candidate.model, null, robot, { recordHistory: false, select: false, announce: false, allowDuringMotion: true }),
+    release: candidate => { if (isGripObjectModelInUse(candidate.model)) detachEquipmentObject(candidate.model, { recordHistory: false, select: false, announce: false, allowDuringMotion: true }); },
+    saveProgress: scheduleMotionProjectSave,
+    conveyorControl(command, paused) {
+        conveyorTransportSuspended = command === 'start' ? false : command === 'pause' ? paused : true;
+        conveyorLastTimestamp = null;
+        conveyorManualCommands.clear();
+        if (command === 'reset') conveyorResetTransforms.forEach((transform, model) => {
+            const owner = state.models.find(root => root === model || getImportedModelParts(root).includes(model));
+            if (!owner || owner.userData.attachmentHost) return;
+            applyClipboardTransform(model, transform); markSceneCollisionDirty(owner);
+        });
+    },
+    snapshot: captureSceneSnapshot,
+    history: (label, before) => recordHistory(label, before, captureSceneSnapshot()),
+    changed() { requestRender(); renderModelTree(); renderIoFunctionMappingEditorTargets(); renderIoFunctionMappingList(); scheduleMotionProjectSave(); },
+    bindings: getEquipmentIoBindings,
+    updateBindings: setEquipmentIoBindings,
+    removeBindings(id) { state.ioFunctionMappings = state.ioFunctionMappings.filter(mapping => { if (mapping.gripObjectRef !== 'equipment:' + id) return true; state.ioFunctionMappingRuntimeValues.delete(mapping.id); return false; }); },
+    saveConveyor: saveConveyorMotion,
+    conveyorDefinition: getConveyorMotionDefinition,
+    conveyorCommand: runConveyorCommand
+
+});
+let conveyorLastTimestamp = null;
+function getEquipmentIoBindings(def, ref) {
+    const target = def?.type === 'CONVEYOR' || !def ? conveyorTargetFromRef(ref) : 'equipment:' + def.id;
+    const mappings = state.ioFunctionMappings.filter(mapping => mapping.gripObjectRef === target);
+    const forward = mappings.find(mapping => mapping.action === 'CONVEYOR' || mapping.equipmentCommand === 'FORWARD');
+    const reverse = mappings.find(mapping => mapping.equipmentCommand === 'REVERSE');
+    return { direction: forward?.direction || reverse?.direction || 'OUT', triggerValue: forward?.triggerValue ?? reverse?.triggerValue ?? 1, forward: forward?.conveyorManualOnly ? '' : forward?.address ?? '', reverse: reverse?.address ?? '' };
+}
+function activateIoFunctionMapping(mapping) {
+    if (mapping.action === 'CONVEYOR') conveyorManualCommands.delete(mapping.id);
+    if (!mapping.enabled) return;
+    if (EQUIPMENT_TYPES.includes(mapping.action)) equipmentApp.signal(mapping);
+    else if (mapping.action === 'CONVEYOR') conveyorTransportSuspended = false;
+    else if (readOlpSimulatorBit(mapping.direction, mapping.address) === mapping.triggerValue) {
+        try { executeIoFunctionMapping(mapping); } catch (error) { setIoSimulatorStatus('IO 매핑 실행 실패: {error}', { error: error.message }); }
+    }
+    requestRender();
+}
+function setEquipmentIoBindings(def, bindings) {
+    const target = def.type === 'CONVEYOR' ? conveyorTargetFromRef(def.movingRef) : 'equipment:' + def.id;
+    const existing = state.ioFunctionMappings.filter(mapping => mapping.gripObjectRef === target && (mapping.action === 'CONVEYOR' || ['FORWARD', 'REVERSE'].includes(mapping.equipmentCommand)));
+    state.ioFunctionMappings = state.ioFunctionMappings.filter(mapping => !existing.includes(mapping));
+    existing.forEach(mapping => state.ioFunctionMappingRuntimeValues.delete(mapping.id));
+    for (const [command, address] of [['FORWARD', bindings.forward], ['REVERSE', bindings.reverse]]) {
+        if (def.type === 'OBJECT' || address === null && def.type !== 'CONVEYOR') continue;
+        if (def.type === 'CONVEYOR' && command === 'REVERSE') continue;
+        const previous = existing.find(mapping => mapping.equipmentCommand === command || def.type === 'CONVEYOR');
+        const mapping = normalizeIoFunctionMapping({ ...previous, id: previous?.id || createIoFunctionMappingId(), direction: bindings.direction, address: address ?? 512, triggerValue: bindings.triggerValue, enabled: address !== null, conveyorManualOnly: def.type === 'CONVEYOR' && address === null, action: def.type, gripObjectRef: target, equipmentCommand: command, conveyorAxis: def.axis, conveyorSpeed: def.speed });
+        state.ioFunctionMappings.push(mapping); conveyorManualCommands.delete(mapping.id); state.ioFunctionMappingRuntimeValues.set(mapping.id, readOlpSimulatorBit(mapping.direction, mapping.address)); activateIoFunctionMapping(mapping);
+    }
+    renderIoFunctionMappingList(); scheduleMotionProjectSave(); requestRender();
+}
+function conveyorTargetFromRef(ref) {
+    const match = String(ref || '').match(/^equipment-model:(.+)\/(-?\d+)$/);
+    return match ? 'conveyor:' + match[1] + (Number(match[2]) < 0 ? '' : '/' + match[2]) : '';
+}
+function getConveyorMotionDefinition(ref) {
+    const target = conveyorTargetFromRef(ref);
+    const mapping = state.ioFunctionMappings.find(item => item.action === 'CONVEYOR' && item.gripObjectRef === target);
+    if (!mapping) return null;
+    return { id: target, type: 'CONVEYOR', name: '컨베이어 이송 / ' + (equipmentApp.references().find(item => item.value === ref)?.modelLabel || '모델'), movingRef: ref, movingRefs: [ref], axis: mapping.conveyorAxis, speed: mapping.conveyorSpeed };
+}
+function saveConveyorMotion(raw, bindings) {
+    if (raw.movingRefs.length !== 1) throw new Error('컨베이어의 벨트 모델 또는 벨트 부품 하나를 선택하세요.');
+    const target = conveyorTargetFromRef(raw.movingRef), resolved = equipmentApp.resolve(raw.movingRef);
+    if (!target || !resolved || resolved.model.userData.tcpFrame || resolved.model.userData.attachmentHost) throw new Error('장면에 놓인 벨트 모델 또는 부품을 선택하세요.');
+    if (!['X', '-X', 'Y', '-Y'].includes(raw.axis)) throw new Error('컨베이어 방향은 X 또는 Y 축을 선택하세요.');
+    if (!(Number(raw.speed) > 0) || Number(raw.speed) > 5000) throw new Error('이송 속도는 0보다 크고 5000mm/s 이하여야 합니다.');
+    const before = captureSceneSnapshot(); const def = { ...raw, id: target };
+    setEquipmentIoBindings(def, { ...bindings, reverse: null }); recordHistory('컨베이어 동작 설정', before, captureSceneSnapshot()); return def;
+}
+function resolveConveyorBelt(mapping) {
+    const match = String(mapping.gripObjectRef).match(/^conveyor:(.+?)(?:\/(\d+))?$/);
+    return match ? equipmentApp.resolve(equipmentObjectRef(match[1], match[2] === undefined ? -1 : Number(match[2])))?.object : null;
+}
+function runConveyorCommand(ref, command) {
+    const target = conveyorTargetFromRef(ref);
+    const mappings = state.ioFunctionMappings.filter(item => item.action === 'CONVEYOR' && item.gripObjectRef === target);
+    if (command === 'DELETE') {
+        state.ioFunctionMappings = state.ioFunctionMappings.filter(item => !mappings.includes(item));
+        for (const mapping of mappings) { conveyorManualCommands.delete(mapping.id); state.ioFunctionMappingRuntimeValues.delete(mapping.id); }
+    } else {
+        for (const mapping of mappings) conveyorManualCommands.set(mapping.id, command === 'FORWARD');
+        if (command === 'FORWARD') conveyorTransportSuspended = false;
+    }
+    renderIoFunctionMappingList(); scheduleMotionProjectSave(); requestRender();
+}
+function activeConveyorMappings() {
+    if (document.hidden || conveyorTransportSuspended) return [];
+    return state.ioFunctionMappings.filter(mapping => mapping.action === IO_FUNCTION_MAPPING_ACTIONS.CONVEYOR
+        && (conveyorManualCommands.has(mapping.id) ? conveyorManualCommands.get(mapping.id) : mapping.enabled && readOlpSimulatorBit(mapping.direction, mapping.address) === mapping.triggerValue)
+        && resolveConveyorBelt(mapping)?.visible !== false && resolveConveyorBelt(mapping));
+}
+function updateConveyorSimulation(timestamp) {
+    const mappings = activeConveyorMappings();
+    const seconds = conveyorElapsedSeconds(conveyorLastTimestamp, timestamp);
+    conveyorLastTimestamp = mappings.length ? timestamp : null;
+    if (!mappings.length || !seconds) return;
+    const candidates = equipmentApp.objects().filter(item => !item.model.userData.attachmentHost).map(item => item.object);
+    const moved = moveConveyorObjects(mappings, candidates, resolveConveyorBelt, seconds, model => {
+        if (!conveyorResetTransforms.has(model)) conveyorResetTransforms.set(model, captureClipboardTransform(model));
+    });
+    moved.forEach(object => markSceneCollisionDirty(equipmentApp.objects().find(item => item.object === object)?.model || object));
+}
 function ioFunctionMappingActionLabel(action) {
-    return action === IO_FUNCTION_MAPPING_ACTIONS.GRIP_USE
-        ? uiText('물건 잡기')
-        : action === IO_FUNCTION_MAPPING_ACTIONS.GRIP_RELEASE
-            ? uiText('놓기')
-            : uiText('뷰 전환');
+    if (EQUIPMENT_IO_TYPES.includes(action)) return uiText(EQUIPMENT_LABELS[action]);
+    return uiText(action === 'CONVEYOR' ? '컨베이어 이송' : '뷰 전환');
 }
 
 function getIoFunctionMappingTargetReferences(action) {
+    if (action === 'VACUUM_RELEASE') action = 'VACUUM';
+    if (EQUIPMENT_TYPES.includes(action)) return equipmentApp.targets(action);
+    if (action === IO_FUNCTION_MAPPING_ACTIONS.CONVEYOR) return state.models
+        .filter(model => !model.userData.tcpFrame && !model.userData.attachmentHost && model.userData.placement === 'scene')
+        .flatMap(model => { const id = ensureWorkspaceModelId(model), label = model.userData.modelName || model.name; return [{ value: 'conveyor:' + id, label }, ...getImportedModelParts(model).map((part, index) => ({ value: 'conveyor:' + id + '/' + index, label: label + ' / ' + (part.userData.modelPartName || part.name || index + 1) }))]; });
     if (action === IO_FUNCTION_MAPPING_ACTIONS.VIEW) return [];
-    return getGripObjectReferences().filter((reference) => {
-        const resolved = resolveGripObjectReference(
-            reference.value,
-            action === IO_FUNCTION_MAPPING_ACTIONS.GRIP_USE ? 'use' : 'release'
-        );
-        if (!resolved) return false;
-        return action === IO_FUNCTION_MAPPING_ACTIONS.GRIP_USE
-            ? !isGripObjectModelInUse(resolved.model)
-                && !(resolved.part && findActiveGripObjectForSource(resolved.model, resolved.part))
-            : true;
-    });
+    return [];
 }
 
 function getIoFunctionMappingTargetLabel(mapping) {
@@ -34392,7 +35399,7 @@ function getIoFunctionMappingTargetLabel(mapping) {
         const preset = getViewPreset(mapping.viewSlot);
         return preset ? `${preset.name} (V${mapping.viewSlot + 1})` : `V${mapping.viewSlot + 1} · ${uiText('저장된 뷰 없음')}`;
     }
-    const reference = getGripObjectReferences().find((candidate) => candidate.value === mapping.gripObjectRef);
+    const reference = getIoFunctionMappingTargetReferences(mapping.action).find((candidate) => candidate.value === mapping.gripObjectRef);
     return reference?.label || uiText('대상을 찾을 수 없음');
 }
 
@@ -34403,8 +35410,20 @@ function setIoFunctionMappingStatus(message = '', type = '') {
 }
 
 function renderIoFunctionMappingEditorTargets() {
-    const action = el.ioFunctionMappingAction?.value || IO_FUNCTION_MAPPING_ACTIONS.GRIP_USE;
+    const release = el.ioFunctionMappingAction?.value === 'VACUUM_RELEASE';
+    const action = release ? 'VACUUM' : el.ioFunctionMappingAction?.value || IO_FUNCTION_MAPPING_ACTIONS.VIEW;
+    const outputOnly = EQUIPMENT_TYPES.includes(action) || action === 'CONVEYOR';
+    if (el.ioFunctionMappingDirection) {
+        el.ioFunctionMappingDirection.disabled = outputOnly;
+        if (outputOnly) el.ioFunctionMappingDirection.value = 'OUT';
+    }
     const isView = action === IO_FUNCTION_MAPPING_ACTIONS.VIEW;
+    if (el.ioFunctionMappingGripField?.querySelector('span')) el.ioFunctionMappingGripField.querySelector('span').textContent = uiText(action === IO_FUNCTION_MAPPING_ACTIONS.CONVEYOR ? '컨베이어' : '등록된 동작');
+    if (el.ioFunctionMappingConveyorField) el.ioFunctionMappingConveyorField.hidden = action !== IO_FUNCTION_MAPPING_ACTIONS.CONVEYOR;
+    const commandField = document.getElementById('io-equipment-command-field');
+    if (commandField) commandField.hidden = release || !EQUIPMENT_IO_TYPES.includes(action);
+    const commandSelect=document.getElementById('io-equipment-command');
+    if (commandSelect) { const current=commandSelect.value; commandSelect.replaceChildren(...equipmentCommandOptions(action).map(([value,label]) => new Option(label,value)));if(equipmentCommandOptions(action).some(([value])=>value===current))commandSelect.value=current;if(release)commandSelect.value='REVERSE'; }
     if (el.ioFunctionMappingGripTarget) {
         const references = getIoFunctionMappingTargetReferences(action);
         const current = el.ioFunctionMappingGripTarget.value;
@@ -34412,7 +35431,7 @@ function renderIoFunctionMappingEditorTargets() {
         if (!references.length) {
             const option = document.createElement('option');
             option.value = '';
-            option.textContent = uiText('사용 가능한 물건이 없습니다.');
+            option.textContent = uiText('등록된 동작이 없습니다. 모델 트리에서 동작을 설정하세요.');
             option.disabled = true;
             option.selected = true;
             el.ioFunctionMappingGripTarget.appendChild(option);
@@ -34491,6 +35510,7 @@ function createIoFunctionMappingTargetSelect(mapping) {
 }
 
 function renderIoFunctionMappingList() {
+    requestRender();
     if (!el.ioFunctionMappingList) return;
     const mappings = normalizeIoFunctionMappings(state.ioFunctionMappings);
     state.ioFunctionMappings = mappings;
@@ -34524,6 +35544,7 @@ function renderIoFunctionMappingList() {
             direction.appendChild(option);
         });
         direction.value = mapping.direction;
+        direction.disabled = EQUIPMENT_TYPES.includes(mapping.action) || mapping.action === 'CONVEYOR';
 
         const address = document.createElement('input');
         address.type = 'number';
@@ -34548,14 +35569,14 @@ function renderIoFunctionMappingList() {
         const action = document.createElement('select');
         action.dataset.ioFunctionMappingField = 'action';
         action.setAttribute('aria-label', uiText('매핑 기능'));
-        [[IO_FUNCTION_MAPPING_ACTIONS.GRIP_USE, '물건 잡기'], [IO_FUNCTION_MAPPING_ACTIONS.GRIP_RELEASE, '놓기'], [IO_FUNCTION_MAPPING_ACTIONS.VIEW, '뷰 전환']]
+        [[IO_FUNCTION_MAPPING_ACTIONS.VIEW, '뷰 전환'], [IO_FUNCTION_MAPPING_ACTIONS.CONVEYOR, '컨베이어 이송'], ...EQUIPMENT_IO_TYPES.map(type => [type, EQUIPMENT_LABELS[type]]), ['VACUUM_RELEASE', '파기']]
             .forEach(([value, label]) => {
                 const option = document.createElement('option');
                 option.value = value;
                 option.textContent = uiText(label);
                 action.appendChild(option);
             });
-        action.value = mapping.action;
+        action.value = mapping.action === 'VACUUM' && mapping.equipmentCommand === 'REVERSE' ? 'VACUUM_RELEASE' : mapping.action;
 
         const target = createIoFunctionMappingTargetSelect(mapping);
         const remove = document.createElement('button');
@@ -34566,6 +35587,22 @@ function renderIoFunctionMappingList() {
         remove.setAttribute('aria-label', uiText('매핑 삭제'));
         remove.innerHTML = '<i class="fa-solid fa-trash" aria-hidden="true"></i>';
         row.append(enabled, direction, address, trigger, action, target, remove);
+        if (EQUIPMENT_TYPES.includes(mapping.action)) {
+            const command = document.createElement('select'); command.dataset.ioFunctionMappingField = 'equipmentCommand';
+            command.setAttribute('aria-label', '설비 명령');
+            equipmentCommandOptions(mapping.action).forEach(([value, label]) => command.add(new Option(label, value)));
+            command.value = mapping.equipmentCommand; row.append(command);
+        }
+        if (mapping.action === IO_FUNCTION_MAPPING_ACTIONS.CONVEYOR) {
+            const settings = document.createElement('div'); settings.className = 'conveyor-mapping-settings';
+            const axis = document.createElement('select'); axis.dataset.ioFunctionMappingField = 'conveyorAxis';
+            axis.setAttribute('aria-label', '이송 방향');
+            ['X', '-X', 'Y', '-Y'].forEach(value => axis.add(new Option(value, value))); axis.value = mapping.conveyorAxis;
+            const speed = document.createElement('input'); speed.type = 'number'; speed.min = '0.1'; speed.max = '5000'; speed.step = '0.1';
+            speed.value = mapping.conveyorSpeed; speed.dataset.ioFunctionMappingField = 'conveyorSpeed';
+            speed.setAttribute('aria-label', '이송 속도 mm/s');
+            settings.append('방향 ', axis, ' 속도(mm/s) ', speed); row.append(settings);
+        }
         el.ioFunctionMappingList.appendChild(row);
     });
     if (el.ioFunctionMappingButton) {
@@ -34575,6 +35612,7 @@ function renderIoFunctionMappingList() {
 }
 
 function resetIoFunctionMappingRuntimeValues() {
+    conveyorLastTimestamp = null;
     state.ioFunctionMappingRuntimeValues.clear();
     state.ioFunctionMappings.forEach((mapping) => {
         state.ioFunctionMappingRuntimeValues.set(mapping.id, readOlpSimulatorBit(mapping.direction, mapping.address));
@@ -34591,43 +35629,26 @@ function isIoFunctionMappingAffected(mapping, change = {}) {
 }
 
 function executeIoFunctionMapping(mapping) {
-    if (mapping.action === IO_FUNCTION_MAPPING_ACTIONS.VIEW) {
-        if (!getViewPreset(mapping.viewSlot) || !applyViewPreset(mapping.viewSlot, { announce: false })) {
-            throw new Error(`${getIoFunctionMappingAddressLabel(mapping)}: ${uiText('저장된 뷰가 없습니다.')}`);
-        }
-        setStatus('IO 매핑으로 {view} 뷰로 전환했습니다.', '#22c55e', {
-            view: `V${mapping.viewSlot + 1}`
-        });
-        return;
-    }
-    const action = mapping.action === IO_FUNCTION_MAPPING_ACTIONS.GRIP_USE ? 'use' : 'release';
-    const resolved = resolveGripObjectReference(mapping.gripObjectRef, action);
-    if (!resolved) throw new Error(`${getIoFunctionMappingAddressLabel(mapping)}: ${uiText('물건 잡기 대상을 찾을 수 없습니다.')}`);
-    const success = action === 'use'
-        ? useGripObject(resolved.model, resolved.part, getGripObjectRobot(), {
-            recordHistory: false,
-            select: false,
-            announce: false,
-            allowDuringMotion: true
-        })
-        : releaseGripObject(resolved.model, {
-            recordHistory: false,
-            select: false,
-            announce: false,
-            allowDuringMotion: true
-        });
-    if (!success) throw new Error(`${getIoFunctionMappingAddressLabel(mapping)}: ${uiText('물건 잡기/놓기 명령을 실행할 수 없습니다.')}`);
-    setStatus('IO 매핑으로 {action}을 실행했습니다.', '#22c55e', {
-        action: ioFunctionMappingActionLabel(mapping.action)
-    });
+    if (mapping.action !== 'VIEW') return;
+    if (!getViewPreset(mapping.viewSlot) || !applyViewPreset(mapping.viewSlot, { announce: false })) throw new Error(getIoFunctionMappingAddressLabel(mapping)+': '+uiText('저장된 뷰가 없습니다.'));
+    setStatus('IO 매핑으로 {view} 뷰로 전환했습니다.', '#22c55e', { view: 'V'+(mapping.viewSlot+1) });
 }
 
 function processIoFunctionMappings(change = {}) {
+    requestRender();
     state.ioFunctionMappings.forEach((mapping) => {
         if (!isIoFunctionMappingAffected(mapping, change)) return;
         const current = readOlpSimulatorBit(mapping.direction, mapping.address);
         const previous = state.ioFunctionMappingRuntimeValues.get(mapping.id);
         state.ioFunctionMappingRuntimeValues.set(mapping.id, current);
+        if (EQUIPMENT_TYPES.includes(mapping.action)) {
+            if (previous !== undefined && previous !== current && mapping.enabled) equipmentApp.signal(mapping);
+            return;
+        }
+        if (mapping.action === IO_FUNCTION_MAPPING_ACTIONS.CONVEYOR) {
+            if (previous !== undefined && previous !== current && mapping.enabled) { conveyorManualCommands.delete(mapping.id); if (current === mapping.triggerValue) conveyorTransportSuspended = false; }
+            return;
+        }
         if (previous === undefined || previous === current || !mapping.enabled || current !== mapping.triggerValue) return;
         try {
             executeIoFunctionMapping(mapping);
@@ -34649,7 +35670,13 @@ function openIoFunctionMappingDialog() {
     renderIoFunctionMappingList();
     renderIoFunctionMappingEditorTargets();
     setIoFunctionMappingStatus('');
-    if (!el.ioFunctionMappingDialog.open) el.ioFunctionMappingDialog.showModal();
+    if (!el.ioFunctionMappingDialog.open) el.ioFunctionMappingDialog.show();
+    const top = (document.getElementById('topbar')?.getBoundingClientRect().bottom || 0) + 8;
+    const bottom = document.getElementById('stats-bar')?.getBoundingClientRect().top ?? window.innerHeight;
+    el.ioFunctionMappingDialog.style.top = `${top}px`;
+    el.ioFunctionMappingDialog.style.maxHeight = `${Math.max(0, bottom - top - 8)}px`;
+    bindPanelFocusOnPointerDown(el.ioFunctionMappingDialog);
+    bringPanelToFront('io-function-mapping-dialog');
 }
 
 function closeIoFunctionMappingDialog() {
@@ -34657,10 +35684,11 @@ function closeIoFunctionMappingDialog() {
 }
 
 function addIoFunctionMapping() {
+    const release = el.ioFunctionMappingAction?.value === 'VACUUM_RELEASE';
     const direction = normalizeIoSimulatorDirection(el.ioFunctionMappingDirection?.value);
     const address = Number(el.ioFunctionMappingAddress?.value);
     const triggerValue = Number(el.ioFunctionMappingTrigger?.value) === 0 ? 0 : 1;
-    const action = el.ioFunctionMappingAction?.value || IO_FUNCTION_MAPPING_ACTIONS.GRIP_USE;
+    const action = release ? 'VACUUM' : el.ioFunctionMappingAction?.value || IO_FUNCTION_MAPPING_ACTIONS.VIEW;
     const gripObjectRef = String(el.ioFunctionMappingGripTarget?.value || '');
     const viewSlot = Number(el.ioFunctionMappingViewTarget?.value);
     if (!isSupportedIoFunctionMappingAddress(address)) {
@@ -34676,6 +35704,10 @@ function addIoFunctionMapping() {
         setIoFunctionMappingStatus('선택한 기능에 사용할 대상을 선택하세요.', 'error');
         return;
     }
+    const conveyorSpeed = Number(el.ioFunctionMappingConveyorSpeed?.value);
+    if (action === IO_FUNCTION_MAPPING_ACTIONS.CONVEYOR && (!(conveyorSpeed > 0) || conveyorSpeed > 5000)) {
+        setIoFunctionMappingStatus('이송 속도는 0보다 크고 5000mm/s 이하여야 합니다.', 'error'); return;
+    }
     const before = captureSceneSnapshot();
     const mapping = normalizeIoFunctionMapping({
         id: createIoFunctionMappingId(),
@@ -34684,10 +35716,14 @@ function addIoFunctionMapping() {
         triggerValue,
         action,
         gripObjectRef,
-        viewSlot
+        viewSlot,
+        conveyorAxis: el.ioFunctionMappingConveyorAxis?.value,
+        conveyorSpeed,
+        equipmentCommand: release ? 'REVERSE' : document.getElementById('io-equipment-command')?.value
     }, state.ioFunctionMappings.length);
     state.ioFunctionMappings.push(mapping);
     state.ioFunctionMappingRuntimeValues.set(mapping.id, readOlpSimulatorBit(mapping.direction, mapping.address));
+    activateIoFunctionMapping(mapping);
     renderIoFunctionMappingList();
     recordHistory('IO 기능 매핑 추가', before, captureSceneSnapshot());
     setIoFunctionMappingStatus('기능 매핑을 추가했습니다.');
@@ -34709,8 +35745,20 @@ function updateIoFunctionMapping(id, field, value) {
         }
         next.address = Math.trunc(Number(value));
     } else if (field === 'triggerValue') next.triggerValue = Number(value) === 0 ? 0 : 1;
-    else if (field === 'action' && Object.values(IO_FUNCTION_MAPPING_ACTIONS).includes(value)) next.action = value;
+    else if (field === 'action' && (value === 'VACUUM_RELEASE' || Object.values(IO_FUNCTION_MAPPING_ACTIONS).includes(value))) {
+        next.action = value === 'VACUUM_RELEASE' ? 'VACUUM' : value;
+        if (next.action === 'VACUUM') next.equipmentCommand = value === 'VACUUM_RELEASE' ? 'REVERSE' : 'FORWARD';
+    }
     else if (field === 'gripObjectRef') next.gripObjectRef = String(value || '');
+    else if (field === 'equipmentCommand') next.equipmentCommand = value;
+    else if (field === 'conveyorAxis') next.conveyorAxis = value;
+    else if (field === 'conveyorSpeed') {
+        if (!(Number(value) > 0) || Number(value) > 5000) {
+            setIoFunctionMappingStatus('이송 속도는 0보다 크고 5000mm/s 이하여야 합니다.', 'error');
+            renderIoFunctionMappingList(); return;
+        }
+        next.conveyorSpeed = Number(value);
+    }
     else if (field === 'viewSlot') next.viewSlot = Number.isInteger(Number(value)) ? Math.min(3, Math.max(0, Number(value))) : 0;
     else return;
 
@@ -34723,8 +35771,10 @@ function updateIoFunctionMapping(id, field, value) {
             next.gripObjectRef = references[0]?.value || '';
         }
     }
+    if (next.action === 'CONVEYOR' && ['enabled', 'address', 'direction', 'triggerValue'].includes(field) && next.enabled) delete next.conveyorManualOnly;
     state.ioFunctionMappings[index] = normalizeIoFunctionMapping(next, index);
     state.ioFunctionMappingRuntimeValues.set(id, readOlpSimulatorBit(next.direction, next.address));
+    activateIoFunctionMapping(state.ioFunctionMappings[index]);
     renderIoFunctionMappingList();
     recordHistory('IO 기능 매핑 변경', before, captureSceneSnapshot());
     setIoFunctionMappingStatus('기능 매핑을 변경했습니다.');
@@ -34735,6 +35785,7 @@ function deleteIoFunctionMapping(id) {
     if (index < 0) return;
     const before = captureSceneSnapshot();
     state.ioFunctionMappings.splice(index, 1);
+    conveyorManualCommands.delete(id);
     state.ioFunctionMappingRuntimeValues.delete(id);
     renderIoFunctionMappingList();
     recordHistory('IO 기능 매핑 삭제', before, captureSceneSnapshot());
@@ -34759,6 +35810,9 @@ function handleIoFunctionMappingListClick(event) {
 
 function setOlpInputFromIoSimulator(entry, value) {
     if (!entry || entry.direction !== IO_SIMULATOR_DIRECTIONS.INPUT) return;
+    if (state.equipmentDefinitions.some(def => [def.feedbackHome, def.feedbackEnd, def.feedbackGrip].some(address => address !== null && address >= entry.bitStart && address <= entry.bitEnd))) {
+        setIoSimulatorStatus('설비 센서에 연결된 입력은 설비 상태에서 자동으로 갱신됩니다.'); return;
+    }
     const before = readIoSimulatorEntry(entry, (bit) => readOlpSimulatorBit(entry.direction, bit));
     const numeric = writeIoSimulatorEntry(entry, value, (bit, enabled) => {
         writeOlpSimulatorBit(entry.direction, bit, enabled);
@@ -34954,11 +36008,12 @@ async function animateOlpJointMove(robot, targetAngles, speed, {
         }
         const now = performance.now();
         const durationMilliseconds = getDuration();
-        const elapsedMilliseconds = Math.max(0, now - previousAt);
+        const overrideScale = normalizeProgramSpeedOverride(state.programSpeedOverride) / 100;
+        const elapsedMilliseconds = Math.max(0, now - previousAt) * overrideScale;
         const deltaSeconds = Math.max(0, Math.min(
             RAPID_MOVE_DEFAULTS.maxStepSeconds,
-            elapsedMilliseconds / 1000
-        ));
+            elapsedMilliseconds / 1000 / overrideScale
+        )) * overrideScale;
         previousAt = now;
         let progress;
         if (rapidMove?.enabled) {
@@ -35100,8 +36155,8 @@ function buildOlpCartesianTarget(robot, values, options = {}) {
             const worldQuaternion = workObjectPose.quaternion.clone()
                 .multiply(quaternion)
                 .normalize();
-            position.copy(robot.worldToLocal(worldPosition));
-            quaternion = robot.getWorldQuaternion(new THREE.Quaternion())
+            position.copy(getRobotControllerBaseFrame(robot).worldToLocal(worldPosition));
+            quaternion = getRobotControllerBaseFrame(robot).getWorldQuaternion(new THREE.Quaternion())
                 .invert()
                 .multiply(worldQuaternion)
                 .normalize();
@@ -35361,13 +36416,14 @@ async function animateOlpCartesianPath(robot, motion, poses, speed, runtime = nu
     const callbacks = getOlpMotionCallbacks(runtime, options);
     const startAt = performance.now();
     let progress = 0;
+    const speedClock = {};
     while (progress < 1) {
         if (runtime?.cancelled) throw new Error('OLP stopped');
         if (options.until && runtime?.evaluate?.(options.until)) {
             captureCurrentTcpTarget(robot);
             return { interrupted: true, progress };
         }
-        progress = Math.min(1, (performance.now() - startAt) / (duration * 1000));
+        progress = Math.min(1, advanceMotionSpeedClock(speedClock, performance.now() - startAt, state.programSpeedOverride).elapsedMilliseconds / (duration * 1000));
         let remaining = progress * totalWeight;
         let segment = 0;
         while (segment < segmentWeights.length - 1 && remaining > segmentWeights[segment]) {
@@ -36271,8 +37327,7 @@ async function stopOlpSession(reason = 'OLP stopped', { closeBus = false, resetC
         }
     }
     if (!isOlpRunning()) {
-        writeOlpAddress('Out[512]', 0);
-        writeOlpAddress('Out[513]', 1);
+        if (wasRunning) { writeOlpAddress('Out[512]', 0); writeOlpAddress('Out[513]', 1); }
         if (state.olp.resetCursorOnStop) {
             resetOlpProgramCursor();
             state.olp.resetCursorOnStop = false;
@@ -36341,8 +37396,8 @@ async function connectVirtualController() {
     registerVirtualControllerSession(controller);
     controller.historyBefore = captureSceneSnapshot();
     controller.wanted = true;
-    resetControllerGripInference(controller);
-    if (controller.gripInference.enabled) enableControllerGripCollisionWarning();
+
+
     controller.samples?.clear();
     controller.lastAppliedSampleId = 0;
     controller.lastRateUpdateAt = 0;
@@ -36588,7 +37643,7 @@ function disconnectVirtualController(controller = state.virtualController) {
     if (robot) sendCollaborationRobotState(robot, { connected: false, streaming: false });
     controller.historyBefore = null;
     controller.wanted = false;
-    resetControllerGripInference(controller);
+
     closeVirtualControllerSocket(true, controller);
     controller.pendingInterferenceReads.clear();
     controller.pendingInterferenceToolReads.clear();
@@ -36615,199 +37670,27 @@ function isVirtualControllerSourceLive(timestamp, controller = state.virtualCont
     return false;
 }
 
-function resetControllerGripInference(controller = state.virtualController) {
-    const inference = controller.gripInference;
-    inference.robot = null;
-    inference.stationaryPose = null;
-    inference.stationarySince = 0;
-    inference.contactKey = '';
-    inference.contactSince = 0;
-    inference.actionDone = false;
-    inference.blockedUntilContactClears = false;
-}
 
-function getControllerGripPose(robot) {
-    const joints = robot?.userData?.joints;
-    if (!Array.isArray(joints) || joints.length === 0) return null;
-    const pose = joints.map((joint) => Number(joint?.angle));
-    return pose.every(Number.isFinite) ? pose : null;
-}
 
-function updateControllerGripStationaryState(robot, timestamp, controller = state.virtualController) {
-    const inference = controller.gripInference;
-    const pose = getControllerGripPose(robot);
-    if (!pose) {
-        resetControllerGripInference(controller);
-        return false;
-    }
 
-    if (inference.robot !== robot
-        || !Array.isArray(inference.stationaryPose)
-        || inference.stationaryPose.length !== pose.length) {
-        inference.robot = robot;
-        inference.stationaryPose = pose;
-        inference.stationarySince = timestamp;
-        inference.contactSince = 0;
-        inference.contactKey = '';
-        inference.actionDone = false;
-        inference.blockedUntilContactClears = false;
-        return false;
-    }
 
-    const moved = pose.some((value, index) => (
-        Math.abs(value - inference.stationaryPose[index]) > CONTROLLER_GRIP_POSITION_TOLERANCE
-    ));
-    if (moved) {
-        // Keep the reference fixed until the accumulated pose drift exceeds
-        // the tolerance. This prevents a slow, continuous motion made up of
-        // sub-tolerance frame steps from being mistaken for a stop.
-        inference.stationaryPose = pose;
-        inference.stationarySince = timestamp;
-        inference.contactSince = 0;
-        if (!inference.blockedUntilContactClears) inference.actionDone = false;
-    }
-    return true;
-}
 
-function isControllerGripTool(model, robot) {
-    return Boolean(
-        model
-        && model.userData?.placement === 'tcp'
-        && model.userData?.attachmentHost === robot
-        && model.visible !== false
-    );
-}
 
-function isControllerGripObject(model, robot) {
-    if (!model || model === robot) return false;
-    if (isGripObjectModelInUse(model)) {
-        return model.userData?.attachmentHost === robot;
-    }
-    return model.userData?.placement === 'scene' && isGripObjectTarget(model);
-}
 
-function isObjectWithinControllerGripRoot(object, root) {
-    let current = object;
-    while (current) {
-        if (current === root) return true;
-        current = current.parent;
-    }
-    return false;
-}
 
-function getControllerGripCollisionPart(model, mesh) {
-    if (!model?.userData?.uploaded || !mesh) return null;
-    return getImportedModelParts(model).find((part) => (
-        isObjectWithinControllerGripRoot(mesh, part)
-    )) || null;
-}
 
-function getControllerGripContactIdentity(model, part = null) {
-    const source = normalizeGripObjectSource(model?.userData?.gripObjectSource);
-    if (source?.sourceModelId) {
-        return `${source.mode}:${source.sourceModelId}:${source.sourcePartIndex ?? ''}`;
-    }
-    const modelId = ensureWorkspaceModelId(model);
-    if (part) {
-        const partIndex = getImportedModelParts(model).indexOf(part);
-        return `part:${modelId}:${partIndex}`;
-    }
-    return `model:${modelId}`;
-}
 
-function getControllerGripContact(result, robot) {
-    const candidates = [];
-    asCollisionResults(result).forEach((hit) => {
-        const pairs = [
-            { tool: hit.objectA, object: hit.objectB, objectMesh: hit.meshB },
-            { tool: hit.objectB, object: hit.objectA, objectMesh: hit.meshA }
-        ];
-        pairs.forEach(({ tool, object, objectMesh }) => {
-            if (!isControllerGripTool(tool, robot) || !isControllerGripObject(object, robot)) return;
-            const attached = isGripObjectModelInUse(object);
-            const part = attached ? null : getControllerGripCollisionPart(object, objectMesh);
-            if (part && findActiveGripObjectForSource(object, part)) return;
-            const identity = getControllerGripContactIdentity(object, part);
-            candidates.push({
-                key: `${tool.uuid}:${identity}`,
-                tool,
-                object,
-                objectMesh,
-                part,
-                attached
-            });
-        });
-    });
 
-    // If the Tool is touching both a held object and a scene object, finish
-    // the held-object toggle first. This keeps the attached state coherent.
-    candidates.sort((left, right) => Number(right.attached) - Number(left.attached));
-    return candidates[0] || null;
-}
 
-function applyControllerGripContact(contact, robot) {
-    const attached = isGripObjectModelInUse(contact.object)
-        && contact.object.userData?.attachmentHost === robot;
-    if (attached) {
-        const released = releaseGripObject(contact.object, {
-            recordHistory: false,
-            select: false,
-            announce: false,
-            allowDuringMotion: true
-        });
-        if (released) setStatus('물건을 놓았습니다.', '#22c55e');
-        return { applied: released, action: 'release' };
-    }
 
-    const used = useGripObject(contact.object, contact.part, robot, {
-        recordHistory: false,
-        select: false,
-        announce: false,
-        allowDuringMotion: true
-    });
-    if (used) setStatus('물건을 잡았습니다.', '#22c55e');
-    return { applied: used, action: 'use' };
-}
 
-function updateControllerGripInference(timestamp, collision, controller = state.virtualController) {
-    const robot = getVirtualControllerTargetRobot(controller);
-    const sampleIsLive = controller.status === 'streaming'
-        && Number.isFinite(controller.lastSampleAt)
-        && timestamp - controller.lastSampleAt <= VIRTUAL_CONTROLLER_STREAM_STALL_MS;
-    if (!controller.wanted || !controller.gripInference.enabled || !robot || !state.collision.enabled || !sampleIsLive) {
-        resetControllerGripInference(controller);
-        return;
-    }
 
-    const stationary = updateControllerGripStationaryState(robot, timestamp, controller);
-    const inference = controller.gripInference;
-    const contact = getControllerGripContact(collision, robot);
-    if (!contact) {
-        inference.contactKey = '';
-        inference.contactSince = 0;
-        inference.actionDone = false;
-        inference.blockedUntilContactClears = false;
-        return;
-    }
 
-    if (inference.contactKey !== contact.key) {
-        inference.contactKey = contact.key;
-        inference.contactSince = 0;
-        inference.actionDone = false;
-        inference.blockedUntilContactClears = false;
-    }
-    if (!stationary || inference.blockedUntilContactClears || inference.actionDone) return;
-    if (!inference.contactSince) inference.contactSince = timestamp;
-    if (timestamp - inference.contactSince < CONTROLLER_GRIP_CONTACT_HOLD_MS) return;
 
-    const result = applyControllerGripContact(contact, robot);
-    inference.actionDone = true;
-    // A release can leave the object geometrically touching the Tool. Do not
-    // immediately pick it again until the contact has actually cleared.
-    if (result.action === 'release' && result.applied) {
-        inference.blockedUntilContactClears = true;
-    }
-}
+
+
+
+
 
 function applyVirtualControllerFrameForController(timestamp, controller) {
     if (!controller.wanted || !controller.samples || !controller.core) return;
@@ -37251,7 +38134,7 @@ function applyPlanningJointAngles(robot, angles) {
 }
 
 function isAutoPathTargetInsideModel(robot, targetPose, collisionModels) {
-    const worldPoint = targetPose.position.clone().applyMatrix4(robot.matrixWorld);
+    const worldPoint = targetPose.position.clone().applyMatrix4(getRobotControllerBaseFrame(robot).matrixWorld);
     const obstacleModels = collisionModels.filter((model) => (
         model !== robot && model.userData?.attachmentHost !== robot
     ));
@@ -37275,6 +38158,8 @@ function createAutoPathCollisionEvaluator(robot, originalAngles) {
         try {
             return asCollisionResults(system.checkAll(collisionModels, {
                 changedRoots,
+                pairFilter: isSimulationCollisionPair,
+                meshPairFilter: shouldCheckSceneCollisionMeshes,
                 allowWarmHitReuse: false
             }));
         } finally {
@@ -37730,7 +38615,7 @@ function autoPathBoxInRobotBase(robot, object) {
     if (!robot || !object) return null;
     const worldBounds = new THREE.Box3().setFromObject(object);
     if (worldBounds.isEmpty()) return null;
-    const inverseRobotMatrix = robot.matrixWorld.clone().invert();
+    const inverseRobotMatrix = getRobotControllerBaseFrame(robot).matrixWorld.clone().invert();
     const bounds = new THREE.Box3();
     for (const x of [worldBounds.min.x, worldBounds.max.x]) {
         for (const y of [worldBounds.min.y, worldBounds.max.y]) {
@@ -38040,7 +38925,7 @@ async function solveAutoPathCartesianWaypointRoute(
 }
 
 function getAutoPathObstacleTopInBase(robot, collisionModels) {
-    const inverseRobotMatrix = robot.matrixWorld.clone().invert();
+    const inverseRobotMatrix = getRobotControllerBaseFrame(robot).matrixWorld.clone().invert();
     let top = -Infinity;
     collisionModels
         .filter((model) => (
@@ -38137,7 +39022,7 @@ function buildAutoPathPreview(robot, path, originalAngles) {
     path.forEach((angles) => {
         applyPlanningJointAngles(robot, angles);
         const pose = getCurrentTcpPoseBase(robot);
-        if (pose) points.push(pose.position.clone().applyMatrix4(robot.matrixWorld));
+        if (pose) points.push(pose.position.clone().applyMatrix4(getRobotControllerBaseFrame(robot).matrixWorld));
     });
     applyPlanningJointAngles(robot, originalAngles);
     if (points.length < 2) return;
@@ -38788,6 +39673,7 @@ function applyAutoPath() {
 }
 
 function programCommandName(step) {
+    if (isIoMotion(step.motion)) return (step.motion === 'IO_OUT' ? 'IO 출력' : '입력 대기');
     if (isMotionPointMotion(step.motion)) return formatMotionPointName(step.pointIndex);
     if (step.motion === 'VIEW') return `View ${Math.min(4, Math.max(1, Number(step.viewSlot) + 1 || 1))}`;
     return ({
@@ -38796,9 +39682,7 @@ function programCommandName(step) {
         HOME: 'Home',
         TIME_START: 'Time Start',
         TIME_OUT: 'Time Out',
-        GRIP_USE: uiText('물건 잡기'),
-        GRIP_RELEASE: uiText('놓기')
-    })[step.motion] || step.motion;
+            })[step.motion] || step.motion;
 }
 
 function getWorkOriginRobot() {
@@ -39197,6 +40081,7 @@ function handleProgramStepListInput(event) {
 
 function renderMotionProgramPanel() {
     if (!el.programRobotList || !el.programStepList) return;
+    syncMotionRepeatControl();
     const focusState = captureProgramStepInputFocus();
     const robots = getArticulatedRobots();
     updateRobotInterferenceAvoidanceUi();
@@ -39278,10 +40163,9 @@ function renderMotionProgramPanel() {
             const session = getMotionSession(robot);
             const isRunning = session?.currentStepId === step.id && session.status === 'running';
             const isTimer = step.motion === 'TIME_START' || step.motion === 'TIME_OUT';
-            const isGrip = isGripObjectMotion(step.motion);
             const isWait = isWaitMotion(step.motion);
             const isHome = isHomeMotion(step.motion);
-            row.className = `program-step-row${isSelected ? ' active' : ''}${isRunning ? ' running' : ''}${step.motion === 'DELAY' ? ' delay' : ''}${isWait ? ' wait' : ''}${isHome ? ' home' : ''}${isTimer ? ' timer' : ''}${isGrip ? ' grip-object' : ''}`;
+            row.className = `program-step-row${isSelected ? ' active' : ''}${isRunning ? ' running' : ''}${step.motion === 'DELAY' ? ' delay' : ''}${isWait ? ' wait' : ''}${isHome ? ' home' : ''}${isTimer ? ' timer' : ''}`;
             row.tabIndex = 0;
             row.dataset.programStepId = step.id;
             row.dataset.programLineNumber = String(index + 1);
@@ -39343,22 +40227,17 @@ function renderMotionProgramPanel() {
             const motion = document.createElement('select');
             motion.dataset.programStepMotion = step.id;
             motion.dataset.programEdit = '';
-            (isGrip
-                ? [
-                    ['GRIP_USE', uiText('물건 잡기')],
-                    ['GRIP_RELEASE', uiText('놓기')]
-                ]
-                : [
+            ([
                     ['MOVJ', 'MovJ'],
                     ['MOVL', 'MovL'],
                     ['HOME', 'Home'],
                     ['DELAY', 'Delay'],
                     ['WAIT', 'Wait'],
+                    ['IO_OUT', 'IO 출력'],
+                    ['IO_WAIT', '입력 대기'],
                     ['TIME_START', 'T.Start'],
                     ['TIME_OUT', 'T.Out'],
                     ['VIEW', 'View'],
-                    ['GRIP_USE', uiText('물건 잡기')],
-                    ['GRIP_RELEASE', uiText('놓기')]
                 ]).forEach(([value, label]) => {
                 const option = document.createElement('option');
                 option.value = value;
@@ -39371,14 +40250,16 @@ function renderMotionProgramPanel() {
             const isView = step.motion === 'VIEW';
             const waitTargetRobot = isWait ? document.createElement('select') : null;
             const waitTargetLine = isWait ? document.createElement('input') : null;
-            const speed = isView || isGrip || isWait
+            const speed = isView || isWait
                 ? document.createElement('select')
                 : isHome
                     ? document.createElement('span')
                     : document.createElement('input');
             const isDelay = step.motion === 'DELAY';
-            speed.className = `program-step-speed${isGrip ? ' program-step-grip-object' : ''}`;
-            if (isView) {
+            speed.className = 'program-step-speed';
+            if (isIoMotion(step.motion)) {
+                speed.type = 'number'; speed.min = '0'; speed.max = '2559'; speed.step = '1'; speed.value = String(step.ioAddress ?? 512); speed.dataset.programStepIoAddress = step.id; speed.setAttribute('aria-label', step.motion === 'IO_OUT' ? '출력 IO 번호' : '입력 IO 번호');
+            } else if (isView) {
                 speed.dataset.programStepViewSlot = step.id;
                 speed.dataset.programEdit = '';
                 for (let slot = 0; slot < VIEW_PRESET_COUNT; slot += 1) {
@@ -39390,35 +40271,6 @@ function renderMotionProgramPanel() {
                 speed.value = String(Math.min(VIEW_PRESET_COUNT - 1, Math.max(0, Number(step.viewSlot) || 0)));
                 speed.title = uiText('전환할 화면 뷰');
                 speed.setAttribute('aria-label', uiText('전환할 화면 뷰'));
-            } else if (isGrip) {
-                speed.dataset.programStepGripObject = step.id;
-                speed.dataset.programEdit = '';
-                const references = getGripObjectReferences();
-                if (!references.length) {
-                    const option = document.createElement('option');
-                    option.value = '';
-                    option.textContent = uiText('오브젝트를 선택하세요');
-                    option.disabled = true;
-                    option.selected = true;
-                    speed.appendChild(option);
-                } else {
-                    references.forEach((reference) => {
-                        const option = document.createElement('option');
-                        option.value = reference.value;
-                        option.textContent = reference.label;
-                        speed.appendChild(option);
-                    });
-                    if (step.gripObjectRef && !references.some((reference) => reference.value === step.gripObjectRef)) {
-                        const option = document.createElement('option');
-                        option.value = step.gripObjectRef;
-                        option.textContent = uiText('물건 잡기/놓기 명령 대상이 없습니다.');
-                        option.disabled = true;
-                        speed.appendChild(option);
-                    }
-                    speed.value = step.gripObjectRef || references[0].value;
-                }
-                speed.title = uiText('사용할 오브젝트');
-                speed.setAttribute('aria-label', uiText('사용할 오브젝트'));
             } else if (isWait) {
                 waitTargetRobot.className = 'program-step-wait-robot';
                 waitTargetRobot.dataset.programStepWaitRobot = step.id;
@@ -39488,10 +40340,13 @@ function renderMotionProgramPanel() {
 
             const unit = document.createElement('span');
             unit.className = 'program-step-unit';
-            unit.textContent = isTimer || isView || isGrip || isWait || isHome ? '' : isDelay ? 's' : step.motion === 'MOVJ' ? '%' : 'mm/s';
+            unit.textContent = isIoMotion(step.motion) ? (step.motion === 'IO_OUT' ? 'Out' : 'In') : isTimer || isView || isWait || isHome ? '' : isDelay ? 's' : step.motion === 'MOVJ' ? '%' : 'mm/s';
             row.append(dragHandle, lineNumber, pointControl, motion);
             if (isWait) row.append(waitTargetRobot, waitTargetLine);
             else row.append(speed, unit);
+            if (isIoMotion(step.motion)) {
+                const value = document.createElement('select'); value.dataset.programStepIoValue = step.id; value.dataset.programEdit = ''; value.setAttribute('aria-label', 'IO 상태'); value.add(new Option('ON', '1')); value.add(new Option('OFF', '0')); value.value = String(step.ioValue ?? 1); row.append(value);
+            }
             if (labelControl) row.appendChild(labelControl);
             el.programStepList.appendChild(row);
         });
@@ -39957,17 +40812,17 @@ function applyPositionValueDialog() {
 function handleProgramStepListChange(event) {
     const pointIndexControl = event.target.closest('[data-program-step-point-index]');
     const labelControl = event.target.closest('[data-program-step-label]');
+    const ioAddressControl = event.target.closest('[data-program-step-io-address]');
+    const ioValueControl = event.target.closest('[data-program-step-io-value]');
     const motionControl = event.target.closest('[data-program-step-motion]');
     const viewSlotControl = event.target.closest('[data-program-step-view-slot]');
-    const gripObjectControl = event.target.closest('[data-program-step-grip-object]');
     const waitRobotControl = event.target.closest('[data-program-step-wait-robot]');
     const waitLineControl = event.target.closest('[data-program-step-wait-line]');
     const speedControl = event.target.closest('[data-program-step-speed]');
-    const stepId = pointIndexControl?.dataset.programStepPointIndex
+    const stepId = ioAddressControl?.dataset.programStepIoAddress || ioValueControl?.dataset.programStepIoValue || pointIndexControl?.dataset.programStepPointIndex
         || labelControl?.dataset.programStepLabel
         || motionControl?.dataset.programStepMotion
         || viewSlotControl?.dataset.programStepViewSlot
-        || gripObjectControl?.dataset.programStepGripObject
         || waitRobotControl?.dataset.programStepWaitRobot
         || waitLineControl?.dataset.programStepWaitLine
         || speedControl?.dataset.programStepSpeed;
@@ -39975,6 +40830,12 @@ function handleProgramStepListChange(event) {
     const program = ensureMotionProgram(robot);
     const step = program?.steps.find((candidate) => candidate.id === stepId);
     if (!step) return;
+    if (ioAddressControl || ioValueControl) {
+        const before = captureSceneSnapshot();
+        try { Object.assign(step, normalizeProgramIoStep({ ...step, ioAddress: ioAddressControl?.value ?? step.ioAddress, ioValue: ioValueControl?.value ?? step.ioValue })); recordHistory('프로그램 IO 명령 변경', before, captureSceneSnapshot()); }
+        catch (error) { setMotionProgramStatus(error.message, 'error'); }
+        renderMotionProgramPanel(); return;
+    }
     if (pointIndexControl) {
         const pointIndex = Number(pointIndexControl.value);
         const duplicate = program.steps.some((candidate) => candidate !== step
@@ -40026,21 +40887,7 @@ function handleProgramStepListChange(event) {
         renderMotionProgramPanel();
         return;
     }
-    if (gripObjectControl) {
-        const reference = gripObjectControl.value;
-        if (!getGripObjectReferences().some((candidate) => candidate.value === reference)) {
-            setMotionProgramStatus('물건 잡기/놓기 명령 대상이 없습니다.', 'error');
-            renderMotionProgramPanel();
-            return;
-        }
-        if (step.gripObjectRef === reference) return;
-        const before = captureSceneSnapshot();
-        step.gripObjectRef = reference;
-        step.name = programCommandName(step);
-        recordHistory('물건 잡기 대상 변경', before, captureSceneSnapshot());
-        renderMotionProgramPanel();
-        return;
-    }
+
     if (waitRobotControl) {
         const targetRobot = getArticulatedRobots().find((candidate) => (
             candidate.userData.motionInstanceId === waitRobotControl.value
@@ -40084,7 +40931,7 @@ function handleProgramStepListChange(event) {
     const before = captureSceneSnapshot();
     if (motionControl) {
         const wasPoint = isMotionPointMotion(step.motion);
-        const nextMotion = ['MOVJ', 'MOVL', 'HOME', 'DELAY', 'WAIT', 'TIME_START', 'TIME_OUT', 'VIEW', 'GRIP_USE', 'GRIP_RELEASE'].includes(motionControl.value)
+        const nextMotion = ['MOVJ', 'MOVL', 'HOME', 'DELAY', 'WAIT', 'TIME_START', 'TIME_OUT', 'VIEW',   'IO_OUT', 'IO_WAIT'].includes(motionControl.value)
             ? motionControl.value
             : 'MOVJ';
         const isPoint = isMotionPointMotion(nextMotion);
@@ -40123,13 +40970,11 @@ function handleProgramStepListChange(event) {
                     ? 'Time Out'
                     : step.motion === 'HOME'
                         ? 'Home'
-                    : step.motion === 'GRIP_USE'
-                            ? uiText('물건 잡기')
-                            : step.motion === 'GRIP_RELEASE'
-                                ? uiText('놓기')
-                                : 'View 1';
+                    : 'View 1';
         }
-        if (step.motion === 'DELAY') {
+        if (isIoMotion(step.motion)) {
+            step.ioAddress = Number.isInteger(step.ioAddress) ? step.ioAddress : 512; step.ioValue = step.ioValue === 0 ? 0 : 1; step.name = programCommandName(step);
+        } else if (step.motion === 'DELAY') {
             delete step.speed;
             delete step.viewSlot;
             delete step.waitRobotInstanceId;
@@ -40169,22 +41014,6 @@ function handleProgramStepListChange(event) {
             step.viewSlot = Number.isInteger(step.viewSlot)
                 ? THREE.MathUtils.clamp(step.viewSlot, 0, VIEW_PRESET_COUNT - 1)
                 : 0;
-            step.name = programCommandName(step);
-        } else if (isGripObjectMotion(step.motion)) {
-            delete step.delaySeconds;
-            delete step.speed;
-            delete step.viewSlot;
-            delete step.waitRobotInstanceId;
-            delete step.waitLineNumber;
-            const references = getGripObjectReferences();
-            if (!references.length) {
-                setMotionProgramStatus('물건 잡기 대상을 선택하세요.', 'error');
-                renderMotionProgramPanel();
-                return;
-            }
-            step.gripObjectRef = references.some((reference) => reference.value === step.gripObjectRef)
-                ? step.gripObjectRef
-                : getSelectedGripObjectReference() || references[0].value;
             step.name = programCommandName(step);
         } else {
             delete step.speed;
@@ -40358,12 +41187,9 @@ function captureRobotMotionStep(robot, existing = null) {
                     ? 'Time Start'
                 : motion === 'TIME_OUT'
                         ? 'Time Out'
-                        : motion === 'GRIP_USE'
-                            ? uiText('물건 잡기')
-                            : motion === 'GRIP_RELEASE'
-                                ? uiText('놓기')
                         : `View ${(Number.isInteger(existing?.viewSlot) ? existing.viewSlot : 0) + 1}`,
         motion,
+        ...(isIoMotion(motion) ? { ...normalizeProgramIoStep(existing || { ioAddress: 512, ioValue: 1 }) } : {}),
         ...(isPoint ? {
             pointIndex,
             label: existing?.label || '',
@@ -40389,8 +41215,6 @@ function captureRobotMotionStep(robot, existing = null) {
                             ? THREE.MathUtils.clamp(existing.waitLineNumber, MIN_WAIT_LINE_NUMBER, MAX_WAIT_LINE_NUMBER)
                             : MIN_WAIT_LINE_NUMBER
                     }
-                : isGripObjectMotion(motion)
-                    ? { gripObjectRef: existing?.gripObjectRef || '' }
                 : {}),
         joints,
         tcp: {
@@ -40400,6 +41224,13 @@ function captureRobotMotionStep(robot, existing = null) {
     };
 }
 
+function addIoMotionStep(motion = 'IO_OUT') {
+    const robot = state.activeProgramRobot; if (!robot || !isIoMotion(motion)) return;
+    const before = captureSceneSnapshot(), program = ensureMotionProgram(robot);
+    const step = captureRobotMotionStep(robot, { motion, ioAddress: 512, ioValue: 1 });
+    step.name = programCommandName(step); program.steps.push(step); program.selectedStepId = step.id;
+    recordHistory('프로그램 IO 명령 추가', before, captureSceneSnapshot()); renderMotionProgramPanel();
+}
 function addCurrentMotionStep() {
     if (!state.activeProgramRobot) return;
     const before = captureSceneSnapshot();
@@ -40575,36 +41406,10 @@ function addWaitMotionStep() {
     renderMotionProgramPanel();
 }
 
-function addGripObjectMotionStep(motion) {
-    if (!state.activeProgramRobot || !isGripObjectMotion(motion)) return;
-    const references = getGripObjectReferences();
-    const gripObjectRef = getSelectedGripObjectReference() || references[0]?.value || '';
-    if (!gripObjectRef) {
-        setMotionProgramStatus('물건 잡기 대상을 선택하세요.', 'error');
-        return;
-    }
-    const before = captureSceneSnapshot();
-    const program = ensureMotionProgram(state.activeProgramRobot);
-    const step = captureRobotMotionStep(state.activeProgramRobot);
-    if (!step) return;
-    step.name = programCommandName({ motion, gripObjectRef });
-    step.motion = motion;
-    step.gripObjectRef = gripObjectRef;
-    delete step.pointIndex;
-    delete step.label;
-    delete step.armParameters;
-    delete step.externalAxes;
-    delete step.speed;
-    delete step.delaySeconds;
-    delete step.viewSlot;
-    insertMotionStepAfterSelected(program, step);
-    program.selectedStepId = step.id;
-    recordHistory('물건 잡기/놓기 명령 추가', before, captureSceneSnapshot());
-    renderMotionProgramPanel();
-    scheduleMotionProjectSave();
-}
+
 
 function syncMotionRepeatControl() {
+    if (el.programSpeedOverride && el.programSpeedOverride.ownerDocument.activeElement !== el.programSpeedOverride) el.programSpeedOverride.value = String(state.programSpeedOverride);
     el.programRepeatButtons.forEach((button) => {
         const reverse = button.hasAttribute('data-program-reverse-repeat');
         const robotScope = button.dataset.programRepeatScope === 'robot';
@@ -41206,6 +42011,7 @@ function serializeWorkspaceSnapshot() {
             inputs: state.simulationIo.inputs.map(Boolean),
             outputs: state.simulationIo.outputs.map(Boolean)
         },
+        equipmentDefinitions: JSON.parse(JSON.stringify(state.equipmentDefinitions)),
         ioFunctionMappings: cloneIoFunctionMappings(state.ioFunctionMappings),
         tcpPath: {
             enabled: Boolean(state.tcpPath.enabled)
@@ -41247,6 +42053,17 @@ function serializeWorkspaceSnapshot() {
             collisionEnabled: Boolean(state.collision.enabled)
         },
         viewConfiguration: serializeViewConfiguration(),
+        modelPartGroups: state.models.filter(model => model.userData.modelPartGroups?.length).map(model => ({ modelId: ensureWorkspaceModelId(model), groups: JSON.parse(JSON.stringify(model.userData.modelPartGroups)) })),
+        modelGroups: normalizeModelGroups(state.modelGroups),
+        modelTreeOrder: normalizeModelTreeOrder(state.modelTreeOrder),
+        modelTreeNames: state.models.map(model => ({
+            modelId: ensureWorkspaceModelId(model), name: model.userData.modelTreeName || '',
+            parts: getImportedModelParts(model).map(part => part.userData.modelTreeName || '')
+        })).filter(entry => entry.name || entry.parts.some(Boolean)),
+        modelTreeInstances: state.models.filter(model => !model.userData.motionDisplayName).flatMap(model => {
+            const index = ensureModelTreeInstanceIndex(model);
+            return index ? [{ modelId: ensureWorkspaceModelId(model), index }] : [];
+        }),
         collapsedModelIds: state.models
             .filter((model) => state.modelTreeCollapsedIds.has(ensureModelTreeId(model)))
             .map((model) => ensureWorkspaceModelId(model))
@@ -41260,6 +42077,7 @@ function serializeMotionProject() {
         repeat: state.motionRepeat,
         reverseRepeatCurrentRobot: state.motionReverseRepeatRobot,
         reverseRepeat: state.motionReverseRepeat,
+        programSpeedOverride: state.programSpeedOverride,
         robotInterferenceAvoidance: {
             enabled: Boolean(state.robotInterferenceAvoidance.enabled),
             priorityRobotId: state.robotInterferenceAvoidance.priorityRobotId || null
@@ -41289,7 +42107,7 @@ function serializeMotionProject() {
                     : null,
                 externalAxes: getRobotExternalAxes(robot),
                 baseTransform: {
-                    position: robot.position.toArray(),
+                    position: getRobotControllerBasePosition(robot).toArray(),
                     quaternion: robot.quaternion.toArray(),
                     scale: robot.scale.toArray()
                 },
@@ -41301,6 +42119,7 @@ function serializeMotionProject() {
                     id: step.id,
                     name: step.name,
                     motion: step.motion,
+                    ...(isIoMotion(step.motion) ? normalizeProgramIoStep(step) : {}),
                     ...(isMotionPointMotion(step.motion) ? {
                         pointIndex: step.pointIndex,
                         label: step.label || '',
@@ -41318,8 +42137,6 @@ function serializeMotionProject() {
                                     waitRobotInstanceId: step.waitRobotInstanceId,
                                     waitLineNumber: step.waitLineNumber
                                 }
-                            : isGripObjectMotion(step.motion)
-                                ? { gripObjectRef: step.gripObjectRef }
                             : {}),
                     joints: [...step.joints],
                     tcp: {
@@ -41382,6 +42199,8 @@ function clearSceneForWorkspaceRestore() {
     });
     disposePrimitiveDimensionOverlay();
     state.models = [];
+    state.modelGroups = [];
+    state.modelTreeOrder = {};
     state.cad2d.documents.clear();
     state.cad2d.activeDocumentId = null;
     state.cad2d.selectedEntityIds.clear();
@@ -41393,6 +42212,9 @@ function clearSceneForWorkspaceRestore() {
     state.activeArticulatedModel = null;
     state.activeProgramRobot = null;
     state.modelTreeCollapsedIds.clear();
+    state.equipmentDefinitions = [];
+    conveyorResetTransforms.clear(); conveyorManualCommands.clear(); conveyorTransportSuspended = false;
+    equipmentApp.runtime.clear();
     state.ioFunctionMappings = [];
     state.ioFunctionMappingRuntimeValues.clear();
     markSceneCollisionDirty();
@@ -42030,6 +42852,11 @@ async function restoreWorkspaceSnapshot(snapshot) {
         state.simulationIo.outputs = Array.from({ length: state.simulationIo.outputs.length }, (_, index) => (
             simulationIo.outputs?.[index] === true
         ));
+        state.equipmentDefinitions = [];
+        for (const definition of snapshot?.equipmentDefinitions || []) {
+            try { state.equipmentDefinitions.push(normalizeEquipmentDefinition(definition)); }
+            catch (error) { warnings.push('설비: ' + error.message); }
+        }
         state.ioFunctionMappings = normalizeIoFunctionMappings(snapshot?.ioFunctionMappings);
         resetIoFunctionMappingRuntimeValues();
         renderIoFunctionMappingList();
@@ -42147,6 +42974,8 @@ async function restoreWorkspaceSnapshot(snapshot) {
             warnings.push(...await restoreWorkspaceOlpProjects(snapshot, robotsById));
         }
 
+        equipmentApp.restore();
+        renderIoFunctionMappingList();
         restoreWorkspaceViewConfiguration(snapshot?.viewConfiguration);
         applyWorkspaceDisplayState(snapshot);
         applyWorkspaceCameraState(snapshot?.camera);
@@ -42156,7 +42985,26 @@ async function restoreWorkspaceSnapshot(snapshot) {
             const model = findModelByWorkspaceId(modelId);
             if (model) state.modelTreeCollapsedIds.add(ensureModelTreeId(model));
         });
+        for (const entry of snapshot?.modelPartGroups || []) {
+            const model = findModelByWorkspaceId(entry.modelId);
+            if (model) model.userData.modelPartGroups = JSON.parse(JSON.stringify(entry.groups));
+        }
+        state.modelGroups = normalizeModelGroups(snapshot?.modelGroups);
+        state.modelTreeOrder = normalizeModelTreeOrder(snapshot?.modelTreeOrder);
+        for (const entry of Array.isArray(snapshot?.modelTreeInstances) ? snapshot.modelTreeInstances : []) {
+            const model = findModelByWorkspaceId(entry?.modelId);
+            if (model && Number.isSafeInteger(entry.index) && entry.index > 0) model.userData.modelTreeInstanceIndex = entry.index;
+        }
 
+        for (const entry of Array.isArray(snapshot?.modelTreeNames) ? snapshot.modelTreeNames : []) {
+            const model = findModelByWorkspaceId(entry?.modelId);
+            if (!model) continue;
+            if (typeof entry.name === 'string') model.userData.modelTreeName = entry.name.trim();
+            getImportedModelParts(model).forEach((part, index) => {
+                const name = entry.parts?.[index];
+                if (typeof name === 'string') part.userData.modelTreeName = name.trim();
+            });
+        }
         const selection = snapshot?.selection || {};
         const selectedModel = findModelByWorkspaceId(selection.selectedModelId);
         if (selectedModel && selection.selectedPartIndex !== null
@@ -42186,6 +43034,10 @@ async function restoreWorkspaceSnapshot(snapshot) {
         state.undoStack = [];
         state.redoStack = [];
         updateHistoryButtons();
+        const workObjectRobot = state.activeArticulatedModel;
+        state.workObjectEditor.robotId = workObjectRobot?.userData.motionInstanceId || null;
+        state.workObjectEditor.index = resolveWorkObjectIndex(workObjectRobot?.userData.activeWorkObjectIndex);
+        renderWorkObjectPanel(workObjectRobot);
         updateUIStatus();
         renderModelTree();
         renderMotionProgramPanel();
@@ -42996,12 +43848,15 @@ async function resetCleanWorkspaceUiState() {
     state.motionRepeat = false;
     state.motionReverseRepeatRobot = false;
     state.motionReverseRepeat = false;
+    state.programSpeedOverride = 100;
     state.interferenceZones = normalizeInterferenceZones();
     state.endMonitoringObjects = normalizeEndMonitoringObjects();
     syncMotionRepeatControl();
     state.viewPresets = Array.from({ length: VIEW_PRESET_COUNT }, () => null);
     state.activeViewSlot = null;
     refreshViewPresetsUi();
+    state.equipmentDefinitions = [];
+    equipmentApp.runtime.clear();
     state.ioFunctionMappings = [];
     state.ioFunctionMappingRuntimeValues.clear();
     renderIoFunctionMappingList();
@@ -43363,9 +44218,7 @@ async function restoreMotionProjectData(input) {
             robotProject.workObjects,
             robotProject.activeWorkObjectIndex
         );
-        robot.position.fromArray(robotProject.baseTransform.position);
-        robot.quaternion.fromArray(robotProject.baseTransform.quaternion);
-        robot.scale.fromArray(robotProject.baseTransform.scale);
+        restoreRobotControllerBaseTransform(robot, robotProject.baseTransform);
         robot.userData.externalAxes = normalizeExternalAxisValues(robotProject.externalAxes);
         robot.updateMatrixWorld(true);
         updateModelRenderComplexity(robot);
@@ -43391,6 +44244,7 @@ async function restoreMotionProjectData(input) {
     state.motionRepeat = project.repeat;
     state.motionReverseRepeatRobot = project.reverseRepeatCurrentRobot;
     state.motionReverseRepeat = project.reverseRepeat;
+    state.programSpeedOverride = normalizeProgramSpeedOverride(project.programSpeedOverride);
     syncMotionRepeatControl();
     state.activeArticulatedModel = getArticulatedRobots()[0] || null;
     state.activeProgramRobot = state.activeArticulatedModel;
@@ -43931,10 +44785,11 @@ function serializeMotionProgramFileStep(step, robotIndexByInstanceId) {
         record.armParameters = [...(step.armParameters || [0, 0, 0, 1])];
         record.externalAxes = [...(step.externalAxes || [0, 0, 0, 0, 0, 0])];
     }
+    if (isIoMotion(motion)) Object.assign(record, normalizeProgramIoStep(step));
     if (motion === 'DELAY') record.delaySeconds = step.delaySeconds;
     if (motion === 'MOVJ' || motion === 'MOVL') record.speed = step.speed;
     if (motion === 'VIEW') record.viewSlot = step.viewSlot;
-    if (isGripObjectMotion(motion)) record.gripObjectRef = step.gripObjectRef || '';
+
     if (isWaitMotion(motion)) {
         record.waitRobotIndex = robotIndexByInstanceId.has(step.waitRobotInstanceId)
             ? robotIndexByInstanceId.get(step.waitRobotInstanceId)
@@ -43960,6 +44815,7 @@ function serializeMotionProgramFile() {
         repeat: Boolean(state.motionRepeat),
         reverseRepeatCurrentRobot: Boolean(state.motionReverseRepeatRobot),
         reverseRepeat: Boolean(state.motionReverseRepeat),
+        programSpeedOverride: state.programSpeedOverride,
         robotInterferenceAvoidance: {
             enabled: Boolean(state.robotInterferenceAvoidance.enabled),
             priorityRobotIndex
@@ -43972,7 +44828,7 @@ function serializeMotionProgramFile() {
                 included: Boolean(program.included),
                 selectedStepId: program.selectedStepId || null,
                 workOrigin: serializeMotionProgramFileWorkOrigin(program.workOrigin),
-                steps: program.steps.map((step) => serializeMotionProgramFileStep(step, robotIndexByInstanceId))
+                steps: program.steps.filter(step => !['GRIP_USE','GRIP_RELEASE'].includes(step.motion)).map((step) => serializeMotionProgramFileStep(step, robotIndexByInstanceId))
             };
         })
     };
@@ -44019,6 +44875,7 @@ function normalizeMotionProgramFileStep(step, jointCount, stepIndex) {
             quaternion: normalizeMotionProgramFileArray(step.tcp?.quaternion, 4, `Program step ${stepIndex + 1} TCP quaternion`)
         }
     };
+    if (isIoMotion(motion)) Object.assign(normalized, normalizeProgramIoStep(step));
     if (isMotionPointMotion(motion)) {
         const pointIndex = Number(step.pointIndex);
         const label = String(step.label || '').trim();
@@ -44058,7 +44915,7 @@ function normalizeMotionProgramFileStep(step, jointCount, stepIndex) {
         }
         normalized.viewSlot = viewSlot;
     }
-    if (isGripObjectMotion(motion)) normalized.gripObjectRef = String(step.gripObjectRef || '').trim();
+
     if (isWaitMotion(motion)) {
         const waitRobotIndex = step.waitRobotIndex === null || step.waitRobotIndex === undefined
             ? null
@@ -44090,7 +44947,7 @@ function normalizeMotionProgramFile(input) {
         if (!Number.isInteger(jointCount) || jointCount < 1 || jointCount > 12) {
             throw new Error(`Program robot ${index + 1} has an invalid joint count.`);
         }
-        const steps = (Array.isArray(entry.steps) ? entry.steps : [])
+        const steps = (Array.isArray(entry.steps) ? entry.steps : []).filter(step => !['GRIP_USE','GRIP_RELEASE'].includes(step?.motion))
             .map((step, stepIndex) => normalizeMotionProgramFileStep(step, jointCount, stepIndex));
         const stepIds = new Set();
         const pointIndices = new Set();
@@ -44117,6 +44974,7 @@ function normalizeMotionProgramFile(input) {
         repeat: Boolean(input.repeat),
         reverseRepeatCurrentRobot: Boolean(input.reverseRepeatCurrentRobot),
         reverseRepeat: Boolean(input.reverseRepeat),
+        programSpeedOverride: normalizeProgramSpeedOverride(input.programSpeedOverride),
         robotInterferenceAvoidance: {
             enabled: Boolean(input.robotInterferenceAvoidance?.enabled),
             priorityRobotIndex: priorityRobotIndex === null || priorityRobotIndex === undefined
@@ -44137,6 +44995,7 @@ function captureMotionProgramPanelState() {
         motionRepeat: state.motionRepeat,
         motionReverseRepeatRobot: state.motionReverseRepeatRobot,
         motionReverseRepeat: state.motionReverseRepeat,
+        programSpeedOverride: state.programSpeedOverride,
         robotInterferenceAvoidance: {
             enabled: Boolean(state.robotInterferenceAvoidance.enabled),
             priorityRobotId: state.robotInterferenceAvoidance.priorityRobotId || null
@@ -44152,6 +45011,7 @@ function restoreMotionProgramPanelState(snapshot) {
     state.motionRepeat = Boolean(snapshot?.motionRepeat);
     state.motionReverseRepeatRobot = Boolean(snapshot?.motionReverseRepeatRobot);
     state.motionReverseRepeat = Boolean(snapshot?.motionReverseRepeat);
+    state.programSpeedOverride = normalizeProgramSpeedOverride(snapshot?.programSpeedOverride);
     state.robotInterferenceAvoidance = {
         enabled: Boolean(snapshot?.robotInterferenceAvoidance?.enabled),
         priorityRobotId: snapshot?.robotInterferenceAvoidance?.priorityRobotId || null
@@ -44207,6 +45067,7 @@ function restoreMotionProgramFileData(input) {
     state.motionRepeat = project.repeat;
     state.motionReverseRepeatRobot = project.reverseRepeatCurrentRobot;
     state.motionReverseRepeat = project.reverseRepeat;
+    state.programSpeedOverride = normalizeProgramSpeedOverride(project.programSpeedOverride);
     state.robotInterferenceAvoidance = {
         enabled: project.robotInterferenceAvoidance.enabled,
         priorityRobotId: robots[priorityRobotIndex]?.userData?.motionInstanceId || null
@@ -44486,7 +45347,6 @@ function preflightRobotMotion(robot, steps, { reverseRepeat = false, timerOnly =
     const originalBaseTransform = timerOnly ? null : captureClipboardTransform(robot);
     const originalExternalAxes = timerOnly ? null : getRobotExternalAxes(robot);
     let timerAvailable = Number.isFinite(ensureMotionProgram(robot).cycleTimerStartedAt);
-    const gripObjectRefsInUse = new Set();
     const traversal = steps.map((step, cursor) => ({ step, cursor, direction: 1 }));
     if (reverseRepeat && steps.length > 1) {
         for (let cursor = steps.length - 2; cursor >= 0; cursor -= 1) {
@@ -44522,34 +45382,12 @@ function preflightRobotMotion(robot, steps, { reverseRepeat = false, timerOnly =
                 validateWaitStep(robot, step);
                 return;
             }
+            if (isIoMotion(step.motion)) { normalizeProgramIoStep(step); return; }
             if (timerOnly) return;
             if (isMotionPointMotion(step.motion)) {
                 applyRobotTravelAxis(robot, step.externalAxes, { syncPresentation: false });
             }
-            if (isGripObjectMotion(step.motion)) {
-                getDirectionalGripActions(step.motion, {
-                    cursor,
-                    direction,
-                    stepCount: steps.length,
-                    repeat: false,
-                    reverseRepeat
-                }).forEach((gripMotion) => {
-                    const action = gripMotion === 'GRIP_USE' ? 'use' : 'release';
-                    const resolved = resolveGripObjectReference(step.gripObjectRef, action);
-                    if (gripMotion === 'GRIP_USE') {
-                        if (!resolved || isGripObjectModelInUse(resolved.model) || gripObjectRefsInUse.has(step.gripObjectRef)) {
-                            throw new Error(`${step.name}: 물건 잡기 대상을 사용할 수 없습니다.`);
-                        }
-                        gripObjectRefsInUse.add(step.gripObjectRef);
-                    } else {
-                        if (!gripObjectRefsInUse.has(step.gripObjectRef) && !findGripObjectForReference(step.gripObjectRef)) {
-                            throw new Error(`${step.name}: 물건 잡기 대상을 찾을 수 없습니다.`);
-                        }
-                        gripObjectRefsInUse.delete(step.gripObjectRef);
-                    }
-                });
-                return;
-            }
+
             if (step.motion === 'DELAY') {
                 if (!Number.isFinite(step.delaySeconds)
                     || step.delaySeconds < MIN_DELAY_SECONDS
@@ -45358,6 +46196,7 @@ function createMotionSegment(session, timestamp) {
     session.currentStepId = step.id;
     session.reachedStepIds.add(step.id);
     markMotionStepExecutionEdge(robot, step);
+    if (isIoMotion(step.motion)) { normalizeProgramIoStep(step); return { type: step.motion, step, startTime: timestamp, duration: 0 }; }
     if (step.motion === 'WAIT') {
         const targetRobot = findProgramRobot(step.waitRobotInstanceId);
         const targetProgram = ensureMotionProgram(targetRobot);
@@ -45403,22 +46242,7 @@ function createMotionSegment(session, timestamp) {
             duration: 0
         };
     }
-    if (isGripObjectMotion(step.motion)) {
-        const gripActions = getDirectionalGripActions(step.motion, {
-            cursor: session.cursor,
-            direction: session.direction,
-            stepCount: session.steps.length,
-            repeat: session.repeat,
-            reverseRepeat: session.reverseRepeat
-        });
-        return {
-            type: gripActions[0],
-            gripActions,
-            step,
-            startTime: timestamp,
-            duration: 0
-        };
-    }
+
     const isHome = isHomeMotion(step.motion);
     const motionCommand = isHome
         ? { motion: 'MOVJ', speed: 100 }
@@ -45504,6 +46328,12 @@ function createMotionSegment(session, timestamp) {
 
 function advanceMotionSegment(session, timestamp) {
     const { robot, segment } = session;
+    if (isIoMotion(segment.type)) {
+        const step = segment.step;
+        if (segment.type === 'IO_OUT') { writeOlpAddress('Out[' + step.ioAddress + ']', step.ioValue); return true; }
+        ensureMotionProgram(robot).progress = motionSessionProgress(session, 0);
+        return readOlpSimulatorBit('IN', step.ioAddress) === step.ioValue;
+    }
     if (segment.type === 'WAIT') {
         const waitState = getMotionWaitState(session, segment);
         if (waitState.error) throw new Error(waitState.error);
@@ -45547,39 +46377,18 @@ function advanceMotionSegment(session, timestamp) {
         program.progress = motionSessionProgress(session, 1);
         return true;
     }
-    if (isGripObjectMotion(segment.type)) {
-        // Repeat controls can be changed while a session is running. Resolve
-        // the boundary actions at execution time so a toggle made while the
-        // endpoint command is pending cannot leave the object state inverted.
-        getDirectionalGripActions(segment.step.motion, {
-            cursor: session.cursor,
-            direction: session.direction,
-            stepCount: session.steps.length,
-            repeat: session.repeat,
-            reverseRepeat: session.reverseRepeat
-        }).forEach((gripMotion) => {
-            if (!applyProgramGripObjectAction(robot, segment.step, gripMotion)) {
-                throw new Error(`${segment.step.name}: 물건 잡기/놓기 명령을 실행할 수 없습니다.`);
-            }
-        });
-        const program = ensureMotionProgram(robot);
-        program.progress = motionSessionProgress(session, 1);
-        return true;
-    }
-    const elapsed = timestamp - segment.startTime;
+
+    const rawElapsed = timestamp - segment.startTime;
+    const moving = ['MOVJ', 'MOVL', 'HOME'].includes(segment.type);
+    const clock = moving ? advanceMotionSpeedClock(segment, rawElapsed, state.programSpeedOverride) : null;
+    const elapsed = clock ? clock.elapsedMilliseconds : rawElapsed;
     const rapidMoveEnabled = (segment.type === 'MOVJ' || segment.type === 'HOME')
         && segment.rapidMove?.enabled === true;
     let linearProgress;
     let progress;
     let rapidMoveSettling = false;
     if (rapidMoveEnabled) {
-        const previousTimestamp = Number.isFinite(segment.rapidMove.lastTimestamp)
-            ? segment.rapidMove.lastTimestamp
-            : timestamp;
-        const deltaSeconds = Math.max(0, Math.min(
-            RAPID_MOVE_DEFAULTS.maxStepSeconds,
-            (timestamp - previousTimestamp) / 1000
-        ));
+        const deltaSeconds = Math.min(RAPID_MOVE_DEFAULTS.maxStepSeconds, clock.deltaMilliseconds / 1000) * clock.scale;
         segment.rapidMove.lastTimestamp = timestamp;
         const rapidMoveResult = advanceRapidMoveState(
             segment.rapidMove,
@@ -45594,7 +46403,7 @@ function advanceMotionSegment(session, timestamp) {
         progress = rapidMoveResult.progress;
         if (rapidMoveResult.completed && !Number.isFinite(segment.rapidMove.completedAt)) {
             segment.rapidMove.completedAt = timestamp;
-            segment.motionDuration = Math.max(0, timestamp - segment.startTime);
+            segment.motionDuration = elapsed;
             segment.duration = segment.motionDuration + MOTION_SETTLING_DELAY_SECONDS * 1000;
         }
         rapidMoveSettling = rapidMoveResult.completed
@@ -45785,7 +46594,15 @@ function getModelTransparencyForObject(object, model) {
 }
 
 function isModelOutlineSelectionTarget(mesh, model) {
-    if (!mesh || !model || state.selectedModel !== model) return false;
+    if (!mesh || !model) return false;
+    if (state.modelSelection?.size) {
+        for (let current = mesh; current; current = current.parent) {
+            if (state.modelSelection.get(current) === model) return true;
+            if (current === model) break;
+        }
+        return false;
+    }
+    if (state.selectedModel !== model) return false;
     const selectedPart = state.selectedModelPart;
     if (!selectedPart || selectedPart === model) return true;
     for (let current = mesh; current && current !== model; current = current.parent) {
@@ -45833,7 +46650,18 @@ function syncModelOutlines() {
                 disposeModelOutlineLine(mesh.userData.outlineLine);
             }
             if (!mesh.userData.outlineLine) {
-                const edgeGeometry = new THREE.EdgesGeometry(mesh.geometry, 28);
+                const positions = mesh.geometry.getAttribute('position');
+                const packedPositions = positions.isInterleavedBufferAttribute
+                    ? Float32Array.from({ length: positions.count * 3 }, (_, index) => (
+                        index % 3 === 0 ? positions.getX(Math.floor(index / 3))
+                            : index % 3 === 1 ? positions.getY(Math.floor(index / 3)) : positions.getZ(Math.floor(index / 3))
+                    )) : positions.array;
+                const edgeGeometry = new THREE.BufferGeometry();
+                edgeGeometry.setAttribute('position', new THREE.BufferAttribute(
+                    buildCleanOutlinePositions(packedPositions, mesh.geometry.index?.array, {
+                        minimumAspectRatio: model.userData.manifest || model.userData.sourceExtension === 'stl' ? 0.01 : 0
+                    }), 3
+                ));
                 const lineMaterial = new THREE.LineBasicMaterial({
                     color: 0x000000,
                     transparent: true,
@@ -45842,6 +46670,13 @@ function syncModelOutlines() {
                     depthWrite: false,
                     toneMapped: false
                 });
+                // Keep lines 0.05 mm in front of their surface to avoid broken
+                // contours from depth-buffer competition on STL triangles.
+                lineMaterial.onBeforeCompile = shader => {
+                    shader.vertexShader = shader.vertexShader.replace('#include <project_vertex>',
+                        '#include <project_vertex>\nmvPosition.z += 0.05;\ngl_Position = projectionMatrix * mvPosition;');
+                };
+                lineMaterial.customProgramCacheKey = () => 'clean-model-outline-depth-v1';
                 const line = new THREE.LineSegments(edgeGeometry, lineMaterial);
                 line.name = 'Cartoon Outline';
                 line.renderOrder = 30;
@@ -46210,6 +47045,7 @@ function updateUIStatus() {
     renderToolLoadInfoPanel();
     refreshImportPlacementOptions();
     updatePanelLauncher('collaboration-panel');
+    updatePanelLauncher('workobject-panel');
     refreshInterferenceZoneDialogRobotOptions();
     renderInterferenceZonePanel();
     updateInterferenceZoneVisuals();
@@ -46353,7 +47189,7 @@ function installSimulationManualGuide() {
         });
         const robot = activeManualRobot();
         const pose = robot && getCurrentTcpPoseBase(robot);
-        const tcpWorld = pose ? robot.localToWorld(pose.position.clone()) : new THREE.Vector3();
+        const tcpWorld = pose ? getRobotControllerBaseFrame(robot).localToWorld(pose.position.clone()) : new THREE.Vector3();
         return entries.sort((left, right) => (
             (left.upward >= 0.65 ? 0 : 1) - (right.upward >= 0.65 ? 0 : 1)
             || left.point.distanceToSquared(tcpWorld) - right.point.distanceToSquared(tcpWorld)
@@ -46389,7 +47225,7 @@ function installSimulationManualGuide() {
         if (!robot || !equipment) return false;
         const startAngles = robot.userData.joints.map((joint) => joint.angle);
         const pose = getCurrentTcpPoseBase(robot);
-        const tcpWorld = pose ? robot.localToWorld(pose.position.clone()) : new THREE.Vector3();
+        const tcpWorld = pose ? getRobotControllerBaseFrame(robot).localToWorld(pose.position.clone()) : new THREE.Vector3();
         state.snapMoveMode = true;
         updateSimulationSnapButton();
 
@@ -46457,8 +47293,7 @@ function installSimulationManualGuide() {
         const equipment = await importTestModelFile(equipmentFile, 'scene', { testModel: true });
         const tool = await importTestModelFile(toolFile, 'tcp', {
             testModel: true,
-            testToolPositionZero: true,
-            testToolRotationX: robot.userData.manifest?.robotType === 'scara'
+            testToolPositionZero: true
         });
         if (!equipment || !tool) throw new Error('The Test assets could not be prepared.');
         applyTestToolCollisionProfile(tool);
@@ -46784,7 +47619,9 @@ function installSimulationManualGuide() {
 }
 
 function requiresContinuousRendering() {
-    return isViewWindowOpen()
+    return equipmentApp.active(state.ioFunctionMappings)
+        || activeConveyorMappings().length > 0
+        || isViewWindowOpen()
         || state.trace.running
         || isVirtualControllerActive()
         || state.collaboration.remoteMotionStates.size > 0
@@ -46822,12 +47659,13 @@ function animate(timestamp = performance.now()) {
     applyVirtualControllerFrame(timestamp);
     applyRemoteCollaborationMotion(timestamp);
     updateMotionSessions(timestamp);
+    equipmentApp.update(timestamp, state.ioFunctionMappings);
+    updateConveyorSimulation(timestamp);
     updateCycleTimeReadout(timestamp);
     const collision = checkSceneCollisions();
-    getVirtualControllerSessions().forEach((controller) => {
-        updateControllerGripInference(timestamp, collision, controller);
-    });
+
     const collisionFresh = !state.collision.lastCheckSkipped;
+    if (collisionFresh && equipmentApp.collision(asCollisionResults(collision), collisionStopsMotion())) setStatus('충돌이 감지되어 설비를 정지했습니다.', '#ef4444');
     if (collisionFresh) releaseClearedMotionCollisionIgnores(collision);
     const blockingMotionCollision = collisionStopsMotion()
         ? getBlockingMotionCollision(collision)
@@ -46851,6 +47689,7 @@ function animate(timestamp = performance.now()) {
         captureCollisionSafeRobotPoses();
     }
     evaluateInterferenceZones(timestamp);
+    updateSelectedViewPivot();
     state.controls.update();
     updateCameraScaledTcpAxes();
     updateCameraScaledWorkObjectAxes();
@@ -46885,7 +47724,7 @@ function onResize() {
     state.camera.updateProjectionMatrix();
     state.renderer.setSize(w, h);
     [el.modelBrowserPanel, el.jogPanel, el.tcpProfilePanel, el.workObjectPanel, el.virtualControllerPanel, el.collaborationPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.ioSimulatorPanel, el.programPanel, el.tracePanel, el.measurementPanel, el.shapePanel, el.toolLoadInfoPanel, el.workOriginDialog].forEach((panel) => {
-        if (panel?.dataset.userResized === 'true') normalizePanelResizeBox(panel);
+        if (panel?.dataset.userResized === 'true') normalizePanelResizeBox(panel, { viewportResize: true });
         else if (panel === el.workOriginDialog) constrainWorkOriginDialogToLayoutBounds();
     });
     resizeViewWindow();

@@ -749,7 +749,7 @@ assert.doesNotMatch(
 );
 assert.match(
     viewerSource,
-    /if \(force\) state\.collision\.system\.prepare\(collisionModels\);\s*const result = force[\s\S]*?checkAll\(collisionModels, \{ allowWarmHitReuse: false \}\)/,
+    /if \(force\) state\.collision\.system\.prepare\(collisionModels\);\s*const rawResult = force[\s\S]*?checkAll\(collisionModels, \{ allowWarmHitReuse: false, pairFilter: isSimulationCollisionPair, meshPairFilter: shouldCheckSceneCollisionMeshes \}\)/,
     'A forced viewer scan must prepare every BVH and consume every collision hit without stale reuse.'
 );
 assert.match(
