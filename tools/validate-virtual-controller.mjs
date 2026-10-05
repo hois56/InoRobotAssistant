@@ -127,7 +127,7 @@ assert.match(html, /id="virtual-controller-source"/);
 assert.match(html, /id="virtual-controller-kind"/);
 assert.match(html, /id="virtual-controller-ip"/);
 assert.match(html, /class="virtual-controller-controller-settings"/);
-assert.match(html, /id="virtual-controller-grip-toggle"/);
+assert.doesNotMatch(html, /id="virtual-controller-grip-toggle"/);
 assert.doesNotMatch(html, /virtual-controller-endpoint|127\.0\.0\.1:5055/);
 assert.doesNotMatch(html, /컨트롤러 포트|3333 \(고정\)/);
 assert.match(html, /id="virtual-controller-bridge-start"/);
@@ -163,9 +163,9 @@ assert.match(main, /Virtual controller bridge health check failed\./);
 assert.match(main, /Virtual controller bridge health check returned an unusable response\./);
 assert.match(main, /applyVirtualControllerFrame\(timestamp\)/);
 assert.match(main, /function monitorVirtualControllerStream\(controller(?: = state\.virtualController)?\)/);
-assert.match(main, /enabled: false,[\s\S]*?stationaryPose/);
-assert.match(main, /!controller\.gripInference\.enabled/);
-assert.match(main, /CONTROLLER_GRIP_CONTACT_HOLD_MS = 300/);
+assert.doesNotMatch(main, /gripInference:/);
+assert.doesNotMatch(main, /updateControllerGripInference/);
+assert.doesNotMatch(main, /CONTROLLER_GRIP_CONTACT_HOLD_MS/);
 assert.match(main, /VIRTUAL_CONTROLLER_STREAM_STALL_MS = 750/);
 const sceneSelectionFunction = main.match(
     /function selectSceneModel\([\s\S]*?(?=\r?\nfunction beginNumericTransformHistory)/

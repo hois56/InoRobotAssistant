@@ -332,8 +332,8 @@ assert(tubeVisualSource.includes('const geometry = sourceGeometry.clone()')
 assert(!tubeVisualSource.includes('new THREE.TubeGeometry(')
     && !tubeVisualSource.includes('createScaraTubeConnector(')
     && !tubeVisualSource.includes('createScaraTubeGeometry('), 'SCARA conduit must not be replaced by generated tube or connector geometry');
-assert(viewerSource.includes('robot.add(tubeMesh)')
-    && tubeVisualSource.includes('if (tube.parent !== robot) robot.add(tube)')
+assert(viewerSource.includes('controllerBaseFrame.add(tubeMesh)')
+    && tubeVisualSource.includes('if (tube.parent !== controllerBaseFrame) controllerBaseFrame.add(tube)')
     && !viewerSource.includes('j1.group.add(robot.userData.scaraTube)')
     && !viewerSource.includes('j2.group.add(robot.userData.scaraTube)'), 'SCARA conduit must remain in the fixed P0 frame');
 assert(tubeVisualSource.includes('getScaraTubeJ1SocketOffset')
@@ -363,7 +363,7 @@ const outlineSource = viewerSource.slice(
     viewerSource.indexOf('function removeModelOutlines(')
 );
 assert(outlineSource.includes('!mesh.userData?.excludeFromOutline'), 'Outline selection must honor the SCARA conduit exclusion flag');
-assert(tubeVisualSource.includes('if (tube.parent !== robot) robot.add(tube)')
+assert(tubeVisualSource.includes('if (tube.parent !== controllerBaseFrame) controllerBaseFrame.add(tube)')
     && !tubeVisualSource.includes('weightBuckets')
     && !tubeVisualSource.includes('scaraCosines'), 'SCARA CD conduit must use a fixed-end planar mapping instead of progressive per-vertex rotation');
 for (const angle of [-132, -120, -45, 0, 45, 120, 132]) {

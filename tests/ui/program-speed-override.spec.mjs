@@ -1,0 +1,29 @@
+import {test,expect} from '@playwright/test';
+async function setup(page){
+ const errors=[];page.on('pageerror',error=>errors.push(error.message));
+ await page.route('**/2_3DSimulation/main.js*',async route=>{const response=await route.fetch();await route.fulfill({response,body:await response.text()+'\nwindow.__speed={state,ensureMotionProgram,captureRobotMotionStep,setJointAngle,getCurrentTcpPoseBase,createMotionSegment,advanceMotionSegment,serializeWorkspaceSnapshot,restoreWorkspaceSnapshot,serializeMotionProgramFile,normalizeMotionProgramFile,restoreMotionProgramFileData,animateOlpJointMove,applyRobotTravelAxis,getRobotExternalAxes};'});});
+ await page.goto('/2_3DSimulation/index.html');await page.waitForFunction(()=>window.__speed);await page.locator('#model-select').selectOption('robot:IR-R10H-120');await page.waitForFunction(()=>window.__speed.state.models.some(m=>m.userData.tcpFrame));await page.locator('[data-panel-toggle="program-panel"]').click();return errors;
+}
+test('전체 속도는 간섭 회피 왼쪽에 표시하고 범위와 프로젝트·프로그램 저장을 유지한다',async({page})=>{
+ const errors=await setup(page),input=page.locator('#program-speed-override');await expect(input).toHaveValue('100');await expect(input).toHaveAttribute('min','1');await expect(input).toHaveAttribute('max','100');
+ const a=await input.boundingBox(),b=await page.locator('#program-toggle-robot-avoidance').boundingBox();expect(a.x+a.width).toBeLessThan(b.x);
+ await input.fill('');await input.fill('10');await input.blur();expect(await page.evaluate(()=>window.__speed.state.programSpeedOverride)).toBe(10);
+ const data=await page.evaluate(async()=>{const a=window.__speed,robot=a.state.models.find(m=>m.userData.tcpFrame);a.ensureMotionProgram(robot).steps=[{...a.captureRobotMotionStep(robot),speed:10}];const file=a.serializeMotionProgramFile(),snapshot=JSON.parse(JSON.stringify(a.serializeWorkspaceSnapshot()));a.state.programSpeedOverride=100;await a.restoreWorkspaceSnapshot(snapshot);return {override:a.state.programSpeedOverride,step:a.ensureMotionProgram(a.state.models.find(m=>m.userData.tcpFrame)).steps[0].speed,file:a.normalizeMotionProgramFile(file).programSpeedOverride};});expect(data).toEqual({override:10,step:10,file:10});await expect(input).toHaveValue('10');
+ await input.fill('');await input.fill('0');await input.blur();await expect(input).toHaveValue('1');await input.fill('');await input.fill('101');await input.blur();await expect(input).toHaveValue('100');expect(errors).toEqual([]);
+});
+test('실제 이동 진행은 전체 속도를 곱하고 외부축과 원점 복귀에도 적용하며 대기는 유지한다',async({page})=>{
+ const errors=await setup(page);const result=await page.evaluate(async()=>{
+  const a=window.__speed,robot=a.state.models.find(m=>m.userData.tcpFrame),program=a.ensureMotionProgram(robot),initial=robot.userData.joints.map(j=>j.angle);
+  const reset=()=>{initial.forEach((angle,i)=>a.setJointAngle(robot.userData.joints[i],angle,false));robot.updateMatrixWorld(true);a.applyRobotTravelAxis(robot,[0,0,0,0,0,0]);};
+  a.setJointAngle(robot.userData.joints[0],initial[0]+20,false);robot.updateMatrixWorld(true);const step={...a.captureRobotMotionStep(robot),speed:10};program.steps=[step];reset();
+  const sessionFor=step=>({robot,steps:[step],cursor:0,direction:1,repeat:false,reverseRepeat:false,reachedStepIds:new Set()});
+  const run=(override,tick)=>{reset();a.state.programSpeedOverride=override;const session=sessionFor(step);session.segment=a.createMotionSegment(session,0);for(let n=0;n<=300;n++)a.advanceMotionSegment(session,n*tick);return {angle:robot.userData.joints[0].angle,progress:program.progress,speed:step.speed};};
+  const fast=run(100,1.6),slow=run(10,16);
+  reset();const pose=a.getCurrentTcpPoseBase(robot),still={...a.captureRobotMotionStep(robot),speed:10};
+  const check=(type,override,time)=>{reset();a.state.programSpeedOverride=override;const session=sessionFor(still);session.segment={type,step:still,startTime:0,motionDuration:1000,duration:1000,startAngles:initial,targetAngles:initial,startPose:pose,targetPose:pose};const done=a.advanceMotionSegment(session,time);return {done,progress:program.progress};};
+  const linear=check('MOVL',10,1000),home=check('HOME',10,1000),delay=check('DELAY',10,1000);
+  reset();a.state.programSpeedOverride=10;const externalStep={...still,externalAxes:[100,0,0,0,0,0]},session=sessionFor(externalStep);session.segment=a.createMotionSegment(session,0);a.advanceMotionSegment(session,1000);const external=a.getRobotExternalAxes(robot)[0];
+  const live=sessionFor(still);live.segment={type:'MOVL',step:still,startTime:0,motionDuration:1000,duration:1000,startAngles:initial,targetAngles:initial,startPose:pose,targetPose:pose};reset();a.state.programSpeedOverride=10;a.advanceMotionSegment(live,1000);a.state.programSpeedOverride=100;a.advanceMotionSegment(live,1100);const liveProgress=program.progress;
+  const olpRun=async override=>{reset();a.state.programSpeedOverride=override;let count=0;await a.animateOlpJointMove(robot,step.joints,10,{onProgress:()=>count++,shouldStop:()=>count>=20});return Math.abs(robot.userData.joints[0].angle-initial[0]);};const olpFast=await olpRun(100),olpSlow=await olpRun(10);reset();a.state.programSpeedOverride=100;return {fast,slow,linear,home,delay,external,liveProgress,olpFast,olpSlow,initial:initial[0]};
+ });expect(result.fast.angle).not.toBe(result.initial);expect(result.slow.angle).toBeCloseTo(result.fast.angle,6);expect(result.slow.progress).toBeCloseTo(result.fast.progress,6);expect(result.fast.speed).toBe(10);expect(result.slow.speed).toBe(10);expect(result.linear).toEqual({done:false,progress:0.1});expect(result.home).toEqual({done:false,progress:0.1});expect(result.delay.done).toBe(true);expect(result.liveProgress).toBeCloseTo(0.2,6);expect(result.olpFast).toBeGreaterThan(0);expect(result.olpSlow).toBeLessThan(result.olpFast/2);expect(result.external).toBeGreaterThan(0);expect(result.external).toBeLessThan(100);expect(errors).toEqual([]);
+});

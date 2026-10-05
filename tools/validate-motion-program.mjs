@@ -20,7 +20,6 @@ import {
     formatMotionPointName,
     formatPositionPointRecordLine,
     isMotionPointMotion,
-    isGripObjectMotion,
     isWaitMotion,
     isHomeMotion,
     isValidMotionPointLabel,
@@ -37,7 +36,6 @@ import {
     advanceMotionCursor,
     resolveDirectionalMotionType,
     resolveMotionSegmentCommand,
-    getDirectionalGripActions,
     getDirectionalTimerActions,
     cloneMotionProgram,
     reorderMotionSteps,
@@ -205,18 +203,6 @@ assert.deepEqual(
     { motion: 'MOVJ', speed: 50 },
     'A forward segment must retain its target row\'s motion type and speed.'
 );
-assert.deepEqual(getDirectionalGripActions('GRIP_USE', {
-    cursor: 1, direction: 1, stepCount: 3, reverseRepeat: true
-}), ['GRIP_USE'], 'A forward grip command must execute its declared action away from a boundary.');
-assert.deepEqual(getDirectionalGripActions('GRIP_RELEASE', {
-    cursor: 2, direction: 1, stepCount: 3, reverseRepeat: true
-}), ['GRIP_RELEASE', 'GRIP_USE'], 'The last grip command must be inverted before the returning leg.');
-assert.deepEqual(getDirectionalGripActions('GRIP_USE', {
-    cursor: 0, direction: -1, stepCount: 3, reverseRepeat: true
-}), ['GRIP_RELEASE', 'GRIP_USE'], 'The first grip command must be inverted before the next forward leg.');
-assert.deepEqual(getDirectionalGripActions('GRIP_USE', {
-    cursor: 0, direction: 1, stepCount: 1, reverseRepeat: true
-}), ['GRIP_USE', 'GRIP_RELEASE'], 'A one-row reverse-repeat grip command must alternate its object state.');
 assert.deepEqual(getDirectionalTimerActions('MOVJ', {
     cursor: 2, direction: 1, stepCount: 3, reverseRepeat: true
 }), []);
@@ -246,9 +232,6 @@ assert.equal(formatMotionPointName(0), 'P[0]');
 assert.equal(isMotionPointMotion('MOVJ'), true);
 assert.equal(isMotionPointMotion('MOVL'), true);
 assert.equal(isMotionPointMotion('DELAY'), false);
-assert.equal(isGripObjectMotion('GRIP_USE'), true);
-assert.equal(isGripObjectMotion('GRIP_RELEASE'), true);
-assert.equal(isGripObjectMotion('MOVJ'), false);
 assert.equal(isValidMotionPointLabel('Pickup_01'), true);
 assert.equal(isValidMotionPointLabel(''), true);
 assert.equal(isValidMotionPointLabel('1Pickup'), false);
@@ -2377,7 +2360,7 @@ assert.equal((htmlSource.match(/data-position-arm=/g) || []).length, 4, 'The pos
 assert.equal((htmlSource.match(/data-position-external=/g) || []).length, 6, 'The position dialog must expose six external axes.');
 assert.ok(mainSource.includes("import { buildStepSnapCandidates } from '../3_ToolSelector/snap-geometry.mjs")
     && mainSource.includes('function moveRobotTcpToSimulationSnap(snap)')
-    && mainSource.includes('position: robot.worldToLocal(snap.worldPoint.clone())')
+    && mainSource.includes('position: getRobotControllerBaseFrame(robot).worldToLocal(snap.worldPoint.clone())')
     && mainSource.includes('positionTolerance: 0.001'), 'Simulation snap movement must reuse Mode D candidates and solve the selected point in robot Base coordinates.');
 assert.ok(mainSource.includes('formatPositionPointRecordLine({')
     && mainSource.includes("async function saveStandalonePFile(content, suggestedName = 'P.pts')")

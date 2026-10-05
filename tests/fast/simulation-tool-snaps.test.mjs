@@ -7,7 +7,7 @@ const source = readFileSync(new URL('../../2_3DSimulation/main.js', import.meta.
 const names = ['findSceneModelAncestor', 'isSceneModelObjectPickable', 'isSimulationSnapModel',
   'isModelTreeVisible', 'getModelTreeAttachedModels', 'getSimulationSnapModels',
   'getAllSimulationSnapMeshes', 'isSimulationSnapRobotModel', 'isSimulationSnapRobotMesh',
-  'pickSimulationSnapRobotAtPointer'];
+  'getSimulationSnapViewport', 'pickSimulationSnapRobotAtPointer'];
 const functions = names.map(name => source.match(new RegExp(`function ${name}\\([^]*?\\n\\}`))[0]).join('\n');
 
 function fixture() {
@@ -30,7 +30,7 @@ function fixture() {
     renderer: { domElement: { getBoundingClientRect: () => ({ left: 0, top: 0, width: 100, height: 100 }) } },
     camera: { updateMatrixWorld() {} },
     snapVisibilityRaycaster: { setFromCamera() {}, intersectObjects: () => [{ object: toolMesh }] } };
-  const context = vm.createContext({ state, THREE: { Vector2: class {} },
+  const context = vm.createContext({ state, el: {}, THREE: { Vector2: class {} },
     getArticulatedRobots: () => [robot], isPrimitiveShapeModel: () => false,
     isSketchFeatureModel: () => false, isCad2dModel: () => false });
   vm.runInContext(functions, context);

@@ -1,5 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
+const testPort = Number(process.env.TEST_SERVER_PORT || 4173);
+
 export default defineConfig({
   testDir: './tests/ui',
   fullyParallel: false,
@@ -7,7 +9,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? 'github' : 'list',
   use: {
-    baseURL: 'http://127.0.0.1:4173',
+    baseURL: `http://127.0.0.1:${testPort}`,
     browserName: 'chromium',
     headless: true,
     trace: 'retain-on-failure',
@@ -15,7 +17,7 @@ export default defineConfig({
   },
   webServer: {
     command: 'node tools/static-server.mjs',
-    url: 'http://127.0.0.1:4173/health',
+    url: `http://127.0.0.1:${testPort}/health`,
     reuseExistingServer: !process.env.CI,
     timeout: 30_000
   }

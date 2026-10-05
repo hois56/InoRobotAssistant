@@ -914,7 +914,8 @@ export class MeshCollisionSystem {
 
     checkRootPair(left, right, includeSelf, stats, {
         now = performance.now(),
-        allowWarmHitReuse = true
+        allowWarmHitReuse = true,
+        meshPairFilter = null
     } = {}) {
         // A link only needs one representative contact with this model pair.
         // Continuing to inspect every overlapping CAD sub-mesh is redundant
@@ -931,6 +932,7 @@ export class MeshCollisionSystem {
                 ? rightMeshesByUuid.get(cachedEntry.rightMeshUuid)
                 : null;
             if (cachedRightMesh
+                && (!meshPairFilter || meshPairFilter(left.root, leftMesh.mesh, right.root, cachedRightMesh.mesh))
                 && !isAttachedToolMountContact(left.root, leftMesh.mesh, right.root, cachedRightMesh.mesh)
                 && !isAttachedArmLoadHostLinkContact(left.root, leftMesh.mesh, right.root, cachedRightMesh.mesh)) {
                 // AABB overlap is only a broad-phase result. It can remain
@@ -965,6 +967,7 @@ export class MeshCollisionSystem {
             }
             this.hitMeshPairCache.delete(cacheKey);
             for (const rightMesh of right.meshes) {
+                if (meshPairFilter && !meshPairFilter(left.root, leftMesh.mesh, right.root, rightMesh.mesh)) continue;
                 if (rightMesh === cachedRightMesh) continue;
                 if (!includeSelf && left.root === right.root) continue;
                 if (left.root === right.root
@@ -998,6 +1001,8 @@ export class MeshCollisionSystem {
 
     checkAll(objects, {
         includeSelf = false,
+        pairFilter = null,
+        meshPairFilter = null,
         changedRoots = null,
         now = performance.now(),
         allowWarmHitReuse = true
@@ -1048,6 +1053,7 @@ export class MeshCollisionSystem {
             for (let rightIndex = rightStart; rightIndex < colliders.length; rightIndex += 1) {
                 const right = colliders[rightIndex];
                 if (left === right) continue;
+                if (pairFilter && !pairFilter(left.root, right.root)) continue;
                 if (left.root.userData?.collisionGroup
                     && left.root.userData.collisionGroup === right.root.userData?.collisionGroup
                     && left.root.userData?.collisionGroup === 'ignore-self') continue;
@@ -1061,7 +1067,7 @@ export class MeshCollisionSystem {
                 let pairHits = this.rootPairHitCache.get(pairKey)?.hits;
                 if (mustRefresh || !pairHits) {
                     stats.refreshedModelPairs += 1;
-                    pairHits = this.checkRootPair(left, right, includeSelf, stats, { now, allowWarmHitReuse });
+                    pairHits = this.checkRootPair(left, right, includeSelf, stats, { now, allowWarmHitReuse, meshPairFilter });
                     this.rootPairHitCache.set(pairKey, {
                         leftRoot: left.root,
                         rightRoot: right.root,

@@ -2,6 +2,21 @@ import { normalizeWorkObjects } from './workobject-core.mjs';
 
 export const MOTION_PROJECT_SCHEMA_VERSION = 1;
 export const DEFAULT_MOVJ_SPEED = 100;
+export function normalizeProgramSpeedOverride(value) {
+    const number = value === '' || value == null ? 100 : Number(value);
+    return Number.isFinite(number) ? Math.round(Math.min(100, Math.max(1, number))) : 100;
+}
+
+// Advance the motion clock independently of each command's saved speed.
+export function advanceMotionSpeedClock(segment, elapsedMilliseconds, override) {
+    const elapsed = Math.max(0, Number(elapsedMilliseconds) || 0);
+    const deltaMilliseconds = Math.max(0, elapsed - (segment.speedOverridePreviousElapsed || 0));
+    const scale = normalizeProgramSpeedOverride(override) / 100;
+    segment.speedOverrideElapsed = (segment.speedOverrideElapsed || 0) + deltaMilliseconds * scale;
+    segment.speedOverridePreviousElapsed = elapsed;
+    return { elapsedMilliseconds: segment.speedOverrideElapsed, deltaMilliseconds, scale };
+}
+
 export const DEFAULT_MOVL_SPEED = 1500;
 export const MAX_MOVL_SPEED = 2500;
 export const DEFAULT_DELAY_SECONDS = 1;
@@ -479,22 +494,7 @@ export function resolveMotionSegmentCommand(steps, cursor, direction) {
     };
 }
 
-export function getDirectionalGripActions(motion, playback = {}) {
-    if (!isGripObjectMotion(motion)) return [];
-    const direction = Number(playback.direction) < 0 ? -1 : 1;
-    const action = direction < 0
-        ? motion === 'GRIP_USE' ? 'GRIP_RELEASE' : 'GRIP_USE'
-        : motion;
-    const actions = [action];
-    const advanced = advanceMotionCursor(playback);
-    if (playback.reverseRepeat && advanced.boundary) {
-        // Motion points do not need to be replayed at a ping-pong boundary,
-        // but stateful commands must be inverted there so the next leg starts
-        // with the same object state as the corresponding forward leg.
-        actions.push(action === 'GRIP_USE' ? 'GRIP_RELEASE' : 'GRIP_USE');
-    }
-    return actions;
-}
+
 
 export function getDirectionalTimerActions(motion, playback = {}) {
     if (motion !== 'TIME_START' && motion !== 'TIME_OUT') return [];
@@ -526,9 +526,7 @@ export function isMotionPointMotion(motion) {
     return motion === 'MOVJ' || motion === 'MOVL';
 }
 
-export function isGripObjectMotion(motion) {
-    return motion === 'GRIP_USE' || motion === 'GRIP_RELEASE';
-}
+
 
 export function isWaitMotion(motion) {
     return motion === 'WAIT';
@@ -651,8 +649,8 @@ export function cloneMotionProgram(program) {
         lastCycleTimeSeconds: Number.isFinite(program?.lastCycleTimeSeconds)
             ? Math.max(0, Number(program.lastCycleTimeSeconds))
             : null,
-        steps: (program?.steps || []).map((step) => {
-            const motion = step.motion === 'TIME_START'
+        steps: (program?.steps || []).filter(step => !['GRIP_USE','GRIP_RELEASE'].includes(step?.motion)).map((step) => {
+            const motion = isIoMotion(step.motion) ? step.motion : step.motion === 'TIME_START'
                 ? 'TIME_START'
                 : step.motion === 'TIME_OUT'
                     ? 'TIME_OUT'
@@ -660,10 +658,6 @@ export function cloneMotionProgram(program) {
                         ? 'DELAY'
                         : step.motion === 'VIEW'
                             ? 'VIEW'
-                        : step.motion === 'GRIP_USE'
-                            ? 'GRIP_USE'
-                        : step.motion === 'GRIP_RELEASE'
-                            ? 'GRIP_RELEASE'
                         : step.motion === 'WAIT'
                             ? 'WAIT'
                         : step.motion === 'HOME'
@@ -685,16 +679,13 @@ export function cloneMotionProgram(program) {
                         ? 'Time Start'
                         : motion === 'TIME_OUT'
                         ? 'Time Out'
-                            : motion === 'GRIP_USE'
-                                ? 'Grip Use'
-                            : motion === 'GRIP_RELEASE'
-                                ? 'Grip Release'
                             : motion === 'WAIT'
                                 ? 'Wait'
                             : motion === 'HOME'
                                 ? 'Home'
                             : `View ${viewSlot + 1}`),
                 motion,
+                ...(isIoMotion(motion) ? { name: motion === 'IO_OUT' ? 'IO Out' : 'IO Wait', ...normalizeProgramIoStep(step) } : {}),
                 ...(pointMetadata || {}),
                 ...(motion === 'DELAY'
                     ? { delaySeconds: Number(step.delaySeconds) }
@@ -702,8 +693,6 @@ export function cloneMotionProgram(program) {
                         ? { speed: Number(step.speed) }
                     : motion === 'VIEW'
                             ? { viewSlot }
-                        : isGripObjectMotion(motion)
-                            ? { gripObjectRef: String(step.gripObjectRef || '').trim() }
                         : motion === 'WAIT'
                             ? {
                                 waitRobotInstanceId: String(step.waitRobotInstanceId || '').trim(),
@@ -804,7 +793,7 @@ function normalizeTcpProfiles(value, robotIndex) {
 }
 
 function normalizeStep(step, jointCount, index, fallbackPointIndex) {
-    const motion = step?.motion === 'TIME_START'
+    const motion = isIoMotion(step?.motion) ? step.motion : step?.motion === 'TIME_START'
         ? 'TIME_START'
         : step?.motion === 'TIME_OUT'
             ? 'TIME_OUT'
@@ -812,10 +801,6 @@ function normalizeStep(step, jointCount, index, fallbackPointIndex) {
                 ? 'DELAY'
                 : step?.motion === 'VIEW'
                     ? 'VIEW'
-                : step?.motion === 'GRIP_USE'
-                    ? 'GRIP_USE'
-                : step?.motion === 'GRIP_RELEASE'
-                    ? 'GRIP_RELEASE'
                 : step?.motion === 'WAIT'
                     ? 'WAIT'
                 : step?.motion === 'HOME'
@@ -829,7 +814,7 @@ function normalizeStep(step, jointCount, index, fallbackPointIndex) {
     const delaySeconds = motion === 'DELAY' ? Number(step.delaySeconds) : null;
     const speed = motion === 'MOVJ' || motion === 'MOVL' ? Number(step.speed) : null;
     const viewSlot = motion === 'VIEW' ? Number(step.viewSlot) : null;
-    const gripObjectRef = isGripObjectMotion(motion) ? requiredString(step.gripObjectRef, `Step ${index + 1} grip object`) : null;
+    const gripObjectRef = null;
     const waitRobotInstanceId = motion === 'WAIT'
         ? requiredString(step.waitRobotInstanceId, `Step ${index + 1} wait target robot`)
         : null;
@@ -886,16 +871,13 @@ function normalizeStep(step, jointCount, index, fallbackPointIndex) {
                 ? 'Time Start'
                 : motion === 'TIME_OUT'
                 ? 'Time Out'
-                : motion === 'GRIP_USE'
-                    ? 'Grip Use'
-                : motion === 'GRIP_RELEASE'
-                    ? 'Grip Release'
                 : motion === 'WAIT'
                     ? 'Wait'
                 : motion === 'HOME'
                     ? 'Home'
                 : `View ${viewSlot + 1}`),
         motion,
+        ...(isIoMotion(motion) ? { name: motion === 'IO_OUT' ? 'IO Out' : 'IO Wait', ...normalizeProgramIoStep(step) } : {}),
         ...(pointMetadata || {}),
         ...(motion === 'DELAY'
             ? { delaySeconds }
@@ -903,8 +885,6 @@ function normalizeStep(step, jointCount, index, fallbackPointIndex) {
                 ? { speed }
                 : motion === 'VIEW'
                     ? { viewSlot }
-                : isGripObjectMotion(motion)
-                    ? { gripObjectRef }
                 : motion === 'WAIT'
                     ? { waitRobotInstanceId, waitLineNumber }
                 : motion === 'HOME'
@@ -940,7 +920,7 @@ export function normalizeMotionProject(input) {
                 : null;
         if (!robotType) throw new Error(`Robot ${index + 1} has an invalid robot type.`);
         let fallbackPointIndex = 0;
-        const steps = (robot.steps || []).map((step, stepIndex) => {
+        const steps = (robot.steps || []).filter(step => !['GRIP_USE','GRIP_RELEASE'].includes(step?.motion)).map((step, stepIndex) => {
             const normalized = normalizeStep(step, jointCount, stepIndex, fallbackPointIndex);
             if (isMotionPointMotion(normalized.motion)) fallbackPointIndex += 1;
             return normalized;
@@ -1011,6 +991,15 @@ export function normalizeMotionProject(input) {
         reverseRepeatCurrentRobot,
         repeat: reverseRepeat ? false : Boolean(input.repeat),
         reverseRepeat,
+        programSpeedOverride: normalizeProgramSpeedOverride(input.programSpeedOverride),
         robots
     };
+}
+
+export function isIoMotion(motion) { return motion === 'IO_OUT' || motion === 'IO_WAIT'; }
+export function normalizeProgramIoStep(step) {
+ const address=Number(step.ioAddress),value=Number(step.ioValue);
+ if(!Number.isInteger(address)||!(address>=0&&address<=64||address>=512&&address<=2559))throw new Error('IO 번호는 0~64 또는 512~2559의 정수여야 합니다.');
+ if(value!==0&&value!==1)throw new Error('IO 값은 ON(1) 또는 OFF(0)이어야 합니다.');
+ return {ioAddress:address,ioValue:value};
 }

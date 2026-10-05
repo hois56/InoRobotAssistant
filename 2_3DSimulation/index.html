@@ -8,7 +8,7 @@
     <title>3D Simulation | INOVANCE</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=20260925-ru-panel-buttons-1">
+    <link rel="stylesheet" href="style.css?v=20261003-conveyor-settings-6">
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -675,16 +675,25 @@
         </form>
     </dialog>
 
-    <dialog id="test-model-dialog" class="simulation-reset-dialog" aria-labelledby="test-model-dialog-title">
+    <dialog id="test-model-dialog" class="simulation-reset-dialog test-model-picker" aria-labelledby="test-model-dialog-title">
         <form method="dialog">
             <div class="simulation-reset-dialog-header">
                 <i class="fa-solid fa-flask" aria-hidden="true"></i>
                 <h2 id="test-model-dialog-title">테스트 모델링 불러오기</h2>
             </div>
-            <p>테스트용 모델링을 적용하시겠습니까?<br>TCP 1번은 Test 값으로 덮어쓰기됩니다.</p>
+            <p>모델별 가져올 수량을 입력한 뒤 일괄 가져오기를 누르세요. (모델별 최대 20개, 전체 최대 100개)</p>
+            <div class="test-model-picker-body">
+                <section><h3>3D 모델링</h3><div class="test-model-grid" data-test-category="model"></div></section>
+                <section><h3>툴 (Tool)</h3>
+                    <p>선택된 로봇에 Tool로 부착합니다. 로봇이 선택되어 있지 않으면 마지막으로 선택한 로봇에 부착합니다.</p>
+                    <div class="test-model-grid" data-test-category="tool"></div>
+                </section>
+            </div>
+            <p id="test-model-total" aria-live="polite">선택 수량: 0개</p>
             <div class="simulation-reset-dialog-actions">
-                <button id="btn-cancel-test-model" type="button" class="secondary">아니오</button>
-                <button id="btn-confirm-test-model" type="button" class="primary">예</button>
+                <button id="btn-educational-test-model" type="button" class="secondary">교육용 모델링 생성</button>
+                <button id="btn-cancel-test-model" type="button" class="secondary">취소</button>
+                <button id="btn-confirm-test-model" type="button" class="primary" disabled>일괄 가져오기</button>
             </div>
         </form>
     </dialog>
@@ -973,7 +982,6 @@
                 <section id="model-transform-panel" class="model-transform-panel hidden" aria-label="선택 모델 위치 편집">
                     <div class="model-transform-heading">
                         <div>
-                            <span>SELECTED MODEL</span>
                             <strong id="selected-model-name">-</strong>
                         </div>
                     </div>
@@ -1032,7 +1040,6 @@
                             <label class="axis-z"><span>RZ</span><input id="model-rotation-z" type="number" step="0.5" value="0"></label>
                         </div>
                     </div>
-                    <p class="model-transform-help">트리에서 선택한 모델만 조정됩니다. 패널의 빈 영역을 끌어 이동하고, <i class="fa-solid fa-up-right-from-square"></i> 버튼으로 별도 창에 분리할 수 있습니다.</p>
                     <section id="model-zero-point-editor" class="model-zero-point-editor hidden" aria-label="모델 영점 변경">
                         <div class="zero-point-editor-heading">
                             <div>
@@ -1725,7 +1732,6 @@
                         </div>
                         <div class="tcp-profile-actions workobject-actions">
                             <button id="btn-register-workobject" type="button"><i class="fa-solid fa-crosshairs"></i> <span data-i18n="legacy.현재 TCP로 등록">현재 TCP로 등록</span></button>
-                            <button id="btn-focus-workobject" type="button"><i class="fa-solid fa-location-crosshairs"></i> <span data-i18n="legacy.위치로 이동">위치로 이동</span></button>
                             <button id="btn-reset-workobject" type="button"><i class="fa-solid fa-rotate-left"></i> <span data-i18n="legacy.초기화">초기화</span></button>
                             <button id="btn-apply-workobject" type="button" class="primary"><i class="fa-solid fa-check"></i> <span data-i18n="legacy.적용">적용</span></button>
                         </div>
@@ -1788,13 +1794,6 @@
                             <option value="">로봇을 선택하세요</option>
                         </select>
                     </label>
-                    <button id="virtual-controller-grip-toggle" type="button" class="virtual-controller-grip-toggle" title="충돌 시 물건 잡기/놓기 활성화" aria-label="충돌 시 물건 잡기/놓기 활성화" aria-pressed="false" data-i18n-title="legacy.충돌 시 물건 잡기/놓기 활성화" data-i18n-aria-label="legacy.충돌 시 물건 잡기/놓기 활성화">
-                        <span class="virtual-controller-grip-toggle-copy">
-                            <strong data-i18n="legacy.충돌 시 물건 잡기/놓기">충돌 시 물건 잡기/놓기</strong>
-                            <small data-i18n="legacy.충돌 상태 300ms 유지하면 실행">충돌 상태를 0.3초 유지하면 실행</small>
-                        </span>
-                        <span class="virtual-controller-grip-toggle-state" data-i18n="legacy.OFF">OFF</span>
-                    </button>
                     <button id="virtual-controller-connect" type="button" class="virtual-controller-connect">
                         <i class="fa-solid fa-plug"></i>
                         <span>연결</span>
@@ -1965,7 +1964,7 @@
                         </div>
                         <button id="io-function-mapping-close" type="button" aria-label="닫기" title="닫기"><i class="fa-solid fa-xmark"></i></button>
                     </div>
-                    <p class="io-function-mapping-help">지정한 IO 신호가 선택한 상태로 바뀌면 물건 잡기·놓기 또는 저장된 뷰 전환을 한 번 실행합니다. In은 IO 테스트에서 직접 변경하고, Out은 OLP 프로그램 출력에도 반응합니다.</p>
+                    <p class="io-function-mapping-help">동작 설정에서 등록한 실린더·외부 축·그리퍼·필름 박리·진공을 Output으로 제어합니다. 진공은 흡착과 파기를 별도로 연결하며, 동시에 입력되면 파기를 우선합니다. 완료·감지 신호는 동작 설정에서 Input으로 연결하세요.</p>
                     <section class="io-function-mapping-editor" aria-label="기능 매핑 추가">
                         <label>
                             <span>IO</span>
@@ -1988,21 +1987,28 @@
                         <label>
                             <span>기능</span>
                             <select id="io-function-mapping-action" aria-label="매핑 기능">
-                                <option value="GRIP_USE">물건 잡기</option>
-                                <option value="GRIP_RELEASE">놓기</option>
                                 <option value="VIEW">뷰 전환</option>
+                                <option value="CONVEYOR">컨베이어 이송</option>
+                                <option value="CYLINDER">실린더</option><option value="LINEAR_AXIS">직선 외부 축</option><option value="ROTARY_AXIS">회전 외부 축</option><option value="GRIPPER">그리퍼</option><option value="FILM_PEEL">필름 박리</option><option value="VACUUM">진공</option><option value="VACUUM_RELEASE">파기</option>
                             </select>
                         </label>
                         <label id="io-function-mapping-grip-field">
-                            <span>물건</span>
-                            <select id="io-function-mapping-grip-target" aria-label="물건 잡기 대상"></select>
+                            <span>동작 대상</span>
+                            <select id="io-function-mapping-grip-target" aria-label="동작 대상"></select>
                         </label>
                         <label id="io-function-mapping-view-field" hidden>
                             <span>뷰</span>
                             <select id="io-function-mapping-view-target" aria-label="전환할 뷰"></select>
                         </label>
+                        <div id="io-function-mapping-conveyor-field" hidden>
+                            <label>이송 방향 (모델 기준)<select id="io-function-mapping-conveyor-axis"><option>X</option><option>-X</option><option>Y</option><option>-Y</option></select></label>
+                            <label>속도 (mm/s)<input id="io-function-mapping-conveyor-speed" type="number" min="0.1" max="5000" step="0.1" value="100"></label>
+                        </div>
+                        <label id="io-equipment-command-field" hidden>설비 명령<select id="io-equipment-command"><option value="FORWARD">전진 / 닫기 / 박리</option><option value="REVERSE">후진 / 열기</option><option value="STOP">정지</option><option value="RESET">초기화</option><option value="RELEASE">필름 파지 해제</option></select></label>
                         <button id="io-function-mapping-add" class="primary" type="button"><i class="fa-solid fa-plus" aria-hidden="true"></i> 매핑 추가</button>
                     </section>
+                    <p class="io-function-mapping-help">컨베이어는 대상으로 선택한 모델의 상면에 있는 물체를 이송합니다. 지정한 IO 상태 동안 운전하며 끝단에서 정지합니다. 방향은 모델 기준입니다. </p>
+                    <p class="io-function-mapping-help"><button id="io-equipment-settings" type="button">등록된 동작 관리</button> 모델 트리에서 항목을 우클릭하여 동작과 IO를 함께 설정할 수 있습니다.</p>
                     <div class="io-function-mapping-list-heading">
                         <strong>등록된 매핑</strong>
                         <span id="io-function-mapping-count">0</span>
@@ -2025,8 +2031,8 @@
                 <div class="program-panel-content">
                 <div class="program-robot-section">
                     <div class="program-section-title">
-                        <span>ROBOTS</span>
                         <div class="program-section-actions">
+                            <label class="program-speed-override"><span>전체 속도</span><input id="program-speed-override" type="number" min="1" max="100" step="1" value="100" aria-label="전체 속도"><span>%</span></label>
                             <button id="program-toggle-robot-avoidance" class="program-robot-avoidance-toggle" type="button" title="로봇 간섭 회피 활성화" aria-label="로봇 간섭 회피 활성화" aria-pressed="false" data-i18n-title="legacy.로봇 간섭 회피 활성화" data-i18n-aria-label="legacy.로봇 간섭 회피 활성화">
                                 <i class="fa-solid fa-shield-halved" aria-hidden="true"></i><span>로봇 간섭 회피</span>
                             </button>
@@ -2053,11 +2059,11 @@
                         </div>
                         <div id="program-point-actions" class="program-point-actions">
                             <button id="program-add-step" type="button" data-program-edit title="현재 자세 추가"><i class="fa-solid fa-plus"></i></button>
+                            <button id="program-add-io-output" type="button" data-program-edit title="IO 출력 추가">IO Out</button><button id="program-add-io-wait" type="button" data-program-edit title="입력 IO 대기 추가">IO Wait</button>
                             <button id="program-add-delay" type="button" data-program-edit title="딜레이 추가"><i class="fa-solid fa-hourglass-half"></i></button>
                             <button id="program-add-wait" type="button" data-program-edit title="WAIT 명령 추가" aria-label="WAIT 명령 추가" data-i18n-title="legacy.WAIT 명령 추가" data-i18n-aria-label="legacy.WAIT 명령 추가"><i class="fa-solid fa-people-arrows"></i></button>
                             <button id="program-add-time-start" type="button" data-program-edit title="TIME START 추가"><i class="fa-solid fa-stopwatch"></i></button>
                             <button id="program-add-view" type="button" data-program-edit title="화면 뷰 전환 추가"><i class="fa-solid fa-camera"></i></button>
-                            <button id="program-add-grip-use" type="button" data-program-edit title="물건 잡기 명령 추가" aria-label="물건 잡기 명령 추가" data-i18n-title="legacy.물건 잡기 명령 추가" data-i18n-aria-label="legacy.물건 잡기 명령 추가"><i class="fa-solid fa-hand-back-fist"></i></button>
                             <button id="program-auto-path" type="button" data-program-edit title="자동 경로 생성" aria-label="자동 경로 생성"><i class="fa-solid fa-route"></i></button>
                             <button id="program-delete-step" type="button" data-program-edit title="포인트 삭제"><i class="fa-solid fa-trash"></i></button>
                         </div>
@@ -2315,6 +2321,15 @@
         </button>
     </div>
     <div id="model-context-menu" class="program-step-context-menu hidden" role="menu">
+        <button id="model-rename" type="button" role="menuitem"><i class="fa-solid fa-pen-to-square"></i><span>이름 변경</span></button>
+        <button id="model-motion-settings" type="button" role="menuitem"><i class="fa-solid fa-gears"></i>동작 설정</button>
+        <div id="model-motion-edit-options"></div>
+        <button id="model-motion-add-part" type="button" role="menuitem" hidden><i class="fa-solid fa-plus"></i>이동 대상으로 체크</button>
+        <button id="model-group-parts" type="button" role="menuitem"><i class="fa-solid fa-folder-plus"></i>선택한 항목 그룹으로 묶기</button>
+        <button id="model-ungroup-part" type="button" role="menuitem" hidden><i class="fa-solid fa-folder-minus"></i>항목 그룹에서 해제</button>
+        <button id="model-group-motion-settings" class="model-group-menu-action" type="button" role="menuitem"><i class="fa-solid fa-gears"></i>동작 설정</button>
+        <button id="model-group-rename" class="model-group-menu-action" type="button" role="menuitem">이름 변경</button>
+        <button id="model-group-dissolve" class="model-group-menu-action" type="button" role="menuitem">그룹 해제</button>
         <button id="model-export" type="button" role="menuitem" hidden>
             <i class="fa-solid fa-file-export"></i>
             <span data-i18n="legacy.내보내기">내보내기</span>
@@ -2350,14 +2365,6 @@
         <button id="model-arm-load" type="button" role="menuitem" hidden>
             <i class="fa-solid fa-gears"></i>
             <span id="model-arm-load-label">암 로드 등록</span>
-        </button>
-        <button id="model-use-grip-object" type="button" role="menuitem" hidden>
-            <i class="fa-solid fa-hand-back-fist"></i>
-            <span data-i18n="legacy.물건 잡기">물건 잡기</span>
-        </button>
-        <button id="model-release-grip-object" type="button" role="menuitem" hidden>
-            <i class="fa-solid fa-hand"></i>
-            <span data-i18n="legacy.놓기">놓기</span>
         </button>
         <label id="model-transparency-control" class="model-context-transparency-control" role="menuitem">
             <i class="fa-solid fa-adjust"></i>
@@ -2437,11 +2444,12 @@
             </button>
             <button id="btn-toggle-outline" type="button" class="active" title="외곽선 끄기" aria-label="외곽선 표시/숨김" aria-pressed="true"><i class="fa-solid fa-pen-nib"></i></button>
             <button id="btn-reset-view" type="button" title="뷰 초기화" aria-label="뷰 초기화"><i class="fa-solid fa-arrows-rotate"></i></button>
+            <button id="btn-selected-view-pivot" type="button" title="선택 모델 중심 회전 켜기" aria-label="선택 모델 중심 회전 켜기" aria-pressed="false"><i class="fa-solid fa-crosshairs" aria-hidden="true"></i></button>
             <button id="btn-toggle-grid" type="button" class="active" title="그리드 표시/숨김" aria-label="그리드 표시/숨김"><i class="fa-solid fa-border-all"></i></button>
         </div>
     </footer>
 
-    <script type="module" src="main.js?v=20261001-wobj-jog-1"></script>
+    <script type="module" src="main.js?v=20261003-conveyor-settings-6"></script>
 <script src="/0_Home/tool-guide-embed.js?v=20260906-2"></script>
 </body>
 </html>

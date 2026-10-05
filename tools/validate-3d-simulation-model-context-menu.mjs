@@ -13,16 +13,14 @@ assert.doesNotMatch(contextHandlers, /modelDelete[\s\S]*?isRobotMotionActive\(\)
 assert.match(contextHandlers, /openToolAttachmentDialog\(target\.model, target\.part, \{ allowDuringMotion: true \}\)/);
 assert.match(contextHandlers, /registerSceneModelAsArmLoad\(target\.model, getArticulatedRobotForAttachment\(\), 3, \{[\s\S]*?allowDuringMotion: true/);
 assert.match(contextHandlers, /detachToolModel\(target\.model, \{ allowDuringMotion: true \}\)/);
-assert.match(contextHandlers, /useGripObject\(target\.model, target\.part, getGripObjectRobot\(\), \{[\s\S]*?allowDuringMotion: true/);
-assert.match(contextHandlers, /releaseGripObject\(activeGripObject, \{ allowDuringMotion: true \}\)/);
 assert.match(contextHandlers, /openZeroPointEditor\(target\.model, \{ allowDuringMotion: true \}\)/);
 
 assert.match(markup, /id="model-delete"/);
 assert.match(markup, /id="model-install-tool"/);
 assert.match(markup, /id="model-detach-tool"/);
 assert.match(markup, /id="model-arm-load"/);
-assert.match(markup, /id="model-use-grip-object"/);
-assert.match(markup, /id="model-release-grip-object"/);
+assert.doesNotMatch(markup, /id="model-use-grip-object"/);
+assert.doesNotMatch(markup, /id="model-release-grip-object"/);
 assert.match(markup, /id="model-change-zero-point"/);
 
 const deleteBlock = source.match(/function deleteSelectedModel\([\s\S]*?\n\}/)?.[0] || '';
@@ -46,8 +44,8 @@ const zeroPointBlock = source.match(/function openZeroPointEditor\([\s\S]*?\n\}/
 assert.match(zeroPointBlock, /allowDuringMotion = false/);
 assert.match(zeroPointBlock, /!allowDuringMotion && isMotionActive\(\)/);
 
-const gripUseBlock = source.match(/function useGripObject\([\s\S]*?\n\}/)?.[0] || '';
-const gripReleaseBlock = source.match(/function releaseGripObject\([\s\S]*?\n\}/)?.[0] || '';
+const gripUseBlock = source.match(/function attachEquipmentObject\([\s\S]*?\n\}/)?.[0] || '';
+const gripReleaseBlock = source.match(/function detachEquipmentObject\([\s\S]*?\n\}/)?.[0] || '';
 assert.match(gripUseBlock, /allowDuringMotion = false/);
 assert.match(gripReleaseBlock, /allowDuringMotion = false/);
 

@@ -5,9 +5,16 @@ const LARGE_OCCT_MODULE_URL = 'https://cdn.jsdelivr.net/npm/occt-wasm@5.3.4/dist
 const LARGE_OCCT_WASM_URL = 'https://cdn.jsdelivr.net/npm/occt-wasm@5.3.4/dist/occt-wasm.wasm';
 const STEP_MESH_CHUNK_TARGET_BYTES = 6 * 1024 * 1024;
 const LARGE_STEP_MESH_CHUNK_TARGET_BYTES = 4 * 1024 * 1024;
+const STEP_VERTEX_LOOKUP_MAX_BYTES = 16 * 1024 * 1024;
+const LARGE_OCCT_IDLE_TIMEOUT_MS = 30_000;
+const LARGE_OCCT_RETAIN_MAX_BYTES = 512 * 1024 * 1024;
 const DEFAULT_COLOR = [0.749, 0.78, 0.835];
 let occtPromise = null;
 let largeOcctModulePromise = null;
+let largeOcctKernelPromise = null;
+let largeOcctKernel = null;
+let largeOcctIdleTimer = null;
+let stepImportQueue = Promise.resolve();
 
 function ensureOcctImporter() {
     if (!occtPromise) {
@@ -35,8 +42,51 @@ function ensureLargeOcctModule() {
     return largeOcctModulePromise;
 }
 
+function disposeLargeOcctKernel() {
+    clearTimeout(largeOcctIdleTimer);
+    largeOcctIdleTimer = null;
+    const kernel = largeOcctKernel;
+    largeOcctKernel = null;
+    largeOcctKernelPromise = null;
+    kernel?.[Symbol.dispose]?.();
+}
+
+function ensureLargeOcctKernel() {
+    clearTimeout(largeOcctIdleTimer);
+    largeOcctIdleTimer = null;
+    if (!largeOcctKernelPromise) {
+        largeOcctKernelPromise = ensureLargeOcctModule().then(async ({ OcctKernel }) => {
+            largeOcctKernel = await OcctKernel.init({ wasm: LARGE_OCCT_WASM_URL });
+            return largeOcctKernel;
+        }).catch((error) => {
+            disposeLargeOcctKernel();
+            throw error;
+        });
+    }
+    return largeOcctKernelPromise;
+}
+
+function retainLargeOcctKernel(kernel) {
+    // WASM heaps cannot shrink. Do not retain an oversized heap between files.
+    if (kernel.getRawModule()?.HEAPU8?.byteLength > LARGE_OCCT_RETAIN_MAX_BYTES) {
+        disposeLargeOcctKernel();
+        return;
+    }
+    largeOcctIdleTimer = setTimeout(disposeLargeOcctKernel, LARGE_OCCT_IDLE_TIMEOUT_MS);
+}
+
+function measureStepPhase(timings, phase, callback) {
+    const startedAt = performance.now();
+    try {
+        return callback();
+    } finally {
+        timings[phase] += performance.now() - startedAt;
+    }
+}
+
 function numericArrayLength(source) {
     if (!source?.length) return 0;
+    if (ArrayBuffer.isView(source)) return source.length;
     let length = 0;
     for (let index = 0; index < source.length; index += 1) {
         const value = source[index];
@@ -46,6 +96,23 @@ function numericArrayLength(source) {
 }
 
 function copyNumbers(source, target, targetOffset, valueOffset = 0) {
+    const flatNumbers = ArrayBuffer.isView(source)
+        || (Array.isArray(source) && source.every((value) => typeof value === 'number'));
+    if (flatNumbers && valueOffset === 0) {
+        target.set(source, targetOffset);
+        // The previous Number(value) + 0 copy canonicalized source -0 to +0.
+        // Preserve that bit-level result without changing underflowed values.
+        for (let index = 0; index < source.length; index += 1) {
+            if (Object.is(source[index], -0)) target[targetOffset + index] = 0;
+        }
+        return targetOffset + source.length;
+    }
+    if (flatNumbers) {
+        for (let index = 0; index < source.length; index += 1) {
+            target[targetOffset + index] = source[index] + valueOffset;
+        }
+        return targetOffset + source.length;
+    }
     let offset = targetOffset;
     for (let index = 0; index < source.length; index += 1) {
         const value = source[index];
@@ -298,8 +365,8 @@ function groupLargeMeshTriangleRanges(mesh) {
     return { groups, preservesFaces: Boolean(completeFaceRanges) };
 }
 
-function createLargeMeshChunk(mesh, triangleRanges, preservesFaces = true) {
-    const localByGlobal = new Map();
+function createLargeMeshChunk(mesh, triangleRanges, preservesFaces = true, vertexLookup = null) {
+    const localByGlobal = vertexLookup ? null : new Map();
     const globalVertices = [];
     const triangleCount = triangleRanges.reduce(
         (total, range) => total + range.last - range.first + 1,
@@ -314,10 +381,15 @@ function createLargeMeshChunk(mesh, triangleRanges, preservesFaces = true) {
             const sourceOffset = triangleIndex * 3;
             for (let corner = 0; corner < 3; corner += 1) {
                 const globalIndex = mesh.indices[sourceOffset + corner];
-                let localIndex = localByGlobal.get(globalIndex);
-                if (localIndex === undefined) {
+                // Zero means unseen; stored indices are shifted by one. The
+                // bounded scratch array avoids hashing every triangle corner.
+                let localIndex = vertexLookup
+                    ? (vertexLookup[globalIndex] || 0) - 1
+                    : localByGlobal.get(globalIndex);
+                if (localIndex === undefined || localIndex === -1) {
                     localIndex = globalVertices.length;
-                    localByGlobal.set(globalIndex, localIndex);
+                    if (vertexLookup) vertexLookup[globalIndex] = localIndex + 1;
+                    else localByGlobal.set(globalIndex, localIndex);
                     globalVertices.push(globalIndex);
                 }
                 uint32Indices[indexOffset] = localIndex;
@@ -332,6 +404,7 @@ function createLargeMeshChunk(mesh, triangleRanges, preservesFaces = true) {
         && mesh.normals.length === mesh.positions.length;
     const normals = hasNormals ? new Float32Array(positions.length) : null;
     globalVertices.forEach((globalIndex, localIndex) => {
+        if (vertexLookup) vertexLookup[globalIndex] = 0;
         const sourceOffset = globalIndex * 3;
         const targetOffset = localIndex * 3;
         positions[targetOffset] = mesh.positions[sourceOffset];
@@ -351,9 +424,13 @@ function createLargeMeshChunk(mesh, triangleRanges, preservesFaces = true) {
 
 function postLargeMeshChunks(mesh, message, requestId, partMeta = {}) {
     const { groups, preservesFaces } = groupLargeMeshTriangleRanges(mesh);
+    const vertexCount = mesh.positions.length / 3;
+    const vertexLookup = vertexCount * 4 <= STEP_VERTEX_LOOKUP_MAX_BYTES
+        ? new Uint32Array(vertexCount)
+        : null;
     groups.forEach((triangleRanges, chunkIndex) => {
         const workerMesh = {
-            ...createLargeMeshChunk(mesh, triangleRanges, preservesFaces),
+            ...createLargeMeshChunk(mesh, triangleRanges, preservesFaces, vertexLookup),
             color: Array.isArray(partMeta.color) && partMeta.color.length === 3
                 ? partMeta.color.map(Number)
                 : DEFAULT_COLOR,
@@ -406,8 +483,9 @@ function collectXcafParts(document) {
 
 async function parseLargeStepFile(message, requestId) {
     const startedAt = performance.now();
-    const { OcctKernel } = await ensureLargeOcctModule();
-    const kernel = await OcctKernel.init({ wasm: LARGE_OCCT_WASM_URL });
+    const kernel = await ensureLargeOcctKernel();
+    const timings = { engineInitMs: performance.now() - startedAt, readingMs: 0, tessellationMs: 0, packingMs: 0 };
+    let completed = false;
     let shape = null;
     let document = null;
     let sourceBuffer = message.fileBuffer;
@@ -423,7 +501,7 @@ async function parseLargeStepFile(message, requestId) {
         // document and a second STEP representation alive at once.
         let directImportError = null;
         try {
-            shape = kernel.importStep(sourceBuffer);
+            shape = measureStepPhase(timings, 'readingMs', () => kernel.importStep(sourceBuffer));
             sourceBuffer = null;
         } catch (error) {
             directImportError = error;
@@ -434,8 +512,8 @@ async function parseLargeStepFile(message, requestId) {
         if (shape == null) {
             try {
                 if (typeof kernel.importXCAFFromSTEP === 'function') {
-                    document = kernel.importXCAFFromSTEP(sourceBuffer);
-                    const parts = collectXcafParts(document);
+                    document = measureStepPhase(timings, 'readingMs', () => kernel.importXCAFFromSTEP(sourceBuffer));
+                    const parts = measureStepPhase(timings, 'readingMs', () => collectXcafParts(document));
                     if (parts.length) {
                         let meshCount = 0;
                         let failedPartCount = 0;
@@ -450,11 +528,11 @@ async function parseLargeStepFile(message, requestId) {
                                 partName: part.partName
                             });
                             try {
-                                const mesh = kernel.meshShape(part.shapeHandle, {
+                                const mesh = measureStepPhase(timings, 'tessellationMs', () => kernel.meshShape(part.shapeHandle, {
                                     linearDeflection: Number(message.parameters?.linearDeflectionAbsolute) || 1,
                                     angularDeflection: Number(message.parameters?.angularDeflection) || 0.8
-                                });
-                                meshCount += postLargeMeshChunks(mesh, message, requestId, part);
+                                }));
+                                meshCount += measureStepPhase(timings, 'packingMs', () => postLargeMeshChunks(mesh, message, requestId, part));
                             } catch (error) {
                                 failedPartCount += 1;
                                 console.warn('Skipped XCAF STEP part:', part.partName, error);
@@ -471,8 +549,9 @@ async function parseLargeStepFile(message, requestId) {
                                 partCount: parts.length,
                                 failedPartCount,
                                 segmented: true,
-                                timings: { totalMs: performance.now() - startedAt }
+                                timings: { ...timings, totalMs: performance.now() - startedAt }
                             });
+                            completed = true;
                             return;
                         }
                     }
@@ -490,10 +569,10 @@ async function parseLargeStepFile(message, requestId) {
         }
 
         self.postMessage({ type: 'progress', requestId, phase: 'tessellating' });
-        const mesh = kernel.meshShape(shape, {
+        const mesh = measureStepPhase(timings, 'tessellationMs', () => kernel.meshShape(shape, {
             linearDeflection: Number(message.parameters?.linearDeflectionAbsolute) || 1,
             angularDeflection: Number(message.parameters?.angularDeflection) || 0.8
-        });
+        }));
         if (!(mesh?.positions instanceof Float32Array) || mesh.positions.length < 9
             || !(mesh.indices instanceof Uint32Array) || mesh.indices.length < 3) {
             throw new Error('The STEP file contains no triangulated mesh.');
@@ -503,23 +582,32 @@ async function parseLargeStepFile(message, requestId) {
         shape = null;
 
         self.postMessage({ type: 'progress', requestId, phase: 'packing', sourceMeshCount: 1 });
-        const meshCount = postLargeMeshChunks(mesh, message, requestId);
+        const meshCount = measureStepPhase(timings, 'packingMs', () => postLargeMeshChunks(mesh, message, requestId));
         self.postMessage({
             type: 'done',
             requestId,
             rootName: message.fileName || 'STEP Assembly',
             meshCount,
-            timings: { totalMs: performance.now() - startedAt }
+            timings: { ...timings, totalMs: performance.now() - startedAt }
         });
+        completed = true;
     } finally {
-        if (shape != null) kernel.release(shape);
-        document?.close();
-        sourceBuffer = null;
-        kernel[Symbol.dispose]?.();
+        try {
+            if (shape != null) kernel.release(shape);
+            document?.close();
+            kernel.releaseAll();
+        } catch (error) {
+            completed = false;
+            throw error;
+        } finally {
+            sourceBuffer = null;
+            if (completed) retainLargeOcctKernel(kernel);
+            else disposeLargeOcctKernel();
+        }
     }
 }
 
-self.addEventListener('message', async (event) => {
+async function handleStepImportMessage(event) {
     const message = event.data || {};
     const requestId = message.requestId;
     const startedAt = performance.now();
@@ -598,4 +686,11 @@ self.addEventListener('message', async (event) => {
     } catch (error) {
         self.postMessage({ type: 'error', requestId, message: errorMessage(error) });
     }
+}
+
+// Initialization awaits must not allow two imports to share live kernel state.
+self.addEventListener('message', (event) => {
+    const job = stepImportQueue.then(() => handleStepImportMessage(event));
+    stepImportQueue = job.catch(() => {});
+    return job;
 });
