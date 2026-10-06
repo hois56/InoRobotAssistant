@@ -499,6 +499,10 @@
 
 ## Software
 
+### Ver 26.10.06
+
+- `[변경]` InoRobotLab 일반 설치 버전을 ZIP 파일로 제공합니다.
+
 ### Ver 26.10.01
 
 - `[업데이트]` InoRobotLab·InoRobotTP를 `V4R24C4SPC22 → V4R24C4SPC25`로 업데이트했습니다.

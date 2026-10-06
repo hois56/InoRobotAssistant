@@ -77,7 +77,7 @@ test('서로 다른 소프트웨어 파일을 내려받아도 파일명과 내�
   await page.goto('/5_Software/index.html', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('#softwareList .software-card').first()).toBeVisible({ timeout: 20_000 });
   const candidates = [
-    'InoRobotLab/InoRobotLabSetUp_V4R24C4SPC25_x64.exe',
+    'InoRobotLab/InoRobotLabSetUp_V4R24C4SPC25_x64.zip',
     'InoRobotTP/InoRobotTP_win_x86_V4R24C4SPC25.zip'
   ];
   const buttons = page.locator('#softwareList button[data-download-path]');
