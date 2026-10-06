@@ -52,9 +52,9 @@ Func P3_pos()
             EndIf;
         Case 10:
             R_Cur_pos = 310;
-            Movj Offset(P3_Up, PR[B_PR]),V[100],Z[1],Tool[B_Tool],Wobj[B_Wobj];
+            Movj Offset(P3_Pre_work, PR[B_PR]),V[100],Z[1],Tool[B_Tool],Wobj[B_Wobj];
             R_Cur_pos = 311;
-            Movl Offset(P3_Down, PR[B_PR]),V[100],Z[0],Tool[B_Tool],Wobj[B_Wobj];
+            Movl Offset(P3_Work, PR[B_PR]),V[100],Z[0],Tool[B_Tool],Wobj[B_Wobj];
             Break;
     EndSwitch;
     #================================================================================

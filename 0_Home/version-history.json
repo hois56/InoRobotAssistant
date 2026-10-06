@@ -561,6 +561,12 @@
             "title": "Project Generator",
             "versions": [
               {
+                "title": "Ver 26.10.06",
+                "items": [
+                  "`[변경]` 생성되는 P.pts와 초기화·공정 프로그램의 포지션 라벨을 `P번호_Up`·`P번호_Down`에서 `P번호_Pre_work`·`P번호_Work`로 변경했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.09.24",
                 "items": [
                   "`[수정]` Wait 위치에 도착하기 전에 현재 위치가 갱신되어 복귀 경로가 잘못 판단될 수 있던 문제를 해결했습니다."
@@ -1734,6 +1740,12 @@
           {
             "title": "Project Generator",
             "versions": [
+              {
+                "title": "Ver 26.10.06",
+                "items": [
+                  "`[Changed]` Renamed position labels in generated P.pts, initialization and process programs from `Pn_Up` / `Pn_Down` to `Pn_Pre_work` / `Pn_Work`."
+                ]
+              },
               {
                 "title": "Ver 26.09.24",
                 "items": [
@@ -2909,6 +2921,12 @@
             "title": "Project Generator",
             "versions": [
               {
+                "title": "Ver 26.10.06",
+                "items": [
+                  "`[变更]` 将生成的 P.pts、初始化程序和工序程序中的位置标签从 `Pn_Up` / `Pn_Down` 改为 `Pn_Pre_work` / `Pn_Work`。"
+                ]
+              },
+              {
                 "title": "Ver 26.09.24",
                 "items": [
                   "`[修复]` 修复了机器人尚未到达 Wait 位置就更新当前位置、导致返回路径可能判断错误的问题。"
@@ -4082,6 +4100,12 @@
           {
             "title": "Project Generator",
             "versions": [
+              {
+                "title": "Ver 26.10.06",
+                "items": [
+                  "`[Thay đổi]` Đổi nhãn vị trí trong P.pts, chương trình khởi tạo và công đoạn được tạo từ `Pn_Up` / `Pn_Down` thành `Pn_Pre_work` / `Pn_Work`."
+                ]
+              },
               {
                 "title": "Ver 26.09.24",
                 "items": [
@@ -5257,6 +5281,12 @@
             "title": "Project Generator",
             "versions": [
               {
+                "title": "Ver 26.10.06",
+                "items": [
+                  "`[Değişiklik]` Oluşturulan P.pts, başlatma ve işlem programlarındaki konum etiketleri `Pn_Up` / `Pn_Down` yerine `Pn_Pre_work` / `Pn_Work` olarak değiştirildi."
+                ]
+              },
+              {
                 "title": "Ver 26.09.24",
                 "items": [
                   "[Düzeltildi] Geçerli konumun, Bekleme konumuna ulaşmadan önce güncellenmesine ve dönüş yolunun yanlış tanımlanmasına neden olan bir sorun düzeltildi."
@@ -6430,6 +6460,12 @@
           {
             "title": "Project Generator",
             "versions": [
+              {
+                "title": "Ver 26.10.06",
+                "items": [
+                  "`[Изменено]` Метки позиций в создаваемом P.pts, программах инициализации и процессов переименованы из `Pn_Up` / `Pn_Down` в `Pn_Pre_work` / `Pn_Work`."
+                ]
+              },
               {
                 "title": "Ver 26.09.24",
                 "items": [

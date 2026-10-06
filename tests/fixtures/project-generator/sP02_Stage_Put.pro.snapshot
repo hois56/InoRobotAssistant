@@ -58,9 +58,9 @@ Func P2_pos()
             EndIf;
         Case 10:
             R_Cur_pos = 210;
-            Movj Offset(P2_Up, PR[B_PR]),V[100],Z[1],Tool[B_Tool],Wobj[B_Wobj];
+            Movj Offset(P2_Pre_work, PR[B_PR]),V[100],Z[1],Tool[B_Tool],Wobj[B_Wobj];
             R_Cur_pos = 211;
-            Movl Offset(P2_Down, PR[B_PR]),V[100],Z[0],Tool[B_Tool],Wobj[B_Wobj],DEC[5];
+            Movl Offset(P2_Work, PR[B_PR]),V[100],Z[0],Tool[B_Tool],Wobj[B_Wobj],DEC[5];
             Break;
     EndSwitch;
     #================================================================================
