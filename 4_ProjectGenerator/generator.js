@@ -304,7 +304,7 @@ const Generator = {
                 }
                 sb += `        Case ${n * 100 + 16}:\n            Movl P${n}_Peel_end,V[100],Z[2],Tool[B_Tool],Wobj[B_Wobj];\n            R_Cur_pos = ${n * 100 + 20};\n        Case ${n * 100 + 20}:\n            Movj P${n}_Safe,V[100],Z[CP],Tool[B_Tool],Wobj[B_Wobj];\n            R_Cur_pos = ${n * 100};\n            Break;\n`;
             }
-            sb += `        Case ${n * 100 + 11}:\n            Movl Offset(P${n}_Up, PR[B_PR]),V[100],Z[${zUp}],Tool[B_Tool],Wobj[B_Wobj]${accUp};\n            R_Cur_pos = ${n * 100 + 10};\n            If return_path == 10\n                Break;\n            EndIf;\n        Case ${n * 100 + 10}:\n            Movj P${n}_Wait,V[100],Z[CP],Tool[B_Tool],Wobj[B_Wobj];\n            R_Cur_pos = ${n * 100 + 1};\n`;
+            sb += `        Case ${n * 100 + 11}:\n            Movl Offset(P${n}_Pre_work, PR[B_PR]),V[100],Z[${zUp}],Tool[B_Tool],Wobj[B_Wobj]${accUp};\n            R_Cur_pos = ${n * 100 + 10};\n            If return_path == 10\n                Break;\n            EndIf;\n        Case ${n * 100 + 10}:\n            Movj P${n}_Wait,V[100],Z[CP],Tool[B_Tool],Wobj[B_Wobj];\n            R_Cur_pos = ${n * 100 + 1};\n`;
             for (let i = 2; i <= lastWait; i++) {
                 sb += `            Movj P${n}_Wait${i},V[100],Z[CP],Tool[B_Tool],Wobj[B_Wobj];\n            R_Cur_pos = ${n * 100 + i};\n`;
             }
@@ -429,7 +429,7 @@ const Generator = {
         if (hasWait) {
             sb += `            If ${waitFlag}\n                Break;\n            EndIf;\n`;
         }
-        sb += `        Case 10:\n            R_Cur_pos = ${n * 100 + 10};\n            Movj Offset(P${n}_Up, PR[B_PR]),V[100],Z[1],Tool[B_Tool],Wobj[B_Wobj];\n            R_Cur_pos = ${n * 100 + 11};\n            Movl Offset(P${n}_Down, PR[B_PR]),V[100],Z[0],Tool[B_Tool],Wobj[B_Wobj]${downDec};\n            Break;\n    EndSwitch;\n${afterMoveAction}${toolCtrlLogic}${processAction}    #================================================================================\n    #  Process Complete\n    #================================================================================\n${finalAction}    L[0]:\n    Print "P${n} - ${type} ${method} pos End";\n${completion}EndFunc;\n`;
+        sb += `        Case 10:\n            R_Cur_pos = ${n * 100 + 10};\n            Movj Offset(P${n}_Pre_work, PR[B_PR]),V[100],Z[1],Tool[B_Tool],Wobj[B_Wobj];\n            R_Cur_pos = ${n * 100 + 11};\n            Movl Offset(P${n}_Work, PR[B_PR]),V[100],Z[0],Tool[B_Tool],Wobj[B_Wobj]${downDec};\n            Break;\n    EndSwitch;\n${afterMoveAction}${toolCtrlLogic}${processAction}    #================================================================================\n    #  Process Complete\n    #================================================================================\n${finalAction}    L[0]:\n    Print "P${n} - ${type} ${method} pos End";\n${completion}EndFunc;\n`;
 
         if (socketFuncs) {
             sb += `\n${socketFuncs}`;
@@ -446,7 +446,7 @@ const Generator = {
             const n = s.No * 100;
             let list = [{ N: "Safe", O: 0 }, { N: "Wait", O: 1 }];
             for (let i = 1; i <= (s.ExtraWaitCount || 0); i++) list.push({ N: `Wait${i + 1}`, O: 1 + i });
-            list.push({ N: "Up", O: 10 }, { N: "Down", O: 11 });
+            list.push({ N: "Pre_work", O: 10 }, { N: "Work", O: 11 });
             if (Generator.IsPeeling(s)) {
                 list.push({ N: "Peel_1", O: 12 }, { N: "Peel_2", O: 13 }, { N: "Peel_3", O: 14 }, { N: "Peel_4", O: 15 }, { N: "Peel_5", O: 16 }, { N: "Peel_end", O: 20 });
             }

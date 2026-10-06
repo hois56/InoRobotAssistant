@@ -43,7 +43,7 @@ Func Return_move(Int return_path)
         #  P1 - Tray Get
         #============================================================================
         Case 111:
-            Movl Offset(P1_Up, PR[B_PR]),V[100],Z[2],Tool[B_Tool],Wobj[B_Wobj],Acc[5];
+            Movl Offset(P1_Pre_work, PR[B_PR]),V[100],Z[2],Tool[B_Tool],Wobj[B_Wobj],Acc[5];
             R_Cur_pos = 110;
             If return_path == 10
                 Break;
@@ -64,7 +64,7 @@ Func Return_move(Int return_path)
         #  P2 - Stage Put
         #============================================================================
         Case 211:
-            Movl Offset(P2_Up, PR[B_PR]),V[100],Z[1],Tool[B_Tool],Wobj[B_Wobj];
+            Movl Offset(P2_Pre_work, PR[B_PR]),V[100],Z[1],Tool[B_Tool],Wobj[B_Wobj];
             R_Cur_pos = 210;
             If return_path == 10
                 Break;
@@ -83,7 +83,7 @@ Func Return_move(Int return_path)
         #  P3 - Vision Check
         #============================================================================
         Case 311:
-            Movl Offset(P3_Up, PR[B_PR]),V[100],Z[1],Tool[B_Tool],Wobj[B_Wobj];
+            Movl Offset(P3_Pre_work, PR[B_PR]),V[100],Z[1],Tool[B_Tool],Wobj[B_Wobj];
             R_Cur_pos = 310;
             If return_path == 10
                 Break;
