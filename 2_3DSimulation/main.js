@@ -16241,6 +16241,46 @@ function updateSnapFaceOrientationUi() {
     });
 }
 
+function preferSnapFaceWristConfiguration(robot) {
+    const joints = robot.userData.joints || [];
+    if (robot.userData.manifest?.robotType !== 'six-axis' || joints.length !== 6) return;
+    const originalAngles = joints.map((joint) => joint.angle);
+    const originalPose = getCurrentTcpPoseBase(robot);
+    if (!originalPose) return;
+
+    // The X-Y-X wrist can flip J4/J6 by 180 degrees and reverse J5
+    // without changing the flange pose. Verify with FK before accepting it,
+    // including robots with a translated or rotated active Tool.
+    const wristCandidates = [];
+    [false, true].forEach((flip) => {
+        const j4Angles = equivalentJointAngles(originalAngles[3] + (flip ? 180 : 0), joints[3]);
+        const j5Angles = equivalentJointAngles(originalAngles[4] * (flip ? -1 : 1), joints[4]);
+        const j6Angles = equivalentJointAngles(originalAngles[5] + (flip ? 180 : 0), joints[5]);
+        j4Angles.forEach((j4) => {
+            if (Math.abs(j4) >= Math.abs(originalAngles[3]) - 1e-7) return;
+            j5Angles.forEach((j5) => j6Angles.forEach((j6) => {
+                wristCandidates.push([j4, j5, j6]);
+            }));
+        });
+    });
+    const wristTravel = (angles) => angles.reduce((sum, angle, index) => (
+        sum + (angle - originalAngles[index + 3]) ** 2
+    ), 0);
+    wristCandidates.sort((left, right) => Math.abs(left[0]) - Math.abs(right[0])
+        || wristTravel(left) - wristTravel(right));
+    for (const angles of wristCandidates) {
+        angles.forEach((angle, index) => setJointAngle(joints[index + 3], angle, false));
+        robot.updateMatrixWorld(true);
+        const pose = getCurrentTcpPoseBase(robot);
+        if (pose && pose.position.distanceTo(originalPose.position) < 1e-5
+            && pose.quaternion.angleTo(originalPose.quaternion) < 1e-7) return;
+    }
+    if (wristCandidates.length) {
+        originalAngles.forEach((angle, index) => setJointAngle(joints[index], angle, false));
+        robot.updateMatrixWorld(true);
+    }
+}
+
 function applySnapFaceOrientation(mode) {
     if (!['horizontal', 'vertical'].includes(mode) || isMotionActive()) return false;
     const robot = getJogTargetRobot();
@@ -16343,6 +16383,7 @@ function applySnapFaceOrientation(mode) {
             rotationTolerance: THREE.MathUtils.degToRad(0.001)
         });
         if (candidateResult.success) {
+            if (mode === 'vertical') preferSnapFaceWristConfiguration(robot);
             result = candidateResult;
             target = candidate;
             break;
@@ -16407,9 +16448,9 @@ function isSimulationSnapInteractionActive() {
     return isSimulationSnapPicking() && !state.viewNavigationActive;
 }
 
-function beginSimulationViewNavigation() {
+function beginSimulationViewNavigation(event) {
     if (state.viewNavigationActive) return;
-    updateSelectedViewPivot(true);
+    if (!event?.surfaceWheelZoom) updateSelectedViewPivot(true);
     state.viewNavigationActive = true;
     // Camera movement can generate a pointermove for every orbit/pan step.
     // Cancel any pending snap work before those events reach the snap picker.
@@ -18761,8 +18802,48 @@ function recreateMainOrbitControls(previousState = undefined) {
     return controls;
 }
 
+function handleMainSurfaceWheelZoom(event) {
+    const { camera, controls } = state;
+    if (state.sketch.active || !camera?.isPerspectiveCamera || !controls?.enabled
+        || !controls.enableZoom || state.orbitControlPointerIds.size || !event.deltaY) return;
+    const canvas = state.renderer.domElement;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    const pointer = new THREE.Vector2(
+        ((event.clientX - rect.left) / rect.width) * 2 - 1,
+        -((event.clientY - rect.top) / rect.height) * 2 + 1
+    );
+    const meshes = getAllSimulationSnapMeshes('measurement').filter(mesh => mesh.isMesh
+        && !mesh.userData?.outlineSource);
+    meshes.forEach(mesh => mesh.updateWorldMatrix(true, false));
+    camera.updateMatrixWorld(true);
+    const raycaster = state.sceneSelectionRaycaster;
+    raycaster.setFromCamera(pointer, camera);
+    const hit = raycaster.intersectObjects(meshes, false)[0];
+    if (!hit) return;
+    const forward = camera.getWorldDirection(new THREE.Vector3());
+    const cosine = raycaster.ray.direction.dot(forward);
+    if (cosine <= 0) return;
+    const depth = hit.distance * cosine;
+    const scale = Math.pow(0.95, controls.zoomSpeed);
+    // Use the pointed surface depth instead of the old orbit radius. Translating
+    // along the pointer ray keeps that surface point fixed on screen, while a
+    // target on the view axis preserves the camera's orientation.
+    const nextDepth = THREE.MathUtils.clamp(depth * (event.deltaY < 0 ? scale : 1 / scale),
+        Math.max(controls.minDistance, camera.near * 2), controls.maxDistance);
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    controls.dispatchEvent({ type: 'start', surfaceWheelZoom: true });
+    camera.position.addScaledVector(raycaster.ray.direction, (depth - nextDepth) / cosine);
+    controls.target.copy(camera.position).addScaledVector(forward, nextDepth);
+    controls.update();
+    requestRender();
+    controls.dispatchEvent({ type: 'end' });
+}
+
 function setupControls() {
     recreateMainOrbitControls();
+    state.renderer.domElement.addEventListener('wheel', handleMainSurfaceWheelZoom, { capture: true, passive: false });
     state.renderer.domElement.addEventListener('pointerdown', trackMainOrbitControlPointer, { capture: true });
     state.renderer.domElement.addEventListener('pointerup', clearMainOrbitControlPointer, { capture: true });
     state.renderer.domElement.addEventListener('pointercancel', clearMainOrbitControlPointer, { capture: true });
@@ -20531,18 +20612,22 @@ function setupEventListeners() {
                 ? input.value
                 : 'diagonal';
             const firstPoint = state.measurement.points[0] || null;
+            const secondPoint = nextMode === 'robot-position' ? null : state.measurement.points[1] || null;
             state.measurement.displayMode = nextMode;
-            state.measurement.points = [firstPoint, null];
+            state.measurement.points = [firstPoint, secondPoint];
             state.measurement.result = null;
             state.measurement.robotPositionRobotId = nextMode === 'robot-position'
                 ? getSelectedRobotModel()?.userData?.motionInstanceId || null
                 : null;
             if (nextMode === 'robot-position' && firstPoint) {
                 state.measurement.result = calculateRobotPositionMeasurement(firstPoint);
+            } else if (firstPoint && secondPoint) {
+                const result = calculateMeasurementResult(firstPoint.worldPoint, secondPoint.worldPoint);
+                state.measurement.result = result?.isSamePoint ? null : result;
             }
-            setMeasurementPanelStatus(nextMode === 'robot-position'
-                ? (firstPoint && state.measurement.result ? '측정 완료' : 'P1 선택')
-                : (firstPoint ? 'P2 선택' : 'P1 선택'));
+            setMeasurementPanelStatus(state.measurement.result
+                ? '측정 완료'
+                : (nextMode !== 'robot-position' && firstPoint ? 'P2 선택' : 'P1 선택'));
             updateMeasurementUi();
             updateMeasurementOverlay();
             requestRender();

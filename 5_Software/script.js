@@ -16,7 +16,7 @@ const softwareGroups = [
                 updates: ["시스템 안정성 개선"],
                 downloads: [
                     { label: "Download Install", type: "install", size: "535MB", path: "InoRobotLab/InoRobotLabSetUp_V4R24C4SPC25_x64.zip" },
-                    { label: "Download Portable", type: "portable", size: "546MB", path: "InoRobotLab/InoRobotLab_V4R24C4SPC25_x86.zip" }
+                    { label: "Download Portable", type: "portable", size: "549MB", path: "InoRobotLab/InoRobotLab_V4R24C4SPC25_x64.zip" }
                 ]
             },
             {
