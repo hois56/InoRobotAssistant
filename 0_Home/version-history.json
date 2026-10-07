@@ -254,6 +254,14 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.07",
+                "items": [
+                  "`[수정]` OLP IO 테스트에서 입력의 ON/OFF가 유지되지 않고 표시가 갱신되지 않던 문제와 가상 버스의 InW 입력값이 프로그램에 반영되지 않던 문제를 해결했습니다.",
+                  "`[수정]` OLP 이동에서 Tool 번호와 선택한 TCP의 위치·회전 오프셋이 적용되지 않던 문제를 해결했습니다.",
+                  "`[추가]` 컨트롤러 연결 시 Out[0]~Out[16]을 읽어 IO 테스트와 진공·그리퍼 등 설비 동작 및 IO 매핑에 연동하도록 추가했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.10.05",
                 "items": [
                   "`[추가]` 모델 트리에 부품·모델 그룹 폴더, Shift 다중 선택, 드래그 순서 변경과 이름 변경을 추가했습니다. 그룹을 선택하여 전체를 함께 이동·회전할 수 있습니다.",
@@ -560,6 +568,12 @@
           {
             "title": "Project Generator",
             "versions": [
+              {
+                "title": "Ver 26.10.07",
+                "items": [
+                  "Tray 프로세스에 X·Y 카운터와 피치 입력을 추가했습니다. 생성되는 s02_offset.pro에 Tray 위치 계산을 추가하고, Label·엑셀에 INW[37] xwTray_index, 사용자 알람 12번에 ERR : Tray Count Error!를 추가했습니다. 생성되는 IO 맵 엑셀 파일명에 생성 날짜를 반영했습니다. Tray 셀이 없거나 1개인 프로세스는 Tray 오프셋을 생성하지 않도록 했습니다."
+                ]
+              },
               {
                 "title": "Ver 26.10.06",
                 "items": [
@@ -873,6 +887,13 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.10.07",
+                "items": [
+                  "`[변경]` Communication Tester를 `V3.1 → V3.2`로 업데이트했습니다.",
+                  "`[변경]` InoRobot Label Gen을 `V2.1 → V2.2`로 업데이트했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.09.03",
                 "items": [
                   "`[변경]` Communication Tester를 `V3.0 → V3.1`로 업데이트했습니다."
@@ -998,6 +1019,12 @@
             "title": "communicationTester",
             "versions": [
               {
+                "title": "Ver 3.2 (2026.10.07)",
+                "items": [
+                  "`[수정]` Virtual Bus 연결 중 HMI에서 새로 추가하거나 설정한 워드 입력 및 워드 버튼의 값 변경이 로봇에 적용되지 않던 문제를 해결했습니다."
+                ]
+              },
+              {
                 "title": "Ver 3.1 (2026.09.02)",
                 "items": [
                   "`[추가]` 모든 통신 프로토콜의 송수신 프레임을 구조별로 확인할 수 있는 통신 프레임 모니터 기능을 추가했습니다.",
@@ -1092,6 +1119,15 @@
           {
             "title": "labelGenerator",
             "versions": [
+              {
+                "title": "Ver 2.2.0",
+                "items": [
+                  "`[수정]` Excel 라벨 영역의 행 높이를 18로 통일했습니다.",
+                  "`[수정]` 일부 라벨명이 파란색으로 표시되던 문제를 해결하고 글자색을 검은색으로 통일했습니다.",
+                  "`[수정]` 비트 라벨 영역의 셀 테두리가 사라지던 문제를 해결했습니다.",
+                  "`[수정]` 라벨명과 설명의 정렬이 서로 다르게 표시되던 문제를 해결하고, 왼쪽 정렬과 세로 가운데 정렬로 통일했습니다."
+                ]
+              },
               {
                 "title": "Ver 2.1.0",
                 "items": [
@@ -1451,6 +1487,14 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.07",
+                "items": [
+                  "`[Fixed]` Fixed OLP IO test inputs failing to retain ON/OFF states or refresh their display, and virtual bus InW values not reaching the program.",
+                  "`[Fixed]` Fixed OLP motion ignoring the Tool number and the selected TCP position and rotation offsets.",
+                  "`[Added]` Controller Out[0]–Out[16] feedback now drives the IO test display, equipment such as vacuum and grippers, and IO mappings."
+                ]
+              },
+              {
                 "title": "Ver 26.10.01",
                 "items": [
                   "`[Improved]` JOG TCP position and rotation readouts, coordinate entry, and movement buttons now use the selected Wobj frame. The bottom Wobj button shows the active number."
@@ -1740,6 +1784,12 @@
           {
             "title": "Project Generator",
             "versions": [
+              {
+                "title": "Ver 26.10.07",
+                "items": [
+                  "Added X/Y counts and pitches for Tray processes. Generated s02_offset.pro now calculates Tray offsets; labels and Excel include INW[37] xwTray_index, and user alarm 12 includes ERR : Tray Count Error!. The generated IO map Excel filename now uses the generation date. Tray offsets are omitted for processes with zero or one cell."
+                ]
+              },
               {
                 "title": "Ver 26.10.06",
                 "items": [
@@ -2053,6 +2103,13 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.10.07",
+                "items": [
+                  "Updated Communication Tester from V3.1 to V3.2.",
+                  "Updated InoRobot Label Gen from V2.1 to V2.2."
+                ]
+              },
+              {
                 "title": "Ver 26.09.03",
                 "items": [
                   "`[Updated]` Communication Tester has been updated from `V3.0` to `V3.1`."
@@ -2272,6 +2329,15 @@
           {
             "title": "labelGenerator",
             "versions": [
+              {
+                "title": "Ver 2.2.0",
+                "items": [
+                  "`[수정]` Excel 라벨 영역의 행 높이를 18로 통일했습니다.",
+                  "`[수정]` 일부 라벨명이 파란색으로 표시되던 문제를 해결하고 글자색을 검은색으로 통일했습니다.",
+                  "`[수정]` 비트 라벨 영역의 셀 테두리가 사라지던 문제를 해결했습니다.",
+                  "`[수정]` 라벨명과 설명의 정렬이 서로 다르게 표시되던 문제를 해결하고, 왼쪽 정렬과 세로 가운데 정렬로 통일했습니다."
+                ]
+              },
               {
                 "title": "Ver 2.1.0",
                 "items": [
@@ -2631,6 +2697,14 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.07",
+                "items": [
+                  "`[修复]` 修复了 OLP IO 测试输入无法保持 ON/OFF 状态或刷新显示，以及虚拟总线 InW 输入值未反映到程序中的问题。",
+                  "`[修复]` 修复了 OLP 移动未应用 Tool 编号和所选 TCP 位置及旋转偏移的问题。",
+                  "`[新增]` 连接控制器时读取 Out[0]～Out[16]，并联动 IO 测试显示、真空和夹爪等设备动作及 IO 映射。"
+                ]
+              },
+              {
                 "title": "Ver 26.10.01",
                 "items": [
                   "`[改进]` JOG 面板的 TCP 位置、旋转显示、坐标输入和移动按钮现在使用所选 Wobj 坐标系，底部 Wobj 按钮显示当前编号。"
@@ -2920,6 +2994,12 @@
           {
             "title": "Project Generator",
             "versions": [
+              {
+                "title": "Ver 26.10.07",
+                "items": [
+                  "为 Tray 工序添加 X/Y 数量和间距输入。生成的 s02_offset.pro 添加 Tray 偏移计算，Label 和 Excel 添加 INW[37] xwTray_index，用户报警 12 添加 ERR : Tray Count Error!。 生成的 IO 映射 Excel 文件名现在使用生成日期。 单元格数量为零或一个的工序不生成 Tray 偏移。"
+                ]
+              },
               {
                 "title": "Ver 26.10.06",
                 "items": [
@@ -3233,6 +3313,13 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.10.07",
+                "items": [
+                  "Communication Tester 从 V3.1 更新至 V3.2。",
+                  "InoRobot Label Gen 从 V2.1 更新至 V2.2。"
+                ]
+              },
+              {
                 "title": "Ver 26.09.03",
                 "items": [
                   "`[更新]` Communication Tester 已从 `V3.0` 更新至 `V3.1`。"
@@ -3452,6 +3539,15 @@
           {
             "title": "labelGenerator",
             "versions": [
+              {
+                "title": "Ver 2.2.0",
+                "items": [
+                  "`[수정]` Excel 라벨 영역의 행 높이를 18로 통일했습니다.",
+                  "`[수정]` 일부 라벨명이 파란색으로 표시되던 문제를 해결하고 글자색을 검은색으로 통일했습니다.",
+                  "`[수정]` 비트 라벨 영역의 셀 테두리가 사라지던 문제를 해결했습니다.",
+                  "`[수정]` 라벨명과 설명의 정렬이 서로 다르게 표시되던 문제를 해결하고, 왼쪽 정렬과 세로 가운데 정렬로 통일했습니다."
+                ]
+              },
               {
                 "title": "Ver 2.1.0",
                 "items": [
@@ -3811,6 +3907,14 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.07",
+                "items": [
+                  "`[Đã sửa]` Đã sửa lỗi đầu vào kiểm tra IO của OLP không giữ trạng thái ON/OFF hoặc cập nhật hiển thị, và giá trị InW từ bus ảo không được phản ánh trong chương trình.",
+                  "`[Đã sửa]` Đã sửa lỗi chuyển động OLP không áp dụng số Tool và độ lệch vị trí, góc xoay của TCP đã chọn.",
+                  "`[Đã thêm]` Khi kết nối bộ điều khiển, đọc Out[0]–Out[16] để liên kết hiển thị kiểm tra IO, hoạt động thiết bị như hút chân không, kẹp và ánh xạ IO."
+                ]
+              },
+              {
                 "title": "Ver 26.10.01",
                 "items": [
                   "`[Cải tiến]` Hiển thị vị trí và góc TCP, nhập tọa độ và nút di chuyển trong JOG sử dụng hệ tọa độ Wobj đã chọn. Nút Wobj phía dưới hiển thị số đang dùng."
@@ -4100,6 +4204,12 @@
           {
             "title": "Project Generator",
             "versions": [
+              {
+                "title": "Ver 26.10.07",
+                "items": [
+                  "Thêm số ô và bước X/Y cho quy trình Tray. s02_offset.pro tính độ lệch Tray; Label và Excel thêm INW[37] xwTray_index, cảnh báo 12 thêm ERR : Tray Count Error!. Tên tệp Excel ánh xạ IO được tạo hiện dùng ngày tạo. Không tạo độ lệch Tray cho quy trình có không hoặc một ô."
+                ]
+              },
               {
                 "title": "Ver 26.10.06",
                 "items": [
@@ -4413,6 +4523,13 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.10.07",
+                "items": [
+                  "Đã cập nhật Communication Tester từ V3.1 lên V3.2.",
+                  "Đã cập nhật InoRobot Label Gen từ V2.1 lên V2.2."
+                ]
+              },
+              {
                 "title": "Ver 26.09.03",
                 "items": [
                   "`[Cập nhật]` Đã cập nhật Communication Tester từ `V3.0` lên `V3.1`."
@@ -4632,6 +4749,15 @@
           {
             "title": "labelGenerator",
             "versions": [
+              {
+                "title": "Ver 2.2.0",
+                "items": [
+                  "`[수정]` Excel 라벨 영역의 행 높이를 18로 통일했습니다.",
+                  "`[수정]` 일부 라벨명이 파란색으로 표시되던 문제를 해결하고 글자색을 검은색으로 통일했습니다.",
+                  "`[수정]` 비트 라벨 영역의 셀 테두리가 사라지던 문제를 해결했습니다.",
+                  "`[수정]` 라벨명과 설명의 정렬이 서로 다르게 표시되던 문제를 해결하고, 왼쪽 정렬과 세로 가운데 정렬로 통일했습니다."
+                ]
+              },
               {
                 "title": "Ver 2.1.0",
                 "items": [
@@ -4991,6 +5117,14 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.07",
+                "items": [
+                  "`[Düzeltildi]` OLP IO testinde girişlerin ON/OFF durumunu korumaması veya ekranı yenilememesi ve sanal veri yolu InW değerlerinin programa yansımaması sorunları giderildi.",
+                  "`[Düzeltildi]` OLP hareketlerinde Tool numarasının ve seçilen TCP konum ve dönüş ofsetlerinin uygulanmaması sorunu giderildi.",
+                  "`[Eklendi]` Kontrolör bağlantısında Out[0]–Out[16] okunarak IO test ekranı, vakum ve tutucu gibi ekipman hareketleri ve IO eşlemeleriyle ilişkilendirildi."
+                ]
+              },
+              {
                 "title": "Ver 26.10.01",
                 "items": [
                   "`[İyileştirildi]` JOG TCP konum ve dönüş göstergeleri, koordinat girişi ve hareket düğmeleri seçili Wobj koordinat sistemini kullanır. Alt Wobj düğmesi etkin numarayı gösterir."
@@ -5280,6 +5414,12 @@
           {
             "title": "Project Generator",
             "versions": [
+              {
+                "title": "Ver 26.10.07",
+                "items": [
+                  "Tray işlemlerine X/Y hücre sayısı ve aralık girişleri eklendi. s02_offset.pro Tray ofsetlerini hesaplar; Label ve Excel dosyalarına INW[37] xwTray_index, kullanıcı alarmı 12 için ERR : Tray Count Error! eklendi. Oluşturulan IO eşleme Excel dosyasının adı artık oluşturma tarihini kullanır. Sıfır veya tek hücreli işlemlerde Tray ofseti oluşturulmaz."
+                ]
+              },
               {
                 "title": "Ver 26.10.06",
                 "items": [
@@ -5593,6 +5733,13 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.10.07",
+                "items": [
+                  "Communication Tester V3.1 sürümünden V3.2 sürümüne güncellendi.",
+                  "InoRobot Label Gen V2.1 sürümünden V2.2 sürümüne güncellendi."
+                ]
+              },
+              {
                 "title": "Ver 26.09.03",
                 "items": [
                   "[Güncellendi] İletişim Test Cihazı `V3.0`'dan `V3.1`'ya güncellendi."
@@ -5812,6 +5959,15 @@
           {
             "title": "labelGenerator",
             "versions": [
+              {
+                "title": "Ver 2.2.0",
+                "items": [
+                  "`[수정]` Excel 라벨 영역의 행 높이를 18로 통일했습니다.",
+                  "`[수정]` 일부 라벨명이 파란색으로 표시되던 문제를 해결하고 글자색을 검은색으로 통일했습니다.",
+                  "`[수정]` 비트 라벨 영역의 셀 테두리가 사라지던 문제를 해결했습니다.",
+                  "`[수정]` 라벨명과 설명의 정렬이 서로 다르게 표시되던 문제를 해결하고, 왼쪽 정렬과 세로 가운데 정렬로 통일했습니다."
+                ]
+              },
               {
                 "title": "Ver 2.1.0",
                 "items": [
@@ -6171,6 +6327,14 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.07",
+                "items": [
+                  "`[Исправлено]` Исправлены проблемы сохранения состояний ON/OFF и обновления отображения входов в тесте IO OLP, а также передачи значений InW виртуальной шины в программу.",
+                  "`[Исправлено]` Исправлена проблема применения номера Tool и смещений положения и поворота выбранного TCP при движении OLP.",
+                  "`[Добавлено]` При подключении контроллера значения Out[0]–Out[16] используются для отображения теста IO, управления вакуумом, захватами и другими механизмами и выполнения сопоставлений IO."
+                ]
+              },
+              {
                 "title": "Ver 26.10.01",
                 "items": [
                   "`[Улучшено]` Показания положения и ориентации TCP, ввод координат и кнопки перемещения JOG используют выбранную систему Wobj. Нижняя кнопка Wobj показывает активный номер."
@@ -6460,6 +6624,12 @@
           {
             "title": "Project Generator",
             "versions": [
+              {
+                "title": "Ver 26.10.07",
+                "items": [
+                  "Для процессов Tray добавлен ввод количества ячеек и шага X/Y. В s02_offset.pro добавлен расчёт смещения Tray; в Label и Excel добавлена переменная INW[37] xwTray_index, а для тревоги 12 — ERR : Tray Count Error!. Имя создаваемого файла Excel карты IO теперь содержит дату создания. Для процессов с нулём или одной ячейкой смещения Tray не создаются."
+                ]
+              },
               {
                 "title": "Ver 26.10.06",
                 "items": [
@@ -6773,6 +6943,13 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.10.07",
+                "items": [
+                  "Communication Tester обновлён с V3.1 до V3.2.",
+                  "InoRobot Label Gen обновлён с V2.1 до V2.2."
+                ]
+              },
+              {
                 "title": "Ver 26.09.03",
                 "items": [
                   "[Обновлено] Коммуникационный тестер обновлен с `V3.0` до `V3.1`."
@@ -6992,6 +7169,15 @@
           {
             "title": "labelGenerator",
             "versions": [
+              {
+                "title": "Ver 2.2.0",
+                "items": [
+                  "`[수정]` Excel 라벨 영역의 행 높이를 18로 통일했습니다.",
+                  "`[수정]` 일부 라벨명이 파란색으로 표시되던 문제를 해결하고 글자색을 검은색으로 통일했습니다.",
+                  "`[수정]` 비트 라벨 영역의 셀 테두리가 사라지던 문제를 해결했습니다.",
+                  "`[수정]` 라벨명과 설명의 정렬이 서로 다르게 표시되던 문제를 해결하고, 왼쪽 정렬과 세로 가운데 정렬로 통일했습니다."
+                ]
+              },
               {
                 "title": "Ver 2.1.0",
                 "items": [

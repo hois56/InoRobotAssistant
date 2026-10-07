@@ -62,6 +62,10 @@ class ProcessStep {
         this.VisionUse = "No use";
         this._customName = null;
         this.ExtraWaitCount = 0;
+        this.TrayXCount = 3;
+        this.TrayYCount = 3;
+        this.TrayPitchX = -58;
+        this.TrayPitchY = -58;
         this.teachMode = false;
         this.waitPos = false;
     }
@@ -421,6 +425,17 @@ window.uStep = function (idx, field, val) {
     renderSteps();
 }
 
+window.updateTraySetting = function (idx, field, input) {
+    const value = Number(input.value);
+    const isCount = field === 'TrayXCount' || field === 'TrayYCount';
+    if (input.value.trim() === '' || !Number.isFinite(value) || (isCount && (!Number.isInteger(value) || value < 0))) {
+        input.value = state.steps[idx][field];
+        return;
+    }
+    state.steps[idx][field] = value;
+    updatePreview();
+};
+
 window.addExtraWait = function (stepIdx) {
     if (!state.steps[stepIdx]) return;
     state.steps[stepIdx].ExtraWaitCount = (state.steps[stepIdx].ExtraWaitCount || 0) + 1;
@@ -601,7 +616,7 @@ function renderSteps() {
     document.getElementById('processCount').innerText = `${state.steps.length} / 15`;
     state.steps.forEach((s, idx) => {
         const el = document.createElement('div');
-        el.className = 'flex items-center gap-2 p-3 bg-slate-900/40 border border-slate-700/50 rounded-xl max-w-full overflow-hidden';
+        el.className = 'flex flex-wrap items-center gap-2 p-3 bg-slate-900/40 border border-slate-700/50 rounded-xl max-w-full overflow-hidden';
 
         let mOpts = [];
         if (s.WorkType === "Trash") mOpts.push("Put");
@@ -635,6 +650,12 @@ function renderSteps() {
             <select data-i18n-skip onchange="window.uStep(${idx}, 'VisionUse', this.value)" ${disV} class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${vOpts.map(v => `<option ${s.VisionUse === v ? 'selected' : ''}>${v}</option>`).join('')}</select>
             <button onclick="window.rStep(${idx})" class="text-slate-500 hover:text-red-400 font-bold ml-1 w-6 h-6 flex items-center justify-center flex-shrink-0">X</button>
         `;
+        if (s.WorkType === 'Tray') {
+            el.innerHTML += `<div class="w-full flex flex-wrap gap-3 pt-2 border-t border-slate-700/50" data-tray-settings="${idx}">${[
+                ['TrayXCount', 'X Count', 3], ['TrayYCount', 'Y Count', 3],
+                ['TrayPitchX', 'X Pitch', -58], ['TrayPitchY', 'Y Pitch', -58]
+            ].map(([field, label, fallback]) => `<label data-i18n-skip class="flex items-center gap-2 text-xs text-slate-400">${label}<input aria-label="${label}" type="number" ${field.endsWith('Count') ? 'min="0" step="1"' : 'step="any"'} value="${s[field] ?? fallback}" onchange="window.updateTraySetting(${idx}, '${field}', this)" class="w-16 bg-slate-800 border border-slate-600 rounded px-2 py-1 text-slate-200"></label>`).join('')}</div>`;
+        }
         list.appendChild(el);
     });
     uSelector();
@@ -988,6 +1009,53 @@ function updatePreview() {
 }
 
 
+function getIOMapFilename(date = new Date()) {
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `InoRobot_IO_Map_${month}${day}.xlsx`;
+}
+
+async function buildIOMapExcel() {
+    const workbook = await JSZip.loadAsync(Assets.IO_Map_Excel, { base64: true });
+    if (state.steps.some(Generator.UsesTrayOffset)) {
+        // Preserve the template and its styles; INW 37 is the fieldbus word at row 83.
+        const sheetPath = 'xl/worksheets/sheet2.xml';
+        const xml = new DOMParser().parseFromString(await workbook.file(sheetPath).async('string'), 'application/xml');
+        const ns = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+        const cells = [...xml.getElementsByTagNameNS(ns, 'c')];
+        for (const [ref, value] of [['F83', state.labelOverrides.xwTray_index || 'xwTray_index'], ['G83', 'Tray cell index (1-based)']]) {
+            const cell = cells.find(item => item.getAttribute('r') === ref);
+            if (!cell) throw new Error(`Missing IO map cell: ${ref}`);
+            cell.replaceChildren();
+            cell.setAttribute('t', 'inlineStr');
+            const inline = xml.createElementNS(ns, 'x:is');
+            const text = xml.createElementNS(ns, 'x:t');
+            text.textContent = value;
+            inline.appendChild(text);
+            cell.appendChild(inline);
+        }
+        // Use the same one-word layout as the template's INW 40 labels.
+        for (const column of ['F', 'G']) {
+            for (let row = 83; row <= 98; row++) {
+                const cell = cells.find(item => item.getAttribute('r') === `${column}${row}`);
+                const reference = cells.find(item => item.getAttribute('r') === `${column}${row + 48}`);
+                if (reference?.hasAttribute('s')) cell.setAttribute('s', reference.getAttribute('s'));
+            }
+        }
+        const merges = xml.getElementsByTagNameNS(ns, 'mergeCells')[0];
+        for (const ref of ['F83:F98', 'G83:G98']) {
+            if (![...merges.children].some(item => item.getAttribute('ref') === ref)) {
+                const merge = xml.createElementNS(ns, 'x:mergeCell');
+                merge.setAttribute('ref', ref);
+                merges.appendChild(merge);
+            }
+        }
+        merges.setAttribute('count', merges.children.length);
+        workbook.file(sheetPath, new XMLSerializer().serializeToString(xml));
+    }
+    return workbook.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+}
+
 async function exportProj() {
     const name = document.getElementById('prjName').value || state.projectName;
     try {
@@ -1001,6 +1069,7 @@ async function exportProj() {
             processNames.add(key);
             const config = state.options.VisionConfigs[step.id];
             if (config) state.options.VisionConfigs[step.id] = validateVisionEndpoint(config);
+            if (Generator.IsTray(step)) Generator.TraySettings(step);
         });
     } catch (error) {
         alert(uiText(error.message));
@@ -1068,8 +1137,9 @@ async function exportProj() {
         // Name changes dynamically based on input
         addCustomZFile(root, `${name}.prj`, `${name}.prj`);
 
-        registerArchivePath('', 'InoRobot_IO_Map_0614.xlsx');
-        root.file("InoRobot_IO_Map_0614.xlsx", Assets.IO_Map_Excel, { base64: true });
+        const ioMapFilename = getIOMapFilename();
+        registerArchivePath('', ioMapFilename);
+        root.file(ioMapFilename, await buildIOMapExcel());
 
         const includePattern = /\bInclude\s+["']([^"']+)["']/gi;
         for (const [archivePath, content] of generatedTexts.entries()) {

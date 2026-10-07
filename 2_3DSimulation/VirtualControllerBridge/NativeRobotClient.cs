@@ -20,6 +20,8 @@ internal sealed class NativeRobotClient : IDisposable
     private int _consecutiveJointReadFailures;
     private long _jointReadFailureStartedAt;
     private string? _lastConnectionLossDiagnostic;
+    private long _nextOutputReadAt;
+    private Dictionary<int, int> _outputs = new();
 
     private readonly int _communicationId;
 
@@ -245,11 +247,29 @@ internal sealed class NativeRobotClient : IDisposable
                     // feedback or its optional call fails transiently.
                 }
 
+                if (Environment.TickCount64 >= _nextOutputReadAt)
+                {
+                    var outputs = new Dictionary<int, int>();
+                    for (int index = 0; index <= 16; index++)
+                    {
+                        try
+                        {
+                            int status = 0;
+                            int result = NativeApi.IMC100_Get_DO(index, ref status, _communicationId);
+                            if (result >= 0) outputs[index] = status == 0 ? 0 : 1;
+                        }
+                        catch { /* Optional IO feedback must not stop joint synchronization. */ }
+                    }
+                    _outputs = outputs;
+                    _nextOutputReadAt = Environment.TickCount64 + 50;
+                }
+
                 return new RobotState(
                     sequence,
                     timestamp,
                     jointPosition.JointData.ToArray(),
-                    tcp);
+                    tcp,
+                    _outputs);
             }
             catch (Exception error)
             {
@@ -436,6 +456,8 @@ internal sealed class NativeRobotClient : IDisposable
 
     private void DisconnectUnsafe()
     {
+        _outputs = new();
+        _nextOutputReadAt = 0;
         if (!IsConnected && !_nativeSessionOpen)
             return;
         CloseNativeSessionUnsafe();
@@ -541,6 +563,8 @@ internal sealed class NativeRobotClient : IDisposable
 
     private static class NativeApi
     {
+        [DllImport(NativeLibraryName, EntryPoint = "IMC100_Get_DO")]
+        public static extern int IMC100_Get_DO(int num, ref int status, int comId);
         [DllImport(NativeLibraryName, EntryPoint = "IMC100_Init_ETH")]
         public static extern int IMC100_Init_ETH(uint ipAddress, ushort port, int timeout, int communicationId);
 
@@ -570,7 +594,7 @@ internal sealed class NativeRobotClient : IDisposable
     }
 }
 
-internal sealed record RobotState(long Sequence, long Timestamp, double[] Joints, double[] Tcp);
+internal sealed record RobotState(long Sequence, long Timestamp, double[] Joints, double[] Tcp, IReadOnlyDictionary<int, int> Outputs);
 
 internal sealed class InterferenceZoneReadResult
 {

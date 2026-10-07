@@ -179,6 +179,7 @@ import {
 import {
     IO_SIMULATOR_DISPLAY_MODES,
     IO_SIMULATOR_DIRECTIONS,
+    IO_SIMULATOR_RANGES,
     getIoSimulatorEntries,
     normalizeIoSimulatorDirection,
     normalizeIoSimulatorMode,
@@ -4117,7 +4118,7 @@ function recomputeInterferenceOutputs() {
     applyWorkOriginOutputStates(nextOutputs);
     const controlled = new Set(state.interferenceZones.filter(zone => isInterferenceZoneEnabled(zone)).map(zone => zone.outSignal));
     for (const index of controlled) if (index >= 0 && index < nextOutputs.length) writeOlpAddress('Out[' + index + ']', nextOutputs[index] ? 1 : 0);
-    state.simulationIo.outputs = state.simulationIo.outputs.map((value, index) => controlled.has(index) ? nextOutputs[index] : value);
+    state.simulationIo.outputs = state.simulationIo.outputs.map((value, index) => controlled.has(index) && !isControllerOutputLive(index, 1) ? nextOutputs[index] : value);
     renderInterferenceZoneIo();
 }
 
@@ -30474,7 +30475,7 @@ function selectTcpProfile(index) {
     if (isMotionActive() || !robot?.userData.tcpFrame || !Number.isInteger(index)
         || index < 0 || index >= TCP_PROFILE_COUNT) return;
     ensureRobotTcpProfiles(robot);
-    if (robot.userData.activeTcpProfileIndex === index) {
+    if (robot.userData.activeTcpProfileIndex === index && !robot.userData.tcpLiveProfile) {
         refreshTcpProfileUi(robot);
         return;
     }
@@ -33085,7 +33086,7 @@ function getVirtualControllerForRobot(robot) {
 async function ensureVirtualControllerCore(controller = state.virtualController) {
     if (controller.core) return controller.core;
     if (!controller.corePromise) {
-        controller.corePromise = import('./virtual-controller-core.mjs')
+        controller.corePromise = import('./virtual-controller-core.mjs?v=20261007-output-1')
             .then((core) => {
                 controller.core = core;
                 controller.samples = new core.VirtualControllerSampleBuffer();
@@ -33368,6 +33369,7 @@ function handleVirtualControllerMessage(raw, controller = state.virtualControlle
     if (!controller.core || !controller.samples) return;
     const parsed = controller.core.parseVirtualControllerMessage(raw, performance.now());
     if (parsed.kind === 'state') {
+        applyVirtualControllerOutputs(parsed.outputs);
         controller.samples.push(parsed);
         controller.lastSampleAt = parsed.receivedAt;
         if (controller.status !== 'streaming') {
@@ -34783,6 +34785,8 @@ function activateOlpProject(project, {
         state.olp.inputWords = new Uint16Array(OLP_WORD_COUNT);
         state.olp.outputWords = new Uint16Array(OLP_WORD_COUNT);
         state.olp.inputExtended = new Map();
+        state.olp.manualInputValues = new Map();
+        state.olp.busInputValues = null;
         state.olp.outputExtended = new Map();
         markIoSimulatorDirty();
         state.olp.positionCommandValues = new Map();
@@ -35094,7 +35098,7 @@ function renderIoSimulatorEntryValue(node, entry) {
 function markIoSimulatorDirty(directionValue, bitStart = null, bitWidth = 1) {
     const direction = normalizeIoSimulatorDirection(directionValue);
     if (!state.ioSimulator) return;
-    if (!Number.isFinite(Number(bitStart))) {
+    if (bitStart === null || !Number.isFinite(Number(bitStart))) {
         state.ioSimulator.dirtyAll = true;
         state.ioSimulator.dirtyRanges.clear();
         return;
@@ -35808,6 +35812,45 @@ function handleIoFunctionMappingListClick(event) {
     if (remove) deleteIoFunctionMapping(remove.dataset.ioFunctionMappingRemove);
 }
 
+function decodeOlpInputSnapshot(message) {
+    const words = new Uint16Array(OLP_WORD_COUNT);
+    words.set(message.words.slice(0, OLP_WORD_COUNT).map(clampWord));
+    const extended = new Map();
+    const readBit = (bit) => bit >= OLP_BIT_START
+        ? (words[Math.floor((bit - OLP_BIT_START) / 16)] >> ((bit - OLP_BIT_START) % 16)) & 1
+        : extended.get(`IN[${bit}]`) || 0;
+    const writeBit = (bit, enabled) => {
+        if (!isOlpSimulatorBitAddress(bit)) return;
+        if (bit < OLP_BIT_START) { extended.set(`IN[${bit}]`, enabled ? 1 : 0); return; }
+        const index = Math.floor((bit - OLP_BIT_START) / 16);
+        const mask = 1 << ((bit - OLP_BIT_START) % 16);
+        words[index] = enabled ? words[index] | mask : words[index] & ~mask;
+    };
+    for (const [address, value] of Object.entries(message.mappedValues || {})) {
+        const parsed = normalizeOlpAddress(address, getOlpProject()?.labels || {});
+        if (!parsed || !['IN', 'INB', 'INW'].includes(parsed.prefix)) continue;
+        const bitStart = getOlpGroupedBitStart(parsed);
+        const bitWidth = parsed.prefix === 'IN' ? 1 : parsed.prefix === 'INB' ? 8 : 16;
+        if (isOlpSimulatorBitAddress(bitStart)) {
+            writeIoSimulatorEntry({ bitStart, bitWidth }, value, writeBit);
+        } else {
+            extended.set(canonicalOlpAddress(parsed), clampWord(value));
+        }
+    }
+    const rawInputs = new Map();
+    for (const range of IO_SIMULATOR_RANGES) {
+        for (let bit = range.bitStart; bit <= range.bitEnd; bit++) rawInputs.set(bit, readBit(bit));
+    }
+    // An unchanged tester scan must not undo a manual IO test. A real
+    // tester transition takes control of that bit again, including OFF.
+    for (const [bit, value] of state.olp.manualInputValues || []) {
+        if (state.olp.busInputValues?.get(bit) === rawInputs.get(bit)) writeBit(bit, value);
+        else state.olp.manualInputValues.delete(bit);
+    }
+    state.olp.busInputValues = rawInputs;
+    return { words, extended };
+}
+
 function setOlpInputFromIoSimulator(entry, value) {
     if (!entry || entry.direction !== IO_SIMULATOR_DIRECTIONS.INPUT) return;
     if (state.equipmentDefinitions.some(def => [def.feedbackHome, def.feedbackEnd, def.feedbackGrip].some(address => address !== null && address >= entry.bitStart && address <= entry.bitEnd))) {
@@ -35816,6 +35859,10 @@ function setOlpInputFromIoSimulator(entry, value) {
     const before = readIoSimulatorEntry(entry, (bit) => readOlpSimulatorBit(entry.direction, bit));
     const numeric = writeIoSimulatorEntry(entry, value, (bit, enabled) => {
         writeOlpSimulatorBit(entry.direction, bit, enabled);
+        if (state.olp.busConnected) {
+            state.olp.manualInputValues ||= new Map();
+            state.olp.manualInputValues.set(bit, enabled ? 1 : 0);
+        }
     });
     const after = readIoSimulatorEntry(entry, (bit) => readOlpSimulatorBit(entry.direction, bit));
     if (before === after) {
@@ -35912,6 +35959,14 @@ function readOlpRawInputAddress(address, runtime = null) {
         : (state.olp.inputExtended.get(canonicalOlpAddress(parsed)) || 0);
 }
 
+function isControllerOutputLive(bitStart, bitWidth) {
+    return getVirtualControllerSessions().some((controller) => {
+        if (!controller.wanted || controller.status !== 'streaming') return false;
+        const outputs = controller.samples?.getLatest()?.outputs || {};
+        return Object.keys(outputs).some((address) => Number(address) >= bitStart && Number(address) < bitStart + bitWidth);
+    });
+}
+
 function writeOlpAddress(address, value, runtime = null, projectOverride = null) {
     const project = projectOverride || runtime?.project || getOlpProject();
     const parsed = normalizeOlpAddress(address, project?.labels || {});
@@ -35919,6 +35974,7 @@ function writeOlpAddress(address, value, runtime = null, projectOverride = null)
     const direction = IO_SIMULATOR_DIRECTIONS.OUTPUT;
     const bitStart = parsed.prefix === 'OUT' ? parsed.index : getOlpGroupedBitStart(parsed);
     const bitWidth = parsed.prefix === 'OUT' ? 1 : (parsed.prefix === 'OUTB' ? 8 : 16);
+    if (isControllerOutputLive(bitStart, bitWidth)) return;
     const supportedGroupedAddress = isOlpSimulatorBitAddress(bitStart);
     const numeric = parsed.prefix === 'OUT'
         ? (Number(value) ? 1 : 0)
@@ -36486,9 +36542,32 @@ async function tryOlpZoneBlend(robot, motion, point, speed, project, runtime, op
     }
 }
 
+function applyOlpTcpProfile(robot, options = {}) {
+    if (options.tool === undefined || options.tool === null || options.tool === '') return;
+    const tool = Number(options.tool);
+    if (!Number.isInteger(tool) || tool < 0 || tool > TCP_PROFILE_COUNT) {
+        throw new Error(`Tool index must be 0 to ${TCP_PROFILE_COUNT}.`);
+    }
+    if (!robot?.userData?.tcpFrame) throw new Error('TCP frame is unavailable for the selected robot.');
+    ensureRobotTcpProfiles(robot);
+    if (tool === 0) {
+        // Controller Tool[0] is the flange, not one of the saved TCP slots.
+        robot.userData.tcpLiveProfile = {
+            position: new THREE.Vector3(), quaternion: new THREE.Quaternion()
+        };
+    } else {
+        delete robot.userData.tcpLiveProfile;
+        robot.userData.activeTcpProfileIndex = tool - 1;
+    }
+    syncActiveTcpFrame(robot);
+    captureCurrentTcpTarget(robot);
+    if (robot === state.activeArticulatedModel) refreshTcpProfileUi(robot);
+}
+
 async function runOlpMove(motion, pointExpression, speed, project, runtime = null, options = {}) {
     const robot = getOlpRuntimeRobot(runtime);
     if (!robot) throw new Error('Select one robot before running OLP.');
+    applyOlpTcpProfile(robot, options);
     if (motion === 'MOVC') {
         const arcTargets = options.arcTargets || [];
         const middle = arcTargets[1];
@@ -36542,6 +36621,7 @@ async function runOlpJump(motion, pointExpression, speed, project, runtime = nul
     const robot = getOlpRuntimeRobot(runtime);
     if (!robot) throw new Error('Select one robot before running OLP.');
     if (robot.userData.manifest?.robotType !== 'scara') throw new Error(`${motion} is available only for SCARA robots.`);
+    applyOlpTcpProfile(robot, options);
     const point = getOlpMotionTarget(project, pointExpression, runtime, options);
     if (!point || point.kind === 'jointPoint') throw new Error(`${motion} requires a Cartesian P point.`);
     const start = getCurrentTcpPoseBase(robot);
@@ -36879,16 +36959,7 @@ function connectOlpVirtualBusLegacy() {
             const message = JSON.parse(event.data);
             if (message.type === 'inputSnapshot' && Array.isArray(message.words)) {
                 const previousPositionValues = new Map(state.olp.positionCommandValues);
-                const nextWords = Uint16Array.from(message.words.slice(0, OLP_WORD_COUNT).map(clampWord));
-                const nextExtended = new Map();
-                if (message.mappedValues && typeof message.mappedValues === 'object') {
-                    Object.entries(message.mappedValues).forEach(([address, value]) => {
-                        const parsed = normalizeOlpAddress(address, state.olp.project?.labels || {});
-                        if (parsed?.prefix === 'IN' || parsed?.prefix === 'INW') {
-                            nextExtended.set(canonicalOlpAddress(parsed), parsed.prefix === 'INW' ? clampWord(value) : (Number(value) ? 1 : 0));
-                        }
-                    });
-                }
+                const { words: nextWords, extended: nextExtended } = decodeOlpInputSnapshot(message);
                 const nextSignature = `${[...nextWords].join(',')}|${[...nextExtended.entries()].sort().map(([key, value]) => `${key}:${value}`).join(',')}`;
                 const changed = nextSignature !== state.olp.lastInputSignature;
                 const previousRemoteValues = new Map(state.olp.remoteCommandValues);
@@ -37021,6 +37092,8 @@ function connectOlpVirtualBus({ refreshMetadata = false } = {}) {
     state.olp.socket = socket;
     state.olp.busConnected = false;
     state.olp.busPhase = 'connecting';
+    state.olp.manualInputValues = new Map();
+    state.olp.busInputValues = null;
     state.olp.busLastPacketAt = 0;
     updateOlpBusStatus('Virtual Bus connecting');
     socket.addEventListener('open', () => {
@@ -37072,16 +37145,7 @@ function connectOlpVirtualBus({ refreshMetadata = false } = {}) {
             }
             if (message.type !== 'inputSnapshot' || !Array.isArray(message.words) || !state.olp.busConnected) return;
             const previousPositionValues = new Map(state.olp.positionCommandValues);
-            const nextWords = Uint16Array.from(message.words.slice(0, OLP_WORD_COUNT).map(clampWord));
-            const nextExtended = new Map();
-            if (message.mappedValues && typeof message.mappedValues === 'object') {
-                Object.entries(message.mappedValues).forEach(([address, value]) => {
-                    const parsed = normalizeOlpAddress(address, getOlpProject()?.labels || {});
-                    if (parsed?.prefix === 'IN' || parsed?.prefix === 'INW') {
-                        nextExtended.set(canonicalOlpAddress(parsed), parsed.prefix === 'INW' ? clampWord(value) : (Number(value) ? 1 : 0));
-                    }
-                });
-            }
+            const { words: nextWords, extended: nextExtended } = decodeOlpInputSnapshot(message);
             const nextSignature = `${[...nextWords].join(',')}|${[...nextExtended.entries()].sort().map(([key, value]) => `${key}:${value}`).join(',')}`;
             const changed = nextSignature !== state.olp.lastInputSignature;
             const previousRemoteValues = new Map(state.olp.remoteCommandValues);
@@ -37691,6 +37755,23 @@ function isVirtualControllerSourceLive(timestamp, controller = state.virtualCont
 
 
 
+
+function applyVirtualControllerOutputs(outputs) {
+    let changed = false;
+    for (const [address, value] of Object.entries(outputs || {})) {
+        const bit = Number(address);
+        if (!Number.isInteger(bit) || bit < 0 || bit > 16 || ![0, 1].includes(value)) continue;
+        if (readOlpSimulatorBit('OUT', bit) === value) continue;
+        writeOlpSimulatorBit('OUT', bit, value);
+        changed = true;
+        markIoSimulatorDirty('OUT', bit, 1);
+        processIoFunctionMappings({ direction: 'OUT', bitStart: bit, bitWidth: 1 });
+    }
+    if (changed) {
+        renderIoSimulatorDirtyEntries();
+        renderOlpIoMonitor();
+    }
+}
 
 function applyVirtualControllerFrameForController(timestamp, controller) {
     if (!controller.wanted || !controller.samples || !controller.core) return;
