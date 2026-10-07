@@ -254,6 +254,14 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.08",
+                "items": [
+                  "`[수정]` 6축 로봇의 선택 면 수직 정렬에서 J4가 뒤집히던 문제를 해결하고, 같은 TCP 위치·방향에서 J4가 0도에 가까운 자세를 우선하도록 개선했습니다.",
+                  "`[수정]` 마우스 휠로 모델을 계속 확대하면 중심점 근처에서 확대가 느려지던 문제를 해결했습니다. 커서가 가리키는 모델 표면을 기준으로 확대·축소합니다.",
+                  "`[수정]` P1·P2 측정 후 직선 길이와 직각 치수를 전환할 때 P2를 다시 선택해야 하던 문제를 해결했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.10.07",
                 "items": [
                   "`[수정]` OLP IO 테스트에서 입력의 ON/OFF가 유지되지 않고 표시가 갱신되지 않던 문제와 가상 버스의 InW 입력값이 프로그램에 반영되지 않던 문제를 해결했습니다.",
@@ -679,6 +687,12 @@
           {
             "title": "Software",
             "versions": [
+              {
+                "title": "Ver 26.10.08",
+                "items": [
+                  "`[변경]` InoRobotLab 일반 포터블 버전을 32비트에서 64비트 파일로 교체했습니다."
+                ]
+              },
               {
                 "title": "Ver 26.10.06",
                 "items": [
@@ -1490,6 +1504,14 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.08",
+                "items": [
+                  "Fixed the flipped J4 posture when aligning a six-axis robot perpendicular to a selected face. Equivalent wrist configurations now prefer J4 closer to zero while preserving the TCP position and orientation.",
+                  "Fixed wheel zoom slowing near the orbit center during repeated zooming. Zoom now uses the model surface under the cursor.",
+                  "`[Fixed]` Switching between straight-line and orthogonal dimensions after selecting P1 and P2 now retains both points without requiring P2 to be selected again."
+                ]
+              },
+              {
                 "title": "Ver 26.10.07",
                 "items": [
                   "`[Fixed]` Fixed OLP IO test inputs failing to retain ON/OFF states or refresh their display, and virtual bus InW values not reaching the program.",
@@ -1898,6 +1920,12 @@
           {
             "title": "Software",
             "versions": [
+              {
+                "title": "Ver 26.10.08",
+                "items": [
+                  "`[Changed]` Replaced the standard InoRobotLab portable package with the 64-bit version instead of the 32-bit version."
+                ]
+              },
               {
                 "title": "Ver 26.10.06",
                 "items": [
@@ -2703,6 +2731,14 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.08",
+                "items": [
+                  "修复了六轴机器人垂直于选定面时J4翻转的问题。在保持TCP位置和方向不变的等效腕部姿态中，优先选择J4接近0度的姿态。",
+                  "修复了持续使用鼠标滚轮放大模型时，在旋转中心附近放大变慢的问题。现在以光标指向的模型表面为基准进行缩放。",
+                  "`[修复]` 选择P1和P2后，切换直线长度与直角尺寸时保留两个点，无需重新选择P2。"
+                ]
+              },
+              {
                 "title": "Ver 26.10.07",
                 "items": [
                   "`[修复]` 修复了 OLP IO 测试输入无法保持 ON/OFF 状态或刷新显示，以及虚拟总线 InW 输入值未反映到程序中的问题。",
@@ -3111,6 +3147,12 @@
           {
             "title": "Software",
             "versions": [
+              {
+                "title": "Ver 26.10.08",
+                "items": [
+                  "`[变更]` InoRobotLab 标准便携版已从32位替换为64位文件。"
+                ]
+              },
               {
                 "title": "Ver 26.10.06",
                 "items": [
@@ -3916,6 +3958,14 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.08",
+                "items": [
+                  "Đã khắc phục tư thế J4 bị lật khi căn robot 6 trục vuông góc với mặt đã chọn. Ưu tiên cấu hình cổ tay có J4 gần 0 độ trong khi giữ nguyên vị trí và hướng TCP.",
+                  "Đã khắc phục hiện tượng phóng to bằng con lăn chậm dần gần tâm xoay. Phóng to và thu nhỏ theo bề mặt mô hình dưới con trỏ.",
+                  "`[Sửa lỗi]` Khi chuyển giữa chiều dài đường thẳng và kích thước vuông góc sau khi chọn P1 và P2, giữ nguyên cả hai điểm mà không cần chọn lại P2."
+                ]
+              },
+              {
                 "title": "Ver 26.10.07",
                 "items": [
                   "`[Đã sửa]` Đã sửa lỗi đầu vào kiểm tra IO của OLP không giữ trạng thái ON/OFF hoặc cập nhật hiển thị, và giá trị InW từ bus ảo không được phản ánh trong chương trình.",
@@ -4324,6 +4374,12 @@
           {
             "title": "Software",
             "versions": [
+              {
+                "title": "Ver 26.10.08",
+                "items": [
+                  "`[Thay đổi]` Đã thay gói InoRobotLab bản tiêu chuẩn không cần cài đặt từ 32 bit sang 64 bit."
+                ]
+              },
               {
                 "title": "Ver 26.10.06",
                 "items": [
@@ -5129,6 +5185,14 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.08",
+                "items": [
+                  "Altı eksenli robot seçilen yüzeye dik hizalanırken J4 ekseninin ters dönmesi düzeltildi. TCP konumu ve yönü korunarak eşdeğer bilek duruşlarında J4 sıfıra daha yakın olacak şekilde tercih edilir.",
+                  "Fare tekerleğiyle sürekli yakınlaştırmada dönme merkezi yakınında yavaşlama sorunu giderildi. Yakınlaştırma ve uzaklaştırma artık imlecin altındaki model yüzeyini temel alır.",
+                  "`[Düzeltildi]` P1 ve P2 seçildikten sonra düz çizgi uzunluğu ile dik boyutlar arasında geçiş yapıldığında artık her iki nokta korunur ve P2 yeniden seçilmez."
+                ]
+              },
+              {
                 "title": "Ver 26.10.07",
                 "items": [
                   "`[Düzeltildi]` OLP IO testinde girişlerin ON/OFF durumunu korumaması veya ekranı yenilememesi ve sanal veri yolu InW değerlerinin programa yansımaması sorunları giderildi.",
@@ -5537,6 +5601,12 @@
           {
             "title": "Software",
             "versions": [
+              {
+                "title": "Ver 26.10.08",
+                "items": [
+                  "`[Değiştirildi]` Standart InoRobotLab taşınabilir paketi 32 bit yerine 64 bit dosyayla değiştirildi."
+                ]
+              },
               {
                 "title": "Ver 26.10.06",
                 "items": [
@@ -6342,6 +6412,14 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.08",
+                "items": [
+                  "Исправлен переворот J4 при выравнивании шестиосевого робота перпендикулярно выбранной грани. Среди эквивалентных положений запястья предпочтение отдаётся J4 ближе к нулю с сохранением положения и ориентации TCP.",
+                  "Исправлено замедление масштабирования колёсиком возле центра вращения. Приближение и отдаление теперь ориентируются на поверхность модели под курсором.",
+                  "`[Исправлено]` При переключении между длиной прямой и размерами по осям после выбора P1 и P2 обе точки сохраняются без повторного выбора P2."
+                ]
+              },
+              {
                 "title": "Ver 26.10.07",
                 "items": [
                   "`[Исправлено]` Исправлены проблемы сохранения состояний ON/OFF и обновления отображения входов в тесте IO OLP, а также передачи значений InW виртуальной шины в программу.",
@@ -6750,6 +6828,12 @@
           {
             "title": "Software",
             "versions": [
+              {
+                "title": "Ver 26.10.08",
+                "items": [
+                  "`[Изменено]` Портативная стандартная версия InoRobotLab заменена с 32-битной на 64-битную."
+                ]
+              },
               {
                 "title": "Ver 26.10.06",
                 "items": [
