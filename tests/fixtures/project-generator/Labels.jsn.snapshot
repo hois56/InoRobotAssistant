@@ -214,7 +214,7 @@
     ]
   },
   "InputWordLabels": {
-    "nNumberOfLabels": 22,
+    "nNumberOfLabels": 23,
     "LabelsArray": [
       {
         "nLabelId": 0,
@@ -232,139 +232,146 @@
       },
       {
         "nLabelId": 2,
+        "nIndex": 37,
+        "sLabel": "xwTray_index",
+        "sDescription": "Tray cell index (1-based)",
+        "sOriginalName": "INW[37]"
+      },
+      {
+        "nLabelId": 3,
         "nIndex": 40,
         "sLabel": "xwP_file_switch",
         "sDescription": "",
         "sOriginalName": "INW[40]"
       },
       {
-        "nLabelId": 3,
+        "nLabelId": 4,
         "nIndex": 41,
         "sLabel": "xwSet_speed",
         "sDescription": "Speed settings",
         "sOriginalName": "INW[41]"
       },
       {
-        "nLabelId": 4,
+        "nLabelId": 5,
         "nIndex": 42,
         "sLabel": "xwTeach_offset_X",
         "sDescription": "2 Word /10000",
         "sOriginalName": "INW[42]"
       },
       {
-        "nLabelId": 5,
+        "nLabelId": 6,
         "nIndex": 44,
         "sLabel": "xwTeach_offset_Y",
         "sDescription": "2 Word /10000",
         "sOriginalName": "INW[44]"
       },
       {
-        "nLabelId": 6,
+        "nLabelId": 7,
         "nIndex": 46,
         "sLabel": "xwTeach_offset_Z",
         "sDescription": "2 Word /10000",
         "sOriginalName": "INW[46]"
       },
       {
-        "nLabelId": 7,
+        "nLabelId": 8,
         "nIndex": 48,
         "sLabel": "xwTeach_offset_A",
         "sDescription": "2 Word /10000",
         "sOriginalName": "INW[48]"
       },
       {
-        "nLabelId": 8,
+        "nLabelId": 9,
         "nIndex": 50,
         "sLabel": "xwTeach_offset_B",
         "sDescription": "2 Word /10000",
         "sOriginalName": "INW[50]"
       },
       {
-        "nLabelId": 9,
+        "nLabelId": 10,
         "nIndex": 52,
         "sLabel": "xwTeach_offset_C",
         "sDescription": "2 Word /10000",
         "sOriginalName": "INW[52]"
       },
       {
-        "nLabelId": 10,
+        "nLabelId": 11,
         "nIndex": 54,
         "sLabel": "xwOffset_1_X",
         "sDescription": "2 Word, /10000",
         "sOriginalName": "INW[54]"
       },
       {
-        "nLabelId": 11,
+        "nLabelId": 12,
         "nIndex": 56,
         "sLabel": "xwOffset_1_Y",
         "sDescription": "2 Word, /10000",
         "sOriginalName": "INW[56]"
       },
       {
-        "nLabelId": 12,
+        "nLabelId": 13,
         "nIndex": 58,
         "sLabel": "xwOffset_1_Z",
         "sDescription": "2 Word, /10000",
         "sOriginalName": "INW[58]"
       },
       {
-        "nLabelId": 13,
+        "nLabelId": 14,
         "nIndex": 60,
         "sLabel": "xwOffset_1_A",
         "sDescription": "2 Word, /10000",
         "sOriginalName": "INW[60]"
       },
       {
-        "nLabelId": 14,
+        "nLabelId": 15,
         "nIndex": 62,
         "sLabel": "xwOffset_2_X",
         "sDescription": "2 Word, /10000",
         "sOriginalName": "INW[62]"
       },
       {
-        "nLabelId": 15,
+        "nLabelId": 16,
         "nIndex": 64,
         "sLabel": "xwOffset_2_Y",
         "sDescription": "2 Word, /10000",
         "sOriginalName": "INW[64]"
       },
       {
-        "nLabelId": 16,
+        "nLabelId": 17,
         "nIndex": 66,
         "sLabel": "xwOffset_2_Z",
         "sDescription": "2 Word, /10000",
         "sOriginalName": "INW[66]"
       },
       {
-        "nLabelId": 17,
+        "nLabelId": 18,
         "nIndex": 68,
         "sLabel": "xwOffset_2_A",
         "sDescription": "2 Word, /10000",
         "sOriginalName": "INW[68]"
       },
       {
-        "nLabelId": 18,
+        "nLabelId": 19,
         "nIndex": 70,
         "sLabel": "xwOffset_3_X",
         "sDescription": "2 Word, /10000",
         "sOriginalName": "INW[70]"
       },
       {
-        "nLabelId": 19,
+        "nLabelId": 20,
         "nIndex": 72,
         "sLabel": "xwOffset_3_Y",
         "sDescription": "2 Word, /10000",
         "sOriginalName": "INW[72]"
       },
       {
-        "nLabelId": 20,
+        "nLabelId": 21,
         "nIndex": 74,
         "sLabel": "xwOffset_3_Z",
         "sDescription": "2 Word, /10000",
         "sOriginalName": "INW[74]"
       },
       {
-        "nLabelId": 21,
+        "nLabelId": 22,
         "nIndex": 76,
         "sLabel": "xwOffset_3_A",
         "sDescription": "2 Word, /10000",

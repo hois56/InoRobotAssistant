@@ -59,6 +59,16 @@ function readTraceJoints(data) {
     return joints.every((value) => value !== null) ? joints : null;
 }
 
+function readControllerOutputs(data) {
+    const outputs = {};
+    for (let index = 0; index <= 16; index++) {
+        const value = data?.outputs?.[index] ?? data?.[`do_${index}`];
+        if (value === null || value === undefined || value === '' || !Number.isFinite(Number(value))) continue;
+        outputs[index] = Number(value) === 0 ? 0 : 1;
+    }
+    return outputs;
+}
+
 export function parseVirtualControllerMessage(raw, receivedAt = 0) {
     let message;
     try {
@@ -84,7 +94,8 @@ export function parseVirtualControllerMessage(raw, receivedAt = 0) {
             joints,
             position: hasTcp ? tcp.slice(0, 3) : null,
             rotation: hasTcp ? tcp.slice(3, 6) : null,
-            telemetry: null
+            telemetry: null,
+            outputs: readControllerOutputs(data)
         };
     }
 
@@ -108,7 +119,8 @@ export function parseVirtualControllerMessage(raw, receivedAt = 0) {
         // recorder. The controller synchronizer only needs the normalized
         // joint sample, but Trace also exposes errors, variables, I/O and
         // line-monitor values that must not be discarded here.
-        telemetry: { ...data }
+        telemetry: { ...data },
+        outputs: readControllerOutputs(data)
     };
 }
 

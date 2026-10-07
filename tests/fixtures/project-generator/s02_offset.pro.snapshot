@@ -14,6 +14,7 @@ Func Set_PR()
         #============================================================================
         Case 1:
             PR[B_PR] = (xwOffset_1_X.Int/10000,xwOffset_1_Y.Int/10000,xwOffset_1_Z.Int/10000,xwOffset_1_A.Int/10000,0,0);
+            Set_tray_offset();
             Break;
         #============================================================================
         #  P2 - Stage Put
@@ -35,4 +36,38 @@ Func Set_PR()
         PR[5] = (xwTeach_offset_X.Int/10000,xwTeach_offset_Y.Int/10000,xwTeach_offset_Z.Int/10000,xwTeach_offset_A.Int/10000,xwTeach_offset_B.Int/10000,xwTeach_offset_C.Int/10000);
         PR[6] = PR[5] + PR[B_PR];
     EndIf;
+EndFunc;
+#====================================================================================
+#  Set tray offset
+#====================================================================================
+Func Set_tray_offset()
+    #============================================================
+    # Setting
+    #============================================================
+    Int X_count = 3;       # X Cell Count
+    Int Y_count = 3;       # Y Cell Count
+    Double pitch_X = -58;    # X Pitch
+    Double pitch_Y = -58;    # Y Pitch
+    #============================================================
+    # Cell Number
+    #============================================================
+    Int num = xwTray_index - 1;
+    Int total_cell = X_count * Y_count;
+    #============================================================
+    # Range Check
+    #============================================================
+    If num < 0 Or num >= total_cell
+        Alarm[12];
+        Ret;
+    EndIf;
+    #============================================================
+    # Row / Column Calculate
+    #============================================================
+    Int row = num / X_count;
+    Int col = num - (row * X_count);
+    #============================================================
+    # Offset Calculate
+    #============================================================
+    LPR[B_PR] = (pitch_X*row, pitch_Y*col,0,0,0,0);
+    PR[B_PR] = PR[B_PR] + LPR[B_PR];
 EndFunc;

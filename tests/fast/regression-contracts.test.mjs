@@ -129,9 +129,9 @@ test('주요 화면의 로컬 스크립트와 스타일 경로가 실제 파일�
 
 test('Communication Tester 다운로드는 실행 파일을 담은 ZIP 아카이브를 가리킨다', () => {
   const html = fs.readFileSync(path.join(repoRoot, '7_DebuggingTool/index.html'), 'utf8');
-  const archivePath = path.join(repoRoot, '7_DebuggingTool/CommunicationTester/InoRobot_Comm_Test_V3.1.zip');
+  const archivePath = path.join(repoRoot, '7_DebuggingTool/CommunicationTester/InoRobot_Comm_Test_V3.2.zip');
 
-  assert.match(html, /href="CommunicationTester\/InoRobot_Comm_Test_V3\.1\.zip"/);
+  assert.match(html, /href="CommunicationTester\/InoRobot_Comm_Test_V3\.2\.zip"/);
   const archive = fs.readFileSync(archivePath);
   assert.equal(archive.readUInt32LE(0), 0x04034b50, 'Communication Tester 다운로드 파일이 ZIP 아카이브가 아닙니다.');
 });

@@ -14,6 +14,74 @@ const TemplateHelper = {
 };
 
 const Generator = {
+    IsTray(step) {
+        return step.WorkType === 'Tray' && (step.WorkMethod === 'Get' || step.WorkMethod === 'Put');
+    },
+
+    UsesTrayOffset(step) {
+        if (!Generator.IsTray(step)) return false;
+        const [x, y] = Generator.TraySettings(step);
+        return x * y > 1;
+    },
+
+    TraySettings(step) {
+        const count = (value) => value === undefined ? 3 : Number(value);
+        const pitch = (value) => value === undefined ? -58 : Number(value);
+        const settings = [count(step.TrayXCount), count(step.TrayYCount), pitch(step.TrayPitchX), pitch(step.TrayPitchY)];
+        if (!settings.slice(0, 2).every(value => Number.isInteger(value) && value >= 0) || !settings.slice(2).every(Number.isFinite)) {
+            throw new Error('Tray counts must be non-negative integers and pitches must be finite numbers.');
+        }
+        return settings;
+    },
+
+    TrayOffsetFunction(steps) {
+        const trays = steps.filter(Generator.UsesTrayOffset);
+        if (!trays.length) return '';
+        let settings = '';
+        if (trays.some(step => Generator.TraySettings(step).some((value, index) => value !== [3, 3, -58, -58][index]))) {
+            settings = '    Switch B_Cur_process\n';
+            trays.forEach(step => {
+                const [x, y, px, py] = Generator.TraySettings(step);
+                settings += `        Case ${step.No}:\n            X_count = ${x};\n            Y_count = ${y};\n            pitch_X = ${px};\n            pitch_Y = ${py};\n            Break;\n`;
+            });
+            settings += '    EndSwitch;\n';
+        }
+        return `#====================================================================================
+#  Set tray offset
+#====================================================================================
+Func Set_tray_offset()
+    #============================================================
+    # Setting
+    #============================================================
+    Int X_count${settings ? '' : ' = 3'};       # X Cell Count
+    Int Y_count${settings ? '' : ' = 3'};       # Y Cell Count
+    Double pitch_X${settings ? '' : ' = -58'};    # X Pitch
+    Double pitch_Y${settings ? '' : ' = -58'};    # Y Pitch
+${settings}    #============================================================
+    # Cell Number
+    #============================================================
+    Int num = xwTray_index - 1;
+    Int total_cell = X_count * Y_count;
+    #============================================================
+    # Range Check
+    #============================================================
+    If num < 0 Or num >= total_cell
+        Alarm[12];
+        Ret;
+    EndIf;
+    #============================================================
+    # Row / Column Calculate
+    #============================================================
+    Int row = num / X_count;
+    Int col = num - (row * X_count);
+    #============================================================
+    # Offset Calculate
+    #============================================================
+    LPR[B_PR] = (pitch_X*row, pitch_Y*col,0,0,0,0);
+    PR[B_PR] = PR[B_PR] + LPR[B_PR];
+EndFunc;
+`;
+    },
     Header(robotName, timeFunc = "getNowAmPm") {
         return `ProgramInfo\n    Version = "S4.24"\n    VRC = "V4R24"\n    Time = "${TemplateHelper[timeFunc]()}"\n    RobotName = "${robotName}"\nEndProgramInfo\n`;
     },
@@ -199,6 +267,7 @@ const Generator = {
                     sb += `            PR[B_PR] = PR[B_PR] + PR[0];\n`;
                 }
             }
+            if (Generator.UsesTrayOffset(s)) sb += `            Set_tray_offset();\n`;
             sb += `            Break;\n`;
         });
         sb += `    EndSwitch;\n`;
@@ -206,6 +275,7 @@ const Generator = {
             sb += `    #================================================================================\n    #  Teach mode offset\n    #================================================================================\n    If xTeach_mode\n        PR[5] = (xwTeach_offset_X.Int/10000,xwTeach_offset_Y.Int/10000,xwTeach_offset_Z.Int/10000,xwTeach_offset_A.Int/10000,xwTeach_offset_B.Int/10000,xwTeach_offset_C.Int/10000);\n        PR[6] = PR[5] + PR[B_PR];\n    EndIf;\n`;
         }
         sb += `EndFunc;\n`;
+        sb += Generator.TrayOffsetFunction(steps);
         return sb;
     },
 
@@ -462,6 +532,7 @@ const Generator = {
         let warn = ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""];
         steps.forEach(s => {
             if (s.ToolType === "Vacuum" || s.WorkType === "Trash") { warn[0] = "ERR : Tool Vacuum ON Error!"; warn[1] = "ERR : Tool Vacuum OFF Error!"; }
+            if (Generator.UsesTrayOffset(s)) warn[12] = "ERR : Tray Count Error!";
             if (s.ToolType === "Gripper" || Generator.IsPeeling(s) || s.WorkType === "Trash") { warn[2] = "ERR : Gripper ON Error!"; warn[3] = "ERR : Gripper OFF Error!"; }
             if (s.WorkType === "Trash") { warn[4] = "ERR : Trash Gripper ON Error!"; warn[5] = "ERR : Trash Gripper OFF Error!"; }
             if (s.WorkType === "Stage") { warn[6] = "ERR : Stage Vacuum ON Error!"; warn[7] = "ERR : Stage Vacuum OFF Error!"; }
@@ -602,6 +673,7 @@ const Generator = {
             { nIndex: 33, sLabel: "xwProcess_wait_pos", sDescription: "", sOriginalName: "INW[33]" },
             { nIndex: 34, sLabel: "xwProcess_work_pos", sDescription: "", sOriginalName: "INW[34]" }
         ];
+        if (steps.some(Generator.UsesTrayOffset)) inWords.push({ nIndex: 37, sLabel: "xwTray_index", sDescription: "Tray cell index (1-based)", sOriginalName: "INW[37]" });
         if (options.EnableMultiRecipe) inWords.push({ nIndex: 40, sLabel: "xwP_file_switch", sDescription: "", sOriginalName: "INW[40]" });
         inWords.push({ nIndex: 41, sLabel: "xwSet_speed", sDescription: "Speed settings", sOriginalName: "INW[41]" });
         if (options.EnableTeachingMode) {
