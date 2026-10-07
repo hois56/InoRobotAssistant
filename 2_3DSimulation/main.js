@@ -17,7 +17,7 @@ import {
     createCoordinateFrame,
     integrateStepMesh
 } from '../3_ToolSelector/mass-properties.mjs';
-import { MeshCollisionSystem } from './collision-system.mjs';
+import { MeshCollisionSystem } from './collision-system.mjs?v=20261007-vacuum-margin-1';
 import { isSimulationCollisionPair, shouldReportSimulationCollision } from './collision-policy-core.mjs';
 import {
     MOTION_PROJECT_SCHEMA_VERSION,
@@ -103,9 +103,9 @@ import {
     resolveOlpPoint,
     updateOlpFileText
 } from './olp-project-core.mjs';
-import { createEquipmentApp } from './equipment-app.mjs';
-import { EQUIPMENT_TYPES, EQUIPMENT_IO_TYPES, EQUIPMENT_LABELS, normalizeEquipmentDefinition, equipmentMotionGroups, equipmentReferences, equipmentCommandOptions } from './equipment-core.mjs';
-import { equipmentObjectRef } from './equipment-scene.mjs';
+import { createEquipmentApp } from './equipment-app.mjs?v=20261007-object-reset-1';
+import { EQUIPMENT_TYPES, EQUIPMENT_IO_TYPES, EQUIPMENT_LABELS, normalizeEquipmentDefinition, equipmentMotionGroups, equipmentReferences, equipmentCommandOptions } from './equipment-core.mjs?v=20261007-object-reset-1';
+import { equipmentObjectRef } from './equipment-scene.mjs?v=20261007-object-reset-1';
 import { conveyorElapsedSeconds } from './conveyor-core.mjs';
 import { moveConveyorObjects } from './conveyor-scene.mjs';
 import * as WorkspaceRecovery from './workspace-recovery-core.mjs';
@@ -30197,6 +30197,9 @@ function syncActiveTcpFrame(robot, profileOverride = null) {
     tcpFrame.scale.set(1, 1, 1);
     tcpFrame.updateMatrix();
     robot.updateMatrixWorld(true);
+    if (robot.userData.controllerTcpPose) {
+        applyControllerTcpPose(robot, robot.userData.controllerTcpPose);
+    }
 }
 
 function restoreRobotTcpProfiles(robot, profiles, activeIndex = 0) {
@@ -30940,7 +30943,7 @@ function getJointJogDisplaySpec(joint) {
     };
 }
 
-function setJointAngle(joint, rawValue, syncControl = true) {
+function setJointAngle(joint, rawValue, syncControl = true, deferUpdates = false) {
     const { min, max } = joint.definition;
     const parsed = Number(rawValue);
     const value = THREE.MathUtils.clamp(Number.isFinite(parsed) ? parsed : 0, min, max);
@@ -30954,19 +30957,19 @@ function setJointAngle(joint, rawValue, syncControl = true) {
         joint.group.position.copy(joint.basePosition);
         joint.group.quaternion.setFromAxisAngle(joint.axis, THREE.MathUtils.degToRad(value));
     }
-    if (joint.definition.name === 'J1') updateScaraTube(joint.robot);
+    if (!deferUpdates && joint.definition.name === 'J1') updateScaraTube(joint.robot);
     if (syncControl && joint.control) {
         const display = joint.control.display || getJointJogDisplaySpec(joint);
         const displayValue = display.toDisplay(value);
         joint.control.range.value = formatJogValue(displayValue);
         joint.control.number.value = formatJogValue(displayValue);
     }
-    if (changed && !isCollisionPoseProbe) {
+    if (changed && !isCollisionPoseProbe && !deferUpdates) {
         markSceneCollisionDirty(joint.robot);
         syncOlpHomeStatus(joint.robot);
         syncWorkOriginOutputStates();
     }
-    if (!isCollisionPoseProbe) requestRender();
+    if (!isCollisionPoseProbe && !deferUpdates) requestRender();
     return value;
 }
 
@@ -31269,7 +31272,7 @@ function getCurrentTcpPoseBase(robot) {
     const tcpFrame = robot.userData.tcpFrame;
     if (!tcpFrame) return null;
 
-    robot.updateMatrixWorld(true);
+    tcpFrame.updateWorldMatrix(true, false);
     const worldPosition = tcpFrame.getWorldPosition(new THREE.Vector3());
     const worldQuaternion = tcpFrame.getWorldQuaternion(new THREE.Quaternion());
     const baseWorldQuaternion = getRobotControllerBaseFrame(robot).getWorldQuaternion(new THREE.Quaternion());
@@ -31526,7 +31529,7 @@ function getJogReadoutPose(robot, basePose) {
     ));
     const index = resolveWorkObjectIndex(robot.userData.activeWorkObjectIndex);
     if (index === WOBJ_WORLD_INDEX) return { position: basePose.position.clone(), quaternion };
-    robot.updateMatrixWorld(true);
+    getRobotControllerBaseFrame(robot).updateWorldMatrix(true, false);
     const workObject = getWorkObjectWorldPose(robot, index);
     const inverse = workObject.quaternion.clone().invert();
     return {
@@ -31541,7 +31544,7 @@ function getBasePoseFromJogReadout(robot, displayPose) {
     const quaternion = displayPose.quaternion.clone();
     const index = resolveWorkObjectIndex(robot.userData.activeWorkObjectIndex);
     if (index !== WOBJ_WORLD_INDEX) {
-        robot.updateMatrixWorld(true);
+        getRobotControllerBaseFrame(robot).updateWorldMatrix(true, false);
         const workObject = getWorkObjectWorldPose(robot, index);
         getRobotControllerBaseFrame(robot).worldToLocal(position.applyQuaternion(workObject.quaternion).add(workObject.position));
         quaternion.premultiply(workObject.quaternion)
@@ -37704,6 +37707,7 @@ function closeVirtualControllerSocket(notifyBridge = true, controller = state.vi
 function disconnectVirtualController(controller = state.virtualController) {
     const historyBefore = controller.historyBefore;
     const robot = getVirtualControllerTargetRobot(controller);
+    restoreControllerToolFrame(robot);
     if (robot) sendCollaborationRobotState(robot, { connected: false, streaming: false });
     controller.historyBefore = null;
     controller.wanted = false;
@@ -37719,6 +37723,17 @@ function disconnectVirtualController(controller = state.virtualController) {
     controller.reconnectMessage = '';
     clearVirtualControllerStreamWatchdog(controller);
     setVirtualControllerStatus('disconnected', '', controller);
+    if (robot) {
+        const pose = getCurrentTcpPoseBase(robot);
+        if (pose) {
+            robot.userData.baseJogTarget = {
+                position: pose.position.clone(), quaternion: pose.quaternion.clone()
+            };
+            updateTcpPresentation(robot, pose);
+            if (robot === state.activeArticulatedModel) syncBaseJogGizmoFromRobot(robot, pose);
+        }
+        syncWorkOriginOutputStates();
+    }
     refreshViewPresetsUi();
     if (historyBefore) recordHistory('가상 컨트롤러 동기화', historyBefore, captureSceneSnapshot());
     removeVirtualControllerSession(controller);
@@ -37773,6 +37788,63 @@ function applyVirtualControllerOutputs(outputs) {
     }
 }
 
+function restoreControllerToolFrame(robot, notify = true) {
+    const saved = robot?.userData.controllerToolFrame;
+    const flange = robot?.userData.flangeFrame;
+    if (!saved || !flange) return false;
+    flange.position.copy(saved.position);
+    flange.quaternion.copy(saved.quaternion);
+    flange.scale.copy(saved.scale);
+    delete robot.userData.controllerToolFrame;
+    delete robot.userData.controllerTcpPose;
+    flange.updateWorldMatrix(true, true);
+    if (notify) {
+        markSceneCollisionDirty(robot);
+        requestRender();
+    }
+    return true;
+}
+
+function applyControllerTcpPose(robot, pose, notify = true) {
+    const flange = robot?.userData.flangeFrame;
+    const tcp = robot?.userData.tcpFrame;
+    if (!pose || !flange?.parent || !tcp) return;
+    if (!robot.userData.controllerToolFrame) {
+        flange.updateMatrix();
+        robot.userData.controllerToolFrame = {
+            position: flange.position.clone(),
+            quaternion: flange.quaternion.clone(),
+            scale: flange.scale.clone(),
+            matrix: flange.matrix.clone()
+        };
+    }
+    flange.parent.updateWorldMatrix(true, false);
+    const base = getRobotControllerBaseFrame(robot);
+    const worldPosition = base.localToWorld(pose.position.clone());
+    const worldQuaternion = base.getWorldQuaternion(new THREE.Quaternion()).multiply(pose.quaternion);
+    // The controller pose already includes the active TCP and Wobj. Recover
+    // the Tool mount from that final pose instead of adding the TCP again or
+    // solving IK and potentially changing the received arm configuration.
+    tcp.updateMatrix();
+    // Derive scale from the authored mount, preventing correction drift.
+    const nominalTcpWorld = flange.parent.matrixWorld.clone()
+        .multiply(robot.userData.controllerToolFrame.matrix).multiply(tcp.matrix);
+    const targetTcpWorld = new THREE.Matrix4().compose(
+        worldPosition, worldQuaternion, new THREE.Vector3().setFromMatrixScale(nominalTcpWorld)
+    );
+    const targetFlangeLocal = flange.parent.matrixWorld.clone().invert()
+        .multiply(targetTcpWorld).multiply(tcp.matrix.clone().invert());
+    targetFlangeLocal.decompose(flange.position, flange.quaternion, flange.scale);
+    robot.userData.controllerTcpPose = {
+        position: pose.position.clone(), quaternion: pose.quaternion.clone()
+    };
+    flange.updateWorldMatrix(false, true);
+    if (notify) {
+        markSceneCollisionDirty(robot);
+        requestRender();
+    }
+}
+
 function applyVirtualControllerFrameForController(timestamp, controller) {
     if (!controller.wanted || !controller.samples || !controller.core) return;
     if (!isVirtualControllerSourceLive(timestamp, controller)) return;
@@ -37790,27 +37862,54 @@ function applyVirtualControllerFrameForController(timestamp, controller) {
         setVirtualControllerStatus('error', '가상 컨트롤러의 관절 위치를 가져올 수 없습니다.', controller);
         return;
     }
+    const hasTcp = Array.isArray(sample.position) && sample.position.length === 3 && sample.position.every(Number.isFinite)
+        && Array.isArray(sample.rotation) && sample.rotation.length === 3 && sample.rotation.every(Number.isFinite);
+    let changed = !hasTcp && restoreControllerToolFrame(robot, false);
+    let jointsChanged = false;
+    let firstJointChanged = false;
     joints.forEach((joint, index) => {
         let value = sample.joints[index];
         // The controller can report the SCARA vertical axis as a motor/encoder
         // angle, while the simulator's J3 is prismatic and expects millimeters.
-        // TCP Z is already in the Cartesian unit expected by the simulator. If
-        // TCP feedback is unavailable (for example Trace), convert the raw
-        // controller Joint angle back to the simulator's millimeter coordinate.
-        if (index === 2
-            && robot.userData.manifest?.robotType === 'scara'
-            && Number.isFinite(sample.position?.[2])) {
-            const tcpOffsetZ = Number(robot.userData.tcpFrame?.position?.z) || 0;
-            value = sample.position[2] - tcpOffsetZ;
-        } else if (index === 2 && robot.userData.manifest?.robotType === 'scara') {
+        // Convert motor angle to millimeters independently of TCP/Wobj; the
+        // received Cartesian endpoint is applied to the Tool mount below.
+        if (index === 2 && robot.userData.manifest?.robotType === 'scara') {
             value = getJointJogDisplaySpec(joint).fromDisplay(value);
         }
-        setJointAngle(joint, value, false);
+        if (joint.angle === value) return;
+        const previousAngle = joint.angle;
+        setJointAngle(joint, value, false, true);
+        if (joint.angle !== previousAngle) {
+            jointsChanged = true;
+            if (index === 0) firstJointChanged = true;
+        }
     });
-    robot.updateMatrixWorld(true);
-    queueCollaborationRobotState(robot);
+    if (firstJointChanged) updateScaraTube(robot);
+    if (jointsChanged) syncOlpHomeStatus(robot);
+    let pose = null;
+    if (hasTcp) {
+        // Controller A/B/C are RZ/RY/RX, as in P.pts and OLP point records.
+        const [rz, ry, rx] = sample.rotation.map(THREE.MathUtils.degToRad);
+        const displayPose = {
+            position: new THREE.Vector3().fromArray(sample.position),
+            quaternion: new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz, 'ZYX'))
+        };
+        pose = getBasePoseFromJogReadout(robot, displayPose);
+        const previousPose = robot.userData.controllerTcpPose;
+        if (jointsChanged || !previousPose || previousPose.position.distanceToSquared(pose.position) > 1e-18
+            || 1 - Math.abs(previousPose.quaternion.dot(pose.quaternion)) > 1e-12) {
+            applyControllerTcpPose(robot, pose, false);
+            changed = true;
+        }
+    }
     controller.statusMessage = '';
-    const pose = getCurrentTcpPoseBase(robot);
+    if (!changed && !jointsChanged) return;
+    // Notify once for a complete pose, after all joints and the TCP agree.
+    markSceneCollisionDirty(robot);
+    syncWorkOriginOutputStates();
+    requestRender();
+    queueCollaborationRobotState(robot);
+    pose ||= getCurrentTcpPoseBase(robot);
     if (pose) {
         robot.userData.baseJogTarget = {
             position: pose.position.clone(),

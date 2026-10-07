@@ -20,14 +20,15 @@ internal sealed class NativeRobotClient : IDisposable
     private int _consecutiveJointReadFailures;
     private long _jointReadFailureStartedAt;
     private string? _lastConnectionLossDiagnostic;
-    private long _nextOutputReadAt;
-    private Dictionary<int, int> _outputs = new();
+    private readonly ControllerOutputSampler _outputSampler = new();
+    private readonly Func<int, int?> _readOutput;
 
     private readonly int _communicationId;
 
     public NativeRobotClient(int communicationId = 0)
     {
         _communicationId = communicationId;
+        _readOutput = ReadOutput;
     }
 
     public bool IsConnected { get; private set; }
@@ -247,29 +248,14 @@ internal sealed class NativeRobotClient : IDisposable
                     // feedback or its optional call fails transiently.
                 }
 
-                if (Environment.TickCount64 >= _nextOutputReadAt)
-                {
-                    var outputs = new Dictionary<int, int>();
-                    for (int index = 0; index <= 16; index++)
-                    {
-                        try
-                        {
-                            int status = 0;
-                            int result = NativeApi.IMC100_Get_DO(index, ref status, _communicationId);
-                            if (result >= 0) outputs[index] = status == 0 ? 0 : 1;
-                        }
-                        catch { /* Optional IO feedback must not stop joint synchronization. */ }
-                    }
-                    _outputs = outputs;
-                    _nextOutputReadAt = Environment.TickCount64 + 50;
-                }
+                _outputSampler.Update(Environment.TickCount64, _readOutput);
 
                 return new RobotState(
                     sequence,
                     timestamp,
                     jointPosition.JointData.ToArray(),
                     tcp,
-                    _outputs);
+                    _outputSampler.Values);
             }
             catch (Exception error)
             {
@@ -281,6 +267,13 @@ internal sealed class NativeRobotClient : IDisposable
                 return null;
             }
         }
+    }
+
+    private int? ReadOutput(int index)
+    {
+        int status = 0;
+        int result = NativeApi.IMC100_Get_DO(index, ref status, _communicationId);
+        return result >= 0 ? status : null;
     }
 
     public InterferenceZoneReadResult ReadInterferenceZone(int zoneNumber)
@@ -456,8 +449,7 @@ internal sealed class NativeRobotClient : IDisposable
 
     private void DisconnectUnsafe()
     {
-        _outputs = new();
-        _nextOutputReadAt = 0;
+        _outputSampler.Reset();
         if (!IsConnected && !_nativeSessionOpen)
             return;
         CloseNativeSessionUnsafe();

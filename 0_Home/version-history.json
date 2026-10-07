@@ -258,7 +258,10 @@
                 "items": [
                   "`[수정]` OLP IO 테스트에서 입력의 ON/OFF가 유지되지 않고 표시가 갱신되지 않던 문제와 가상 버스의 InW 입력값이 프로그램에 반영되지 않던 문제를 해결했습니다.",
                   "`[수정]` OLP 이동에서 Tool 번호와 선택한 TCP의 위치·회전 오프셋이 적용되지 않던 문제를 해결했습니다.",
-                  "`[추가]` 컨트롤러 연결 시 Out[0]~Out[16]을 읽어 IO 테스트와 진공·그리퍼 등 설비 동작 및 IO 매핑에 연동하도록 추가했습니다."
+                  "`[추가]` 컨트롤러 연결 시 Out[0]~Out[16]을 읽어 IO 테스트와 진공·그리퍼 등 설비 동작 및 IO 매핑에 연동하도록 추가했습니다.",
+                  "`[개선]` 진공 패드와 오브젝트 사이에 0.1mm 이내의 간격이 있어도 흡착되도록 접촉 조건에 여유를 추가했습니다.",
+                  "`[수정]` 실제 컨트롤러 연결 시 TCP·WOBJ가 반영된 수신 위치·회전을 사용하여 시뮬레이션 끝점과 컨트롤러의 위치값이 다르던 문제를 해결하고, 위치 동기화 중 화면 갱신을 개선했습니다.",
+                  "`[추가]` 모두 원위치 기능으로 등록된 오브젝트의 위치·회전을 초기 상태로 한 번에 복원할 수 있습니다."
                 ]
               },
               {
@@ -1491,7 +1494,10 @@
                 "items": [
                   "`[Fixed]` Fixed OLP IO test inputs failing to retain ON/OFF states or refresh their display, and virtual bus InW values not reaching the program.",
                   "`[Fixed]` Fixed OLP motion ignoring the Tool number and the selected TCP position and rotation offsets.",
-                  "`[Added]` Controller Out[0]–Out[16] feedback now drives the IO test display, equipment such as vacuum and grippers, and IO mappings."
+                  "`[Added]` Controller Out[0]–Out[16] feedback now drives the IO test display, equipment such as vacuum and grippers, and IO mappings.",
+                  "`[Improved]` Vacuum pads now acquire objects when the surface gap is within 0.1 mm.",
+                  "`[Fixed]` Fixed simulation endpoint differences by using received TCP position and rotation, including TCP and Wobj, and improved screen updates during controller position synchronization.",
+                  "`[Added]` Reset all now restores registered objects to their initial positions and rotations."
                 ]
               },
               {
@@ -2701,7 +2707,10 @@
                 "items": [
                   "`[修复]` 修复了 OLP IO 测试输入无法保持 ON/OFF 状态或刷新显示，以及虚拟总线 InW 输入值未反映到程序中的问题。",
                   "`[修复]` 修复了 OLP 移动未应用 Tool 编号和所选 TCP 位置及旋转偏移的问题。",
-                  "`[新增]` 连接控制器时读取 Out[0]～Out[16]，并联动 IO 测试显示、真空和夹爪等设备动作及 IO 映射。"
+                  "`[新增]` 连接控制器时读取 Out[0]～Out[16]，并联动 IO 测试显示、真空和夹爪等设备动作及 IO 映射。",
+                  "`[改进]` 真空吸盘与物体表面间距在 0.1 mm 以内时也可吸附。",
+                  "`[修复]` 连接实际控制器时使用已包含 TCP 和 Wobj 的接收位置及姿态，修复了仿真末端与控制器位置不一致的问题，并改善了位置同步时的画面更新。",
+                  "`[新增]` 全部归位功能现在可将已注册对象的位置和姿态一次恢复到初始状态。"
                 ]
               },
               {
@@ -3911,7 +3920,10 @@
                 "items": [
                   "`[Đã sửa]` Đã sửa lỗi đầu vào kiểm tra IO của OLP không giữ trạng thái ON/OFF hoặc cập nhật hiển thị, và giá trị InW từ bus ảo không được phản ánh trong chương trình.",
                   "`[Đã sửa]` Đã sửa lỗi chuyển động OLP không áp dụng số Tool và độ lệch vị trí, góc xoay của TCP đã chọn.",
-                  "`[Đã thêm]` Khi kết nối bộ điều khiển, đọc Out[0]–Out[16] để liên kết hiển thị kiểm tra IO, hoạt động thiết bị như hút chân không, kẹp và ánh xạ IO."
+                  "`[Đã thêm]` Khi kết nối bộ điều khiển, đọc Out[0]–Out[16] để liên kết hiển thị kiểm tra IO, hoạt động thiết bị như hút chân không, kẹp và ánh xạ IO.",
+                  "`[Cải thiện]` Đệm hút chân không có thể hút vật thể khi khoảng cách giữa các bề mặt không quá 0,1 mm.",
+                  "`[Sửa lỗi]` Đã sửa sai lệch điểm cuối bằng vị trí và góc quay nhận được có TCP và Wobj, đồng thời cải thiện cập nhật màn hình khi đồng bộ vị trí bộ điều khiển thực.",
+                  "`[Thêm]` Chức năng đưa tất cả về vị trí ban đầu khôi phục vị trí và góc quay ban đầu của các đối tượng đã đăng ký."
                 ]
               },
               {
@@ -5121,7 +5133,10 @@
                 "items": [
                   "`[Düzeltildi]` OLP IO testinde girişlerin ON/OFF durumunu korumaması veya ekranı yenilememesi ve sanal veri yolu InW değerlerinin programa yansımaması sorunları giderildi.",
                   "`[Düzeltildi]` OLP hareketlerinde Tool numarasının ve seçilen TCP konum ve dönüş ofsetlerinin uygulanmaması sorunu giderildi.",
-                  "`[Eklendi]` Kontrolör bağlantısında Out[0]–Out[16] okunarak IO test ekranı, vakum ve tutucu gibi ekipman hareketleri ve IO eşlemeleriyle ilişkilendirildi."
+                  "`[Eklendi]` Kontrolör bağlantısında Out[0]–Out[16] okunarak IO test ekranı, vakum ve tutucu gibi ekipman hareketleri ve IO eşlemeleriyle ilişkilendirildi.",
+                  "`[İyileştirildi]` Vakum pedleri, yüzeyler arasındaki boşluk 0,1 mm veya daha az olduğunda nesneleri tutabilir.",
+                  "`[Düzeltildi]` Gerçek kontrolör bağlantısında TCP ve Wobj içeren alınan konum ve dönüş değerleriyle uç nokta farkı giderildi ve konum eşitlemesi sırasında ekran güncellemeleri iyileştirildi.",
+                  "`[Eklendi]` Tümünü sıfırla işlevi, kayıtlı nesneleri başlangıç konumlarına ve dönüşlerine geri getirir."
                 ]
               },
               {
@@ -6331,7 +6346,10 @@
                 "items": [
                   "`[Исправлено]` Исправлены проблемы сохранения состояний ON/OFF и обновления отображения входов в тесте IO OLP, а также передачи значений InW виртуальной шины в программу.",
                   "`[Исправлено]` Исправлена проблема применения номера Tool и смещений положения и поворота выбранного TCP при движении OLP.",
-                  "`[Добавлено]` При подключении контроллера значения Out[0]–Out[16] используются для отображения теста IO, управления вакуумом, захватами и другими механизмами и выполнения сопоставлений IO."
+                  "`[Добавлено]` При подключении контроллера значения Out[0]–Out[16] используются для отображения теста IO, управления вакуумом, захватами и другими механизмами и выполнения сопоставлений IO.",
+                  "`[Улучшено]` Вакуумные присоски захватывают объекты при зазоре между поверхностями не более 0,1 мм.",
+                  "`[Исправлено]` Устранено расхождение конечной точки с помощью полученных положения и ориентации с учётом TCP и Wobj; улучшено обновление экрана при синхронизации положения реального контроллера.",
+                  "`[Добавлено]` Сброс всех объектов восстанавливает исходные положение и ориентацию зарегистрированных объектов."
                 ]
               },
               {
