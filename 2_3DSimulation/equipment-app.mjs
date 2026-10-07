@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { EquipmentScene, equipmentObjectRef } from './equipment-scene.mjs';
-import { createEquipmentUi } from './equipment-ui.mjs';
-import { EQUIPMENT_LABELS, normalizeEquipmentDefinition, validateEquipmentDefinitions, equipmentMotionGroups, equipmentReferences, normalizeEquipmentBindings } from './equipment-core.mjs';
+import { EquipmentScene, equipmentObjectRef } from './equipment-scene.mjs?v=20261007-object-reset-1';
+import { createEquipmentUi } from './equipment-ui.mjs?v=20261007-object-reset-1';
+import { EQUIPMENT_LABELS, normalizeEquipmentDefinition, validateEquipmentDefinitions, equipmentMotionGroups, equipmentReferences, normalizeEquipmentBindings } from './equipment-core.mjs?v=20261007-object-reset-1';
 
 export function createEquipmentApp(adapter) {
     const resolve = ref => {
@@ -58,6 +58,7 @@ export function createEquipmentApp(adapter) {
             && (def.type !== 'FILM_PEEL' || ['movingRef', 'pullerRef', 'filmGripRef', 'filmGripSide', 'filmGripOffset', 'filmGripWidth', 'filmLength', 'filmWidth'].every(key => def[key] === previous[key]) && JSON.stringify(def.filmGripRefs) === JSON.stringify(previous.filmGripRefs));
         const simple = ['OBJECT', 'VACUUM'].includes(def.type);
         if (simple) {
+            if (def.type === 'OBJECT') runtime.captureObjectOrigins(def, previous?.type === 'OBJECT' ? previous : null);
             if (previous && previous.type === def.type && JSON.stringify(equipmentReferences(previous)) === JSON.stringify(equipmentReferences(def))) def.runtime = JSON.parse(JSON.stringify(previous.runtime));
         } else if (sameStructure) {
             def.origins = JSON.parse(JSON.stringify(previous.origins)); def.runtime = JSON.parse(JSON.stringify(previous.runtime));
@@ -147,11 +148,18 @@ export function createEquipmentApp(adapter) {
         saveConveyor: (def, bindings) => adapter.saveConveyor(def, normalizeEquipmentBindings(bindings)),
         status: id => runtime.status.get(id), changed: adapter.changed,
         global(command) {
+            const before = command === 'reset' ? adapter.snapshot() : null;
             if (command === 'start') { runtime.manual.clear(); runtime.start(); }
             else if (command === 'pause') runtime.pause();
-            else if (command === 'reset') runtime.reset(adapter.definitions());
+            else if (command === 'reset') {
+                runtime.stop();
+                adapter.conveyorControl?.(command, runtime.paused);
+                runtime.reset(adapter.definitions());
+                adapter.conveyorControl?.('stop', runtime.paused);
+                adapter.history('모두 원위치', before);
+            }
             else runtime.stop();
-            adapter.conveyorControl?.(command, runtime.paused);
+            if (command !== 'reset') adapter.conveyorControl?.(command, runtime.paused);
             adapter.changed();
         },
         command(id, command) { runtime.manual.set(id, command); runtime.start(); adapter.changed(); }

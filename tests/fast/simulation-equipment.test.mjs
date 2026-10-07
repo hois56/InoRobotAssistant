@@ -17,6 +17,16 @@ test('오브젝트는 IO와 이동 설정 없이 등록하고 진공은 패드�
     assert.throws(()=>normalizeIoFunctionMapping({id:'object-io',action:'OBJECT',address:512}),/동작|지원|action|매핑/);
 });
 
+test('등록 오브젝트의 초기 위치는 프로젝트 정규화·복사 후에도 보존한다', () => {
+    const matrix = [1,0,0,0, 0,1,0,0, 0,0,1,0, 10,20,30,1];
+    const source = { id: 'original-object', type: 'OBJECT', movingRef: 'part-a', origins: { objectWorld: { 'part-a': matrix } } };
+    const restored = normalizeEquipmentDefinition(JSON.parse(JSON.stringify(source)));
+    assert.deepEqual(restored.origins, source.origins);
+    restored.origins.objectWorld['part-a'][12] = 900;
+    assert.equal(matrix[12], 10);
+    assert.deepEqual(normalizeEquipmentDefinition({ id: 'legacy-object', type: 'OBJECT', movingRef: 'part-a' }).origins, {});
+});
+
 test('실린더·외부 축은 속도로 이동하고 중간 반전과 끝단 센서를 처리한다', () => {
     assert.equal(stepEquipmentPosition(0, 100, 50, 2), 100);
     assert.equal(stepEquipmentPosition(40, 0, 50, 0.2), 30);

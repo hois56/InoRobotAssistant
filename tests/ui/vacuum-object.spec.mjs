@@ -19,7 +19,7 @@ test('진공은 등록된 접촉 물체만 흡착하며 패드 자세·저장 �
  const result=await page.evaluate(async()=>{
   const a=window.__vacuum,app=a.equipmentApp;const box=(name,xyz)=>{const m=a.createPrimitiveShapeRoot('box',{x:20,y:20,z:20},{name});m.position.fromArray(xyz);a.state.scene.add(m);a.state.models.push(m);return m;};
   const ref=m=>'equipment-model:'+a.ensureWorkspaceModelId(m)+'/-1';
-  const pad=box('패드',[0,0,20]),obj=box('등록 물체',[0,0,0]),ignored=box('미등록 물체',[0,0,0]),air=box('떨어진 등록 물체',[0,0,-0.1]);
+  const pad=box('패드',[0,0,20]),obj=box('등록 물체',[0,0,0]),ignored=box('미등록 물체',[0,0,0]),air=box('떨어진 등록 물체',[0,0,-0.11]);
   app.save({id:'objects',type:'OBJECT',movingRefs:[ref(obj),ref(air)]});const def=app.save({id:'vacuum',type:'VACUUM',movingRef:ref(pad)},{forward:512,reverse:null});
   const mappings=a.state.ioFunctionMappings;a.writeOlpAddress('Out[512]',1);app.runtime.start();app.runtime.update(a.state.equipmentDefinitions,mappings,0);app.runtime.update(a.state.equipmentDefinitions,mappings,20);
   const held=def.runtime.heldRef;const count=def.runtime.heldObjects.length;
@@ -30,7 +30,31 @@ test('진공은 등록된 접촉 물체만 흡착하며 패드 자세·저장 �
   a.writeOlpAddress('Out[512]',0);app.runtime.start();app.runtime.update(a.state.equipmentDefinitions,a.state.ioFunctionMappings,0);const released=restored.runtime.heldRef;app.resolve(restored.movingRef).object.position.x+=50;app.runtime.update(a.state.equipmentDefinitions,a.state.ioFunctionMappings,20);
   return {held,expected:ref(obj),count,pose,unchanged,airPose,persisted,released,after:restoredObj.getWorldPosition(new a.THREE.Vector3()).toArray(),registry:app.objects().length};
  });
- expect(result.held).toBe(result.expected);expect(result.count).toBe(1);result.pose.forEach((v,i)=>expect(v).toBeCloseTo([80,50,20][i],5));expect(result.unchanged).toEqual([0,0,0]);expect(result.airPose).toEqual([0,0,-0.1]);expect(result.persisted).toEqual(result.pose);expect(result.released).toBe('');expect(result.after).toEqual(result.pose);expect(result.registry).toBe(2);expect(errors).toEqual([]);
+ expect(result.held).toBe(result.expected);expect(result.count).toBe(1);result.pose.forEach((v,i)=>expect(v).toBeCloseTo([80,50,20][i],5));expect(result.unchanged).toEqual([0,0,0]);expect(result.airPose).toEqual([0,0,-0.11]);expect(result.persisted).toEqual(result.pose);expect(result.released).toBe('');expect(result.after).toEqual(result.pose);expect(result.registry).toBe(2);expect(errors).toEqual([]);
+});
+
+test('진공은 실제 표면 간격 0.1mm까지 흡착하고 초과·대각선 거리·빈 공간은 제외한다',async({page})=>{
+ await setup(page);
+ const result=await page.evaluate(()=>{
+  const a=window.__vacuum,app=a.equipmentApp;
+  const box=(name,position,dimensions={x:20,y:20,z:20})=>{const m=a.createPrimitiveShapeRoot('box',dimensions,{name});m.position.fromArray(position);a.state.scene.add(m);a.state.models.push(m);return m;};
+  const ref=m=>'equipment-model:'+a.ensureWorkspaceModelId(m)+'/-1';
+  const trials=[{gap:0},{gap:0.05},{gap:0.1},{gap:0.1001},{gap:0.08,diagonal:true},{gap:0.1,rotated:true}];
+  const held=trials.map((trial,i)=>{
+   const x=i*100,pad=box('경계 패드 '+i,[x,0,20+trial.gap]),obj=box('경계 제품 '+i,[x,0,0]);
+   if(trial.diagonal)pad.position.x+=20+trial.gap;
+   if(trial.rotated){pad.rotation.z=Math.PI/4;obj.rotation.z=Math.PI/4;}
+   app.save({id:'boundary-object-'+i,type:'OBJECT',movingRef:ref(obj)});
+   const def=app.save({id:'boundary-vacuum-'+i,type:'VACUUM',movingRef:ref(pad)});
+   app.runtime.applyVacuum(def,true);const acquired=!!def.runtime.heldRef;
+   app.runtime.applyVacuum(def,false);if(def.runtime.heldRef)throw new Error('파기 후에도 흡착 상태가 남았습니다.');
+   return acquired;
+  });
+  const frame=new a.THREE.Group();frame.userData.uploaded=true;frame.userData.placement='scene';frame.add(box('왼쪽 프레임',[980,0,0],{x:2,y:20,z:20}),box('오른쪽 프레임',[1020,0,0],{x:2,y:20,z:20}));a.state.scene.add(frame);a.state.models.push(frame);
+  const pad=box('빈 공간 패드',[1000,0,0],{x:2,y:2,z:2});app.save({id:'frame-object',type:'OBJECT',movingRef:ref(frame)});const def=app.save({id:'frame-vacuum',type:'VACUUM',movingRef:ref(pad)});app.runtime.applyVacuum(def,true);
+  return {held,hollow:!!def.runtime.heldRef};
+ });
+ expect(result.held).toEqual([true,true,true,false,false,true]);expect(result.hollow).toBe(false);
 });
 
 test('컨베이어는 등록된 항목만 이송하고 등록 해제하면 멈춘다',async({page})=>{

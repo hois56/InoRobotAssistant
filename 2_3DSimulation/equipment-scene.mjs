@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { equipmentFeedback, resolveEquipmentCommand, stepEquipmentPosition, equipmentMotionGroups, equipmentReferences } from './equipment-core.mjs';
+import { equipmentFeedback, resolveEquipmentCommand, stepEquipmentPosition, equipmentMotionGroups, equipmentReferences } from './equipment-core.mjs?v=20261007-object-reset-1';
 import { createFilmState, stepFilm, getFilmGripLayout, getFilmPeelFromGrip } from './film-peeling-core.mjs';
 import { conveyorLocalBounds } from './conveyor-scene.mjs';
-import { MeshCollisionSystem } from './collision-system.mjs';
+import { MeshCollisionSystem } from './collision-system.mjs?v=20261007-vacuum-margin-1';
 
 export function equipmentObjectRef(modelId, partIndex = -1) { return `equipment-model:${modelId}/${partIndex}`; }
 
@@ -137,6 +137,41 @@ export class EquipmentScene {
             || (def.type === 'FILM_PEEL' && def.runtime.position > 0)));
     }
 
+    captureObjectOrigins(def, previous = null) {
+        const saved = previous?.origins?.objectWorld || def.origins?.objectWorld || {};
+        const objectWorld = {};
+        for (const ref of equipmentReferences(def)) {
+            const object = this.adapter.resolve(ref)?.object;
+            if (!object) continue;
+            const matrix = saved[ref];
+            if (Array.isArray(matrix) && matrix.length === 16 && matrix.every(Number.isFinite)) objectWorld[ref] = [...matrix];
+            else {
+                object.updateWorldMatrix(true, false);
+                objectWorld[ref] = object.matrixWorld.toArray();
+            }
+        }
+        def.origins = { objectWorld };
+    }
+
+    resetObjects(definitions) {
+        const entries = new Map();
+        for (const def of definitions.filter(item => item.type === 'OBJECT')) {
+            for (const ref of equipmentReferences(def)) {
+                const target = this.adapter.resolve(ref);
+                const matrix = def.origins?.objectWorld?.[ref];
+                if (!target || !Array.isArray(matrix) || matrix.length !== 16 || !matrix.every(Number.isFinite)) continue;
+                if (target.object === target.model) this.adapter.release(target);
+                delete target.object.userData.equipmentOwner;
+                if (!entries.has(target.object)) entries.set(target.object, { ...target, matrix });
+            }
+        }
+        const depth = object => { let result = 0; while (object.parent) { result++; object = object.parent; } return result; };
+        for (const target of [...entries.values()].sort((a, b) => depth(a.object) - depth(b.object))) {
+            this.applyWorld(target.object, new THREE.Matrix4().fromArray(target.matrix));
+            this.adapter.dirty(target.model);
+        }
+    }
+
     reset(definitions) {
         for (const def of definitions) {
             this.release(def);
@@ -151,6 +186,7 @@ export class EquipmentScene {
             this.writeFeedback(def, false);
             this.status.set(def.id, { phase: '정지', position: 0, error: '' });
         }
+        this.resetObjects(definitions);
         this.stop();
     }
 
@@ -352,7 +388,8 @@ export class EquipmentScene {
                 let visible = true, owned = false;
                 for (let node = candidate.object; node; node = node.parent) { if (node.visible === false) visible = false; if (node.userData.equipmentOwner || node.userData.attachmentHost) owned = true; }
                 if (!visible || owned || candidate.model.userData.tcpFrame) continue;
-                if (!this.contact.check([pad.object, candidate.object], { allowWarmHitReuse: false })) continue;
+                if (!this.contact.check([pad.object, candidate.object], { allowWarmHitReuse: false })
+                    && !this.contact.isWithinDistance(pad.object, candidate.object, 0.1)) continue;
                 candidate.object.updateWorldMatrix(true, false);
                 const local = pad.object.matrixWorld.clone().invert().multiply(candidate.object.matrixWorld).toArray();
                 // Full models use the existing robot attachment so project saves
@@ -505,6 +542,7 @@ export class EquipmentScene {
     restore(definitions) {
         this.clear();
         for (const def of definitions) {
+            if (def.type === 'OBJECT') this.captureObjectOrigins(def);
             def.runtime.lastCommand = 'STOP';
             try {
                 // Older workspaces stored only a world frame. Recover the live

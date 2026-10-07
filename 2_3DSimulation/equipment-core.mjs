@@ -65,7 +65,7 @@ export function normalizeEquipmentDefinition(source) {
             movingRefs, movingRef: movingRefs[0], bodyRef: '', secondRef: '', secondRefs: [], carriedRef: '', carriedRefs: [],
             robotRef: '', pullerRef: '', axis: 'X', travel: 0, speed: 0, reverseSpeed: 0, externalAxis: 0,
             feedbackHome: null, feedbackEnd: null, feedbackGrip: source.type === 'VACUUM' ? sensor(source.feedbackGrip) : null, enabled: source.enabled !== false,
-            origins: {}, runtime: source.runtime ? JSON.parse(JSON.stringify(source.runtime)) : { position: 0, heldRef: '', heldLocal: null } };
+            origins: source.type === 'OBJECT' && source.origins && typeof source.origins === 'object' ? JSON.parse(JSON.stringify(source.origins)) : {}, runtime: source.runtime ? JSON.parse(JSON.stringify(source.runtime)) : { position: 0, heldRef: '', heldLocal: null } };
     }
     const rotary = source.type === 'ROTARY_AXIS';
     const def = {

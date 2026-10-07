@@ -482,6 +482,45 @@ function pointNearMeshSurface(point, mesh, bvh, getWorldBounds, tolerance) {
     return false;
 }
 
+function boundsDistanceSquared(a, b) {
+    return ['x', 'y', 'z'].reduce((sum, axis) => {
+        const gap = Math.max(0, a.min[axis] - b.max[axis], b.min[axis] - a.max[axis]);
+        return sum + gap * gap;
+    }, 0);
+}
+
+function segmentDistanceSquared(a, ai, aj, b, bi, bj) {
+    const p = new THREE.Vector3().fromArray(a, ai), q = new THREE.Vector3().fromArray(b, bi);
+    const u = new THREE.Vector3().fromArray(a, aj).sub(p);
+    const v = new THREE.Vector3().fromArray(b, bj).sub(q);
+    const w = p.clone().sub(q);
+    const aa = u.dot(u), bb = u.dot(v), cc = v.dot(v), dd = u.dot(w), ee = v.dot(w);
+    const clamp = value => Math.max(0, Math.min(1, value));
+    let s = 0, t = 0;
+    if (aa <= Number.EPSILON) t = cc > Number.EPSILON ? clamp(ee / cc) : 0;
+    else if (cc <= Number.EPSILON) s = clamp(-dd / aa);
+    else {
+        const denominator = aa * cc - bb * bb;
+        s = denominator > Number.EPSILON ? clamp((bb * ee - cc * dd) / denominator) : 0;
+        t = (bb * s + ee) / cc;
+        if (t < 0) { t = 0; s = clamp(-dd / aa); }
+        else if (t > 1) { t = 1; s = clamp((bb - dd) / aa); }
+    }
+    return w.addScaledVector(u, s).addScaledVector(v, -t).lengthSq();
+}
+
+function trianglesWithinDistance(a, b, distanceSquared) {
+    const point = new THREE.Vector3();
+    for (let offset = 0; offset < 9; offset += 3) {
+        if (pointTriangleDistanceSquared(point.fromArray(a, offset), b) <= distanceSquared
+            || pointTriangleDistanceSquared(point.fromArray(b, offset), a) <= distanceSquared) return true;
+    }
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+        if (segmentDistanceSquared(a, i * 3, ((i + 1) % 3) * 3, b, j * 3, ((j + 1) % 3) * 3) <= distanceSquared) return true;
+    }
+    return false;
+}
+
 const POINT_ON_SURFACE_TOLERANCE = 0.25;
 
 function worldBoundsContain(outer, inner, epsilon) {
@@ -997,6 +1036,45 @@ export class MeshCollisionSystem {
 
     check(objects, options = {}) {
         return this.checkAll(objects, options)[0] || null;
+    }
+
+    // Exact world-space surface distance, used for vacuum acquisition only.
+    // BVH bounds prune distant triangles without treating hollow AABBs as solids.
+    isWithinDistance(leftRoot, rightRoot, distance) {
+        if (!leftRoot || !rightRoot || !Number.isFinite(distance) || distance < 0) return false;
+        leftRoot.updateWorldMatrix(true, true);
+        rightRoot.updateWorldMatrix(true, true);
+        const limitSquared = (distance + 1e-9) ** 2;
+        const triangleA = new Float64Array(9), triangleB = new Float64Array(9);
+        const localA = new Float64Array(9), localB = new Float64Array(9);
+        for (const left of this.collectMeshes(leftRoot)) for (const right of this.collectMeshes(rightRoot)) {
+            if (!left.worldBounds || !right.worldBounds
+                || boundsDistanceSquared(left.worldBounds, right.worldBounds) > limitSquared) continue;
+            const a = this.getGeometryBVH(left.geometry), b = this.getGeometryBVH(right.geometry);
+            if (!a?.root || !b?.root) continue;
+            const stack = [[a.root, b.root]];
+            while (stack.length) {
+                const [nodeA, nodeB] = stack.pop();
+                const boundsA = getWorldNodeBounds(left, a, nodeA), boundsB = getWorldNodeBounds(right, b, nodeB);
+                if (!boundsA || !boundsB || boundsDistanceSquared(boundsA, boundsB) > limitSquared) continue;
+                if (nodeA.triangles && nodeB.triangles) {
+                    for (const indexA of nodeA.triangles) {
+                        a.readTriangleWorld(left.mesh, indexA, triangleA, localA);
+                        for (const indexB of nodeB.triangles) {
+                            b.readTriangleWorld(right.mesh, indexB, triangleB, localB);
+                            if (trianglesWithinDistance(triangleA, triangleB, limitSquared)) return true;
+                        }
+                    }
+                } else if (nodeA.triangles) {
+                    if (nodeB.left) stack.push([nodeA, nodeB.left]);
+                    if (nodeB.right) stack.push([nodeA, nodeB.right]);
+                } else {
+                    if (nodeA.left) stack.push([nodeA.left, nodeB]);
+                    if (nodeA.right) stack.push([nodeA.right, nodeB]);
+                }
+            }
+        }
+        return false;
     }
 
     checkAll(objects, {
