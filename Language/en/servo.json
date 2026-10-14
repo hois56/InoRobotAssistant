@@ -1,0 +1,150 @@
+{
+  "pages": {
+    "servo": {
+      "title": "INOVANCE Servo System Solution | InoRobot Assistant",
+      "description": "PC Ethernet motion control with INOVANCE servo drives.",
+      "heading": "Servo System Solution",
+      "hero": {
+        "badge": "3rd Party Solution",
+        "tag": "Ethernet Motion Control",
+        "title": "Easy PC-based position control with INOVANCE servos",
+        "lead": "Control multiple INOVANCE servo axes from your PC over Ethernet, without a separate motion controller or command wiring.",
+        "compatibility": "For SV660 · SV670 · SV680",
+        "with": "With FASTECH Ezi-MOTIONLINK Plus-E",
+        "alt": "INOVANCE servo drives and servo motor"
+      },
+      "connection": {
+        "title": "Ethernet motion control with INOVANCE servos",
+        "intro": "Mount Ezi-MOTIONLINK Plus-E on SV660, SV670 or SV680 servo drives to control up to 254 axes from a PC over an Ethernet daisy chain. A built-in Ethernet switch supports the connection, motion settings are stored as parameters, and a motion library (DLL) is provided for PC programming.",
+        "pc": "Host controller (PC)",
+        "library": "GUI · Motion library (DLL)",
+        "network": "Ethernet daisy chain · Up to 254 axes",
+        "drive": "Servo drive",
+        "motor": "Servo motor",
+        "link": "Motion Link"
+      },
+      "points": {
+        "title": "Key benefits",
+        "intro": "Keep INOVANCE servo performance and simplify host control with a PC and Ethernet.",
+        "axisTitle": "Multi-axis control over Ethernet",
+        "axisBody": "Build a daisy chain with the integrated dual-port switch. Set the IP address easily using the rotary switch.",
+        "easyTitle": "Easy installation, less wiring",
+        "easyBody": "Mount directly on the INOVANCE servo drive for quick installation without separate command wiring.",
+        "guiTitle": "Simple setup and programming",
+        "guiBody": "Use the dedicated GUI for parameter settings, jog, homing, repeat tests and command tables. Integrate directly into PC programs with the DLL.",
+        "axes": "254 axes"
+      },
+      "set": {
+        "title": "Recommended set",
+        "intro": "Purchase the components as a set to implement position control easily.",
+        "badge": "One-stop set purchase",
+        "drive": "INOVANCE servo drive",
+        "motor": "INOVANCE servo motor",
+        "result": "Complete PC-based Ethernet position control",
+        "checks": [
+          "Setup by mounting the module",
+          "Expandable to 254 axes",
+          "GUI · DLL provided"
+        ]
+      },
+      "naming": {
+        "title": "Model naming",
+        "intro": "Select the common INO drive code for INOVANCE servos.",
+        "series": "Series",
+        "communication": "Base model",
+        "communicationValue": "PE : Plus Ethernet",
+        "drive": "Drive type",
+        "driveValue": "INO : INOVANCE SV660 / SV670 / SV680"
+      },
+      "dimensions": {
+        "title": "Controller dimensions",
+        "intro": "A compact module mounted on the front of the drive.",
+        "drawing": "Controller dimension drawing (mm)",
+        "product": "Ezi-MOTIONLINK Plus-E module",
+        "width": "Width (W)",
+        "height": "Height (H)",
+        "depth": "Depth (D)",
+        "screws": "Mounting screws"
+      },
+      "specs": {
+        "title": "Controller specifications",
+        "intro": "Ezi-MOTIONLINK Plus-E common specifications",
+        "rows": [
+          {
+            "label": "Input voltage",
+            "value": "24 V DC ± 10 %"
+          },
+          {
+            "label": "Multi-axis control",
+            "value": "Up to 254 axes (IP settings: 1 ~ 254)"
+          },
+          {
+            "label": "Current consumption",
+            "value": "Maximum 500 mA"
+          },
+          {
+            "label": "Operating temperature / humidity",
+            "value": "0 ~ 55 °C / 35 ~ 85 % RH (non-condensing)"
+          },
+          {
+            "label": "Storage temperature / humidity",
+            "value": "-20 ~ 70 °C / 10 ~ 90 % RH"
+          },
+          {
+            "label": "Vibration resistance",
+            "value": "0.5 g"
+          },
+          {
+            "label": "Display",
+            "value": "7-segment LED — IP address and alarm status"
+          },
+          {
+            "label": "Command pulse output",
+            "value": "2-pulse (CW/CCW) or 1-pulse (Pulse/Dir), maximum 5 MHz"
+          },
+          {
+            "label": "Encoder input",
+            "value": "Maximum 4 MHz"
+          },
+          {
+            "label": "Position command range",
+            "value": "-134,217,728 ~ +134,217,727 pulses (28-bit)"
+          },
+          {
+            "label": "Acceleration / deceleration",
+            "value": "Symmetric / asymmetric trapezoidal profile"
+          },
+          {
+            "label": "Input signals",
+            "value": "3 fixed inputs (LIMIT+, LIMIT−, ORIGIN) + 1 configurable input (optocoupler)"
+          },
+          {
+            "label": "Output signals",
+            "value": "1 configurable output (optocoupler) + 1 brake output"
+          },
+          {
+            "label": "Communication",
+            "value": "10BASE-T / 100BASE-TX, full duplex, built-in dual-port switch"
+          },
+          {
+            "label": "Homing",
+            "value": "Home sensor, Z-phase, limit sensors (+/−)"
+          },
+          {
+            "label": "Position control",
+            "value": "Relative / absolute move modes"
+          },
+          {
+            "label": "User software",
+            "value": "Ezi-MOTION Plus-E (Windows 7 or later)"
+          },
+          {
+            "label": "Motion API",
+            "value": "Motion library (Windows / Linux)"
+          }
+        ]
+      },
+      "source": "FASTECH product · Excerpt from the FASTECH Ezi-MOTIONLINK Plus-E catalog (KOR Rev.6.2)"
+    }
+  }
+}

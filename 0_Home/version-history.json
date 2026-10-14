@@ -34,6 +34,12 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.10.14",
+                "items": [
+                  "메인 홈페이지에 서보 시스템 솔루션 카드를 추가하고, 서보 모션 제어 안내를 영어·베트남어로 볼 수 있도록 지원했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.09.30",
                 "items": [
                   "`[수정]` Communication Tester 실행 파일이 다운로드되지 않던 문제를 ZIP 파일 다운로드로 해결했습니다."
@@ -1290,6 +1296,12 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.10.14",
+                "items": [
+                  "Added a Servo System Solution card to the homepage and a servo motion control guide available in English and Vietnamese."
+                ]
+              },
+              {
                 "title": "Ver 26.09.28",
                 "items": [
                   "Added automatic checks for purchase-code and download mappings and generated robot programs."
@@ -2516,6 +2528,12 @@
           {
             "title": "InoRobot Assistant",
             "versions": [
+              {
+                "title": "Ver 26.10.14",
+                "items": [
+                  "在主页添加了伺服系统解决方案卡片，并支持以英语和越南语查看伺服运动控制介绍。"
+                ]
+              },
               {
                 "title": "Ver 26.09.28",
                 "items": [
@@ -3744,6 +3762,12 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.10.14",
+                "items": [
+                  "Đã thêm thẻ Giải pháp hệ thống servo trên trang chủ và hỗ trợ xem hướng dẫn điều khiển chuyển động servo bằng tiếng Anh và tiếng Việt."
+                ]
+              },
+              {
                 "title": "Ver 26.09.28",
                 "items": [
                   "Bổ sung kiểm tra tự động cho mã mua hàng, liên kết tệp tải xuống và kết quả tạo chương trình robot."
@@ -4971,6 +4995,12 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.10.14",
+                "items": [
+                  "Ana sayfaya Servo Sistem Çözümü kartı eklendi ve servo hareket kontrolü kılavuzu İngilizce ve Vietnamca olarak sunuldu."
+                ]
+              },
+              {
                 "title": "Ver 26.09.28",
                 "items": [
                   "Satın alma kodu, indirme dosyası eşleştirmeleri ve robot programı çıktıları için otomatik kontroller eklendi."
@@ -6197,6 +6227,12 @@
           {
             "title": "InoRobot Assistant",
             "versions": [
+              {
+                "title": "Ver 26.10.14",
+                "items": [
+                  "На главной странице добавлена карточка «Решение для сервосистем» и руководство по управлению сервоприводами на английском и вьетнамском языках."
+                ]
+              },
               {
                 "title": "Ver 26.09.28",
                 "items": [

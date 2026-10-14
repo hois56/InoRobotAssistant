@@ -284,6 +284,7 @@
         if (pathname.includes('/6_document/') || pathname.includes('/manual/')) return 'manual';
         if (pathname.includes('/5_software/') || pathname.includes('/software/')) return 'software';
         if (pathname.includes('/privacy/')) return 'privacy';
+        if (pathname.includes('/servo/')) return 'servo';
         return 'home';
     }
 

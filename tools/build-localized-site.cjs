@@ -11,6 +11,7 @@ const root = path.resolve(__dirname, '..');
 const localeCodes = ['ko', 'en', 'zh-CN', 'vi', 'tr', 'ru'];
 const localeFileDefinitions = [
     { file: 'home.json', pageKeys: ['home'] },
+    { file: 'servo.json', pageKeys: ['servo'] },
     { file: 'robot-model-select.json', pageKeys: ['robotSelect'] },
     { file: 'robot-3d-viewer.json', pageKeys: ['robot3dViewer'] },
     { file: 'tool-selector.json', pageKeys: ['toolSelector'] },
@@ -38,6 +39,7 @@ const outputRoutes = {
     ru: '0_Home/ru/index.html'
 };
 const subpageSeoDefinitions = [
+    { file: 'Servo/index.html', route: '/Servo/', pageKey: 'servo' },
     { file: '1_RobotModelSelect/index.html', route: '/1_RobotModelSelect/', pageKey: 'robotSelect' },
     { file: '2_3DSimulation/index.html', route: '/2_3DSimulation/', pageKey: 'robot3dViewer' },
     { file: '3_ToolSelector/index.html', route: '/3_ToolSelector/', pageKey: 'toolSelector' },
