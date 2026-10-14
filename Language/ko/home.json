@@ -1,11 +1,20 @@
 {
   "pages": {
+    "servo": {
+      "title": "INOVANCE Servo | InoRobot Assistant",
+      "description": "INOVANCE 서보 기반 PC Ethernet 모션 제어 안내"
+    },
     "home": {
       "title": "Inovance Robot Assistant | 이노밴스 코리아",
       "description": "이노로봇은 이노밴스 로봇(INOVANCE robot)의 모델 선택, 3D 시뮬레이션, 프로젝트 생성, 소프트웨어와 기술 문서를 지원하는 도구 모음입니다."
     }
   },
   "legacy": {
+    "INOVANCE 서보의 PC 기반 Ethernet 모션 제어 구성과 주요 사양을 확인하세요.": "INOVANCE 서보의 PC 기반 Ethernet 모션 제어 구성과 주요 사양을 확인하세요.",
+    "Servo": "서보",
+    "서보 안내 이미지": "서보 안내 이미지",
+    "Servo System Solution": "서보 시스템 솔루션",
+    "준비 중": "준비 중",
     "이노로봇(InoRobot Assistant)은 이노밴스 로봇(INOVANCE robot)의 모델 선택, 3D 시뮬레이션, 프로젝트 생성, 소프트웨어, 문서와 디버깅을 지원합니다.": "이노로봇(InoRobot Assistant)은 이노밴스 로봇(INOVANCE robot)의 모델 선택, 3D 시뮬레이션, 프로젝트 생성, 소프트웨어, 문서와 디버깅을 지원합니다.",
     "InoRobot Assistant는 INOVANCE Robot을 설계부터 프로그래밍, 시운전까지 지원하는 유용한 협업 도구입니다.": "InoRobot Assistant는 INOVANCE Robot을 설계부터 프로그래밍, 시운전까지 지원하는 유용한 협업 도구입니다.",
     "필요한 도구를 선택하여 작업을 시작하세요.": "필요한 도구를 선택하여 작업을 시작하세요.",

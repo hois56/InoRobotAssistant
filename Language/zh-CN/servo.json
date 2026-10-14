@@ -1,0 +1,150 @@
+{
+  "pages": {
+    "servo": {
+      "title": "INOVANCE Servo System Solution | InoRobot Assistant",
+      "description": "INOVANCE 서보 기반 PC Ethernet 모션 제어 안내",
+      "heading": "伺服系统解决方案",
+      "hero": {
+        "badge": "타사 솔루션",
+        "tag": "Ethernet 모션 제어",
+        "title": "INOVANCE 서보로 간편하게 완성하는 PC 기반 위치제어",
+        "lead": "별도 모션 컨트롤러나 지령 배선 없이, PC에서 Ethernet 연결만으로 INOVANCE 서보를 손쉽게 다축 제어합니다.",
+        "compatibility": "SV660 · SV670 · SV680 전용",
+        "with": "FASTECH Ezi-MOTIONLINK Plus-E와 함께",
+        "alt": "INOVANCE 서보드라이브와 서보모터"
+      },
+      "connection": {
+        "title": "INOVANCE 서보 기반 Ethernet 모션 제어",
+        "intro": "SV660 · SV670 · SV680 서보드라이브에 Ezi-MOTIONLINK Plus-E를 장착하면, PC에서 Ethernet 연결만으로 최대 254축까지 데이지체인으로 손쉽게 제어할 수 있습니다. Ethernet 스위치가 내장되어 있고, 모션 조건은 파라미터로 저장되며, PC 프로그래밍용 모션 라이브러리(DLL)를 제공합니다.",
+        "pc": "상위 제어기 (PC)",
+        "library": "GUI · 모션 라이브러리(DLL)",
+        "network": "Ethernet 데이지체인 · 최대 254축",
+        "drive": "서보드라이브",
+        "motor": "서보모터",
+        "link": "Motion Link"
+      },
+      "points": {
+        "title": "핵심 포인트",
+        "intro": "INOVANCE 서보 성능 그대로, 상위 제어는 PC와 Ethernet으로 간단하게.",
+        "axisTitle": "Ethernet 연결만으로 다축 제어",
+        "axisBody": "듀얼 포트 스위치 내장으로 데이지체인 구성. 로터리 스위치로 IP를 간단히 설정합니다.",
+        "easyTitle": "간편한 설치, 배선 간소화",
+        "easyBody": "INOVANCE 서보드라이브에 바로 장착 — 별도 지령 배선 작업 없이 빠르게 설치합니다.",
+        "guiTitle": "손쉬운 셋업과 프로그래밍",
+        "guiBody": "전용 GUI로 파라미터·조그·원점·반복 테스트를, 지령 테이블을 설정하고, DLL로 PC 프로그램에 바로 연동합니다.",
+        "axes": "254축"
+      },
+      "set": {
+        "title": "추천 SET 구성",
+        "intro": "아래 구성을 세트로 구매하여 손쉽게 위치제어를 구현합니다.",
+        "badge": "원스톱 세트 구매",
+        "drive": "INOVANCE 서보드라이브",
+        "motor": "INOVANCE 서보모터",
+        "result": "PC 기반 Ethernet 위치제어 완성",
+        "checks": [
+          "장착만으로 셋업 완료",
+          "최대 254축 확장",
+          "GUI · DLL 제공"
+        ]
+      },
+      "naming": {
+        "title": "형번 체계",
+        "intro": "INOVANCE 서보용 드라이브 공통 코드 INO를 선택합니다.",
+        "series": "시리즈명",
+        "communication": "기본형",
+        "communicationValue": "PE : Plus Ethernet",
+        "drive": "드라이브 종류",
+        "driveValue": "INO : INOVANCE SV660 / SV670 / SV680"
+      },
+      "dimensions": {
+        "title": "제어기 크기",
+        "intro": "드라이브 전면에 장착되는 소형 모듈.",
+        "drawing": "제어기 치수 도면 (mm)",
+        "product": "Ezi-MOTIONLINK Plus-E 모듈",
+        "width": "폭 (W)",
+        "height": "높이 (H)",
+        "depth": "깊이 (D)",
+        "screws": "고정 나사"
+      },
+      "specs": {
+        "title": "제어기 규격",
+        "intro": "Ezi-MOTIONLINK Plus-E 공통 사양",
+        "rows": [
+          {
+            "label": "입력 전압",
+            "value": "24 V DC ± 10 %"
+          },
+          {
+            "label": "다축 제어",
+            "value": "최대 254축 구동 (IP: 1 ~ 254 설정)"
+          },
+          {
+            "label": "소비 전류",
+            "value": "최대 500 mA"
+          },
+          {
+            "label": "사용 온도 / 습도",
+            "value": "0 ~ 55 °C / 35 ~ 85 % RH (결로 없을 것)"
+          },
+          {
+            "label": "보관 온도 / 습도",
+            "value": "-20 ~ 70 °C / 10 ~ 90 % RH"
+          },
+          {
+            "label": "내진동",
+            "value": "0.5 g"
+          },
+          {
+            "label": "표시기",
+            "value": "7세그먼트 LED — IP 주소, 알람 상태"
+          },
+          {
+            "label": "지령 펄스 출력",
+            "value": "2펄스(CW/CCW) 또는 1펄스(Pulse/Dir), 최대 5 MHz"
+          },
+          {
+            "label": "엔코더 입력",
+            "value": "최대 4 MHz"
+          },
+          {
+            "label": "위치 지령 범위",
+            "value": "-134,217,728 ~ +134,217,727 펄스 (28비트)"
+          },
+          {
+            "label": "가감속",
+            "value": "대칭 / 비대칭 사다리꼴"
+          },
+          {
+            "label": "입력 신호",
+            "value": "고정 3점 (LIMIT+, LIMIT−, ORIGIN) + 가변 1점 (포토커플러)"
+          },
+          {
+            "label": "출력 신호",
+            "value": "가변 1점 (포토커플러) + 브레이크 신호 1점"
+          },
+          {
+            "label": "통신",
+            "value": "10BASE-T / 100BASE-TX, 전이중, 듀얼 포트 스위치 내장"
+          },
+          {
+            "label": "원점 복귀",
+            "value": "원점 센서, Z상, 리밋 센서(+/−)"
+          },
+          {
+            "label": "위치 제어",
+            "value": "상대값 / 절대값 이동 모드"
+          },
+          {
+            "label": "사용자 소프트웨어",
+            "value": "Ezi-MOTION Plus-E (Windows 7 이상)"
+          },
+          {
+            "label": "모션 API",
+            "value": "모션 라이브러리 (Windows / Linux)"
+          }
+        ]
+      },
+      "source": "FASTECH 제품 · FASTECH Ezi-MOTIONLINK Plus-E 카탈로그 (KOR Rev.6.2) 발췌"
+    }
+  }
+}

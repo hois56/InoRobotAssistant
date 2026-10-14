@@ -22,7 +22,7 @@ const landingFiles = new Map([
 const publicTopLevelDirectories = new Set([
     '0_Home', '1_RobotModelSelect', '2_3DSimulation', '3_ToolSelector',
     '4_ProjectGenerator', '5_Software', '6_Document', '7_DebuggingTool',
-    'Language', 'privacy'
+    'Language', 'privacy', 'Servo'
 ]);
 const publicRootFiles = new Set([
     'CNAME', 'favicon.png', 'robots.txt', 'sitemap.xml', 'analytics.js', 'analytics-config.js', 'visitor-counter.js',

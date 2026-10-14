@@ -1,0 +1,150 @@
+{
+  "pages": {
+    "servo": {
+      "title": "INOVANCE Servo System Solution | InoRobot Assistant",
+      "description": "Giới thiệu điều khiển chuyển động PC Ethernet với servo INOVANCE.",
+      "heading": "Giải pháp hệ thống servo",
+      "hero": {
+        "badge": "Giải pháp bên thứ ba",
+        "tag": "Điều khiển chuyển động Ethernet",
+        "title": "Điều khiển vị trí bằng PC dễ dàng với servo INOVANCE",
+        "lead": "Điều khiển nhiều trục servo INOVANCE từ PC chỉ qua Ethernet, không cần bộ điều khiển chuyển động riêng hoặc dây tín hiệu lệnh.",
+        "compatibility": "Dành cho SV660 · SV670 · SV680",
+        "with": "Cùng FASTECH Ezi-MOTIONLINK Plus-E",
+        "alt": "Bộ điều khiển servo và động cơ servo INOVANCE"
+      },
+      "connection": {
+        "title": "Điều khiển chuyển động Ethernet với servo INOVANCE",
+        "intro": "Lắp Ezi-MOTIONLINK Plus-E lên bộ điều khiển servo SV660, SV670 hoặc SV680 để điều khiển dễ dàng tối đa 254 trục từ PC qua kết nối Ethernet nối tiếp. Thiết bị tích hợp bộ chuyển mạch Ethernet, lưu điều kiện chuyển động dưới dạng tham số và cung cấp thư viện chuyển động (DLL) để lập trình trên PC.",
+        "pc": "Bộ điều khiển cấp trên (PC)",
+        "library": "GUI · Thư viện chuyển động (DLL)",
+        "network": "Ethernet nối tiếp · Tối đa 254 trục",
+        "drive": "Bộ điều khiển servo",
+        "motor": "Động cơ servo",
+        "link": "Motion Link"
+      },
+      "points": {
+        "title": "Điểm nổi bật",
+        "intro": "Giữ nguyên hiệu suất servo INOVANCE, đơn giản hóa điều khiển cấp trên bằng PC và Ethernet.",
+        "axisTitle": "Điều khiển nhiều trục qua Ethernet",
+        "axisBody": "Tích hợp bộ chuyển mạch hai cổng để kết nối nối tiếp. Dễ dàng đặt địa chỉ IP bằng công tắc xoay.",
+        "easyTitle": "Lắp đặt dễ dàng, giảm dây nối",
+        "easyBody": "Lắp trực tiếp lên bộ điều khiển servo INOVANCE — nhanh chóng, không cần dây tín hiệu lệnh riêng.",
+        "guiTitle": "Thiết lập và lập trình dễ dàng",
+        "guiBody": "Dùng GUI chuyên dụng để cài đặt tham số, chạy jog, về gốc, thử nghiệm lặp và thiết lập bảng lệnh. Tích hợp trực tiếp vào chương trình PC bằng DLL.",
+        "axes": "254 trục"
+      },
+      "set": {
+        "title": "Bộ sản phẩm đề xuất",
+        "intro": "Mua các thành phần theo bộ để dễ dàng triển khai điều khiển vị trí.",
+        "badge": "Mua trọn bộ tại một nơi",
+        "drive": "Bộ điều khiển servo INOVANCE",
+        "motor": "Động cơ servo INOVANCE",
+        "result": "Hoàn thiện điều khiển vị trí bằng PC qua Ethernet",
+        "checks": [
+          "Thiết lập bằng cách lắp mô-đun",
+          "Mở rộng đến 254 trục",
+          "Cung cấp GUI · DLL"
+        ]
+      },
+      "naming": {
+        "title": "Quy tắc đặt mã sản phẩm",
+        "intro": "Chọn mã bộ điều khiển INO dùng chung cho servo INOVANCE.",
+        "series": "Tên dòng sản phẩm",
+        "communication": "Mẫu cơ bản",
+        "communicationValue": "PE : Plus Ethernet",
+        "drive": "Loại bộ điều khiển",
+        "driveValue": "INO : INOVANCE SV660 / SV670 / SV680"
+      },
+      "dimensions": {
+        "title": "Kích thước bộ điều khiển",
+        "intro": "Mô-đun nhỏ gọn được lắp ở mặt trước bộ điều khiển servo.",
+        "drawing": "Bản vẽ kích thước bộ điều khiển (mm)",
+        "product": "Mô-đun Ezi-MOTIONLINK Plus-E",
+        "width": "Chiều rộng (W)",
+        "height": "Chiều cao (H)",
+        "depth": "Chiều sâu (D)",
+        "screws": "Vít cố định"
+      },
+      "specs": {
+        "title": "Thông số bộ điều khiển",
+        "intro": "Thông số chung của Ezi-MOTIONLINK Plus-E",
+        "rows": [
+          {
+            "label": "Điện áp đầu vào",
+            "value": "24 V DC ± 10 %"
+          },
+          {
+            "label": "Điều khiển nhiều trục",
+            "value": "Tối đa 254 trục (cài đặt IP: 1 ~ 254)"
+          },
+          {
+            "label": "Dòng điện tiêu thụ",
+            "value": "Tối đa 500 mA"
+          },
+          {
+            "label": "Nhiệt độ / độ ẩm hoạt động",
+            "value": "0 ~ 55 °C / 35 ~ 85 % RH (không ngưng tụ)"
+          },
+          {
+            "label": "Nhiệt độ / độ ẩm bảo quản",
+            "value": "-20 ~ 70 °C / 10 ~ 90 % RH"
+          },
+          {
+            "label": "Khả năng chịu rung",
+            "value": "0.5 g"
+          },
+          {
+            "label": "Hiển thị",
+            "value": "LED 7 đoạn — địa chỉ IP và trạng thái báo lỗi"
+          },
+          {
+            "label": "Đầu ra xung lệnh",
+            "value": "2 xung (CW/CCW) hoặc 1 xung (Pulse/Dir), tối đa 5 MHz"
+          },
+          {
+            "label": "Đầu vào encoder",
+            "value": "Tối đa 4 MHz"
+          },
+          {
+            "label": "Phạm vi lệnh vị trí",
+            "value": "-134,217,728 ~ +134,217,727 xung (28 bit)"
+          },
+          {
+            "label": "Tăng tốc / giảm tốc",
+            "value": "Biên dạng hình thang đối xứng / bất đối xứng"
+          },
+          {
+            "label": "Tín hiệu đầu vào",
+            "value": "3 đầu vào cố định (LIMIT+, LIMIT−, ORIGIN) + 1 đầu vào cấu hình được (bộ ghép quang)"
+          },
+          {
+            "label": "Tín hiệu đầu ra",
+            "value": "1 đầu ra cấu hình được (bộ ghép quang) + 1 đầu ra phanh"
+          },
+          {
+            "label": "Truyền thông",
+            "value": "10BASE-T / 100BASE-TX, song công toàn phần, tích hợp bộ chuyển mạch hai cổng"
+          },
+          {
+            "label": "Về gốc",
+            "value": "Cảm biến gốc, pha Z, cảm biến giới hạn (+/−)"
+          },
+          {
+            "label": "Điều khiển vị trí",
+            "value": "Chế độ di chuyển tương đối / tuyệt đối"
+          },
+          {
+            "label": "Phần mềm người dùng",
+            "value": "Ezi-MOTION Plus-E (Windows 7 trở lên)"
+          },
+          {
+            "label": "API chuyển động",
+            "value": "Thư viện chuyển động (Windows / Linux)"
+          }
+        ]
+      },
+      "source": "Sản phẩm FASTECH · Trích từ danh mục FASTECH Ezi-MOTIONLINK Plus-E (KOR Rev.6.2)"
+    }
+  }
+}
