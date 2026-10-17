@@ -4692,8 +4692,9 @@ function createViewWindowCell(slot, fallbackPreset = null) {
         snapPointerDown = { x: event.clientX, y: event.clientY, moved: false };
     }, { capture: true });
     canvas.addEventListener('pointermove', (event) => {
-        if (snapPointerDown && Math.hypot(event.clientX - snapPointerDown.x,
-            event.clientY - snapPointerDown.y) > 4) snapPointerDown.moved = true;
+        if (snapPointerDown && (state.transformControls?.dragging
+            || Math.hypot(event.clientX - snapPointerDown.x,
+                event.clientY - snapPointerDown.y) > 4)) snapPointerDown.moved = true;
     }, { capture: true });
     canvas.addEventListener('pointercancel', () => { snapPointerDown = null; });
     canvas.addEventListener('click', (event) => {
@@ -16538,7 +16539,7 @@ function isSimulationSnapPicking() {
 }
 
 function isSimulationSnapInteractionActive() {
-    return isSimulationSnapPicking() && !state.viewNavigationActive;
+    return isSimulationSnapPicking() && !state.viewNavigationActive && !state.transformControls?.dragging;
 }
 
 function beginSimulationViewNavigation(event) {
@@ -18977,6 +18978,7 @@ function setupControls() {
     state.renderer.domElement.addEventListener('pointercancel', clearModelTransformRotationSnap, true);
     state.transformControls.addEventListener('dragging-changed', (event) => {
         state.controls.enabled = !event.value;
+        if (state.placement.active) hideSimulationSnapMarker();
         if (!event.value) clearModelTransformRotationSnap();
     });
     state.transformControls.addEventListener('mouseDown', () => {
@@ -20778,7 +20780,23 @@ function setupEventListeners() {
         resetTcpSnapPoints();
         if (state.tcpSnapMode) setTcpSnapReadout('스냅 점 2~4개를 선택하세요.');
     });
-    state.renderer.domElement.addEventListener('pointerdown', handleSketchPointerDown, { capture: true, passive: false });
+    const canvas = state.renderer.domElement;
+    let snapPointerDown = null;
+    canvas.addEventListener('pointerdown', (event) => {
+        snapPointerDown = { x: event.clientX, y: event.clientY, moved: false };
+    }, { capture: true });
+    canvas.addEventListener('pointermove', (event) => {
+        if (snapPointerDown && Math.hypot(event.clientX - snapPointerDown.x,
+            event.clientY - snapPointerDown.y) > 4) snapPointerDown.moved = true;
+    }, { capture: true });
+    canvas.addEventListener('pointercancel', () => { snapPointerDown = null; }, { capture: true });
+    canvas.addEventListener('pointerup', () => {
+        const gesture = snapPointerDown;
+        window.setTimeout(() => {
+            if (snapPointerDown === gesture) snapPointerDown = null;
+        }, 0);
+    }, { capture: true });
+    canvas.addEventListener('pointerdown', handleSketchPointerDown, { capture: true, passive: false });
     state.renderer.domElement.addEventListener('contextmenu', handleSketchContextMenu, { capture: true, passive: false });
     state.renderer.domElement.addEventListener('pointermove', handleSketchPointerMove, { passive: false });
     state.renderer.domElement.addEventListener('pointerup', handleSketchPointerUp, { passive: false });
@@ -20798,7 +20816,11 @@ function setupEventListeners() {
     state.renderer.domElement.addEventListener('pointerleave', hideSimulationSnapMarker);
     state.renderer.domElement.addEventListener('pointerleave', requestRender);
     state.renderer.domElement.addEventListener('click', handleCadCanvasClick, { capture: true });
-    state.renderer.domElement.addEventListener('click', handleSimulationSnapClick);
+    canvas.addEventListener('click', (event) => {
+        const wasDrag = Boolean(snapPointerDown?.moved);
+        snapPointerDown = null;
+        if (!wasDrag) handleSimulationSnapClick(event);
+    });
     state.renderer.domElement.addEventListener('click', handleSceneModelClick);
     state.renderer.domElement.addEventListener('contextmenu', handleSceneModelContextMenu);
     el.canvasContainer?.addEventListener('contextmenu', handleSketchContextMenu, { capture: true, passive: false });
