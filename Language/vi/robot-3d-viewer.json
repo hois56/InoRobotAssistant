@@ -600,6 +600,7 @@
     "TCP 스냅할 Tool 모델을 먼저 지정하세요.": "Hãy chỉ định mô hình Tool trước khi bắt TCP.",
     "TCP 스냅할 Tool 모델 또는 생성 도형을 먼저 준비하세요.": "Hãy chuẩn bị mô hình Tool hoặc hình đã tạo trước khi bắt TCP.",
     "원/호 중심점": "Tâm đường tròn/cung",
+    "사분점": "Điểm phần tư",
     "에지 중심점": "Trung điểm cạnh",
     "면 중심점": "Tâm mặt",
     "사각형 중심점": "Tâm hình chữ nhật",
@@ -1883,7 +1884,11 @@
     "IR-S4-40Z15 is not available.": "IR-S4-40Z15 không có sẵn.",
     "OpenCascade STEP parser is unavailable.": "Trình phân tích cú pháp OpenCascade STEP không khả dụng.",
     "The STEP file could not be imported.": "Không thể nhập tệp STEP.",
-    "OpenCascade could not convert this STEP file.": "OpenCascade không thể chuyển đổi tệp STEP này."
+    "OpenCascade could not convert this STEP file.": "OpenCascade không thể chuyển đổi tệp STEP này.",
+    "맨 앞으로 고정": "Luôn ở trên cùng",
+    "맨 앞으로 고정 해제": "Tắt luôn ở trên cùng",
+    "이 브라우저에서는 맨 앞으로 고정을 지원하지 않습니다. Chrome 또는 Edge에서 HTTPS로 열어 주세요.": "Trình duyệt này không hỗ trợ luôn ở trên cùng. Hãy mở qua HTTPS trong Chrome hoặc Edge.",
+    "맨 앞으로 고정 창을 열 수 없습니다. 다시 시도해 주세요.": "Không thể mở cửa sổ luôn ở trên cùng. Vui lòng thử lại."
   },
   "patterns": []
 }

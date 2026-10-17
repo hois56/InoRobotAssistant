@@ -600,6 +600,7 @@
     "TCP 스냅할 Tool 모델을 먼저 지정하세요.": "Assign a Tool model before snapping the TCP.",
     "TCP 스냅할 Tool 모델 또는 생성 도형을 먼저 준비하세요.": "Prepare a Tool model or generated shape before snapping the TCP.",
     "원/호 중심점": "Circle/arc center",
+    "사분점": "Quadrant point",
     "에지 중심점": "Edge midpoint",
     "면 중심점": "Face center",
     "사각형 중심점": "Rectangle center",
@@ -1883,7 +1884,11 @@
     "IR-S4-40Z15 is not available.": "IR-S4-40Z15 is not available.",
     "OpenCascade STEP parser is unavailable.": "OpenCascade STEP parser is unavailable.",
     "The STEP file could not be imported.": "The STEP file could not be imported.",
-    "OpenCascade could not convert this STEP file.": "OpenCascade could not convert this STEP file."
+    "OpenCascade could not convert this STEP file.": "OpenCascade could not convert this STEP file.",
+    "맨 앞으로 고정": "Always on top",
+    "맨 앞으로 고정 해제": "Turn off always on top",
+    "이 브라우저에서는 맨 앞으로 고정을 지원하지 않습니다. Chrome 또는 Edge에서 HTTPS로 열어 주세요.": "Always on top is unavailable in this browser. Open this page over HTTPS in Chrome or Edge.",
+    "맨 앞으로 고정 창을 열 수 없습니다. 다시 시도해 주세요.": "Unable to open the always-on-top window. Please try again."
   },
   "patterns": []
 }

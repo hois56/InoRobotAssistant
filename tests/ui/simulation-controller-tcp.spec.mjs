@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test('R7H-90 controller TCP controls JOG, endpoint and MTCP with Tool/Wobj while keeping the received arm configuration', async ({ page }) => {
+test('R7H-90 controller TCP updates JOG while Tool/Wobj never shift the physical mounting zero', async ({ page }) => {
   test.setTimeout(90000);
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
@@ -22,6 +22,8 @@ test('R7H-90 controller TCP controls JOG, endpoint and MTCP with Tool/Wobj while
     robot.userData.activeWorkObjectIndex = 1;
     const flange = robot.userData.flangeFrame;
     window.__originalMount = { position: flange.position.toArray(), quaternion: flange.quaternion.toArray() };
+    const tool = new a.THREE.Group();
+    tool.position.set(10, 20, 30); flange.add(tool);
     const controller = a.state.virtualController;
     await a.ensureVirtualControllerCore(controller);
     a.registerVirtualControllerSession(controller);
@@ -35,12 +37,22 @@ test('R7H-90 controller TCP controls JOG, endpoint and MTCP with Tool/Wobj while
     a.applyVirtualControllerFrameForController(performance.now(), controller);
     const tcpWorld = a.getRobotWorldTcpPoint(robot);
     const mtcp = a.getMtcpProfileWorldPoint(robot, a.getRobotToolWorldTransform(robot), 0).toArray();
-    return { joints: robot.userData.joints.map(joint => joint.angle), arm: a.calculatePointArmParameters(robot),
+    const firstToolWorld = tool.getWorldPosition(new a.THREE.Vector3());
+    a.handleVirtualControllerMessage(JSON.stringify({ type: 'robotState', data: { joints, tcp: [808, -192, 315, 20, 30, 40] } }), controller);
+    a.applyVirtualControllerFrameForController(performance.now(), controller);
+    const toolShift = tool.getWorldPosition(new a.THREE.Vector3()).distanceTo(firstToolWorld);
+    a.handleVirtualControllerMessage(JSON.stringify({ type: 'robotState', data: { joints, tcp: [708, -292, 215, 0, 0, 180] } }), controller);
+    a.applyVirtualControllerFrameForController(performance.now(), controller);
+    return { joints: robot.userData.joints.map(joint => joint.angle), arm: a.calculatePointArmParameters(robot), toolShift,
+      mountShift: flange.position.distanceTo(new a.THREE.Vector3().fromArray(window.__originalMount.position)),
+      mountRotation: flange.quaternion.angleTo(new a.THREE.Quaternion().fromArray(window.__originalMount.quaternion)),
       distance: new a.THREE.Vector3().fromArray(tcpWorld).distanceTo(new a.THREE.Vector3().fromArray(mtcp)) };
   });
   expect(result.joints).toEqual([20, -30, 40, -110, 60, 200]);
   expect(result.arm).toEqual([0, -2, 2, 1]);
-  expect(result.distance).toBeLessThan(1e-7);
+  expect(result.toolShift).toBeLessThan(1e-7);
+  expect(result.mountShift).toBeLessThan(1e-7);
+  expect(result.mountRotation).toBeLessThan(1e-7);
   for (const [key, value] of Object.entries({ x: '708.00', y: '-292.00', z: '215.00' })) {
     await expect(page.locator('#tcp-' + key)).toHaveValue(value);
   }

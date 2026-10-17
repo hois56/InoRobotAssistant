@@ -74,7 +74,7 @@ function fixture({ wobj = 0, tool = false, scara = false } = {}) {
 }
 
 for (const wobj of [0, 1]) {
-  test(`controller TCP drives endpoint and attached tool with Wobj ${wobj}, preserving joints and arm parameters`, () => {
+  test(`controller TCP drives readout with Wobj ${wobj}, preserving tool mount, joints and arm parameters`, () => {
     const f = fixture({ wobj, tool: true });
     f.send();
     const pose = f.context.getCurrentTcpPoseBase(f.robot);
@@ -82,7 +82,8 @@ for (const wobj of [0, 1]) {
     assert.ok(readout.position.distanceTo(new THREE.Vector3(708, -292, 215)) < 1e-8);
     const expectedRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI, 0, 0, 'ZYX'));
     assert.ok(readout.quaternion.angleTo(expectedRotation) < 1e-7);
-    assert.ok(f.tcp.getWorldPosition(new THREE.Vector3()).distanceTo(f.mountedTool.getWorldPosition(new THREE.Vector3())) < 1e-8);
+    assert.ok(f.flange.position.distanceTo(f.original.position) < 1e-8);
+    assert.ok(f.flange.quaternion.angleTo(f.original.quaternion) < 1e-7);
     assert.deepEqual(f.robot.userData.joints.map(joint => joint.angle), [20, -30, 40, -110, 60, 200]);
     assert.deepEqual(Array.from(f.context.calculatePointArmParameters(f.robot)), [0, -2, 2, 1]);
     const firstPosition = pose.position.clone();
@@ -91,12 +92,23 @@ for (const wobj of [0, 1]) {
   });
 }
 
+test('controller TCP changes never move the physical tool mounting zero', () => {
+  const f = fixture({ tool: true });
+  const originalTool = f.mountedTool.position.clone();
+  for (const tcp of [[708, -292, 215, 0, 0, 180], [100, 200, 300, 40, 20, 10]]) {
+    f.send(tcp);
+    assert.ok(f.flange.position.distanceTo(f.original.position) < 1e-8);
+    assert.ok(f.flange.quaternion.angleTo(f.original.quaternion) < 1e-7);
+    assert.ok(f.mountedTool.position.distanceTo(originalTool) < 1e-8);
+  }
+});
+
 test('missing TCP and disconnect restore the authored tool mount without changing the TCP profile', () => {
   const f = fixture({ tool: true });
   const profilePosition = f.tcp.position.clone();
   const profileRotation = f.tcp.quaternion.clone();
   f.send();
-  assert.ok(f.flange.position.distanceTo(f.original.position) > 1);
+  assert.ok(f.flange.position.distanceTo(f.original.position) < 1e-8);
   f.send([]);
   assert.ok(f.flange.position.distanceTo(f.original.position) < 1e-8);
   assert.ok(f.flange.quaternion.angleTo(f.original.quaternion) < 1e-7);

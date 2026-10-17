@@ -139,7 +139,7 @@ function indexStepHierarchy(root) {
     const partByMeshIndex = new Map();
     let fallbackPartIndex = 0;
 
-    const visit = (node, path = [], isRoot = false) => {
+    const visit = (node, path = [], isRoot = false, assemblyPath = []) => {
         if (!node || typeof node !== 'object') return;
         const rawName = String(node.name || '').trim();
         const partName = rawName || `Part ${fallbackPartIndex + 1}`;
@@ -148,13 +148,13 @@ function indexStepHierarchy(root) {
             node.meshes.forEach((meshIndex) => {
                 const index = Number(meshIndex);
                 if (Number.isInteger(index) && index >= 0) {
-                    partByMeshIndex.set(index, { partId, partName });
+                    partByMeshIndex.set(index, { partId, partName, assemblyPath });
                 }
             });
         }
         const children = Array.isArray(node.children) ? node.children : [];
         children.forEach((child, childIndex) => {
-            visit(child, [...path, childIndex], false);
+            visit(child, [...path, childIndex], false, isRoot ? assemblyPath : [...assemblyPath, { id: partId, name: partName }]);
         });
     };
 
@@ -177,6 +177,7 @@ function createMeshEntry(meshDefinition, partMeta = {}) {
         brepFaces: Array.isArray(meshDefinition.brep_faces) ? meshDefinition.brep_faces : [],
         partId: partMeta.partId || null,
         partName: partMeta.partName || meshDefinition?.name || '',
+        assemblyPath: partMeta.assemblyPath || [],
         positionLength,
         indexLength,
         normalLength,
@@ -184,11 +185,12 @@ function createMeshEntry(meshDefinition, partMeta = {}) {
     };
 }
 
-function createBucket(color, partId, partName) {
+function createBucket(color, partId, partName, assemblyPath = []) {
     return {
         color,
         partId,
         partName,
+        assemblyPath,
         entries: [],
         brepFaces: [],
         positionLength: 0,
@@ -256,7 +258,8 @@ function packBucket(bucket) {
         color: bucket.color,
         brepFaces: bucket.hasCompleteBrepFaces ? bucket.brepFaces : null,
         partId: bucket.partId,
-        partName: bucket.partName
+        partName: bucket.partName,
+        assemblyPath: bucket.assemblyPath
     };
 }
 
@@ -436,6 +439,7 @@ function postLargeMeshChunks(mesh, message, requestId, partMeta = {}) {
                 : DEFAULT_COLOR,
             partId: partMeta.partId || 'cad-large-whole',
             partName: partMeta.partName || message.fileName || 'STEP Assembly',
+            assemblyPath: partMeta.assemblyPath || [],
             largeModelChunk: true,
             chunkIndex,
             chunkCount: groups.length
@@ -447,37 +451,62 @@ function postLargeMeshChunks(mesh, message, requestId, partMeta = {}) {
     return groups.length;
 }
 
+function composeStepPlacement(parent, local) {
+    const result = new Array(12).fill(0);
+    for (let row = 0; row < 3; row += 1) {
+        for (let col = 0; col < 4; col += 1) {
+            result[row * 4 + col] = col === 3 ? parent[row * 4 + 3] : 0;
+            for (let k = 0; k < 3; k += 1) {
+                result[row * 4 + col] += parent[row * 4 + k] * local[k * 4 + col];
+            }
+        }
+    }
+    return result;
+}
+
 function collectXcafParts(document) {
     const parts = [];
-    const visit = (label, path) => {
-        const info = document.getLabelInfo(label);
-        const children = document.getChildren(label);
-        const partName = String(info.name || '').trim() || `Part ${parts.length + 1}`;
-        const partId = `cad-xcaf-${path.join('-') || parts.length}`;
-        if (children.length) {
-            const partCountBeforeChildren = parts.length;
-            children.forEach((child, childIndex) => visit(child, [...path, childIndex]));
-            if (parts.length === partCountBeforeChildren && info.shapeHandle != null) {
+    const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0];
+    const ancestors = new Set();
+    const roots = document.getRoots();
+    const visit = (label, path, parentPlacement, inheritedColor, assemblyPath = []) => {
+        if (ancestors.has(label)) throw new Error('Cyclic STEP assembly reference.');
+        ancestors.add(label);
+        try {
+            const instance = document.getLabelInfo(label);
+            const referred = instance.isComponent ? document.getReferredLabel?.(label) : null;
+            const prototype = referred == null ? instance : document.getLabelInfo(referred);
+            const children = document.getChildren(referred ?? label);
+            const local = document.getLocation?.(label) || identity;
+            const placement = composeStepPlacement(parentPlacement, local);
+            const color = instance.hasColor ? instance.color
+                : prototype.hasColor ? prototype.color : inheritedColor;
+            const instanceName = String(instance.name || '').trim();
+            const prototypeName = String(prototype.name || '').trim();
+            const name = (instanceName && !/^NAUO\d+$/i.test(instanceName) ? instanceName : prototypeName)
+                || instanceName || 'Part ' + (parts.length + 1);
+            if (children.length) {
+                // The single document root is represented by the imported model.
+                const childPath = path.length === 1 && roots.length === 1 ? assemblyPath
+                    : [...assemblyPath, { id: 'cad-xcaf-' + path.join('-'), name }];
+                children.forEach((child, index) => visit(child, [...path, index], placement, color, childPath));
+                return;
+            }
+            if (prototype.shapeHandle != null) {
                 parts.push({
-                    partId,
-                    partName,
-                    shapeHandle: info.shapeHandle,
-                    color: info.hasColor ? info.color : DEFAULT_COLOR
+                    partId: 'cad-xcaf-' + path.join('-'),
+                    partName: name,
+                    assemblyPath,
+                    shapeHandle: prototype.shapeHandle,
+                    placement: document.getLocation ? placement : null,
+                    color: color || DEFAULT_COLOR
                 });
             }
-            return;
-        }
-        if (info.shapeHandle != null) {
-            parts.push({
-                partId,
-                partName,
-                shapeHandle: info.shapeHandle,
-                color: info.hasColor ? info.color : DEFAULT_COLOR
-            });
+        } finally {
+            ancestors.delete(label);
         }
     };
-
-    document.getRoots().forEach((label, rootIndex) => visit(label, [rootIndex]));
+    roots.forEach((label, index) => visit(label, [index], identity, null));
     return parts;
 }
 
@@ -496,77 +525,58 @@ async function parseLargeStepFile(message, requestId) {
         // makes otherwise valid 100-500 MB files fail before OCCT can read them.
         message.fileBuffer = null;
 
-        // The single-shape import is the lowest-memory large-file path. Try it
-        // before XCAF so a successful import never keeps both an assembly
-        // document and a second STEP representation alive at once.
-        let directImportError = null;
-        try {
-            shape = measureStepPhase(timings, 'readingMs', () => kernel.importStep(sourceBuffer));
-            sourceBuffer = null;
-        } catch (error) {
-            directImportError = error;
-        }
-
-        // XCAF preserves the STEP assembly tree. It remains a fallback for
-        // files that the direct importer rejects before producing a shape.
-        if (shape == null) {
+        // Read the assembly first: a successful single-shape import discards
+        // the part identities even when the source contains a full assembly.
+        let parts = [];
+        if (typeof kernel.importXCAFFromSTEP === 'function') {
             try {
-                if (typeof kernel.importXCAFFromSTEP === 'function') {
-                    document = measureStepPhase(timings, 'readingMs', () => kernel.importXCAFFromSTEP(sourceBuffer));
-                    const parts = measureStepPhase(timings, 'readingMs', () => collectXcafParts(document));
-                    if (parts.length) {
-                        let meshCount = 0;
-                        let failedPartCount = 0;
-                        for (let index = 0; index < parts.length; index += 1) {
-                            const part = parts[index];
-                            self.postMessage({
-                                type: 'progress',
-                                requestId,
-                                phase: 'tessellating',
-                                partIndex: index,
-                                partCount: parts.length,
-                                partName: part.partName
-                            });
-                            try {
-                                const mesh = measureStepPhase(timings, 'tessellationMs', () => kernel.meshShape(part.shapeHandle, {
-                                    linearDeflection: Number(message.parameters?.linearDeflectionAbsolute) || 1,
-                                    angularDeflection: Number(message.parameters?.angularDeflection) || 0.8
-                                }));
-                                meshCount += measureStepPhase(timings, 'packingMs', () => postLargeMeshChunks(mesh, message, requestId, part));
-                            } catch (error) {
-                                failedPartCount += 1;
-                                console.warn('Skipped XCAF STEP part:', part.partName, error);
-                            } finally {
-                                kernel.release(part.shapeHandle);
-                            }
-                        }
-                        if (meshCount > 0) {
-                            self.postMessage({
-                                type: 'done',
-                                requestId,
-                                rootName: message.fileName || 'STEP Assembly',
-                                meshCount,
-                                partCount: parts.length,
-                                failedPartCount,
-                                segmented: true,
-                                timings: { ...timings, totalMs: performance.now() - startedAt }
-                            });
-                            completed = true;
-                            return;
-                        }
-                    }
-                }
+                document = measureStepPhase(timings, 'readingMs', () => kernel.importXCAFFromSTEP(sourceBuffer));
+                parts = measureStepPhase(timings, 'readingMs', () => collectXcafParts(document));
             } catch (error) {
-                console.warn('XCAF STEP hierarchy import failed after direct import.', error);
-            } finally {
+                console.warn('XCAF STEP hierarchy import failed; trying direct import.', error);
                 document?.close();
                 document = null;
+                kernel.releaseAll();
             }
         }
-
-        if (shape == null) {
-            throw directImportError || new Error('The STEP file could not be imported.');
+        if (parts.length) {
+            sourceBuffer = null;
+            let meshCount = 0;
+            for (let index = 0; index < parts.length; index += 1) {
+                const part = parts[index];
+                self.postMessage({ type: 'progress', requestId, phase: 'tessellating',
+                    partIndex: index, partCount: parts.length, partName: part.partName });
+                let placedShape = null;
+                try {
+                    if (part.placement) placedShape = kernel.located(part.shapeHandle, part.placement);
+                    const mesh = measureStepPhase(timings, 'tessellationMs', () => kernel.meshShape(placedShape ?? part.shapeHandle, {
+                        linearDeflection: Number(message.parameters?.linearDeflectionAbsolute) || 1,
+                        angularDeflection: Number(message.parameters?.angularDeflection) || 0.8
+                    }));
+                    if (!mesh?.positions?.length || !mesh?.indices?.length) {
+                        throw new Error('STEP part contains no triangulated mesh: ' + part.partName);
+                    }
+                    meshCount += measureStepPhase(timings, 'packingMs', () => postLargeMeshChunks(mesh, message, requestId, part));
+                } finally {
+                    if (placedShape != null) kernel.release(placedShape);
+                    kernel.release(part.shapeHandle);
+                }
+            }
+            self.postMessage({ type: 'done', requestId, rootName: message.fileName || 'STEP Assembly',
+                meshCount, partCount: parts.length, failedPartCount: 0, segmented: true,
+                timings: { ...timings, totalMs: performance.now() - startedAt } });
+            completed = true;
+            return;
         }
+        // Close the assembly before the fallback so two representations are
+        // never retained together. Part conversion errors above must propagate.
+        if (document) {
+            document.close();
+            document = null;
+            kernel.releaseAll();
+        }
+        shape = measureStepPhase(timings, 'readingMs', () => kernel.importStep(sourceBuffer));
+        sourceBuffer = null;
 
         self.postMessage({ type: 'progress', requestId, phase: 'tessellating' });
         const mesh = measureStepPhase(timings, 'tessellationMs', () => kernel.meshShape(shape, {
@@ -654,17 +664,17 @@ async function handleStepImportMessage(event) {
             if (bucket?.entries.length > 0
                 && bucket.estimatedBytes + entryBytes > STEP_MESH_CHUNK_TARGET_BYTES) {
                 outputMeshCount += postBucket(bucket, requestId);
-                bucket = createBucket(color, entry.partId, entry.partName);
+                bucket = createBucket(color, entry.partId, entry.partName, entry.assemblyPath);
                 buckets.set(bucketKey, bucket);
             }
             if (!bucket) {
-                bucket = createBucket(color, entry.partId, entry.partName);
+                bucket = createBucket(color, entry.partId, entry.partName, entry.assemblyPath);
                 buckets.set(bucketKey, bucket);
             }
             appendEntry(bucket, entry);
             if (bucket.estimatedBytes >= STEP_MESH_CHUNK_TARGET_BYTES) {
                 outputMeshCount += postBucket(bucket, requestId);
-                buckets.set(bucketKey, createBucket(color, entry.partId, entry.partName));
+                buckets.set(bucketKey, createBucket(color, entry.partId, entry.partName, entry.assemblyPath));
             }
         }
         buckets.forEach((bucket) => {

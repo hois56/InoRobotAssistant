@@ -17,7 +17,7 @@ const OCCT_IMPORT_SCRIPT_URL = `${OCCT_IMPORT_BASE_URL}occt-import-js.js`;
 const KG_PER_MM3_PER_G_PER_CM3 = 1e-6;
 const ROBOT_SELECTION_GRAVITY = 9.8;
 const LARGE_STEP_ENGINE_MIN_BYTES = 100 * 1024 * 1024;
-const LARGE_STEP_ENGINE_WORKER_URL = '../2_3DSimulation/step-import-worker.js?v=20260720-large-xcaf-quality-1';
+const LARGE_STEP_ENGINE_WORKER_URL = '../2_3DSimulation/step-import-worker.js?v=20261016-xcaf-assembly-2';
 const MODE_D_STEP_CACHE_DB_NAME = 'inorobot-tool-mode-d-step-cache';
 const MODE_D_STEP_CACHE_STORE_NAME = 'imports';
 const MODE_D_STEP_CACHE_SCHEMA = 1;

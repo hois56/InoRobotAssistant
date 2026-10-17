@@ -82,6 +82,51 @@ test('선택 중심 토글은 초기화 오른쪽에 있고 모델·부품·이�
     expect(errors).toEqual([]);
 });
 
+test('OFF의 기본 회전은 이동한 뷰 중심 대신 월드 원점을 사용한다', async ({ page }) => {
+    await setup(page);
+    const before = await page.evaluate(() => {
+        const { state } = window.__pivotTest;
+        state.controls.target.set(300, 200, 100);
+        state.camera.position.set(900, -800, 600); state.controls.update();
+        const rect = state.renderer.domElement.getBoundingClientRect();
+        return { radius: state.camera.position.distanceTo(state.controls.target), x: rect.x + rect.width * .55, y: rect.y + rect.height * .75 };
+    });
+    await page.mouse.move(before.x, before.y); await page.mouse.down();
+    await page.mouse.move(before.x + 70, before.y + 20, { steps: 8 }); await page.mouse.up();
+    const after = await page.evaluate(() => ({ target: window.__pivotTest.state.controls.target.toArray(),
+        radius: window.__pivotTest.state.camera.position.distanceTo(window.__pivotTest.state.controls.target) }));
+    expect(after.target).toEqual([0, 0, 0]);
+    expect(after.radius).toBeCloseTo(before.radius, 5);
+    await page.mouse.move(before.x, before.y); await page.mouse.down({ button: 'right' });
+    await page.mouse.move(before.x + 40, before.y + 15, { steps: 6 }); await page.mouse.up({ button: 'right' });
+    const panned = await page.evaluate(() => window.__pivotTest.state.controls.target.toArray());
+    expect(panned).not.toEqual([0, 0, 0]);
+    await page.mouse.move(before.x, before.y); await page.mouse.down();
+    await page.mouse.move(before.x - 35, before.y + 12, { steps: 6 }); await page.mouse.up();
+    const rotatedAfterPan = await page.evaluate(() => window.__pivotTest.state.controls.target.toArray());
+    rotatedAfterPan.forEach((value, index) => expect(value).toBeCloseTo(panned[index], 6));
+});
+
+test('OFF에서 휠 확대 후 회전해도 확대된 위치와 중심을 유지한다', async ({ page }) => {
+    await setup(page);
+    const start = await page.evaluate(() => {
+        const { state } = window.__pivotTest;
+        state.controls.target.set(300, 200, 100);
+        state.camera.position.set(900, -800, 600); state.controls.update();
+        const rect = state.renderer.domElement.getBoundingClientRect();
+        return { x: rect.x + rect.width * .55, y: rect.y + rect.height * .75 };
+    });
+    await page.mouse.move(start.x, start.y); await page.mouse.wheel(0, -100);
+    const zoomed = await page.evaluate(() => ({ target: window.__pivotTest.state.controls.target.toArray(),
+        radius: window.__pivotTest.state.camera.position.distanceTo(window.__pivotTest.state.controls.target) }));
+    await page.mouse.move(start.x, start.y); await page.mouse.down();
+    await page.mouse.move(start.x + 55, start.y + 18, { steps: 6 }); await page.mouse.up();
+    const rotated = await page.evaluate(() => ({ target: window.__pivotTest.state.controls.target.toArray(),
+        radius: window.__pivotTest.state.camera.position.distanceTo(window.__pivotTest.state.controls.target) }));
+    rotated.target.forEach((value, index) => expect(value).toBeCloseTo(zoomed.target[index], 6));
+    expect(rotated.radius).toBeCloseTo(zoomed.radius, 5);
+});
+
 test('ON의 실제 회전은 선택 중심을 사용하고 우클릭 팬과 기존 마우스 설정을 유지한다', async ({ page }) => {
     const errors = await setup(page);
     await page.evaluate(() => window.__pivotTest.selectSceneModel(window.__pivotTest.state.models[0]));
