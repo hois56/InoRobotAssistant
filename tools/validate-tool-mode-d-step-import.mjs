@@ -50,7 +50,9 @@ assert.match(largeWorker, /async function parseLargeStepFile\(message, requestId
 assert.match(largeWorker, /kernel\.importXCAFFromSTEP\(sourceBuffer\)/);
 assert.match(largeWorker, /function collectXcafParts\(document\)/);
 assert.match(largeWorker, /document\.getRoots\(\)/);
-assert.match(largeWorker, /document\.getChildren\(label\)/);
+assert.match(largeWorker, /document\.getChildren\(referred \?\? label\)/);
+assert.match(largeWorker, /document\.getReferredLabel\?\.\(label\)/);
+assert.match(largeWorker, /kernel\.located\(part\.shapeHandle, part\.placement\)/);
 assert.match(largeWorker, /part\.shapeHandle/);
 assert.match(largeWorker, /postLargeMeshChunks\(mesh, message, requestId, part\)/);
 assert.match(largeWorker, /segmented: true/);

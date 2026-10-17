@@ -5,6 +5,15 @@ async function setTransformValue(page, selector, value) {
     await input.pressSequentially(value);await input.press('Enter');
 }
 
+async function revealCadAssemblyPart(page, partId) {
+    const path = await page.evaluate(id => window.__treeMotion.state.models.flatMap(model => model.userData.importedParts || [])
+        .find(part => part.userData.modelPartId === id)?.userData.cadAssemblyPath || [], partId);
+    for (const entry of path) {
+        const toggle = page.locator(`[data-cad-assembly-id="${entry.id}"] > details > summary > .model-tree-toggle`).first();
+        if (await toggle.getAttribute('aria-expanded') === 'false') await toggle.click();
+    }
+}
+
 test('그룹의 부모와 부착 모델을 함께 선택해도 부착 모델을 두 번 변환하지 않는다', async ({page}) => {
     const errors=await setup(page,false);
     await page.evaluate(()=>{
@@ -512,6 +521,7 @@ test('실제 CAD 부품 그룹과 이동 기준을 프로젝트 저장·복구�
     await expect(page.locator('[data-model-tree-toggle]').first()).toHaveAttribute('aria-expanded','false');
     await page.locator('[data-model-tree-toggle]').first().click();
     const ids=await page.evaluate(()=>window.__treeMotion.state.models[0].userData.importedParts.slice(0,2).map(part=>part.userData.modelPartId));
+    for (const id of ids) await revealCadAssemblyPart(page, id);
     await page.locator(`button[data-model-part-id="${ids[0]}"]`).click();await page.locator(`button[data-model-part-id="${ids[1]}"]`).click({modifiers:['Shift']});
     await page.locator(`button[data-model-part-id="${ids[1]}"]`).click({button:'right'});page.once('dialog',dialog=>dialog.accept('저장할 그룹'));await page.locator('#model-group-parts').click();
     const result=await page.evaluate(async()=>{
@@ -625,6 +635,7 @@ test('하위 부품 이름 변경은 부품 참조와 원본 이름을 보존하
  await page.waitForFunction(()=>window.__treeMotion.state.models.some(model=>model.userData.importedParts?.length>1),null,{timeout:60000});
  await page.locator('[data-model-tree-toggle]').first().click();
  const before=await page.evaluate(()=>{const p=window.__treeMotion.state.models[0].userData.importedParts[0];return {id:p.userData.modelPartId,name:p.userData.modelPartName};});
+ await revealCadAssemblyPart(page, before.id);
  const button=page.locator('.model-tree-part-button').first();await button.click({button:'right'});
  page.once('dialog',dialog=>dialog.accept('흡착 패드'));await page.locator('#model-rename').click();await expect(button.locator('.model-tree-part-name')).toHaveText('흡착 패드');
  await page.keyboard.press('Control+z');await expect(button.locator('.model-tree-part-name')).not.toHaveText('흡착 패드');

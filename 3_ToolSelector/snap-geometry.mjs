@@ -247,7 +247,7 @@ function fitCircle(path, points, tolerance, modelDiagonal) {
   const planeTolerance = Math.max(tolerance * 20, modelDiagonal * 1e-5);
   const maximumRadialError = Math.max(...radialDistances.map((value) => Math.abs(value - radius)));
   if (maximumPlaneError > planeTolerance || maximumRadialError > radialTolerance) return null;
-  return { center, radius };
+  return { center, radius, normal: basis.normal };
 }
 
 function straightLineForChain(chain, points, tolerance) {
@@ -552,7 +552,19 @@ export function buildStepSnapCandidates(meshDefinition, options = {}) {
   });
   circleChains.forEach((chain, chainIndex) => {
     const circle = fitCircle(chain.path, positions, weldTolerance, rawBounds.diagonal);
-    if (circle) addCandidate({ type: 'circle-center', point: circle.center, source: { chainIndex, radiusMm: circle.radius } });
+    if (!circle) return;
+    addCandidate({ type: 'circle-center', point: circle.center, source: { chainIndex, radiusMm: circle.radius } });
+    if (options.includeCircleQuadrants && chain.closed) {
+      // Project the first usable model axis into the circle plane so quadrant
+      // positions do not depend on tessellation order or the first vertex.
+      const reference = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+        .find(axis => Math.abs(dot(axis, circle.normal)) < 0.9);
+      const axis = normalize(sub(reference, scale(circle.normal, dot(reference, circle.normal))));
+      const otherAxis = normalize(cross(circle.normal, axis));
+      for (const direction of [axis, otherAxis, scale(axis, -1), scale(otherAxis, -1)]) {
+        addCandidate({ type: 'quadrant', point: add(circle.center, scale(direction, circle.radius)), source: { chainIndex } });
+      }
+    }
   });
 
   addCandidate({ type: 'shape-center', point: rawBounds.center, source: { kind: 'bounding-box' } });

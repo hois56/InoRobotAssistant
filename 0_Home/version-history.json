@@ -260,6 +260,23 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.17",
+                "items": [
+                  "`[수정]` 대용량 STEP 조립 모델의 부품 구분과 중간 조립품 계층을 유지하여 가져오도록 개선했습니다.",
+                  "가상 컨트롤러의 IP 주소를 수정할 수 있도록 개선하고, 실제 컨트롤러 선택 시 기본 IP 주소를 192.168.0.1로 설정했습니다.",
+                  "선택 모델 중심 회전을 끈 상태에서 뷰 조작이 불편하던 문제를 해결하고, 기존 중심점을 유지하는 확대·축소 방식으로 복원했습니다.",
+                  "`[수정]` 스냅 이동 등 스냅 작업에서 스냅 대신 뒤쪽 모델이 선택되어 스냅 위치가 바뀌던 문제를 해결했습니다.",
+                  "선택 모델 중심 회전을 끈 상태의 뷰 조작을 개선하고, 반복 확대 시 속도가 점점 느려지던 문제를 해결했습니다.",
+                  "면을 선택하지 않은 모델의 스냅이 표시되던 문제를 해결하고, 선택한 면의 원에 사분점 스냅을 추가했습니다.",
+                  "로봇 등록 여부와 기존 연결 상태에 관계없이 새 컨트롤러 연결 설정을 열 수 있도록 개선했습니다.",
+                  "마우스 휠의 확대·축소 이동량을 줄이고, 휠 버튼 드래그로 화면 크기를 세밀하게 조정할 수 있도록 개선했습니다.",
+                  "컨트롤러 연결 후 TCP 좌표에 따라 툴 설치 영점이 이동하던 문제를 해결했습니다.",
+                  "고정 뷰 창에 다른 프로그램보다 항상 위에 표시하는 맨 앞으로 고정 기능을 추가했습니다.",
+                  "선택 모델 중심 회전을 끈 상태에서 첫 회전은 카메라 거리를 유지하며 월드 원점을 기준으로 하고, 우클릭 이동이나 휠 확대 후에는 현재 중심을 유지하며 카메라만 확대·축소하도록 개선했습니다.",
+                  "다른 로봇의 컨트롤러 연결로 인해 선택한 로봇의 TCP 설정까지 잠기던 문제를 해결했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.10.08",
                 "items": [
                   "`[수정]` 6축 로봇의 선택 면 수직 정렬에서 J4가 뒤집히던 문제를 해결하고, 같은 TCP 위치·방향에서 J4가 0도에 가까운 자세를 우선하도록 개선했습니다.",
@@ -585,6 +602,12 @@
           {
             "title": "Project Generator",
             "versions": [
+              {
+                "title": "Ver 26.10.17",
+                "items": [
+                  "프로젝트 생성기에서 R20H 모델을 선택할 수 없던 문제를 해결했습니다."
+                ]
+              },
               {
                 "title": "Ver 26.10.07",
                 "items": [
@@ -1516,6 +1539,23 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.17",
+                "items": [
+                  "`[Fixed]` Large STEP assemblies now retain their individual parts and nested assembly structure.",
+                  "Virtual controller IP addresses can now be edited; selecting a real controller defaults to 192.168.0.1.",
+                  "Restored zoom around the existing view center when selected-model rotation is disabled, resolving awkward view navigation.",
+                  "`[Fix]` Fixed snap operations selecting a model behind a snap point and changing the snap location.",
+                  "Improved view navigation with selected-model rotation disabled and fixed zoom slowing down during repeated zooming.",
+                  "Fixed snaps appearing on models without a selected face and added quadrant snaps to circles on selected faces.",
+                  "New controller connection settings can now be opened regardless of robot availability or existing connection status.",
+                  "Reduced mouse-wheel zoom increments and middle-button drag sensitivity for finer view scaling.",
+                  "Fixed the tool mounting zero shifting with TCP coordinates after controller connection.",
+                  "Added an always-on-top option to keep the fixed-view window above other applications.",
+                  "Default rotation preserves camera distance at the world origin, while panning or wheel zoom keeps the view center fixed and moves only the camera.",
+                  "Fixed another robot’s controller connection incorrectly locking the selected robot’s TCP settings."
+                ]
+              },
+              {
                 "title": "Ver 26.10.08",
                 "items": [
                   "Fixed the flipped J4 posture when aligning a six-axis robot perpendicular to a selected face. Equivalent wrist configurations now prefer J4 closer to zero while preserving the TCP position and orientation.",
@@ -1824,6 +1864,12 @@
           {
             "title": "Project Generator",
             "versions": [
+              {
+                "title": "Ver 26.10.17",
+                "items": [
+                  "Fixed the missing R20H model in the project generator."
+                ]
+              },
               {
                 "title": "Ver 26.10.07",
                 "items": [
@@ -2749,6 +2795,23 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.17",
+                "items": [
+                  "`[修复]` 导入大型 STEP 装配模型时保留独立零件和嵌套装配层级。",
+                  "支持修改虚拟控制器 IP 地址，选择实际控制器时默认 IP 地址为 192.168.0.1。",
+                  "关闭所选模型中心旋转时，恢复围绕原有视图中心缩放，解决视图操作不便的问题。",
+                  "`[修复]` 修复了捕捉操作中选中捕捉点后方模型而导致捕捉位置改变的问题。",
+                  "改善关闭所选模型中心旋转时的视图操作，并解决连续放大时速度逐渐降低的问题。",
+                  "修复了未选择面时模型仍显示捕捉点的问题，并为所选面上的圆添加了象限点捕捉。",
+                  "现在无论是否已添加机器人或现有连接处于何种状态，都可以打开新控制器连接设置。",
+                  "减小鼠标滚轮缩放步幅，并降低中键拖动灵敏度，以便精细调整视图。",
+                  "修复连接控制器后工具安装零点随 TCP 坐标移动的问题。",
+                  "固定视图窗口新增置顶功能，可始终显示在其他应用程序上方。",
+                  "关闭所选模型中心旋转时，首次旋转会保持相机距离并以世界原点为中心；平移或滚轮缩放后固定当前中心，仅移动相机。",
+                  "修复其他机器人连接控制器时，所选机器人的 TCP 设置也被锁定的问题。"
+                ]
+              },
+              {
                 "title": "Ver 26.10.08",
                 "items": [
                   "修复了六轴机器人垂直于选定面时J4翻转的问题。在保持TCP位置和方向不变的等效腕部姿态中，优先选择J4接近0度的姿态。",
@@ -3057,6 +3120,12 @@
           {
             "title": "Project Generator",
             "versions": [
+              {
+                "title": "Ver 26.10.17",
+                "items": [
+                  "修复了项目生成器中缺少 R20H 型号的问题。"
+                ]
+              },
               {
                 "title": "Ver 26.10.07",
                 "items": [
@@ -3982,6 +4051,23 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.17",
+                "items": [
+                  "`[Sửa lỗi]` Mô hình lắp ráp STEP dung lượng lớn giữ nguyên các chi tiết riêng và cấu trúc lắp ráp lồng nhau khi nhập.",
+                  "Cho phép sửa địa chỉ IP bộ điều khiển ảo; khi chọn bộ điều khiển thực, IP mặc định là 192.168.0.1.",
+                  "Khôi phục thu phóng quanh tâm nhìn hiện tại khi tắt xoay quanh mô hình đã chọn, khắc phục thao tác góc nhìn bất tiện.",
+                  "`[Sửa lỗi]` Đã khắc phục việc thao tác bắt điểm chọn mô hình phía sau điểm bắt và làm thay đổi vị trí bắt điểm.",
+                  "Cải thiện thao tác góc nhìn khi tắt xoay quanh mô hình đã chọn và khắc phục tốc độ phóng to giảm dần.",
+                  "Đã sửa lỗi hiển thị điểm bắt dính trên mô hình chưa chọn mặt và thêm bắt dính điểm phần tư cho đường tròn trên mặt đã chọn.",
+                  "Giờ có thể mở cài đặt kết nối bộ điều khiển mới bất kể đã thêm rô-bốt hay trạng thái kết nối hiện tại.",
+                  "Giảm mức thu phóng mỗi lần lăn chuột và độ nhạy kéo nút giữa để điều chỉnh góc nhìn chính xác hơn.",
+                  "Khắc phục điểm gốc lắp dụng cụ dịch chuyển theo tọa độ TCP sau khi kết nối bộ điều khiển.",
+                  "Đã thêm tùy chọn luôn ở trên cùng cho cửa sổ góc nhìn cố định.",
+                  "Khi tắt xoay quanh mô hình đã chọn, lần xoay đầu dùng gốc thế giới và giữ khoảng cách camera; sau khi kéo hoặc lăn chuột, giữ nguyên tâm nhìn và chỉ di chuyển camera.",
+                  "Khắc phục việc kết nối bộ điều khiển của robot khác làm khóa cài đặt TCP của robot đang chọn."
+                ]
+              },
+              {
                 "title": "Ver 26.10.08",
                 "items": [
                   "Đã khắc phục tư thế J4 bị lật khi căn robot 6 trục vuông góc với mặt đã chọn. Ưu tiên cấu hình cổ tay có J4 gần 0 độ trong khi giữ nguyên vị trí và hướng TCP.",
@@ -4290,6 +4376,12 @@
           {
             "title": "Project Generator",
             "versions": [
+              {
+                "title": "Ver 26.10.17",
+                "items": [
+                  "Đã khắc phục việc thiếu mẫu R20H trong trình tạo dự án."
+                ]
+              },
               {
                 "title": "Ver 26.10.07",
                 "items": [
@@ -5215,6 +5307,23 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.17",
+                "items": [
+                  "`[Düzeltme]` Büyük STEP montajları içe aktarılırken ayrı parçalar ve iç içe montaj yapısı korunur.",
+                  "Sanal denetleyici IP adresi düzenlenebilir; gerçek denetleyici seçildiğinde varsayılan IP 192.168.0.1 olur.",
+                  "Seçili model etrafında döndürme kapalıyken mevcut görünüm merkezi etrafında yakınlaştırma geri getirildi ve görünüm kontrolü sorunu giderildi.",
+                  "`[Düzeltme]` Yakalama işlemlerinde yakalama noktasının arkasındaki modelin seçilerek yakalama konumunun değişmesi sorunu giderildi.",
+                  "Seçili model etrafında döndürme kapalıyken görünüm kontrolü iyileştirildi ve tekrarlanan yakınlaştırmada yavaşlama giderildi.",
+                  "Yüz seçilmeden modellerde yakalama noktalarının görünmesi düzeltildi ve seçili yüzlerdeki dairelere çeyrek nokta yakalaması eklendi.",
+                  "Yeni kontrolör bağlantı ayarları artık robot bulunabilirliği veya mevcut bağlantı durumundan bağımsız olarak açılabilir.",
+                  "Daha hassas görünüm ölçekleme için fare tekerleği adımları ve orta düğmeyle sürükleme hassasiyeti azaltıldı.",
+                  "Denetleyici bağlantısından sonra takım montaj sıfırının TCP koordinatlarıyla kayması giderildi.",
+                  "Sabit görünüm penceresine diğer uygulamaların üzerinde kalma seçeneği eklendi.",
+                  "Seçili model etrafında döndürme kapalıyken ilk dönüş dünya başlangıcını kamera mesafesini koruyarak kullanır; kaydırma veya tekerlek yakınlaştırmasından sonra merkez sabit kalır, yalnızca kamera hareket eder.",
+                  "Başka bir robotun denetleyici bağlantısının seçili robotun TCP ayarlarını kilitlemesi giderildi."
+                ]
+              },
+              {
                 "title": "Ver 26.10.08",
                 "items": [
                   "Altı eksenli robot seçilen yüzeye dik hizalanırken J4 ekseninin ters dönmesi düzeltildi. TCP konumu ve yönü korunarak eşdeğer bilek duruşlarında J4 sıfıra daha yakın olacak şekilde tercih edilir.",
@@ -5523,6 +5632,12 @@
           {
             "title": "Project Generator",
             "versions": [
+              {
+                "title": "Ver 26.10.17",
+                "items": [
+                  "Proje oluşturucuda eksik olan R20H modeli eklendi."
+                ]
+              },
               {
                 "title": "Ver 26.10.07",
                 "items": [
@@ -6448,6 +6563,23 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.17",
+                "items": [
+                  "`[Исправлено]` При импорте больших сборок STEP сохраняются отдельные детали и вложенная структура сборки.",
+                  "IP-адрес виртуального контроллера можно изменять; при выборе реального контроллера используется адрес 192.168.0.1 по умолчанию.",
+                  "При отключённом вращении вокруг выбранной модели восстановлено масштабирование относительно текущего центра вида, устранено неудобство управления.",
+                  "`[Исправлено]` Исправлен выбор модели за точкой привязки, из-за которого менялось положение привязки.",
+                  "Улучшено управление видом при отключённом вращении вокруг выбранной модели и устранено замедление при повторном приближении.",
+                  "Исправлено появление точек привязки на моделях без выбранной грани и добавлена привязка к точкам квадрантов окружностей на выбранных гранях.",
+                  "Настройки нового подключения контроллера теперь можно открыть независимо от наличия роботов и состояния текущих подключений.",
+                  "Уменьшен шаг масштабирования колёсиком и чувствительность перетаскивания средней кнопкой для точной настройки вида.",
+                  "Устранено смещение нуля установки инструмента вслед за координатами TCP после подключения контроллера.",
+                  "Добавлена возможность отображать окно фиксированного вида поверх других приложений.",
+                  "При отключённом вращении вокруг выбранной модели первое вращение использует начало координат, сохраняя расстояние камеры; после панорамирования или масштабирования центр фиксируется, перемещается только камера.",
+                  "Устранена блокировка настроек TCP выбранного робота при подключении контроллера другого робота."
+                ]
+              },
+              {
                 "title": "Ver 26.10.08",
                 "items": [
                   "Исправлен переворот J4 при выравнивании шестиосевого робота перпендикулярно выбранной грани. Среди эквивалентных положений запястья предпочтение отдаётся J4 ближе к нулю с сохранением положения и ориентации TCP.",
@@ -6756,6 +6888,12 @@
           {
             "title": "Project Generator",
             "versions": [
+              {
+                "title": "Ver 26.10.17",
+                "items": [
+                  "Исправлено отсутствие модели R20H в генераторе проектов."
+                ]
+              },
               {
                 "title": "Ver 26.10.07",
                 "items": [

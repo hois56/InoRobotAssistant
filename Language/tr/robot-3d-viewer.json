@@ -600,6 +600,7 @@
     "TCP 스냅할 Tool 모델을 먼저 지정하세요.": "TCP'yi yakalamadan önce bir Araç modeli atayın.",
     "TCP 스냅할 Tool 모델 또는 생성 도형을 먼저 준비하세요.": "TCP'yi yakalamadan önce bir Araç modeli veya oluşturulan şekil hazırlayın.",
     "원/호 중심점": "Daire/yay merkezi",
+    "사분점": "Çeyrek nokta",
     "에지 중심점": "Kenar orta noktası",
     "면 중심점": "Yüz merkezi",
     "사각형 중심점": "Dikdörtgenin merkezi",
@@ -1883,7 +1884,11 @@
     "IR-S4-40Z15 is not available.": "IR-S4-40Z15 mevcut değil.",
     "OpenCascade STEP parser is unavailable.": "OpenCascade STEP ayrıştırıcısı kullanılamıyor.",
     "The STEP file could not be imported.": "STEP dosyası içe aktarılamadı.",
-    "OpenCascade could not convert this STEP file.": "OpenCascade bu STEP dosyasını dönüştüremedi."
+    "OpenCascade could not convert this STEP file.": "OpenCascade bu STEP dosyasını dönüştüremedi.",
+    "맨 앞으로 고정": "Her zaman üstte",
+    "맨 앞으로 고정 해제": "Her zaman üstteyi kapat",
+    "이 브라우저에서는 맨 앞으로 고정을 지원하지 않습니다. Chrome 또는 Edge에서 HTTPS로 열어 주세요.": "Bu tarayıcı her zaman üstte özelliğini desteklemiyor. Chrome veya Edge ile HTTPS üzerinden açın.",
+    "맨 앞으로 고정 창을 열 수 없습니다. 다시 시도해 주세요.": "Her zaman üstte penceresi açılamadı. Tekrar deneyin."
   },
   "patterns": []
 }

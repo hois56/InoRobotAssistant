@@ -5,10 +5,10 @@ import vm from 'node:vm';
 
 const workerSource = readFileSync(new URL('../../2_3DSimulation/step-import-worker.js', import.meta.url), 'utf8');
 
-function fixture({ heapBytes = 1024 } = {}) {
+function fixture({ heapBytes = 1024, assembly = false, failPart = false } = {}) {
     const messages = [];
     const timers = new Map();
-    const calls = { init: 0, released: 0, disposed: 0, parameters: [] };
+    const calls = { init: 0, released: 0, disposed: 0, parameters: [], direct: 0, closed: 0 };
     let handler;
     let failImport = false;
     const mesh = {
@@ -18,13 +18,19 @@ function fixture({ heapBytes = 1024 } = {}) {
         faceGroups: new Uint32Array([0, 3, 101, 3, 3, 102])
     };
     const kernel = {
-        importStep() { if (failImport) throw new Error('invalid STEP'); return 1; },
-        meshShape(_shape, parameters) { calls.parameters.push(parameters); return mesh; },
+        importStep() { calls.direct += 1; if (failImport) throw new Error('invalid STEP'); return 1; },
+        meshShape(shape, parameters) { calls.parameters.push(parameters); if (failPart && shape === 12) throw new Error('part failed'); return mesh; },
         release() {},
         releaseAll() { calls.released += 1; },
         getRawModule() { return { HEAPU8: { byteLength: heapBytes } }; },
         [Symbol.dispose]() { calls.disposed += 1; }
     };
+    if (assembly) kernel.importXCAFFromSTEP = () => ({
+        getRoots: () => [1],
+        getChildren: label => label === 1 ? [2, 3] : [],
+        getLabelInfo: label => ({ name: label === 1 ? 'Assembly' : 'Bolt', shapeHandle: label === 1 ? 10 : 10 + label, hasColor: true, color: [1, 0, 0] }),
+        close() { calls.closed += 1; }
+    });
     const context = vm.createContext({
         Float32Array, Uint16Array, Uint32Array, ArrayBuffer, Symbol, performance,
         console, setTimeout(callback) { const id = timers.size + 1; timers.set(id, callback); return id; },
@@ -65,6 +71,48 @@ test('STEP 연속 가져오기는 엔진을 재사용하고 매번 형상을 정
     assert.equal(calls.disposed, 1);
     await parse(3);
     assert.equal(calls.init, 2);
+});
+
+test('대용량 조립 STEP는 직접 변환 성공 여부와 관계없이 부품 구분을 보존한다', async () => {
+    const { parse, calls, messages } = fixture({ assembly: true });
+    await parse();
+    const meshes = messages.filter(message => message.type === 'mesh').map(message => message.mesh);
+    assert.equal(calls.direct, 0);
+    assert.equal(new Set(meshes.map(mesh => mesh.partId)).size, 2);
+    assert.deepEqual(meshes.map(mesh => mesh.partName), ['Bolt', 'Bolt']);
+    assert.deepEqual(meshes.map(mesh => mesh.color), [[1, 0, 0], [1, 0, 0]]);
+    assert.equal(calls.closed, 1);
+    assert.equal(messages.at(-1).segmented, true);
+});
+
+test('조립 STEP의 일부 부품 변환 실패를 성공으로 보고하지 않는다', async () => {
+    const { parse, calls, messages } = fixture({ assembly: true, failPart: true });
+    await parse();
+    assert.equal(messages.at(-1).type, 'error');
+    assert.equal(messages.some(message => message.type === 'done'), false);
+    assert.equal(calls.closed, 1);
+});
+
+test('중첩 조립 참조는 반복 부품의 ID와 부모 회전·이동을 보존한다', () => {
+    const { context } = fixture();
+    const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0];
+    const document = {
+        getRoots: () => [1],
+        getChildren: label => ({ 1: [2, 3], 20: [4] }[label] || []),
+        getLabelInfo: label => ({ name: label === 40 ? 'Bolt' : '', isComponent: [2, 3, 4].includes(label), shapeHandle: label === 40 ? 100 : null }),
+        getReferredLabel: label => ({ 2: 20, 3: 20, 4: 40 }[label]),
+        getLocation: label => label === 2 ? [0, -1, 0, 100, 1, 0, 0, 0, 0, 0, 1, 0]
+            : label === 4 ? [1, 0, 0, 10, 0, 1, 0, 20, 0, 0, 1, 30] : identity
+    };
+    const parts = context.collectXcafParts(document);
+    assert.equal(parts.length, 2);
+    assert.notEqual(parts[0].partId, parts[1].partId);
+    assert.equal(parts[0].partName, 'Bolt');
+    assert.deepEqual(Array.from(parts[0].placement), [0, -1, 0, 80, 1, 0, 0, 10, 0, 0, 1, 30]);
+    assert.deepEqual(Array.from(parts[1].placement), [1, 0, 0, 10, 0, 1, 0, 20, 0, 0, 1, 30]);
+    const getInfo = document.getLabelInfo;
+    document.getLabelInfo = label => ({ ...getInfo(label), name: label === 4 ? 'NAUO42' : label === 40 ? 'Bolt' : '' });
+    assert.equal(context.collectXcafParts(document)[0].partName, 'Bolt');
 });
 
 test('STEP 변환 실패 후에는 엔진을 폐기하고 다음 요청에서 초기화한다', async () => {

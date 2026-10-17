@@ -600,6 +600,7 @@
     "TCP 스냅할 Tool 모델을 먼저 지정하세요.": "请先指定用于捕捉 TCP 的 Tool 模型。",
     "TCP 스냅할 Tool 모델 또는 생성 도형을 먼저 준비하세요.": "请先准备用于捕捉 TCP 的 Tool 模型或生成的图形。",
     "원/호 중심점": "圆/圆弧中心",
+    "사분점": "象限点",
     "에지 중심점": "边中点",
     "면 중심점": "面中心",
     "사각형 중심점": "矩形中心",
@@ -1883,7 +1884,11 @@
     "IR-S4-40Z15 is not available.": "IR-S4-40Z15 不可用。",
     "OpenCascade STEP parser is unavailable.": "OpenCascade STEP 解析器不可用。",
     "The STEP file could not be imported.": "无法导入 STEP 文件。",
-    "OpenCascade could not convert this STEP file.": "OpenCascade 无法转换此 STEP 文件。"
+    "OpenCascade could not convert this STEP file.": "OpenCascade 无法转换此 STEP 文件。",
+    "맨 앞으로 고정": "置顶",
+    "맨 앞으로 고정 해제": "取消置顶",
+    "이 브라우저에서는 맨 앞으로 고정을 지원하지 않습니다. Chrome 또는 Edge에서 HTTPS로 열어 주세요.": "此浏览器不支持置顶。请使用 Chrome 或 Edge 通过 HTTPS 打开。",
+    "맨 앞으로 고정 창을 열 수 없습니다. 다시 시도해 주세요.": "无法打开置顶窗口，请重试。"
   },
   "patterns": []
 }

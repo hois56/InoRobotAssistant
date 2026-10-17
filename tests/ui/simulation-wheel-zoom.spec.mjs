@@ -12,7 +12,7 @@ async function setup(page) {
 test('빈 공간·숨긴 모델·스케치의 휠 동작을 유지하고 표면 앞에서 멈춘다', async ({ page }) => {
   await setup(page);
   const result = await page.evaluate(() => {
-    const { state, THREE, recreateMainOrbitControls } = window.__wheelTest;
+    const { state, THREE, recreateMainOrbitControls, setSelectedViewPivotEnabled } = window.__wheelTest;
     const canvas = state.renderer.domElement;
     const rect = canvas.getBoundingClientRect();
     const wheel = deltaY => canvas.dispatchEvent(new WheelEvent('wheel', { deltaY, clientX: rect.left + rect.width / 2,
@@ -26,9 +26,13 @@ test('빈 공간·숨긴 모델·스케치의 휠 동작을 유지하고 표면 
     wheel(-100);
     const hiddenDistance = state.controls.getDistance();
     model.visible = true;
+    state.selectedModel = model;
+    setSelectedViewPivotEnabled(true);
+    state.camera.position.set(0, -hiddenDistance, 0);
+    state.controls.target.set(0, 0, 0); state.controls.update();
     // The canvas handler must keep using the current controls after recreation.
     recreateMainOrbitControls();
-    for (let i = 0; i < 200; i++) wheel(-100);
+    for (let i = 0; i < 400; i++) wheel(-100);
     const surfaceCameraY = state.camera.position.y;
     state.controls.enabled = false;
     wheel(-100);
@@ -43,8 +47,8 @@ test('빈 공간·숨긴 모델·스케치의 휠 동작을 유지하고 표면 
     return { emptyDistance, hiddenDistance, surfaceCameraY, disabledCameraY,
       sketchZoom: state.camera.zoom, sketchTargetShift: state.controls.target.distanceTo(sketchTarget) };
   });
-  expect(result.emptyDistance).toBeCloseTo(9.5, 6);
-  expect(result.hiddenDistance).toBeCloseTo(9.025, 6);
+  expect(result.emptyDistance).toBeCloseTo(9.6, 6);
+  expect(result.hiddenDistance).toBeCloseTo(result.emptyDistance - 0.4, 6);
   expect(result.surfaceCameraY).toBeCloseTo(99.8, 5);
   expect(result.disabledCameraY).toBe(result.surfaceCameraY);
   expect(result.sketchZoom).toBeCloseTo(1 / 0.95, 6);
@@ -52,7 +56,30 @@ test('빈 공간·숨긴 모델·스케치의 휠 동작을 유지하고 표면 
 });
 
 for (const selectedPivot of [false, true]) {
-  test(`휠 확대는 기존 중심점을 지나 커서의 표면에 접근하고 방향을 유지한다 (선택 중심 ${selectedPivot})`, async ({ page }) => {
+  test(`반복 확대의 이동량은 줄지 않고 축소로 복귀한다 (${selectedPivot})`, async ({ page }) => {
+    await setup(page);
+    const result = await page.evaluate(selectedPivot => {
+      const { state, THREE, setSelectedViewPivotEnabled } = window.__wheelTest;
+      const model = new THREE.Mesh(new THREE.BoxGeometry(80, 80, 80), new THREE.MeshBasicMaterial());
+      model.position.set(0, 140, 0); model.userData.uploaded = true; model.userData.placement = 'scene';
+      state.scene.add(model); state.models.push(model); state.selectedModel = model;
+      setSelectedViewPivotEnabled(selectedPivot);
+      state.camera.position.set(0, -10, 0); state.controls.target.set(0, 0, 0); state.controls.update();
+      const canvas = state.renderer.domElement, rect = canvas.getBoundingClientRect();
+      const wheel = deltaY => canvas.dispatchEvent(new WheelEvent('wheel', { deltaY,
+        clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2, bubbles: true, cancelable: true }));
+      const steps = [];
+      for (let i = 0; i < 20; i++) {
+        const before = state.camera.position.clone(); wheel(-100);
+        steps.push(state.camera.position.distanceTo(before));
+      }
+      for (let i = 0; i < 20; i++) wheel(100);
+      return { steps, position: state.camera.position.toArray() };
+    }, selectedPivot);
+    result.steps.forEach(step => expect(step).toBeCloseTo(0.4, 6));
+    expect(result.position[1]).toBeCloseTo(-10, 6);
+  });
+  test(`선택 중심 OFF는 기존 중심, ON은 커서 표면 기준으로 확대한다 (${selectedPivot})`, async ({ page }) => {
     await setup(page);
     const point = await page.evaluate(selectedPivot => {
       const { state, THREE, setSelectedViewPivotEnabled } = window.__wheelTest;
@@ -82,9 +109,9 @@ for (const selectedPivot of [false, true]) {
         projected: new THREE.Vector3(25, 100, 0).project(state.camera).toArray(),
         contract: !state.controls.zoomToCursor && state.controls.zoomSpeed === 1 && state.controls.mouseButtons.RIGHT === THREE.MOUSE.PAN };
     });
-    expect(result.cameraY).toBeGreaterThan(0);
+    expect(result.cameraY).toBeCloseTo(-6.8, 5);
     // Native mouse coordinates are rounded to pixels by Chromium.
-    expect(Math.abs(result.projected[0] - point.projected[0]) * point.width / 2).toBeLessThan(1);
+    if (selectedPivot) expect(Math.abs(result.projected[0] - point.projected[0]) * point.width / 2).toBeLessThan(1);
     expect(Math.abs(result.projected[1] - point.projected[1]) * point.height / 2).toBeLessThan(1);
     result.quaternion.forEach((value, i) => expect(value).toBeCloseTo(point.quaternion[i], 6));
     expect(result.contract).toBe(true);
