@@ -262,6 +262,7 @@
               {
                 "title": "Ver 26.10.17",
                 "items": [
+                  "`[수정]` 모델 트리 이동 핸들을 드래그한 뒤 마우스를 놓을 때 스냅이 실행되던 문제를 해결했습니다.",
                   "`[수정]` 대용량 STEP 조립 모델의 부품 구분과 중간 조립품 계층을 유지하여 가져오도록 개선했습니다.",
                   "가상 컨트롤러의 IP 주소를 수정할 수 있도록 개선하고, 실제 컨트롤러 선택 시 기본 IP 주소를 192.168.0.1로 설정했습니다.",
                   "선택 모델 중심 회전을 끈 상태에서 뷰 조작이 불편하던 문제를 해결하고, 기존 중심점을 유지하는 확대·축소 방식으로 복원했습니다.",
@@ -1541,6 +1542,7 @@
               {
                 "title": "Ver 26.10.17",
                 "items": [
+                  "`[Fixed]` Prevented snap selection from triggering when releasing the mouse after dragging the model tree move handle.",
                   "`[Fixed]` Large STEP assemblies now retain their individual parts and nested assembly structure.",
                   "Virtual controller IP addresses can now be edited; selecting a real controller defaults to 192.168.0.1.",
                   "Restored zoom around the existing view center when selected-model rotation is disabled, resolving awkward view navigation.",
@@ -2797,6 +2799,7 @@
               {
                 "title": "Ver 26.10.17",
                 "items": [
+                  "`[修复]` 解决了拖动模型树移动手柄后松开鼠标时触发捕捉的问题。",
                   "`[修复]` 导入大型 STEP 装配模型时保留独立零件和嵌套装配层级。",
                   "支持修改虚拟控制器 IP 地址，选择实际控制器时默认 IP 地址为 192.168.0.1。",
                   "关闭所选模型中心旋转时，恢复围绕原有视图中心缩放，解决视图操作不便的问题。",
@@ -4053,6 +4056,7 @@
               {
                 "title": "Ver 26.10.17",
                 "items": [
+                  "`[Sửa lỗi]` Khắc phục việc kích hoạt bắt điểm khi thả chuột sau khi kéo tay nắm di chuyển trong cây mô hình.",
                   "`[Sửa lỗi]` Mô hình lắp ráp STEP dung lượng lớn giữ nguyên các chi tiết riêng và cấu trúc lắp ráp lồng nhau khi nhập.",
                   "Cho phép sửa địa chỉ IP bộ điều khiển ảo; khi chọn bộ điều khiển thực, IP mặc định là 192.168.0.1.",
                   "Khôi phục thu phóng quanh tâm nhìn hiện tại khi tắt xoay quanh mô hình đã chọn, khắc phục thao tác góc nhìn bất tiện.",
@@ -5309,6 +5313,7 @@
               {
                 "title": "Ver 26.10.17",
                 "items": [
+                  "`[Düzeltme]` Model ağacı taşıma tutamacı sürüklendikten sonra fare bırakıldığında yakalamanın tetiklenmesi düzeltildi.",
                   "`[Düzeltme]` Büyük STEP montajları içe aktarılırken ayrı parçalar ve iç içe montaj yapısı korunur.",
                   "Sanal denetleyici IP adresi düzenlenebilir; gerçek denetleyici seçildiğinde varsayılan IP 192.168.0.1 olur.",
                   "Seçili model etrafında döndürme kapalıyken mevcut görünüm merkezi etrafında yakınlaştırma geri getirildi ve görünüm kontrolü sorunu giderildi.",
@@ -6565,6 +6570,7 @@
               {
                 "title": "Ver 26.10.17",
                 "items": [
+                  "`[Исправлено]` Устранён запуск привязки при отпускании кнопки мыши после перетаскивания маркера перемещения в дереве моделей.",
                   "`[Исправлено]` При импорте больших сборок STEP сохраняются отдельные детали и вложенная структура сборки.",
                   "IP-адрес виртуального контроллера можно изменять; при выборе реального контроллера используется адрес 192.168.0.1 по умолчанию.",
                   "При отключённом вращении вокруг выбранной модели восстановлено масштабирование относительно текущего центра вида, устранено неудобство управления.",

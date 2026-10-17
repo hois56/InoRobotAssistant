@@ -71,6 +71,35 @@ test('모델 폴더 전체는 수치 이동·회전과 핸들 및 배치 미리�
     expect(await positions()).toEqual([[150,-220,0],[150,20,0],[400,0,0]]);expect(errors).toEqual([]);
 });
 
+test('이동 핸들을 드래그해 놓으면 스냅 미리보기와 스냅 선택이 실행되지 않는다', async ({page}) => {
+    const errors=await setup(page,false);
+    await page.evaluate(()=>{
+        const a=window.__treeMotion,model=a.createPrimitiveShapeRoot('box',{x:40,y:40,z:40});
+        a.state.scene.add(model);a.state.models.push(model);a.updateUIStatus();
+    });
+    await page.locator('.model-tree-button').first().click();
+    await page.locator('[data-transform-mode="translate"]').click();
+    const drag=await page.evaluate(()=>{
+        const a=window.__treeMotion,controls=a.state.transformControls,canvas=a.state.renderer.domElement;
+        controls.dragging=true;controls.dispatchEvent({type:'dragging-changed',value:true});
+        const snapInteractionDuringDrag=a.isSimulationSnapInteractionActive();
+        const rect=canvas.getBoundingClientRect(),x=rect.left+rect.width*.75,y=rect.top+rect.height*.75;
+        return {snapInteractionDuringDrag,x,y,statusBefore:document.querySelector('#stat-status').textContent};
+    });
+    await page.mouse.move(drag.x,drag.y);
+    await page.mouse.down();
+    await page.mouse.move(drag.x+20,drag.y+20);
+    await page.evaluate(()=>{
+        const controls=window.__treeMotion.state.transformControls;
+        controls.dragging=false;controls.dispatchEvent({type:'dragging-changed',value:false});
+    });
+    await page.mouse.up();
+    expect(drag.snapInteractionDuringDrag).toBe(false);
+    await expect(page.locator('#stat-status')).toHaveText(drag.statusBefore);
+    await expect(page.locator('#simulation-snap-marker')).toHaveClass(/hidden/);
+    expect(errors).toEqual([]);
+});
+
 test('하위 부품 폴더 변환은 회전된 부모에서도 그룹 부품만 이동하고 고정 행렬을 갱신한다', async ({page}) => {
     const errors=await setup(page);
     await page.evaluate(()=>{
@@ -410,7 +439,7 @@ async function setup(page, fixture=true) {
     const errors=[];page.on('pageerror', error=>errors.push(error.message));
     await page.route('**/2_3DSimulation/main.js*', async route => {
         const response = await route.fetch();
-        await route.fulfill({ response, body: `${(await response.text()).replace('init();\n', 'window.__simulationReady = init();\n')}\nwindow.__treeMotion = { state, equipmentApp, THREE, createPrimitiveShapeRoot, ensureWorkspaceModelId, updateUIStatus, selectSceneModel, serializeWorkspaceSnapshot, restoreWorkspaceSnapshot, activateModelPlacement, updatePlacementPreviewFromTranslation, restorePlacementPreview, handleMeasurementSnapSelection };` });
+        await route.fulfill({ response, body: `${(await response.text()).replace('init();\n', 'window.__simulationReady = init();\n')}\nwindow.__treeMotion = { state, equipmentApp, THREE, createPrimitiveShapeRoot, ensureWorkspaceModelId, updateUIStatus, selectSceneModel, serializeWorkspaceSnapshot, restoreWorkspaceSnapshot, activateModelPlacement, updatePlacementPreviewFromTranslation, restorePlacementPreview, handleMeasurementSnapSelection, isSimulationSnapInteractionActive };` });
     });
     await page.goto('/2_3DSimulation/index.html');await page.waitForFunction(()=>window.__treeMotion);
     await page.evaluate(()=>window.__simulationReady);
