@@ -108,9 +108,11 @@ test('체크한 로봇의 관절·BASE 버튼·좌표 입력·3D 핸들을 함�
     for (const index of [0, 1]) expect(gizmoMove[index].position[2] - numericMove[index].position[2]).toBeCloseTo(3, 2);
     expect(gizmoMove[2]).toEqual(before[2]);
     await page.evaluate(() => window.__multiJog.undoLastAction());
+    await expect(page.locator('#jog-robot-list input:checked')).toHaveCount(2);
     const undone = await poses(page);
     undone.forEach((pose, index) => pose.joints.forEach((angle, joint) => expect(angle).toBeCloseTo(numericMove[index].joints[joint], 6)));
     await page.evaluate(() => window.__multiJog.redoLastAction());
+    await expect(page.locator('#jog-robot-list input:checked')).toHaveCount(2);
     const redone = await poses(page);
     redone.forEach((pose, index) => pose.joints.forEach((angle, joint) => expect(angle).toBeCloseTo(gizmoMove[index].joints[joint], 6)));
     await page.screenshot({ path: test.info().outputPath('multi-jog-desktop.png') });
@@ -140,10 +142,61 @@ test('길게 누르기는 모든 선택 로봇을 함께 이동시키고 해제 
     for (const pose of after) expect(pose.position[2] - before[0].position[2]).toBeCloseTo(delta, 2);
     await expect.poll(() => page.evaluate(() => window.__multiJog.state.baseJogHold)).toBeNull();
     await page.locator('#jog-select-all').uncheck();
-    await expect(button).toBeDisabled();
-    await expect(page.locator('#btn-reset-joints')).toBeDisabled();
+    await expect(page.locator('#jog-robot-list input:checked')).toHaveCount(1);
+    await expect(button).toBeEnabled();
+    await expect(page.locator('#btn-reset-joints')).toBeEnabled();
     await page.evaluate(() => window.__multiJog.updateMotionUiLock());
-    await expect(button).toBeDisabled();
+    await expect(button).toBeEnabled();
+});
+
+test('전체 선택 외에는 화면의 로봇 선택을 따라 체크가 바뀌고 선택한 로봇만 JOG한다', async ({ page }) => {
+    test.setTimeout(120000);
+    await setup(page);
+    const checks = page.locator('#jog-robot-list input');
+    const all = page.locator('#jog-select-all');
+    const selectRobot = index => page.evaluate(index => {
+        const a = window.__multiJog;
+        a.selectSceneModel(a.getArticulatedRobots()[index]);
+    }, index);
+    const expectOnly = async index => {
+        for (let i = 0; i < 3; i++) await expect(checks.nth(i)).toBeChecked({ checked: i === index });
+        await expect(all).not.toBeChecked();
+    };
+    await checks.nth(1).check();
+    await selectRobot(2);
+    await expectOnly(2);
+    await page.locator('#btn-jog-joint-mode').click();
+    const before = await poses(page);
+    await fillNumber(page.locator('#jog-controls .jog-value input').first(), 45);
+    await page.locator('#jog-controls .jog-value input').first().press('Tab');
+    const after = await poses(page);
+    expect(after[0]).toEqual(before[0]);
+    expect(after[1]).toEqual(before[1]);
+    expect(after[2].joints[0]).toBe(45);
+    await page.locator('#btn-jog-base-mode').click();
+    await fillNumber(page.locator('#base-move-step'), 1);
+    await page.locator('[data-base-jog="move"][data-axis="z"][data-direction="1"]').click();
+    const baseAfter = await poses(page);
+    expect(baseAfter[0]).toEqual(after[0]);
+    expect(baseAfter[1]).toEqual(after[1]);
+    expect(baseAfter[2].position[2] - after[2].position[2]).toBeCloseTo(1, 2);
+    await page.locator('#btn-jog-joint-mode').click();
+
+    // Selecting the existing reference robot also leaves only that robot checked.
+    await checks.nth(0).check();
+    await selectRobot(2);
+    await expectOnly(2);
+    await all.check();
+    await selectRobot(1);
+    await expect(page.locator('#jog-robot-list input:checked')).toHaveCount(3);
+    await expect(all).toBeChecked();
+    await all.uncheck();
+    await expectOnly(1);
+    await checks.nth(1).uncheck();
+    await expect(page.locator('#jog-controls .jog-value input').first()).toBeDisabled();
+    await selectRobot(0);
+    await expectOnly(0);
+    await expect(page.locator('#jog-controls .jog-value input').first()).toBeEnabled();
 });
 
 test('한 로봇의 한계를 넘는 BASE 입력은 전체 복원하고 혼합 모델의 공통 관절만 활성화한다', async ({ page }) => {
@@ -268,6 +321,8 @@ test('마주 보는 로봇도 BASE 버튼·좌표 입력·3D 핸들로 같은 �
         const a = window.__multiJog;
         a.selectSceneModel(a.getArticulatedRobots()[1]);
     });
+    await expect(page.locator('#jog-robot-list input:checked')).toHaveCount(1);
+    await page.locator('#jog-robot-list input').nth(0).check();
     before = await worldPoses(page);
     await page.locator('[data-base-jog="move"][data-axis="x"][data-direction="1"]').click();
     expectWorldTranslation(before, await worldPoses(page), [-1, 0, 0]);

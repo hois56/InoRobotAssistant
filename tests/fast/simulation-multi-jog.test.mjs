@@ -36,6 +36,14 @@ function fixture() {
   return { robots, state, calls, statuses, context };
 }
 
+function selectionFixture() {
+  const result = fixture();
+  const fn = source.match(/function syncJogRobotSelectionWithScene\([^]*?\n\}/);
+  assert.ok(fn, '로봇 선택 시 JOG 체크를 동기화해야 합니다.');
+  vm.runInContext(fn[0], result.context);
+  return result;
+}
+
 test('기본 JOG는 기존 단일 선택을 유지하고 체크한 로봇만 동시 대상으로 삼는다', () => {
   const { robots, state, context } = fixture();
   assert.deepEqual([...context.getJogTargetRobots()], [robots[0]]);
@@ -50,6 +58,33 @@ test('혼합 모델의 BASE 회전축은 모든 선택 로봇이 지원하는 �
   const { state, context } = fixture();
   state.jogSelectedRobotIds = new Set(['robot-0', 'robot-1']);
   assert.deepEqual([...context.getSharedJogRotationAxes()], ['z']);
+});
+
+test('전체 선택이 아니면 화면에서 선택한 로봇을 따라 JOG 체크와 이동 대상을 바꾼다', () => {
+  const { robots, state, context } = selectionFixture();
+  state.jogSelectedRobotIds = new Set(['robot-0', 'robot-1']);
+  assert.equal(context.syncJogRobotSelectionWithScene(robots[2]), true);
+  state.selectedModel = robots[2];
+  assert.equal(state.jogSelectedRobotIds, null);
+  assert.deepEqual([...context.getJogTargetRobots()], [robots[2]]);
+  context.applyJointJogValue(robots[2], robots[2].userData.joints[0], 45);
+  assert.deepEqual(robots.map(robot => robot.userData.joints[0].angle), [0, 20, 45]);
+});
+
+test('전체 선택은 로봇을 바꿔 선택해도 유지하고 일반 모델 선택은 JOG 체크를 바꾸지 않는다', () => {
+  const { robots, state, context } = selectionFixture();
+  const all = new Set(robots.map(robot => robot.userData.motionInstanceId));
+  state.jogSelectedRobotIds = all;
+  assert.equal(context.syncJogRobotSelectionWithScene(robots[2]), false);
+  assert.equal(state.jogSelectedRobotIds, all);
+  state.jogSelectedRobotIds = new Set(['robot-0', 'robot-1']);
+  const partial = state.jogSelectedRobotIds;
+  assert.equal(context.syncJogRobotSelectionWithScene(new THREE.Group()), false);
+  assert.equal(context.syncJogRobotSelectionWithScene(null), false);
+  assert.equal(state.jogSelectedRobotIds, partial);
+  state.historySuspended = true;
+  assert.equal(context.syncJogRobotSelectionWithScene(robots[0]), false);
+  assert.equal(state.jogSelectedRobotIds, partial);
 });
 
 test('관절 동시 JOG는 각 로봇의 기존 자세 차이를 유지하고 미선택 로봇은 움직이지 않는다', () => {
