@@ -8,7 +8,7 @@ const THREE = await import(`data:text/javascript;base64,${Buffer.from(threeSourc
 const source = readFileSync(new URL('../../2_3DSimulation/main.js', import.meta.url), 'utf8');
 const names = ['getRobotControllerBaseFrame', 'getJogReadoutPose', 'getBasePoseFromJogReadout', 'getTcpRotationDegrees',
   'quaternionFromTcpRotationDegrees', 'normalizeDegrees', 'updateJogWorkObjectUi', 'updateTcpPresentation',
-  'applyBaseJogNumericTarget', 'jogTcpInBase'];
+  'applyBaseJogNumericTarget', 'jogTcpInBase', 'runJogRobotBatch', 'applyJogPoseDelta'];
 const functions = names.map(name => source.match(new RegExp(`function ${name}\\([^]*?\\n\\}`))[0]).join('\n');
 
 function fixture() {
@@ -33,7 +33,8 @@ function fixture() {
     el: { tcpReadouts: inputs, baseJogView: { querySelectorAll: () => titles }, baseMoveStep: { value: '10' } },
     document: { activeElement: null, getElementById: () => label },
     uiText: value => value, resolveWorkObjectIndex: value => Number(value) || 0,
-    getWorkObjectWorldPose: () => workObject, getJogTargetRobot: () => robot,
+    getWorkObjectWorldPose: () => workObject, getJogTargetRobot: () => robot, getJogTargetRobots: () => [robot],
+    getCurrentTcpPoseBase: target => target.userData.baseJogTarget,
     syncTcpVisualAtPose() {}, beginBaseJogNumericHistory() {},
     solveRobotIK: (_, target) => { solvedTarget = target; return { success: true }; },
     syncJointControls() {}, syncBaseJogGizmoFromRobot() {}, queueCollaborationRobotState() {},
@@ -71,6 +72,29 @@ test('Wobj 0은 기존 BASE 표시와 하단 번호로 복귀한다', () => {
   assert.equal(inputs.y.value, '220.00');
   assert.equal(label.textContent, 'Wobj 0');
   assert.ok(titles[0].firstChild.textContent.endsWith('BASE'));
+});
+
+test('JOG 위치·회전 제목은 BASE와 Wobj를 전환해도 현재 언어로 표시한다', () => {
+  const expected = {
+    ko: ['TCP 위치 /', 'TCP 회전 /', '베이스'],
+    en: ['TCP Position /', 'TCP Rotation /', 'Base'],
+    'zh-CN': ['TCP 位置 /', 'TCP 旋转 /', '基座'],
+    vi: ['Vị trí TCP /', 'Góc xoay TCP /', 'Đế'],
+    tr: ['TCP Konumu /', 'TCP Dönüşü /', 'Taban'],
+    ru: ['Позиция TCP /', 'Вращение TCP /', 'База']
+  };
+  const { context, robot, titles } = fixture();
+  for (const [locale, [position, rotation, base]] of Object.entries(expected)) {
+    const dictionary = JSON.parse(readFileSync(new URL(`../../Language/${locale}/robot-3d-viewer.json`, import.meta.url), 'utf8')).legacy;
+    context.uiText = key => dictionary[key] ?? key;
+    for (const index of [0, 2, 0]) {
+      robot.userData.activeWorkObjectIndex = index;
+      context.updateTcpPresentation(robot);
+      const coordinate = index ? 'Wobj[2]' : base;
+      assert.equal(titles[0].firstChild.textContent, `${position} ${coordinate}`, `${locale}: position`);
+      assert.equal(titles[1].firstChild.textContent, `${rotation} ${coordinate}`, `${locale}: rotation`);
+    }
+  }
 });
 
 test('SCARA 설치면 원점과 분리된 BASE 높이를 Wobj 변환에 반영한다', () => {
@@ -118,4 +142,86 @@ test('JOG 회전 직접 입력은 선택 Wobj 회전을 반영하여 목표 자�
   const expected = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, Math.PI / 2, 'ZYX'));
   assert.ok(target().quaternion.angleTo(expected) < 1e-7);
   assert.ok(target().position.distanceTo(pose.position) < 1e-8);
+});
+
+test('동시 좌표 입력은 기준 Wobj의 공간 방향으로 통일하고 로봇 간 위치 차이를 유지한다', () => {
+  const { context, robot, pose, inputs } = fixture();
+  const second = new THREE.Group();
+  second.position.set(500, 300, 0);
+  second.rotation.z = Math.PI / 2;
+  second.userData = { activeWorkObjectIndex: 0, joints: [], tcpFrame: new THREE.Group(),
+    toolHomeQuaternion: new THREE.Quaternion(),
+    baseJogTarget: { position: new THREE.Vector3(50, 80, 10), quaternion: new THREE.Quaternion() } };
+  context.getJogTargetRobots = () => [robot, second];
+  context.updateTcpPresentation(robot, pose);
+  inputs.x.value = '30';
+  context.applyBaseJogNumericTarget({ currentTarget: inputs.x });
+  assert.ok(robot.userData.baseJogTarget.position.distanceTo(new THREE.Vector3(100, 230, 35)) < 1e-8);
+  assert.ok(second.userData.baseJogTarget.position.distanceTo(new THREE.Vector3(60, 80, 10)) < 1e-8);
+  const firstBefore = robot.userData.baseJogTarget.quaternion.clone();
+  const secondBefore = second.userData.baseJogTarget.quaternion.clone();
+  context.updateTcpPresentation(robot);
+  inputs.rz.value = '-80';
+  context.applyBaseJogNumericTarget({ currentTarget: inputs.rz });
+  assert.ok(Math.abs(robot.userData.baseJogTarget.quaternion.angleTo(firstBefore) - Math.PI / 18) < 1e-7);
+  assert.ok(Math.abs(second.userData.baseJogTarget.quaternion.angleTo(secondBefore) - Math.PI / 18) < 1e-7);
+});
+
+for (const yaw of [Math.PI / 2, Math.PI]) {
+  test(`방향이 다른 로봇도 동시 BASE 버튼을 누르면 같은 공간 방향으로 이동한다 (${yaw})`, () => {
+    const { context, robot } = fixture();
+    robot.userData.activeWorkObjectIndex = 0;
+    const second = new THREE.Group();
+    second.position.set(700, 300, 50);
+    second.rotation.z = yaw;
+    second.userData = { activeWorkObjectIndex: 0, joints: [], tcpFrame: new THREE.Group(),
+      toolHomeQuaternion: new THREE.Quaternion(),
+      baseJogTarget: { position: new THREE.Vector3(50, 80, 10), quaternion: new THREE.Quaternion() } };
+    context.getJogTargetRobots = () => [robot, second];
+    const before = [robot, second].map(target => target.localToWorld(target.userData.baseJogTarget.position.clone()));
+    assert.equal(context.jogTcpInBase(robot, 'move', 'x', 1), true);
+    [robot, second].forEach((target, index) => {
+      const delta = target.localToWorld(target.userData.baseJogTarget.position.clone()).sub(before[index]);
+      assert.ok(delta.distanceTo(new THREE.Vector3(10, 0, 0)) < 1e-8, `공간 이동량: ${delta.toArray()}`);
+    });
+  });
+}
+
+test('서로 다른 Wobj와 회전된 BASE에서도 좌표 입력과 핸들의 공간 이동·회전이 일치한다', () => {
+  const { context, robot, inputs } = fixture();
+  const second = new THREE.Group();
+  second.position.set(-500, 300, 90);
+  second.rotation.set(0.3, -0.6, Math.PI);
+  const frame = new THREE.Group();
+  frame.position.set(15, -20, 100);
+  frame.rotation.set(-0.1, 0.2, 0.4);
+  second.add(frame);
+  second.userData = { activeWorkObjectIndex: 0, joints: [], tcpFrame: new THREE.Group(),
+    controllerBaseFrame: frame, toolHomeQuaternion: new THREE.Quaternion(),
+    baseJogTarget: { position: new THREE.Vector3(50, 80, 10),
+      quaternion: new THREE.Quaternion().setFromEuler(new THREE.Euler(0.1, 0.5, -0.7)) } };
+  context.getJogTargetRobots = () => [robot, second];
+  const world = target => {
+    const base = context.getRobotControllerBaseFrame(target);
+    base.updateWorldMatrix(true, false);
+    return { position: base.localToWorld(target.userData.baseJogTarget.position.clone()),
+      quaternion: base.getWorldQuaternion(new THREE.Quaternion()).multiply(target.userData.baseJogTarget.quaternion) };
+  };
+  let before = [robot, second].map(world);
+  context.updateTcpPresentation(robot);
+  inputs.x.value = '30';
+  context.applyBaseJogNumericTarget({ currentTarget: inputs.x });
+  [robot, second].map(world).forEach((pose, index) => {
+    assert.ok(pose.position.clone().sub(before[index].position).distanceTo(new THREE.Vector3(0, 10, 0)) < 1e-8);
+  });
+  before = [robot, second].map(world);
+  const desired = { position: robot.userData.baseJogTarget.position.clone().add(new THREE.Vector3(3, -2, 1)),
+    quaternion: new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), 0.1)
+      .multiply(robot.userData.baseJogTarget.quaternion) };
+  assert.equal(context.applyJogPoseDelta(robot, desired), true);
+  [robot, second].map(world).forEach((pose, index) => {
+    assert.ok(pose.position.clone().sub(before[index].position).distanceTo(new THREE.Vector3(3, -2, 1)) < 1e-8);
+    const delta = pose.quaternion.clone().multiply(before[index].quaternion.clone().invert());
+    assert.ok(delta.angleTo(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), 0.1)) < 1e-7);
+  });
 });

@@ -1888,7 +1888,10 @@
     "맨 앞으로 고정": "Always on top",
     "맨 앞으로 고정 해제": "Turn off always on top",
     "이 브라우저에서는 맨 앞으로 고정을 지원하지 않습니다. Chrome 또는 Edge에서 HTTPS로 열어 주세요.": "Always on top is unavailable in this browser. Open this page over HTTPS in Chrome or Edge.",
-    "맨 앞으로 고정 창을 열 수 없습니다. 다시 시도해 주세요.": "Unable to open the always-on-top window. Please try again."
+    "맨 앞으로 고정 창을 열 수 없습니다. 다시 시도해 주세요.": "Unable to open the always-on-top window. Please try again.",
+    "동시 JOG": "Simultaneous JOG",
+    "TCP POSITION /": "TCP Position /",
+    "TCP ROTATION /": "TCP Rotation /"
   },
   "patterns": []
 }
