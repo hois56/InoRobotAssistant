@@ -21833,8 +21833,8 @@ function setupEventListeners() {
         setJogRobotSelection(ids);
     });
     el.jogSelectAll?.addEventListener('change', () => {
-        setJogRobotSelection(new Set(el.jogSelectAll.checked
-            ? getArticulatedRobots().map((robot) => robot.userData.motionInstanceId) : []));
+        setJogRobotSelection(el.jogSelectAll.checked
+            ? new Set(getArticulatedRobots().map((robot) => robot.userData.motionInstanceId)) : null);
     });
 
     el.tcpProfileButtons.forEach((button) => {
@@ -26569,7 +26569,8 @@ function selectSceneModel(model, options = {}) {
         centerSketchFeatureGeometry(model, { preserveSketchOrigin: true });
     }
     const selectionChanged = model !== state.selectedModel;
-    if (selectionChanged) {
+    const jogSelectionChanged = syncJogRobotSelectionWithScene(model);
+    if (selectionChanged || jogSelectionChanged) {
         stopBaseJogHold();
         commitPendingHistory('도형 치수 변경', 'pendingPrimitiveShapeHistory');
         setBaseJogGizmoEnabled(false);
@@ -26600,7 +26601,7 @@ function selectSceneModel(model, options = {}) {
         if (model) state.modelSelection.set(options.preservePart && state.selectedModelPart || model, model);
     }
     const jogRobot = getJogTargetRobot();
-    if (jogRobot && state.activeArticulatedModel !== jogRobot) {
+    if (jogRobot && (state.activeArticulatedModel !== jogRobot || jogSelectionChanged)) {
         state.activeArticulatedModel = jogRobot;
         renderJogControls(jogRobot);
     }
@@ -31148,6 +31149,14 @@ function updateJointJogCapabilities(robot = getJogTargetRobot()) {
             joint.control.number.disabled = !compatible;
         }
     });
+}
+
+function syncJogRobotSelectionWithScene(model) {
+    const robots = getArticulatedRobots();
+    if (state.historySuspended || !state.jogSelectedRobotIds || !robots.includes(model)
+        || robots.every((robot) => state.jogSelectedRobotIds.has(robot.userData.motionInstanceId))) return false;
+    state.jogSelectedRobotIds = null;
+    return true;
 }
 
 function setJogRobotSelection(ids) {
