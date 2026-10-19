@@ -731,6 +731,7 @@ const state = {
     baseJogGizmoTranslationSnap: null,
     baseJogGizmoSnapAxis: null,
     jogCoordinateMode: 'base',
+    jogSelectedRobotIds: null,
     workObjectEditor: {
         index: 0,
         robotId: null
@@ -1464,6 +1465,9 @@ const el = {
     btnCancelImport: document.getElementById('btn-cancel-import'),
     btnConfirmImport: document.getElementById('btn-confirm-import'),
     jogControls:     document.getElementById('jog-controls'),
+    jogRobotSelection: document.getElementById('jog-robot-selection'),
+    jogRobotList:    document.getElementById('jog-robot-list'),
+    jogSelectAll:    document.getElementById('jog-select-all'),
     btnResetJoints:  document.getElementById('btn-reset-joints'),
     tcpProfileManager: document.getElementById('tcp-profile-manager'),
     tcpProfileEditor: document.getElementById('tcp-profile-editor'),
@@ -18620,6 +18624,7 @@ function handleSimulationSnapClick(event) {
 function updateSimulationSnapButton() {
     if (!el.btnSnapMove) return;
     const available = Boolean(getJogTargetRobot()?.userData?.tcpFrame)
+        && getJogTargetRobots().length === 1
         && !isOlpRunning()
         && !state.olp.workOriginBusy
         && !state.olp.manualMoveBusy;
@@ -21809,13 +21814,27 @@ function setupEventListeners() {
 
     el.btnResetJoints?.addEventListener('click', () => {
         stopBaseJogHold();
-        const robot = getJogTargetRobot();
-        if (robot) {
+        const robots = getJogTargetRobots();
+        if (robots.length) {
             const before = captureSceneSnapshot();
-            resetArticulatedJoints(robot);
-            sendCollaborationRobotCommand(robot, 'reset');
+            robots.forEach((robot) => {
+                resetArticulatedJoints(robot);
+                sendCollaborationRobotCommand(robot, 'reset');
+            });
             recordHistory('관절 원점 복귀', before, captureSceneSnapshot());
         }
+    });
+    el.jogRobotList?.addEventListener('change', (event) => {
+        const input = event.target.closest('[data-jog-robot-id]');
+        if (!input) return;
+        const ids = new Set(getJogTargetRobots().map((robot) => robot.userData.motionInstanceId));
+        if (input.checked) ids.add(input.dataset.jogRobotId);
+        else ids.delete(input.dataset.jogRobotId);
+        setJogRobotSelection(ids);
+    });
+    el.jogSelectAll?.addEventListener('change', () => {
+        setJogRobotSelection(new Set(el.jogSelectAll.checked
+            ? getArticulatedRobots().map((robot) => robot.userData.motionInstanceId) : []));
     });
 
     el.tcpProfileButtons.forEach((button) => {
@@ -24693,6 +24712,7 @@ function configureModelTreeOrdering(list, parentKey = 'root') {
 }
 
 function renderModelTree() {
+    renderJogRobotSelection();
     if (!el.modelTree) return;
     const scrollTop = el.modelTree.scrollTop;
     el.modelTree.replaceChildren();
@@ -26550,6 +26570,7 @@ function selectSceneModel(model, options = {}) {
     }
     const selectionChanged = model !== state.selectedModel;
     if (selectionChanged) {
+        stopBaseJogHold();
         commitPendingHistory('도형 치수 변경', 'pendingPrimitiveShapeHistory');
         setBaseJogGizmoEnabled(false);
     }
@@ -26611,9 +26632,9 @@ function selectSceneModel(model, options = {}) {
     setTransformHandlesEnabled(false);
     setModelPlacementUiVisibility(true);
     el.selectedModelName.textContent = displayNameForModelTree(model);
-    if (model.userData.tcpFrame && state.activeArticulatedModel !== model) {
-        state.activeArticulatedModel = model;
-        renderJogControls(model);
+    if (model.userData.tcpFrame && jogRobot && state.activeArticulatedModel !== jogRobot) {
+        state.activeArticulatedModel = jogRobot;
+        renderJogControls(jogRobot);
     }
     if (model.userData.tcpFrame) {
         state.activeProgramRobot = model;
@@ -31065,19 +31086,129 @@ function updateTcpProfileLive() {
     captureCurrentTcpTarget(robot);
 }
 
+function runJogRobotBatch(robots, apply) {
+    if (!robots.length) return false;
+    const snapshots = robots.map((robot) => {
+        const pose = robot.userData.baseJogTarget || getCurrentTcpPoseBase(robot);
+        return { robot, angles: robot.userData.joints.map((joint) => joint.angle),
+            pose: pose && { position: pose.position.clone(), quaternion: pose.quaternion.clone() } };
+    });
+    const success = robots.every((robot) => apply(robot) === true);
+    if (!success) {
+        snapshots.forEach(({ robot, angles, pose }) => {
+            angles.forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle, false));
+            robot.userData.baseJogTarget = pose;
+            robot.updateMatrixWorld(true);
+        });
+    }
+    robots.forEach((robot) => {
+        syncJointControls(robot);
+        updateTcpPresentation(robot);
+        syncBaseJogGizmoFromRobot(robot);
+        queueCollaborationRobotState(robot);
+    });
+    if (success) clearJogCollisionLock();
+    setBaseJogStatus(success ? '' : 'Target is outside the reachable range or joint limits.', success ? '' : 'error');
+    return success;
+}
+
+function applyJointJogValue(robot, joint, rawValue) {
+    if (!Number.isFinite(rawValue)) return false;
+    const robots = getJogTargetRobots();
+    if (!robots.includes(robot)) return false;
+    const display = getJointJogDisplaySpec(joint);
+    const delta = rawValue - display.toDisplay(joint.angle);
+    return runJogRobotBatch(robots, (targetRobot) => {
+        const targetJoint = targetRobot.userData.joints.find((candidate) => (
+            candidate.definition.name === joint.definition.name
+            && candidate.definition.type === joint.definition.type
+            && getJointJogDisplaySpec(candidate).unit === display.unit
+        ));
+        if (!targetJoint) return false;
+        const targetDisplay = getJointJogDisplaySpec(targetJoint);
+        const value = targetDisplay.fromDisplay(targetDisplay.toDisplay(targetJoint.angle) + delta);
+        if (robots.length > 1 && (value < targetJoint.definition.min - 1e-7
+            || value > targetJoint.definition.max + 1e-7)) return false;
+        setJointAngle(targetJoint, value);
+        captureCurrentTcpTarget(targetRobot);
+        return true;
+    });
+}
+
+function updateJointJogCapabilities(robot = getJogTargetRobot()) {
+    const robots = getJogTargetRobots();
+    (robot?.userData.joints || []).forEach((joint) => {
+        const compatible = robots.length > 0 && robots.every((targetRobot) => targetRobot.userData.joints.some((candidate) => (
+            candidate.definition.name === joint.definition.name
+            && candidate.definition.type === joint.definition.type
+            && getJointJogDisplaySpec(candidate).unit === getJointJogDisplaySpec(joint).unit
+        )));
+        if (joint.control) {
+            joint.control.range.disabled = !compatible;
+            joint.control.number.disabled = !compatible;
+        }
+    });
+}
+
+function setJogRobotSelection(ids) {
+    stopBaseJogHold();
+    commitAllPendingHistories();
+    setBaseJogGizmoEnabled(false);
+    state.jogSelectedRobotIds = ids;
+    getJogTargetRobots().forEach((target) => captureCurrentTcpTarget(target));
+    const robot = getJogTargetRobot();
+    const mode = state.jogCoordinateMode;
+    if (robot) {
+        state.activeArticulatedModel = robot;
+        renderJogControls(robot);
+        setJogMode(mode);
+    }
+    renderJogRobotSelection();
+    updateBaseJogCapabilities(robot);
+    updateSimulationSnapButton();
+    setBaseJogStatus('');
+}
+
+function renderJogRobotSelection() {
+    if (!el.jogRobotList) return;
+    const robots = getArticulatedRobots();
+    el.jogRobotSelection?.classList.toggle('hidden', robots.length < 2);
+    if (state.jogSelectedRobotIds?.size) {
+        const available = new Set(robots.map((robot) => robot.userData.motionInstanceId));
+        state.jogSelectedRobotIds = new Set([...state.jogSelectedRobotIds].filter((id) => available.has(id)));
+        if (!state.jogSelectedRobotIds.size) state.jogSelectedRobotIds = null;
+    }
+    if (robots.length < 2) state.jogSelectedRobotIds = null;
+    const targets = getJogTargetRobots();
+    el.jogRobotList.replaceChildren(...robots.map((robot) => {
+        const label = document.createElement('label');
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.dataset.jogRobotId = robot.userData.motionInstanceId;
+        input.checked = targets.includes(robot);
+        label.append(input, document.createTextNode(displayNameForModelTree(robot)));
+        return label;
+    }));
+    if (el.jogSelectAll) {
+        el.jogSelectAll.checked = robots.length > 0 && targets.length === robots.length;
+        el.jogSelectAll.indeterminate = targets.length > 0 && targets.length < robots.length;
+        el.jogSelectAll.disabled = !robots.length;
+    }
+}
+
 function renderJogControls(robot) {
+    if (state.jogSelectedRobotIds) {
+        robot = getJogTargetRobot() || robot;
+        state.activeArticulatedModel = robot;
+    }
+    renderJogRobotSelection();
     const joints = robot.userData.joints || [];
     el.jogControls.replaceChildren();
     if (el.btnJogJointMode) el.btnJogJointMode.disabled = false;
     if (el.btnJogBaseMode) el.btnJogBaseMode.disabled = false;
     el.jointJogView?.classList.toggle('hidden', state.jogCoordinateMode !== 'joint');
     el.baseJogView?.classList.toggle('hidden', state.jogCoordinateMode === 'joint');
-    const titles = el.baseJogView?.querySelectorAll('.base-jog-title') || [];
-    const jogLabel = 'BASE';
-    if (titles[0]) {
-        titles[0].childNodes[0].textContent = `${uiText('TCP POSITION /')} ${jogLabel}`;
-    }
-    if (titles[1]) titles[1].firstChild.textContent = `${uiText('TCP ROTATION /')} ${jogLabel}`;
+    updateJogWorkObjectUi(robot);
 
     joints.forEach((joint) => {
         const { name } = joint.definition;
@@ -31111,10 +31242,7 @@ function renderJogControls(robot) {
         valueWrap.append(number, document.createTextNode(unit));
 
         const applyFromControl = (rawValue) => {
-            clearJogCollisionLock();
-            setJointAngle(joint, display.fromDisplay(Number(rawValue)));
-            captureCurrentTcpTarget(robot);
-            queueCollaborationRobotState(robot);
+            applyJointJogValue(robot, joint, Number(rawValue));
         };
 
         const beginJointHistory = () => {
@@ -31154,10 +31282,12 @@ function renderJogControls(robot) {
     updateBaseJogCapabilities(robot);
     setJogMode('base');
     updateSnapFaceOrientationUi();
+    syncJointControls(robot);
     captureCurrentTcpTarget(robot);
 }
 
 function refreshJointControlLabels() {
+    renderJogRobotSelection();
     const robot = getJogTargetRobot();
     if (!robot) return;
     (robot.userData.joints || []).forEach((joint) => {
@@ -31325,6 +31455,7 @@ function setBaseJogGizmoEnabled(enabled) {
     const shouldEnable = Boolean(enabled && panelVisible && baseModeVisible
         && state.jogCoordinateMode === 'base'
         && robot?.userData.tcpFrame
+        && getJogTargetRobots().length > 0
         && (!robot || isModelTreeVisible(robot))
         && !state.snapMoveMode
         && !isMotionActive());
@@ -31364,8 +31495,19 @@ function getBaseJogRotationAxes(robot = getJogTargetRobot()) {
     return robot?.userData.manifest?.ikRotationAxes || ['x', 'y', 'z'];
 }
 
+function getSharedJogRotationAxes() {
+    const robots = getJogTargetRobots();
+    return robots.length ? getBaseJogRotationAxes(robots[0]).filter((axis) => (
+        robots.every((robot) => getBaseJogRotationAxes(robot).includes(axis))
+    )) : [];
+}
+
 function updateBaseJogCapabilities(robot = getJogTargetRobot()) {
-    const rotationAxes = new Set(getBaseJogRotationAxes(robot));
+    const rotationAxes = new Set(getSharedJogRotationAxes());
+    const hasTargets = getJogTargetRobots().length > 0;
+    document.querySelectorAll('[data-base-jog="move"]').forEach((button) => { button.disabled = !hasTargets; });
+    Object.values(el.tcpReadouts).forEach((input) => { if (input) input.disabled = !hasTargets; });
+    if (el.btnResetJoints) el.btnResetJoints.disabled = !hasTargets;
     document.querySelectorAll('[data-base-jog="rotate"]').forEach((button) => {
         button.disabled = !rotationAxes.has(button.dataset.axis);
     });
@@ -31376,6 +31518,7 @@ function updateBaseJogCapabilities(robot = getJogTargetRobot()) {
         el.baseGizmoRotateLabel.textContent = [...rotationAxes].map((axis) => `R${axis.toUpperCase()}`).join(' · ');
     }
     updateBaseJogTransformAxes(robot);
+    updateJointJogCapabilities(robot);
 }
 
 function updateBaseJogTransformAxes(robot = getJogTargetRobot()) {
@@ -31387,7 +31530,7 @@ function updateBaseJogTransformAxes(robot = getJogTargetRobot()) {
         controls.showZ = true;
         return;
     }
-    const rotationAxes = new Set(getBaseJogRotationAxes(robot));
+    const rotationAxes = new Set(getSharedJogRotationAxes());
     controls.showX = rotationAxes.has('x');
     controls.showY = rotationAxes.has('y');
     controls.showZ = rotationAxes.has('z');
@@ -31460,6 +31603,15 @@ function applyBaseJogGizmoTarget() {
             ? proxy.quaternion.clone().normalize().multiply(start.quaternion.clone()).normalize()
             : start.quaternion.clone()
     };
+    if (getJogTargetRobots().length > 1) {
+        state.baseJogGizmoApplying = true;
+        try {
+            applyJogPoseDelta(robot, desired);
+        } finally {
+            state.baseJogGizmoApplying = false;
+        }
+        return;
+    }
     const previousTarget = robot.userData.baseJogTarget
         ? {
             position: robot.userData.baseJogTarget.position.clone(),
@@ -31796,7 +31948,7 @@ function updateJogWorkObjectUi(robot = getJogTargetRobot()) {
     const label = document.getElementById('wobj-launcher-label');
     if (label) label.textContent = `Wobj ${index}`;
     const titles = el.baseJogView?.querySelectorAll('.base-jog-title') || [];
-    const coordinate = index === WOBJ_WORLD_INDEX ? 'BASE' : `Wobj[${index}]`;
+    const coordinate = index === WOBJ_WORLD_INDEX ? uiText('BASE') : `Wobj[${index}]`;
     if (titles[0]) titles[0].childNodes[0].textContent = `${uiText('TCP POSITION /')} ${coordinate}`;
     if (titles[1]) titles[1].firstChild.textContent = `${uiText('TCP ROTATION /')} ${coordinate}`;
 }
@@ -31848,7 +32000,7 @@ function beginBaseJogNumericHistory() {
 
 function applyBaseJogNumericTarget(event) {
     const robot = getJogTargetRobot();
-    if (!robot?.userData.tcpFrame) return;
+    if (!robot?.userData.tcpFrame || !getJogTargetRobots().length) return;
     beginBaseJogNumericHistory();
     const editedEntry = Object.entries(el.tcpReadouts)
         .find(([, input]) => input === event?.currentTarget);
@@ -31881,6 +32033,10 @@ function applyBaseJogNumericTarget(event) {
             THREE.MathUtils.degToRad(rotationValues.ry),
             THREE.MathUtils.degToRad(rotationValues.rz), 'ZYX'
         ));
+    }
+    if (getJogTargetRobots().length > 1) {
+        applyJogPoseDelta(robot, displayTarget, true);
+        return;
     }
     const target = getBasePoseFromJogReadout(robot, displayTarget);
 
@@ -31926,14 +32082,14 @@ function setBaseJogStatus(message, type = '') {
 }
 
 function runBaseJogButton(button) {
-    const robot = getJogTargetRobot();
-    if (!robot) return false;
+    const robots = getJogTargetRobots();
+    if (!robots.length) return false;
     if (button.dataset.baseJog === 'rotate'
-        && !getBaseJogRotationAxes(robot).includes(button.dataset.axis)) return false;
+        && !getSharedJogRotationAxes().includes(button.dataset.axis)) return false;
     const ownsHistory = !state.historySuspended && !state.pendingBaseJogHistory;
     const before = ownsHistory ? captureSceneSnapshot() : null;
     const result = jogTcpInBase(
-        robot,
+        getJogTargetRobot(),
         button.dataset.baseJog,
         button.dataset.axis,
         Number(button.dataset.direction)
@@ -31993,6 +32149,40 @@ function stopBaseJogHold(pointerId = null) {
     commitPendingHistory('Base JOG', 'pendingBaseJogHistory');
 }
 
+function applyJogPoseDelta(referenceRobot, desired, useReadout = false) {
+    const robots = getJogTargetRobots();
+    if (!robots.includes(referenceRobot)) return false;
+    const current = referenceRobot.userData.baseJogTarget || getCurrentTcpPoseBase(referenceRobot);
+    const referenceFrame = getRobotControllerBaseFrame(referenceRobot);
+    referenceFrame.updateWorldMatrix(true, false);
+    const referenceOrientation = referenceFrame.getWorldQuaternion(new THREE.Quaternion());
+    const desiredBase = useReadout ? getBasePoseFromJogReadout(referenceRobot, desired) : desired;
+    // Use the reference robot's command as one world-space displacement.
+    // Each follower converts it back to its own controller BASE for IK.
+    const translation = referenceFrame.localToWorld(desiredBase.position.clone())
+        .sub(referenceFrame.localToWorld(current.position.clone()));
+    const rotation = referenceOrientation.clone().multiply(desiredBase.quaternion)
+        .multiply(referenceOrientation.clone().multiply(current.quaternion).invert()).normalize();
+    return runJogRobotBatch(robots, (robot) => {
+        const base = robot.userData.baseJogTarget || getCurrentTcpPoseBase(robot);
+        const frame = getRobotControllerBaseFrame(robot);
+        frame.updateWorldMatrix(true, false);
+        const orientation = frame.getWorldQuaternion(new THREE.Quaternion());
+        const target = {
+            position: frame.worldToLocal(frame.localToWorld(base.position.clone()).add(translation)),
+            quaternion: orientation.clone().invert().multiply(rotation)
+                .multiply(orientation).multiply(base.quaternion).normalize()
+        };
+        const result = solveRobotIK(robot, target, {
+            positionTolerance: 0.001,
+            rotationTolerance: THREE.MathUtils.degToRad(0.001)
+        });
+        if (!result.success) return false;
+        robot.userData.baseJogTarget = target;
+        return true;
+    });
+}
+
 function jogTcpInBase(robot, kind, axisName, direction) {
     const currentBaseTarget = robot.userData.baseJogTarget;
     if (!currentBaseTarget || !['x', 'y', 'z'].includes(axisName)) return false;
@@ -32025,6 +32215,7 @@ function jogTcpInBase(robot, kind, axisName, direction) {
     }
     const target = getBasePoseFromJogReadout(robot, displayTarget);
 
+    if (getJogTargetRobots().length > 1) return applyJogPoseDelta(robot, target);
     setBaseJogStatus('Solving IK...', 'working');
     const result = solveRobotIK(robot, target, {
         positionTolerance: 0.001,
@@ -38217,8 +38408,12 @@ function isArticulatedRobotModel(model) {
 }
 
 function getJogTargetRobot() {
-    const robots = getArticulatedRobots();
+    let robots = getArticulatedRobots();
     if (robots.length === 0) return null;
+    if (state.jogSelectedRobotIds) {
+        const checked = robots.filter((robot) => state.jogSelectedRobotIds.has(robot.userData.motionInstanceId));
+        if (checked.length) robots = checked;
+    }
 
     // JOG follows an explicitly selected robot. Selecting a shape must not
     // change the robot that the JOG panel controls.
@@ -38230,7 +38425,16 @@ function getJogTargetRobot() {
 
     // A single robot is unambiguous even when the scene currently has no
     // selected model (for example after a selection was cleared).
-    return robots.length === 1 ? robots[0] : null;
+    return robots.length === 1 || state.jogSelectedRobotIds ? robots[0] : null;
+}
+
+function getJogTargetRobots() {
+    const robots = getArticulatedRobots();
+    if (state.jogSelectedRobotIds) {
+        return robots.filter((robot) => state.jogSelectedRobotIds.has(robot.userData.motionInstanceId));
+    }
+    const robot = getJogTargetRobot();
+    return robot ? [robot] : [];
 }
 
 function createMotionId(prefix = 'motion') {
@@ -41958,6 +42162,7 @@ function updateMotionUiLock() {
     updateTcpSnapUi();
     updateSimulationSnapButton();
     updateHistoryButtons();
+    updateBaseJogCapabilities();
 }
 
 function getWorkspaceObjectPath(root, object) {
@@ -42657,6 +42862,7 @@ function clearSceneForWorkspaceRestore() {
     });
     disposePrimitiveDimensionOverlay();
     state.models = [];
+    state.jogSelectedRobotIds = null;
     state.modelGroups = [];
     state.modelTreeOrder = {};
     state.cad2d.documents.clear();

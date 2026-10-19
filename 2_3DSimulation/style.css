@@ -3005,6 +3005,43 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
     backdrop-filter: blur(18px);
 }
 
+.jog-robot-selection {
+    margin-bottom: 0.8rem;
+    padding: 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 0.75rem;
+}
+
+.jog-robot-selection-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.45rem;
+}
+
+.jog-robot-selection label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    overflow-wrap: anywhere;
+}
+
+.jog-robot-selection input[type="checkbox"] {
+    flex: 0 0 auto;
+    accent-color: #60a5fa;
+}
+
+.jog-robot-list {
+    display: grid;
+    gap: 0.4rem;
+    max-height: 120px;
+    overflow-y: auto;
+}
+
 .jog-panel-header {
     display: flex;
     align-items: flex-start;

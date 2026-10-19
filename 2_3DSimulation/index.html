@@ -8,7 +8,7 @@
     <title>3D Simulation | INOVANCE</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=20261003-conveyor-settings-6">
+    <link rel="stylesheet" href="style.css?v=20261019-multi-jog-2">
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -23,7 +23,7 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/Language/runtime/i18n.css">
-    <script src="/Language/runtime/locales-data.js?v=853c475ce9d9" defer></script>
+    <script src="/Language/runtime/locales-data.js?v=4a107c098547" defer></script>
     <script src="/Language/runtime/i18n.js" defer></script>
     <script src="/Language/runtime/icon-fallback.js" defer></script>
     <script src="/analytics-config.js"></script>
@@ -1608,6 +1608,13 @@
                         <button type="button" data-panel-action="hide" data-panel-id="jog-panel" title="숨기기" aria-label="JOG 패널 숨기기"><i class="fa-solid fa-eye-slash"></i></button>
                     </div>
                 </div>
+                <section id="jog-robot-selection" class="jog-robot-selection hidden" aria-label="동시 JOG" data-i18n-aria-label="legacy.동시 JOG">
+                    <div class="jog-robot-selection-heading">
+                        <strong data-i18n="legacy.동시 JOG">동시 JOG</strong>
+                        <label><input id="jog-select-all" type="checkbox"><span data-i18n="legacy.전체 선택">전체 선택</span></label>
+                    </div>
+                    <div id="jog-robot-list" class="jog-robot-list"></div>
+                </section>
                 <div class="jog-mode-tabs" role="group" aria-label="JOG coordinate mode">
                     <button id="btn-jog-joint-mode" type="button" class="jog-mode-btn" aria-pressed="false">JOINT</button>
                     <button id="btn-jog-base-mode" type="button" class="jog-mode-btn active" aria-pressed="true">BASE</button>
@@ -1653,8 +1660,8 @@
                             </button>
                         </div>
                     </div>
-                    <p id="base-jog-status" class="base-jog-status hidden"></p>
                 </div>
+                <p id="base-jog-status" class="base-jog-status hidden" role="status"></p>
             </aside>
             <aside id="tcp-profile-panel" class="tcp-profile-panel panel-user-hidden" aria-label="TCP 설정">
                 <div class="tcp-profile-panel-header">
@@ -2474,7 +2481,7 @@
         </div>
     </footer>
 
-    <script type="module" src="main.js?v=20261016-program-recovery"></script>
+    <script type="module" src="main.js?v=20261019-multi-jog-4"></script>
 <script src="/0_Home/tool-guide-embed.js?v=20260906-2"></script>
 </body>
 </html>

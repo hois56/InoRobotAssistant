@@ -223,6 +223,7 @@ test('폴더 선택은 스크롤을 유지하고 접힌 폴더 안의 3D 선택�
         model.userData.modelPartGroups.push({name:'선택 대상',parts:[0,1],collapsed:false});
         a.selectSceneModel(model);a.updateUIStatus();
     });
+    await page.evaluate(() => document.fonts.ready);
     const tree=page.locator('#model-tree'),folder=page.locator('.model-tree-part-group').filter({has:page.locator('.model-tree-group-name').filter({hasText:'선택 대상'})});
     await folder.locator('summary').scrollIntoViewIfNeeded();const before=await tree.evaluate(node=>node.scrollTop);
     await folder.locator('.model-tree-group-name').click();
@@ -255,6 +256,7 @@ test('폴더 선택은 스크롤을 유지하고 접힌 폴더 안의 3D 선택�
         }
         a.state.modelGroups.push({name:'접힌 상위 폴더',modelIds:[a.ensureWorkspaceModelId(owner)],collapsed:true});a.updateUIStatus();
     });
+    await page.evaluate(() => document.fonts.ready);
     const outer=page.locator('.model-tree-model-group').filter({has:page.locator('.model-tree-group-name').filter({hasText:'접힌 상위 폴더'})});
     await outer.locator(':scope > details > summary').scrollIntoViewIfNeeded();const rootScroll=await tree.evaluate(node=>node.scrollTop);
     await outer.locator(':scope > details > summary > .model-tree-group-name').click();expect(await tree.evaluate(node=>node.scrollTop)).toBeCloseTo(rootScroll,0);
