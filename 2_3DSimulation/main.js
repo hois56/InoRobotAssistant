@@ -39916,6 +39916,8 @@ async function generateAutoPath() {
         if (!Array.isArray(startStep.joints) || startStep.joints.length !== robot.userData.joints.length) {
             throw new Error('선택한 시작 포인트의 관절 데이터를 읽을 수 없습니다.');
         }
+        validateMovjTarget(robot, startStep);
+        validateMovjTarget(robot, targetStep);
         const startAngles = startStep.joints.map((angle) => Number(angle));
         if (startAngles.some((angle) => !Number.isFinite(angle))) {
             throw new Error('선택한 시작 포인트의 관절 데이터를 읽을 수 없습니다.');
@@ -41524,7 +41526,7 @@ function applyPositionValueDialog() {
         return;
     }
 
-    const targetPose = {
+    const pointPose = {
         position: new THREE.Vector3(values.x, values.y, values.z),
         quaternion: quaternionFromPointRotation(robot, values.c, values.b, values.a)
     };
@@ -41533,6 +41535,9 @@ function applyPositionValueDialog() {
     const originalExternalAxes = getRobotExternalAxes(robot);
     const originalAngles = robot.userData.joints.map((joint) => joint.angle);
     applyRobotTravelAxis(robot, externalAxes, { syncPresentation: false });
+    const targetPose = motionStepTargetPose({ tcp: {
+        position: pointPose.position.toArray(), quaternion: pointPose.quaternion.toArray()
+    } }, robot);
     const seedAngles = Array.isArray(step.joints) ? step.joints : originalAngles;
     seedAngles.forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle, false));
     robot.updateMatrixWorld(true);
@@ -41556,8 +41561,8 @@ function applyPositionValueDialog() {
 
     step.joints = solvedAngles;
     step.tcp = {
-        position: targetPose.position.toArray(),
-        quaternion: targetPose.quaternion.toArray()
+        position: pointPose.position.toArray(),
+        quaternion: pointPose.quaternion.toArray()
     };
     step.armParameters = armParameters;
     step.externalAxes = externalAxes;
@@ -41979,10 +41984,7 @@ function captureRobotMotionStep(robot, existing = null) {
                     }
                 : {}),
         joints,
-        tcp: {
-            position: pose.position.toArray(),
-            quaternion: pose.quaternion.toArray()
-        }
+        tcp: captureMotionPointCoordinates(robot, pose)
     };
 }
 
@@ -45994,11 +45996,32 @@ function restoreRobotJointAngles(robot, angles) {
     }
 }
 
-function motionStepTargetPose(step) {
+function captureMotionPointCoordinates(robot, pose) {
+    // Keep controller point values in the selected Wobj. Joint angles are
+    // only IK seeds and must not replace these values after TCP/Wobj edits.
+    const display = getJogReadoutPose(robot, pose);
+    const rotation = new THREE.Euler().setFromQuaternion(display.quaternion, 'ZYX');
     return {
+        position: display.position.toArray(),
+        quaternion: quaternionFromTcpRotationDegrees(robot,
+            THREE.MathUtils.radToDeg(rotation.x), THREE.MathUtils.radToDeg(rotation.y),
+            THREE.MathUtils.radToDeg(rotation.z)).toArray()
+    };
+}
+
+function motionStepTargetPose(step, robot = null) {
+    const pose = {
         position: new THREE.Vector3().fromArray(step.tcp.position),
         quaternion: new THREE.Quaternion().fromArray(step.tcp.quaternion).normalize()
     };
+    if (!robot) return pose;
+    const rotation = getTcpRotationDegrees(robot, pose);
+    return getBasePoseFromJogReadout(robot, {
+        position: pose.position,
+        quaternion: new THREE.Quaternion().setFromEuler(new THREE.Euler(
+            THREE.MathUtils.degToRad(rotation.rx), THREE.MathUtils.degToRad(rotation.ry),
+            THREE.MathUtils.degToRad(rotation.rz), 'ZYX'))
+    });
 }
 
 function getAutoPathPointPoseAtJoints(robot, angles) {
@@ -46012,15 +46035,12 @@ function getAutoPathPointPoseAtJoints(robot, angles) {
 }
 
 function resolveAutoPathPointPose(robot, step, angles) {
-    const storedPose = motionStepTargetPose(step);
+    const storedPose = motionStepTargetPose(step, robot);
     const actualPose = getAutoPathPointPoseAtJoints(robot, angles);
     if (!actualPose) return { pose: storedPose, needsSync: false };
 
-    // A motion point stores both joints and TCP data. If the active TCP
-    // profile was edited after the point was taught, those two values no
-    // longer describe the same physical pose. The planner must use the TCP
-    // generated from the selected joints and the current profile; otherwise
-    // its IK stages and preview are offset from the real Tool/TCP geometry.
+    // Endpoint joints are resolved against the taught Cartesian coordinates
+    // and the current TCP/Wobj before planning the path.
     const positionMismatch = storedPose.position.distanceTo(actualPose.position) > 0.8;
     const orientationMismatch = THREE.MathUtils.radToDeg(
         storedPose.quaternion.angleTo(actualPose.quaternion)
@@ -46040,6 +46060,25 @@ function validateMovjTarget(robot, step) {
         const joint = joints[index];
         if (!Number.isFinite(value) || value < joint.definition.min - 1e-7 || value > joint.definition.max + 1e-7) {
             throw new Error(`${step.name}: ${joint.definition.name} is outside its joint limit.`);
+        }
+    });
+    const target = motionStepTargetPose(step, robot);
+    const originalAngles = joints.map(joint => joint.angle);
+    withCollisionPoseProbe(() => {
+        try {
+            applyPlanningJointAngles(robot, step.joints);
+            const actual = getCurrentTcpPoseBase(robot);
+            if (actual.position.distanceTo(target.position) < 0.001
+                && actual.quaternion.angleTo(target.quaternion) < THREE.MathUtils.degToRad(0.001)) return;
+            const solved = solveRobotIK(robot, target, {
+                positionTolerance: 0.001,
+                rotationTolerance: THREE.MathUtils.degToRad(0.001),
+                armParameters: step.armParameters
+            });
+            if (!solved.success) throw new Error(`${step.name}: target is unreachable with the current TCP/Wobj.`);
+            step.joints = joints.map(joint => joint.angle);
+        } finally {
+            applyPlanningJointAngles(robot, originalAngles);
         }
     });
 }
@@ -46287,13 +46326,13 @@ function preflightRobotMotion(robot, steps, { reverseRepeat = false, timerOnly =
                 const evaluator = collisionStopsMotion()
                     ? createAutoPathCollisionEvaluator(robot, startAngles)
                     : null;
-                solveMovlSamples(robot, motionStepTargetPose(step), step.name, {
+                solveMovlSamples(robot, motionStepTargetPose(step, robot), step.name, {
                     isStateSafe: evaluator?.isSafe || null
                 });
                 step.joints.forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle, false));
                 robot.updateMatrixWorld(true);
                 const settled = getCurrentTcpPoseBase(robot);
-                const target = motionStepTargetPose(step);
+                const target = motionStepTargetPose(step, robot);
                 if (settled.position.distanceTo(target.position) > 0.8
                     || THREE.MathUtils.radToDeg(settled.quaternion.angleTo(target.quaternion)) > 0.35) {
                     throw new Error(`${step.name}: stored TCP and joint targets are inconsistent.`);
@@ -46787,6 +46826,7 @@ function getRobotInterferenceMotionTargetAngles(session) {
     if (!step) return null;
     if (isHomeMotion(step.motion)) return validateWorkOriginMotion(session.robot, step).joints;
     const motionCommand = resolveMotionSegmentCommand(session.steps, session.cursor, session.direction);
+    if (isMotionPointMotion(step.motion)) validateMovjTarget(session.robot, step);
     return ['MOVJ', 'MOVL'].includes(motionCommand?.motion) && Array.isArray(step.joints)
         ? step.joints
         : null;
@@ -46868,6 +46908,7 @@ function createRobotInterferenceCheck(session, timestamp) {
         return owner === robot || otherRobots.has(owner);
     });
     if (!collisionModels.length) return { status: 'clear' };
+    if (isMotionPointMotion(step.motion)) validateMovjTarget(robot, step);
     const originalAngles = robot.userData.joints.map((joint) => joint.angle);
     const stepSignature = getRobotInterferenceStepSignature(robot, step);
     const changedRoots = new Set(collisionModels.filter((model) => (
@@ -46924,7 +46965,7 @@ function createRobotInterferenceCheck(session, timestamp) {
     }
 
     const startPose = getCurrentTcpPoseBase(robot);
-    const targetPose = motionStepTargetPose(step);
+    const targetPose = motionStepTargetPose(step, robot);
     const samples = Math.max(2, Math.min(24, Math.ceil(Math.max(
         startPose.position.distanceTo(targetPose.position) / MOTION_MOVL_SAMPLE_DISTANCE,
         THREE.MathUtils.radToDeg(startPose.quaternion.angleTo(targetPose.quaternion)) / MOTION_MOVL_SAMPLE_ANGLE
@@ -47093,13 +47134,13 @@ function createMotionSegment(session, timestamp) {
         ? { motion: 'MOVJ', speed: 100 }
         : resolveMotionSegmentCommand(session.steps, session.cursor, session.direction);
     const motion = motionCommand?.motion;
+    if (!isHome) validateMovjTarget(robot, step);
     if (motion === 'MOVJ') {
         const workOrigin = isHome ? validateWorkOriginMotion(robot, step) : null;
-        if (!isHome) validateMovjTarget(robot, step);
         const startAngles = robot.userData.joints.map((joint) => joint.angle);
         const startPose = getCurrentTcpPoseBase(robot);
         const targetAngles = isHome ? workOrigin.joints : step.joints;
-        const targetPose = isHome ? workOriginTargetPose(workOrigin) : motionStepTargetPose(step);
+        const targetPose = isHome ? workOriginTargetPose(workOrigin) : motionStepTargetPose(step, robot);
         const robotMotionDuration = calculateMovjDuration(
             startAngles,
             targetAngles,
@@ -47141,7 +47182,7 @@ function createMotionSegment(session, timestamp) {
         };
     }
     const startPose = getCurrentTcpPoseBase(robot);
-    const targetPose = motionStepTargetPose(step);
+    const targetPose = motionStepTargetPose(step, robot);
     const robotMotionDuration = calculateMovlDuration(
         startPose.position.distanceTo(targetPose.position),
         THREE.MathUtils.radToDeg(startPose.quaternion.angleTo(targetPose.quaternion)),
