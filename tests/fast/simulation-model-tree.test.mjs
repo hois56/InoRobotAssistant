@@ -8,6 +8,20 @@ const functions = ['shouldDisplayModelTreeParts', 'modelTreeHasChildren'].map(na
     source.match(new RegExp(`function ${name}\\(model\\) \\{[\\s\\S]*?\\n\\}`))[0]
 )).join('\n');
 
+test('조립 그룹 메뉴는 중첩 부품을 포함하고 같은 모델의 다른 그룹은 제외한다', () => {
+    const a = { userData: { modelPartId: 'a', cadAssemblyPath: [{ id: 'module' }] } };
+    const b = { userData: { modelPartId: 'b', cadAssemblyPath: [{ id: 'module' }, { id: 'child' }] } };
+    const c = { userData: { modelPartId: 'c', cadAssemblyPath: [{ id: 'other' }] } };
+    const model = { userData: { modelTreeId: 'root' }, parts: [a, b, c] };
+    const menu = { dataset: { modelTreeId: 'root', modelPartId: 'a', cadAssemblyId: 'module' } };
+    const context = vm.createContext({ state: { models: [model] }, el: { modelContextMenu: menu }, getImportedModelParts: model => model.parts });
+    vm.runInContext(source.match(/function getModelContextTarget\(\) \{[\s\S]*?\n\}/)[0], context);
+    assert.deepEqual(Array.from(context.getModelContextTarget().parts), [a, b]);
+    delete menu.dataset.cadAssemblyId;
+    assert.equal(context.getModelContextTarget().part, a);
+    assert.equal(context.getModelContextTarget().parts, undefined);
+});
+
 test('파츠가 하나인 모든 모델은 하위 파츠와 펼치기 버튼을 표시하지 않는다', () => {
     const context = vm.createContext({
         state: { models: [] },
