@@ -956,9 +956,10 @@ export class MeshCollisionSystem {
         allowWarmHitReuse = true,
         meshPairFilter = null
     } = {}) {
-        // A link only needs one representative contact with this model pair.
-        // Continuing to inspect every overlapping CAD sub-mesh is redundant
-        // and becomes expensive when several links collide at once.
+        // Robot links are separate moving bodies. A contact with a shaft must
+        // not hide another contact with the other robot's arm. Static CAD
+        // assemblies keep one representative hit per left mesh for performance.
+        const reportAllContacts = Boolean(left.root.userData?.tcpFrame && right.root.userData?.tcpFrame);
         const hits = [];
         const reportedLeftMeshes = new Set();
         const rightMeshesByUuid = new Map(right.meshes.map((entry) => [entry.mesh.uuid, entry]));
@@ -970,6 +971,7 @@ export class MeshCollisionSystem {
             const cachedRightMesh = cachedEntry
                 ? rightMeshesByUuid.get(cachedEntry.rightMeshUuid)
                 : null;
+            let confirmedCachedHit = false;
             if (cachedRightMesh
                 && (!meshPairFilter || meshPairFilter(left.root, leftMesh.mesh, right.root, cachedRightMesh.mesh))
                 && !isAttachedToolMountContact(left.root, leftMesh.mesh, right.root, cachedRightMesh.mesh)
@@ -987,24 +989,18 @@ export class MeshCollisionSystem {
                         stats
                     )
                     : null;
-                if (cachedSurfaceHit) {
-                    cachedEntry.hit = cachedSurfaceHit;
-                    cachedEntry.lastConfirmedAt = now;
-                    hits.push({ ...cachedSurfaceHit, objectA: left.root, objectB: right.root });
-                    stats.warmHitReuses += 1;
-                    reportedLeftMeshes.add(leftMesh.mesh);
-                    continue;
-                }
-                const cachedHit = this.checkMeshPair(leftMesh, cachedRightMesh, stats);
+                const cachedHit = cachedSurfaceHit || this.checkMeshPair(leftMesh, cachedRightMesh, stats);
                 if (cachedHit) {
                     cachedEntry.hit = cachedHit;
                     cachedEntry.lastConfirmedAt = now;
                     hits.push({ ...cachedHit, objectA: left.root, objectB: right.root });
+                    if (cachedSurfaceHit) stats.warmHitReuses += 1;
+                    confirmedCachedHit = true;
                     reportedLeftMeshes.add(leftMesh.mesh);
-                    continue;
+                    if (!reportAllContacts) continue;
                 }
             }
-            this.hitMeshPairCache.delete(cacheKey);
+            if (!confirmedCachedHit) this.hitMeshPairCache.delete(cacheKey);
             for (const rightMesh of right.meshes) {
                 if (meshPairFilter && !meshPairFilter(left.root, leftMesh.mesh, right.root, rightMesh.mesh)) continue;
                 if (rightMesh === cachedRightMesh) continue;
@@ -1027,7 +1023,7 @@ export class MeshCollisionSystem {
                         lastConfirmedAt: now
                     });
                     reportedLeftMeshes.add(leftMesh.mesh);
-                    break;
+                    if (!reportAllContacts) break;
                 }
             }
         }
