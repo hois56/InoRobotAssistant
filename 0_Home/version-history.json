@@ -266,7 +266,8 @@
                   "휠 버튼 드래그의 확대·축소 속도를 2배로 높이고, Shift+휠로 화면을 세밀하게 확대·축소할 수 있도록 추가했습니다.",
                   "가져온 3D 조립 그룹에서 부품 옵션 메뉴가 열리지 않던 문제와 부품을 숨기면 모델 트리가 최상단으로 이동하던 문제를 해결했습니다.",
                   "프로그램 패널에서 이동한 뒤 JOG를 조작하면 이전 위치를 기준으로 움직이던 문제를 해결했습니다.",
-                  "큰 모델이 포함된 시뮬레이션 프로젝트가 저장되지 않던 문제를 해결했습니다."
+                  "큰 모델이 포함된 시뮬레이션 프로젝트가 저장되지 않던 문제를 해결했습니다.",
+                  "프로그램 티칭 포인트가 현재 TCP·Wobj 설정을 기준으로 저장된 직교 좌표로 이동하도록 개선했습니다."
                 ]
               },
               {
@@ -1563,7 +1564,8 @@
                   "Doubled zoom speed when dragging with the wheel button held and added fine zoom with Shift+wheel.",
                   "Fixed the part options menu not opening for imported 3D assembly groups and the model tree jumping to the top when hiding a part.",
                   "Fixed JOG using the previous position after moving the robot from the program panel.",
-                  "Fixed simulation projects containing large models failing to save."
+                  "Fixed simulation projects containing large models failing to save.",
+                  "Taught program points now move to their saved Cartesian coordinates using the current TCP and Wobj settings."
                 ]
               },
               {
@@ -2837,7 +2839,8 @@
                   "将按住滚轮拖动的缩放速度提高至原来的两倍，并新增 Shift+滚轮精细缩放功能。",
                   "修复了导入的3D装配组无法打开零件选项菜单，以及隐藏零件时模型树跳回顶部的问题。",
                   "修复了从程序面板移动机器人后，JOG仍基于移动前位置进行操作的问题。",
-                  "修复了包含大型模型的仿真项目无法保存的问题。"
+                  "修复了包含大型模型的仿真项目无法保存的问题。",
+                  "程序示教点现在根据当前TCP和Wobj设置移动到保存的笛卡尔坐标。"
                 ]
               },
               {
@@ -4111,7 +4114,8 @@
                   "Tăng gấp đôi tốc độ thu phóng khi giữ nút con lăn và kéo, đồng thời thêm thu phóng tinh bằng Shift+con lăn.",
                   "Đã khắc phục lỗi không mở được menu tùy chọn chi tiết cho nhóm lắp ráp 3D đã nhập và cây mô hình nhảy lên đầu khi ẩn chi tiết.",
                   "Đã khắc phục lỗi JOG sử dụng vị trí cũ sau khi di chuyển robot từ bảng chương trình.",
-                  "Đã khắc phục lỗi không lưu được dự án mô phỏng có mô hình dung lượng lớn."
+                  "Đã khắc phục lỗi không lưu được dự án mô phỏng có mô hình dung lượng lớn.",
+                  "Các điểm dạy trong chương trình hiện di chuyển đến tọa độ Descartes đã lưu theo cài đặt TCP và Wobj hiện tại."
                 ]
               },
               {
@@ -5385,7 +5389,8 @@
                   "Tekerlek düğmesi basılı tutularak sürüklendiğinde yakınlaştırma hızı iki katına çıkarıldı ve Shift+tekerlek ile hassas yakınlaştırma eklendi.",
                   "İçe aktarılan 3B montaj gruplarında parça seçenekleri menüsünün açılmaması ve bir parça gizlendiğinde model ağacının en üste atlaması sorunları giderildi.",
                   "Robot program panelinden hareket ettirildikten sonra JOG işleminin önceki konumu temel alması sorunu giderildi.",
-                  "Büyük modeller içeren simülasyon projelerinin kaydedilememesi sorunu giderildi."
+                  "Büyük modeller içeren simülasyon projelerinin kaydedilememesi sorunu giderildi.",
+                  "Programda öğretilen noktalar artık geçerli TCP ve Wobj ayarlarıyla kayıtlı Kartezyen koordinatlarına hareket eder."
                 ]
               },
               {
@@ -6659,7 +6664,8 @@
                   "Скорость масштабирования при перетаскивании с нажатым колесом увеличена вдвое; добавлено точное масштабирование с Shift+колесо.",
                   "Исправлены проблемы, из-за которых меню параметров деталей не открывалось для импортированных 3D-сборок, а дерево моделей прокручивалось вверх при скрытии детали.",
                   "Исправлена проблема, из-за которой JOG использовал прежнюю позицию после перемещения робота из панели программы.",
-                  "Исправлена проблема сохранения проектов симуляции, содержащих большие модели."
+                  "Исправлена проблема сохранения проектов симуляции, содержащих большие модели.",
+                  "Обученные точки программы теперь перемещаются в сохранённые декартовы координаты с текущими настройками TCP и Wobj."
                 ]
               },
               {
