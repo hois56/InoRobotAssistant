@@ -1,6 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {isRobotAttachedCollisionModel,isSimulationCollisionPair,shouldReportSimulationCollision} from '../../2_3DSimulation/collision-policy-core.mjs';
+
+test('서로 다른 로봇 본체끼리의 충돌을 양방향으로 감지한다', () => {
+ const left = {userData: {tcpFrame: {}}}, right = {userData: {tcpFrame: {}}};
+ for (const [objectA, objectB] of [[left, right], [right, left]]) {
+  assert.equal(isSimulationCollisionPair(objectA, objectB), true);
+  assert.equal(shouldReportSimulationCollision({objectA, objectB}), true);
+ }
+ assert.equal(isSimulationCollisionPair(left, left), false);
+});
 test('로봇 하위 모델의 장애물 접촉만 감지하고 Tool·오브젝트와 오브젝트끼리는 제외한다',()=>{
  const robot={userData:{tcpFrame:{}}},tool={userData:{attachmentHost:robot,placement:'tcp'}},held={userData:{attachmentHost:robot,placement:'grip-object'}},object={userData:{object:true}},base={userData:{}},module={userData:{}},nested={userData:{attachmentHost:tool}};
  const report=(left,right)=>shouldReportSimulationCollision({objectA:left,objectB:right},model=>Boolean(model.userData.object));
