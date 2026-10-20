@@ -1,4 +1,4 @@
-// Scene collision alerts apply to models shown below a robot in the model tree.
+// Scene collision alerts apply to robot attachments and distinct robot bodies.
 export function isRobotAttachedCollisionModel(model) {
     const visited = new Set([model]);
     let host = model?.userData?.attachmentHost;
@@ -11,6 +11,7 @@ export function isRobotAttachedCollisionModel(model) {
 }
 
 export function isSimulationCollisionPair(left, right) {
+    if (left !== right && left?.userData?.tcpFrame && right?.userData?.tcpFrame) return true;
     return isRobotAttachedCollisionModel(left) || isRobotAttachedCollisionModel(right);
 }
 

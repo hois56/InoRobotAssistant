@@ -268,7 +268,8 @@
                   "프로그램 패널에서 이동한 뒤 JOG를 조작하면 이전 위치를 기준으로 움직이던 문제를 해결했습니다.",
                   "큰 모델이 포함된 시뮬레이션 프로젝트가 저장되지 않던 문제를 해결했습니다.",
                   "프로그램 티칭 포인트가 현재 TCP·Wobj 설정을 기준으로 저장된 직교 좌표로 이동하도록 개선했습니다.",
-                  "시뮬레이션 화면·모델 트리·프로그램 패널에서 브라우저 기본 우클릭 메뉴가 표시되던 문제를 해결했습니다."
+                  "시뮬레이션 화면·모델 트리·프로그램 패널에서 브라우저 기본 우클릭 메뉴가 표시되던 문제를 해결했습니다.",
+                  "여러 로봇을 제어할 때 로봇 본체끼리의 충돌이 감지되지 않던 문제를 해결했습니다."
                 ]
               },
               {
@@ -1567,7 +1568,8 @@
                   "Fixed JOG using the previous position after moving the robot from the program panel.",
                   "Fixed simulation projects containing large models failing to save.",
                   "Taught program points now move to their saved Cartesian coordinates using the current TCP and Wobj settings.",
-                  "Fixed the browser context menu appearing in the simulation view, model tree and program panel."
+                  "Fixed the browser context menu appearing in the simulation view, model tree and program panel.",
+                  "Fixed missing collision detection between robot bodies when controlling multiple robots."
                 ]
               },
               {
@@ -2843,7 +2845,8 @@
                   "修复了从程序面板移动机器人后，JOG仍基于移动前位置进行操作的问题。",
                   "修复了包含大型模型的仿真项目无法保存的问题。",
                   "程序示教点现在根据当前TCP和Wobj设置移动到保存的笛卡尔坐标。",
-                  "修复了仿真视图、模型树和程序面板中出现浏览器默认右键菜单的问题。"
+                  "修复了仿真视图、模型树和程序面板中出现浏览器默认右键菜单的问题。",
+                  "修复了控制多台机器人时无法检测机器人本体之间碰撞的问题。"
                 ]
               },
               {
@@ -4119,7 +4122,8 @@
                   "Đã khắc phục lỗi JOG sử dụng vị trí cũ sau khi di chuyển robot từ bảng chương trình.",
                   "Đã khắc phục lỗi không lưu được dự án mô phỏng có mô hình dung lượng lớn.",
                   "Các điểm dạy trong chương trình hiện di chuyển đến tọa độ Descartes đã lưu theo cài đặt TCP và Wobj hiện tại.",
-                  "Đã khắc phục lỗi menu chuột phải mặc định của trình duyệt xuất hiện trong màn hình mô phỏng, cây mô hình và bảng chương trình."
+                  "Đã khắc phục lỗi menu chuột phải mặc định của trình duyệt xuất hiện trong màn hình mô phỏng, cây mô hình và bảng chương trình.",
+                  "Đã khắc phục lỗi không phát hiện va chạm giữa thân các robot khi điều khiển nhiều robot."
                 ]
               },
               {
@@ -5395,7 +5399,8 @@
                   "Robot program panelinden hareket ettirildikten sonra JOG işleminin önceki konumu temel alması sorunu giderildi.",
                   "Büyük modeller içeren simülasyon projelerinin kaydedilememesi sorunu giderildi.",
                   "Programda öğretilen noktalar artık geçerli TCP ve Wobj ayarlarıyla kayıtlı Kartezyen koordinatlarına hareket eder.",
-                  "Simülasyon görünümünde, model ağacında ve program panelinde tarayıcı sağ tıklama menüsünün açılması sorunu giderildi."
+                  "Simülasyon görünümünde, model ağacında ve program panelinde tarayıcı sağ tıklama menüsünün açılması sorunu giderildi.",
+                  "Birden fazla robot kontrol edilirken robot gövdeleri arasındaki çarpışmaların algılanmaması sorunu giderildi."
                 ]
               },
               {
@@ -6671,7 +6676,8 @@
                   "Исправлена проблема, из-за которой JOG использовал прежнюю позицию после перемещения робота из панели программы.",
                   "Исправлена проблема сохранения проектов симуляции, содержащих большие модели.",
                   "Обученные точки программы теперь перемещаются в сохранённые декартовы координаты с текущими настройками TCP и Wobj.",
-                  "Исправлено появление стандартного контекстного меню браузера в окне симуляции, дереве моделей и панели программы."
+                  "Исправлено появление стандартного контекстного меню браузера в окне симуляции, дереве моделей и панели программы.",
+                  "Исправлена проблема, из-за которой при управлении несколькими роботами не обнаруживались столкновения между их корпусами."
                 ]
               },
               {
