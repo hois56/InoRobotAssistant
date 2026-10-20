@@ -14022,7 +14022,7 @@ function handleSceneContextPointerMove(event) {
     if (!pointer || pointer.pointerId !== event.pointerId) return;
     const dx = event.clientX - pointer.x;
     const dy = event.clientY - pointer.y;
-    if (dx * dx + dy * dy > 16) pointer.moved = true;
+    if (dx !== 0 || dy !== 0) pointer.moved = true;
 }
 
 function handleSceneContextPointerUp(event) {
@@ -14036,7 +14036,7 @@ function handleSceneContextPointerCancel(event) {
     const pointer = state.sceneContextPointer;
     if (!pointer || pointer.pointerId !== event.pointerId) return;
     state.sceneContextPointer = null;
-    state.suppressNextSceneContextMenu = false;
+    state.suppressNextSceneContextMenu = pointer.moved;
 }
 
 function suppressSceneContextMenuAfterViewDrag(event) {
@@ -14131,15 +14131,21 @@ function handleCanvasContainerContextMenu(event) {
     const canvas = state.renderer?.domElement;
     const target = event.target;
     if (!container || !canvas || !container.contains(target)) return;
+    // Panels own their context menus. Camera-drag suppression belongs only
+    // to the 3D surface and must never swallow model-tree/program actions.
+    const panel = target?.closest?.('aside, section, dialog, #sketch-workbench');
+    if (panel && container.contains(panel)) return;
+    if (suppressSceneContextMenuAfterViewDrag(event)) return;
 
     // The canvas is not the only element layered over the 3D view. When a
     // marker or a non-interactive overlay is under the pointer, the event can
     // target that element instead of the renderer canvas and the renderer's
     // context-menu listener is skipped. Delegate those scene-area events from
     // the container so the browser menu cannot leak through.
-    if (target?.closest?.(
+    const excludedTarget = target?.closest?.(
         'aside, section, dialog, .primitive-dimension-overlay, .simulation-snap-marker, .collision-status, #sketch-workbench'
-    )) return;
+    );
+    if (excludedTarget && container.contains(excludedTarget)) return;
     const interactiveTarget = target?.closest?.(
         'button, input, select, textarea, a, summary, [contenteditable="true"], [data-panel-drag-ignore]'
     );
@@ -20847,13 +20853,18 @@ function setupEventListeners() {
     state.renderer.domElement.addEventListener('pointerdown', handleSceneContextPointerDown, { capture: true, passive: true });
     state.renderer.domElement.addEventListener('pointerdown', requestRender, { passive: true });
     state.renderer.domElement.addEventListener('pointermove', handleSceneModelPointerMove, { capture: true, passive: true });
-    state.renderer.domElement.addEventListener('pointermove', handleSceneContextPointerMove, { capture: true, passive: true });
+    window.addEventListener('pointermove', handleSceneContextPointerMove, { capture: true, passive: true });
     state.renderer.domElement.addEventListener('pointermove', handleCadPointerMove, { capture: true, passive: true });
     state.renderer.domElement.addEventListener('pointermove', handleSimulationSnapPointerMove);
     state.renderer.domElement.addEventListener('pointermove', requestRender, { passive: true });
     state.renderer.domElement.addEventListener('pointercancel', handleSceneModelPointerCancel, { passive: true });
-    state.renderer.domElement.addEventListener('pointerup', handleSceneContextPointerUp, { capture: true, passive: true });
-    state.renderer.domElement.addEventListener('pointercancel', handleSceneContextPointerCancel, { capture: true, passive: true });
+    window.addEventListener('pointerup', handleSceneContextPointerUp, { capture: true, passive: true });
+    window.addEventListener('pointercancel', handleSceneContextPointerCancel, { capture: true, passive: true });
+    window.addEventListener('pointerdown', event => {
+        if (event.button !== 2) return;
+        state.sceneContextPointer = null;
+        state.suppressNextSceneContextMenu = false;
+    }, { capture: true, passive: true });
     state.renderer.domElement.addEventListener('pointerleave', hideSimulationSnapMarker);
     state.renderer.domElement.addEventListener('pointerleave', requestRender);
     state.renderer.domElement.addEventListener('click', handleCadCanvasClick, { capture: true });
@@ -20864,6 +20875,12 @@ function setupEventListeners() {
     });
     state.renderer.domElement.addEventListener('click', handleSceneModelClick);
     state.renderer.domElement.addEventListener('contextmenu', handleSceneModelContextMenu);
+    // Cancel only the browser's default menu; keep propagation intact so each
+    // panel can open its own application menu, including in detached panels.
+    const preventBrowserContextMenu = event => event.preventDefault();
+    [el.canvasContainer, el.modelTree, el.programPanel].forEach(surface => {
+        surface?.addEventListener('contextmenu', preventBrowserContextMenu, { capture: true, passive: false });
+    });
     el.canvasContainer?.addEventListener('contextmenu', handleSketchContextMenu, { capture: true, passive: false });
     el.canvasContainer?.addEventListener('contextmenu', handleCanvasContainerContextMenu, { capture: true });
     el.canvasContainer?.addEventListener('dragenter', handle3DFileDragEnter);
