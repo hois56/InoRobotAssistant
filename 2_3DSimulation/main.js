@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 import { buildCleanOutlinePositions } from './outline-geometry-core.mjs';
 import { buildCadAssemblyTree } from './cad-assembly-tree.mjs';
+import { writeWorkspaceArchive } from './workspace-archive.mjs';
 import { TEST_MODEL_CATALOG, getTestModelSelection, getTestModelSelectionForRobot, getEducationalModelSelection, getImportedModelColor } from './test-model-catalog.mjs';
 import { getTestModelTreePreset } from './test-model-tree-presets.mjs';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -13787,7 +13788,7 @@ function trackMainOrbitControlPointer(event) {
     if (event.button === 1 && event.pointerType === 'mouse' && !state.sketch.active
         && controls?.enabled && controls.enableZoom && !mainMiddleDragZoomStates.has(controls)) {
         mainMiddleDragZoomStates.set(controls, { pointerId: event.pointerId, zoomSpeed: controls.zoomSpeed });
-        controls.zoomSpeed *= 0.1;
+        controls.zoomSpeed *= 0.2;
     }
 }
 
@@ -18912,14 +18913,38 @@ function recreateMainOrbitControls(previousState = undefined) {
 
 const mainWheelZoomSteps = new WeakMap();
 
+function applyFineNativeWheelZoom(event, controls) {
+    if (!event.shiftKey) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const speed = controls.zoomSpeed;
+    controls.zoomSpeed *= 0.1;
+    try {
+        // Forward synchronously so native wheel handling uses the fine speed,
+        // then restore it before any subsequent pointer or wheel gesture.
+        state.renderer.domElement.dispatchEvent(new WheelEvent('wheel', {
+            deltaX: event.deltaX, deltaY: event.deltaY, deltaZ: event.deltaZ, deltaMode: event.deltaMode,
+            clientX: event.clientX, clientY: event.clientY,
+            ctrlKey: event.ctrlKey, metaKey: event.metaKey, altKey: event.altKey,
+            bubbles: true, cancelable: true
+        }));
+    } finally {
+        controls.zoomSpeed = speed;
+    }
+}
+
 function handleMainSurfaceWheelZoom(event) {
     const { camera, controls } = state;
-    if (state.sketch.active || !camera?.isPerspectiveCamera || !controls?.enabled
+    if (!camera || !controls?.enabled
         || !controls.enableZoom || state.orbitControlPointerIds.size || !event.deltaY) return;
+    if (state.sketch.active || !camera.isPerspectiveCamera) {
+        applyFineNativeWheelZoom(event, controls);
+        return;
+    }
     if (!mainWheelZoomSteps.has(controls)) {
         mainWheelZoomSteps.set(controls, Math.max(controls.getDistance() * 0.05, camera.near * 2));
     }
-    const step = mainWheelZoomSteps.get(controls) * controls.zoomSpeed * 0.8;
+    const step = mainWheelZoomSteps.get(controls) * controls.zoomSpeed * 0.8 * (event.shiftKey ? 0.1 : 1);
     if (!state.selectedViewPivot.enabled) {
         event.preventDefault();
         event.stopImmediatePropagation();
@@ -18927,7 +18952,15 @@ function handleMainSurfaceWheelZoom(event) {
         controls.dispatchEvent({ type: 'start', surfaceWheelZoom: true });
         const offset = controls.target.clone().sub(camera.position).normalize()
             .multiplyScalar(event.deltaY < 0 ? step : -step);
+        const distance = controls.getDistance();
         camera.position.add(offset);
+        const minimumDistance = Math.max(controls.minDistance, camera.near * 2);
+        if (event.deltaY < 0 && distance - step < minimumDistance) {
+            // Keep looking forward when the camera passes its old orbit target.
+            // A target behind the camera makes OrbitControls flip the view.
+            const forward = camera.getWorldDirection(new THREE.Vector3());
+            controls.target.copy(camera.position).addScaledVector(forward, Math.max(step, minimumDistance));
+        }
         controls.update();
         requestRender();
         controls.dispatchEvent({ type: 'end' });
@@ -18947,7 +18980,10 @@ function handleMainSurfaceWheelZoom(event) {
     const raycaster = state.sceneSelectionRaycaster;
     raycaster.setFromCamera(pointer, camera);
     const hit = raycaster.intersectObjects(meshes, false)[0];
-    if (!hit) return;
+    if (!hit) {
+        applyFineNativeWheelZoom(event, controls);
+        return;
+    }
     const forward = camera.getWorldDirection(new THREE.Vector3());
     const cosine = raycaster.ray.direction.dot(forward);
     if (cosine <= 0) return;
@@ -21106,7 +21142,7 @@ function setupEventListeners() {
     el.modelColorPicker?.addEventListener('input', () => {
         const target = getModelContextTarget();
         if (target) {
-            applyModelColor(target.model, target.part, el.modelColorPicker.value);
+            (target.parts || [target.part]).forEach(part => applyModelColor(target.model, part, el.modelColorPicker.value));
             scheduleMotionProjectSave();
         }
     });
@@ -21463,11 +21499,21 @@ function setupEventListeners() {
     el.ioFunctionMappingAction?.addEventListener('change', handleIoFunctionMappingActionChange);
     document.getElementById('model-motion-settings')?.addEventListener('click', () => {
         const target = getModelContextTarget(); closeModelContextMenu();
+        if (target?.parts) {
+            equipmentApp.ui.openGroup(target.parts.map(part => equipmentObjectRef(ensureWorkspaceModelId(target.model), getImportedModelParts(target.model).indexOf(part))));
+            return;
+        }
         if (target) equipmentApp.ui.open(equipmentObjectRef(ensureWorkspaceModelId(target.model), target.part ? getImportedModelParts(target.model).indexOf(target.part) : -1));
     });
     document.getElementById('model-motion-add-part')?.addEventListener('click', () => {
         const target = getModelContextTarget(); closeModelContextMenu();
         if (target) {
+            if (target.parts) {
+                const refs = target.parts.map(part => equipmentObjectRef(ensureWorkspaceModelId(target.model), getImportedModelParts(target.model).indexOf(part)));
+                if (!equipmentApp.ui.dialog.open) equipmentApp.ui.openGroup(refs);
+                else refs.forEach(ref => equipmentApp.ui.addPart(ref));
+                return;
+            }
             const ref = equipmentObjectRef(ensureWorkspaceModelId(target.model), target.part ? getImportedModelParts(target.model).indexOf(target.part) : -1);
             if (!equipmentApp.ui.dialog.open) equipmentApp.ui.open(ref);
             equipmentApp.ui.addPart(ref);
@@ -22638,7 +22684,7 @@ function updateModelTransparencyFromContextMenu(value) {
     const target = getModelContextTarget();
     if (!target) return;
     beginModelTransparencyHistory();
-    applyModelTransparencyVisual(target.model, target.part, value);
+    (target.parts || [target.part]).forEach(part => applyModelTransparencyVisual(target.model, part, value));
     if (el.modelTransparencyValue) {
         el.modelTransparencyValue.textContent = `${normalizeModelTransparencyPercent(value)}%`;
     }
@@ -24324,6 +24370,27 @@ function createCadAssemblyTreeNode(model, node) {
             updateModelSelectionOutlines(); renderModelTree(); requestRender();
         });
     });
+    summary.addEventListener('contextmenu', event => {
+        event.preventDefault(); event.stopPropagation();
+        preserveModelTreeScroll(() => {
+            commitPendingHistory('수치 모델 변환', 'pendingNumericHistory');
+            state.modelSelection.clear();
+            node.members.forEach(part => state.modelSelection.set(part, model));
+            state.selectionBatch = true;
+            try { selectSceneModelPart(model, node.members[0]); }
+            finally { state.selectionBatch = false; }
+            updateModelSelectionOutlines(); renderModelTree(); requestRender();
+        });
+        openModelContextMenu(event, model, node.members[0]);
+        el.modelContextMenu.dataset.cadAssemblyId = node.id;
+        // Assembly folders are imported structure; single-part structural actions
+        // must not accidentally operate on only the representative member.
+        if (node.members.length > 1 && el.modelInstallTool) el.modelInstallTool.hidden = true;
+        document.getElementById('model-rename').hidden = true;
+        document.getElementById('model-ungroup-part').hidden = true;
+        updateModelContextVisibilityLabel(node.members.some(part => part.visible !== false));
+        positionModelContextMenu(event);
+    });
     const children = document.createElement('ul'); children.className = 'model-tree-children'; children.setAttribute('role', 'group');
     node.children.forEach(child => children.append(createCadAssemblyTreeNode(model, child)));
     details.append(summary, children); item.append(details); return item;
@@ -25490,6 +25557,11 @@ function getModelContextTarget() {
     const partId = menu?.dataset.modelPartId;
     const part = partId ? getImportedModelParts(model).find((candidate) => candidate.userData.modelPartId === partId) : null;
     if (partId && !part) return null;
+    const assemblyId = menu?.dataset.cadAssemblyId;
+    if (assemblyId) {
+        const parts = getImportedModelParts(model).filter(candidate => candidate.userData.cadAssemblyPath?.some(entry => entry.id === assemblyId));
+        return parts.length ? { model, part: parts[0], parts } : null;
+    }
     return { model, part: part || null };
 }
 
@@ -25690,10 +25762,23 @@ async function exportGeneratedShapeFromDialog() {
     }
 }
 
+function updateModelContextVisibilityLabel(isVisible) {
+    if (el.modelHide) {
+        el.modelHide.hidden = false;
+        el.modelHide.setAttribute('aria-label', uiText(isVisible ? '숨기기' : '표시'));
+        el.modelHide.title = uiText(isVisible ? '숨기기' : '표시');
+        const icon = el.modelHide.querySelector('i');
+        icon?.classList.toggle('fa-eye-slash', isVisible);
+        icon?.classList.toggle('fa-eye', !isVisible);
+    }
+    if (el.modelHideLabel) el.modelHideLabel.textContent = uiText(isVisible ? '숨기기' : '표시');
+}
+
 function openModelContextMenu(event, model, part = null) {
     const menu = el.modelContextMenu;
     if (!menu || !model || !state.models.includes(model)) return;
     closeModelContextMenu();
+    document.getElementById('model-rename').hidden = false;
     ensureModelTreeId(model);
     menu.dataset.modelTreeId = model.userData.modelTreeId;
     if (part) menu.dataset.modelPartId = part.userData.modelPartId;
@@ -25721,15 +25806,7 @@ function openModelContextMenu(event, model, part = null) {
         control.disabled = state.modelClipboardPastePending;
     });
     const isVisible = part ? part.visible !== false : isModelTreeVisible(model);
-    if (el.modelHide) {
-        el.modelHide.hidden = false;
-        el.modelHide.setAttribute('aria-label', uiText(isVisible ? '숨기기' : '표시'));
-        el.modelHide.title = uiText(isVisible ? '숨기기' : '표시');
-        const icon = el.modelHide.querySelector('i');
-        icon?.classList.toggle('fa-eye-slash', isVisible);
-        icon?.classList.toggle('fa-eye', !isVisible);
-    }
-    if (el.modelHideLabel) el.modelHideLabel.textContent = uiText(isVisible ? '숨기기' : '표시');
+    updateModelContextVisibilityLabel(isVisible);
     const transparency = getModelTransparencyPercent(part || model);
     const displayTransparency = transparency;
     if (el.modelTransparency) el.modelTransparency.value = String(displayTransparency);
@@ -25792,6 +25869,7 @@ function closeModelContextMenu() {
     delete el.modelContextMenu.dataset.modelGroup;
     delete el.modelContextMenu.dataset.modelTreeId;
     delete el.modelContextMenu.dataset.modelPartId;
+    delete el.modelContextMenu.dataset.cadAssemblyId;
     if (el.modelChangeZeroPoint) el.modelChangeZeroPoint.hidden = false;
 }
 
@@ -25799,6 +25877,11 @@ function toggleModelContextVisibility() {
     const target = getModelContextTarget();
     closeModelContextMenu();
     if (!target) return;
+    if (target.parts) {
+        const visible = !target.parts.some(part => part.visible !== false);
+        setModelPartsVisibility(target.model, target.parts, visible);
+        return;
+    }
     if (target.part) {
         setModelPartVisibility(target.model, target.part, target.part.visible === false);
         return;
@@ -29425,14 +29508,20 @@ function setSelectedModelPart(part) {
 }
 
 function setModelPartVisibility(model, part, visible, recordHistoryChange = true) {
-    if (!model || !part || !getImportedModelParts(model).includes(part)) return;
+    setModelPartsVisibility(model, [part], visible, recordHistoryChange);
+}
+
+function setModelPartsVisibility(model, parts, visible, recordHistoryChange = true) {
+    if (!model) return;
     const nextVisible = Boolean(visible);
-    if (part.visible === nextVisible) return;
+    const importedParts = new Set(getImportedModelParts(model));
+    const changedParts = parts.filter(part => importedParts.has(part) && part.visible !== nextVisible);
+    if (!changedParts.length) return;
     const historyBefore = recordHistoryChange && !state.historySuspended ? captureSceneSnapshot() : null;
-    part.visible = nextVisible;
+    changedParts.forEach(part => { part.visible = nextVisible; });
     if (nextVisible && state.collision.enabled) state.collision.system?.prepare([model]);
     markSceneCollisionDirty(model);
-    if (!nextVisible && state.selectedModelPart === part) setSelectedModelPart(null);
+    if (!nextVisible && changedParts.includes(state.selectedModelPart)) preserveModelTreeScroll(() => setSelectedModelPart(null));
     invalidateSimulationSnapCandidates();
     refreshCollisionDebugOverlays();
     renderModelTree();
@@ -29715,6 +29804,7 @@ async function handleCad2DImport(options = {}) {
                 root.userData.workspaceAssetId = await persistImportedWorkspaceAsset(file, extension);
             } catch (storageError) {
                 console.warn('CAD source asset could not be saved:', storageError);
+                root.userData.workspaceAssetId = retainWorkspaceSourceAsset(file, extension);
                 root.userData.cadAssetPersistenceFailed = true;
             }
         }
@@ -29934,6 +30024,7 @@ async function handle3DImport(options = {}) {
                 if (assetId) importedModel.userData.workspaceAssetId = assetId;
             } catch (storageError) {
                 console.warn('Imported source asset could not be saved:', storageError);
+                importedModel.userData.workspaceAssetId = retainWorkspaceSourceAsset(file, extension);
                 assetPersistenceFailed = true;
             }
         }
@@ -36565,6 +36656,7 @@ async function animateOlpJointMove(robot, targetAngles, speed, {
         targets.forEach((target, index) => setJointAngle(robot.userData.joints[index], starts[index] + (target - starts[index]) * eased, false));
         robot.updateMatrixWorld(true);
         syncJointControls(robot);
+        captureCurrentTcpTarget(robot);
         appendTcpPathPoint(robot);
         requestRender();
         onProgress?.({
@@ -36962,6 +37054,7 @@ async function animateOlpCartesianPath(robot, motion, poses, speed, runtime = nu
         from.forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle + (to[index] - angle) * local, false));
         robot.updateMatrixWorld(true);
         syncJointControls(robot);
+        captureCurrentTcpTarget(robot);
         appendTcpPathPoint(robot);
         requestRender();
         callbacks.onProgress?.({ progress, elapsedSeconds: (performance.now() - startAt) / 1000, durationSeconds: duration, distance: 0 });
@@ -42821,6 +42914,18 @@ function serializeMotionProject() {
     };
 }
 
+const workspaceSourceAssetFallbacks = new Map();
+
+function retainWorkspaceSourceAsset(file, extension) {
+    const id = WorkspaceRecovery.createWorkspaceId('asset');
+    workspaceSourceAssetFallbacks.set(id, {
+        id, name: file.name, type: file.type || 'application/octet-stream',
+        size: file.size, lastModified: file.lastModified || Date.now(),
+        extension, blob: file
+    });
+    return id;
+}
+
 async function persistImportedWorkspaceAsset(file, extension = getFileExtension(file?.name)) {
     const recovery = state.workspaceRecovery;
     if (!file || !recovery.db || !recovery.ready || recovery.restoring) {
@@ -45087,7 +45192,7 @@ async function collectSimulationWorkspaceBundleAssets(snapshot) {
     const assetIds = WorkspaceRecovery.collectWorkspaceAssetIds(snapshot);
     const assets = [];
     for (const id of assetIds) {
-        const asset = await recovery.db.getAsset(id, { touch: true });
+        const asset = workspaceSourceAssetFallbacks.get(id) || await recovery.db.getAsset(id);
         if (!asset?.blob) throw new Error(`저장에 필요한 파일을 찾을 수 없습니다: ${asset?.name || id}`);
         assets.push({
             id,
@@ -45111,10 +45216,29 @@ async function saveSimulationWorkspaceProject() {
     }
 
     setSimulationWorkspaceFileBusy(true);
-    showLoading(true, uiText('시뮬레이션 프로젝트 저장 중...'));
+    let writable = null;
     try {
-        await saveMotionProjectNow();
+        // Request the picker while the save click still has user activation.
+        // Compression and storage work may take longer than that activation.
+        const suggestedName = getSimulationWorkspaceFileName({
+            motionProject: { robots: getArticulatedRobots().map(robot => ({ displayName: robot.userData.motionDisplayName })) },
+            importedModels: state.models.filter(model => model.userData.uploaded || isGeneratedShapeModel(model) || isCad2dModel(model)).map(model => ({ name: model.userData.modelName || model.name })),
+            catalogModels: state.models.map(model => ({ name: model.userData.modelName || model.name }))
+        });
+        const fileHandle = typeof window.showSaveFilePicker === 'function'
+            ? await window.showSaveFilePicker({
+                id: 'inorobot-simulation-workspace', suggestedName, startIn: 'documents',
+                excludeAcceptAllOption: true,
+                types: [{ description: 'InoRobot Simulation Workspace', accept: { 'application/zip': ['.inosim'] } }]
+            })
+            : null;
+        showLoading(true, uiText('시뮬레이션 프로젝트 저장 중...'));
+        window.clearTimeout(state.motionSaveTimer);
+        state.motionSaveTimer = null;
         const snapshot = serializeWorkspaceSnapshot();
+        if (snapshot.importedModels?.some(model => model.kind === 'uploaded' && !model.assetId)) {
+            throw new Error('저장에 필요한 원본 모델 파일이 없습니다. 모델을 다시 가져와 주세요.');
+        }
         const assets = await collectSimulationWorkspaceBundleAssets(snapshot);
         const manifest = {
             format: SIMULATION_WORKSPACE_FILE_FORMAT,
@@ -45124,44 +45248,37 @@ async function saveSimulationWorkspaceProject() {
             projectName: getSimulationWorkspaceFileName(snapshot).replace(/\.inosim$/i, ''),
             assets: assets.map(({ blob, ...metadata }) => metadata)
         };
-        const zip = new window.JSZip();
-        zip.file('manifest.json', JSON.stringify(manifest, null, 2));
-        zip.file(manifest.workspaceFile, JSON.stringify(snapshot, null, 2));
-        assets.forEach((asset) => zip.file(asset.path, asset.blob));
-        const blob = await zip.generateAsync({
-            type: 'blob',
-            compression: 'DEFLATE',
-            compressionOptions: { level: 6 }
-        });
-        const suggestedName = getSimulationWorkspaceFileName(snapshot);
-        let savedName = suggestedName;
-        if (typeof window.showSaveFilePicker === 'function') {
-            const fileHandle = await window.showSaveFilePicker({
-                id: 'inorobot-simulation-workspace',
-                suggestedName,
-                startIn: 'documents',
-                excludeAcceptAllOption: true,
-                types: [{
-                    description: 'InoRobot Simulation Workspace',
-                    accept: { 'application/zip': ['.inosim'] }
-                }]
-            });
-            const writable = await fileHandle.createWritable();
-            await writable.write(blob);
+        const entries = [
+            { name: 'manifest.json', blob: new Blob([JSON.stringify(manifest)]) },
+            { name: manifest.workspaceFile, blob: new Blob([JSON.stringify(snapshot)]) },
+            ...assets.map(asset => ({ name: asset.path, blob: asset.blob }))
+        ];
+        const savedName = fileHandle?.name || getSimulationWorkspaceFileName(snapshot);
+        if (fileHandle) {
+            writable = await fileHandle.createWritable();
+            await writeWorkspaceArchive(entries, writable);
             await writable.close();
-            savedName = fileHandle.name;
-        } else if (typeof window.saveAs === 'function') {
-            window.saveAs(blob, suggestedName);
+            writable = null;
         } else {
-            const url = URL.createObjectURL(blob);
-            const anchor = document.createElement('a');
-            anchor.href = url;
-            anchor.download = suggestedName;
-            anchor.click();
-            window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+            const chunks = [];
+            await writeWorkspaceArchive(entries, { write: chunk => { chunks.push(chunk); } });
+            const blob = new Blob(chunks, { type: 'application/zip' });
+            if (typeof window.saveAs === 'function') {
+                window.saveAs(blob, savedName);
+            } else {
+                const url = URL.createObjectURL(blob);
+                const anchor = document.createElement('a');
+                anchor.href = url;
+                anchor.download = savedName;
+                anchor.click();
+                window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }
         }
         setStatus('시뮬레이션 프로젝트 저장됨: {name}', '#22c55e', { name: savedName });
     } catch (error) {
+        if (writable) {
+            try { await writable.abort(); } catch { }
+        }
         if (error?.name === 'AbortError') {
             setStatus('시뮬레이션 프로젝트 저장을 취소했습니다.', '#60a5fa');
         } else {
@@ -46591,7 +46708,7 @@ function finishRobotMotionSession(session, status, message = '', replacements = 
         program.progress = 1;
     }
     syncJointControls(robot);
-    if (robot === state.activeArticulatedModel) captureCurrentTcpTarget(robot);
+    captureCurrentTcpTarget(robot);
     if (message) setMotionProgramStatus(message, status === 'error' ? 'error' : '', replacements);
     renderMotionProgramPanel();
     finalizeMotionHistoryIfIdle();
@@ -47177,7 +47294,8 @@ function advanceMotionSegment(session, timestamp) {
     const program = ensureMotionProgram(robot);
     program.progress = motionSessionProgress(session, linearProgress);
     if (robot === state.activeArticulatedModel) syncJointControls(robot);
-    updateTcpPresentation(robot);
+    if (moving) captureCurrentTcpTarget(robot);
+    else updateTcpPresentation(robot);
     if (segment.type === 'HOME' && linearProgress >= 1) syncWorkOriginOutputStates();
     appendTcpPathPoint(robot);
     return rapidMoveEnabled

@@ -55,7 +55,110 @@ test('빈 공간·숨긴 모델·스케치의 휠 동작을 유지하고 표면 
   expect(result.sketchTargetShift).toBe(0);
 });
 
+test('Shift 휠은 빈 공간과 스케치에서도 세밀하게 동작하고 감도를 복원한다', async ({ page }) => {
+  await setup(page);
+  const results = await page.evaluate(async () => {
+    const { state, THREE, setSelectedViewPivotEnabled, recreateMainOrbitControls } = window.__wheelTest;
+    setSelectedViewPivotEnabled(true);
+    const canvas = state.renderer.domElement;
+    const results = [];
+    for (const sketch of [false, true]) {
+      if (sketch) {
+        state.camera = new THREE.OrthographicCamera(-100, 100, 100, -100, 0.1, 1000);
+        state.camera.up.set(1, 0, 0);
+        state.sketch.active = true;
+        recreateMainOrbitControls(null);
+      }
+      state.camera.position.set(0, -100, 0); state.controls.target.set(0, 0, 0); state.controls.update();
+      const value = () => sketch ? state.camera.zoom : state.controls.getDistance();
+      const wheel = shiftKey => canvas.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, shiftKey, bubbles: true, cancelable: true }));
+      const before = value();
+      wheel(false);
+      const normal = value();
+      wheel(true); wheel(true);
+      await Promise.resolve();
+      results.push({ ratio: Math.log(value() / normal) / Math.log(normal / before), speed: state.controls.zoomSpeed });
+    }
+    return results;
+  });
+  for (const result of results) {
+    expect(result.ratio).toBeCloseTo(0.2, 6);
+    expect(result.speed).toBe(1);
+  }
+  // Real wheel events also restore the speed before the next input event.
+  const point = await page.evaluate(() => {
+    const { state } = window.__wheelTest;
+    const rect = state.renderer.domElement.getBoundingClientRect();
+    return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, zoom: state.camera.zoom };
+  });
+  await page.mouse.move(point.x, point.y);
+  await page.mouse.wheel(0, -100);
+  await expect.poll(() => page.evaluate(() => window.__wheelTest.state.camera.zoom)).toBeGreaterThan(point.zoom);
+  const normal = await page.evaluate(() => window.__wheelTest.state.camera.zoom);
+  await page.keyboard.down('Shift');
+  await page.mouse.wheel(0, -100);
+  await expect.poll(() => page.evaluate(() => window.__wheelTest.state.camera.zoom)).toBeGreaterThan(normal);
+  await page.keyboard.up('Shift');
+  const fine = await page.evaluate(() => ({ zoom: window.__wheelTest.state.camera.zoom, speed: window.__wheelTest.state.controls.zoomSpeed }));
+  expect(Math.log(fine.zoom / normal) / Math.log(normal / point.zoom)).toBeCloseTo(0.1, 6);
+  expect(fine.speed).toBe(1);
+});
+
+test('휠 확대가 원점을 통과해도 시선이 뒤집히지 않고 축소로 돌아온다', async ({ page }) => {
+  await setup(page);
+  const result = await page.evaluate(() => {
+    const { state, THREE, setSelectedViewPivotEnabled } = window.__wheelTest;
+    setSelectedViewPivotEnabled(false);
+    state.camera.position.set(6, -8, 4);
+    state.controls.target.set(0, 0, 0); state.controls.update();
+    const initial = state.camera.position.clone();
+    const direction = state.camera.getWorldDirection(new THREE.Vector3());
+    const quaternion = state.camera.quaternion.clone();
+    const canvas = state.renderer.domElement;
+    const wheel = deltaY => canvas.dispatchEvent(new WheelEvent('wheel', { deltaY, bubbles: true, cancelable: true }));
+    let maxAngle = 0;
+    for (let i = 0; i < 80; i++) {
+      wheel(-100);
+      maxAngle = Math.max(maxAngle, quaternion.angleTo(state.camera.quaternion));
+    }
+    const travel = state.camera.position.clone().sub(initial).dot(direction);
+    const targetAhead = state.controls.target.clone().sub(state.camera.position).dot(direction);
+    for (let i = 0; i < 80; i++) wheel(100);
+    return { maxAngle, travel, targetAhead, returnError: state.camera.position.distanceTo(initial) };
+  });
+  expect(result.travel).toBeGreaterThan(20);
+  expect(result.maxAngle).toBeLessThan(1e-6);
+  expect(result.targetAhead).toBeGreaterThan(0);
+  expect(result.returnError).toBeLessThan(1e-6);
+});
+
 for (const selectedPivot of [false, true]) {
+  test(`Shift 휠은 기본 이동량의 10분의 1로 확대·축소한다 (${selectedPivot})`, async ({ page }) => {
+    await setup(page);
+    const result = await page.evaluate(selectedPivot => {
+      const { state, THREE, setSelectedViewPivotEnabled } = window.__wheelTest;
+      const model = new THREE.Mesh(new THREE.BoxGeometry(80, 80, 80), new THREE.MeshBasicMaterial());
+      model.position.set(0, 140, 0); model.userData.uploaded = true; model.userData.placement = 'scene';
+      state.scene.add(model); state.models.push(model); state.selectedModel = model;
+      setSelectedViewPivotEnabled(selectedPivot);
+      state.camera.position.set(0, -10, 0); state.controls.target.set(0, 0, 0); state.controls.update();
+      const canvas = state.renderer.domElement, rect = canvas.getBoundingClientRect();
+      const wheel = (deltaY, shiftKey) => canvas.dispatchEvent(new WheelEvent('wheel', { deltaY, shiftKey,
+        clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2, bubbles: true, cancelable: true }));
+      wheel(-100, false);
+      const initial = state.camera.position.clone();
+      wheel(-100, true);
+      const fineStep = state.camera.position.distanceTo(initial);
+      wheel(100, true);
+      const returnError = state.camera.position.distanceTo(initial);
+      wheel(-100, false);
+      return { fineStep, returnError, normalStep: state.camera.position.distanceTo(initial), speed: state.controls.zoomSpeed };
+    }, selectedPivot);
+    expect(result.fineStep).toBeCloseTo(0.04, 6);
+    expect(result.normalStep).toBeCloseTo(0.4, 6);
+    expect(result.returnError).toBeLessThan(1e-6);
+    expect(result.speed).toBe(1);
+  });
   test(`반복 확대의 이동량은 줄지 않고 축소로 복귀한다 (${selectedPivot})`, async ({ page }) => {
     await setup(page);
     const result = await page.evaluate(selectedPivot => {

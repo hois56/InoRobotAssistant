@@ -260,6 +260,16 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.20",
+                "items": [
+                  "휠 확대로 회전 중심을 통과할 때 카메라 시점이 뒤집히던 문제를 해결했습니다.",
+                  "휠 버튼 드래그의 확대·축소 속도를 2배로 높이고, Shift+휠로 화면을 세밀하게 확대·축소할 수 있도록 추가했습니다.",
+                  "가져온 3D 조립 그룹에서 부품 옵션 메뉴가 열리지 않던 문제와 부품을 숨기면 모델 트리가 최상단으로 이동하던 문제를 해결했습니다.",
+                  "프로그램 패널에서 이동한 뒤 JOG를 조작하면 이전 위치를 기준으로 움직이던 문제를 해결했습니다.",
+                  "큰 모델이 포함된 시뮬레이션 프로젝트가 저장되지 않던 문제를 해결했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.10.19",
                 "items": [
                   "로봇이 2대 이상일 때 여러 로봇을 선택해 관절·BASE JOG와 3D 핸들 이동, 원점 복귀를 동시에 조작할 수 있도록 추가했습니다. BASE JOG는 설치 방향이 다른 로봇도 기준 로봇과 같은 공간 방향으로 이동·회전합니다. JOG 패널의 제목이 선택한 언어 대신 영어로 표시되던 문제를 해결했습니다.",
@@ -1547,6 +1557,16 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.20",
+                "items": [
+                  "Fixed the camera view flipping when wheel zoom passed the orbit center.",
+                  "Doubled zoom speed when dragging with the wheel button held and added fine zoom with Shift+wheel.",
+                  "Fixed the part options menu not opening for imported 3D assembly groups and the model tree jumping to the top when hiding a part.",
+                  "Fixed JOG using the previous position after moving the robot from the program panel.",
+                  "Fixed simulation projects containing large models failing to save."
+                ]
+              },
+              {
                 "title": "Ver 26.10.19",
                 "items": [
                   "Added simultaneous joint/BASE JOG, 3D handle motion and zero return when two or more robots are loaded. BASE JOG moves and rotates selected robots in the same spatial direction as the reference robot, regardless of their installation orientation. Fixed JOG panel headings appearing in English instead of the selected language.",
@@ -2810,6 +2830,16 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.10.20",
+                "items": [
+                  "修复了滚轮放大越过旋转中心时相机视角翻转的问题。",
+                  "将按住滚轮拖动的缩放速度提高至原来的两倍，并新增 Shift+滚轮精细缩放功能。",
+                  "修复了导入的3D装配组无法打开零件选项菜单，以及隐藏零件时模型树跳回顶部的问题。",
+                  "修复了从程序面板移动机器人后，JOG仍基于移动前位置进行操作的问题。",
+                  "修复了包含大型模型的仿真项目无法保存的问题。"
+                ]
+              },
               {
                 "title": "Ver 26.10.19",
                 "items": [
@@ -4075,6 +4105,16 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.20",
+                "items": [
+                  "Đã sửa lỗi góc nhìn camera bị lật khi phóng to bằng con lăn vượt qua tâm xoay.",
+                  "Tăng gấp đôi tốc độ thu phóng khi giữ nút con lăn và kéo, đồng thời thêm thu phóng tinh bằng Shift+con lăn.",
+                  "Đã khắc phục lỗi không mở được menu tùy chọn chi tiết cho nhóm lắp ráp 3D đã nhập và cây mô hình nhảy lên đầu khi ẩn chi tiết.",
+                  "Đã khắc phục lỗi JOG sử dụng vị trí cũ sau khi di chuyển robot từ bảng chương trình.",
+                  "Đã khắc phục lỗi không lưu được dự án mô phỏng có mô hình dung lượng lớn."
+                ]
+              },
+              {
                 "title": "Ver 26.10.19",
                 "items": [
                   "Thêm JOG khớp và BASE, tay nắm 3D và về điểm không đồng thời khi có từ hai robot. BASE JOG di chuyển và xoay các robot được chọn theo cùng hướng trong không gian với robot tham chiếu, bất kể hướng lắp đặt. Đã khắc phục tiêu đề bảng JOG hiển thị bằng tiếng Anh thay vì ngôn ngữ đã chọn.",
@@ -5339,6 +5379,16 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.20",
+                "items": [
+                  "Tekerlekle yakınlaştırma sırasında dönüş merkezi geçildiğinde kamera görünümünün ters dönmesi sorunu giderildi.",
+                  "Tekerlek düğmesi basılı tutularak sürüklendiğinde yakınlaştırma hızı iki katına çıkarıldı ve Shift+tekerlek ile hassas yakınlaştırma eklendi.",
+                  "İçe aktarılan 3B montaj gruplarında parça seçenekleri menüsünün açılmaması ve bir parça gizlendiğinde model ağacının en üste atlaması sorunları giderildi.",
+                  "Robot program panelinden hareket ettirildikten sonra JOG işleminin önceki konumu temel alması sorunu giderildi.",
+                  "Büyük modeller içeren simülasyon projelerinin kaydedilememesi sorunu giderildi."
+                ]
+              },
+              {
                 "title": "Ver 26.10.19",
                 "items": [
                   "İki veya daha fazla robot yüklendiğinde eşzamanlı eklem/BASE JOG, 3D tutamak hareketi ve sıfıra dönüş eklendi. BASE JOG, montaj yönleri farklı olsa da seçilen robotları referans robotla aynı uzaysal yönde hareket ettirir ve döndürür. JOG panel başlıklarının seçilen dil yerine İngilizce görünmesi sorunu giderildi.",
@@ -6602,6 +6652,16 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.10.20",
+                "items": [
+                  "Исправлен переворот вида камеры при приближении колесом за центр вращения.",
+                  "Скорость масштабирования при перетаскивании с нажатым колесом увеличена вдвое; добавлено точное масштабирование с Shift+колесо.",
+                  "Исправлены проблемы, из-за которых меню параметров деталей не открывалось для импортированных 3D-сборок, а дерево моделей прокручивалось вверх при скрытии детали.",
+                  "Исправлена проблема, из-за которой JOG использовал прежнюю позицию после перемещения робота из панели программы.",
+                  "Исправлена проблема сохранения проектов симуляции, содержащих большие модели."
+                ]
+              },
               {
                 "title": "Ver 26.10.19",
                 "items": [
