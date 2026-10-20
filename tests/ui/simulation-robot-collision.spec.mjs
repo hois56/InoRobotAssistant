@@ -57,3 +57,57 @@ window.__robotCollision = { state, getArticulatedRobots, checkSceneCollisions,
     expect(result.excluded).toBe(0);
     expect(errors).toEqual([]);
 });
+
+test('S25 네 대의 동시 접촉은 본체와 샤프트를 모두 표시하고 이전 충돌 모듈 캐시를 사용하지 않는다', async ({ page }) => {
+    test.setTimeout(90000);
+    const errors = [];
+    page.on('pageerror', error => errors.push(error.message));
+    // A browser may still have the attachment-only policy cached at this URL.
+    await page.route('**/2_3DSimulation/collision-policy-core.mjs', route => route.fulfill({
+        contentType: 'text/javascript', body: `
+export const isSimulationCollisionPair = (a, b) => Boolean(a?.userData?.attachmentHost || b?.userData?.attachmentHost);
+export const shouldReportSimulationCollision = h => isSimulationCollisionPair(h.objectA, h.objectB);`
+    }));
+    await page.route('**/2_3DSimulation/main.js*', async route => {
+        const response = await route.fetch();
+        await route.fulfill({ response, body: `${await response.text()}
+window.__s25Contacts = { state, getArticulatedRobots, restoreRobotControllerBaseTransform,
+    setJointAngle, markSceneCollisionDirty, checkSceneCollisions, createAutoPathCollisionEvaluator };` });
+    });
+    await page.goto('/2_3DSimulation/index.html');
+    await page.waitForFunction(() => window.__s25Contacts);
+    for (let index = 0; index < 4; index++) {
+        await page.locator('#model-select').selectOption('robot:IR-S25-120Z42');
+        if (index) await page.locator('#btn-add-robot-model-choice').click();
+        await page.waitForFunction(count => window.__s25Contacts.getArticulatedRobots().length === count, index + 1);
+    }
+    const result = await page.evaluate(() => {
+        const a = window.__s25Contacts, robots = a.getArticulatedRobots();
+        const poses = [
+            { p: [-110.5, -100, 357.5], q: [0, 0, 0, 1], j: [-1.980655, 84.260830, 0, -82.280174] },
+            { p: [-110.5, -660, 357.5], q: [0, 0, 0, 1], j: [19.437766, 56.366715, -85, 14.195520] },
+            { p: [1641.5, -100, 357.5], q: [0, 0, 1, 0], j: [-47.732130, 69.027387, -7.75, 13.704743] },
+            { p: [1641.5, -660, 357.5], q: [0, 0, 1, 0], j: [-29.195447, -13.307146, -7.75, 7.502592] }
+        ];
+        robots.forEach((robot, index) => {
+            const pose = poses[index];
+            a.restoreRobotControllerBaseTransform(robot, { position: pose.p, quaternion: pose.q, scale: [1, 1, 1] });
+            pose.j.forEach((angle, joint) => a.setJointAngle(robot.userData.joints[joint], angle, false));
+        });
+        a.state.collision.enabled = true;
+        a.markSceneCollisionDirty();
+        const hits = a.checkSceneCollisions({ force: true });
+        const parts = new Map();
+        for (const hit of hits) for (const [root, mesh] of [[hit.objectA, hit.meshA], [hit.objectB, hit.meshB]]) {
+            parts.set(`${robots.indexOf(root)}:J${mesh.userData.robotJointIndex + 1}`, mesh.material.color.getHex());
+        }
+        const angles = robots[2].userData.joints.map(joint => joint.angle);
+        return { parts: Object.fromEntries(parts), planningSafe: a.createAutoPathCollisionEvaluator(robots[2], angles).isSafe(angles) };
+    });
+    for (const part of ['0:J1', '0:J2', '1:J2', '1:J4', '2:J2', '2:J4', '3:J2', '3:J4']) {
+        expect(result.parts[part], part).toBe(0xef4444);
+    }
+    expect(result.planningSafe).toBe(false);
+    await expect(page.locator('#collision-status')).toBeVisible();
+    expect(errors).toEqual([]);
+});

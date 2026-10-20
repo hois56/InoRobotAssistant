@@ -260,6 +260,12 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.21",
+                "items": [
+                  "여러 로봇이 동시에 접촉할 때 일부 본체와 샤프트의 충돌 표시가 누락되던 문제를 해결했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.10.20",
                 "items": [
                   "휠 확대로 회전 중심을 통과할 때 카메라 시점이 뒤집히던 문제를 해결했습니다.",
@@ -1560,6 +1566,12 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.21",
+                "items": [
+                  "Fixed missing collision indicators on some robot bodies and shafts during simultaneous contact between multiple robots."
+                ]
+              },
+              {
                 "title": "Ver 26.10.20",
                 "items": [
                   "Fixed the camera view flipping when wheel zoom passed the orbit center.",
@@ -2836,6 +2848,12 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.10.21",
+                "items": [
+                  "修复了多台机器人同时接触时，部分本体和轴的碰撞提示缺失的问题。"
+                ]
+              },
               {
                 "title": "Ver 26.10.20",
                 "items": [
@@ -4114,6 +4132,12 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.21",
+                "items": [
+                  "Đã khắc phục lỗi thiếu hiển thị va chạm ở một số thân và trục khi nhiều robot tiếp xúc đồng thời."
+                ]
+              },
+              {
                 "title": "Ver 26.10.20",
                 "items": [
                   "Đã sửa lỗi góc nhìn camera bị lật khi phóng to bằng con lăn vượt qua tâm xoay.",
@@ -5391,6 +5415,12 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.21",
+                "items": [
+                  "Birden fazla robot aynı anda temas ettiğinde bazı gövde ve millerde çarpışma göstergelerinin eksik kalması sorunu giderildi."
+                ]
+              },
+              {
                 "title": "Ver 26.10.20",
                 "items": [
                   "Tekerlekle yakınlaştırma sırasında dönüş merkezi geçildiğinde kamera görünümünün ters dönmesi sorunu giderildi.",
@@ -6667,6 +6697,12 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.10.21",
+                "items": [
+                  "Исправлено отсутствие индикации столкновений некоторых корпусов и валов при одновременном контакте нескольких роботов."
+                ]
+              },
               {
                 "title": "Ver 26.10.20",
                 "items": [

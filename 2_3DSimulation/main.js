@@ -19,8 +19,8 @@ import {
     createCoordinateFrame,
     integrateStepMesh
 } from '../3_ToolSelector/mass-properties.mjs';
-import { MeshCollisionSystem } from './collision-system.mjs?v=20261007-vacuum-margin-1';
-import { isSimulationCollisionPair, shouldReportSimulationCollision } from './collision-policy-core.mjs';
+import { MeshCollisionSystem } from './collision-system.mjs?v=20261021-robot-body-1';
+import { isSimulationCollisionPair, shouldReportSimulationCollision } from './collision-policy-core.mjs?v=20261021-robot-body-1';
 import {
     MOTION_PROJECT_SCHEMA_VERSION,
     DEFAULT_MOVJ_SPEED,
