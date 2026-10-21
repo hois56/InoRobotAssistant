@@ -4184,6 +4184,8 @@ function recomputeInterferenceOutputs() {
 }
 
 function triggerInterferenceZoneAlarm(zone, robot) {
+    // A local interference warning must not stop a controller-driven robot.
+    if (isVirtualControllerActiveForRobot(robot)) return;
     const runtime = getInterferenceZoneRuntime(zone.id);
     if (!runtime || runtime.alarmLatched) return;
     runtime.alarmLatched = true;
@@ -38491,7 +38493,8 @@ function applyVirtualControllerFrameForController(timestamp, controller) {
     const robot = getVirtualControllerTargetRobot(controller);
     const sample = controller.samples.getLatest();
     if (!robot || !sample || sample.sampleId <= controller.lastAppliedSampleId) return;
-    if (robot.userData.interferenceStopLatched) return;
+    // Always reflect received feedback, including while local interference is
+    // displayed. Simulator stop latches only control simulator-authored motion.
     if (timestamp - controller.lastRateUpdateAt >= 250) {
         controller.lastRateUpdateAt = timestamp;
         refreshVirtualControllerUi();
