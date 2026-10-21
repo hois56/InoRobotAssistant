@@ -112,7 +112,7 @@ export function cloneEndMonitoringObjects(objects) {
     }));
 }
 
-export function getEndMonitoringCuboidBounds(object) {
+export function getEndMonitoringCuboidBounds(object, heightDirection = 1) {
     const normalized = normalizeEndMonitoringObject(object, object?.id ?? 0);
     const { cuboid } = normalized;
     let points;
@@ -121,7 +121,7 @@ export function getEndMonitoringCuboidBounds(object) {
     } else if (cuboid.method === 'fourPointsHeight') {
         points = [
             ...cuboid.points,
-            ...cuboid.points.map((point) => [point[0], point[1], point[2] + cuboid.height])
+            ...cuboid.points.map((point) => [point[0], point[1], point[2] + cuboid.height * (heightDirection < 0 ? -1 : 1)])
         ];
     } else {
         points = [cuboid.p1, cuboid.p2];
@@ -149,7 +149,7 @@ function pointDistance(left, right) {
     return vectorLength(subtractPoints(left, right));
 }
 
-export function getEndMonitoringCuboidTransform(object) {
+export function getEndMonitoringCuboidTransform(object, heightDirection = 1) {
     const normalized = normalizeEndMonitoringObject(object, object?.id ?? 0);
     const { cuboid } = normalized;
     if (cuboid.method !== 'fourPointsHeight') {
@@ -167,7 +167,7 @@ export function getEndMonitoringCuboidTransform(object) {
     const axisYLength = vectorLength(axisYVector);
     const baseCenter = p1.map((value, index) => value + (axisXVector[index] + axisYVector[index]) / 2);
     return {
-        center: [baseCenter[0], baseCenter[1], baseCenter[2] + cuboid.height / 2],
+        center: [baseCenter[0], baseCenter[1], baseCenter[2] + cuboid.height * (heightDirection < 0 ? -1 : 1) / 2],
         axes: [normalizeVector(axisXVector), normalizeVector(axisYVector), [0, 0, 1]],
         halfSizes: [axisXLength / 2, axisYLength / 2, cuboid.height / 2]
     };

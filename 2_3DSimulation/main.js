@@ -97,7 +97,7 @@ import {
     normalizeEndMonitoringObjects,
     getEndMonitoringCuboidTransform,
     validateEndMonitoringObject
-} from './end-monitoring-core.mjs';
+} from './end-monitoring-core.mjs?v=20261021-flange-height-1';
 import {
     buildOlpProjectFromFiles,
     getOlpEditableFiles,
@@ -3273,12 +3273,12 @@ function readInterferenceToolFromController(toolId, controller = state.virtualCo
 }
 
 function getInterferenceToolObjectType(typeValue) {
-    // The controller's Tool type follows the native Tool enum ordering:
-    // 0 = MTCP, 1 = sphere, 2 = square/cuboid.
+    // Controller type values differ from the native struct field ordering:
+    // 0 = TCP/MTCP, 1 = square/cuboid, 2 = sphere.
     const type = Number(typeValue);
     if (type === 0) return 'mtcp';
-    if (type === 1) return 'sphere';
-    if (type === 2) return 'cuboid';
+    if (type === 1) return 'cuboid';
+    if (type === 2) return 'sphere';
     return null;
 }
 
@@ -3966,7 +3966,7 @@ function getInterferenceZoneProbes(zone, robot) {
             robot
         );
     }
-    const cuboid = getEndMonitoringCuboidTransform(monitoring);
+    const cuboid = getEndMonitoringCuboidTransform(monitoring, robot.userData.manifest?.robotType === 'scara' ? 1 : -1);
     const center = new THREE.Vector3().fromArray(cuboid.center)
         .applyQuaternion(toolTransform.quaternion).add(toolTransform.position);
     const halfSizes = cuboid.halfSizes;
@@ -4063,7 +4063,53 @@ function probeInInterferenceRegion(probe, zone) {
 }
 
 function serializeInterferenceProbe(probe) {
-    return { kind: probe.kind, center: probe.center.toArray(), radius: Number(probe.radius) || 0 };
+    return {
+        kind: probe.kind,
+        center: probe.center.toArray(),
+        radius: Number(probe.radius) || 0,
+        ...(probe.kind === 'box' ? {
+            axes: probe.axes.map((axis) => axis.toArray()),
+            halfSizes: [...probe.halfSizes]
+        } : {})
+    };
+}
+
+function sweptBoxIntersectsBounds(previous, current, bounds) {
+    // For a translating box, intersect the time intervals on all OBB/AABB
+    // separating axes. An enclosing sphere produces false alarms even at rest.
+    if (!Array.isArray(previous.axes) || !Array.isArray(previous.halfSizes)) return null;
+    if (current.axes.some((axis, index) => axis.distanceToSquared(
+        new THREE.Vector3().fromArray(previous.axes[index])) > 1e-12)
+        || current.halfSizes.some((value, index) => Math.abs(value - previous.halfSizes[index]) > 1e-9)) return null;
+    if (bounds.min.some((value, index) => value > bounds.max[index])) return false;
+    const worldAxes = [new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1)];
+    const axes = [...worldAxes, ...current.axes.map((axis) => axis.clone()),
+        ...worldAxes.flatMap((worldAxis) => current.axes.map((axis) => new THREE.Vector3().crossVectors(worldAxis, axis)))];
+    const boundsCenter = new THREE.Vector3().fromArray(bounds.min.map((value, index) => (value + bounds.max[index]) / 2));
+    const boundsHalfSizes = bounds.max.map((value, index) => (value - bounds.min[index]) / 2);
+    const start = new THREE.Vector3().fromArray(previous.center);
+    const offset = start.clone().sub(boundsCenter);
+    const delta = current.center.clone().sub(start);
+    let enter = 0;
+    let exit = 1;
+    for (const axis of axes) {
+        if (axis.lengthSq() < 1e-12) continue;
+        axis.normalize();
+        const radius = boundsHalfSizes.reduce((sum, value, index) => sum + value * Math.abs(axis.getComponent(index)), 0)
+            + current.halfSizes.reduce((sum, value, index) => sum + value * Math.abs(axis.dot(current.axes[index])), 0);
+        const distance = offset.dot(axis);
+        const speed = delta.dot(axis);
+        if (Math.abs(speed) < 1e-12) {
+            if (Math.abs(distance) > radius + 1e-9) return false;
+            continue;
+        }
+        const first = (-radius - distance) / speed;
+        const second = (radius - distance) / speed;
+        enter = Math.max(enter, Math.min(first, second));
+        exit = Math.min(exit, Math.max(first, second));
+        if (enter > exit + 1e-9) return false;
+    }
+    return true;
 }
 
 function pointDistanceSquaredToBounds(point, bounds) {
@@ -4096,6 +4142,12 @@ function segmentDistanceSquaredToBounds(start, end, bounds) {
 
 function sweptProbeInInterferenceRegion(previous, current, zone) {
     if (!previous || !current) return false;
+    if (current.kind === 'box' && previous.kind === 'box') {
+        const intersects = sweptBoxIntersectsBounds(previous, current, getInterferenceZoneBounds(zone, true));
+        // With constant orientation, a straight path between contained endpoints
+        // remains contained. Current endpoint violations are evaluated separately.
+        if (intersects !== null) return zone.insideOutside === 'outside' ? false : intersects;
+    }
     if (current.kind === 'sphere' && previous.kind === 'sphere') {
         // Outside mode is a containment requirement. If both endpoints are
         // contained, the straight centre path is contained as well because an
@@ -4272,7 +4324,7 @@ function updateEndMonitoringVisuals() {
                 group.add(sphere);
                 materials.push(sphere.material);
             } else if (monitoring.type === 'cuboid') {
-                const cuboid = getEndMonitoringCuboidTransform(monitoring);
+                const cuboid = getEndMonitoringCuboidTransform(monitoring, robot.userData.manifest?.robotType === 'scara' ? 1 : -1);
                 const size = cuboid.halfSizes.map((value) => value * 2);
                 if (size.every((value) => value > 0)) {
                     const visual = createEndMonitoringWireframe(new THREE.BoxGeometry(size[0], size[1], size[2]));
@@ -21684,7 +21736,7 @@ function setupEventListeners() {
     [el.tcpProfilePanel, el.workObjectPanel].forEach(makePanelEdgeResizable);
     renderIoSimulatorPanel();
     makeModelTransformSplitResizable(el.modelBrowserPanel);
-    setupInterferenceZoneDialogDragging();
+    [el.interferenceZoneDialog, el.endMonitoringDialog].forEach(setupInterferenceZoneDialogDragging);
     initializePanelStack();
 
     el.viewPresetsList?.addEventListener('click', handleViewPresetListClick);
@@ -23691,8 +23743,7 @@ function restorePanelFromWindow(panelId, closePopup = false, hidePanel = false) 
     updatePanelLauncher(panelId);
 }
 
-function setupInterferenceZoneDialogDragging() {
-    const dialog = el.interferenceZoneDialog;
+function setupInterferenceZoneDialogDragging(dialog) {
     const header = dialog?.querySelector('.interference-zone-dialog-header');
     if (!dialog || !header) return;
     bindPanelFocusOnPointerDown(dialog);
@@ -23711,12 +23762,15 @@ function setupInterferenceZoneDialogDragging() {
     });
     header.addEventListener('pointermove', (event) => {
         if (!drag || drag.pointerId !== event.pointerId) return;
+        const bounds = getWorkOriginDialogLayoutBounds();
         const maxLeft = Math.max(0, window.innerWidth - dialog.offsetWidth);
-        const maxTop = Math.max(0, window.innerHeight - dialog.offsetHeight);
+        const maxTop = Math.max(bounds.top, bounds.bottom - dialog.offsetHeight);
         const left = THREE.MathUtils.clamp(event.clientX - drag.offsetX, 0, maxLeft);
-        const top = THREE.MathUtils.clamp(event.clientY - drag.offsetY, 0, maxTop);
+        const top = THREE.MathUtils.clamp(event.clientY - drag.offsetY, bounds.top, maxTop);
         dialog.style.left = `${left}px`;
         dialog.style.top = `${top}px`;
+        dialog.style.right = 'auto';
+        dialog.style.bottom = 'auto';
         dialog.style.transform = 'none';
     });
     const stopDrag = (event) => {

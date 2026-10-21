@@ -262,7 +262,11 @@
               {
                 "title": "Ver 26.10.21",
                 "items": [
-                  "여러 로봇이 동시에 접촉할 때 일부 본체와 샤프트의 충돌 표시가 누락되던 문제를 해결했습니다."
+                  "여러 로봇이 동시에 접촉할 때 일부 본체와 샤프트의 충돌 표시가 누락되던 문제를 해결했습니다.",
+                  "컨트롤러에서 TCP 감지 범위 설정을 가져올 때 구와 직사각형이 서로 바뀌던 문제를 해결했습니다.",
+                  "간섭영역과 TCP 감지 범위 설정 창을 제목 표시줄로 이동할 수 있도록 개선했습니다.",
+                  "TCP 감지 상자가 간섭영역 밖에 있어도 간섭·정지 색상으로 표시되던 문제를 해결했습니다.",
+                  "TCP 감지 범위를 4점과 높이로 설정할 때 높이가 기종에 따라 다관절은 플랜지 Z−, 스카라는 플랜지 Z+ 방향으로 적용되도록 수정했습니다."
                 ]
               },
               {
@@ -1568,7 +1572,11 @@
               {
                 "title": "Ver 26.10.21",
                 "items": [
-                  "Fixed missing collision indicators on some robot bodies and shafts during simultaneous contact between multiple robots."
+                  "Fixed missing collision indicators on some robot bodies and shafts during simultaneous contact between multiple robots.",
+                  "Fixed sphere and rectangular TCP monitoring shapes being swapped when importing settings from the controller.",
+                  "Improved interference zone and TCP monitoring settings dialogs so they can be moved by dragging their title bars.",
+                  "Fixed TCP monitoring boxes showing interference or stop colors even when outside the interference zone.",
+                  "Fixed four-point TCP monitoring height to extend along flange Z− for articulated robots and flange Z+ for SCARA robots."
                 ]
               },
               {
@@ -2851,7 +2859,11 @@
               {
                 "title": "Ver 26.10.21",
                 "items": [
-                  "修复了多台机器人同时接触时，部分本体和轴的碰撞提示缺失的问题。"
+                  "修复了多台机器人同时接触时，部分本体和轴的碰撞提示缺失的问题。",
+                  "修复了从控制器导入 TCP 检测范围设置时，球形与长方体互换的问题。",
+                  "改进了干涉区域和 TCP 检测范围设置窗口，可通过拖动标题栏移动窗口。",
+                  "修复了 TCP 检测边界框位于干涉区域外时仍显示干涉或停止颜色的问题。",
+                  "修复了 TCP 检测范围的四点加高度设置，使高度按机型沿多关节机器人法兰 Z−、SCARA 机器人法兰 Z+ 方向应用。"
                 ]
               },
               {
@@ -4134,7 +4146,11 @@
               {
                 "title": "Ver 26.10.21",
                 "items": [
-                  "Đã khắc phục lỗi thiếu hiển thị va chạm ở một số thân và trục khi nhiều robot tiếp xúc đồng thời."
+                  "Đã khắc phục lỗi thiếu hiển thị va chạm ở một số thân và trục khi nhiều robot tiếp xúc đồng thời.",
+                  "Đã sửa lỗi hình cầu và hình hộp chữ nhật bị hoán đổi khi nhập cài đặt phạm vi giám sát TCP từ bộ điều khiển.",
+                  "Đã cải thiện cửa sổ cài đặt vùng giao thoa và phạm vi giám sát TCP để có thể di chuyển bằng cách kéo thanh tiêu đề.",
+                  "Đã sửa lỗi hộp giám sát TCP vẫn hiển thị màu giao thoa hoặc dừng khi nằm ngoài vùng giao thoa.",
+                  "Đã sửa hướng chiều cao khi cài đặt phạm vi giám sát TCP bằng bốn điểm: theo Z− của mặt bích với robot nhiều khớp và Z+ với robot SCARA."
                 ]
               },
               {
@@ -5417,7 +5433,11 @@
               {
                 "title": "Ver 26.10.21",
                 "items": [
-                  "Birden fazla robot aynı anda temas ettiğinde bazı gövde ve millerde çarpışma göstergelerinin eksik kalması sorunu giderildi."
+                  "Birden fazla robot aynı anda temas ettiğinde bazı gövde ve millerde çarpışma göstergelerinin eksik kalması sorunu giderildi.",
+                  "Kontrolörden TCP izleme ayarları alınırken küre ve dikdörtgen prizma şekillerinin birbiriyle karışması sorunu giderildi.",
+                  "Girişim bölgesi ve TCP izleme ayarları pencereleri başlık çubuklarından sürüklenerek taşınabilecek şekilde iyileştirildi.",
+                  "TCP izleme kutuları girişim bölgesinin dışındayken bile girişim veya durma renginde gösterilmesi sorunu giderildi.",
+                  "Dört noktalı TCP izleme yüksekliği, eklemli robotlarda flanş Z− ve SCARA robotlarda flanş Z+ yönünde uygulanacak şekilde düzeltildi."
                 ]
               },
               {
@@ -6700,7 +6720,11 @@
               {
                 "title": "Ver 26.10.21",
                 "items": [
-                  "Исправлено отсутствие индикации столкновений некоторых корпусов и валов при одновременном контакте нескольких роботов."
+                  "Исправлено отсутствие индикации столкновений некоторых корпусов и валов при одновременном контакте нескольких роботов.",
+                  "Исправлена ошибка, при которой сфера и прямоугольный параллелепипед менялись местами при импорте настроек области контроля TCP из контроллера.",
+                  "Добавлена возможность перемещать окна настроек зоны контроля и области контроля TCP перетаскиванием строки заголовка.",
+                  "Исправлено отображение цвета пересечения или остановки у контрольной области TCP, находящейся вне зоны контроля.",
+                  "Исправлено направление высоты области контроля TCP по четырём точкам: Z− фланца для шарнирных роботов и Z+ фланца для роботов SCARA."
                 ]
               },
               {
