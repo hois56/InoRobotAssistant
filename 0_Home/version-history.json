@@ -266,7 +266,8 @@
                   "컨트롤러에서 TCP 감지 범위 설정을 가져올 때 구와 직사각형이 서로 바뀌던 문제를 해결했습니다.",
                   "간섭영역과 TCP 감지 범위 설정 창을 제목 표시줄로 이동할 수 있도록 개선했습니다.",
                   "TCP 감지 상자가 간섭영역 밖에 있어도 간섭·정지 색상으로 표시되던 문제를 해결했습니다.",
-                  "TCP 감지 범위를 4점과 높이로 설정할 때 높이가 기종에 따라 다관절은 플랜지 Z−, 스카라는 플랜지 Z+ 방향으로 적용되도록 수정했습니다."
+                  "TCP 감지 범위를 4점과 높이로 설정할 때 높이가 기종에 따라 다관절은 플랜지 Z−, 스카라는 플랜지 Z+ 방향으로 적용되도록 수정했습니다.",
+                  "컨트롤러 연동 중 시뮬레이션 간섭이 감지되면 수신 위치 갱신이 멈추던 문제를 해결했습니다. 컨트롤러 수신 위치는 계속 반영하고 시뮬레이션 간섭은 경고로 표시합니다."
                 ]
               },
               {
@@ -1576,7 +1577,8 @@
                   "Fixed sphere and rectangular TCP monitoring shapes being swapped when importing settings from the controller.",
                   "Improved interference zone and TCP monitoring settings dialogs so they can be moved by dragging their title bars.",
                   "Fixed TCP monitoring boxes showing interference or stop colors even when outside the interference zone.",
-                  "Fixed four-point TCP monitoring height to extend along flange Z− for articulated robots and flange Z+ for SCARA robots."
+                  "Fixed four-point TCP monitoring height to extend along flange Z− for articulated robots and flange Z+ for SCARA robots.",
+                  "Fixed controller position updates freezing when simulation interference was detected. Received controller positions continue updating while local interference is shown as a warning."
                 ]
               },
               {
@@ -2863,7 +2865,8 @@
                   "修复了从控制器导入 TCP 检测范围设置时，球形与长方体互换的问题。",
                   "改进了干涉区域和 TCP 检测范围设置窗口，可通过拖动标题栏移动窗口。",
                   "修复了 TCP 检测边界框位于干涉区域外时仍显示干涉或停止颜色的问题。",
-                  "修复了 TCP 检测范围的四点加高度设置，使高度按机型沿多关节机器人法兰 Z−、SCARA 机器人法兰 Z+ 方向应用。"
+                  "修复了 TCP 检测范围的四点加高度设置，使高度按机型沿多关节机器人法兰 Z−、SCARA 机器人法兰 Z+ 方向应用。",
+                  "修复了控制器联动时仿真干涉导致接收位置停止更新的问题。持续显示控制器接收位置，并将仿真干涉显示为警告。"
                 ]
               },
               {
@@ -4150,7 +4153,8 @@
                   "Đã sửa lỗi hình cầu và hình hộp chữ nhật bị hoán đổi khi nhập cài đặt phạm vi giám sát TCP từ bộ điều khiển.",
                   "Đã cải thiện cửa sổ cài đặt vùng giao thoa và phạm vi giám sát TCP để có thể di chuyển bằng cách kéo thanh tiêu đề.",
                   "Đã sửa lỗi hộp giám sát TCP vẫn hiển thị màu giao thoa hoặc dừng khi nằm ngoài vùng giao thoa.",
-                  "Đã sửa hướng chiều cao khi cài đặt phạm vi giám sát TCP bằng bốn điểm: theo Z− của mặt bích với robot nhiều khớp và Z+ với robot SCARA."
+                  "Đã sửa hướng chiều cao khi cài đặt phạm vi giám sát TCP bằng bốn điểm: theo Z− của mặt bích với robot nhiều khớp và Z+ với robot SCARA.",
+                  "Đã sửa lỗi vị trí nhận từ bộ điều khiển ngừng cập nhật khi phát hiện giao thoa trong mô phỏng. Vị trí tiếp tục được cập nhật và giao thoa mô phỏng được hiển thị dưới dạng cảnh báo."
                 ]
               },
               {
@@ -5437,7 +5441,8 @@
                   "Kontrolörden TCP izleme ayarları alınırken küre ve dikdörtgen prizma şekillerinin birbiriyle karışması sorunu giderildi.",
                   "Girişim bölgesi ve TCP izleme ayarları pencereleri başlık çubuklarından sürüklenerek taşınabilecek şekilde iyileştirildi.",
                   "TCP izleme kutuları girişim bölgesinin dışındayken bile girişim veya durma renginde gösterilmesi sorunu giderildi.",
-                  "Dört noktalı TCP izleme yüksekliği, eklemli robotlarda flanş Z− ve SCARA robotlarda flanş Z+ yönünde uygulanacak şekilde düzeltildi."
+                  "Dört noktalı TCP izleme yüksekliği, eklemli robotlarda flanş Z− ve SCARA robotlarda flanş Z+ yönünde uygulanacak şekilde düzeltildi.",
+                  "Simülasyonda girişim algılandığında kontrolörden alınan konum güncellemelerinin donması giderildi. Alınan konumlar güncellenmeye devam ederken simülasyon girişimi uyarı olarak gösterilir."
                 ]
               },
               {
@@ -6724,7 +6729,8 @@
                   "Исправлена ошибка, при которой сфера и прямоугольный параллелепипед менялись местами при импорте настроек области контроля TCP из контроллера.",
                   "Добавлена возможность перемещать окна настроек зоны контроля и области контроля TCP перетаскиванием строки заголовка.",
                   "Исправлено отображение цвета пересечения или остановки у контрольной области TCP, находящейся вне зоны контроля.",
-                  "Исправлено направление высоты области контроля TCP по четырём точкам: Z− фланца для шарнирных роботов и Z+ фланца для роботов SCARA."
+                  "Исправлено направление высоты области контроля TCP по четырём точкам: Z− фланца для шарнирных роботов и Z+ фланца для роботов SCARA.",
+                  "Исправлено прекращение обновления получаемого положения контроллера при обнаружении пересечения в симуляции. Положение продолжает обновляться, а пересечение отображается как предупреждение."
                 ]
               },
               {

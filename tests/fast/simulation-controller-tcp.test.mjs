@@ -127,3 +127,16 @@ test('SCARA endpoint uses Wobj TCP while keeping motor angle conversion for the 
   assert.ok(pose.position.distanceTo(new THREE.Vector3(500, 100, 200)) < 1e-8);
   assert.equal(f.robot.userData.joints[2].angle, 20);
 });
+
+test('simulation interference stop never blocks subsequent controller positions', () => {
+  const f = fixture();
+  f.robot.userData.interferenceStopLatched = true;
+  f.send([100, 200, 300, 0, 0, 180]);
+  assert.equal(f.controller.lastAppliedSampleId, 1);
+  f.send([400, 500, 600, 0, 0, 180]);
+  assert.equal(f.controller.lastAppliedSampleId, 2);
+  const pose = f.context.getJogReadoutPose(f.robot, f.context.getCurrentTcpPoseBase(f.robot));
+  assert.ok(pose.position.distanceTo(new THREE.Vector3(400, 500, 600)) < 1e-8);
+  assert.equal(f.controller.wanted, true);
+  assert.equal(f.controller.status, 'streaming');
+});
