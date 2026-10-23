@@ -737,6 +737,10 @@
 
 ## Debugging Tool
 
+### Ver 26.10.23
+
+- `[변경]` CAD Lightweight를 `V1.0 → V1.1`로 업데이트했습니다.
+
 ### Ver 26.10.07
 
 - `[변경]` Communication Tester를 `V3.1 → V3.2`로 업데이트했습니다.

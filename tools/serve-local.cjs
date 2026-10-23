@@ -335,6 +335,50 @@ function originForRequest(request) {
     return null;
 }
 
+// Launcher mode: every served page keeps a presence socket open, and the
+// server exits once no page has been open for the grace period. The grace
+// period covers reloads and navigation between pages.
+const exitWhenPagesClosed = process.env.INOROBOT_EXIT_WHEN_PAGES_CLOSED === '1';
+const pagePresenceGraceMs = 15000;
+const pagePresenceStartupMs = 120000;
+const pagePresenceSockets = new Set();
+let pagePresenceTimer = null;
+const pagePresenceScript = '<script>(function(){function connect(){try{var socket=new WebSocket("ws://"+location.host+"/api/page-presence");socket.onclose=function(){setTimeout(connect,2000);};}catch(error){}}connect();})();</script>';
+
+function schedulePagePresenceExit(delayMs) {
+    if (!exitWhenPagesClosed) return;
+    if (pagePresenceTimer) clearTimeout(pagePresenceTimer);
+    pagePresenceTimer = setTimeout(() => {
+        if (pagePresenceSockets.size > 0) return;
+        console.log('All pages are closed. Stopping the local server.');
+        process.exit(0);
+    }, delayMs);
+}
+
+function injectPagePresenceScript(html) {
+    if (!exitWhenPagesClosed) return html;
+    const bodyEnd = html.lastIndexOf('</body>');
+    return bodyEnd < 0 ? html + pagePresenceScript : html.slice(0, bodyEnd) + pagePresenceScript + html.slice(bodyEnd);
+}
+
+function acceptPagePresenceSocket(request, socket) {
+    const key = request.headers['sec-websocket-key'];
+    if (!exitWhenPagesClosed || !key || (request.headers.origin && !allowedOrigin(request.headers.origin))) { socket.destroy(); return; }
+    const accept = crypto.createHash('sha1').update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');
+    socket.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ' + accept + '\r\n\r\n');
+    pagePresenceSockets.add(socket);
+    if (pagePresenceTimer) { clearTimeout(pagePresenceTimer); pagePresenceTimer = null; }
+    const release = () => {
+        if (!pagePresenceSockets.delete(socket)) return;
+        socket.destroy();
+        if (pagePresenceSockets.size === 0) schedulePagePresenceExit(pagePresenceGraceMs);
+    };
+    // The page never sends application data; a close frame or socket end means the page is gone.
+    socket.on('data', chunk => { if (chunk.length && (chunk[0] & 0x0f) === 0x8) release(); });
+    socket.on('error', release);
+    socket.on('close', release);
+}
+
 const server = http.createServer((request, response) => {
     let pathname;
     try { pathname = decodeURIComponent(new URL(request.url, `http://${host}`).pathname); }
@@ -357,7 +401,7 @@ const server = http.createServer((request, response) => {
     if (request.method === 'HEAD') { response.end(); return; }
     if (contentType.startsWith('text/html')) {
         const html = fs.readFileSync(filePath, 'utf8').replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '');
-        response.end(html);
+        response.end(injectPagePresenceScript(html));
         return;
     }
     fs.createReadStream(filePath).pipe(response);
@@ -367,6 +411,7 @@ server.on('upgrade', (request, socket, head) => {
     let pathname;
     try { pathname = new URL(request.url, `http://${host}`).pathname; }
     catch { socket.destroy(); return; }
+    if (pathname === '/api/page-presence') { acceptPagePresenceSocket(request, socket); return; }
     if (pathname !== '/virtualbus/' && pathname !== '/virtualbus') { socket.destroy(); return; }
     if (!virtualBusToken || (request.headers.origin && !allowedOrigin(request.headers.origin))) { socket.destroy(); return; }
     const key = request.headers['sec-websocket-key'];
@@ -404,4 +449,8 @@ server.listen(port, host, () => {
     console.log('Virtual Bus broker: ws://' + host + ':' + port + '/virtualbus/');
     console.log(virtualBusToken ? 'Virtual Bus pairing token is configured.' : 'Virtual Bus disabled: set INOROBOT_VIRTUAL_BUS_TOKEN to a high-entropy token.');
     console.log('Stop: Ctrl+C');
+    if (exitWhenPagesClosed) {
+        console.log('The server stops automatically when all pages are closed.');
+        schedulePagePresenceExit(pagePresenceStartupMs);
+    }
 });
