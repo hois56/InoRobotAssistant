@@ -1151,8 +1151,8 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .position-value-dialog::backdrop {
-    background: rgba(3, 6, 12, 0.76);
-    backdrop-filter: blur(5px);
+    background: transparent;
+    backdrop-filter: none;
 }
 
 .position-value-dialog form {

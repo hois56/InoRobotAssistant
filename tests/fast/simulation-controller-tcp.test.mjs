@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import { parseVirtualControllerMessage } from '../../2_3DSimulation/virtual-controller-core.mjs';
+import * as armParameterCore from '../../2_3DSimulation/arm-parameter-core.mjs';
 
 const threeSource = readFileSync(new URL('../../3_ToolSelector/vendor/three/three.module.js', import.meta.url), 'utf8');
 const THREE = await import(`data:text/javascript;base64,${Buffer.from(threeSource).toString('base64')}`);
@@ -10,7 +11,7 @@ const source = readFileSync(new URL('../../2_3DSimulation/main.js', import.meta.
 const names = ['getRobotControllerBaseFrame', 'getCurrentTcpPoseBase', 'getJogReadoutPose',
   'getBasePoseFromJogReadout', 'getTcpRotationDegrees', 'quaternionFromTcpRotationDegrees',
   'normalizeDegrees', 'applyVirtualControllerFrameForController', 'calculatePointArmParameters',
-  'pointQuadrantIndex', 'quaternionErrorVector', 'restoreControllerToolFrame', 'applyControllerTcpPose', 'disconnectVirtualController'];
+  'quaternionErrorVector', 'restoreControllerToolFrame', 'applyControllerTcpPose', 'disconnectVirtualController'];
 const functions = names.map(name => source.match(new RegExp(`function ${name}\\([^]*?\\n\\}`))?.[0] || '').join('\n');
 
 function fixture({ wobj = 0, tool = false, scara = false, trace = false } = {}) {
@@ -49,7 +50,7 @@ function fixture({ wobj = 0, tool = false, scara = false, trace = false } = {}) 
     pendingInterferenceReads: new Map(), pendingInterferenceToolReads: new Map(),
     samples: { getLatest: () => sample, clear() {} } };
   let sample;
-  const context = vm.createContext({ THREE, WOBJ_WORLD_INDEX: 0,
+  const context = vm.createContext({ THREE, ...armParameterCore, WOBJ_WORLD_INDEX: 0,
     SIX_AXIS_POSITION_HOME_QUATERNION: new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI, -Math.PI / 2, 0, 'ZYX')),
     state: { activeArticulatedModel: robot, virtualController: controller },
     el: { baseJogView: { classList: { contains: () => true } } },
