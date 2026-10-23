@@ -32,6 +32,9 @@ test('고정 뷰 맨 앞으로 고정의 켜기, 끄기, 닫기와 기존 팝업
   const second = page.waitForEvent('popup');
   await page.locator('#view-window-popout').click();
   const regular = await second;
+  await regular.evaluate(() => Object.defineProperty(window, 'documentPictureInPicture', {
+    configurable: true, value: window.opener.documentPictureInPicture
+  }));
   const third = page.waitForEvent('popup');
   await regular.locator('#view-window-pin').click();
   const repinned = await third;
@@ -45,4 +48,27 @@ test('고정 뷰 맨 앞으로 고정의 켜기, 끄기, 닫기와 기존 팝업
   await expect(page.locator('#view-window')).toBeVisible();
   await expect(page.locator('#view-window-pin')).toHaveAttribute('aria-pressed', 'false');
   expect(errors).toEqual([]);
+});
+
+test('새 창에서 고정 요청이 거절되어도 기존 뷰 창을 유지한다', async ({ page }) => {
+  await page.route('**/2_3DSimulation/main.js*', async route => {
+    const response = await route.fetch();
+    await route.fulfill({ response, body: `${await response.text()}\nwindow.__pinTest = { state, openViewWindow };` });
+  });
+  await page.goto('/2_3DSimulation/index.html');
+  await page.waitForFunction(() => window.__pinTest?.state.renderer);
+  await page.evaluate(() => window.__pinTest.openViewWindow(0));
+  const popupPromise = page.waitForEvent('popup');
+  await page.locator('#view-window-popout').click();
+  const popup = await popupPromise;
+  await popup.evaluate(() => Object.defineProperty(window, 'documentPictureInPicture', {
+    configurable: true, value: { requestWindow: async () => { throw new DOMException('Blocked', 'NotAllowedError'); } }
+  }));
+  await popup.locator('#view-window-pin').click();
+  await expect(popup.locator('.view-window-canvas')).toBeVisible();
+  await expect(popup.locator('#view-window-pin')).toHaveAttribute('aria-pressed', 'false');
+  await expect.poll(() => page.evaluate(() => {
+    const view = window.__pinTest.state.viewWindow;
+    return !view.pinPending && !view.popup.closed && view.root.ownerDocument === view.popup.document && !view.alwaysOnTop;
+  })).toBe(true);
 });

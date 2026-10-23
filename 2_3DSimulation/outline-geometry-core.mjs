@@ -1,6 +1,8 @@
 // Extract CAD feature edges from triangle positions without changing the mesh.
 // STL can duplicate faces, reverse winding, and leave small coordinate seams.
-export function buildCleanOutlinePositions(positions, indices = null, { thresholdAngle = 40, weldTolerance = null, minimumAspectRatio = 0 } = {}) {
+export function buildCleanOutlinePositions(positions, indices = null, {
+    thresholdAngle = 40, weldTolerance = null, minimumAspectRatio = 0, pruneDanglingEdges = false
+} = {}) {
     if (!positions?.length) return new Float32Array();
     const min = [Infinity, Infinity, Infinity];
     const max = [-Infinity, -Infinity, -Infinity];
@@ -50,7 +52,7 @@ export function buildCleanOutlinePositions(positions, indices = null, { threshol
             edges.get(key).normals.push({ normal: unitNormal, direction: a < b ? 1 : -1 });
         }
     }
-    const result = [];
+    const featureEdges = [];
     const cosine = Math.cos(thresholdAngle * Math.PI / 180);
     for (const [key, { a, b, normals }] of edges) {
         let feature = normals.length === 1 && !degenerateEdges.has(key);
@@ -61,7 +63,34 @@ export function buildCleanOutlinePositions(positions, indices = null, { threshol
                 if (dot < cosine) { feature = true; break; }
             }
         }
-        if (feature) result.push(...vertices[a], ...vertices[b]);
+        if (feature) featureEdges.push([a, b]);
     }
+    const removed = new Uint8Array(featureEdges.length);
+    if (pruneDanglingEdges) {
+        // CAD tessellation defects leave loose chains that do not bound a feature.
+        const adjacent = new Map();
+        featureEdges.forEach((edge, index) => {
+            for (const vertex of edge) {
+                if (!adjacent.has(vertex)) adjacent.set(vertex, new Set());
+                adjacent.get(vertex).add(index);
+            }
+        });
+        const pending = [...adjacent].filter(([, edges]) => edges.size === 1).map(([vertex]) => vertex);
+        while (pending.length) {
+            const edges = adjacent.get(pending.pop());
+            if (edges.size !== 1) continue;
+            const [index] = edges;
+            removed[index] = 1;
+            for (const vertex of featureEdges[index]) {
+                const neighbours = adjacent.get(vertex);
+                neighbours.delete(index);
+                if (neighbours.size === 1) pending.push(vertex);
+            }
+        }
+    }
+    const result = [];
+    featureEdges.forEach(([a, b], index) => {
+        if (!removed[index]) result.push(...vertices[a], ...vertices[b]);
+    });
     return new Float32Array(result);
 }

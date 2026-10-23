@@ -13,7 +13,7 @@ const names = ['getRobotControllerBaseFrame', 'getCurrentTcpPoseBase', 'getJogRe
   'pointQuadrantIndex', 'quaternionErrorVector', 'restoreControllerToolFrame', 'applyControllerTcpPose', 'disconnectVirtualController'];
 const functions = names.map(name => source.match(new RegExp(`function ${name}\\([^]*?\\n\\}`))?.[0] || '').join('\n');
 
-function fixture({ wobj = 0, tool = false, scara = false } = {}) {
+function fixture({ wobj = 0, tool = false, scara = false, trace = false } = {}) {
   const robot = new THREE.Group();
   const base = new THREE.Group();
   base.position.set(0, 0, 350);
@@ -65,13 +65,59 @@ function fixture({ wobj = 0, tool = false, scara = false } = {}) {
     clearVirtualControllerStreamWatchdog() {}, refreshViewPresetsUi() {}, removeVirtualControllerSession() {} });
   vm.runInContext(functions, context);
   function send(tcpValues = [708, -292, 215, 0, 0, 180]) {
-    const parsed = parseVirtualControllerMessage({ type: 'robotState',
-      data: { joints: scara ? [20, -30, 360, 40] : [20, -30, 40, -110, 60, 200], tcp: tcpValues } });
+    const joints = scara ? [20, -30, 360, 40] : [20, -30, 40, -110, 60, 200];
+    const data = trace
+      ? { joints, ...Object.fromEntries(['x', 'y', 'z', 'a', 'b', 'c'].map((key, index) => [`pos_${key}`, tcpValues[index]])) }
+      : { joints, tcp: tcpValues };
+    const parsed = parseVirtualControllerMessage({ type: trace ? 'traceData' : 'robotState', data });
     sample = { ...parsed, sampleId: (sample?.sampleId || 0) + 1 };
     context.applyVirtualControllerFrameForController(100, controller);
   }
   return { context, robot, flange, tcp, mountedTool, original, send, controller };
 }
+
+test('Trace TCP feedback preserves calibrated positions independently of nominal links and joints', () => {
+  const f = fixture({ trace: true, wobj: 1, tool: true });
+  f.send([708.321, -292.456, 215.789, 20, 30, 40]);
+  const pose = f.context.getJogReadoutPose(f.robot, f.context.getCurrentTcpPoseBase(f.robot));
+  assert.ok(pose.position.distanceTo(new THREE.Vector3(708.321, -292.456, 215.789)) < 1e-8);
+  assert.deepEqual(f.robot.userData.joints.map(joint => joint.angle), [20, -30, 40, -110, 60, 200]);
+  assert.deepEqual(Array.from(f.context.calculatePointArmParameters(f.robot)), [0, -2, 2, 1]);
+});
+
+test('TCP readout remains controller feedback when nominal forward kinematics changes', () => {
+  const f = fixture({ tool: true });
+  f.send();
+  f.flange.parent.position.x += 0.75;
+  const pose = f.context.getJogReadoutPose(f.robot, f.context.getCurrentTcpPoseBase(f.robot));
+  assert.ok(pose.position.distanceTo(new THREE.Vector3(708, -292, 215)) < 1e-8);
+});
+
+test('controller rotation is preserved at SCARA tilted Wobj and Euler singularities', () => {
+  for (const scara of [false, true]) {
+    const f = fixture({ wobj: 1, scara });
+    f.send([500, 100, 200, 190, 90, 30]);
+    const readout = f.robot.userData.controllerTcpPose?.readout;
+    assert.ok(readout, 'keep the reported Cartesian pose separate from the nominal model');
+    assert.deepEqual(Array.from(readout.rotation), [190, 90, 30]);
+    const expected = new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI / 6, Math.PI / 2, 190 * Math.PI / 180, 'ZYX'));
+    const pose = f.context.getJogReadoutPose(f.robot, f.context.getCurrentTcpPoseBase(f.robot));
+    assert.ok(pose.quaternion.angleTo(expected) < 1e-7);
+    f.send([500, 100, 200, -170, 90, 30]);
+    assert.deepEqual(Array.from(f.robot.userData.controllerTcpPose.readout.rotation), [-170, 90, 30]);
+  }
+});
+
+test('Trace requires a complete finite TCP pose and retains joint-only feedback', () => {
+  for (const bad of [undefined, null, '', 'bad', Infinity]) {
+    const parsed = parseVirtualControllerMessage({ type: 'traceData', data: {
+      joints: [0, 0, 0, 0], pos_x: 1, pos_y: 2, pos_z: 3, pos_a: 0, pos_b: 0, pos_c: bad
+    } });
+    assert.equal(parsed.kind, 'state');
+    assert.equal(parsed.position, null);
+    assert.equal(parsed.rotation, null);
+  }
+});
 
 for (const wobj of [0, 1]) {
   test(`controller TCP drives readout with Wobj ${wobj}, preserving tool mount, joints and arm parameters`, () => {

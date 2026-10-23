@@ -1,4 +1,9 @@
 #!/bin/sh
 set -eu
 
+# Push-only requests must not rerun validation while creating their commit.
+if [ "${INOROBOT_PUSH_ONLY:-0}" = "1" ]; then
+    exit 0
+fi
+
 npm run test:fast

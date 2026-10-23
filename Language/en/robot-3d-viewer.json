@@ -1891,7 +1891,24 @@
     "맨 앞으로 고정 창을 열 수 없습니다. 다시 시도해 주세요.": "Unable to open the always-on-top window. Please try again.",
     "동시 JOG": "Simultaneous JOG",
     "TCP POSITION /": "TCP Position /",
-    "TCP ROTATION /": "TCP Rotation /"
+    "TCP ROTATION /": "TCP Rotation /",
+    "티칭 위치 표시": "Teaching positions",
+    "번호 표시": "Show numbers",
+    "가려진 위치도 표시": "Show occluded positions",
+    "포인트 화면 맞춤": "Fit points to view",
+    "티칭 포인트 선택": "Select teaching point",
+    "포인트 선택": "Select a point",
+    "포인트 파일을 선택하세요.": "Select a point file.",
+    "동작 프로그램": "Motion program",
+    "표시 포인트": "Visible points",
+    "표시 제외": "Omitted",
+    "저장값": "Stored values",
+    "좌표 또는 축 설정을 확인하세요.": "Check coordinates or axis settings.",
+    "텍스트 표시": "Show text",
+    "포인트 표시 방식": "Point label format",
+    "ID만": "ID only",
+    "라벨명만": "Label only",
+    "둘 다": "Both"
   },
   "patterns": []
 }

@@ -4,7 +4,12 @@
  */
 
 import * as THREE from 'three';
-import { buildCleanOutlinePositions } from './outline-geometry-core.mjs';
+import { collectTeachingPoints, normalizeTeachingPointSettings } from './teaching-point-core.mjs?v=20261023-teaching-defaults-1';
+import { TeachingPointScene, teachingJointMatrix } from './teaching-point-scene.mjs?v=20261023-teaching-labels-2';
+import { buildCleanOutlinePositions } from './outline-geometry-core.mjs?v=20261023-clean-outlines-2';
+import { computeSmoothTriangleNormals } from './smooth-triangle-normals-core.mjs';
+import { ROBOT_LOGO_COLOR, ROBOT_LOGO_FACES, ROBOT_LOGO_PROJECTIONS, createRobotLogoIndex } from './robot-logo-material-core.mjs';
+import { applyRobotLogoProjection } from './robot-logo-projection.mjs';
 import { buildCadAssemblyTree } from './cad-assembly-tree.mjs';
 import { writeWorkspaceArchive } from './workspace-archive.mjs';
 import { TEST_MODEL_CATALOG, getTestModelSelection, getTestModelSelectionForRobot, getEducationalModelSelection, getImportedModelColor } from './test-model-catalog.mjs';
@@ -159,7 +164,7 @@ import {
     planJointWaypointGraph,
     planJointPath,
     simplifyJointPath
-} from './path-planning-core.mjs';
+} from './path-planning-core.mjs?v=20261023-auto-path-1';
 import {
     BIT_COUNT as OLP_BIT_COUNT,
     BIT_START as OLP_BIT_START,
@@ -757,6 +762,7 @@ const state = {
         group: null,
         entries: new Map()
     },
+    teachingPoints: { ...normalizeTeachingPointSettings(), scene: null, signature: '', olpKey: null },
     autoPath: {
         active: false,
         planning: false,
@@ -1589,6 +1595,9 @@ const el = {
     programStatus: document.getElementById('program-status'),
     btnProgramRobotAvoidance: document.getElementById('program-toggle-robot-avoidance'),
     btnProgramToggleTcpPath: document.getElementById('program-toggle-tcp-path'),
+    btnTeachingPoints: document.getElementById('program-toggle-teaching-points'),
+    teachingPanel: document.getElementById('teaching-point-controls'),
+    teachingLabelMode: document.getElementById('teaching-point-label-mode'),
     programSpeedOverride: document.getElementById('program-speed-override'),
     programRobotAvoidancePriority: document.getElementById('program-robot-avoidance-priority'),
     programRobotAvoidanceStatus: document.getElementById('program-robot-avoidance-status'),
@@ -1730,7 +1739,7 @@ const el = {
     collaborationError: document.getElementById('collaboration-error')
 };
 
-const MODEL_DEFAULT_OUTLINE_COLOR = 0x000000;
+const MODEL_DEFAULT_OUTLINE_COLOR = 0x5c626b;
 const MODEL_SELECTION_OUTLINE_COLOR = 0xfacc15;
 
 const IK_POSITION_SCALE = 400;
@@ -3691,6 +3700,198 @@ function getRobotWorldTcpPoint(robot) {
     return tcpFrame.getWorldPosition(new THREE.Vector3()).toArray();
 }
 
+function getTeachingPointContext() {
+    const robot = state.olp.enabled ? getOlpRobot() : state.activeProgramRobot;
+    const project = state.olp.enabled ? getOlpProject(robot) : null;
+    const file = project?.pointFiles?.find(entry => entry.path === state.olp.selectedFile) || null;
+    return { robot, file, program: robot ? ensureMotionProgram(robot) : null };
+}
+
+function teachingPointBaseMatrix(robot, axes) {
+    robot.updateWorldMatrix(true, false);
+    const base = getRobotControllerBaseFrame(robot);
+    base.updateWorldMatrix(true, false);
+    if (!axes?.length) return base.matrixWorld.clone();
+    if (!axes.every(Number.isFinite)) throw new Error('E');
+    const current = getRobotExternalAxes(robot), target = normalizeExternalAxisValues(axes);
+    const moduleAxes = state.equipmentDefinitions.filter(def => def.enabled && def.externalAxis
+        && equipmentApp.resolve(def.robotRef)?.object === robot);
+    const travel = [...target];
+    moduleAxes.forEach(def => { travel[def.externalAxis - 1] = current[def.externalAxis - 1]; });
+    const position = robot.position.clone().add(new THREE.Vector3(
+        travel[0] - current[0], travel[1] - current[1], travel[2] - current[2]));
+    const quaternion = robot.quaternion.clone().multiply(externalAxisRotationQuaternion(current).invert())
+        .multiply(externalAxisRotationQuaternion(travel));
+    let rootWorld = new THREE.Matrix4().compose(position, quaternion, robot.scale);
+    if (robot.parent) rootWorld.premultiply(robot.parent.matrixWorld);
+    for (const def of moduleAxes) {
+        const member = equipmentMotionGroups(def).find(([ref]) => equipmentApp.resolve(ref)?.object === robot);
+        if (!member || !def.origins?.objects?.[member[0]]) throw new Error('E');
+        rootWorld = equipmentApp.runtime.frame(def)
+            .multiply(equipmentApp.runtime.motionDelta(def, member[1], target[def.externalAxis - 1]))
+            .multiply(new THREE.Matrix4().fromArray(def.origins.objects[member[0]]));
+    }
+    return rootWorld.multiply(robot.matrixWorld.clone().invert()).multiply(base.matrixWorld);
+}
+
+function teachingPointWorldPose(robot, point) {
+    const record = point.record;
+    const baseMatrix = teachingPointBaseMatrix(robot, record.externalAxes);
+    if (point.joint) {
+        const matrix = baseMatrix.multiply(teachingJointMatrix(robot, record.values));
+        const position = new THREE.Vector3(), quaternion = new THREE.Quaternion();
+        matrix.decompose(position, quaternion, new THREE.Vector3());
+        return { position, quaternion };
+    }
+    let pose;
+    if (point.source === 'motion') pose = motionStepTargetPose(record, robot);
+    else {
+        const values = record.values;
+        const displayPose = {
+            position: new THREE.Vector3(...values.slice(0, 3)),
+            quaternion: new THREE.Quaternion().setFromEuler(new THREE.Euler(
+                THREE.MathUtils.degToRad(values[5]), THREE.MathUtils.degToRad(values[4]),
+                THREE.MathUtils.degToRad(values[3]), 'ZYX'))
+        };
+        // Match OLP frame conversion without its SCARA reach/tilt adaptation.
+        pose = { position: displayPose.position, quaternion: quaternionFromTcpRotationDegrees(robot, values[5], values[4], values[3]) };
+        if (resolveWorkObjectIndex(robot.userData.activeWorkObjectIndex) !== WOBJ_WORLD_INDEX) {
+            const wobj = getWorkObjectWorldPose(robot, robot.userData.activeWorkObjectIndex);
+            const inverse = getRobotControllerBaseFrame(robot).matrixWorld.clone().invert();
+            pose.position.applyQuaternion(wobj.quaternion).add(wobj.position).applyMatrix4(inverse);
+            pose.quaternion.premultiply(wobj.quaternion)
+                .premultiply(getRobotControllerBaseFrame(robot).getWorldQuaternion(new THREE.Quaternion()).invert()).normalize();
+        }
+    }
+    const worldMatrix = resolveWorkObjectIndex(robot.userData.activeWorkObjectIndex) === WOBJ_WORLD_INDEX
+        ? baseMatrix : getRobotControllerBaseFrame(robot).matrixWorld;
+    const baseQuaternion = new THREE.Quaternion();
+    worldMatrix.decompose(new THREE.Vector3(), baseQuaternion, new THREE.Vector3());
+    return { position: pose.position.clone().applyMatrix4(worldMatrix),
+        quaternion: pose.quaternion.clone().premultiply(baseQuaternion).normalize() };
+}
+
+function selectTeachingPoint(key) {
+    const point = state.teachingPoints.scene?.points.find(entry => entry.key === key);
+    if (!point) return;
+    const { program } = getTeachingPointContext();
+    if (point.source === 'motion') {
+        program.selectedStepId = point.record.id;
+        renderMotionProgramPanel();
+        focusProgramStepRow(point.record.id);
+        el.programStepList.querySelector('.program-step-row.active')?.scrollIntoView({ block: 'nearest' });
+    } else {
+        state.teachingPoints.olpKey = key;
+        const row = [...el.olpPointTable.querySelectorAll('[data-olp-point-row]')].find(entry =>
+            entry.dataset.olpPointPath === point.record.path && Number(entry.dataset.olpPointIndex) === point.record.index
+            && entry.dataset.olpPointSymbol === point.record.sourceSymbol);
+        row?.focus({ preventScroll: true }); row?.scrollIntoView({ block: 'nearest' });
+        if (!row && point.joint && el.olpFileEditor) {
+            const editor = el.olpFileEditor, start = editor.value.indexOf(point.record.sourceLine);
+            if (start >= 0) {
+                editor.focus(); editor.setSelectionRange(start, start + point.record.sourceLine.length);
+                editor.scrollTop = editor.value.slice(0, start).split('\n').length * (parseFloat(getComputedStyle(editor).lineHeight) || 18);
+            }
+        }
+    }
+    scheduleMotionProjectSave();
+    requestRender();
+}
+
+function updateTeachingPointDisplay() {
+    const settings = state.teachingPoints;
+    el.btnTeachingPoints?.classList.toggle('active', settings.enabled);
+    el.btnTeachingPoints?.setAttribute('aria-pressed', String(settings.enabled));
+    if (el.btnTeachingPoints) el.btnTeachingPoints.querySelector('span').textContent = uiText('티칭 위치 표시');
+    el.teachingPanel?.classList.toggle('hidden', !settings.enabled);
+    if (!settings.enabled || state.workspaceRecovery.restoring) {
+        settings.scene?.dispose(); settings.scene = null; settings.signature = ''; return;
+    }
+    if (!settings.scene) settings.scene = new TeachingPointScene(state.scene);
+    const context = getTeachingPointContext(), { robot, file, program } = context;
+    robot?.updateWorldMatrix(true, false);
+    if (robot) getRobotControllerBaseFrame(robot).updateWorldMatrix(true, false);
+    const signature = JSON.stringify([robot?.uuid, state.olp.enabled, state.olp.selectedFile,
+        robot?.matrixWorld.elements, robot ? getRobotControllerBaseFrame(robot).matrixWorld.elements : null,
+        robot?.userData.activeWorkObjectIndex, robot?.userData.workObjects, robot?.userData.toolHomeQuaternion?.toArray(),
+        robot?.userData.externalAxes, robot?.userData.tcpFrame?.position.toArray(), robot?.userData.tcpFrame?.quaternion.toArray(),
+        state.equipmentDefinitions.filter(def => def.externalAxis).map(def => [def.id, def.axis, def.pivot, def.runtime.position]),
+        state.olp.enabled ? file : program?.steps]);
+    if (signature !== settings.signature) {
+        settings.signature = signature;
+        const result = robot && (!state.olp.enabled || file)
+            ? collectTeachingPoints(robot.userData.motionInstanceId, program?.steps, file)
+            : { points: [], rejected: [] };
+        const points = [];
+        for (const point of result.points) {
+            try {
+                const pose = teachingPointWorldPose(robot, point);
+                if (![...pose.position.toArray(), ...pose.quaternion.toArray()].every(Number.isFinite)) throw new Error('pose');
+                points.push({ ...point, ...pose });
+            } catch { result.rejected.push(point.name); }
+        }
+        settings.rejected = result.rejected;
+        settings.scene.setPoints(points);
+    }
+    const selected = settings.scene.points.find(point => point.source === 'motion'
+        ? point.record.id === program?.selectedStepId : point.key === settings.olpKey);
+    settings.scene.select(selected?.key || null, settings.labelMode);
+    el.olpPointTable?.querySelectorAll('[data-olp-point-row]').forEach(row => {
+        row.classList.toggle('teaching-point-selected', Boolean(selected && selected.source !== 'motion'
+            && row.dataset.olpPointPath === selected.record.path && Number(row.dataset.olpPointIndex) === selected.record.index
+            && row.dataset.olpPointSymbol === selected.record.sourceSymbol));
+    });
+    el.btnTeachingPoints.title = settings.rejected?.length
+        ? `${uiText('좌표 또는 축 설정을 확인하세요.')}: ${settings.rejected.slice(0, 8).join(', ')}` : '';
+    settings.scene.update(state.camera, state.renderer.domElement.clientHeight, { ...settings, enabled: !state.sketch.active });
+}
+
+function pickTeachingPoint(event, pressedKeys = null) {
+    if (!state.teachingPoints.enabled) return false;
+    const overlay = state.teachingPoints.scene;
+    const points = pressedKeys ? overlay?.points.filter(point => pressedKeys.includes(point.key)) || []
+        : overlay?.hit(event, state.camera, state.renderer.domElement, state.models, state.teachingPoints.xray) || [];
+    if (!points.length) return false;
+    const { program } = getTeachingPointContext();
+    const currentIndex = points.findIndex(point => point.source === 'motion'
+        ? point.record.id === program?.selectedStepId : point.key === state.teachingPoints.olpKey);
+    const next = (currentIndex + 1) % points.length;
+    selectTeachingPoint(points[next].key);
+    return true;
+}
+
+function setupTeachingPointControls() {
+    el.btnTeachingPoints?.addEventListener('click', () => {
+        state.teachingPoints.enabled = !state.teachingPoints.enabled;
+        requestRender(); scheduleMotionProjectSave();
+    });
+    el.teachingLabelMode?.addEventListener('change', () => {
+        state.teachingPoints.labelMode = el.teachingLabelMode.value;
+        requestRender(); scheduleMotionProjectSave();
+    });
+    for (const [id, setting] of [['teaching-point-labels', 'labels'], ['teaching-point-xray', 'xray']]) {
+        document.getElementById(id)?.addEventListener('change', event => {
+            state.teachingPoints[setting] = event.target.checked; requestRender(); scheduleMotionProjectSave();
+        });
+    }
+    document.getElementById('teaching-point-fit')?.addEventListener('click', () => {
+        const points = state.teachingPoints.scene?.points || [];
+        const selected = points.find(point => point.key === state.teachingPoints.scene?.selectedKey);
+        const bounds = new THREE.Box3();
+        (selected ? [selected] : points).forEach(point => bounds.expandByPoint(point.position));
+        if (!bounds.isEmpty()) fitCameraToBounds(bounds.expandByScalar(60));
+    });
+    const selectOlpMarker = event => {
+        const row = event.target.closest('[data-olp-point-row]');
+        if (!row) return;
+        const point = state.teachingPoints.scene?.points.find(entry => entry.record.path === row?.dataset.olpPointPath
+            && entry.record.index === Number(row.dataset.olpPointIndex) && entry.record.sourceSymbol === row.dataset.olpPointSymbol);
+        if (point) { state.teachingPoints.olpKey = point.key; requestRender(); }
+    };
+    el.olpPointTable?.addEventListener('click', selectOlpMarker);
+    el.olpPointTable?.addEventListener('focusin', selectOlpMarker);
+}
+
 function ensureTcpPathOverlayGroup() {
     if (!state.scene) return null;
     if (!state.tcpPath.group) {
@@ -4770,7 +4971,9 @@ function restoreViewWindowFromPopup(closePopup = false, hideWindow = false) {
     const viewWindow = state.viewWindow;
     if (!viewWindow?.popup) return;
     const popup = viewWindow.popup;
+    const pinSourcePopup = viewWindow.pinSourcePopup;
     viewWindow.popup = null;
+    viewWindow.pinSourcePopup = null;
     viewWindow.alwaysOnTop = false;
     popup.removeEventListener('resize', viewWindow.handleResize);
     if (viewWindow.placeholder?.parentNode) {
@@ -4790,6 +4993,7 @@ function restoreViewWindowFromPopup(closePopup = false, hideWindow = false) {
     }
     refreshViewWindowLocalizedUi();
     if (closePopup && !popup.closed) popup.close();
+    if (pinSourcePopup && !pinSourcePopup.closed) pinSourcePopup.close();
     requestRender();
 }
 
@@ -4831,20 +5035,51 @@ async function toggleViewWindowAlwaysOnTop() {
         bringViewWindowToFront();
         return;
     }
-    if (!window.documentPictureInPicture?.requestWindow) {
+    const ownerWindow = viewWindow.root.ownerDocument?.defaultView || window;
+    const pictureInPicture = ownerWindow.documentPictureInPicture;
+    if (!pictureInPicture?.requestWindow) {
         setStatus('이 브라우저에서는 맨 앞으로 고정을 지원하지 않습니다. Chrome 또는 Edge에서 HTTPS로 열어 주세요.', '#f59e0b');
         return;
     }
     viewWindow.pinPending = true;
+    let popup = null;
     try {
-        const popup = await window.documentPictureInPicture.requestWindow({ width: 1100, height: 780 });
+        popup = await pictureInPicture.requestWindow({ width: 1100, height: 780 });
         if (state.viewWindow !== viewWindow || viewWindow.root.classList.contains('hidden')) {
             popup.close();
             return;
         }
-        restoreViewWindowFromPopup(true);
+        const sourcePopup = viewWindow.popup;
+        // PiP belongs to the clicked window and closes when that window closes.
+        restoreViewWindowFromPopup(false);
+        viewWindow.pinSourcePopup = sourcePopup;
         popOutViewWindow(popup);
+        if (sourcePopup && !sourcePopup.closed) {
+            const sourceDocument = sourcePopup.document;
+            const header = sourceDocument.createElement('div');
+            header.className = 'view-window-header';
+            header.style.cursor = 'default';
+            const title = sourceDocument.createElement('h2');
+            title.textContent = uiText('맨 앞으로 고정');
+            const unpin = sourceDocument.createElement('button');
+            unpin.type = 'button';
+            unpin.title = uiText('맨 앞으로 고정 해제');
+            unpin.setAttribute('aria-label', unpin.title);
+            unpin.innerHTML = '<i class="fa-solid fa-thumbtack"></i>';
+            unpin.addEventListener('click', toggleViewWindowAlwaysOnTop);
+            header.append(title, unpin);
+            sourceDocument.body.append(header);
+            window.focus();
+            popup.focus();
+        }
     } catch (_) {
+        if (popup) {
+            restoreViewWindowFromPopup(true);
+            if (!popup.closed) popup.close();
+            const sourcePopup = viewWindow.pinSourcePopup;
+            viewWindow.pinSourcePopup = null;
+            if (sourcePopup && !sourcePopup.closed) sourcePopup.close();
+        }
         setStatus('맨 앞으로 고정 창을 열 수 없습니다. 다시 시도해 주세요.', '#ef4444');
     } finally {
         viewWindow.pinPending = false;
@@ -4904,6 +5139,7 @@ function popOutViewWindow(pinnedPopup = null) {
     popup.addEventListener('resize', viewWindow.handleResize);
     popup.addEventListener(alwaysOnTop ? 'pagehide' : 'beforeunload', () => {
         if (viewWindow.popup === popup) restoreViewWindowFromPopup(false, true);
+        else if (viewWindow.pinSourcePopup === popup) restoreViewWindowFromPopup(true, true);
     }, { once: true });
     resizeViewWindow();
     requestRender();
@@ -5091,6 +5327,7 @@ function refreshMotionProgramFileUi() {
 }
 
 function refreshLocalizedControls() {
+    if (state.teachingPoints?.enabled) { state.teachingPoints.signature = ''; requestRender(); }
     refreshSimulationWorkspaceFileUi();
     refreshMotionProgramFileUi();
     refreshPrimitiveShapeNames();
@@ -14043,8 +14280,13 @@ function handleSceneModelPointerDown(event) {
         pointerId: event.pointerId,
         x: event.clientX,
         y: event.clientY,
-        moved: false
+        moved: false,
+        // OrbitControls can change the pivot on press, so remember the visible hit before it starts.
+        teachingKeys: state.teachingPoints?.enabled && !event.ctrlKey && !event.shiftKey && !state.sketch.active
+            ? state.teachingPoints.scene?.hit(event, state.camera, state.renderer.domElement, state.models, state.teachingPoints.xray).map(point => point.key) || []
+            : null
     };
+    if (state.sceneSelectionPointer.teachingKeys?.length) mainOriginRotationGestures.delete(state.controls);
 }
 
 function handleSceneModelPointerMove(event) {
@@ -14154,6 +14396,7 @@ function handleSceneModelClick(event) {
         || state.baseJogGizmoDragging
         || state.zeroPointEdit.transformControls?.dragging) return;
 
+    if (state.teachingPoints?.enabled && !event.shiftKey && !event.ctrlKey && pickTeachingPoint(event, pointer?.teachingKeys)) return;
     const selection = getSceneModelAtPointer(event);
     if (!selection) return;
     if (event.shiftKey) { toggleSceneSelection(selection.model, event.ctrlKey ? null : selection.part); return; }
@@ -21844,6 +22087,7 @@ function setupEventListeners() {
     });
     el.programRobotAvoidancePriority?.addEventListener('change', handleRobotInterferencePriorityChange);
     el.btnProgramToggleTcpPath?.addEventListener('click', toggleTcpPathDisplay);
+    setupTeachingPointControls();
     el.btnProgramAdd?.addEventListener('click', addCurrentMotionStep);
     el.btnProgramAddDelay?.addEventListener('click', addDelayMotionStep);
     el.btnProgramAddWait?.addEventListener('click', addWaitMotionStep);
@@ -27215,7 +27459,34 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
         if (onProgress) onProgress(Math.round((loadedCount / meshDefinitions.length) * 100));
         return asset;
     }));
-    const geometries = meshAssets.map((asset) => asset?.geometry || null);
+    const geometries = meshAssets.map((asset, index) => {
+        const geometry = asset?.geometry || null;
+        if (!geometry) return geometry;
+        const logo = createRobotLogoIndex(
+            geometry.getAttribute('position').count,
+            ROBOT_LOGO_FACES[`${modelDefinition.folder}/${meshDefinitions[index].mesh}`]
+        );
+        const smoothNormals = Number.isFinite(modelDefinition.smoothNormalsAngle);
+        if (!logo && !smoothNormals) return geometry;
+        const renderGeometry = geometry.clone();
+        if (smoothNormals) {
+            renderGeometry.setAttribute('normal', new THREE.BufferAttribute(
+                computeSmoothTriangleNormals(
+                    renderGeometry.getAttribute('position').array,
+                    modelDefinition.smoothNormalsAngle
+                ),
+                3
+            ));
+        }
+        if (logo) {
+            // Keep vertex positions and collision geometry intact; two draw calls cover body and lettering.
+            renderGeometry.setIndex(new THREE.BufferAttribute(logo.index, 1));
+            renderGeometry.clearGroups();
+            renderGeometry.addGroup(0, logo.bodyCount, 0);
+            renderGeometry.addGroup(logo.bodyCount, logo.index.length - logo.bodyCount, 1);
+        }
+        return renderGeometry;
+    });
 
     const robot = new THREE.Group();
     robot.name = manifest.name;
@@ -27317,6 +27588,13 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
         parent = jointGroup;
         parentPivot = pivot;
     });
+
+    const logoProjection = ROBOT_LOGO_PROJECTIONS[modelDefinition.folder];
+    if (logoProjection) {
+        const partIndex = meshDefinitions.findIndex(definition => definition.mesh === logoProjection.mesh);
+        const partMesh = robot.getObjectsByProperty('geometry', geometries[partIndex])[0];
+        if (partMesh) await applyRobotLogoProjection(partMesh, logoProjection);
+    }
 
     // TUBE.stl already contains the conduit and both rotary connector details.
     // Keep that complete CAD mesh in the fixed robot frame and only reshape its
@@ -30363,7 +30641,9 @@ function createSTLMesh(geometry, definition, collisionGeometry = null) {
         roughness: 0.66,
         metalness: 0.06
     });
-    const mesh = new THREE.Mesh(geometry, material);
+    const logoMaterial = geometry.groups.some((group) => group.materialIndex === 1) ? material.clone() : null;
+    if (logoMaterial) logoMaterial.color.setHex(ROBOT_LOGO_COLOR);
+    const mesh = new THREE.Mesh(geometry, logoMaterial ? [material, logoMaterial] : material);
     mesh.name = definition.name;
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -31875,6 +32155,8 @@ function restoreRobotControllerBaseTransform(robot, transform) {
 }
 
 function getCurrentTcpPoseBase(robot) {
+    const feedback = robot.userData.controllerTcpPose;
+    if (feedback) return { position: feedback.position.clone(), quaternion: feedback.quaternion.clone() };
     const tcpFrame = robot.userData.tcpFrame;
     if (!tcpFrame) return null;
 
@@ -32096,7 +32378,10 @@ function updateTcpPresentation(robot, pose = getCurrentTcpPoseBase(robot)) {
     updateJogWorkObjectUi(robot);
     const displayPose = getJogReadoutPose(robot, pose);
     const euler = new THREE.Euler().setFromQuaternion(displayPose.quaternion, 'ZYX');
-    const rotation = {
+    const feedbackRotation = robot.userData.controllerTcpPose?.readout?.rotation;
+    const rotation = feedbackRotation ? {
+        rx: feedbackRotation[2], ry: feedbackRotation[1], rz: feedbackRotation[0]
+    } : {
         rx: normalizeDegrees(THREE.MathUtils.radToDeg(euler.x)),
         ry: normalizeDegrees(THREE.MathUtils.radToDeg(euler.y)),
         rz: normalizeDegrees(THREE.MathUtils.radToDeg(euler.z))
@@ -32127,6 +32412,8 @@ function updateJogWorkObjectUi(robot = getJogTargetRobot()) {
 }
 
 function getJogReadoutPose(robot, basePose) {
+    const feedback = robot.userData.controllerTcpPose?.readout;
+    if (feedback) return { position: feedback.position.clone(), quaternion: feedback.quaternion.clone() };
     const rotation = getTcpRotationDegrees(robot, basePose);
     const quaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(
         THREE.MathUtils.degToRad(rotation.rx),
@@ -33734,7 +34021,7 @@ function getVirtualControllerForRobot(robot) {
 async function ensureVirtualControllerCore(controller = state.virtualController) {
     if (controller.core) return controller.core;
     if (!controller.corePromise) {
-        controller.corePromise = import('./virtual-controller-core.mjs?v=20261007-output-1')
+        controller.corePromise = import('./virtual-controller-core.mjs?v=20261023-tcp-feedback-1')
             .then((core) => {
                 controller.core = core;
                 controller.samples = new core.VirtualControllerSampleBuffer();
@@ -38478,7 +38765,7 @@ function applyControllerTcpPose(robot, pose, notify = true) {
     const targetTcpLocal = flange.matrixWorld.clone().invert().multiply(targetTcpWorld);
     targetTcpLocal.decompose(tcp.position, tcp.quaternion, tcp.scale);
     robot.userData.controllerTcpPose = {
-        position: pose.position.clone(), quaternion: pose.quaternion.clone()
+        position: pose.position.clone(), quaternion: pose.quaternion.clone(), readout: pose.readout
     };
     flange.updateWorldMatrix(false, true);
     if (notify) {
@@ -38515,7 +38802,7 @@ function applyVirtualControllerFrameForController(timestamp, controller) {
         // The controller can report the SCARA vertical axis as a motor/encoder
         // angle, while the simulator's J3 is prismatic and expects millimeters.
         // Convert motor angle to millimeters independently of TCP/Wobj; the
-        // received Cartesian endpoint is applied to the Tool mount below.
+        // received Cartesian endpoint is applied to the TCP frame below.
         if (index === 2 && robot.userData.manifest?.robotType === 'scara') {
             value = getJointJogDisplaySpec(joint).fromDisplay(value);
         }
@@ -38535,12 +38822,16 @@ function applyVirtualControllerFrameForController(timestamp, controller) {
         const [rz, ry, rx] = sample.rotation.map(THREE.MathUtils.degToRad);
         const displayPose = {
             position: new THREE.Vector3().fromArray(sample.position),
-            quaternion: new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz, 'ZYX'))
+            quaternion: new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz, 'ZYX')),
+            rotation: sample.rotation.slice()
         };
         pose = getBasePoseFromJogReadout(robot, displayPose);
+        // Keep calibrated feedback independent of nominal link lengths and Euler conversion.
+        pose.readout = displayPose;
         const previousPose = robot.userData.controllerTcpPose;
         if (jointsChanged || !previousPose || previousPose.position.distanceToSquared(pose.position) > 1e-18
-            || 1 - Math.abs(previousPose.quaternion.dot(pose.quaternion)) > 1e-12) {
+            || 1 - Math.abs(previousPose.quaternion.dot(pose.quaternion)) > 1e-12
+            || sample.rotation.some((value, index) => value !== previousPose.readout?.rotation[index])) {
             applyControllerTcpPose(robot, pose, false);
             changed = true;
         }
@@ -38997,7 +39288,7 @@ function createAutoPathCollisionEvaluator(robot, originalAngles) {
                 pairFilter: isSimulationCollisionPair,
                 meshPairFilter: shouldCheckSceneCollisionMeshes,
                 allowWarmHitReuse: false
-            }));
+            })).filter(hit => changedRoots.has(hit.objectA) || changedRoots.has(hit.objectB));
         } finally {
             applyPlanningJointAngles(robot, originalAngles);
         }
@@ -39048,7 +39339,8 @@ function autoPathJointDistance(left, right, bounds) {
     }, 0));
 }
 
-function solveAutoPathGoalCandidates(robot, targetPose, startingAngles, { maxSeeds = Infinity } = {}) {
+function solveAutoPathGoalCandidates(robot, targetPose, startingAngles, { maxSeeds = Infinity, deadline = Infinity } = {}) {
+    if (performance.now() >= deadline) return [];
     const joints = robot.userData.joints || [];
     if (robot.userData.manifest?.robotType === 'scara') {
         applyPlanningJointAngles(robot, startingAngles);
@@ -39115,6 +39407,7 @@ function solveAutoPathGoalCandidates(robot, targetPose, startingAngles, { maxSee
     });
 
     for (const seed of seeds.slice(0, Math.max(1, Math.floor(Number(maxSeeds) || 1)))) {
+        if (performance.now() >= deadline) break;
         applyPlanningJointAngles(robot, seed);
         const result = solveRobotIK(robot, targetPose, {
             positionTolerance: 0.8,
@@ -39232,7 +39525,7 @@ function buildAutoPathTeachingStagePoses(robot, startPose, targetPose, collision
     return poses.slice(0, 12);
 }
 
-function solveAutoPathStageCandidates(robot, stagePose, seedStates, bounds, limit = 3) {
+function solveAutoPathStageCandidates(robot, stagePose, seedStates, bounds, limit = 3, deadline = Infinity) {
     const originalAngles = robot.userData.joints.map((joint) => joint.angle);
     const candidates = [];
     const seeds = [];
@@ -39248,6 +39541,7 @@ function solveAutoPathStageCandidates(robot, stagePose, seedStates, bounds, limi
     };
     seedStates.forEach(addSeed);
     for (const seed of seeds.slice(0, 5)) {
+        if (performance.now() >= deadline) break;
         applyPlanningJointAngles(robot, seed);
         const solved = solveRobotIK(robot, stagePose, {
             positionTolerance: 0.8,
@@ -39293,7 +39587,7 @@ async function collectAutoPathTeachingCandidates(
     // synthetic IK seeds.
     hintStates.forEach((angles) => add(angles, 'user hint'));
     const targetCandidates = performance.now() < deadline
-        ? solveAutoPathGoalCandidates(robot, targetPose, startAngles, { maxSeeds: 10 })
+        ? solveAutoPathGoalCandidates(robot, targetPose, startAngles, { maxSeeds: 10, deadline })
         : [];
     targetCandidates.slice(0, 6).forEach((candidate) => add(candidate.angles, 'target configuration'));
 
@@ -39314,7 +39608,7 @@ async function collectAutoPathTeachingCandidates(
         if (performance.now() >= deadline) break;
         const stagePose = stagePoses[index];
         stagePose.quaternion.copy(routeTargetPose.quaternion);
-        const solved = solveAutoPathStageCandidates(robot, stagePose, seedStates, bounds);
+        const solved = solveAutoPathStageCandidates(robot, stagePose, seedStates, bounds, 3, deadline);
         solved.forEach((angles) => {
             if (add(angles, 'clearance stage')) {
                 seedStates.unshift(angles.slice());
@@ -39415,22 +39709,19 @@ async function solveAutoPathLinear(
                 startPose.quaternion.toArray(), targetPose.quaternion.toArray(), alpha
             )).normalize()
         };
+        applyPlanningJointAngles(robot, seed);
+        const ik = solveRobotIK(robot, pose, {
+            positionTolerance: 0.8,
+            rotationTolerance: THREE.MathUtils.degToRad(0.5)
+        });
+        if (!ik.success) return fail();
+        seed = robot.userData.joints.map((joint) => joint.angle);
         if (sampleIndex === samples && Array.isArray(finalAngles)) {
-            // The endpoint already has a taught/selected joint solution.  Use
-            // that exact branch instead of letting the iterative IK solver
-            // jump to a different wrist configuration at the last sample.
-            // This is especially important when a held TCP orientation has
-            // multiple valid six-axis IK solutions.
+            // A taught endpoint must be on the continuously solved IK branch.
+            if (seed.some((angle, index) => Math.abs(angle - finalAngles[index])
+                > (robot.userData.joints[index].definition.type === 'prismatic' ? 0.8 : 1))) return fail();
             applyPlanningJointAngles(robot, finalAngles);
             seed = finalAngles.slice();
-        } else {
-            applyPlanningJointAngles(robot, seed);
-            const ik = solveRobotIK(robot, pose, {
-                positionTolerance: 0.8,
-                rotationTolerance: THREE.MathUtils.degToRad(0.5)
-            });
-            if (!ik.success) return fail();
-            seed = robot.userData.joints.map((joint) => joint.angle);
         }
         if (!(allowUnsafeTarget && sampleIndex === samples) && !isStateSafe(seed)) {
             return fail({
@@ -39445,6 +39736,28 @@ async function solveAutoPathLinear(
     }
     applyPlanningJointAngles(robot, startAngles);
     return path;
+}
+
+function createAutoPathCartesianEdgeChecker(robot, evaluator, isStateSafe, shouldCancel, deadline, heldQuaternion = null) {
+    const cache = new Map();
+    return async (from, to) => {
+        const key = JSON.stringify([from, to]);
+        if (cache.has(key)) return cache.get(key);
+        const startPose = getAutoPathPointPoseAtJoints(robot, from);
+        const targetPose = getAutoPathPointPoseAtJoints(robot, to);
+        if (heldQuaternion && [startPose, targetPose].some(pose => !pose
+            || heldQuaternion.angleTo(pose.quaternion) > THREE.MathUtils.degToRad(0.6))) {
+            cache.set(key, false);
+            return false;
+        }
+        const path = startPose && targetPose && await solveAutoPathLinear(
+            robot, from, startPose, targetPose, evaluator, shouldCancel, undefined,
+            { deadline, isStateSafe, finalAngles: to }
+        );
+        const safe = Boolean(path);
+        cache.set(key, safe);
+        return safe;
+    };
 }
 
 function autoPathBoxInRobotBase(robot, object) {
@@ -39552,7 +39865,7 @@ async function solveAutoPathAxisEscapeRoute(
         if (shouldCancel()) throw new Error('경로 계산을 취소했습니다.');
         if (performance.now() >= deadline) return null;
         const escapePose = escapePoses[index];
-        const candidates = solveAutoPathGoalCandidates(robot, escapePose, startAngles, { maxSeeds: 18 });
+        const candidates = solveAutoPathGoalCandidates(robot, escapePose, startAngles, { maxSeeds: 4, deadline });
         for (const candidate of candidates) {
             if (shouldCancel()) throw new Error('경로 계산을 취소했습니다.');
             if (performance.now() >= deadline) return null;
@@ -39604,7 +39917,7 @@ async function solveAutoPathAxisEscapeRoute(
     return null;
 }
 
-function buildAutoPathCartesianWaypointPoses(robot, startPose, targetPose, collisionModels) {
+function buildAutoPathCartesianWaypointPoses(robot, startPose, targetPose, collisionModels, hits = []) {
     const obstacleTop = getAutoPathObstacleTopInBase(robot, collisionModels);
     const start = startPose.position;
     const target = targetPose.position;
@@ -39648,6 +39961,19 @@ function buildAutoPathCartesianWaypointPoses(robot, startPose, targetPose, colli
         add(target.x, start.y, z);
         add(start.x, target.y, z);
     };
+    const obstacleBounds = getAutoPathCollisionObstacleBounds(robot, collisionModels, hits);
+    if (obstacleBounds) {
+        // Both ends of each clearance lane are needed to pass a wide fixture.
+        for (const axis of [0, 1, 2]) {
+            for (const coordinate of [obstacleBounds.min.getComponent(axis) - padding,
+                obstacleBounds.max.getComponent(axis) + padding]) {
+                for (const endpoint of [start, target]) {
+                    const position = endpoint.clone().setComponent(axis, coordinate);
+                    add(position.x, position.y, position.z);
+                }
+            }
+        }
+    }
     zLevels.forEach(addAxisCorners);
     [
         [minX, start.y], [maxX, start.y], [minX, target.y], [maxX, target.y],
@@ -39674,90 +40000,58 @@ async function solveAutoPathCartesianWaypointRoute(
     routeTargetPose,
     collisionModels,
     evaluator,
-    edgeIsSafe,
     isStateSafe,
     shouldCancel,
     report,
     deadline,
-    holdOrientation
+    holdOrientation,
+    hits = []
 ) {
     const bounds = autoPathJointBounds(robot);
     const waypointPoses = buildAutoPathCartesianWaypointPoses(
         robot,
         startPose,
         routeTargetPose,
-        collisionModels
+        collisionModels,
+        hits
     );
+    const candidates = [];
+    const posesByState = new Map([
+        [JSON.stringify(startAngles), startPose], [JSON.stringify(targetAngles), routeTargetPose]
+    ]);
+    const candidateDeadline = performance.now() + Math.max(0, deadline - performance.now()) * 0.4;
     for (let index = 0; index < waypointPoses.length; index += 1) {
         if (shouldCancel()) throw new Error('경로 계산을 취소했습니다.');
-        if (performance.now() >= deadline) return null;
+        if (performance.now() >= candidateDeadline) break;
         const waypointPose = waypointPoses[index];
-        const seedGroups = [startAngles, targetAngles];
-        const waypointCandidates = [];
-        const addCandidate = (candidate) => {
-            if (!candidate?.angles || waypointCandidates.some((existing) => (
-                autoPathJointDistance(existing.angles, candidate.angles, bounds) < 0.01
-            ))) return;
-            waypointCandidates.push(candidate);
-        };
-        for (const seed of seedGroups) {
-            if (performance.now() >= deadline) break;
-            solveAutoPathGoalCandidates(robot, waypointPose, seed, { maxSeeds: 14 })
-                .forEach(addCandidate);
-        }
-        for (const candidate of waypointCandidates) {
-            if (shouldCancel()) throw new Error('경로 계산을 취소했습니다.');
-            if (performance.now() >= deadline) return null;
-            const waypointAngles = candidate.angles;
-            if (!isStateSafe(waypointAngles)) continue;
-            applyPlanningJointAngles(robot, waypointAngles);
-            const actualWaypointPose = getCurrentTcpPoseBase(robot);
-            if (!actualWaypointPose) continue;
-            const firstSegment = await solveAutoPathLinear(
-                robot,
-                startAngles,
-                startPose,
-                actualWaypointPose,
-                evaluator,
-                shouldCancel,
-                undefined,
-                {
-                    deadline,
-                    isStateSafe,
-                    finalAngles: waypointAngles
-                }
-            );
-            if (!firstSegment) continue;
-            const secondSegment = await solveAutoPathLinear(
-                robot,
-                waypointAngles,
-                actualWaypointPose,
-                routeTargetPose,
-                evaluator,
-                shouldCancel,
-                undefined,
-                {
-                    deadline,
-                    isStateSafe,
-                    allowUnsafeTarget: true,
-                    finalAngles: targetAngles
-                }
-            );
-            if (!secondSegment) continue;
-            const path = [startAngles.slice(), waypointAngles.slice(), targetAngles.slice()];
-            const motion = holdOrientation
-                ? 'MOVL'
-                : edgeIsSafe(path[0], path[1]) && edgeIsSafe(path[1], path[2])
-                    ? 'MOVJ'
-                    : 'MOVL';
-            applyPlanningJointAngles(robot, startAngles);
-            return { path, motion };
+        const seeds = [startAngles, targetAngles, candidates.at(-1)].filter(Boolean);
+        for (const seed of seeds) {
+            const solved = solveAutoPathGoalCandidates(robot, waypointPose, seed, { maxSeeds: 2, deadline: candidateDeadline });
+            for (const { angles } of solved.slice(0, 1)) {
+                if (!isStateSafe(angles) || candidates.some(other => autoPathJointDistance(other, angles, bounds) < 0.002)) continue;
+                candidates.push(angles);
+                posesByState.set(JSON.stringify(angles), getAutoPathPointPoseAtJoints(robot, angles));
+            }
         }
         if (typeof report === 'function') report(index + 1, waypointPoses.length);
         if (index % 2 === 1) await new Promise((resolve) => requestAnimationFrame(resolve));
     }
+    const cartesianEdgeIsSafe = createAutoPathCartesianEdgeChecker(
+        robot, evaluator, isStateSafe, shouldCancel, deadline, holdOrientation ? startPose.quaternion : null
+    );
+    const result = await planJointWaypointGraph({
+        start: startAngles, goal: targetAngles, candidates, bounds,
+        isStateSafe, edgeIsSafe: cartesianEdgeIsSafe,
+        distance: (a, b) => posesByState.get(JSON.stringify(a)).position.distanceTo(posesByState.get(JSON.stringify(b)).position),
+        maxCandidates: candidates.length, neighbors: 8, maxNeighbors: candidates.length + 1,
+        maxTimeMs: Math.max(1, deadline - performance.now()), shouldCancel,
+        onYield: () => new Promise(resolve => requestAnimationFrame(resolve)), yieldEvery: 8
+    });
     applyPlanningJointAngles(robot, startAngles);
-    return null;
+    if (!result.success) return null;
+    const path = result.path;
+    const motion = 'MOVL';
+    return { path, motion };
 }
 
 function getAutoPathObstacleTopInBase(robot, collisionModels) {
@@ -39791,7 +40085,8 @@ async function solveAutoPathClearanceRoute(
     shouldCancel,
     report,
     deadline = Infinity,
-    isStateSafe = evaluator.isSafe
+    isStateSafe = evaluator.isSafe,
+    targetAngles = null
 ) {
     const obstacleTop = getAutoPathObstacleTopInBase(robot, collisionModels);
     if (!Number.isFinite(obstacleTop)) return null;
@@ -39835,14 +40130,15 @@ async function solveAutoPathClearanceRoute(
                 {
                     deadline,
                     isStateSafe,
-                    allowUnsafeTarget: segmentTargetPose === targetPose
+                    allowUnsafeTarget: segmentTargetPose === targetPose,
+                    finalAngles: segmentTargetPose === targetPose ? targetAngles : null
                 }
             );
             if (!segment) {
                 routeIsSafe = false;
                 break;
             }
-            path.push(...segment.slice(1));
+            path.push(segment.at(-1).slice());
             currentAngles = segment.at(-1)?.slice() || currentAngles;
         }
         applyPlanningJointAngles(robot, startAngles);
@@ -39855,10 +40151,27 @@ function buildAutoPathPreview(robot, path, originalAngles) {
     clearAutoPathPreview();
     if (!state.scene || !path?.length) return;
     const points = [];
-    path.forEach((angles) => {
+    const linePoints = [];
+    path.forEach((angles, index) => {
+        if (index > 0 && state.autoPath.motion === 'MOVJ') {
+            const from = path[index - 1];
+            const bounds = autoPathJointBounds(robot);
+            const segments = Math.max(1, Math.ceil(Math.max(...angles.map((value, joint) => (
+                Math.abs(value - from[joint]) / bounds[joint].sampleStep
+            )))));
+            for (let sample = 1; sample < segments; sample += 1) {
+                applyPlanningJointAngles(robot, from.map((value, joint) => value + (angles[joint] - value) * sample / segments));
+                const pose = getCurrentTcpPoseBase(robot);
+                if (pose) linePoints.push(pose.position.clone().applyMatrix4(getRobotControllerBaseFrame(robot).matrixWorld));
+            }
+        }
         applyPlanningJointAngles(robot, angles);
         const pose = getCurrentTcpPoseBase(robot);
-        if (pose) points.push(pose.position.clone().applyMatrix4(getRobotControllerBaseFrame(robot).matrixWorld));
+        if (pose) {
+            const point = pose.position.clone().applyMatrix4(getRobotControllerBaseFrame(robot).matrixWorld);
+            points.push(point);
+            linePoints.push(point);
+        }
     });
     applyPlanningJointAngles(robot, originalAngles);
     if (points.length < 2) return;
@@ -39866,7 +40179,7 @@ function buildAutoPathPreview(robot, path, originalAngles) {
     group.name = 'Auto Path Preview';
     group.renderOrder = 20;
     const line = new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints(points),
+        new THREE.BufferGeometry().setFromPoints(linePoints),
         new THREE.LineBasicMaterial({ color: 0xfacc15, transparent: true, opacity: 0.95, depthTest: false })
     );
     line.renderOrder = 20;
@@ -39959,17 +40272,19 @@ async function generateAutoPath() {
         return;
     }
     const settings = readAutoPathSettings();
+    const planningDeadline = performance.now() + settings.maxTimeMs;
+    const phaseDeadline = fraction => performance.now() + Math.max(0, planningDeadline - performance.now()) * fraction;
     const originalAngles = robot.userData.joints.map((joint) => joint.angle);
     state.autoPath.planning = true;
     state.autoPath.cancelRequested = false;
     state.autoPath.robot = robot;
     state.autoPath.startAngles = originalAngles.slice();
-        state.autoPath.settings = settings;
-        state.autoPath.path = null;
-        state.autoPath.generatedPointCount = 0;
-        state.autoPath.targetConfigurationChangeRequired = false;
-        state.autoPath.endpointTcpSyncRequired = false;
-        clearAutoPathPreview();
+    state.autoPath.settings = settings;
+    state.autoPath.path = null;
+    state.autoPath.generatedPointCount = 0;
+    state.autoPath.targetConfigurationChangeRequired = false;
+    state.autoPath.endpointTcpSyncRequired = false;
+    clearAutoPathPreview();
     el.btnAutoPathGenerate.disabled = true;
     el.btnAutoPathApply.disabled = true;
     updateMotionUiLock();
@@ -40041,7 +40356,8 @@ async function generateAutoPath() {
             const goalCandidates = solveAutoPathGoalCandidates(
                 robot,
                 routeTargetPose,
-                targetAngles
+                targetAngles,
+                { deadline: phaseDeadline(0.15) }
             );
             const collisionFreeCandidate = goalCandidates.find((candidate) => evaluator.isSafe(candidate.angles));
             const selectedCandidate = collisionFreeCandidate || goalCandidates[0];
@@ -40058,7 +40374,6 @@ async function generateAutoPath() {
             || autoPathJointDistance(angles, planningTargetAngles, jointBounds) < 0.0001
         );
         const isPathStateSafe = (angles) => isAutoPathEndpoint(angles) || evaluator.isSafe(angles);
-        const planningDeadline = performance.now() + settings.maxTimeMs;
         setAutoPathStatus('직선 경로 검사 중', 'working');
         let firstCollision = null;
         const rememberFirstCollision = (details) => {
@@ -40079,6 +40394,10 @@ async function generateAutoPath() {
             isPathStateSafe,
             rememberFirstCollision
         );
+        const heldEdgeIsSafe = createAutoPathCartesianEdgeChecker(
+            robot, evaluator, isPathStateSafe, () => state.autoPath.cancelRequested, planningDeadline, startPose.quaternion
+        );
+        const routeEdgeIsSafe = settings.holdOrientation ? heldEdgeIsSafe : edgeIsSafe;
         let path = null;
         let motion = 'MOVJ';
         let requiredMotion = null;
@@ -40092,7 +40411,7 @@ async function generateAutoPath() {
             () => state.autoPath.cancelRequested,
             (current, total) => setAutoPathStatus('직선 경로 검사 중 ({current}/{total})', 'working', { current, total }),
             {
-                deadline: planningDeadline,
+                deadline: phaseDeadline(0.3),
                 isStateSafe: isPathStateSafe,
                 allowUnsafeTarget: true,
                 finalAngles: planningTargetAngles,
@@ -40100,12 +40419,10 @@ async function generateAutoPath() {
             }
         );
         if (linearPath) {
-            // Check the TCP straight line first.  Keep MOVJ only when its
-            // joint-space edge is also safe; otherwise the generated command
-            // must retain the collision-free Cartesian trajectory.
+            // Execute the same Cartesian geometry that was checked.
             path = [startAngles.slice(), linearPath.at(-1)?.slice() || planningTargetAngles.slice()];
-            if (!edgeIsSafe(startAngles, planningTargetAngles)) requiredMotion = 'MOVL';
-        } else if (!firstCollision && edgeIsSafe(startAngles, planningTargetAngles)) {
+            requiredMotion = 'MOVL';
+        } else if (!settings.holdOrientation && edgeIsSafe(startAngles, planningTargetAngles)) {
             // A straight Cartesian route can fail because an intermediate IK
             // solve is unavailable even though the direct joint route is safe.
             // Preserve that valid direct route as a fallback.
@@ -40119,17 +40436,17 @@ async function generateAutoPath() {
                 candidates: userHintStates,
                 bounds: jointBounds,
                 isStateSafe: isPathStateSafe,
-                edgeIsSafe,
+                edgeIsSafe: routeEdgeIsSafe,
                 maxCandidates: userHintStates.length,
                 neighbors: Math.min(8, Math.max(2, userHintStates.length)),
                 maxNeighbors: Math.min(16, Math.max(2, userHintStates.length)),
-                maxTimeMs: Math.max(120, Math.min(2500, planningDeadline - performance.now())),
+                maxTimeMs: Math.max(1, (planningDeadline - performance.now()) * 0.2),
                 shouldCancel: () => state.autoPath.cancelRequested,
                 onYield: () => new Promise((resolve) => requestAnimationFrame(resolve)),
                 yieldEvery: 8
             });
             if (hintedRoute.success) {
-                path = await simplifyJointPath(hintedRoute.path, edgeIsSafe, {
+                path = await simplifyJointPath(hintedRoute.path, routeEdgeIsSafe, {
                     maxPasses: 4,
                     shouldCancel: () => state.autoPath.cancelRequested
                 });
@@ -40154,13 +40471,13 @@ async function generateAutoPath() {
                     'working',
                     { current, total }
                 ),
-                planningDeadline,
+                phaseDeadline(0.15),
                 firstCollision
             );
             if (axisEscapeRoute) {
                 path = axisEscapeRoute.path;
                 motion = axisEscapeRoute.motion;
-                requiredMotion = settings.holdOrientation ? 'MOVL' : requiredMotion;
+                requiredMotion = 'MOVL';
             }
         }
         if (!path) {
@@ -40173,7 +40490,6 @@ async function generateAutoPath() {
                 routeTargetPose,
                 collisionModels,
                 evaluator,
-                edgeIsSafe,
                 isPathStateSafe,
                 () => state.autoPath.cancelRequested,
                 (current, total) => setAutoPathStatus(
@@ -40181,14 +40497,25 @@ async function generateAutoPath() {
                     'working',
                     { current, total }
                 ),
-                planningDeadline,
-                settings.holdOrientation
+                phaseDeadline(0.6),
+                settings.holdOrientation,
+                firstCollision?.hits
             );
             if (cartesianRoute) {
                 path = cartesianRoute.path;
                 motion = cartesianRoute.motion;
-                if (settings.holdOrientation) requiredMotion = 'MOVL';
+                requiredMotion = 'MOVL';
             }
+        }
+        if (!path) {
+            setAutoPathStatus('안전 높이 경로 검사 중', 'working');
+            path = await solveAutoPathClearanceRoute(
+                robot, startAngles, startPose, routeTargetPose, collisionModels, evaluator,
+                () => state.autoPath.cancelRequested,
+                (current, total) => setAutoPathStatus('안전 높이 경로 검사 중 ({current}/{total})', 'working', { current, total }),
+                phaseDeadline(0.4), isPathStateSafe, planningTargetAngles
+            );
+            if (path) requiredMotion = 'MOVL';
         }
         if (!path) {
             setAutoPathStatus('안전 전환 자세 탐색 중', 'working');
@@ -40208,10 +40535,7 @@ async function generateAutoPath() {
                     'working',
                     { current, total }
                 ),
-                performance.now() + Math.max(
-                    120,
-                    Math.min(1800, (planningDeadline - performance.now()) * 0.32)
-                ),
+                phaseDeadline(0.3),
                 userHintStates
             );
             const remainingTimeMs = Math.max(1, planningDeadline - performance.now());
@@ -40223,11 +40547,11 @@ async function generateAutoPath() {
                     candidates: teachingCandidates.map((candidate) => candidate.angles),
                     bounds: jointBounds,
                     isStateSafe: isPathStateSafe,
-                    edgeIsSafe,
+                    edgeIsSafe: routeEdgeIsSafe,
                     maxCandidates: 96,
                     neighbors: 9,
                     maxNeighbors: 20,
-                    maxTimeMs: Math.max(120, remainingTimeMs * 0.68),
+                    maxTimeMs: Math.max(1, remainingTimeMs * (settings.holdOrientation ? 1 : 0.5)),
                     shouldCancel: () => state.autoPath.cancelRequested,
                     onProgress: ({ nodes, checkedEdges }) => setAutoPathStatus(
                         '전환점 연결 검사 중 ({nodes} 자세 · {edges} links)',
@@ -40239,7 +40563,7 @@ async function generateAutoPath() {
                 });
                 if (transitionRoute.success) {
                     setAutoPathStatus('경로 최적화 중', 'working');
-                    path = await simplifyJointPath(transitionRoute.path, edgeIsSafe, {
+                    path = await simplifyJointPath(transitionRoute.path, routeEdgeIsSafe, {
                         maxPasses: 4,
                         shouldCancel: () => state.autoPath.cancelRequested
                     });
@@ -40249,23 +40573,7 @@ async function generateAutoPath() {
                 }
             }
         }
-        if (!path) {
-            setAutoPathStatus('안전 높이 경로 검사 중', 'working');
-            path = await solveAutoPathClearanceRoute(
-                robot,
-                startAngles,
-                startPose,
-                routeTargetPose,
-                collisionModels,
-                evaluator,
-                () => state.autoPath.cancelRequested,
-                (current, total) => setAutoPathStatus('안전 높이 경로 검사 중 ({current}/{total})', 'working', { current, total }),
-                planningDeadline,
-                isPathStateSafe
-            );
-            if (path && settings.holdOrientation) requiredMotion = 'MOVL';
-        }
-        if (!path) {
+        if (!path && !settings.holdOrientation) {
             setAutoPathStatus('우회 경로 탐색 중', 'working');
             const remainingTimeMs = Math.max(1, planningDeadline - performance.now());
             const planned = await planJointPath({
@@ -40301,6 +40609,7 @@ async function generateAutoPath() {
             if (planned.reason === 'cancelled') throw new Error('경로 계산을 취소했습니다.');
             if (!path) throw new Error('제한 시간 안에 안전한 우회 경로를 찾지 못했습니다.');
         }
+        if (!path) throw new Error('제한 시간 안에 안전한 우회 경로를 찾지 못했습니다.');
         if (state.autoPath.cancelRequested) throw new Error('경로 계산을 취소했습니다.');
         path = appendAutoPathTarget(path, planningTargetAngles, jointBounds);
         const generatedPointCount = Math.max(0, path.length - 2);
@@ -40309,6 +40618,7 @@ async function generateAutoPath() {
         const movjPathIsSafe = path.every((angles, index) => (
             index === 0 || edgeIsSafe(path[index - 1], angles)
         ));
+        if (settings.holdOrientation) requiredMotion = 'MOVL';
         motion = requiredMotion || (movjPathIsSafe ? 'MOVJ' : 'MOVL');
         for (let index = 0; index < path.length; index += 1) {
             if (state.autoPath.cancelRequested || !isPathStateSafe(path[index])) throw new Error('최종 경로 간섭 검사에 실패했습니다.');
@@ -42815,6 +43125,8 @@ function serializeWorkspaceSnapshot() {
     const simulationIoChanged = state.simulationIo.inputs.some(Boolean)
         || state.simulationIo.outputs.some(Boolean);
     const ioFunctionMappingsChanged = state.ioFunctionMappings.length > 0;
+    const teachingPointsChanged = JSON.stringify(normalizeTeachingPointSettings(state.teachingPoints))
+        !== JSON.stringify(normalizeTeachingPointSettings());
     const measurement = serializeWorkspaceMeasurement();
     const olpProjects = serializeWorkspaceOlpProjects();
     const activeOlpProject = olpProjects.find((project) => (
@@ -42834,6 +43146,7 @@ function serializeWorkspaceSnapshot() {
         || simulationIoChanged
         || ioFunctionMappingsChanged
         || Boolean(state.tcpPath.enabled)
+        || teachingPointsChanged
         || measurement.points.length > 0;
     return {
         schemaVersion: 1,
@@ -42855,6 +43168,7 @@ function serializeWorkspaceSnapshot() {
         tcpPath: {
             enabled: Boolean(state.tcpPath.enabled)
         },
+        teachingPoints: normalizeTeachingPointSettings(state.teachingPoints),
         measurement,
         programSelection: robots.map((robot) => ({
             instanceId: robot.userData.motionInstanceId,
@@ -43145,6 +43459,10 @@ function resetMainOrbitControlsForWorkspaceView() {
 }
 
 function applyWorkspaceDisplayState(snapshot) {
+    Object.assign(state.teachingPoints, normalizeTeachingPointSettings(snapshot?.teachingPoints));
+    document.getElementById('teaching-point-labels').checked = state.teachingPoints.labels;
+    document.getElementById('teaching-point-xray').checked = state.teachingPoints.xray;
+    el.teachingLabelMode.value = state.teachingPoints.labelMode;
     const display = snapshot?.display || {};
     const gridVisible = display.gridVisible !== false;
     if (state.grid) state.grid.visible = gridVisible;
@@ -45036,6 +45354,7 @@ function saveMotionProjectNow() {
 }
 
 function scheduleMotionProjectSave() {
+    if (state.teachingPoints?.enabled) requestRender();
     window.clearTimeout(state.motionSaveTimer);
     if (IS_MANUAL_GUIDE_EMBED) {
         state.motionSaveTimer = null;
@@ -47618,13 +47937,16 @@ function syncModelOutlines() {
                             : index % 3 === 1 ? positions.getY(Math.floor(index / 3)) : positions.getZ(Math.floor(index / 3))
                     )) : positions.array;
                 const edgeGeometry = new THREE.BufferGeometry();
+                const isRobot = Boolean(model.userData.manifest);
                 edgeGeometry.setAttribute('position', new THREE.BufferAttribute(
                     buildCleanOutlinePositions(packedPositions, mesh.geometry.index?.array, {
+                        thresholdAngle: isRobot ? 55 : 40,
+                        pruneDanglingEdges: isRobot,
                         minimumAspectRatio: model.userData.manifest || model.userData.sourceExtension === 'stl' ? 0.01 : 0
                     }), 3
                 ));
                 const lineMaterial = new THREE.LineBasicMaterial({
-                    color: 0x000000,
+                    color: MODEL_DEFAULT_OUTLINE_COLOR,
                     transparent: true,
                     opacity: 0.95,
                     depthTest: true,
@@ -48661,6 +48983,7 @@ function animate(timestamp = performance.now()) {
     updateMeasurementOverlay();
     updatePrimitiveDimensionOverlay();
     updateSketchPreview();
+    updateTeachingPointDisplay();
     state.renderer.render(state.scene, state.camera);
     renderViewWindow();
     updateZeroPointCurrentMarker();

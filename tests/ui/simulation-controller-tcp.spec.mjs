@@ -59,6 +59,29 @@ test('R7H-90 controller TCP updates JOG while Tool/Wobj never shift the physical
   expect(Math.abs(Number(await page.locator('#tcp-rx').inputValue()))).toBeCloseTo(180, 2);
   expect(Number(await page.locator('#tcp-ry').inputValue())).toBeCloseTo(0, 2);
   expect(Number(await page.locator('#tcp-rz').inputValue())).toBeCloseTo(0, 2);
+  const calibrated = await page.evaluate(() => {
+    const a = window.__controllerTcp, robot = a.state.activeArticulatedModel;
+    const controller = a.state.virtualController;
+    const joints = [20, -30, 40, -110, 60, 200];
+    a.handleVirtualControllerMessage(JSON.stringify({ type: 'traceData', data: {
+      joints, pos_x: 708.321, pos_y: -292.456, pos_z: 215.789, pos_a: 190, pos_b: 90, pos_c: 30
+    } }), controller);
+    a.applyVirtualControllerFrameForController(performance.now(), controller);
+    return { joints: robot.userData.joints.map(joint => joint.angle), arm: a.calculatePointArmParameters(robot) };
+  });
+  expect(calibrated.joints).toEqual([20, -30, 40, -110, 60, 200]);
+  expect(calibrated.arm).toEqual([0, -2, 2, 1]);
+  for (const [key, value] of Object.entries({ x: '708.32', y: '-292.46', z: '215.79', rx: '30.00', ry: '90.00', rz: '190.00' })) {
+    await expect(page.locator('#tcp-' + key)).toHaveValue(value);
+  }
+  await page.evaluate(() => {
+    const a = window.__controllerTcp, controller = a.state.virtualController;
+    a.handleVirtualControllerMessage(JSON.stringify({ type: 'robotState', data: {
+      joints: [20, -30, 40, -110, 60, 200], tcp: [708.321, -292.456, 215.789, -170, 90, 30]
+    } }), controller);
+    a.applyVirtualControllerFrameForController(performance.now(), controller);
+  });
+  await expect(page.locator('#tcp-rz')).toHaveValue('-170.00');
   const restored = await page.evaluate(() => {
     const a = window.__controllerTcp, robot = a.state.activeArticulatedModel;
     a.disconnectVirtualController(a.state.virtualController);

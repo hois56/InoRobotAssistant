@@ -8,7 +8,7 @@
     <title>3D Simulation | INOVANCE</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=20261019-multi-jog-2">
+    <link rel="stylesheet" href="style.css?v=20261023-teaching-labels-2">
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -28,6 +28,24 @@
     <script src="/Language/runtime/icon-fallback.js" defer></script>
     <script src="/analytics-config.js"></script>
     <script src="/analytics.js" defer></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2071,6 +2089,9 @@
                             <button id="program-toggle-tcp-path" class="program-tcp-path-toggle" type="button" title="TCP 경로 선 표시" aria-label="TCP 경로 선 표시" aria-pressed="false">
                                 <i class="fa-solid fa-route" aria-hidden="true"></i><span>TCP 경로 선</span>
                             </button>
+                            <button id="program-toggle-teaching-points" class="program-tcp-path-toggle" type="button" aria-pressed="true">
+                                <i class="fa-solid fa-location-dot" aria-hidden="true"></i><span data-i18n="legacy.티칭 위치 표시">티칭 위치 표시</span>
+                            </button>
                         </div>
                     </div>
                     <div class="program-robot-avoidance-config">
@@ -2079,6 +2100,18 @@
                             <select id="program-robot-avoidance-priority" aria-label="간섭 회피 우선 로봇" data-i18n-aria-label="legacy.간섭 회피 우선 로봇"></select>
                         </label>
                         <span id="program-robot-avoidance-status" class="program-robot-avoidance-status" role="status"></span>
+                    </div>
+                    <div id="teaching-point-controls" class="teaching-point-controls" data-panel-drag-ignore>
+                        <div class="teaching-point-options">
+                            <label><input id="teaching-point-labels" type="checkbox" checked><span data-i18n="legacy.텍스트 표시">텍스트 표시</span></label>
+                            <select id="teaching-point-label-mode" aria-label="포인트 표시 방식" data-i18n-aria-label="legacy.포인트 표시 방식">
+                                <option value="id" data-i18n="legacy.ID만">ID만</option>
+                                <option value="label" data-i18n="legacy.라벨명만">라벨명만</option>
+                                <option value="both" data-i18n="legacy.둘 다">둘 다</option>
+                            </select>
+                            <label><input id="teaching-point-xray" type="checkbox" checked><span data-i18n="legacy.가려진 위치도 표시">가려진 위치도 표시</span></label>
+                            <button id="teaching-point-fit" type="button" data-i18n="legacy.포인트 화면 맞춤">포인트 화면 맞춤</button>
+                        </div>
                     </div>
                     <div id="program-robot-list" class="program-robot-list"></div>
                     <div id="olp-group-control-slot" class="olp-group-control-slot hidden" aria-label="OLP group robot controls"></div>
@@ -2481,7 +2514,7 @@
         </div>
     </footer>
 
-    <script type="module" src="main.js?v=20261021-controller-interference-1"></script>
+    <script type="module" src="main.js?v=20261023-teaching-defaults-1"></script>
 <script src="/0_Home/tool-guide-embed.js?v=20260906-2"></script>
 </body>
 </html>
