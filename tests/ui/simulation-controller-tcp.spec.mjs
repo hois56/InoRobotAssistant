@@ -49,7 +49,8 @@ test('R7H-90 controller TCP updates JOG while Tool/Wobj never shift the physical
       distance: new a.THREE.Vector3().fromArray(tcpWorld).distanceTo(new a.THREE.Vector3().fromArray(mtcp)) };
   });
   expect(result.joints).toEqual([20, -30, 40, -110, 60, 200]);
-  expect(result.arm).toEqual([0, -2, 2, 1]);
+  // J5 = 60° is wrist flipped: forward, elbow upward, flipped -> ArmType[3] 0.
+  expect(result.arm).toEqual([0, -2, 2, 0]);
   expect(result.toolShift).toBeLessThan(1e-7);
   expect(result.mountShift).toBeLessThan(1e-7);
   expect(result.mountRotation).toBeLessThan(1e-7);
@@ -70,7 +71,7 @@ test('R7H-90 controller TCP updates JOG while Tool/Wobj never shift the physical
     return { joints: robot.userData.joints.map(joint => joint.angle), arm: a.calculatePointArmParameters(robot) };
   });
   expect(calibrated.joints).toEqual([20, -30, 40, -110, 60, 200]);
-  expect(calibrated.arm).toEqual([0, -2, 2, 1]);
+  expect(calibrated.arm).toEqual([0, -2, 2, 0]);
   for (const [key, value] of Object.entries({ x: '708.32', y: '-292.46', z: '215.79', rx: '30.00', ry: '90.00', rz: '190.00' })) {
     await expect(page.locator('#tcp-' + key)).toHaveValue(value);
   }

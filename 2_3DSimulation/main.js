@@ -8,6 +8,7 @@ import { collectTeachingPoints, normalizeTeachingPointSettings } from './teachin
 import { TeachingPointScene, teachingJointMatrix } from './teaching-point-scene.mjs?v=20261023-teaching-labels-2';
 import { buildCleanOutlinePositions } from './outline-geometry-core.mjs?v=20261023-clean-outlines-2';
 import { computeSmoothTriangleNormals } from './smooth-triangle-normals-core.mjs';
+import { armQuadrant, closestArmTurnCandidates, scaraArmParameters, sixAxisArmParameters } from './arm-parameter-core.mjs';
 import { ROBOT_LOGO_COLOR, ROBOT_LOGO_FACES, ROBOT_LOGO_PROJECTIONS, createRobotLogoIndex } from './robot-logo-material-core.mjs';
 import { applyRobotLogoProjection } from './robot-logo-projection.mjs';
 import { buildCadAssemblyTree } from './cad-assembly-tree.mjs';
@@ -21975,7 +21976,7 @@ function setupEventListeners() {
     });
     document.getElementById('view-window-pin')?.addEventListener('click', toggleViewWindowAlwaysOnTop);
     el.viewWindowHide?.addEventListener('click', hideViewWindow);
-    [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.collaborationPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.ioSimulatorPanel, el.programPanel, el.tracePanel, el.measurementPanel, el.shapePanel, el.viewWindow, el.armLoadPanel, el.toolLoadInfoPanel, el.workOriginDialog].forEach(makePanelDraggable);
+    [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.collaborationPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.ioSimulatorPanel, el.programPanel, el.tracePanel, el.measurementPanel, el.shapePanel, el.viewWindow, el.armLoadPanel, el.toolLoadInfoPanel, el.workOriginDialog, el.positionValueDialog].forEach(makePanelDraggable);
     [el.tcpProfilePanel, el.workObjectPanel].forEach(makePanelDraggable);
     [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.collaborationPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.ioSimulatorPanel, el.programPanel, el.tracePanel, el.measurementPanel, el.shapePanel, el.viewWindow, el.armLoadPanel, el.toolLoadInfoPanel, el.workOriginDialog].forEach(makePanelEdgeResizable);
     [el.tcpProfilePanel, el.workObjectPanel].forEach(makePanelEdgeResizable);
@@ -24058,7 +24059,7 @@ function makePanelDraggable(panel) {
         const maxTop = Math.max(0, drag.canvasRect.height - panel.offsetHeight);
         const left = THREE.MathUtils.clamp(event.clientX - drag.canvasRect.left - drag.offsetX, 0, maxLeft);
         const top = THREE.MathUtils.clamp(event.clientY - drag.canvasRect.top - drag.offsetY, 0, maxTop);
-        const viewportPanel = panel === el.workOriginDialog;
+        const viewportPanel = isViewportDialogPanel(panel);
         panel.style.left = `${left + (viewportPanel ? drag.canvasRect.left : 0)}px`;
         panel.style.top = `${top + (viewportPanel ? drag.canvasRect.top : 0)}px`;
         panel.style.right = 'auto';
@@ -24087,9 +24088,17 @@ function getWorkOriginDialogLayoutBounds() {
     return { top, bottom };
 }
 
+// Dialogs live in the top layer and are positioned against the viewport instead of the canvas.
+function isViewportDialogPanel(panel) {
+    return panel === el.workOriginDialog || panel === el.positionValueDialog;
+}
+
 function getPanelLayoutBounds(panel) {
-    if (panel === el.workOriginDialog) {
-        const { top, bottom } = getWorkOriginDialogLayoutBounds();
+    if (isViewportDialogPanel(panel)) {
+        // The modal position dialog is taller than the work area, so it may use the whole viewport.
+        const { top, bottom } = panel === el.positionValueDialog
+            ? { top: 0, bottom: window.innerHeight }
+            : getWorkOriginDialogLayoutBounds();
         return {
             left: 0,
             top,
@@ -24157,7 +24166,7 @@ function normalizePanelResizeBox(panel, { viewportResize = false } = {}) {
     const height = THREE.MathUtils.clamp(preferredHeight, minHeight, maxHeight);
     const left = THREE.MathUtils.clamp(panelRect.left - canvasRect.left, 0, Math.max(0, canvasRect.width - width));
     const top = THREE.MathUtils.clamp(panelRect.top - canvasRect.top, 0, Math.max(0, canvasRect.height - height));
-    const viewportPanel = panel === el.workOriginDialog;
+    const viewportPanel = isViewportDialogPanel(panel);
 
     panel.style.left = `${left + (viewportPanel ? canvasRect.left : 0)}px`;
     panel.style.top = `${top + (viewportPanel ? canvasRect.top : 0)}px`;
@@ -24234,7 +24243,7 @@ function makePanelEdgeResizable(panel) {
         } else if (resize.edge.includes('s')) {
             height = THREE.MathUtils.clamp(resize.height + deltaY, resize.minHeight, resize.canvasHeight - resize.top);
         }
-        const viewportPanel = panel === el.workOriginDialog;
+        const viewportPanel = isViewportDialogPanel(panel);
         panel.style.left = `${left + (viewportPanel ? resize.canvasRect.left : 0)}px`;
         panel.style.top = `${top + (viewportPanel ? resize.canvasRect.top : 0)}px`;
         panel.style.width = `${width}px`;
@@ -32722,10 +32731,6 @@ function solveScaraIK(robot, target, precision = {}) {
     const armSide = Number(precision.armParameters?.[0]);
     const requestedElbowSign = (armSide === -1 || armSide === 1) ? armSide * secondArmDirection : 0;
     const armTurn = Number(precision.armParameters?.[3]);
-    const armTurnRange = armTurn === -1 ? [-360, -180]
-        : armTurn === 0 ? [-180, 180]
-            : armTurn === 1 ? [180, 360]
-                : null;
     if (joints.length !== 4 || !homeQuaternion || !tcpFrame || !Array.isArray(manifest?.structure)) {
         return {
             success: false,
@@ -32747,8 +32752,7 @@ function solveScaraIK(robot, target, precision = {}) {
     const currentArmMatches = !requestedElbowSign
         || Math.abs(joints[1].angle) < 1e-7
         || Math.sign(joints[1].angle) === requestedElbowSign;
-    const currentTurnMatches = !armTurnRange
-        || (joints[3].angle >= armTurnRange[0] - 1e-7 && joints[3].angle <= armTurnRange[1] + 1e-7);
+    const currentTurnMatches = !Number.isInteger(armTurn) || armQuadrant(joints[3].angle) === armTurn;
     if (currentPose.position.distanceTo(target.position) < 0.01
         && Math.hypot(tcpFrame.position.x, tcpFrame.position.y) < 1e-9
         && Math.hypot(rzOnlyError.x, rzOnlyError.y) < THREE.MathUtils.degToRad(0.01)
@@ -32819,13 +32823,9 @@ function solveScaraIK(robot, target, precision = {}) {
             equivalentJointAngles(baseJ2, joints[1]).forEach((j2) => {
                 const baseJ4 = desiredYawDegrees - j1 - j2;
                 const j4Candidates = equivalentJointAngles(baseJ4, joints[3]);
-                const preferredTurnCandidates = armTurnRange
-                    ? j4Candidates.filter((j4) => j4 >= armTurnRange[0] - 1e-7 && j4 <= armTurnRange[1] + 1e-7)
-                    : [];
-                // Prefer the point's requested J4 turn band, but keep a valid
-                // mechanical solution when the selected model's calibrated
-                // joint limits do not contain an equivalent angle in that band.
-                (preferredTurnCandidates.length ? preferredTurnCandidates : j4Candidates)
+                // ArmType[3] is the 90° J4 turn; like the controller, use the
+                // reachable turn closest to it when the exact one is outside the limits.
+                closestArmTurnCandidates(j4Candidates, armTurn)
                     .forEach((j4) => {
                     const candidate = [j1, j2, prismaticTarget, j4];
                     const score = candidate.reduce((sum, value, index) => sum + (value - joints[index].angle) ** 2, 0);
@@ -41859,7 +41859,7 @@ function openContextProgramPointPosition() {
     Object.entries(positionValues).forEach(([key, value]) => {
         if (el.positionValueInputs[key]) el.positionValueInputs[key].value = Number(value).toFixed(6);
     });
-    const armParameters = step.armParameters || calculatePointArmParameters(robot, step.joints);
+    const armParameters = getStepArmParameters(robot, step);
     el.positionArmInputs.forEach((input, index) => { input.value = String(armParameters[index] ?? 0); });
     const externalAxes = step.externalAxes || [0, 0, 0, 0, 0, 0];
     el.positionExternalInputs.forEach((input, index) => {
@@ -41927,7 +41927,8 @@ function applyPositionValueDialog() {
     robot.updateMatrixWorld(true);
     const result = solveRobotIK(robot, targetPose, {
         positionTolerance: 0.001,
-        rotationTolerance: THREE.MathUtils.degToRad(0.001)
+        rotationTolerance: THREE.MathUtils.degToRad(0.001),
+        armParameters
     });
     if (!result.success) {
         restoreRobotJointAngles(robot, originalAngles);
@@ -41948,7 +41949,8 @@ function applyPositionValueDialog() {
         position: pointPose.position.toArray(),
         quaternion: pointPose.quaternion.toArray()
     };
-    step.armParameters = armParameters;
+    // The controller reaches the closest available arm type, so keep the solved pose's values.
+    step.armParameters = calculatePointArmParameters(robot, solvedAngles);
     step.externalAxes = externalAxes;
     step.label = label;
     step.name = formatMotionPointName(step.pointIndex);
@@ -42290,25 +42292,27 @@ function handleProgramStepDragEnd() {
     clearProgramStepDropIndicators();
 }
 
-function pointQuadrantIndex(angleDegrees) {
-    const angle = Number(angleDegrees) || 0;
-    return Math.floor((angle + 1e-9) / 90);
-}
-
-function calculatePointArmParameters(robot, jointAngles, preservedConfiguration = null) {
+function calculatePointArmParameters(robot, jointAngles) {
     const angles = Array.isArray(jointAngles)
         ? jointAngles.map((value) => Number(value) || 0)
         : (robot?.userData.joints || []).map((joint) => joint.angle);
-    if (robot?.userData.manifest?.robotType === 'scara') {
-        const elbowAngle = angles[1] || 0;
-        return [elbowAngle < 0 ? -1 : 1, 0, 0, pointQuadrantIndex(angles[3] || 0)];
-    }
-    return [
-        pointQuadrantIndex(angles[0] || 0),
-        pointQuadrantIndex(angles[3] || 0),
-        pointQuadrantIndex(angles[5] || 0),
-        Number.isInteger(preservedConfiguration) ? preservedConfiguration : 1
-    ];
+    const manifest = robot?.userData.manifest;
+    if (manifest?.robotType === 'scara') return scaraArmParameters(angles, manifest.secondArmDirection);
+    const [, shoulder, elbow, , wrist] = manifest?.joints || [];
+    if (!shoulder || !elbow || !wrist) return [armQuadrant(angles[0]), armQuadrant(angles[3]), armQuadrant(angles[5]), 1];
+    return sixAxisArmParameters({
+        shoulderPivot: shoulder.pivot,
+        elbowPivot: elbow.pivot,
+        wristPivot: wrist.pivot
+    }, angles);
+}
+
+// Stored values may predate the waist/elbow/wrist calculation, so derive them
+// from the point's joints whenever those are available.
+function getStepArmParameters(robot, step) {
+    return Array.isArray(step?.joints) && step.joints.length
+        ? calculatePointArmParameters(robot, step.joints)
+        : (step?.armParameters || calculatePointArmParameters(robot));
 }
 
 function captureRobotMotionStep(robot, existing = null) {
@@ -42344,7 +42348,7 @@ function captureRobotMotionStep(robot, existing = null) {
         ...(isPoint ? {
             pointIndex,
             label: existing?.label || '',
-            armParameters: calculatePointArmParameters(robot, joints, existing?.armParameters?.[3]),
+            armParameters: calculatePointArmParameters(robot, joints),
             externalAxes: Array.isArray(existing?.externalAxes)
                 ? [...existing.externalAxes]
                 : getRobotExternalAxes(robot)
@@ -43278,7 +43282,7 @@ function serializeMotionProject() {
                     ...(isMotionPointMotion(step.motion) ? {
                         pointIndex: step.pointIndex,
                         label: step.label || '',
-                        armParameters: [...(step.armParameters || calculatePointArmParameters(robot, step.joints))],
+                        armParameters: [...getStepArmParameters(robot, step)],
                         externalAxes: [...(step.externalAxes || [0, 0, 0, 0, 0, 0])]
                     } : {}),
                     ...(step.motion === 'DELAY'
@@ -45525,7 +45529,7 @@ function formatPositionPointRecord(robot, step) {
             rotation.ry,
             rotation.rx
         ],
-        armParameters: step.armParameters || calculatePointArmParameters(robot, step.joints),
+        armParameters: getStepArmParameters(robot, step),
         // P.pts retains the six controller fields, but the simulation travel
         // axis values are intentionally not exported.
         externalAxes: [0, 0, 0, 0, 0, 0],
