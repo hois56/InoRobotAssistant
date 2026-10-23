@@ -260,6 +260,18 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.23",
+                "items": [
+                  "시뮬레이션 로봇 모델의 STL 곡면이 각져 보이던 문제를 완화했습니다.",
+                  "티칭한 위치와 자세를 3D 화면에서 확인하고, ID·라벨명 표시 방식과 프로그램 목록 연동 선택을 지원하는 기능을 추가했습니다. 티칭 위치·가려진 위치·텍스트 표시는 기본으로 켜집니다.",
+                  "컨트롤러 연결 시 내부 보정값으로 인해 TCP 표시가 실제 위치와 달라지던 문제를 해결했습니다. TCP는 수신값을 그대로 표시하고 로봇 자세는 Joint 값으로 반영합니다.",
+                  "모든 로봇 모델의 INOVANCE 로고를 브랜드 색상으로 표시하도록 개선했습니다.",
+                  "로봇 모델 안쪽에 표시되던 불필요한 외곽선을 줄이고 선 색상을 부드럽게 개선했습니다.",
+                  "새 창으로 연 뷰 창에서 맨 앞으로 고정이 되지 않던 문제를 해결했습니다.",
+                  "자동 궤적 생성 시 경로가 불필요하게 돌아가거나 생성되지 않던 문제를 해결하고, 장애물 우회와 TCP 자세 유지를 개선했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.10.21",
                 "items": [
                   "여러 로봇이 동시에 접촉할 때 일부 본체와 샤프트의 충돌 표시가 누락되던 문제를 해결했습니다.",
@@ -1571,6 +1583,18 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.23",
+                "items": [
+                  "Reduced the angular appearance of curved STL surfaces on simulation robot models.",
+                  "Added 3D teaching markers with selectable ID and label text and selection linked to the program list. Teaching positions, hidden positions, and text labels are shown by default.",
+                  "Fixed TCP readings differing from the actual position because of controller calibration. Received TCP values are displayed directly, while joint feedback determines the robot posture.",
+                  "INOVANCE logos on all robot models now use the brand color.",
+                  "Reduced unwanted outline fragments inside robot models and softened the outline color.",
+                  "Fixed Always on top not working after opening a view in a separate window.",
+                  "Fixed unnecessarily winding or failed automatic paths, and improved obstacle detours and TCP orientation hold."
+                ]
+              },
+              {
                 "title": "Ver 26.10.21",
                 "items": [
                   "Fixed missing collision indicators on some robot bodies and shafts during simultaneous contact between multiple robots.",
@@ -2858,6 +2882,18 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.10.23",
+                "items": [
+                  "改善了仿真机器人模型的 STL 曲面棱角明显的问题。",
+                  "新增示教位置和姿态的三维标记，支持选择 ID、标签名或两者显示，并与程序列表联动选择。 示教位置、被遮挡的位置及文本默认显示。",
+                  "解决了连接控制器时因内部标定导致 TCP 显示与实际位置不一致的问题。TCP 直接显示接收值，机器人姿态根据关节反馈更新。",
+                  "所有机器人模型上的 INOVANCE 标识现以品牌色显示。",
+                  "减少了机器人模型内部不必要的轮廓线，并柔化了线条颜色。",
+                  "修复了在独立窗口中打开视图后无法启用置顶的问题。",
+                  "修复了自动轨迹绕行异常或无法生成的问题，并改进了障碍物避让和 TCP 姿态保持。"
+                ]
+              },
               {
                 "title": "Ver 26.10.21",
                 "items": [
@@ -4147,6 +4183,18 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.23",
+                "items": [
+                  "Đã giảm hiện tượng bề mặt cong STL của mô hình robot mô phỏng trông góc cạnh.",
+                  "Đã thêm hiển thị vị trí và hướng đã dạy trong 3D, cho phép chọn hiển thị ID, tên nhãn hoặc cả hai và liên kết lựa chọn với danh sách chương trình. Vị trí đã dạy, vị trí bị che khuất và văn bản được hiển thị theo mặc định.",
+                  "Đã khắc phục việc hiển thị TCP khác vị trí thực do hiệu chuẩn bên trong bộ điều khiển. Giá trị TCP nhận được hiển thị trực tiếp, còn tư thế robot được cập nhật theo phản hồi Joint.",
+                  "Logo INOVANCE trên tất cả mô hình robot nay được hiển thị bằng màu thương hiệu.",
+                  "Đã giảm các đoạn đường viền không cần thiết bên trong mô hình robot và làm dịu màu đường viền.",
+                  "Đã khắc phục việc không thể bật luôn ở trên cùng khi mở chế độ xem trong cửa sổ riêng.",
+                  "Đã khắc phục đường đi tự động vòng vèo hoặc không tạo được, đồng thời cải thiện tránh chướng ngại vật và giữ hướng TCP."
+                ]
+              },
+              {
                 "title": "Ver 26.10.21",
                 "items": [
                   "Đã khắc phục lỗi thiếu hiển thị va chạm ở một số thân và trục khi nhiều robot tiếp xúc đồng thời.",
@@ -5435,6 +5483,18 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.23",
+                "items": [
+                  "Simülasyon robot modellerindeki kavisli STL yüzeylerinin köşeli görünümü azaltıldı.",
+                  "Öğretilen konum ve yönler için ID, etiket veya ikisini birden gösterme seçeneği ve program listesiyle bağlantılı seçim sunan 3B işaretçiler eklendi. Öğretilen konumlar, gizli konumlar ve metin etiketleri varsayılan olarak gösterilir.",
+                  "Kontrolör kalibrasyonu nedeniyle TCP gösteriminin gerçek konumdan farklı olması sorunu giderildi. Alınan TCP değerleri doğrudan gösterilir; robot duruşu eklem geri bildirimine göre güncellenir.",
+                  "Tüm robot modellerindeki INOVANCE logoları artık marka rengiyle gösteriliyor.",
+                  "Robot modellerinin içindeki gereksiz kenar çizgileri azaltıldı ve çizgi rengi yumuşatıldı.",
+                  "Ayrı pencerede açılan görünümde her zaman üstte tutma işlevinin çalışmaması sorunu giderildi.",
+                  "Otomatik yolların gereksiz dolanması veya oluşturulamaması sorunları giderildi; engelden kaçınma ve TCP yönünü koruma iyileştirildi."
+                ]
+              },
+              {
                 "title": "Ver 26.10.21",
                 "items": [
                   "Birden fazla robot aynı anda temas ettiğinde bazı gövde ve millerde çarpışma göstergelerinin eksik kalması sorunu giderildi.",
@@ -6722,6 +6782,18 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.10.23",
+                "items": [
+                  "Уменьшена угловатость изогнутых STL-поверхностей моделей роботов в симуляции.",
+                  "Добавлены 3D-маркеры обученных позиций и ориентаций с выбором отображения ID, метки или обоих и связанным выбором в списке программы. Обученные позиции, скрытые позиции и текстовые метки отображаются по умолчанию.",
+                  "Исправлено расхождение показаний TCP с фактическим положением из-за калибровки контроллера. Полученные значения TCP отображаются напрямую, а поза робота обновляется по значениям суставов.",
+                  "Логотипы INOVANCE на всех моделях роботов теперь отображаются в фирменном цвете.",
+                  "Уменьшено количество лишних контурных линий внутри моделей роботов, цвет линий стал мягче.",
+                  "Исправлена ошибка, из-за которой режим поверх всех окон не включался для вида, открытого в отдельном окне.",
+                  "Исправлены излишние обходы и сбои автоматического построения траекторий; улучшены обход препятствий и сохранение ориентации TCP."
+                ]
+              },
               {
                 "title": "Ver 26.10.21",
                 "items": [

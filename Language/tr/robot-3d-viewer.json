@@ -1891,7 +1891,24 @@
     "맨 앞으로 고정 창을 열 수 없습니다. 다시 시도해 주세요.": "Her zaman üstte penceresi açılamadı. Tekrar deneyin.",
     "동시 JOG": "Eşzamanlı JOG",
     "TCP POSITION /": "TCP Konumu /",
-    "TCP ROTATION /": "TCP Dönüşü /"
+    "TCP ROTATION /": "TCP Dönüşü /",
+    "티칭 위치 표시": "Öğretilen konumlar",
+    "번호 표시": "Numaraları göster",
+    "가려진 위치도 표시": "Gizlenen konumları göster",
+    "포인트 화면 맞춤": "Noktaları görünüme sığdır",
+    "티칭 포인트 선택": "Öğretilen noktayı seç",
+    "포인트 선택": "Bir nokta seçin",
+    "포인트 파일을 선택하세요.": "Bir nokta dosyası seçin.",
+    "동작 프로그램": "Hareket programı",
+    "표시 포인트": "Görünen noktalar",
+    "표시 제외": "Atlanan",
+    "저장값": "Kayıtlı değerler",
+    "좌표 또는 축 설정을 확인하세요.": "Koordinatları veya eksen ayarlarını kontrol edin.",
+    "텍스트 표시": "Metni göster",
+    "포인트 표시 방식": "Nokta etiketi biçimi",
+    "ID만": "Yalnızca ID",
+    "라벨명만": "Yalnızca etiket",
+    "둘 다": "İkisi de"
   },
   "patterns": []
 }

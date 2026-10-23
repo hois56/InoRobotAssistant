@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
+import { ROBOT_LOGO_FACES, ROBOT_LOGO_PROJECTIONS, createRobotLogoIndex } from '../../2_3DSimulation/robot-logo-material-core.mjs';
 
 const threeSource = readFileSync(new URL('../../3_ToolSelector/vendor/three/three.module.js', import.meta.url), 'utf8');
 const THREE = await import(`data:text/javascript;base64,${Buffer.from(threeSource).toString('base64')}`);
@@ -26,7 +27,7 @@ async function fixture(robotType = 'scara', kinematicVariant = 'standard', heigh
       { name: 'J3', pivot: [600, 0, 0], axis: [0, 0, 1] },
       { name: 'J4', pivot: [600, 0, 0], axis: [0, 0, 1] }
     ], tcp: [600, 0, 0] };
-  const context = vm.createContext({ THREE, performance, WOBJ_WORLD_INDEX: 0,
+  const context = vm.createContext({ THREE, performance, ROBOT_LOGO_FACES, ROBOT_LOGO_PROJECTIONS, createRobotLogoIndex, WOBJ_WORLD_INDEX: 0,
     TCP_PROFILE_COUNT: 1, TCP_AXES_LOCAL_SIZE: 100, TCP_AXES_SCREEN_PIXELS: 80,
     createRobotManifest: () => manifest,
     loadSTL: async () => ({ geometry: geometry.clone() }),

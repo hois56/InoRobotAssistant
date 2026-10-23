@@ -177,9 +177,18 @@ export async function planJointPath({
     const normalizedSampleBias = Math.max(0, Math.min(1, Number(sampleBias) || 0));
     let guidedSampleIndex = 0;
     let totalNodes = 2;
-    let lastProgress = 0;
+    let attempts = 0;
+    let lastYieldAt = elapsed();
+    const startTree = trees[0];
 
     const extend = async (tree, target) => {
+        attempts += 1;
+        if (attempts % Math.max(1, yieldEvery) === 0 || elapsed() - lastYieldAt >= 16) {
+            if (typeof onProgress === 'function') await onProgress({ nodes: totalNodes, elapsedMs: elapsed() });
+            await yieldPlanner(onYield);
+            lastYieldAt = elapsed();
+        }
+        if (shouldCancel() || elapsed() > maximumTime) return { status: 'trapped', node: null };
         const nearest = nearestNode(tree, target, normalizedBounds);
         if (!nearest) return { status: 'trapped', node: null };
         const distance = jointDistance(nearest.state, target, normalizedBounds);
@@ -193,7 +202,7 @@ export async function planJointPath({
         tree.push(node);
         totalNodes += 1;
         return {
-            status: jointDistance(nextState, target, normalizedBounds) <= Math.max(stepSize, EPSILON)
+            status: jointDistance(nextState, target, normalizedBounds) <= EPSILON
                 ? 'reached'
                 : 'advanced',
             node
@@ -214,13 +223,14 @@ export async function planJointPath({
         const activeResult = await extend(active, sample);
         if (activeResult.node) {
             let passiveResult = await extend(passive, activeResult.node.state);
-            while (passiveResult.status === 'advanced' && totalNodes < maximumNodes && elapsed() <= maximumTime) {
+            while (passiveResult.status === 'advanced' && totalNodes < maximumNodes && elapsed() <= maximumTime && !shouldCancel()) {
                 passiveResult = await extend(passive, activeResult.node.state);
             }
             if (passiveResult.status === 'reached' && passiveResult.node) {
                 const firstPath = traceToRoot(activeResult.node);
                 const secondPath = traceToRoot(passiveResult.node).reverse();
                 const path = firstPath.concat(secondPath.slice(1));
+                if (active !== startTree) path.reverse();
                 return {
                     success: true,
                     path,
@@ -232,11 +242,6 @@ export async function planJointPath({
             }
         }
         trees.reverse();
-        if (totalNodes - lastProgress >= Math.max(1, yieldEvery)) {
-            lastProgress = totalNodes;
-            if (typeof onProgress === 'function') await onProgress({ nodes: totalNodes, elapsedMs: elapsed() });
-            await yieldPlanner(onYield);
-        }
     }
     return fail(shouldCancel() ? 'cancelled' : 'route not found within limits', totalNodes);
 }
@@ -291,6 +296,7 @@ export async function planJointWaypointGraph({
     bounds = [],
     isStateSafe = null,
     edgeIsSafe = null,
+    distance = null,
     maxCandidates = 120,
     neighbors = 10,
     maxNeighbors = 24,
@@ -302,6 +308,7 @@ export async function planJointWaypointGraph({
 } = {}) {
     const dimension = Array.isArray(start) ? start.length : 0;
     const normalizedBounds = normalizeBounds(bounds, dimension);
+    const measure = (a, b) => typeof distance === 'function' ? distance(a, b) : jointDistance(a, b, normalizedBounds);
     const startedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
     const elapsed = () => (typeof performance !== 'undefined' ? performance.now() : Date.now()) - startedAt;
     const fail = (reason, nodeCount = 0, checkedEdges = 0) => ({
@@ -376,9 +383,10 @@ export async function planJointWaypointGraph({
 
     const adjacency = safeNodes.map(() => []);
     const checkedPairs = new Set(['0:1']);
+    const safeEdges = new Set();
     let checkedEdges = 1;
     const attachEdge = (from, to) => {
-        const cost = jointDistance(safeNodes[from], safeNodes[to], normalizedBounds);
+        const cost = measure(safeNodes[from], safeNodes[to]);
         adjacency[from].push({ index: to, cost });
         adjacency[to].push({ index: from, cost });
     };
@@ -390,7 +398,7 @@ export async function planJointWaypointGraph({
         const pairs = [];
         safeNodes.forEach((state, from) => {
             const nearest = safeNodes
-                .map((other, to) => ({ to, distance: jointDistance(state, other, normalizedBounds) }))
+                .map((other, to) => ({ to, distance: measure(state, other) }))
                 .filter(({ to }) => to !== from)
                 .sort((left, right) => left.distance - right.distance)
                 .slice(0, neighborLimit);
@@ -403,35 +411,35 @@ export async function planJointWaypointGraph({
                 pairs.push({ from: left, to: right });
             });
         });
-        pairs.sort((left, right) => (
-            jointDistance(safeNodes[left.from], safeNodes[left.to], normalizedBounds)
-            - jointDistance(safeNodes[right.from], safeNodes[right.to], normalizedBounds)
-        ));
+        pairs.forEach(({ from, to }) => attachEdge(from, to));
 
-        for (const { from, to } of pairs) {
+        // Validate only edges on the shortest remaining route. Dense scenes
+        // otherwise spend the entire budget checking links the route never uses.
+        let route;
+        while ((route = shortestWaypointGraphPath(adjacency, 1))) {
             if (shouldCancel()) return fail('cancelled', safeNodes.length, checkedEdges);
             if (elapsed() > maxTimeMs) return fail('route not found within limits', safeNodes.length, checkedEdges);
-            if (await checkEdge(safeNodes[from], safeNodes[to], normalizedBounds, edgeIsSafe)) {
-                attachEdge(from, to);
-            }
-            checkedEdges += 1;
-            if (checkedEdges % Math.max(1, yieldEvery) === 0) {
-                if (typeof onProgress === 'function') {
-                    await onProgress({
-                        phase: 'transition links',
-                        nodes: safeNodes.length,
-                        candidates: nodes.length - 2,
-                        checkedEdges,
-                        elapsedMs: elapsed()
+            let valid = true;
+            for (let index = 1; index < route.length; index += 1) {
+                if (shouldCancel()) return fail('cancelled', safeNodes.length, checkedEdges);
+                if (elapsed() > maxTimeMs) return fail('route not found within limits', safeNodes.length, checkedEdges);
+                const from = route[index - 1], to = route[index];
+                const key = `${from}:${to}`;
+                if (safeEdges.has(key)) continue;
+                valid = await checkEdge(safeNodes[from], safeNodes[to], normalizedBounds, edgeIsSafe);
+                checkedEdges += 1;
+                if (valid) safeEdges.add(key);
+                else adjacency[from] = adjacency[from].filter(edge => edge.index !== to);
+                if (checkedEdges % Math.max(1, yieldEvery) === 0) {
+                    if (typeof onProgress === 'function') await onProgress({
+                        phase: 'transition links', nodes: safeNodes.length,
+                        candidates: nodes.length - 2, checkedEdges, elapsedMs: elapsed()
                     });
+                    await yieldPlanner(onYield);
                 }
-                await yieldPlanner(onYield);
+                if (!valid) break;
             }
-        }
-
-        const route = shortestWaypointGraphPath(adjacency, 1);
-        if (route) {
-            return {
+            if (valid) return {
                 success: true,
                 path: route.map((index) => copyState(safeNodes[index])),
                 reason: '',

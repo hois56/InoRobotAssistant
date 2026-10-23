@@ -99,13 +99,15 @@ window.__s25Contacts = { state, getArticulatedRobots, restoreRobotControllerBase
         const hits = a.checkSceneCollisions({ force: true });
         const parts = new Map();
         for (const hit of hits) for (const [root, mesh] of [[hit.objectA, hit.meshA], [hit.objectB, hit.meshB]]) {
-            parts.set(`${robots.indexOf(root)}:J${mesh.userData.robotJointIndex + 1}`, mesh.material.color.getHex());
+            const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+            parts.set(`${robots.indexOf(root)}:J${mesh.userData.robotJointIndex + 1}`, materials.map(material => material.color.getHex()));
         }
         const angles = robots[2].userData.joints.map(joint => joint.angle);
         return { parts: Object.fromEntries(parts), planningSafe: a.createAutoPathCollisionEvaluator(robots[2], angles).isSafe(angles) };
     });
     for (const part of ['0:J1', '0:J2', '1:J2', '1:J4', '2:J2', '2:J4', '3:J2', '3:J4']) {
-        expect(result.parts[part], part).toBe(0xef4444);
+        expect(result.parts[part]?.length, part).toBeGreaterThan(0);
+        expect(result.parts[part].every(color => color === 0xef4444), part).toBe(true);
     }
     expect(result.planningSafe).toBe(false);
     await expect(page.locator('#collision-status')).toBeVisible();

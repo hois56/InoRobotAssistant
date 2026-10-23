@@ -1891,7 +1891,24 @@
     "맨 앞으로 고정 창을 열 수 없습니다. 다시 시도해 주세요.": "Không thể mở cửa sổ luôn ở trên cùng. Vui lòng thử lại.",
     "동시 JOG": "JOG đồng thời",
     "TCP POSITION /": "Vị trí TCP /",
-    "TCP ROTATION /": "Góc xoay TCP /"
+    "TCP ROTATION /": "Góc xoay TCP /",
+    "티칭 위치 표시": "Vị trí dạy",
+    "번호 표시": "Hiện số điểm",
+    "가려진 위치도 표시": "Hiện vị trí bị che",
+    "포인트 화면 맞춤": "Hiển thị vừa các điểm",
+    "티칭 포인트 선택": "Chọn điểm dạy",
+    "포인트 선택": "Chọn một điểm",
+    "포인트 파일을 선택하세요.": "Chọn tệp điểm.",
+    "동작 프로그램": "Chương trình chuyển động",
+    "표시 포인트": "Điểm hiển thị",
+    "표시 제외": "Bỏ qua",
+    "저장값": "Giá trị đã lưu",
+    "좌표 또는 축 설정을 확인하세요.": "Kiểm tra tọa độ hoặc cài đặt trục.",
+    "텍스트 표시": "Hiện chữ",
+    "포인트 표시 방식": "Kiểu hiển thị điểm",
+    "ID만": "Chỉ ID",
+    "라벨명만": "Chỉ tên nhãn",
+    "둘 다": "Cả hai"
   },
   "patterns": []
 }

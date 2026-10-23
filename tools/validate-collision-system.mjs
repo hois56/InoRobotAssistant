@@ -426,7 +426,7 @@ assert.match(
 );
 assert.match(
     viewerSource,
-    /const linearPath = await solveAutoPathLinear\([\s\S]*?if \(linearPath\)[\s\S]*?else if \(!firstCollision && edgeIsSafe\(startAngles, planningTargetAngles\)\)/,
+    /const linearPath = await solveAutoPathLinear\([\s\S]*?if \(linearPath\)[\s\S]*?else if \(!settings\.holdOrientation && edgeIsSafe\(startAngles, planningTargetAngles\)\)/,
     'Automatic path planning must test the TCP straight route before falling back to a direct joint route.'
 );
 assert.match(
@@ -501,8 +501,8 @@ assert.match(
 );
 assert.match(
     viewerSource,
-    /function solveAutoPathCartesianWaypointRoute\([\s\S]*?solveAutoPathLinear\([\s\S]*?finalAngles: waypointAngles[\s\S]*?finalAngles: targetAngles[\s\S]*?return \{ path, motion \}/,
-    'Automatic path planning must validate a Cartesian one-waypoint route with exact endpoint joint branches.'
+    /function solveAutoPathCartesianWaypointRoute\([\s\S]*?createAutoPathCartesianEdgeChecker\([\s\S]*?planJointWaypointGraph\(\{[\s\S]*?edgeIsSafe: cartesianEdgeIsSafe[\s\S]*?return \{ path, motion \}/,
+    'Automatic path planning must connect multiple Cartesian waypoints using validated MOVL edges.'
 );
 assert.match(
     viewerSource,
@@ -511,7 +511,7 @@ assert.match(
 );
 assert.match(
     viewerSource,
-    /const linearPath = await solveAutoPathLinear\([\s\S]*?if \(linearPath\)[\s\S]*?else if \(!firstCollision && edgeIsSafe\(startAngles, planningTargetAngles\)\)[\s\S]*?path = \[startAngles\.slice\(\), planningTargetAngles\.slice\(\)\]/,
+    /const linearPath = await solveAutoPathLinear\([\s\S]*?if \(linearPath\)[\s\S]*?else if \(!settings\.holdOrientation && edgeIsSafe\(startAngles, planningTargetAngles\)\)[\s\S]*?path = \[startAngles\.slice\(\), planningTargetAngles\.slice\(\)\]/,
     'Automatic path planning must test the TCP straight route before falling back to a direct joint route.'
 );
 assert.match(
@@ -576,7 +576,7 @@ assert.match(
 );
 assert.match(
     viewerSource,
-    /solveMovlSamples\(robot, motionStepTargetPose\(step\), step\.name, \{[\s\S]*?isStateSafe:/,
+    /solveMovlSamples\(robot, motionStepTargetPose\(step, robot\), step\.name, \{[\s\S]*?isStateSafe:/,
     'Motion preflight must collision-check sampled MOVL states.'
 );
 assert.match(
