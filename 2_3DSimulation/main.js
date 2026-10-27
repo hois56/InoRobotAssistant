@@ -16631,12 +16631,14 @@ function getSimulationSnapFaceNormal(selection = getActiveSimulationSnapFaceSele
 }
 
 function updateSnapFaceOrientationUi() {
+    const robot = getJogTargetRobot();
     const snapMoveActive = Boolean(state.snapMoveMode);
     const hasSelectedFace = Boolean(getActiveSimulationSnapFaceSelection());
     const available = snapMoveActive
         && hasSelectedFace
-        && Boolean(getJogTargetRobot()?.userData?.tcpFrame)
-        && !isMotionActive();
+        && Boolean(robot?.userData?.tcpFrame)
+        && !isRobotMotionActive()
+        && !isVirtualControllerActiveForRobot(robot);
     el.snapFaceOrientationActions?.classList.toggle('hidden', !snapMoveActive);
     [el.btnSnapFaceHorizontal, el.btnSnapFaceVertical].forEach((button) => {
         if (!button) return;
@@ -16685,8 +16687,9 @@ function preferSnapFaceWristConfiguration(robot) {
 }
 
 function applySnapFaceOrientation(mode) {
-    if (!['horizontal', 'vertical'].includes(mode) || isMotionActive()) return false;
     const robot = getJogTargetRobot();
+    if (!['horizontal', 'vertical'].includes(mode)
+        || isRobotMotionActive() || isVirtualControllerActiveForRobot(robot)) return false;
     const faceSelection = getActiveSimulationSnapFaceSelection();
     if (!state.snapMoveMode || !faceSelection || !robot?.userData?.tcpFrame) {
         setStatus('스냅 이동에서 먼저 면을 선택하세요.', '#f59e0b');
@@ -18840,7 +18843,7 @@ function applyZeroPointMultiCenter() {
 
 function moveRobotTcpToSimulationSnap(snap) {
     const robot = getJogTargetRobot();
-    if (isMotionActive()) return false;
+    if (isRobotMotionActive() || isVirtualControllerActiveForRobot(robot)) return false;
     if (!robot?.userData.tcpFrame) {
         setStatus('스냅 이동할 로봇을 먼저 선택하세요.', '#ef4444');
         return false;
@@ -18928,11 +18931,11 @@ function handleSimulationSnapClick(event) {
 
 function updateSimulationSnapButton() {
     if (!el.btnSnapMove) return;
-    const available = Boolean(getJogTargetRobot()?.userData?.tcpFrame)
+    const robot = getJogTargetRobot();
+    const available = Boolean(robot?.userData?.tcpFrame)
         && getJogTargetRobots().length === 1
-        && !isOlpRunning()
-        && !state.olp.workOriginBusy
-        && !state.olp.manualMoveBusy;
+        && !isRobotMotionActive()
+        && !isVirtualControllerActiveForRobot(robot);
     if (!available && state.snapMoveMode) {
         state.snapMoveMode = false;
         clearSimulationSnapFaceSelection({ invalidate: false });
@@ -19148,7 +19151,7 @@ function configureMainOrbitControlDefaults(controls) {
     if ('zoomToCursor' in controls) controls.zoomToCursor = false;
 }
 
-function updateSelectedViewPivot(force = false) {
+function updateSelectedViewPivot(force = false, { preserveView = false } = {}) {
     const pivot = state.selectedViewPivot;
     if (!pivot.enabled || state.sketch.active || !state.camera || !state.controls) {
         pivot.object = null;
@@ -19175,7 +19178,7 @@ function updateSelectedViewPivot(force = false) {
     const delta = center.clone().sub(origin);
     pivot.object = object;
     pivot.center = center;
-    if (delta.lengthSq() < 1e-12) return;
+    if (preserveView || delta.lengthSq() < 1e-12) return;
     state.camera.position.add(delta);
     state.controls.target.add(delta);
     requestRender();
@@ -30391,7 +30394,10 @@ async function handle3DImport(options = {}) {
 
         reportProgress(100);
         updateUIStatus();
-        if (!options.preserveSelection) selectSceneModel(importedModel);
+        if (!options.preserveSelection) {
+            selectSceneModel(importedModel);
+            updateSelectedViewPivot(false, { preserveView: true });
+        }
         if (historyBefore) {
             recordHistory(
                 placement === 'tcp' ? 'TCP 툴 불러오기' : placement === 'arm-load' ? '암 로드 불러오기' : placement === 'grip-object' ? '물건 잡기 대상 불러오기' : '3D 모델링 불러오기',
@@ -30399,7 +30405,6 @@ async function handle3DImport(options = {}) {
                 captureSceneSnapshot()
             );
         }
-        if (!options.suppressFit) fitCamera();
         if (assetPersistenceFailed) {
             setStatus('3D 모델은 불러왔지만 원본 파일을 작업 복구 저장소에 저장하지 못했습니다.', '#f59e0b');
         } else if (options.suppressSuccessStatus) {
@@ -30484,10 +30489,7 @@ async function handleSelectedImportFiles(files, options = {}) {
         }
     }
 
-    if (imported.length) {
-        if (importedCadCount && !importedModelCount) fitCadDocument(true);
-        else fitCamera();
-    }
+    if (importedCadCount && !importedModelCount) fitCadDocument(true);
     if (failed.length) {
         setStatus('{success}개 파일 불러오기 완료 · {failed}개 파일 실패', '#f59e0b', {
             success: imported.length,
@@ -30633,7 +30635,6 @@ async function handleTestModelImport() {
                 failures.push(asset.name + ': ' + (error.message || error));
             }
         }
-        fitCamera();
         checkSceneCollisions({ force: true });
         setStatus('{count}개 파일 불러오기 완료', failures.length ? '#f59e0b' : '#22c55e', { count: completed });
         if (failures.length) alert(uiFormat('테스트 모델을 불러오지 못했습니다.\n{message}', { message: failures.join('\n') }));

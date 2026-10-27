@@ -266,6 +266,13 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.27",
+                "items": [
+                  "`[수정]` 다른 로봇의 컨트롤러 연결로 인해 미연결 로봇의 스냅 이동과 면 정렬이 막히던 문제를 해결했습니다.",
+                  "`[수정]` 3D 모델링을 가져올 때 현재 뷰가 자동으로 초기화되던 문제를 해결했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.10.23",
                 "items": [
                   "`[개선]` 시뮬레이션 로봇 모델의 STL 곡면이 각져 보이던 문제를 완화했습니다.",
@@ -591,6 +598,12 @@
           {
             "title": "Robot Tool Selector",
             "versions": [
+              {
+                "title": "Ver 26.10.27",
+                "items": [
+                  "`[개선]` 스카라 선택 시 계산에 사용하지 않는 J5 → 끝단 플랜지 거리 입력을 비활성화하여 혼동을 줄였습니다."
+                ]
+              },
               {
                 "title": "Ver 26.09.03",
                 "items": [
@@ -1603,6 +1616,13 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.27",
+                "items": [
+                  "`[Fixed]` Fixed snap movement and face alignment being blocked for an unconnected robot when another robot is connected to a controller.",
+                  "`[Fixed]` Fixed importing 3D models automatically resetting the current view."
+                ]
+              },
+              {
                 "title": "Ver 26.10.23",
                 "items": [
                   "`[Improved]` Reduced the angular appearance of curved STL surfaces on simulation robot models.",
@@ -1911,6 +1931,12 @@
           {
             "title": "Robot Tool Selector",
             "versions": [
+              {
+                "title": "Ver 26.10.27",
+                "items": [
+                  "`[Improved]` Disabled the unused J5-to-flange distance input when a SCARA model is selected to avoid confusion."
+                ]
+              },
               {
                 "title": "Ver 26.09.03",
                 "items": [
@@ -2911,6 +2937,13 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.27",
+                "items": [
+                  "`[修复]` 修复了其他机器人连接控制器时，未连接机器人的捕捉移动和面向对齐被阻止的问题。",
+                  "`[修复]` 修复了导入三维模型时当前视图自动重置的问题。"
+                ]
+              },
+              {
                 "title": "Ver 26.10.23",
                 "items": [
                   "`[改进]` 改善了仿真机器人模型的 STL 曲面棱角明显的问题。",
@@ -3219,6 +3252,12 @@
           {
             "title": "Robot Tool Selector",
             "versions": [
+              {
+                "title": "Ver 26.10.27",
+                "items": [
+                  "`[改进]` 选择 SCARA 机型时，禁用不参与计算的 J5 至末端法兰距离输入，避免混淆。"
+                ]
+              },
               {
                 "title": "Ver 26.09.03",
                 "items": [
@@ -4219,6 +4258,13 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.27",
+                "items": [
+                  "`[Sửa lỗi]` Đã sửa lỗi di chuyển bắt điểm và căn chỉnh theo mặt của robot chưa kết nối bị chặn khi robot khác kết nối với bộ điều khiển.",
+                  "`[Sửa lỗi]` Đã khắc phục việc chế độ xem hiện tại tự đặt lại khi nhập mô hình 3D."
+                ]
+              },
+              {
                 "title": "Ver 26.10.23",
                 "items": [
                   "`[Cải tiến]` Đã giảm hiện tượng bề mặt cong STL của mô hình robot mô phỏng trông góc cạnh.",
@@ -4527,6 +4573,12 @@
           {
             "title": "Robot Tool Selector",
             "versions": [
+              {
+                "title": "Ver 26.10.27",
+                "items": [
+                  "`[Cải tiến]` Vô hiệu hóa ô nhập khoảng cách từ J5 đến mặt bích không dùng trong tính toán khi chọn SCARA để tránh nhầm lẫn."
+                ]
+              },
               {
                 "title": "Ver 26.09.03",
                 "items": [
@@ -5527,6 +5579,13 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.27",
+                "items": [
+                  "`[Düzeltildi]` Başka bir robot kontrolöre bağlıyken bağlı olmayan robotun yakalama hareketinin ve yüzey hizalamasının engellenmesi sorunu giderildi.",
+                  "`[Düzeltildi]` 3B model içe aktarılırken mevcut görünümün otomatik sıfırlanması sorunu giderildi."
+                ]
+              },
+              {
                 "title": "Ver 26.10.23",
                 "items": [
                   "`[Geliştirildi]` Simülasyon robot modellerindeki kavisli STL yüzeylerinin köşeli görünümü azaltıldı.",
@@ -5835,6 +5894,12 @@
           {
             "title": "Robot Tool Selector",
             "versions": [
+              {
+                "title": "Ver 26.10.27",
+                "items": [
+                  "`[Geliştirildi]` Karışıklığı önlemek için SCARA modeli seçildiğinde hesaplamada kullanılmayan J5 ile uç flanşı arası mesafe girişi devre dışı bırakıldı."
+                ]
+              },
               {
                 "title": "Ver 26.09.03",
                 "items": [
@@ -6835,6 +6900,13 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.27",
+                "items": [
+                  "`[Исправлено]` Исправлена блокировка перемещения по привязке и выравнивания по грани неподключённого робота при подключении другого робота к контроллеру.",
+                  "`[Исправлено]` Исправлен автоматический сброс текущего вида при импорте 3D-моделей."
+                ]
+              },
+              {
                 "title": "Ver 26.10.23",
                 "items": [
                   "`[Улучшено]` Уменьшена угловатость изогнутых STL-поверхностей моделей роботов в симуляции.",
@@ -7143,6 +7215,12 @@
           {
             "title": "Robot Tool Selector",
             "versions": [
+              {
+                "title": "Ver 26.10.27",
+                "items": [
+                  "`[Улучшено]` При выборе SCARA отключён неиспользуемый в расчёте ввод расстояния от J5 до концевого фланца, чтобы избежать путаницы."
+                ]
+              },
               {
                 "title": "Ver 26.09.03",
                 "items": [

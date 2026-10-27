@@ -36,7 +36,8 @@ function fixture({ limited = false, offsetTool = false, reachable = true } = {})
   let solvedPose;
   let history = 0;
   const context = vm.createContext({ THREE, state: { snapMoveMode: true },
-    isMotionActive: () => false, getJogTargetRobot: () => robot,
+    isMotionActive: () => false, isRobotMotionActive: () => false,
+    isVirtualControllerActiveForRobot: () => false, getJogTargetRobot: () => robot,
     getActiveSimulationSnapFaceSelection: () => ({}), getSimulationSnapFaceNormal: () => new THREE.Vector3(0, 0, 1),
     getCurrentTcpPoseBase: pose, getRobotControllerBaseFrame: () => robot, setJointAngle: setAngle,
     solveRobotIK: () => {
