@@ -35,6 +35,8 @@
   .row label{font-size:13px;color:#cbd5e1}
   .row input,.row select{padding:9px 12px;background:rgba(15,23,42,.6);border:1px solid rgba(255,255,255,.08);border-radius:10px;font-size:13px;text-align:right;width:100%;color:#fff;transition:all .2s;font-family:inherit}
   .row input:focus,.row select:focus{outline:none;border-color:rgba(37,99,235,.5);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+  .row.is-disabled{opacity:.45}
+  .row input:disabled{cursor:not-allowed}
   .row select{text-align:left}
   .row .unit{font-size:12px;color:#64748b}
   .grid3{display:grid;gap:8px;align-items:center;font-size:12px;margin-bottom:8px}
@@ -987,7 +989,7 @@ ROBOTS.forEach((r,i)=>{const o=document.createElement('option');o.value=i;o.text
 sel.appendChild(gCobot);sel.appendChild(gScara);
 sel.value=ROBOTS.findIndex(r=>r.name==='R25');
 sel.onchange=()=>showSpec();
-function showSpec(preserveOffset=false){const r=ROBOTS[sel.value];const isScara=r.type==='scara';document.body.classList.toggle('scara',isScara);document.getElementById('j5off-row').classList.toggle('hide',isScara);document.getElementById('d_izz_label').textContent=uiText(isScara?'부하 무게중심 기준 J4 관성모멘트':'부하 무게중심 기준 관성모멘트 Izz');if(!isScara){if(!preserveOffset)document.getElementById('j5off').value=r.j5;document.getElementById('spec').innerHTML=`${uiText('허용 질량')} ${r.load} kg · ${uiText('J5 허용 토크')} ${r.t5} N·m · ${uiText('J6 허용 토크')} ${r.t6} N·m · ${uiText('J5 허용 관성모멘트')} ${r.i5} kgm² · ${uiText('J6 허용 관성모멘트')} ${r.i6} kgm²`;}else{document.getElementById('spec').innerHTML=`${uiText('형식 SCARA')} · ${uiText('정격 부하')} ${r.rated} kg · ${uiText('최대 부하')} ${r.load} kg · ${uiText('J4 정격 관성모멘트')} ${r.i4r} kgm² · ${uiText('J4 허용 관성모멘트')} ${r.i4} kgm²`;}}
+function showSpec(preserveOffset=false){const r=ROBOTS[sel.value];const isScara=r.type==='scara';document.body.classList.toggle('scara',isScara);document.getElementById('j5off-row').classList.toggle('is-disabled',isScara);document.getElementById('j5off').disabled=isScara;document.getElementById('d_izz_label').textContent=uiText(isScara?'부하 무게중심 기준 J4 관성모멘트':'부하 무게중심 기준 관성모멘트 Izz');if(!isScara){if(!preserveOffset)document.getElementById('j5off').value=r.j5;document.getElementById('spec').innerHTML=`${uiText('허용 질량')} ${r.load} kg · ${uiText('J5 허용 토크')} ${r.t5} N·m · ${uiText('J6 허용 토크')} ${r.t6} N·m · ${uiText('J5 허용 관성모멘트')} ${r.i5} kgm² · ${uiText('J6 허용 관성모멘트')} ${r.i6} kgm²`;}else{document.getElementById('spec').innerHTML=`${uiText('형식 SCARA')} · ${uiText('정격 부하')} ${r.rated} kg · ${uiText('최대 부하')} ${r.load} kg · ${uiText('J4 정격 관성모멘트')} ${r.i4r} kgm² · ${uiText('J4 허용 관성모멘트')} ${r.i4} kgm²`;}}
 showSpec();
 const MATERIALS={al:{name:"알루미늄 합금",rho:2.7},steel:{name:"강철",rho:7.87},sus:{name:"스테인리스",rho:7.93},brass:{name:"황동",rho:8.5}};
 const DEF_BLOCKS=[{mat:"al",x:0,y:0,z:0,cx:0,cy:0,cz:0}];
@@ -1041,7 +1043,10 @@ document.addEventListener('inorobot:languagechange',refreshDynamicLanguage);
     if (rule === 'nonnegative' && value < 0) return `${label} cannot be negative.`;
     return '';
   };
-  const validateInput = (id, label, rule) => validateValue(document.getElementById(id)?.value, label, rule);
+  const validateInput = (id, label, rule) => {
+    const input = document.getElementById(id);
+    return input?.disabled ? '' : validateValue(input?.value, label, rule);
+  };
   window.calculate = function guardedCalculate() {
     const mode = document.querySelector('.tab.active')?.dataset.mode || 'direct';
     for (const [id, label, rule] of (valueChecks[mode] || [])) {
@@ -1076,7 +1081,7 @@ document.addEventListener('inorobot:languagechange',refreshDynamicLanguage);
   });
 })();
 </script>
-        <script type="module" src="./mode-d.js?v=20260904-snap-color-red-1"></script>
+        <script type="module" src="./mode-d.js?v=20261027-scara-flange-1"></script>
   <script src="/0_Home/tool-guide-embed.js?v=20260906-2"></script>
 </body>
 </html>

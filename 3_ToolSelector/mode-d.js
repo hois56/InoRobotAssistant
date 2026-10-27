@@ -2206,7 +2206,8 @@ function updateCadRobotSpec(preserveJ5Offset = false) {
   if (!robot) return;
 
   const isScara = robot.type === 'scara';
-  el.robotJ5OffsetRow.hidden = isScara;
+  el.robotJ5OffsetRow.classList.toggle('is-disabled', isScara);
+  el.robotJ5Offset.disabled = isScara;
   if (!isScara && !preserveJ5Offset) el.robotJ5Offset.value = robot.j5;
 
   el.robotSpec.textContent = isScara
