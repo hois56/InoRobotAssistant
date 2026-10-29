@@ -135,3 +135,12 @@ test('Communication Tester 다운로드는 실행 파일을 담은 ZIP 아카이
   const archive = fs.readFileSync(archivePath);
   assert.equal(archive.readUInt32LE(0), 0x04034b50, 'Communication Tester 다운로드 파일이 ZIP 아카이브가 아닙니다.');
 });
+
+test('CAD Lightweight 다운로드는 LFS 참조 파일 대신 실제 ZIP을 제공하는 주소를 가리킨다', () => {
+  const html = fs.readFileSync(path.join(repoRoot, '7_DebuggingTool/index.html'), 'utf8');
+  const downloadUrl = 'https://media.githubusercontent.com/media/hois56/InoRobotAssistant/main/7_DebuggingTool/CADLightweight/CAD_Lightweight_V1.1.zip';
+  assert.ok(html.includes(`href="${downloadUrl}"`), 'CAD Lightweight 다운로드는 실제 LFS 파일 주소를 사용해야 합니다.');
+
+  const archivePath = new URL(downloadUrl).pathname.split('/main/')[1];
+  assert.ok(fs.existsSync(path.join(repoRoot, archivePath)), 'CAD Lightweight 다운로드 대상 파일이 없습니다.');
+});
