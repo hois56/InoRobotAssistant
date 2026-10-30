@@ -1,0 +1,2918 @@
+{
+  "units": "mm",
+  "coordinateFrame": "Authored STL / controller BASE at joint zero, before runtime fixed-base mounting correction",
+  "selection": "Accessory mounting-hole groups independently identified from manuals and original STL. No runtime offset values are stored in this fixture.",
+  "models": [
+    {
+      "folder": "IR-S4-40Z15",
+      "robotType": "scara",
+      "manual": {
+        "path": "6_Document/Hardware_manual/SCARA/IR-S4&S7&S10 Series User Guide - Manipulator.pdf",
+        "pdfPage": 46,
+        "printedPage": 45,
+        "figure": "2-16",
+        "thread": "4 x M4 depth 8",
+        "pattern": "20 mm pairs / 76.8 mm cross spacing, on bottom of arm 2"
+      },
+      "sourceCaveat": null,
+      "mounts": [
+        {
+          "jointIndex": 1,
+          "mesh": "P2.stl",
+          "kind": "bottom-accessory-pad-group-center",
+          "holes": [
+            {
+              "center": [
+                326.0487213134104,
+                -38.39512825013435,
+                64.69999694824219
+              ],
+              "axis": "z",
+              "radius": 2.149979481220682,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                326.048721313408,
+                38.39512825013435,
+                64.69999694824219
+              ],
+              "axis": "z",
+              "radius": 2.149979481224066,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                345.99999999999216,
+                -36.99999999999977,
+                64.69999694824219
+              ],
+              "axis": "z",
+              "radius": 2.1499714229643208,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                345.9999999999922,
+                36.999999999999545,
+                64.69999694824219
+              ],
+              "axis": "z",
+              "radius": 2.149971422963792,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "folder": "IR-S7-50Z20",
+      "robotType": "scara",
+      "manual": {
+        "path": "6_Document/Hardware_manual/SCARA/IR-S4&S7&S10 Series User Guide - Manipulator.pdf",
+        "pdfPage": 101,
+        "printedPage": 100,
+        "figure": "3-9",
+        "thread": "8 x M4 depth 10",
+        "pattern": "20 mm pairs, 52 mm gap, cross spacings 83 and 80 mm, bottom of arm 2"
+      },
+      "sourceCaveat": null,
+      "mounts": [
+        {
+          "jointIndex": 1,
+          "mesh": "P2.stl",
+          "kind": "bottom-accessory-pad-group-center",
+          "holes": [
+            {
+              "center": [
+                337.0000000000112,
+                -41.5,
+                76.5
+              ],
+              "axis": "z",
+              "radius": 2.1499714229242386,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                337.0000000000113,
+                41.499999999999545,
+                76.5
+              ],
+              "axis": "z",
+              "radius": 2.149971422932382,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                357.0000000000119,
+                -41.5,
+                76.5
+              ],
+              "axis": "z",
+              "radius": 2.149971422947928,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                357.0000000000119,
+                41.5,
+                76.5
+              ],
+              "axis": "z",
+              "radius": 2.149971422947928,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                409.00000000001404,
+                -39.97258567811082,
+                79.5
+              ],
+              "axis": "z",
+              "radius": 2.149970271748812,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                409.00000000001097,
+                39.99999999999932,
+                79.5
+              ],
+              "axis": "z",
+              "radius": 2.1499714229487745,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                429.0000000000079,
+                -39.97258567810877,
+                79.5
+              ],
+              "axis": "z",
+              "radius": 2.1499702717378133,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                429.0000000000032,
+                39.99999999999909,
+                79.5
+              ],
+              "axis": "z",
+              "radius": 2.149971422944544,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "folder": "IR-S7-60Z20",
+      "robotType": "scara",
+      "manual": {
+        "path": "6_Document/Hardware_manual/SCARA/IR-S4&S7&S10 Series User Guide - Manipulator.pdf",
+        "pdfPage": 101,
+        "printedPage": 100,
+        "figure": "3-9",
+        "thread": "8 x M4 depth 10",
+        "pattern": "20 mm pairs, 52 mm gap, cross spacings 83 and 80 mm, bottom of arm 2"
+      },
+      "sourceCaveat": null,
+      "mounts": [
+        {
+          "jointIndex": 1,
+          "mesh": "P2.stl",
+          "kind": "bottom-accessory-pad-group-center",
+          "holes": [
+            {
+              "center": [
+                436.99999999998266,
+                -41.500000000000455,
+                76.5
+              ],
+              "axis": "z",
+              "radius": 2.1499714229973166,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                436.999999999992,
+                41.500000000000455,
+                76.5
+              ],
+              "axis": "z",
+              "radius": 2.1499714229770115,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                457.00000000001086,
+                -41.49999999999909,
+                76.5
+              ],
+              "axis": "z",
+              "radius": 2.149971422937141,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                457.00000000001086,
+                41.49999999999909,
+                76.5
+              ],
+              "axis": "z",
+              "radius": 2.1499714229439095,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                509.0000000000075,
+                -39.972585678110136,
+                79.5
+              ],
+              "axis": "z",
+              "radius": 2.1499702717428897,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                509.00000000000506,
+                39.999999999999545,
+                79.5
+              ],
+              "axis": "z",
+              "radius": 2.149971422946236,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                528.9999999998073,
+                -39.972585680875454,
+                79.5
+              ],
+              "axis": "z",
+              "radius": 2.149988690717984,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                528.9999999998004,
+                40.00000000276077,
+                79.5
+              ],
+              "axis": "z",
+              "radius": 2.149989841904435,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "folder": "IR-S7-70Z20",
+      "robotType": "scara",
+      "manual": {
+        "path": "6_Document/Hardware_manual/SCARA/IR-S4&S7&S10 Series User Guide - Manipulator.pdf",
+        "pdfPage": 101,
+        "printedPage": 100,
+        "figure": "3-9",
+        "thread": "8 x M4 depth 10",
+        "pattern": "20 mm pairs, 52 mm gap, cross spacings 83 and 80 mm, bottom of arm 2"
+      },
+      "sourceCaveat": null,
+      "mounts": [
+        {
+          "jointIndex": 1,
+          "mesh": "P2.stl",
+          "kind": "bottom-accessory-pad-group-center",
+          "holes": [
+            {
+              "center": [
+                536.9999999997873,
+                -41.47722816727128,
+                76.5
+              ],
+              "axis": "z",
+              "radius": 2.149988690772184,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                536.9999999997984,
+                41.52277183788692,
+                76.5
+              ],
+              "axis": "z",
+              "radius": 2.1499886907710732,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                556.999999999827,
+                -41.47722816709302,
+                76.5
+              ],
+              "axis": "z",
+              "radius": 2.149988690690276,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                556.9999999998244,
+                41.522771837709115,
+                76.5
+              ],
+              "axis": "z",
+              "radius": 2.1499886907618726,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                608.999999999868,
+                -39.94981575219845,
+                79.5
+              ],
+              "axis": "z",
+              "radius": 2.1499886907657855,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                608.9999999998681,
+                40.02277183739625,
+                79.5
+              ],
+              "axis": "z",
+              "radius": 2.1499886908293977,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                628.9999999998613,
+                -39.9498157520693,
+                79.5
+              ],
+              "axis": "z",
+              "radius": 2.149988690775568,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                628.9999999998766,
+                40.0227718372671,
+                79.5
+              ],
+              "axis": "z",
+              "radius": 2.1499886907130135,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "folder": "IR-S10-60Z20",
+      "robotType": "scara",
+      "manual": {
+        "path": "6_Document/Hardware_manual/SCARA/IR-S4&S7&S10 Series User Guide - Manipulator.pdf",
+        "pdfPage": 154,
+        "printedPage": 153,
+        "figure": "4-9",
+        "thread": "8 x M4 depth 8",
+        "pattern": "20 mm pairs, 55 mm gap, cross spacings 96 and 92 mm, bottom of arm 2"
+      },
+      "sourceCaveat": null,
+      "mounts": [
+        {
+          "jointIndex": 1,
+          "mesh": "P2.stl",
+          "kind": "bottom-accessory-pad-group-center",
+          "holes": [
+            {
+              "center": [
+                419.99999999999983,
+                -48.000000000000455,
+                78.0
+              ],
+              "axis": "z",
+              "radius": 1.9499778599873634,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                419.99999999999983,
+                47.99999999999932,
+                78.0
+              ],
+              "axis": "z",
+              "radius": 1.9499778599743038,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                439.99999999997925,
+                -47.99999999999977,
+                78.0
+              ],
+              "axis": "z",
+              "radius": 1.9499778599854978,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                439.9999999999792,
+                47.999999999999545,
+                78.0
+              ],
+              "axis": "z",
+              "radius": 1.9499778599724382,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                495.00000000000045,
+                -46.0,
+                82.0
+              ],
+              "axis": "z",
+              "radius": 1.9499778599836322,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                495.0000000000008,
+                45.999999999999545,
+                82.0
+              ],
+              "axis": "z",
+              "radius": 1.9499778599952924,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                514.999999999767,
+                -46.000000002554316,
+                82.0
+              ],
+              "axis": "z",
+              "radius": 1.649553691819867,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 6
+            },
+            {
+              "center": [
+                514.9999999997527,
+                46.000000002520665,
+                82.0
+              ],
+              "axis": "z",
+              "radius": 1.9499886494562406,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "folder": "IR-S10-70Z20",
+      "robotType": "scara",
+      "manual": {
+        "path": "6_Document/Hardware_manual/SCARA/IR-S4&S7&S10 Series User Guide - Manipulator.pdf",
+        "pdfPage": 154,
+        "printedPage": 153,
+        "figure": "4-9",
+        "thread": "8 x M4 depth 8",
+        "pattern": "20 mm pairs, 55 mm gap, cross spacings 96 and 92 mm, bottom of arm 2"
+      },
+      "sourceCaveat": null,
+      "mounts": [
+        {
+          "jointIndex": 1,
+          "mesh": "P2.stl",
+          "kind": "bottom-accessory-pad-group-center",
+          "holes": [
+            {
+              "center": [
+                520.0027357355181,
+                -48.00515275313228,
+                78.00043626265092
+              ],
+              "axis": "z",
+              "radius": 1.9731015090508206,
+              "radialTolerance": 0.022078388786388015,
+              "planeTolerance": 0.06,
+              "minVertices": 11
+            },
+            {
+              "center": [
+                519.9980112194179,
+                48.003210169145405,
+                78.0006477355957
+              ],
+              "axis": "z",
+              "radius": 1.983063720716915,
+              "radialTolerance": 0.028804763653999865,
+              "planeTolerance": 0.06,
+              "minVertices": 10
+            },
+            {
+              "center": [
+                540.0027828540359,
+                -48.00525414306867,
+                78.00044666637073
+              ],
+              "axis": "z",
+              "radius": 1.9730848782204484,
+              "radialTolerance": 0.022472275005185338,
+              "planeTolerance": 0.06,
+              "minVertices": 11
+            },
+            {
+              "center": [
+                540.0070332385391,
+                48.00895735487302,
+                78.00061111450195
+              ],
+              "axis": "z",
+              "radius": 1.9801957443153728,
+              "radialTolerance": 0.01869510346400971,
+              "planeTolerance": 0.06,
+              "minVertices": 10
+            },
+            {
+              "center": [
+                595.0076928663069,
+                -45.994470274849846,
+                82.00053405761719
+              ],
+              "axis": "z",
+              "radius": 1.9738151014806518,
+              "radialTolerance": 0.021848479226139972,
+              "planeTolerance": 0.06,
+              "minVertices": 11
+            },
+            {
+              "center": [
+                595.0103273572357,
+                46.003457996547695,
+                82.00059231844816
+              ],
+              "axis": "z",
+              "radius": 1.974656735032938,
+              "radialTolerance": 0.021476920579538206,
+              "planeTolerance": 0.06,
+              "minVertices": 11
+            },
+            {
+              "center": [
+                614.9912939057365,
+                -46.0065212238851,
+                81.99998474121094
+              ],
+              "axis": "z",
+              "radius": 1.685465982368815,
+              "radialTolerance": 0.022770460209768695,
+              "planeTolerance": 0.06,
+              "minVertices": 9
+            },
+            {
+              "center": [
+                615.0103099612467,
+                46.003631059327745,
+                82.00056249445134
+              ],
+              "axis": "z",
+              "radius": 1.9747051928982082,
+              "radialTolerance": 0.02229136509385632,
+              "planeTolerance": 0.06,
+              "minVertices": 11
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "folder": "IR-S10-80Z20",
+      "robotType": "scara",
+      "manual": {
+        "path": "6_Document/Hardware_manual/SCARA/IR-S4&S7&S10 Series User Guide - Manipulator.pdf",
+        "pdfPage": 154,
+        "printedPage": 153,
+        "figure": "4-9",
+        "thread": "8 x M4 depth 8",
+        "pattern": "20 mm pairs, 55 mm gap, cross spacings 96 and 92 mm, bottom of arm 2"
+      },
+      "sourceCaveat": null,
+      "mounts": [
+        {
+          "jointIndex": 1,
+          "mesh": "P2.stl",
+          "kind": "bottom-accessory-pad-group-center",
+          "holes": [
+            {
+              "center": [
+                620.0027357355287,
+                -48.00515275258704,
+                78.00043626265092
+              ],
+              "axis": "z",
+              "radius": 1.9731015091637527,
+              "radialTolerance": 0.022078389121463093,
+              "planeTolerance": 0.06,
+              "minVertices": 11
+            },
+            {
+              "center": [
+                619.998011219492,
+                48.00321016858652,
+                78.0006477355957
+              ],
+              "axis": "z",
+              "radius": 1.9830637207636954,
+              "radialTolerance": 0.028804763159031355,
+              "planeTolerance": 0.06,
+              "minVertices": 10
+            },
+            {
+              "center": [
+                640.0027828540917,
+                -48.00525414256845,
+                78.00044666637073
+              ],
+              "axis": "z",
+              "radius": 1.973084878233816,
+              "radialTolerance": 0.022472275377343642,
+              "planeTolerance": 0.06,
+              "minVertices": 11
+            },
+            {
+              "center": [
+                640.0070332386229,
+                48.00895735436188,
+                78.00061111450195
+              ],
+              "axis": "z",
+              "radius": 1.9801957442688694,
+              "radialTolerance": 0.01869510290639842,
+              "planeTolerance": 0.06,
+              "minVertices": 10
+            },
+            {
+              "center": [
+                695.0076928663977,
+                -45.99447027436054,
+                82.00053405761719
+              ],
+              "axis": "z",
+              "radius": 1.973815101417525,
+              "radialTolerance": 0.021848478820578388,
+              "planeTolerance": 0.06,
+              "minVertices": 11
+            },
+            {
+              "center": [
+                695.0103273572421,
+                46.00345799604838,
+                82.00059231844816
+              ],
+              "axis": "z",
+              "radius": 1.9746567351176856,
+              "radialTolerance": 0.02147692092371023,
+              "planeTolerance": 0.06,
+              "minVertices": 11
+            },
+            {
+              "center": [
+                714.9912939058846,
+                -46.00652122346946,
+                81.99998474121094
+              ],
+              "axis": "z",
+              "radius": 1.6854659819365871,
+              "radialTolerance": 0.022770459339584104,
+              "planeTolerance": 0.06,
+              "minVertices": 9
+            },
+            {
+              "center": [
+                715.0103099612872,
+                46.00363105887118,
+                82.00056249445134
+              ],
+              "axis": "z",
+              "radius": 1.9747051929471442,
+              "radialTolerance": 0.022291365419689235,
+              "planeTolerance": 0.06,
+              "minVertices": 11
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "folder": "IR-TS4-35Z15",
+      "robotType": "scara",
+      "manual": {
+        "path": "6_Document/Hardware_manual/SCARA/IR-TS Series User Guide - Mechanical.pdf",
+        "pdfPage": 35,
+        "printedPage": 32,
+        "figure": "4-1",
+        "thread": "No accessory camera-hole callout in TS manual",
+        "pattern": "Actual P2 rim pattern is the reflected S4 accessory pattern; cross-reference S4 Figure 2-16",
+        "crossReference": {
+          "path": "6_Document/Hardware_manual/SCARA/IR-S4&S7&S10 Series User Guide - Manipulator.pdf",
+          "pdfPage": 46,
+          "figure": "2-16"
+        }
+      },
+      "sourceCaveat": "TS manual describes shaft tooling, not arm accessory holes. Selection is supported by four actual P2 rims matching the reflected S4 20 x 76.8 mm accessory pattern, distinct from shaft hardware.",
+      "mounts": [
+        {
+          "jointIndex": 1,
+          "mesh": "P2.stl",
+          "kind": "bottom-accessory-pad-group-center",
+          "holes": [
+            {
+              "center": [
+                53.99999999999473,
+                -37.0000000000078,
+                68.4000015258789
+              ],
+              "axis": "z",
+              "radius": 2.1499787250418816,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                53.9999999999947,
+                37.000000000007816,
+                68.4000015258789
+              ],
+              "axis": "z",
+              "radius": 2.1499787250416174,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                73.9512825011973,
+                -38.395128250135336,
+                68.4000015258789
+              ],
+              "axis": "z",
+              "radius": 2.149975271489261,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                73.9512825011973,
+                38.395128250135336,
+                68.4000015258789
+              ],
+              "axis": "z",
+              "radius": 2.149975271489261,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "folder": "IR-TS5-55Z15",
+      "robotType": "scara",
+      "manual": {
+        "path": "6_Document/Hardware_manual/SCARA/IR-TS Series User Guide - Mechanical.pdf",
+        "pdfPage": 35,
+        "printedPage": 32,
+        "figure": "4-2",
+        "thread": "No accessory camera-hole callout in TS manual",
+        "pattern": "Actual P2 hole pattern is the reflected S7 accessory pattern; cross-reference S7 Figure 3-9",
+        "crossReference": {
+          "path": "6_Document/Hardware_manual/SCARA/IR-S4&S7&S10 Series User Guide - Manipulator.pdf",
+          "pdfPage": 101,
+          "figure": "3-9"
+        }
+      },
+      "sourceCaveat": "TS manual describes shaft tooling, not arm accessory holes. Selection is supported by eight actual P2 inward cylindrical holes matching the reflected S7 20 mm pairs / 52 mm gap / 80 and 83 mm cross-spacing accessory pattern.",
+      "mounts": [
+        {
+          "jointIndex": 1,
+          "mesh": "P2.stl",
+          "kind": "bottom-accessory-pad-group-center",
+          "holes": [
+            {
+              "center": [
+                71.00642394908338,
+                -39.98859977681626,
+                77.69999694824219
+              ],
+              "axis": "z",
+              "radius": 1.6492801087120996,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 6
+            },
+            {
+              "center": [
+                70.9935842263734,
+                39.98398558719774,
+                77.69999694824219
+              ],
+              "axis": "z",
+              "radius": 1.6492810644804539,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 6
+            },
+            {
+              "center": [
+                91.00642394908397,
+                -39.9853878017169,
+                77.69999694824219
+              ],
+              "axis": "z",
+              "radius": 1.6492801087123066,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 6
+            },
+            {
+              "center": [
+                90.99358367808651,
+                39.98719596903928,
+                77.69999694824219
+              ],
+              "axis": "z",
+              "radius": 1.649280108714857,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 6
+            },
+            {
+              "center": [
+                143.00666425147162,
+                -41.47703522893744,
+                74.69999694824219
+              ],
+              "axis": "z",
+              "radius": 1.6492801089195137,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 6
+            },
+            {
+              "center": [
+                142.99333630015974,
+                41.52295687448037,
+                74.69999694824219
+              ],
+              "axis": "z",
+              "radius": 1.6492804286176466,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 6
+            },
+            {
+              "center": [
+                163.00666425146724,
+                -41.47382516118614,
+                74.69999694824219
+              ],
+              "axis": "z",
+              "radius": 1.6492813800853396,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 6
+            },
+            {
+              "center": [
+                162.99333574852932,
+                41.52616852971755,
+                74.69999694824219
+              ],
+              "axis": "z",
+              "radius": 1.6492801089257174,
+              "radialTolerance": 0.003,
+              "planeTolerance": 0.06,
+              "minVertices": 6
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "folder": "IR-S25-80Z42",
+      "robotType": "scara",
+      "manual": {
+        "path": "6_Document/Hardware_manual/SCARA/IR-S25&S35-INT Series User Guide - Manipulator.pdf",
+        "pdfPage": 55,
+        "printedPage": 54,
+        "figure": "6-8 / 6-9",
+        "thread": "8 x M4 depth 10",
+        "pattern": "30 and 20 mm pairs, cross spacings 140 and 120 mm, bottom of arm 2"
+      },
+      "sourceCaveat": null,
+      "mounts": [
+        {
+          "jointIndex": 1,
+          "mesh": "P2.stl",
+          "kind": "bottom-accessory-pad-group-center",
+          "holes": [
+            {
+              "center": [
+                497.4963018436466,
+                -70.00223210480908,
+                131.50024922688803
+              ],
+              "axis": "z",
+              "radius": 1.970423975549878,
+              "radialTolerance": 0.029305573922224326,
+              "planeTolerance": 0.06,
+              "minVertices": 12
+            },
+            {
+              "center": [
+                497.50605918235533,
+                70.00015932083738,
+                131.50033430619672
+              ],
+              "axis": "z",
+              "radius": 1.9758606855809802,
+              "radialTolerance": 0.026981895301009917,
+              "planeTolerance": 0.06,
+              "minVertices": 11
+            },
+            {
+              "center": [
+                527.4963719017643,
+                -70.00227801962615,
+                131.50024032592773
+              ],
+              "axis": "z",
+              "radius": 1.9704274088049147,
+              "radialTolerance": 0.029200613566823908,
+              "planeTolerance": 0.06,
+              "minVertices": 12
+            },
+            {
+              "center": [
+                527.5061463227663,
+                70.0001252688262,
+                131.5003107244318
+              ],
+              "axis": "z",
+              "radius": 1.9758856628710362,
+              "radialTolerance": 0.027206549111752798,
+              "planeTolerance": 0.06,
+              "minVertices": 11
+            },
+            {
+              "center": [
+                669.9950987083837,
+                -59.9978322445545,
+                137.5002555847168
+              ],
+              "axis": "z",
+              "radius": 1.9704529387787573,
+              "radialTolerance": 0.03165717780841004,
+              "planeTolerance": 0.06,
+              "minVertices": 12
+            },
+            {
+              "center": [
+                670.0004423039894,
+                59.99701488541132,
+                137.50020188551682
+              ],
+              "axis": "z",
+              "radius": 1.9646082888248366,
+              "radialTolerance": 0.012335929934183863,
+              "planeTolerance": 0.06,
+              "minVertices": 13
+            },
+            {
+              "center": [
+                689.9951587394211,
+                -59.997829678208745,
+                137.50025685628256
+              ],
+              "axis": "z",
+              "radius": 1.9704445087008546,
+              "radialTolerance": 0.0316532033388901,
+              "planeTolerance": 0.06,
+              "minVertices": 12
+            },
+            {
+              "center": [
+                690.0004826149119,
+                59.99703125507858,
+                137.50021479679987
+              ],
+              "axis": "z",
+              "radius": 1.9645954331194515,
+              "radialTolerance": 0.012289048030118986,
+              "planeTolerance": 0.06,
+              "minVertices": 13
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "folder": "IR-S25-100Z42",
+      "robotType": "scara",
+      "manual": {
+        "path": "6_Document/Hardware_manual/SCARA/IR-S25&S35-INT Series User Guide - Manipulator.pdf",
+        "pdfPage": 55,
+        "printedPage": 54,
+        "figure": "6-8 / 6-9",
+        "thread": "8 x M4 depth 10",
+        "pattern": "30 and 20 mm pairs, cross spacings 140 and 120 mm, bottom of arm 2"
+      },
+      "sourceCaveat": null,
+      "mounts": [
+        {
+          "jointIndex": 1,
+          "mesh": "P2.stl",
+          "kind": "bottom-accessory-pad-group-center",
+          "holes": [
+            {
+              "center": [
+                697.5004946894478,
+                -69.98930040020059,
+                131.5002466837565
+              ],
+              "axis": "z",
+              "radius": 1.971456704743552,
+              "radialTolerance": 0.02450486920061601,
+              "planeTolerance": 0.06,
+              "minVertices": 12
+            },
+            {
+              "center": [
+                697.5004837186682,
+                69.9971740075448,
+                131.50032170613608
+              ],
+              "axis": "z",
+              "radius": 1.9735214240555785,
+              "radialTolerance": 0.02463624241862572,
+              "planeTolerance": 0.06,
+              "minVertices": 12
+            },
+            {
+              "center": [
+                727.4973335184865,
+                -70.00314398022783,
+                131.50022888183594
+              ],
+              "axis": "z",
+              "radius": 1.9661716122461073,
+              "radialTolerance": 0.01334308702855713,
+              "planeTolerance": 0.06,
+              "minVertices": 13
+            },
+            {
+              "center": [
+                727.4996430930503,
+                70.0012139229375,
+                131.50020892803485
+              ],
+              "axis": "z",
+              "radius": 1.9656063948562046,
+              "radialTolerance": 0.022634390001752047,
+              "planeTolerance": 0.06,
+              "minVertices": 13
+            },
+            {
+              "center": [
+                869.9916194051342,
+                -60.004693504835814,
+                137.50026830037436
+              ],
+              "axis": "z",
+              "radius": 1.9722145411411598,
+              "radialTolerance": 0.02358762151895344,
+              "planeTolerance": 0.06,
+              "minVertices": 12
+            },
+            {
+              "center": [
+                869.9986283872174,
+                59.996217208036796,
+                137.50024922688803
+              ],
+              "axis": "z",
+              "radius": 1.9701422270586078,
+              "radialTolerance": 0.014493887191433517,
+              "planeTolerance": 0.06,
+              "minVertices": 12
+            },
+            {
+              "center": [
+                889.9933494115171,
+                -60.00701647047299,
+                137.5003398548473
+              ],
+              "axis": "z",
+              "radius": 1.9741710379305684,
+              "radialTolerance": 0.021987839142453725,
+              "planeTolerance": 0.06,
+              "minVertices": 11
+            },
+            {
+              "center": [
+                889.9980354699254,
+                60.00273379310238,
+                137.50025470440204
+              ],
+              "axis": "z",
+              "radius": 1.9669274657567226,
+              "radialTolerance": 0.030167040009502877,
+              "planeTolerance": 0.06,
+              "minVertices": 13
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "folder": "IR-S25-120Z42",
+      "robotType": "scara",
+      "manual": {
+        "path": "6_Document/Hardware_manual/SCARA/IR-S25&S35-INT Series User Guide - Manipulator.pdf",
+        "pdfPage": 55,
+        "printedPage": 54,
+        "figure": "6-8 / 6-9",
+        "thread": "8 x M4 depth 10",
+        "pattern": "30 and 20 mm pairs, cross spacings 140 and 120 mm, bottom of arm 2"
+      },
+      "sourceCaveat": null,
+      "mounts": [
+        {
+          "jointIndex": 1,
+          "mesh": "P2.stl",
+          "kind": "bottom-accessory-pad-group-center",
+          "holes": [
+            {
+              "center": [
+                897.4980338903367,
+                -69.99589839278451,
+                131.50017606295071
+              ],
+              "axis": "z",
+              "radius": 1.9668461895777325,
+              "radialTolerance": 0.021531197020791426,
+              "planeTolerance": 0.06,
+              "minVertices": 13
+            },
+            {
+              "center": [
+                897.5015619122277,
+                70.00040500477553,
+                131.50026321411133
+              ],
+              "axis": "z",
+              "radius": 1.9671236367838756,
+              "radialTolerance": 0.014819536663465136,
+              "planeTolerance": 0.06,
+              "minVertices": 12
+            },
+            {
+              "center": [
+                927.498081929422,
+                -69.9959291763953,
+                131.50017841045673
+              ],
+              "axis": "z",
+              "radius": 1.966835124503084,
+              "radialTolerance": 0.021451932682558184,
+              "planeTolerance": 0.06,
+              "minVertices": 13
+            },
+            {
+              "center": [
+                927.501621048247,
+                70.0004272987344,
+                131.50028483072916
+              ],
+              "axis": "z",
+              "radius": 1.9671030827382912,
+              "radialTolerance": 0.014839539726474003,
+              "planeTolerance": 0.06,
+              "minVertices": 12
+            },
+            {
+              "center": [
+                1069.9992396120726,
+                -60.00244633935108,
+                137.50022888183594
+              ],
+              "axis": "z",
+              "radius": 1.970721438515625,
+              "radialTolerance": 0.02094244954347091,
+              "planeTolerance": 0.06,
+              "minVertices": 12
+            },
+            {
+              "center": [
+                1070.0080421246766,
+                59.99656241493358,
+                137.50020540677585
+              ],
+              "axis": "z",
+              "radius": 1.9686700663069647,
+              "radialTolerance": 0.016804577932057585,
+              "planeTolerance": 0.06,
+              "minVertices": 13
+            },
+            {
+              "center": [
+                1089.9987369253333,
+                -60.00273079906583,
+                137.5002466837565
+              ],
+              "axis": "z",
+              "radius": 1.9703914522565236,
+              "radialTolerance": 0.020513225697338378,
+              "planeTolerance": 0.06,
+              "minVertices": 12
+            },
+            {
+              "center": [
+                1090.0080848223918,
+                59.99654425238987,
+                137.50020423302283
+              ],
+              "axis": "z",
+              "radius": 1.9686749249853266,
+              "radialTolerance": 0.016808760738295847,
+              "planeTolerance": 0.06,
+              "minVertices": 13
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "folder": "IR-S35-80Z42",
+      "robotType": "scara",
+      "manual": {
+        "path": "6_Document/Hardware_manual/SCARA/IR-S25&S35-INT Series User Guide - Manipulator.pdf",
+        "pdfPage": 55,
+        "printedPage": 54,
+        "figure": "6-8 / 6-9",
+        "thread": "8 x M4 depth 10",
+        "pattern": "30 and 20 mm pairs, cross spacings 140 and 120 mm, bottom of arm 2"
+      },
+      "sourceCaveat": null,
+      "mounts": [
+        {
+          "jointIndex": 1,
+          "mesh": "P2.stl",
+          "kind": "bottom-accessory-pad-group-center",
+          "holes": [
+            {
+              "center": [
+                497.50531251391874,
+                -70.01127192548688,
+                156.5004711151123
+              ],
+              "axis": "z",
+              "radius": 2.0059147243091906,
+              "radialTolerance": 0.041990701760884486,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                497.50146973530263,
+                69.99326755862444,
+                156.50073411729602
+              ],
+              "axis": "z",
+              "radius": 1.989742845591089,
+              "radialTolerance": 0.03622324698510626,
+              "planeTolerance": 0.06,
+              "minVertices": 9
+            },
+            {
+              "center": [
+                527.4935827890881,
+                -70.00232836946634,
+                156.50047760009767
+              ],
+              "axis": "z",
+              "radius": 1.9803939210008539,
+              "radialTolerance": 0.028309828185058894,
+              "planeTolerance": 0.06,
+              "minVertices": 10
+            },
+            {
+              "center": [
+                527.5042524763604,
+                70.00498666302883,
+                156.5005628797743
+              ],
+              "axis": "z",
+              "radius": 1.992083945056462,
+              "radialTolerance": 0.031119444715037803,
+              "planeTolerance": 0.06,
+              "minVertices": 9
+            },
+            {
+              "center": [
+                669.9936067875551,
+                -60.0065253457351,
+                162.50155300564236
+              ],
+              "axis": "z",
+              "radius": 1.9890049884287595,
+              "radialTolerance": 0.04013732043639262,
+              "planeTolerance": 0.06,
+              "minVertices": 9
+            },
+            {
+              "center": [
+                670.0096760715784,
+                60.018224564271804,
+                162.50040351019965
+              ],
+              "axis": "z",
+              "radius": 1.9903224041480143,
+              "radialTolerance": 0.03237245608175687,
+              "planeTolerance": 0.06,
+              "minVertices": 9
+            },
+            {
+              "center": [
+                690.0026567870946,
+                -60.00593169211152,
+                162.50048217773437
+              ],
+              "axis": "z",
+              "radius": 1.9773257212306985,
+              "radialTolerance": 0.019802824394718588,
+              "planeTolerance": 0.06,
+              "minVertices": 10
+            },
+            {
+              "center": [
+                690.0086950361939,
+                60.00680745979025,
+                162.50099182128906
+              ],
+              "axis": "z",
+              "radius": 1.9984360570982467,
+              "radialTolerance": 0.041367451177217074,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "folder": "IR-S35-100Z42",
+      "robotType": "scara",
+      "manual": {
+        "path": "6_Document/Hardware_manual/SCARA/IR-S25&S35-INT Series User Guide - Manipulator.pdf",
+        "pdfPage": 55,
+        "printedPage": 54,
+        "figure": "6-8 / 6-9",
+        "thread": "8 x M4 depth 10",
+        "pattern": "30 and 20 mm pairs, cross spacings 140 and 120 mm, bottom of arm 2"
+      },
+      "sourceCaveat": null,
+      "mounts": [
+        {
+          "jointIndex": 1,
+          "mesh": "P2.stl",
+          "kind": "bottom-accessory-pad-group-center",
+          "holes": [
+            {
+              "center": [
+                697.4918970438313,
+                -70.00159018254453,
+                156.50054321289062
+              ],
+              "axis": "z",
+              "radius": 1.9807621733998735,
+              "radialTolerance": 0.03525981535927092,
+              "planeTolerance": 0.06,
+              "minVertices": 10
+            },
+            {
+              "center": [
+                697.4984275821719,
+                70.00933966193998,
+                156.5005661010742
+              ],
+              "axis": "z",
+              "radius": 1.9758881429033262,
+              "radialTolerance": 0.024469419003397164,
+              "planeTolerance": 0.06,
+              "minVertices": 10
+            },
+            {
+              "center": [
+                727.4920668527411,
+                -70.0016476742976,
+                156.50050354003906
+              ],
+              "axis": "z",
+              "radius": 1.9807963248663238,
+              "radialTolerance": 0.03503373661130893,
+              "planeTolerance": 0.06,
+              "minVertices": 10
+            },
+            {
+              "center": [
+                727.4985774910663,
+                70.0094861505172,
+                156.500537109375
+              ],
+              "axis": "z",
+              "radius": 1.9759247931388482,
+              "radialTolerance": 0.024947552061554967,
+              "planeTolerance": 0.06,
+              "minVertices": 10
+            },
+            {
+              "center": [
+                870.0025498877736,
+                -60.005894744939724,
+                162.50052490234376
+              ],
+              "axis": "z",
+              "radius": 1.9772838144185036,
+              "radialTolerance": 0.01962247759023228,
+              "planeTolerance": 0.06,
+              "minVertices": 10
+            },
+            {
+              "center": [
+                869.9932816377609,
+                59.99795379403622,
+                162.50046053799716
+              ],
+              "axis": "z",
+              "radius": 1.972971471975646,
+              "radialTolerance": 0.033867853989318464,
+              "planeTolerance": 0.06,
+              "minVertices": 11
+            },
+            {
+              "center": [
+                890.0026567871063,
+                -60.00593169169042,
+                162.50048217773437
+              ],
+              "axis": "z",
+              "radius": 1.9773257213306252,
+              "radialTolerance": 0.019802824710869693,
+              "planeTolerance": 0.06,
+              "minVertices": 10
+            },
+            {
+              "center": [
+                889.9933583252622,
+                59.99802200066006,
+                162.500468860973
+              ],
+              "axis": "z",
+              "radius": 1.9729549304175478,
+              "radialTolerance": 0.03384653698244211,
+              "planeTolerance": 0.06,
+              "minVertices": 11
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "folder": "IR-S35-120Z42",
+      "robotType": "scara",
+      "manual": {
+        "path": "6_Document/Hardware_manual/SCARA/IR-S25&S35-INT Series User Guide - Manipulator.pdf",
+        "pdfPage": 55,
+        "printedPage": 54,
+        "figure": "6-8 / 6-9",
+        "thread": "8 x M4 depth 10",
+        "pattern": "30 and 20 mm pairs, cross spacings 140 and 120 mm, bottom of arm 2"
+      },
+      "sourceCaveat": null,
+      "mounts": [
+        {
+          "jointIndex": 1,
+          "mesh": "P2.stl",
+          "kind": "bottom-accessory-pad-group-center",
+          "holes": [
+            {
+              "center": [
+                897.4981247559442,
+                -69.9971537851061,
+                159.50017723670373
+              ],
+              "axis": "z",
+              "radius": 1.9670912323894187,
+              "radialTolerance": 0.022254771301916998,
+              "planeTolerance": 0.06,
+              "minVertices": 13
+            },
+            {
+              "center": [
+                897.5008060059691,
+                70.0026340164568,
+                159.50027720133463
+              ],
+              "axis": "z",
+              "radius": 1.9672358684430324,
+              "radialTolerance": 0.014770004755198183,
+              "planeTolerance": 0.06,
+              "minVertices": 12
+            },
+            {
+              "center": [
+                927.4981867282158,
+                -69.99716636880112,
+                159.50018310546875
+              ],
+              "axis": "z",
+              "radius": 1.967080204617899,
+              "radialTolerance": 0.022194063063147862,
+              "planeTolerance": 0.06,
+              "minVertices": 13
+            },
+            {
+              "center": [
+                927.500838319087,
+                70.00264465496184,
+                159.5002924601237
+              ],
+              "axis": "z",
+              "radius": 1.9672204837599823,
+              "radialTolerance": 0.014753908359825816,
+              "planeTolerance": 0.06,
+              "minVertices": 12
+            },
+            {
+              "center": [
+                1070.0017594046133,
+                -60.002606886546346,
+                165.50022506713867
+              ],
+              "axis": "z",
+              "radius": 1.969520279869275,
+              "radialTolerance": 0.023495755344594915,
+              "planeTolerance": 0.06,
+              "minVertices": 12
+            },
+            {
+              "center": [
+                1070.0055656213183,
+                59.99469090601269,
+                165.5001983642578
+              ],
+              "axis": "z",
+              "radius": 1.9696060068582066,
+              "radialTolerance": 0.015910945152438405,
+              "planeTolerance": 0.06,
+              "minVertices": 13
+            },
+            {
+              "center": [
+                1090.0017991779707,
+                -60.002586435824924,
+                165.50023778279623
+              ],
+              "axis": "z",
+              "radius": 1.9695076581192412,
+              "radialTolerance": 0.023320590607688985,
+              "planeTolerance": 0.06,
+              "minVertices": 12
+            },
+            {
+              "center": [
+                1090.0056078752734,
+                59.99467541215199,
+                165.50019719050482
+              ],
+              "axis": "z",
+              "radius": 1.969611824916023,
+              "radialTolerance": 0.015865974334152932,
+              "planeTolerance": 0.06,
+              "minVertices": 13
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "folder": "IR-S60-120Z40",
+      "robotType": "scara",
+      "manual": {
+        "path": "6_Document/Hardware_manual/SCARA/IR-S60&GS60 Series User Guide - Mechanical.pdf",
+        "pdfPage": 46,
+        "printedPage": 45,
+        "figure": "6-3 / 6-4",
+        "thread": "8 x M4 depth 10",
+        "pattern": "20 mm pairs, bottom of arm 2; actual CAD cross spacings 182 and 172 mm"
+      },
+      "sourceCaveat": null,
+      "mounts": [
+        {
+          "jointIndex": 1,
+          "mesh": "P2.stl",
+          "kind": "bottom-accessory-pad-group-center",
+          "holes": [
+            {
+              "center": [
+                906.0172296171459,
+                -91.01718239896945,
+                161.000004359654
+              ],
+              "axis": "z",
+              "radius": 1.7108131325696239,
+              "radialTolerance": 0.029294764327057576,
+              "planeTolerance": 0.06,
+              "minVertices": 7
+            },
+            {
+              "center": [
+                906.0117310469324,
+                90.98912387168639,
+                160.99993460518974
+              ],
+              "axis": "z",
+              "radius": 1.7061640278155843,
+              "radialTolerance": 0.025872559502879255,
+              "planeTolerance": 0.06,
+              "minVertices": 7
+            },
+            {
+              "center": [
+                926.0163844354349,
+                -91.01828648646915,
+                161.00022670200892
+              ],
+              "axis": "z",
+              "radius": 1.7104886696053012,
+              "radialTolerance": 0.03024089783088657,
+              "planeTolerance": 0.06,
+              "minVertices": 7
+            },
+            {
+              "center": [
+                926.0112323840898,
+                90.98550847651131,
+                160.9998822893415
+              ],
+              "axis": "z",
+              "radius": 1.7080927351773145,
+              "radialTolerance": 0.026977484688327058,
+              "planeTolerance": 0.06,
+              "minVertices": 7
+            },
+            {
+              "center": [
+                1042.004801018872,
+                -86.00875580093634,
+                160.99998664855957
+              ],
+              "axis": "z",
+              "radius": 1.6942654728424154,
+              "radialTolerance": 0.02567441339170129,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                1042.0151106303492,
+                86.02288560712987,
+                161.00000653948103
+              ],
+              "axis": "z",
+              "radius": 1.7081740592488999,
+              "radialTolerance": 0.03527881931847432,
+              "planeTolerance": 0.06,
+              "minVertices": 7
+            },
+            {
+              "center": [
+                1062.004865689214,
+                -86.00947976328098,
+                160.9999828338623
+              ],
+              "axis": "z",
+              "radius": 1.6946509554079188,
+              "radialTolerance": 0.02584152477940127,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            },
+            {
+              "center": [
+                1062.0107249953319,
+                85.97904940236003,
+                161.0001106262207
+              ],
+              "axis": "z",
+              "radius": 1.699080731952944,
+              "radialTolerance": 0.03363332431910315,
+              "planeTolerance": 0.06,
+              "minVertices": 8
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "folder": "IR-GS60-120Z40",
+      "robotType": "scara",
+      "manual": {
+        "path": "6_Document/Hardware_manual/SCARA/IR-S60&GS60 Series User Guide - Mechanical.pdf",
+        "pdfPage": 46,
+        "printedPage": 45,
+        "figure": "6-3 / 6-4",
+        "thread": "8 x M4 depth 10",
+        "pattern": "20 mm pairs, bottom of arm 2; actual CAD cross spacings 182 and 172 mm"
+      },
+      "sourceCaveat": null,
+      "mounts": [
+        {
+          "jointIndex": 1,
+          "mesh": "P2.stl",
+          "kind": "bottom-accessory-pad-group-center",
+          "holes": [
+            {
+              "center": [
+                905.994520663301,
+                -90.9958127425989,
+                161.00006103515625
+              ],
+              "axis": "z",
+              "radius": 1.6848078366369186,
+              "radialTolerance": 0.023890920083578626,
+              "planeTolerance": 0.06,
+              "minVertices": 9
+            },
+            {
+              "center": [
+                905.9964969877273,
+                91.00415760702799,
+                161.00006103515625
+              ],
+              "axis": "z",
+              "radius": 1.6845601640341399,
+              "radialTolerance": 0.022342618521093538,
+              "planeTolerance": 0.06,
+              "minVertices": 9
+            },
+            {
+              "center": [
+                925.9945206631762,
+                -90.99581274261527,
+                161.00006103515625
+              ],
+              "axis": "z",
+              "radius": 1.6848078366919803,
+              "radialTolerance": 0.023890920149461925,
+              "planeTolerance": 0.06,
+              "minVertices": 9
+            },
+            {
+              "center": [
+                925.9964969877594,
+                91.00415760699525,
+                161.00006103515625
+              ],
+              "axis": "z",
+              "radius": 1.684560164131322,
+              "radialTolerance": 0.02234261840755436,
+              "planeTolerance": 0.06,
+              "minVertices": 9
+            },
+            {
+              "center": [
+                1041.9858765337422,
+                -86.00197906416815,
+                161.00006103515625
+              ],
+              "axis": "z",
+              "radius": 1.685410223446971,
+              "radialTolerance": 0.021088701377061536,
+              "planeTolerance": 0.06,
+              "minVertices": 9
+            },
+            {
+              "center": [
+                1041.9858772555601,
+                85.99802705381444,
+                161.00006103515625
+              ],
+              "axis": "z",
+              "radius": 1.6854095153066386,
+              "radialTolerance": 0.02108984500180422,
+              "planeTolerance": 0.06,
+              "minVertices": 9
+            },
+            {
+              "center": [
+                1061.9858765338215,
+                -86.00197906417452,
+                161.00006103515625
+              ],
+              "axis": "z",
+              "radius": 1.6854102237718271,
+              "radialTolerance": 0.021088701129085008,
+              "planeTolerance": 0.06,
+              "minVertices": 9
+            },
+            {
+              "center": [
+                1061.9858772556656,
+                85.9980270538008,
+                161.00006103515625
+              ],
+              "axis": "z",
+              "radius": 1.685409515439387,
+              "radialTolerance": 0.02108984497032851,
+              "planeTolerance": 0.06,
+              "minVertices": 9
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "folder": "IR-R10-110",
+      "robotType": "six-axis",
+      "manual": {
+        "path": "6_Document/Hardware_manual/6-axis/IR-R10-110&R10H&R11 Series User Guide - Manipulator.PDF",
+        "pdfPage": 50,
+        "printedPage": 49,
+        "figure": "Figure 4-4",
+        "png": "tmp/all-arm-load-reference/r10-110-mounting-page50.png"
+      },
+      "mounts": [
+        {
+          "jointIndex": 2,
+          "mesh": "P3.stl",
+          "kind": "top-tapped-hole-group-center",
+          "manualThread": "2 x M4 depth 8; transverse spacing 25; axial offset from J3 57.5",
+          "holes": [
+            {
+              "center": [
+                82.5,
+                -12.5,
+                1054.010009765625
+              ],
+              "axis": "z",
+              "radius": 1.75,
+              "radialTolerance": 0.001,
+              "planeTolerance": 0.01,
+              "minVertices": 12
+            },
+            {
+              "center": [
+                82.5,
+                12.5,
+                1054.010009765625
+              ],
+              "axis": "z",
+              "radius": 1.75,
+              "radialTolerance": 0.001,
+              "planeTolerance": 0.01,
+              "minVertices": 12
+            }
+          ]
+        },
+        {
+          "jointIndex": 3,
+          "mesh": "P4.stl",
+          "kind": "side-tapped-hole-upper-bridge-datum",
+          "manualThread": "Four M3 depth 5 (two per side); vertical spacing 45; 120 behind flange",
+          "holes": [
+            {
+              "center": [
+                500,
+                -67.00000762939453,
+                977.5099985975021
+              ],
+              "axis": "y",
+              "radius": 1.2499937000706285,
+              "radialTolerance": 0.001,
+              "planeTolerance": 0.001,
+              "minVertices": 13
+            },
+            {
+              "center": [
+                500,
+                67,
+                977.5099985975021
+              ],
+              "axis": "y",
+              "radius": 1.2499937000706285,
+              "radialTolerance": 0.001,
+              "planeTolerance": 0.001,
+              "minVertices": 13
+            },
+            {
+              "center": [
+                500,
+                -67.00000762939453,
+                1022.5099836253452
+              ],
+              "axis": "y",
+              "radius": 1.2500025799785823,
+              "radialTolerance": 0.001,
+              "planeTolerance": 0.001,
+              "minVertices": 13
+            },
+            {
+              "center": [
+                500,
+                67,
+                1022.5099836253452
+              ],
+              "axis": "y",
+              "radius": 1.2500025799785823,
+              "radialTolerance": 0.001,
+              "planeTolerance": 0.001,
+              "minVertices": 13
+            }
+          ],
+          "sectionEvidence": {
+            "sectionX": 500,
+            "yCenter": -3.814697265625e-06,
+            "sectionEndpointCount": 502,
+            "negativeYTop": {
+              "point": [
+                500,
+                -41.735142855102644,
+                1047.3833100443826
+              ],
+              "triangleIndex": 18276,
+              "barycentric": [
+                0,
+                0.19328464015070712,
+                0.8067153598492929
+              ],
+              "vertices": [
+                [
+                  469.9914855957031,
+                  -41.662994384765625,
+                  1049.2484130859375
+                ],
+                [
+                  469.9946594238281,
+                  -42.03627014160156,
+                  1049.30615234375
+                ],
+                [
+                  507.1891174316406,
+                  -41.662994384765625,
+                  1046.922607421875
+                ]
+              ]
+            },
+            "positiveYTop": {
+              "point": [
+                500,
+                42.036277770996094,
+                1047.4476365545283
+              ],
+              "triangleIndex": 17548,
+              "barycentric": [
+                0,
+                0.8764004141699054,
+                0.12359958583009455
+              ],
+              "vertices": [
+                [
+                  504.324951171875,
+                  41.663002014160156,
+                  1047.12255859375
+                ],
+                [
+                  504.3314208984375,
+                  42.036277770996094,
+                  1047.1800537109375
+                ],
+                [
+                  469.2874450683594,
+                  42.036277770996094,
+                  1049.344970703125
+                ]
+              ]
+            },
+            "interpolationFraction": 0.49820259377818066,
+            "center": [
+              500,
+              -3.814697265625e-06,
+              1047.415357678586
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "folder": "IR-R11-90",
+      "robotType": "six-axis",
+      "manual": {
+        "path": "6_Document/Hardware_manual/6-axis/IR-R10-110&R10H&R11 Series User Guide - Manipulator.PDF",
+        "pdfPage": 50,
+        "printedPage": 49,
+        "figure": "Figure 4-4",
+        "png": "tmp/all-arm-load-reference/r10-110-mounting-page50.png"
+      },
+      "mounts": [
+        {
+          "jointIndex": 2,
+          "mesh": "P3.stl",
+          "kind": "top-tapped-hole-group-center",
+          "manualThread": "2 x M4 depth 8; transverse spacing 25; axial offset from J3 57.5",
+          "holes": [
+            {
+              "center": [
+                82.5,
+                -12.5,
+                949.010009765625
+              ],
+              "axis": "z",
+              "radius": 1.75,
+              "radialTolerance": 0.001,
+              "planeTolerance": 0.01,
+              "minVertices": 12
+            },
+            {
+              "center": [
+                82.5,
+                12.5,
+                949.010009765625
+              ],
+              "axis": "z",
+              "radius": 1.75,
+              "radialTolerance": 0.001,
+              "planeTolerance": 0.01,
+              "minVertices": 12
+            }
+          ]
+        },
+        {
+          "jointIndex": 3,
+          "mesh": "P4.stl",
+          "kind": "side-tapped-hole-upper-bridge-datum",
+          "manualThread": "Four M3 depth 5 (two per side); vertical spacing 45; 120 behind flange",
+          "holes": [
+            {
+              "center": [
+                405,
+                -67.00000762939453,
+                871.3673495284019
+              ],
+              "axis": "y",
+              "radius": 1.2499988900450207,
+              "radialTolerance": 0.001,
+              "planeTolerance": 0.001,
+              "minVertices": 13
+            },
+            {
+              "center": [
+                405,
+                67,
+                871.3673495284019
+              ],
+              "axis": "y",
+              "radius": 1.2499988900450205,
+              "radialTolerance": 0.001,
+              "planeTolerance": 0.001,
+              "minVertices": 13
+            },
+            {
+              "center": [
+                405,
+                -67.00000762939453,
+                916.3673444651889
+              ],
+              "axis": "y",
+              "radius": 1.2500025799785823,
+              "radialTolerance": 0.001,
+              "planeTolerance": 0.001,
+              "minVertices": 13
+            },
+            {
+              "center": [
+                405,
+                67,
+                916.3673444651889
+              ],
+              "axis": "y",
+              "radius": 1.2500025799785823,
+              "radialTolerance": 0.001,
+              "planeTolerance": 0.001,
+              "minVertices": 13
+            }
+          ],
+          "sectionEvidence": {
+            "sectionX": 405,
+            "yCenter": -3.814697265625e-06,
+            "sectionEndpointCount": 502,
+            "negativeYTop": {
+              "point": [
+                405,
+                -41.735142855102644,
+                941.2406708842265
+              ],
+              "triangleIndex": 22643,
+              "barycentric": [
+                0,
+                0.19328464015070712,
+                0.8067153598492929
+              ],
+              "vertices": [
+                [
+                  374.9914855957031,
+                  -41.662994384765625,
+                  943.1057739257812
+                ],
+                [
+                  374.9946594238281,
+                  -42.03627014160156,
+                  943.1635131835938
+                ],
+                [
+                  412.1891174316406,
+                  -41.662994384765625,
+                  940.7799682617188
+                ]
+              ]
+            },
+            "positiveYTop": {
+              "point": [
+                405,
+                42.036277770996094,
+                941.3049898504521
+              ],
+              "triangleIndex": 28395,
+              "barycentric": [
+                0,
+                0.8764004141699054,
+                0.12359958583009455
+              ],
+              "vertices": [
+                [
+                  409.324951171875,
+                  41.663002014160156,
+                  940.9798583984375
+                ],
+                [
+                  409.3314208984375,
+                  42.036277770996094,
+                  941.0374145507812
+                ],
+                [
+                  374.2874450683594,
+                  42.036277770996094,
+                  943.2022705078125
+                ]
+              ]
+            },
+            "interpolationFraction": 0.49820259377818066,
+            "center": [
+              405,
+              -3.814697265625e-06,
+              941.2727147600292
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "folder": "IR-R10-140",
+      "robotType": "six-axis",
+      "manual": {
+        "path": "6_Document/Hardware_manual/6-axis/IR-R10-140 User Guide - Manipulator.pdf",
+        "pdfPage": 21,
+        "printedPage": 20,
+        "figure": "Figure 1-4",
+        "png": "tmp/all-arm-load-reference/r10-140-outline-page21.png"
+      },
+      "mounts": [
+        {
+          "jointIndex": 2,
+          "mesh": "P3.stl",
+          "kind": "top-tapped-hole-group-center",
+          "manualThread": "4 x M5 depth 7.5; pattern 25 x 80",
+          "holes": [
+            {
+              "center": [
+                229,
+                -22.5,
+                1254.5
+              ],
+              "axis": "z",
+              "radius": 2.25,
+              "radialTolerance": 0.001,
+              "planeTolerance": 0.01,
+              "minVertices": 12
+            },
+            {
+              "center": [
+                229,
+                57.5,
+                1254.5
+              ],
+              "axis": "z",
+              "radius": 2.25,
+              "radialTolerance": 0.001,
+              "planeTolerance": 0.01,
+              "minVertices": 12
+            },
+            {
+              "center": [
+                254,
+                -22.5,
+                1254.5
+              ],
+              "axis": "z",
+              "radius": 2.25,
+              "radialTolerance": 0.001,
+              "planeTolerance": 0.01,
+              "minVertices": 12
+            },
+            {
+              "center": [
+                254,
+                57.5,
+                1254.5
+              ],
+              "axis": "z",
+              "radius": 2.25,
+              "radialTolerance": 0.001,
+              "planeTolerance": 0.01,
+              "minVertices": 12
+            }
+          ]
+        },
+        {
+          "jointIndex": 3,
+          "mesh": "P4.stl",
+          "kind": "front-forearm-top-tapped-hole-group-center",
+          "manualThread": "2 x M5 depth 7.5; transverse spacing 25",
+          "holes": [
+            {
+              "center": [
+                642,
+                -21.25,
+                1244
+              ],
+              "axis": "z",
+              "radius": 2.25,
+              "radialTolerance": 0.001,
+              "planeTolerance": 0.01,
+              "minVertices": 12
+            },
+            {
+              "center": [
+                642,
+                3.75,
+                1244
+              ],
+              "axis": "z",
+              "radius": 2.25,
+              "radialTolerance": 0.001,
+              "planeTolerance": 0.01,
+              "minVertices": 12
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "folder": "IR-R15H-145",
+      "robotType": "six-axis",
+      "manual": {
+        "path": "6_Document/Hardware_manual/6-axis/IR-R15H&20H Series User Guide - Manipulator.pdf",
+        "pdfPage": 62,
+        "printedPage": 61,
+        "figure": "Figure 6-3"
+      },
+      "mounts": [
+        {
+          "jointIndex": 2,
+          "mesh": "P3.stl",
+          "kind": "top-tapped-hole-group-center",
+          "manualThread": "Four M5 depth 10; 65 x 70 pattern",
+          "holes": [
+            {
+              "center": [
+                130,
+                -35,
+                1260.5
+              ],
+              "axis": "z",
+              "radius": 2.12,
+              "radialTolerance": 0.02,
+              "planeTolerance": 0.01,
+              "minVertices": 15
+            },
+            {
+              "center": [
+                130,
+                35,
+                1260.5
+              ],
+              "axis": "z",
+              "radius": 2.12,
+              "radialTolerance": 0.02,
+              "planeTolerance": 0.01,
+              "minVertices": 16
+            },
+            {
+              "center": [
+                195,
+                -35,
+                1260.5
+              ],
+              "axis": "z",
+              "radius": 2.12,
+              "radialTolerance": 0.02,
+              "planeTolerance": 0.01,
+              "minVertices": 15
+            },
+            {
+              "center": [
+                195,
+                35,
+                1260.5
+              ],
+              "axis": "z",
+              "radius": 2.12,
+              "radialTolerance": 0.02,
+              "planeTolerance": 0.01,
+              "minVertices": 15
+            }
+          ]
+        },
+        {
+          "jointIndex": 3,
+          "mesh": "P4.stl",
+          "kind": "top-tapped-hole-group-center",
+          "manualThread": "Two M5 depth 12; transverse spacing 50",
+          "holes": [
+            {
+              "center": [
+                564,
+                -25,
+                1241.5
+              ],
+              "axis": "z",
+              "radius": 2.12,
+              "radialTolerance": 0.02,
+              "planeTolerance": 0.01,
+              "minVertices": 16
+            },
+            {
+              "center": [
+                564,
+                25,
+                1241.5
+              ],
+              "axis": "z",
+              "radius": 2.12,
+              "radialTolerance": 0.02,
+              "planeTolerance": 0.01,
+              "minVertices": 16
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "folder": "IR-R20H-120",
+      "robotType": "six-axis",
+      "manual": {
+        "path": "6_Document/Hardware_manual/6-axis/IR-R15H&20H Series User Guide - Manipulator.pdf",
+        "pdfPage": 63,
+        "printedPage": 62,
+        "figure": "Figure 6-4"
+      },
+      "mounts": [
+        {
+          "jointIndex": 2,
+          "mesh": "P3.stl",
+          "kind": "top-tapped-hole-group-center",
+          "manualThread": "Four M5 depth 10; 65 x 70 pattern",
+          "holes": [
+            {
+              "center": [
+                130,
+                -35,
+                1175.5
+              ],
+              "axis": "z",
+              "radius": 2.12,
+              "radialTolerance": 0.02,
+              "planeTolerance": 0.01,
+              "minVertices": 15
+            },
+            {
+              "center": [
+                130,
+                35,
+                1175.5
+              ],
+              "axis": "z",
+              "radius": 2.12,
+              "radialTolerance": 0.02,
+              "planeTolerance": 0.01,
+              "minVertices": 15
+            },
+            {
+              "center": [
+                195,
+                -35,
+                1175.5
+              ],
+              "axis": "z",
+              "radius": 2.12,
+              "radialTolerance": 0.02,
+              "planeTolerance": 0.01,
+              "minVertices": 16
+            },
+            {
+              "center": [
+                195,
+                35,
+                1175.5
+              ],
+              "axis": "z",
+              "radius": 2.12,
+              "radialTolerance": 0.02,
+              "planeTolerance": 0.01,
+              "minVertices": 15
+            }
+          ]
+        },
+        {
+          "jointIndex": 3,
+          "mesh": "P4.stl",
+          "kind": "top-tapped-hole-group-center",
+          "manualThread": "Two M5 depth 12; transverse spacing 50",
+          "holes": [
+            {
+              "center": [
+                411,
+                -25,
+                1156.5
+              ],
+              "axis": "z",
+              "radius": 2.12,
+              "radialTolerance": 0.02,
+              "planeTolerance": 0.01,
+              "minVertices": 19
+            },
+            {
+              "center": [
+                411,
+                25,
+                1156.5
+              ],
+              "axis": "z",
+              "radius": 2.12,
+              "radialTolerance": 0.02,
+              "planeTolerance": 0.01,
+              "minVertices": 19
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "folder": "IR-R16-210",
+      "robotType": "six-axis",
+      "manual": {
+        "path": "6_Document/Hardware_manual/6-axis/IR-R25&16 Series User Guide - Manipulator.PDF",
+        "pdfPage": 25,
+        "printedPage": 24,
+        "figure": "Figure 2-4"
+      },
+      "mounts": [
+        {
+          "jointIndex": 2,
+          "mesh": "P3.stl",
+          "kind": "top-tapped-hole-group-center",
+          "manualThread": "Four M6 depth 9; 50 x 50 pattern",
+          "holes": [
+            {
+              "center": [
+                310,
+                -25,
+                1595
+              ],
+              "axis": "z",
+              "radius": 2.75,
+              "radialTolerance": 0.01,
+              "planeTolerance": 0.01,
+              "minVertices": 24
+            },
+            {
+              "center": [
+                310,
+                25,
+                1595
+              ],
+              "axis": "z",
+              "radius": 2.75,
+              "radialTolerance": 0.01,
+              "planeTolerance": 0.01,
+              "minVertices": 24
+            },
+            {
+              "center": [
+                360,
+                -25,
+                1595
+              ],
+              "axis": "z",
+              "radius": 2.75,
+              "radialTolerance": 0.01,
+              "planeTolerance": 0.01,
+              "minVertices": 24
+            },
+            {
+              "center": [
+                360,
+                25,
+                1595
+              ],
+              "axis": "z",
+              "radius": 2.75,
+              "radialTolerance": 0.01,
+              "planeTolerance": 0.01,
+              "minVertices": 24
+            }
+          ]
+        },
+        {
+          "jointIndex": 3,
+          "mesh": "P4.stl",
+          "kind": "user-confirmed-front-cover-upper-datum",
+          "manualThread": null,
+          "threadMountingSupportClaimed": false,
+          "sourceNote": "User selected the red cross over the foremost upper pair of cover-fastener rims. These are cover references, not dedicated accessory mounting taps. P4 upper section only; P5/P6 excluded.",
+          "rims": [
+            {
+              "center": [
+                1303.000001448049,
+                -75.4,
+                1519.0000396929138
+              ],
+              "axis": "y",
+              "radius": 3.999998552147863,
+              "radialTolerance": 0.001,
+              "planeTolerance": 0.001,
+              "minVertices": 28
+            },
+            {
+              "center": [
+                1303.159944762453,
+                75,
+                1519.0000068555423
+              ],
+              "axis": "y",
+              "radius": 3.999976378581059,
+              "radialTolerance": 0.001,
+              "planeTolerance": 0.001,
+              "minVertices": 24
+            }
+          ],
+          "sectionEvidence": {
+            "sectionX": 1303.0799731052512,
+            "yCenter": -0.20000000000000284,
+            "center": [
+              1303.0799731052512,
+              -0.20000000000000284,
+              1527.8363419157731
+            ],
+            "negativeYTop": {
+              "triangleIndex": 36766,
+              "point": [
+                1303.0799731052512,
+                -56.1339734612694,
+                1527.8536985849234
+              ],
+              "vertices": [
+                [
+                  1303.2564697265625,
+                  -55.370697021484375,
+                  1527.699462890625
+                ],
+                [
+                  1302.827880859375,
+                  -56.1341667175293,
+                  1528.018798828125
+                ],
+                [
+                  1305.0621337890625,
+                  -56.13245391845703,
+                  1526.5555419921875
+                ]
+              ],
+              "barycentric": [
+                0.0,
+                0.8871693340863536,
+                0.11283066591364643
+              ]
+            },
+            "positiveYTop": {
+              "triangleIndex": 38638,
+              "point": [
+                1303.0799731052512,
+                56.133675531499804,
+                1527.818861216518
+              ],
+              "vertices": [
+                [
+                  1303.257568359375,
+                  55.38344192504883,
+                  1527.7020263671875
+                ],
+                [
+                  1304.191162109375,
+                  56.13352584838867,
+                  1527.182861328125
+                ],
+                [
+                  1301.8690185546875,
+                  56.13383865356445,
+                  1528.511962890625
+                ]
+              ],
+              "barycentric": [
+                0.0,
+                0.521481347748382,
+                0.478518652251618
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "folder": "IR-R25-178",
+      "robotType": "six-axis",
+      "manual": {
+        "path": "6_Document/Hardware_manual/6-axis/IR-R25&16 Series User Guide - Manipulator.PDF",
+        "pdfPage": 24,
+        "printedPage": 23,
+        "figure": "Figure 2-3"
+      },
+      "mounts": [
+        {
+          "jointIndex": 2,
+          "mesh": "P3.stl",
+          "kind": "top-tapped-hole-group-center",
+          "manualThread": "Four M6 depth 9; 50 x 50 pattern",
+          "holes": [
+            {
+              "center": [
+                310,
+                -25,
+                1595
+              ],
+              "axis": "z",
+              "radius": 2.75,
+              "radialTolerance": 0.01,
+              "planeTolerance": 0.01,
+              "minVertices": 6
+            },
+            {
+              "center": [
+                310,
+                25,
+                1595
+              ],
+              "axis": "z",
+              "radius": 2.75,
+              "radialTolerance": 0.01,
+              "planeTolerance": 0.01,
+              "minVertices": 6
+            },
+            {
+              "center": [
+                360,
+                -25,
+                1595
+              ],
+              "axis": "z",
+              "radius": 2.75,
+              "radialTolerance": 0.01,
+              "planeTolerance": 0.01,
+              "minVertices": 6
+            },
+            {
+              "center": [
+                360,
+                25,
+                1595
+              ],
+              "axis": "z",
+              "radius": 2.75,
+              "radialTolerance": 0.01,
+              "planeTolerance": 0.01,
+              "minVertices": 6
+            }
+          ]
+        },
+        {
+          "jointIndex": 3,
+          "mesh": "P4.stl",
+          "kind": "user-confirmed-front-cover-upper-datum",
+          "manualThread": null,
+          "threadMountingSupportClaimed": false,
+          "sourceNote": "User selected the red cross over the foremost upper pair of cover-fastener rims. These are cover references, not dedicated accessory mounting taps. P4 upper section only; P5/P6 excluded.",
+          "rims": [
+            {
+              "center": [
+                973.919122810165,
+                -75.4,
+                1519.6219482421875
+              ],
+              "axis": "y",
+              "radius": 4.000005607803662,
+              "radialTolerance": 0.001,
+              "planeTolerance": 0.001,
+              "minVertices": 6
+            },
+            {
+              "center": [
+                974.0790887505756,
+                75,
+                1519.6219788922697
+              ],
+              "axis": "y",
+              "radius": 3.999987188193032,
+              "radialTolerance": 0.001,
+              "planeTolerance": 0.001,
+              "minVertices": 6
+            }
+          ],
+          "sectionEvidence": {
+            "sectionX": 973.9991057803703,
+            "yCenter": -0.20000000000000284,
+            "center": [
+              973.9991057803703,
+              -0.20000000000000284,
+              1528.360831335604
+            ],
+            "negativeYTop": {
+              "triangleIndex": 6018,
+              "point": [
+                973.9991057803703,
+                -56.13381915300267,
+                1528.4501924487781
+              ],
+              "vertices": [
+                [
+                  977.6962280273438,
+                  -56.129085540771484,
+                  1525.681884765625
+                ],
+                [
+                  973.7395629882812,
+                  -56.134151458740234,
+                  1528.64453125
+                ],
+                [
+                  978.1206665039062,
+                  -70.0,
+                  1524.268310546875
+                ]
+              ],
+              "barycentric": [
+                0.06559635185862511,
+                0.9344036481413749,
+                0.0
+              ]
+            },
+            "positiveYTop": {
+              "triangleIndex": 2531,
+              "point": [
+                973.9991057803703,
+                56.132569721116,
+                1528.270833169656
+              ],
+              "vertices": [
+                [
+                  978.4436645507812,
+                  56.12660598754883,
+                  1524.895751953125
+                ],
+                [
+                  972.6740112304688,
+                  70.0,
+                  1528.4134521484375
+                ],
+                [
+                  972.9937133789062,
+                  56.13391876220703,
+                  1529.0343017578125
+                ]
+              ],
+              "barycentric": [
+                0.18447732277905332,
+                0.0,
+                0.8155226772209467
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "userConfirmedCoverJ4": [
+    "IR-R16-210",
+    "IR-R25-178"
+  ]
+}

@@ -135,7 +135,7 @@ function normalizeColor(source) {
     return [source[0] / divisor, source[1] / divisor, source[2] / divisor];
 }
 
-function indexStepHierarchy(root) {
+function indexStepHierarchy(root, meshes = []) {
     const partByMeshIndex = new Map();
     let fallbackPartIndex = 0;
 
@@ -148,7 +148,15 @@ function indexStepHierarchy(root) {
             node.meshes.forEach((meshIndex) => {
                 const index = Number(meshIndex);
                 if (Number.isInteger(index) && index >= 0) {
-                    partByMeshIndex.set(index, { partId, partName, assemblyPath });
+                    const multiple = node.meshes.length > 1;
+                    partByMeshIndex.set(index, multiple ? {
+                        partId: `${partId}-mesh-${index}`,
+                        partName: String(meshes[index]?.name || '').trim() || `${partName} ${index + 1}`,
+                        assemblyPath: [...assemblyPath, { id: partId, name: partName }],
+                        parentPartId: partId,
+                        parentPartName: partName,
+                        parentAssemblyPath: assemblyPath
+                    } : { partId, partName, assemblyPath });
                 }
             });
         }
@@ -178,6 +186,12 @@ function createMeshEntry(meshDefinition, partMeta = {}) {
         partId: partMeta.partId || null,
         partName: partMeta.partName || meshDefinition?.name || '',
         assemblyPath: partMeta.assemblyPath || [],
+        ...(partMeta.parentPartId ? {
+            parentPartId: partMeta.parentPartId,
+            parentPartName: partMeta.parentPartName,
+            parentAssemblyPath: partMeta.parentAssemblyPath,
+            legacyPartMeshIndex: partMeta.legacyPartMeshIndex
+        } : {}),
         positionLength,
         indexLength,
         normalLength,
@@ -259,7 +273,13 @@ function packBucket(bucket) {
         brepFaces: bucket.hasCompleteBrepFaces ? bucket.brepFaces : null,
         partId: bucket.partId,
         partName: bucket.partName,
-        assemblyPath: bucket.assemblyPath
+        assemblyPath: bucket.assemblyPath,
+        ...(bucket.entries[0]?.parentPartId ? {
+            parentPartId: bucket.entries[0].parentPartId,
+            parentPartName: bucket.entries[0].parentPartName,
+            parentAssemblyPath: bucket.entries[0].parentAssemblyPath,
+            legacyPartMeshIndex: bucket.entries[0].legacyPartMeshIndex
+        } : {})
     };
 }
 
@@ -725,6 +745,34 @@ async function parseLargeStepFile(message, requestId) {
     }
 }
 
+function indexLegacyStepMeshes(meshes, parts) {
+    const buckets = new Map(), output = [];
+    const flush = bucket => { if (bucket?.indexes.length) output.push(bucket); };
+    meshes.forEach((mesh, index) => {
+        const meta = parts.get(index) || { partId: `cad-mesh-${index}` };
+        const entry = createMeshEntry(mesh, meta);
+        if (!entry) return;
+        const partId = meta.parentPartId || meta.partId;
+        const key = `${partId}\u0000${normalizeColor(mesh.color).map(value => value.toFixed(5)).join(',')}`;
+        const bytes = (entry.positionLength + entry.indexLength + entry.normalLength) * 4;
+        let bucket = buckets.get(key);
+        if (bucket?.indexes.length && bucket.bytes + bytes > STEP_MESH_CHUNK_TARGET_BYTES) {
+            flush(bucket); bucket = null;
+        }
+        if (!bucket) { bucket = { partId, indexes: [], bytes: 0 }; buckets.set(key, bucket); }
+        bucket.indexes.push(index); bucket.bytes += bytes;
+        if (bucket.bytes >= STEP_MESH_CHUNK_TARGET_BYTES) { flush(bucket); buckets.set(key, null); }
+    });
+    buckets.forEach(flush);
+    const counts = new Map(), result = new Map();
+    output.forEach(bucket => {
+        const index = counts.get(bucket.partId) || 0;
+        bucket.indexes.forEach(sourceIndex => result.set(sourceIndex, index));
+        counts.set(bucket.partId, index + 1);
+    });
+    return result;
+}
+
 async function handleStepImportMessage(event) {
     const message = event.data || {};
     const requestId = message.requestId;
@@ -751,7 +799,9 @@ async function handleStepImportMessage(event) {
 
         self.postMessage({ type: 'progress', requestId, phase: 'packing', sourceMeshCount: result.meshes.length });
         const packingStartedAt = performance.now();
-        const partByMeshIndex = indexStepHierarchy(result.root);
+        const partByMeshIndex = indexStepHierarchy(result.root, result.meshes);
+        const legacyMeshIndexes = [...partByMeshIndex.values()].some(part => part.parentPartId)
+            ? indexLegacyStepMeshes(result.meshes, partByMeshIndex) : new Map();
         const buckets = new Map();
         let outputMeshCount = 0;
         for (let index = 0; index < result.meshes.length; index += 1) {
@@ -760,7 +810,7 @@ async function handleStepImportMessage(event) {
                 partId: `cad-mesh-${index}`,
                 partName: meshDefinition?.name || `Part ${index + 1}`
             };
-            const entry = createMeshEntry(meshDefinition, partMeta);
+            const entry = createMeshEntry(meshDefinition, { ...partMeta, legacyPartMeshIndex: legacyMeshIndexes.get(index) });
             const color = normalizeColor(meshDefinition?.color);
             result.meshes[index] = null;
             if (!entry) continue;

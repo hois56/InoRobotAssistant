@@ -1908,7 +1908,21 @@
     "포인트 표시 방식": "Nokta etiketi biçimi",
     "ID만": "Yalnızca ID",
     "라벨명만": "Yalnızca etiket",
-    "둘 다": "İkisi de"
+    "둘 다": "İkisi de",
+    "Cartesian": "Kartezyen",
+    "Coordinate system": "Koordinat sistemi",
+    "Tool jog offset hint": "Tool değerleri, mevcut TCP noktasına göre bağıl ofsetlerdir.",
+    "TCP 좌표축 표시": "TCP koordinat eksenlerini göster",
+    "모델 영점": "Model sıfır noktası",
+    "오브젝트 원위치": "Nesneyi ilk konumuna döndür",
+    "모든 등록 오브젝트": "Tüm kayıtlı nesneler",
+    "등록 오브젝트": "Kayıtlı nesneler",
+    "원위치로 되돌릴 등록 오브젝트가 없습니다.": "İlk konumuna döndürülecek kayıtlı nesne yok.",
+    "IO 매핑으로 오브젝트를 원위치로 되돌렸습니다.": "Nesneler IO eşlemesiyle ilk konumlarına döndürüldü.",
+    "컨트롤러에서 Tool 설정 가져오기": "Kontrolörden Tool ayarlarını al",
+    "컨트롤러에서 설정 가져오기": "Kontrolörden ayarları al",
+    "컨트롤러에 연결한 후 간섭영역 설정을 가져올 수 있습니다.": "Girişim bölgesi ayarlarını almak için bir kontrolör bağlayın.",
+    "컨트롤러에 연결한 후 TCP 감지 범위 설정을 가져올 수 있습니다.": "TCP algılama aralığı ayarlarını almak için bir kontrolör bağlayın."
   },
   "patterns": []
 }

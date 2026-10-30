@@ -113,7 +113,7 @@ import {
     resolveOlpPoint,
     updateOlpFileText
 } from './olp-project-core.mjs';
-import { createEquipmentApp } from './equipment-app.mjs?v=20261007-object-reset-1';
+import { createEquipmentApp } from './equipment-app.mjs?v=20261030-io-object-reset-1';
 import { EQUIPMENT_TYPES, EQUIPMENT_IO_TYPES, EQUIPMENT_LABELS, normalizeEquipmentDefinition, equipmentMotionGroups, equipmentReferences, equipmentCommandOptions } from './equipment-core.mjs?v=20261007-object-reset-1';
 import { equipmentObjectRef } from './equipment-scene.mjs?v=20261007-object-reset-1';
 import { conveyorElapsedSeconds } from './conveyor-core.mjs';
@@ -204,7 +204,7 @@ import {
     isSupportedIoFunctionMappingAddress,
     normalizeIoFunctionMapping,
     normalizeIoFunctionMappings
-} from './io-function-mapping-core.mjs';
+} from './io-function-mapping-core.mjs?v=20261030-io-object-reset-1';
 import {
     TRACE_INTERVALS,
     TRACE_MAX_POINTS,
@@ -740,6 +740,8 @@ const state = {
     baseJogGizmoTranslationSnap: null,
     baseJogGizmoSnapAxis: null,
     jogCoordinateMode: 'base',
+    jogCartesianFrame: 'base',
+    jogToolNumericFrame: null,
     jogSelectedRobotIds: null,
     workObjectEditor: {
         index: 0,
@@ -1089,6 +1091,7 @@ const state = {
     largeModelPerformanceMode: false,
     renderFramePending: false,
     outlineMode: true,
+    tcpAxesVisible: true,
     grid: null, baseAxes: null, labels: [],
     pendingRobotModelChoice: null,
     pendingToolAttachmentChoice: null
@@ -1480,6 +1483,7 @@ const el = {
     jogSelectAll:    document.getElementById('jog-select-all'),
     btnResetJoints:  document.getElementById('btn-reset-joints'),
     tcpProfileManager: document.getElementById('tcp-profile-manager'),
+    tcpAxesCheckbox: document.getElementById('tcp-axes-visible'),
     tcpProfileEditor: document.getElementById('tcp-profile-editor'),
     activeTcpProfileLabel: document.getElementById('active-tcp-profile-label'),
     btnApplyTcpProfile: document.getElementById('btn-apply-tcp-profile'),
@@ -1499,6 +1503,8 @@ const el = {
     baseJogView:     document.getElementById('base-jog-view'),
     btnJogJointMode: document.getElementById('btn-jog-joint-mode'),
     btnJogBaseMode:  document.getElementById('btn-jog-base-mode'),
+    jogCartesianFrame: document.getElementById('jog-cartesian-frame'),
+    jogToolFrameHint: document.getElementById('jog-tool-frame-hint'),
     btnBaseGizmoTranslate: document.getElementById('btn-base-gizmo-translate'),
     btnBaseGizmoRotate: document.getElementById('btn-base-gizmo-rotate'),
     baseGizmoRotateLabel: document.getElementById('base-gizmo-rotate-label'),
@@ -1786,9 +1792,8 @@ const SCARA_TUBE_CAD_Z_OFFSETS = Object.freeze({
     'IR-S60-120Z40': -45.372,
     'IR-GS60-120Z40': -5.628
 });
-// SCARA J4's kinematic origin is also the J3 wrist pivot. Arm-load mounting
-// uses the nearby pneumatic-port housing while the joint's motion origin stays
-// unchanged for forward/inverse kinematics.
+// Historical SCARA J4 arm loads used the pneumatic-port housing 35 mm above
+// the wrist pivot. Retain this offset only when restoring those saved files.
 const SCARA_J4_ARM_LOAD_MOUNT_OFFSET = Object.freeze([0, 0, 35]);
 const SIX_AXIS_POSITION_HOME_QUATERNION = new THREE.Quaternion().setFromEuler(
     new THREE.Euler(-Math.PI, -Math.PI / 2, 0, 'ZYX')
@@ -1864,6 +1869,7 @@ const MAX_VISIBLE_SIMULATION_SNAP_MARKERS = 256;
 const MAX_VISIBLE_SIMULATION_SNAP_CENTER_MARKERS = 96;
 const SIMULATION_SNAP_CENTER_MARKER_TYPES = new Set([
     'scene-origin',
+    'model-origin',
     'multi-point-center',
     'hole-center',
     'rectangle-center',
@@ -1872,6 +1878,7 @@ const SIMULATION_SNAP_CENTER_MARKER_TYPES = new Set([
     'robot-tcp'
 ]);
 const SIMULATION_SNAP_MARKER_TYPE_ORDER = Object.freeze([
+    'model-origin',
     'robot-base-center',
     'scene-origin',
     'robot-tcp',
@@ -1926,6 +1933,7 @@ const SIMULATION_SNAP_MAX_PER_TYPE = Object.freeze({
     'rectangle-center': 2000,
     'multi-point-center': 2000,
     'scene-origin': 1,
+    'model-origin': Infinity,
     'robot-base-center': Infinity,
     'robot-tcp': Infinity
 });
@@ -1943,6 +1951,7 @@ const tcpAxesCameraPosition = new THREE.Vector3();
 const tcpAxesParentScale = new THREE.Vector3();
 const SNAP_TYPES = Object.freeze({
     // Specific geometric centers must win when they overlap generic topology snaps.
+    'model-origin': { label: '모델 영점', symbol: '⊙', priority: -2 },
     'robot-base-center': { label: '로봇 바디 중심점', symbol: '◎', priority: 0 },
     'scene-origin': { label: '0,0 영점 위치', symbol: '⊙', priority: 0 },
     'robot-tcp': { label: '현재 TCP (점)', symbol: '✦', priority: 0 },
@@ -2969,7 +2978,7 @@ function renderEndMonitoringList() {
         row.className = 'end-monitoring-row';
         row.dataset.endMonitoringRow = String(object.id);
         const type = object.type === 'sphere' ? 'Sphere' : object.type === 'cuboid' ? 'Cuboid' : 'MTCP';
-        row.innerHTML = `<strong>${object.id}</strong><span></span><em>${uiText(type)}</em><button type="button" class="end-monitoring-read" data-end-monitoring-read title="실제 컨트롤러에서 Tool 설정 가져오기">가져오기</button><button type="button" data-end-monitoring-edit>${uiText('Edit')}</button>`;
+        row.innerHTML = `<strong>${object.id}</strong><span></span><em>${uiText(type)}</em><button type="button" class="end-monitoring-read" data-end-monitoring-read title="${uiText('컨트롤러에서 Tool 설정 가져오기')}">${uiText('가져오기')}</button><button type="button" data-end-monitoring-edit>${uiText('Edit')}</button>`;
         row.querySelector('span').textContent = object.remarks || '-';
         return row;
     }));
@@ -3187,7 +3196,7 @@ function renderInterferenceZonePanel() {
             <strong class="interference-zone-number">${zone.id}</strong>
             <span class="interference-zone-remarks"></span>
             <span class="interference-zone-state">${interferenceZoneStatusLabel(status)}</span>
-            <button type="button" class="interference-zone-read" data-interference-zone-read title="${uiText('실제 컨트롤러에서 설정 가져오기')}">${uiText('가져오기')}</button>
+            <button type="button" class="interference-zone-read" data-interference-zone-read title="${uiText('컨트롤러에서 설정 가져오기')}">${uiText('가져오기')}</button>
             <button type="button" class="interference-zone-edit" data-interference-zone-edit>${uiText('Edit')}</button>
         `;
         row.querySelector('.interference-zone-remarks').textContent = zone.remarks || '-';
@@ -3199,37 +3208,57 @@ function renderInterferenceZonePanel() {
 }
 
 function canReadInterferenceZoneFromController(controller = state.virtualController) {
-    return controller.controllerKind === 'real'
+    return controller.source !== 'trace'
         && controller.wanted
         && ['connected', 'streaming'].includes(controller.status)
         && controller.socket?.readyState === WebSocket.OPEN;
 }
 
+function scheduleOptionalInterferenceReadTimeout(controller, kind, id) {
+    if (controller.controllerKind !== 'virtual') return;
+    const pending = kind === 'zone' ? controller.pendingInterferenceReads : controller.pendingInterferenceToolReads;
+    const timers = controller.pendingInterferenceReadTimers ||= new Map();
+    const key = `${kind}:${id}`;
+    const timer = setTimeout(() => {
+        if (timers.get(key) !== timer) return;
+        timers.delete(key);
+        pending.delete(id);
+        refreshVirtualControllerUi();
+    }, 3000);
+    timers.set(key, timer);
+}
+
 function readInterferenceZoneFromController(zoneId, controller = state.virtualController) {
     if (!Number.isInteger(zoneId) || zoneId < 0 || zoneId >= INTERFERENCE_ZONE_COUNT) return;
-    if (!canReadInterferenceZoneFromController()) {
-        setStatus('실제 컨트롤러에 연결한 후 간섭영역 설정을 가져올 수 있습니다.', '#f59e0b');
+    if (!canReadInterferenceZoneFromController(controller)) {
+        setStatus('컨트롤러에 연결한 후 간섭영역 설정을 가져올 수 있습니다.', '#f59e0b');
         return;
     }
     if (controller.pendingInterferenceReads.has(zoneId)) return;
     controller.pendingInterferenceReads.add(zoneId);
     refreshVirtualControllerUi();
-    if (sendVirtualControllerCommand({ type: 'readInterferenceZone', zoneNumber: zoneId }, controller)) return;
+    if (sendVirtualControllerCommand({ type: 'readInterferenceZone', zoneNumber: zoneId }, controller)) {
+        scheduleOptionalInterferenceReadTimeout(controller, 'zone', zoneId);
+        return;
+    }
     controller.pendingInterferenceReads.delete(zoneId);
     refreshVirtualControllerUi();
-    setStatus('간섭영역 설정 요청을 전송하지 못했습니다.', '#ef4444');
+    if (controller.controllerKind !== 'virtual') setStatus('간섭영역 설정 요청을 전송하지 못했습니다.', '#ef4444');
 }
 
 function applyInterferenceZoneControllerResult(result, controller = state.virtualController) {
     const zoneId = Number(result?.zoneNumber);
+    const timer = controller.pendingInterferenceReadTimers?.get(`zone:${zoneId}`);
+    if (timer) clearTimeout(timer);
+    controller.pendingInterferenceReadTimers?.delete(`zone:${zoneId}`);
     if (Number.isInteger(zoneId)) controller.pendingInterferenceReads.delete(zoneId);
     refreshVirtualControllerUi();
     if (!result?.success) {
-        setStatus(result?.message || '간섭영역 설정을 가져오지 못했습니다.', '#f59e0b');
+        if (controller.controllerKind !== 'virtual') setStatus(result?.message || '간섭영역 설정을 가져오지 못했습니다.', '#f59e0b');
         return;
     }
     if (!Number.isInteger(zoneId) || zoneId < 0 || zoneId >= INTERFERENCE_ZONE_COUNT || !result.zone) {
-        setStatus('컨트롤러 간섭영역 응답 형식이 올바르지 않습니다.', '#ef4444');
+        if (controller.controllerKind !== 'virtual') setStatus('컨트롤러 간섭영역 응답 형식이 올바르지 않습니다.', '#ef4444');
         return;
     }
 
@@ -3271,17 +3300,20 @@ function applyInterferenceZoneControllerResult(result, controller = state.virtua
 
 function readInterferenceToolFromController(toolId, controller = state.virtualController) {
     if (!Number.isInteger(toolId) || toolId < 0 || toolId >= END_MONITORING_OBJECT_COUNT) return;
-    if (!canReadInterferenceZoneFromController()) {
-        setStatus('실제 컨트롤러에 연결된 경우에만 TCP 감지 범위 설정을 가져올 수 있습니다.', '#f59e0b');
+    if (!canReadInterferenceZoneFromController(controller)) {
+        setStatus('컨트롤러에 연결한 후 TCP 감지 범위 설정을 가져올 수 있습니다.', '#f59e0b');
         return;
     }
     if (controller.pendingInterferenceToolReads.has(toolId)) return;
     controller.pendingInterferenceToolReads.add(toolId);
     refreshVirtualControllerUi();
-    if (sendVirtualControllerCommand({ type: 'readInterferenceTool', toolNumber: toolId }, controller)) return;
+    if (sendVirtualControllerCommand({ type: 'readInterferenceTool', toolNumber: toolId }, controller)) {
+        scheduleOptionalInterferenceReadTimeout(controller, 'tool', toolId);
+        return;
+    }
     controller.pendingInterferenceToolReads.delete(toolId);
     refreshVirtualControllerUi();
-    setStatus('TCP 감지 범위 설정 요청을 전송하지 못했습니다.', '#ef4444');
+    if (controller.controllerKind !== 'virtual') setStatus('TCP 감지 범위 설정 요청을 전송하지 못했습니다.', '#ef4444');
 }
 
 function getInterferenceToolObjectType(typeValue) {
@@ -3296,14 +3328,17 @@ function getInterferenceToolObjectType(typeValue) {
 
 function applyInterferenceToolControllerResult(result, controller = state.virtualController) {
     const toolId = Number(result?.toolNumber);
+    const timer = controller.pendingInterferenceReadTimers?.get(`tool:${toolId}`);
+    if (timer) clearTimeout(timer);
+    controller.pendingInterferenceReadTimers?.delete(`tool:${toolId}`);
     if (Number.isInteger(toolId)) controller.pendingInterferenceToolReads.delete(toolId);
     refreshVirtualControllerUi();
     if (!result?.success) {
-        setStatus(result?.message || 'TCP 감지 범위 설정을 가져오지 못했습니다.', '#f59e0b');
+        if (controller.controllerKind !== 'virtual') setStatus(result?.message || 'TCP 감지 범위 설정을 가져오지 못했습니다.', '#f59e0b');
         return;
     }
     if (!Number.isInteger(toolId) || toolId < 0 || toolId >= END_MONITORING_OBJECT_COUNT || !result.tool) {
-        setStatus('컨트롤러 TCP 감지 범위 응답 형식이 올바르지 않습니다.', '#ef4444');
+        if (controller.controllerKind !== 'virtual') setStatus('컨트롤러 TCP 감지 범위 응답 형식이 올바르지 않습니다.', '#ef4444');
         return;
     }
 
@@ -3311,7 +3346,7 @@ function applyInterferenceToolControllerResult(result, controller = state.virtua
     const objectType = getInterferenceToolObjectType(source.type);
     const current = state.endMonitoringObjects[toolId];
     if (!objectType || !current) {
-        setStatus(`지원하지 않는 컨트롤러 Tool 형식입니다 (type=${source.type}).`, '#ef4444');
+        if (controller.controllerKind !== 'virtual') setStatus(`지원하지 않는 컨트롤러 Tool 형식입니다 (type=${source.type}).`, '#ef4444');
         return;
     }
 
@@ -5427,6 +5462,7 @@ function refreshLocalizedControls() {
     refreshTcpProfileUi();
     renderWorkObjectPanel(getWorkObjectEditorRobot());
     updateOutlineToggleUi();
+    updateTcpAxesToggleUi();
     updateCollisionUi();
 }
 
@@ -15065,6 +15101,7 @@ function isSimulationSnapRobotMesh(mesh) {
 
 function isSimulationSnapReferenceCandidate(candidate) {
     return candidate?.type === 'scene-origin'
+        || candidate?.type === 'model-origin'
         || candidate?.robotMountingHole === true
         || candidate?.type === 'robot-base-center'
         || candidate?.type === 'robot-tcp';
@@ -15083,6 +15120,18 @@ function getSimulationSnapRobotMountingHoleCandidates(scope = 'scene') {
             localPoint: new THREE.Vector3(x, y, z)
         }));
     });
+}
+
+function getSimulationSnapModelOriginCandidates(scope = 'scene', faceSelections = []) {
+    if (scope !== 'placement' || !state.placement.active) return [];
+    const models = new Set(faceSelections.map((selection) => findSceneModelAncestor(selection.mesh)));
+    return [...models]
+        .filter((model) => isSimulationSnapModel(model) && isModelTreeVisible(model))
+        .map((model) => ({
+            type: 'model-origin',
+            mesh: model,
+            localPoint: new THREE.Vector3()
+        }));
 }
 
 function getSimulationSnapSceneOriginCandidates(scope = 'scene', faceSelections = []) {
@@ -15859,10 +15908,10 @@ async function buildSimulationSnapCandidates(scope = getSimulationSnapScope()) {
     if (!isSimulationSnapInteractionActive()) return [];
     const faceSelections = isSimulationSnapFaceSelectionActive(scope)
         ? cloneSimulationSnapFaceSelections() : [];
-    const robotSpecialCandidates = getSimulationSnapRobotSpecialCandidates(
-        scope,
-        faceSelections
-    );
+    const referenceCandidates = [
+        ...getSimulationSnapRobotSpecialCandidates(scope, faceSelections),
+        ...getSimulationSnapModelOriginCandidates(scope, faceSelections)
+    ];
     const hasSelectedFirstPoint = (scope === 'placement' && Boolean(state.placement.sourcePoint))
         || (scope === 'measurement' && Boolean(state.measurement.points[0]));
     const initialMeshes = scope === 'scene' && state.sketch.active
@@ -15872,7 +15921,7 @@ async function buildSimulationSnapCandidates(scope = getSimulationSnapScope()) {
     if (isSimulationSnapFaceSelectionActive(scope)
         && !faceSelections.length
         && !hasSelectedFirstPoint
-        && !robotSpecialCandidates.length
+        && !referenceCandidates.length
         && !directSnapMeshes.length) {
         state.snapCandidates = [];
         state.snapCandidatesReady = false;
@@ -15889,7 +15938,7 @@ async function buildSimulationSnapCandidates(scope = getSimulationSnapScope()) {
     });
     const faceSignature = getSimulationSnapFaceSelectionSignature(faceSelections);
     const robotSpecialSignature = getSimulationSnapRobotSpecialCandidateSignature(
-        robotSpecialCandidates
+        referenceCandidates
     );
     const signature = `${scope}:${meshes.map((mesh) => `${mesh.uuid}:${mesh.geometry.uuid}`).join('|')}:${faceSignature}:robot-special=${robotSpecialSignature}`;
     if (signature === state.snapCandidateModelsSignature && state.snapCandidatesReady) return meshes;
@@ -15913,7 +15962,7 @@ async function buildSimulationSnapCandidates(scope = getSimulationSnapScope()) {
     const candidateGroupsByKey = new Map(
         candidateGroups.map((group) => [group.selectionKey, group])
     );
-    robotSpecialCandidates.forEach((candidate) => {
+    referenceCandidates.forEach((candidate) => {
         const count = nextCandidateCounts[candidate.type] || 0;
         const limit = SIMULATION_SNAP_MAX_PER_TYPE[candidate.type] || Infinity;
         if (count >= limit) return;
@@ -22278,6 +22327,7 @@ function setupEventListeners() {
         }
         setJogMode('base');
     });
+    el.jogCartesianFrame?.addEventListener('change', () => setJogCartesianFrame(el.jogCartesianFrame.value));
     el.btnBaseGizmoTranslate?.addEventListener('click', () => setBaseJogGizmoMode('translate'));
     el.btnBaseGizmoRotate?.addEventListener('click', () => setBaseJogGizmoMode('rotate'));
     el.btnSnapFaceHorizontal?.addEventListener('click', () => applySnapFaceOrientation('horizontal'));
@@ -22333,6 +22383,9 @@ function setupEventListeners() {
     el.btnToggleOutline?.addEventListener('click', () => {
         setModelOutlineMode(!state.outlineMode);
     });
+    el.tcpAxesCheckbox?.addEventListener('change', () => {
+        setTcpAxesVisible(el.tcpAxesCheckbox.checked);
+    });
     el.btnToggleGrid.addEventListener('click', () => {
         state.grid.visible = !state.grid.visible;
         state.baseAxes.visible = state.grid.visible;
@@ -22342,6 +22395,7 @@ function setupEventListeners() {
     });
     updateOutlineToggleUi();
     refreshCollaborationUi();
+    updateTcpAxesToggleUi();
 
     window.addEventListener('keydown', handleGlobalKeyDown);
     window.addEventListener('keyup', handleGlobalKeyUp);
@@ -23410,7 +23464,7 @@ function applySceneSnapshot(snapshot) {
                     ? 'joint'
                     : entry.placement === 'grip-object' ? 'grip' : 'flange');
             if (entry.placement === 'arm-load') {
-                entry.model.userData.attachmentJointIndex = normalizeArmLoadJointIndex(entry.attachmentJointIndex);
+                entry.model.userData.attachmentJointIndex = getRobotArmLoadJointIndex(entry.host, entry.attachmentJointIndex);
                 entry.model.userData.attachmentAxis = `J${entry.model.userData.attachmentJointIndex + 1}`;
                 entry.model.userData.armLoadProperties = normalizeArmLoadProperties(entry.armLoadProperties);
             }
@@ -24840,7 +24894,10 @@ function createModelTreeNode(model) {
         if (parts.length > 0) {
             const grouped = new Set();
             for (const group of model.userData.modelPartGroups || []) {
-                const members = group.parts.map(index => parts[index]).filter(Boolean);
+                const members = [...new Set(group.parts.flatMap(index => {
+                    const part = parts[index];
+                    return part?.userData.modelPartAggregate ? parts.filter(child => child.parent === part) : part ? [part] : [];
+                }))];
                 members.forEach(part => grouped.add(part));
                 if (!members.length) continue;
                 const item = document.createElement('li'), details = document.createElement('details'), summary = document.createElement('summary');
@@ -24905,7 +24962,7 @@ function createModelTreeNode(model) {
                 details.addEventListener('toggle', () => { group.collapsed = !details.open; scheduleMotionProjectSave(); });
                 item.append(details); childList.append(item);
             }
-            buildCadAssemblyTree(parts.filter(part => !grouped.has(part)))
+            buildCadAssemblyTree(parts.filter(part => !grouped.has(part) && !part.userData.modelPartAggregate))
                 .forEach(node => childList.appendChild(createCadAssemblyTreeNode(model, node)));
         }
         item.appendChild(childList);
@@ -25782,7 +25839,7 @@ function pasteObjectClipboardSnapshot(snapshot, pasteNumber) {
             pastedModel.userData.attachmentFrame = placement === 'arm-load' ? 'joint' : 'flange';
             pastedModel.userData.placement = placement;
             if (placement === 'arm-load') {
-                pastedModel.userData.attachmentJointIndex = normalizeArmLoadJointIndex(snapshot.attachmentJointIndex);
+                pastedModel.userData.attachmentJointIndex = getRobotArmLoadJointIndex(host, snapshot.attachmentJointIndex);
                 pastedModel.userData.attachmentAxis = `J${pastedModel.userData.attachmentJointIndex + 1}`;
                 pastedModel.userData.armLoadProperties = normalizeArmLoadProperties(snapshot.armLoadProperties);
             }
@@ -25853,7 +25910,7 @@ async function pasteRobotClipboardSnapshot(snapshot, pasteNumber) {
             model.userData.attachmentFrame = placement === 'arm-load' ? 'joint' : 'flange';
             model.userData.placement = placement;
             if (placement === 'arm-load') {
-                model.userData.attachmentJointIndex = normalizeArmLoadJointIndex(attachmentJointIndex);
+                model.userData.attachmentJointIndex = getRobotArmLoadJointIndex(robot, attachmentJointIndex);
                 model.userData.attachmentAxis = `J${model.userData.attachmentJointIndex + 1}`;
                 model.userData.armLoadProperties = normalizeArmLoadProperties(armLoadProperties);
             }
@@ -26392,7 +26449,7 @@ function renderArmLoadPanel() {
     el.armLoadEditor.hidden = !selectedModel;
     if (!selectedModel) return;
     el.armLoadSelectedName.textContent = displayNameForModelTree(selectedModel);
-    el.armLoadAxis.value = String(getArmLoadJointIndex(selectedModel));
+    refreshArmLoadAxisOptions(el.armLoadAxis, selectedModel.userData.attachmentHost, getArmLoadJointIndex(selectedModel));
     el.armLoadVisible.checked = selectedModel.visible !== false;
     ['x', 'y', 'z'].forEach((axis) => {
         el.armLoadFields[axis].value = formatOptionalArmLoadNumber(selectedModel.position[axis]);
@@ -26451,7 +26508,7 @@ function normalizeToolLoadProperties(value = {}) {
 }
 
 function getToolLoadPartRoots(model) {
-    const parts = getImportedModelParts(model);
+    const parts = getImportedModelParts(model).filter(part => !part.userData.modelPartAggregate);
     return parts.length ? parts : [model];
 }
 
@@ -26468,7 +26525,7 @@ function getToolLoadPartSettings(model) {
     const properties = normalizeToolLoadProperties(model?.userData?.toolLoadProperties);
     return getToolLoadPartRoots(model).map((part, index) => {
         const key = getToolLoadPartKey(part, index);
-        const saved = properties.partMaterials[key] || {};
+        const saved = properties.partMaterials[key] || properties.partMaterials[part?.userData?.cadParentPartKey] || {};
         const materialKey = Object.prototype.hasOwnProperty.call(TOOL_LOAD_MATERIALS, saved.materialKey)
             ? saved.materialKey
             : 'aluminum';
@@ -26900,8 +26957,8 @@ function applyArmLoadPanelField(event) {
 
 function setArmLoadAttachmentAxis(model, jointIndex, recordHistoryChange = true) {
     if (!model || model.userData.placement !== 'arm-load') return false;
-    const normalizedJointIndex = normalizeArmLoadJointIndex(jointIndex);
     const host = model.userData.attachmentHost;
+    const normalizedJointIndex = getRobotArmLoadJointIndex(host, jointIndex);
     const mountFrame = getRobotJointMountFrame(host, normalizedJointIndex);
     if (!mountFrame) return false;
     const historyBefore = recordHistoryChange && !state.historySuspended ? captureSceneSnapshot() : null;
@@ -27072,6 +27129,7 @@ function selectSceneModel(model, options = {}) {
     }
     if (model.userData.tcpFrame) {
         state.activeProgramRobot = model;
+        renderWorkObjectPanel(model);
         // Keep the connected controller bound to the robot chosen at connection
         // time. Scene selection is still allowed to change the active program
         // and JOG robot without retargeting an active controller stream.
@@ -27671,6 +27729,7 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
 
     const toolAxesAtTcp = new THREE.AxesHelper(TCP_AXES_LOCAL_SIZE);
     toolAxesAtTcp.name = 'Tool axes at TCP';
+    toolAxesAtTcp.visible = state.tcpAxesVisible;
     applyAxesHelperColors(toolAxesAtTcp);
     const axesMaterials = Array.isArray(toolAxesAtTcp.material) ? toolAxesAtTcp.material : [toolAxesAtTcp.material];
     axesMaterials.forEach((material) => {
@@ -27792,6 +27851,42 @@ function createRobotManifest(modelDefinition) {
         ...extra
     });
 
+    // Accessory-hole group centers measured in each link's original CAD frame (mm).
+    // Side-mounted R4/R4H/R10/R11 use the upper datum joining the P4 edges above the hole group.
+    // SCARA uses the camera/valve mounting group on P2; exclude the separate shaft-side pair.
+    // R16/R25 J4 uses the user-confirmed upper datum above the front cover screw pair.
+    const armLoadMountOffsets = {
+        'IR-S4-40Z15': { j2: [111.0243606567, 0, 64.69999694824] },
+        'IR-S7-50Z20': { j2: [158.00000000001, 0.00685358047, 78] },
+        'IR-S7-60Z20': { j2: [157.99999999995, 0.00685358047, 78] },
+        'IR-S7-70Z20': { j2: [157.99999999984, 0.02962493895, 78] },
+        'IR-S10-60Z20': { j2: [242.49999999993, 0, 80] },
+        'IR-S10-70Z20': { j2: [242.50377339225, 0.00098227312, 80.00047692386] },
+        'IR-S10-80Z20': { j2: [242.50377339232, 0.00098227311, 80.00047692386] },
+        'IR-TS4-35Z15': { j2: [-111.0243587494, 0, 68.40000152588] },
+        'IR-TS5-55Z15': { j2: [-157.99999795572, 0.01193237397, 76.19999694824] },
+        'IR-S25-80Z42': { j2: [246.24950770215, -0.00073016463, 134.50025796335] },
+        'IR-S25-100Z42': { j2: [246.24744846168, -0.00085192801, 134.50026478578] },
+        'IR-S25-120Z42': { j2: [246.25167528309, -0.0003832171, 134.50022346545] },
+        'IR-S35-80Z42': { j2: [246.25240652464, -0.00034638589, 159.50070952839] },
+        'IR-S35-100Z42': { j2: [246.24660195096, -0.00003283579, 159.5005108053] },
+        'IR-S35-120Z42': { j2: [246.25158598605, -0.00060856084, 162.50022355104] },
+        'IR-S60-120Z40': { j2: [384.01150997717, -0.0096421365, 161.00001682554] },
+        'IR-GS60-120Z40': { j2: [383.99069286009, 0.00109821351, 161.00006103516] },
+        'IR-R4-56': { j3: [31.49983253, 0, 66.68655502], j4: [274.999832, -1, 40.05397691] },
+        'IR-R4H-54': { j3: [31.49983253, 0, 66.68655502], j4: [283.999832, 0, 44.86201514] },
+        'IR-R7H-70': { j3: [36, -0.00419855, 99.5], j4: [217, -0.00419855, 49.5] },
+        'IR-R7H-90': { j3: [36, 0, 99.5], j4: [297, 0, 49.5] },
+        'IR-R10-110': { j3: [57.5, 0, 94.01000976563], j4: [475, -0.0000038147, 47.41535767859] },
+        'IR-R10H-120': { j3: [57.5, 0, 94], j4: [492, 0, 49.5] },
+        'IR-R11-90': { j3: [57.5, 0, 94.01000976563], j4: [380, -0.0000038147, 47.40537476003] },
+        'IR-R10-140': { j3: [91.5, 17.5, 194.5], j4: [492, -8.75, 59] },
+        'IR-R15H-145': { j3: [12.5, 0, 150.5], j4: [414, 0, 66.5] },
+        'IR-R16-210': { j3: [165, 0, 255], j4: [1133.07997310525, -0.2, 47.83634191577] },
+        'IR-R20H-120': { j3: [12.5, 0, 150.5], j4: [261, 0, 66.5] },
+        'IR-R25-178': { j3: [165, 0, 255], j4: [803.99910578037, -0.2, 48.3608313356] }
+    }[modelDefinition.folder] || {};
+
     if (robotType === 'scara') {
         const [arm1, arm2] = structure;
         // TS4/TS5 are authored at a folded ceiling-mount zero pose. Their second
@@ -27823,11 +27918,11 @@ function createRobotManifest(modelDefinition) {
                 },
             joints: [
                 joint(0, 'P1.stl', [0, 0, 0], [0, 0, 1]),
-                joint(1, 'P2.stl', [arm1, 0, 0], [0, 0, 1]),
+                joint(1, 'P2.stl', [arm1, 0, 0], [0, 0, 1], {
+                    armLoadMountOffset: armLoadMountOffsets.j2
+                }),
                 joint(2, j3Mesh ? 'P3.stl' : null, wrist, [0, 0, 1], { type: 'prismatic', direction: CONTROLLER_PRISMATIC_DIRECTION }),
-                joint(3, 'P4.stl', wrist, [0, 0, 1], {
-                    armLoadMountOffset: SCARA_J4_ARM_LOAD_MOUNT_OFFSET
-                })
+                joint(3, 'P4.stl', wrist, [0, 0, 1])
             ]
         };
     }
@@ -27842,18 +27937,6 @@ function createRobotManifest(modelDefinition) {
         : 0;
     const wristHeight = elbowHeight + elbowOffset + normalizedWristAxisZOffset;
     const tcp = [shoulderOffset + forearm + wristLength, 0, wristHeight];
-    // User-confirmed accessory-hole centers, verified against P3/P4 STL.
-    // R4/R4H: elbow pair and the upper datum above the side-hole center (Figures 4-4/4-5).
-    // The wrist opening is empty, so join the two P4 upper edges at that X to define J4's height.
-    // R7H: Figures 6-3/6-4.
-    // R10H-120: Figure 4-5; exclude the extension-arm pair.
-    const armLoadMountOffsets = {
-        'IR-R4-56': { j3: [31.49983253, 0, 66.68655502], j4: [274.999832, -1, 40.05397691] },
-        'IR-R4H-54': { j3: [31.49983253, 0, 66.68655502], j4: [283.999832, 0, 44.86201514] },
-        'IR-R7H-70': { j3: [36, -0.00419855, 99.5], j4: [217, -0.00419855, 49.5] },
-        'IR-R7H-90': { j3: [36, 0, 99.5], j4: [297, 0, 49.5] },
-        'IR-R10H-120': { j3: [57.5, 0, 94], j4: [492, 0, 49.5] }
-    }[modelDefinition.folder] || {};
     return {
         name,
         robotType,
@@ -28171,8 +28254,35 @@ function getArmLoadJointIndex(model) {
     );
 }
 
-function getRobotJointMountFrame(robot, jointIndex = 3) {
-    const index = normalizeArmLoadJointIndex(jointIndex);
+function getAllowedArmLoadJointIndices(robot) {
+    return robot?.userData.manifest?.robotType === 'scara' ? [1] : [2, 3];
+}
+
+function getRobotArmLoadJointIndex(robot, value) {
+    const allowed = getAllowedArmLoadJointIndices(robot);
+    const index = value === null || value === undefined || value === '' ? -1 : Number(value);
+    return allowed.includes(index) ? index : allowed[allowed.length - 1];
+}
+
+function refreshArmLoadAxisOptions(select, robot, value = select?.value) {
+    if (!select) return;
+    const allowed = getAllowedArmLoadJointIndices(robot);
+    if (Array.from(select.options).map((option) => option.value).join(',') !== allowed.join(',')) {
+        select.replaceChildren(...allowed.map((index) => {
+            const option = document.createElement('option');
+            option.value = String(index);
+            option.textContent = `J${index + 1}`;
+            return option;
+        }));
+    }
+    select.value = String(getRobotArmLoadJointIndex(robot, value));
+}
+
+function getRobotJointMountFrame(robot, jointIndex = null) {
+    const index = jointIndex === null || jointIndex === undefined
+        ? getRobotArmLoadJointIndex(robot, jointIndex)
+        : normalizeArmLoadJointIndex(jointIndex, -1);
+    if (!getAllowedArmLoadJointIndices(robot).includes(index)) return null;
     const joint = robot?.userData?.joints?.[index];
     return joint?.armLoadMountFrame || joint?.group || null;
 }
@@ -28202,10 +28312,10 @@ function normalizeArmLoadProperties(value = {}) {
     };
 }
 
-function getModelAttachmentFrame(placement, robot, attachmentJointIndex = 3) {
+function getModelAttachmentFrame(placement, robot, attachmentJointIndex = null) {
     if (!robot) return null;
     if (placement === 'tcp' || placement === 'grip-object') return getRobotToolMountFrame(robot);
-    if (placement === 'arm-load') return getRobotJointMountFrame(robot, attachmentJointIndex);
+    if (placement === 'arm-load') return getRobotJointMountFrame(robot, getRobotArmLoadJointIndex(robot, attachmentJointIndex));
     return null;
 }
 
@@ -28384,6 +28494,8 @@ function installSceneModelAsTool(sourceModel, sourcePart, robot, { allowDuringMo
             }
         }
 
+        state.modelTreeCollapsedIds.delete(ensureModelTreeId(robot));
+        state.modelTreeCollapsedIds.delete(ensureModelTreeId(toolModel));
         if (state.collision.enabled) state.collision.system?.prepare([toolModel]);
         markSceneCollisionDirty();
         refreshCollisionDebugOverlays();
@@ -28867,8 +28979,8 @@ function detachEquipmentObject(model, options = {}) {
 
 
 
-function mountArmLoadModelAtJoint(robot, model, jointIndex = 3) {
-    const normalizedJointIndex = normalizeArmLoadJointIndex(jointIndex);
+function mountArmLoadModelAtJoint(robot, model, jointIndex = null) {
+    const normalizedJointIndex = getRobotArmLoadJointIndex(robot, jointIndex);
     const mountFrame = getRobotJointMountFrame(robot, normalizedJointIndex);
     if (!mountFrame || !model) return false;
     mountFrame.add(model);
@@ -28900,13 +29012,13 @@ function openArmLoadPanelForModel(model) {
     }
 }
 
-function registerSceneModelAsArmLoad(model, robot, jointIndex = 3, { allowDuringMotion = false } = {}) {
+function registerSceneModelAsArmLoad(model, robot, jointIndex = null, { allowDuringMotion = false } = {}) {
     if ((!allowDuringMotion && isMotionActive()) || !isArmLoadAttachableSceneTarget(model)) return false;
     if (!robot) {
         setStatus('암 로드에 부착할 로봇을 먼저 불러와 주세요.', '#f59e0b');
         return false;
     }
-    const normalizedJointIndex = normalizeArmLoadJointIndex(jointIndex);
+    const normalizedJointIndex = getRobotArmLoadJointIndex(robot, jointIndex);
     if (!getRobotJointMountFrame(robot, normalizedJointIndex)) {
         setStatus('선택한 로봇의 암 로드 부착 축을 찾을 수 없습니다.', '#ef4444');
         return false;
@@ -29149,6 +29261,7 @@ function refreshImportPlacementOptions() {
     }
     const armLoadSelected = el.importPlacement.value === 'arm-load';
     el.importArmLoadAxisSetting?.classList.toggle('hidden', !armLoadSelected);
+    refreshArmLoadAxisOptions(el.importArmLoadAxis, robot);
     if (el.importArmLoadAxis) el.importArmLoadAxis.disabled = !robot || !armLoadSelected;
 }
 
@@ -29234,7 +29347,7 @@ function getLargeStepTessellationParameters(fileSizeBytes, qualityKey = 'auto') 
 
 function getStepImportCacheKey(file, parameters, qualityKey = 'auto') {
     return [
-        'step-mesh-v7-surface-colors',
+        'step-mesh-v8-component-parts',
         file.name,
         file.size,
         file.lastModified || 0,
@@ -29351,7 +29464,7 @@ function resetStepImportWorkerSession(session = state.stepImportWorkerSession) {
 function getStepImportWorkerSession() {
     if (state.stepImportWorkerSession) return state.stepImportWorkerSession;
 
-    const workerUrl = new URL('./step-import-worker.js?v=20261030-large-step-colors-1', import.meta.url);
+    const workerUrl = new URL('./step-import-worker.js?v=20261030-component-parts-1', import.meta.url);
     const worker = new Worker(workerUrl);
     let readySettled = false;
     let resolveReady;
@@ -29454,6 +29567,12 @@ function createStepMeshFromWorker(meshDefinition, index, placement, performanceM
     mesh.userData.cadPartKey = meshDefinition.partId || `cad-mesh-${index}`;
     mesh.userData.cadPartName = meshDefinition.partName || meshDefinition.name || mesh.name;
     mesh.userData.cadAssemblyPath = meshDefinition.assemblyPath || [];
+    if (meshDefinition.parentPartId) {
+        mesh.userData.cadParentPartKey = meshDefinition.parentPartId;
+        mesh.userData.cadParentPartName = meshDefinition.parentPartName;
+        mesh.userData.cadParentAssemblyPath = meshDefinition.parentAssemblyPath || [];
+        mesh.userData.legacyPartMeshIndex = meshDefinition.legacyPartMeshIndex;
+    }
     mesh.userData.largeModelMode = performanceMode;
     mesh.userData.largeModelChunk = Boolean(performanceMode && meshDefinition.largeModelChunk);
     mesh.userData.largeModelChunkIndex = Number(meshDefinition.chunkIndex) || 0;
@@ -29868,15 +29987,15 @@ function registerImportedModelParts(model, content, performanceMode = false) {
         const hierarchyRoot = mesh.userData.cadPartKey
             ? null
             : getImportedHierarchyPartRoot(mesh, content);
-        const cadPartKey = mesh.userData.cadPartKey
+        const cadPartKey = mesh.userData.cadParentPartKey || mesh.userData.cadPartKey
             || (hierarchyRoot ? `hierarchy-${hierarchyRoot.uuid}` : `mesh-${mesh.uuid}`);
         let group = groups.get(cadPartKey);
         if (!group) {
             group = {
                 key: cadPartKey,
-                name: hierarchyRoot?.name || mesh.userData.cadPartName || mesh.name || uiFormat('Part {index}', { index: index + 1 }),
+                name: hierarchyRoot?.name || mesh.userData.cadParentPartName || mesh.userData.cadPartName || mesh.name || uiFormat('Part {index}', { index: index + 1 }),
                 sourceNode: hierarchyRoot,
-                assemblyPath: mesh.userData.cadAssemblyPath || [],
+                assemblyPath: mesh.userData.cadParentAssemblyPath || mesh.userData.cadAssemblyPath || [],
                 meshes: []
             };
             groups.set(cadPartKey, group);
@@ -29903,10 +30022,36 @@ function registerImportedModelParts(model, content, performanceMode = false) {
         part.userData.modelPartName = displayName;
         part.userData.cadPartKey = group.key;
         part.userData.cadAssemblyPath = group.assemblyPath;
+        part.userData.modelPartAggregate = group.meshes.some(mesh => mesh.userData.cadParentPartKey);
         if (sourceNode) part.userData.modelPartOrigin = 'source-node';
         if (!performanceMode) {
             group.meshes.forEach((mesh) => ensureModelPartMaterialIsolation(mesh));
         }
+        parts.push(part);
+    });
+    // Keep the original aggregate indexes and pivots for saved projects and
+    // existing motion references. Append independently selectable components.
+    const aggregates = new Map(parts.filter(part => part.userData.modelPartAggregate).map(part => [part.userData.cadPartKey, part]));
+    const details = new Map();
+    meshList.forEach(mesh => {
+        if (!mesh.userData.cadParentPartKey) return;
+        const parent = aggregates.get(mesh.userData.cadParentPartKey);
+        mesh.userData.legacyWorkspacePath = [...getWorkspaceObjectPath(model, parent), mesh.userData.legacyPartMeshIndex];
+        const key = mesh.userData.cadPartKey;
+        if (!details.has(key)) details.set(key, { parent, meshes: [], name: mesh.userData.cadPartName || mesh.name, path: mesh.userData.cadAssemblyPath });
+        details.get(key).meshes.push(mesh);
+    });
+    details.forEach(({ parent, meshes, name, path }) => {
+        const count = (nameCounts.get(name) || 0) + 1;
+        nameCounts.set(name, count);
+        const displayName = count > 1 ? `${name} #${count}` : name;
+        const part = createImportedPartTransformPivot(parent, meshes, displayName);
+        state.modelPartIdCounter += 1;
+        part.userData.modelPartId = `scene-model-part-${state.modelPartIdCounter}`;
+        part.userData.modelPartName = displayName;
+        part.userData.cadPartKey = meshes[0].userData.cadPartKey;
+        part.userData.cadParentPartKey = parent.userData.cadPartKey;
+        part.userData.cadAssemblyPath = path || [];
         parts.push(part);
     });
     model.userData.importedParts = parts;
@@ -30291,7 +30436,7 @@ async function handle3DImport(options = {}) {
         ? options.attachmentRobot || getArticulatedRobotForAttachment()
         : null;
     const attachmentJointIndex = placement === 'arm-load'
-        ? normalizeArmLoadJointIndex(options.attachmentJointIndex ?? el.importArmLoadAxis?.value)
+        ? getRobotArmLoadJointIndex(robot, options.attachmentJointIndex ?? el.importArmLoadAxis?.value)
         : null;
     if (placement === 'tcp' && !robot) {
         alert(uiText('TCP에 장착할 로봇을 먼저 불러와 주세요.'));
@@ -30384,11 +30529,12 @@ async function handle3DImport(options = {}) {
         historyBefore = options.suppressHistory ? null : captureSceneSnapshot();
 
         // Only free-standing 3D models are normalized into the viewer's Z-Up axes.
-        // TCP tools preserve file XYZ and inherit the robot's Tool XYZ frame 1:1.
+        // Tool models preserve file XYZ and use the flange mounting frame.
         if (placement === 'scene' && upAxis === 'y') importedModel.rotateX(Math.PI / 2);
 
         if (placement === 'tcp' || placement === 'grip-object') {
-            mountToolModelAtActiveTcp(robot, importedModel);
+            if (placement === 'tcp') mountExistingModelAtTool(robot, importedModel);
+            else mountToolModelAtActiveTcp(robot, importedModel);
             if (placement === 'grip-object') {
                 importedModel.userData.placement = 'grip-object';
                 importedModel.userData.attachmentFrame = 'grip';
@@ -30435,7 +30581,7 @@ async function handle3DImport(options = {}) {
         ensureModelTreeId(importedModel);
         registerImportedModelParts(importedModel, content, performanceMode);
         if (options.testModel && !options.workspaceModelId) {
-            const preset = getTestModelTreePreset(file.name, getImportedModelParts(importedModel).length);
+            const preset = getTestModelTreePreset(file.name, getImportedModelParts(importedModel).filter(part => !part.userData.cadParentPartKey).length);
             if (preset) {
                 importedModel.userData.modelPartGroups = preset.groups;
                 if (preset.folder && isGroupableModel(importedModel)) {
@@ -30448,7 +30594,11 @@ async function handle3DImport(options = {}) {
                 }
             }
         }
-        if (modelTreeHasChildren(importedModel)) state.modelTreeCollapsedIds.add(ensureModelTreeId(importedModel));
+        if (placement === 'tcp') {
+            state.modelTreeCollapsedIds.delete(ensureModelTreeId(robot));
+        } else if (modelTreeHasChildren(importedModel)) {
+            state.modelTreeCollapsedIds.add(ensureModelTreeId(importedModel));
+        }
 
         if (!options.skipAssetPersistence && !IS_MANUAL_GUIDE_EMBED) {
             try {
@@ -31437,14 +31587,18 @@ function readWorkObjectEditorValues() {
 }
 
 function renderWorkObjectPanel(robot = getWorkObjectEditorRobot()) {
+    // Keep the editor's owner and slot together. Rendering another robot must
+    // never copy the previous robot's active Wobj into its independent data.
+    const robotId = robot?.userData.motionInstanceId || null;
+    const ownerChanged = state.workObjectEditor.robotId !== robotId;
+    state.workObjectEditor.robotId = robotId;
     refreshWorkObjectTargetRobotOptions();
     const available = Boolean(robot);
     if (robot) ensureRobotWorkObjects(robot);
     const activeIndex = available
-        ? resolveWorkObjectIndex(state.workObjectEditor.index ?? robot.userData.activeWorkObjectIndex)
+        ? resolveWorkObjectIndex(robot.userData.activeWorkObjectIndex)
         : WOBJ_WORLD_INDEX;
     state.workObjectEditor.index = activeIndex;
-    if (available) robot.userData.activeWorkObjectIndex = activeIndex;
     const workObjects = available ? robot.userData.workObjects : normalizeWorkObjects();
     if (el.workObjectList) {
         el.workObjectList.replaceChildren(...workObjects.map((workObject) => {
@@ -31488,7 +31642,7 @@ function renderWorkObjectPanel(robot = getWorkObjectEditorRobot()) {
     };
     Object.entries(values).forEach(([key, value]) => {
         const input = el.workObjectInputs[key];
-        if (input && input !== document.activeElement) input.value = String(Number(value.toFixed(3)));
+        if (input && (ownerChanged || input !== document.activeElement)) input.value = String(Number(value.toFixed(3)));
     });
     const readOnly = !available || activeIndex === WOBJ_WORLD_INDEX || isMotionActive();
     if (el.workObjectName) el.workObjectName.disabled = readOnly;
@@ -31693,6 +31847,7 @@ function setJogRobotSelection(ids) {
     if (robot) {
         state.activeArticulatedModel = robot;
         renderJogControls(robot);
+        renderWorkObjectPanel(robot);
         setJogMode(mode);
     }
     renderJogRobotSelection();
@@ -31957,6 +32112,65 @@ function setJogMode(mode, { preserveSnapMove = false } = {}) {
     }
 }
 
+function setJogCartesianFrame(frame) {
+    if (!['base', 'tool', 'wobj'].includes(frame)) return;
+    stopBaseJogHold();
+    endBaseJogGizmoDrag();
+    finishBaseJogNumericHistory();
+    state.jogCartesianFrame = frame;
+    if (el.jogCartesianFrame) el.jogCartesianFrame.value = frame;
+    const robot = getJogTargetRobot();
+    if (!robot) return;
+    captureCurrentTcpTarget(robot);
+    updateBaseJogCapabilities(robot);
+    syncBaseJogGizmoFromRobot(robot);
+}
+
+function getCartesianJogFrame(robot, pose = robot.userData.baseJogTarget || getCurrentTcpPoseBase(robot)) {
+    if (state.jogCartesianFrame === 'tool') {
+        const editing = state.jogToolNumericFrame;
+        return editing?.robot === robot ? editing : pose;
+    }
+    if (state.jogCartesianFrame === 'wobj') {
+        const index = resolveWorkObjectIndex(robot.userData.activeWorkObjectIndex);
+        if (index !== WOBJ_WORLD_INDEX) {
+            const base = getRobotControllerBaseFrame(robot);
+            base.updateWorldMatrix(true, false);
+            const workObject = getWorkObjectWorldPose(robot, index);
+            return {
+                position: base.worldToLocal(workObject.position.clone()),
+                quaternion: base.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(workObject.quaternion).normalize()
+            };
+        }
+    }
+    return { position: new THREE.Vector3(), quaternion: new THREE.Quaternion() };
+}
+
+function getCartesianJogReadout(robot, pose) {
+    if (state.jogCartesianFrame !== 'tool') {
+        return getJogReadoutPose(robot, pose, state.jogCartesianFrame === 'wobj'
+            ? resolveWorkObjectIndex(robot.userData.activeWorkObjectIndex) : WOBJ_WORLD_INDEX);
+    }
+    const frame = getCartesianJogFrame(robot);
+    const inverse = frame.quaternion.clone().invert();
+    return {
+        position: pose.position.clone().sub(frame.position).applyQuaternion(inverse),
+        quaternion: inverse.clone().multiply(pose.quaternion).normalize()
+    };
+}
+
+function getBasePoseFromCartesianJog(robot, pose) {
+    if (state.jogCartesianFrame !== 'tool') {
+        return getBasePoseFromJogReadout(robot, pose, state.jogCartesianFrame === 'wobj'
+            ? resolveWorkObjectIndex(robot.userData.activeWorkObjectIndex) : WOBJ_WORLD_INDEX);
+    }
+    const frame = getCartesianJogFrame(robot);
+    return {
+        position: pose.position.clone().applyQuaternion(frame.quaternion).add(frame.position),
+        quaternion: frame.quaternion.clone().multiply(pose.quaternion).normalize()
+    };
+}
+
 function setBaseJogGizmoMode(mode) {
     if (!['translate', 'rotate'].includes(mode)) return;
     if (state.baseJogGizmoDragging) endBaseJogGizmoDrag();
@@ -32075,7 +32289,7 @@ function syncBaseJogGizmoFromRobot(robot, pose = null) {
     const resolvedPose = pose || getCurrentTcpPoseBase(robot);
     if (!resolvedPose) return;
     target.position.copy(resolvedPose.position);
-    target.quaternion.identity();
+    target.quaternion.copy(getCartesianJogFrame(robot, resolvedPose).quaternion);
     target.scale.set(1, 1, 1);
     target.updateMatrixWorld(true);
 }
@@ -32083,6 +32297,7 @@ function syncBaseJogGizmoFromRobot(robot, pose = null) {
 function beginBaseJogGizmoDrag() {
     const robot = state.baseJogGizmoRobot;
     if (!robot || !state.baseJogTransformControls?.enabled) return;
+    if (Object.values(el.tcpReadouts).includes(document.activeElement)) document.activeElement.blur();
     stopBaseJogHold();
 
     state.baseJogGizmoTranslationSnap = Number.isFinite(state.baseJogTransformControls.translationSnap)
@@ -32099,7 +32314,8 @@ function beginBaseJogGizmoDrag() {
     syncBaseJogGizmoFromRobot(robot, pose);
     state.baseJogGizmoStartTarget = {
         position: pose.position.clone(),
-        quaternion: pose.quaternion.clone()
+        quaternion: pose.quaternion.clone(),
+        gizmoQuaternion: state.baseJogGizmoTarget.quaternion.clone()
     };
     state.baseJogGizmoDragging = true;
     if (!state.historySuspended && !state.pendingBaseJogGizmoHistory) {
@@ -32127,12 +32343,14 @@ function applyBaseJogGizmoTarget() {
         || state.baseJogGizmoSnapAxis
         || 'XYZ';
     const targetPosition = state.baseJogGizmoMode === 'translate'
-        ? snapBaseJogPosition(proxy.position, liveTranslationSnap, snapAxis)
+        ? snapCartesianJogPosition(proxy.position, liveTranslationSnap, snapAxis, start)
         : start.position.clone();
     const desired = {
         position: targetPosition,
         quaternion: state.baseJogGizmoMode === 'rotate'
-            ? proxy.quaternion.clone().normalize().multiply(start.quaternion.clone()).normalize()
+            ? proxy.quaternion.clone().normalize()
+                .multiply((start.gizmoQuaternion || new THREE.Quaternion()).clone().invert())
+                .multiply(start.quaternion).normalize()
             : start.quaternion.clone()
     };
     if (getJogTargetRobots().length > 1) {
@@ -32179,13 +32397,13 @@ function endBaseJogGizmoDrag() {
     if (!state.baseJogGizmoDragging) return;
     const robot = state.baseJogGizmoRobot;
     state.baseJogGizmoDragging = false;
-    state.baseJogGizmoStartTarget = null;
     if (robot && Number.isFinite(state.baseJogGizmoTranslationSnap) && robot.userData.baseJogTarget) {
         robot.userData.baseJogTarget = {
-            position: snapBaseJogPosition(
+            position: snapCartesianJogPosition(
                 robot.userData.baseJogTarget.position,
                 state.baseJogGizmoTranslationSnap,
-                state.baseJogGizmoSnapAxis || 'XYZ'
+                state.baseJogGizmoSnapAxis || 'XYZ',
+                state.baseJogGizmoStartTarget
             ),
             quaternion: robot.userData.baseJogTarget.quaternion.clone()
         };
@@ -32195,8 +32413,16 @@ function endBaseJogGizmoDrag() {
         captureCurrentTcpTarget(robot);
     }
     state.baseJogGizmoTranslationSnap = null;
+    state.baseJogGizmoStartTarget = null;
     state.baseJogGizmoSnapAxis = null;
     commitPendingHistory('Base 3D JOG', 'pendingBaseJogGizmoHistory');
+}
+
+function snapCartesianJogPosition(position, snap, axis, start) {
+    if (state.jogCartesianFrame === 'base' || !start) return snapBaseJogPosition(position, snap, axis);
+    const orientation = start.gizmoQuaternion || new THREE.Quaternion();
+    const local = position.clone().sub(start.position).applyQuaternion(orientation.clone().invert());
+    return snapBaseJogPosition(local, snap, axis).applyQuaternion(orientation).add(start.position);
 }
 
 function snapBaseJogPosition(position, snap, axis = 'XYZ') {
@@ -32398,6 +32624,20 @@ function getTcpRotationDegrees(robot, pose) {
     };
 }
 
+function updateTcpAxesToggleUi() {
+    if (el.tcpAxesCheckbox) el.tcpAxesCheckbox.checked = state.tcpAxesVisible;
+}
+
+function setTcpAxesVisible(visible) {
+    state.tcpAxesVisible = Boolean(visible);
+    state.models.forEach((robot) => {
+        if (robot.userData.toolAxesAtTcp) robot.userData.toolAxesAtTcp.visible = state.tcpAxesVisible;
+    });
+    updateTcpAxesToggleUi();
+    requestRender();
+    scheduleMotionProjectSave();
+}
+
 function syncTcpVisualAtPose(robot, pose) {
     const axes = robot.userData.toolAxesAtTcp;
     if (!axes || !pose) return;
@@ -32455,9 +32695,11 @@ function updateTcpPresentation(robot, pose = getCurrentTcpPoseBase(robot)) {
     if (robot !== getJogTargetRobot()) return;
 
     updateJogWorkObjectUi(robot);
-    const displayPose = getJogReadoutPose(robot, pose);
+    const displayPose = getCartesianJogReadout(robot, pose);
     const euler = new THREE.Euler().setFromQuaternion(displayPose.quaternion, 'ZYX');
-    const feedbackRotation = robot.userData.controllerTcpPose?.readout?.rotation;
+    const feedbackRotation = state.jogCartesianFrame !== 'tool'
+        && (state.jogCartesianFrame === 'wobj' || resolveWorkObjectIndex(robot.userData.activeWorkObjectIndex) === WOBJ_WORLD_INDEX)
+        ? robot.userData.controllerTcpPose?.readout?.rotation : null;
     const rotation = feedbackRotation ? {
         rx: feedbackRotation[2], ry: feedbackRotation[1], rz: feedbackRotation[0]
     } : {
@@ -32485,21 +32727,25 @@ function updateJogWorkObjectUi(robot = getJogTargetRobot()) {
     const label = document.getElementById('wobj-launcher-label');
     if (label) label.textContent = `Wobj ${index}`;
     const titles = el.baseJogView?.querySelectorAll('.base-jog-title') || [];
-    const coordinate = index === WOBJ_WORLD_INDEX ? uiText('BASE') : `Wobj[${index}]`;
+    if (el.jogCartesianFrame) el.jogCartesianFrame.value = state.jogCartesianFrame;
+    el.jogToolFrameHint?.classList.toggle('hidden', state.jogCartesianFrame !== 'tool');
+    const coordinate = state.jogCartesianFrame === 'tool' ? 'Tool'
+        : state.jogCartesianFrame === 'wobj' && index !== WOBJ_WORLD_INDEX ? `Wobj[${index}]` : uiText('BASE');
     if (titles[0]) titles[0].childNodes[0].textContent = `${uiText('TCP POSITION /')} ${coordinate}`;
     if (titles[1]) titles[1].firstChild.textContent = `${uiText('TCP ROTATION /')} ${coordinate}`;
 }
 
-function getJogReadoutPose(robot, basePose) {
+function getJogReadoutPose(robot, basePose, index = resolveWorkObjectIndex(robot.userData.activeWorkObjectIndex)) {
     const feedback = robot.userData.controllerTcpPose?.readout;
-    if (feedback) return { position: feedback.position.clone(), quaternion: feedback.quaternion.clone() };
+    if (feedback && index === resolveWorkObjectIndex(robot.userData.activeWorkObjectIndex)) {
+        return { position: feedback.position.clone(), quaternion: feedback.quaternion.clone() };
+    }
     const rotation = getTcpRotationDegrees(robot, basePose);
     const quaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(
         THREE.MathUtils.degToRad(rotation.rx),
         THREE.MathUtils.degToRad(rotation.ry),
         THREE.MathUtils.degToRad(rotation.rz), 'ZYX'
     ));
-    const index = resolveWorkObjectIndex(robot.userData.activeWorkObjectIndex);
     if (index === WOBJ_WORLD_INDEX) return { position: basePose.position.clone(), quaternion };
     getRobotControllerBaseFrame(robot).updateWorldMatrix(true, false);
     const workObject = getWorkObjectWorldPose(robot, index);
@@ -32511,10 +32757,9 @@ function getJogReadoutPose(robot, basePose) {
     };
 }
 
-function getBasePoseFromJogReadout(robot, displayPose) {
+function getBasePoseFromJogReadout(robot, displayPose, index = resolveWorkObjectIndex(robot.userData.activeWorkObjectIndex)) {
     const position = displayPose.position.clone();
     const quaternion = displayPose.quaternion.clone();
-    const index = resolveWorkObjectIndex(robot.userData.activeWorkObjectIndex);
     if (index !== WOBJ_WORLD_INDEX) {
         getRobotControllerBaseFrame(robot).updateWorldMatrix(true, false);
         const workObject = getWorkObjectWorldPose(robot, index);
@@ -32531,6 +32776,11 @@ function getBasePoseFromJogReadout(robot, displayPose) {
 }
 
 function beginBaseJogNumericHistory() {
+    const robot = getJogTargetRobot();
+    if (state.jogCartesianFrame === 'tool' && robot && state.jogToolNumericFrame?.robot !== robot) {
+        const pose = getCurrentTcpPoseBase(robot);
+        if (pose) state.jogToolNumericFrame = { robot, position: pose.position.clone(), quaternion: pose.quaternion.clone() };
+    }
     if (!state.historySuspended && !state.pendingBaseJogNumericHistory
         && getJogTargetRobot()) {
         state.pendingBaseJogNumericHistory = captureSceneSnapshot();
@@ -32557,7 +32807,7 @@ function applyBaseJogNumericTarget(event) {
             quaternion: robot.userData.baseJogTarget.quaternion.clone()
         }
         : getCurrentTcpPoseBase(robot);
-    const displayTarget = getJogReadoutPose(robot, previousBaseTarget);
+    const displayTarget = getCartesianJogReadout(robot, previousBaseTarget);
 
     if (['x', 'y', 'z'].includes(editedKey)) {
         displayTarget.position[editedKey] = editedValue;
@@ -32577,7 +32827,7 @@ function applyBaseJogNumericTarget(event) {
         applyJogPoseDelta(robot, displayTarget, true);
         return;
     }
-    const target = getBasePoseFromJogReadout(robot, displayTarget);
+    const target = getBasePoseFromCartesianJog(robot, displayTarget);
 
     const result = solveRobotIK(robot, target, {
         positionTolerance: 0.001,
@@ -32604,6 +32854,11 @@ function applyBaseJogNumericTarget(event) {
 
 function finishBaseJogNumericHistory() {
     commitPendingHistory('Base 좌표 입력', 'pendingBaseJogNumericHistory');
+    // Wheel gestures can finish while the field is still being edited.
+    if (state.jogToolNumericFrame && Object.values(el.tcpReadouts).includes(document.activeElement)) return;
+    state.jogToolNumericFrame = null;
+    const robot = getJogTargetRobot();
+    if (robot) updateTcpPresentation(robot);
 }
 
 function normalizeDegrees(value) {
@@ -32638,6 +32893,7 @@ function runBaseJogButton(button) {
 }
 
 function startBaseJogHold(button, pointerId) {
+    if (Object.values(el.tcpReadouts).includes(document.activeElement)) document.activeElement.blur();
     stopBaseJogHold();
     if (!state.historySuspended) state.pendingBaseJogHistory = captureSceneSnapshot();
     if (!runBaseJogButton(button)) {
@@ -32695,7 +32951,7 @@ function applyJogPoseDelta(referenceRobot, desired, useReadout = false) {
     const referenceFrame = getRobotControllerBaseFrame(referenceRobot);
     referenceFrame.updateWorldMatrix(true, false);
     const referenceOrientation = referenceFrame.getWorldQuaternion(new THREE.Quaternion());
-    const desiredBase = useReadout ? getBasePoseFromJogReadout(referenceRobot, desired) : desired;
+    const desiredBase = useReadout ? getBasePoseFromCartesianJog(referenceRobot, desired) : desired;
     // Use the reference robot's command as one world-space displacement.
     // Each follower converts it back to its own controller BASE for IK.
     const translation = referenceFrame.localToWorld(desiredBase.position.clone())
@@ -32738,7 +32994,7 @@ function jogTcpInBase(robot, kind, axisName, direction) {
         position: currentBaseTarget.position.clone(),
         quaternion: currentBaseTarget.quaternion.clone()
     };
-    const displayTarget = getJogReadoutPose(robot, previousBaseTarget);
+    const displayTarget = getCartesianJogReadout(robot, previousBaseTarget);
     const previousAngles = (robot.userData.joints || []).map((joint) => joint.angle);
 
     if (kind === 'rotate') {
@@ -32752,7 +33008,7 @@ function jogTcpInBase(robot, kind, axisName, direction) {
     } else {
         displayTarget.position[axisName] += step * direction;
     }
-    const target = getBasePoseFromJogReadout(robot, displayTarget);
+    const target = getBasePoseFromCartesianJog(robot, displayTarget);
 
     if (getJogTargetRobots().length > 1) return applyJogPoseDelta(robot, target);
     setBaseJogStatus('Solving IK...', 'working');
@@ -34091,7 +34347,7 @@ function getVirtualControllerForRobot(robot) {
 async function ensureVirtualControllerCore(controller = state.virtualController) {
     if (controller.core) return controller.core;
     if (!controller.corePromise) {
-        controller.corePromise = import('./virtual-controller-core.mjs?v=20261023-tcp-feedback-1')
+        controller.corePromise = import('./virtual-controller-core.mjs?v=20261030-fieldbus-io-1')
             .then((core) => {
                 controller.core = core;
                 controller.samples = new core.VirtualControllerSampleBuffer();
@@ -34362,6 +34618,7 @@ function handleVirtualControllerMessage(raw, controller = state.virtualControlle
     const parsed = controller.core.parseVirtualControllerMessage(raw, performance.now());
     if (parsed.kind === 'state') {
         applyVirtualControllerOutputs(parsed.outputs);
+        applyVirtualControllerInputs(parsed.inputs);
         controller.samples.push(parsed);
         controller.lastSampleAt = parsed.receivedAt;
         if (controller.status !== 'streaming') {
@@ -36376,11 +36633,15 @@ function updateConveyorSimulation(timestamp) {
     moved.forEach(object => markSceneCollisionDirty(equipmentApp.objects().find(item => item.object === object)?.model || object));
 }
 function ioFunctionMappingActionLabel(action) {
+    if (action === IO_FUNCTION_MAPPING_ACTIONS.OBJECT_RESET) return uiText('오브젝트 원위치');
     if (EQUIPMENT_IO_TYPES.includes(action)) return uiText(EQUIPMENT_LABELS[action]);
     return uiText(action === 'CONVEYOR' ? '컨베이어 이송' : '뷰 전환');
 }
 
 function getIoFunctionMappingTargetReferences(action) {
+    if (action === IO_FUNCTION_MAPPING_ACTIONS.OBJECT_RESET) return [
+        { value: 'all', label: uiText('모든 등록 오브젝트') }, ...equipmentApp.targets('OBJECT')
+    ];
     if (action === 'VACUUM_RELEASE') action = 'VACUUM';
     if (EQUIPMENT_TYPES.includes(action)) return equipmentApp.targets(action);
     if (action === IO_FUNCTION_MAPPING_ACTIONS.CONVEYOR) return state.models
@@ -36414,7 +36675,7 @@ function renderIoFunctionMappingEditorTargets() {
         if (outputOnly) el.ioFunctionMappingDirection.value = 'OUT';
     }
     const isView = action === IO_FUNCTION_MAPPING_ACTIONS.VIEW;
-    if (el.ioFunctionMappingGripField?.querySelector('span')) el.ioFunctionMappingGripField.querySelector('span').textContent = uiText(action === IO_FUNCTION_MAPPING_ACTIONS.CONVEYOR ? '컨베이어' : '등록된 동작');
+    if (el.ioFunctionMappingGripField?.querySelector('span')) el.ioFunctionMappingGripField.querySelector('span').textContent = uiText(action === IO_FUNCTION_MAPPING_ACTIONS.OBJECT_RESET ? '등록 오브젝트' : action === IO_FUNCTION_MAPPING_ACTIONS.CONVEYOR ? '컨베이어' : '등록된 동작');
     if (el.ioFunctionMappingConveyorField) el.ioFunctionMappingConveyorField.hidden = action !== IO_FUNCTION_MAPPING_ACTIONS.CONVEYOR;
     const commandField = document.getElementById('io-equipment-command-field');
     if (commandField) commandField.hidden = release || !EQUIPMENT_IO_TYPES.includes(action);
@@ -36565,7 +36826,7 @@ function renderIoFunctionMappingList() {
         const action = document.createElement('select');
         action.dataset.ioFunctionMappingField = 'action';
         action.setAttribute('aria-label', uiText('매핑 기능'));
-        [[IO_FUNCTION_MAPPING_ACTIONS.VIEW, '뷰 전환'], [IO_FUNCTION_MAPPING_ACTIONS.CONVEYOR, '컨베이어 이송'], ...EQUIPMENT_IO_TYPES.map(type => [type, EQUIPMENT_LABELS[type]]), ['VACUUM_RELEASE', '파기']]
+        [[IO_FUNCTION_MAPPING_ACTIONS.VIEW, '뷰 전환'], [IO_FUNCTION_MAPPING_ACTIONS.OBJECT_RESET, '오브젝트 원위치'], [IO_FUNCTION_MAPPING_ACTIONS.CONVEYOR, '컨베이어 이송'], ...EQUIPMENT_IO_TYPES.map(type => [type, EQUIPMENT_LABELS[type]]), ['VACUUM_RELEASE', '파기']]
             .forEach(([value, label]) => {
                 const option = document.createElement('option');
                 option.value = value;
@@ -36625,6 +36886,11 @@ function isIoFunctionMappingAffected(mapping, change = {}) {
 }
 
 function executeIoFunctionMapping(mapping) {
+    if (mapping.action === IO_FUNCTION_MAPPING_ACTIONS.OBJECT_RESET) {
+        equipmentApp.resetObjects(mapping.gripObjectRef);
+        setStatus('IO 매핑으로 오브젝트를 원위치로 되돌렸습니다.', '#22c55e');
+        return;
+    }
     if (mapping.action !== 'VIEW') return;
     if (!getViewPreset(mapping.viewSlot) || !applyViewPreset(mapping.viewSlot, { announce: false })) throw new Error(getIoFunctionMappingAddressLabel(mapping)+': '+uiText('저장된 뷰가 없습니다.'));
     setStatus('IO 매핑으로 {view} 뷰로 전환했습니다.', '#22c55e', { view: 'V'+(mapping.viewSlot+1) });
@@ -38679,6 +38945,10 @@ async function stopVirtualControllerBridge() {
 }
 
 function closeVirtualControllerSocket(notifyBridge = true, controller = state.virtualController) {
+    controller.pendingInterferenceReadTimers?.forEach(timer => clearTimeout(timer));
+    controller.pendingInterferenceReadTimers?.clear();
+    controller.pendingInterferenceReads.clear();
+    controller.pendingInterferenceToolReads.clear();
     if (controller.reconnectTimer) {
         clearTimeout(controller.reconnectTimer);
         controller.reconnectTimer = null;
@@ -38765,7 +39035,7 @@ function applyVirtualControllerOutputs(outputs) {
     let changed = false;
     for (const [address, value] of Object.entries(outputs || {})) {
         const bit = Number(address);
-        if (!Number.isInteger(bit) || bit < 0 || bit > 16 || ![0, 1].includes(value)) continue;
+        if (!Number.isInteger(bit) || !isOlpSimulatorBitAddress(bit) || ![0, 1].includes(value)) continue;
         if (readOlpSimulatorBit('OUT', bit) === value) continue;
         writeOlpSimulatorBit('OUT', bit, value);
         changed = true;
@@ -38776,6 +39046,20 @@ function applyVirtualControllerOutputs(outputs) {
         renderIoSimulatorDirtyEntries();
         renderOlpIoMonitor();
     }
+}
+
+function applyVirtualControllerInputs(inputs) {
+    let changed = false;
+    for (const [address, value] of Object.entries(inputs || {})) {
+        const bit = Number(address);
+        if (!Number.isInteger(bit) || !isOlpSimulatorBitAddress(bit) || ![0, 1].includes(value)) continue;
+        if (readOlpSimulatorBit('IN', bit) === value) continue;
+        writeOlpSimulatorBit('IN', bit, value);
+        markIoSimulatorDirty('IN', bit, 1);
+        processIoFunctionMappings({ direction: 'IN', bitStart: bit, bitWidth: 1 });
+        changed = true;
+    }
+    if (changed) { renderIoSimulatorDirtyEntries(); renderOlpIoMonitor(); }
 }
 
 function restoreControllerToolFrame(robot, notify = true) {
@@ -42891,15 +43175,21 @@ function captureWorkspaceMaterialColors(model) {
 function applyWorkspaceMaterialColors(model, records) {
     (Array.isArray(records) ? records : []).forEach((record) => {
         const mesh = getWorkspaceObjectAtPath(model, record?.path);
-        if (!mesh?.isMesh || !Array.isArray(record.colors)) return;
-        ensureModelPartMaterialIsolation(mesh);
-        getMeshMaterials(mesh).forEach((material, index) => {
-            const colorHex = record.colors[index];
-            if (!material?.color || typeof colorHex !== 'string' || !/^[0-9a-f]{6}$/i.test(colorHex)) return;
-            material.color.setHex(Number.parseInt(colorHex, 16));
-            material.needsUpdate = true;
-            mesh.userData.modelPartMaterials?.forEach((entry) => {
-                if (entry.material === material && entry.color) entry.color.copy(material.color);
+        if (!Array.isArray(record?.colors)) return;
+        const targets = mesh?.isMesh ? [mesh] : [];
+        if (!targets.length && Array.isArray(record.path)) model.traverse(object => {
+            if (object.isMesh && object.userData.legacyWorkspacePath?.join('/') === record.path.join('/')) targets.push(object);
+        });
+        targets.forEach(mesh => {
+            ensureModelPartMaterialIsolation(mesh);
+            getMeshMaterials(mesh).forEach((material, index) => {
+                const colorHex = record.colors[index];
+                if (!material?.color || typeof colorHex !== 'string' || !/^[0-9a-f]{6}$/i.test(colorHex)) return;
+                material.color.setHex(Number.parseInt(colorHex, 16));
+                material.needsUpdate = true;
+                mesh.userData.modelPartMaterials?.forEach((entry) => {
+                    if (entry.material === material && entry.color) entry.color.copy(material.color);
+                });
             });
         });
     });
@@ -42911,7 +43201,7 @@ function captureWorkspacePartState(model) {
         return {
             index,
             visible: part.visible !== false,
-            transparency: getModelTransparencyPercent(part),
+            transparency: part.parent?.userData.modelPartAggregate ? getModelTransparencyForObject(part, model) : getModelTransparencyPercent(part),
             matrix: part.matrix.toArray(),
             matrixAutoUpdate: part.matrixAutoUpdate !== false
         };
@@ -43280,6 +43570,7 @@ function serializeWorkspaceSnapshot() {
         display: {
             gridVisible: state.grid?.visible !== false,
             outlineMode: Boolean(state.outlineMode),
+            tcpAxesVisible: state.tcpAxesVisible,
             collisionMode: state.collision.mode,
             collisionEnabled: Boolean(state.collision.enabled)
         },
@@ -43551,6 +43842,7 @@ function applyWorkspaceDisplayState(snapshot) {
     clearCollisionStopNotice();
     updateCollisionUi();
     setModelOutlineMode(display.outlineMode !== false);
+    setTcpAxesVisible(display.tcpAxesVisible !== false);
 }
 
 function applyWorkspaceCameraState(cameraState) {
@@ -43865,6 +44157,48 @@ function restoreWorkspaceGripPart(entry, robotsById = new Map()) {
     return model;
 }
 
+function getRestoredArmLoadTransform(robot, entry, targetIndex) {
+    if (entry.placement !== 'arm-load') return entry.transform;
+    const transform = normalizeToolAttachmentTransform(entry.transform);
+    if (!transform) return entry.transform;
+    const sourceIndex = getArmLoadJointIndex({ userData: entry });
+    const mountOffset = getRobotJointMountOffset(robot, targetIndex);
+    // Numeric offsets are self-describing. Earlier SCARA J4 used a 35 mm housing
+    // offset; only R7H-90's marked legacy files already used accessory-hole centers.
+    const savedOffset = Array.isArray(entry.armLoadMountOffset)
+        && entry.armLoadMountOffset.length === 3
+        && entry.armLoadMountOffset.every(Number.isFinite)
+        ? entry.armLoadMountOffset
+        : robot?.userData.manifest?.robotType === 'scara' && sourceIndex === 3
+            ? SCARA_J4_ARM_LOAD_MOUNT_OFFSET
+            : robot?.userData.motionModelFolder === 'IR-R7H-90' && entry.armLoadMountReference === 'mount-frame'
+                ? getRobotJointMountOffset(robot, sourceIndex)
+                : [0, 0, 0];
+    if (sourceIndex === targetIndex) {
+        return { ...entry.transform,
+            position: transform.position.map((value, index) => value + savedOffset[index] - mountOffset[index]) };
+    }
+    const sourceFrame = robot?.userData.joints?.[sourceIndex]?.group;
+    const targetFrame = getRobotJointMountFrame(robot, targetIndex);
+    if (!sourceFrame || !targetFrame) return entry.transform;
+    sourceFrame.updateWorldMatrix(true, false);
+    targetFrame.updateWorldMatrix(true, false);
+    const local = new THREE.Matrix4().compose(
+        new THREE.Vector3().fromArray(transform.position),
+        new THREE.Quaternion().fromArray(transform.quaternion),
+        new THREE.Vector3().fromArray(transform.scale)
+    );
+    const rebased = targetFrame.matrixWorld.clone().invert()
+        .multiply(sourceFrame.matrixWorld)
+        .multiply(new THREE.Matrix4().makeTranslation(...savedOffset))
+        .multiply(local);
+    const position = new THREE.Vector3();
+    const quaternion = new THREE.Quaternion();
+    const scale = new THREE.Vector3();
+    rebased.decompose(position, quaternion, scale);
+    return { position: position.toArray(), quaternion: quaternion.toArray(), scale: scale.toArray() };
+}
+
 async function restoreWorkspaceImportedModel(entry, robotsById) {
     const asset = await state.workspaceRecovery.db.getAsset(entry.assetId, { touch: true });
     if (!asset?.blob) return null;
@@ -43873,27 +44207,10 @@ async function restoreWorkspaceImportedModel(entry, robotsById) {
         ? robotsById.get(entry.hostRobotInstanceId) || null
         : null;
     if (needsRobotAttachment && !attachmentRobot) return null;
-    const attachmentJointIndex = getArmLoadJointIndex({ userData: entry });
-    const mountOffset = getRobotJointMountOffset(attachmentRobot, attachmentJointIndex);
-    const folder = attachmentRobot?.userData.motionModelFolder;
-    // Preserve the physical placement saved before a model's mounting origin changed.
-    // Only older R7H-90 mount-frame entries already used the hole centers.
-    const legacyPivot = ['IR-R4-56', 'IR-R4H-54', 'IR-R7H-70', 'IR-R10H-120'].includes(folder)
-        || (folder === 'IR-R7H-90' && entry.armLoadMountReference !== 'mount-frame');
-    const savedMountOffset = Array.isArray(entry.armLoadMountOffset)
-        && entry.armLoadMountOffset.length === 3
-        && entry.armLoadMountOffset.every(Number.isFinite)
-        ? entry.armLoadMountOffset
-        : legacyPivot ? [0, 0, 0] : mountOffset;
-    const transform = entry.placement === 'arm-load'
-        && Array.isArray(entry.transform?.position)
-        && entry.transform.position.length === 3
-        && entry.transform.position.every(Number.isFinite)
-        ? {
-            ...entry.transform,
-            position: entry.transform.position.map((value, index) => value + savedMountOffset[index] - mountOffset[index])
-        }
-        : entry.transform;
+    const attachmentJointIndex = entry.placement === 'arm-load'
+        ? getRobotArmLoadJointIndex(attachmentRobot, getArmLoadJointIndex({ userData: entry }))
+        : getArmLoadJointIndex({ userData: entry });
+    const transform = getRestoredArmLoadTransform(attachmentRobot, entry, attachmentJointIndex);
     const file = new File([asset.blob], asset.name, {
         type: asset.type || asset.blob.type || '',
         lastModified: asset.lastModified || Date.now()
@@ -48151,7 +48468,7 @@ function attachPendingToolModels(robot) {
         }
         const armLoadTransform = model.userData.pendingArmLoadAttachment;
         if (!armLoadTransform) return;
-        const jointIndex = normalizeArmLoadJointIndex(armLoadTransform.attachmentJointIndex);
+        const jointIndex = getRobotArmLoadJointIndex(robot, armLoadTransform.attachmentJointIndex);
         const armLoadMountFrame = getRobotJointMountFrame(robot, jointIndex);
         if (!armLoadMountFrame) return;
         armLoadMountFrame.add(model);

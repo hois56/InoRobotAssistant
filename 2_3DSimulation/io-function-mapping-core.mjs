@@ -9,6 +9,7 @@ export const IO_FUNCTION_MAPPING_SCHEMA_VERSION = 1;
 
 export const IO_FUNCTION_MAPPING_ACTIONS = Object.freeze({
     VIEW: 'VIEW',
+    OBJECT_RESET: 'OBJECT_RESET',
     CONVEYOR: 'CONVEYOR',
     ...Object.fromEntries(EQUIPMENT_IO_TYPES.map(type => [type, type]))
 });

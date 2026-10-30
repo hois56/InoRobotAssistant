@@ -8,7 +8,7 @@
     <title>3D Simulation | INOVANCE</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=20261023-teaching-labels-2">
+    <link rel="stylesheet" href="style.css?v=20261030-tool-flange-origin-1">
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -23,7 +23,7 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/Language/runtime/i18n.css">
-    <script src="/Language/runtime/locales-data.js?v=4a107c098547" defer></script>
+    <script src="/Language/runtime/locales-data.js?v=20261030-tool-flange-origin-1" defer></script>
     <script src="/Language/runtime/i18n.js" defer></script>
     <script src="/Language/runtime/icon-fallback.js" defer></script>
     <script src="/analytics-config.js"></script>
@@ -852,12 +852,8 @@
             <label id="import-arm-load-axis-setting" class="import-setting hidden" for="import-arm-load-axis">
                 <span data-i18n="legacy.부착 축">부착 축</span>
                 <select id="import-arm-load-axis" aria-label="암 로드 부착 축" data-i18n-aria-label="legacy.암 로드 부착 축">
-                    <option value="0">J1</option>
-                    <option value="1">J2</option>
                     <option value="2">J3</option>
                     <option value="3" selected>J4</option>
-                    <option value="4">J5</option>
-                    <option value="5">J6</option>
                 </select>
             </label>
             <label id="import-quality-setting" class="import-setting" for="import-quality">
@@ -1480,12 +1476,8 @@
                         <label class="arm-load-field arm-load-axis-field" for="arm-load-axis">
                             <span data-i18n="legacy.부착 축">부착 축</span>
                             <select id="arm-load-axis" aria-label="암 로드 부착 축 변경" data-i18n-aria-label="legacy.암 로드 부착 축 변경">
-                                <option value="0">J1</option>
-                                <option value="1">J2</option>
                                 <option value="2">J3</option>
                                 <option value="3">J4</option>
-                                <option value="4">J5</option>
-                                <option value="5">J6</option>
                             </select>
                         </label>
                         <label class="arm-load-visibility-field">
@@ -1643,13 +1635,22 @@
                 </section>
                 <div class="jog-mode-tabs" role="group" aria-label="JOG coordinate mode">
                     <button id="btn-jog-joint-mode" type="button" class="jog-mode-btn" aria-pressed="false">JOINT</button>
-                    <button id="btn-jog-base-mode" type="button" class="jog-mode-btn active" aria-pressed="true">BASE</button>
+                    <button id="btn-jog-base-mode" type="button" class="jog-mode-btn active" aria-pressed="true" data-i18n="legacy.Cartesian">직교</button>
                     <button id="btn-snap-move" type="button" class="jog-mode-btn jog-snap-move" title="스냅 이동" aria-label="스냅 이동" aria-pressed="false">스냅 이동</button>
                 </div>
                 <div id="joint-jog-view" class="jog-view" role="tabpanel">
                     <div id="jog-controls" class="jog-controls"></div>
                 </div>
                 <div id="base-jog-view" class="jog-view hidden" role="tabpanel">
+                    <label class="jog-frame-setting">
+                        <span data-i18n="legacy.Coordinate system">좌표계</span>
+                        <select id="jog-cartesian-frame" aria-label="좌표계" data-i18n-aria-label="legacy.Coordinate system">
+                            <option value="base" data-i18n="legacy.BASE">베이스</option>
+                            <option value="tool" data-i18n-skip>Tool</option>
+                            <option value="wobj" data-i18n-skip>Wobj</option>
+                        </select>
+                    </label>
+                    <p id="jog-tool-frame-hint" class="jog-tool-frame-hint hidden" data-i18n="legacy.Tool jog offset hint">Tool 값은 현재 TCP 기준 상대 이동값입니다.</p>
                     <div class="base-gizmo-mode" role="group" aria-label="BASE 3D handle mode">
                         <button id="btn-base-gizmo-translate" type="button" class="active" title="X/Y/Z translate handle">
                             <i class="fa-solid fa-up-down-left-right"></i> X · Y · Z
@@ -1704,6 +1705,7 @@
                             <strong id="active-tcp-profile-label">TCP 1</strong>
                         </div>
                     </div>
+                    <label class="tcp-axes-visible-toggle"><input id="tcp-axes-visible" type="checkbox" checked><span data-i18n="legacy.TCP 좌표축 표시">TCP 좌표축 표시</span></label>
                     <div class="tcp-profile-tabs" role="group" aria-label="활성 TCP 선택">
                         <button type="button" class="active" data-tcp-profile="0" aria-pressed="true">TCP 1</button>
                         <button type="button" data-tcp-profile="1" aria-pressed="false">TCP 2</button>
@@ -1818,7 +1820,7 @@
                         </select>
                     </label>
                     <div class="virtual-controller-bridge-actions" data-virtual-controller-source="bridge">
-                        <a class="virtual-controller-bridge-download" href="./bridge/InoRobotVirtualControllerBridge.zip?v=20261007-output-1" download>
+                        <a class="virtual-controller-bridge-download" href="./bridge/InoRobotVirtualControllerBridge.zip?v=20261030-fieldbus-io-1" download>
                             <i class="fa-solid fa-download"></i>
                             <span>브리지 다운로드</span>
                         </a>
@@ -2046,6 +2048,7 @@
                             <span>기능</span>
                             <select id="io-function-mapping-action" aria-label="매핑 기능">
                                 <option value="VIEW">뷰 전환</option>
+                                <option value="OBJECT_RESET">오브젝트 원위치</option>
                                 <option value="CONVEYOR">컨베이어 이송</option>
                                 <option value="CYLINDER">실린더</option><option value="LINEAR_AXIS">직선 외부 축</option><option value="ROTARY_AXIS">회전 외부 축</option><option value="GRIPPER">그리퍼</option><option value="FILM_PEEL">필름 박리</option><option value="VACUUM">진공</option><option value="VACUUM_RELEASE">파기</option>
                             </select>
@@ -2522,7 +2525,7 @@
         </div>
     </footer>
 
-    <script type="module" src="main.js?v=20261030-arm-load-mount-4"></script>
+    <script type="module" src="main.js?v=20261030-fieldbus-io-1"></script>
 <script src="/0_Home/tool-guide-embed.js?v=20260906-2"></script>
 </body>
 </html>

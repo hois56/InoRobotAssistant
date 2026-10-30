@@ -1908,7 +1908,21 @@
     "포인트 표시 방식": "Kiểu hiển thị điểm",
     "ID만": "Chỉ ID",
     "라벨명만": "Chỉ tên nhãn",
-    "둘 다": "Cả hai"
+    "둘 다": "Cả hai",
+    "Cartesian": "Đề-các",
+    "Coordinate system": "Hệ tọa độ",
+    "Tool jog offset hint": "Giá trị Tool là độ dịch chuyển tương đối từ TCP hiện tại.",
+    "TCP 좌표축 표시": "Hiện trục tọa độ TCP",
+    "모델 영점": "Điểm gốc mô hình",
+    "오브젝트 원위치": "Đưa đối tượng về vị trí gốc",
+    "모든 등록 오브젝트": "Tất cả đối tượng đã đăng ký",
+    "등록 오브젝트": "Đối tượng đã đăng ký",
+    "원위치로 되돌릴 등록 오브젝트가 없습니다.": "Không có đối tượng đã đăng ký để đưa về vị trí gốc.",
+    "IO 매핑으로 오브젝트를 원위치로 되돌렸습니다.": "Đã đưa đối tượng về vị trí gốc bằng ánh xạ IO.",
+    "컨트롤러에서 Tool 설정 가져오기": "Nhập cài đặt Tool từ bộ điều khiển",
+    "컨트롤러에서 설정 가져오기": "Nhập cài đặt từ bộ điều khiển",
+    "컨트롤러에 연결한 후 간섭영역 설정을 가져올 수 있습니다.": "Kết nối bộ điều khiển để nhập cài đặt vùng giao thoa.",
+    "컨트롤러에 연결한 후 TCP 감지 범위 설정을 가져올 수 있습니다.": "Kết nối bộ điều khiển để nhập cài đặt phạm vi phát hiện TCP."
   },
   "patterns": []
 }

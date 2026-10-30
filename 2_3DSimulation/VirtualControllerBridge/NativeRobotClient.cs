@@ -22,6 +22,8 @@ internal sealed class NativeRobotClient : IDisposable
     private string? _lastConnectionLossDiagnostic;
     private readonly ControllerOutputSampler _outputSampler = new();
     private readonly Func<int, int?> _readOutput;
+    private readonly FieldbusIoReader _fieldbusIo = new();
+    public bool EnableFieldbusIo { get; set; }
 
     private readonly int _communicationId;
 
@@ -201,6 +203,7 @@ internal sealed class NativeRobotClient : IDisposable
                 }
 
                 IsConnected = true;
+                if (EnableFieldbusIo) _fieldbusIo.Start(ipAddress);
                 return (true, "Connected");
             }
             catch (Exception error)
@@ -249,13 +252,16 @@ internal sealed class NativeRobotClient : IDisposable
                 }
 
                 _outputSampler.Update(Environment.TickCount64, _readOutput);
+                FieldbusIoSnapshot fieldbus = _fieldbusIo.Snapshot;
 
                 return new RobotState(
                     sequence,
                     timestamp,
                     jointPosition.JointData.ToArray(),
                     tcp,
-                    _outputSampler.Values);
+                    _outputSampler.Values,
+                    fieldbus.Inputs,
+                    fieldbus.Outputs);
             }
             catch (Exception error)
             {
@@ -449,6 +455,7 @@ internal sealed class NativeRobotClient : IDisposable
 
     private void DisconnectUnsafe()
     {
+        _fieldbusIo.Stop();
         _outputSampler.Reset();
         if (!IsConnected && !_nativeSessionOpen)
             return;
@@ -586,7 +593,8 @@ internal sealed class NativeRobotClient : IDisposable
     }
 }
 
-internal sealed record RobotState(long Sequence, long Timestamp, double[] Joints, double[] Tcp, IReadOnlyDictionary<int, int> Outputs);
+internal sealed record RobotState(long Sequence, long Timestamp, double[] Joints, double[] Tcp,
+    IReadOnlyDictionary<int, int> Outputs, byte[]? FieldbusInputs = null, byte[]? FieldbusOutputs = null);
 
 internal sealed class InterferenceZoneReadResult
 {

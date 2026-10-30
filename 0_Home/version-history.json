@@ -271,7 +271,16 @@
                   "`[추가]` 모든 로봇 모델의 베이스 설치 구멍 중심에 스냅점을 추가했습니다.",
                   "`[개선]` 3D 모델의 면 사이 명암과 접합부 음영을 개선하여 형태와 입체감을 더 쉽게 구분할 수 있도록 했습니다.",
                   "`[수정]` 일반 3D 모델링을 가져올 때 원래 색상이 바뀌거나 대용량 STEP의 부품·면 색상이 누락되던 문제를 해결했습니다.",
-                  "`[수정]` R4·R4H·R7H·R10H-120의 J3·J4 암 로드가 로봇의 장착 기준 위치에 맞지 않던 문제를 해결했습니다."
+                  "`[수정]` 암 로드가 로봇의 장착 기준 위치에 맞지 않던 문제를 모든 모델에서 해결했습니다.",
+                  "`[개선]` 암 로드 부착 축을 6축 로봇은 J3·J4, 스카라는 J2로 제한했습니다.",
+                  "`[추가]` JOG 패널의 직교 모드에서 베이스·Tool·Wobj 좌표계를 선택하여 이동·회전할 수 있도록 했습니다.",
+                  "`[수정]` 로봇이 여러 대일 때 Wobj 편집 대상과 활성 번호가 다른 로봇에 섞이던 문제를 해결했습니다.",
+                  "`[추가]` TCP 설정에서 TCP 좌표축 표시를 켜고 끌 수 있도록 했습니다.",
+                  "`[수정]` Tool 모델의 세부 부품을 펼쳐 표시하고, 일부 STEP Tool의 여러 부품이 하나로 합쳐져 개별 동작을 설정할 수 없던 문제를 해결했습니다.",
+                  "`[추가]` 모델 트리의 이동 기능에서 면을 선택하면 해당 모델의 영점을 함께 표시하고 스냅 기준점으로 선택할 수 있도록 했습니다.",
+                  "`[개선]` 가상컨트롤러에서도 간섭영역·TCP 감지 범위 설정 가져오기와 필드버스 IO 모니터링을 사용할 수 있도록 하고, 지원하지 않는 항목은 건너뛰도록 했습니다.",
+                  "`[추가]` IO 매핑에 선택한 등록 오브젝트 또는 전체 오브젝트를 등록 당시 위치·회전으로 되돌리는 기능을 추가했습니다.",
+                  "`[수정]` TCP 오프셋으로 새 Tool 모델의 장착 위치가 어긋나던 문제를 해결하고 플랜지 영점(0, 0, 0)에 배치하도록 했습니다."
                 ]
               },
               {
@@ -1636,7 +1645,16 @@
                   "`[Added]` Added snap points at the base mounting-hole centers of all robot models.",
                   "`[Improved]` Improved face shading and subtle contact occlusion on 3D models to make shapes and depth easier to distinguish.",
                   "`[Fixed]` Fixed original colors changing on imported 3D models and missing part or face colors in large STEP files.",
-                  "`[Fixed]` Fixed J3/J4 arm-load models on R4, R4H, R7H and R10H-120 robots not aligning with their accessory mounting references."
+                  "`[Fixed]` Fixed arm-load models not aligning with their mounting references across all robot models.",
+                  "`[Improved]` Limited arm-load attachment axes to J3/J4 for six-axis robots and J2 for SCARA robots.",
+                  "`[Added]` Added Base, Tool and Wobj coordinate selection for Cartesian translation and rotation in the JOG panel.",
+                  "`[Fixed]` Fixed Wobj editor targets and active indices being mixed between robots in multi-robot scenes.",
+                  "`[Added]` Added a checkbox in TCP settings to show or hide TCP coordinate axes.",
+                  "`[Fixed]` Expanded Tool component trees and fixed components in some STEP Tools being merged into one part, preventing individual motion settings.",
+                  "`[Added]` Selecting a face during a move from the model tree now displays the model origin as a selectable snap reference.",
+                  "`[Improved]` Enabled interference zone and TCP detection range imports and fieldbus IO monitoring for virtual controllers, skipping unsupported items.",
+                  "`[Added]` Added IO mapping to return selected or all registered objects to their original registered positions and rotations.",
+                  "`[Fixed]` Fixed TCP offsets displacing newly imported Tool models by mounting them at the flange origin (0, 0, 0)."
                 ]
               },
               {
@@ -2972,7 +2990,16 @@
                   "`[新增]` 为所有机器人型号底座安装孔中心添加了捕捉点。",
                   "`[改进]` 改善了3D模型各面之间的明暗对比和接合处的柔和阴影，使形状和立体感更加清晰。",
                   "`[修复]` 修复了导入普通3D模型时原始颜色被替换，以及大型STEP文件中零件和面颜色丢失的问题。",
-                  "`[修复]` 修复了R4、R4H、R7H和R10H-120的J3/J4臂部负载模型与机器人附件安装基准位置不一致的问题。"
+                  "`[修复]` 修复了所有机器人型号的臂部负载模型与安装基准位置不一致的问题。",
+                  "`[改进]` 将臂部负载的安装轴限制为六轴机器人的J3/J4和SCARA机器人的J2。",
+                  "`[新增]` JOG 面板的直角坐标模式支持选择基座、Tool 和 Wobj 坐标系进行移动和旋转。",
+                  "`[修复]` 修复了多机器人场景中Wobj编辑对象和当前编号在不同机器人之间混用的问题。",
+                  "`[新增]` 在 TCP 设置中新增 TCP 坐标轴显示复选框。",
+                  "`[修复]` 展开显示 Tool 模型的详细零件，并修复了部分 STEP Tool 的多个零件被合并为一个而无法单独设置动作的问题。",
+                  "`[新增]` 在模型树中移动模型时，选择面即可同时显示该模型的原点，并可将其选为捕捉参考点。",
+                  "`[改进]` 虚拟控制器现可导入干涉区域和TCP检测范围设置并监控现场总线IO，不支持的项目将跳过。",
+                  "`[新增]` IO映射现可将选定或全部已注册对象恢复到注册时的位置和旋转角度。",
+                  "`[修复]` 修复了 TCP 偏移导致新导入 Tool 模型安装位置偏移的问题，统一安装到法兰原点 (0, 0, 0)。"
                 ]
               },
               {
@@ -4308,7 +4335,16 @@
                   "`[Thêm]` Đã thêm điểm bắt tại tâm các lỗ lắp đặt trên đế của tất cả các mẫu robot.",
                   "`[Cải thiện]` Cải thiện độ tương phản giữa các mặt và bóng nhẹ tại các điểm tiếp giáp của mô hình 3D để dễ nhận biết hình dạng và chiều sâu hơn.",
                   "`[Sửa]` Đã sửa lỗi thay đổi màu gốc khi nhập mô hình 3D và mất màu chi tiết hoặc bề mặt trong tệp STEP lớn.",
-                  "`[Sửa]` Đã sửa lỗi mô hình tải trên tay J3/J4 của R4, R4H, R7H và R10H-120 không khớp với vị trí tham chiếu lắp phụ kiện của robot."
+                  "`[Sửa]` Đã sửa lỗi mô hình tải trên tay không khớp với vị trí tham chiếu lắp trên tất cả các mẫu robot.",
+                  "`[Cải thiện]` Giới hạn trục gắn tải trên tay ở J3/J4 cho robot 6 trục và J2 cho robot SCARA.",
+                  "`[Thêm]` Đã bổ sung lựa chọn hệ tọa độ Đế, Tool và Wobj để di chuyển và xoay trong chế độ Đề-các của bảng JOG.",
+                  "`[Sửa lỗi]` Đã khắc phục việc đối tượng chỉnh sửa và số Wobj đang chọn bị nhầm giữa các robot khi có nhiều robot.",
+                  "`[Thêm]` Thêm hộp kiểm trong cài đặt TCP để hiện hoặc ẩn các trục tọa độ TCP.",
+                  "`[Sửa lỗi]` Mở rộng danh sách chi tiết của Tool và sửa lỗi nhiều chi tiết trong một số STEP Tool bị gộp thành một, không thể thiết lập chuyển động riêng.",
+                  "`[Thêm]` Khi chọn một mặt trong lúc di chuyển từ cây mô hình, điểm gốc của mô hình được hiển thị và có thể chọn làm điểm tham chiếu bắt điểm.",
+                  "`[Cải tiến]` Cho phép bộ điều khiển ảo nhập vùng giao thoa, phạm vi phát hiện TCP và giám sát IO fieldbus; bỏ qua các mục không được hỗ trợ.",
+                  "`[Thêm]` Thêm ánh xạ IO để đưa đối tượng đã đăng ký được chọn hoặc tất cả đối tượng về vị trí và góc xoay ban đầu khi đăng ký.",
+                  "`[Sửa lỗi]` Đã sửa lỗi độ lệch TCP làm sai vị trí lắp mô hình Tool mới nhập; Tool được đặt tại gốc mặt bích (0, 0, 0)."
                 ]
               },
               {
@@ -5644,7 +5680,16 @@
                   "`[Eklendi]` Tüm robot modellerinin taban montaj deliklerinin merkezlerine yakalama noktaları eklendi.",
                   "`[İyileştirildi]` Şekillerin ve derinliğin daha kolay ayırt edilmesi için 3D model yüzeylerinin gölgelendirmesi ve birleşim yerlerindeki hafif gölgeler iyileştirildi.",
                   "`[Düzeltildi]` İçe aktarılan 3D modellerin özgün renklerinin değişmesi ve büyük STEP dosyalarında parça veya yüzey renklerinin kaybolması sorunu giderildi.",
-                  "`[Düzeltildi]` R4, R4H, R7H ve R10H-120 robotlarının J3/J4 kol yükü modellerinin aksesuar montaj referanslarıyla hizalanmaması sorunu giderildi."
+                  "`[Düzeltildi]` Tüm robot modellerinde kol yükü modellerinin montaj referanslarıyla hizalanmaması sorunu giderildi.",
+                  "`[İyileştirildi]` Kol yükü bağlama eksenleri altı eksenli robotlarda J3/J4 ve SCARA robotlarda J2 ile sınırlandırıldı.",
+                  "`[Eklendi]` JOG panelinin Kartezyen modunda taşıma ve döndürme için Taban, Tool ve Wobj koordinat sistemi seçimi eklendi.",
+                  "`[Düzeltildi]` Birden fazla robot içeren sahnelerde Wobj düzenleme hedeflerinin ve etkin numaraların robotlar arasında karışması sorunu giderildi.",
+                  "`[Eklendi]` TCP ayarlarına koordinat eksenlerini göstermek veya gizlemek için bir onay kutusu eklendi.",
+                  "`[Düzeltme]` Tool ayrıntı ağaçları açıldı ve bazı STEP Tool modellerinde birden fazla parçanın birleşerek ayrı hareket ayarını engellemesi sorunu giderildi.",
+                  "`[Eklendi]` Model ağacından taşıma sırasında bir yüz seçildiğinde modelin sıfır noktası görüntülenir ve yakalama referansı olarak seçilebilir.",
+                  "`[İyileştirme]` Sanal kontrolörlerde girişim bölgesi ve TCP algılama aralığı ayarlarını alma ve fieldbus IO izleme etkinleştirildi; desteklenmeyen öğeler atlanır.",
+                  "`[Eklendi]` Seçilen veya tüm kayıtlı nesneleri kayıt sırasındaki konum ve dönüşlerine döndüren IO eşlemesi eklendi.",
+                  "`[Düzeltildi]` TCP ofsetlerinin yeni içe aktarılan Tool modellerini kaydırması sorunu giderildi; modeller flanş orijinine (0, 0, 0) yerleştirilir."
                 ]
               },
               {
@@ -6980,7 +7025,16 @@
                   "`[Добавлено]` Добавлены точки привязки в центрах монтажных отверстий оснований всех моделей роботов.",
                   "`[Улучшено]` Улучшены светотеневой контраст граней и мягкое затенение стыков 3D-моделей для лучшего восприятия формы и объёма.",
                   "`[Исправлено]` Исправлены замена исходных цветов при импорте 3D-моделей и потеря цветов деталей или граней в больших файлах STEP.",
-                  "`[Исправлено]` Исправлено несовпадение положения моделей нагрузок звеньев J3/J4 роботов R4, R4H, R7H и R10H-120 с опорными точками крепления оборудования."
+                  "`[Исправлено]` Исправлено несовпадение положения моделей нагрузок звеньев с опорными точками крепления на всех моделях роботов.",
+                  "`[Улучшено]` Оси крепления нагрузки ограничены J3/J4 для шестиосевых роботов и J2 для роботов SCARA.",
+                  "`[Добавлено]` В декартовом режиме панели JOG добавлен выбор систем координат «База», Tool и Wobj для перемещения и вращения.",
+                  "`[Исправлено]` Исправлено смешивание роботов для редактирования Wobj и активных номеров Wobj в сценах с несколькими роботами.",
+                  "`[Добавлено]` В настройки TCP добавлен флажок отображения осей координат TCP.",
+                  "`[Исправлено]` Добавлено раскрытие деталей Tool и устранено объединение нескольких деталей некоторых STEP Tool в одну, мешавшее настройке отдельных движений.",
+                  "`[Добавлено]` При выборе грани во время перемещения из дерева моделей отображается начало координат модели, которое можно выбрать как опорную точку привязки.",
+                  "`[Улучшено]` Виртуальные контроллеры поддерживают загрузку зон интерференции и диапазона обнаружения TCP, а также мониторинг полевых IO; неподдерживаемые данные пропускаются.",
+                  "`[Добавлено]` Добавлена привязка IO для возврата выбранных или всех зарегистрированных объектов к положению и повороту на момент регистрации.",
+                  "`[Исправлено]` Устранено смещение новых моделей Tool из-за смещения TCP: модели устанавливаются в начало координат фланца (0, 0, 0)."
                 ]
               },
               {

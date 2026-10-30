@@ -380,6 +380,7 @@ test('JOG 위치·회전 제목은 언어와 BASE·Wobj 전환 및 이동 후에
     test.setTimeout(120000);
     const errors = []; page.on('pageerror', error => errors.push(error.message));
     await setup(page, ['IR-S7-60Z20']);
+    await page.locator('#jog-cartesian-frame').selectOption('wobj');
     await fillNumber(page.locator('#base-move-step'), 0.1);
     const titles = page.locator('#base-jog-view .base-jog-title');
     const expected = {
@@ -393,6 +394,9 @@ test('JOG 위치·회전 제목은 언어와 BASE·Wobj 전환 및 이동 후에
     for (const locale of ['ko', 'en', 'zh-CN', 'vi', 'tr', 'ru', 'ko']) {
         const [position, rotation, base] = expected[locale];
         await page.locator('#inorobot-language-select').selectOption(locale);
+        const cartesian = { ko: '직교', en: 'Cartesian', 'zh-CN': '直角坐标', vi: 'Đề-các', tr: 'Kartezyen', ru: 'Декартовы' };
+        await expect(page.locator('#btn-jog-base-mode')).toHaveText(cartesian[locale]);
+        await expect(page.locator('#jog-cartesian-frame option')).toHaveText([base, 'Tool', 'Wobj']);
         await expect(titles.nth(0)).toHaveText(`${position} ${base}`);
         await expect(titles.nth(1)).toHaveText(`${rotation} ${base}`);
         await page.evaluate(() => {

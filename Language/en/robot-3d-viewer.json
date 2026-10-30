@@ -1908,7 +1908,21 @@
     "포인트 표시 방식": "Point label format",
     "ID만": "ID only",
     "라벨명만": "Label only",
-    "둘 다": "Both"
+    "둘 다": "Both",
+    "Cartesian": "Cartesian",
+    "Coordinate system": "Coordinate system",
+    "Tool jog offset hint": "Tool values are relative offsets from the current TCP.",
+    "TCP 좌표축 표시": "Show TCP axes",
+    "모델 영점": "Model origin",
+    "오브젝트 원위치": "Reset object position",
+    "모든 등록 오브젝트": "All registered objects",
+    "등록 오브젝트": "Registered objects",
+    "원위치로 되돌릴 등록 오브젝트가 없습니다.": "There are no registered objects to reset.",
+    "IO 매핑으로 오브젝트를 원위치로 되돌렸습니다.": "Objects were reset to their original positions by IO mapping.",
+    "컨트롤러에서 Tool 설정 가져오기": "Import Tool settings from controller",
+    "컨트롤러에서 설정 가져오기": "Import settings from controller",
+    "컨트롤러에 연결한 후 간섭영역 설정을 가져올 수 있습니다.": "Connect a controller to import interference zone settings.",
+    "컨트롤러에 연결한 후 TCP 감지 범위 설정을 가져올 수 있습니다.": "Connect a controller to import TCP detection range settings."
   },
   "patterns": []
 }

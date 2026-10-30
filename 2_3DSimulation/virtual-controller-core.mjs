@@ -59,14 +59,26 @@ function readTraceJoints(data) {
     return joints.every((value) => value !== null) ? joints : null;
 }
 
-function readControllerOutputs(data) {
-    const outputs = {};
-    for (let index = 0; index <= 16; index++) {
-        const value = data?.outputs?.[index] ?? data?.[`do_${index}`];
+function readControllerIo(data, direction, prefix, packedKey) {
+    const values = {};
+    const source = { ...data?.[direction] };
+    for (let index = 0; index <= 16; index++) source[index] ??= data?.[`${prefix}${index}`];
+    for (const [address, value] of Object.entries(source)) {
+        const index = Number(address);
+        if (!Number.isInteger(index) || !(index >= 0 && index <= 16 || index >= 512 && index <= 2559)) continue;
         if (value === null || value === undefined || value === '' || !Number.isFinite(Number(value))) continue;
-        outputs[index] = Number(value) === 0 ? 0 : 1;
+        values[index] = Number(value) === 0 ? 0 : 1;
     }
-    return outputs;
+    try {
+        const packed = data?.[packedKey];
+        const bytes = typeof packed === 'string' ? Uint8Array.from(atob(packed), char => char.charCodeAt(0)) : packed;
+        if (bytes?.length === 256) for (let index = 0; index < 2048; index++) values[512 + index] = (bytes[index >> 3] >> (index & 7)) & 1;
+    } catch { /* Optional fieldbus feedback may be unavailable. */ }
+    return values;
+}
+
+function readControllerOutputs(data) {
+    return readControllerIo(data, 'outputs', 'do_', 'fieldbusOutputs');
 }
 
 export function parseVirtualControllerMessage(raw, receivedAt = 0) {
@@ -95,7 +107,8 @@ export function parseVirtualControllerMessage(raw, receivedAt = 0) {
             position: hasTcp ? tcp.slice(0, 3) : null,
             rotation: hasTcp ? tcp.slice(3, 6) : null,
             telemetry: null,
-            outputs: readControllerOutputs(data)
+            outputs: readControllerOutputs(data),
+            inputs: readControllerIo(data, 'inputs', 'di_', 'fieldbusInputs')
         };
     }
 
@@ -121,7 +134,8 @@ export function parseVirtualControllerMessage(raw, receivedAt = 0) {
         // recorder. Trace also exposes errors, variables, I/O and
         // line-monitor values that must not be discarded here.
         telemetry: { ...data },
-        outputs: readControllerOutputs(data)
+        outputs: readControllerOutputs(data),
+        inputs: readControllerIo(data, 'inputs', 'di_', 'fieldbusInputs')
     };
 }
 

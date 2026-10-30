@@ -8,7 +8,9 @@ const THREE = await import(`data:text/javascript;base64,${Buffer.from(threeSourc
 const source = readFileSync(new URL('../../2_3DSimulation/main.js', import.meta.url), 'utf8');
 const names = ['getRobotControllerBaseFrame', 'getJogReadoutPose', 'getBasePoseFromJogReadout', 'getTcpRotationDegrees',
   'quaternionFromTcpRotationDegrees', 'normalizeDegrees', 'updateJogWorkObjectUi', 'updateTcpPresentation',
-  'applyBaseJogNumericTarget', 'jogTcpInBase', 'runJogRobotBatch', 'applyJogPoseDelta'];
+  'getCartesianJogFrame', 'getCartesianJogReadout', 'getBasePoseFromCartesianJog',
+  'beginBaseJogNumericHistory', 'finishBaseJogNumericHistory',
+  'applyBaseJogNumericTarget', 'jogTcpInBase', 'runJogRobotBatch', 'applyJogPoseDelta', 'getBaseJogRotationAxes'];
 const functions = names.map(name => source.match(new RegExp(`function ${name}\\([^]*?\\n\\}`))[0]).join('\n');
 
 function fixture() {
@@ -28,14 +30,14 @@ function fixture() {
     return { childNodes: [text], firstChild: text };
   });
   let solvedTarget;
-  const context = vm.createContext({ THREE, WOBJ_WORLD_INDEX: 0,
+  const context = vm.createContext({ THREE, WOBJ_WORLD_INDEX: 0, state: { jogCartesianFrame: 'wobj' },
     SIX_AXIS_POSITION_HOME_QUATERNION: new THREE.Quaternion(), robot,
-    el: { tcpReadouts: inputs, baseJogView: { querySelectorAll: () => titles }, baseMoveStep: { value: '10' } },
+    el: { tcpReadouts: inputs, baseJogView: { querySelectorAll: () => titles }, baseMoveStep: { value: '10' }, baseRotateStep: { value: '5' } },
     document: { activeElement: null, getElementById: () => label },
     uiText: value => value, resolveWorkObjectIndex: value => Number(value) || 0,
     getWorkObjectWorldPose: () => workObject, getJogTargetRobot: () => robot, getJogTargetRobots: () => [robot],
     getCurrentTcpPoseBase: target => target.userData.baseJogTarget,
-    syncTcpVisualAtPose() {}, beginBaseJogNumericHistory() {},
+    syncTcpVisualAtPose() {}, captureSceneSnapshot: () => ({}), commitPendingHistory() {},
     solveRobotIK: (_, target) => { solvedTarget = target; return { success: true }; },
     syncJointControls() {}, syncBaseJogGizmoFromRobot() {}, queueCollaborationRobotState() {},
     setBaseJogStatus() {}, clearJogCollisionLock() {} });
@@ -52,6 +54,61 @@ test('Wobj 원점과 회전을 JOG 위치·회전 표시 및 하단 번호에 �
   assert.equal(inputs.rz.value, '-90.00');
   assert.equal(label.textContent, 'Wobj 1');
   assert.ok(titles[0].firstChild.textContent.includes('Wobj[1]'));
+});
+
+test('직교 베이스 선택은 활성 Wobj의 원점과 회전에 영향을 받지 않는다', () => {
+  const { context, robot, pose, inputs, target } = fixture();
+  context.state.jogCartesianFrame = 'base';
+  context.updateTcpPresentation(robot, pose);
+  assert.equal(inputs.x.value, '100.00');
+  assert.equal(inputs.y.value, '220.00');
+  assert.equal(context.jogTcpInBase(robot, 'move', 'x', 1), true);
+  assert.ok(target().position.distanceTo(new THREE.Vector3(110, 220, 35)) < 1e-8);
+  assert.equal(robot.userData.activeWorkObjectIndex, 1);
+});
+
+test('Tool 이동과 회전은 현재 TCP의 축을 따르고 TCP 원점을 유지한다', () => {
+  const { context, robot, pose, target } = fixture();
+  context.state.jogCartesianFrame = 'tool';
+  pose.quaternion.setFromEuler(new THREE.Euler(0.3, -0.4, 0.7, 'ZYX'));
+  const before = pose.quaternion.clone();
+  const expectedPosition = pose.position.clone().add(new THREE.Vector3(10, 0, 0).applyQuaternion(before));
+  assert.equal(context.jogTcpInBase(robot, 'move', 'x', 1), true);
+  assert.ok(target().position.distanceTo(expectedPosition) < 1e-8);
+  const origin = target().position.clone();
+  const expectedRotation = before.clone().multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 36));
+  assert.equal(context.jogTcpInBase(robot, 'rotate', 'x', 1), true);
+  assert.ok(target().quaternion.angleTo(expectedRotation) < 1e-7);
+  assert.ok(target().position.distanceTo(origin) < 1e-8);
+});
+
+test('Tool 숫자 입력은 편집 시작 TCP를 기준으로 하여 연속 입력을 누적하지 않는다', () => {
+  const { context, robot, pose, inputs, target } = fixture();
+  context.state.jogCartesianFrame = 'tool';
+  pose.quaternion.setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2);
+  context.beginBaseJogNumericHistory();
+  context.updateTcpPresentation(robot, pose);
+  inputs.x.value = '1';
+  context.applyBaseJogNumericTarget({ currentTarget: inputs.x });
+  inputs.x.value = '10';
+  context.applyBaseJogNumericTarget({ currentTarget: inputs.x });
+  assert.ok(target().position.distanceTo(new THREE.Vector3(100, 230, 35)) < 1e-8);
+  context.document.activeElement = inputs.x;
+  context.finishBaseJogNumericHistory();
+  assert.equal(context.state.jogToolNumericFrame.robot, robot, '휠 동작 사이에는 편집 기준을 유지한다');
+  context.document.activeElement = null;
+  context.finishBaseJogNumericHistory();
+  assert.equal(context.state.jogToolNumericFrame, null);
+  assert.equal(inputs.x.value, '0.00');
+});
+
+test('직교 좌표계 선택은 티칭에 사용하는 활성 Wobj 좌표를 바꾸지 않는다', () => {
+  const { context, robot, pose } = fixture();
+  for (const frame of ['base', 'tool', 'wobj']) {
+    context.state.jogCartesianFrame = frame;
+    const taught = context.getJogReadoutPose(robot, pose);
+    assert.ok(taught.position.distanceTo(new THREE.Vector3(20, 0, 5)) < 1e-8);
+  }
 });
 
 test('로봇 BASE가 이동·회전되어도 Wobj 표시와 역변환을 보존한다', () => {

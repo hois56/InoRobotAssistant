@@ -3214,7 +3214,8 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
     font-size: 0.68rem;
 }
 
-.workobject-visible-toggle {
+.workobject-visible-toggle,
+.tcp-axes-visible-toggle {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -3223,7 +3224,8 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
     font-size: 0.72rem;
 }
 
-.workobject-visible-toggle input {
+.workobject-visible-toggle input,
+.tcp-axes-visible-toggle input {
     accent-color: #2563eb;
 }
 
@@ -6583,6 +6585,13 @@ button.io-simulator-entry:hover {
     border-radius: 50%;
 }
 
+.simulation-snap-marker[data-snap-type="model-origin"] > span {
+    border-radius: 50%;
+    background:
+        linear-gradient(currentColor, currentColor) center / 1px 100% no-repeat,
+        linear-gradient(currentColor, currentColor) center / 100% 1px no-repeat;
+}
+
 .simulation-snap-marker[data-snap-type="hole-center"] > span {
     border-radius: 50%;
     background: radial-gradient(circle at center, currentColor 0 1.25px, transparent 1.75px);
@@ -7426,6 +7435,32 @@ button.io-simulator-entry:hover {
     background: rgba(37, 99, 235, 0.9);
     color: #fff;
     box-shadow: 0 5px 14px rgba(37, 99, 235, 0.25);
+}
+
+.jog-frame-setting {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin-bottom: 0.75rem;
+    color: var(--text-2);
+    font-size: 0.75rem;
+}
+
+.jog-frame-setting select {
+    flex: 1;
+    min-width: 0;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-card, #1e293b);
+    color: var(--text-1, #fff);
+}
+
+.jog-tool-frame-hint {
+    margin: -0.25rem 0 0.75rem;
+    color: var(--text-2);
+    font-size: 0.68rem;
+    line-height: 1.5;
 }
 
 .base-step-settings {

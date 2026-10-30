@@ -28,6 +28,7 @@ async function fixture(robotType = 'scara', kinematicVariant = 'standard', heigh
       { name: 'J4', pivot: [600, 0, 0], axis: [0, 0, 1] }
     ], tcp: [600, 0, 0] };
   const context = vm.createContext({ THREE, performance, ROBOT_LOGO_FACES, ROBOT_LOGO_PROJECTIONS, createRobotLogoIndex, WOBJ_WORLD_INDEX: 0,
+    state: { tcpAxesVisible: true },
     TCP_PROFILE_COUNT: 1, TCP_AXES_LOCAL_SIZE: 100, TCP_AXES_SCREEN_PIXELS: 80,
     createRobotManifest: () => manifest,
     loadSTL: async () => ({ geometry: geometry.clone() }),

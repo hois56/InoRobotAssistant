@@ -12,6 +12,7 @@ test('R7H-90 controller TCP updates JOG while Tool/Wobj never shift the physical
   await page.waitForFunction(() => window.__controllerTcp);
   await page.locator('#model-select').selectOption('robot:IR-R7H-90');
   await page.waitForFunction(() => window.__controllerTcp.state.models.some(model => model.userData.tcpFrame));
+  await page.locator('#jog-cartesian-frame').selectOption('wobj');
   const result = await page.evaluate(async () => {
     const a = window.__controllerTcp;
     const robot = a.state.activeArticulatedModel;

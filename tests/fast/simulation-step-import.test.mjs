@@ -5,6 +5,39 @@ import vm from 'node:vm';
 
 const workerSource = readFileSync(new URL('../../2_3DSimulation/step-import-worker.js', import.meta.url), 'utf8');
 
+test('Tool 하중 계산은 세부 부품만 사용하고 기존 조립품의 재질 설정을 이어받는다', () => {
+    const source = readFileSync(new URL('../../2_3DSimulation/main.js', import.meta.url), 'utf8');
+    const context = vm.createContext({
+        getImportedModelParts: model => model.parts,
+        normalizeToolLoadProperties: value => value,
+        TOOL_LOAD_MATERIALS: { aluminum: { densityKgPerMm3: 0.0000027 } },
+        uiFormat: value => value
+    });
+    vm.runInContext(['getToolLoadPartRoots', 'getToolLoadPartKey', 'getToolLoadPartSettings'].map(name => source.match(new RegExp(`function ${name}\\([^)]*\\) \\{[\\s\\S]*?\\n\\}`))[0]).join('\n'), context);
+    const model = { parts: [{ userData: { modelPartAggregate: true, cadPartKey: 'old' } },
+        { userData: { cadPartKey: 'body', cadParentPartKey: 'old' } },
+        { userData: { cadPartKey: 'rod', cadParentPartKey: 'old' } }],
+        userData: { toolLoadProperties: { partMaterials: { old: { densityKgPerMm3: 0.0000078 }, rod: { densityKgPerMm3: 0.000003 } } } } };
+    assert.equal(context.getToolLoadPartRoots(model).length, 2);
+    assert.deepEqual(Array.from(context.getToolLoadPartSettings(model), setting => setting.densityKgPerMm3), [0.0000078, 0.000003]);
+});
+
+test('하나의 STEP 좌표 노드에 속한 여러 실제 부품을 이름과 개별 ID로 구분한다', () => {
+    const context = vm.createContext({});
+    vm.runInContext(workerSource.match(/function indexStepHierarchy\([\s\S]*?\n\}/)[0], context);
+    const root = { name: '', children: [{ name: 'Coordinate frame', children: [{ name: 'Coordinate frame', meshes: [0, 1, 2] }] }] };
+    const meshes = [{ name: 'Cylinder body' }, { name: 'Cylinder rod' }, { name: 'Cylinder rod' }];
+    const parts = context.indexStepHierarchy(root, meshes);
+    assert.equal(new Set([...parts.values()].map(part => part.partId)).size, 3);
+    assert.deepEqual([...parts.values()].map(part => part.partName), meshes.map(mesh => mesh.name));
+    assert.ok([...parts.values()].every(part => part.parentPartId === 'cad-part-0-0'));
+    assert.equal(parts.get(1).assemblyPath.at(-1).id, 'cad-part-0-0');
+    const single = context.indexStepHierarchy({ children: [{ name: 'Original part', meshes: [0] }] }, meshes).get(0);
+    assert.equal(single.partId, 'cad-part-0');
+    assert.equal(single.partName, 'Original part');
+    assert.equal(single.parentPartId, undefined);
+});
+
 function fixture({ heapBytes = 1024, assembly = false, failPart = false } = {}) {
     const messages = [];
     const timers = new Map();
@@ -71,6 +104,17 @@ test('STEP 연속 가져오기는 엔진을 재사용하고 매번 형상을 정
     assert.equal(calls.disposed, 1);
     await parse(3);
     assert.equal(calls.init, 2);
+});
+
+test('세부 부품의 기존 색상 경로는 같은 색 묶음과 크기별 청크 순서를 보존한다', () => {
+    const { context } = fixture();
+    const mesh = color => ({ color, attributes: { position: { array: new Float32Array(9) } }, index: { array: new Uint32Array([0, 1, 2]) } });
+    const meshes = [mesh([1, 0, 0]), mesh([0, 0, 1]), mesh([1, 0, 0])];
+    const root = { children: [{ name: 'Coordinate frame', meshes: [0, 1, 2] }] };
+    const parts = context.indexStepHierarchy(root, meshes);
+    assert.deepEqual(Array.from(context.indexLegacyStepMeshes(meshes, parts), ([index, value]) => [index, value]), [[0, 0], [2, 0], [1, 1]]);
+    meshes[0].attributes.position.array = new Float32Array(1572864);
+    assert.deepEqual(Array.from(context.indexLegacyStepMeshes(meshes, parts), ([index, value]) => [index, value]), [[0, 0], [2, 1], [1, 2]]);
 });
 
 test('대용량 조립 STEP는 직접 변환 성공 여부와 관계없이 부품 구분을 보존한다', async () => {

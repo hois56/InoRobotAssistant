@@ -188,6 +188,20 @@ export function createEquipmentApp(adapter) {
     }
     return {
         runtime, ui, resolve, references, save, remove, objects,
+        resetObjects(target = 'all') {
+            const definitions = adapter.definitions().filter(def => def.type === 'OBJECT'
+                && (target === 'all' || target === `equipment:${def.id}`));
+            if (!definitions.length) throw new Error('원위치로 되돌릴 등록 오브젝트가 없습니다.');
+            const before = adapter.snapshot();
+            const targets = definitions.flatMap(def => equipmentReferences(def)).map(resolve).filter(Boolean);
+            for (const def of adapter.definitions()) {
+                const held = [def.runtime.heldRef, ...(def.runtime.heldObjects || []).map(item => item.ref)].map(resolve).filter(Boolean);
+                if (held.some(item => targets.some(target => within(item.object, target.object) || within(target.object, item.object)))) runtime.release(def);
+            }
+            runtime.resetObjects(definitions);
+            adapter.history('오브젝트 원위치', before);
+            adapter.changed();
+        },
         isRegistered(model, part = null) {
             const source = model.userData.gripObjectSource;
             const original = source?.mode === 'part-copy' ? resolve(equipmentObjectRef(source.sourceModelId, source.sourcePartIndex)) : null;

@@ -287,6 +287,7 @@ internal static class Program
                                 continue;
                             }
                             controllerIp = ip;
+                            robot.EnableFieldbusIo = !requestedRealController;
                             (bool success, string message) = robot.Connect(
                                 ip,
                                 ControllerPort,
