@@ -1007,6 +1007,12 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.10.30",
+                "items": [
+                  "`[변경]` CAD Lightweight를 `V1.1 → V1.2`로 업데이트했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.10.23",
                 "items": [
                   "`[변경]` CAD Lightweight를 `V1.0 → V1.1`로 업데이트했습니다."
@@ -2349,6 +2355,12 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.10.30",
+                "items": [
+                  "`[Changed]` Updated CAD Lightweight from `V1.1` to `V1.2`."
+                ]
+              },
+              {
                 "title": "Ver 26.10.07",
                 "items": [
                   "`[Changed]` Updated Communication Tester from V3.1 to V3.2.",
@@ -3678,6 +3690,12 @@
           {
             "title": "Debugging Tool",
             "versions": [
+              {
+                "title": "Ver 26.10.30",
+                "items": [
+                  "`[变更]` CAD Lightweight 从 `V1.1` 更新至 `V1.2`。"
+                ]
+              },
               {
                 "title": "Ver 26.10.07",
                 "items": [
@@ -5009,6 +5027,12 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.10.30",
+                "items": [
+                  "`[Thay đổi]` Đã cập nhật CAD Lightweight từ `V1.1` lên `V1.2`."
+                ]
+              },
+              {
                 "title": "Ver 26.10.07",
                 "items": [
                   "`[Thay đổi]` Đã cập nhật Communication Tester từ V3.1 lên V3.2.",
@@ -6339,6 +6363,12 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.10.30",
+                "items": [
+                  "`[Değiştirildi]` CAD Lightweight, `V1.1` sürümünden `V1.2` sürümüne güncellendi."
+                ]
+              },
+              {
                 "title": "Ver 26.10.07",
                 "items": [
                   "`[Değiştirildi]` Communication Tester V3.1 sürümünden V3.2 sürümüne güncellendi.",
@@ -7668,6 +7698,12 @@
           {
             "title": "Debugging Tool",
             "versions": [
+              {
+                "title": "Ver 26.10.30",
+                "items": [
+                  "`[Изменено]` CAD Lightweight обновлён с `V1.1` до `V1.2`."
+                ]
+              },
               {
                 "title": "Ver 26.10.07",
                 "items": [
