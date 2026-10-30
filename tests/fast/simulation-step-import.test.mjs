@@ -32,7 +32,7 @@ function fixture({ heapBytes = 1024, assembly = false, failPart = false } = {}) 
         close() { calls.closed += 1; }
     });
     const context = vm.createContext({
-        Float32Array, Uint16Array, Uint32Array, ArrayBuffer, Symbol, performance,
+        Float32Array, Uint8Array, Uint16Array, Uint32Array, ArrayBuffer, DataView, TextDecoder, Symbol, performance,
         console, setTimeout(callback) { const id = timers.size + 1; timers.set(id, callback); return id; },
         clearTimeout(id) { timers.delete(id); },
         __loadLargeModule: async () => ({ OcctKernel: { init: async () => { calls.init += 1; return kernel; } } }),
@@ -185,4 +185,56 @@ test('희소 정점의 Map 경로와 빠른 경로는 면 정보가 없어도 �
     const fast = context.createLargeMeshChunk(mesh, ranges, false, new Uint32Array(mesh.positions.length / 3));
     for (const property of ['positions', 'indices', 'normals']) assert.deepEqual(fast[property], fallback[property]);
     assert.equal(fast.brepFaces, null);
+});
+
+test('대용량 STEP 색상 조회는 동일 이름의 부품을 구별하고 JSON만 읽은 뒤 이름과 임시 파일을 정리한다', () => {
+    const { context } = fixture();
+    const json = Buffer.from(JSON.stringify({
+        scene: 0, scenes: [{ nodes: [0, 1] }],
+        nodes: [{ name: '__inorobot_color_1', mesh: 0 }, { name: '__inorobot_color_2', mesh: 1 }],
+        meshes: [
+            { primitives: [{ indices: 0, material: 0 }] },
+            { primitives: [{ indices: 1, material: 1 }] }
+        ],
+        materials: [
+            { pbrMetallicRoughness: { baseColorFactor: [1, 0, 0, 1] } },
+            { pbrMetallicRoughness: { baseColorFactor: [0, 0, 0, 1] } }
+        ], accessors: [{ count: 6 }, { count: 3 }]
+    }));
+    const glb = Buffer.alloc(20 + json.length + 1024 * 1024);
+    glb.writeUInt32LE(0x46546c67, 0); glb.writeUInt32LE(2, 4); glb.writeUInt32LE(glb.length, 8);
+    glb.writeUInt32LE(json.length, 12); glb.writeUInt32LE(0x4e4f534a, 16); json.copy(glb, 20);
+    const names = new Map([[1, 'Same name'], [2, 'Same name']]);
+    const reads = []; let unlinked = 0, closed = 0;
+    const fs = {
+        open: () => ({}), close: () => { closed++; }, unlink: () => { unlinked++; },
+        read(_stream, target, offset, length, position) { reads.push(length); target.set(glb.subarray(position, position + length), offset); return length; }
+    };
+    const document = {
+        setName(label, name) { names.set(label, name); },
+        exportGLTF(options) {
+            assert.deepEqual([...names.values()], ['__inorobot_color_1', '__inorobot_color_2']);
+            const result = options.fs.readFile('/colors.glb'); options.fs.unlink('/colors.glb'); return result;
+        }
+    };
+    const styles = context.readXcafSurfaceStyles({ getRawModule: () => ({ FS: fs }) }, document, new Map(names), {});
+    assert.deepEqual(JSON.parse(JSON.stringify(styles.get('1'))), [{ color: [1, 0, 0], indexCount: 6 }]);
+    assert.deepEqual(JSON.parse(JSON.stringify(styles.get('2'))), [{ color: [0, 0, 0], indexCount: 3 }]);
+    assert.deepEqual([...names.values()], ['Same name', 'Same name']);
+    assert.deepEqual(reads, [20, json.length]);
+    assert.equal(unlinked, 1); assert.equal(closed, 1);
+});
+
+test('대용량 STEP의 서로 다른 면 색상은 형상과 면 스냅 범위를 바꾸지 않고 전달한다', () => {
+    const { context, mesh, messages } = fixture();
+    const part = { partId: 'cad-1', color: [0.75, 0.78, 0.84] };
+    const styles = [{ color: [1, 0, 0], indexCount: 3 }, { color: [0, 0, 1], indexCount: 3 }];
+    const colored = context.resolveLargeStepSurfaceColors(mesh, part, styles);
+    context.postLargeMeshChunks(mesh, { fileName: 'colors.step' }, 1, colored);
+    const result = messages.find(message => message.type === 'mesh').mesh;
+    assert.deepEqual(result.materialGroups, [
+        { start: 0, count: 3, color: [1, 0, 0] }, { start: 3, count: 3, color: [0, 0, 1] }
+    ]);
+    assert.deepEqual(result.brepFaces, [{ first: 0, last: 0 }, { first: 1, last: 1 }]);
+    assert.throws(() => context.resolveLargeStepSurfaceColors(mesh, part, styles.slice(1)), /surface|face/i);
 });

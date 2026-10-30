@@ -340,10 +340,12 @@ function getCompleteLargeMeshFaceRanges(mesh) {
     return expectedFirst === triangleCount ? faceRanges : null;
 }
 
-function groupLargeMeshTriangleRanges(mesh) {
+function groupLargeMeshTriangleRanges(mesh, faceColors = null) {
     const triangleCount = Math.floor(mesh.indices.length / 3);
     const completeFaceRanges = getCompleteLargeMeshFaceRanges(mesh);
-    const ranges = completeFaceRanges || Array.from(
+    const ranges = completeFaceRanges?.map((range, index) => (
+        faceColors ? { ...range, color: faceColors[index] } : range
+    )) || Array.from(
         { length: Math.ceil((triangleCount * 84) / LARGE_STEP_MESH_CHUNK_TARGET_BYTES) },
         (_, chunkIndex) => {
             const trianglesPerChunk = Math.max(1, Math.floor(LARGE_STEP_MESH_CHUNK_TARGET_BYTES / 84));
@@ -355,7 +357,7 @@ function groupLargeMeshTriangleRanges(mesh) {
     let current = [];
     let estimatedBytes = 0;
     ranges.forEach((range) => {
-        const rangeBytes = (range.last - range.first + 1) * 84;
+        const rangeBytes = (range.last - range.first + 1) * 84 + (faceColors ? 96 : 0);
         if (current.length && estimatedBytes + rangeBytes > LARGE_STEP_MESH_CHUNK_TARGET_BYTES) {
             groups.push(current);
             current = [];
@@ -426,14 +428,26 @@ function createLargeMeshChunk(mesh, triangleRanges, preservesFaces = true, verte
 }
 
 function postLargeMeshChunks(mesh, message, requestId, partMeta = {}) {
-    const { groups, preservesFaces } = groupLargeMeshTriangleRanges(mesh);
+    const { groups, preservesFaces } = groupLargeMeshTriangleRanges(mesh, partMeta.surfaceFaceColors);
     const vertexCount = mesh.positions.length / 3;
     const vertexLookup = vertexCount * 4 <= STEP_VERTEX_LOOKUP_MAX_BYTES
         ? new Uint32Array(vertexCount)
         : null;
     groups.forEach((triangleRanges, chunkIndex) => {
+        const materialGroups = [];
+        let indexStart = 0;
+        triangleRanges.forEach((range) => {
+            const count = (range.last - range.first + 1) * 3;
+            if (range.color) {
+                const previous = materialGroups.at(-1);
+                if (previous && previous.color.every((value, index) => value === range.color[index])) previous.count += count;
+                else materialGroups.push({ start: indexStart, count, color: range.color });
+            }
+            indexStart += count;
+        });
         const workerMesh = {
             ...createLargeMeshChunk(mesh, triangleRanges, preservesFaces, vertexLookup),
+            ...(materialGroups.length ? { materialGroups } : {}),
             color: Array.isArray(partMeta.color) && partMeta.color.length === 3
                 ? partMeta.color.map(Number)
                 : DEFAULT_COLOR,
@@ -464,18 +478,21 @@ function composeStepPlacement(parent, local) {
     return result;
 }
 
-function collectXcafParts(document) {
+function collectXcafParts(document, labelNames = new Map()) {
     const parts = [];
     const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0];
     const ancestors = new Set();
     const roots = document.getRoots();
-    const visit = (label, path, parentPlacement, inheritedColor, assemblyPath = []) => {
+    const visit = (label, path, parentPlacement, inheritedColor, assemblyPath = [], labelPath = []) => {
         if (ancestors.has(label)) throw new Error('Cyclic STEP assembly reference.');
         ancestors.add(label);
         try {
             const instance = document.getLabelInfo(label);
             const referred = instance.isComponent ? document.getReferredLabel?.(label) : null;
             const prototype = referred == null ? instance : document.getLabelInfo(referred);
+            labelNames.set(label, instance.name || '');
+            if (referred != null) labelNames.set(referred, prototype.name || '');
+            const currentLabelPath = [...labelPath, label];
             const children = document.getChildren(referred ?? label);
             const local = document.getLocation?.(label) || identity;
             const placement = composeStepPlacement(parentPlacement, local);
@@ -489,7 +506,7 @@ function collectXcafParts(document) {
                 // The single document root is represented by the imported model.
                 const childPath = path.length === 1 && roots.length === 1 ? assemblyPath
                     : [...assemblyPath, { id: 'cad-xcaf-' + path.join('-'), name }];
-                children.forEach((child, index) => visit(child, [...path, index], placement, color, childPath));
+                children.forEach((child, index) => visit(child, [...path, index], placement, color, childPath, currentLabelPath));
                 return;
             }
             if (prototype.shapeHandle != null) {
@@ -497,6 +514,7 @@ function collectXcafParts(document) {
                     partId: 'cad-xcaf-' + path.join('-'),
                     partName: name,
                     assemblyPath,
+                    labelPath: currentLabelPath.join('/'),
                     shapeHandle: prototype.shapeHandle,
                     placement: document.getLocation ? placement : null,
                     color: color || DEFAULT_COLOR
@@ -508,6 +526,90 @@ function collectXcafParts(document) {
     };
     roots.forEach((label, index) => visit(label, [index], identity, null));
     return parts;
+}
+
+function readGlbStyleJson(fs, path) {
+    const stream = fs.open(path, 'r');
+    try {
+        const header = new Uint8Array(20);
+        if (fs.read(stream, header, 0, header.length, 0) !== header.length) throw new Error('Incomplete STEP color metadata.');
+        const view = new DataView(header.buffer);
+        const length = view.getUint32(12, true);
+        if (view.getUint32(0, true) !== 0x46546c67 || view.getUint32(4, true) !== 2
+            || view.getUint32(16, true) !== 0x4e4f534a || length > view.getUint32(8, true) - 20) {
+            throw new Error('Invalid STEP color metadata.');
+        }
+        // Copy only the JSON chunk. The potentially large binary geometry is
+        // kept in the native temporary file and unlinked without a JS copy.
+        const bytes = new Uint8Array(length);
+        if (fs.read(stream, bytes, 0, length, 20) !== length) throw new Error('Incomplete STEP color metadata.');
+        return JSON.parse(new TextDecoder().decode(bytes));
+    } finally {
+        fs.close(stream);
+    }
+}
+
+function readXcafSurfaceStyles(kernel, document, labelNames, parameters) {
+    const result = new Map();
+    if (!document.exportGLTF || !document.setName) return result;
+    const fs = kernel.getRawModule().FS;
+    const renamed = [];
+    try {
+        // Names are not unique in CAD assemblies. Temporary label tags let the
+        // native style traversal identify each instance without matching names.
+        for (const [label, name] of labelNames) {
+            document.setName(label, `__inorobot_color_${label}`);
+            renamed.push([label, name]);
+        }
+        const gltf = document.exportGLTF({
+            linearDeflection: Number(parameters.linearDeflectionAbsolute) || 1,
+            angularDeflection: Number(parameters.angularDeflection) || 0.8,
+            fs: {
+                readFile(path) {
+                    try { return readGlbStyleJson(fs, path); }
+                    catch (error) { fs.unlink(path); throw error; }
+                },
+                unlink(path) { fs.unlink(path); }
+            }
+        });
+        const visit = (index, path = []) => {
+            const node = gltf.nodes[index];
+            const match = /^__inorobot_color_(\d+)$/.exec(node.name || '');
+            const labelPath = match ? [...path, Number(match[1])] : path;
+            if (node.mesh !== undefined) {
+                const styles = gltf.meshes[node.mesh].primitives
+                    .filter((primitive) => primitive.mode === undefined || primitive.mode === 4)
+                    .map((primitive) => {
+                        const color = gltf.materials?.[primitive.material]?.pbrMetallicRoughness?.baseColorFactor;
+                        return {
+                            color: Array.isArray(color) && color.length >= 3 ? color.slice(0, 3) : null,
+                            indexCount: gltf.accessors[primitive.indices ?? primitive.attributes.POSITION].count
+                        };
+                    });
+                result.set(labelPath.join('/'), styles);
+            }
+            (node.children || []).forEach((child) => visit(child, labelPath));
+        };
+        (gltf.scenes[gltf.scene || 0]?.nodes || []).forEach((index) => visit(index));
+        return result;
+    } finally {
+        renamed.forEach(([label, name]) => document.setName(label, name));
+    }
+}
+
+function resolveLargeStepSurfaceColors(mesh, part, styles) {
+    if (!styles?.length) return part;
+    const faces = getCompleteLargeMeshFaceRanges(mesh);
+    if (!faces || faces.length !== styles.length || faces.some((face, index) => (
+        (face.last - face.first + 1) * 3 !== styles[index].indexCount
+    ))) throw new Error('STEP surface colors do not match the imported faces.');
+    const colors = styles.map((style) => style.color || part.color || DEFAULT_COLOR);
+    const color = colors[0];
+    return {
+        ...part, color,
+        ...(colors.some((entry) => entry.some((value, index) => value !== color[index]))
+            ? { surfaceFaceColors: colors } : {})
+    };
 }
 
 async function parseLargeStepFile(message, requestId) {
@@ -528,10 +630,11 @@ async function parseLargeStepFile(message, requestId) {
         // Read the assembly first: a successful single-shape import discards
         // the part identities even when the source contains a full assembly.
         let parts = [];
+        const labelNames = new Map();
         if (typeof kernel.importXCAFFromSTEP === 'function') {
             try {
                 document = measureStepPhase(timings, 'readingMs', () => kernel.importXCAFFromSTEP(sourceBuffer));
-                parts = measureStepPhase(timings, 'readingMs', () => collectXcafParts(document));
+                parts = measureStepPhase(timings, 'readingMs', () => collectXcafParts(document, labelNames));
             } catch (error) {
                 console.warn('XCAF STEP hierarchy import failed; trying direct import.', error);
                 document?.close();
@@ -541,6 +644,10 @@ async function parseLargeStepFile(message, requestId) {
         }
         if (parts.length) {
             sourceBuffer = null;
+            self.postMessage({ type: 'progress', requestId, phase: 'tessellating', partIndex: 0, partCount: parts.length });
+            const surfaceStyles = measureStepPhase(timings, 'tessellationMs', () => (
+                readXcafSurfaceStyles(kernel, document, labelNames, message.parameters || {})
+            ));
             let meshCount = 0;
             for (let index = 0; index < parts.length; index += 1) {
                 const part = parts[index];
@@ -556,7 +663,8 @@ async function parseLargeStepFile(message, requestId) {
                     if (!mesh?.positions?.length || !mesh?.indices?.length) {
                         throw new Error('STEP part contains no triangulated mesh: ' + part.partName);
                     }
-                    meshCount += measureStepPhase(timings, 'packingMs', () => postLargeMeshChunks(mesh, message, requestId, part));
+                    const coloredPart = resolveLargeStepSurfaceColors(mesh, part, surfaceStyles.get(part.labelPath));
+                    meshCount += measureStepPhase(timings, 'packingMs', () => postLargeMeshChunks(mesh, message, requestId, coloredPart));
                 } finally {
                     if (placedShape != null) kernel.release(placedShape);
                     kernel.release(part.shapeHandle);

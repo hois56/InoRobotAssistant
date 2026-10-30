@@ -266,6 +266,15 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.30",
+                "items": [
+                  "`[추가]` 모든 로봇 모델의 베이스 설치 구멍 중심에 스냅점을 추가했습니다.",
+                  "`[개선]` 3D 모델의 면 사이 명암과 접합부 음영을 개선하여 형태와 입체감을 더 쉽게 구분할 수 있도록 했습니다.",
+                  "`[수정]` 일반 3D 모델링을 가져올 때 원래 색상이 바뀌거나 대용량 STEP의 부품·면 색상이 누락되던 문제를 해결했습니다.",
+                  "`[수정]` R4·R4H·R7H·R10H-120의 J3·J4 암 로드가 로봇의 장착 기준 위치에 맞지 않던 문제를 해결했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.10.27",
                 "items": [
                   "`[수정]` 다른 로봇의 컨트롤러 연결로 인해 미연결 로봇의 스냅 이동과 면 정렬이 막히던 문제를 해결했습니다.",
@@ -1616,6 +1625,15 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.30",
+                "items": [
+                  "`[Added]` Added snap points at the base mounting-hole centers of all robot models.",
+                  "`[Improved]` Improved face shading and subtle contact occlusion on 3D models to make shapes and depth easier to distinguish.",
+                  "`[Fixed]` Fixed original colors changing on imported 3D models and missing part or face colors in large STEP files.",
+                  "`[Fixed]` Fixed J3/J4 arm-load models on R4, R4H, R7H and R10H-120 robots not aligning with their accessory mounting references."
+                ]
+              },
+              {
                 "title": "Ver 26.10.27",
                 "items": [
                   "`[Fixed]` Fixed snap movement and face alignment being blocked for an unconnected robot when another robot is connected to a controller.",
@@ -2936,6 +2954,15 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.10.30",
+                "items": [
+                  "`[新增]` 为所有机器人型号底座安装孔中心添加了捕捉点。",
+                  "`[改进]` 改善了3D模型各面之间的明暗对比和接合处的柔和阴影，使形状和立体感更加清晰。",
+                  "`[修复]` 修复了导入普通3D模型时原始颜色被替换，以及大型STEP文件中零件和面颜色丢失的问题。",
+                  "`[修复]` 修复了R4、R4H、R7H和R10H-120的J3/J4臂部负载模型与机器人附件安装基准位置不一致的问题。"
+                ]
+              },
               {
                 "title": "Ver 26.10.27",
                 "items": [
@@ -4258,6 +4285,15 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.30",
+                "items": [
+                  "`[Thêm]` Đã thêm điểm bắt tại tâm các lỗ lắp đặt trên đế của tất cả các mẫu robot.",
+                  "`[Cải thiện]` Cải thiện độ tương phản giữa các mặt và bóng nhẹ tại các điểm tiếp giáp của mô hình 3D để dễ nhận biết hình dạng và chiều sâu hơn.",
+                  "`[Sửa]` Đã sửa lỗi thay đổi màu gốc khi nhập mô hình 3D và mất màu chi tiết hoặc bề mặt trong tệp STEP lớn.",
+                  "`[Sửa]` Đã sửa lỗi mô hình tải trên tay J3/J4 của R4, R4H, R7H và R10H-120 không khớp với vị trí tham chiếu lắp phụ kiện của robot."
+                ]
+              },
+              {
                 "title": "Ver 26.10.27",
                 "items": [
                   "`[Sửa lỗi]` Đã sửa lỗi di chuyển bắt điểm và căn chỉnh theo mặt của robot chưa kết nối bị chặn khi robot khác kết nối với bộ điều khiển.",
@@ -5579,6 +5615,15 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.10.30",
+                "items": [
+                  "`[Eklendi]` Tüm robot modellerinin taban montaj deliklerinin merkezlerine yakalama noktaları eklendi.",
+                  "`[İyileştirildi]` Şekillerin ve derinliğin daha kolay ayırt edilmesi için 3D model yüzeylerinin gölgelendirmesi ve birleşim yerlerindeki hafif gölgeler iyileştirildi.",
+                  "`[Düzeltildi]` İçe aktarılan 3D modellerin özgün renklerinin değişmesi ve büyük STEP dosyalarında parça veya yüzey renklerinin kaybolması sorunu giderildi.",
+                  "`[Düzeltildi]` R4, R4H, R7H ve R10H-120 robotlarının J3/J4 kol yükü modellerinin aksesuar montaj referanslarıyla hizalanmaması sorunu giderildi."
+                ]
+              },
+              {
                 "title": "Ver 26.10.27",
                 "items": [
                   "`[Düzeltildi]` Başka bir robot kontrolöre bağlıyken bağlı olmayan robotun yakalama hareketinin ve yüzey hizalamasının engellenmesi sorunu giderildi.",
@@ -6899,6 +6944,15 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.10.30",
+                "items": [
+                  "`[Добавлено]` Добавлены точки привязки в центрах монтажных отверстий оснований всех моделей роботов.",
+                  "`[Улучшено]` Улучшены светотеневой контраст граней и мягкое затенение стыков 3D-моделей для лучшего восприятия формы и объёма.",
+                  "`[Исправлено]` Исправлены замена исходных цветов при импорте 3D-моделей и потеря цветов деталей или граней в больших файлах STEP.",
+                  "`[Исправлено]` Исправлено несовпадение положения моделей нагрузок звеньев J3/J4 роботов R4, R4H, R7H и R10H-120 с опорными точками крепления оборудования."
+                ]
+              },
               {
                 "title": "Ver 26.10.27",
                 "items": [

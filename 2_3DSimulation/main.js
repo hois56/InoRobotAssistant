@@ -4,6 +4,8 @@
  */
 
 import * as THREE from 'three';
+import { renderWithContactAO, disposeContactAO } from './contact-ambient-occlusion.mjs?v=20261030-1';
+import { ROBOT_MOUNTING_HOLES } from './robot-mounting-holes.mjs?v=20261029-2';
 import { collectTeachingPoints, normalizeTeachingPointSettings } from './teaching-point-core.mjs?v=20261023-teaching-defaults-1';
 import { TeachingPointScene, teachingJointMatrix } from './teaching-point-scene.mjs?v=20261023-teaching-labels-2';
 import { buildCleanOutlinePositions } from './outline-geometry-core.mjs?v=20261023-clean-outlines-2';
@@ -4885,7 +4887,7 @@ function renderViewWindow() {
     try {
         viewWindow.cells.forEach((cell) => {
             updateCameraScaledTcpAxes(cell.camera, cell.canvas?.clientHeight);
-            cell.renderer.render(state.scene, cell.camera);
+            renderSimulationScene(cell.renderer, cell.camera);
         });
     } finally {
         if (sketchPreview) sketchPreview.visible = previewVisible;
@@ -5010,6 +5012,7 @@ function closeViewWindow() {
     viewWindow.resizeObserver?.disconnect();
     viewWindow.cells.forEach((cell) => {
         cell.controls.dispose();
+        disposeContactAO(cell.renderer);
         cell.renderer.dispose();
     });
     viewWindow.grid?.replaceChildren();
@@ -15062,8 +15065,24 @@ function isSimulationSnapRobotMesh(mesh) {
 
 function isSimulationSnapReferenceCandidate(candidate) {
     return candidate?.type === 'scene-origin'
+        || candidate?.robotMountingHole === true
         || candidate?.type === 'robot-base-center'
         || candidate?.type === 'robot-tcp';
+}
+
+function getSimulationSnapRobotMountingHoleCandidates(scope = 'scene') {
+    return getArticulatedRobots().flatMap((robot) => {
+        const holes = ROBOT_MOUNTING_HOLES[robot.userData.motionModelFolder];
+        if (!holes || !isModelTreeVisible(robot) || (scope === 'zero' && !robot.userData.uploaded)) return [];
+        const mesh = getRobotBodyBaseMesh(robot);
+        if (!mesh?.geometry?.getAttribute?.('position') || mesh.visible === false) return [];
+        return holes.map(([x, y, z]) => ({
+            type: 'hole-center',
+            robotMountingHole: true,
+            mesh,
+            localPoint: new THREE.Vector3(x, y, z)
+        }));
+    });
 }
 
 function getSimulationSnapSceneOriginCandidates(scope = 'scene', faceSelections = []) {
@@ -15113,6 +15132,7 @@ function getSimulationSnapRobotSpecialCandidates(scope = 'scene', faceSelections
     return [
         ...getSimulationSnapSceneOriginCandidates(scope, faceSelections),
         ...getSimulationSnapRobotBodyCenterCandidates(scope, faceSelections),
+        ...getSimulationSnapRobotMountingHoleCandidates(scope),
         ...getSimulationSnapRobotTcpCandidates(scope, faceSelections)
     ];
 }
@@ -19033,13 +19053,14 @@ function createLabel(text, x, y, z, color, width = 160, height = 80, options = {
 }
 
 function setupLights() {
-    state.scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-    const dir = new THREE.DirectionalLight(0xffffff, 1.25);
-    dir.position.set(1500, -1000, 2500);
+    // Lift shaded robot surfaces while the stronger key preserves face contrast.
+    state.scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+    const dir = new THREE.DirectionalLight(0xffffff, 3.2);
+    dir.position.set(-1500, -2500, 3500);
     dir.castShadow = true;
     state.scene.add(dir);
-    const dir2 = new THREE.DirectionalLight(0xffffff, 0.5);
-    dir2.position.set(-1500, 1200, 1000);
+    const dir2 = new THREE.DirectionalLight(0xffffff, 0.6);
+    dir2.position.set(2000, 1200, 1500);
     state.scene.add(dir2);
 }
 
@@ -27821,6 +27842,18 @@ function createRobotManifest(modelDefinition) {
         : 0;
     const wristHeight = elbowHeight + elbowOffset + normalizedWristAxisZOffset;
     const tcp = [shoulderOffset + forearm + wristLength, 0, wristHeight];
+    // User-confirmed accessory-hole centers, verified against P3/P4 STL.
+    // R4/R4H: elbow pair and the upper datum above the side-hole center (Figures 4-4/4-5).
+    // The wrist opening is empty, so join the two P4 upper edges at that X to define J4's height.
+    // R7H: Figures 6-3/6-4.
+    // R10H-120: Figure 4-5; exclude the extension-arm pair.
+    const armLoadMountOffsets = {
+        'IR-R4-56': { j3: [31.49983253, 0, 66.68655502], j4: [274.999832, -1, 40.05397691] },
+        'IR-R4H-54': { j3: [31.49983253, 0, 66.68655502], j4: [283.999832, 0, 44.86201514] },
+        'IR-R7H-70': { j3: [36, -0.00419855, 99.5], j4: [217, -0.00419855, 49.5] },
+        'IR-R7H-90': { j3: [36, 0, 99.5], j4: [297, 0, 49.5] },
+        'IR-R10H-120': { j3: [57.5, 0, 94], j4: [492, 0, 49.5] }
+    }[modelDefinition.folder] || {};
     return {
         name,
         robotType,
@@ -27835,8 +27868,13 @@ function createRobotManifest(modelDefinition) {
         joints: [
             joint(0, 'P1.stl', [0, 0, 0], [0, 0, 1], { direction: REVOLUTE_DIRECTION_POSITIVE }),
             joint(1, 'P2.stl', [shoulderOffset, 0, shoulderHeight], [0, 1, 0]),
-            joint(2, 'P3.stl', [shoulderOffset, 0, elbowHeight], [0, 1, 0]),
-            joint(3, 'P4.stl', [shoulderOffset, 0, wristHeight], [1, 0, 0], { direction: REVOLUTE_DIRECTION_POSITIVE }),
+            joint(2, 'P3.stl', [shoulderOffset, 0, elbowHeight], [0, 1, 0], {
+                armLoadMountOffset: armLoadMountOffsets.j3
+            }),
+            joint(3, 'P4.stl', [shoulderOffset, 0, wristHeight], [1, 0, 0], {
+                direction: REVOLUTE_DIRECTION_POSITIVE,
+                armLoadMountOffset: armLoadMountOffsets.j4
+            }),
             joint(4, 'P5.stl', [shoulderOffset + forearm, 0, wristHeight], [0, 1, 0]),
             joint(5, 'P6.stl', tcp, [1, 0, 0], { direction: REVOLUTE_DIRECTION_POSITIVE })
         ]
@@ -28137,6 +28175,11 @@ function getRobotJointMountFrame(robot, jointIndex = 3) {
     const index = normalizeArmLoadJointIndex(jointIndex);
     const joint = robot?.userData?.joints?.[index];
     return joint?.armLoadMountFrame || joint?.group || null;
+}
+
+function getRobotJointMountOffset(robot, jointIndex = 3) {
+    const joint = robot?.userData?.joints?.[normalizeArmLoadJointIndex(jointIndex)];
+    return joint?.armLoadMountFrame?.position.toArray() || [0, 0, 0];
 }
 
 function normalizeArmLoadProperties(value = {}) {
@@ -29191,7 +29234,7 @@ function getLargeStepTessellationParameters(fileSizeBytes, qualityKey = 'auto') 
 
 function getStepImportCacheKey(file, parameters, qualityKey = 'auto') {
     return [
-        'step-mesh-v6-assembly-tree',
+        'step-mesh-v7-surface-colors',
         file.name,
         file.size,
         file.lastModified || 0,
@@ -29205,7 +29248,8 @@ function stepMeshCacheBytes(meshes = []) {
     return meshes.reduce((total, mesh) => total
         + (mesh?.positions?.byteLength || 0)
         + (mesh?.indices?.byteLength || 0)
-        + (mesh?.normals?.byteLength || 0), 0);
+        + (mesh?.normals?.byteLength || 0)
+        + (mesh?.materialGroups?.length || 0) * 96, 0);
 }
 
 function openStepImportCacheDb() {
@@ -29307,7 +29351,7 @@ function resetStepImportWorkerSession(session = state.stepImportWorkerSession) {
 function getStepImportWorkerSession() {
     if (state.stepImportWorkerSession) return state.stepImportWorkerSession;
 
-    const workerUrl = new URL('./step-import-worker.js?v=20261016-large-step-chunked-snap-assembly-2', import.meta.url);
+    const workerUrl = new URL('./step-import-worker.js?v=20261030-large-step-colors-1', import.meta.url);
     const worker = new Worker(workerUrl);
     let readySettled = false;
     let resolveReady;
@@ -29383,7 +29427,28 @@ function createStepMeshFromWorker(meshDefinition, index, placement, performanceM
     geometry.computeBoundingSphere();
 
     const material = createImportedPlacementMaterial(placement, null, performanceMode);
-    const mesh = new THREE.Mesh(geometry, material);
+    material.color.fromArray(meshDefinition.color || [0.75, 0.78, 0.84]);
+    const materials = [material];
+    const materialIndices = new Map([[material.color.toArray().join(','), 0]]);
+    let groupEnd = 0;
+    for (const group of meshDefinition.materialGroups || []) {
+        if (group.start !== groupEnd || !Number.isInteger(group.count) || group.count < 3 || group.count % 3
+            || group.start + group.count > indices.length || !Array.isArray(group.color) || group.color.length !== 3
+            || !group.color.every(Number.isFinite)) throw new Error('Invalid STEP surface color range.');
+        const key = group.color.join(',');
+        let materialIndex = materialIndices.get(key);
+        if (materialIndex === undefined) {
+            materialIndex = materials.length;
+            const surfaceMaterial = createImportedPlacementMaterial(placement, null, performanceMode);
+            surfaceMaterial.color.fromArray(group.color);
+            materials.push(surfaceMaterial);
+            materialIndices.set(key, materialIndex);
+        }
+        geometry.addGroup(group.start, group.count, materialIndex);
+        groupEnd += group.count;
+    }
+    if (groupEnd && groupEnd !== indices.length) throw new Error('Incomplete STEP surface color ranges.');
+    const mesh = new THREE.Mesh(geometry, materials.length > 1 ? materials : material);
     mesh.name = meshDefinition.partName || meshDefinition.name || `STEP Surface ${index + 1}`;
     mesh.userData.importColorRole = placement;
     mesh.userData.cadPartKey = meshDefinition.partId || `cad-mesh-${index}`;
@@ -29614,8 +29679,10 @@ async function parseUploaded3DFile(file, extension, placement, qualityKey = 'aut
         }
         onProgress?.(92);
         if (!geometry.getAttribute('normal')) geometry.computeVertexNormals();
+        const vertexColors = Boolean(geometry.getAttribute('color'));
         const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
-            color: 0xbfc7d5,
+            color: vertexColors ? 0xffffff : 0xbfc7d5,
+            vertexColors,
             roughness: 0.6,
             metalness: 0.15
         }));
@@ -30268,20 +30335,22 @@ async function handle3DImport(options = {}) {
             reportProgress(5 + Math.round((Number(parserProgress) || 0) * 0.65));
         });
         reportProgress(72);
-        if (extension === 'fbx') applyFBXMaterial(content);
+        if (options.testModel && extension === 'fbx') applyFBXMaterial(content);
         const meshCount = prepareImportedObject(content, performanceMode);
         reportProgress(78);
         if (meshCount === 0) throw new Error('The file contains no renderable mesh.');
-        if (extension !== 'stp' && extension !== 'step') {
-            applyImportedPlacementColor(content, placement, performanceMode);
-        }
-        const modelColor = new THREE.Color(getImportedModelColor(file.name));
-        content.traverse(child => {
-            if (!child.isMesh) return;
-            getMeshMaterials(child).forEach(material => {
-                if (material?.color) material.color.copy(modelColor);
+        if (options.testModel) {
+            if (extension !== 'stp' && extension !== 'step') {
+                applyImportedPlacementColor(content, placement, performanceMode);
+            }
+            const modelColor = new THREE.Color(getImportedModelColor(file.name));
+            content.traverse(child => {
+                if (!child.isMesh) return;
+                getMeshMaterials(child).forEach(material => {
+                    if (material?.color) material.color.copy(modelColor);
+                });
             });
-        });
+        }
 
         importedModel = new THREE.Group();
         importedModel.name = `Imported: ${file.name}`;
@@ -43038,6 +43107,10 @@ function serializeWorkspaceSceneModel(model) {
             hostRobotInstanceId: model.userData.attachmentHost?.userData?.motionInstanceId || null,
             attachmentJointIndex: placement === 'arm-load' ? getArmLoadJointIndex(model) : null,
             attachmentAxis: placement === 'arm-load' ? `J${getArmLoadJointIndex(model) + 1}` : null,
+            armLoadMountReference: placement === 'arm-load' ? 'mount-frame' : null,
+            armLoadMountOffset: placement === 'arm-load'
+                ? getRobotJointMountOffset(model.userData.attachmentHost, getArmLoadJointIndex(model))
+                : null,
             visible: isModelTreeVisible(model),
             transparency: getModelTransparencyPercent(model),
             armLoadProperties: placement === 'arm-load'
@@ -43800,6 +43873,27 @@ async function restoreWorkspaceImportedModel(entry, robotsById) {
         ? robotsById.get(entry.hostRobotInstanceId) || null
         : null;
     if (needsRobotAttachment && !attachmentRobot) return null;
+    const attachmentJointIndex = getArmLoadJointIndex({ userData: entry });
+    const mountOffset = getRobotJointMountOffset(attachmentRobot, attachmentJointIndex);
+    const folder = attachmentRobot?.userData.motionModelFolder;
+    // Preserve the physical placement saved before a model's mounting origin changed.
+    // Only older R7H-90 mount-frame entries already used the hole centers.
+    const legacyPivot = ['IR-R4-56', 'IR-R4H-54', 'IR-R7H-70', 'IR-R10H-120'].includes(folder)
+        || (folder === 'IR-R7H-90' && entry.armLoadMountReference !== 'mount-frame');
+    const savedMountOffset = Array.isArray(entry.armLoadMountOffset)
+        && entry.armLoadMountOffset.length === 3
+        && entry.armLoadMountOffset.every(Number.isFinite)
+        ? entry.armLoadMountOffset
+        : legacyPivot ? [0, 0, 0] : mountOffset;
+    const transform = entry.placement === 'arm-load'
+        && Array.isArray(entry.transform?.position)
+        && entry.transform.position.length === 3
+        && entry.transform.position.every(Number.isFinite)
+        ? {
+            ...entry.transform,
+            position: entry.transform.position.map((value, index) => value + savedMountOffset[index] - mountOffset[index])
+        }
+        : entry.transform;
     const file = new File([asset.blob], asset.name, {
         type: asset.type || asset.blob.type || '',
         lastModified: asset.lastModified || Date.now()
@@ -43808,21 +43902,14 @@ async function restoreWorkspaceImportedModel(entry, robotsById) {
         file,
         placement: entry.placement,
         attachmentRobot,
-        attachmentJointIndex: entry.attachmentJointIndex !== null
-            && entry.attachmentJointIndex !== undefined
-            && Number.isInteger(Number(entry.attachmentJointIndex))
-            ? Number(entry.attachmentJointIndex)
-            : (() => {
-                const match = String(entry.attachmentAxis || '').match(/^J([1-6])$/i);
-                return match ? Number(match[1]) - 1 : 3;
-            })(),
+        attachmentJointIndex,
         armLoadProperties: entry.armLoadProperties,
         toolLoadProperties: entry.toolLoadProperties,
         visible: entry.visible !== false,
         importQuality: entry.importQuality,
         workspaceAssetId: asset.id,
         workspaceModelId: entry.workspaceModelId,
-        transform: entry.transform,
+        transform,
         testModel: Boolean(entry.testModel),
         skipAssetPersistence: true,
         suppressHistory: true,
@@ -48941,6 +49028,10 @@ function requestRender() {
     getRenderWindow().requestAnimationFrame(() => animate(performance.now()));
 }
 
+function renderSimulationScene(renderer, camera) {
+    renderWithContactAO(renderer, state.scene, camera, state.models);
+}
+
 function animate(timestamp = performance.now()) {
     state.renderFramePending = false;
     if (!state.collision.lastCheckSkipped) captureCollisionSafeRobotPoses();
@@ -48989,7 +49080,7 @@ function animate(timestamp = performance.now()) {
     updatePrimitiveDimensionOverlay();
     updateSketchPreview();
     updateTeachingPointDisplay();
-    state.renderer.render(state.scene, state.camera);
+    renderSimulationScene(state.renderer, state.camera);
     renderViewWindow();
     updateZeroPointCurrentMarker();
     if (requiresContinuousRendering()) requestRender();
