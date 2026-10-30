@@ -23,7 +23,6 @@
     "소프트웨어 버전 또는 키워드를 입력하세요...": "소프트웨어 버전 또는 키워드를 입력하세요...",
     "Software Type": "소프트웨어 유형",
     "알림": "알림",
-    "Display 버전은 배포가 제한되어 있으며, 별도의 비밀번호가 필요합니다. 권한이 있는 사용자만 다운로드해 주세요.": "Display 버전은 배포가 제한되어 별도의 비밀번호가 필요합니다. 권한이 있는 사용자만 다운로드해 주세요.",
     "해당 조건에 맞는 소프트웨어가 없습니다.": "조건에 맞는 소프트웨어가 없습니다.",
     "시스템 안정성 개선": "시스템 안정성 개선",
     "Display 모듈 지원": "Display 모듈 지원",
@@ -39,10 +38,11 @@
     "개": "개",
     "Pendant": "티칭 펜던트",
     "No": "없음",
-    "Port": "포트"
-    ,"Inovance Robot Software Center": "Inovance Robot Software Center"
-    ,"다운로드 권한을 확인할 수 없습니다. 관리자에게 문의하세요.": "다운로드 권한을 확인할 수 없습니다. 관리자에게 문의하세요.",
-    "Download URL was not returned.": "다운로드 URL이 반환되지 않았습니다."
+    "Port": "포트",
+    "Inovance Robot Software Center": "Inovance Robot Software Center",
+    "다운로드 권한을 확인할 수 없습니다. 관리자에게 문의하세요.": "다운로드 권한을 확인할 수 없습니다. 관리자에게 문의하세요.",
+    "Download URL was not returned.": "다운로드 URL이 반환되지 않았습니다.",
+    "Standard와 Display 버전을 바로 다운로드할 수 있습니다.": "Standard와 Display 버전을 바로 다운로드할 수 있습니다."
   },
   "patterns": []
 }

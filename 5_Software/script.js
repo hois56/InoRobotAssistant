@@ -23,11 +23,11 @@ const softwareGroups = [
                 tagName: "Display Version (V4R24C4SPC0L23F121)",
                 description: "Display 공정용 특수 버전 소프트웨어",
                 date: "2026-09-08",
-                isLocked: true,
+                isLocked: false,
                 updates: ["Display 모듈 지원"],
                 downloads: [
-                    { label: "Download Install", type: "install", size: "514MB", assetId: "software.inorobotlab.display.install", path: "InoRobotLab/Display/InoRobotLabSetUp_V4R24C4SPC0L23F121_x64.exe" },
-                    { label: "Download Portable", type: "portable", size: "506MB", assetId: "software.inorobotlab.display.portable", path: "InoRobotLab/Display/InoRobotLab_V4R24C4SPC0L23F121_x64.zip" }
+                    { label: "Download Install", type: "install", size: "514MB", path: "InoRobotLab/Display/InoRobotLabSetUp_V4R24C4SPC0L23F121_x64.exe", url: "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/InoRobotLabSetUp_V4R24C4SPC0L23F121_x64.exe" },
+                    { label: "Download Portable", type: "portable", size: "506MB", path: "InoRobotLab/Display/InoRobotLab_V4R24C4SPC0L23F121_x64.zip", url: "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/InoRobotLab_V4R24C4SPC0L23F121_x64.zip" }
                 ]
             }
         ]
@@ -51,10 +51,10 @@ const softwareGroups = [
                 tagName: "Display Version (V4R24C4SPC0L23F121)",
                 description: "Display 공정용 TP 소프트웨어",
                 date: "2026-09-08",
-                isLocked: true,
+                isLocked: false,
                 updates: ["Display 최적화"],
                 downloads: [
-                    { label: "Download Portable", type: "portable", size: "57MB", assetId: "software.inorobottp.display.portable", path: "InoRobotTP/Display/InoRobotTP_win_x86_V4R24C4SPC0L23F121.zip" }
+                    { label: "Download Portable", type: "portable", size: "57MB", path: "InoRobotTP/Display/InoRobotTP_win_x86_V4R24C4SPC0L23F121.zip", url: "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/InoRobotTP_win_x86_V4R24C4SPC0L23F121.zip" }
                 ]
             }
         ]
@@ -112,17 +112,17 @@ function renderSoftwareList(filterType = 'all', searchTerm = '') {
             card.className = 'software-card p-6 md:p-8 flex flex-col md:flex-row gap-8 items-start animate-fade-in-up';
             
             // 아이콘 및 헤더
-            let verBadgeClass = ver.isLocked ? "bg-amber-500/10 text-amber-500 border-amber-500/20" : "bg-blue-600/10 text-blue-400 border-blue-500/20";
-            let verIcon = ver.isLocked ? "lock" : "check-circle";
+            const verBadgeClass = "bg-blue-600/10 text-blue-400 border-blue-500/20";
+            const verIcon = "check-circle";
             const downloadButtons = ver.downloads.map(dl => {
-                const downloadKey = ver.isLocked ? dl.assetId : dl.url;
+                const downloadKey = dl.url;
                 const isDisabled = dl.disabled || !downloadKey;
                 const downloadDataAttrs = isDisabled
                     ? ''
-                    : `data-download-key="${encodeURIComponent(downloadKey)}" data-download-locked="${ver.isLocked}"${dl.path ? ` data-download-path="${encodeURIComponent(dl.path)}"` : ''}`;
+                    : `data-download-key="${encodeURIComponent(downloadKey)}" data-download-locked="false"${dl.path ? ` data-download-path="${encodeURIComponent(dl.path)}"` : ''}`;
                 const disabledAttr = isDisabled ? 'disabled aria-disabled="true"' : '';
-                const buttonClass = isDisabled ? 'disabled-btn' : (ver.isLocked ? 'locked-btn' : 'download-btn');
-                const icon = isDisabled ? 'ban' : (ver.isLocked ? 'key' : 'download');
+                const buttonClass = isDisabled ? 'disabled-btn' : 'download-btn';
+                const icon = isDisabled ? 'ban' : 'download';
 
                 const sizeLabel = dl.size && dl.size !== '-' ? ` ${dl.size}` : '';
 
@@ -161,11 +161,7 @@ function renderSoftwareList(filterType = 'all', searchTerm = '') {
 
             card.querySelectorAll('button[data-download-key]').forEach(button => {
                 button.addEventListener('click', () => {
-                    handleDownload(
-                        decodeURIComponent(button.dataset.downloadKey),
-                        button.dataset.downloadLocked === 'true',
-                        button.dataset.downloadPath ? decodeURIComponent(button.dataset.downloadPath) : ''
-                    );
+                    handleDownload(decodeURIComponent(button.dataset.downloadKey));
                 });
             });
         });
@@ -208,53 +204,8 @@ function setupSearch() {
     });
 }
 
-// Cloudflare Worker URL - 배포 후 실제 URL로 교체하세요
-const WORKER_URL = 'https://ino-robot-display-auth.hois56.workers.dev/';
-
-/**
- * 다운로드 핸들러
- * @param {string} downloadKey 공개 다운로드 URL 또는 Worker assetId
- * @param {boolean} isLocked 잠김 여부
- * @param {string} legacyPath 이전 Worker 호환용 Software 경로
- */
-async function handleDownload(downloadKey, isLocked, legacyPath = '') {
-    if (isLocked) {
-        const password = prompt(translateUiText("[기능 제한 안내] 이 버전은 전용 배포판입니다. 비밀번호를 입력해 주세요:"));
-        if (password === null) return;
-
-        try {
-            const res = await fetch(WORKER_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    password,
-                    assetId: downloadKey,
-                    path: legacyPath,
-                    folder: 'Software',
-                    mode: 'download'
-                })
-            });
-            if (!res.ok) {
-                alert(translateUiText("다운로드 권한을 확인할 수 없습니다. 관리자에게 문의하세요."));
-                return;
-            }
-            const responseType = res.headers.get('Content-Type') || '';
-            if (responseType.includes('application/json')) {
-                const result = await res.json();
-                if (result?.url) {
-                    downloadFile(result.url);
-                    return;
-                }
-                throw new Error('Download URL was not returned.');
-            }
-            const blob = await res.blob();
-            downloadBlob(blob, getResponseFileName(res) || 'InoRobot-download.zip');
-        } catch {
-            alert(translateUiText("서버 연결에 실패했습니다. 잠시 후 다시 시도해 주세요."));
-        }
-    } else {
-        downloadFile(downloadKey);
-    }
+function handleDownload(url) {
+    downloadFile(url);
 }
 
 function downloadFile(url, fileName = '') {
@@ -266,14 +217,3 @@ function downloadFile(url, fileName = '') {
     document.body.removeChild(link);
 }
 
-function getResponseFileName(response) {
-    const disposition = response.headers.get('Content-Disposition') || '';
-    const encoded = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
-    return encoded ? decodeURIComponent(encoded) : disposition.match(/filename="([^"]+)"/i)?.[1] || '';
-}
-
-function downloadBlob(blob, fileName) {
-    const url = URL.createObjectURL(blob);
-    downloadFile(url, fileName);
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-}

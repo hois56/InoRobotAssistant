@@ -4,9 +4,10 @@ Public files formerly managed with Git LFS are distributed as GitHub Release ass
 `release-assets.json` records each file's download URL, size, SHA-256 and former local paths.
 Software and Document download buttons link directly to these assets.
 
-Password-protected Display software and documents remain in the private Cloudflare R2
-bucket and are streamed by `5_Software/worker/worker.js` after authorization. Never
-upload protected files to a public release.
+Standard and Display software are public GitHub Release assets. Display education
+PDFs are public repository files. Neither downloads nor PDF previews require a password.
+`5_Software/worker/worker.js` resolves the same public files for older cached pages;
+it does not require a password, secret or R2 bucket.
 
 Binary originals may remain in the local working folder, but new `.exe` and `.zip`
 files are ignored by Git. Existing non-LFS ZIP downloads remain tracked and linked

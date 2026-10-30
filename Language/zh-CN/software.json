@@ -23,7 +23,6 @@
     "소프트웨어 버전 또는 키워드를 입력하세요...": "输入软件版本或关键词...",
     "Software Type": "软件类型",
     "알림": "提示",
-    "Display 버전은 배포가 제한되어 있으며, 별도의 비밀번호가 필요합니다. 권한이 있는 사용자만 다운로드해 주세요.": "Display 版本限制分发，需要单独密码。仅限授权用户下载。",
     "해당 조건에 맞는 소프트웨어가 없습니다.": "没有符合条件的软件。",
     "시스템 안정성 개선": "提升系统稳定性",
     "Display 모듈 지원": "支持 Display 模块",
@@ -39,10 +38,11 @@
     "개": "个",
     "Pendant": "示教器",
     "No": "无",
-    "Port": "端口"
-    ,"Inovance Robot Software Center": "Inovance 机器人软件中心"
-    ,"다운로드 권한을 확인할 수 없습니다. 관리자에게 문의하세요.": "无法确认下载权限。请联系管理员。",
-    "Download URL was not returned.": "未返回下载 URL。"
+    "Port": "端口",
+    "Inovance Robot Software Center": "Inovance 机器人软件中心",
+    "다운로드 권한을 확인할 수 없습니다. 관리자에게 문의하세요.": "无法确认下载权限。请联系管理员。",
+    "Download URL was not returned.": "未返回下载 URL。",
+    "Standard와 Display 버전을 바로 다운로드할 수 있습니다.": "可直接下载 Standard 和 Display 版本。"
   },
   "patterns": []
 }

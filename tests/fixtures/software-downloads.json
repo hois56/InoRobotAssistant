@@ -23,21 +23,21 @@
   {
     "productId": "InoRobotLab",
     "version": "Display Version (V4R24C4SPC0L23F121)",
-    "isLocked": true,
+    "isLocked": false,
     "downloads": [
       {
         "label": "Download Install",
         "type": "install",
         "path": "InoRobotLab/Display/InoRobotLabSetUp_V4R24C4SPC0L23F121_x64.exe",
-        "assetId": "software.inorobotlab.display.install",
-        "url": null
+        "assetId": null,
+        "url": "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/InoRobotLabSetUp_V4R24C4SPC0L23F121_x64.exe"
       },
       {
         "label": "Download Portable",
         "type": "portable",
         "path": "InoRobotLab/Display/InoRobotLab_V4R24C4SPC0L23F121_x64.zip",
-        "assetId": "software.inorobotlab.display.portable",
-        "url": null
+        "assetId": null,
+        "url": "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/InoRobotLab_V4R24C4SPC0L23F121_x64.zip"
       }
     ]
   },
@@ -58,14 +58,14 @@
   {
     "productId": "InoRobotTP",
     "version": "Display Version (V4R24C4SPC0L23F121)",
-    "isLocked": true,
+    "isLocked": false,
     "downloads": [
       {
         "label": "Download Portable",
         "type": "portable",
         "path": "InoRobotTP/Display/InoRobotTP_win_x86_V4R24C4SPC0L23F121.zip",
-        "assetId": "software.inorobottp.display.portable",
-        "url": null
+        "assetId": null,
+        "url": "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/InoRobotTP_win_x86_V4R24C4SPC0L23F121.zip"
       }
     ]
   }

@@ -428,8 +428,7 @@ const manualData = [
         category: "display",
         date: "2026-04-07",
         lang: "KR",
-        isLocked: true,
-        assetId: "document.edu.display.1",
+
         path: "교육 자료/입문과정/Display/1.로봇 소개(Display).pdf",
         description: "Education Item"
     },
@@ -440,8 +439,7 @@ const manualData = [
         category: "display",
         date: "2026-06-01",
         lang: "KR",
-        isLocked: true,
-        assetId: "document.edu.display.2",
+
         path: "교육 자료/입문과정/Display/2.로봇 기초(Display).pdf",
         description: "Education Item"
     },
@@ -452,8 +450,7 @@ const manualData = [
         category: "display",
         date: "2026-04-07",
         lang: "KR",
-        isLocked: true,
-        assetId: "document.edu.display.3",
+
         path: "교육 자료/입문과정/Display/3.로봇 구조 및 초기 배선(Display).pdf",
         description: "Education Item"
     }
@@ -901,11 +898,11 @@ function renderManuals() {
             <div class="document-action-row flex items-center gap-2 pt-4 md:pt-0 shrink-0 w-full md:w-auto">
                 <div class="document-action-buttons flex gap-2 ml-auto">
                     <button onclick="handleView('${man.id}')"
-                            class="document-action-button px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 min-w-[100px] justify-center ${man.isLocked ? 'locked-btn' : 'view-btn'}">
+                            class="document-action-button px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 min-w-[100px] justify-center view-btn">
                         <i data-lucide="eye" class="w-3.5 h-3.5"></i> 미리보기
                     </button>
                     <button onclick="handleDownload('${man.id}')"
-                            class="document-action-button px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 min-w-[100px] justify-center ${man.isLocked ? 'locked-btn' : 'download-btn'}">
+                            class="document-action-button px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 min-w-[100px] justify-center download-btn">
                         <i data-lucide="download" class="w-3.5 h-3.5"></i> 다운로드
                     </button>
                 </div>
@@ -964,9 +961,6 @@ function setupSearch() {
     input.addEventListener('input', renderManuals);
 }
 
-// Cloudflare Worker URL
-const WORKER_URL = 'https://ino-robot-display-auth.hois56.workers.dev/';
-
 function encodeManualPath(path) {
     return path.split('/').map(segment => encodeURIComponent(segment)).join('/');
 }
@@ -980,94 +974,17 @@ function resolveManualUrl(path) {
     return encodeManualPath(path);
 }
 
-async function handleView(id) {
+function handleView(id) {
     const man = manualData.find(m => m.id === id);
     if (!man) return;
-
-    if (man.isLocked) {
-        const password = prompt(translateUiText("[보안 안내] 이 자료는 열람이 제한되어 있습니다. 비밀번호를 입력해 주세요:"));
-        if (password === null) return;
-
-        // 팝업 차단 방지: 사용자 제스처 시점에 미리 창 열기
-        const win = window.open('', '_blank');
-        if (!win) {
-            alert(translateUiText("팝업이 차단되었습니다. 이 사이트의 팝업을 허용한 뒤 다시 시도해 주세요."));
-            return;
-        }
-
-        try {
-            const res = await fetch(WORKER_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    password,
-                    assetId: man.assetId,
-                    path: man.path,
-                    folder: '6_Document',
-                    mode: 'view'
-                })
-            });
-
-            const contentType = res.headers.get('Content-Type') || '';
-
-            if (contentType.includes('application/json')) {
-                win.close();
-                alert(translateUiText("자료를 열 수 없습니다."));
-                return;
-            }
-
-            if (!res.ok) {
-                win.close();
-                alert(translateUiText("파일을 불러오는데 실패했습니다."));
-                return;
-            }
-
-            const blob = await res.blob();
-            const blobUrl = URL.createObjectURL(blob);
-            win.location.href = blobUrl;
-        } catch (e) {
-            win.close();
-            console.error('Manual view request failed:', e);
-            alert(translateUiText("서버 연결에 실패했습니다."));
-        }
-    } else {
-        window.open(resolveManualUrl(man.path), '_blank');
-    }
+    window.open(resolveManualUrl(man.path), '_blank');
 }
 
-async function handleDownload(id) {
+function handleDownload(id) {
     const man = manualData.find(m => m.id === id);
     if (!man) return;
-
-    if (man.isLocked) {
-        const password = prompt(translateUiText("[보안 안내] 이 자료는 다운로드가 제한되어 있습니다. 비밀번호를 입력해 주세요:"));
-        if (password === null) return;
-
-        try {
-            const res = await fetch(WORKER_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    password,
-                    assetId: man.assetId,
-                    path: man.path,
-                    folder: '6_Document',
-                    mode: 'download'
-                })
-            });
-            if (!res.ok) {
-                alert(translateUiText("자료를 다운로드할 수 없습니다."));
-                return;
-            }
-            const blob = await res.blob();
-            downloadBlob(blob, getResponseFileName(res) || getFileName(man.title));
-        } catch {
-            alert(translateUiText("서버 연결에 실패했습니다."));
-        }
-    } else {
-        const path = man.downloadPath || man.path;
-        downloadFile(resolveManualUrl(path), getFileName(path));
-    }
+    const path = man.downloadPath || man.path;
+    downloadFile(resolveManualUrl(path), getFileName(path));
 }
 
 function downloadFile(url, fileName = '') {
@@ -1078,18 +995,6 @@ function downloadFile(url, fileName = '') {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-}
-
-function getResponseFileName(response) {
-    const disposition = response.headers.get('Content-Disposition') || '';
-    const encoded = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
-    return encoded ? decodeURIComponent(encoded) : disposition.match(/filename="([^"]+)"/i)?.[1] || '';
-}
-
-function downloadBlob(blob, fileName) {
-    const url = URL.createObjectURL(blob);
-    downloadFile(url, fileName);
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 document.addEventListener('DOMContentLoaded', init);

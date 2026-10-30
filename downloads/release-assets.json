@@ -75,6 +75,33 @@
       "size": 26632,
       "sha256": "2f1239b78ee7a217275da4be89c05632fc871b208d42f295869fca07c804531f",
       "url": "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/en.zip"
+    },
+    {
+      "paths": [
+        "5_Software/InoRobotLab/Display/InoRobotLabSetUp_V4R24C4SPC0L23F121_x64.exe"
+      ],
+      "fileName": "InoRobotLabSetUp_V4R24C4SPC0L23F121_x64.exe",
+      "size": 514281421,
+      "sha256": "a025c1d90941e84e87e63097261da9d6be747fce7196406bcb09d7dc5d10ba94",
+      "url": "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/InoRobotLabSetUp_V4R24C4SPC0L23F121_x64.exe"
+    },
+    {
+      "paths": [
+        "5_Software/InoRobotLab/Display/InoRobotLab_V4R24C4SPC0L23F121_x64.zip"
+      ],
+      "fileName": "InoRobotLab_V4R24C4SPC0L23F121_x64.zip",
+      "size": 505918394,
+      "sha256": "f6952d125019e4079047f10132029e7db604212e449665aced4cce5f090604a5",
+      "url": "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/InoRobotLab_V4R24C4SPC0L23F121_x64.zip"
+    },
+    {
+      "paths": [
+        "5_Software/InoRobotTP/Display/InoRobotTP_win_x86_V4R24C4SPC0L23F121.zip"
+      ],
+      "fileName": "InoRobotTP_win_x86_V4R24C4SPC0L23F121.zip",
+      "size": 57421952,
+      "sha256": "1f55e096637de12b4c20add5c1cd964c5b4dc3d014fe79ecf812f3199fdf03d0",
+      "url": "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/InoRobotTP_win_x86_V4R24C4SPC0L23F121.zip"
     }
   ]
 }

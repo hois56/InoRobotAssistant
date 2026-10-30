@@ -802,7 +802,7 @@
               {
                 "title": "Ver 26.10.30",
                 "items": [
-                  "`[수정]` 소프트웨어 다운로드가 용량 제한으로 중단되던 문제를 해결했습니다."
+                  "`[수정]` 소프트웨어 다운로드가 중단되던 문제를 해결하고, Display 버전을 비밀번호 없이 다운로드할 수 있도록 공개했습니다."
                 ]
               },
               {
@@ -889,7 +889,7 @@
               {
                 "title": "Ver 26.10.30",
                 "items": [
-                  "`[수정]` API 실습 자료가 다운로드되지 않던 문제를 해결했습니다."
+                  "`[수정]` API 실습 자료 다운로드 문제를 해결하고, Display 교육 자료를 비밀번호 없이 열람하고 다운로드할 수 있도록 공개했습니다."
                 ]
               },
               {
@@ -2171,7 +2171,7 @@
               {
                 "title": "Ver 26.10.30",
                 "items": [
-                  "`[Fixed]` Fixed software downloads being interrupted by storage limits."
+                  "`[Fixed]` Fixed interrupted software downloads and made Display versions available without a password."
                 ]
               },
               {
@@ -2258,7 +2258,7 @@
               {
                 "title": "Ver 26.10.30",
                 "items": [
-                  "`[Fixed]` Fixed API practice materials failing to download."
+                  "`[Fixed]` Fixed API practice downloads and made Display training documents available to view and download without a password."
                 ]
               },
               {
@@ -3528,7 +3528,7 @@
               {
                 "title": "Ver 26.10.30",
                 "items": [
-                  "`[修复]` 修复了软件因存储容量限制而无法下载的问题。"
+                  "`[修复]` 修复了软件下载中断的问题，并开放 Display 版本，无需密码即可下载。"
                 ]
               },
               {
@@ -3615,7 +3615,7 @@
               {
                 "title": "Ver 26.10.30",
                 "items": [
-                  "`[修复]` 修复了 API 实践资料无法下载的问题。"
+                  "`[修复]` 修复了 API 实践资料下载问题，并开放 Display 培训资料，无需密码即可查看和下载。"
                 ]
               },
               {
@@ -4885,7 +4885,7 @@
               {
                 "title": "Ver 26.10.30",
                 "items": [
-                  "`[Sửa lỗi]` Đã khắc phục việc tải phần mềm bị gián đoạn do giới hạn dung lượng lưu trữ."
+                  "`[Sửa lỗi]` Đã khắc phục việc tải phần mềm bị gián đoạn và cho phép tải phiên bản Display không cần mật khẩu."
                 ]
               },
               {
@@ -4972,7 +4972,7 @@
               {
                 "title": "Ver 26.10.30",
                 "items": [
-                  "`[Sửa lỗi]` Đã khắc phục lỗi không tải được tài liệu thực hành API."
+                  "`[Sửa lỗi]` Đã khắc phục lỗi tải tài liệu thực hành API và cho phép xem, tải tài liệu đào tạo Display không cần mật khẩu."
                 ]
               },
               {
@@ -6242,7 +6242,7 @@
               {
                 "title": "Ver 26.10.30",
                 "items": [
-                  "`[Düzeltildi]` Depolama sınırları nedeniyle yazılım indirmelerinin kesilmesi sorunu giderildi."
+                  "`[Düzeltildi]` Kesintiye uğrayan yazılım indirmeleri düzeltildi ve Display sürümleri parolasız indirilebilir hâle getirildi."
                 ]
               },
               {
@@ -6329,7 +6329,7 @@
               {
                 "title": "Ver 26.10.30",
                 "items": [
-                  "`[Düzeltildi]` API uygulama materyallerinin indirilememesi sorunu giderildi."
+                  "`[Düzeltildi]` API uygulama indirmeleri düzeltildi ve Display eğitim belgeleri parolasız görüntülenebilir ve indirilebilir hâle getirildi."
                 ]
               },
               {
@@ -7599,7 +7599,7 @@
               {
                 "title": "Ver 26.10.30",
                 "items": [
-                  "`[Исправлено]` Исправлена остановка загрузки программ из-за ограничения объёма хранилища."
+                  "`[Исправлено]` Исправлена остановка загрузки программ, версии Display открыты для загрузки без пароля."
                 ]
               },
               {
@@ -7686,7 +7686,7 @@
               {
                 "title": "Ver 26.10.30",
                 "items": [
-                  "`[Исправлено]` Исправлена невозможность загрузки практических материалов по API."
+                  "`[Исправлено]` Исправлена загрузка практических материалов API, учебные материалы Display открыты для просмотра и загрузки без пароля."
                 ]
               },
               {

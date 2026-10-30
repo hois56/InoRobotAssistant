@@ -23,7 +23,6 @@
     "소프트웨어 버전 또는 키워드를 입력하세요...": "Bir yazılım sürümü veya anahtar kelime girin...",
     "Software Type": "Yazılım Türü",
     "알림": "Bildirim",
-    "Display 버전은 배포가 제한되어 있으며, 별도의 비밀번호가 필요합니다. 권한이 있는 사용자만 다운로드해 주세요.": "Ekran versiyonlarının dağıtımı kısıtlıdır ve ayrı bir şifre gerektirir. Bunları yalnızca yetkiliyseniz indirin.",
     "해당 조건에 맞는 소프트웨어가 없습니다.": "Seçilen kriterlere uyan hiçbir yazılım yok.",
     "시스템 안정성 개선": "Geliştirilmiş sistem kararlılığı",
     "Display 모듈 지원": "Ekran modülü desteği eklendi",
@@ -42,7 +41,8 @@
     "Port": "Bağlantı Noktası",
     "Inovance Robot Software Center": "İnovasyon Robot Yazılım Merkezi",
     "다운로드 권한을 확인할 수 없습니다. 관리자에게 문의하세요.": "İndirme izni doğrulanamadı. Yöneticiyle iletişime geç.",
-    "Download URL was not returned.": "İndirme URL'si döndürülmedi."
+    "Download URL was not returned.": "İndirme URL'si döndürülmedi.",
+    "Standard와 Display 버전을 바로 다운로드할 수 있습니다.": "Standard ve Display sürümlerini doğrudan indirin."
   },
   "patterns": []
 }
