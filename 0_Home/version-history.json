@@ -800,6 +800,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.10.30",
+                "items": [
+                  "`[수정]` 소프트웨어 다운로드가 용량 제한으로 중단되던 문제를 해결했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.10.08",
                 "items": [
                   "`[변경]` InoRobotLab 일반 포터블 버전을 32비트에서 64비트 파일로 교체했습니다."
@@ -880,6 +886,12 @@
           {
             "title": "Document",
             "versions": [
+              {
+                "title": "Ver 26.10.30",
+                "items": [
+                  "`[수정]` API 실습 자료가 다운로드되지 않던 문제를 해결했습니다."
+                ]
+              },
               {
                 "title": "Ver 26.09.14",
                 "items": [
@@ -2157,6 +2169,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.10.30",
+                "items": [
+                  "`[Fixed]` Fixed software downloads being interrupted by storage limits."
+                ]
+              },
+              {
                 "title": "Ver 26.10.08",
                 "items": [
                   "`[Changed]` Replaced the standard InoRobotLab portable package with the 64-bit version instead of the 32-bit version."
@@ -2237,6 +2255,12 @@
           {
             "title": "Document",
             "versions": [
+              {
+                "title": "Ver 26.10.30",
+                "items": [
+                  "`[Fixed]` Fixed API practice materials failing to download."
+                ]
+              },
               {
                 "title": "Ver 26.09.14",
                 "items": [
@@ -3502,6 +3526,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.10.30",
+                "items": [
+                  "`[修复]` 修复了软件因存储容量限制而无法下载的问题。"
+                ]
+              },
+              {
                 "title": "Ver 26.10.08",
                 "items": [
                   "`[变更]` InoRobotLab 标准便携版已从32位替换为64位文件。"
@@ -3582,6 +3612,12 @@
           {
             "title": "Document",
             "versions": [
+              {
+                "title": "Ver 26.10.30",
+                "items": [
+                  "`[修复]` 修复了 API 实践资料无法下载的问题。"
+                ]
+              },
               {
                 "title": "Ver 26.09.14",
                 "items": [
@@ -4847,6 +4883,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.10.30",
+                "items": [
+                  "`[Sửa lỗi]` Đã khắc phục việc tải phần mềm bị gián đoạn do giới hạn dung lượng lưu trữ."
+                ]
+              },
+              {
                 "title": "Ver 26.10.08",
                 "items": [
                   "`[Thay đổi]` Đã thay gói InoRobotLab bản tiêu chuẩn không cần cài đặt từ 32 bit sang 64 bit."
@@ -4927,6 +4969,12 @@
           {
             "title": "Document",
             "versions": [
+              {
+                "title": "Ver 26.10.30",
+                "items": [
+                  "`[Sửa lỗi]` Đã khắc phục lỗi không tải được tài liệu thực hành API."
+                ]
+              },
               {
                 "title": "Ver 26.09.14",
                 "items": [
@@ -6192,6 +6240,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.10.30",
+                "items": [
+                  "`[Düzeltildi]` Depolama sınırları nedeniyle yazılım indirmelerinin kesilmesi sorunu giderildi."
+                ]
+              },
+              {
                 "title": "Ver 26.10.08",
                 "items": [
                   "`[Değiştirildi]` Standart InoRobotLab taşınabilir paketi 32 bit yerine 64 bit dosyayla değiştirildi."
@@ -6272,6 +6326,12 @@
           {
             "title": "Document",
             "versions": [
+              {
+                "title": "Ver 26.10.30",
+                "items": [
+                  "`[Düzeltildi]` API uygulama materyallerinin indirilememesi sorunu giderildi."
+                ]
+              },
               {
                 "title": "Ver 26.09.14",
                 "items": [
@@ -7537,6 +7597,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.10.30",
+                "items": [
+                  "`[Исправлено]` Исправлена остановка загрузки программ из-за ограничения объёма хранилища."
+                ]
+              },
+              {
                 "title": "Ver 26.10.08",
                 "items": [
                   "`[Изменено]` Портативная стандартная версия InoRobotLab заменена с 32-битной на 64-битную."
@@ -7617,6 +7683,12 @@
           {
             "title": "Document",
             "versions": [
+              {
+                "title": "Ver 26.10.30",
+                "items": [
+                  "`[Исправлено]` Исправлена невозможность загрузки практических материалов по API."
+                ]
+              },
               {
                 "title": "Ver 26.09.14",
                 "items": [

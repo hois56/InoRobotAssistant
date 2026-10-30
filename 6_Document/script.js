@@ -417,7 +417,7 @@ const manualData = [
         date: "2026-04-10",
         lang: "KR",
         path: "교육 자료/응용과정/API 교육 자료.pdf",
-        downloadPath: "https://media.githubusercontent.com/media/hois56/InoRobotAssistant/main/6_Document/%EA%B5%90%EC%9C%A1%20%EC%9E%90%EB%A3%8C/%EC%9D%91%EC%9A%A9%EA%B3%BC%EC%A0%95/API.zip",
+        downloadPath: "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/API.zip",
         description: "Application Level - API"
     },
     // 6-3. For Display Education

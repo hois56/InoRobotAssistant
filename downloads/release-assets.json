@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "repository": "hois56/InoRobotAssistant",
+  "tag": "downloads-2026-10-30",
+  "assets": [
+    {
+      "paths": [
+        "2_3DSimulation/VirtualControllerBridge/InoRobotVirtualControllerBridge.exe",
+        "2_3DSimulation/bridge/InoRobotVirtualControllerBridge.exe"
+      ],
+      "fileName": "InoRobotVirtualControllerBridge.exe",
+      "size": 189163388,
+      "sha256": "09133b7a1a2f93a7a3fcc3b3b322d3a5e5cc8cfe2858e1c63dc795b6d19422c4",
+      "url": "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/InoRobotVirtualControllerBridge.exe"
+    },
+    {
+      "paths": [
+        "5_Software/InoRobotLab/InoRobotLabSetUp_V4R24C4SPC25_x64.zip"
+      ],
+      "fileName": "InoRobotLabSetUp_V4R24C4SPC25_x64.zip",
+      "size": 535264676,
+      "sha256": "1cca042ac091c3a4cbbdc4b0744782baf5ef3db83b60958694b2fa31b905c694",
+      "url": "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/InoRobotLabSetUp_V4R24C4SPC25_x64.zip"
+    },
+    {
+      "paths": [
+        "5_Software/InoRobotLab/InoRobotLab_V4R24C4SPC25_x64.zip"
+      ],
+      "fileName": "InoRobotLab_V4R24C4SPC25_x64.zip",
+      "size": 549007977,
+      "sha256": "2ff5c46386214601a36b991521d070cd54a198ef7fb056521d904c024194b139",
+      "url": "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/InoRobotLab_V4R24C4SPC25_x64.zip"
+    },
+    {
+      "paths": [
+        "5_Software/InoRobotTP/InoRobotTP_win_x86_V4R24C4SPC25.zip"
+      ],
+      "fileName": "InoRobotTP_win_x86_V4R24C4SPC25.zip",
+      "size": 57462802,
+      "sha256": "9cf08cf16e53d6747ec8567fba281064d93f6e6d5ed1a1209c950fae0e698223",
+      "url": "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/InoRobotTP_win_x86_V4R24C4SPC25.zip"
+    },
+    {
+      "paths": [
+        "6_Document/교육 자료/응용과정/API.zip"
+      ],
+      "fileName": "API.zip",
+      "size": 210660090,
+      "sha256": "f44cba7e18e744b80c54beb056b3cf2b5dbe5ab47e92c9f5f4425c9e089c56c8",
+      "url": "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/API.zip"
+    },
+    {
+      "paths": [
+        "7_DebuggingTool/CommunicationTester/InoRobot_Comm_Test_V3.2.exe"
+      ],
+      "fileName": "InoRobot_Comm_Test_V3.2.exe",
+      "size": 162228088,
+      "sha256": "6ccd91293b302bb442af922e83afb9b2d05973012b432f8668ce19aa24b6762e",
+      "url": "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/InoRobot_Comm_Test_V3.2.exe"
+    },
+    {
+      "paths": [
+        "7_DebuggingTool/Trace/InoRobotTrace_V1.5.exe"
+      ],
+      "fileName": "InoRobotTrace_V1.5.exe",
+      "size": 96521910,
+      "sha256": "8581c4188a7854d178b03469d4cc4e6350a57555409993a9c7981926c14c9230",
+      "url": "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/InoRobotTrace_V1.5.exe"
+    },
+    {
+      "paths": [
+        "Language/en.zip"
+      ],
+      "fileName": "en.zip",
+      "size": 26632,
+      "sha256": "2f1239b78ee7a217275da4be89c05632fc871b208d42f295869fca07c804531f",
+      "url": "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/en.zip"
+    }
+  ]
+}

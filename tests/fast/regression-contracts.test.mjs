@@ -74,15 +74,18 @@ test('소프트웨어 버전별 다운로드 파일 연결이 승인된 기준�
     productId: group.id,
     version: version.tagName,
     isLocked: Boolean(version.isLocked),
-    downloads: version.downloads.map(({ label, type, path: downloadPath, assetId }) => ({
+    downloads: version.downloads.map(({ label, type, path: downloadPath, assetId, url }) => ({
       label,
       type,
       path: downloadPath || null,
-      assetId: assetId || null
+      assetId: assetId || null,
+      url: url || null
     }))
   })));
 
   assert.deepEqual(actual, readFixture('software-downloads.json'));
+  const releases = JSON.parse(fs.readFileSync(path.join(repoRoot, 'downloads/release-assets.json'), 'utf8'));
+  const worker = fs.readFileSync(path.join(repoRoot, '5_Software/worker/worker.js'), 'utf8');
 
   for (const version of actual) {
     const types = version.downloads.map(download => download.type);
@@ -91,11 +94,15 @@ test('소프트웨어 버전별 다운로드 파일 연결이 승인된 기준�
     for (const download of version.downloads) {
       assert.ok(download.path, `${version.productId} ${version.version}: 파일 경로가 없습니다.`);
       assert.ok(!download.path.split(/[\\/]/).includes('..'), `${download.path}: 저장소 밖을 가리킵니다.`);
-      assert.ok(
-        fs.existsSync(path.join(repoRoot, '5_Software', download.path)),
-        `다운로드 파일을 찾을 수 없습니다: ${download.path}`
-      );
-      if (version.isLocked) assert.ok(download.assetId, `${version.productId}: 잠금 다운로드 ID가 없습니다.`);
+      if (version.isLocked) {
+        assert.ok(download.assetId, `${version.productId}: 잠금 다운로드 ID가 없습니다.`);
+        assert.ok(worker.includes(`'${download.assetId}'`) && worker.includes(`'software/${download.path}'`), `${download.path}: 비공개 R2 연결이 없습니다.`);
+        assert.equal(download.url, null, '잠금 파일에 공개 다운로드 URL이 있습니다.');
+      } else {
+        const asset = releases.assets.find(asset => asset.paths.includes(`5_Software/${download.path}`));
+        assert.ok(asset, `${download.path}: 릴리스 파일 목록에 없습니다.`);
+        assert.equal(download.url, asset.url, `${download.path}: 릴리스 다운로드 URL이 다릅니다.`);
+      }
     }
   }
 });

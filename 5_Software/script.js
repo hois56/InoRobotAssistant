@@ -15,8 +15,8 @@ const softwareGroups = [
                 date: "2026-10-01",
                 updates: ["시스템 안정성 개선"],
                 downloads: [
-                    { label: "Download Install", type: "install", size: "535MB", path: "InoRobotLab/InoRobotLabSetUp_V4R24C4SPC25_x64.zip" },
-                    { label: "Download Portable", type: "portable", size: "549MB", path: "InoRobotLab/InoRobotLab_V4R24C4SPC25_x64.zip" }
+                    { label: "Download Install", type: "install", size: "535MB", path: "InoRobotLab/InoRobotLabSetUp_V4R24C4SPC25_x64.zip", url: "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/InoRobotLabSetUp_V4R24C4SPC25_x64.zip" },
+                    { label: "Download Portable", type: "portable", size: "549MB", path: "InoRobotLab/InoRobotLab_V4R24C4SPC25_x64.zip", url: "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/InoRobotLab_V4R24C4SPC25_x64.zip" }
                 ]
             },
             {
@@ -44,7 +44,7 @@ const softwareGroups = [
                 date: "2026-10-01",
                 updates: ["시스템 안정성 개선"],
                 downloads: [
-                    { label: "Download Portable", type: "portable", size: "57MB", path: "InoRobotTP/InoRobotTP_win_x86_V4R24C4SPC25.zip" }
+                    { label: "Download Portable", type: "portable", size: "57MB", path: "InoRobotTP/InoRobotTP_win_x86_V4R24C4SPC25.zip", url: "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/InoRobotTP_win_x86_V4R24C4SPC25.zip" }
                 ]
             },
             {
@@ -115,7 +115,7 @@ function renderSoftwareList(filterType = 'all', searchTerm = '') {
             let verBadgeClass = ver.isLocked ? "bg-amber-500/10 text-amber-500 border-amber-500/20" : "bg-blue-600/10 text-blue-400 border-blue-500/20";
             let verIcon = ver.isLocked ? "lock" : "check-circle";
             const downloadButtons = ver.downloads.map(dl => {
-                const downloadKey = ver.isLocked ? dl.assetId : dl.path;
+                const downloadKey = ver.isLocked ? dl.assetId : dl.url;
                 const isDisabled = dl.disabled || !downloadKey;
                 const downloadDataAttrs = isDisabled
                     ? ''
@@ -213,7 +213,7 @@ const WORKER_URL = 'https://ino-robot-display-auth.hois56.workers.dev/';
 
 /**
  * 다운로드 핸들러
- * @param {string} downloadKey 공개 경로 또는 Worker assetId
+ * @param {string} downloadKey 공개 다운로드 URL 또는 Worker assetId
  * @param {boolean} isLocked 잠김 여부
  * @param {string} legacyPath 이전 Worker 호환용 Software 경로
  */
@@ -253,8 +253,7 @@ async function handleDownload(downloadKey, isLocked, legacyPath = '') {
             alert(translateUiText("서버 연결에 실패했습니다. 잠시 후 다시 시도해 주세요."));
         }
     } else {
-        const lfsUrl = `https://media.githubusercontent.com/media/hois56/InoRobotAssistant/main/5_Software/${downloadKey}`;
-        downloadFile(lfsUrl);
+        downloadFile(downloadKey);
     }
 }
 

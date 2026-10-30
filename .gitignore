@@ -1,4 +1,7 @@
 # Local extracted software and runtime logs are intentionally not versioned.
+# New download binaries belong in GitHub Releases or private R2, not Git history.
+*.exe
+*.zip
 # CAD Lightweight archives are distributed as GitHub Release assets.
 /7_DebuggingTool/CADLightweight/*.zip
 /5_Software/InoRobotLab/InoRobotLab_V4R24C4SPC21_x64/

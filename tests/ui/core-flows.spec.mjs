@@ -45,7 +45,7 @@ test('소프트웨어 버전과 다운로드 버튼이 기준 파일에 연결�
       const visibleLabel = button.textContent.replace(/\s+/g, ' ').trim();
       const type = /install|설치/i.test(visibleLabel) ? 'install' : 'portable';
       const label = type === 'install' ? 'Download Install' : 'Download Portable';
-      return { label, type, path, assetId: locked ? key : null };
+      return { label, type, path, assetId: locked ? key : null, url: locked ? null : key };
     });
     return {
       productId: groupName,
@@ -60,11 +60,14 @@ test('소프트웨어 버전과 다운로드 버튼이 기준 파일에 연결�
 });
 
 test('서로 다른 소프트웨어 파일을 내려받아도 파일명과 내용이 각각 일치한다', async ({ page }) => {
+  const candidates = expectedDownloads.filter(version => !version.isLocked)
+    .flatMap(version => version.downloads.map(download => download.path));
   const downloadRoutes = new Map();
-  await page.route('https://media.githubusercontent.com/**', async route => {
+  await page.route('https://github.com/hois56/InoRobotAssistant/releases/download/**', async route => {
     const url = new URL(route.request().url());
-    const downloadPath = decodeURIComponent(url.pathname.split('/5_Software/')[1] || '');
-    const filename = path.posix.basename(downloadPath);
+    const filename = decodeURIComponent(path.posix.basename(url.pathname));
+    const downloadPath = candidates.find(candidate => path.posix.basename(candidate) === filename);
+    assert.ok(downloadPath, `예상하지 않은 릴리스 파일: ${filename}`);
     downloadRoutes.set(filename, downloadPath);
     await route.fulfill({
       status: 200,
@@ -76,11 +79,6 @@ test('서로 다른 소프트웨어 파일을 내려받아도 파일명과 내�
 
   await page.goto('/5_Software/index.html', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('#softwareList .software-card').first()).toBeVisible({ timeout: 20_000 });
-  const candidates = [
-    'InoRobotLab/InoRobotLabSetUp_V4R24C4SPC25_x64.zip',
-    'InoRobotLab/InoRobotLab_V4R24C4SPC25_x64.zip',
-    'InoRobotTP/InoRobotTP_win_x86_V4R24C4SPC25.zip'
-  ];
   const buttons = page.locator('#softwareList button[data-download-path]');
   const matchingButtons = [];
   for (const downloadPath of candidates) {

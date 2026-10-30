@@ -1,4 +1,6 @@
 #!/bin/sh
 set -eu
 
-git lfs pre-push "$@"
+# Download binaries are hosted in GitHub Releases or private R2.
+# Pushing the website requires no LFS upload or validation.
+exit 0
