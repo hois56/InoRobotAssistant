@@ -47,6 +47,7 @@ test('조립 STEP의 중첩 부품은 이름과 배치 좌표를 유지한다', 
     });
     expect(result.done.segmented).toBe(true);
     expect(new Set(result.parts.map(part => part.id)).size).toBe(3);
+    expect(result.parts.map(part => part.color)).toEqual([[1, 0, 0], [0, 1, 0], [0, 0, 1]]);
     const tip = result.parts.find(part => part.name === 'Tip');
     expect(tip).toBeDefined();
     expect(tip.min).toEqual([100, 40, 0]);
