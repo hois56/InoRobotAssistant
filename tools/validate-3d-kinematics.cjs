@@ -455,7 +455,7 @@ assert(viewerSource.includes("Math.max(0, -(geometries[0].boundingBox?.min.z || 
 assert((viewerHtml.match(/data-base-rotation-row=/g) || []).length === 3, 'BASE JOG must expose three filterable rotation rows');
 assert((viewerHtml.match(/id="tcp-(?:x|y|z|rx|ry|rz)" type="number"/g) || []).length === 6, 'TCP readouts must be directly editable');
 const robots = catalog.filter((entry) => entry.type === 'articulated-stl');
-assert(robots.length === 29, `Expected 29 articulated robots, found ${robots.length}`);
+assert(robots.length === 31, `Expected 31 articulated robots, found ${robots.length}`);
 assert(new Set(robots.map((robot) => robot.name)).size === robots.length, 'Robot names must be unique');
 assert(new Set(robots.map((robot) => robot.folder)).size === robots.length, 'Robot folders must be unique');
 
@@ -584,8 +584,8 @@ for (const model of robots) {
 }
 
 assert(typeCounts.scara === 17, `Expected 17 SCARA models, found ${typeCounts.scara}`);
-assert(typeCounts['six-axis'] === 12, `Expected 12 six-axis models, found ${typeCounts['six-axis']}`);
-assert(jointCount === 140, `Expected 140 joints, found ${jointCount}`);
+assert(typeCounts['six-axis'] === 14, `Expected 14 six-axis models, found ${typeCounts['six-axis']}`);
+assert(jointCount === 152, `Expected 152 joints, found ${jointCount}`);
 assert(tubeCount === 15, `Expected 15 SCARA CD conduit assets, found ${tubeCount}`);
 assert(robots.filter((model) => model.kinematicVariant === 'ceiling-scara').map((model) => model.folder).sort().join(',') === 'IR-TS4-35Z15,IR-TS5-55Z15', 'Ceiling SCARA variants must be TS4 and TS5');
 

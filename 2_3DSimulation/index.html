@@ -8,7 +8,7 @@
     <title>3D Simulation | INOVANCE</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=20261030-tool-flange-origin-1">
+    <link rel="stylesheet" href="style.css?v=20261031-work-origin-1">
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -23,11 +23,38 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/Language/runtime/i18n.css">
-    <script src="/Language/runtime/locales-data.js?v=20261030-tool-flange-origin-1" defer></script>
+    <script src="/Language/runtime/locales-data.js?v=20261031-view-no-jog-1" defer></script>
     <script src="/Language/runtime/i18n.js" defer></script>
     <script src="/Language/runtime/icon-fallback.js" defer></script>
     <script src="/analytics-config.js"></script>
     <script src="/analytics.js" defer></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -665,6 +692,10 @@
             <h1 class="app-title">3D Simulation</h1>
         </div>
         <div class="topbar-center">
+            <button id="btn-workspace-list" class="ui-btn workspace-list-btn" type="button" title="프로젝트 목록" aria-label="프로젝트 목록" data-i18n-title="legacy.프로젝트 목록" data-i18n-aria-label="legacy.프로젝트 목록">
+                <i class="fa-solid fa-list" aria-hidden="true"></i>
+                <span data-i18n="legacy.목록">목록</span>
+            </button>
             <button id="btn-reset-simulation" class="simulation-reset-btn" type="button" title="모든 설정 및 모델 초기화" aria-label="모든 설정 및 모델 초기화">
                 <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
                 <span>초기화</span>
@@ -823,6 +854,7 @@
             </p>
             <p id="workspace-recovery-error" class="workspace-recovery-error" role="alert" hidden></p>
             <div class="workspace-recovery-dialog-actions">
+                <button id="btn-workspace-cancel" type="button" class="secondary" hidden data-i18n="legacy.취소">취소</button>
                 <button id="btn-workspace-new" type="button" class="secondary">새 작업 시작</button>
                 <button id="btn-workspace-restore" type="button" class="primary">
                     <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
@@ -993,17 +1025,11 @@
             </div>
             <div id="primitive-dimension-overlay" class="primitive-dimension-overlay" aria-live="polite" aria-label="도형 치수"></div>
             <div id="sketch-dimension-overlay" class="primitive-dimension-overlay sketch-dimension-overlay" aria-live="polite" aria-label="2D 스케치 치수"></div>
-            <aside id="view-window" class="view-window panel-edge-resizable hidden" aria-labelledby="view-window-title">
-                <div class="view-window-header">
-                    <div>
-                        <span class="view-window-eyebrow" data-i18n="legacy.SAVED VIEWS">SAVED VIEWS</span>
-                        <h2 id="view-window-title"><i class="fa-solid fa-display"></i> <span data-i18n="legacy.고정 뷰 창">고정 뷰 창</span> <strong id="view-window-count">0</strong></h2>
-                    </div>
-                    <div class="view-window-actions">
-                        <button id="view-window-pin" type="button" title="맨 앞으로 고정" aria-label="맨 앞으로 고정" aria-pressed="false"><i class="fa-solid fa-thumbtack"></i></button>
-                        <button id="view-window-popout" type="button" title="새 창으로 열기" aria-label="사용자 뷰 창을 별도로 분리" data-i18n-title="legacy.새 창으로 열기" data-i18n-aria-label="legacy.사용자 뷰 창을 별도로 분리"><i class="fa-solid fa-up-right-from-square"></i></button>
-                        <button id="view-window-hide" type="button" title="숨기기" aria-label="사용자 뷰 창 숨기기" data-i18n-title="legacy.숨기기" data-i18n-aria-label="legacy.사용자 뷰 창 숨기기"><i class="fa-solid fa-eye-slash"></i></button>
-                    </div>
+            <aside id="view-window" class="view-window panel-edge-resizable hidden" aria-label="고정 뷰 창">
+                <div class="view-window-actions">
+                    <button id="view-window-pin" type="button" title="맨 앞으로 고정" aria-label="맨 앞으로 고정" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 3 5 5-4 1-3 5v3l-7-7h3l5-3 1-4Z M9 15l-6 6"/></svg></button>
+                    <button id="view-window-popout" type="button" title="새 창으로 열기" aria-label="사용자 뷰 창을 별도로 분리" data-i18n-title="legacy.새 창으로 열기" data-i18n-aria-label="legacy.사용자 뷰 창을 별도로 분리"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3h7v7 M21 3 11 13 M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5"/></svg></button>
+                    <button id="view-window-hide" type="button" title="숨기기" aria-label="사용자 뷰 창 숨기기" data-i18n-title="legacy.숨기기" data-i18n-aria-label="legacy.사용자 뷰 창 숨기기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18 M10.6 10.6a2 2 0 0 0 2.8 2.8 M9.9 5.2A11 11 0 0 1 21 12a14 14 0 0 1-3.2 4.1 M6.2 6.2A14 14 0 0 0 3 12s3 7 9 7a10 10 0 0 0 4.1-.9"/></svg></button>
                 </div>
                 <main id="view-window-grid" data-count="0" data-panel-drag-ignore></main>
             </aside>
@@ -1690,31 +1716,45 @@
                 </div>
                 <p id="base-jog-status" class="base-jog-status hidden" role="status"></p>
             </aside>
-            <aside id="tcp-profile-panel" class="tcp-profile-panel panel-user-hidden" aria-label="TCP 설정">
+            <aside id="tcp-profile-panel" class="tcp-profile-panel frame-settings-panel panel-user-hidden" aria-label="Tool 설정">
                 <div class="tcp-profile-panel-header">
-                    <h2><i class="fa-solid fa-crosshairs"></i> TCP 설정</h2>
+                    <h2><i class="fa-solid fa-crosshairs"></i> Tool 설정</h2>
                     <div class="panel-header-actions">
-                        <button type="button" data-panel-action="popout" data-panel-id="tcp-profile-panel" title="별도 창으로 분리" aria-label="TCP 설정"><i class="fa-solid fa-up-right-from-square"></i></button>
+                        <button type="button" data-panel-action="popout" data-panel-id="tcp-profile-panel" title="별도 창으로 분리" aria-label="Tool 설정"><i class="fa-solid fa-up-right-from-square"></i></button>
                         <button type="button" data-panel-action="hide" data-panel-id="tcp-profile-panel" title="숨기기" aria-label="숨기기"><i class="fa-solid fa-eye-slash"></i></button>
                     </div>
                 </div>
-                <section id="tcp-profile-manager" class="tcp-profile-manager" aria-label="TCP 설정">
-                    <div class="tcp-profile-heading">
-                        <div>
-                            <span>활성 툴</span>
-                            <strong id="active-tcp-profile-label">TCP 1</strong>
+                <section id="tcp-profile-manager" class="tcp-profile-manager" aria-label="Tool 설정">
+                    <div class="tcp-profile-tabs frame-slot-grid" role="group" aria-label="활성 Tool 선택">
+                        <button type="button" class="active" data-tcp-profile="0" aria-pressed="true">Tool 0</button>
+                        <button type="button" data-tcp-profile="1" aria-pressed="false">Tool 1</button>
+                        <button type="button" data-tcp-profile="2" aria-pressed="false">Tool 2</button>
+                        <button type="button" data-tcp-profile="3" aria-pressed="false">Tool 3</button>
+                        <button type="button" data-tcp-profile="4" aria-pressed="false">Tool 4</button>
+                        <button type="button" data-tcp-profile="5" aria-pressed="false">Tool 5</button>
+                        <button type="button" data-tcp-profile="6" aria-pressed="false">Tool 6</button>
+                        <button type="button" data-tcp-profile="7" aria-pressed="false">Tool 7</button>
+                        <button type="button" data-tcp-profile="8" aria-pressed="false">Tool 8</button>
+                        <button type="button" data-tcp-profile="9" aria-pressed="false">Tool 9</button>
+                        <button type="button" data-tcp-profile="10" aria-pressed="false">Tool 10</button>
+                        <button type="button" data-tcp-profile="11" aria-pressed="false">Tool 11</button>
+                        <button type="button" data-tcp-profile="12" aria-pressed="false">Tool 12</button>
+                        <button type="button" data-tcp-profile="13" aria-pressed="false">Tool 13</button>
+                        <button type="button" data-tcp-profile="14" aria-pressed="false">Tool 14</button>
+                        <button type="button" data-tcp-profile="15" aria-pressed="false">Tool 15</button>
+                    </div>
+                    <label class="tcp-axes-visible-toggle frame-axis-toggle"><input id="tcp-axes-visible" type="checkbox" checked><span data-i18n="legacy.축 표시">축 표시</span></label>
+                    <div id="tcp-profile-editor" class="tcp-profile-editor frame-main-editor">
+                        <div class="tcp-profile-fields">
+                            <label><span>X</span><input type="number" min="-10000" max="10000" step="0.5" value="0" data-tcp-offset="x"><small>mm</small></label>
+                            <label><span>Y</span><input type="number" min="-10000" max="10000" step="0.5" value="0" data-tcp-offset="y"><small>mm</small></label>
+                            <label><span>Z</span><input type="number" min="-10000" max="10000" step="0.5" value="0" data-tcp-offset="z"><small>mm</small></label>
+                            <label><span>RX <small class="tcp-axis-alias">C</small></span><input type="number" min="-360" max="360" step="0.5" value="0" data-tcp-offset="rx"><small>deg</small></label>
+                            <label><span>RY <small class="tcp-axis-alias">B</small></span><input type="number" min="-360" max="360" step="0.5" value="0" data-tcp-offset="ry"><small>deg</small></label>
+                            <label><span>RZ <small class="tcp-axis-alias">A</small></span><input type="number" min="-360" max="360" step="0.5" value="0" data-tcp-offset="rz"><small>deg</small></label>
                         </div>
-                    </div>
-                    <label class="tcp-axes-visible-toggle"><input id="tcp-axes-visible" type="checkbox" checked><span data-i18n="legacy.TCP 좌표축 표시">TCP 좌표축 표시</span></label>
-                    <div class="tcp-profile-tabs" role="group" aria-label="활성 TCP 선택">
-                        <button type="button" class="active" data-tcp-profile="0" aria-pressed="true">TCP 1</button>
-                        <button type="button" data-tcp-profile="1" aria-pressed="false">TCP 2</button>
-                        <button type="button" data-tcp-profile="2" aria-pressed="false">TCP 3</button>
-                    </div>
-                    <div class="tcp-snap-controls">
-                        <label>
-                            <span>스냅 유형</span>
-                            <select id="tcp-snap-type">
+                        <div class="tcp-snap-controls frame-snap-row">
+                            <label><span data-i18n="legacy.스냅 유형">스냅 유형</span><select id="tcp-snap-type">
                                 <option value="auto">자동 스냅</option>
                                 <option value="vertex">꼭짓점</option>
                                 <option value="endpoint">끝점</option>
@@ -1725,38 +1765,41 @@
                                 <option value="hole-center">구멍 가상 중심점</option>
                                 <option value="multi-point-center">다중 점 중심점</option>
                                 <option value="robot-base-center">로봇 바디 중심점</option>
-                                <option value="robot-tcp">현재 TCP (점)</option>
-                            </select>
-                        </label>
-                    </div>
-                    <div id="tcp-snap-readout" class="tcp-snap-readout" aria-live="polite">3D 모델링의 스냅 지점을 클릭하세요.</div>
-                    <div id="tcp-multi-center-controls" class="tcp-multi-center-controls hidden">
-                        <span id="tcp-multi-center-count">다중 점 선택</span>
-                        <button id="tcp-multi-center-apply" type="button" disabled>계산 중심 적용</button>
-                        <button id="tcp-multi-center-reset" type="button" disabled>선택 초기화</button>
-                    </div>
-                    <button id="btn-tcp-snap" type="button" class="tcp-snap-button" aria-pressed="false"><i class="fa-solid fa-crosshairs"></i> TCP 위치 스냅</button>
-                    <div id="tcp-profile-editor" class="tcp-profile-editor">
-                        <div class="tcp-profile-editor-title">
-                            <strong>플랜지 기준 오프셋</strong>
+                                <option value="robot-tcp">현재 Tool (점)</option>
+                            </select></label>
+                            <button id="btn-tcp-snap" type="button" class="tcp-snap-button" aria-pressed="false"><i class="fa-solid fa-crosshairs"></i> <span data-i18n="legacy.위치 스냅">위치 스냅</span></button>
                         </div>
-                        <div class="tcp-profile-fields">
-                            <label><span>X</span><input type="number" min="-10000" max="10000" step="0.5" value="0" data-tcp-offset="x"><small>mm</small></label>
-                            <label><span>Y</span><input type="number" min="-10000" max="10000" step="0.5" value="0" data-tcp-offset="y"><small>mm</small></label>
-                            <label><span>Z</span><input type="number" min="-10000" max="10000" step="0.5" value="0" data-tcp-offset="z"><small>mm</small></label>
-                            <label><span>RX <small class="tcp-axis-alias">C</small></span><input type="number" min="-360" max="360" step="0.5" value="0" data-tcp-offset="rx"><small>deg</small></label>
-                            <label><span>RY <small class="tcp-axis-alias">B</small></span><input type="number" min="-360" max="360" step="0.5" value="0" data-tcp-offset="ry"><small>deg</small></label>
-                            <label><span>RZ <small class="tcp-axis-alias">A</small></span><input type="number" min="-360" max="360" step="0.5" value="0" data-tcp-offset="rz"><small>deg</small></label>
+                        <div id="tcp-multi-center-controls" class="tcp-multi-center-controls hidden">
+                            <span id="tcp-multi-center-count">다중 점 선택</span>
+                            <button id="tcp-multi-center-apply" type="button" disabled>계산 중심 적용</button>
+                            <button id="tcp-multi-center-reset" type="button" disabled>선택 초기화</button>
+                        </div>
+
+                        <strong data-i18n="legacy.Tool 부하 정보">Tool 부하 정보</strong>
+                        <p class="tcp-profile-status" data-i18n="legacy.Tool 부하 기준 안내">무게중심은 플랜지 원점 기준, 관성은 부하중심 기준입니다. Tool 0은 수정할 수 없는 기본값입니다.</p>
+                        <div class="tcp-profile-fields tool-load-fields">
+                            <label><span data-i18n="legacy.질량">질량</span><input type="number" min="0" step="0.001" value="0" data-tool-load="mass"><small>kg</small></label>
+                            <label><span>CoG X</span><input type="number" step="0.1" value="0" data-tool-load="cogX"><small>mm</small></label>
+                            <label><span>Ixx</span><input type="number" min="0" step="0.000001" value="0" data-tool-load="ix"><small>kg·m²</small></label>
+                            <label><span>CoG Y</span><input type="number" step="0.1" value="0" data-tool-load="cogY"><small>mm</small></label>
+                            <label><span>Iyy</span><input type="number" min="0" step="0.000001" value="0" data-tool-load="iy"><small>kg·m²</small></label>
+                            <label><span>CoG Z</span><input type="number" step="0.1" value="0" data-tool-load="cogZ"><small>mm</small></label>
+                            <label><span>Izz</span><input type="number" min="0" step="0.000001" value="0" data-tool-load="iz"><small>kg·m²</small></label>
                         </div>
                         <div class="tcp-profile-actions">
+                            <button id="btn-tool-load-info" type="button" data-i18n="legacy.부하 정보">부하 정보</button>
+                            <button id="btn-tool-load-from-models" type="button" data-i18n="legacy.모델 부하 가져오기">모델 부하 가져오기</button>
+                        </div>
+                        <div class="tcp-profile-actions">
+                            <button id="btn-copy-tool-data" type="button"><i class="fa-solid fa-copy"></i> <span data-i18n="legacy.데이터 복사">데이터 복사</span></button>
                             <button id="btn-reset-tcp-profile" type="button"><i class="fa-solid fa-rotate-left"></i> 초기화</button>
                             <button id="btn-apply-tcp-profile" type="button" class="primary"><i class="fa-solid fa-check"></i> 적용</button>
                         </div>
-                        <p id="tcp-profile-status" class="tcp-profile-status" aria-live="polite">선택한 TCP는 로봇별로 저장됩니다.</p>
+                        <p id="tcp-profile-status" class="tcp-profile-status" aria-live="polite">선택한 Tool은 로봇별로 저장됩니다.</p>
                     </div>
                 </section>
             </aside>
-            <aside id="workobject-panel" class="tcp-profile-panel workobject-panel panel-user-hidden" aria-label="Wobj 설정" data-i18n-aria-label="legacy.Wobj 설정">
+            <aside id="workobject-panel" class="tcp-profile-panel workobject-panel frame-settings-panel panel-user-hidden" aria-label="Wobj 설정" data-i18n-aria-label="legacy.Wobj 설정">
                 <div class="tcp-profile-panel-header">
                     <h2><i class="fa-solid fa-compass-drafting"></i> <span data-i18n="legacy.Wobj 설정">Wobj 설정</span></h2>
                     <div class="panel-header-actions">
@@ -1765,33 +1808,40 @@
                     </div>
                 </div>
                 <section class="tcp-profile-manager workobject-manager" aria-label="Wobj 설정" data-i18n-aria-label="legacy.Wobj 설정">
-                    <label class="workobject-target-field">
-                        <span data-i18n="legacy.대상 로봇">대상 로봇</span>
-                        <select id="workobject-target-robot" aria-label="Wobj 대상 로봇" data-i18n-aria-label="legacy.Wobj 대상 로봇"></select>
-                    </label>
-                    <div class="tcp-profile-heading">
-                        <div>
-                            <span data-i18n="legacy.활성 좌표계">활성 좌표계</span>
-                            <strong id="active-workobject-label">Wobj[0] World</strong>
-                        </div>
-                    </div>
-                    <div id="workobject-list" class="workobject-list" role="listbox" aria-label="Wobj 목록" data-i18n-aria-label="legacy.Wobj 목록"></div>
-                    <div class="workobject-editor">
-                        <div class="tcp-profile-editor-title">
-                            <input id="workobject-name" type="text" maxlength="40" autocomplete="off" aria-label="Wobj 이름" data-i18n-aria-label="legacy.Wobj 이름">
-                            <span id="workobject-defined">정의됨</span>
-                        </div>
-                        <label class="workobject-visible-toggle"><input id="workobject-visible" type="checkbox" checked><span data-i18n="legacy.3D 표시">3D 표시</span></label>
+                    <div id="workobject-list" class="workobject-list frame-slot-grid" role="listbox" aria-label="Wobj 목록" data-i18n-aria-label="legacy.Wobj 목록"></div>
+                    <label class="workobject-visible-toggle frame-axis-toggle"><input id="workobject-visible" type="checkbox" checked><span data-i18n="legacy.Wobj 축 표시">Wobj 축 표시</span></label>
+                    <div class="workobject-editor frame-main-editor">
                         <div class="tcp-profile-fields workobject-fields">
                             <label><span>X</span><input type="number" min="-1000000" max="1000000" step="0.5" data-workobject-pose="x"><small>mm</small></label>
                             <label><span>Y</span><input type="number" min="-1000000" max="1000000" step="0.5" data-workobject-pose="y"><small>mm</small></label>
                             <label><span>Z</span><input type="number" min="-1000000" max="1000000" step="0.5" data-workobject-pose="z"><small>mm</small></label>
-                            <label><span>RX</span><input type="number" min="-360000" max="360000" step="0.5" data-workobject-pose="rx"><small>deg</small></label>
-                            <label><span>RY</span><input type="number" min="-360000" max="360000" step="0.5" data-workobject-pose="ry"><small>deg</small></label>
-                            <label><span>RZ</span><input type="number" min="-360000" max="360000" step="0.5" data-workobject-pose="rz"><small>deg</small></label>
+                            <label><span>RX <small class="tcp-axis-alias">C</small></span><input type="number" min="-360000" max="360000" step="0.5" data-workobject-pose="rx"><small>deg</small></label>
+                            <label><span>RY <small class="tcp-axis-alias">B</small></span><input type="number" min="-360000" max="360000" step="0.5" data-workobject-pose="ry"><small>deg</small></label>
+                            <label><span>RZ <small class="tcp-axis-alias">A</small></span><input type="number" min="-360000" max="360000" step="0.5" data-workobject-pose="rz"><small>deg</small></label>
+                        </div>
+                        <div class="tcp-snap-controls frame-snap-row">
+                            <label><span data-i18n="legacy.스냅 유형">스냅 유형</span><select id="workobject-snap-type">
+                                <option value="auto">자동 스냅</option>
+                                <option value="vertex">꼭짓점</option>
+                                <option value="endpoint">끝점</option>
+                                <option value="edge-midpoint">에지 중심점</option>
+                                <option value="circle-center">원/호 중심점</option>
+                                <option value="quadrant">사분점</option>
+                                <option value="rectangle-center">사각형 중심점</option>
+                                <option value="hole-center">구멍 가상 중심점</option>
+                                <option value="multi-point-center">다중 점 중심점</option>
+                                <option value="robot-base-center">로봇 바디 중심점</option>
+                                <option value="robot-tcp">현재 Tool (점)</option>
+                            </select></label>
+                            <button id="btn-workobject-snap" type="button" class="tcp-snap-button" aria-pressed="false"><i class="fa-solid fa-crosshairs"></i> <span data-i18n="legacy.위치 스냅">위치 스냅</span></button>
+                        </div>
+                        <div id="workobject-multi-center-controls" class="tcp-multi-center-controls hidden">
+                            <span id="workobject-multi-center-count"></span>
+                            <button id="workobject-multi-center-apply" type="button" disabled data-i18n="legacy.계산 중심 적용">계산 중심 적용</button>
+                            <button id="workobject-multi-center-reset" type="button" disabled data-i18n="legacy.선택 초기화">선택 초기화</button>
                         </div>
                         <div class="tcp-profile-actions workobject-actions">
-                            <button id="btn-register-workobject" type="button"><i class="fa-solid fa-crosshairs"></i> <span data-i18n="legacy.현재 TCP로 등록">현재 TCP로 등록</span></button>
+                            <button id="btn-copy-workobject-data" type="button"><i class="fa-solid fa-copy"></i> <span data-i18n="legacy.데이터 복사">데이터 복사</span></button>
                             <button id="btn-reset-workobject" type="button"><i class="fa-solid fa-rotate-left"></i> <span data-i18n="legacy.초기화">초기화</span></button>
                             <button id="btn-apply-workobject" type="button" class="primary"><i class="fa-solid fa-check"></i> <span data-i18n="legacy.적용">적용</span></button>
                         </div>
@@ -1922,10 +1972,12 @@
                 </div>
                 <div class="view-presets-content">
                     <p class="view-presets-help">카메라를 원하는 위치로 조정한 뒤 슬롯의 저장 버튼을 누르세요. 저장하지 않은 뷰도 화면 버튼으로 실행할 수 있으며, 이 경우 현재 메인 뷰의 각도에서 시작합니다. 뷰 버튼은 페이지 안의 고정 뷰 창으로 열리고, 다른 뷰를 누르면 같은 창에 분할되어 추가됩니다. 패널 헤더의 새 창 버튼은 패널을 화면 밖의 별도 창으로 엽니다.</p>
+                    <p class="view-presets-help">각 뷰 이름 옆에 전환 시간(초)을 입력하고 저장하세요. IO 매핑과 프로그램의 View 명령은 해당 뷰에 저장된 시간으로 전환합니다. 0초는 즉시 전환합니다.</p>
                     <div id="view-presets-list" class="view-presets-list">
                         <div class="view-preset-row" data-view-slot="0">
                             <span class="view-preset-index">1</span>
                             <input type="text" data-view-name value="View 1" maxlength="24" aria-label="뷰 1 이름">
+                            <label class="view-preset-duration"><input type="number" data-view-seconds min="0" max="3600" step="0.1" value="1" aria-label="뷰 1 전환 시간 (초)"><span>s</span></label>
                             <button type="button" data-view-save title="현재 뷰 저장" aria-label="뷰 1에 현재 뷰 저장"><i class="fa-solid fa-floppy-disk"></i></button>
                             <button type="button" data-view-apply title="뷰 적용" aria-label="뷰 1 적용" disabled><i class="fa-solid fa-eye"></i></button>
                             <button type="button" data-view-monitor title="페이지 안의 고정 뷰 창에 보기" aria-label="뷰 1을 페이지 안의 고정 뷰 창에 보기"><i class="fa-solid fa-display"></i></button>
@@ -1933,6 +1985,7 @@
                         <div class="view-preset-row" data-view-slot="1">
                             <span class="view-preset-index">2</span>
                             <input type="text" data-view-name value="View 2" maxlength="24" aria-label="뷰 2 이름">
+                            <label class="view-preset-duration"><input type="number" data-view-seconds min="0" max="3600" step="0.1" value="1" aria-label="뷰 2 전환 시간 (초)"><span>s</span></label>
                             <button type="button" data-view-save title="현재 뷰 저장" aria-label="뷰 2에 현재 뷰 저장"><i class="fa-solid fa-floppy-disk"></i></button>
                             <button type="button" data-view-apply title="뷰 적용" aria-label="뷰 2 적용" disabled><i class="fa-solid fa-eye"></i></button>
                             <button type="button" data-view-monitor title="페이지 안의 고정 뷰 창에 보기" aria-label="뷰 2를 페이지 안의 고정 뷰 창에 보기"><i class="fa-solid fa-display"></i></button>
@@ -1940,6 +1993,7 @@
                         <div class="view-preset-row" data-view-slot="2">
                             <span class="view-preset-index">3</span>
                             <input type="text" data-view-name value="View 3" maxlength="24" aria-label="뷰 3 이름">
+                            <label class="view-preset-duration"><input type="number" data-view-seconds min="0" max="3600" step="0.1" value="1" aria-label="뷰 3 전환 시간 (초)"><span>s</span></label>
                             <button type="button" data-view-save title="현재 뷰 저장" aria-label="뷰 3에 현재 뷰 저장"><i class="fa-solid fa-floppy-disk"></i></button>
                             <button type="button" data-view-apply title="뷰 적용" aria-label="뷰 3 적용" disabled><i class="fa-solid fa-eye"></i></button>
                             <button type="button" data-view-monitor title="페이지 안의 고정 뷰 창에 보기" aria-label="뷰 3을 페이지 안의 고정 뷰 창에 보기"><i class="fa-solid fa-display"></i></button>
@@ -1947,6 +2001,7 @@
                         <div class="view-preset-row" data-view-slot="3">
                             <span class="view-preset-index">4</span>
                             <input type="text" data-view-name value="View 4" maxlength="24" aria-label="뷰 4 이름">
+                            <label class="view-preset-duration"><input type="number" data-view-seconds min="0" max="3600" step="0.1" value="1" aria-label="뷰 4 전환 시간 (초)"><span>s</span></label>
                             <button type="button" data-view-save title="현재 뷰 저장" aria-label="뷰 4에 현재 뷰 저장"><i class="fa-solid fa-floppy-disk"></i></button>
                             <button type="button" data-view-apply title="뷰 적용" aria-label="뷰 4 적용" disabled><i class="fa-solid fa-eye"></i></button>
                             <button type="button" data-view-monitor title="페이지 안의 고정 뷰 창에 보기" aria-label="뷰 4를 페이지 안의 고정 뷰 창에 보기"><i class="fa-solid fa-display"></i></button>
@@ -2490,12 +2545,6 @@
 
     <footer id="stats-bar">
         <div class="stat-item">
-            <i class="fa-solid fa-circle-nodes"></i>
-            <label>Model</label>
-            <span id="stat-name">-</span>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
             <i id="status-dot" class="fa-solid fa-circle"></i>
             <label>Status</label>
             <span id="stat-status">Initializing...</span>
@@ -2503,7 +2552,7 @@
         <div id="panel-launcher" class="viewer-control-dock" aria-label="뷰어 제어 도크">
             <button type="button" data-panel-toggle="model-browser-panel" class="active" title="모델 트리 표시/숨김"><i class="fa-solid fa-list-ul"></i> 모델</button>
             <button type="button" data-panel-toggle="jog-panel" disabled title="로봇 JOG 패널 표시/숨김"><i class="fa-solid fa-gamepad"></i> JOG</button>
-            <button type="button" data-panel-toggle="tcp-profile-panel" disabled title="TCP 오프셋 설정"><i class="fa-solid fa-crosshairs"></i> <span id="tcp-launcher-label">TCP 1</span></button>
+            <button type="button" data-panel-toggle="tcp-profile-panel" disabled title="Tool 설정"><i class="fa-solid fa-crosshairs"></i> <span id="tcp-launcher-label">Tool 0</span></button>
             <button id="btn-measurement" type="button" data-panel-toggle="measurement-panel" title="치수 측정 패널 표시/숨기기" aria-label="치수 측정 패널 표시/숨기기" aria-pressed="false"><i class="fa-solid fa-ruler-combined"></i> 치수</button>
             <button id="btn-shape-panel" type="button" data-panel-toggle="shape-panel" title="도형 생성 및 편집 표시/숨기기" aria-label="도형 생성 및 편집 표시/숨기기" aria-pressed="false"><i class="fa-solid fa-cubes-stacked"></i> 도형</button>
             <button type="button" data-panel-toggle="view-presets-panel" title="사용자 뷰 표시/숨김"><i class="fa-solid fa-camera"></i> 뷰</button>
@@ -2525,7 +2574,7 @@
         </div>
     </footer>
 
-    <script type="module" src="main.js?v=20261030-fieldbus-io-1"></script>
+    <script type="module" src="main.js?v=20261031-work-origin-1"></script>
 <script src="/0_Home/tool-guide-embed.js?v=20260906-2"></script>
 </body>
 </html>

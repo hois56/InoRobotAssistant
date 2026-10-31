@@ -101,5 +101,6 @@ export const ROBOT_LOGO_PROJECTIONS = {
         ],
         "minDepth": 75,
         "sha256": "d36dc29ff85b66e42d8854974be1c5037c18f0b018a157bcb4c7fdbd42ab2115"
-    }
+    },
+    "IR-R35-185": {"mesh":"P4.stl","negative":[820,1469,130,19.6],"positive":[820,1469,130,19.6],"minDepth":75,"sha256":"fd6cc82d4ae95131cb6324d4abf0281aed729b8ca8b31541836744009fb7cd0a"}
 };

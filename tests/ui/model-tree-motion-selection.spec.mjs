@@ -336,7 +336,7 @@ test('항목 그룹에서 해제는 여러 모델의 선택한 부품만 한꺼�
         const parts=[other.children[0],part];parts.forEach((part,index)=>{part.userData.modelPartId='other-part-'+index;part.userData.modelPartName='다른 부품 '+index;});other.userData.importedParts=parts;other.userData.primitiveShape=false;other.userData.modelPartGroups=[{name:'둘째 그룹',parts:[0,1],collapsed:false}];
         api.state.scene.add(other);api.state.models.push(other);api.updateUIStatus();
     });
-    await page.locator('button[data-model-part-id="test-part-0"]').click();await page.locator('button[data-model-part-id="test-part-1"]').click({modifiers:['Shift']});await page.locator('button[data-model-part-id="other-part-0"]').click({modifiers:['Shift']});
+    await page.locator('button[data-model-part-id="test-part-0"]').click();await page.locator('button[data-model-part-id="test-part-1"]').click({modifiers:['Control']});await page.locator('button[data-model-part-id="other-part-0"]').click({modifiers:['Control']});
     await page.locator('button[data-model-part-id="test-part-0"]').click({button:'right'});await page.locator('#model-ungroup-part').click();
     expect(await page.evaluate(()=>window.__treeMotion.state.models.map(model=>model.userData.modelPartGroups.map(group=>group.parts)))).toEqual([[[2]],[[1]]]);
     await expect(page.locator('.model-tree-part-button.active')).toHaveCount(3);
@@ -459,14 +459,109 @@ async function setup(page, fixture=true) {
     return errors;
 }
 
-test('Shift로 하위 부품을 다중 선택하고 그룹을 만들고 해제한다',async({page})=>{
+test('ESC는 모델·부품의 단일·다중 선택과 이동 핸들을 함께 해제한다',async({page})=>{
+    const errors=await setup(page);
+    const selection=()=>page.evaluate(()=>{
+        const s=window.__treeMotion.state;
+        return {count:s.modelSelection.size,model:Boolean(s.selectedModel),part:Boolean(s.selectedModelPart),anchor:Boolean(s.modelSelectionAnchor)};
+    });
+    await page.locator('.model-tree-button').first().click();
+    await page.locator('[data-transform-mode="translate"]').click();
+    expect(await page.evaluate(()=>window.__treeMotion.state.transformControls.enabled)).toBe(true);
+    await page.keyboard.press('Escape');
+    expect(await selection()).toEqual({count:0,model:false,part:false,anchor:false});
+    expect(await page.evaluate(()=>window.__treeMotion.state.transformControls.enabled)).toBe(false);
+    await page.locator('button[data-model-part-id="test-part-0"]').click();
+    await page.locator('button[data-model-part-id="test-part-1"]').click({modifiers:['Control']});
+    expect(await page.evaluate(()=>window.__treeMotion.state.modelSelection.size)).toBe(2);
+    await page.keyboard.press('Escape');
+    expect(await selection()).toEqual({count:0,model:false,part:false,anchor:false});
+    await expect(page.locator('#model-tree .active, #model-tree .contains-selection')).toHaveCount(0);
+    expect(await page.evaluate(()=>window.__treeMotion.state.models[0].userData.importedParts.map(part=>{
+        let selected=false;part.traverse(mesh=>{if(mesh.userData.outlineLine?.material.color.getHex()===0xfacc15)selected=true;});return selected;
+    }))).toEqual([false,false]);
+    expect(errors).toEqual([]);
+});
+
+test('입력 중이거나 창을 닫는 ESC는 모델 선택을 유지하고 다음 ESC로 해제한다',async({page})=>{
+    const errors=await setup(page);
+    await page.locator('button[data-model-part-id="test-part-0"]').click();
+    await page.locator('#model-position-x').focus();await page.keyboard.press('Escape');
+    expect(await page.evaluate(()=>window.__treeMotion.state.modelSelection.size)).toBe(1);
+    await page.locator('#btn-reset-simulation').click();
+    await expect(page.locator('#simulation-reset-dialog')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#simulation-reset-dialog')).not.toBeVisible();
+    expect(await page.evaluate(()=>window.__treeMotion.state.modelSelection.size)).toBe(1);
+    await page.keyboard.press('Escape');
+    expect(await page.evaluate(()=>window.__treeMotion.state.modelSelection.size)).toBe(0);
+    expect(errors).toEqual([]);
+});
+
+test('모델 트리의 Shift는 기준점부터 범위를 선택하고 Ctrl은 클릭한 항목만 추가·해제한다',async({page})=>{
+    const errors=await setup(page,false);
+    await page.evaluate(()=>{
+        const a=window.__treeMotion;
+        for(const name of ['A','B','C','D','E']){
+            const model=a.createPrimitiveShapeRoot('box',{x:20,y:20,z:20},{name});
+            a.state.scene.add(model);a.state.models.push(model);
+        }
+        a.updateUIStatus();
+    });
+    const row=name=>page.locator('.model-tree-button').filter({hasText:new RegExp('^'+name+'도형$')});
+    const selected=()=>page.evaluate(()=>[...window.__treeMotion.state.modelSelection.keys()].map(model=>model.userData.modelName).sort());
+    await row('A').click();await row('E').click({modifiers:['Shift']});
+    expect(await selected()).toEqual(['A','B','C','D','E']);
+    await row('C').click({modifiers:['Shift']});expect(await selected()).toEqual(['A','B','C']);
+    await row('E').click({modifiers:['Control']});expect(await selected()).toEqual(['A','B','C','E']);
+    await row('C').click({modifiers:['Control']});expect(await selected()).toEqual(['A','B','E']);
+    await row('B').click();await row('E').click({modifiers:['Control']});expect(await selected()).toEqual(['B','E']);
+    await row('E').click({modifiers:['Control']});expect(await selected()).toEqual(['B']);
+    await row('B').click();expect(await selected()).toEqual(['B']);
+    await row('D').click({modifiers:['Shift']});expect(await selected()).toEqual(['B','C','D']);
+    await row('E').click();await row('A').click({modifiers:['Control']});
+    await row('C').click({modifiers:['Control','Shift']});expect(await selected()).toEqual(['A','B','C','E']);
+    await row('B').click({modifiers:['Shift']});expect(await selected()).toEqual(['A','B']);
+    await page.evaluate(()=>window.__treeMotion.selectSceneModel(null));
+    await row('C').click({modifiers:['Shift']});expect(await selected()).toEqual(['C']);
+    await row('E').locator('..').dragTo(row('B').locator('..'),{targetPosition:{x:40,y:2}});
+    await row('A').click();await row('C').click({modifiers:['Shift']});expect(await selected()).toEqual(['A','B','C','E']);
+    expect(errors).toEqual([]);
+});
+
+test('접힌 모델 폴더도 Shift 범위 선택과 Ctrl 전체 추가·해제를 지원한다',async({page})=>{
+    const errors=await setup(page,false);
+    await page.evaluate(()=>{
+        const a=window.__treeMotion;
+        for(const name of ['A','B','C','D','E']){
+            const model=a.createPrimitiveShapeRoot('box',{x:20,y:20,z:20},{name});
+            a.state.scene.add(model);a.state.models.push(model);
+        }
+        a.state.modelGroups=[{name:'첫 폴더',collapsed:true,modelIds:a.state.models.slice(0,2).map(a.ensureWorkspaceModelId)},
+            {name:'둘째 폴더',collapsed:true,modelIds:a.state.models.slice(2,4).map(a.ensureWorkspaceModelId)}];
+        a.updateUIStatus();
+    });
+    const first=page.locator('.model-tree-group-name').filter({hasText:'첫 폴더'});
+    const second=page.locator('.model-tree-group-name').filter({hasText:'둘째 폴더'});
+    const last=page.locator('.model-tree-button').filter({hasText:/^E도형$/});
+    const selected=()=>page.evaluate(()=>[...window.__treeMotion.state.modelSelection.keys()].map(model=>model.userData.modelName).sort());
+    await first.click();await last.click({modifiers:['Control']});expect(await selected()).toEqual(['A','B','E']);
+    await first.click({modifiers:['Control']});expect(await selected()).toEqual(['E']);
+    await second.click({modifiers:['Control']});expect(await selected()).toEqual(['C','D','E']);
+    await first.click();await last.click({modifiers:['Shift']});expect(await selected()).toEqual(['A','B','C','D','E']);
+    await second.click({modifiers:['Shift']});expect(await selected()).toEqual(['A','B','C','D']);
+    await expect(page.locator('.model-tree-model-group details[open]')).toHaveCount(0);
+    expect(errors).toEqual([]);
+});
+
+test('Ctrl로 하위 부품을 다중 선택하고 그룹을 만들고 해제한다',async({page})=>{
     const errors=await setup(page);
     const first=page.locator('button[data-model-part-id="test-part-0"]'), second=page.locator('button[data-model-part-id="test-part-1"]');
-    await first.click();await second.click({modifiers:['Shift']});
+    await first.click();await second.click({modifiers:['Control']});
     await expect(first).toHaveClass(/active/);await expect(second).toHaveClass(/active/);
     expect(await page.evaluate(()=>window.__treeMotion.state.modelSelection.size)).toBe(2);
-    await second.click({modifiers:['Shift']});expect(await page.evaluate(()=>window.__treeMotion.state.modelSelection.size)).toBe(1);
-    await second.click({modifiers:['Shift']});
+    await second.click({modifiers:['Control']});expect(await page.evaluate(()=>window.__treeMotion.state.modelSelection.size)).toBe(1);
+    await second.click({modifiers:['Control']});
     // Context menu must preserve the multiple selected parts when grouping.
     await second.click({button:'right'});
     page.once('dialog',dialog=>dialog.accept('로드 그룹'));
@@ -477,7 +572,7 @@ test('Shift로 하위 부품을 다중 선택하고 그룹을 만들고 해제�
     await page.locator('.model-tree-group-toggle').click();await expect(first).toBeVisible();
     await page.locator('.model-tree-part-group summary').click({button:'right'});await page.locator('#model-group-dissolve').click();await expect(page.locator('.model-tree-part-group')).toHaveCount(0);
     await page.evaluate(()=>{const api=window.__treeMotion;const model=api.createPrimitiveShapeRoot('box',{x:20,y:20,z:20},{name:'보조 모델'});api.state.scene.add(model);api.state.models.push(model);api.updateUIStatus();});
-    await page.locator('.model-tree-button').filter({hasText:'실린더 모델'}).click();await page.locator('.model-tree-button').filter({hasText:'보조 모델'}).click({modifiers:['Shift']});
+    await page.locator('.model-tree-button').filter({hasText:'실린더 모델'}).click();await page.locator('.model-tree-button').filter({hasText:'보조 모델'}).click({modifiers:['Control']});
     await expect(page.locator('.model-tree-button.active')).toHaveCount(2);
     await page.locator('.model-tree-button').filter({hasText:'실린더 모델'}).click({button:'right'});await page.locator('#model-motion-settings').click();
     const targets=page.locator('[data-equipment-role="movingRef"] .equipment-part-options');
@@ -524,17 +619,26 @@ test('이동 대상 트리 선택은 외곽선 다중 선택과 연결되고 우
     expect(errors).toEqual([]);
 });
 
-test('일반 3D 화면의 Shift 클릭으로 여러 부품을 선택한다',async({page})=>{
+test('일반 3D 화면과 모델 트리에서 Shift 범위와 Ctrl 개별 선택을 함께 사용한다',async({page})=>{
     const errors=await setup(page);
     const points=await page.evaluate(()=>{
         const {state,THREE,selectSceneModel}=window.__treeMotion;
+        const root=state.models[0],middle=root.userData.importedParts[0].clone();
+        middle.position.x=0;middle.userData={modelPartId:'test-part-middle',modelPartName:'중간 부품'};
+        root.add(middle);root.userData.importedParts.splice(1,0,middle);window.__treeMotion.updateUIStatus();
         selectSceneModel(null);state.controls.target.set(0,0,0);state.camera.position.set(0,-1200,850);state.camera.up.set(0,0,1);state.camera.lookAt(0,0,0);state.controls.update();state.camera.updateMatrixWorld(true);
         const rect=state.renderer.domElement.getBoundingClientRect();
         return state.models[0].userData.importedParts.map(part=>{const center=new THREE.Box3().setFromObject(part).getCenter(new THREE.Vector3()).project(state.camera);return {x:rect.left+(center.x+1)*rect.width/2,y:rect.top+(1-center.y)*rect.height/2};});
     });
     await page.mouse.click(points[0].x,points[0].y);
-    await page.keyboard.down('Shift');await page.mouse.click(points[1].x,points[1].y);await page.keyboard.up('Shift');
-    expect(await page.evaluate(()=>window.__treeMotion.state.modelSelection.size)).toBe(2);
+    await page.keyboard.down('Control');await page.mouse.click(points[2].x,points[2].y);await page.keyboard.up('Control');
+    expect(await page.evaluate(()=>[...window.__treeMotion.state.modelSelection.keys()].map(part=>part.userData.modelPartId).sort())).toEqual(['test-part-0','test-part-1']);
+    await page.keyboard.down('Control');await page.mouse.click(points[2].x,points[2].y);await page.keyboard.up('Control');
+    expect(await page.evaluate(()=>window.__treeMotion.state.modelSelection.size)).toBe(1);
+    await page.locator('button[data-model-part-id="test-part-0"]').click();
+    await page.keyboard.down('Shift');await page.mouse.click(points[2].x,points[2].y);await page.keyboard.up('Shift');
+    await expect(page.locator('.model-tree-part-button.active')).toHaveCount(3);
+    await page.locator('button[data-model-part-id="test-part-middle"]').click({modifiers:['Shift']});
     await expect(page.locator('.model-tree-part-button.active')).toHaveCount(2);
     await page.mouse.click(points[0].x,points[0].y);expect(await page.evaluate(()=>window.__treeMotion.state.modelSelection.size)).toBe(1);
     expect(errors).toEqual([]);
@@ -553,7 +657,7 @@ test('실제 CAD 부품 그룹과 이동 기준을 프로젝트 저장·복구�
     await page.locator('[data-model-tree-toggle]').first().click();
     const ids=await page.evaluate(()=>window.__treeMotion.state.models[0].userData.importedParts.slice(0,2).map(part=>part.userData.modelPartId));
     for (const id of ids) await revealCadAssemblyPart(page, id);
-    await page.locator(`button[data-model-part-id="${ids[0]}"]`).click();await page.locator(`button[data-model-part-id="${ids[1]}"]`).click({modifiers:['Shift']});
+    await page.locator(`button[data-model-part-id="${ids[0]}"]`).click();await page.locator(`button[data-model-part-id="${ids[1]}"]`).click({modifiers:['Control']});
     await page.locator(`button[data-model-part-id="${ids[1]}"]`).click({button:'right'});page.once('dialog',dialog=>dialog.accept('저장할 그룹'));await page.locator('#model-group-parts').click();
     const result=await page.evaluate(async()=>{
         const api=window.__treeMotion,app=api.equipmentApp,root=api.state.models[0];

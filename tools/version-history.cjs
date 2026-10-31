@@ -12,6 +12,47 @@ const cardSections = {
     debuggingTool: 'Debugging Tool'
 };
 
+const historyTagOrder = new Map([
+    ['추가', 'Added', '新增', 'Thêm', 'Thêm mới', 'Đã thêm', 'Bổ sung', 'Eklendi', 'Добавлено'],
+    ['신규', 'New', 'Mới', 'Yeni', 'Новое', 'Новинка', 'Новый'],
+    ['지원', 'Support', '支持', 'Hỗ trợ', 'Destek', 'Поддержка'],
+    ['개선', 'Improved', '改进', 'Cải tiến', 'Cải thiện', 'İyileştirme', 'Geliştirildi', 'İyileştirildi', 'Улучшено', 'Улучшение'],
+    ['변경', 'Changed', '变更', 'Thay đổi', 'Değiştirildi', 'Değişiklik', 'Изменено'],
+    ['개편', 'Revamp', '改版', 'Cải tổ', 'Yenileme', 'Обновление'],
+    ['수정', 'Fixed', 'Fix', '修复', 'Sửa lỗi', 'Đã sửa', 'Sửa', 'Düzeltildi', 'Düzeltme', 'Sabitlendi', 'Исправлено'],
+    ['업데이트', 'Updated', '更新', 'Cập nhật', 'Güncellendi', 'Обновлено'],
+    ['삭제', 'Removed', '删除', 'Đã xóa'],
+    ['정리', 'Cleanup', 'Dọn dẹp', 'Temizleme', 'Очистка'],
+    ['배포', 'Distribution', 'Phân phối', 'Dağıtım', 'Распространение']
+].flatMap((tags, index) => tags.map(tag => [tag, index])));
+
+function sortHistoryMarkdown(markdown) {
+    const newline = markdown.includes('\r\n') ? '\r\n' : '\n';
+    const lines = markdown.split(/\r?\n/);
+    let inVersion = false;
+    let entryIndices = [];
+    const rank = line => {
+        const tag = line.slice(2).match(/^(?:`\[([^\]]+)\]`|\*\*\[([^\]]+)\]\*\*)/);
+        return historyTagOrder.get(tag?.[1] || tag?.[2]) ?? historyTagOrder.size;
+    };
+    const flush = () => {
+        // Stable sorting keeps the authored order within each category.
+        const entries = entryIndices.map(index => lines[index]).sort((a, b) => rank(a) - rank(b));
+        entryIndices.forEach((index, position) => { lines[index] = entries[position]; });
+        entryIndices = [];
+    };
+    lines.forEach((line, index) => {
+        if (/^#{1,3}\s|^---\s*$/.test(line)) {
+            flush();
+            inVersion = line.startsWith('### ');
+        } else if (inVersion && line.startsWith('- ')) {
+            entryIndices.push(index);
+        }
+    });
+    flush();
+    return lines.join(newline);
+}
+
 function readJson(root, relativePath) {
     return JSON.parse(fs.readFileSync(path.join(root, relativePath), 'utf8'));
 }
@@ -40,7 +81,7 @@ function historyToMarkdown(history, includeTableOfContents = false) {
         if (sectionIndex < history.sections.length - 1) lines.push('---', '');
     });
 
-    return lines.join('\n').trimEnd() + '\n';
+    return sortHistoryMarkdown(lines.join('\n').trimEnd() + '\n');
 }
 
 function parseMarkdown(markdown) {
@@ -184,5 +225,6 @@ module.exports = {
     loadVersionHistory,
     mergeHistory,
     parseMarkdown,
+    sortHistoryMarkdown,
     writeGeneratedArtifacts
 };

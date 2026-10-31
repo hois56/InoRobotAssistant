@@ -9,6 +9,150 @@ async function setup(page) {
   await page.waitForFunction(() => window.__wheelTest?.state.controls);
 }
 
+for (const button of ['left', 'right']) {
+  test(`${button} 드래그는 Shift 0.1배·Ctrl 2배로 같은 기능을 유지한다`, async ({ page }) => {
+    await setup(page);
+    const results = [];
+    for (const keys of [[], ['Shift'], ['Control'], ['Shift', 'Control']]) {
+      const before = await page.evaluate(() => {
+        const { state } = window.__wheelTest;
+        state.camera.position.set(0, -1000, 500); state.controls.target.set(0, 0, 0); state.controls.update();
+        const rect = state.renderer.domElement.getBoundingClientRect();
+        return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, quaternion: state.camera.quaternion.toArray() };
+      });
+      for (const key of keys) await page.keyboard.down(key);
+      await page.mouse.move(before.x, before.y); await page.mouse.down({ button });
+      await page.mouse.move(before.x + 20, before.y, { steps: 4 }); await page.mouse.up({ button });
+      for (const key of [...keys].reverse()) await page.keyboard.up(key);
+      results.push(await page.evaluate(before => {
+        const { state, THREE } = window.__wheelTest;
+        return { angle: state.camera.quaternion.angleTo(new THREE.Quaternion().fromArray(before.quaternion)),
+          distance: state.controls.target.length(), rotateSpeed: state.controls.rotateSpeed, panSpeed: state.controls.panSpeed,
+          buttons: [state.controls.mouseButtons.LEFT, state.controls.mouseButtons.RIGHT] };
+      }, before));
+    }
+    const metric = button === 'left' ? 'angle' : 'distance';
+    const unchanged = button === 'left' ? 'distance' : 'angle';
+    expect(results[0][metric]).toBeGreaterThan(0.001);
+    for (const [i, scale] of [1, 0.1, 2, 0.1].entries()) {
+      expect(results[i][metric] / results[0][metric]).toBeCloseTo(scale, 5);
+      expect(results[i][unchanged]).toBeLessThan(1e-6);
+      expect(results[i].rotateSpeed).toBe(1); expect(results[i].panSpeed).toBe(1);
+      expect(results[i].buttons).toEqual(results[0].buttons);
+    }
+  });
+}
+
+test('드래그 중 보조키 변경과 취소 후에도 이동 감도를 복원한다', async ({ page }) => {
+  await setup(page);
+  const point = await page.evaluate(() => {
+    const { state, recreateMainOrbitControls } = window.__wheelTest;
+    state.camera.position.set(0, -1000, 500); state.controls.target.set(0, 0, 0);
+    recreateMainOrbitControls(); state.controls.update();
+    const rect = state.renderer.domElement.getBoundingClientRect();
+    return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+  });
+  const readTarget = () => page.evaluate(() => window.__wheelTest.state.controls.target.toArray());
+  const targets = [await readTarget()];
+  await page.mouse.move(point.x, point.y); await page.mouse.down({ button: 'right' });
+  for (const [i, key] of [null, 'Shift', 'Control'].entries()) {
+    if (key) await page.keyboard.down(key);
+    await page.mouse.move(point.x + 20 * (i + 1), point.y, { steps: 3 });
+    targets.push(await readTarget());
+    if (key) await page.keyboard.up(key);
+  }
+  const distances = targets.slice(1).map((target, i) => Math.hypot(...target.map((v, j) => v - targets[i][j])));
+  expect(distances[1] / distances[0]).toBeCloseTo(0.1, 6);
+  expect(distances[2] / distances[0]).toBeCloseTo(2, 6);
+  await page.evaluate(() => {
+    const { state } = window.__wheelTest;
+    state.renderer.domElement.dispatchEvent(new PointerEvent('pointercancel', {
+      pointerId: [...state.orbitControlPointerIds][0], pointerType: 'mouse', bubbles: true
+    }));
+  });
+  await page.mouse.up({ button: 'right' });
+  expect(await page.evaluate(() => {
+    const { state, THREE, recreateMainOrbitControls } = window.__wheelTest;
+    recreateMainOrbitControls();
+    return state.controls.panSpeed === 1 && state.controls.rotateSpeed === 1
+      && state.controls.mouseButtons.LEFT === THREE.MOUSE.ROTATE && state.controls.mouseButtons.RIGHT === THREE.MOUSE.PAN;
+  })).toBe(true);
+});
+
+test('우클릭 팬은 확대 거리에 관계없이 같은 거리를 이동하고 감도를 복원한다', async ({ page }) => {
+  await setup(page);
+  await page.evaluate(() => {
+    const { state, recreateMainOrbitControls } = window.__wheelTest;
+    state.camera.position.set(0, -1000, 0); state.controls.target.set(0, 0, 0);
+    recreateMainOrbitControls(); state.controls.update();
+  });
+  const moves = [];
+  for (const distance of [1000, 10, 1000]) {
+    const point = await page.evaluate(distance => {
+      const { state } = window.__wheelTest;
+      state.camera.position.set(0, -distance, 0); state.controls.target.set(0, 0, 0); state.controls.update();
+      const rect = state.renderer.domElement.getBoundingClientRect();
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    }, distance);
+    await page.mouse.move(point.x, point.y);
+    await page.mouse.down({ button: 'right' });
+    await page.mouse.move(point.x + 50, point.y + 20, { steps: 5 });
+    await page.mouse.up({ button: 'right' });
+    moves.push(await page.evaluate(() => {
+      const { state } = window.__wheelTest;
+      return { target: state.controls.target.toArray(), speed: state.controls.panSpeed };
+    }));
+  }
+  expect(Math.hypot(...moves[0].target)).toBeGreaterThan(1);
+  for (const move of moves) {
+    move.target.forEach((value, i) => expect(value).toBeCloseTo(moves[0].target[i], 6));
+    expect(move.speed).toBe(1);
+  }
+});
+
+test('Ctrl 휠은 기본의 2배이며 스케치·빈 공간에서도 감도를 복원한다', async ({ page }) => {
+  await setup(page);
+  const results = await page.evaluate(() => {
+    const { state, THREE, setSelectedViewPivotEnabled, recreateMainOrbitControls } = window.__wheelTest;
+    const results = [];
+    for (const mode of ['main', 'surface', 'empty', 'sketch']) {
+      if (mode === 'sketch') {
+        state.camera = new THREE.OrthographicCamera(-100, 100, 100, -100, 0.1, 1000);
+        state.camera.up.set(1, 0, 0); state.sketch.active = true;
+        recreateMainOrbitControls(null);
+      }
+      if (mode === 'surface') {
+        const model = new THREE.Mesh(new THREE.BoxGeometry(80, 80, 80), new THREE.MeshBasicMaterial());
+        model.position.set(0, 140, 0); model.userData.uploaded = true; model.userData.placement = 'scene';
+        state.scene.add(model); state.models.push(model); state.selectedModel = model;
+      }
+      if (mode === 'empty') state.models.forEach(model => { model.visible = false; });
+      setSelectedViewPivotEnabled(mode !== 'main');
+      const canvas = state.renderer.domElement, rect = canvas.getBoundingClientRect();
+      for (const deltaY of [-100, 100]) {
+        const measure = modifiers => {
+          state.camera.position.set(0, -100, 0); state.camera.zoom = 1; state.camera.updateProjectionMatrix();
+          state.controls.target.set(0, 0, 0); state.controls.update();
+          canvas.dispatchEvent(new WheelEvent('wheel', { deltaY, ...modifiers,
+            clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2, bubbles: true, cancelable: true }));
+          if (mode === 'sketch') return Math.log(state.camera.zoom);
+          if (mode === 'empty') return Math.log(state.controls.getDistance() / 100);
+          return state.camera.position.y + 100;
+        };
+        const normal = measure({});
+        results.push({ mode, ratio: measure({ ctrlKey: true }) / normal,
+          fineRatio: measure({ ctrlKey: true, shiftKey: true }) / normal, speed: state.controls.zoomSpeed });
+      }
+    }
+    return results;
+  });
+  for (const result of results) {
+    expect(result.ratio, result.mode).toBeCloseTo(2, 6);
+    expect(result.fineRatio, result.mode).toBeCloseTo(0.1, 6);
+    expect(result.speed).toBe(1);
+  }
+});
+
 test('빈 공간·숨긴 모델·스케치의 휠 동작을 유지하고 표면 앞에서 멈춘다', async ({ page }) => {
   await setup(page);
   const result = await page.evaluate(() => {

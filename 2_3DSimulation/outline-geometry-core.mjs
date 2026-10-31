@@ -1,7 +1,8 @@
 // Extract CAD feature edges from triangle positions without changing the mesh.
 // STL can duplicate faces, reverse winding, and leave small coordinate seams.
 export function buildCleanOutlinePositions(positions, indices = null, {
-    thresholdAngle = 40, weldTolerance = null, minimumAspectRatio = 0, pruneDanglingEdges = false
+    thresholdAngle = 40, weldTolerance = null, minimumAspectRatio = 0, pruneDanglingEdges = false,
+    excludedIndexRanges = [], excludedBounds = []
 } = {}) {
     if (!positions?.length) return new Float32Array();
     const min = [Infinity, Infinity, Infinity];
@@ -17,6 +18,7 @@ export function buildCleanOutlinePositions(positions, indices = null, {
     const edges = new Map();
     const faces = new Set();
     const degenerateEdges = new Set();
+    const excludedEdges = new Set();
     const getVertex = index => {
         const point = [positions[index * 3], positions[index * 3 + 1], positions[index * 3 + 2]];
         const key = point.map(value => Math.round(value / tolerance)).join(',');
@@ -31,6 +33,12 @@ export function buildCleanOutlinePositions(positions, indices = null, {
     for (let i = 0; i + 2 < count; i += 3) {
         const ids = [0, 1, 2].map(offset => getVertex(indices ? indices[i + offset] : i + offset));
         if (new Set(ids).size < 3) continue;
+        const pairs = [[ids[0], ids[1]], [ids[1], ids[2]], [ids[2], ids[0]]];
+        // Suppress shared boundaries too, rather than creating an open border
+        // where an excluded face meets the surrounding body.
+        if (excludedIndexRanges.some(range => i >= range.start && i < range.start + range.count)) {
+            pairs.forEach(([a, b]) => excludedEdges.add(edgeKey(a, b)));
+        }
         const faceKey = [...ids].sort((a, b) => a - b).join(',');
         if (faces.has(faceKey)) continue;
         faces.add(faceKey);
@@ -40,7 +48,6 @@ export function buildCleanOutlinePositions(positions, indices = null, {
         const normal = [ab[1] * ac[2] - ab[2] * ac[1], ab[2] * ac[0] - ab[0] * ac[2], ab[0] * ac[1] - ab[1] * ac[0]];
         const area2 = Math.hypot(...normal);
         const longest = Math.max(Math.hypot(...ab), Math.hypot(...ac), Math.hypot(...c.map((value, axis) => value - b[axis])));
-        const pairs = [[ids[0], ids[1]], [ids[1], ids[2]], [ids[2], ids[0]]];
         if (area2 <= longest * tolerance || area2 < longest * longest * minimumAspectRatio) {
             pairs.forEach(([a, b]) => degenerateEdges.add(edgeKey(a, b)));
             continue;
@@ -55,6 +62,7 @@ export function buildCleanOutlinePositions(positions, indices = null, {
     const featureEdges = [];
     const cosine = Math.cos(thresholdAngle * Math.PI / 180);
     for (const [key, { a, b, normals }] of edges) {
+        if (excludedEdges.has(key)) continue;
         let feature = normals.length === 1 && !degenerateEdges.has(key);
         for (let i = 0; !feature && i < normals.length; i++) {
             for (let j = i + 1; j < normals.length; j++) {
@@ -90,7 +98,37 @@ export function buildCleanOutlinePositions(positions, indices = null, {
     }
     const result = [];
     featureEdges.forEach(([a, b], index) => {
-        if (!removed[index]) result.push(...vertices[a], ...vertices[b]);
+        if (removed[index]) return;
+        if (!excludedBounds.length) {
+            result.push(...vertices[a], ...vertices[b]);
+            return;
+        }
+        let segments = [[vertices[a], vertices[b]]];
+        for (const bounds of excludedBounds) {
+            segments = segments.flatMap(([start, end]) => clipOutlineOutsideBounds(start, end, bounds));
+        }
+        segments.forEach(([start, end]) => result.push(...start, ...end));
     });
     return new Float32Array(result);
+}
+
+function clipOutlineOutsideBounds(start, end, { min, max }) {
+    const direction = end.map((value, axis) => value - start[axis]);
+    let enter = 0, exit = 1;
+    for (let axis = 0; axis < 3; axis++) {
+        if (Math.abs(direction[axis]) < 1e-12) {
+            if (start[axis] < min[axis] || start[axis] > max[axis]) return [[start, end]];
+            continue;
+        }
+        const first = (min[axis] - start[axis]) / direction[axis];
+        const last = (max[axis] - start[axis]) / direction[axis];
+        enter = Math.max(enter, Math.min(first, last));
+        exit = Math.min(exit, Math.max(first, last));
+        if (enter >= exit) return [[start, end]];
+    }
+    const at = t => start.map((value, axis) => value + direction[axis] * t);
+    const result = [];
+    if (enter > 1e-9) result.push([start, at(enter)]);
+    if (exit < 1 - 1e-9) result.push([at(exit), end]);
+    return result;
 }

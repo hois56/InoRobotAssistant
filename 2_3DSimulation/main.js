@@ -4,14 +4,17 @@
  */
 
 import * as THREE from 'three';
+import { normalizeToolLoad, buildToolProgram, buildFrameProgram, combineToolLoads } from './tool-data-core.mjs';
+import { VIEW_PRESET_COUNT } from './view-preset-core.mjs';
 import { renderWithContactAO, disposeContactAO } from './contact-ambient-occlusion.mjs?v=20261030-1';
 import { ROBOT_MOUNTING_HOLES } from './robot-mounting-holes.mjs?v=20261029-2';
 import { collectTeachingPoints, normalizeTeachingPointSettings } from './teaching-point-core.mjs?v=20261023-teaching-defaults-1';
 import { TeachingPointScene, teachingJointMatrix } from './teaching-point-scene.mjs?v=20261023-teaching-labels-2';
-import { buildCleanOutlinePositions } from './outline-geometry-core.mjs?v=20261023-clean-outlines-2';
+import { buildCleanOutlinePositions } from './outline-geometry-core.mjs?v=20261031-logo-outline-1';
 import { computeSmoothTriangleNormals } from './smooth-triangle-normals-core.mjs';
 import { armQuadrant, closestArmTurnCandidates, scaraArmParameters, sixAxisArmParameters } from './arm-parameter-core.mjs';
-import { ROBOT_LOGO_COLOR, ROBOT_LOGO_FACES, ROBOT_LOGO_PROJECTIONS, createRobotLogoIndex } from './robot-logo-material-core.mjs';
+import { ROBOT_LOGO_COLOR, ROBOT_LOGO_FACES, ROBOT_LOGO_PROJECTIONS, createRobotLogoIndex } from './robot-logo-material-core.mjs?v=20261031-r35-r50-1';
+import { ROBOT_JOINT_ACCENT_COLOR, applyRobotJointAccent } from './robot-joint-accent.mjs?v=20261031-r50-flange-12';
 import { applyRobotLogoProjection } from './robot-logo-projection.mjs';
 import { buildCadAssemblyTree } from './cad-assembly-tree.mjs';
 import { writeWorkspaceArchive } from './workspace-archive.mjs';
@@ -34,6 +37,9 @@ import {
     DEFAULT_MOVJ_SPEED,
     DEFAULT_MOVL_SPEED,
     DEFAULT_DELAY_SECONDS,
+    DEFAULT_VIEW_TRANSITION_SECONDS,
+    MAX_VIEW_TRANSITION_SECONDS,
+    normalizeViewTransitionSeconds,
     MIN_DELAY_SECONDS,
     MAX_DELAY_SECONDS,
     MOTION_SETTLING_DELAY_SECONDS,
@@ -71,7 +77,7 @@ import {
     cloneMotionProgram,
     reorderMotionSteps,
     normalizeMotionProject
-} from './motion-program-core.mjs';
+} from './motion-program-core.mjs?v=20261031-tool-wobj-1';
 import {
     INTERFERENCE_ZONE_COUNT,
     INTERFERENCE_COORDINATE_MIN,
@@ -93,7 +99,7 @@ import {
     normalizeWorkObjectReference,
     resolveWorkObjectIndex,
     isEditableWorkObjectIndex
-} from './workobject-core.mjs';
+} from './workobject-core.mjs?v=20261031-tool-wobj-1';
 import {
     END_MONITORING_OBJECT_COUNT,
     END_MONITORING_COORDINATE_MIN,
@@ -204,7 +210,7 @@ import {
     isSupportedIoFunctionMappingAddress,
     normalizeIoFunctionMapping,
     normalizeIoFunctionMappings
-} from './io-function-mapping-core.mjs?v=20261030-io-object-reset-1';
+} from './io-function-mapping-core.mjs?v=20261030-view-slots-10-1';
 import {
     TRACE_INTERVALS,
     TRACE_MAX_POINTS,
@@ -478,6 +484,7 @@ const state = {
     selectedModel: null,
     selectedModelPart: null,
     modelSelection: new Map(),
+    modelSelectionAnchor: null,
     selectedTransformBasis: null,
     modelGroups: [],
     modelTreeOrder: {},
@@ -823,7 +830,9 @@ const state = {
     ioFunctionMappings: [],
     ioFunctionMappingRuntimeValues: new Map(),
     workOriginOutputStates: new Map(),
-    viewPresets: Array.from({ length: 4 }, () => null),
+    viewPresets: Array.from({ length: VIEW_PRESET_COUNT }, () => null),
+    viewTransitionSeconds: DEFAULT_VIEW_TRANSITION_SECONDS,
+    viewTransition: null,
     activeViewSlot: null,
     viewWindow: null,
     motionSaveTimer: null,
@@ -843,6 +852,7 @@ const state = {
         channelListener: null,
         pendingProbes: new Map(),
         recoveryChoiceResolver: null,
+        projectListOpen: false,
         recoveryCandidates: [],
         selectedRecoveryWorkspaceId: null,
         selectedRecoveryWorkspaceIds: new Set(),
@@ -1036,6 +1046,7 @@ const state = {
     interferenceSnapMode: false,
     interferenceSnapPointKey: null,
     tcpSnapMode: false,
+    tcpSnapTarget: null,
     tcpSnapType: 'auto',
     tcpSnapPoints: [],
     tcpSurfaceSnapMeshes: null,
@@ -1090,6 +1101,7 @@ const state = {
     },
     largeModelPerformanceMode: false,
     renderFramePending: false,
+    renderFrameRequest: null,
     outlineMode: true,
     tcpAxesVisible: true,
     grid: null, baseAxes: null, labels: [],
@@ -1113,6 +1125,7 @@ const MODEL_UNIT_SCALE_FIX = {
 const el = {
     modelSelect:     document.getElementById('model-select'),
     btnResetSimulation: document.getElementById('btn-reset-simulation'),
+    btnWorkspaceList: document.getElementById('btn-workspace-list'),
     btnWorkspaceSave: document.getElementById('btn-workspace-save'),
     btnWorkspaceLoad: document.getElementById('btn-workspace-load'),
     inputWorkspaceLoad: document.getElementById('input-workspace-load'),
@@ -1131,6 +1144,7 @@ const el = {
     workspaceRecoveryIsolationNote: document.getElementById('workspace-recovery-isolation-note'),
     workspaceRecoveryError: document.getElementById('workspace-recovery-error'),
     btnWorkspaceNew: document.getElementById('btn-workspace-new'),
+    btnWorkspaceCancel: document.getElementById('btn-workspace-cancel'),
     btnWorkspaceRestore: document.getElementById('btn-workspace-restore'),
     btnWorkspaceSelectAll: document.getElementById('btn-workspace-select-all'),
     btnWorkspaceClearSelection: document.getElementById('btn-workspace-clear-selection'),
@@ -1161,7 +1175,6 @@ const el = {
     loadingProgressBar: document.getElementById('loading-progress-bar'),
     loadingProgressText: document.getElementById('loading-progress-text'),
     emptyState:      document.getElementById('empty-state'),
-    statName:        document.getElementById('stat-name'),
     statStatus:      document.getElementById('stat-status'),
     statusDot:       document.getElementById('status-dot'),
     canvasContainer: document.getElementById('canvas-container'),
@@ -1418,7 +1431,14 @@ const el = {
         .map((input) => [input.dataset.workobjectPose, input])),
     btnApplyWorkObject: document.getElementById('btn-apply-workobject'),
     btnResetWorkObject: document.getElementById('btn-reset-workobject'),
-    btnRegisterWorkObject: document.getElementById('btn-register-workobject'),
+    btnWorkObjectSnap: document.getElementById('btn-workobject-snap'),
+    workObjectSnapType: document.getElementById('workobject-snap-type'),
+    workObjectSnapReadout: document.getElementById('workobject-snap-readout'),
+    workObjectMultiControls: document.getElementById('workobject-multi-center-controls'),
+    workObjectMultiCount: document.getElementById('workobject-multi-center-count'),
+    btnWorkObjectMultiApply: document.getElementById('workobject-multi-center-apply'),
+    btnWorkObjectMultiReset: document.getElementById('workobject-multi-center-reset'),
+    btnCopyWorkObject: document.getElementById('btn-copy-workobject-data'),
     workObjectStatus: document.getElementById('workobject-status'),
     armLoadPanel: document.getElementById('arm-load-panel'),
     armLoadList: document.getElementById('arm-load-list'),
@@ -1489,6 +1509,10 @@ const el = {
     btnApplyTcpProfile: document.getElementById('btn-apply-tcp-profile'),
     btnResetTcpProfile: document.getElementById('btn-reset-tcp-profile'),
     tcpProfileStatus: document.getElementById('tcp-profile-status'),
+    btnCopyToolData: document.getElementById('btn-copy-tool-data'),
+    btnToolLoadFromModels: document.getElementById('btn-tool-load-from-models'),
+    btnToolLoadInfo: document.getElementById('btn-tool-load-info'),
+    toolLoadInputs: Object.fromEntries([...document.querySelectorAll('[data-tool-load]')].map(input => [input.dataset.toolLoad, input])),
     btnTcpSnap: document.getElementById('btn-tcp-snap'),
     tcpSnapType: document.getElementById('tcp-snap-type'),
     tcpSnapReadout: document.getElementById('tcp-snap-readout'),
@@ -1710,8 +1734,6 @@ const el = {
     viewPresetsPanel: document.getElementById('view-presets-panel'),
     viewPresetsList: document.getElementById('view-presets-list'),
     viewWindow: document.getElementById('view-window'),
-    viewWindowTitle: document.getElementById('view-window-title'),
-    viewWindowCount: document.getElementById('view-window-count'),
     viewWindowPopout: document.getElementById('view-window-popout'),
     viewWindowHide: document.getElementById('view-window-hide'),
     viewWindowGrid: document.getElementById('view-window-grid'),
@@ -1804,9 +1826,9 @@ const BASE_JOG_HOLD_DELAY = 250;
 const BASE_JOG_REPEAT_INTERVAL = 30;
 const COLLISION_VISUAL_CLEAR_DELAY_MS = 180;
 const SIMULATION_TOOLTIP_DELAY_MS = 200;
-const TCP_PROFILE_COUNT = 3;
+const TCP_PROFILE_COUNT = 16;
 const WOBJ_AXES_LOCAL_SIZE = 110;
-const WOBJ_AXES_SCREEN_PIXELS = 30;
+const WOBJ_AXES_SCREEN_PIXELS = 75;
 const TRACE_SOURCE_LIVENESS_TIMEOUT_MS = 2500;
 const VIRTUAL_CONTROLLER_STREAM_STALL_MS = 750;
 const VIRTUAL_CONTROLLER_STREAM_WATCHDOG_MS = 250;
@@ -1836,14 +1858,15 @@ const TOOL_LOAD_MODE_MASS = 'mass';
 const TOOL_LOAD_DEFAULT_MASS_KG = 1;
 const MOTION_PROJECT_STORAGE_KEY = 'inorobot.3d-simulation.motion-project.v1';
 const VIEW_PRESETS_STORAGE_KEY = 'inorobot.3d-simulation.view-presets.v1';
+const VIRTUAL_CONTROLLER_SETTINGS_STORAGE_KEY = 'inorobot.3d-simulation.controller-settings.v1';
 const SIMULATION_STORAGE_KEY_PREFIX = 'inorobot.3d-simulation.';
 const WORKSPACE_SESSION_POINTER_KEY = WorkspaceRecovery.WORKSPACE_SESSION_KEY;
 const WORKSPACE_START_CLEAN_KEY = WorkspaceRecovery.WORKSPACE_START_CLEAN_SESSION_KEY;
+const WORKSPACE_REQUESTED_RESTORE_KEY = 'inorobot.3d-simulation.requested-workspace.v1';
 const WORKSPACE_EXIT_SNAPSHOT_PREFIX = 'inorobot.3d-simulation.exit-snapshot.v1:';
 const WORKSPACE_BROADCAST_CHANNEL = WorkspaceRecovery.WORKSPACE_CHANNEL_NAME;
 const WORKSPACE_LIVE_PROBE_TIMEOUT_MS = 180;
 const WORKSPACE_HEARTBEAT_INTERVAL_MS = 5000;
-const VIEW_PRESET_COUNT = 4;
 const CYCLE_TIME_DISPLAY_INTERVAL = 50;
 const MAX_MOTION_TRANSITIONS_PER_FRAME = 256;
 // Robot-to-robot path checks can contain many CAD meshes. Spread the samples
@@ -2407,6 +2430,9 @@ async function init() {
 }
 
 function setupUI() {
+    const controllerSettings = readVirtualControllerSettings();
+    state.virtualController.controllerKind = controllerSettings.controllerKind;
+    state.virtualController.ipAddress = controllerSettings.ipAddresses[controllerSettings.controllerKind];
     ensureEndMonitoringUi();
     loadViewConfiguration();
 
@@ -2916,7 +2942,7 @@ function refreshInterferenceZoneCoordinateOptions() {
         const option = document.createElement('option');
         option.value = String(workObject.index);
         option.textContent = workObject.index === WOBJ_WORLD_INDEX
-            ? 'Wobj[0] World'
+            ? 'Wobj 0'
             : `Wobj[${workObject.index}] ${workObject.name}`;
         option.disabled = workObject.index > 0 && !workObject.defined;
         return option;
@@ -2936,7 +2962,7 @@ function updateInterferenceZoneCoordinateLabels() {
     const workObject = coordinateRobot
         ? getWorkObjectData(coordinateRobot, index)
         : createDefaultWorkObject(index);
-    const label = index === WOBJ_WORLD_INDEX ? 'World' : `Wobj[${index}] ${workObject.name}`;
+    const label = index === WOBJ_WORLD_INDEX ? 'Wobj 0' : `Wobj[${index}] ${workObject.name}`;
     el.interferenceZonePointTitles.forEach((title) => {
         const key = title.dataset.interferencePointTitle;
         title.textContent = key === 'datum' ? `Datum point (${label} mm)` : `${key.toUpperCase()} (${label} mm)`;
@@ -3881,7 +3907,12 @@ function updateTeachingPointDisplay() {
     });
     el.btnTeachingPoints.title = settings.rejected?.length
         ? `${uiText('좌표 또는 축 설정을 확인하세요.')}: ${settings.rejected.slice(0, 8).join(', ')}` : '';
-    settings.scene.update(state.camera, state.renderer.domElement.clientHeight, { ...settings, enabled: !state.sketch.active });
+    updateTeachingPointView();
+}
+
+function updateTeachingPointView(camera = state.camera, viewportHeight = state.renderer.domElement.clientHeight) {
+    const settings = state.teachingPoints;
+    settings.scene?.update(camera, viewportHeight, { ...settings, enabled: !state.sketch.active });
 }
 
 function pickTeachingPoint(event, pressedKeys = null) {
@@ -4158,9 +4189,9 @@ function createPointProbe(point) {
 
 function getMtcpProfileWorldPoint(robot, toolTransform, profileIndex) {
     const profiles = ensureRobotTcpProfiles(robot);
-    const profile = profileIndex === robot.userData.activeTcpProfileIndex && robot.userData.tcpLiveProfile
+    const profile = profileIndex + 1 === robot.userData.activeTcpProfileIndex && robot.userData.tcpLiveProfile
         ? robot.userData.tcpLiveProfile
-        : profiles[profileIndex];
+        : profiles[profileIndex + 1];
     if (!profile) return null;
     return profile.position.clone().applyQuaternion(toolTransform.quaternion).add(toolTransform.position);
 }
@@ -4717,6 +4748,7 @@ function serializeViewConfiguration() {
     return {
         viewPresets: state.viewPresets.map((preset) => preset && {
             name: preset.name,
+            transitionSeconds: normalizeViewTransitionSeconds(preset.transitionSeconds ?? state.viewTransitionSeconds),
             camera: {
                 position: [...preset.camera.position],
                 target: [...preset.camera.target],
@@ -4734,18 +4766,21 @@ function saveViewConfiguration() {
 
 function loadViewConfiguration() {
     state.viewPresets = Array.from({ length: VIEW_PRESET_COUNT }, () => null);
+    state.viewTransitionSeconds = DEFAULT_VIEW_TRANSITION_SECONDS;
     if (IS_MANUAL_GUIDE_EMBED) {
         refreshViewPresetsUi();
         return;
     }
     try {
         const raw = JSON.parse(localStorage.getItem(VIEW_PRESETS_STORAGE_KEY) || 'null');
+        state.viewTransitionSeconds = normalizeViewTransitionSeconds(raw?.viewTransitionSeconds);
         const presets = Array.isArray(raw) ? raw : raw?.viewPresets;
         if (Array.isArray(presets)) {
             presets.slice(0, VIEW_PRESET_COUNT).forEach((preset, slot) => {
                 if (!isValidViewPreset(preset)) return;
                 state.viewPresets[slot] = {
                     name: String(preset.name || getDefaultViewPresetName(slot)).slice(0, 24),
+                    transitionSeconds: normalizeViewTransitionSeconds(preset.transitionSeconds ?? state.viewTransitionSeconds),
                     camera: {
                         position: preset.camera.position.map(Number),
                         target: preset.camera.target.map(Number),
@@ -4761,7 +4796,7 @@ function loadViewConfiguration() {
     refreshViewPresetsUi();
 }
 
-function captureViewPreset(slot, name = '') {
+function captureViewPreset(slot, name = '', transitionSeconds = getViewPreset(slot)?.transitionSeconds ?? state.viewTransitionSeconds) {
     const view = state.sketch.active && state.sketch.previousCamera && state.sketch.previousControls
         ? {
             camera: state.sketch.previousCamera,
@@ -4780,6 +4815,7 @@ function captureViewPreset(slot, name = '') {
     if (!view) return null;
     return {
         name: String(name || getDefaultViewPresetName(slot)).trim().slice(0, 24) || getDefaultViewPresetName(slot),
+        transitionSeconds: normalizeViewTransitionSeconds(transitionSeconds),
         camera: {
             position: view.camera.position.toArray(),
             target: view.target.toArray(),
@@ -4832,19 +4868,13 @@ function updateViewWindowHeader() {
     if (!viewWindow?.root?.isConnected) return;
     const count = viewWindow.cells.size;
     if (viewWindow.grid) viewWindow.grid.dataset.count = String(count);
-    if (el.viewWindowCount) el.viewWindowCount.textContent = String(count);
-    if (el.viewWindowTitle) {
-        el.viewWindowTitle.setAttribute('aria-label', uiFormat('고정 뷰 {count}개', { count }));
-    }
+    viewWindow.root.setAttribute('aria-label', uiFormat('고정 뷰 {count}개', { count }));
 }
 
 function refreshViewWindowLocalizedUi() {
     const root = state.viewWindow?.root || el.viewWindow;
     if (!root) return;
-    const eyebrow = root.querySelector('.view-window-eyebrow');
-    if (eyebrow) eyebrow.textContent = uiText('SAVED VIEWS');
-    const titleLabel = root.querySelector('#view-window-title [data-i18n]');
-    if (titleLabel) titleLabel.textContent = uiText('고정 뷰 창');
+    state.viewWindow?.cells.forEach(refreshViewWindowSelectedPivotButton);
     const popoutButton = root.querySelector('#view-window-popout');
     if (popoutButton) {
         popoutButton.title = uiText('새 창으로 열기');
@@ -4861,7 +4891,6 @@ function refreshViewWindowLocalizedUi() {
         pinButton.title = uiText(pinned ? '맨 앞으로 고정 해제' : '맨 앞으로 고정');
         pinButton.setAttribute('aria-label', pinButton.title);
         pinButton.setAttribute('aria-pressed', String(pinned));
-        pinButton.style.color = pinned ? '#38bdf8' : '';
     }
     const popup = state.viewWindow?.popup;
     if (popup && !popup.closed) {
@@ -4869,6 +4898,15 @@ function refreshViewWindowLocalizedUi() {
         popup.document.title = `3D Simulation - ${uiText('고정 뷰 창')}`;
     }
     updateViewWindowHeader();
+}
+
+function refreshViewWindowSelectedPivotButton(cell) {
+    const button = cell.selectedPivotButton;
+    if (!button) return;
+    const enabled = cell.selectedViewPivot.enabled;
+    button.setAttribute('aria-pressed', String(enabled));
+    button.title = uiText(enabled ? '선택 모델 중심 회전 끄기' : '선택 모델 중심 회전 켜기');
+    button.setAttribute('aria-label', button.title);
 }
 
 function applyViewWindowPreset(slot) {
@@ -4884,6 +4922,8 @@ function applyViewWindowPreset(slot) {
         : 1;
     cell.camera.updateProjectionMatrix();
     cell.controls.target.fromArray(preset.camera.target);
+    updateOrbitSelectedViewPivot(cell.selectedViewPivot, cell.camera, cell.controls,
+        state.sketch.active ? null : getSelectedViewPivotReference(), true, { preserveView: true });
     cell.camera.lookAt(cell.controls.target);
     cell.controls.update();
     if (cell.canvas) cell.canvas.setAttribute('aria-label', preset.name);
@@ -4910,6 +4950,8 @@ function resizeViewWindow() {
 function renderViewWindow() {
     const viewWindow = getOpenViewWindow();
     if (!state.scene || !viewWindow) return;
+    const jogControls = state.baseJogTransformControls;
+    const jogVisible = jogControls?.visible;
     const sketch = state.sketch.active ? state.sketch : null;
     const sketchPreview = sketch?.previewGroup;
     const editingModel = sketch?.editingModel;
@@ -4919,12 +4961,21 @@ function renderViewWindow() {
     if (editingModel && state.models.includes(editingModel)) {
         editingModel.visible = sketch.editingModelVisibility !== false;
     }
+    if (jogControls) jogControls.visible = false;
     try {
+        const followsSelection = [...viewWindow.cells.values()].some(cell => cell.selectedViewPivot.enabled);
+        const pivotReference = followsSelection && !state.sketch.active ? getSelectedViewPivotReference() : null;
         viewWindow.cells.forEach((cell) => {
+            if (updateOrbitSelectedViewPivot(cell.selectedViewPivot, cell.camera, cell.controls, pivotReference)) {
+                cell.controls.update();
+            }
             updateCameraScaledTcpAxes(cell.camera, cell.canvas?.clientHeight);
+            updateTeachingPointView(cell.camera, cell.canvas.clientHeight);
             renderSimulationScene(cell.renderer, cell.camera);
         });
     } finally {
+        if (jogControls) jogControls.visible = jogVisible;
+        updateTeachingPointView();
         if (sketchPreview) sketchPreview.visible = previewVisible;
         if (editingModel && state.models.includes(editingModel)) {
             editingModel.visible = editingModelVisible;
@@ -4979,9 +5030,35 @@ function createViewWindowCell(slot, fallbackPreset = null) {
     controls.rotateSpeed = 1;
     if ('zoomToCursor' in controls) controls.zoomToCursor = false;
     controls.addEventListener('change', requestRender);
-    controls.addEventListener('start', requestRender);
     controls.addEventListener('end', requestRender);
-    const cell = { slot: Number(slot), element, renderer, camera, controls, canvas, preset };
+    const cell = { slot: Number(slot), element, renderer, camera, controls, canvas, preset,
+        selectedViewPivot: { enabled: false, object: null, center: null } };
+    const actions = ownerDocument.createElement('div');
+    actions.className = 'view-window-cell-actions';
+    const selectedPivotButton = ownerDocument.createElement('button');
+    selectedPivotButton.type = 'button';
+    selectedPivotButton.dataset.viewSelectedPivot = '';
+    selectedPivotButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><path d="M12 2v4 M12 18v4 M2 12h4 M18 12h4"/><circle cx="12" cy="12" r="1"/></svg>';
+    cell.selectedPivotButton = selectedPivotButton;
+    refreshViewWindowSelectedPivotButton(cell);
+    selectedPivotButton.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const pivot = cell.selectedViewPivot;
+        pivot.enabled = !pivot.enabled;
+        pivot.object = null;
+        pivot.center = null;
+        refreshViewWindowSelectedPivotButton(cell);
+        updateOrbitSelectedViewPivot(pivot, camera, controls,
+            state.sketch.active ? null : getSelectedViewPivotReference(), true);
+        requestRender();
+    });
+    actions.append(selectedPivotButton);
+    element.append(actions);
+    controls.addEventListener('start', () => {
+        updateOrbitSelectedViewPivot(cell.selectedViewPivot, camera, controls,
+            state.sketch.active ? null : getSelectedViewPivotReference(), true);
+        requestRender();
+    });
     canvas.addEventListener('pointermove', handleSimulationSnapPointerMove);
     canvas.addEventListener('pointerleave', hideSimulationSnapMarker);
     // Keep orbit gestures, but never commit a snap at the end of a drag.
@@ -5052,7 +5129,6 @@ function closeViewWindow() {
     });
     viewWindow.grid?.replaceChildren();
     viewWindow.root?.classList.add('hidden');
-    if (el.viewWindowCount) el.viewWindowCount.textContent = '0';
 }
 
 function hideViewWindow() {
@@ -5096,9 +5172,8 @@ async function toggleViewWindowAlwaysOnTop() {
         if (sourcePopup && !sourcePopup.closed) {
             const sourceDocument = sourcePopup.document;
             const header = sourceDocument.createElement('div');
-            header.className = 'view-window-header';
-            header.style.cursor = 'default';
-            const title = sourceDocument.createElement('h2');
+            header.className = 'view-window-pin-source';
+            const title = sourceDocument.createElement('span');
             title.textContent = uiText('맨 앞으로 고정');
             const unpin = sourceDocument.createElement('button');
             unpin.type = 'button';
@@ -5159,7 +5234,7 @@ function popOutViewWindow(pinnedPopup = null) {
         link.href = source.href;
         popup.document.head.appendChild(link);
     });
-    popup.document.body.className = 'panel-popout-body';
+    popup.document.body.className = 'panel-popout-body view-window-popout-body';
 
     const placeholder = document.createComment('view-window placeholder');
     viewWindow.root.parentNode.insertBefore(placeholder, viewWindow.root);
@@ -5235,7 +5310,58 @@ function openViewWindow(slot) {
     bringViewWindowToFront();
 }
 
-function applyViewPreset(slot, { announce = true } = {}) {
+function cancelMainViewTransition() {
+    const transition = state.viewTransition;
+    if (!transition) return;
+    transition.cancelled = true;
+    state.viewTransition = null;
+    updateSelectedViewPivot(true, { preserveView: true });
+    scheduleMotionProjectSave();
+}
+
+function updateMainViewTransition(timestamp = performance.now()) {
+    const transition = state.viewTransition;
+    if (!transition) return;
+    if (state.sketch.active || state.camera !== transition.camera || state.controls !== transition.controls) {
+        cancelMainViewTransition();
+        return;
+    }
+    if (transition.session?.status === 'paused') return;
+    if (isAny3DTransformHandleDragging()) {
+        transition.startTime += Math.max(0, timestamp - transition.lastTimestamp);
+        transition.lastTimestamp = timestamp;
+        return;
+    }
+    transition.lastTimestamp = timestamp;
+    transition.progress = THREE.MathUtils.clamp((timestamp - transition.startTime) / transition.duration, 0, 1);
+    const progress = sCurveProgress(transition.progress);
+    const { camera, controls } = transition;
+    controls.target.lerpVectors(transition.fromTarget, transition.toTarget, progress);
+    // Orbit around the moving target instead of cutting through it when the
+    // saved cameras face each other. Quaternion slerp also takes the short arc.
+    const orientation = transition.fromQuaternion.clone().slerp(transition.toQuaternion, progress);
+    const distance = THREE.MathUtils.lerp(transition.fromDistance, transition.toDistance, progress);
+    camera.position.set(0, 0, distance).applyQuaternion(orientation).add(controls.target);
+    const upRotation = new THREE.Quaternion().slerp(transition.upRotation, progress);
+    camera.up.copy(transition.fromUp).applyQuaternion(upRotation).normalize();
+    camera.zoom = THREE.MathUtils.lerp(transition.fromZoom, transition.toZoom, progress);
+    if (transition.progress >= 1) {
+        camera.position.copy(transition.toPosition);
+        camera.up.copy(transition.toUp);
+        transition.completed = true;
+        state.viewTransition = null;
+        updateSelectedViewPivot(true, { preserveView: true });
+        scheduleMotionProjectSave();
+    }
+    camera.updateProjectionMatrix();
+    camera.lookAt(controls.target);
+    controls.update();
+    if (state.snapMoveMode) captureSimulationSnapMarkerReferenceDistance();
+}
+
+function applyViewPreset(slot, {
+    announce = true, durationSeconds = null, timestamp = performance.now(), session = null
+} = {}) {
     const index = Number(slot);
     const preset = getViewPreset(index);
     if (state.sketch.active) {
@@ -5243,15 +5369,33 @@ function applyViewPreset(slot, { announce = true } = {}) {
         return false;
     }
     if (!preset || !isValidViewPreset(preset) || !state.camera || !state.controls) return false;
-    state.camera.position.fromArray(preset.camera.position);
-    setCameraUpFromPreset(state.camera, preset.camera.up);
-    state.camera.zoom = Number.isFinite(preset.camera.zoom) && preset.camera.zoom > 0
-        ? preset.camera.zoom
-        : 1;
-    state.camera.updateProjectionMatrix();
-    state.controls.target.fromArray(preset.camera.target);
-    state.camera.lookAt(state.controls.target);
+    cancelMainViewTransition();
     state.controls.update();
+    const destination = state.camera.clone();
+    destination.position.fromArray(preset.camera.position);
+    setCameraUpFromPreset(destination, preset.camera.up);
+    const target = new THREE.Vector3().fromArray(preset.camera.target);
+    destination.lookAt(target);
+    const duration = normalizeViewTransitionSeconds(durationSeconds ?? preset.transitionSeconds ?? state.viewTransitionSeconds) * 1000;
+    const transition = {
+        camera: state.camera, controls: state.controls, session,
+        startTime: timestamp, lastTimestamp: timestamp, duration, progress: 0,
+        fromTarget: state.controls.target.clone(), toTarget: target,
+        fromQuaternion: state.camera.quaternion.clone(), toQuaternion: destination.quaternion.clone(),
+        fromDistance: state.camera.position.distanceTo(state.controls.target),
+        toDistance: destination.position.distanceTo(target),
+        fromUp: state.camera.up.clone().normalize(), toUp: destination.up.clone(),
+        upRotation: new THREE.Quaternion().setFromUnitVectors(state.camera.up.clone().normalize(), destination.up),
+        fromZoom: state.camera.zoom,
+        toZoom: Number.isFinite(preset.camera.zoom) && preset.camera.zoom > 0 ? preset.camera.zoom : 1,
+        toPosition: destination.position.clone()
+    };
+    state.viewTransition = transition;
+    if (duration === 0) {
+        transition.duration = 1;
+        transition.startTime = timestamp - 1;
+        updateMainViewTransition(timestamp);
+    }
     state.activeViewSlot = index;
     if (state.snapMoveMode) captureSimulationSnapMarkerReferenceDistance();
     if (state.sketch.active) updateSketchPreview();
@@ -5268,7 +5412,7 @@ function saveViewPreset(slot) {
     const row = el.viewPresetsList?.querySelector(`[data-view-slot="${slot}"]`);
     if (!row) return;
     const name = row.querySelector('[data-view-name]')?.value || getDefaultViewPresetName(slot);
-    const preset = captureViewPreset(slot, name);
+    const preset = captureViewPreset(slot, name, row.querySelector('[data-view-seconds]')?.value);
     if (!preset) return;
     state.viewPresets[slot] = preset;
     state.activeViewSlot = slot;
@@ -5284,15 +5428,39 @@ function saveViewPreset(slot) {
 
 function refreshViewPresetsUi() {
     if (!el.viewPresetsList) return;
+    const template = el.viewPresetsList.querySelector('[data-view-slot="0"]');
+    for (let slot = 0; template && slot < VIEW_PRESET_COUNT; slot += 1) {
+        if (el.viewPresetsList.querySelector(`[data-view-slot="${slot}"]`)) continue;
+        const row = template.cloneNode(true);
+        row.dataset.viewSlot = String(slot);
+        row.querySelector('.view-preset-index').textContent = String(slot + 1);
+        row.querySelector('[data-view-name]').value = getDefaultViewPresetName(slot);
+        row.querySelector('[data-view-seconds]').value = String(state.viewTransitionSeconds);
+        el.viewPresetsList.appendChild(row);
+    }
     el.viewPresetsList.querySelectorAll('[data-view-slot]').forEach((row) => {
         const slot = Number(row.dataset.viewSlot);
         const preset = getViewPreset(slot);
         const nameInput = row.querySelector('[data-view-name]');
+        const secondsInput = row.querySelector('[data-view-seconds]');
+        const saveButton = row.querySelector('[data-view-save]');
         const applyButton = row.querySelector('[data-view-apply]');
         const monitorButton = row.querySelector('[data-view-monitor]');
         if (nameInput && document.activeElement !== nameInput) {
             nameInput.value = preset?.name || nameInput.value || getDefaultViewPresetName(slot);
         }
+        nameInput?.setAttribute('aria-label', uiFormat('뷰 {number} 이름', { number: slot + 1 }));
+        if (secondsInput) {
+            secondsInput.max = String(MAX_VIEW_TRANSITION_SECONDS);
+            secondsInput.title = uiText('뷰 전환 시간 (초, 0 = 즉시 전환)');
+            secondsInput.setAttribute('aria-label', uiFormat('뷰 {number} 전환 시간 (초)', { number: slot + 1 }));
+            if (secondsInput.ownerDocument.activeElement !== secondsInput) {
+                secondsInput.value = String(normalizeViewTransitionSeconds(preset?.transitionSeconds ?? state.viewTransitionSeconds));
+            }
+        }
+        saveButton?.setAttribute('aria-label', uiFormat('{name}에 현재 뷰 저장', {
+            name: preset?.name || getDefaultViewPresetName(slot)
+        }));
         if (applyButton) {
             applyButton.disabled = !preset;
             applyButton.setAttribute('aria-label', uiFormat('{name} 적용', {
@@ -5334,6 +5502,17 @@ function handleViewPresetListInput(event) {
         renderIoFunctionMappingList();
         renderIoFunctionMappingEditorTargets();
     }
+}
+
+function handleViewPresetTimeChange(event) {
+    const input = event.target.closest('[data-view-seconds]');
+    if (!input || !el.viewPresetsList?.contains(input)) return;
+    const seconds = normalizeViewTransitionSeconds(input.value);
+    input.value = String(seconds);
+    const preset = getViewPreset(Number(input.closest('[data-view-slot]')?.dataset.viewSlot));
+    if (!preset) return;
+    preset.transitionSeconds = seconds;
+    saveViewConfiguration();
 }
 
 function refreshSimulationWorkspaceFileUi() {
@@ -5412,10 +5591,6 @@ function refreshLocalizedControls() {
     });
     if (el.selectedModelName && state.selectedModel) {
         el.selectedModelName.textContent = displayNameForModelTree(state.selectedModel);
-    }
-    if (el.statName) {
-        const names = state.models.map((model) => displayNameForModelTree(model));
-        el.statName.textContent = names.length > 1 ? `${names[0]} (+${names.length - 1})` : (names[0] || '-');
     }
     const contextTarget = getModelContextTarget();
     if (contextTarget?.model && el.modelArmLoadLabel) {
@@ -14101,6 +14276,9 @@ function preventMiddleButtonAutoscroll(event) {
 }
 
 const mainMiddleDragZoomStates = new WeakMap();
+const mainPanReferenceDistances = new WeakMap();
+const mainPanDragStates = new WeakMap();
+const mainDragSpeedStates = new WeakMap();
 const mainOriginRotationGestures = new WeakSet();
 const mainPannedOrbitControls = new WeakSet();
 
@@ -14108,13 +14286,42 @@ function trackMainOrbitControlPointer(event) {
     if (event?.pointerId !== undefined) state.orbitControlPointerIds.add(event.pointerId);
     const controls = state.controls;
     if (controls) {
+        const speedControlled = event.pointerType === 'mouse' && !state.sketch.active
+            && controls.enabled && (event.button === 0 || event.button === 2);
         const action = [controls.mouseButtons.LEFT, controls.mouseButtons.MIDDLE, controls.mouseButtons.RIGHT][event.button];
-        const modifier = event.ctrlKey || event.metaKey || event.shiftKey;
+        const modifier = (event.ctrlKey || event.metaKey || event.shiftKey)
+            && !(speedControlled && (event.ctrlKey || event.shiftKey));
         const rotates = action === THREE.MOUSE.ROTATE ? !modifier : action === THREE.MOUSE.PAN && modifier;
         if (event.pointerType === 'mouse' && rotates) mainOriginRotationGestures.add(controls);
         else mainOriginRotationGestures.delete(controls);
         const pans = action === THREE.MOUSE.PAN ? !modifier : action === THREE.MOUSE.ROTATE && modifier;
         if (event.pointerType === 'mouse' && pans) mainPannedOrbitControls.add(controls);
+        if (event.pointerType === 'mouse' && pans && !state.sketch.active
+            && state.camera?.isPerspectiveCamera && controls.enabled && controls.enablePan
+            && !mainPanDragStates.has(controls)) {
+            const distance = controls.getDistance();
+            const reference = mainPanReferenceDistances.get(controls);
+            if (distance > 0 && reference > 0) {
+                mainPanDragStates.set(controls, { pointerId: event.pointerId, panSpeed: controls.panSpeed });
+                // Cancel OrbitControls' radius factor so each drag moves the
+                // same world distance, even after zooming close to the target.
+                controls.panSpeed *= reference / distance;
+            }
+        }
+        if (speedControlled && !mainDragSpeedStates.has(controls)) {
+            mainDragSpeedStates.set(controls, { pointerId: event.pointerId,
+                rotateSpeed: controls.rotateSpeed, panSpeed: controls.panSpeed,
+                mouseButtons: { ...controls.mouseButtons } });
+            if (event.ctrlKey || event.shiftKey) {
+                // OrbitControls swaps rotation and panning for modifiers.
+                // Counter that swap for this gesture while selection handlers
+                // still receive the original Shift/Ctrl flags.
+                const key = event.button === 0 ? 'LEFT' : 'RIGHT';
+                if (action === THREE.MOUSE.ROTATE) controls.mouseButtons[key] = THREE.MOUSE.PAN;
+                else if (action === THREE.MOUSE.PAN) controls.mouseButtons[key] = THREE.MOUSE.ROTATE;
+            }
+            updateMainOrbitDragSpeed(event);
+        }
     }
     if (event.button === 1 && event.pointerType === 'mouse' && !state.sketch.active
         && controls?.enabled && controls.enableZoom && !mainMiddleDragZoomStates.has(controls)) {
@@ -14123,10 +14330,31 @@ function trackMainOrbitControlPointer(event) {
     }
 }
 
+function updateMainOrbitDragSpeed(event) {
+    const controls = state.controls;
+    const drag = controls && mainDragSpeedStates.get(controls);
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const multiplier = getMainWheelSpeedMultiplier(event);
+    controls.rotateSpeed = drag.rotateSpeed * multiplier;
+    controls.panSpeed = drag.panSpeed * multiplier;
+}
+
 function clearMainOrbitControlPointer(event) {
     if (event?.pointerId !== undefined) state.orbitControlPointerIds.delete(event.pointerId);
     const controls = state.controls;
     if (controls) mainOriginRotationGestures.delete(controls);
+    const speed = controls && mainDragSpeedStates.get(controls);
+    if (speed && speed.pointerId === event?.pointerId) {
+        controls.rotateSpeed = speed.rotateSpeed;
+        controls.panSpeed = speed.panSpeed;
+        Object.assign(controls.mouseButtons, speed.mouseButtons);
+        mainDragSpeedStates.delete(controls);
+    }
+    const pan = controls && mainPanDragStates.get(controls);
+    if (pan && pan.pointerId === event?.pointerId) {
+        controls.panSpeed = pan.panSpeed;
+        mainPanDragStates.delete(controls);
+    }
     const drag = controls && mainMiddleDragZoomStates.get(controls);
     if (drag && drag.pointerId === event?.pointerId) {
         controls.zoomSpeed = drag.zoomSpeed;
@@ -14439,13 +14667,7 @@ function handleSceneModelClick(event) {
     if (state.teachingPoints?.enabled && !event.shiftKey && !event.ctrlKey && pickTeachingPoint(event, pointer?.teachingKeys)) return;
     const selection = getSceneModelAtPointer(event);
     if (!selection) return;
-    if (event.shiftKey) { toggleSceneSelection(selection.model, event.ctrlKey ? null : selection.part); return; }
-    if (event.ctrlKey) {
-        // Select the clicked model as a whole. Its attachment host belongs
-        // to a separate model, even when both share the robot hierarchy.
-        selectSceneModel(selection.model);
-    } else if (selection.part) selectSceneModelPart(selection.model, selection.part);
-    else selectSceneModel(selection.model);
+    selectSceneEntries(event, [[selection.part || selection.model, selection.model]]);
 }
 
 function handleSceneModelContextMenu(event) {
@@ -15237,7 +15459,7 @@ function getSimulationSnapFaceSelectionSignature(selections = getSimulationSnapF
 }
 
 function isSimulationSnapFaceSelectionActive(scope = getSimulationSnapScope()) {
-    return (scope === 'scene' && state.snapMoveMode)
+    return (scope === 'scene' && (state.snapMoveMode || (state.tcpSnapMode && state.tcpSnapTarget)))
         || (scope === 'scene' && state.sketch.active && state.sketch.snapMode)
         || (scope === 'interference' && state.interferenceSnapMode)
         || (scope === 'zero' && state.zeroPointEdit.active && state.zeroPointEdit.snapMode)
@@ -15302,7 +15524,7 @@ function getSimulationSnapScope() {
     if (state.zeroPointEdit.active && state.zeroPointEdit.snapMode) return 'zero';
     if (state.placement.active) return 'placement';
     if (state.measurement.active) return 'measurement';
-    return state.tcpSnapMode ? 'tool' : 'scene';
+    return state.tcpSnapMode && !state.tcpSnapTarget ? 'tool' : 'scene';
 }
 
 function yieldToAnimationFrame() {
@@ -16924,6 +17146,7 @@ function isSimulationSnapInteractionActive() {
 }
 
 function beginSimulationViewNavigation(event) {
+    cancelMainViewTransition();
     if (state.viewNavigationActive) return;
     if (!event?.surfaceWheelZoom && !state.sketch.active && !state.selectedViewPivot.enabled
         && mainOriginRotationGestures.has(state.controls) && !mainPannedOrbitControls.has(state.controls)) {
@@ -16972,6 +17195,7 @@ function setTcpSnapReadout(message) {
     if (!el.tcpSnapReadout) return;
     el.tcpSnapReadout.dataset.sourceMessage = message;
     el.tcpSnapReadout.textContent = uiText(message);
+    if (el.workObjectSnapReadout && state.tcpSnapTarget) el.workObjectSnapReadout.textContent = uiText(message);
 }
 
 function formatSimulationSnapPoint(point) {
@@ -18040,8 +18264,14 @@ function getTcpSnapCenter() {
 }
 
 function updateTcpMultiCenterControls() {
-    const multi = isTcpMultiPointSnapMode();
+    const wobj = Boolean(state.tcpSnapTarget);
+    const multi = isTcpMultiPointSnapMode() && !wobj;
     const count = state.tcpSnapPoints.length;
+    const wobjMulti = isTcpMultiPointSnapMode() && wobj;
+    el.workObjectMultiControls?.classList.toggle('hidden', !wobjMulti);
+    if (el.workObjectMultiCount) el.workObjectMultiCount.textContent = `${uiText('다중 점 선택')} ${count}/4`;
+    if (el.btnWorkObjectMultiApply) el.btnWorkObjectMultiApply.disabled = !wobjMulti || count < 2 || count > 4;
+    if (el.btnWorkObjectMultiReset) el.btnWorkObjectMultiReset.disabled = !wobjMulti || count === 0;
     if (el.tcpMultiCenterControls) el.tcpMultiCenterControls.classList.toggle('hidden', !multi);
     if (el.tcpMultiCenterCount) {
         el.tcpMultiCenterCount.textContent = `${uiText('다중 점 선택')} ${count}/4`;
@@ -18051,31 +18281,36 @@ function updateTcpMultiCenterControls() {
 }
 
 function updateTcpSnapUi() {
-    const robot = getJogTargetRobot();
-    const available = Boolean(robot?.userData?.tcpFrame) && !isModelMotionActive(robot);
-    if (!available && state.tcpSnapMode) {
-        state.tcpSnapMode = false;
-        clearSimulationSnapFaceSelection({ invalidate: false });
-        invalidateSimulationSnapCandidates();
-        resetTcpSnapPoints();
-        hideSimulationSnapMarker();
-        resetSimulationSnapMarkerCameraScale();
-    }
+    const target = state.tcpSnapTarget;
+    const robot = target ? getWorkObjectRobotById(target.robotId) : getJogTargetRobot();
+    const available = target
+        ? Boolean(robot) && target.robotId === state.workObjectEditor.robotId && target.index === state.workObjectEditor.index && !isMotionActive()
+        : Boolean(robot?.userData?.tcpFrame) && robot.userData.activeTcpProfileIndex !== 0 && !isModelMotionActive(robot);
+    if (!available && state.tcpSnapMode) { setTcpSnapMode(false); return; }
+    const tool = getJogTargetRobot();
+    const toolAvailable = Boolean(tool?.userData?.tcpFrame) && tool.userData.activeTcpProfileIndex !== 0 && !isModelMotionActive(tool);
     if (el.btnTcpSnap) {
-        el.btnTcpSnap.disabled = !available;
-        el.btnTcpSnap.classList.toggle('active', state.tcpSnapMode);
-        el.btnTcpSnap.setAttribute('aria-pressed', String(state.tcpSnapMode));
-        el.btnTcpSnap.title = uiText(state.tcpSnapMode ? 'TCP 위치 스냅 종료' : 'TCP 위치 스냅');
+        el.btnTcpSnap.disabled = !toolAvailable;
+        el.btnTcpSnap.classList.toggle('active', state.tcpSnapMode && !target);
+        el.btnTcpSnap.setAttribute('aria-pressed', String(state.tcpSnapMode && !target));
     }
-    if (el.tcpSnapType) el.tcpSnapType.disabled = !available;
+    if (el.tcpSnapType) el.tcpSnapType.disabled = !toolAvailable;
+    if (el.btnWorkObjectSnap) {
+        el.btnWorkObjectSnap.classList.toggle('active', state.tcpSnapMode && Boolean(target));
+        el.btnWorkObjectSnap.setAttribute('aria-pressed', String(state.tcpSnapMode && Boolean(target)));
+    }
     el.canvasContainer?.classList.toggle('tcp-snap-picking', state.tcpSnapMode);
     updateTcpMultiCenterControls();
 }
 
 function setTcpSnapMode(enabled) {
     state.tcpSnapMode = Boolean(enabled);
+    if (!state.tcpSnapMode) state.tcpSnapTarget = null;
     if (state.tcpSnapMode) {
         state.snapMoveMode = false;
+        if (state.interferenceSnapMode) setInterferenceSnapMode(false);
+        if (state.zeroPointEdit.active && state.zeroPointEdit.snapMode) setZeroPointSnapMode(false);
+        if (state.sketch.active && state.sketch.snapMode) setSketchSnapMode(false);
         clearSimulationSnapFaceSelection({ invalidate: false });
         state.snapLastPointerEvent = null;
         resetTcpSnapPoints();
@@ -18084,7 +18319,7 @@ function setTcpSnapMode(enabled) {
         setStatus('스냅할 3D 모델의 면을 클릭하세요.', '#60a5fa');
         updateSimulationSnapButton();
         updateTcpSnapUi();
-        void buildSimulationSnapCandidates('tool')
+        void buildSimulationSnapCandidates(getSimulationSnapScope())
             .then(() => {
                 if (state.tcpSnapMode) {
                     const hasFaceSelection = getSimulationSnapFaceSelections().length > 0;
@@ -18121,7 +18356,11 @@ function toggleTcpSnapMode() {
         setStatus('스냅 이동할 로봇을 먼저 선택하세요.', '#ef4444');
         return;
     }
-    setTcpSnapMode(!state.tcpSnapMode);
+    const enabled = state.tcpSnapMode && !state.tcpSnapTarget;
+    if (state.tcpSnapMode) setTcpSnapMode(false);
+    if (getJogTargetRobot().userData.activeTcpProfileIndex === 0) return;
+    state.tcpSnapType = el.tcpSnapType?.value || 'auto';
+    setTcpSnapMode(!enabled);
 }
 
 function hideSimulationSnapMarker() {
@@ -18592,9 +18831,21 @@ function scheduleSimulationSnapPreview() {
 }
 
 function applyTcpSnapPoint(worldPoint, selectedLabelKey = '스냅') {
+    const target = state.tcpSnapTarget;
+    if (target) {
+        const robot = getWorkObjectRobotById(target.robotId);
+        if (!robot || robot !== getWorkObjectEditorRobot() || target.index !== state.workObjectEditor.index || !isEditableWorkObjectIndex(target.index) || isMotionActive()) return false;
+        const base = getRobotControllerBaseFrame(robot);
+        base.updateWorldMatrix(true, false);
+        const localPoint = base.worldToLocal(worldPoint.clone());
+        ['x', 'y', 'z'].forEach(axis => { el.workObjectInputs[axis].value = Number(localPoint[axis].toFixed(3)); });
+        setTcpSnapMode(false);
+        setWorkObjectStatus('Wobj 원점을 스냅했습니다. 적용을 눌러 저장하세요.', 'success');
+        return true;
+    }
     const robot = getJogTargetRobot();
     const flangeFrame = getRobotToolMountFrame(robot);
-    if (!robot?.userData?.tcpFrame || !flangeFrame || isModelMotionActive(robot)) return false;
+    if (!robot?.userData?.tcpFrame || !flangeFrame || isModelMotionActive(robot) || robot.userData.activeTcpProfileIndex === 0) return false;
     const localPoint = flangeFrame.worldToLocal(worldPoint.clone());
     ['x', 'y', 'z'].forEach((axis) => {
         const input = el.tcpOffsetInputs[axis];
@@ -18602,8 +18853,8 @@ function applyTcpSnapPoint(worldPoint, selectedLabelKey = '스냅') {
     });
     updateTcpProfileLive();
     setTcpSnapMode(false);
-    setTcpProfileStatus('TCP 위치를 스냅했습니다. 적용을 눌러 저장하세요.', 'success');
-    setStatus('{label} TCP 위치 스냅', '#22c55e', {
+    setTcpProfileStatus('Tool 위치를 스냅했습니다. 적용을 눌러 저장하세요.', 'success');
+    setStatus('{label} Tool 위치 스냅', '#22c55e', {
         label: uiText(selectedLabelKey)
     });
     return true;
@@ -19141,6 +19392,7 @@ function clearModelTransformRotationSnap() {
 
 function captureMainOrbitControlState(controls) {
     if (!controls) return null;
+    const drag = mainDragSpeedStates.get(controls);
     return {
         enabled: controls.enabled,
         enableRotate: controls.enableRotate,
@@ -19149,8 +19401,8 @@ function captureMainOrbitControlState(controls) {
         enableDamping: controls.enableDamping,
         dampingFactor: controls.dampingFactor,
         screenSpacePanning: controls.screenSpacePanning,
-        rotateSpeed: controls.rotateSpeed,
-        panSpeed: controls.panSpeed,
+        rotateSpeed: drag?.rotateSpeed ?? controls.rotateSpeed,
+        panSpeed: mainPanDragStates.get(controls)?.panSpeed ?? drag?.panSpeed ?? controls.panSpeed,
         zoomSpeed: controls.zoomSpeed,
         keyPanSpeed: controls.keyPanSpeed,
         minDistance: controls.minDistance,
@@ -19163,7 +19415,7 @@ function captureMainOrbitControlState(controls) {
         maxAzimuthAngle: controls.maxAzimuthAngle,
         autoRotate: controls.autoRotate,
         autoRotateSpeed: controls.autoRotateSpeed,
-        mouseButtons: { ...controls.mouseButtons },
+        mouseButtons: { ...(drag?.mouseButtons ?? controls.mouseButtons) },
         touches: { ...controls.touches },
         keys: { ...controls.keys },
         zoomToCursor: 'zoomToCursor' in controls ? controls.zoomToCursor : undefined,
@@ -19221,19 +19473,9 @@ function configureMainOrbitControlDefaults(controls) {
     if ('zoomToCursor' in controls) controls.zoomToCursor = false;
 }
 
-function updateSelectedViewPivot(force = false, { preserveView = false } = {}) {
-    const pivot = state.selectedViewPivot;
-    if (!pivot.enabled || state.sketch.active || !state.camera || !state.controls) {
-        pivot.object = null;
-        pivot.center = null;
-        return;
-    }
+function getSelectedViewPivotReference() {
     const object = state.selectedModelPart || state.selectedModel;
-    if (!object || !state.models.includes(state.selectedModel)) {
-        pivot.object = null;
-        pivot.center = null;
-        return;
-    }
+    if (!object || !state.models.includes(state.selectedModel)) return null;
     object.updateWorldMatrix(true, true);
     const bounds = new THREE.Box3();
     object.traverse(child => {
@@ -19244,14 +19486,33 @@ function updateSelectedViewPivot(force = false, { preserveView = false } = {}) {
         if (child.geometry.boundingBox) bounds.union(child.geometry.boundingBox.clone().applyMatrix4(child.matrixWorld));
     });
     const center = bounds.isEmpty() ? object.getWorldPosition(new THREE.Vector3()) : bounds.getCenter(new THREE.Vector3());
-    const origin = force || pivot.object !== object || !pivot.center ? state.controls.target : pivot.center;
+    return { object, center };
+}
+
+function updateOrbitSelectedViewPivot(pivot, camera, controls, reference, force = false, { preserveView = false } = {}) {
+    if (!pivot.enabled || !camera || !controls || !reference) {
+        pivot.object = null;
+        pivot.center = null;
+        return;
+    }
+    const { object, center } = reference;
+    const origin = force || pivot.object !== object || !pivot.center ? controls.target : pivot.center;
     const delta = center.clone().sub(origin);
     pivot.object = object;
     pivot.center = center;
     if (preserveView || delta.lengthSq() < 1e-12) return;
-    state.camera.position.add(delta);
-    state.controls.target.add(delta);
+    camera.position.add(delta);
+    controls.target.add(delta);
     requestRender();
+    return true;
+}
+
+function updateSelectedViewPivot(force = false, { preserveView = false } = {}) {
+    if (state.viewTransition) return;
+    const pivot = state.selectedViewPivot;
+    const reference = pivot.enabled && !state.sketch.active && state.camera && state.controls
+        ? getSelectedViewPivotReference() : null;
+    updateOrbitSelectedViewPivot(pivot, state.camera, state.controls, reference, force, { preserveView });
 }
 
 function setSelectedViewPivotEnabled(enabled) {
@@ -19270,6 +19531,7 @@ function setSelectedViewPivotEnabled(enabled) {
 }
 
 function recreateMainOrbitControls(previousState = undefined) {
+    cancelMainViewTransition();
     const previous = state.controls;
     const restoredState = previousState === undefined
         ? captureMainOrbitControlState(previous)
@@ -19285,32 +19547,41 @@ function recreateMainOrbitControls(previousState = undefined) {
     if (restoredState) {
         applyMainOrbitControlState(controls, restoredState);
     }
+    mainPanReferenceDistances.set(controls, controls.getDistance());
     return controls;
 }
 
 const mainWheelZoomSteps = new WeakMap();
+const mainForwardedWheelEvents = new WeakSet();
+
+function getMainWheelSpeedMultiplier(event) {
+    return event.shiftKey ? 0.1 : event.ctrlKey ? 2 : 1;
+}
 
 function applyFineNativeWheelZoom(event, controls) {
-    if (!event.shiftKey) return;
+    if (!event.shiftKey && !event.ctrlKey) return;
     event.preventDefault();
     event.stopImmediatePropagation();
     const speed = controls.zoomSpeed;
-    controls.zoomSpeed *= 0.1;
+    controls.zoomSpeed *= getMainWheelSpeedMultiplier(event);
     try {
         // Forward synchronously so native wheel handling uses the fine speed,
         // then restore it before any subsequent pointer or wheel gesture.
-        state.renderer.domElement.dispatchEvent(new WheelEvent('wheel', {
+        const forwarded = new WheelEvent('wheel', {
             deltaX: event.deltaX, deltaY: event.deltaY, deltaZ: event.deltaZ, deltaMode: event.deltaMode,
             clientX: event.clientX, clientY: event.clientY,
-            ctrlKey: event.ctrlKey, metaKey: event.metaKey, altKey: event.altKey,
+            metaKey: event.metaKey, altKey: event.altKey,
             bubbles: true, cancelable: true
-        }));
+        });
+        mainForwardedWheelEvents.add(forwarded);
+        state.renderer.domElement.dispatchEvent(forwarded);
     } finally {
         controls.zoomSpeed = speed;
     }
 }
 
 function handleMainSurfaceWheelZoom(event) {
+    if (mainForwardedWheelEvents.has(event)) return;
     const { camera, controls } = state;
     if (!camera || !controls?.enabled
         || !controls.enableZoom || state.orbitControlPointerIds.size || !event.deltaY) return;
@@ -19321,7 +19592,7 @@ function handleMainSurfaceWheelZoom(event) {
     if (!mainWheelZoomSteps.has(controls)) {
         mainWheelZoomSteps.set(controls, Math.max(controls.getDistance() * 0.05, camera.near * 2));
     }
-    const step = mainWheelZoomSteps.get(controls) * controls.zoomSpeed * 0.8 * (event.shiftKey ? 0.1 : 1);
+    const step = mainWheelZoomSteps.get(controls) * controls.zoomSpeed * 0.8 * getMainWheelSpeedMultiplier(event);
     if (!state.selectedViewPivot.enabled) {
         event.preventDefault();
         event.stopImmediatePropagation();
@@ -19385,6 +19656,7 @@ function setupControls() {
     recreateMainOrbitControls();
     state.renderer.domElement.addEventListener('wheel', handleMainSurfaceWheelZoom, { capture: true, passive: false });
     state.renderer.domElement.addEventListener('pointerdown', trackMainOrbitControlPointer, { capture: true });
+    state.renderer.domElement.addEventListener('pointermove', updateMainOrbitDragSpeed, { capture: true });
     state.renderer.domElement.addEventListener('pointerup', clearMainOrbitControlPointer, { capture: true });
     state.renderer.domElement.addEventListener('pointercancel', clearMainOrbitControlPointer, { capture: true });
 
@@ -21070,6 +21342,7 @@ function setupEventListeners() {
         openRobotModelChoiceDialog(model);
     });
     el.btnResetSimulation?.addEventListener('click', openSimulationResetDialog);
+    el.btnWorkspaceList?.addEventListener('click', () => void openWorkspaceProjectList());
     el.btnCancelSimulationReset?.addEventListener('click', closeSimulationResetDialog);
     el.btnConfirmSimulationReset?.addEventListener('click', () => void resetSimulation());
     el.btnWorkspaceSave?.addEventListener('click', () => void saveSimulationWorkspaceProject());
@@ -21084,6 +21357,7 @@ function setupEventListeners() {
         closeSimulationResetDialog();
     });
     el.btnWorkspaceNew?.addEventListener('click', () => resolveWorkspaceRecoveryChoice('new'));
+    el.btnWorkspaceCancel?.addEventListener('click', () => resolveWorkspaceRecoveryChoice('cancel'));
     el.btnWorkspaceRestore?.addEventListener('click', () => resolveWorkspaceRecoveryChoice('restore'));
     el.btnWorkspaceSelectAll?.addEventListener('click', selectAllWorkspaceRecoveryCandidates);
     el.btnWorkspaceClearSelection?.addEventListener('click', clearWorkspaceRecoveryCandidateSelection);
@@ -21092,6 +21366,7 @@ function setupEventListeners() {
     el.workspaceRecoveryDialog?.addEventListener('cancel', (event) => {
         // A recovery source must never be silently accepted or overwritten.
         event.preventDefault();
+        if (state.workspaceRecovery.projectListOpen) resolveWorkspaceRecoveryChoice('cancel');
     });
     el.btnCancelTestModel?.addEventListener('click', () => resolveTestModelConfirmation(false));
     el.btnConfirmTestModel?.addEventListener('click', confirmTestModelSelection);
@@ -21405,12 +21680,7 @@ function setupEventListeners() {
             if (match) {
                 if (equipmentApp.ui.pendingRole) { equipmentApp.ui.addPart(equipmentObjectRef(ensureWorkspaceModelId(match.model), getImportedModelParts(match.model).indexOf(match.part))); return; }
                 commitPendingHistory('수치 모델 변환', 'pendingNumericHistory');
-                if (event.shiftKey) { toggleSceneSelection(match.model, match.part); return; }
-                if (state.selectedModel === match.model && state.selectedModelPart === match.part) {
-                    setSelectedModelPart(null);
-                } else {
-                    selectSceneModelPart(match.model, match.part);
-                }
+                selectSceneEntries(event, [[match.part, match.model]]);
             }
             return;
         }
@@ -21419,8 +21689,7 @@ function setupEventListeners() {
         commitPendingHistory('수치 모델 변환', 'pendingNumericHistory');
         const model = state.models.find((candidate) => candidate.userData.modelTreeId === button.dataset.modelTreeId);
         if (model && equipmentApp.ui.pendingRole) { equipmentApp.ui.addPart(equipmentObjectRef(ensureWorkspaceModelId(model))); return; }
-        if (model && event.shiftKey) toggleSceneSelection(model);
-        else if (model) selectSceneModel(isModelTreeModelSelected(model) ? null : model);
+        if (model) selectSceneEntries(event, [[model, model]]);
     });
     el.modelTree?.addEventListener('change', (event) => {
         const checkbox = event.target.closest('[data-model-part-visibility]');
@@ -22060,6 +22329,7 @@ function setupEventListeners() {
 
     el.viewPresetsList?.addEventListener('click', handleViewPresetListClick);
     el.viewPresetsList?.addEventListener('input', handleViewPresetListInput);
+    el.viewPresetsList?.addEventListener('change', handleViewPresetTimeChange);
 
     el.virtualControllerRobot?.addEventListener('change', () => {
         if (state.virtualController.wanted) return;
@@ -22077,12 +22347,14 @@ function setupEventListeners() {
         if (state.virtualController.wanted) return;
         const controller = state.virtualController;
         controller.controllerKind = el.virtualControllerKind.value === 'real' ? 'real' : 'virtual';
-        controller.ipAddress = controller.controllerKind === 'real' ? '192.168.0.1' : '127.0.0.1';
+        controller.ipAddress = readVirtualControllerSettings().ipAddresses[controller.controllerKind];
+        saveVirtualControllerSettings(controller);
         refreshVirtualControllerUi();
     });
     el.virtualControllerIp?.addEventListener('input', () => {
         if (state.virtualController.wanted) return;
         state.virtualController.ipAddress = el.virtualControllerIp.value.trim();
+        saveVirtualControllerSettings();
     });
 
     el.btnVirtualControllerConnect?.addEventListener('click', () => {
@@ -22288,6 +22560,7 @@ function setupEventListeners() {
     });
     el.workObjectTargetRobot?.addEventListener('change', () => {
         if (isMotionActive()) return;
+        if (state.tcpSnapTarget) setTcpSnapMode(false);
         state.workObjectEditor.robotId = el.workObjectTargetRobot.value || null;
         state.workObjectEditor.index = resolveWorkObjectIndex(
             getWorkObjectEditorRobot()?.userData?.activeWorkObjectIndex
@@ -22302,7 +22575,24 @@ function setupEventListeners() {
     });
     el.btnApplyWorkObject?.addEventListener('click', applyWorkObjectEditor);
     el.btnResetWorkObject?.addEventListener('click', resetWorkObjectEditor);
-    el.btnRegisterWorkObject?.addEventListener('click', registerCurrentTcpAsWorkObject);
+    el.btnWorkObjectSnap?.addEventListener('click', toggleWorkObjectSnap);
+    el.btnCopyToolData?.addEventListener('click', copyToolData);
+    el.btnCopyWorkObject?.addEventListener('click', copyWorkObjectData);
+    el.btnToolLoadFromModels?.addEventListener('click', importMountedToolLoad);
+    el.btnToolLoadInfo?.addEventListener('click', showMountedToolLoadInfo);
+    Object.values(el.toolLoadInputs || {}).forEach(input => {
+        input.addEventListener('input', updateTcpProfileLive);
+        input.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); applyTcpProfileEditor(); } });
+    });
+    el.workObjectSnapType?.addEventListener('change', () => {
+        if (!state.tcpSnapTarget) return;
+        state.tcpSnapType = el.workObjectSnapType.value;
+        resetTcpSnapPoints();
+        invalidateSimulationSnapCandidates();
+        void buildSimulationSnapCandidates(getSimulationSnapScope()).catch(error => { setTcpSnapMode(false); setWorkObjectStatus(error.message, 'error'); });
+    });
+    el.btnWorkObjectMultiApply?.addEventListener('click', applyTcpMultiPointCenter);
+    el.btnWorkObjectMultiReset?.addEventListener('click', resetTcpSnapPoints);
     el.workObjectInputs && Object.values(el.workObjectInputs).forEach((input) => {
         input?.addEventListener('keydown', (event) => {
             if (event.key !== 'Enter') return;
@@ -22706,9 +22996,14 @@ function handleGlobalKeyDown(event) {
         deleteSelectedMotionStep();
         return;
     }
-    if (event.key === 'Escape' && exitActiveTransformMode()) {
-        event.preventDefault();
-        return;
+    if (event.key === 'Escape' && !event.defaultPrevented && !document.querySelector('dialog[open]')) {
+        const hadSelection = Boolean(state.selectedModel || state.modelSelection.size);
+        const exitedTransform = exitActiveTransformMode();
+        if (hadSelection) selectSceneModel(null);
+        if (hadSelection || exitedTransform) {
+            event.preventDefault();
+            return;
+        }
     }
     const isModelDeleteShortcut = (event.key === 'Delete' || event.key === 'Backspace')
         && !shortcut
@@ -23294,7 +23589,8 @@ function sceneSnapshotsEqual(a, b) {
         if (leftProfiles.length !== rightProfiles.length) return false;
         for (let profileIndex = 0; profileIndex < leftProfiles.length; profileIndex += 1) {
             if (!numberArraysEqual(leftProfiles[profileIndex].position, rightProfiles[profileIndex].position)
-                || !numberArraysEqual(leftProfiles[profileIndex].quaternion, rightProfiles[profileIndex].quaternion)) {
+                || !numberArraysEqual(leftProfiles[profileIndex].quaternion, rightProfiles[profileIndex].quaternion)
+                || JSON.stringify(leftProfiles[profileIndex].load) !== JSON.stringify(rightProfiles[profileIndex].load)) {
                 return false;
             }
         }
@@ -24007,7 +24303,7 @@ function getPanelWindowTitle(panelId) {
         : panelId === 'trace-panel'
         ? uiText('Trace')
         : panelId === 'tcp-profile-panel'
-        ? uiText('TCP 설정')
+        ? uiText('Tool 설정')
         : panelId === 'arm-load-panel'
             ? uiText('암 로드 설정')
         : panelId === 'collaboration-panel'
@@ -24713,6 +25009,7 @@ function createModelTreePartNode(model, part) {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `model-tree-part-button${state.modelSelection.has(part) ? ' active' : ''}`;
+    button.modelTreeSelection = { key: part, entries: [[part, model]] };
     button.dataset.modelPartId = part.userData.modelPartId;
     button.title = `${part.userData.modelTreeName || modelTreeDisplayName(part.userData.modelPartName) || uiText('PART')} ${uiText('선택')}`;
 
@@ -24759,6 +25056,7 @@ function createCadAssemblyTreeNode(model, node) {
     });
     const name = document.createElement('button'); name.type = 'button'; name.className = 'model-tree-group-name';
     name.textContent = `📁 ${node.name} (${node.members.length})`;
+    name.modelTreeSelection = { key: item.dataset.treeOrderKey, entries: node.members.map(part => [part, model]) };
     const selected = node.members.every(part => state.modelSelection.has(part));
     name.classList.toggle('active', selected); name.setAttribute('aria-pressed', String(selected));
     markModelTreeGroupSelection(name, details, () => node.members.some(part => state.modelSelection.has(part)));
@@ -24766,12 +25064,7 @@ function createCadAssemblyTreeNode(model, node) {
     summary.addEventListener('click', event => {
         event.preventDefault(); event.stopPropagation();
         preserveModelTreeScroll(() => {
-            if (!event.shiftKey) state.modelSelection.clear();
-            node.members.forEach(part => state.modelSelection.set(part, model));
-            state.selectionBatch = true;
-            try { selectSceneModelPart(model, node.members.at(-1)); }
-            finally { state.selectionBatch = false; }
-            updateModelSelectionOutlines(); renderModelTree(); requestRender();
+            selectSceneEntries(event, name.modelTreeSelection.entries, name.modelTreeSelection.key);
         });
     });
     summary.addEventListener('contextmenu', event => {
@@ -24851,6 +25144,7 @@ function createModelTreeNode(model) {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `model-tree-button${isModelTreeModelSelected(model) ? ' active' : ''}`;
+    button.modelTreeSelection = { key: model, entries: [[model, model]] };
     button.classList.add(`model-tree-button-${meta.className}`);
     button.classList.toggle('model-tree-button-hidden', !modelVisible);
     const containsSelection = collapsed && modelTreeContainsSelectedDescendant(model);
@@ -24919,6 +25213,7 @@ function createModelTreeNode(model) {
                 });
                 const name = document.createElement('button'); name.type = 'button'; name.className = 'model-tree-group-name';
                 name.textContent = `📁 ${group.name} (${members.length})`;
+                name.modelTreeSelection = { key: item.dataset.treeOrderKey, entries: members.map(part => [part, model]) };
                 const selected = members.every(part => state.modelSelection.has(part));
                 name.classList.toggle('active', selected); name.setAttribute('aria-pressed', String(selected));
                 markModelTreeGroupSelection(name, details, () => members.some(part => state.modelSelection.has(part)));
@@ -24926,12 +25221,7 @@ function createModelTreeNode(model) {
                 summary.addEventListener('click', event => {
                     event.preventDefault(); event.stopPropagation();
                     preserveModelTreeScroll(() => {
-                    if (!event.shiftKey) state.modelSelection.clear();
-                    members.forEach(part => state.modelSelection.set(part, model));
-                    state.selectionBatch = true;
-                    try { selectSceneModelPart(model, members.at(-1)); }
-                    finally { state.selectionBatch = false; }
-                    updateModelSelectionOutlines(); renderModelTree(); requestRender();
+                    selectSceneEntries(event, name.modelTreeSelection.entries, name.modelTreeSelection.key);
                     });
                 });
                 summary.addEventListener('contextmenu', event => {
@@ -25063,6 +25353,7 @@ function createModelTreeModelGroup(group, members) {
     });
     const name = document.createElement('button'); name.type = 'button'; name.className = 'model-tree-group-name';
     name.textContent = `📁 ${group.name} (${members.length})`;
+    name.modelTreeSelection = { key: item.dataset.treeOrderKey, entries: members.map(model => [model, model]) };
     const selected = members.length > 0 && members.every(model => state.modelSelection.has(model));
     name.classList.toggle('active', selected); name.setAttribute('aria-pressed', String(selected)); item.setAttribute('aria-selected', String(selected));
     markModelTreeGroupSelection(name, details, () => [...state.modelSelection.values()].some(owner => {
@@ -25075,11 +25366,7 @@ function createModelTreeModelGroup(group, members) {
     summary.addEventListener('click', event => {
         event.preventDefault(); event.stopPropagation();
         preserveModelTreeScroll(() => {
-        if (!event.shiftKey) state.modelSelection.clear();
-        members.forEach(model => state.modelSelection.set(model, model));
-        state.selectionBatch = true;
-        try { selectSceneModel(members.at(-1)); } finally { state.selectionBatch = false; }
-        updateModelSelectionOutlines(); renderModelTree(); requestRender();
+        selectSceneEntries(event, name.modelTreeSelection.entries, name.modelTreeSelection.key);
         });
     });
     summary.addEventListener('contextmenu', event => {
@@ -26996,6 +27283,45 @@ function setArmLoadVisibility(model, visible, recordHistoryChange = true) {
     if (historyBefore) recordHistory('암 로드 표시 설정', historyBefore, captureSceneSnapshot());
 }
 
+function selectSceneEntries(event, entries, key = entries[0]?.[0]) {
+    if (!entries.length) return;
+    const additive = Boolean(event.ctrlKey || event.metaKey);
+    const previous = [...state.modelSelection].at(-1);
+    const anchor = state.modelSelectionAnchor || (previous && { key: previous[0], entries: [previous] });
+    let range = entries;
+    let rangeAnchor = null;
+    if (event.shiftKey && anchor) {
+        const buttons = [...el.modelTree.querySelectorAll('.model-tree-button, .model-tree-part-button, .model-tree-group-name')];
+        let rows = buttons.filter(button => button.getClientRects().length).map(button => button.modelTreeSelection);
+        // A 3D click can target a part inside a collapsed tree node.
+        if (!rows.some(row => row.key === key) || !rows.some(row => row.key === anchor.key)) {
+            rows = buttons.map(button => button.modelTreeSelection);
+        }
+        const start = rows.findIndex(row => row.key === anchor.key);
+        const end = rows.findIndex(row => row.key === key);
+        if (start >= 0 && end >= 0) {
+            range = rows.slice(Math.min(start, end), Math.max(start, end) + 1).flatMap(row => row.entries);
+            rangeAnchor = anchor;
+        }
+    }
+    const remove = additive && !event.shiftKey && entries.every(([object]) => state.modelSelection.has(object));
+    if (!additive) state.modelSelection.clear();
+    for (const [object, model] of range) {
+        if (!state.models.includes(model)) continue;
+        if (remove) state.modelSelection.delete(object);
+        else state.modelSelection.set(object, model);
+    }
+    state.modelSelectionAnchor = rangeAnchor || { key, entries };
+    const clicked = entries.at(-1);
+    const active = state.modelSelection.has(clicked[0]) ? clicked : [...state.modelSelection].at(-1);
+    state.selectionBatch = true;
+    try {
+        if (active && active[0] !== active[1]) selectSceneModelPart(active[1], active[0]);
+        else selectSceneModel(active?.[1] || null);
+    } finally { state.selectionBatch = false; }
+    updateModelSelectionOutlines(); renderModelTree(); requestRender();
+}
+
 function toggleSceneSelection(model, part = null) {
     const object = part || model;
     if (!object || !state.models.includes(model)) return;
@@ -27087,6 +27413,7 @@ function selectSceneModel(model, options = {}) {
     if (!preservePart || !currentPartBelongsToModel) setSelectedModelPart(null);
     state.selectedModel = model || null;
     if (!state.selectionBatch && !options.preserveSelection) {
+        state.modelSelectionAnchor = null;
         state.modelSelection.clear();
         if (model) state.modelSelection.set(options.preservePart && state.selectedModelPart || model, model);
     }
@@ -27545,7 +27872,9 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
     let loadedCount = 0;
 
     const meshAssets = await Promise.all(meshDefinitions.map(async (definition) => {
-        const asset = definition.mesh ? await loadSTL(`${baseUrl}${definition.mesh}`) : null;
+        const revision = modelDefinition.meshRevisions?.[definition.mesh];
+        const suffix = revision ? `?v=${encodeURIComponent(revision)}` : '';
+        const asset = definition.mesh ? await loadSTL(`${baseUrl}${definition.mesh}${suffix}`) : null;
         loadedCount += 1;
         if (onProgress) onProgress(Math.round((loadedCount / meshDefinitions.length) * 100));
         return asset;
@@ -27576,7 +27905,7 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
             renderGeometry.addGroup(0, logo.bodyCount, 0);
             renderGeometry.addGroup(logo.bodyCount, logo.index.length - logo.bodyCount, 1);
         }
-        return renderGeometry;
+        return applyRobotJointAccent(renderGeometry, modelDefinition.folder, meshDefinitions[index].mesh);
     });
 
     const robot = new THREE.Group();
@@ -27753,6 +28082,7 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
 }
 
 function createRobotManifest(modelDefinition) {
+    const bodyColor = modelDefinition.bodyColor || ROBOT_BODY_COLOR;
     const {
         name,
         robotType,
@@ -27847,7 +28177,7 @@ function createRobotManifest(modelDefinition) {
         maxSpeed: jointSpeeds[index],
         maxAcceleration: jointAccelerations[index],
         maxDeceleration: jointDecelerations[index],
-        color: ROBOT_BODY_COLOR,
+        color: bodyColor,
         ...extra
     });
 
@@ -27907,7 +28237,7 @@ function createRobotManifest(modelDefinition) {
             tcp: wrist,
             ikRotationAxes: ['z'],
             toolAxes: SCARA_TOOL_AXES,
-            base: { name: 'P0', mesh: 'P0.stl', color: ROBOT_BODY_COLOR },
+            base: { name: 'P0', mesh: 'P0.stl', color: bodyColor },
             tube: kinematicVariant === 'ceiling-scara'
                 ? null
                 : {
@@ -27947,7 +28277,7 @@ function createRobotManifest(modelDefinition) {
         tcp,
         ikRotationAxes: ['x', 'y', 'z'],
         toolAxes: SIX_AXIS_TOOL_AXES,
-        base: { name: 'P0', mesh: 'P0.stl', color: ROBOT_BODY_COLOR },
+        base: { name: 'P0', mesh: 'P0.stl', color: bodyColor },
         joints: [
             joint(0, 'P1.stl', [0, 0, 0], [0, 0, 1], { direction: REVOLUTE_DIRECTION_POSITIVE }),
             joint(1, 'P2.stl', [shoulderOffset, 0, shoulderHeight], [0, 1, 0]),
@@ -30072,6 +30402,7 @@ function setSelectedModelPart(part) {
     setModelPartHighlight(state.selectedModelPart, false);
     state.selectedModelPart = part || null;
     if (!state.selectionBatch) {
+        state.modelSelectionAnchor = null;
         state.modelSelection.clear();
         if (state.selectedModel) state.modelSelection.set(part || state.selectedModel, state.selectedModel);
     }
@@ -30769,8 +31100,8 @@ function applyTestTcpProfile(robot) {
     const before = captureSceneSnapshot();
     clearTcpProfileLive(robot);
     const profiles = ensureRobotTcpProfiles(robot);
-    const profile = profiles[0];
-    robot.userData.activeTcpProfileIndex = 0;
+    const profile = profiles[1];
+    robot.userData.activeTcpProfileIndex = 1;
     const isScara = robot.userData.manifest?.robotType === 'scara';
     profile.position.set(200, 0, isScara ? -33 : 33);
     profile.quaternion.identity();
@@ -30872,7 +31203,11 @@ function createSTLMesh(geometry, definition, collisionGeometry = null) {
     });
     const logoMaterial = geometry.groups.some((group) => group.materialIndex === 1) ? material.clone() : null;
     if (logoMaterial) logoMaterial.color.setHex(ROBOT_LOGO_COLOR);
-    const mesh = new THREE.Mesh(geometry, logoMaterial ? [material, logoMaterial] : material);
+    const accentMaterial = geometry.groups.some((group) => group.materialIndex === 2) ? material.clone() : null;
+    if (accentMaterial) accentMaterial.color.setHex(geometry.userData.robotJointAccentColor ?? ROBOT_JOINT_ACCENT_COLOR);
+    const materials = accentMaterial ? [material, logoMaterial || material, accentMaterial] : logoMaterial ? [material, logoMaterial] : material;
+    const mesh = new THREE.Mesh(geometry, materials);
+    if (logoMaterial) mesh.userData.robotLogoMaterialIndex = 1;
     mesh.name = definition.name;
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -31119,7 +31454,8 @@ function updateScaraTube(robot) {
 function createDefaultTcpProfile() {
     return {
         position: new THREE.Vector3(),
-        quaternion: new THREE.Quaternion()
+        quaternion: new THREE.Quaternion(),
+        load: normalizeToolLoad()
     };
 }
 
@@ -31127,6 +31463,7 @@ function normalizeTcpProfile(profile) {
     const normalized = createDefaultTcpProfile();
     const position = profile?.position;
     const quaternion = profile?.quaternion;
+    normalized.load = normalizeToolLoad(profile?.load);
     if (position?.isVector3) normalized.position.copy(position);
     else if (Array.isArray(position) && position.length === 3 && position.every(Number.isFinite)) {
         normalized.position.fromArray(position);
@@ -31143,20 +31480,21 @@ function normalizeTcpProfile(profile) {
 function ensureRobotTcpProfiles(robot) {
     if (!robot) return [];
     const source = Array.isArray(robot.userData.tcpProfiles) ? robot.userData.tcpProfiles : [];
+    const legacy = source.length === 3;
     robot.userData.tcpProfiles = Array.from({ length: TCP_PROFILE_COUNT }, (_, index) => (
-        normalizeTcpProfile(source[index])
+        index === 0 ? createDefaultTcpProfile() : normalizeTcpProfile(source[legacy ? index - 1 : index])
     ));
     const activeIndex = Number(robot.userData.activeTcpProfileIndex);
     robot.userData.activeTcpProfileIndex = Number.isInteger(activeIndex)
-        ? THREE.MathUtils.clamp(activeIndex, 0, TCP_PROFILE_COUNT - 1)
-        : 0;
+        ? THREE.MathUtils.clamp(activeIndex + (legacy ? 1 : 0), 0, TCP_PROFILE_COUNT - 1) : 0;
     return robot.userData.tcpProfiles;
 }
 
 function serializeRobotTcpProfiles(robot) {
     return ensureRobotTcpProfiles(robot).map((profile) => ({
         position: profile.position.toArray(),
-        quaternion: profile.quaternion.toArray()
+        quaternion: profile.quaternion.toArray(),
+        load: normalizeToolLoad(profile.load)
     }));
 }
 
@@ -31164,9 +31502,8 @@ function syncActiveTcpFrame(robot, profileOverride = null) {
     const tcpFrame = robot?.userData.tcpFrame;
     if (!tcpFrame) return;
     const profiles = ensureRobotTcpProfiles(robot);
-    const profile = profileOverride
-        || robot.userData.tcpLiveProfile
-        || profiles[robot.userData.activeTcpProfileIndex];
+    const profile = robot.userData.activeTcpProfileIndex === 0 ? profiles[0]
+        : profileOverride || robot.userData.tcpLiveProfile || profiles[robot.userData.activeTcpProfileIndex];
     tcpFrame.position.copy(profile.position);
     tcpFrame.quaternion.copy(profile.quaternion);
     tcpFrame.scale.set(1, 1, 1);
@@ -31180,13 +31517,9 @@ function syncActiveTcpFrame(robot, profileOverride = null) {
 function restoreRobotTcpProfiles(robot, profiles, activeIndex = 0) {
     if (!robot?.userData.tcpFrame) return;
     delete robot.userData.tcpLiveProfile;
-    robot.userData.tcpProfiles = Array.from({ length: TCP_PROFILE_COUNT }, (_, index) => (
-        normalizeTcpProfile(profiles?.[index])
-    ));
-    const index = Number(activeIndex);
-    robot.userData.activeTcpProfileIndex = Number.isInteger(index)
-        ? THREE.MathUtils.clamp(index, 0, TCP_PROFILE_COUNT - 1)
-        : 0;
+    robot.userData.tcpProfiles = profiles;
+    robot.userData.activeTcpProfileIndex = activeIndex;
+    ensureRobotTcpProfiles(robot);
     syncActiveTcpFrame(robot);
 }
 
@@ -31366,7 +31699,7 @@ function updateCameraScaledWorkObjectAxes() {
         : null;
     const cameraPosition = new THREE.Vector3();
     const parentScale = new THREE.Vector3();
-    state.workObjectVisuals.forEach(({ axes }) => {
+    state.workObjectVisuals.forEach(({ axes, label }) => {
         const sizing = axes?.userData?.cameraScaledSize;
         if (!axes || !sizing || !axes.visible) return;
         axes.getWorldPosition(cameraPosition);
@@ -31380,6 +31713,10 @@ function updateCameraScaledWorkObjectAxes() {
             ? Math.max(...axes.parent.getWorldScale(parentScale).toArray().map((value) => Math.abs(value)), Number.EPSILON)
             : 1;
         axes.scale.setScalar((worldUnitsPerPixel * sizing.pixelSize) / (sizing.localSize * inheritedScale));
+        if (label) {
+            label.position.z = sizing.localSize * axes.scale.x * 1.12;
+            label.scale.set(120, 52, 1).multiplyScalar(worldUnitsPerPixel * 0.48 / inheritedScale);
+        }
     });
 }
 
@@ -31424,28 +31761,40 @@ function refreshTcpProfileUi(robot = state.activeArticulatedModel) {
     const locked = !available || isModelMotionActive(robot);
     const profiles = available ? ensureRobotTcpProfiles(robot) : [];
     const activeIndex = available ? robot.userData.activeTcpProfileIndex : 0;
-    if (el.activeTcpProfileLabel) el.activeTcpProfileLabel.textContent = `TCP ${activeIndex + 1}`;
-    if (el.tcpLauncherLabel) el.tcpLauncherLabel.textContent = `TCP ${activeIndex + 1}`;
+    const readOnly = locked || activeIndex === 0;
+    if (el.activeTcpProfileLabel) el.activeTcpProfileLabel.textContent = 'Tool ' + activeIndex;
+    if (el.tcpLauncherLabel) {
+        el.tcpLauncherLabel.textContent = 'Tool ' + activeIndex;
+        el.tcpLauncherLabel.parentElement?.classList.toggle('frame-selection-nonzero', activeIndex !== 0);
+    }
     el.tcpProfileButtons.forEach((button) => {
         const selected = Number(button.dataset.tcpProfile) === activeIndex;
         button.classList.toggle('active', selected);
         button.setAttribute('aria-pressed', String(selected));
         button.disabled = locked;
-        button.title = uiFormat('TCP {number} 선택', { number: Number(button.dataset.tcpProfile) + 1 });
+        button.title = 'Tool ' + button.dataset.tcpProfile;
     });
-    Object.values(el.tcpOffsetInputs).forEach((input) => { input.disabled = locked; });
-    if (el.btnApplyTcpProfile) el.btnApplyTcpProfile.disabled = locked;
-    if (el.btnResetTcpProfile) el.btnResetTcpProfile.disabled = locked;
+    Object.values(el.tcpOffsetInputs).forEach(input => { input.disabled = readOnly; });
+    Object.values(el.toolLoadInputs || {}).forEach(input => { input.disabled = readOnly; });
+    if (el.btnApplyTcpProfile) el.btnApplyTcpProfile.disabled = readOnly;
+    if (el.btnResetTcpProfile) el.btnResetTcpProfile.disabled = readOnly;
+    if (el.btnToolLoadFromModels) el.btnToolLoadFromModels.disabled = readOnly;
+    if (el.btnToolLoadInfo) el.btnToolLoadInfo.disabled = !available;
+    if (el.btnCopyToolData) el.btnCopyToolData.disabled = !available;
     if (!available) el.tcpProfilePanel?.classList.add('panel-user-hidden');
     updatePanelLauncher('tcp-profile-panel');
     updateTcpSnapUi();
     if (!available) return;
-
-    const profile = robot.userData.tcpLiveProfile || profiles[activeIndex];
-    const values = getTcpProfileEditorValues(profile);
-    Object.entries(values).forEach(([key, value]) => {
+    const profile = activeIndex === 0 ? profiles[0] : robot.userData.tcpLiveProfile || profiles[activeIndex];
+    Object.entries(getTcpProfileEditorValues(profile)).forEach(([key, value]) => {
         const input = el.tcpOffsetInputs[key];
         if (input && input !== document.activeElement) input.value = String(Number(value.toFixed(3)));
+    });
+    const load = normalizeToolLoad(profile.load);
+    const values = { mass: load.mass, cogX: load.cog[0], cogY: load.cog[1], cogZ: load.cog[2], ix: load.inertia[0], iy: load.inertia[1], iz: load.inertia[2] };
+    Object.entries(values).forEach(([key, value]) => {
+        const input = el.toolLoadInputs?.[key];
+        if (input && input !== document.activeElement) input.value = String(value);
     });
 }
 
@@ -31465,9 +31814,9 @@ function selectTcpProfile(index) {
     syncActiveTcpFrame(robot);
     captureCurrentTcpTarget(robot);
     refreshTcpProfileUi(robot);
-    setTcpProfileStatus('선택한 TCP가 활성화되었습니다.', 'success');
-    setStatus('TCP {number} 활성화', '#f97316', { number: index + 1 });
-    recordHistory('TCP 선택', before, captureSceneSnapshot());
+    setTcpProfileStatus('선택한 Tool가 활성화되었습니다.', 'success');
+    setStatus('Tool {number} 활성화', '#f97316', { number: index });
+    recordHistory('Tool 선택', before, captureSceneSnapshot());
 }
 
 function readTcpProfileEditorValues() {
@@ -31485,11 +31834,12 @@ function readTcpProfileEditorValues() {
 
 function applyTcpProfileEditor() {
     const robot = state.activeArticulatedModel;
-    if (isModelMotionActive(robot) || !robot?.userData.tcpFrame) return;
+    if (isModelMotionActive(robot) || !robot?.userData.tcpFrame || robot.userData.activeTcpProfileIndex === 0) return;
     const values = readTcpProfileEditorValues();
-    if (!values) {
-        setTcpProfileStatus('TCP 오프셋 입력값을 확인하세요.', 'error');
-        setStatus('TCP 오프셋 입력값을 확인하세요.', '#ef4444');
+    const load = readToolLoadEditor();
+    if (!values || !load) {
+        setTcpProfileStatus('Tool 오프셋 입력값을 확인하세요.', 'error');
+        setStatus('Tool 오프셋 입력값을 확인하세요.', '#ef4444');
         return;
     }
     commitAllPendingHistories();
@@ -31497,6 +31847,7 @@ function applyTcpProfileEditor() {
     delete robot.userData.tcpLiveProfile;
     const profiles = ensureRobotTcpProfiles(robot);
     const profile = profiles[robot.userData.activeTcpProfileIndex];
+    profile.load = load;
     profile.position.set(values.x, values.y, values.z);
     profile.quaternion.setFromEuler(new THREE.Euler(
         THREE.MathUtils.degToRad(values.rx),
@@ -31507,16 +31858,16 @@ function applyTcpProfileEditor() {
     syncActiveTcpFrame(robot);
     captureCurrentTcpTarget(robot);
     refreshTcpProfileUi(robot);
-    setTcpProfileStatus('TCP 오프셋을 적용했습니다.', 'success');
-    setStatus('TCP {number} 오프셋 적용', '#22c55e', {
-        number: robot.userData.activeTcpProfileIndex + 1
+    setTcpProfileStatus('Tool 오프셋을 적용했습니다.', 'success');
+    setStatus('Tool {number} 오프셋 적용', '#22c55e', {
+        number: robot.userData.activeTcpProfileIndex
     });
-    recordHistory('TCP 오프셋 설정', before, captureSceneSnapshot());
+    recordHistory('Tool 오프셋 설정', before, captureSceneSnapshot());
 }
 
 function resetActiveTcpProfile() {
     const robot = state.activeArticulatedModel;
-    if (isModelMotionActive(robot) || !robot?.userData.tcpFrame) return;
+    if (isModelMotionActive(robot) || !robot?.userData.tcpFrame || robot.userData.activeTcpProfileIndex === 0) return;
     commitAllPendingHistories();
     const before = captureSceneSnapshot();
     delete robot.userData.tcpLiveProfile;
@@ -31524,11 +31875,12 @@ function resetActiveTcpProfile() {
     const profile = profiles[robot.userData.activeTcpProfileIndex];
     profile.position.set(0, 0, 0);
     profile.quaternion.identity();
+    profile.load = normalizeToolLoad();
     syncActiveTcpFrame(robot);
     captureCurrentTcpTarget(robot);
     refreshTcpProfileUi(robot);
-    setTcpProfileStatus('TCP 오프셋을 초기화했습니다.', 'success');
-    recordHistory('TCP 오프셋 초기화', before, captureSceneSnapshot());
+    setTcpProfileStatus('Tool 오프셋을 초기화했습니다.', 'success');
+    recordHistory('Tool 오프셋 초기화', before, captureSceneSnapshot());
 }
 
 function setWorkObjectStatus(message, type = '') {
@@ -31565,6 +31917,25 @@ function refreshWorkObjectTargetRobotOptions() {
     }
 }
 
+function convertWorkObjectPose(robot, pose, toWorld) {
+    const base = getRobotControllerBaseFrame(robot);
+    base.updateWorldMatrix(true, false);
+    const position = new THREE.Vector3().fromArray(pose.position);
+    const quaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+        ...pose.rotation.map(THREE.MathUtils.degToRad), 'ZYX'
+    ));
+    const baseRotation = base.getWorldQuaternion(new THREE.Quaternion());
+    if (toWorld) {
+        base.localToWorld(position);
+        quaternion.premultiply(baseRotation).normalize();
+    } else {
+        base.worldToLocal(position);
+        quaternion.premultiply(baseRotation.invert()).normalize();
+    }
+    const rotation = new THREE.Euler().setFromQuaternion(quaternion, 'ZYX');
+    return { position: position.toArray(), rotation: [rotation.x, rotation.y, rotation.z].map(THREE.MathUtils.radToDeg) };
+}
+
 function readWorkObjectEditorValues() {
     const values = Object.fromEntries(Object.entries(el.workObjectInputs).map(([key, input]) => [
         key,
@@ -31576,10 +31947,11 @@ function readWorkObjectEditorValues() {
         return Math.abs(value) <= limit;
     });
     if (!valid) return null;
+    const saved = getWorkObjectEditorRobot()?.userData?.workObjects?.[state.workObjectEditor.index];
     return {
-        name: el.workObjectName?.value?.trim() || `Wobj ${state.workObjectEditor.index}`,
+        name: saved?.name || `Wobj ${state.workObjectEditor.index}`,
         defined: state.workObjectEditor.index === WOBJ_WORLD_INDEX
-            || el.workObjectDefined?.textContent !== uiText('미설정'),
+            || saved?.defined === true,
         visible: el.workObjectVisible?.checked !== false,
         position: [values.x, values.y, values.z],
         rotation: [values.rx, values.ry, values.rz]
@@ -31612,9 +31984,7 @@ function renderWorkObjectPanel(robot = getWorkObjectEditorRobot()) {
             // move the robot. Keep the list selectable even while a controller
             // session is active, while pose editing remains motion-locked below.
             button.disabled = !available;
-            button.textContent = workObject.index === WOBJ_WORLD_INDEX
-                ? 'World'
-                : `Wobj[${workObject.index}]`;
+            button.textContent = `Wobj ${workObject.index}`;
             button.title = workObject.name;
             return button;
         }));
@@ -31622,7 +31992,7 @@ function renderWorkObjectPanel(robot = getWorkObjectEditorRobot()) {
     const workObject = workObjects[activeIndex] || createDefaultWorkObject(WOBJ_WORLD_INDEX);
     if (el.workObjectActiveLabel) {
         el.workObjectActiveLabel.textContent = activeIndex === WOBJ_WORLD_INDEX
-            ? 'Wobj[0] World'
+            ? 'Wobj 0'
             : `Wobj[${activeIndex}] ${workObject.name}`;
     }
     if (el.workObjectName) el.workObjectName.value = workObject.name;
@@ -31631,11 +32001,15 @@ function renderWorkObjectPanel(robot = getWorkObjectEditorRobot()) {
         el.workObjectDefined.classList.toggle('error', !workObject.defined);
     }
     if (el.workObjectVisible) el.workObjectVisible.checked = workObject.visible;
-    const rotation = getWorkObjectRotationDegrees(workObject);
+    // Stored frames remain in scene coordinates for save-file compatibility.
+    // Editing and program copying both use the robot's Wobj 0 / BASE frame.
+    const editorPose = available && activeIndex !== WOBJ_WORLD_INDEX && workObject.defined
+        ? convertWorkObjectPose(robot, workObject, false) : workObject;
+    const rotation = getWorkObjectRotationDegrees(editorPose);
     const values = {
-        x: workObject.position[0],
-        y: workObject.position[1],
-        z: workObject.position[2],
+        x: editorPose.position[0],
+        y: editorPose.position[1],
+        z: editorPose.position[2],
         rx: rotation.rx,
         ry: rotation.ry,
         rz: rotation.rz
@@ -31650,7 +32024,10 @@ function renderWorkObjectPanel(robot = getWorkObjectEditorRobot()) {
     Object.values(el.workObjectInputs).forEach((input) => { input.disabled = readOnly; });
     if (el.btnApplyWorkObject) el.btnApplyWorkObject.disabled = readOnly;
     if (el.btnResetWorkObject) el.btnResetWorkObject.disabled = readOnly;
-    if (el.btnRegisterWorkObject) el.btnRegisterWorkObject.disabled = readOnly;
+    if (el.btnWorkObjectSnap) el.btnWorkObjectSnap.disabled = readOnly;
+    if (el.workObjectSnapType) el.workObjectSnapType.disabled = readOnly;
+    if (el.btnCopyWorkObject) el.btnCopyWorkObject.disabled = !available;
+    updateTcpSnapUi();
     updatePanelLauncher('workobject-panel');
     syncWorkObjectVisuals(robot);
     const jogRobot = getJogTargetRobot();
@@ -31660,6 +32037,7 @@ function renderWorkObjectPanel(robot = getWorkObjectEditorRobot()) {
 
 function selectWorkObject(index) {
     const robot = getWorkObjectEditorRobot();
+    if (state.tcpSnapTarget) setTcpSnapMode(false);
     const nextIndex = resolveWorkObjectIndex(index, -1);
     if (!robot || nextIndex < WOBJ_WORLD_INDEX || nextIndex > WOBJ_MAX_INDEX) return;
     const before = captureSceneSnapshot();
@@ -31685,11 +32063,12 @@ function applyWorkObjectEditor() {
     commitAllPendingHistories();
     const before = captureSceneSnapshot();
     const workObject = ensureRobotWorkObjects(robot)[index];
+    const worldPose = convertWorkObjectPose(robot, values, true);
     workObject.name = values.name.slice(0, 40) || `Wobj ${index}`;
     workObject.defined = true;
     workObject.visible = values.visible;
-    workObject.position = values.position;
-    workObject.rotation = values.rotation;
+    workObject.position = worldPose.position;
+    workObject.rotation = worldPose.rotation;
     robot.userData.activeWorkObjectIndex = index;
     syncWorkObjectVisuals(robot);
     renderWorkObjectPanel(robot);
@@ -31717,41 +32096,31 @@ function resetWorkObjectEditor() {
     recordHistory('Wobj 초기화', before, captureSceneSnapshot());
 }
 
-function registerCurrentTcpAsWorkObject() {
+function toggleWorkObjectSnap() {
     const robot = getWorkObjectEditorRobot();
-    const index = resolveWorkObjectIndex(state.workObjectEditor.index);
-    const tcpFrame = robot?.userData?.tcpFrame;
-    if (!robot || !tcpFrame || !isEditableWorkObjectIndex(index) || isMotionActive()) return;
-    commitAllPendingHistories();
-    const before = captureSceneSnapshot();
-    robot.updateMatrixWorld(true);
-    const position = tcpFrame.getWorldPosition(new THREE.Vector3());
-    const quaternion = tcpFrame.getWorldQuaternion(new THREE.Quaternion());
-    const euler = new THREE.Euler().setFromQuaternion(quaternion, 'ZYX');
-    const workObject = ensureRobotWorkObjects(robot)[index];
-    workObject.defined = true;
-    workObject.visible = true;
-    workObject.position = position.toArray().map((value) => Number(value.toFixed(3)));
-    workObject.rotation = [euler.x, euler.y, euler.z].map((value) => Number(THREE.MathUtils.radToDeg(value).toFixed(3)));
-    syncWorkObjectVisuals(robot);
-    renderWorkObjectPanel(robot);
-    updateInterferenceZoneVisuals();
-    evaluateInterferenceZones();
-    scheduleMotionProjectSave();
-    setWorkObjectStatus('현재 TCP 위치를 Wobj 원점으로 등록했습니다.', 'success');
-    recordHistory('현재 TCP로 Wobj 등록', before, captureSceneSnapshot());
+    const index = state.workObjectEditor.index;
+    if (!robot || !isEditableWorkObjectIndex(index) || isMotionActive()) return;
+    const enabled = state.tcpSnapMode && Boolean(state.tcpSnapTarget);
+    setTcpSnapMode(false);
+    if (enabled) return;
+    if (state.measurement.active) closeMeasurementPanel();
+    if (state.placement.active) deactivateModelPlacement();
+    state.tcpSnapTarget = { robotId: robot.userData.motionInstanceId, index };
+    state.tcpSnapType = el.workObjectSnapType?.value || 'auto';
+    setTcpSnapMode(true);
 }
 
 function updateTcpProfileLive() {
     const robot = state.activeArticulatedModel;
-    if (isModelMotionActive(robot) || !robot?.userData.tcpFrame) return;
+    if (isModelMotionActive(robot) || !robot?.userData.tcpFrame || robot.userData.activeTcpProfileIndex === 0) return;
     const values = readTcpProfileEditorValues();
     if (!values) {
         clearTcpProfileLive(robot);
-        setTcpProfileStatus('TCP 오프셋 입력값을 확인하세요.', 'error');
+        setTcpProfileStatus('Tool 오프셋 입력값을 확인하세요.', 'error');
         return;
     }
     const liveProfile = createDefaultTcpProfile();
+    liveProfile.load = readToolLoadEditor() || normalizeToolLoad(ensureRobotTcpProfiles(robot)[robot.userData.activeTcpProfileIndex].load);
     liveProfile.position.set(values.x, values.y, values.z);
     liveProfile.quaternion.setFromEuler(new THREE.Euler(
         THREE.MathUtils.degToRad(values.rx),
@@ -31965,7 +32334,7 @@ function renderJogControls(robot) {
     el.jogPanel.classList.remove('hidden');
     updatePanelLauncher('jog-panel');
     refreshTcpProfileUi(robot);
-    setTcpProfileStatus('선택한 TCP는 로봇별로 저장됩니다.');
+    setTcpProfileStatus('선택한 Tool은 로봇별로 저장됩니다.');
     updateBaseJogCapabilities(robot);
     setJogMode('base');
     updateSnapFaceOrientationUi();
@@ -32725,7 +33094,10 @@ function updateTcpPresentation(robot, pose = getCurrentTcpPoseBase(robot)) {
 function updateJogWorkObjectUi(robot = getJogTargetRobot()) {
     const index = resolveWorkObjectIndex(robot?.userData?.activeWorkObjectIndex);
     const label = document.getElementById('wobj-launcher-label');
-    if (label) label.textContent = `Wobj ${index}`;
+    if (label) {
+        label.textContent = `Wobj ${index}`;
+        label.parentElement?.classList.toggle('frame-selection-nonzero', index !== WOBJ_WORLD_INDEX);
+    }
     const titles = el.baseJogView?.querySelectorAll('.base-jog-title') || [];
     if (el.jogCartesianFrame) el.jogCartesianFrame.value = state.jogCartesianFrame;
     el.jogToolFrameHint?.classList.toggle('hidden', state.jogCartesianFrame !== 'tool');
@@ -34268,6 +34640,33 @@ function closeCollaborationSocket(resetState = true) {
 }
 
 let virtualControllerSessionSequence = 0;
+
+function readVirtualControllerSettings() {
+    let saved;
+    try {
+        saved = JSON.parse(localStorage.getItem(VIRTUAL_CONTROLLER_SETTINGS_STORAGE_KEY) || 'null');
+    } catch { }
+    const addresses = saved?.ipAddresses || {};
+    const readAddress = (kind, fallback) => typeof addresses[kind] === 'string'
+        ? addresses[kind].trim() || fallback : fallback;
+    return {
+        controllerKind: saved?.controllerKind === 'real' ? 'real' : 'virtual',
+        ipAddresses: {
+            virtual: readAddress('virtual', '127.0.0.1'),
+            real: readAddress('real', '192.168.0.1')
+        }
+    };
+}
+
+function saveVirtualControllerSettings(controller = state.virtualController) {
+    const settings = readVirtualControllerSettings();
+    settings.controllerKind = controller.controllerKind === 'real' ? 'real' : 'virtual';
+    const ipAddress = typeof controller.ipAddress === 'string' ? controller.ipAddress.trim() : '';
+    if (ipAddress) settings.ipAddresses[settings.controllerKind] = ipAddress;
+    try {
+        localStorage.setItem(VIRTUAL_CONTROLLER_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+    } catch { }
+}
 
 function createVirtualControllerSession(template = null) {
     const source = template || {};
@@ -37021,7 +37420,7 @@ function updateIoFunctionMapping(id, field, value) {
         }
         next.conveyorSpeed = Number(value);
     }
-    else if (field === 'viewSlot') next.viewSlot = Number.isInteger(Number(value)) ? Math.min(3, Math.max(0, Number(value))) : 0;
+    else if (field === 'viewSlot') next.viewSlot = Number.isInteger(Number(value)) ? Math.min(VIEW_PRESET_COUNT - 1, Math.max(0, Number(value))) : 0;
     else return;
 
     if (next.action === IO_FUNCTION_MAPPING_ACTIONS.VIEW) {
@@ -37805,20 +38204,13 @@ async function tryOlpZoneBlend(robot, motion, point, speed, project, runtime, op
 function applyOlpTcpProfile(robot, options = {}) {
     if (options.tool === undefined || options.tool === null || options.tool === '') return;
     const tool = Number(options.tool);
-    if (!Number.isInteger(tool) || tool < 0 || tool > TCP_PROFILE_COUNT) {
-        throw new Error(`Tool index must be 0 to ${TCP_PROFILE_COUNT}.`);
+    if (!Number.isInteger(tool) || tool < 0 || tool >= TCP_PROFILE_COUNT) {
+        throw new Error('Tool index must be 0 to ' + (TCP_PROFILE_COUNT - 1) + '.');
     }
     if (!robot?.userData?.tcpFrame) throw new Error('TCP frame is unavailable for the selected robot.');
     ensureRobotTcpProfiles(robot);
-    if (tool === 0) {
-        // Controller Tool[0] is the flange, not one of the saved TCP slots.
-        robot.userData.tcpLiveProfile = {
-            position: new THREE.Vector3(), quaternion: new THREE.Quaternion()
-        };
-    } else {
-        delete robot.userData.tcpLiveProfile;
-        robot.userData.activeTcpProfileIndex = tool - 1;
-    }
+    delete robot.userData.tcpLiveProfile;
+    robot.userData.activeTcpProfileIndex = tool;
     syncActiveTcpFrame(robot);
     captureCurrentTcpTarget(robot);
     if (robot === state.activeArticulatedModel) refreshTcpProfileUi(robot);
@@ -38677,6 +39069,7 @@ async function connectVirtualController() {
         return;
     }
     controller.ipAddress = ipAddress;
+    saveVirtualControllerSettings(controller);
     const targetRobot = getVirtualControllerTargetRobot(controller);
     if (!targetRobot) {
         setVirtualControllerStatus(
@@ -41177,7 +41570,7 @@ function applyAutoPath() {
 function programCommandName(step) {
     if (isIoMotion(step.motion)) return (step.motion === 'IO_OUT' ? 'IO 출력' : '입력 대기');
     if (isMotionPointMotion(step.motion)) return formatMotionPointName(step.pointIndex);
-    if (step.motion === 'VIEW') return `View ${Math.min(4, Math.max(1, Number(step.viewSlot) + 1 || 1))}`;
+    if (step.motion === 'VIEW') return `View ${Math.min(VIEW_PRESET_COUNT, Math.max(1, Number(step.viewSlot) + 1 || 1))}`;
     return ({
         DELAY: 'Delay',
         WAIT: 'Wait',
@@ -41222,6 +41615,7 @@ function applyWorkOriginOutputStates() {
 function syncWorkOriginOutputStates() {
     applyWorkOriginOutputStates();
     renderWorkOriginDialog();
+    updateWorkOriginButtonUi();
 }
 
 function setWorkOriginDialogStatus(message = '', type = '') {
@@ -41380,6 +41774,9 @@ function updateWorkOriginButtonUi() {
         : !robot || isMotionActive();
     button.classList.toggle('hidden', !visible);
     button.classList.toggle('active', !isOlp && dialogOpen);
+    button.classList.toggle('work-origin-reached', Boolean(robot) && isRobotAtWorkOrigin(
+        robot, isOlp ? { joints: getOlpHomeTargetAngles(robot, 0) } : workOrigin
+    ));
     button.disabled = disabled;
     button.title = uiText(isOlp
         ? (disabled ? 'Work Origin is available when OLP is stopped' : 'Move to Work Origin 0')
@@ -42714,7 +43111,8 @@ function captureRobotMotionStep(robot, existing = null) {
                 : motion === 'VIEW'
                     ? { viewSlot: Number.isInteger(existing?.viewSlot)
                         ? THREE.MathUtils.clamp(existing.viewSlot, 0, VIEW_PRESET_COUNT - 1)
-                        : 0 }
+                        : 0,
+                        viewTransitionSeconds: existing?.viewTransitionSeconds }
                 : motion === 'WAIT'
                     ? {
                         waitRobotInstanceId: existing?.waitRobotInstanceId
@@ -42980,6 +43378,10 @@ function updateMotionUiLock() {
     }
     if (el.btnWorkspaceLoad) {
         el.btnWorkspaceLoad.disabled = simulationWorkspaceFileBusy || locked || isOlpRunning();
+    }
+    if (el.btnWorkspaceList) {
+        el.btnWorkspaceList.disabled = simulationWorkspaceFileBusy || locked || isOlpRunning()
+            || state.workspaceRecovery.projectListOpen;
     }
     if (el.btnWorkspaceSave) el.btnWorkspaceSave.disabled = simulationWorkspaceFileBusy;
     if (el.btnProgramAutoPath) el.btnProgramAutoPath.disabled = locked;
@@ -43655,7 +44057,7 @@ function serializeMotionProject() {
                         : step.motion === 'MOVJ' || step.motion === 'MOVL'
                             ? { speed: step.speed }
                             : step.motion === 'VIEW'
-                            ? { viewSlot: step.viewSlot }
+                            ? { viewSlot: step.viewSlot, viewTransitionSeconds: step.viewTransitionSeconds }
                             : isWaitMotion(step.motion)
                                 ? {
                                     waitRobotInstanceId: step.waitRobotInstanceId,
@@ -43719,6 +44121,7 @@ async function persistImportedWorkspaceAsset(file, extension = getFileExtension(
 }
 
 function clearSceneForWorkspaceRestore() {
+    cancelMainViewTransition();
     if (state.sketch.active) exitSketchMode({ restoreCamera: false });
     if (state.zeroPointEdit.active) exitZeroPointEditor();
     closeToolLoadInfoPanel();
@@ -43758,6 +44161,8 @@ function clearSceneForWorkspaceRestore() {
 }
 
 function restoreWorkspaceViewConfiguration(configuration) {
+    cancelMainViewTransition();
+    state.viewTransitionSeconds = normalizeViewTransitionSeconds(configuration?.viewTransitionSeconds);
     state.viewPresets = Array.from({ length: VIEW_PRESET_COUNT }, () => null);
     const presets = Array.isArray(configuration) ? configuration : configuration?.viewPresets;
     if (Array.isArray(presets)) {
@@ -43765,6 +44170,7 @@ function restoreWorkspaceViewConfiguration(configuration) {
             if (!isValidViewPreset(preset)) return;
             state.viewPresets[slot] = {
                 name: String(preset.name || getDefaultViewPresetName(slot)).slice(0, 24),
+                transitionSeconds: normalizeViewTransitionSeconds(preset.transitionSeconds ?? state.viewTransitionSeconds),
                 camera: {
                     position: preset.camera.position.map(Number),
                     target: preset.camera.target.map(Number),
@@ -43846,6 +44252,7 @@ function applyWorkspaceDisplayState(snapshot) {
 }
 
 function applyWorkspaceCameraState(cameraState) {
+    cancelMainViewTransition();
     if (!state.camera || !state.controls || !cameraState) return;
     const loadedSketchCamera = isSketchCameraState(cameraState);
     if (Array.isArray(cameraState.position) && cameraState.position.length === 3) {
@@ -44702,7 +45109,7 @@ function resolveWorkspaceRecoveryChoice(choice) {
     recovery.recoveryChoiceResolver = null;
     resolve(choice === 'restore'
         ? { action: 'restore', workspaceId: recovery.selectedRecoveryWorkspaceId }
-        : { action: 'new', workspaceId: null });
+        : { action: choice === 'cancel' ? 'cancel' : 'new', workspaceId: null });
 }
 
 function showWorkspaceRecoveryError(message = '') {
@@ -44782,6 +45189,7 @@ function updateWorkspaceRecoveryManagementUi() {
     if (el.btnWorkspaceDelete) {
         el.btnWorkspaceDelete.disabled = selectedInputs.length === 0 || recovery.recoveryDeleting;
     }
+    if (el.btnWorkspaceCancel) el.btnWorkspaceCancel.disabled = recovery.recoveryDeleting;
 }
 
 function renderWorkspaceRecoverySelection() {
@@ -44854,12 +45262,13 @@ function renderWorkspaceRecoveryCandidates(candidates, preferredWorkspaceId = nu
     const multiple = candidates.length > 1;
     const hasCandidates = candidates.length > 0;
     if (el.workspaceRecoveryDescription) {
-        el.workspaceRecoveryDescription.textContent = uiText(multiple
+        el.workspaceRecoveryDescription.textContent = uiText(!hasCandidates
+            ? '저장된 프로젝트가 없습니다.' : multiple
             ? '저장된 작업이 여러 개 있습니다. 불러올 작업을 선택하세요.'
             : '저장된 3D 시뮬레이션 작업이 있습니다. 불러오시겠습니까?');
     }
     if (el.workspaceRecoveryOptions) el.workspaceRecoveryOptions.hidden = !hasCandidates;
-    if (el.workspaceRecoveryDetails) el.workspaceRecoveryDetails.hidden = multiple;
+    if (el.workspaceRecoveryDetails) el.workspaceRecoveryDetails.hidden = multiple || !hasCandidates;
     if (el.workspaceRecoveryManagement) el.workspaceRecoveryManagement.hidden = !hasCandidates;
     if (el.workspaceRecoveryList) el.workspaceRecoveryList.replaceChildren();
 
@@ -44946,7 +45355,8 @@ function renderWorkspaceRecoveryCandidates(candidates, preferredWorkspaceId = nu
             deleteInput.type = 'checkbox';
             deleteInput.dataset.workspaceRecoveryDelete = 'true';
             deleteInput.value = candidate.record.id;
-            deleteInput.disabled = Boolean(candidate.live);
+            deleteInput.disabled = Boolean(candidate.live || recovery.projectListOpen
+                && new Set(candidate.memberIds || [candidate.record.id]).has(recovery.workspaceId));
             deleteInput.setAttribute('aria-label', uiFormat('삭제할 작업 선택: {name}', {
                 name: getWorkspaceRecoveryDisplayName(candidate.record, number)
             }));
@@ -45030,8 +45440,10 @@ async function deleteSelectedWorkspaceRecoveryCandidates() {
 
 function requestWorkspaceRecoveryChoice(candidates, {
     preferredWorkspaceId = null,
-    errorMessage = ''
+    errorMessage = '',
+    allowCancel = false
 } = {}) {
+    if (el.btnWorkspaceCancel) el.btnWorkspaceCancel.hidden = !allowCancel;
     renderWorkspaceRecoveryCandidates(candidates, preferredWorkspaceId);
     const selected = candidates.find((candidate) => (
         candidate.record.id === state.workspaceRecovery.selectedRecoveryWorkspaceId
@@ -45051,7 +45463,7 @@ function requestWorkspaceRecoveryChoice(candidates, {
             ? '저장된 작업이 여러 개 있습니다. 불러올 작업을 선택하세요.'
             : '저장된 3D 시뮬레이션 작업이 있습니다. 불러오시겠습니까?'));
         if (!shouldRestore || !selected) {
-            return Promise.resolve({ action: 'new', workspaceId: null });
+            return Promise.resolve({ action: allowCancel ? 'cancel' : 'new', workspaceId: null });
         }
         if (candidates.length === 1 || typeof window.prompt !== 'function') {
             return Promise.resolve({ action: 'restore', workspaceId: selected.record.id });
@@ -45060,7 +45472,7 @@ function requestWorkspaceRecoveryChoice(candidates, {
             `${index + 1}. ${getWorkspaceRecoveryDisplayName(candidate.record, index + 1)}`
         )).join('\n');
         const answer = window.prompt(`${uiText('불러올 작업 선택')}\n${options}`, '1');
-        if (answer === null) return Promise.resolve({ action: 'new', workspaceId: null });
+        if (answer === null) return Promise.resolve({ action: allowCancel ? 'cancel' : 'new', workspaceId: null });
         const index = Math.max(0, Math.min(candidates.length - 1, Math.trunc(Number(answer) || 1) - 1));
         return Promise.resolve({ action: 'restore', workspaceId: candidates[index].record.id });
     }
@@ -45076,6 +45488,41 @@ function requestWorkspaceRecoveryChoice(candidates, {
 function closeWorkspaceRecoveryDialog() {
     showWorkspaceRecoveryError('');
     if (el.workspaceRecoveryDialog?.open) el.workspaceRecoveryDialog.close();
+}
+
+async function openWorkspaceProjectList() {
+    const recovery = state.workspaceRecovery;
+    if (!recovery.ready || recovery.projectListOpen || state.resetInProgress
+        || simulationWorkspaceFileBusy || isMotionActive() || isOlpRunning()
+        || state.placement.previewOriginalTransform) return;
+    recovery.projectListOpen = true;
+    if (el.btnWorkspaceList) el.btnWorkspaceList.disabled = true;
+    const saveCurrent = async () => {
+        const revision = Number(recovery.workspace?.revision) || 0;
+        await saveMotionProjectNow();
+        if (Number(recovery.workspace?.revision) <= revision) {
+            throw new Error('작업을 자동 저장하지 못했습니다.');
+        }
+    };
+    try {
+        await saveCurrent();
+        const candidates = await discoverWorkspaceRecoveryCandidates({ sessionWorkspaceId: recovery.workspaceId });
+        const choice = await requestWorkspaceRecoveryChoice(candidates, {
+            preferredWorkspaceId: recovery.workspaceId, allowCancel: true
+        });
+        closeWorkspaceRecoveryDialog();
+        if (choice.action === 'cancel') return;
+        await saveCurrent();
+        writeSessionStorageValue(WORKSPACE_REQUESTED_RESTORE_KEY, choice.action === 'restore' ? choice.workspaceId : null);
+        writeSessionStorageValue(WORKSPACE_START_CLEAN_KEY, choice.action === 'new' ? '1' : null);
+        window.location.reload();
+    } catch (error) {
+        console.warn('Unable to open the saved project list:', error);
+        setStatus('작업을 자동 저장하지 못했습니다.', '#ef4444');
+    } finally {
+        recovery.projectListOpen = false;
+        if (el.btnWorkspaceList) el.btnWorkspaceList.disabled = false;
+    }
 }
 
 function setupWorkspaceBroadcastChannel() {
@@ -45489,6 +45936,7 @@ async function resetCleanWorkspaceUiState() {
     state.endMonitoringObjects = normalizeEndMonitoringObjects();
     syncMotionRepeatControl();
     state.viewPresets = Array.from({ length: VIEW_PRESET_COUNT }, () => null);
+    state.viewTransitionSeconds = DEFAULT_VIEW_TRANSITION_SECONDS;
     state.activeViewSlot = null;
     refreshViewPresetsUi();
     state.equipmentDefinitions = [];
@@ -45586,6 +46034,8 @@ async function initializeWorkspaceRecovery() {
         const startClean = readSessionStorageValue(WORKSPACE_START_CLEAN_KEY) === '1';
         writeSessionStorageValue(WORKSPACE_START_CLEAN_KEY, null);
         const sessionWorkspaceId = readSessionStorageValue(WORKSPACE_SESSION_POINTER_KEY);
+        let requestedWorkspaceId = readSessionStorageValue(WORKSPACE_REQUESTED_RESTORE_KEY);
+        writeSessionStorageValue(WORKSPACE_REQUESTED_RESTORE_KEY, null);
         let candidates = await discoverWorkspaceRecoveryCandidates({ sessionWorkspaceId, startClean });
         let preferredWorkspaceId = candidates.find((candidate) => candidate.sessionMatch)?.record.id
             || candidates[0]?.record.id
@@ -45600,10 +46050,13 @@ async function initializeWorkspaceRecovery() {
         let errorMessage = '';
 
         while (candidates.length && !startClean) {
-            const choice = await requestWorkspaceRecoveryChoice(candidates, {
-                preferredWorkspaceId,
-                errorMessage
-            });
+            const choice = candidates.some(candidate => candidate.record.id === requestedWorkspaceId)
+                ? { action: 'restore', workspaceId: requestedWorkspaceId }
+                : await requestWorkspaceRecoveryChoice(candidates, {
+                    preferredWorkspaceId,
+                    errorMessage
+                });
+            requestedWorkspaceId = null;
             if (choice.action === 'new') {
                 break;
             }
@@ -45964,6 +46417,10 @@ function setSimulationWorkspaceFileBusy(busy) {
     if (el.btnWorkspaceSave) el.btnWorkspaceSave.disabled = simulationWorkspaceFileBusy;
     if (el.btnWorkspaceLoad) {
         el.btnWorkspaceLoad.disabled = simulationWorkspaceFileBusy || isMotionActive() || isOlpRunning();
+    }
+    if (el.btnWorkspaceList) {
+        el.btnWorkspaceList.disabled = simulationWorkspaceFileBusy || isMotionActive() || isOlpRunning()
+            || state.workspaceRecovery.projectListOpen;
     }
 }
 
@@ -46437,7 +46894,10 @@ function serializeMotionProgramFileStep(step, robotIndexByInstanceId) {
     if (isIoMotion(motion)) Object.assign(record, normalizeProgramIoStep(step));
     if (motion === 'DELAY') record.delaySeconds = step.delaySeconds;
     if (motion === 'MOVJ' || motion === 'MOVL') record.speed = step.speed;
-    if (motion === 'VIEW') record.viewSlot = step.viewSlot;
+    if (motion === 'VIEW') {
+        record.viewSlot = step.viewSlot;
+        record.viewTransitionSeconds = step.viewTransitionSeconds;
+    }
 
     if (isWaitMotion(motion)) {
         record.waitRobotIndex = robotIndexByInstanceId.has(step.waitRobotInstanceId)
@@ -46563,6 +47023,9 @@ function normalizeMotionProgramFileStep(step, jointCount, stepIndex) {
             throw new Error(`Program step ${stepIndex + 1} has an invalid view slot.`);
         }
         normalized.viewSlot = viewSlot;
+        if (step.viewTransitionSeconds != null) {
+            normalized.viewTransitionSeconds = normalizeViewTransitionSeconds(step.viewTransitionSeconds);
+        }
     }
 
     if (isWaitMotion(motion)) {
@@ -47484,6 +47947,10 @@ function setMotionSessionPaused(session, paused, now = performance.now()) {
         session.startAt += delay;
         session.nextSegmentStartAt += delay;
         if (session.segment) session.segment.startTime += delay;
+        if (state.viewTransition?.session === session) {
+            state.viewTransition.startTime += delay;
+            state.viewTransition.lastTimestamp += delay;
+        }
         const program = ensureMotionProgram(session.robot);
         if (Number.isFinite(program.cycleTimerStartedAt)) program.cycleTimerStartedAt += delay;
         session.status = 'running';
@@ -47532,6 +47999,7 @@ function finalizeMotionHistoryIfIdle() {
 }
 
 function finishRobotMotionSession(session, status, message = '', replacements = {}) {
+    if (state.viewTransition?.session === session) cancelMainViewTransition();
     const robot = session.robot;
     state.motionSessions.delete(robot.userData.motionInstanceId);
     const program = ensureMotionProgram(robot);
@@ -47562,6 +48030,7 @@ function stopRobotMotions(robots) {
         resetTcpPath(robot);
         const session = getMotionSession(robot);
         if (!session) return;
+        if (state.viewTransition?.session === session) cancelMainViewTransition();
         state.motionSessions.delete(robot.userData.motionInstanceId);
         const program = ensureMotionProgram(robot);
         program.runtimeReachedStepIds = new Set(session.reachedStepIds || []);
@@ -48060,10 +48529,20 @@ function advanceMotionSegment(session, timestamp) {
         // with a 3D handle. Defer the camera change until the handle is
         // released so the two interactions never compete in the same frame.
         if (isAny3DTransformHandleDragging()) return false;
-        applyViewPreset(segment.step.viewSlot, { announce: false });
+        if (!segment.viewStarted) {
+            applyViewPreset(segment.step.viewSlot, {
+                announce: false, timestamp, session
+            });
+            segment.viewStarted = true;
+            segment.viewTransition = state.viewTransition;
+        }
+        updateMainViewTransition(timestamp);
+        const transition = segment.viewTransition;
+        const completed = Boolean(!transition || transition.completed || transition.cancelled);
         const program = ensureMotionProgram(robot);
-        program.progress = motionSessionProgress(session, 1);
-        return true;
+        program.progress = motionSessionProgress(session, completed ? 1 : transition.progress);
+        if (completed) segment.duration = Math.max(0, timestamp - segment.startTime);
+        return completed;
     }
 
     const rawElapsed = timestamp - segment.startTime;
@@ -48347,10 +48826,24 @@ function syncModelOutlines() {
                     )) : positions.array;
                 const edgeGeometry = new THREE.BufferGeometry();
                 const isRobot = Boolean(model.userData.manifest);
+                const logoProjection = isRobot && mesh.userData.robotLogoProjection;
+                // Embossed letter edges can extend slightly beyond the painted logo.
+                const logoOutlinePadding = 1;
+                const excludedBounds = logoProjection ? [
+                    { min: [logoProjection.negative[0] - logoOutlinePadding, -Infinity, logoProjection.negative[1] - logoOutlinePadding],
+                      max: [logoProjection.negative[0] + logoProjection.negative[2] + logoOutlinePadding, -logoProjection.minDepth,
+                          logoProjection.negative[1] + logoProjection.negative[3] + logoOutlinePadding] },
+                    { min: [logoProjection.positive[0] - logoOutlinePadding, logoProjection.minDepth, logoProjection.positive[1] - logoOutlinePadding],
+                      max: [logoProjection.positive[0] + logoProjection.positive[2] + logoOutlinePadding, Infinity,
+                          logoProjection.positive[1] + logoProjection.positive[3] + logoOutlinePadding] }
+                ] : [];
                 edgeGeometry.setAttribute('position', new THREE.BufferAttribute(
                     buildCleanOutlinePositions(packedPositions, mesh.geometry.index?.array, {
                         thresholdAngle: isRobot ? 55 : 40,
                         pruneDanglingEdges: isRobot,
+                        excludedIndexRanges: isRobot && mesh.userData.robotLogoMaterialIndex === 1
+                            ? mesh.geometry.groups.filter(group => group.materialIndex === 1) : [],
+                        excludedBounds,
                         minimumAspectRatio: model.userData.manifest || model.userData.sourceExtension === 'stl' ? 0.01 : 0
                     }), 3
                 ));
@@ -48727,8 +49220,6 @@ function syncEmptyStateVisibility() {
 function updateUIStatus() {
     updateLargeModelPerformanceMode();
     syncModelOutlines();
-    const names = state.models.map(m => m.userData.modelName);
-    el.statName.textContent = names.length > 1 ? `${names[0]} (+${names.length-1})` : (names[0] || '-');
     syncEmptyStateVisibility();
     renderModelTree();
     renderPrimitiveShapePanel();
@@ -49311,7 +49802,8 @@ function installSimulationManualGuide() {
 }
 
 function requiresContinuousRendering() {
-    return equipmentApp.active(state.ioFunctionMappings)
+    return Boolean(state.viewTransition && state.viewTransition.session?.status !== 'paused')
+        || equipmentApp.active(state.ioFunctionMappings)
         || activeConveyorMappings().length > 0
         || isViewWindowOpen()
         || state.trace.running
@@ -49335,14 +49827,26 @@ function getRenderWindow() {
 }
 
 function requestRender() {
-    if (!state.renderer || state.renderFramePending) return;
+    if (!state.renderer) return;
+    const renderWindow = getRenderWindow();
+    const previous = state.renderFrameRequest;
+    if (state.renderFramePending && previous?.owner === renderWindow) return;
+    if (previous) previous.owner.cancelAnimationFrame(previous.id);
+    const frame = { owner: renderWindow, id: null };
+    state.renderFrameRequest = frame;
     state.renderFramePending = true;
     // When the fixed-view panel is detached, the opener can be backgrounded by
     // the browser. Schedule the scene loop in the visible popup so camera input
     // and robot motion continue to repaint at the expected rate. Always pass the
     // opener's monotonic clock to animate because each window has its own
     // requestAnimationFrame timestamp origin.
-    getRenderWindow().requestAnimationFrame(() => animate(performance.now()));
+    // A hidden or closed source can suspend its pending callback indefinitely.
+    // Transfer that request with the live view and ignore any stale callback.
+    frame.id = renderWindow.requestAnimationFrame(() => {
+        if (state.renderFrameRequest !== frame) return;
+        state.renderFrameRequest = null;
+        animate(performance.now());
+    });
 }
 
 function renderSimulationScene(renderer, camera) {
@@ -49355,6 +49859,7 @@ function animate(timestamp = performance.now()) {
     applyVirtualControllerFrame(timestamp);
     applyRemoteCollaborationMotion(timestamp);
     updateMotionSessions(timestamp);
+    updateMainViewTransition(timestamp);
     equipmentApp.update(timestamp, state.ioFunctionMappings);
     updateConveyorSimulation(timestamp);
     updateCycleTimeReadout(timestamp);
@@ -49430,6 +49935,7 @@ function onResize() {
 
 function fitCameraToBounds(bounds, { topOnly = false } = {}) {
     if (!bounds || bounds.isEmpty() || !state.camera || !state.controls) return false;
+    cancelMainViewTransition();
     const size = bounds.getSize(new THREE.Vector3());
     const center = bounds.getCenter(new THREE.Vector3());
     const aspect = Math.max(0.1, state.camera.aspect || 1);
@@ -49474,7 +49980,7 @@ function fitCamera() {
 
 async function populateModelList() {
     try {
-        const res = await fetch('./models/models.json?v=20260724-j3-angle-display-1');
+        const res = await fetch('./models/models.json?v=20261031-r35-r50-11');
         const list = await res.json();
         state.catalog.clear();
         el.modelSelect.innerHTML = `<option value="" disabled selected>${uiText('-- 로봇 모델을 선택하세요 --')}</option>`;
@@ -49531,6 +50037,182 @@ function refreshViewerStatus() {
 function setStatus(text, color, replacements = {}) {
     state.viewerStatus = { text, color, replacements };
     refreshViewerStatus();
+}
+
+
+function readToolLoadEditor() {
+    const values = Object.fromEntries(Object.entries(el.toolLoadInputs || {}).map(([key, input]) =>
+        [key, input.value.trim() === '' ? NaN : Number(input.value)]));
+    if (Object.values(values).some(value => !Number.isFinite(value))
+        || ['mass', 'ix', 'iy', 'iz'].some(key => values[key] < 0)) return null;
+    return normalizeToolLoad({ mass: values.mass, cog: [values.cogX, values.cogY, values.cogZ], inertia: [values.ix, values.iy, values.iz] });
+}
+
+async function copyRobotProgram(code, button, status) {
+    try {
+        const doc = button.ownerDocument;
+        const clipboard = doc.defaultView.navigator.clipboard;
+        try {
+            if (!clipboard?.writeText) throw new Error('Clipboard API unavailable');
+            await clipboard.writeText(code);
+        } catch {
+            const text = doc.createElement('textarea');
+            text.value = code;
+            text.style.cssText = 'position:fixed;left:-10000px;top:0';
+            const active = doc.activeElement;
+            doc.body.append(text);
+            try {
+                text.select();
+                if (!doc.execCommand('copy')) throw new Error('Clipboard copy failed');
+            } finally { text.remove(); active?.focus(); }
+        }
+        status('로봇 프로그램 코드를 복사했습니다.', 'success');
+    } catch { status('데이터를 복사하지 못했습니다. 다시 시도하세요.', 'error'); }
+}
+
+function copyToolData() {
+    const robot = state.activeArticulatedModel;
+    if (!robot?.userData?.tcpFrame) return;
+    const index = robot.userData.activeTcpProfileIndex;
+    const values = index === 0 ? getTcpProfileEditorValues(createDefaultTcpProfile()) : readTcpProfileEditorValues();
+    const load = index === 0 ? normalizeToolLoad() : readToolLoadEditor();
+    if (!values || !load) { setTcpProfileStatus('Tool 오프셋 입력값을 확인하세요.', 'error'); return; }
+    const code = buildToolProgram(index, [values.x, values.y, values.z], [values.rx, values.ry, values.rz], load);
+    void copyRobotProgram(code, el.btnCopyToolData, setTcpProfileStatus);
+}
+
+function copyWorkObjectData() {
+    const robot = getWorkObjectEditorRobot();
+    if (!robot) return;
+    const index = state.workObjectEditor.index;
+    const values = readWorkObjectEditorValues();
+    if (!values) { setWorkObjectStatus('Wobj 입력값을 확인하세요.', 'error'); return; }
+    const position = index === WOBJ_WORLD_INDEX ? [0, 0, 0] : values.position;
+    const rotation = index === WOBJ_WORLD_INDEX ? [0, 0, 0] : values.rotation;
+    const code = buildFrameProgram(`Wobj[${index}].UFrame`, position, rotation);
+    void copyRobotProgram(code, el.btnCopyWorkObject, setWorkObjectStatus);
+}
+
+function selectToolLoadModel(models, { description = '부하 정보를 가져올 Tool 모델을 선택하세요.', confirmLabel = '가져오기', allowAll = false } = {}) {
+    const doc = el.btnToolLoadFromModels.ownerDocument;
+    if (doc !== document && !doc.getElementById('tool-load-model-styles')) {
+        // Reuse the loaded application styles in the detached Tool window.
+        const style = doc.createElement('style');
+        style.id = 'tool-load-model-styles';
+        style.textContent = Array.from(document.styleSheets).flatMap((sheet) => {
+            try { return Array.from(sheet.cssRules, rule => rule.cssText); }
+            catch { return []; }
+        }).join('\n');
+        doc.head.append(style);
+    }
+    const dialog = doc.createElement('dialog');
+    dialog.id = 'tool-load-model-dialog';
+    dialog.className = 'simulation-reset-dialog tool-attachment-dialog';
+    dialog.setAttribute('aria-labelledby', 'tool-load-model-title');
+    dialog.innerHTML = `<form method="dialog">
+        <div class="simulation-reset-dialog-header"><i class="fa-solid fa-weight-hanging" aria-hidden="true"></i><h2 id="tool-load-model-title"></h2></div>
+        <p></p>
+        <label class="tool-attachment-robot-field" for="tool-load-model-select"><span></span><select id="tool-load-model-select" autofocus></select></label>
+        <div class="simulation-reset-dialog-actions">
+            <button id="tool-load-model-cancel" type="button"></button>
+            <button id="tool-load-model-confirm" type="submit" class="primary" value="select"></button>
+        </div>
+    </form>`;
+    dialog.querySelector('h2').textContent = uiText('Tool 모델 선택');
+    dialog.querySelector('p').textContent = uiText(description);
+    dialog.querySelector('label span').textContent = uiText('Tool 모델');
+    dialog.querySelector('#tool-load-model-cancel').textContent = uiText('취소');
+    dialog.querySelector('#tool-load-model-confirm').textContent = uiText(confirmLabel);
+    const select = dialog.querySelector('select');
+    models.forEach((model, index) => {
+        const option = doc.createElement('option');
+        option.value = String(index);
+        option.textContent = `${index + 1}. ${model.userData.modelName || model.name || uiText('Tool')}`;
+        select.append(option);
+    });
+    if (allowAll && models.length > 1) {
+        const option = doc.createElement('option');
+        option.value = 'all';
+        option.textContent = uiText('모두 다');
+        select.append(option);
+    }
+    return new Promise((resolve) => {
+        dialog.querySelector('#tool-load-model-cancel').addEventListener('click', () => dialog.close('cancel'));
+        dialog.addEventListener('close', () => {
+            const selected = dialog.returnValue !== 'select' ? null
+                : allowAll && select.value === 'all' ? [...models] : models[Number(select.value)];
+            dialog.remove();
+            resolve(selected);
+        }, { once: true });
+        doc.body.append(dialog);
+        dialog.showModal();
+    });
+}
+
+async function showMountedToolLoadInfo() {
+    const robot = state.activeArticulatedModel;
+    if (!robot?.userData?.tcpFrame) return;
+    const models = state.models.filter(model => model.userData.placement === 'tcp' && model.userData.attachmentHost === robot);
+    if (!models.length) { setTcpProfileStatus('로봇에 장착된 Tool 모델이 없습니다.', 'error'); return; }
+    try {
+        const model = models.length === 1 ? models[0] : await selectToolLoadModel(models, {
+            description: '부하 정보를 확인할 Tool 모델을 선택하세요.', confirmLabel: '부하 정보'
+        });
+        if (!model || state.activeArticulatedModel !== robot || !state.models.includes(robot)) return;
+        if (!state.models.includes(model) || model.userData.placement !== 'tcp' || model.userData.attachmentHost !== robot) {
+            setTcpProfileStatus('선택한 Tool 모델을 사용할 수 없습니다. 다시 선택하세요.', 'error');
+            return;
+        }
+        openToolLoadInfoPanel(model);
+        el.toolLoadInfoPanel?.ownerDocument.defaultView?.focus();
+    } catch (error) {
+        setTcpProfileStatus(error.message || '부하 정보를 계산할 수 없습니다.', 'error');
+    }
+}
+
+async function importMountedToolLoad() {
+    const robot = state.activeArticulatedModel;
+    if (!robot?.userData?.tcpFrame || robot.userData.activeTcpProfileIndex === 0 || isModelMotionActive(robot)) return;
+    const toolIndex = robot.userData.activeTcpProfileIndex;
+    const models = state.models.filter(model => model.userData.placement === 'tcp' && model.userData.attachmentHost === robot);
+    if (!models.length) { setTcpProfileStatus('로봇에 장착된 Tool 모델이 없습니다.', 'error'); return; }
+    try {
+        const selection = models.length === 1 ? models[0] : await selectToolLoadModel(models, { allowAll: true });
+        if (!selection) return;
+        const selectedModels = Array.isArray(selection) ? selection : [selection];
+        if (state.activeArticulatedModel !== robot || robot.userData.activeTcpProfileIndex !== toolIndex
+            || !state.models.includes(robot) || isModelMotionActive(robot)) return;
+        if (selectedModels.some(model => !state.models.includes(model) || model.userData.placement !== 'tcp'
+            || model.userData.attachmentHost !== robot)) {
+            setTcpProfileStatus('선택한 Tool 모델을 사용할 수 없습니다. 다시 선택하세요.', 'error');
+            return;
+        }
+        const mount = getRobotToolMountFrame(robot);
+        mount.updateWorldMatrix(true, true);
+        const inverseRotation = mount.getWorldQuaternion(new THREE.Quaternion()).invert();
+        const parts = selectedModels.map(model => {
+            const result = calculateModelLoadResult(model, normalizeToolLoadProperties(model.userData.toolLoadProperties));
+            const rotation = model.getWorldQuaternion(new THREE.Quaternion()).premultiply(inverseRotation);
+            // calculateModelLoadResult already includes the model scale.
+            const center = new THREE.Vector3().fromArray(result.centerOfMassToolMm).applyQuaternion(rotation);
+            center.add(mount.worldToLocal(model.getWorldPosition(new THREE.Vector3())));
+            const matrix = new THREE.Matrix3().setFromMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(rotation)).elements;
+            const tensor = result.inertiaCenterKgM2;
+            const inertia = [0, 1, 2].map(i => [0, 1, 2].map(j => {
+                let value = 0;
+                for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) value += matrix[a * 3 + i] * tensor[a][b] * matrix[b * 3 + j];
+                return value;
+            }));
+            return { mass: result.massKg, cog: center.toArray(), inertia };
+        });
+        const load = combineToolLoads(parts);
+        const values = { mass: load.mass, cogX: load.cog[0], cogY: load.cog[1], cogZ: load.cog[2], ix: load.inertia[0], iy: load.inertia[1], iz: load.inertia[2] };
+        Object.entries(values).forEach(([key, value]) => { el.toolLoadInputs[key].value = Number(value.toFixed(9)); });
+        updateTcpProfileLive();
+        setTcpProfileStatus('모델 부하 정보를 가져왔습니다. 적용을 눌러 저장하세요.', 'success');
+    } catch (error) {
+        setTcpProfileStatus(error.message || '부하 정보를 계산할 수 없습니다.', 'error');
+    }
 }
 
 init();

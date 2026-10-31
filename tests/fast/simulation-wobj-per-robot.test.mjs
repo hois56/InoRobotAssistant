@@ -29,9 +29,10 @@ function fixture() {
     getWorkObjectRobotById: id => robots.find(robot => robot.userData.motionInstanceId === id),
     getJogTargetRobot: () => robots[0],
     getWorkObjectRotationDegrees: workObject => ({ rx: workObject.rotation[0], ry: workObject.rotation[1], rz: workObject.rotation[2] }),
+    convertWorkObjectPose: (_robot, pose) => ({ position: [...pose.position], rotation: [...pose.rotation] }),
     uiText: value => value, isMotionActive: () => false, captureSceneSnapshot: () => ({}),
     sceneSnapshotsEqual: () => false, recordHistory() {}, updatePanelLauncher() {},
-    syncWorkObjectVisuals() {}, updateTcpPresentation() {}, updateJogWorkObjectUi() {},
+    syncWorkObjectVisuals() {}, updateTcpSnapUi() {}, updateTcpPresentation() {}, updateJogWorkObjectUi() {},
     updateInterferenceZoneVisuals() {}, scheduleMotionProjectSave() {}, evaluateInterferenceZones() {},
     commitAllPendingHistories() {}, setWorkObjectStatus() {},
     readWorkObjectEditorValues: () => ({ name: 'Robot 2 frame', position: [4, 5, 6], rotation: [0, 0, 90], visible: true }) });

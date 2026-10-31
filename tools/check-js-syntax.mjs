@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { isIgnoredPath } from './test-selection.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ignoredDirectories = new Set([
@@ -13,14 +14,23 @@ const files = [];
 
 function collect(directory) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-    if (entry.isDirectory() && ignoredDirectories.has(entry.name)) continue;
     const fullPath = path.join(directory, entry.name);
+    if (ignoredDirectories.has(entry.name) || isIgnoredPath(path.relative(repoRoot, fullPath))) continue;
     if (entry.isDirectory()) collect(fullPath);
     else if (sourceExtensions.has(path.extname(entry.name))) files.push(fullPath);
   }
 }
 
-collect(repoRoot);
+if (process.argv.length > 2) {
+  for (const filename of new Set(process.argv.slice(2))) {
+    const fullPath = path.resolve(repoRoot, filename);
+    const relative = path.relative(repoRoot, fullPath);
+    if (relative.startsWith('..') || path.isAbsolute(relative)) throw new Error(`저장소 밖의 경로: ${filename}`);
+    if (sourceExtensions.has(path.extname(fullPath)) && fs.existsSync(fullPath) && !isIgnoredPath(relative)) files.push(fullPath);
+  }
+} else {
+  collect(repoRoot);
+}
 files.sort();
 
 const failures = [];

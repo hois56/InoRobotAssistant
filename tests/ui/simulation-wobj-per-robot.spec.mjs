@@ -18,7 +18,11 @@ async function setFrame(page, index, x, name) {
   await page.locator(`[data-work-object-index="${index}"]`).click();
   const input = page.locator('[data-workobject-pose="x"]');
   await input.focus(); await input.fill(String(x));
-  await page.locator('#workobject-name').fill(name);
+  // Seed an existing custom name; the editor no longer has a name input.
+  await page.evaluate(({ index, name }) => {
+    const a = window.__robotWobj;
+    a.getArticulatedRobots().find(robot => robot.userData.motionInstanceId === a.state.workObjectEditor.robotId).userData.workObjects[index].name = name;
+  }, { index, name });
   await page.locator('#btn-apply-workobject').click();
 }
 
@@ -34,10 +38,11 @@ async function selectRobot(page, index) {
 }
 
 async function expectFrame(page, robotId, index, x, name) {
-  await expect(page.locator('#workobject-target-robot')).toHaveValue(robotId);
+  await expect.poll(() => page.evaluate(() => window.__robotWobj.state.workObjectEditor.robotId)).toBe(robotId);
   await expect(page.locator(`[data-work-object-index="${index}"]`)).toHaveClass(/active/);
   await expect(page.locator('[data-workobject-pose="x"]')).toHaveValue(String(x));
-  if (name) await expect(page.locator('#workobject-name')).toHaveValue(name);
+  if (name) expect(await page.evaluate(({ robotId, index }) => window.__robotWobj.getArticulatedRobots().find(robot => robot.userData.motionInstanceId === robotId).userData.workObjects[index].name, { robotId, index })).toBe(name);
+  await expect(page.locator('#workobject-name, #workobject-target-robot')).toHaveCount(0);
 }
 
 test('두 로봇은 같은 번호의 Wobj도 각각 편집하고 로봇·JOG 전환에서 활성 번호를 유지한다', async ({ page }) => {
@@ -64,9 +69,9 @@ test('두 로봇은 같은 번호의 Wobj도 각각 편집하고 로봇·JOG 전
   await expectFrame(page, ids[0], 1, 100, 'Robot A');
   await page.locator('[data-workobject-pose="x"]').press('Tab');
   await selectRobot(page, 1);
-  await page.locator('#workobject-target-robot').selectOption(ids[0]);
+  await selectRobot(page, 0);
   await expectFrame(page, ids[0], 1, 100, 'Robot A');
-  await page.locator('#workobject-target-robot').selectOption(ids[1]);
+  await selectRobot(page, 1);
   await page.locator('[data-work-object-index="1"]').click();
   await expectFrame(page, ids[1], 1, 700, 'Robot B');
   await page.locator('[data-work-object-index="2"]').click();

@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { sortHistoryMarkdown } = require('./version-history.cjs');
 
 const root = path.resolve(__dirname, '..');
 const histories = {
@@ -13,7 +14,7 @@ const histories = {
 const encodedHistories = Object.fromEntries(
     Object.entries(histories).map(([toolKey, relativePath]) => [
         toolKey,
-        fs.readFileSync(path.join(root, relativePath)).toString('base64')
+        Buffer.from(sortHistoryMarkdown(fs.readFileSync(path.join(root, relativePath), 'utf8')), 'utf8').toString('base64')
     ])
 );
 

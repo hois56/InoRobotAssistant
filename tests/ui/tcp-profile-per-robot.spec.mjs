@@ -21,8 +21,8 @@ test('1번 로봇 컨트롤러 연결은 2번 로봇 TCP 설정을 막지 않는
     controller.wanted = true; controller.status = 'streaming';
     a.selectSceneModel(second); a.refreshTcpProfileUi(second);
     const input = document.querySelector('[data-tcp-offset="x"]');
-    const secondDisabled = input.disabled;
     a.selectTcpProfile(1);
+    const secondDisabled = input.disabled;
     input.value = '123'; a.updateTcpProfileLive();
     const live = second.userData.tcpLiveProfile?.position.x;
     a.applyTcpProfileEditor();

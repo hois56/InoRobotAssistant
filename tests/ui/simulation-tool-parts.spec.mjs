@@ -17,8 +17,9 @@ for (const robotModel of ['IR-R10H-120', 'IR-S7-60Z20']) for (const placement of
     await page.waitForFunction(() => window.__toolParts?.state.models.some(model => model.userData.tcpFrame));
     await page.evaluate(() => {
         const a = window.__toolParts, robot = a.state.models.find(model => model.userData.tcpFrame);
-        robot.userData.tcpProfiles[0].position.set(135, -75, 260);
-        robot.userData.tcpProfiles[0].quaternion.setFromEuler(new a.THREE.Euler(0.3, -0.2, 0.4, 'ZYX'));
+        robot.userData.activeTcpProfileIndex = 1;
+        robot.userData.tcpProfiles[1].position.set(135, -75, 260);
+        robot.userData.tcpProfiles[1].quaternion.setFromEuler(new a.THREE.Euler(0.3, -0.2, 0.4, 'ZYX'));
         a.syncActiveTcpFrame(robot);
     });
     await page.locator('#input-import-3d').setInputFiles({
@@ -38,13 +39,13 @@ for (const robotModel of ['IR-R10H-120', 'IR-S7-60Z20']) for (const placement of
         const a = window.__toolParts, tool = a.state.models.find(model => model.userData.uploaded);
         const robot = tool.userData.attachmentHost, flange = a.getRobotToolMountFrame(robot);
         const before = tool.getWorldPosition(new a.THREE.Vector3());
-        const tcpProfile = robot.userData.tcpProfiles[0].position.toArray();
-        robot.userData.tcpProfiles[1].position.set(-200, 90, 400);
-        robot.userData.tcpProfiles[1].quaternion.setFromEuler(new a.THREE.Euler(-0.4, 0.1, -0.5, 'ZYX'));
-        robot.userData.activeTcpProfileIndex = 1;
+        const tcpProfile = robot.userData.tcpProfiles[1].position.toArray();
+        robot.userData.tcpProfiles[2].position.set(-200, 90, 400);
+        robot.userData.tcpProfiles[2].quaternion.setFromEuler(new a.THREE.Euler(-0.4, 0.1, -0.5, 'ZYX'));
+        robot.userData.activeTcpProfileIndex = 2;
         a.syncActiveTcpFrame(robot);
         const shiftAfterTcpChange = tool.getWorldPosition(new a.THREE.Vector3()).distanceTo(before);
-        robot.userData.activeTcpProfileIndex = 0;
+        robot.userData.activeTcpProfileIndex = 1;
         a.syncActiveTcpFrame(robot);
         return { parentIsFlange: tool.parent === flange, position: tool.position.toArray(),
             rotation: tool.quaternion.angleTo(new a.THREE.Quaternion()), tcpProfile, shiftAfterTcpChange,

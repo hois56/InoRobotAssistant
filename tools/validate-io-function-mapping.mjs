@@ -31,7 +31,7 @@ assert.deepEqual(normalized, {
     triggerValue: 0,
     action: IO_FUNCTION_MAPPING_ACTIONS.VIEW,
     gripObjectRef: '',
-    viewSlot: 3,
+    viewSlot: 9,
     enabled: true
 });
 assert.equal(getIoFunctionMappingAddressLabel(normalized), 'Out[512]');

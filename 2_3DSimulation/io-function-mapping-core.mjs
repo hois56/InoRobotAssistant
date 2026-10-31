@@ -4,6 +4,7 @@ import {
 } from './io-simulator-core.mjs';
 import { normalizeConveyorSettings } from './conveyor-core.mjs';
 import { EQUIPMENT_IO_TYPES, equipmentCommandOptions } from './equipment-core.mjs';
+import { VIEW_PRESET_COUNT } from './view-preset-core.mjs';
 
 export const IO_FUNCTION_MAPPING_SCHEMA_VERSION = 1;
 
@@ -40,7 +41,7 @@ export function normalizeIoFunctionMapping(value, index = 0) {
         : 0;
     const rawViewSlot = Number(source.viewSlot);
     const viewSlot = Number.isSafeInteger(rawViewSlot)
-        ? Math.min(3, Math.max(0, Math.trunc(rawViewSlot)))
+        ? Math.min(VIEW_PRESET_COUNT - 1, Math.max(0, Math.trunc(rawViewSlot)))
         : 0;
     return {
         id: String(source.id || `io-mapping-${index + 1}`),

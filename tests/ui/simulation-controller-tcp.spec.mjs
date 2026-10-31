@@ -16,8 +16,9 @@ test('R7H-90 controller TCP updates JOG while Tool/Wobj never shift the physical
   const result = await page.evaluate(async () => {
     const a = window.__controllerTcp;
     const robot = a.state.activeArticulatedModel;
-    robot.userData.tcpProfiles[0].position.set(30, -20, 150);
-    robot.userData.tcpProfiles[0].quaternion.setFromEuler(new a.THREE.Euler(0.2, -0.1, 0.3, 'ZYX'));
+    robot.userData.activeTcpProfileIndex = 1;
+    robot.userData.tcpProfiles[1].position.set(30, -20, 150);
+    robot.userData.tcpProfiles[1].quaternion.setFromEuler(new a.THREE.Euler(0.2, -0.1, 0.3, 'ZYX'));
     a.syncActiveTcpFrame(robot);
     robot.userData.workObjects[1] = { index: 1, defined: true, position: [130, -70, 40], rotation: [10, -20, 30] };
     robot.userData.activeWorkObjectIndex = 1;
@@ -90,7 +91,7 @@ test('R7H-90 controller TCP updates JOG while Tool/Wobj never shift the physical
     const original = window.__originalMount;
     return { positionError: robot.userData.flangeFrame.position.distanceTo(new a.THREE.Vector3().fromArray(original.position)),
       rotationError: robot.userData.flangeFrame.quaternion.angleTo(new a.THREE.Quaternion().fromArray(original.quaternion)),
-      profile: robot.userData.tcpProfiles[0].position.toArray(), corrected: Boolean(robot.userData.controllerTcpPose) };
+      profile: robot.userData.tcpProfiles[1].position.toArray(), corrected: Boolean(robot.userData.controllerTcpPose) };
   });
   expect(restored.positionError).toBeLessThan(1e-8);
   expect(restored.rotationError).toBeLessThan(1e-7);

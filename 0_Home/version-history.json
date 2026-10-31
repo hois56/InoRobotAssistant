@@ -34,6 +34,13 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.10.31",
+                "items": [
+                  "`[개선]` 수정 범위에 맞춰 검사하도록 개선해 간단한 수정의 검증 대기 시간을 줄였습니다.",
+                  "`[개선]` 버전 기록을 날짜별로 추가·개선·변경·수정 등의 구분에 따라 모아 표시하도록 개선했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.10.23",
                 "items": [
                   "`[수정]` 버전 기록에서 일부 항목의 구분이 \"안내\"로 표시되던 문제를 해결했습니다."
@@ -266,8 +273,9 @@
             "title": "3D Simulation",
             "versions": [
               {
-                "title": "Ver 26.10.30",
+                "title": "Ver 26.10.31",
                 "items": [
+                  "`[추가]` R35-185·R50-250 로봇을 PI2.0 색상과 INOVANCE 로고로 시뮬레이션할 수 있도록 지원했습니다.",
                   "`[추가]` 모든 로봇 모델의 베이스 설치 구멍 중심에 스냅점을 추가했습니다.",
                   "`[개선]` 3D 모델의 면 사이 명암과 접합부 음영을 개선하여 형태와 입체감을 더 쉽게 구분할 수 있도록 했습니다.",
                   "`[수정]` 일반 3D 모델링을 가져올 때 원래 색상이 바뀌거나 대용량 STEP의 부품·면 색상이 누락되던 문제를 해결했습니다.",
@@ -280,7 +288,20 @@
                   "`[추가]` 모델 트리의 이동 기능에서 면을 선택하면 해당 모델의 영점을 함께 표시하고 스냅 기준점으로 선택할 수 있도록 했습니다.",
                   "`[개선]` 가상컨트롤러에서도 간섭영역·TCP 감지 범위 설정 가져오기와 필드버스 IO 모니터링을 사용할 수 있도록 하고, 지원하지 않는 항목은 건너뛰도록 했습니다.",
                   "`[추가]` IO 매핑에 선택한 등록 오브젝트 또는 전체 오브젝트를 등록 당시 위치·회전으로 되돌리는 기능을 추가했습니다.",
-                  "`[수정]` TCP 오프셋으로 새 Tool 모델의 장착 위치가 어긋나던 문제를 해결하고 플랜지 영점(0, 0, 0)에 배치하도록 했습니다."
+                  "`[수정]` TCP 오프셋으로 새 Tool 모델의 장착 위치가 어긋나던 문제를 해결하고 플랜지 영점(0, 0, 0)에 배치하도록 했습니다.",
+                  "`[추가]` 사용자 뷰를 최대 10개까지 저장하고, 각 뷰 이름 옆에서 전환 시간을 개별 설정할 수 있도록 했습니다. 뷰 적용, IO 매핑과 프로그램의 View 명령에 저장된 전환 시간을 함께 적용합니다. 고정 뷰 창의 헤더와 여백을 없애고 화면 안쪽에 배경 없는 조작 아이콘을 배치했습니다. 각 고정 뷰에서 선택 물체 중심 회전을 개별로 켜고 끌 수 있습니다. 고정 뷰에는 3D JOG 핸들을 표시하지 않습니다.",
+                  "`[수정]` 새 창으로 연 뷰를 맨 앞으로 고정할 때 뷰가 보이지 않거나 화면이 멈추던 문제를 해결했습니다.",
+                  "`[개선]` TCP 설정을 Tool 0~15로 확장하고, 부하 정보 확인·개별 또는 전체 모델 부하 가져오기·로봇 프로그램 코드 복사를 지원했습니다. 전체 부하는 질량·무게중심·관성모멘트를 함께 계산하며, Tool·Wobj가 0이 아니거나 로봇이 작업 원점에 도달하면 해당 아이콘을 초록색으로 표시합니다.",
+                  "`[개선]` Wobj 0 기준의 좌표 입력·원점 스냅·로봇 프로그램 코드 복사를 지원하고, 3D 좌표계 표시를 키웠습니다. Tool·Wobj 설정 창의 구성과 색상을 통일하고 불필요한 항목을 정리했습니다.",
+                  "`[수정]` 컨트롤러 연결의 실제·가상 선택과 종류별 마지막 IP를 기억하여, 창을 다시 열거나 새로고침할 때 설정이 초기화되던 문제를 해결했습니다.",
+                  "`[수정]` 모델 트리와 3D 화면의 다중 선택이 윈도우 방식과 다르던 문제를 해결해 Shift는 범위 선택, Ctrl은 개별 추가·해제로 동작하도록 했습니다. 하단의 모델 이름 표시를 제거하고 상태를 맨 왼쪽에 표시하도록 정리했습니다. ESC 키로 모델·부품의 선택을 한 번에 해제할 수 있도록 했습니다.",
+                  "`[수정]` 메인 화면을 확대·축소할 때 고정 뷰의 포인트·라벨 표시 크기가 함께 바뀌던 문제를 해결했습니다.",
+                  "`[추가]` 초기화 왼쪽에 목록 버튼을 추가해 저장된 시뮬레이션 프로젝트 목록을 다시 열고 불러올 수 있도록 했습니다.",
+                  "`[개선]` 로봇 모델에 PI2.0 색상을 적용했습니다.",
+                  "`[수정]` 로봇의 INOVANCE 로고에 외곽선이 표시되던 문제를 해결하고 본체 외곽선은 유지했습니다.",
+                  "`[수정]` R16 로봇의 J3 뒤에 작은 조각이 떨어져 표시되던 문제를 해결했습니다.",
+                  "`[수정]` 확대할수록 우클릭 화면 이동이 느려지던 문제를 해결했습니다.",
+                  "`[추가]` Shift로 마우스 회전·화면 이동·휠 확대·축소를 세밀하게 조작하고, Ctrl로 기본 속도의 2배로 조작하는 기능을 추가했습니다."
                 ]
               },
               {
@@ -1426,6 +1447,13 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.10.31",
+                "items": [
+                  "`[Improved]` Reduced validation waits for small changes by checking the affected areas.",
+                  "`[Improved]` Grouped version history entries by change category within each release date."
+                ]
+              },
+              {
                 "title": "Ver 26.10.23",
                 "items": [
                   "`[Fixed]` Fixed some version history entries being labeled \"Info\" instead of their change type."
@@ -1652,8 +1680,9 @@
             "title": "3D Simulation",
             "versions": [
               {
-                "title": "Ver 26.10.30",
+                "title": "Ver 26.10.31",
                 "items": [
+                  "`[Added]` Added R35-185 and R50-250 robots with PI2.0 colors and INOVANCE logos to the 3D simulation.",
                   "`[Added]` Added snap points at the base mounting-hole centers of all robot models.",
                   "`[Improved]` Improved face shading and subtle contact occlusion on 3D models to make shapes and depth easier to distinguish.",
                   "`[Fixed]` Fixed original colors changing on imported 3D models and missing part or face colors in large STEP files.",
@@ -1666,7 +1695,20 @@
                   "`[Added]` Selecting a face during a move from the model tree now displays the model origin as a selectable snap reference.",
                   "`[Improved]` Enabled interference zone and TCP detection range imports and fieldbus IO monitoring for virtual controllers, skipping unsupported items.",
                   "`[Added]` Added IO mapping to return selected or all registered objects to their original registered positions and rotations.",
-                  "`[Fixed]` Fixed TCP offsets displacing newly imported Tool models by mounting them at the flange origin (0, 0, 0)."
+                  "`[Fixed]` Fixed TCP offsets displacing newly imported Tool models by mounting them at the flange origin (0, 0, 0).",
+                  "`[Added]` Expanded saved views to 10 slots with a separate transition time beside each view name. Applying a view, IO mappings, and program View commands all use the time saved with that view. Fixed-view windows now fill the available space without a header, with unframed control icons overlaid inside the view. Rotation around the selected object can be enabled separately in each fixed view. 3D JOG handles are hidden in fixed views.",
+                  "`[Fixed]` Fixed views disappearing or freezing when Always on top was enabled after opening them in a separate window.",
+                  "`[Improved]` Expanded TCP setup to Tool 0–15 with load information viewing, individual or combined model load import and robot program code copying. Combined loads recalculate total mass, center of gravity and inertia. Tool and Wobj icons turn green for nonzero indices, and the Work Origin icon turns green when the robot reaches its work origin.",
+                  "`[Improved]` Added coordinate editing, origin snapping and robot program code copying relative to Wobj 0, and enlarged the 3D coordinate display. Unified the Tool and Wobj setup layouts and colors and removed unnecessary fields.",
+                  "`[Fixed]` Remembered the selected real or virtual controller and the last IP for each type so connection settings survive reopening and page reloads.",
+                  "`[Fixed]` Fixed multiple selection in the model tree and 3D view to follow Windows behavior: Shift selects a range, and Ctrl adds or removes individual items. Removed the model name from the bottom bar and placed the status at the far left. Pressing Esc now clears selected models and parts together.",
+                  "`[Fixed]` Fixed point markers and labels in fixed views changing size when zooming the main view.",
+                  "`[Added]` Added a List button to the left of Reset to reopen and load saved simulation projects.",
+                  "`[Improved]` Applied PI2.0 colors to robot models.",
+                  "`[Fixed]` Removed outlines from INOVANCE logos on robot models while preserving body outlines.",
+                  "`[Fixed]` Removed a small fragment that appeared detached behind J3 on the R16 robot.",
+                  "`[Fixed]` Fixed right-drag panning slowing down when zoomed in.",
+                  "`[Added]` Added fine mouse rotation, panning and wheel zoom with Shift, and twice-normal speed with Ctrl."
                 ]
               },
               {
@@ -2783,6 +2825,13 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.10.31",
+                "items": [
+                  "`[改进]` 按修改范围执行检查，减少小幅修改后的验证等待时间。",
+                  "`[改进]` 版本记录在每个发布日期内按新增、改进、变更、修复等类别分组显示。"
+                ]
+              },
+              {
                 "title": "Ver 26.10.23",
                 "items": [
                   "`[修复]` 修复了版本记录中部分条目类型显示为“提示”的问题。"
@@ -3009,8 +3058,9 @@
             "title": "3D Simulation",
             "versions": [
               {
-                "title": "Ver 26.10.30",
+                "title": "Ver 26.10.31",
                 "items": [
+                  "`[新增]` 支持采用 PI2.0 配色和 INOVANCE 标识的 R35-185、R50-250 机器人 3D 仿真。",
                   "`[新增]` 为所有机器人型号底座安装孔中心添加了捕捉点。",
                   "`[改进]` 改善了3D模型各面之间的明暗对比和接合处的柔和阴影，使形状和立体感更加清晰。",
                   "`[修复]` 修复了导入普通3D模型时原始颜色被替换，以及大型STEP文件中零件和面颜色丢失的问题。",
@@ -3023,7 +3073,20 @@
                   "`[新增]` 在模型树中移动模型时，选择面即可同时显示该模型的原点，并可将其选为捕捉参考点。",
                   "`[改进]` 虚拟控制器现可导入干涉区域和TCP检测范围设置并监控现场总线IO，不支持的项目将跳过。",
                   "`[新增]` IO映射现可将选定或全部已注册对象恢复到注册时的位置和旋转角度。",
-                  "`[修复]` 修复了 TCP 偏移导致新导入 Tool 模型安装位置偏移的问题，统一安装到法兰原点 (0, 0, 0)。"
+                  "`[修复]` 修复了 TCP 偏移导致新导入 Tool 模型安装位置偏移的问题，统一安装到法兰原点 (0, 0, 0)。",
+                  "`[新增]` 用户视图扩展至最多10个，可在各视图名称旁单独保存切换时间。视图应用、IO映射和程序中的View指令均使用该视图保存的切换时间。 固定视图窗口移除了标题栏和留白，操作图标以无背景、无边框样式叠加在画面内。 每个固定视图均可独立开启或关闭围绕所选物体旋转。 固定视图中不显示3D JOG操作手柄。",
+                  "`[修复]` 修复将视图在新窗口中打开后启用置顶时，视图不显示或画面冻结的问题。",
+                  "`[改进]` 将 TCP 设置扩展为 Tool 0–15，支持查看负载信息、导入单个或全部模型的负载以及复制机器人程序代码。合并负载会重新计算总质量、重心和转动惯量。选择非零编号时，Tool 和 Wobj 图标显示为绿色；机器人到达作业原点时，作业原点图标也显示为绿色。",
+                  "`[改进]` 支持以 Wobj 0 为基准编辑坐标、捕捉原点和复制机器人程序代码，并放大 3D 坐标系显示。统一 Tool 和 Wobj 设置窗口的布局和颜色，移除不必要的项目。",
+                  "`[修复]` 记住实际或虚拟控制器选项及各类型最后使用的 IP，解决重新打开连接窗口或刷新页面后设置被重置的问题。",
+                  "`[修复]` 修复模型树和3D视图的多选方式与Windows不一致的问题：Shift选择范围，Ctrl单独添加或取消选择项目。 移除底部栏的模型名称，并将状态移至最左侧。 现在可按Esc键一次清除模型和部件的选择。",
+                  "`[修复]` 修复缩放主画面时，固定视图中的点位标记和标签大小也随之变化的问题。",
+                  "`[新增]` 在重置左侧新增列表按钮，可重新打开并加载已保存的仿真项目。",
+                  "`[改进]` 为机器人模型应用了 PI2.0 配色。",
+                  "`[修复]` 修复机器人INOVANCE标志显示轮廓线的问题，并保留机身轮廓线。",
+                  "`[修复]` 修复了 R16 机器人 J3 后方显示分离小碎片的问题。",
+                  "`[修复]` 修复了放大后鼠标右键平移速度变慢的问题。",
+                  "`[新增]` 按住 Shift 可精细控制鼠标旋转、平移和滚轮缩放，按住 Ctrl 可以正常速度的两倍进行操作。"
                 ]
               },
               {
@@ -4140,6 +4203,13 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.10.31",
+                "items": [
+                  "`[Cải tiến]` Giảm thời gian chờ kiểm tra cho thay đổi nhỏ bằng cách kiểm tra theo phạm vi thay đổi.",
+                  "`[Cải tiến]` Nhóm các mục lịch sử phiên bản theo loại thay đổi trong từng ngày phát hành."
+                ]
+              },
+              {
                 "title": "Ver 26.10.23",
                 "items": [
                   "`[Sửa lỗi]` Đã sửa lỗi một số mục trong lịch sử phiên bản bị hiển thị nhãn \"Thông tin\"."
@@ -4366,8 +4436,9 @@
             "title": "3D Simulation",
             "versions": [
               {
-                "title": "Ver 26.10.30",
+                "title": "Ver 26.10.31",
                 "items": [
+                  "`[Thêm]` Bổ sung mô phỏng 3D robot R35-185 và R50-250 với màu PI2.0 và logo INOVANCE.",
                   "`[Thêm]` Đã thêm điểm bắt tại tâm các lỗ lắp đặt trên đế của tất cả các mẫu robot.",
                   "`[Cải thiện]` Cải thiện độ tương phản giữa các mặt và bóng nhẹ tại các điểm tiếp giáp của mô hình 3D để dễ nhận biết hình dạng và chiều sâu hơn.",
                   "`[Sửa]` Đã sửa lỗi thay đổi màu gốc khi nhập mô hình 3D và mất màu chi tiết hoặc bề mặt trong tệp STEP lớn.",
@@ -4380,7 +4451,20 @@
                   "`[Thêm]` Khi chọn một mặt trong lúc di chuyển từ cây mô hình, điểm gốc của mô hình được hiển thị và có thể chọn làm điểm tham chiếu bắt điểm.",
                   "`[Cải tiến]` Cho phép bộ điều khiển ảo nhập vùng giao thoa, phạm vi phát hiện TCP và giám sát IO fieldbus; bỏ qua các mục không được hỗ trợ.",
                   "`[Thêm]` Thêm ánh xạ IO để đưa đối tượng đã đăng ký được chọn hoặc tất cả đối tượng về vị trí và góc xoay ban đầu khi đăng ký.",
-                  "`[Sửa lỗi]` Đã sửa lỗi độ lệch TCP làm sai vị trí lắp mô hình Tool mới nhập; Tool được đặt tại gốc mặt bích (0, 0, 0)."
+                  "`[Sửa lỗi]` Đã sửa lỗi độ lệch TCP làm sai vị trí lắp mô hình Tool mới nhập; Tool được đặt tại gốc mặt bích (0, 0, 0).",
+                  "`[Thêm]` Đã mở rộng lên tối đa 10 góc nhìn và cho phép đặt thời gian chuyển riêng bên cạnh từng tên. Khi áp dụng góc nhìn, ánh xạ IO và lệnh View đều dùng thời gian đã lưu cho góc nhìn đó. Cửa sổ góc nhìn cố định đã bỏ phần đầu và khoảng đệm, với các biểu tượng điều khiển không nền, không viền đặt ngay trong khung nhìn. Có thể bật hoặc tắt xoay quanh đối tượng đã chọn riêng cho từng góc nhìn cố định. Không hiển thị tay nắm 3D JOG trong các góc nhìn cố định.",
+                  "`[Sửa lỗi]` Đã khắc phục góc nhìn biến mất hoặc màn hình bị treo khi bật Luôn ở trên cùng sau khi mở trong cửa sổ riêng.",
+                  "`[Cải tiến]` Mở rộng cài đặt TCP thành Tool 0–15, hỗ trợ xem thông tin tải, lấy tải của từng mô hình hoặc toàn bộ và sao chép mã chương trình robot. Tải tổng hợp tính lại tổng khối lượng, tâm trọng lực và mô men quán tính. Biểu tượng Tool và Wobj chuyển sang màu xanh khi chọn chỉ số khác 0; biểu tượng gốc làm việc chuyển sang màu xanh khi robot đến gốc làm việc.",
+                  "`[Cải tiến]` Hỗ trợ nhập tọa độ, bắt điểm gốc và sao chép mã chương trình robot theo Wobj 0, đồng thời tăng kích thước hiển thị hệ tọa độ 3D. Thống nhất bố cục và màu sắc cài đặt Tool và Wobj, lược bỏ các mục không cần thiết.",
+                  "`[Sửa lỗi]` Ghi nhớ lựa chọn bộ điều khiển thực/ảo và IP cuối cùng của từng loại để không bị đặt lại khi mở lại cửa sổ hoặc tải lại trang.",
+                  "`[Sửa lỗi]` Đã sửa cách chọn nhiều mục trong cây mô hình và khung nhìn 3D theo Windows: Shift chọn một dải, Ctrl thêm hoặc bỏ chọn từng mục. Đã bỏ tên mô hình khỏi thanh dưới cùng và chuyển trạng thái sang ngoài cùng bên trái. Giờ đây có thể nhấn Esc để bỏ chọn đồng thời các mô hình và bộ phận.",
+                  "`[Sửa lỗi]` Đã sửa lỗi kích thước điểm đánh dấu và nhãn trong góc nhìn cố định thay đổi khi phóng to hoặc thu nhỏ khung nhìn chính.",
+                  "`[Thêm]` Thêm nút Danh sách bên trái Đặt lại để mở lại và tải các dự án mô phỏng đã lưu.",
+                  "`[Cải tiến]` Đã áp dụng màu PI2.0 cho các mô hình robot.",
+                  "`[Sửa lỗi]` Đã bỏ đường viền trên logo INOVANCE của mô hình robot và giữ nguyên đường viền thân robot.",
+                  "`[Sửa lỗi]` Đã khắc phục mảnh nhỏ hiển thị tách rời phía sau J3 của robot R16.",
+                  "`[Sửa]` Đã khắc phục tình trạng kéo chuột phải để di chuyển khung nhìn chậm hơn khi phóng to.",
+                  "`[Thêm]` Đã thêm Shift để xoay, di chuyển khung nhìn và thu phóng bằng con lăn chậm, chính xác hơn; Ctrl để thao tác với tốc độ gấp đôi bình thường."
                 ]
               },
               {
@@ -5497,6 +5581,13 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.10.31",
+                "items": [
+                  "`[İyileştirme]` Değiştirilen alanları denetleyerek küçük değişikliklerde doğrulama bekleme süresini kısalttık.",
+                  "`[İyileştirme]` Sürüm geçmişi kayıtları her yayın tarihi içinde değişiklik türüne göre gruplandırıldı."
+                ]
+              },
+              {
                 "title": "Ver 26.10.23",
                 "items": [
                   "`[Düzeltildi]` Sürüm geçmişindeki bazı kayıtların türünün \"Bilgi\" olarak gösterilmesi düzeltildi."
@@ -5723,8 +5814,9 @@
             "title": "3D Simulation",
             "versions": [
               {
-                "title": "Ver 26.10.30",
+                "title": "Ver 26.10.31",
                 "items": [
+                  "`[Eklendi]` R35-185 ve R50-250 robotları, PI2.0 renkleri ve INOVANCE logolarıyla 3D simülasyona eklendi.",
                   "`[Eklendi]` Tüm robot modellerinin taban montaj deliklerinin merkezlerine yakalama noktaları eklendi.",
                   "`[İyileştirildi]` Şekillerin ve derinliğin daha kolay ayırt edilmesi için 3D model yüzeylerinin gölgelendirmesi ve birleşim yerlerindeki hafif gölgeler iyileştirildi.",
                   "`[Düzeltildi]` İçe aktarılan 3D modellerin özgün renklerinin değişmesi ve büyük STEP dosyalarında parça veya yüzey renklerinin kaybolması sorunu giderildi.",
@@ -5737,7 +5829,20 @@
                   "`[Eklendi]` Model ağacından taşıma sırasında bir yüz seçildiğinde modelin sıfır noktası görüntülenir ve yakalama referansı olarak seçilebilir.",
                   "`[İyileştirme]` Sanal kontrolörlerde girişim bölgesi ve TCP algılama aralığı ayarlarını alma ve fieldbus IO izleme etkinleştirildi; desteklenmeyen öğeler atlanır.",
                   "`[Eklendi]` Seçilen veya tüm kayıtlı nesneleri kayıt sırasındaki konum ve dönüşlerine döndüren IO eşlemesi eklendi.",
-                  "`[Düzeltildi]` TCP ofsetlerinin yeni içe aktarılan Tool modellerini kaydırması sorunu giderildi; modeller flanş orijinine (0, 0, 0) yerleştirilir."
+                  "`[Düzeltildi]` TCP ofsetlerinin yeni içe aktarılan Tool modellerini kaydırması sorunu giderildi; modeller flanş orijinine (0, 0, 0) yerleştirilir.",
+                  "`[Eklendi]` Kayıtlı görünümler 10 yuvaya çıkarıldı ve her görünüm adının yanına ayrı geçiş süresi eklendi. Görünüm uygulama, IO eşlemeleri ve View komutları görünümle kaydedilen süreyi kullanır. Sabit görünüm penceresinde başlık ve kenar boşlukları kaldırıldı, arka plansız ve çerçevesiz denetim simgeleri görünümün içine yerleştirildi. Her sabit görünümde seçili nesne etrafında dönüş ayrı ayrı açılıp kapatılabilir. Sabit görünümlerde 3D JOG tutamaçları gösterilmez.",
+                  "`[Düzeltildi]` Görünüm ayrı bir pencerede açıldıktan sonra Her zaman üstte etkinleştirildiğinde görünümün kaybolması veya ekranın donması sorunu giderildi.",
+                  "`[İyileştirme]` TCP ayarları Tool 0–15 olarak genişletildi; yük bilgilerini görüntüleme, tek veya tüm modellerin yükünü alma ve robot program kodu kopyalama desteklendi. Birleşik yük için toplam kütle, ağırlık merkezi ve atalet yeniden hesaplanır. Sıfır dışı numaralarda Tool ve Wobj simgeleri yeşil olur; robot çalışma başlangıcına ulaştığında Work Origin simgesi de yeşile döner.",
+                  "`[İyileştirme]` Wobj 0 temelinde koordinat düzenleme, orijin yakalama ve robot program kodu kopyalama eklendi; 3D koordinat gösterimi büyütüldü. Tool ve Wobj ayarlarının düzeni ve renkleri birleştirildi, gereksiz alanlar kaldırıldı.",
+                  "`[Düzeltildi]` Bağlantı penceresi yeniden açıldığında veya sayfa yenilendiğinde ayarların sıfırlanmaması için gerçek/sanal denetleyici seçimi ve her türün son IP adresi hatırlanır.",
+                  "`[Düzeltildi]` Model ağacında ve 3D görünümde çoklu seçimin Windows ile farklı çalışması düzeltildi: Shift bir aralığı seçer, Ctrl tek tek öğeleri ekler veya seçimden çıkarır. Alt çubuktaki model adı kaldırıldı ve durum en sola taşındı. Esc tuşuyla seçili modellerin ve parçaların seçimi artık tek seferde kaldırılabilir.",
+                  "`[Düzeltildi]` Ana görünüm yakınlaştırıldığında sabit görünümlerdeki nokta işaretlerinin ve etiketlerin boyutunun da değişmesi sorunu giderildi.",
+                  "`[Eklendi]` Kaydedilmiş simülasyon projelerini yeniden listelemek ve yüklemek için Sıfırla düğmesinin soluna Liste düğmesi eklendi.",
+                  "`[Geliştirildi]` Robot modellerine PI2.0 renkleri uygulandı.",
+                  "`[Düzeltildi]` Robot modellerindeki INOVANCE logolarının kenar çizgileri kaldırıldı; gövde kenar çizgileri korundu.",
+                  "`[Düzeltildi]` R16 robotunun J3 arkasında ayrı görünen küçük parça kaldırıldı.",
+                  "`[Düzeltildi]` Yakınlaştırıldığında sağ tuşla görünüm kaydırmanın yavaşlaması sorunu giderildi.",
+                  "`[Eklendi]` Shift ile hassas fare döndürme, görünüm kaydırma ve tekerlek yakınlaştırması; Ctrl ile normal hızın iki katında kontrol eklendi."
                 ]
               },
               {
@@ -6854,6 +6959,13 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.10.31",
+                "items": [
+                  "`[Улучшено]` Сокращено ожидание проверки небольших изменений за счёт проверки затронутых разделов.",
+                  "`[Улучшено]` Записи истории версий сгруппированы по типу изменений внутри каждой даты выпуска."
+                ]
+              },
+              {
                 "title": "Ver 26.10.23",
                 "items": [
                   "`[Исправлено]` Исправлено отображение типа некоторых записей истории версий как «Информация»."
@@ -7080,8 +7192,9 @@
             "title": "3D Simulation",
             "versions": [
               {
-                "title": "Ver 26.10.30",
+                "title": "Ver 26.10.31",
                 "items": [
+                  "`[Добавлено]` В 3D-симуляцию добавлены роботы R35-185 и R50-250 с цветами PI2.0 и логотипами INOVANCE.",
                   "`[Добавлено]` Добавлены точки привязки в центрах монтажных отверстий оснований всех моделей роботов.",
                   "`[Улучшено]` Улучшены светотеневой контраст граней и мягкое затенение стыков 3D-моделей для лучшего восприятия формы и объёма.",
                   "`[Исправлено]` Исправлены замена исходных цветов при импорте 3D-моделей и потеря цветов деталей или граней в больших файлах STEP.",
@@ -7094,7 +7207,20 @@
                   "`[Добавлено]` При выборе грани во время перемещения из дерева моделей отображается начало координат модели, которое можно выбрать как опорную точку привязки.",
                   "`[Улучшено]` Виртуальные контроллеры поддерживают загрузку зон интерференции и диапазона обнаружения TCP, а также мониторинг полевых IO; неподдерживаемые данные пропускаются.",
                   "`[Добавлено]` Добавлена привязка IO для возврата выбранных или всех зарегистрированных объектов к положению и повороту на момент регистрации.",
-                  "`[Исправлено]` Устранено смещение новых моделей Tool из-за смещения TCP: модели устанавливаются в начало координат фланца (0, 0, 0)."
+                  "`[Исправлено]` Устранено смещение новых моделей Tool из-за смещения TCP: модели устанавливаются в начало координат фланца (0, 0, 0).",
+                  "`[Добавлено]` Число сохраняемых видов увеличено до 10. Время перехода задаётся рядом с именем каждого вида и используется при применении вида, сопоставлениях IO и выполнении команд View. В окне фиксированных видов убраны заголовок и отступы, а значки управления без фона и рамок размещены поверх изображения. Вращение вокруг выбранного объекта можно включать и выключать отдельно для каждого фиксированного вида. В фиксированных видах манипуляторы 3D JOG не отображаются.",
+                  "`[Исправлено]` Устранено исчезновение вида или зависание изображения при включении режима поверх всех окон после открытия вида в отдельном окне.",
+                  "`[Улучшение]` Настройки TCP расширены до Tool 0–15 с просмотром нагрузки, загрузкой данных одной или всех моделей и копированием кода программы робота. Для общей нагрузки пересчитываются масса, центр тяжести и моменты инерции. При ненулевом номере значки Tool и Wobj зелёные; значок рабочей исходной позиции становится зелёным, когда робот достигает этой позиции.",
+                  "`[Улучшение]` Добавлены редактирование координат, привязка начала и копирование кода программы робота относительно Wobj 0; увеличено отображение координат в 3D. Унифицированы оформление и структура настроек Tool и Wobj, удалены лишние поля.",
+                  "`[Исправлено]` Сохраняются выбор реального или виртуального контроллера и последний IP каждого типа, чтобы настройки не сбрасывались при повторном открытии окна и обновлении страницы.",
+                  "`[Исправлено]` Исправлено множественное выделение в дереве моделей и 3D-виде: как в Windows, Shift выделяет диапазон, а Ctrl добавляет или снимает выделение отдельных элементов. Название модели убрано из нижней панели, а статус перенесён в крайнее левое положение. Теперь клавиша Esc снимает выделение всех выбранных моделей и деталей.",
+                  "`[Исправлено]` Устранено изменение размера маркеров точек и подписей в фиксированных видах при масштабировании основного вида.",
+                  "`[Добавлено]` Слева от кнопки сброса добавлена кнопка «Список» для просмотра и загрузки сохранённых проектов симуляции.",
+                  "`[Улучшено]` К моделям роботов применены цвета PI2.0.",
+                  "`[Исправлено]` Убраны контурные линии логотипа INOVANCE на моделях роботов; контуры корпуса сохранены.",
+                  "`[Исправлено]` Устранён небольшой фрагмент, отображавшийся отдельно позади J3 робота R16.",
+                  "`[Исправлено]` Исправлено замедление перемещения вида правой кнопкой мыши при приближении.",
+                  "`[Добавлено]` Добавлены точное вращение, перемещение вида и масштабирование колесом мыши с Shift и удвоенная скорость с Ctrl."
                 ]
               },
               {

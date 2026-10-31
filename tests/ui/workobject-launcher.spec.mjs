@@ -28,11 +28,13 @@ test('새 화면에서 프로젝트를 복원하면 Wobj 버튼과 저장된 좌
   await expect(launcher).toBeEnabled();await launcher.click();
   await expect(restored.locator('#workobject-panel')).toBeVisible();
   await expect(restored.locator('#btn-focus-workobject')).toHaveCount(0);
-  await expect(restored.locator('#btn-register-workobject')).toBeEnabled();
+  await expect(restored.locator('#btn-workobject-snap')).toBeEnabled();
   await expect(restored.locator('#btn-reset-workobject')).toBeEnabled();
-  await expect(restored.locator('#workobject-target-robot option')).toHaveCount(1);
+  await expect(restored.locator('#workobject-target-robot, #workobject-name')).toHaveCount(0);
   await expect(restored.locator('#workobject-list [data-work-object-index="2"]')).toHaveClass(/active/);
-  await expect(restored.locator('[data-workobject-pose="x"]')).toHaveValue('100');
+  await expect(restored.locator('[data-workobject-pose="x"]')).toHaveValue('63.5');
+  // IR-S10-80Z20 has a 155.5 mm controller-base height in this scene.
+  await expect(restored.locator('[data-workobject-pose="z"]')).toHaveValue('144.5');
   await expect(restored.locator('#btn-apply-workobject')).toBeEnabled();
   expect(errors).toEqual([]);
  } finally {await context.close();}

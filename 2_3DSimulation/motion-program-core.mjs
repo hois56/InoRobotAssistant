@@ -1,4 +1,6 @@
-import { normalizeWorkObjects } from './workobject-core.mjs';
+import { normalizeToolLoad } from './tool-data-core.mjs';
+import { normalizeWorkObjects } from './workobject-core.mjs?v=20261031-tool-wobj-1';
+import { VIEW_PRESET_COUNT } from './view-preset-core.mjs';
 
 export const MOTION_PROJECT_SCHEMA_VERSION = 1;
 export const DEFAULT_MOVJ_SPEED = 100;
@@ -20,6 +22,14 @@ export function advanceMotionSpeedClock(segment, elapsedMilliseconds, override) 
 export const DEFAULT_MOVL_SPEED = 1500;
 export const MAX_MOVL_SPEED = 2500;
 export const DEFAULT_DELAY_SECONDS = 1;
+export const DEFAULT_VIEW_TRANSITION_SECONDS = 1;
+export const MAX_VIEW_TRANSITION_SECONDS = 3600;
+export function normalizeViewTransitionSeconds(value) {
+    const seconds = value == null || String(value).trim() === '' ? NaN : Number(value);
+    return Number.isFinite(seconds)
+        ? Math.min(MAX_VIEW_TRANSITION_SECONDS, Math.max(0, seconds))
+        : DEFAULT_VIEW_TRANSITION_SECONDS;
+}
 export const MIN_DELAY_SECONDS = 0.1;
 export const MAX_DELAY_SECONDS = 3600;
 export const MOVJ_REVOLUTE_RATE = 180;
@@ -669,7 +679,7 @@ export function cloneMotionProgram(program) {
                 ? clonePointMetadata(step, fallbackPointIndex++)
                 : null;
             const viewSlot = motion === 'VIEW' && Number.isInteger(Number(step.viewSlot))
-                ? Math.min(3, Math.max(0, Number(step.viewSlot)))
+                ? Math.min(VIEW_PRESET_COUNT - 1, Math.max(0, Number(step.viewSlot)))
                 : 0;
             return {
                 id: String(step.id),
@@ -692,7 +702,9 @@ export function cloneMotionProgram(program) {
                     : motion === 'MOVJ' || motion === 'MOVL'
                         ? { speed: Number(step.speed) }
                     : motion === 'VIEW'
-                            ? { viewSlot }
+                            ? { viewSlot, ...(step.viewTransitionSeconds == null ? {} : {
+                                viewTransitionSeconds: normalizeViewTransitionSeconds(step.viewTransitionSeconds)
+                            }) }
                         : motion === 'WAIT'
                             ? {
                                 waitRobotInstanceId: String(step.waitRobotInstanceId || '').trim(),
@@ -771,15 +783,17 @@ function normalizeWorkOrigin(value, jointCount, robotIndex) {
 
 function normalizeTcpProfiles(value, robotIndex) {
     if (value === undefined) {
-        return Array.from({ length: 3 }, () => ({
+        return Array.from({ length: 16 }, () => ({
+            load: normalizeToolLoad(),
             position: [0, 0, 0],
             quaternion: [0, 0, 0, 1]
         }));
     }
-    if (!Array.isArray(value) || value.length !== 3) {
-        throw new Error(`Robot ${robotIndex + 1} TCP profiles must contain exactly 3 entries.`);
+    if (!Array.isArray(value) || ![3, 16].includes(value.length)) {
+        throw new Error(`Robot ${robotIndex + 1} Tool profiles must contain 16 entries (or 3 legacy TCP entries).`);
     }
     return value.map((profile, profileIndex) => ({
+        ...(value.length === 16 ? { load: normalizeToolLoad(profile?.load) } : {}),
         position: finiteArray(
             profile?.position,
             3,
@@ -828,8 +842,8 @@ function normalizeStep(step, jointCount, index, fallbackPointIndex) {
         if (!Number.isFinite(speed) || speed < 1 || speed > maximumSpeed) {
             throw new Error(`Step ${index + 1} speed is outside the ${motion} range.`);
         }
-    } else if (motion === 'VIEW' && (!Number.isInteger(viewSlot) || viewSlot < 0 || viewSlot > 3)) {
-        throw new Error(`Step ${index + 1} view slot must be 0 to 3.`);
+    } else if (motion === 'VIEW' && (!Number.isInteger(viewSlot) || viewSlot < 0 || viewSlot >= VIEW_PRESET_COUNT)) {
+        throw new Error(`Step ${index + 1} view slot must be 0 to ${VIEW_PRESET_COUNT - 1}.`);
     } else if (motion === 'WAIT'
         && (!Number.isInteger(waitLineNumber)
             || waitLineNumber < MIN_WAIT_LINE_NUMBER
@@ -884,7 +898,9 @@ function normalizeStep(step, jointCount, index, fallbackPointIndex) {
             : motion === 'MOVJ' || motion === 'MOVL'
                 ? { speed }
                 : motion === 'VIEW'
-                    ? { viewSlot }
+                    ? { viewSlot, ...(step.viewTransitionSeconds == null ? {} : {
+                        viewTransitionSeconds: normalizeViewTransitionSeconds(step.viewTransitionSeconds)
+                    }) }
                 : motion === 'WAIT'
                     ? { waitRobotInstanceId, waitLineNumber }
                 : motion === 'HOME'

@@ -35,5 +35,9 @@ export const ROBOT_MOUNTING_HOLES = Object.freeze({
   'IR-R7H-70': r7, 'IR-R7H-90': r7,
   'IR-R10-110': r10, 'IR-R10H-120': r10, 'IR-R11-90': r10,
   'IR-R15H-145': r15, 'IR-R20H-120': r15,
+  // R35 uses open mounting slots; coordinates are the semicircular slot centers.
+  'IR-R35-185': grid([-187.5, 187.5], [-120, 120], 0, 10),
+  'IR-R50-250': [...grid([-220, 220], [-170, 170], 0, 11), ...grid([-170, 170], [-220, 220], 0, 11),
+    ...grid([-218, 218], [-218, 218], 0, 7.5), ...grid([195], [-195, 195], 0, 8)],
   'IR-R10-140': rLarge(9, 6, 160), 'IR-R16-210': rLarge(8.75, 5.5), 'IR-R25-178': rLarge(8.75, 5.5)
 });

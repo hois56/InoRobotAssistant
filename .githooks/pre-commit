@@ -6,4 +6,4 @@ if [ "${INOROBOT_PUSH_ONLY:-0}" = "1" ]; then
     exit 0
 fi
 
-npm run test:fast
+npm run test:changed -- --staged

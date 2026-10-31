@@ -1,5 +1,5 @@
-export { ROBOT_LOGO_FACES } from './robot-logo-faces.mjs';
-export { ROBOT_LOGO_PROJECTIONS } from './robot-logo-projections.mjs';
+export { ROBOT_LOGO_FACES } from './robot-logo-faces.mjs?v=20261031-r35-r50-1';
+export { ROBOT_LOGO_PROJECTIONS } from './robot-logo-projections.mjs?v=20261031-r35-r50-1';
 
 // Dominant opaque blue sampled from 1_RobotModelSelect/INOVANCE_Logo.png.
 export const ROBOT_LOGO_COLOR = 0x108ccf;

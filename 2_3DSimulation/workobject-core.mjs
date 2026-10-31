@@ -31,7 +31,7 @@ export function createDefaultWorkObject(index = 0) {
     const isWorld = normalizedIndex === WOBJ_WORLD_INDEX;
     return {
         index: normalizedIndex,
-        name: isWorld ? 'World' : `Wobj ${normalizedIndex}`,
+        name: isWorld ? 'Wobj 0' : `Wobj ${normalizedIndex}`,
         defined: isWorld,
         visible: isWorld,
         editable: !isWorld,
@@ -52,7 +52,7 @@ export function normalizeWorkObject(input, index = 0) {
     return {
         index: normalizedIndex,
         name: isWorld
-            ? 'World'
+            ? 'Wobj 0'
             : typeof source.name === 'string' && source.name.trim()
                 ? source.name.trim().slice(0, 40)
                 : fallback.name,

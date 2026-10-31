@@ -1784,9 +1784,9 @@ assert.equal(normalizedViewProject.robots[0].steps[5].name, 'View 3');
 assert.throws(() => normalizeMotionProject({
     ...viewProject,
     robots: viewProject.robots.map((robot, index) => index === 0
-        ? { ...robot, steps: robot.steps.map((step, stepIndex) => stepIndex === 5 ? { ...step, viewSlot: 4 } : step) }
+        ? { ...robot, steps: robot.steps.map((step, stepIndex) => stepIndex === 5 ? { ...step, viewSlot: 10 } : step) }
         : robot)
-}), /view slot must be 0 to 3/);
+}), /view slot must be 0 to 9/);
 assert.equal(normalized.robots[0].tcpProfiles.length, 3);
 assert.deepEqual(normalized.robots[0].tcpProfiles[0], {
     position: [0, 0, 0],
