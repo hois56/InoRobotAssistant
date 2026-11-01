@@ -96,6 +96,12 @@
             "title": "Robot Model Select",
             "versions": [
               {
+                "title": "Ver 26.10.31",
+                "items": [
+                  "`[업데이트]` 로봇 CAD 자료를 최신 DWG·STP 파일로 업데이트했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.09.28",
                 "items": [
                   "`[수정]` R15H, R20H 구매 코드 표기 오류를 해결했습니다."
@@ -283,17 +289,17 @@
                   "`[개선]` 암 로드 부착 축을 6축 로봇은 J3·J4, 스카라는 J2로 제한했습니다.",
                   "`[추가]` JOG 패널의 직교 모드에서 베이스·Tool·Wobj 좌표계를 선택하여 이동·회전할 수 있도록 했습니다.",
                   "`[수정]` 로봇이 여러 대일 때 Wobj 편집 대상과 활성 번호가 다른 로봇에 섞이던 문제를 해결했습니다.",
-                  "`[추가]` TCP 설정에서 TCP 좌표축 표시를 켜고 끌 수 있도록 했습니다.",
+                  "`[추가]` Tool·Wobj 설정에서 컨트롤러 연결 중에도 좌표축 표시를 켜고 끌 수 있도록 했습니다.",
                   "`[수정]` Tool 모델의 세부 부품을 펼쳐 표시하고, 일부 STEP Tool의 여러 부품이 하나로 합쳐져 개별 동작을 설정할 수 없던 문제를 해결했습니다.",
                   "`[추가]` 모델 트리의 이동 기능에서 면을 선택하면 해당 모델의 영점을 함께 표시하고 스냅 기준점으로 선택할 수 있도록 했습니다.",
                   "`[개선]` 가상컨트롤러에서도 간섭영역·TCP 감지 범위 설정 가져오기와 필드버스 IO 모니터링을 사용할 수 있도록 하고, 지원하지 않는 항목은 건너뛰도록 했습니다.",
-                  "`[추가]` IO 매핑에 선택한 등록 오브젝트 또는 전체 오브젝트를 등록 당시 위치·회전으로 되돌리는 기능을 추가했습니다.",
+                  "`[추가]` 오브젝트 등록·편집 화면의 저장 버튼 옆과 우클릭 메뉴에서 등록 당시 위치·회전으로 되돌릴 수 있도록 했으며, IO 매핑으로 선택한 등록 오브젝트 또는 전체 오브젝트를 원위치로 되돌릴 수 있도록 했습니다.",
                   "`[수정]` TCP 오프셋으로 새 Tool 모델의 장착 위치가 어긋나던 문제를 해결하고 플랜지 영점(0, 0, 0)에 배치하도록 했습니다.",
                   "`[추가]` 사용자 뷰를 최대 10개까지 저장하고, 각 뷰 이름 옆에서 전환 시간을 개별 설정할 수 있도록 했습니다. 뷰 적용, IO 매핑과 프로그램의 View 명령에 저장된 전환 시간을 함께 적용합니다. 고정 뷰 창의 헤더와 여백을 없애고 화면 안쪽에 배경 없는 조작 아이콘을 배치했습니다. 각 고정 뷰에서 선택 물체 중심 회전을 개별로 켜고 끌 수 있습니다. 고정 뷰에는 3D JOG 핸들을 표시하지 않습니다.",
                   "`[수정]` 새 창으로 연 뷰를 맨 앞으로 고정할 때 뷰가 보이지 않거나 화면이 멈추던 문제를 해결했습니다.",
                   "`[개선]` TCP 설정을 Tool 0~15로 확장하고, 부하 정보 확인·개별 또는 전체 모델 부하 가져오기·로봇 프로그램 코드 복사를 지원했습니다. 전체 부하는 질량·무게중심·관성모멘트를 함께 계산하며, Tool·Wobj가 0이 아니거나 로봇이 작업 원점에 도달하면 해당 아이콘을 초록색으로 표시합니다.",
                   "`[개선]` Wobj 0 기준의 좌표 입력·원점 스냅·로봇 프로그램 코드 복사를 지원하고, 3D 좌표계 표시를 키웠습니다. Tool·Wobj 설정 창의 구성과 색상을 통일하고 불필요한 항목을 정리했습니다.",
-                  "`[수정]` 컨트롤러 연결의 실제·가상 선택과 종류별 마지막 IP를 기억하여, 창을 다시 열거나 새로고침할 때 설정이 초기화되던 문제를 해결했습니다.",
+                  "`[수정]` 프로젝트를 다시 열면 컨트롤러 구성 설정이 사라지던 문제를 해결했습니다. 가상 컨트롤러 기본 IP는 구성 순서로 배정하고, 연결 목록·종류·IP·방식·대상 로봇은 자동 연결 없이 복원합니다.",
                   "`[수정]` 모델 트리와 3D 화면의 다중 선택이 윈도우 방식과 다르던 문제를 해결해 Shift는 범위 선택, Ctrl은 개별 추가·해제로 동작하도록 했습니다. 하단의 모델 이름 표시를 제거하고 상태를 맨 왼쪽에 표시하도록 정리했습니다. ESC 키로 모델·부품의 선택을 한 번에 해제할 수 있도록 했습니다.",
                   "`[수정]` 메인 화면을 확대·축소할 때 고정 뷰의 포인트·라벨 표시 크기가 함께 바뀌던 문제를 해결했습니다.",
                   "`[추가]` 초기화 왼쪽에 목록 버튼을 추가해 저장된 시뮬레이션 프로젝트 목록을 다시 열고 불러올 수 있도록 했습니다.",
@@ -301,7 +307,22 @@
                   "`[수정]` 로봇의 INOVANCE 로고에 외곽선이 표시되던 문제를 해결하고 본체 외곽선은 유지했습니다.",
                   "`[수정]` R16 로봇의 J3 뒤에 작은 조각이 떨어져 표시되던 문제를 해결했습니다.",
                   "`[수정]` 확대할수록 우클릭 화면 이동이 느려지던 문제를 해결했습니다.",
-                  "`[추가]` Shift로 마우스 회전·화면 이동·휠 확대·축소를 세밀하게 조작하고, Ctrl로 기본 속도의 2배로 조작하는 기능을 추가했습니다."
+                  "`[추가]` Shift로 마우스 회전·화면 이동·휠 확대·축소를 세밀하게 조작하고, Ctrl로 기본 속도의 2배로 조작하는 기능을 추가했습니다.",
+                  "`[추가]` 하단 P.pts에 로봇별 위치 추가·덮어쓰기, Windows 방식 다중 행 선택, 단축키와 범위 복사·붙여넣기·실행 취소를 지원하는 목록 편집, 선택 위치 이동 및 P.pts 내보내기를 추가했습니다. 표준화 번호·라벨 자동 적용, 창 크기에 맞춘 목록 확장 및 별도 창 열기를 지원합니다.",
+                  "`[수정]` 컨트롤러 연결을 해제하면 목록 항목이 사라지던 문제를 해결하고, 기존 설정으로 다시 연결할 수 있도록 했습니다.",
+                  "`[수정]` CAD_Lightweight에서 합친 STEP 부품을 가져올 때 다시 여러 부품으로 나뉘던 문제를 해결했습니다.",
+                  "`[수정]` 합친 STEP 부품을 불러올 때 면 색상 오류로 가져오지 못하던 문제를 해결했습니다.",
+                  "`[개선]` 로봇 Tool의 IO가 다른 로봇의 동작에 영향을 주던 문제를 해결했습니다. Tool 동작·센서는 소속 로봇별 IO로 분리하고, 장면의 공통 매핑은 어느 컨트롤러든 ON이면 동작하도록 했습니다.",
+                  "`[수정]` 한 모델에 다른 종류의 동작을 추가하면 기존 동작이 사라지던 문제를 해결해 여러 동작을 함께 설정하고 개별 관리할 수 있도록 했습니다. 동작별 IO 연결을 독립적으로 설정할 수 있도록 했습니다.",
+                  "`[수정]` 오브젝트를 잡거나 놓고 원위치로 되돌릴 때 화면이 잠시 멈추던 문제를 해결했습니다. 진공 흡착을 시작할 때 발생하던 지연도 줄였습니다.",
+                  "`[개선]` 오브젝트는 등록만 하고 Tool의 진공 동작에서 흡착 면 또는 전체 부품과 진공·파기 신호를 설정하도록 변경했습니다. 진공을 켤 때 한 번만 1mm 이내의 오브젝트를 찾고, 로봇·실린더 이동을 따라가며 파기 신호까지 흡착을 유지합니다.",
+                  "`[개선]` 실린더·외부 축·필름 박리가 동작 신호가 꺼지면 중간에 멈추던 문제를 해결해, 신호가 한 번 들어오면 목표까지 동작하도록 변경했습니다.",
+                  "`[수정]` 컨트롤러 연결 해제 시 긴 상태 문구로 연결 창에 가로 스크롤이 생기던 문제를 해결했습니다.",
+                  "`[수정]` 모델 트리에서 변경한 모델·부품 이름이 동작 설정과 Tool·물체·컨베이어·부하 선택 목록에 반영되지 않던 문제를 해결했습니다.",
+                  "`[수정]` 가상컨트롤러 연결 시 수평 자세에서도 Tool의 사분점 높이가 달라지던 문제를 해결했습니다.",
+                  "`[수정]` 충돌 감지를 켠 상태에서 부품이 많은 모델로 시뮬레이션할 때 화면이 버벅거리던 문제를 해결했습니다.",
+                  "`[개선]` 동작 이름을 직접 편집하고 모델 트리 우클릭에서 등록된 동작을 시험할 수 있도록 했습니다. 이동 대상과 그리퍼 항목을 제거하고 IO 설정을 동작 조건·출력 신호·입력 신호 순으로 정리했습니다.",
+                  "`[개선]` S7-60 Z20의 RapidMove 이동 시간을 로봇 동역학과 Tool·암 부하, 가감속·램프 설정에 따라 계산하도록 개선하고, OLP 프로그램의 Tool 좌표·부하와 RapidMove 설정을 반영하도록 했습니다."
                 ]
               },
               {
@@ -1049,6 +1070,12 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.11.02",
+                "items": [
+                  "`[변경]` CAD Lightweight를 `V1.2 → V1.3`으로 업데이트했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.10.30",
                 "items": [
                   "`[변경]` CAD Lightweight를 `V1.1 → V1.2`로 업데이트했습니다."
@@ -1503,6 +1530,12 @@
             "title": "Robot Model Select",
             "versions": [
               {
+                "title": "Ver 26.10.31",
+                "items": [
+                  "`[Updated]` Updated the robot CAD files with the latest DWG and STP drawings."
+                ]
+              },
+              {
                 "title": "Ver 26.09.28",
                 "items": [
                   "`[Fixed]` Resolved incorrect purchase-code display for R15H and R20H."
@@ -1690,17 +1723,17 @@
                   "`[Improved]` Limited arm-load attachment axes to J3/J4 for six-axis robots and J2 for SCARA robots.",
                   "`[Added]` Added Base, Tool and Wobj coordinate selection for Cartesian translation and rotation in the JOG panel.",
                   "`[Fixed]` Fixed Wobj editor targets and active indices being mixed between robots in multi-robot scenes.",
-                  "`[Added]` Added a checkbox in TCP settings to show or hide TCP coordinate axes.",
+                  "`[Added]` Added coordinate axis visibility controls to Tool and Wobj settings, available while connected to a controller.",
                   "`[Fixed]` Expanded Tool component trees and fixed components in some STEP Tools being merged into one part, preventing individual motion settings.",
                   "`[Added]` Selecting a face during a move from the model tree now displays the model origin as a selectable snap reference.",
                   "`[Improved]` Enabled interference zone and TCP detection range imports and fieldbus IO monitoring for virtual controllers, skipping unsupported items.",
-                  "`[Added]` Added IO mapping to return selected or all registered objects to their original registered positions and rotations.",
+                  "`[Added]` Added an object reset button beside Save in the registration and editing form, plus a context menu action, to restore registered position and rotation. IO mappings can reset selected or all registered objects.",
                   "`[Fixed]` Fixed TCP offsets displacing newly imported Tool models by mounting them at the flange origin (0, 0, 0).",
                   "`[Added]` Expanded saved views to 10 slots with a separate transition time beside each view name. Applying a view, IO mappings, and program View commands all use the time saved with that view. Fixed-view windows now fill the available space without a header, with unframed control icons overlaid inside the view. Rotation around the selected object can be enabled separately in each fixed view. 3D JOG handles are hidden in fixed views.",
                   "`[Fixed]` Fixed views disappearing or freezing when Always on top was enabled after opening them in a separate window.",
                   "`[Improved]` Expanded TCP setup to Tool 0–15 with load information viewing, individual or combined model load import and robot program code copying. Combined loads recalculate total mass, center of gravity and inertia. Tool and Wobj icons turn green for nonzero indices, and the Work Origin icon turns green when the robot reaches its work origin.",
                   "`[Improved]` Added coordinate editing, origin snapping and robot program code copying relative to Wobj 0, and enlarged the 3D coordinate display. Unified the Tool and Wobj setup layouts and colors and removed unnecessary fields.",
-                  "`[Fixed]` Remembered the selected real or virtual controller and the last IP for each type so connection settings survive reopening and page reloads.",
+                  "`[Fixed]` Fixed controller configurations being lost when reopening a project. Virtual controller default IPs now follow configuration order, and connection lists, types, IPs, sources, and target robots are restored without connecting automatically.",
                   "`[Fixed]` Fixed multiple selection in the model tree and 3D view to follow Windows behavior: Shift selects a range, and Ctrl adds or removes individual items. Removed the model name from the bottom bar and placed the status at the far left. Pressing Esc now clears selected models and parts together.",
                   "`[Fixed]` Fixed point markers and labels in fixed views changing size when zooming the main view.",
                   "`[Added]` Added a List button to the left of Reset to reopen and load saved simulation projects.",
@@ -1708,7 +1741,22 @@
                   "`[Fixed]` Removed outlines from INOVANCE logos on robot models while preserving body outlines.",
                   "`[Fixed]` Removed a small fragment that appeared detached behind J3 on the R16 robot.",
                   "`[Fixed]` Fixed right-drag panning slowing down when zoomed in.",
-                  "`[Added]` Added fine mouse rotation, panning and wheel zoom with Shift, and twice-normal speed with Ctrl."
+                  "`[Added]` Added fine mouse rotation, panning and wheel zoom with Shift, and twice-normal speed with Ctrl.",
+                  "`[Added]` Added per-robot P.pts position registration and overwrite, table editing with Windows-style multiple row selection, shortcuts, range copy/paste and undo/redo, movement to selected positions, and P.pts export. Supports automatic standardized numbers and labels, a list that expands with the window, and a separate window.",
+                  "`[Fixed]` Fixed controller entries disappearing from the list after disconnection, allowing reconnection with the same settings.",
+                  "`[Fixed]` Fixed an issue where STEP parts merged in CAD_Lightweight were split into multiple parts again when imported.",
+                  "`[Fixed]` Fixed merged STEP parts failing to import due to surface color errors.",
+                  "`[Improved]` Fixed one robot’s Tool IO affecting another robot’s actions. Tool actions and sensors now use their own robot’s IO, while shared scene mappings remain active when any controller is ON.",
+                  "`[Fixed]` Fixed existing actions being replaced when adding another action type to the same model. Multiple actions can be configured and managed individually, with independent IO connections.",
+                  "`[Fixed]` Fixed brief view freezes when picking up, releasing, or resetting objects. Also reduced delays when vacuum acquisition starts.",
+                  "`[Improved]` Objects now only need registration. Tool vacuum actions select a contact face or entire part and vacuum/release signals. Objects within 1 mm are searched once on activation, follow robot and cylinder motion, and remain attached until released.",
+                  "`[Improved]` Fixed cylinders, external axes, and film peeling stopping midway when the motion signal turns off. A single signal pulse now keeps each action moving to its target.",
+                  "`[Fixed]` Fixed long controller disconnection messages causing horizontal scrolling in the connection panel.",
+                  "`[Fixed]` Fixed renamed models and parts still showing their original names in motion settings and Tool, object, conveyor, and load selection lists.",
+                  "`[Fixed]` Fixed Tool quadrant snap heights differing at a level pose while connected to a virtual controller.",
+                  "`[Fixed]` Fixed simulation stuttering with collision detection enabled in scenes containing models with many parts.",
+                  "`[Improved]` Action names are editable, and registered actions can be tested from the model-tree context menu. Removed the moving-target section and gripper option, and arranged IO settings into condition, output, and input rows.",
+                  "`[Improved]` S7-60 Z20 RapidMove timing now uses robot dynamics, Tool/arm loads, acceleration/deceleration and ramp settings. OLP now applies program-defined Tool frames, loads and RapidMove settings."
                 ]
               },
               {
@@ -2439,6 +2487,12 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.11.02",
+                "items": [
+                  "`[Changed]` Updated CAD Lightweight from `V1.2` to `V1.3`."
+                ]
+              },
+              {
                 "title": "Ver 26.10.30",
                 "items": [
                   "`[Changed]` Updated CAD Lightweight from `V1.1` to `V1.2`."
@@ -2881,6 +2935,12 @@
             "title": "Robot Model Select",
             "versions": [
               {
+                "title": "Ver 26.10.31",
+                "items": [
+                  "`[更新]` 将机器人 CAD 资料更新为最新的 DWG 和 STP 文件。"
+                ]
+              },
+              {
                 "title": "Ver 26.09.28",
                 "items": [
                   "`[修复]` 修复了 R15H、R20H 购买代码显示错误的问题。"
@@ -3068,17 +3128,17 @@
                   "`[改进]` 将臂部负载的安装轴限制为六轴机器人的J3/J4和SCARA机器人的J2。",
                   "`[新增]` JOG 面板的直角坐标模式支持选择基座、Tool 和 Wobj 坐标系进行移动和旋转。",
                   "`[修复]` 修复了多机器人场景中Wobj编辑对象和当前编号在不同机器人之间混用的问题。",
-                  "`[新增]` 在 TCP 设置中新增 TCP 坐标轴显示复选框。",
+                  "`[新增]` Tool 和 Wobj 设置支持显示或隐藏坐标轴，连接控制器时也可操作。",
                   "`[修复]` 展开显示 Tool 模型的详细零件，并修复了部分 STEP Tool 的多个零件被合并为一个而无法单独设置动作的问题。",
                   "`[新增]` 在模型树中移动模型时，选择面即可同时显示该模型的原点，并可将其选为捕捉参考点。",
                   "`[改进]` 虚拟控制器现可导入干涉区域和TCP检测范围设置并监控现场总线IO，不支持的项目将跳过。",
-                  "`[新增]` IO映射现可将选定或全部已注册对象恢复到注册时的位置和旋转角度。",
+                  "`[新增]` 在对象注册和编辑表单的保存按钮旁及右键菜单中提供复位功能，可恢复注册时的位置和旋转角度；IO映射可复位选定或全部已注册对象。",
                   "`[修复]` 修复了 TCP 偏移导致新导入 Tool 模型安装位置偏移的问题，统一安装到法兰原点 (0, 0, 0)。",
                   "`[新增]` 用户视图扩展至最多10个，可在各视图名称旁单独保存切换时间。视图应用、IO映射和程序中的View指令均使用该视图保存的切换时间。 固定视图窗口移除了标题栏和留白，操作图标以无背景、无边框样式叠加在画面内。 每个固定视图均可独立开启或关闭围绕所选物体旋转。 固定视图中不显示3D JOG操作手柄。",
                   "`[修复]` 修复将视图在新窗口中打开后启用置顶时，视图不显示或画面冻结的问题。",
                   "`[改进]` 将 TCP 设置扩展为 Tool 0–15，支持查看负载信息、导入单个或全部模型的负载以及复制机器人程序代码。合并负载会重新计算总质量、重心和转动惯量。选择非零编号时，Tool 和 Wobj 图标显示为绿色；机器人到达作业原点时，作业原点图标也显示为绿色。",
                   "`[改进]` 支持以 Wobj 0 为基准编辑坐标、捕捉原点和复制机器人程序代码，并放大 3D 坐标系显示。统一 Tool 和 Wobj 设置窗口的布局和颜色，移除不必要的项目。",
-                  "`[修复]` 记住实际或虚拟控制器选项及各类型最后使用的 IP，解决重新打开连接窗口或刷新页面后设置被重置的问题。",
+                  "`[修复]` 修复了重新打开项目后控制器配置丢失的问题。虚拟控制器默认 IP 按配置顺序分配，连接列表、类型、IP、连接方式和目标机器人均可恢复，但不会自动连接。",
                   "`[修复]` 修复模型树和3D视图的多选方式与Windows不一致的问题：Shift选择范围，Ctrl单独添加或取消选择项目。 移除底部栏的模型名称，并将状态移至最左侧。 现在可按Esc键一次清除模型和部件的选择。",
                   "`[修复]` 修复缩放主画面时，固定视图中的点位标记和标签大小也随之变化的问题。",
                   "`[新增]` 在重置左侧新增列表按钮，可重新打开并加载已保存的仿真项目。",
@@ -3086,7 +3146,22 @@
                   "`[修复]` 修复机器人INOVANCE标志显示轮廓线的问题，并保留机身轮廓线。",
                   "`[修复]` 修复了 R16 机器人 J3 后方显示分离小碎片的问题。",
                   "`[修复]` 修复了放大后鼠标右键平移速度变慢的问题。",
-                  "`[新增]` 按住 Shift 可精细控制鼠标旋转、平移和滚轮缩放，按住 Ctrl 可以正常速度的两倍进行操作。"
+                  "`[新增]` 按住 Shift 可精细控制鼠标旋转、平移和滚轮缩放，按住 Ctrl 可以正常速度的两倍进行操作。",
+                  "`[新增]` 底部 P.pts 支持各机器人的位置添加与覆盖、Windows 式多行选择、快捷键及区域复制粘贴和撤销重做、移动到选定位置及导出 P.pts。支持标准化编号和标签自动应用、列表随窗口扩展及独立窗口打开。",
+                  "`[修复]` 修复了断开控制器连接后列表项消失的问题，现在可使用原有设置重新连接。",
+                  "`[修复]` 修复了导入在 CAD_Lightweight 中合并的 STEP 零件时再次被拆分为多个零件的问题。",
+                  "`[修复]` 修复了合并的 STEP 零件因表面颜色错误而无法导入的问题。",
+                  "`[改进]` 修复了一个机器人的 Tool IO 影响其他机器人动作的问题。Tool 动作和传感器按所属机器人独立使用 IO，场景公共映射仍在任一控制器为 ON 时生效。",
+                  "`[修复]` 修复了在同一模型上添加其他类型动作时原有动作被替换的问题。现在可以同时配置并分别管理多个动作，各动作的 IO 连接可独立设置。",
+                  "`[修复]` 修复了抓取、释放或复位对象时画面短暂停顿的问题。 同时减少了开始真空吸附时的延迟。",
+                  "`[改进]` 对象仅需注册，吸附面或整个零件及真空、释放信号改在Tool真空动作中设置。开启真空时仅搜索一次1mm以内的对象，吸附后跟随机器人和气缸运动，直到收到释放信号。",
+                  "`[改进]` 修复了气缸、外部轴和薄膜剥离在动作信号关闭后中途停止的问题，收到一次信号后即可持续动作至目标位置。",
+                  "`[修复]` 修复了控制器断开连接时状态文本过长导致连接面板出现横向滚动条的问题。",
+                  "`[修复]` 修复了在模型树中重命名的模型和零件仍在动作设置及 Tool、对象、传送带和负载选择列表中显示原名称的问题。",
+                  "`[修复]` 修复了连接虚拟控制器时，Tool 处于水平姿态但四象限捕捉点高度不一致的问题。",
+                  "`[修复]` 修复了启用碰撞检测时，包含大量零件的模型导致仿真卡顿的问题。",
+                  "`[改进]` 支持编辑动作名称并通过模型树右键菜单测试已注册动作。移除了移动目标区域和夹爪选项，将IO设置按动作条件、输出信号、输入信号分行排列。",
+                  "`[改进]` S7-60 Z20 的 RapidMove 时间计算现已考虑机器人动力学、Tool/臂部负载及加减速和斜坡设置；OLP 现可应用程序中的 Tool 坐标、负载和 RapidMove 设置。"
                 ]
               },
               {
@@ -3817,6 +3892,12 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.11.02",
+                "items": [
+                  "`[变更]` CAD Lightweight 从 `V1.2` 更新至 `V1.3`。"
+                ]
+              },
+              {
                 "title": "Ver 26.10.30",
                 "items": [
                   "`[变更]` CAD Lightweight 从 `V1.1` 更新至 `V1.2`。"
@@ -4259,6 +4340,12 @@
             "title": "Robot Model Select",
             "versions": [
               {
+                "title": "Ver 26.10.31",
+                "items": [
+                  "`[Cập nhật]` Cập nhật tài liệu CAD robot với các tệp DWG và STP mới nhất."
+                ]
+              },
+              {
                 "title": "Ver 26.09.28",
                 "items": [
                   "`[Đã sửa]` Khắc phục lỗi hiển thị mã mua hàng của R15H và R20H."
@@ -4446,17 +4533,17 @@
                   "`[Cải thiện]` Giới hạn trục gắn tải trên tay ở J3/J4 cho robot 6 trục và J2 cho robot SCARA.",
                   "`[Thêm]` Đã bổ sung lựa chọn hệ tọa độ Đế, Tool và Wobj để di chuyển và xoay trong chế độ Đề-các của bảng JOG.",
                   "`[Sửa lỗi]` Đã khắc phục việc đối tượng chỉnh sửa và số Wobj đang chọn bị nhầm giữa các robot khi có nhiều robot.",
-                  "`[Thêm]` Thêm hộp kiểm trong cài đặt TCP để hiện hoặc ẩn các trục tọa độ TCP.",
+                  "`[Thêm]` Cho phép hiện hoặc ẩn các trục tọa độ trong cài đặt Tool và Wobj ngay cả khi đang kết nối bộ điều khiển.",
                   "`[Sửa lỗi]` Mở rộng danh sách chi tiết của Tool và sửa lỗi nhiều chi tiết trong một số STEP Tool bị gộp thành một, không thể thiết lập chuyển động riêng.",
                   "`[Thêm]` Khi chọn một mặt trong lúc di chuyển từ cây mô hình, điểm gốc của mô hình được hiển thị và có thể chọn làm điểm tham chiếu bắt điểm.",
                   "`[Cải tiến]` Cho phép bộ điều khiển ảo nhập vùng giao thoa, phạm vi phát hiện TCP và giám sát IO fieldbus; bỏ qua các mục không được hỗ trợ.",
-                  "`[Thêm]` Thêm ánh xạ IO để đưa đối tượng đã đăng ký được chọn hoặc tất cả đối tượng về vị trí và góc xoay ban đầu khi đăng ký.",
+                  "`[Thêm]` Thêm nút đặt lại đối tượng bên cạnh nút lưu trong biểu mẫu đăng ký và chỉnh sửa, cùng lệnh trong menu chuột phải, để đưa đối tượng về vị trí và góc xoay khi đăng ký. Ánh xạ IO hỗ trợ khôi phục đối tượng đã chọn hoặc tất cả đối tượng đã đăng ký.",
                   "`[Sửa lỗi]` Đã sửa lỗi độ lệch TCP làm sai vị trí lắp mô hình Tool mới nhập; Tool được đặt tại gốc mặt bích (0, 0, 0).",
                   "`[Thêm]` Đã mở rộng lên tối đa 10 góc nhìn và cho phép đặt thời gian chuyển riêng bên cạnh từng tên. Khi áp dụng góc nhìn, ánh xạ IO và lệnh View đều dùng thời gian đã lưu cho góc nhìn đó. Cửa sổ góc nhìn cố định đã bỏ phần đầu và khoảng đệm, với các biểu tượng điều khiển không nền, không viền đặt ngay trong khung nhìn. Có thể bật hoặc tắt xoay quanh đối tượng đã chọn riêng cho từng góc nhìn cố định. Không hiển thị tay nắm 3D JOG trong các góc nhìn cố định.",
                   "`[Sửa lỗi]` Đã khắc phục góc nhìn biến mất hoặc màn hình bị treo khi bật Luôn ở trên cùng sau khi mở trong cửa sổ riêng.",
                   "`[Cải tiến]` Mở rộng cài đặt TCP thành Tool 0–15, hỗ trợ xem thông tin tải, lấy tải của từng mô hình hoặc toàn bộ và sao chép mã chương trình robot. Tải tổng hợp tính lại tổng khối lượng, tâm trọng lực và mô men quán tính. Biểu tượng Tool và Wobj chuyển sang màu xanh khi chọn chỉ số khác 0; biểu tượng gốc làm việc chuyển sang màu xanh khi robot đến gốc làm việc.",
                   "`[Cải tiến]` Hỗ trợ nhập tọa độ, bắt điểm gốc và sao chép mã chương trình robot theo Wobj 0, đồng thời tăng kích thước hiển thị hệ tọa độ 3D. Thống nhất bố cục và màu sắc cài đặt Tool và Wobj, lược bỏ các mục không cần thiết.",
-                  "`[Sửa lỗi]` Ghi nhớ lựa chọn bộ điều khiển thực/ảo và IP cuối cùng của từng loại để không bị đặt lại khi mở lại cửa sổ hoặc tải lại trang.",
+                  "`[Sửa lỗi]` Đã sửa lỗi mất cấu hình bộ điều khiển khi mở lại dự án. IP mặc định của bộ điều khiển ảo được cấp theo thứ tự cấu hình; danh sách kết nối, loại, IP, phương thức và robot đích được khôi phục mà không tự động kết nối.",
                   "`[Sửa lỗi]` Đã sửa cách chọn nhiều mục trong cây mô hình và khung nhìn 3D theo Windows: Shift chọn một dải, Ctrl thêm hoặc bỏ chọn từng mục. Đã bỏ tên mô hình khỏi thanh dưới cùng và chuyển trạng thái sang ngoài cùng bên trái. Giờ đây có thể nhấn Esc để bỏ chọn đồng thời các mô hình và bộ phận.",
                   "`[Sửa lỗi]` Đã sửa lỗi kích thước điểm đánh dấu và nhãn trong góc nhìn cố định thay đổi khi phóng to hoặc thu nhỏ khung nhìn chính.",
                   "`[Thêm]` Thêm nút Danh sách bên trái Đặt lại để mở lại và tải các dự án mô phỏng đã lưu.",
@@ -4464,7 +4551,22 @@
                   "`[Sửa lỗi]` Đã bỏ đường viền trên logo INOVANCE của mô hình robot và giữ nguyên đường viền thân robot.",
                   "`[Sửa lỗi]` Đã khắc phục mảnh nhỏ hiển thị tách rời phía sau J3 của robot R16.",
                   "`[Sửa]` Đã khắc phục tình trạng kéo chuột phải để di chuyển khung nhìn chậm hơn khi phóng to.",
-                  "`[Thêm]` Đã thêm Shift để xoay, di chuyển khung nhìn và thu phóng bằng con lăn chậm, chính xác hơn; Ctrl để thao tác với tốc độ gấp đôi bình thường."
+                  "`[Thêm]` Đã thêm Shift để xoay, di chuyển khung nhìn và thu phóng bằng con lăn chậm, chính xác hơn; Ctrl để thao tác với tốc độ gấp đôi bình thường.",
+                  "`[Thêm]` Bổ sung bảng P.pts cho từng robot: thêm và ghi đè vị trí, chọn nhiều hàng theo kiểu Windows, sửa bảng bằng phím tắt, sao chép/dán vùng và hoàn tác/làm lại, di chuyển đến vị trí đã chọn và xuất P.pts. Hỗ trợ số cùng nhãn tiêu chuẩn, danh sách mở rộng theo cửa sổ và mở cửa sổ riêng.",
+                  "`[Sửa lỗi]` Đã khắc phục lỗi mục bộ điều khiển biến mất khỏi danh sách sau khi ngắt kết nối, cho phép kết nối lại với cài đặt cũ.",
+                  "`[Sửa lỗi]` Đã sửa lỗi các chi tiết STEP được gộp trong CAD_Lightweight lại bị tách thành nhiều chi tiết khi nhập.",
+                  "`[Sửa lỗi]` Đã sửa lỗi không thể nhập chi tiết STEP đã gộp do lỗi màu bề mặt.",
+                  "`[Cải tiến]` Đã sửa lỗi IO của Tool trên một robot ảnh hưởng đến thao tác của robot khác. Thao tác và cảm biến Tool dùng IO riêng của robot tương ứng; ánh xạ chung trong cảnh vẫn hoạt động khi bất kỳ bộ điều khiển nào ON.",
+                  "`[Sửa lỗi]` Đã sửa lỗi thao tác hiện có bị thay thế khi thêm loại thao tác khác vào cùng một mô hình. Có thể thiết lập và quản lý riêng nhiều thao tác với kết nối IO độc lập.",
+                  "`[Sửa lỗi]` Đã khắc phục tình trạng màn hình tạm dừng khi gắp, thả hoặc đưa đối tượng về vị trí ban đầu. Đồng thời giảm độ trễ khi bắt đầu hút chân không.",
+                  "`[Cải tiến]` Đối tượng chỉ cần đăng ký; chọn mặt tiếp xúc hoặc toàn bộ chi tiết và tín hiệu hút/nhả trong chuyển động chân không của Tool. Chỉ tìm đối tượng trong phạm vi 1 mm một lần khi bật hút; đối tượng đi theo robot và xi lanh, giữ đến khi có tín hiệu nhả.",
+                  "`[Cải tiến]` Đã sửa lỗi xi lanh, trục ngoài và thao tác bóc màng dừng giữa chừng khi tín hiệu tắt. Chỉ cần một xung tín hiệu, thao tác sẽ tiếp tục đến vị trí đích.",
+                  "`[Sửa lỗi]` Đã sửa lỗi thông báo ngắt kết nối bộ điều khiển quá dài làm xuất hiện thanh cuộn ngang trong bảng kết nối.",
+                  "`[Sửa lỗi]` Đã khắc phục việc mô hình và chi tiết đổi tên trong cây mô hình vẫn hiển thị tên gốc trong cài đặt chuyển động và danh sách chọn Tool, đối tượng, băng tải, tải trọng.",
+                  "`[Sửa lỗi]` Đã sửa lỗi các điểm bắt phần tư của Tool có độ cao khác nhau khi nằm ngang trong lúc kết nối bộ điều khiển ảo.",
+                  "`[Sửa lỗi]` Đã khắc phục tình trạng giật khi mô phỏng các mô hình có nhiều chi tiết với tính năng phát hiện va chạm được bật.",
+                  "`[Cải tiến]` Cho phép sửa tên chuyển động và thử chuyển động đã đăng ký từ menu chuột phải của cây mô hình. Bỏ mục đối tượng di chuyển và tùy chọn kẹp, sắp xếp IO thành các hàng điều kiện, tín hiệu đầu ra và tín hiệu đầu vào.",
+                  "`[Cải tiến]` Tính thời gian RapidMove của S7-60 Z20 theo động lực học robot, tải Tool/tay máy và cài đặt tăng/giảm tốc, ramp. OLP áp dụng tọa độ, tải Tool và cài đặt RapidMove trong chương trình."
                 ]
               },
               {
@@ -5195,6 +5297,12 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.11.02",
+                "items": [
+                  "`[Thay đổi]` Đã cập nhật CAD Lightweight từ `V1.2` lên `V1.3`."
+                ]
+              },
+              {
                 "title": "Ver 26.10.30",
                 "items": [
                   "`[Thay đổi]` Đã cập nhật CAD Lightweight từ `V1.1` lên `V1.2`."
@@ -5637,6 +5745,12 @@
             "title": "Robot Model Select",
             "versions": [
               {
+                "title": "Ver 26.10.31",
+                "items": [
+                  "`[Güncellendi]` Robot CAD dosyaları en güncel DWG ve STP çizimleriyle güncellendi."
+                ]
+              },
+              {
                 "title": "Ver 26.09.28",
                 "items": [
                   "`[Düzeltildi]` R15H ve R20H satın alma kodlarının yanlış görüntülenmesi düzeltildi."
@@ -5824,17 +5938,17 @@
                   "`[İyileştirildi]` Kol yükü bağlama eksenleri altı eksenli robotlarda J3/J4 ve SCARA robotlarda J2 ile sınırlandırıldı.",
                   "`[Eklendi]` JOG panelinin Kartezyen modunda taşıma ve döndürme için Taban, Tool ve Wobj koordinat sistemi seçimi eklendi.",
                   "`[Düzeltildi]` Birden fazla robot içeren sahnelerde Wobj düzenleme hedeflerinin ve etkin numaraların robotlar arasında karışması sorunu giderildi.",
-                  "`[Eklendi]` TCP ayarlarına koordinat eksenlerini göstermek veya gizlemek için bir onay kutusu eklendi.",
+                  "`[Eklendi]` Tool ve Wobj ayarlarında koordinat eksenlerini gösterme veya gizleme denetimleri eklendi; denetleyiciye bağlıyken de kullanılabilir.",
                   "`[Düzeltme]` Tool ayrıntı ağaçları açıldı ve bazı STEP Tool modellerinde birden fazla parçanın birleşerek ayrı hareket ayarını engellemesi sorunu giderildi.",
                   "`[Eklendi]` Model ağacından taşıma sırasında bir yüz seçildiğinde modelin sıfır noktası görüntülenir ve yakalama referansı olarak seçilebilir.",
                   "`[İyileştirme]` Sanal kontrolörlerde girişim bölgesi ve TCP algılama aralığı ayarlarını alma ve fieldbus IO izleme etkinleştirildi; desteklenmeyen öğeler atlanır.",
-                  "`[Eklendi]` Seçilen veya tüm kayıtlı nesneleri kayıt sırasındaki konum ve dönüşlerine döndüren IO eşlemesi eklendi.",
+                  "`[Eklendi]` Nesneyi kayıt sırasındaki konum ve dönüşüne döndürmek için kayıt ve düzenleme formunda Kaydet düğmesinin yanına sıfırlama düğmesi ve sağ tık menüsüne bir komut eklendi. IO eşlemesi ile seçilen veya tüm kayıtlı nesneler sıfırlanabilir.",
                   "`[Düzeltildi]` TCP ofsetlerinin yeni içe aktarılan Tool modellerini kaydırması sorunu giderildi; modeller flanş orijinine (0, 0, 0) yerleştirilir.",
                   "`[Eklendi]` Kayıtlı görünümler 10 yuvaya çıkarıldı ve her görünüm adının yanına ayrı geçiş süresi eklendi. Görünüm uygulama, IO eşlemeleri ve View komutları görünümle kaydedilen süreyi kullanır. Sabit görünüm penceresinde başlık ve kenar boşlukları kaldırıldı, arka plansız ve çerçevesiz denetim simgeleri görünümün içine yerleştirildi. Her sabit görünümde seçili nesne etrafında dönüş ayrı ayrı açılıp kapatılabilir. Sabit görünümlerde 3D JOG tutamaçları gösterilmez.",
                   "`[Düzeltildi]` Görünüm ayrı bir pencerede açıldıktan sonra Her zaman üstte etkinleştirildiğinde görünümün kaybolması veya ekranın donması sorunu giderildi.",
                   "`[İyileştirme]` TCP ayarları Tool 0–15 olarak genişletildi; yük bilgilerini görüntüleme, tek veya tüm modellerin yükünü alma ve robot program kodu kopyalama desteklendi. Birleşik yük için toplam kütle, ağırlık merkezi ve atalet yeniden hesaplanır. Sıfır dışı numaralarda Tool ve Wobj simgeleri yeşil olur; robot çalışma başlangıcına ulaştığında Work Origin simgesi de yeşile döner.",
                   "`[İyileştirme]` Wobj 0 temelinde koordinat düzenleme, orijin yakalama ve robot program kodu kopyalama eklendi; 3D koordinat gösterimi büyütüldü. Tool ve Wobj ayarlarının düzeni ve renkleri birleştirildi, gereksiz alanlar kaldırıldı.",
-                  "`[Düzeltildi]` Bağlantı penceresi yeniden açıldığında veya sayfa yenilendiğinde ayarların sıfırlanmaması için gerçek/sanal denetleyici seçimi ve her türün son IP adresi hatırlanır.",
+                  "`[Düzeltildi]` Proje yeniden açıldığında denetleyici yapılandırmalarının kaybolması giderildi. Sanal denetleyicilerin varsayılan IP adresleri yapılandırma sırasına göre atanır; bağlantı listesi, tür, IP, bağlantı yöntemi ve hedef robot otomatik bağlanmadan geri yüklenir.",
                   "`[Düzeltildi]` Model ağacında ve 3D görünümde çoklu seçimin Windows ile farklı çalışması düzeltildi: Shift bir aralığı seçer, Ctrl tek tek öğeleri ekler veya seçimden çıkarır. Alt çubuktaki model adı kaldırıldı ve durum en sola taşındı. Esc tuşuyla seçili modellerin ve parçaların seçimi artık tek seferde kaldırılabilir.",
                   "`[Düzeltildi]` Ana görünüm yakınlaştırıldığında sabit görünümlerdeki nokta işaretlerinin ve etiketlerin boyutunun da değişmesi sorunu giderildi.",
                   "`[Eklendi]` Kaydedilmiş simülasyon projelerini yeniden listelemek ve yüklemek için Sıfırla düğmesinin soluna Liste düğmesi eklendi.",
@@ -5842,7 +5956,22 @@
                   "`[Düzeltildi]` Robot modellerindeki INOVANCE logolarının kenar çizgileri kaldırıldı; gövde kenar çizgileri korundu.",
                   "`[Düzeltildi]` R16 robotunun J3 arkasında ayrı görünen küçük parça kaldırıldı.",
                   "`[Düzeltildi]` Yakınlaştırıldığında sağ tuşla görünüm kaydırmanın yavaşlaması sorunu giderildi.",
-                  "`[Eklendi]` Shift ile hassas fare döndürme, görünüm kaydırma ve tekerlek yakınlaştırması; Ctrl ile normal hızın iki katında kontrol eklendi."
+                  "`[Eklendi]` Shift ile hassas fare döndürme, görünüm kaydırma ve tekerlek yakınlaştırması; Ctrl ile normal hızın iki katında kontrol eklendi.",
+                  "`[Eklendi]` Alt P.pts paneline robot başına konum ekleme ve üzerine yazma, Windows tarzı çoklu satır seçimi, kısayollarla tablo düzenleme, aralık kopyalama/yapıştırma ve geri alma/yineleme, seçili konuma hareket ve P.pts dışa aktarma eklendi. Standart numara ve etiketler, pencereyle genişleyen liste ve ayrı pencere desteklenir.",
+                  "`[Düzeltildi]` Bağlantı kesildiğinde kontrolör kaydının listeden kaybolması sorunu giderildi; aynı ayarlarla yeniden bağlantı kurulabilir.",
+                  "`[Düzeltildi]` CAD_Lightweight içinde birleştirilen STEP parçalarının içe aktarılırken tekrar birden fazla parçaya ayrılması sorunu giderildi.",
+                  "`[Düzeltildi]` Birleştirilmiş STEP parçalarının yüzey rengi hataları nedeniyle içe aktarılamaması sorunu giderildi.",
+                  "`[İyileştirildi]` Bir robotun Tool IO sinyallerinin başka robotların hareketlerini etkilemesi giderildi. Tool hareketleri ve sensörleri kendi robotlarının IO alanını kullanır; ortak sahne eşlemeleri herhangi bir denetleyici ON olduğunda etkin kalır.",
+                  "`[Düzeltildi]` Aynı modele başka bir hareket türü eklenirken mevcut hareketlerin silinmesi giderildi. Birden fazla hareket bağımsız IO bağlantılarıyla ayrı ayrı yapılandırılıp yönetilebilir.",
+                  "`[Düzeltildi]` Nesneleri tutarken, bırakırken veya sıfırlarken görüntünün kısa süre donması sorunu giderildi. Vakum tutuşu başlarken oluşan gecikmeler de azaltıldı.",
+                  "`[İyileştirme]` Nesneler yalnızca kaydedilir; temas yüzeyi veya tüm parça ile vakum/bırakma sinyalleri Tool vakum hareketinde seçilir. Etkinleştirmede 1 mm içindeki nesneler bir kez aranır, robot ve silindir hareketini izler ve bırakma sinyaline kadar tutulur.",
+                  "`[İyileştirildi]` Silindirlerin, harici eksenlerin ve film soyma işleminin hareket sinyali kapandığında yarıda durması giderildi. Tek bir sinyal darbesiyle hareket hedefe ulaşana kadar sürer.",
+                  "`[Düzeltildi]` Uzun denetleyici bağlantı kesilme mesajlarının bağlantı panelinde yatay kaydırma oluşturması giderildi.",
+                  "`[Düzeltildi]` Model ağacında yeniden adlandırılan modellerin ve parçaların hareket ayarları ile Tool, nesne, konveyör ve yük seçim listelerinde eski adlarıyla görünmesi düzeltildi.",
+                  "`[Düzeltildi]` Sanal denetleyiciye bağlıyken yatay konumdaki Tool çeyrek yakalama noktalarının yüksekliklerinin farklı olması giderildi.",
+                  "`[Düzeltildi]` Çok sayıda parça içeren modellerin bulunduğu sahnelerde çarpışma algılama açıkken simülasyonun takılması sorunu giderildi.",
+                  "`[İyileştirme]` Hareket adları düzenlenebilir ve kayıtlı hareketler model ağacının sağ tıklama menüsünden denenebilir. Hareket hedefi bölümü ve tutucu seçeneği kaldırıldı; IO ayarları koşul, çıkış ve giriş satırlarına ayrıldı.",
+                  "`[İyileştirme]` S7-60 Z20 RapidMove süre hesabı robot dinamiğini, Tool/kol yüklerini ve hızlanma/yavaşlama ile rampa ayarlarını kullanır. OLP, programdaki Tool koordinatlarını, yüklerini ve RapidMove ayarlarını uygular."
                 ]
               },
               {
@@ -6573,6 +6702,12 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.11.02",
+                "items": [
+                  "`[Değiştirildi]` CAD Lightweight, `V1.2` sürümünden `V1.3` sürümüne güncellendi."
+                ]
+              },
+              {
                 "title": "Ver 26.10.30",
                 "items": [
                   "`[Değiştirildi]` CAD Lightweight, `V1.1` sürümünden `V1.2` sürümüne güncellendi."
@@ -7015,6 +7150,12 @@
             "title": "Robot Model Select",
             "versions": [
               {
+                "title": "Ver 26.10.31",
+                "items": [
+                  "`[Обновлено]` Файлы CAD роботов обновлены до последних версий чертежей DWG и STP."
+                ]
+              },
+              {
                 "title": "Ver 26.09.28",
                 "items": [
                   "`[Исправлено]` Исправлено неправильное отображение кодов заказа R15H и R20H."
@@ -7202,17 +7343,17 @@
                   "`[Улучшено]` Оси крепления нагрузки ограничены J3/J4 для шестиосевых роботов и J2 для роботов SCARA.",
                   "`[Добавлено]` В декартовом режиме панели JOG добавлен выбор систем координат «База», Tool и Wobj для перемещения и вращения.",
                   "`[Исправлено]` Исправлено смешивание роботов для редактирования Wobj и активных номеров Wobj в сценах с несколькими роботами.",
-                  "`[Добавлено]` В настройки TCP добавлен флажок отображения осей координат TCP.",
+                  "`[Добавлено]` В настройках Tool и Wobj можно показывать и скрывать оси координат, в том числе при подключении к контроллеру.",
                   "`[Исправлено]` Добавлено раскрытие деталей Tool и устранено объединение нескольких деталей некоторых STEP Tool в одну, мешавшее настройке отдельных движений.",
                   "`[Добавлено]` При выборе грани во время перемещения из дерева моделей отображается начало координат модели, которое можно выбрать как опорную точку привязки.",
                   "`[Улучшено]` Виртуальные контроллеры поддерживают загрузку зон интерференции и диапазона обнаружения TCP, а также мониторинг полевых IO; неподдерживаемые данные пропускаются.",
-                  "`[Добавлено]` Добавлена привязка IO для возврата выбранных или всех зарегистрированных объектов к положению и повороту на момент регистрации.",
+                  "`[Добавлено]` Рядом с кнопкой сохранения в форме регистрации и редактирования объекта и в контекстном меню добавлен возврат к положению и повороту на момент регистрации; привязка IO позволяет вернуть выбранные или все зарегистрированные объекты.",
                   "`[Исправлено]` Устранено смещение новых моделей Tool из-за смещения TCP: модели устанавливаются в начало координат фланца (0, 0, 0).",
                   "`[Добавлено]` Число сохраняемых видов увеличено до 10. Время перехода задаётся рядом с именем каждого вида и используется при применении вида, сопоставлениях IO и выполнении команд View. В окне фиксированных видов убраны заголовок и отступы, а значки управления без фона и рамок размещены поверх изображения. Вращение вокруг выбранного объекта можно включать и выключать отдельно для каждого фиксированного вида. В фиксированных видах манипуляторы 3D JOG не отображаются.",
                   "`[Исправлено]` Устранено исчезновение вида или зависание изображения при включении режима поверх всех окон после открытия вида в отдельном окне.",
                   "`[Улучшение]` Настройки TCP расширены до Tool 0–15 с просмотром нагрузки, загрузкой данных одной или всех моделей и копированием кода программы робота. Для общей нагрузки пересчитываются масса, центр тяжести и моменты инерции. При ненулевом номере значки Tool и Wobj зелёные; значок рабочей исходной позиции становится зелёным, когда робот достигает этой позиции.",
                   "`[Улучшение]` Добавлены редактирование координат, привязка начала и копирование кода программы робота относительно Wobj 0; увеличено отображение координат в 3D. Унифицированы оформление и структура настроек Tool и Wobj, удалены лишние поля.",
-                  "`[Исправлено]` Сохраняются выбор реального или виртуального контроллера и последний IP каждого типа, чтобы настройки не сбрасывались при повторном открытии окна и обновлении страницы.",
+                  "`[Исправлено]` Устранена потеря конфигураций контроллеров при повторном открытии проекта. IP виртуальных контроллеров по умолчанию назначаются по порядку конфигураций; список подключений, типы, IP, способы подключения и целевые роботы восстанавливаются без автоматического подключения.",
                   "`[Исправлено]` Исправлено множественное выделение в дереве моделей и 3D-виде: как в Windows, Shift выделяет диапазон, а Ctrl добавляет или снимает выделение отдельных элементов. Название модели убрано из нижней панели, а статус перенесён в крайнее левое положение. Теперь клавиша Esc снимает выделение всех выбранных моделей и деталей.",
                   "`[Исправлено]` Устранено изменение размера маркеров точек и подписей в фиксированных видах при масштабировании основного вида.",
                   "`[Добавлено]` Слева от кнопки сброса добавлена кнопка «Список» для просмотра и загрузки сохранённых проектов симуляции.",
@@ -7220,7 +7361,22 @@
                   "`[Исправлено]` Убраны контурные линии логотипа INOVANCE на моделях роботов; контуры корпуса сохранены.",
                   "`[Исправлено]` Устранён небольшой фрагмент, отображавшийся отдельно позади J3 робота R16.",
                   "`[Исправлено]` Исправлено замедление перемещения вида правой кнопкой мыши при приближении.",
-                  "`[Добавлено]` Добавлены точное вращение, перемещение вида и масштабирование колесом мыши с Shift и удвоенная скорость с Ctrl."
+                  "`[Добавлено]` Добавлены точное вращение, перемещение вида и масштабирование колесом мыши с Shift и удвоенная скорость с Ctrl.",
+                  "`[Добавлено]` Нижняя панель P.pts поддерживает добавление и перезапись позиций каждого робота, выбор нескольких строк как в Windows, правку таблицы с горячими клавишами, копирование/вставку диапазона и отмену/повтор, переход к выбранной позиции и экспорт P.pts. Поддерживаются стандартные номера и метки, расширение списка вместе с окном и открытие в отдельном окне.",
+                  "`[Исправлено]` Исправлено исчезновение контроллера из списка после отключения. Теперь можно подключиться повторно с прежними настройками.",
+                  "`[Исправлено]` Исправлена ошибка, из-за которой объединённые в CAD_Lightweight детали STEP при импорте снова разделялись на несколько деталей.",
+                  "`[Исправлено]` Исправлен сбой импорта объединённых деталей STEP из-за ошибок цвета поверхностей.",
+                  "`[Улучшено]` Устранено влияние IO инструмента одного робота на действия другого. Действия и датчики Tool используют IO своего робота, а общие привязки сцены по-прежнему активны, если хотя бы один контроллер ON.",
+                  "`[Исправлено]` Устранена замена существующих действий при добавлении другого типа действия одной модели. Теперь несколько действий можно настраивать и обслуживать отдельно с независимыми подключениями IO.",
+                  "`[Исправлено]` Исправлены кратковременные зависания при захвате, отпускании или возврате объектов в исходное положение. Также уменьшены задержки в начале вакуумного захвата.",
+                  "`[Улучшено]` Объекты достаточно зарегистрировать, а контактную грань или всю деталь и сигналы захвата/сброса выбрать в вакуумном действии Tool. Поиск в пределах 1 мм выполняется один раз при включении; объекты следуют за роботом и цилиндром до сигнала сброса.",
+                  "`[Улучшено]` Исправлена остановка цилиндров, внешних осей и снятия плёнки при отключении сигнала движения. Теперь одного импульса достаточно для продолжения движения до цели.",
+                  "`[Исправлено]` Устранена горизонтальная прокрутка панели подключения из-за длинных сообщений об отключении контроллера.",
+                  "`[Исправлено]` Исправлено отображение исходных имён моделей и деталей после переименования в дереве моделей в настройках движений и списках выбора Tool, объектов, конвейеров и нагрузки.",
+                  "`[Исправлено]` Исправлены различия высоты точек привязки к квадрантам Tool в горизонтальном положении при подключении к виртуальному контроллеру.",
+                  "`[Исправлено]` Исправлены задержки симуляции при включённом обнаружении столкновений в сценах с моделями из большого числа деталей.",
+                  "`[Улучшено]` Названия действий можно редактировать, а зарегистрированные действия проверять через контекстное меню дерева моделей. Убраны раздел движущихся объектов и пункт захвата; настройки IO разделены на строки условия, выходных и входных сигналов.",
+                  "`[Улучшено]` Расчет времени RapidMove для S7-60 Z20 учитывает динамику робота, нагрузки Tool/руки и настройки ускорения, замедления и рампы. OLP применяет заданные в программе координаты Tool, нагрузки и настройки RapidMove."
                 ]
               },
               {
@@ -7950,6 +8106,12 @@
           {
             "title": "Debugging Tool",
             "versions": [
+              {
+                "title": "Ver 26.11.02",
+                "items": [
+                  "`[Изменено]` CAD Lightweight обновлён с `V1.2` до `V1.3`."
+                ]
+              },
               {
                 "title": "Ver 26.10.30",
                 "items": [

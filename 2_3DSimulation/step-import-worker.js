@@ -135,15 +135,191 @@ function normalizeColor(source) {
     return [source[0] / divisor, source[1] / divisor, source[2] / divisor];
 }
 
-function indexStepHierarchy(root, meshes = []) {
+// Only products explicitly authored by CAD_Lightweight are atomic. Ordinary
+// STEP products keep the existing per-solid selection and assembly behavior.
+function prepareMergedStepImport(fileBuffer) {
+    const source = new Uint8Array(fileBuffer);
+    const decoder = new TextDecoder();
+    const products = new Map(), formations = new Map(), definitions = new Map(), occurrences = [];
+    const tags = new Map(), edits = [];
+    let start = 0, quote = 0, comment = false;
+    const trivia = (position, end) => {
+        while (position < end) {
+            if (source[position] <= 32) { position += 1; continue; }
+            if (source[position] === 47 && source[position + 1] === 42) {
+                position += 2;
+                while (position < end && !(source[position] === 42 && source[position + 1] === 47)) position += 1;
+                position += 2; continue;
+            }
+            break;
+        }
+        return position;
+    };
+    const decodeString = (bytes) => decoder.decode(bytes).replace(/''/g, "'")
+        .replace(/\\X2\\([0-9a-f]+)\\X0\\/gi, (_, hex) => hex.match(/.{4}/g).map(value => String.fromCharCode(parseInt(value, 16))).join(''))
+        .replace(/\\X4\\([0-9a-f]+)\\X0\\/gi, (_, hex) => hex.match(/.{8}/g).map(value => String.fromCodePoint(parseInt(value, 16))).join(''))
+        .replace(/\\X\\([0-9a-f]{2})/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+        .replace(/\\\\/g, '\\');
+    const inspect = (recordStart, end) => {
+        let position = trivia(recordStart, end);
+        if (source[position++] !== 35) return;
+        let id = 0;
+        while (source[position] >= 48 && source[position] <= 57) id = id * 10 + source[position++] - 48;
+        position = trivia(position, end);
+        if (source[position++] !== 61) return;
+        position = trivia(position, end);
+        const typeStart = position;
+        while (source[position] >= 65 && source[position] <= 90 || source[position] === 95) position += 1;
+        const type = decoder.decode(source.subarray(typeStart, position));
+        const count = type === 'PRODUCT' || type === 'NEXT_ASSEMBLY_USAGE_OCCURRENCE' ? 3
+            : type === 'PRODUCT_DEFINITION' || type.startsWith('PRODUCT_DEFINITION_FORMATION') ? 2 : 0;
+        if (!count) return;
+        position = trivia(position, end);
+        if (source[position++] !== 40) return;
+        const strings = [];
+        for (let index = 0; index < count; index += 1) {
+            position = trivia(position, end);
+            if (source[position] !== 39) return;
+            const fieldStart = position++;
+            while (position < end) {
+                if (source[position] !== 39) { position += 1; continue; }
+                if (source[position + 1] === 39) { position += 2; continue; }
+                break;
+            }
+            if (position >= end) return;
+            strings.push({ start: fieldStart, end: position + 1, value: decodeString(source.subarray(fieldStart + 1, position)) });
+            position = trivia(position + 1, end);
+            if (index + 1 < count && source[position++] !== 44) return;
+        }
+        const refs = [];
+        // The remaining fields in these four record types contain references,
+        // enums and optional strings. Lexically skip quoted/commented text.
+        let refQuote = 0;
+        for (; position < end; position += 1) {
+            if (refQuote) { if (source[position] === refQuote) refQuote = 0; continue; }
+            if (source[position] === 39 || source[position] === 34) { refQuote = source[position]; continue; }
+            if (source[position] === 47 && source[position + 1] === 42) { position = trivia(position, end) - 1; continue; }
+            if (source[position] !== 35) continue;
+            let value = 0; position += 1;
+            while (source[position] >= 48 && source[position] <= 57) value = value * 10 + source[position++] - 48;
+            refs.push(value); position -= 1;
+        }
+        if (type === 'PRODUCT' && /^CAD_Lightweight merged part(?: v2)?$/.test(strings[2].value)) products.set(id, { id, strings });
+        else if (type.startsWith('PRODUCT_DEFINITION_FORMATION')) formations.set(id, refs[0]);
+        else if (type === 'PRODUCT_DEFINITION') definitions.set(id, refs[0]);
+        else if (type === 'NEXT_ASSEMBLY_USAGE_OCCURRENCE') occurrences.push({ id, strings, child: refs[1] });
+    };
+    for (let index = 0; index < source.length; index += 1) {
+        const value = source[index];
+        if (comment) { if (value === 42 && source[index + 1] === 47) { comment = false; index += 1; } continue; }
+        if (quote) { if (value === quote) quote = 0; continue; }
+        if (value === 39 || value === 34) { quote = value; continue; }
+        if (value === 47 && source[index + 1] === 42) { comment = true; index += 1; continue; }
+        if (value === 59) { inspect(start, index + 1); start = index + 1; }
+    }
+    const addTag = (record, prefix, displayName) => {
+        const tag = `__CADLW_${prefix}_${record.id}__`;
+        tags.set(tag, { name: displayName });
+        for (const field of record.strings.slice(0, 2)) edits.push({ ...field, replacement: new TextEncoder().encode(`'${tag}'`) });
+    };
+    for (const product of products.values()) addTag(product, 'PRODUCT', product.strings[1].value || product.strings[0].value || 'Merged part');
+    for (const occurrence of occurrences) {
+        const product = products.get(formations.get(definitions.get(occurrence.child)));
+        if (!product) continue;
+        const name = occurrence.strings[1].value;
+        addTag(occurrence, 'OCC', name && !/^NAUO\d+$/i.test(name) ? name : product.strings[1].value || product.strings[0].value || 'Merged part');
+    }
+    if (!edits.length) return { fileBuffer, mergedTags: tags };
+    edits.sort((left, right) => left.start - right.start);
+    const length = source.length + edits.reduce((sum, edit) => sum + edit.replacement.length - (edit.end - edit.start), 0);
+    const result = new Uint8Array(length);
+    let sourceOffset = 0, targetOffset = 0;
+    for (const edit of edits) {
+        result.set(source.subarray(sourceOffset, edit.start), targetOffset); targetOffset += edit.start - sourceOffset;
+        result.set(edit.replacement, targetOffset); targetOffset += edit.replacement.length; sourceOffset = edit.end;
+    }
+    result.set(source.subarray(sourceOffset), targetOffset);
+    return { fileBuffer: result.buffer, mergedTags: tags };
+}
+
+function packAtomicMergedStep(entries, partMeta) {
+    const indexCount = entries.reduce((sum, entry) => sum + entry.indexLength, 0);
+    if (!indexCount || indexCount % 3) throw new Error('Invalid merged STEP triangle data.');
+    // Face-colored vertices may be shared by native meshes. Expanding their
+    // triangle vertices avoids bleeding one face's color onto its neighbour.
+    const positions = new Float32Array(indexCount * 3), colors = new Float32Array(indexCount * 3);
+    const normals = entries.every(entry => entry.normalLength === entry.positionLength) ? new Float32Array(indexCount * 3) : null;
+    const indices = indexCount <= 65535 ? new Uint16Array(indexCount) : new Uint32Array(indexCount);
+    const brepFaces = [];
+    let vertexOffset = 0, completeFaces = true;
+    const flat = (source, length) => {
+        if (ArrayBuffer.isView(source) || source.every(value => typeof value === 'number')) return source;
+        const result = new Float32Array(length); copyNumbers(source, result, 0); return result;
+    };
+    for (const entry of entries) {
+        const sourcePositions = flat(entry.positions, entry.positionLength), sourceIndices = flat(entry.indices, entry.indexLength);
+        const sourceNormals = normals ? flat(entry.normals, entry.normalLength) : null;
+        const faces = entry.brepFaces || [];
+        let faceIndex = 0, expectedFirst = 0;
+        for (const face of faces) {
+            if (!Number.isInteger(face.first) || !Number.isInteger(face.last) || face.first !== expectedFirst || face.last < face.first || face.last >= entry.indexLength / 3) completeFaces = false;
+            else brepFaces.push({ first: face.first + vertexOffset / 3, last: face.last + vertexOffset / 3 });
+            expectedFirst = face.last + 1;
+        }
+        if (!faces.length || expectedFirst !== entry.indexLength / 3) completeFaces = false;
+        for (let index = 0; index < entry.indexLength; index += 1) {
+            const triangle = Math.floor(index / 3);
+            while (faceIndex < faces.length && triangle > faces[faceIndex].last) faceIndex += 1;
+            const face = faces[faceIndex];
+            const color = Array.isArray(face?.color) ? normalizeColor(face.color) : entry.baseColor || DEFAULT_COLOR;
+            const sourceVertex = sourceIndices[index];
+            if (!Number.isInteger(sourceVertex) || sourceVertex < 0 || sourceVertex * 3 + 2 >= sourcePositions.length) throw new Error('Invalid merged STEP vertex index.');
+            const target = (vertexOffset + index) * 3, from = sourceVertex * 3;
+            for (let component = 0; component < 3; component += 1) {
+                positions[target + component] = sourcePositions[from + component];
+                colors[target + component] = color[component];
+                if (normals) normals[target + component] = sourceNormals[from + component];
+            }
+            indices[vertexOffset + index] = vertexOffset + index;
+        }
+        vertexOffset += entry.indexLength;
+    }
+    return { positions, indices, normals, colors, color: [1, 1, 1],
+        brepFaces: completeFaces ? brepFaces : null,
+        partId: partMeta.partId, partName: partMeta.partName, assemblyPath: partMeta.assemblyPath || [], mergedAtomic: true };
+}
+
+function postAtomicMergedStep(entries, partMeta, requestId) {
+    const mesh = packAtomicMergedStep(entries, partMeta);
+    const transfer = [mesh.positions.buffer, mesh.indices.buffer, mesh.colors.buffer];
+    if (mesh.normals) transfer.push(mesh.normals.buffer);
+    self.postMessage({ type: 'mesh', requestId, mesh }, transfer);
+    return 1;
+}
+
+
+function indexStepHierarchy(root, meshes = [], mergedTags = new Map()) {
     const partByMeshIndex = new Map();
     let fallbackPartIndex = 0;
 
     const visit = (node, path = [], isRoot = false, assemblyPath = []) => {
         if (!node || typeof node !== 'object') return;
         const rawName = String(node.name || '').trim();
-        const partName = rawName || `Part ${fallbackPartIndex + 1}`;
+        const merged = mergedTags.get(rawName);
+        const partName = merged?.name || rawName || `Part ${fallbackPartIndex + 1}`;
         const partId = isRoot ? null : `cad-part-${path.join('-') || fallbackPartIndex++}`;
+        if (merged) {
+            const collect = current => {
+                for (const meshIndex of current.meshes || []) {
+                    const index = Number(meshIndex);
+                    if (Number.isInteger(index) && index >= 0) partByMeshIndex.set(index, {
+                        partId: partId || 'cad-merged-root', partName, assemblyPath, mergedAtomic: true
+                    });
+                }
+                for (const child of current.children || []) collect(child);
+            };
+            collect(node); return;
+        }
         if (!isRoot && Array.isArray(node.meshes)) {
             node.meshes.forEach((meshIndex) => {
                 const index = Number(meshIndex);
@@ -447,7 +623,21 @@ function createLargeMeshChunk(mesh, triangleRanges, preservesFaces = true, verte
     return { positions, indices, normals, brepFaces: preservesFaces ? brepFaces : null };
 }
 
+function largeMergedEntry(mesh, partMeta) {
+    const ranges = getCompleteLargeMeshFaceRanges(mesh);
+    return {
+        // Keep owned arrays while other native shapes are tessellated/released.
+        positions: new Float32Array(mesh.positions), indices: new Uint32Array(mesh.indices),
+        normals: mesh.normals ? new Float32Array(mesh.normals) : null,
+        positionLength: mesh.positions.length, indexLength: mesh.indices.length,
+        normalLength: mesh.normals?.length || 0, baseColor: partMeta.color || DEFAULT_COLOR,
+        brepFaces: ranges?.map((face, index) => ({ ...face,
+            ...(partMeta.surfaceFaceColors ? { color: partMeta.surfaceFaceColors[index] } : {}) }))
+    };
+}
+
 function postLargeMeshChunks(mesh, message, requestId, partMeta = {}) {
+    if (partMeta.mergedAtomic) return postAtomicMergedStep([largeMergedEntry(mesh, partMeta)], partMeta, requestId);
     const { groups, preservesFaces } = groupLargeMeshTriangleRanges(mesh, partMeta.surfaceFaceColors);
     const vertexCount = mesh.positions.length / 3;
     const vertexLookup = vertexCount * 4 <= STEP_VERTEX_LOOKUP_MAX_BYTES
@@ -498,12 +688,12 @@ function composeStepPlacement(parent, local) {
     return result;
 }
 
-function collectXcafParts(document, labelNames = new Map()) {
+function collectXcafParts(document, labelNames = new Map(), mergedTags = new Map()) {
     const parts = [];
     const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0];
     const ancestors = new Set();
     const roots = document.getRoots();
-    const visit = (label, path, parentPlacement, inheritedColor, assemblyPath = [], labelPath = []) => {
+    const visit = (label, path, parentPlacement, inheritedColor, assemblyPath = [], labelPath = [], atomicPart = null) => {
         if (ancestors.has(label)) throw new Error('Cyclic STEP assembly reference.');
         ancestors.add(label);
         try {
@@ -522,11 +712,18 @@ function collectXcafParts(document, labelNames = new Map()) {
             const prototypeName = String(prototype.name || '').trim();
             const name = (instanceName && !/^NAUO\d+$/i.test(instanceName) ? instanceName : prototypeName)
                 || instanceName || 'Part ' + (parts.length + 1);
+            const merged = mergedTags.get(instanceName) || mergedTags.get(prototypeName);
+            // Traverse native children for their own face/color correspondence,
+            // then combine their tessellations into one user-visible part.
+            const atomic = atomicPart || (merged ? {
+                partId: 'cad-xcaf-' + path.join('-'), partName: merged.name,
+                assemblyPath, mergedAtomic: true
+            } : null);
             if (children.length) {
                 // The single document root is represented by the imported model.
                 const childPath = path.length === 1 && roots.length === 1 ? assemblyPath
                     : [...assemblyPath, { id: 'cad-xcaf-' + path.join('-'), name }];
-                children.forEach((child, index) => visit(child, [...path, index], placement, color, childPath, currentLabelPath));
+                children.forEach((child, index) => visit(child, [...path, index], placement, color, childPath, currentLabelPath, atomic));
                 return;
             }
             if (prototype.shapeHandle != null) {
@@ -534,6 +731,7 @@ function collectXcafParts(document, labelNames = new Map()) {
                     partId: 'cad-xcaf-' + path.join('-'),
                     partName: name,
                     assemblyPath,
+                    ...(atomic || {}),
                     labelPath: currentLabelPath.join('/'),
                     shapeHandle: prototype.shapeHandle,
                     placement: document.getLocation ? placement : null,
@@ -639,7 +837,9 @@ async function parseLargeStepFile(message, requestId) {
     let completed = false;
     let shape = null;
     let document = null;
-    let sourceBuffer = message.fileBuffer;
+    const prepared = prepareMergedStepImport(message.fileBuffer);
+    let sourceBuffer = prepared.fileBuffer;
+    prepared.fileBuffer = null;
     try {
         self.postMessage({ type: 'progress', requestId, phase: 'reading' });
         // Keep the original transferred buffer. Decoding a large STEP file to
@@ -654,7 +854,7 @@ async function parseLargeStepFile(message, requestId) {
         if (typeof kernel.importXCAFFromSTEP === 'function') {
             try {
                 document = measureStepPhase(timings, 'readingMs', () => kernel.importXCAFFromSTEP(sourceBuffer));
-                parts = measureStepPhase(timings, 'readingMs', () => collectXcafParts(document, labelNames));
+                parts = measureStepPhase(timings, 'readingMs', () => collectXcafParts(document, labelNames, prepared.mergedTags));
             } catch (error) {
                 console.warn('XCAF STEP hierarchy import failed; trying direct import.', error);
                 document?.close();
@@ -669,6 +869,9 @@ async function parseLargeStepFile(message, requestId) {
                 readXcafSurfaceStyles(kernel, document, labelNames, message.parameters || {})
             ));
             let meshCount = 0;
+            const atomicEntries = new Map(), atomicRemaining = new Map();
+            for (const part of parts) if (part.mergedAtomic)
+                atomicRemaining.set(part.partId, (atomicRemaining.get(part.partId) || 0) + 1);
             for (let index = 0; index < parts.length; index += 1) {
                 const part = parts[index];
                 self.postMessage({ type: 'progress', requestId, phase: 'tessellating',
@@ -684,7 +887,18 @@ async function parseLargeStepFile(message, requestId) {
                         throw new Error('STEP part contains no triangulated mesh: ' + part.partName);
                     }
                     const coloredPart = resolveLargeStepSurfaceColors(mesh, part, surfaceStyles.get(part.labelPath));
-                    meshCount += measureStepPhase(timings, 'packingMs', () => postLargeMeshChunks(mesh, message, requestId, coloredPart));
+                    meshCount += measureStepPhase(timings, 'packingMs', () => {
+                        if (!part.mergedAtomic) return postLargeMeshChunks(mesh, message, requestId, coloredPart);
+                        const entries = atomicEntries.get(part.partId) || [];
+                        entries.push(largeMergedEntry(mesh, coloredPart));
+                        atomicEntries.set(part.partId, entries);
+                        const remaining = atomicRemaining.get(part.partId) - 1;
+                        atomicRemaining.set(part.partId, remaining);
+                        if (remaining) return 0;
+                        atomicEntries.delete(part.partId);
+                        atomicRemaining.delete(part.partId);
+                        return postAtomicMergedStep(entries, coloredPart, requestId);
+                    });
                 } finally {
                     if (placedShape != null) kernel.release(placedShape);
                     kernel.release(part.shapeHandle);
@@ -791,7 +1005,10 @@ async function handleStepImportMessage(event) {
 
         self.postMessage({ type: 'progress', requestId, phase: 'tessellating' });
         const tessellationStartedAt = performance.now();
-        const result = occt.ReadStepFile(new Uint8Array(message.fileBuffer), message.parameters || null);
+        const prepared = prepareMergedStepImport(message.fileBuffer);
+        message.fileBuffer = null;
+        const result = occt.ReadStepFile(new Uint8Array(prepared.fileBuffer), message.parameters || null);
+        prepared.fileBuffer = null;
         const tessellationMs = performance.now() - tessellationStartedAt;
         if (!result?.success || !Array.isArray(result.meshes)) {
             throw new Error('OpenCascade could not convert this STEP file.');
@@ -799,10 +1016,10 @@ async function handleStepImportMessage(event) {
 
         self.postMessage({ type: 'progress', requestId, phase: 'packing', sourceMeshCount: result.meshes.length });
         const packingStartedAt = performance.now();
-        const partByMeshIndex = indexStepHierarchy(result.root, result.meshes);
+        const partByMeshIndex = indexStepHierarchy(result.root, result.meshes, prepared.mergedTags);
         const legacyMeshIndexes = [...partByMeshIndex.values()].some(part => part.parentPartId)
             ? indexLegacyStepMeshes(result.meshes, partByMeshIndex) : new Map();
-        const buckets = new Map();
+        const buckets = new Map(), atomic = new Map();
         let outputMeshCount = 0;
         for (let index = 0; index < result.meshes.length; index += 1) {
             const meshDefinition = result.meshes[index];
@@ -814,6 +1031,11 @@ async function handleStepImportMessage(event) {
             const color = normalizeColor(meshDefinition?.color);
             result.meshes[index] = null;
             if (!entry) continue;
+            if (partMeta.mergedAtomic) {
+                let group = atomic.get(partMeta.partId);
+                if (!group) atomic.set(partMeta.partId, group = { partMeta, entries: [] });
+                entry.baseColor = color; group.entries.push(entry); continue;
+            }
 
             const colorKey = color.map((component) => component.toFixed(5)).join(',');
             const bucketKey = `${entry.partId}\u0000${colorKey}`;
@@ -838,6 +1060,7 @@ async function handleStepImportMessage(event) {
         buckets.forEach((bucket) => {
             outputMeshCount += postBucket(bucket, requestId);
         });
+        atomic.forEach(({ entries, partMeta }) => { outputMeshCount += postAtomicMergedStep(entries, partMeta, requestId); });
         if (outputMeshCount === 0) throw new Error('The STEP file contains no triangulated mesh.');
 
         self.postMessage({

@@ -1,0 +1,22 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
+const source = readFileSync(new URL('../../2_3DSimulation/main.js', import.meta.url), 'utf8');
+for (const direction of ['IN', 'OUT']) test(`${direction}: 어느 컨트롤러든 ON이면 유지하고 모두 OFF일 때만 해제한다`, () => {
+ const names=['applyVirtualControllerIo','clearVirtualControllerIo'];
+ const code=names.map(name=>{ const match=source.match(new RegExp(`function ${name}\\([^]*?\\n\\}`)); assert.ok(match, name); return match[0]; }).join('\n');
+ const a={wanted:true}, b={wanted:true}, bank={}, changes=[];
+ const apply=values=>{ for(const [address,value] of Object.entries(values)) { if(bank[address]!==value)changes.push(value);bank[address]=value; } };
+ const context=vm.createContext({state:{virtualController:a},getVirtualControllerSessions:()=>[a,b],findProgramRobot:()=>null,applyVirtualControllerOutputs:apply,applyVirtualControllerInputs:apply});
+ vm.runInContext(code,context);
+ const send=(c,values)=>context.applyVirtualControllerIo(values,direction,c);
+ send(a,{0:1});send(b,{0:0});assert.equal(bank[0],1);
+ send(b,{0:1});send(a,{0:0});assert.equal(bank[0],1);
+ send(b,{});assert.equal(bank[0],1);
+ send(b,{0:0});assert.equal(bank[0],0);
+ assert.deepEqual(changes,[1,0]);
+ send(b,{0:1});context.clearVirtualControllerIo(b);assert.equal(bank[0],0);
+ send(a,{0:1});send(b,{0:1});context.clearVirtualControllerIo(b);assert.equal(bank[0],1);
+ context.clearVirtualControllerIo(a);assert.equal(bank[0],0);
+});

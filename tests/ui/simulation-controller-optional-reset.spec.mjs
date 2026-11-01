@@ -107,6 +107,9 @@ test('원위치 IO 매핑은 선택 오브젝트·전체, OFF 조건, 프로젝�
 
 test('IO 원위치는 흡착을 해제하고 선택하지 않은 오브젝트와 설비 위치를 보존한다', async ({ page }) => {
   await setup(page);
+  await page.waitForFunction(() => window.__optionalReset.state.workspaceRecovery.ready);
+  await page.locator('#model-select').selectOption('robot:IR-R7H-90');
+  await page.waitForFunction(() => window.__optionalReset.state.models.some(m => m.userData.tcpFrame));
   const result = await page.evaluate(() => {
     const a = window.__optionalReset, app = a.equipmentApp;
     const make = (name, z) => {
@@ -115,12 +118,12 @@ test('IO 원위치는 흡착을 해제하고 선택하지 않은 오브젝트와
     };
     const ref = model => 'equipment-model:' + a.ensureWorkspaceModelId(model) + '/-1';
     const pad = make('pad', 20), product = make('product', 0), other = make('other', 100);
-    app.save({ id: 'product', type: 'OBJECT', movingRef: ref(product) });
+    const robot = a.state.models.find(m => m.userData.tcpFrame);
+    const vacuum = app.save({ id: 'product', type: 'OBJECT', movingRef: ref(product), robotRef: ref(robot), feedbackGrip: 600 }, { forward: 512, reverse: null });
     app.save({ id: 'other', type: 'OBJECT', movingRef: ref(other) });
-    const vacuum = app.save({ id: 'vacuum', type: 'VACUUM', movingRef: ref(pad), feedbackGrip: 600 }, { forward: 512, reverse: null });
     a.writeOlpAddress('Out[512]', 1); app.runtime.start(); app.runtime.applyVacuum(vacuum, true);
-    pad.position.x = 200; app.runtime.followVacuum(vacuum); other.position.x = 300;
-    if (product.position.x !== 200 || !vacuum.runtime.heldRef) throw new Error('흡착 재현 실패');
+    pad.position.x = 200; robot.position.x += 200; app.runtime.followVacuum(vacuum); other.position.x = 300;
+    if (Math.abs(product.getWorldPosition(new a.THREE.Vector3()).x - 200) > 1e-6 || !vacuum.runtime.heldRef) throw new Error('흡착 재현 실패');
     app.resetObjects('equipment:product');
     app.runtime.followVacuum(vacuum);
     return { product: product.position.toArray(), other: other.position.x, pad: pad.position.x,

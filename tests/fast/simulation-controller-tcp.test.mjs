@@ -11,7 +11,7 @@ const source = readFileSync(new URL('../../2_3DSimulation/main.js', import.meta.
 const names = ['getRobotControllerBaseFrame', 'getCurrentTcpPoseBase', 'getJogReadoutPose',
   'getBasePoseFromJogReadout', 'getTcpRotationDegrees', 'quaternionFromTcpRotationDegrees',
   'normalizeDegrees', 'applyVirtualControllerFrameForController', 'calculatePointArmParameters',
-  'quaternionErrorVector', 'restoreControllerToolFrame', 'applyControllerTcpPose', 'disconnectVirtualController'];
+  'quaternionErrorVector', 'restoreControllerToolFrame', 'applyControllerTcpPose', 'syncActiveTcpFrame', 'clearVirtualControllerIo', 'disconnectVirtualController'];
 const functions = names.map(name => source.match(new RegExp(`function ${name}\\([^]*?\\n\\}`))?.[0] || '').join('\n');
 
 function fixture({ wobj = 0, tool = false, scara = false, trace = false } = {}) {
@@ -59,6 +59,7 @@ function fixture({ wobj = 0, tool = false, scara = false, trace = false } = {}) 
     refreshVirtualControllerUi() {}, setVirtualControllerStatus() {},
     setJointAngle: (joint, angle) => { joint.angle = angle; },
     getJointJogDisplaySpec: () => ({ fromDisplay: angle => angle * 20 / 360 }),
+    ensureRobotTcpProfiles: robot => robot.userData.tcpProfiles,
     queueCollaborationRobotState() {}, syncJointControls() {}, updateTcpPresentation() {}, syncWorkOriginOutputStates() {},
     updateScaraTube() {}, syncOlpHomeStatus() {},
     syncBaseJogGizmoFromRobot() {}, markSceneCollisionDirty() {}, requestRender() {},
@@ -186,4 +187,50 @@ test('simulation interference stop never blocks subsequent controller positions'
   assert.ok(pose.position.distanceTo(new THREE.Vector3(400, 500, 600)) < 1e-8);
   assert.equal(f.controller.wanted, true);
   assert.equal(f.controller.status, 'streaming');
+});
+
+for (const scara of [false, true]) for (const wobj of [0, 1]) {
+  test(`controller feedback aligns physical TCP and mounted Tool (SCARA ${scara}, Wobj ${wobj})`, () => {
+    const f = fixture({ scara, wobj, tool: true });
+    const profilePosition = f.tcp.position.clone(), profileQuaternion = f.tcp.quaternion.clone();
+    const parent = f.flange.parent;
+    f.send([453.4, -283.32, 516.23, -90, 0, 0]);
+    const reported = f.context.getCurrentTcpPoseBase(f.robot);
+    const base = f.robot.userData.controllerBaseFrame;
+    const expectedPosition = base.localToWorld(reported.position.clone());
+    const expectedQuaternion = base.getWorldQuaternion(new THREE.Quaternion()).multiply(reported.quaternion);
+    assert.ok(f.tcp.getWorldPosition(new THREE.Vector3()).distanceTo(expectedPosition) < 1e-8);
+    assert.ok(f.tcp.getWorldQuaternion(new THREE.Quaternion()).angleTo(expectedQuaternion) < 1e-7);
+    // This Tool point was authored at the profile's local position. It must
+    // follow the reported TCP together with the actual geometry, not just axes.
+    assert.ok(f.mountedTool.getWorldPosition(new THREE.Vector3()).distanceTo(expectedPosition) < 1e-8);
+    assert.ok(f.tcp.position.distanceTo(profilePosition) < 1e-8);
+    assert.ok(f.tcp.quaternion.angleTo(profileQuaternion) < 1e-7);
+    const toolPosition = f.mountedTool.getWorldPosition(new THREE.Vector3());
+    f.send([453.4, -283.32, 516.23, -90, 0, 0]);
+    assert.ok(f.mountedTool.getWorldPosition(new THREE.Vector3()).distanceTo(toolPosition) < 1e-8);
+    f.context.disconnectVirtualController(f.controller);
+    assert.equal(f.flange.parent, parent);
+    assert.equal(parent.children.filter(child => child.name === 'Controller flange correction').length, 0);
+  });
+}
+
+test('editing a Tool waits for fresh feedback and preserves the selected profile after disconnect', () => {
+  const f = fixture({ tool: true });
+  f.send();
+  const before = f.flange.matrixWorld.clone();
+  f.robot.userData.activeTcpProfileIndex = 1;
+  f.robot.userData.tcpProfiles = [null, { position: new THREE.Vector3(-50, 70, 200), quaternion: new THREE.Quaternion() }];
+  f.context.syncActiveTcpFrame(f.robot);
+  assert.ok(f.flange.matrixWorld.elements.every((value, i) => Math.abs(value - before.elements[i]) < 1e-8));
+  assert.equal(f.robot.userData.controllerToolFrame.profileDirty, true);
+  // Even an unchanged TCP sample must reconcile a newly selected local Tool.
+  f.send();
+  assert.equal(f.robot.userData.controllerToolFrame.profileDirty, false);
+  const reported = f.context.getCurrentTcpPoseBase(f.robot);
+  const expected = f.robot.userData.controllerBaseFrame.localToWorld(reported.position.clone());
+  assert.ok(f.tcp.getWorldPosition(new THREE.Vector3()).distanceTo(expected) < 1e-8);
+  f.context.disconnectVirtualController(f.controller);
+  assert.deepEqual(f.tcp.position.toArray(), [-50, 70, 200]);
+  assert.deepEqual(f.tcp.quaternion.toArray(), [0, 0, 0, 1]);
 });

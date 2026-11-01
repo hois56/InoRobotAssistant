@@ -59,10 +59,10 @@ test('controller kind and each IP are remembered after reload and reopening the 
   await expect(ip).toHaveValue('127.0.0.8');
   await page.locator('#virtual-controller-add').click();
   await expect(kind).toHaveValue('virtual');
-  await expect(ip).toHaveValue('127.0.0.8');
+  await expect(ip).toHaveValue('127.0.0.2');
   await page.reload({ waitUntil: 'domcontentloaded' });
   await openPanel();
   await expect(kind).toHaveValue('virtual');
-  await expect(ip).toHaveValue('127.0.0.8');
+  await expect(ip).toHaveValue('127.0.0.2');
   expect(await page.evaluate(() => window.__savedController.state.virtualController.wanted)).toBe(false);
 });

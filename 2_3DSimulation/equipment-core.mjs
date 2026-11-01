@@ -1,4 +1,4 @@
-export const EQUIPMENT_TYPES = Object.freeze(['CYLINDER', 'LINEAR_AXIS', 'ROTARY_AXIS', 'GRIPPER', 'FILM_PEEL', 'VACUUM', 'OBJECT']);
+export const EQUIPMENT_TYPES = Object.freeze(['CYLINDER', 'LINEAR_AXIS', 'ROTARY_AXIS', 'VACUUM', 'FILM_PEEL', 'OBJECT']);
 export const EQUIPMENT_IO_TYPES = Object.freeze(EQUIPMENT_TYPES.filter(type => type !== 'OBJECT'));
 export const EQUIPMENT_COMMANDS = Object.freeze(['FORWARD', 'REVERSE', 'STOP', 'RESET', 'RELEASE']);
 export const EQUIPMENT_LABELS = Object.freeze({
@@ -7,8 +7,8 @@ export const EQUIPMENT_LABELS = Object.freeze({
 });
 
 export function equipmentCommandOptions(type) {
-    if (type === 'OBJECT') return [];
-    if (type === 'VACUUM') return [['FORWARD','흡착'],['REVERSE','파기']];
+    if (type === 'OBJECT') return [['RESET','원위치']];
+    if (type === 'VACUUM') return [['FORWARD','진공'],['REVERSE','파기'],['RESET','원위치']];
     const actions=type === 'GRIPPER' ? [['FORWARD','닫기'],['REVERSE','열기']] : type === 'FILM_PEEL' ? [['FORWARD','박리']] : [['FORWARD','전진'],['REVERSE','후진']];
     return [...actions,['STOP','정지'],['RESET','원위치'],...(type === 'FILM_PEEL' ? [['RELEASE','필름 놓기']] : [])];
 }
@@ -19,7 +19,8 @@ export function stepEquipmentPosition(current, target, speed, seconds) {
     return current + Math.sign(distance) * Math.min(Math.abs(distance), speed * seconds);
 }
 
-export function resolveEquipmentCommand(commands) {
+export function resolveEquipmentCommand(commands, previousCommand = 'STOP') {
+    if (!commands.length && ['FORWARD', 'REVERSE'].includes(previousCommand)) return { command: previousCommand, error: '' };
     if (commands.includes('RESET')) return { command: 'RESET', error: '' };
     if (commands.includes('STOP')) return { command: 'STOP', error: '' };
     if (commands.includes('RELEASE')) return { command: 'RELEASE', error: commands.includes('FORWARD') || commands.includes('REVERSE') ? '해제 명령과 이동 명령이 동시에 입력되었습니다.' : '' };
@@ -57,14 +58,25 @@ export function equipmentMotionGroups(def) {
 }
 
 export function normalizeEquipmentDefinition(source) {
-    if (!source || !EQUIPMENT_TYPES.includes(source.type)) throw new Error('지원하지 않는 설비 종류입니다.');
+    if (!source || !EQUIPMENT_TYPES.includes(source.type) && source.type !== 'GRIPPER') throw new Error('지원하지 않는 설비 종류입니다.');
     if (['VACUUM', 'OBJECT'].includes(source.type)) {
         const movingRefs = equipmentReferences(source);
         if (!source.id || !movingRefs.length) throw new Error('동작 ID와 대상 모델 또는 부품을 선택하세요.');
-        return { id: String(source.id), name: String(source.name || EQUIPMENT_LABELS[source.type]), type: source.type,
+        let vacuumFace = null;
+        if (source.type === 'VACUUM' && source.vacuumFace) {
+            const face = source.vacuumFace;
+            if (!Array.isArray(face.meshPath) || !face.meshPath.every(n => Number.isSafeInteger(n) && n >= 0)
+                || !Array.isArray(face.triangleRanges) || !face.triangleRanges.length
+                || !face.triangleRanges.every(range => Number.isSafeInteger(range.first) && Number.isSafeInteger(range.last) && range.first >= 0 && range.last >= range.first)) throw new Error('흡착 면을 다시 선택하세요.');
+            vacuumFace = { meshPath: [...face.meshPath], triangleRanges: face.triangleRanges.map(range => ({ first: range.first, last: range.last })) };
+        }
+        const vacuumMode = source.vacuumMode === 'WHOLE' ? 'WHOLE' : 'FACE';
+        return { id: String(source.id), name: String(source.name || EQUIPMENT_LABELS[source.type]).trim(), customName: source.customName === true, type: source.type,
             movingRefs, movingRef: movingRefs[0], bodyRef: '', secondRef: '', secondRefs: [], carriedRef: '', carriedRefs: [],
-            robotRef: '', pullerRef: '', axis: 'X', travel: 0, speed: 0, reverseSpeed: 0, externalAxis: 0,
-            feedbackHome: null, feedbackEnd: null, feedbackGrip: source.type === 'VACUUM' ? sensor(source.feedbackGrip) : null, enabled: source.enabled !== false,
+            toolRef: '', robotRef: '', ioRobotRef: source.type === 'VACUUM' ? String(source.ioRobotRef || '') : '',
+            vacuumMode, vacuumFace, pullerRef: '', axis: 'X', travel: 0, speed: 0, reverseSpeed: 0, externalAxis: 0,
+            feedbackHome: null, feedbackEnd: null, feedbackGrip: source.type === 'VACUUM' ? sensor(source.feedbackGrip) : null,
+            enabled: source.enabled !== false && (source.type === 'OBJECT' || vacuumMode === 'WHOLE' || !!vacuumFace),
             origins: source.type === 'OBJECT' && source.origins && typeof source.origins === 'object' ? JSON.parse(JSON.stringify(source.origins)) : {}, runtime: source.runtime ? JSON.parse(JSON.stringify(source.runtime)) : { position: 0, heldRef: '', heldLocal: null } };
     }
     const rotary = source.type === 'ROTARY_AXIS';
@@ -73,6 +85,7 @@ export function normalizeEquipmentDefinition(source) {
         bodyRef: String(source.bodyRef || ''), movingRef: String(source.movingRef || ''),
         secondRef: String(source.secondRef || ''), carriedRef: String(source.carriedRef || ''),
         robotRef: String(source.robotRef || ''), pullerRef: String(source.pullerRef || ''),
+        ioRobotRef: String(source.ioRobotRef || ''),
         filmGripRef: String(source.filmGripRef || ''),
         filmGripRefs: equipmentReferences(source, 'filmGripRef'),
         filmGripSide: ['X-', 'X+', 'Y-', 'Y+'].includes(source.filmGripSide) ? source.filmGripSide : 'X-',
@@ -94,7 +107,7 @@ export function normalizeEquipmentDefinition(source) {
         pivot: Array.from({ length: 3 }, (_, index) => number(source.pivot?.[index], 0, -1000000, 1000000, '회전 중심')),
         gripCenter: Array.from({ length: 3 }, (_, index) => number(source.gripCenter?.[index], index === 2 ? Number(source.gripHeight || 80) / 2 : 0, -1000000, 1000000, '파지 영역 중심')),
         feedbackHome: sensor(source.feedbackHome), feedbackEnd: sensor(source.feedbackEnd), feedbackGrip: sensor(source.feedbackGrip),
-        enabled: source.enabled !== false,
+        customName: source.customName === true, enabled: source.enabled !== false,
         origins: source.origins && typeof source.origins === 'object' ? JSON.parse(JSON.stringify(source.origins)) : {},
         runtime: source.runtime && typeof source.runtime === 'object' ? JSON.parse(JSON.stringify(source.runtime)) : { position: 0, heldRef: '', heldLocal: null }
     };
@@ -135,10 +148,11 @@ export function normalizeEquipmentBindings(source) {
 }
 
 export function validateEquipmentDefinitions(definitions) {
-    const ids = new Set(); const writers = new Set(); const movers = new Set(); const axes = new Set();
+    const ids = new Set(); const writers = new Map(); const movers = new Set(); const axes = new Set();
     for (const raw of definitions) {
         const def = normalizeEquipmentDefinition(raw);
         if (ids.has(def.id)) throw new Error('설비 ID가 중복됩니다.'); ids.add(def.id);
+        if (def.type === 'VACUUM' && !def.enabled) continue;
         const controls = [...equipmentMotionGroups(def), ...(def.type === 'FILM_PEEL' ? def.filmGripRefs.map(ref => [ref, 1]) : [])];
         for (const [ref] of controls) {
             if (movers.has(ref)) throw new Error('동일한 가동부를 여러 설비에서 제어할 수 없습니다.'); movers.add(ref);
@@ -148,7 +162,9 @@ export function validateEquipmentDefinitions(definitions) {
             if (axes.has(key)) throw new Error('동일한 E축 연결이 중복됩니다.'); axes.add(key);
         }
         for (const address of [def.feedbackHome, def.feedbackEnd, def.feedbackGrip].filter(value => value !== null)) {
-            if (writers.has(address)) throw new Error('센서 입력 주소가 다른 설비와 중복됩니다.'); writers.add(address);
+            const key = `${def.ioRobotRef || ''}:${address}`;
+            if (writers.has(key)) throw new Error(`센서 입력 주소가 다른 설비와 중복됩니다. Input[${address}] · ${writers.get(key)} / ${def.name}`);
+            writers.set(key, def.name);
         }
     }
 }

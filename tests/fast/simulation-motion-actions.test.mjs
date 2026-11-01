@@ -9,7 +9,7 @@ test('기존 물건 잡기·놓기 IO와 프로그램 명령은 지원하지 않
  const program=cloneMotionProgram({steps:[{id:'old1',motion:'GRIP_USE'},{id:'old2',motion:'GRIP_RELEASE'},{id:'io',motion:'IO_OUT',ioAddress:512,ioValue:1,joints:[0],tcp:{position:[0,0,0],quaternion:[0,0,0,1]}}]});assert.deepEqual(program.steps.map(s=>s.motion),['IO_OUT']);
 });
 
-test('IO 동작 명령은 각 종류에 맞게 표시하고 진공은 흡착·파기만 허용한다',()=>{
- assert.deepEqual(equipmentCommandOptions('VACUUM'),[['FORWARD','흡착'],['REVERSE','파기']]);assert.deepEqual(equipmentCommandOptions('GRIPPER').slice(0,2),[['FORWARD','닫기'],['REVERSE','열기']]);assert.equal(equipmentCommandOptions('FILM_PEEL').some(([c])=>c==='REVERSE'),false);assert.deepEqual(equipmentCommandOptions('OBJECT'),[]);
- assert.equal(normalizeIoFunctionMapping({action:'VACUUM',equipmentCommand:'RESET'}).equipmentCommand,'FORWARD');
+test('진공 IO는 흡착·파기를 제공하고 오브젝트는 원위치만 제공한다',()=>{
+ assert.deepEqual(equipmentCommandOptions('OBJECT'),[['RESET','원위치']]);assert.deepEqual(equipmentCommandOptions('VACUUM').slice(0,2),[['FORWARD','진공'],['REVERSE','파기']]);assert.equal(equipmentCommandOptions('FILM_PEEL').some(([c])=>c==='REVERSE'),false);assert.equal(IO_FUNCTION_MAPPING_ACTIONS.VACUUM,'VACUUM');
+ assert.equal(normalizeIoFunctionMapping({action:'OBJECT',equipmentCommand:'RESET'}).enabled,false);
 });

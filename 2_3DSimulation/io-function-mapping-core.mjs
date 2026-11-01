@@ -3,7 +3,7 @@ import {
     normalizeIoSimulatorDirection
 } from './io-simulator-core.mjs';
 import { normalizeConveyorSettings } from './conveyor-core.mjs';
-import { EQUIPMENT_IO_TYPES, equipmentCommandOptions } from './equipment-core.mjs';
+import { EQUIPMENT_IO_TYPES, equipmentCommandOptions } from './equipment-core.mjs?v=20261101-vacuum-surface-1';
 import { VIEW_PRESET_COUNT } from './view-preset-core.mjs';
 
 export const IO_FUNCTION_MAPPING_SCHEMA_VERSION = 1;
@@ -31,8 +31,8 @@ export function isSupportedIoFunctionMappingAddress(value) {
 export function normalizeIoFunctionMapping(value, index = 0) {
     const source = value && typeof value === 'object' ? value : {};
     if (['GRIP_USE','GRIP_RELEASE'].includes(source.action)) throw new Error('기존 물건 잡기·놓기 매핑은 제거되었습니다. 동작 설정을 사용하세요.');
-    if (source.action === 'OBJECT') throw new Error('오브젝트 등록에는 IO 매핑을 지원하지 않습니다.');
-    const action = ACTION_VALUES.has(source.action)
+    const removedAction = ['OBJECT', 'OBJECT_RELEASE'].includes(source.action), legacyGripper = source.action === 'GRIPPER';
+    const action = ACTION_VALUES.has(source.action) || removedAction || legacyGripper
         ? source.action
         : IO_FUNCTION_MAPPING_ACTIONS.VIEW;
     const rawAddress = Number(source.address);
@@ -45,15 +45,15 @@ export function normalizeIoFunctionMapping(value, index = 0) {
         : 0;
     return {
         id: String(source.id || `io-mapping-${index + 1}`),
-        direction: EQUIPMENT_IO_TYPES.includes(action) || action === 'CONVEYOR' ? 'OUT' : normalizeIoSimulatorDirection(source.direction),
+        direction: EQUIPMENT_IO_TYPES.includes(action) || legacyGripper || removedAction || action === 'CONVEYOR' ? 'OUT' : normalizeIoSimulatorDirection(source.direction),
         address,
         triggerValue: Number(source.triggerValue) === 0 ? 0 : 1,
         action,
         gripObjectRef: String(source.gripObjectRef || '').trim(),
         viewSlot,
-        ...(action === IO_FUNCTION_MAPPING_ACTIONS.CONVEYOR ? { ...normalizeConveyorSettings(source), ...(source.conveyorManualOnly ? { conveyorManualOnly: true } : {}) } : {}),
-        ...(EQUIPMENT_IO_TYPES.includes(action) ? { equipmentCommand: equipmentCommandOptions(action).some(([command]) => command === source.equipmentCommand) ? source.equipmentCommand : 'FORWARD' } : {}),
-        enabled: source.enabled !== false
+        ...(action === IO_FUNCTION_MAPPING_ACTIONS.CONVEYOR ? { ...normalizeConveyorSettings(source), conveyorName: String(source.conveyorName || ''), conveyorCustomName: source.conveyorCustomName === true, ...(source.conveyorManualOnly ? { conveyorManualOnly: true } : {}) } : {}),
+        ...(EQUIPMENT_IO_TYPES.includes(action) || legacyGripper || removedAction ? { equipmentCommand: equipmentCommandOptions(action).some(([command]) => command === source.equipmentCommand) ? source.equipmentCommand : 'FORWARD' } : {}),
+        enabled: !removedAction && source.enabled !== false
     };
 }
 

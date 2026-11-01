@@ -1,4 +1,6 @@
 import { normalizeToolLoad } from './tool-data-core.mjs';
+import { planFirmwareSCurve } from './firmware-scurve.mjs?v=20261102-scurve160-1';
+import { buildS7RapidMoveLimits } from './s7-rapid-dynamics.mjs?v=20261102-s7-native-2';
 import { normalizeWorkObjects } from './workobject-core.mjs?v=20261031-tool-wobj-1';
 import { VIEW_PRESET_COUNT } from './view-preset-core.mjs';
 
@@ -233,6 +235,35 @@ export function createRapidMoveState(startAngles, targetAngles, joints, speedPer
         };
     }
 
+    // The S7 model uses the firmware's native joint-path radians and ms.
+    // Keep those units through SPrfCalc: its short-move tolerance depends on units.
+    const s7ModelNames = ['IR-S7-60Z20', 'IR-S7-60Z20S-INT', 'IR-S7-60Z20S3-C2LH-INT_01741021'];
+    if (robotType === 'scara' && s7ModelNames.includes(profileOptions.modelName)
+        && (!profileOptions.modelFolder || profileOptions.modelFolder === 'IR-S7-60Z20')
+        && startAngles.length === 4 && targetAngles.length === 4) {
+        const dynamics = buildS7RapidMoveLimits({
+            ...profileOptions, startJoints: startAngles, endJoints: targetAngles, speedPercent
+        });
+        const length = dynamics.scalarPathLengthRad;
+        const motionProfile = planFirmwareSCurve({
+            distance: length,
+            vMax: dynamics.vMax * length / 1000,
+            aMax: dynamics.aMax * length / 1e6,
+            dMax: dynamics.dMax * length / 1e6,
+            jAccel: dynamics.jAccel * length / 1e9,
+            jDecel: dynamics.jDecel * length / 1e9
+        });
+        return {
+            enabled: true, planner: 's7-rapid-dynamics',
+            progress: 0, velocity: 0, acceleration: 0, elapsedSeconds: 0, completed: false,
+            durationSeconds: motionProfile.duration / 1000,
+            maxProgressVelocity: dynamics.vMax,
+            maxProgressAcceleration: dynamics.aMax,
+            maxProgressDeceleration: dynamics.dMax,
+            distances, profile: {...RAPID_MOVE_DEFAULTS, ...profileOptions}, dynamics, motionProfile
+        };
+    }
+
     const speedScale = clamp(Number(speedPercent) || DEFAULT_MOVJ_SPEED, 1, 100) / 100;
     const maxProgressVelocity = Math.min(...movingIndexes.map((index) => (
         rapidMoveJointRate(joints[index]) * speedScale / distances[index]
@@ -315,6 +346,18 @@ export function advanceRapidMoveState(
         accelerationScale: 1,
         completed: Boolean(state?.completed)
     };
+    if (state.planner === 's7-rapid-dynamics') {
+        const delta = Number(deltaSeconds);
+        if (Number.isFinite(delta) && delta > 0) state.elapsedSeconds += delta;
+        const sample = state.motionProfile.evaluate(state.elapsedSeconds * 1000);
+        const length = state.dynamics.scalarPathLengthRad;
+        state.progress = clamp(sample.position / length, 0, 1);
+        state.velocity = sample.velocity * 1000 / length;
+        state.acceleration = sample.acceleration * 1e6 / length;
+        state.completed = state.elapsedSeconds >= state.durationSeconds;
+        if (state.completed) { state.progress = 1; state.velocity = 0; state.acceleration = 0; }
+        return {progress: state.progress, completed: state.completed, postureLoad: null, accelerationScale: 1};
+    }
     const delta = clamp(
         Number(deltaSeconds) || 0,
         0,
@@ -528,6 +571,7 @@ export function createEmptyMotionProgram(included = true) {
         progress: 0,
         cycleTimerStartedAt: null,
         lastCycleTimeSeconds: null,
+        positions: [],
         steps: []
     };
 }
@@ -619,6 +663,7 @@ function clonePointMetadata(step, fallbackPointIndex) {
         pointIndex,
         name: formatMotionPointName(pointIndex),
         label: isValidMotionPointLabel(label) ? label : '',
+        ...(step.armParametersExplicit ? { armParametersExplicit: true } : {}),
         armParameters: Array.isArray(step?.armParameters) && step.armParameters.length === 4
             ? step.armParameters.map((value) => Number(value) || 0)
             : [0, 0, 0, 1],
@@ -652,6 +697,7 @@ export function cloneMotionProgram(program) {
     return {
         included: Boolean(program?.included),
         selectedStepId: typeof program?.selectedStepId === 'string' ? program.selectedStepId : null,
+        positions: program?.positions?.length ? cloneMotionProgram({ steps: program.positions }).steps : [],
         workOrigin,
         status: 'idle',
         progress: 0,
@@ -872,6 +918,7 @@ function normalizeStep(step, jointCount, index, fallbackPointIndex) {
             name: formatMotionPointName(pointIndex),
             label,
             armParameters,
+            ...(step.armParametersExplicit ? { armParametersExplicit: true } : {}),
             externalAxes: step.externalAxes === undefined
                 ? [0, 0, 0, 0, 0, 0]
                 : finiteArray(step.externalAxes, 6, `Step ${index + 1} external axes`)
@@ -992,6 +1039,7 @@ export function normalizeMotionProject(input) {
                 ? Math.max(0, Math.min(workObjects.length - 1, Number(robot.activeWorkObjectIndex)))
                 : 0,
             workOrigin,
+            positions: normalizeRegisteredPositions(robot.positions, steps, jointCount),
             steps
         };
     });
@@ -1010,6 +1058,19 @@ export function normalizeMotionProject(input) {
         programSpeedOverride: normalizeProgramSpeedOverride(input.programSpeedOverride),
         robots
     };
+}
+
+export function normalizeRegisteredPositions(input, steps, jointCount) {
+    if (input !== undefined && !Array.isArray(input)) throw new Error('Position records must be an array.');
+    const positions = (input || []).map((point, index) => normalizeStep(point, jointCount, index, index));
+    const ids = new Set(steps.map(step => step.id));
+    const indices = new Set(steps.filter(step => isMotionPointMotion(step.motion)).map(step => step.pointIndex));
+    for (const point of positions) {
+        if (!isMotionPointMotion(point.motion)) throw new Error('Position records must contain motion points.');
+        if (ids.has(point.id) || indices.has(point.pointIndex)) throw new Error('Duplicate position record.');
+        ids.add(point.id); indices.add(point.pointIndex);
+    }
+    return positions;
 }
 
 export function isIoMotion(motion) { return motion === 'IO_OUT' || motion === 'IO_WAIT'; }

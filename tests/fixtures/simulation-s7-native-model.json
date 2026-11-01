@@ -1,0 +1,109 @@
+{
+  "model": "IR-S7-60Z20S3-C2LH-INT_01741021",
+  "source": "params_package/Standard/Body/IR-S7-60Z20S3-C2LH-INT_01741021/IR-S7-60Z20S3-C2LH-INT_01741021.json",
+  "source_sha256": "93852072012378f40d8db0661b603e4b35d2076e89cf73cbcfe9fa4d52c82360",
+  "body_dynamics": {
+    "stLink": [
+      {
+        "a": 0.325,
+        "d": 0,
+        "pitch": 0,
+        "mass": 3.4141462617,
+        "inertia": [
+          0,
+          0,
+          0.0713425268,
+          0,
+          0,
+          0
+        ],
+        "cog": [
+          0.1521754091,
+          0,
+          0
+        ],
+        "ratio": 81,
+        "motorInertia": 0.0001235964,
+        "ratedTrq": 1.6,
+        "stiffness": 49105.3283900963,
+        "coulombFric": 9.5515449321,
+        "viscousFric": 5.8351187444
+      },
+      {
+        "a": 0.275,
+        "d": 0,
+        "pitch": 0,
+        "mass": 6.2271917368,
+        "inertia": [
+          0,
+          0,
+          0.0644832895,
+          0,
+          0,
+          0
+        ],
+        "cog": [
+          0.0820925744,
+          0,
+          0
+        ],
+        "ratio": 51,
+        "motorInertia": 6.49e-05,
+        "ratedTrq": 0.96,
+        "stiffness": 13241.9071838359,
+        "coulombFric": 5.3949058103,
+        "viscousFric": 2.4938793127
+      },
+      {
+        "a": 0,
+        "d": 0,
+        "pitch": 0,
+        "mass": 0.4947,
+        "inertia": [
+          0,
+          0,
+          9.956e-05,
+          0,
+          0,
+          0
+        ],
+        "cog": [
+          0,
+          0,
+          0
+        ],
+        "ratio": 1.2682926829,
+        "motorInertia": 1.02e-05,
+        "ratedTrq": 0.48,
+        "stiffness": 354.7405777852,
+        "coulombFric": 0.108369,
+        "viscousFric": 0.00052
+      },
+      {
+        "a": 0,
+        "d": 0,
+        "pitch": 0,
+        "mass": 0.4947,
+        "inertia": [
+          0,
+          0,
+          0.000529,
+          0,
+          0,
+          0
+        ],
+        "cog": [
+          0,
+          0,
+          0
+        ],
+        "ratio": 13.6363636364,
+        "motorInertia": 2.38e-05,
+        "ratedTrq": 0.48,
+        "stiffness": 416.7966667035,
+        "coulombFric": 0.2107098216,
+        "viscousFric": 0.0224234149
+      }
+    ]
+  }
+}

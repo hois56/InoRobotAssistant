@@ -9,6 +9,50 @@ async function setup(page) {
   await page.waitForFunction(() => window.__objectReset);
 }
 
+test('오브젝트 편집의 저장 버튼 옆에서 해당 등록만 원위치로 되돌린다', async ({ page }) => {
+  await setup(page);
+  await page.waitForFunction(() => window.__objectReset.state.workspaceRecovery.ready);
+  const expected = await page.evaluate(() => {
+    const a = window.__objectReset, app = a.equipmentApp;
+    const box = name => { const m = a.createPrimitiveShapeRoot('box', { x: 20, y: 20, z: 20 }, { name }); a.state.scene.add(m); a.state.models.push(m); return m; };
+    const target = box('원위치 대상'), other = box('다른 등록');
+    target.position.set(10, 20, 30); target.rotation.set(0.2, 0.4, 0.6); target.updateWorldMatrix(true, false);
+    const original = target.matrixWorld.toArray();
+    const ref = m => 'equipment-model:' + a.ensureWorkspaceModelId(m) + '/-1';
+    app.save({ id: 'editor-reset-object', type: 'OBJECT', movingRef: ref(target) });
+    app.save({ id: 'editor-other-object', type: 'OBJECT', movingRef: ref(other) });
+    target.position.set(300, 400, 500); target.rotation.set(1, 2, 3); other.position.set(600, 700, 800);
+    app.ui.open(ref(target));
+    return { original, targetRef: ref(target), otherRef: ref(other) };
+  });
+  await page.locator('#equipment-registered').evaluate(node => node.open = true);
+  await page.locator('[data-equipment-id="editor-reset-object"] [data-equipment-command="EDIT"]').click();
+  const reset = page.locator('#equipment-form .equipment-toolbar #equipment-object-reset');
+  await expect(reset).toBeVisible(); await expect(reset).toBeEnabled(); await reset.click();
+  const actual = await page.evaluate(({ targetRef, otherRef }) => {
+    const app = window.__objectReset.equipmentApp, target = app.resolve(targetRef).object;
+    target.updateWorldMatrix(true, false);
+    return { matrix: target.matrixWorld.toArray(), other: app.resolve(otherRef).object.position.toArray(), id: document.querySelector('#equipment-form [name="id"]').value };
+  }, expected);
+  actual.matrix.forEach((value, index) => expect(value).toBeCloseTo(expected.original[index], 6));
+  expect(actual.other).toEqual([600, 700, 800]); expect(actual.id).toBe('editor-reset-object');
+});
+
+test('오브젝트 원위치는 첫 등록 뒤 활성화되고 다른 동작 설정에서는 숨긴다', async ({ page }) => {
+  await setup(page);
+  await page.waitForFunction(() => window.__objectReset.state.workspaceRecovery.ready);
+  await page.evaluate(() => {
+    const a = window.__objectReset, m = a.createPrimitiveShapeRoot('box', { x: 20, y: 20, z: 20 }, { name: '신규 오브젝트' });
+    a.state.scene.add(m); a.state.models.push(m); a.equipmentApp.ui.open('equipment-model:' + a.ensureWorkspaceModelId(m) + '/-1');
+  });
+  const form = page.locator('#equipment-form'), reset = form.locator('#equipment-object-reset');
+  await form.locator('[name="type"]').selectOption('OBJECT');
+  await expect(reset).toBeVisible(); await expect(reset).toBeDisabled();
+  await form.locator('button[type="submit"]').click(); await expect(reset).toBeEnabled();
+  await expect(page.locator('#equipment-current-controls [data-equipment-command="RESET"]')).toBeVisible();
+  await form.locator('[name="type"]').selectOption('CYLINDER'); await expect(reset).toBeHidden();
+});
+
 test('모두 원위치는 등록 당시 위치·회전을 프로젝트 복원 후에도 유지한다', async ({ page }) => {
   await setup(page);
   const expected = await page.evaluate(async () => {
@@ -71,6 +115,9 @@ test('고정 행렬 하위 부품도 기준 월드 위치로 복원하고 미등
 
 test('흡착 중 모두 원위치는 물체를 놓고 복원하며 재개 전에는 다시 이동하지 않는다', async ({ page }) => {
   await setup(page);
+  await page.waitForFunction(() => window.__objectReset.state.workspaceRecovery.ready);
+  await page.locator('#model-select').selectOption('robot:IR-R7H-90');
+  await page.waitForFunction(() => window.__objectReset.state.models.some(m => m.userData.tcpFrame));
   await page.evaluate(() => {
     const a = window.__objectReset, app = a.equipmentApp;
     const box = (name, z) => {
@@ -79,11 +126,11 @@ test('흡착 중 모두 원위치는 물체를 놓고 복원하며 재개 전에
     };
     const pad = box('초기화 패드', 20), object = box('초기화 제품', 0);
     const ref = model => 'equipment-model:' + a.ensureWorkspaceModelId(model) + '/-1';
-    app.save({ id: 'held-object', type: 'OBJECT', movingRef: ref(object) });
-    const def = app.save({ id: 'held-vacuum', type: 'VACUUM', movingRef: ref(pad), feedbackGrip: 600 }, { forward: 512, reverse: null });
+    const robot = a.state.models.find(m => m.userData.tcpFrame);
+    const def = app.save({ id: 'held-object', type: 'OBJECT', movingRef: ref(object), robotRef: ref(robot), feedbackGrip: 600 }, { forward: 512, reverse: null });
     a.writeOlpAddress('Out[512]', 1); app.runtime.start();
-    app.runtime.applyVacuum(def, true); pad.position.x = 200; app.runtime.followVacuum(def);
-    if (!def.runtime.heldRef || object.position.x !== 200) throw new Error('흡착 이동 재현 실패');
+    app.runtime.applyVacuum(def, true); robot.position.x += 200; app.runtime.followVacuum(def);
+    if (!def.runtime.heldRef || Math.abs(object.getWorldPosition(new a.THREE.Vector3()).x - 200) > 1e-6) throw new Error('흡착 이동 재현 실패');
     app.ui.open(ref(object));
   });
   await page.locator('[data-equipment-global="reset"]').click();

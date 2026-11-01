@@ -14,7 +14,7 @@ test('controller kind defaults and virtual IP edits', () => {
   const functions = ['readVirtualControllerSettings', 'saveVirtualControllerSettings']
     .map(name => source.match(new RegExp(`function ${name}\\([^]*?\\n\\}`))?.[0] || '').join('\n');
   vm.runInNewContext(functions + '\n' + source.slice(start, end), {
-    state, el, refreshVirtualControllerUi() {},
+    state, el, refreshVirtualControllerUi() {}, registerVirtualControllerSession() {}, scheduleMotionProjectSave() {},
     VIRTUAL_CONTROLLER_SETTINGS_STORAGE_KEY: 'controller-settings',
     localStorage: { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) }
   });

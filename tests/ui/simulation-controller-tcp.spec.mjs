@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test('R7H-90 controller TCP updates JOG while Tool/Wobj never shift the physical mounting zero', async ({ page }) => {
+test('R7H-90 controller TCP updates JOG and mounted geometry while preserving local mounting zero', async ({ page }) => {
   test.setTimeout(90000);
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
@@ -40,12 +40,19 @@ test('R7H-90 controller TCP updates JOG while Tool/Wobj never shift the physical
     const tcpWorld = a.getRobotWorldTcpPoint(robot);
     const mtcp = a.getMtcpProfileWorldPoint(robot, a.getRobotToolWorldTransform(robot), 0).toArray();
     const firstToolWorld = tool.getWorldPosition(new a.THREE.Vector3());
+    const expectedToolWorld = () => {
+      const profile = robot.userData.tcpProfiles[1];
+      return robot.userData.tcpFrame.localToWorld(tool.position.clone().sub(profile.position)
+        .applyQuaternion(profile.quaternion.clone().invert()));
+    };
+    const firstToolError = firstToolWorld.distanceTo(expectedToolWorld());
     a.handleVirtualControllerMessage(JSON.stringify({ type: 'robotState', data: { joints, tcp: [808, -192, 315, 20, 30, 40] } }), controller);
     a.applyVirtualControllerFrameForController(performance.now(), controller);
     const toolShift = tool.getWorldPosition(new a.THREE.Vector3()).distanceTo(firstToolWorld);
+    const secondToolError = tool.getWorldPosition(new a.THREE.Vector3()).distanceTo(expectedToolWorld());
     a.handleVirtualControllerMessage(JSON.stringify({ type: 'robotState', data: { joints, tcp: [708, -292, 215, 0, 0, 180] } }), controller);
     a.applyVirtualControllerFrameForController(performance.now(), controller);
-    return { joints: robot.userData.joints.map(joint => joint.angle), arm: a.calculatePointArmParameters(robot), toolShift,
+    return { joints: robot.userData.joints.map(joint => joint.angle), arm: a.calculatePointArmParameters(robot), toolShift, firstToolError, secondToolError,
       mountShift: flange.position.distanceTo(new a.THREE.Vector3().fromArray(window.__originalMount.position)),
       mountRotation: flange.quaternion.angleTo(new a.THREE.Quaternion().fromArray(window.__originalMount.quaternion)),
       distance: new a.THREE.Vector3().fromArray(tcpWorld).distanceTo(new a.THREE.Vector3().fromArray(mtcp)) };
@@ -53,7 +60,9 @@ test('R7H-90 controller TCP updates JOG while Tool/Wobj never shift the physical
   expect(result.joints).toEqual([20, -30, 40, -110, 60, 200]);
   // J5 = 60° is wrist flipped: forward, elbow upward, flipped -> ArmType[3] 0.
   expect(result.arm).toEqual([0, -2, 2, 0]);
-  expect(result.toolShift).toBeLessThan(1e-7);
+  expect(result.toolShift).toBeGreaterThan(1);
+  expect(result.firstToolError).toBeLessThan(1e-7);
+  expect(result.secondToolError).toBeLessThan(1e-7);
   expect(result.mountShift).toBeLessThan(1e-7);
   expect(result.mountRotation).toBeLessThan(1e-7);
   for (const [key, value] of Object.entries({ x: '708.00', y: '-292.00', z: '215.00' })) {

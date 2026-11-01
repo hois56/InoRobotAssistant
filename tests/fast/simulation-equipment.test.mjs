@@ -1,20 +1,37 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeEquipmentDefinition, stepEquipmentPosition, equipmentFeedback, resolveEquipmentCommand, validateEquipmentDefinitions, equipmentMotionGroups, normalizeEquipmentBindings } from '../../2_3DSimulation/equipment-core.mjs';
+import { EQUIPMENT_TYPES, normalizeEquipmentDefinition, stepEquipmentPosition, equipmentFeedback, resolveEquipmentCommand, validateEquipmentDefinitions, equipmentMotionGroups, normalizeEquipmentBindings } from '../../2_3DSimulation/equipment-core.mjs';
 import { createFilmState, stepFilm, filmLengthError } from '../../2_3DSimulation/film-peeling-core.mjs';
 import { normalizeIoFunctionMapping } from '../../2_3DSimulation/io-function-mapping-core.mjs';
 import * as filmCore from '../../2_3DSimulation/film-peeling-core.mjs';
 
-test('오브젝트는 IO와 이동 설정 없이 등록하고 진공은 패드만 지정한다',()=>{
-    const object=normalizeEquipmentDefinition({id:'object',type:'OBJECT',movingRefs:['part-a','part-b'],speed:'invalid',feedbackHome:512});
+test('오브젝트는 등록만 하고 진공은 Tool의 면이나 전체 부품을 사용한다',()=>{
+    const object=normalizeEquipmentDefinition({id:'object',type:'OBJECT',movingRefs:['part-a','part-b'],robotRef:'robot-a',feedbackGrip:514,speed:'invalid',feedbackHome:512});
     assert.deepEqual(equipmentMotionGroups(object),[]);assert.deepEqual(object.movingRefs,['part-a','part-b']);assert.equal(object.feedbackHome,null);
+    assert.equal(object.robotRef,'');assert.equal(object.feedbackGrip,null);assert.equal(EQUIPMENT_TYPES.includes('VACUUM'),true);
     const vacuum=normalizeEquipmentDefinition({id:'vacuum',type:'VACUUM',movingRef:'pad',travel:'invalid',feedbackGrip:514});
-    assert.deepEqual(equipmentMotionGroups(vacuum),[]);assert.equal(vacuum.feedbackGrip,514);
+    assert.deepEqual(equipmentMotionGroups(vacuum),[]);assert.equal(vacuum.enabled,false);
     assert.throws(()=>normalizeEquipmentDefinition({...vacuum,feedbackGrip:100}),/센서 주소/);
-    assert.throws(()=>validateEquipmentDefinitions([vacuum,{...vacuum,id:'other',movingRef:'other-pad'}]),/센서 입력 주소/);
+    validateEquipmentDefinitions([object,{...object,id:'other',movingRef:'other-part',movingRefs:['other-part']}]);
     validateEquipmentDefinitions([object,vacuum]);
-    assert.equal(normalizeIoFunctionMapping({id:'vacuum-io',action:'VACUUM',direction:'IN',address:512,gripObjectRef:'equipment:vacuum'}).direction,'OUT');
-    assert.throws(()=>normalizeIoFunctionMapping({id:'object-io',action:'OBJECT',address:512}),/동작|지원|action|매핑/);
+    assert.equal(normalizeIoFunctionMapping({id:'object-io',action:'OBJECT',direction:'IN',address:512}).direction,'OUT');
+    assert.equal(normalizeIoFunctionMapping({id:'legacy-io',action:'VACUUM',address:512}).enabled,true);
+});
+
+test('로봇별 Tool 센서는 같은 주소를 쓰고 같은 로봇 안에서만 중복을 금지한다', () => {
+    const first = { id: 'tool-a', type: 'CYLINDER', movingRef: 'tool-model-a', ioRobotRef: 'robot-a', feedbackHome: 514, feedbackEnd: 515 };
+    const second = { ...first, id: 'tool-b', movingRef: 'tool-model-b', ioRobotRef: 'robot-b' };
+    validateEquipmentDefinitions([first, second]);
+    assert.equal(normalizeEquipmentDefinition(first).ioRobotRef, 'robot-a');
+    assert.throws(() => validateEquipmentDefinitions([first, { ...second, ioRobotRef: 'robot-a' }]), /센서 입력 주소/);
+});
+
+test('오브젝트 등록에서 이전 Tool 연결과 로봇별 IO 설정을 제거한다', () => {
+    const source = { id: 'tool-object', type: 'OBJECT', movingRef: 'product', toolRef: 'tool-part', robotRef: 'old-robot', ioRobotRef: 'tool-robot' };
+    const def = normalizeEquipmentDefinition(source);
+    assert.equal(def.toolRef, ''); assert.equal(def.ioRobotRef, ''); assert.equal(def.robotRef, '');
+    assert.equal(normalizeEquipmentDefinition(JSON.parse(JSON.stringify(def))).toolRef, '');
+    assert.equal(normalizeEquipmentDefinition({ ...source, toolRef: '' }).robotRef, '');
 });
 
 test('등록 오브젝트의 초기 위치는 프로젝트 정규화·복사 후에도 보존한다', () => {
@@ -35,6 +52,16 @@ test('실린더·외부 축은 속도로 이동하고 중간 반전과 끝단 �
     assert.equal(resolveEquipmentCommand(['FORWARD', 'REVERSE']).command, 'STOP');
     assert.ok(resolveEquipmentCommand(['FORWARD', 'REVERSE']).error);
 });
+test('짧은 이동 신호는 유지하고 반대·정지·초기화·충돌 명령은 우선한다', () => {
+    assert.deepEqual(resolveEquipmentCommand([], 'FORWARD'), { command: 'FORWARD', error: '' });
+    assert.deepEqual(resolveEquipmentCommand([], 'REVERSE'), { command: 'REVERSE', error: '' });
+    assert.equal(resolveEquipmentCommand(['REVERSE'], 'FORWARD').command, 'REVERSE');
+    for (const command of ['STOP', 'RESET', 'RELEASE']) assert.equal(resolveEquipmentCommand([command], 'FORWARD').command, command);
+    const conflict = resolveEquipmentCommand(['FORWARD', 'REVERSE'], 'FORWARD');
+    assert.equal(conflict.command, 'STOP'); assert.ok(conflict.error);
+    for (const previous of ['STOP', 'RESET', 'RELEASE', 'invalid', undefined]) assert.equal(resolveEquipmentCommand([], previous).command, 'STOP');
+});
+
 test('설비 정의는 중복 가동부·센서·E축과 잘못된 그리퍼 설정을 거부한다', () => {
     const a = { id: 'a', type: 'CYLINDER', movingRef: 'model:a', feedbackHome: 512 };
     assert.throws(() => validateEquipmentDefinitions([a, { ...a, id: 'b' }]), /가동부/);

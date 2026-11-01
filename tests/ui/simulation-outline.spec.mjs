@@ -7,7 +7,7 @@ for (const model of ['IR-R10H-120', 'IR-R20H-120', 'IR-GS60-120Z40', 'IR-TS4-35Z
         page.on('pageerror', error => errors.push(error.message));
         await page.route('**/2_3DSimulation/main.js*', async route => {
             const response = await route.fetch();
-            await route.fulfill({ response, body: `${await response.text()}\nwindow.__outlineTest = { state, THREE, selectSceneModel, syncModelOutlines, applyModelTransparencyVisual, buildCleanOutlinePositions, requestRender };` });
+            await route.fulfill({ response, body: `${await response.text()}\nwindow.__outlineTest = { state, THREE, selectSceneModel, syncModelOutlines, setCollisionMaterialHighlight, applyModelTransparencyVisual, buildCleanOutlinePositions, requestRender };` });
         });
         await page.goto('/2_3DSimulation/index.html');
         await page.locator('#model-select').selectOption(`robot:${model}`);
@@ -69,10 +69,18 @@ for (const model of ['IR-R10H-120', 'IR-R20H-120', 'IR-GS60-120Z40', 'IR-TS4-35Z
             state.outlineMode = false;
             api.syncModelOutlines();
             const hidden = meshes.every(mesh => !mesh.userData.outlineLine);
+            const originals = meshes.map(mesh => (Array.isArray(mesh.material) ? mesh.material : [mesh.material])
+                .map(material => [material.color.getHex(), material.emissive.getHex(), material.emissiveIntensity]));
             api.selectSceneModel(robot);
-            const selected = meshes.every(mesh => mesh.userData.outlineLine?.material.color.getHex() === 0xfacc15);
-            const selectedLogoOutlines = countLogoEdges();
+            const selected = meshes.every(mesh => !mesh.userData.outlineLine
+                && (Array.isArray(mesh.material) ? mesh.material : [mesh.material])
+                    .every(material => material.emissive?.getHex() === 0xfacc15));
             api.selectSceneModel(null);
+            const selectionRestored = meshes.every((mesh, i) =>
+                (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).every((material, j) =>
+                    material.color.getHex() === originals[i][j][0]
+                    && material.emissive.getHex() === originals[i][j][1]
+                    && material.emissiveIntensity === originals[i][j][2]));
             state.outlineMode = true;
             api.syncModelOutlines();
             api.applyModelTransparencyVisual(robot, null, 50);
@@ -97,13 +105,34 @@ for (const model of ['IR-R10H-120', 'IR-R20H-120', 'IR-GS60-120Z40', 'IR-TS4-35Z
             toolRoot.add(tool);toolRoot.position.x=10000;toolRoot.userData.attachmentHost=robot;
             robot.add(toolRoot);state.models.push(toolRoot);api.syncModelOutlines();
             const toolBorderCount = tool.userData.outlineLine.geometry.attributes.position.count / 2;
+            // Independently selected parts keep their own materials and collision warning.
+            state.outlineMode = false;
+            state.modelSelection = new Map([[plane, surface], [tool, toolRoot]]);
+            api.syncModelOutlines();
+            const multiSelected = [plane, tool].every(mesh => !mesh.userData.outlineLine
+                && (Array.isArray(mesh.material) ? mesh.material : [mesh.material])
+                    .every(material => material.emissive.getHex() === 0xfacc15));
+            api.setCollisionMaterialHighlight(tool.material[0], true);
+            state.modelSelection.delete(tool);
+            api.syncModelOutlines();
+            const collisionVisible = tool.material[0].color.getHex() === 0xef4444
+                && tool.material[0].emissive.getHex() === 0x7f1d1d;
+            api.setCollisionMaterialHighlight(tool.material[0], false);
+            const collisionRestored = tool.material[0].emissive.getHex() === 0
+                && tool.material[1].color.getHex() === 0x108ccf;
+            state.outlineMode = true;
+            api.syncModelOutlines();
+            const toggled = plane.material.emissive.getHex() === 0
+                && plane.userData.outlineLine.material.color.getHex() === 0xfacc15;
+            api.selectSceneModel(null);
             const arm = meshes.find(mesh => mesh.name === 'J4') || meshes.find(mesh => mesh.name === 'J2');
             const center = new THREE.Box3().setFromObject(arm).getCenter(new THREE.Vector3());
             state.camera.position.copy(center).add(new THREE.Vector3(100, -550, 180));
             state.controls.target.copy(center);
             state.controls.update();
             api.requestRender();
-            return { before, after, defaultColor, hidden, selected, faded, restored, openBorderCount, toolBorderCount, logoOutlines, selectedLogoOutlines,
+            return { before, after, defaultColor, hidden, selected, selectionRestored, faded, restored, openBorderCount, toolBorderCount, logoOutlines,
+                multiSelected, collisionVisible, collisionRestored, toggled,
                 perMesh: meshes.map(mesh => mesh.userData.outlineLine.geometry.getAttribute('position').count / 2) };
         });
         expect(result.after).toBeLessThan(result.before * 0.9);
@@ -111,13 +140,17 @@ for (const model of ['IR-R10H-120', 'IR-R20H-120', 'IR-GS60-120Z40', 'IR-TS4-35Z
         expect(result.defaultColor).toBe(true);
         expect(result.logoOutlines.logoMeshes).toBeGreaterThan(0);
         expect(result.logoOutlines.count).toBe(0);
-        expect(result.selectedLogoOutlines.count).toBe(0);
+        expect(result.selectionRestored).toBe(true);
         expect(result.hidden).toBe(true);
         expect(result.selected).toBe(true);
         expect(result.faded).toBe(true);
         expect(result.restored).toBe(true);
         expect(result.openBorderCount).toBe(4);
         expect(result.toolBorderCount).toBe(12);
+        expect(result.multiSelected).toBe(true);
+        expect(result.collisionVisible).toBe(true);
+        expect(result.collisionRestored).toBe(true);
+        expect(result.toggled).toBe(true);
         await page.screenshot({ path: test.info().outputPath('robot-outline-detail.png') });
         expect(errors).toEqual([]);
     });

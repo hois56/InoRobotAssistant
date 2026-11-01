@@ -878,6 +878,7 @@ export class MeshCollisionSystem {
                     collider.nodeBounds = null;
                     collider.nodeBoundsBvh = null;
                     collider.nodeBoundsTransformVersion = 0;
+                    collider.matrixWorldSnapshot = null;
                 }
                 if (!collider.localBounds) return null;
                 if (hasMatrixWorldChanged(collider)) {
@@ -973,6 +974,7 @@ export class MeshCollisionSystem {
                 : null;
             let confirmedCachedHit = false;
             if (cachedRightMesh
+                && leftMesh.worldBounds?.intersectsBox(cachedRightMesh.worldBounds)
                 && (!meshPairFilter || meshPairFilter(left.root, leftMesh.mesh, right.root, cachedRightMesh.mesh))
                 && !isAttachedToolMountContact(left.root, leftMesh.mesh, right.root, cachedRightMesh.mesh)
                 && !isAttachedArmLoadHostLinkContact(left.root, leftMesh.mesh, right.root, cachedRightMesh.mesh)) {
@@ -1002,8 +1004,11 @@ export class MeshCollisionSystem {
             }
             if (!confirmedCachedHit) this.hitMeshPairCache.delete(cacheKey);
             for (const rightMesh of right.meshes) {
-                if (meshPairFilter && !meshPairFilter(left.root, leftMesh.mesh, right.root, rightMesh.mesh)) continue;
                 if (rightMesh === cachedRightMesh) continue;
+                // Most CAD parts are far from a moving link. Bounds are cheap;
+                // resolve object/attachment policies only for nearby meshes.
+                if (!leftMesh.worldBounds?.intersectsBox(rightMesh.worldBounds)) continue;
+                if (meshPairFilter && !meshPairFilter(left.root, leftMesh.mesh, right.root, rightMesh.mesh)) continue;
                 if (!includeSelf && left.root === right.root) continue;
                 if (left.root === right.root
                     && (isDescendantOf(leftMesh.mesh, rightMesh.mesh) || isDescendantOf(rightMesh.mesh, leftMesh.mesh))) continue;
@@ -1086,7 +1091,14 @@ export class MeshCollisionSystem {
         for (const root of this.meshCache.keys()) {
             if (!activeRoots.has(root)) this.meshCache.delete(root);
         }
-        const colliders = roots.map((root) => ({ root, meshes: this.collectMeshes(root) }))
+        const colliders = roots.map((root) => {
+            const meshes = this.collectMeshes(root);
+            // Build once per model, rather than scanning all sub-mesh pairs
+            // for assemblies that cannot touch at their current poses.
+            const worldBounds = new THREE.Box3();
+            for (const mesh of meshes) worldBounds.union(mesh.worldBounds);
+            return { root, meshes, worldBounds };
+        })
             .filter((collider) => collider.meshes.length);
         const activeColliderRoots = new Set(colliders.map(({ root }) => root));
         for (const [key, entry] of this.hitMeshPairCache) {
@@ -1141,7 +1153,9 @@ export class MeshCollisionSystem {
                 let pairHits = this.rootPairHitCache.get(pairKey)?.hits;
                 if (mustRefresh || !pairHits) {
                     stats.refreshedModelPairs += 1;
-                    pairHits = this.checkRootPair(left, right, includeSelf, stats, { now, allowWarmHitReuse, meshPairFilter });
+                    pairHits = left.worldBounds.intersectsBox(right.worldBounds)
+                        ? this.checkRootPair(left, right, includeSelf, stats, { now, allowWarmHitReuse, meshPairFilter })
+                        : [];
                     this.rootPairHitCache.set(pairKey, {
                         leftRoot: left.root,
                         rightRoot: right.root,

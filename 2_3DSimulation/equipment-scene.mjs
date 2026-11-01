@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { equipmentFeedback, resolveEquipmentCommand, stepEquipmentPosition, equipmentMotionGroups, equipmentReferences } from './equipment-core.mjs?v=20261007-object-reset-1';
+import { VacuumContact } from './vacuum-contact.mjs?v=20261101-vacuum-surface-1';
+import { equipmentFeedback, resolveEquipmentCommand, stepEquipmentPosition, equipmentMotionGroups, equipmentReferences } from './equipment-core.mjs?v=20261101-vacuum-surface-1';
 import { createFilmState, stepFilm, getFilmGripLayout, getFilmPeelFromGrip } from './film-peeling-core.mjs';
 import { conveyorLocalBounds } from './conveyor-scene.mjs';
-import { MeshCollisionSystem } from './collision-system.mjs?v=20261007-vacuum-margin-1';
 
 export function equipmentObjectRef(modelId, partIndex = -1) { return `equipment-model:${modelId}/${partIndex}`; }
 
@@ -15,7 +15,7 @@ export class EquipmentScene {
         this.manual = new Map();
         this.status = new Map();
         this.films = new Map();
-        this.contact = new MeshCollisionSystem({ persistentHitGraceMs: 0 });
+        this.contact = new VacuumContact(adapter);
         this.suspended = true;
     }
 
@@ -121,19 +121,22 @@ export class EquipmentScene {
     commands(def, mappings) {
         if (this.manual.has(def.id)) return resolveEquipmentCommand([this.manual.get(def.id)]);
         const commands = mappings.filter(mapping => mapping.enabled && mapping.gripObjectRef === `equipment:${def.id}`
-            && this.adapter.read(mapping.direction, mapping.address) === mapping.triggerValue).map(mapping => mapping.equipmentCommand);
+            && this.adapter.read(mapping.direction, mapping.address, def) === mapping.triggerValue).map(mapping => mapping.equipmentCommand);
         if (def.type === 'VACUUM' && commands.includes('REVERSE')) return { command: 'REVERSE', error: '' };
-        return resolveEquipmentCommand(commands);
+        return resolveEquipmentCommand(commands, ['OBJECT', 'VACUUM'].includes(def.type) ? 'STOP' : def.runtime.motionCommand);
     }
 
     start() { this.suspended = false; this.paused = false; this.lastTime = null; this.accumulator = 0; }
     pause() { this.paused = !this.paused; this.lastTime = null; this.accumulator = 0; }
-    stop() { this.suspended = true; this.manual.clear(); this.lastTime = null; this.accumulator = 0; }
-    clear() { this.stop(); this.status.clear(); this.films.clear(); }
+    stop(preserveCommands = false) {
+        if (!preserveCommands) for (const def of this.adapter.definitions()) delete def.runtime.motionCommand;
+        this.suspended = true; this.manual.clear(); this.lastTime = null; this.accumulator = 0;
+    }
+    clear(preserveCommands = false) { this.stop(preserveCommands); this.status.clear(); this.films.clear(); if (!preserveCommands) this.contact.clear(); }
 
     hasWork(definitions, mappings) {
         if (this.suspended || this.paused || document.hidden) return false;
-        return definitions.some(def => def.enabled && def.type !== 'OBJECT' && (def.type === 'VACUUM' && def.runtime.heldRef || def.externalAxis || this.commands(def, mappings).command !== 'STOP'
+        return definitions.some(def => def.enabled && (def.type === 'VACUUM' && (def.runtime.vacuumActive || def.runtime.heldRef) || def.runtime.motionCommand || def.externalAxis || def.type !== 'OBJECT' && this.commands(def, mappings).command !== 'STOP'
             || (def.type === 'FILM_PEEL' && def.runtime.position > 0)));
     }
 
@@ -175,6 +178,7 @@ export class EquipmentScene {
     reset(definitions) {
         for (const def of definitions) {
             this.release(def);
+            delete def.runtime.motionCommand;
             def.runtime.position = 0; def.runtime.film = null; def.runtime.released = false;
             delete def.runtime.filmGripLocal; delete def.runtime.filmGripEdgeLocal; def.runtime.filmGripped = false;
             delete def.runtime.filmActiveTab;
@@ -206,7 +210,10 @@ export class EquipmentScene {
             visiting.add(def);
             const frameObject = this.adapter.resolve(def.bodyRef || def.origins.anchorRef)?.object || this.adapter.resolve(def.movingRef)?.object;
             for (const parent of definitions) {
-                if (parent !== def && equipmentMotionGroups(parent).some(([ref]) => within(frameObject, this.adapter.resolve(ref)?.object))) visit(parent);
+                if (parent !== def && equipmentMotionGroups(parent).some(([ref]) => {
+                    const mover = this.adapter.resolve(ref)?.object;
+                    return within(frameObject, mover) || def.type === 'VACUUM' && within(mover, frameObject);
+                })) visit(parent);
             }
             visiting.delete(def); done.add(def); ordered.push(def);
         };
@@ -217,14 +224,23 @@ export class EquipmentScene {
             try {
                 const { command, error } = this.commands(def, mappings);
                 if (error) throw new Error(error);
-                if (def.type === 'OBJECT') { this.status.set(def.id, { phase: '등록됨', position: 0, error: '' }); continue; }
+                if (def.type === 'OBJECT') {
+                    this.status.set(def.id, { phase: '등록됨', position: 0, error: '' }); continue;
+                }
                 if (def.type === 'VACUUM') {
-                    this.applyVacuum(def, command === 'FORWARD');
+                    // A dual-solenoid valve keeps its last state after the pulse ends.
+                    if (command === 'FORWARD') def.runtime.vacuumActive = true;
+                    else if (command === 'REVERSE' || command === 'RESET') def.runtime.vacuumActive = false;
+                    else def.runtime.vacuumActive ??= !!def.runtime.heldRef;
+                    this.applyVacuum(def, def.runtime.vacuumActive);
                     this.writeFeedback(def, !!def.runtime.heldRef);
-                    this.status.set(def.id, { phase: def.runtime.heldRef ? '흡착 중' : command === 'FORWARD' ? '흡착 대기' : '해제', position: 0, error: '', held: !!def.runtime.heldRef });
+                    this.status.set(def.id, { phase: def.runtime.heldRef ? '흡착 중' : def.runtime.vacuumActive ? '흡착 대기' : '해제', position: 0, error: '', held: !!def.runtime.heldRef });
                     continue;
                 }
                 if (def.type === 'FILM_PEEL' && command === 'REVERSE') throw new Error('박리한 필름은 후진으로 재부착할 수 없습니다. 초기화를 사용하세요.');
+                // A short IO pulse selects the motion until another command replaces it.
+                if (command === 'FORWARD' || command === 'REVERSE') def.runtime.motionCommand = command;
+                else delete def.runtime.motionCommand;
                 if (command === 'RELEASE') {
                     if (def.type !== 'FILM_PEEL') throw new Error('파지 해제 명령은 필름 박리 설비에서 사용합니다.');
                     if (def.runtime.position < def.travel) throw new Error('필름을 완전히 박리한 후 파지를 해제하세요.');
@@ -267,6 +283,7 @@ export class EquipmentScene {
                 this.status.set(def.id, { phase: inMotion ? '이동 중' : command === 'STOP' ? '정지' : '완료', position: def.runtime.position, error: '', held });
                 this.writeFeedback(def, def.type === 'FILM_PEEL' ? !def.runtime.released : held);
             } catch (error) {
+                delete def.runtime.motionCommand;
                 def.runtime.position = positionBefore;
                 if (!this.adapter.resolve(def.movingRef) || (def.bodyRef && !this.adapter.resolve(def.bodyRef))) this.release(def);
                 this.status.set(def.id, { phase: '오류', position: def.runtime.position, error: error.message, held: !!def.runtime.heldRef });
@@ -280,7 +297,7 @@ export class EquipmentScene {
         if (def.type === 'FILM_PEEL') feedback.end = def.runtime.position >= def.travel;
         if (def.type === 'GRIPPER' && held) feedback.end = true;
         for (const [address, value] of [[def.feedbackHome, feedback.home], [def.feedbackEnd, feedback.end], [def.feedbackGrip, held]]) {
-            if (address !== null) this.adapter.sensor(address, fault ? false : value);
+            if (address !== null) this.adapter.sensor(address, fault ? false : value, def);
         }
     }
 
@@ -298,8 +315,8 @@ export class EquipmentScene {
     }
 
     apply(def, seconds) {
-        if (def.type === 'OBJECT') return;
         if (def.type === 'VACUUM') { this.followVacuum(def); return; }
+        if (def.type === 'OBJECT') return;
         const moving = this.adapter.resolve(def.movingRef);
         if (!moving) throw new Error('가동부가 삭제되었거나 누락되었습니다.');
         const frame = this.frame(def);
@@ -362,46 +379,44 @@ export class EquipmentScene {
         }
     }
 
+    objectAttachment(def) {
+        const tool = this.adapter.resolve(def.movingRef), robot = tool?.model.userData.attachmentHost;
+        return tool?.model.userData.placement === 'tcp' && robot?.userData.tcpFrame ? { object: tool.object, robot } : null;
+    }
+
     followVacuum(def) {
         for (const entry of def.runtime.heldObjects || []) {
-            const held = this.adapter.resolve(entry.ref), pad = this.adapter.resolve(entry.padRef);
-            if (!held || !pad) { this.release(def); throw new Error('흡착 중인 물체 또는 패드가 없습니다.'); }
-            pad.object.updateWorldMatrix(true, false);
-            this.applyWorld(held.object, pad.object.matrixWorld.clone().multiply(new THREE.Matrix4().fromArray(entry.local)));
+            const held = this.adapter.resolve(entry.ref), source = this.adapter.resolve(entry.anchorRef || def.movingRef);
+            const mount = source && this.contact.atPath(source.model, entry.meshPath);
+            if (!held || !mount) { this.release(def); throw new Error('연결 중인 오브젝트 또는 Tool이 없습니다.'); }
+            mount.updateWorldMatrix(true, false);
+            this.applyWorld(held.object, mount.matrixWorld.clone().multiply(new THREE.Matrix4().fromArray(entry.local)));
             held.object.userData.equipmentOwner = def.id;
             this.adapter.dirty(held.model);
         }
     }
 
     applyVacuum(def, powered) {
-        if (!powered) { this.release(def); return; }
-        const candidates = this.adapter.candidates();
-        const registered = new Set(candidates.map(item => item.ref));
-        if ((def.runtime.heldObjects || []).some(item => !registered.has(item.ref))) this.release(def);
-        this.followVacuum(def);
-        def.runtime.heldObjects ||= [];
-        for (const padRef of equipmentReferences(def)) {
-            const pad = this.adapter.resolve(padRef);
-            if (!pad) { this.release(def); throw new Error('흡착 패드를 찾을 수 없습니다.'); }
-            pad.object.updateWorldMatrix(true, true);
-            for (const candidate of candidates) {
-                let visible = true, owned = false;
-                for (let node = candidate.object; node; node = node.parent) { if (node.visible === false) visible = false; if (node.userData.equipmentOwner || node.userData.attachmentHost) owned = true; }
-                if (!visible || owned || candidate.model.userData.tcpFrame) continue;
-                if (!this.contact.check([pad.object, candidate.object], { allowWarmHitReuse: false })
-                    && !this.contact.isWithinDistance(pad.object, candidate.object, 0.1)) continue;
-                candidate.object.updateWorldMatrix(true, false);
-                const local = pad.object.matrixWorld.clone().invert().multiply(candidate.object.matrixWorld).toArray();
-                // Full models use the existing robot attachment so project saves
-                // retain their attachment; registered parts keep their own parent.
-                let robot = pad.model;
-                while (robot && !robot.userData.tcpFrame) robot = robot.userData.attachmentHost;
-                if (robot && candidate.object === candidate.model && !this.adapter.grab(candidate, robot)) continue;
+        if (!powered || def.type !== 'VACUUM' || def.enabled === false) { this.release(def); return; }
+        const attachment = this.objectAttachment(def);
+        if (!attachment) { this.release(def); throw new Error('로봇에 설치한 Tool에서 진공을 설정하세요.'); }
+        if (!def.runtime.acquisitionDone) {
+            def.runtime.acquisitionDone = true;
+            const candidates = this.adapter.candidates().filter(candidate => {
+                for (let node = candidate.object; node; node = node.parent) if (node.visible === false || node.userData.equipmentOwner || node.userData.attachmentHost) return false;
+                return !candidate.model.userData.tcpFrame;
+            });
+            def.runtime.heldObjects = [];
+            for (const { candidate, source } of this.contact.find(def, candidates, this.adapter.resolve)) {
+                source.mesh.updateWorldMatrix(true, false); candidate.object.updateWorldMatrix(true, false);
+                const local = source.mesh.matrixWorld.clone().invert().multiply(candidate.object.matrixWorld).toArray();
+                if (candidate.object === candidate.model && !this.adapter.grab(candidate, attachment.robot)) continue;
                 candidate.object.userData.equipmentOwner = def.id;
-                def.runtime.heldObjects.push({ ref: candidate.ref, padRef, local });
+                def.runtime.heldObjects.push({ ref: candidate.ref, anchorRef: source.ref, meshPath: source.meshPath, local });
                 this.adapter.dirty(candidate.model);
             }
         }
+        def.runtime.vacuumActive = true;
         def.runtime.heldRef = def.runtime.heldObjects[0]?.ref || '';
         this.followVacuum(def);
     }
@@ -423,7 +438,7 @@ export class EquipmentScene {
         }
         def.runtime.heldRef = ''; def.runtime.heldLocal = null; def.runtime.heldObjects = [];
         delete def.runtime.filmGripOwner; delete def.runtime.filmGripContactPosition;
-        if (def.type === 'VACUUM') this.writeFeedback(def, false);
+        if (def.type === 'OBJECT' || def.type === 'VACUUM') { def.runtime.vacuumActive = false; def.runtime.acquisitionDone = false; this.writeFeedback(def, false); }
     }
 
     applyFilm(def, object, frame, seconds) {
@@ -540,7 +555,7 @@ export class EquipmentScene {
     }
 
     restore(definitions) {
-        this.clear();
+        this.clear(true);
         for (const def of definitions) {
             if (def.type === 'OBJECT') this.captureObjectOrigins(def);
             def.runtime.lastCommand = 'STOP';
@@ -564,6 +579,7 @@ export class EquipmentScene {
             }
             catch (error) { this.status.set(def.id, { phase: '오류', error: error.message, position: def.runtime.position }); }
         }
+        this.contact.prepare(definitions, this.adapter.candidates(), this.adapter.resolve);
         this.suspended = true;
     }
 }

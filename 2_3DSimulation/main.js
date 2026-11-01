@@ -4,6 +4,7 @@
  */
 
 import * as THREE from 'three';
+import { createPositionPointsUi } from './position-points-ui.mjs?v=20261031-9';
 import { normalizeToolLoad, buildToolProgram, buildFrameProgram, combineToolLoads } from './tool-data-core.mjs';
 import { VIEW_PRESET_COUNT } from './view-preset-core.mjs';
 import { renderWithContactAO, disposeContactAO } from './contact-ambient-occlusion.mjs?v=20261030-1';
@@ -30,7 +31,7 @@ import {
     createCoordinateFrame,
     integrateStepMesh
 } from '../3_ToolSelector/mass-properties.mjs';
-import { MeshCollisionSystem } from './collision-system.mjs?v=20261021-robot-body-1';
+import { MeshCollisionSystem } from './collision-system.mjs?v=20261101-broad-phase-1';
 import { isSimulationCollisionPair, shouldReportSimulationCollision } from './collision-policy-core.mjs?v=20261021-robot-body-1';
 import {
     MOTION_PROJECT_SCHEMA_VERSION,
@@ -76,8 +77,9 @@ import {
     createEmptyMotionProgram,
     cloneMotionProgram,
     reorderMotionSteps,
-    normalizeMotionProject
-} from './motion-program-core.mjs?v=20261031-tool-wobj-1';
+    normalizeMotionProject,
+    normalizeRegisteredPositions
+} from './motion-program-core.mjs?v=20261102-s7-native-2';
 import {
     INTERFERENCE_ZONE_COUNT,
     INTERFERENCE_COORDINATE_MIN,
@@ -117,11 +119,12 @@ import {
     getOlpEditableFiles,
     normalizeOlpTextForWindows,
     resolveOlpPoint,
+    refreshOlpProjectDerivedData,
     updateOlpFileText
 } from './olp-project-core.mjs';
-import { createEquipmentApp } from './equipment-app.mjs?v=20261030-io-object-reset-1';
-import { EQUIPMENT_TYPES, EQUIPMENT_IO_TYPES, EQUIPMENT_LABELS, normalizeEquipmentDefinition, equipmentMotionGroups, equipmentReferences, equipmentCommandOptions } from './equipment-core.mjs?v=20261007-object-reset-1';
-import { equipmentObjectRef } from './equipment-scene.mjs?v=20261007-object-reset-1';
+import { createEquipmentApp } from './equipment-app.mjs?v=20261101-vacuum-surface-1';
+import { EQUIPMENT_TYPES, EQUIPMENT_IO_TYPES, EQUIPMENT_LABELS, normalizeEquipmentDefinition, equipmentMotionGroups, equipmentReferences, equipmentCommandOptions } from './equipment-core.mjs?v=20261101-vacuum-surface-1';
+import { equipmentObjectRef } from './equipment-scene.mjs?v=20261101-vacuum-surface-1';
 import { conveyorElapsedSeconds } from './conveyor-core.mjs';
 import { moveConveyorObjects } from './conveyor-scene.mjs';
 import * as WorkspaceRecovery from './workspace-recovery-core.mjs';
@@ -182,7 +185,7 @@ import {
     OlpRuntime,
     clampWord,
     normalizeAddress as normalizeOlpAddress
-} from './olp-runtime.mjs?v=20260924-olp-runtime-r33';
+} from './olp-runtime.mjs?v=20261102-olp-tool-values-1';
 import {
     COLLABORATION_STATE_INTERVAL_MS,
     MAX_COLLABORATION_MESSAGE_BYTES,
@@ -210,7 +213,7 @@ import {
     isSupportedIoFunctionMappingAddress,
     normalizeIoFunctionMapping,
     normalizeIoFunctionMappings
-} from './io-function-mapping-core.mjs?v=20261030-view-slots-10-1';
+} from './io-function-mapping-core.mjs?v=20261101-vacuum-surface-1';
 import {
     TRACE_INTERVALS,
     TRACE_MAX_POINTS,
@@ -1918,7 +1921,7 @@ const MEBIBYTE = 1024 * 1024;
 const MAX_MODEL_IMPORT_SIZE_BYTES = 500 * MEBIBYTE;
 const STEP_IMPORT_CACHE_DB_NAME = 'inorobot-3d-step-cache';
 const STEP_IMPORT_CACHE_STORE_NAME = 'models';
-const STEP_IMPORT_CACHE_VERSION = 4;
+const STEP_IMPORT_CACHE_VERSION = 6;
 // STEP source files compress CAD topology efficiently, while the tessellated
 // mesh cache can be much larger. Evict by actual mesh bytes below.
 const STEP_IMPORT_CACHE_MAX_ENTRIES = 6;
@@ -1990,6 +1993,7 @@ const SNAP_TYPES = Object.freeze({
 });
 const PANEL_RESIZE_EDGE_SIZE = 8;
 const PANEL_MINIMUM_SIZES = Object.freeze({
+    'position-points-panel': { width: 380, height: 300 },
     'model-browser-panel': { width: 260, height: 220 },
         'jog-panel': { width: 250, height: 300 },
         'tcp-profile-panel': { width: 280, height: 360 },
@@ -2433,6 +2437,7 @@ function setupUI() {
     const controllerSettings = readVirtualControllerSettings();
     state.virtualController.controllerKind = controllerSettings.controllerKind;
     state.virtualController.ipAddress = controllerSettings.ipAddresses[controllerSettings.controllerKind];
+    state.virtualController.ipAddresses = { ...controllerSettings.ipAddresses };
     ensureEndMonitoringUi();
     loadViewConfiguration();
 
@@ -2797,7 +2802,7 @@ function getInterferenceZoneTargets(zone) {
 function getInterferenceZoneRobotLabel(robotId) {
     if (robotId === 'all') return uiText('전체 로봇');
     const robot = getArticulatedRobots().find((candidate) => candidate.userData.motionInstanceId === robotId);
-    return robot?.userData.motionDisplayName || robot?.userData.modelName || robotId || uiText('알 수 없음');
+    return robot?.userData.modelTreeName || robot?.userData.motionDisplayName || robot?.userData.modelName || robotId || uiText('알 수 없음');
 }
 
 function isInterferenceZoneInputDisabled(zone) {
@@ -2831,7 +2836,7 @@ function refreshInterferenceZoneDialogRobotOptions() {
         { value: 'all', label: uiText('전체 로봇') },
         ...getArticulatedRobots().map((robot) => ({
             value: robot.userData.motionInstanceId,
-            label: robot.userData.motionDisplayName || robot.userData.modelName || uiText('ROBOT')
+            label: robot.userData.modelTreeName || robot.userData.motionDisplayName || robot.userData.modelName || uiText('ROBOT')
         }))
     ];
     el.interferenceZoneTargetRobot.replaceChildren(...options.map(({ value, label }) => {
@@ -2924,7 +2929,7 @@ function refreshInterferenceZoneCoordinateOptions() {
     el.interferenceZoneCoordinateRobot.replaceChildren(...robots.map((robot) => {
         const option = document.createElement('option');
         option.value = robot.userData.motionInstanceId || '';
-        option.textContent = robot.userData.motionDisplayName || robot.userData.modelName || robot.name;
+        option.textContent = robot.userData.modelTreeName || robot.userData.motionDisplayName || robot.userData.modelName || robot.name;
         return option;
     }));
     if (robots.length) {
@@ -3880,11 +3885,11 @@ function updateTeachingPointDisplay() {
         robot?.userData.activeWorkObjectIndex, robot?.userData.workObjects, robot?.userData.toolHomeQuaternion?.toArray(),
         robot?.userData.externalAxes, robot?.userData.tcpFrame?.position.toArray(), robot?.userData.tcpFrame?.quaternion.toArray(),
         state.equipmentDefinitions.filter(def => def.externalAxis).map(def => [def.id, def.axis, def.pivot, def.runtime.position]),
-        state.olp.enabled ? file : program?.steps]);
+        state.olp.enabled ? file : getSimulationPositionPoints(program)]);
     if (signature !== settings.signature) {
         settings.signature = signature;
         const result = robot && (!state.olp.enabled || file)
-            ? collectTeachingPoints(robot.userData.motionInstanceId, program?.steps, file)
+            ? collectTeachingPoints(robot.userData.motionInstanceId, getSimulationPositionPoints(program), file)
             : { points: [], rejected: [] };
         const points = [];
         for (const point of result.points) {
@@ -4127,7 +4132,7 @@ function updateRobotInterferenceAvoidanceUi() {
         robots.forEach((robot) => {
             const option = document.createElement('option');
             option.value = robot.userData.motionInstanceId;
-            option.textContent = formatRobotPanelName(robot.userData.motionDisplayName);
+            option.textContent = robot.userData.modelTreeName || formatRobotPanelName(robot.userData.motionDisplayName);
             prioritySelect.appendChild(option);
         });
         prioritySelect.value = robots.some((robot) => robot.userData.motionInstanceId === currentValue)
@@ -4151,7 +4156,7 @@ function updateRobotInterferenceAvoidanceUi() {
     }
     if (el.programRobotAvoidanceStatus) {
         el.programRobotAvoidanceStatus.textContent = state.robotInterferenceAvoidance.enabled
-            ? uiFormat('우선: {name}', { name: priorityRobot ? formatRobotPanelName(priorityRobot.userData.motionDisplayName) : uiText('우선 로봇 없음') })
+            ? uiFormat('우선: {name}', { name: priorityRobot ? priorityRobot.userData.modelTreeName || formatRobotPanelName(priorityRobot.userData.motionDisplayName) : uiText('우선 로봇 없음') })
             : '';
     }
 }
@@ -14744,7 +14749,8 @@ function updateLargeModelPerformanceMode() {
 }
 
 function collisionModelLabel(model) {
-    return model?.userData?.motionDisplayName
+    return model?.userData?.modelTreeName
+        || model?.userData?.motionDisplayName
         || model?.userData?.modelName
         || model?.name
         || '3D Model';
@@ -18284,11 +18290,11 @@ function updateTcpSnapUi() {
     const target = state.tcpSnapTarget;
     const robot = target ? getWorkObjectRobotById(target.robotId) : getJogTargetRobot();
     const available = target
-        ? Boolean(robot) && target.robotId === state.workObjectEditor.robotId && target.index === state.workObjectEditor.index && !isMotionActive()
-        : Boolean(robot?.userData?.tcpFrame) && robot.userData.activeTcpProfileIndex !== 0 && !isModelMotionActive(robot);
+        ? Boolean(robot) && target.robotId === state.workObjectEditor.robotId && target.index === state.workObjectEditor.index && !isMotionActive(false)
+        : Boolean(robot?.userData?.tcpFrame) && robot.userData.activeTcpProfileIndex !== 0 && !isModelMotionActive(robot, false);
     if (!available && state.tcpSnapMode) { setTcpSnapMode(false); return; }
     const tool = getJogTargetRobot();
-    const toolAvailable = Boolean(tool?.userData?.tcpFrame) && tool.userData.activeTcpProfileIndex !== 0 && !isModelMotionActive(tool);
+    const toolAvailable = Boolean(tool?.userData?.tcpFrame) && tool.userData.activeTcpProfileIndex !== 0 && !isModelMotionActive(tool, false);
     if (el.btnTcpSnap) {
         el.btnTcpSnap.disabled = !toolAvailable;
         el.btnTcpSnap.classList.toggle('active', state.tcpSnapMode && !target);
@@ -18349,7 +18355,7 @@ function setTcpSnapMode(enabled) {
 }
 
 function toggleTcpSnapMode() {
-    if (isModelMotionActive(getJogTargetRobot())) return;
+    if (isModelMotionActive(getJogTargetRobot(), false)) return;
     if (state.measurement.active) closeMeasurementPanel();
     if (state.placement.active) deactivateModelPlacement();
     if (!getJogTargetRobot()?.userData?.tcpFrame) {
@@ -18834,7 +18840,7 @@ function applyTcpSnapPoint(worldPoint, selectedLabelKey = '스냅') {
     const target = state.tcpSnapTarget;
     if (target) {
         const robot = getWorkObjectRobotById(target.robotId);
-        if (!robot || robot !== getWorkObjectEditorRobot() || target.index !== state.workObjectEditor.index || !isEditableWorkObjectIndex(target.index) || isMotionActive()) return false;
+        if (!robot || robot !== getWorkObjectEditorRobot() || target.index !== state.workObjectEditor.index || !isEditableWorkObjectIndex(target.index) || isMotionActive(false)) return false;
         const base = getRobotControllerBaseFrame(robot);
         base.updateWorldMatrix(true, false);
         const localPoint = base.worldToLocal(worldPoint.clone());
@@ -18845,7 +18851,7 @@ function applyTcpSnapPoint(worldPoint, selectedLabelKey = '스냅') {
     }
     const robot = getJogTargetRobot();
     const flangeFrame = getRobotToolMountFrame(robot);
-    if (!robot?.userData?.tcpFrame || !flangeFrame || isModelMotionActive(robot) || robot.userData.activeTcpProfileIndex === 0) return false;
+    if (!robot?.userData?.tcpFrame || !flangeFrame || isModelMotionActive(robot, false) || robot.userData.activeTcpProfileIndex === 0) return false;
     const localPoint = flangeFrame.worldToLocal(worldPoint.clone());
     ['x', 'y', 'z'].forEach((axis) => {
         const input = el.tcpOffsetInputs[axis];
@@ -19874,7 +19880,7 @@ function getTraceRobotId(robot) {
 }
 
 function getTraceRobotName(robot) {
-    return String(robot?.userData?.motionDisplayName || robot?.userData?.motionModelName || robot?.name || 'Robot');
+    return String(robot?.userData?.modelTreeName || robot?.userData?.motionDisplayName || robot?.userData?.motionModelName || robot?.name || 'Robot');
 }
 
 function getTraceSource(robot) {
@@ -21514,6 +21520,12 @@ function setupEventListeners() {
     state.renderer.domElement.addEventListener('pointerleave', hideSimulationSnapMarker);
     state.renderer.domElement.addEventListener('pointerleave', requestRender);
     state.renderer.domElement.addEventListener('click', handleCadCanvasClick, { capture: true });
+    state.renderer.domElement.addEventListener('click', handleEquipmentVacuumFaceClick, { capture: true });
+    window.addEventListener('keydown', event => {
+        if (event.key !== 'Escape' || !equipmentVacuumPick) return;
+        const pending = equipmentVacuumPick; equipmentVacuumPick = null; if (pending.controls) pending.controls.enabled = pending.controlsEnabled;
+        event.preventDefault(); event.stopImmediatePropagation(); pending.complete(null); requestRender();
+    }, { capture: true });
     canvas.addEventListener('click', (event) => {
         const wasDrag = Boolean(snapPointerDown?.moved);
         snapPointerDown = null;
@@ -21867,6 +21879,7 @@ function setupEventListeners() {
     el.btnCancelZeroPoint?.addEventListener('click', exitZeroPointEditor);
     el.btnCloseZeroPointEditor?.addEventListener('click', exitZeroPointEditor);
 
+    setupPositionPointsPanel();
     document.querySelectorAll('[data-panel-action]').forEach((button) => {
         button.addEventListener('click', () => handlePanelAction(button.dataset.panelAction, button.dataset.panelId));
     });
@@ -22177,6 +22190,17 @@ function setupEventListeners() {
         }
     });
     document.getElementById('io-equipment-settings')?.addEventListener('click', () => equipmentApp.ui.open());
+    document.getElementById('model-object-reset')?.addEventListener('click', () => {
+        const target = getModelContextTarget();
+        closeModelContextMenu();
+        if (!target) return;
+        const ref = equipmentObjectRef(ensureWorkspaceModelId(target.model), target.part ? getImportedModelParts(target.model).indexOf(target.part) : -1);
+        try {
+            equipmentApp.resetObjects(ref);
+        } catch (error) {
+            setStatus(uiText(error.message), '#ef4444');
+        }
+    });
     document.getElementById('model-group-parts')?.addEventListener('click', () => { groupSelectedModelParts(); closeModelContextMenu(); });
     document.getElementById('model-group-motion-settings')?.addEventListener('click', () => {
         const modelGroup = getContextModelGroup();
@@ -22199,7 +22223,7 @@ function setupEventListeners() {
         if (!target) return;
         const object = target.part || target.model;
         const currentName = target.part
-            ? object.userData.modelTreeName || modelTreeDisplayName(object.userData.modelPartName || object.name)
+            ? displayNameForModelPart(object)
             : displayNameForModelTree(target.model);
         const name = window.prompt(uiText('이름 변경'), currentName)?.trim();
         if (!name || name === currentName) return;
@@ -22319,9 +22343,9 @@ function setupEventListeners() {
     document.getElementById('view-window-pin')?.addEventListener('click', toggleViewWindowAlwaysOnTop);
     el.viewWindowHide?.addEventListener('click', hideViewWindow);
     [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.collaborationPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.ioSimulatorPanel, el.programPanel, el.tracePanel, el.measurementPanel, el.shapePanel, el.viewWindow, el.armLoadPanel, el.toolLoadInfoPanel, el.workOriginDialog, el.positionValueDialog].forEach(makePanelDraggable);
-    [el.tcpProfilePanel, el.workObjectPanel].forEach(makePanelDraggable);
+    [el.tcpProfilePanel, el.workObjectPanel, document.getElementById('position-points-panel')].forEach(makePanelDraggable);
     [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.collaborationPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.ioSimulatorPanel, el.programPanel, el.tracePanel, el.measurementPanel, el.shapePanel, el.viewWindow, el.armLoadPanel, el.toolLoadInfoPanel, el.workOriginDialog].forEach(makePanelEdgeResizable);
-    [el.tcpProfilePanel, el.workObjectPanel].forEach(makePanelEdgeResizable);
+    [el.tcpProfilePanel, el.workObjectPanel, document.getElementById('position-points-panel')].forEach(makePanelEdgeResizable);
     renderIoSimulatorPanel();
     makeModelTransformSplitResizable(el.modelBrowserPanel);
     [el.interferenceZoneDialog, el.endMonitoringDialog].forEach(setupInterferenceZoneDialogDragging);
@@ -22335,19 +22359,22 @@ function setupEventListeners() {
         if (state.virtualController.wanted) return;
         state.virtualController.targetRobotId = el.virtualControllerRobot.value || null;
         state.virtualController.samples?.clear();
+        saveVirtualControllerSettings();
         refreshVirtualControllerUi();
     });
     el.virtualControllerSource?.addEventListener('change', () => {
         if (state.virtualController.wanted) return;
         state.virtualController.source = el.virtualControllerSource.value === 'trace' ? 'trace' : 'bridge';
         state.virtualController.samples?.clear();
+        saveVirtualControllerSettings();
         refreshVirtualControllerUi();
     });
     el.virtualControllerKind?.addEventListener('change', () => {
         if (state.virtualController.wanted) return;
         const controller = state.virtualController;
+        controller.ipAddresses ||= { ...readVirtualControllerSettings().ipAddresses, [controller.controllerKind]: controller.ipAddress };
         controller.controllerKind = el.virtualControllerKind.value === 'real' ? 'real' : 'virtual';
-        controller.ipAddress = readVirtualControllerSettings().ipAddresses[controller.controllerKind];
+        controller.ipAddress = controller.ipAddresses[controller.controllerKind];
         saveVirtualControllerSettings(controller);
         refreshVirtualControllerUi();
     });
@@ -22362,7 +22389,14 @@ function setupEventListeners() {
         else void connectVirtualController();
     });
     el.btnVirtualControllerAdd?.addEventListener('click', () => {
-        state.virtualController = createVirtualControllerSession(state.virtualController);
+        const previous = registerVirtualControllerSession(state.virtualController);
+        const virtualIp = getNextVirtualControllerIp();
+        state.virtualController = createVirtualControllerSession({
+            ...previous,
+            ipAddresses: { ...previous.ipAddresses, virtual: virtualIp },
+            ipAddress: previous.controllerKind === 'real' ? previous.ipAddress : virtualIp
+        });
+        saveVirtualControllerSettings();
         refreshVirtualControllerUi();
         el.virtualControllerSource?.focus();
     });
@@ -22376,9 +22410,15 @@ function setupEventListeners() {
         if (action.dataset.virtualControllerAction === 'select') {
             state.virtualController = controller;
             refreshVirtualControllerUi();
+            scheduleMotionProjectSave();
         } else if (action.dataset.virtualControllerAction === 'disconnect') {
             state.virtualController = controller;
             disconnectVirtualController();
+            scheduleMotionProjectSave();
+        } else if (action.dataset.virtualControllerAction === 'connect') {
+            state.virtualController = controller;
+            refreshVirtualControllerUi();
+            void connectVirtualController();
         }
     });
     el.btnVirtualControllerBridgeStart?.addEventListener('click', launchVirtualControllerBridge);
@@ -22572,6 +22612,15 @@ function setupEventListeners() {
     el.workObjectList?.addEventListener('click', (event) => {
         const button = event.target.closest('[data-work-object-index]');
         if (button) selectWorkObject(Number(button.dataset.workObjectIndex));
+    });
+    el.workObjectVisible?.addEventListener('change', () => {
+        const robot = getWorkObjectEditorRobot();
+        const index = resolveWorkObjectIndex(state.workObjectEditor.index);
+        if (!robot || !isEditableWorkObjectIndex(index)) return;
+        ensureRobotWorkObjects(robot)[index].visible = el.workObjectVisible.checked;
+        syncWorkObjectVisuals(robot);
+        requestRender();
+        scheduleMotionProjectSave();
     });
     el.btnApplyWorkObject?.addEventListener('click', applyWorkObjectEditor);
     el.btnResetWorkObject?.addEventListener('click', resetWorkObjectEditor);
@@ -22925,6 +22974,7 @@ function cancelSketchCurrentAction() {
 }
 
 function handleGlobalKeyDown(event) {
+    if (positionPointsUi?.handleKeyDown(event)) return;
     const shortcut = event.ctrlKey || event.metaKey;
     const key = event.key.toLowerCase();
     if (event.key === 'Escape' && state.fullscreenUiMode) {
@@ -23336,8 +23386,7 @@ function applyModelTransparencyVisual(model, part, value) {
             getMeshMaterials(child).forEach((material) => {
                 applyModelTransparencyToMaterial(material, nextTransparency);
             });
-            child.visible = nextTransparency < 100
-                && (state.outlineMode || isModelOutlineSelectionTarget(child.parent, model));
+            child.visible = nextTransparency < 100 && state.outlineMode;
             return;
         }
         if (!child.isMesh
@@ -23937,6 +23986,7 @@ function redoLastAction() {
 
 function getPanelElement(panelId) {
     return {
+        'position-points-panel': document.getElementById('position-points-panel') || state.panelWindows.get(panelId)?.panel,
         'model-browser-panel': el.modelBrowserPanel,
         'jog-panel': el.jogPanel,
         'tcp-profile-panel': el.tcpProfilePanel,
@@ -24154,6 +24204,7 @@ function updatePanelLauncher(panelId) {
     const button = document.querySelector(`[data-panel-toggle="${panelId}"]`);
     if (!panel || !button) return;
     const unavailable = (panelId === 'jog-panel' && !getJogTargetRobot())
+        || (panelId === 'position-points-panel' && getArticulatedRobots().length === 0)
         || (panelId === 'tcp-profile-panel' && getArticulatedRobots().length === 0)
         || (panelId === 'workobject-panel' && getArticulatedRobots().length === 0)
         || (panelId === 'arm-load-panel' && getArticulatedRobots().length === 0)
@@ -24173,6 +24224,7 @@ function togglePanelVisibility(panelId) {
     }
     panel.classList.toggle('panel-user-hidden');
     const isVisible = !panel.classList.contains('panel-user-hidden');
+    if (panelId === 'position-points-panel' && isVisible) positionPointsUi?.refresh();
     if (panel === el.modelBrowserPanel && isVisible && panel.dataset.userResized === 'true') {
         normalizePanelResizeBox(panel, { viewportResize: true });
     }
@@ -24247,7 +24299,9 @@ function popOutPanel(panelId) {
     }
 
     const isOlpProgramPanel = panelId === 'program-panel' && state.olp.enabled;
-    const popupFeatures = panelId === 'trace-panel'
+    const popupFeatures = panelId === 'position-points-panel'
+        ? 'popup=yes,width=920,height=620,resizable=yes'
+        : panelId === 'trace-panel'
         ? 'popup=yes,width=1180,height=760,resizable=yes'
         : isOlpProgramPanel
         ? 'popup=yes,width=400,height=900,resizable=yes'
@@ -24262,6 +24316,17 @@ function popOutPanel(panelId) {
     popup.document.write(`<!doctype html><html><head><meta charset="UTF-8"><title>${getPanelWindowTitle(panelId)}</title></head><body></body></html>`);
     popup.document.close();
     document.querySelectorAll('link[rel="stylesheet"]').forEach((source) => {
+        if (panelId === 'position-points-panel') {
+            // Apply the loaded local styles immediately, as in the detached view window.
+            try {
+                if (source.sheet) {
+                    const style = popup.document.createElement('style');
+                    style.textContent = Array.from(source.sheet.cssRules, rule => rule.cssText).join('\n');
+                    popup.document.head.appendChild(style);
+                    return;
+                }
+            } catch (_) { /* Keep the URL for cross-origin font and icon styles. */ }
+        }
         const link = popup.document.createElement('link');
         link.rel = 'stylesheet';
         link.href = source.href;
@@ -24296,7 +24361,9 @@ function popOutPanel(panelId) {
 }
 
 function getPanelWindowTitle(panelId) {
-    const panelName = panelId === 'equipment-dialog'
+    const panelName = panelId === 'position-points-panel'
+        ? 'P.pts'
+        : panelId === 'equipment-dialog'
         ? uiText('동작 설정')
         : panelId === 'program-panel'
         ? uiText('Program Panel')
@@ -25004,14 +25071,14 @@ function createModelTreePartNode(model, part) {
     checkbox.className = 'model-tree-part-visibility';
     checkbox.checked = part.visible !== false;
     checkbox.dataset.modelPartVisibility = part.userData.modelPartId;
-    checkbox.setAttribute('aria-label', part.userData.modelTreeName || part.userData.modelPartName || 'PART');
+    checkbox.setAttribute('aria-label', displayNameForModelPart(part));
 
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `model-tree-part-button${state.modelSelection.has(part) ? ' active' : ''}`;
     button.modelTreeSelection = { key: part, entries: [[part, model]] };
     button.dataset.modelPartId = part.userData.modelPartId;
-    button.title = `${part.userData.modelTreeName || modelTreeDisplayName(part.userData.modelPartName) || uiText('PART')} ${uiText('선택')}`;
+    button.title = `${displayNameForModelPart(part)} ${uiText('선택')}`;
 
     const icon = document.createElement('span');
     icon.className = 'model-tree-part-icon';
@@ -25019,7 +25086,7 @@ function createModelTreePartNode(model, part) {
 
     const name = document.createElement('span');
     name.className = 'model-tree-part-name';
-    name.textContent = part.userData.modelTreeName || modelTreeDisplayName(part.userData.modelPartName) || uiText('PART');
+    name.textContent = displayNameForModelPart(part);
 
     button.append(icon, name);
     const motion = modelMotionKind(model, part);
@@ -25093,13 +25160,16 @@ function createCadAssemblyTreeNode(model, node) {
     details.append(summary, children); item.append(details); return item;
 }
 
-function createModelTreeNode(model) {
+function createModelTreeNode(model, reusableNodes = null) {
+    const key = `model:${ensureWorkspaceModelId(model)}`;
+    const reused = reusableNodes?.get(key);
+    if (reused) return reused;
     const treeId = ensureModelTreeId(model);
     const meta = getModelTreeMeta(model);
     const modelVisible = isModelTreeVisible(model);
     const hasChildren = modelTreeHasChildren(model);
     const collapsed = hasChildren && isModelTreeNodeCollapsed(model);
-    const item = document.createElement('li');
+    const item = reusableNodes?.existingNodes.get(key) || document.createElement('li');
     item.className = 'model-tree-node';
     item.dataset.treeOrderKey = `model:${ensureWorkspaceModelId(model)}`;
     item.classList.toggle('model-tree-node-hidden', !modelVisible);
@@ -25175,17 +25245,25 @@ function createModelTreeNode(model) {
 
     button.append(icon, name, kind, visibilityIndicator);
     row.appendChild(button);
-    item.appendChild(row);
+    const previousRow = item.querySelector(':scope > .model-tree-node-row');
+    if (previousRow) previousRow.replaceWith(row);
+    else item.appendChild(row);
 
     const children = state.models.filter((candidate) => candidate.userData.attachmentHost === model);
     const parts = shouldDisplayModelTreeParts(model) ? getImportedModelParts(model) : [];
     if (hasChildren) {
-        const childList = document.createElement('ul');
+        const childList = item.querySelector(':scope > .model-tree-children') || document.createElement('ul');
+        const childItems = [];
         childList.className = 'model-tree-children';
         childList.setAttribute('role', 'group');
         childList.hidden = collapsed;
-        children.forEach((child) => childList.appendChild(createModelTreeNode(child)));
-        if (parts.length > 0) {
+        children.forEach((child) => childItems.push(createModelTreeNode(child, reusableNodes)));
+        const previousParts = reusableNodes && item.modelTreeParts;
+        const reuseParts = previousParts?.parts === parts && parts.every((part, index) => (
+            previousParts.visible[index] === part.visible && previousParts.selected[index] === state.modelSelection.has(part)
+        ));
+        if (reuseParts) childItems.push(...previousParts.nodes);
+        else if (parts.length > 0) {
             const grouped = new Set();
             for (const group of model.userData.modelPartGroups || []) {
                 const members = [...new Set(group.parts.flatMap(index => {
@@ -25250,18 +25328,27 @@ function createModelTreeNode(model) {
                 details.append(summary);
                 const list = document.createElement('ul'); list.className = 'model-tree-children'; members.forEach(part => list.append(createModelTreePartNode(model, part))); details.append(list);
                 details.addEventListener('toggle', () => { group.collapsed = !details.open; scheduleMotionProjectSave(); });
-                item.append(details); childList.append(item);
+                item.append(details); childItems.push(item);
             }
             buildCadAssemblyTree(parts.filter(part => !grouped.has(part) && !part.userData.modelPartAggregate))
-                .forEach(node => childList.appendChild(createCadAssemblyTreeNode(model, node)));
+                .forEach(node => childItems.push(createCadAssemblyTreeNode(model, node)));
         }
-        item.appendChild(childList);
-    }
+        item.modelTreeParts = { parts, visible: parts.map(part => part.visible),
+            selected: parts.map(part => state.modelSelection.has(part)), nodes: childItems.slice(children.length) };
+        reconcileModelTreeItems(childList, childItems);
+        if (childList.parentElement !== item) item.appendChild(childList);
+    } else item.querySelector(':scope > .model-tree-children')?.remove();
     return item;
 }
 
 function modelTreeDisplayName(name) {
     return String(name || '').replace(/\.(?:stl|fbx|obj|glb|gltf|stp|step|dxf)(?=\s*(?:#\d+|\(\d+\))?$)/i, '');
+}
+
+function displayNameForModelPart(part) {
+    return part?.userData?.modelTreeName
+        || modelTreeDisplayName(part?.userData?.modelPartName || part?.name)
+        || uiText('PART');
 }
 
 function displayNameForModelTree(model) {
@@ -25332,8 +25419,11 @@ function changeModelGroups(label, change) {
     recordHistory(label, before, captureSceneSnapshot()); scheduleMotionProjectSave();
 }
 
-function createModelTreeModelGroup(group, members) {
-    const item = document.createElement('li'), details = document.createElement('details'), summary = document.createElement('summary');
+function createModelTreeModelGroup(group, members, reusableNodes = null) {
+    const reused = reusableNodes?.get(`folder:${group.treeOrderId}`);
+    if (reused) return reused;
+    const item = reusableNodes?.existingNodes.get(`folder:${group.treeOrderId}`) || document.createElement('li');
+    const details = item.querySelector(':scope > details') || document.createElement('details'), summary = document.createElement('summary');
     item.className = 'model-tree-part-group model-tree-model-group'; item.setAttribute('role', 'treeitem');
     group.treeOrderId ||= createWorkspaceObjectId('tree-group');
     item.dataset.treeOrderKey = `folder:${group.treeOrderId}`;
@@ -25391,9 +25481,22 @@ function createModelTreeModelGroup(group, members) {
             group.modelIds.push(...ids);
         });
     });
-    const children = document.createElement('ul'); children.className = 'model-tree-children'; children.setAttribute('role', 'group');
-    members.forEach(model => children.appendChild(createModelTreeNode(model)));
-    details.append(summary, children); item.append(details); return item;
+    const children = details.querySelector(':scope > .model-tree-children') || document.createElement('ul'); children.className = 'model-tree-children'; children.setAttribute('role', 'group');
+    reconcileModelTreeItems(children, members.map(model => createModelTreeNode(model, reusableNodes)));
+    const previousSummary = details.querySelector(':scope > summary');
+    if (previousSummary) previousSummary.replaceWith(summary);
+    else details.prepend(summary);
+    if (children.parentElement !== details) details.append(children);
+    if (details.parentElement !== item) item.append(details);
+    return item;
+}
+
+function reconcileModelTreeItems(list, items) {
+    const retained = new Set(items);
+    [...list.children].forEach(item => { if (!retained.has(item)) item.remove(); });
+    items.forEach((item, index) => {
+        if (list.children[index] !== item) list.insertBefore(item, list.children[index] || null);
+    });
 }
 
 function normalizeModelTreeOrder(value) {
@@ -25411,16 +25514,22 @@ function configureModelTreeOrdering(list, parentKey = 'root') {
         : new Set();
     items.sort((a, b) => Number(pinnedKeys.has(b.dataset.treeOrderKey)) - Number(pinnedKeys.has(a.dataset.treeOrderKey))
         || (rank.get(a.dataset.treeOrderKey) ?? saved.length) - (rank.get(b.dataset.treeOrderKey) ?? saved.length));
-    items.forEach(item => list.appendChild(item));
+    items.forEach((item, index) => {
+        if (list.children[index] !== item) list.insertBefore(item, list.children[index] || null);
+    });
     for (const item of items) {
         const row = item.querySelector(':scope > .model-tree-node-row, :scope > .model-tree-part-row, :scope > details > summary');
         const key = item.dataset.treeOrderKey;
         if (!row || !key) continue;
+        // Reused model subtrees already have ordering handlers. Resolve their
+        // current list in the handler so rebuilding a parent keeps drag/drop valid.
+        if (row.modelTreeOrderParentKey === parentKey) continue;
+        row.modelTreeOrderParentKey = parentKey;
         row.draggable = true;
         row.addEventListener('dragstart', event => {
             event.stopPropagation();
             state.modelTreeDragParent = parentKey;
-            const keys = item.classList.contains('model-tree-part-group') ? [key] : items
+            const keys = item.classList.contains('model-tree-part-group') ? [key] : [...item.parentElement.children]
                 .filter(sibling => sibling === item || (item.getAttribute('aria-selected') === 'true'
                     && sibling.getAttribute('aria-selected') === 'true'
                     && sibling.className === item.className))
@@ -25454,7 +25563,7 @@ function configureModelTreeOrdering(list, parentKey = 'root') {
             let payload;
             try { payload = JSON.parse(event.dataTransfer.getData('application/x-inorobot-tree-order')); } catch { return; }
             if (payload?.parentKey !== parentKey || !Array.isArray(payload.keys) || payload.keys.includes(key)) return;
-            const current = [...list.children].map(child => child.dataset.treeOrderKey);
+            const current = [...item.parentElement.children].map(child => child.dataset.treeOrderKey);
             const moved = current.filter(candidate => payload.keys.includes(candidate));
             if (!moved.length) return;
             const order = current.filter(candidate => !moved.includes(candidate));
@@ -25472,11 +25581,28 @@ function configureModelTreeOrdering(list, parentKey = 'root') {
     }
 }
 
-function renderModelTree() {
+function renderModelTree({ changedModels = null } = {}) {
     renderJogRobotSelection();
     if (!el.modelTree) return;
     const scrollTop = el.modelTree.scrollTop;
-    el.modelTree.replaceChildren();
+    let reusableNodes = null;
+    if (changedModels) {
+        const changedKeys = new Set();
+        for (const model of changedModels) {
+            for (let root = model; root; root = root.userData?.attachmentHost) {
+                changedKeys.add(`model:${ensureWorkspaceModelId(root)}`);
+            }
+        }
+        for (const group of state.modelGroups) {
+            if (group.modelIds.some(id => changedKeys.has(`model:${id}`))) changedKeys.add(`folder:${group.treeOrderId}`);
+        }
+        reusableNodes = new Map([...el.modelTree.querySelectorAll('.model-tree-node, .model-tree-model-group')]
+            .filter(node => !changedKeys.has(node.dataset.treeOrderKey))
+            .map(node => [node.dataset.treeOrderKey, node]));
+        reusableNodes.existingNodes = new Map([...el.modelTree.querySelectorAll('.model-tree-node, .model-tree-model-group')]
+            .map(node => [node.dataset.treeOrderKey, node]));
+    }
+    if (!reusableNodes) el.modelTree.replaceChildren();
     el.modelTreeCount.textContent = String(state.models.length);
     updatePanelLauncher('measurement-panel');
 
@@ -25496,19 +25622,23 @@ function renderModelTree() {
         const robotOrder = Number(isArticulatedRobotModel(right)) - Number(isArticulatedRobotModel(left));
         return robotOrder || modelOrder.get(left) - modelOrder.get(right);
     });
-    const list = document.createElement('ul');
+    const list = reusableNodes && el.modelTree.querySelector(':scope > .model-tree-list') || document.createElement('ul');
     list.className = 'model-tree-list';
     list.setAttribute('role', 'group');
-    state.modelGroups = normalizeModelGroups(state.modelGroups);
+    if (!reusableNodes) state.modelGroups = normalizeModelGroups(state.modelGroups);
     const grouped = new Set();
+    const items = [];
     for (const group of state.modelGroups) {
         const members = getModelGroupMembers(group);
         members.forEach(model => grouped.add(model));
-        list.appendChild(createModelTreeModelGroup(group, members));
+        items.push(createModelTreeModelGroup(group, members, reusableNodes));
     }
-    topLevelModels.filter(model => !grouped.has(model)).forEach((model) => list.appendChild(createModelTreeNode(model)));
+    topLevelModels.filter(model => !grouped.has(model)).forEach((model) => items.push(createModelTreeNode(model, reusableNodes)));
+    // Keep unchanged CAD subtrees connected; detaching them also forces the
+    // browser to lay out every part again even when their nodes are reused.
+    reconcileModelTreeItems(list, items);
     configureModelTreeOrdering(list);
-    el.modelTree.appendChild(list);
+    if (list.parentElement !== el.modelTree) el.modelTree.appendChild(list);
     el.modelTree.scrollTop = scrollTop;
 }
 
@@ -26485,11 +26615,24 @@ function openModelContextMenu(event, model, part = null) {
     const ref = equipmentObjectRef(ensureWorkspaceModelId(model), part ? getImportedModelParts(model).indexOf(part) : -1);
     const edits = document.getElementById('model-motion-edit-options'); edits.replaceChildren();
     const motions = equipmentApp.ui.findDefinitions(ref);
+    const tests = document.getElementById('model-motion-test-options'); tests.replaceChildren();
+    document.getElementById('model-object-reset').hidden = !motions.some(motion => motion.type === 'OBJECT') && !equipmentApp.isRegistered(model, part);
+    document.querySelector('#model-object-reset span').textContent = uiText('원위치');
     for (const motion of motions) {
         const button = document.createElement('button'); button.type = 'button'; button.setAttribute('role', 'menuitem');
         const icon = document.createElement('i'); icon.className = 'fa-solid fa-pen-to-square';
-        button.append(icon, document.createTextNode(motions.length === 1 ? '동작 편집' : `동작 편집 · ${motion.name}`));
+        button.append(icon, document.createTextNode(motions.length === 1 ? '동작 편집' : `동작 편집 · ${equipmentApp.label(motion)}`));
         button.addEventListener('click', () => { closeModelContextMenu(); equipmentApp.ui.open(ref, motion); }); edits.append(button);
+        const commands = motion.type === 'OBJECT' ? [] : motion.type === 'CONVEYOR' ? [['FORWARD','이송'],['STOP','정지']] : equipmentCommandOptions(motion.type);
+        for (const [command, label] of commands) {
+            const test = document.createElement('button'); test.type = 'button'; test.setAttribute('role', 'menuitem');
+            test.dataset.equipmentTestCommand = command; test.dataset.equipmentId = motion.id;
+            test.textContent = motions.length === 1 ? label : `${equipmentApp.label(motion)} · ${label}`;
+            test.addEventListener('click', () => { closeModelContextMenu();
+                try { if (motion.type === 'CONVEYOR') runConveyorCommand(motion.movingRef, command); else equipmentApp.command(motion.id, command); }
+                catch (error) { setStatus(error.message, '#ef4444'); }
+            }); tests.append(test);
+        }
     }
     const uploaded = Boolean(model.userData.uploaded);
     const colorEditable = uploaded || isPrimitiveShapeModel(model) || isSketchExtrusionModel(model);
@@ -26559,6 +26702,7 @@ function closeModelContextMenu() {
     if (!el.modelContextMenu) return;
     el.modelContextMenu.classList.add('hidden');
     el.modelContextMenu.classList.remove('model-group-menu');
+    document.getElementById('model-object-reset').hidden = true;
     delete el.modelContextMenu.dataset.partGroup;
     delete el.modelContextMenu.dataset.modelGroup;
     delete el.modelContextMenu.dataset.modelTreeId;
@@ -26820,7 +26964,7 @@ function getToolLoadPartSettings(model) {
         const density = Number(saved.densityKgPerMm3);
         return {
             key,
-            name: part?.userData?.modelPartName || part?.name || uiFormat('Part {index}', { index: index + 1 }),
+            name: part === model ? displayNameForModelTree(model) : displayNameForModelPart(part),
             materialKey,
             densityKgPerMm3: Number.isFinite(density) && density > 0 ? density : defaultDensity
         };
@@ -27424,7 +27568,7 @@ function selectSceneModel(model, options = {}) {
     }
     updateModelSelectionOutlines();
     if (model?.userData?.placement === 'arm-load') state.armLoadPanel.selectedModel = model;
-    renderModelTree();
+    renderModelTree({ changedModels: options.treeChangedModels });
     scrollSelectedModelTreeNodeIntoView();
     renderArmLoadPanel();
 
@@ -28792,7 +28936,7 @@ function installSceneModelAsTool(sourceModel, sourcePart, robot, { allowDuringMo
                 sourceVisible: sourcePartWasVisible
             };
             toolModel = cloneClipboardObjectTemplate(sourcePart);
-            const sourceName = sourcePart.userData.modelPartName || sourcePart.name || uiText('PART');
+            const sourceName = displayNameForModelPart(sourcePart);
             toolModel.name = `Tool: ${sourceName}`;
             toolModel.userData.modelName = sourceName;
             toolModel.userData.uploaded = true;
@@ -28894,7 +29038,7 @@ function openToolAttachmentDialog(model, part = null, { allowDuringMotion = fals
     }
 
     state.pendingToolAttachmentChoice = { model, part, allowDuringMotion };
-    const sourceName = part?.userData?.modelPartName || part?.name || displayNameForModelTree(model);
+    const sourceName = part ? displayNameForModelPart(part) : displayNameForModelTree(model);
     if (el.toolAttachmentDialogTitle) el.toolAttachmentDialogTitle.textContent = uiText('Tool 설치 로봇 선택');
     if (el.toolAttachmentDialogDescription) {
         el.toolAttachmentDialogDescription.textContent = uiFormat(
@@ -29075,7 +29219,7 @@ function getGripObjectReferences() {
             getImportedModelParts(model).forEach((part, index) => {
                 references.push({
                     value: createGripObjectPartRef(model, part, index),
-                    label: `${displayNameForModelTree(model)} / ${part.userData.modelPartName || part.name || uiText('PART')}`,
+                    label: `${displayNameForModelTree(model)} / ${displayNameForModelPart(part)}`,
                     model,
                     part
                 });
@@ -29136,7 +29280,7 @@ function captureModelTreeSelection() {
     };
 }
 
-function restoreModelTreeSelection(selection) {
+function restoreModelTreeSelection(selection, treeChangedModels = null) {
     if (!selection) return;
     const model = selection.model && state.models.includes(selection.model)
         ? selection.model
@@ -29147,8 +29291,24 @@ function restoreModelTreeSelection(selection) {
     const selectionChanged = state.selectedModel !== model
         || state.selectedModelPart !== part;
     if (!selectionChanged) return;
-    selectSceneModel(model, { preservePart: Boolean(part) });
+    selectSceneModel(model, { preservePart: Boolean(part), treeChangedModels });
     if (part) setSelectedModelPart(part);
+}
+
+let equipmentPresentationPending = false;
+const equipmentPresentationModels = new Set();
+function scheduleEquipmentPresentationRefresh(...models) {
+    models.filter(Boolean).forEach(model => equipmentPresentationModels.add(model));
+    if (equipmentPresentationPending) return;
+    equipmentPresentationPending = true;
+    requestAnimationFrame(() => {
+        equipmentPresentationPending = false;
+        const changedModels = [...equipmentPresentationModels];
+        equipmentPresentationModels.clear();
+        updateUIStatus({ changedModels });
+        renderMotionProgramPanel();
+        requestRender();
+    });
 }
 
 function attachEquipmentObject(sourceModel, sourcePart = null, robot = getGripObjectRobot(), options = {}) {
@@ -29157,7 +29317,8 @@ function attachEquipmentObject(sourceModel, sourcePart = null, robot = getGripOb
         select = true,
         announce = true,
         allowDuringMotion = false,
-        preserveGripObjectSource = false
+        preserveGripObjectSource = false,
+        deferUi = false
     } = options;
     const selectionBefore = select ? captureModelTreeSelection() : null;
     if ((!allowDuringMotion && isMotionActive()) || !isGripObjectTarget(sourceModel, sourcePart)) return false;
@@ -29214,7 +29375,7 @@ function attachEquipmentObject(sourceModel, sourcePart = null, robot = getGripOb
     try {
         if (sourcePart) {
             model = cloneClipboardObjectTemplate(sourcePart);
-            const sourceName = sourcePart.userData.modelPartName || sourcePart.name || uiText('PART');
+            const sourceName = displayNameForModelPart(sourcePart);
             model.name = `Grip: ${sourceName}`;
             model.userData.modelName = sourceName;
             model.userData.uploaded = true;
@@ -29243,16 +29404,18 @@ function attachEquipmentObject(sourceModel, sourcePart = null, robot = getGripOb
         model.visible = true;
         model.updateMatrixWorld(true);
         if (state.collision.enabled) state.collision.system?.prepare([model]);
-        markSceneCollisionDirty();
+        markSceneCollisionDirty(model);
         invalidateSimulationSnapCandidates();
-        refreshCollisionDebugOverlays();
+        if (state.collision.debugVisible) setCollisionDebugForModel(model, true);
+        const activeRobotChanged = state.activeArticulatedModel !== gripRobot;
         state.activeArticulatedModel = gripRobot;
-        renderJogControls(gripRobot);
-        updateUIStatus();
-        if (select) selectSceneModel(model);
-        renderModelTree();
-        renderMotionProgramPanel();
-        restoreModelTreeSelection(selectionBefore);
+        if (!deferUi || activeRobotChanged) renderJogControls(gripRobot);
+        const changedModels = [model, sourceModel, gripRobot, selectionBefore?.model];
+        if (!deferUi) updateUIStatus({ changedModels });
+        if (select) selectSceneModel(model, { treeChangedModels: changedModels });
+        if (deferUi) scheduleEquipmentPresentationRefresh(...changedModels);
+        else renderMotionProgramPanel();
+        restoreModelTreeSelection(selectionBefore, changedModels);
         if (historyBefore) recordHistory('물건 잡기', historyBefore, captureSceneSnapshot());
         scheduleMotionProjectSave();
         if (announce) setStatus('물건을 잡았습니다.', '#22c55e');
@@ -29282,23 +29445,26 @@ function detachEquipmentObject(model, options = {}) {
         recordHistory: shouldRecordHistory = true,
         select = true,
         announce = true,
-        allowDuringMotion = false
+        allowDuringMotion = false,
+        deferUi = false
     } = options;
     if ((!allowDuringMotion && isMotionActive()) || !isGripObjectModelInUse(model)) return false;
     const selectionBefore = select ? captureModelTreeSelection() : null;
     const historyBefore = shouldRecordHistory && !state.historySuspended ? captureSceneSnapshot() : null;
+    const previousHost = model.userData.attachmentHost;
     state.scene.attach(model);
     delete model.userData.attachmentHost;
     delete model.userData.attachmentFrame;
     model.userData.placement = 'scene';
     model.visible = true;
-    markSceneCollisionDirty();
+    markSceneCollisionDirty(model);
+    if (previousHost) markSceneCollisionDirty(previousHost);
     invalidateSimulationSnapCandidates();
-    refreshCollisionDebugOverlays();
-    if (select) selectSceneModel(model);
-    renderModelTree();
-    renderMotionProgramPanel();
-    restoreModelTreeSelection(selectionBefore);
+    const changedModels = [model, previousHost, selectionBefore?.model];
+    if (select) selectSceneModel(model, { treeChangedModels: changedModels });
+    if (deferUi) scheduleEquipmentPresentationRefresh(...changedModels);
+    else { renderModelTree({ changedModels }); renderMotionProgramPanel(); }
+    restoreModelTreeSelection(selectionBefore, changedModels);
     if (historyBefore) recordHistory('놓기', historyBefore, captureSceneSnapshot());
     scheduleMotionProjectSave();
     if (announce) setStatus('물건을 놓았습니다.', '#22c55e');
@@ -29677,7 +29843,7 @@ function getLargeStepTessellationParameters(fileSizeBytes, qualityKey = 'auto') 
 
 function getStepImportCacheKey(file, parameters, qualityKey = 'auto') {
     return [
-        'step-mesh-v8-component-parts',
+        'step-mesh-v10-merged-face-colors',
         file.name,
         file.size,
         file.lastModified || 0,
@@ -29692,6 +29858,7 @@ function stepMeshCacheBytes(meshes = []) {
         + (mesh?.positions?.byteLength || 0)
         + (mesh?.indices?.byteLength || 0)
         + (mesh?.normals?.byteLength || 0)
+        + (mesh?.colors?.byteLength || 0)
         + (mesh?.materialGroups?.length || 0) * 96, 0);
 }
 
@@ -29794,7 +29961,7 @@ function resetStepImportWorkerSession(session = state.stepImportWorkerSession) {
 function getStepImportWorkerSession() {
     if (state.stepImportWorkerSession) return state.stepImportWorkerSession;
 
-    const workerUrl = new URL('./step-import-worker.js?v=20261030-component-parts-1', import.meta.url);
+    const workerUrl = new URL('./step-import-worker.js?v=20261031-merged-face-colors-2', import.meta.url);
     const worker = new Worker(workerUrl);
     let readySettled = false;
     let resolveReady;
@@ -29871,6 +30038,12 @@ function createStepMeshFromWorker(meshDefinition, index, placement, performanceM
 
     const material = createImportedPlacementMaterial(placement, null, performanceMode);
     material.color.fromArray(meshDefinition.color || [0.75, 0.78, 0.84]);
+    if (meshDefinition.colors instanceof Float32Array) {
+        if (meshDefinition.colors.length !== positions.length || meshDefinition.materialGroups?.length)
+            throw new Error('Invalid merged STEP vertex colors.');
+        geometry.setAttribute('color', new THREE.BufferAttribute(meshDefinition.colors, 3));
+        material.color.setRGB(1, 1, 1); material.vertexColors = true;
+    }
     const materials = [material];
     const materialIndices = new Map([[material.color.toArray().join(','), 0]]);
     let groupEnd = 0;
@@ -30241,8 +30414,7 @@ function ensureModelPartMaterialIsolation(mesh) {
 }
 
 function setModelPartHighlight(part, highlighted) {
-    // Selection is represented by the outline only. Keep the model's original
-    // material and shading intact so the selected part remains readable.
+    // Central selection rendering also handles the surface highlight.
     updateModelSelectionOutlines();
 }
 
@@ -31509,9 +31681,9 @@ function syncActiveTcpFrame(robot, profileOverride = null) {
     tcpFrame.scale.set(1, 1, 1);
     tcpFrame.updateMatrix();
     robot.updateMatrixWorld(true);
-    if (robot.userData.controllerTcpPose) {
-        applyControllerTcpPose(robot, robot.userData.controllerTcpPose);
-    }
+    // A local Tool edit must not move the physical mount using feedback for
+    // the previous Tool. Reconcile it when a fresh controller sample arrives.
+    if (robot.userData.controllerToolFrame) robot.userData.controllerToolFrame.profileDirty = true;
 }
 
 function restoreRobotTcpProfiles(robot, profiles, activeIndex = 0) {
@@ -31758,7 +31930,8 @@ function setTcpProfileStatus(message, type = '') {
 
 function refreshTcpProfileUi(robot = state.activeArticulatedModel) {
     const available = Boolean(robot?.userData.tcpFrame);
-    const locked = !available || isModelMotionActive(robot);
+    if (el.tcpAxesCheckbox) el.tcpAxesCheckbox.disabled = !available;
+    const locked = !available || isModelMotionActive(robot, false);
     const profiles = available ? ensureRobotTcpProfiles(robot) : [];
     const activeIndex = available ? robot.userData.activeTcpProfileIndex : 0;
     const readOnly = locked || activeIndex === 0;
@@ -31800,7 +31973,7 @@ function refreshTcpProfileUi(robot = state.activeArticulatedModel) {
 
 function selectTcpProfile(index) {
     const robot = state.activeArticulatedModel;
-    if (isModelMotionActive(robot) || !robot?.userData.tcpFrame || !Number.isInteger(index)
+    if (isModelMotionActive(robot, false) || !robot?.userData.tcpFrame || !Number.isInteger(index)
         || index < 0 || index >= TCP_PROFILE_COUNT) return;
     ensureRobotTcpProfiles(robot);
     if (robot.userData.activeTcpProfileIndex === index && !robot.userData.tcpLiveProfile) {
@@ -31834,7 +32007,7 @@ function readTcpProfileEditorValues() {
 
 function applyTcpProfileEditor() {
     const robot = state.activeArticulatedModel;
-    if (isModelMotionActive(robot) || !robot?.userData.tcpFrame || robot.userData.activeTcpProfileIndex === 0) return;
+    if (isModelMotionActive(robot, false) || !robot?.userData.tcpFrame || robot.userData.activeTcpProfileIndex === 0) return;
     const values = readTcpProfileEditorValues();
     const load = readToolLoadEditor();
     if (!values || !load) {
@@ -31867,7 +32040,7 @@ function applyTcpProfileEditor() {
 
 function resetActiveTcpProfile() {
     const robot = state.activeArticulatedModel;
-    if (isModelMotionActive(robot) || !robot?.userData.tcpFrame || robot.userData.activeTcpProfileIndex === 0) return;
+    if (isModelMotionActive(robot, false) || !robot?.userData.tcpFrame || robot.userData.activeTcpProfileIndex === 0) return;
     commitAllPendingHistories();
     const before = captureSceneSnapshot();
     delete robot.userData.tcpLiveProfile;
@@ -31904,7 +32077,7 @@ function refreshWorkObjectTargetRobotOptions() {
     el.workObjectTargetRobot.replaceChildren(...robots.map((robot) => {
         const option = document.createElement('option');
         option.value = robot.userData.motionInstanceId || '';
-        option.textContent = robot.userData.motionDisplayName || robot.userData.modelName || robot.name;
+        option.textContent = robot.userData.modelTreeName || robot.userData.motionDisplayName || robot.userData.modelName || robot.name;
         return option;
     }));
     if (robots.length) {
@@ -31982,7 +32155,7 @@ function renderWorkObjectPanel(robot = getWorkObjectEditorRobot()) {
             button.setAttribute('aria-selected', String(workObject.index === activeIndex));
             // Selecting a Wobj only changes the editor target; it does not
             // move the robot. Keep the list selectable even while a controller
-            // session is active, while pose editing remains motion-locked below.
+            // session is active; local program motion still locks pose editing.
             button.disabled = !available;
             button.textContent = `Wobj ${workObject.index}`;
             button.title = workObject.name;
@@ -32018,9 +32191,9 @@ function renderWorkObjectPanel(robot = getWorkObjectEditorRobot()) {
         const input = el.workObjectInputs[key];
         if (input && (ownerChanged || input !== document.activeElement)) input.value = String(Number(value.toFixed(3)));
     });
-    const readOnly = !available || activeIndex === WOBJ_WORLD_INDEX || isMotionActive();
+    const readOnly = !available || activeIndex === WOBJ_WORLD_INDEX || isMotionActive(false);
     if (el.workObjectName) el.workObjectName.disabled = readOnly;
-    if (el.workObjectVisible) el.workObjectVisible.disabled = !available || activeIndex === WOBJ_WORLD_INDEX || isMotionActive();
+    if (el.workObjectVisible) el.workObjectVisible.disabled = !available || activeIndex === WOBJ_WORLD_INDEX;
     Object.values(el.workObjectInputs).forEach((input) => { input.disabled = readOnly; });
     if (el.btnApplyWorkObject) el.btnApplyWorkObject.disabled = readOnly;
     if (el.btnResetWorkObject) el.btnResetWorkObject.disabled = readOnly;
@@ -32054,7 +32227,7 @@ function selectWorkObject(index) {
 function applyWorkObjectEditor() {
     const robot = getWorkObjectEditorRobot();
     const index = resolveWorkObjectIndex(state.workObjectEditor.index);
-    if (!robot || !isEditableWorkObjectIndex(index) || isMotionActive()) return;
+    if (!robot || !isEditableWorkObjectIndex(index) || isMotionActive(false)) return;
     const values = readWorkObjectEditorValues();
     if (!values) {
         setWorkObjectStatus('Wobj 입력값을 확인하세요.', 'error');
@@ -32082,7 +32255,7 @@ function applyWorkObjectEditor() {
 function resetWorkObjectEditor() {
     const robot = getWorkObjectEditorRobot();
     const index = resolveWorkObjectIndex(state.workObjectEditor.index);
-    if (!robot || !isEditableWorkObjectIndex(index) || isMotionActive()) return;
+    if (!robot || !isEditableWorkObjectIndex(index) || isMotionActive(false)) return;
     commitAllPendingHistories();
     const before = captureSceneSnapshot();
     ensureRobotWorkObjects(robot)[index] = createDefaultWorkObject(index);
@@ -32099,7 +32272,7 @@ function resetWorkObjectEditor() {
 function toggleWorkObjectSnap() {
     const robot = getWorkObjectEditorRobot();
     const index = state.workObjectEditor.index;
-    if (!robot || !isEditableWorkObjectIndex(index) || isMotionActive()) return;
+    if (!robot || !isEditableWorkObjectIndex(index) || isMotionActive(false)) return;
     const enabled = state.tcpSnapMode && Boolean(state.tcpSnapTarget);
     setTcpSnapMode(false);
     if (enabled) return;
@@ -32112,7 +32285,7 @@ function toggleWorkObjectSnap() {
 
 function updateTcpProfileLive() {
     const robot = state.activeArticulatedModel;
-    if (isModelMotionActive(robot) || !robot?.userData.tcpFrame || robot.userData.activeTcpProfileIndex === 0) return;
+    if (isModelMotionActive(robot, false) || !robot?.userData.tcpFrame || robot.userData.activeTcpProfileIndex === 0) return;
     const values = readTcpProfileEditorValues();
     if (!values) {
         clearTcpProfileLive(robot);
@@ -34019,7 +34192,7 @@ function sendCollaborationMessage(message) {
 function getCollaborationRobotDescriptors() {
     return getArticulatedRobots().map((robot) => ({
         robotId: robot.userData.motionInstanceId,
-        name: robot.userData.motionDisplayName || robot.userData.modelName || robot.name || 'Robot',
+        name: robot.userData.modelTreeName || robot.userData.motionDisplayName || robot.userData.modelName || robot.name || 'Robot',
         jointCount: robot.userData.joints?.length || 0,
         jointLimits: (robot.userData.joints || []).map((joint) => [joint.definition.min, joint.definition.max])
     }));
@@ -34662,14 +34835,24 @@ function saveVirtualControllerSettings(controller = state.virtualController) {
     const settings = readVirtualControllerSettings();
     settings.controllerKind = controller.controllerKind === 'real' ? 'real' : 'virtual';
     const ipAddress = typeof controller.ipAddress === 'string' ? controller.ipAddress.trim() : '';
-    if (ipAddress) settings.ipAddresses[settings.controllerKind] = ipAddress;
+    controller.ipAddresses ||= { ...settings.ipAddresses };
+    if (ipAddress) {
+        settings.ipAddresses[settings.controllerKind] = ipAddress;
+        controller.ipAddresses[settings.controllerKind] = ipAddress;
+    }
     try {
         localStorage.setItem(VIRTUAL_CONTROLLER_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
     } catch { }
+    registerVirtualControllerSession(controller);
+    scheduleMotionProjectSave();
 }
 
 function createVirtualControllerSession(template = null) {
     const source = template || {};
+    const controllerKind = source.controllerKind === 'real' ? 'real' : 'virtual';
+    const ipAddresses = { ...readVirtualControllerSettings().ipAddresses, ...source.ipAddresses };
+    const ipAddress = source.ipAddress || ipAddresses[controllerKind];
+    ipAddresses[controllerKind] = ipAddress;
     return {
         sessionId: `controller-${++virtualControllerSessionSequence}`,
         core: source.core || null,
@@ -34679,8 +34862,9 @@ function createVirtualControllerSession(template = null) {
         status: 'disconnected',
         statusMessage: '',
         source: source.source === 'trace' ? 'trace' : 'bridge',
-        controllerKind: source.controllerKind === 'real' ? 'real' : 'virtual',
-        ipAddress: source.ipAddress || (source.controllerKind === 'real' ? '192.168.0.1' : '127.0.0.1'),
+        controllerKind,
+        ipAddress,
+        ipAddresses,
         bridgeStopInProgress: false,
         bridgeStartInProgress: false,
         bridgeRunning: Boolean(source.bridgeRunning),
@@ -34715,20 +34899,60 @@ function getVirtualControllerSessions() {
     return state.virtualControllers;
 }
 
+function getNextVirtualControllerIp() {
+    const sessions = getVirtualControllerSessions();
+    const used = new Set(sessions.flatMap(controller => [
+        controller.controllerKind === 'real' ? null : controller.ipAddress,
+        controller.ipAddresses?.virtual
+    ]).filter(Boolean));
+    let index = sessions.length + 1, address;
+    do {
+        address = `127.${(index >>> 16) & 255}.${(index >>> 8) & 255}.${index & 255}`;
+        index++;
+    } while (used.has(address));
+    return address;
+}
+
+function serializeVirtualControllerConnections() {
+    const sessions = getVirtualControllerSessions();
+    return {
+        controllers: sessions.map(controller => ({
+            source: controller.source === 'trace' ? 'trace' : 'bridge',
+            controllerKind: controller.controllerKind === 'real' ? 'real' : 'virtual',
+            ipAddress: controller.ipAddress,
+            ipAddresses: { ...controller.ipAddresses },
+            targetRobotId: controller.targetRobotId || null
+        })),
+        selectedIndex: sessions.indexOf(state.virtualController)
+    };
+}
+
+function restoreVirtualControllerConnections(configuration) {
+    const controllers = Array.isArray(configuration?.controllers) ? configuration.controllers : [];
+    state.virtualControllers = controllers.filter(controller => controller && typeof controller === 'object').map((saved, index) => {
+        const ipAddresses = {
+            virtual: typeof saved.ipAddresses?.virtual === 'string' ? saved.ipAddresses.virtual : `127.0.0.${index + 1}`,
+            real: typeof saved.ipAddresses?.real === 'string' ? saved.ipAddresses.real : '192.168.0.1'
+        };
+        const controller = createVirtualControllerSession({
+            source: saved.source,
+            controllerKind: saved.controllerKind,
+            ipAddress: typeof saved.ipAddress === 'string' ? saved.ipAddress.trim() : '',
+            ipAddresses
+        });
+        controller.targetRobotId = typeof saved.targetRobotId === 'string' ? saved.targetRobotId : null;
+        return controller;
+    });
+    const selectedIndex = Number.isInteger(configuration?.selectedIndex) ? configuration.selectedIndex : 0;
+    state.virtualController = state.virtualControllers[selectedIndex] || state.virtualControllers[0] || state.virtualController;
+    refreshVirtualControllerUi();
+}
+
 function registerVirtualControllerSession(controller) {
     if (!controller.sessionId) controller.sessionId = `controller-${++virtualControllerSessionSequence}`;
     const sessions = getVirtualControllerSessions();
     if (!sessions.includes(controller)) sessions.push(controller);
     return controller;
-}
-
-function removeVirtualControllerSession(controller) {
-    const sessions = getVirtualControllerSessions();
-    const index = sessions.indexOf(controller);
-    if (index >= 0) sessions.splice(index, 1);
-    if (state.virtualController === controller) {
-        state.virtualController = sessions.at(-1) || createVirtualControllerSession(controller);
-    }
 }
 
 function getVirtualControllerTargetRobot(controller = state.virtualController) {
@@ -34811,7 +35035,7 @@ function refreshVirtualControllerRobotOptions(controller = state.virtualControll
     }
 
     const signature = robots
-        .map((robot) => `${robot.userData.motionInstanceId}:${robot.userData.motionDisplayName}`)
+        .map((robot) => `${robot.userData.motionInstanceId}:${robot.userData.modelTreeName || robot.userData.motionDisplayName}`)
         .join('|');
     if (el.virtualControllerRobot.dataset.robotSignature !== signature) {
         el.virtualControllerRobot.replaceChildren();
@@ -34822,7 +35046,7 @@ function refreshVirtualControllerRobotOptions(controller = state.virtualControll
         robots.forEach((robot) => {
             const option = document.createElement('option');
             option.value = robot.userData.motionInstanceId;
-            option.textContent = robot.userData.motionDisplayName;
+            option.textContent = robot.userData.modelTreeName || robot.userData.motionDisplayName;
             option.disabled = claimedRobotIds.has(option.value) && option.value !== controller.targetRobotId;
             el.virtualControllerRobot.appendChild(option);
         });
@@ -34861,16 +35085,19 @@ function refreshVirtualControllerUi() {
             row.className = `virtual-controller-connection-row ${stateClass}${candidate === controller ? ' selected' : ''}`;
             row.dataset.virtualControllerSession = candidate.sessionId;
             const robot = getVirtualControllerTargetRobot(candidate);
-            const label = robot?.userData?.motionDisplayName || candidate.targetRobotId || uiText('로봇 미선택');
+            const label = robot?.userData?.modelTreeName || robot?.userData?.motionDisplayName || candidate.targetRobotId || uiText('로봇 미선택');
             const detail = candidate.controllerKind === 'real'
                 ? `${candidate.ipAddress || '-'} · ${candidate.source === 'bridge' ? 'Bridge' : 'Trace'}`
                 : `${candidate.source === 'bridge' ? 'Bridge' : 'Trace'} · ${uiText('가상 컨트롤러')}`;
+            const connectionAction = candidate.wanted ? 'disconnect' : 'connect';
+            const connectionLabel = uiText(candidate.wanted ? '연결 해제' : '연결');
+            const connectionIcon = candidate.wanted ? 'fa-link-slash' : 'fa-plug';
             row.innerHTML = `
                 <button type="button" class="virtual-controller-connection-select" data-virtual-controller-action="select" data-virtual-controller-session="${candidate.sessionId}">
                     <i class="fa-solid fa-circle virtual-controller-connection-dot"></i>
                     <span class="virtual-controller-connection-copy"><strong></strong><small></small></span>
                 </button>
-                <button type="button" class="virtual-controller-connection-disconnect" data-virtual-controller-action="disconnect" data-virtual-controller-session="${candidate.sessionId}" title="${uiText('연결 해제')}" aria-label="${uiText('연결 해제')}"><i class="fa-solid fa-link-slash"></i></button>`;
+                <button type="button" class="virtual-controller-connection-toggle" data-virtual-controller-action="${connectionAction}" data-virtual-controller-session="${candidate.sessionId}" title="${connectionLabel}" aria-label="${connectionLabel}"><i class="fa-solid ${connectionIcon}"></i></button>`;
             row.querySelector('strong').textContent = label;
             row.querySelector('small').textContent = uiText(candidate.statusMessage || statusLabels[candidate.status] || '연결 안 됨') + ` · ${detail}`;
             return row;
@@ -35016,8 +35243,8 @@ function handleVirtualControllerMessage(raw, controller = state.virtualControlle
     if (!controller.core || !controller.samples) return;
     const parsed = controller.core.parseVirtualControllerMessage(raw, performance.now());
     if (parsed.kind === 'state') {
-        applyVirtualControllerOutputs(parsed.outputs);
-        applyVirtualControllerInputs(parsed.inputs);
+        applyVirtualControllerIo(parsed.outputs, 'OUT', controller);
+        applyVirtualControllerIo(parsed.inputs, 'IN', controller);
         controller.samples.push(parsed);
         controller.lastSampleAt = parsed.receivedAt;
         if (controller.status !== 'streaming') {
@@ -35059,6 +35286,7 @@ function handleVirtualControllerMessage(raw, controller = state.virtualControlle
             controller.socket?.close();
         }
     } else if (parsed.type === 'controllerConnectionLost') {
+        clearVirtualControllerIo(controller);
         const detail = String(message.message || 'Controller feedback interrupted; reconnecting...').trim();
         console.warn('Virtual controller native feedback interrupted.', { detail });
         const collaborationRobot = getVirtualControllerTargetRobot(controller);
@@ -35200,6 +35428,7 @@ function openVirtualControllerSocket(isReconnect = false, controller = state.vir
         controller.pendingInterferenceToolReads.clear();
         if (source.id === 'bridge') controller.bridgeRunning = false;
         controller.samples?.clear();
+        clearVirtualControllerIo(controller);
         controller.lastAppliedSampleId = 0;
         clearVirtualControllerStreamWatchdog(controller);
         const collaborationRobot = getVirtualControllerTargetRobot(controller);
@@ -35229,6 +35458,7 @@ function endVirtualControllerSessionForSourceExit(source, controller = state.vir
     controller.pendingInterferenceReads.clear();
     controller.pendingInterferenceToolReads.clear();
     controller.samples?.clear();
+    clearVirtualControllerIo(controller);
     controller.lastAppliedSampleId = 0;
     controller.sourceConnectedAt = 0;
     controller.lastSampleAt = 0;
@@ -36282,6 +36512,7 @@ function restoreOlpPointViewState(viewState = {}) {
 }
 
 function renderOlpPointTable() {
+    positionPointsUi?.refresh();
     const tableShell = el.olpPointTable;
     if (!tableShell) return;
     const pointFile = getOlpSelectedPointFile();
@@ -36663,6 +36894,41 @@ function getOlpSimulatorExtended(direction) {
         : state.olp.inputExtended;
 }
 
+function readRobotEquipmentIo(robot, directionValue, address) {
+    const direction = normalizeIoSimulatorDirection(directionValue);
+    if (direction === 'IN' && robot?.userData.equipmentIo?.IN?.[address] !== undefined) {
+        return robot.userData.equipmentIo.IN[address] === 1 ? 1 : 0;
+    }
+    const controller = getVirtualControllerForRobot(robot);
+    if (controller) return controller.ioValues?.[direction]?.[address] === 1 ? 1 : 0;
+    return robot?.userData.equipmentIo?.[direction]?.[address] === 1 ? 1 : 0;
+}
+
+function writeRobotEquipmentIo(robot, directionValue, values) {
+    const direction = normalizeIoSimulatorDirection(directionValue);
+    for (const target of robot ? [robot] : getArticulatedRobots()) {
+        target.userData.equipmentIo ||= { IN: {}, OUT: {} };
+        const bank = target.userData.equipmentIo[direction], changed = [];
+        for (const [key, value] of Object.entries(values || {})) {
+            const address = Number(key);
+            if (!Number.isInteger(address) || !isOlpSimulatorBitAddress(address) || value !== 0 && value !== 1) continue;
+            if (bank[address] !== value) changed.push(address);
+            bank[address] = value;
+        }
+        if (changed.length) equipmentApp.signalRobotIo(target, direction, changed);
+    }
+}
+
+function readRobotProgramIoBit(robot, direction, address) {
+    const scoped = robot && state.equipmentDefinitions.some(def => equipmentApp.ioRobot(def) === robot && (
+        direction === 'IN'
+            ? [def.feedbackHome, def.feedbackEnd, def.feedbackGrip].includes(address)
+            : state.ioFunctionMappings.some(mapping => mapping.enabled && mapping.direction === direction
+                && mapping.address === address && mapping.gripObjectRef === 'equipment:' + def.id)
+    ));
+    return scoped ? readRobotEquipmentIo(robot, direction, address) : readOlpSimulatorBit(direction, address);
+}
+
 function readOlpSimulatorBit(directionValue, bitAddress) {
     const direction = normalizeIoSimulatorDirection(directionValue);
     const bit = Number(bitAddress);
@@ -36893,10 +37159,52 @@ function renderIoSimulatorPanel() {
 let conveyorTransportSuspended = false;
 const conveyorResetTransforms = new Map();
 const conveyorManualCommands = new Map();
+let equipmentVacuumPick = null;
+
+function startEquipmentVacuumFacePick(ref, complete) {
+    const source = equipmentApp.resolve(ref);
+    if (!source || source.model.userData.placement !== 'tcp' || !source.model.userData.attachmentHost) throw new Error('로봇에 설치한 Tool에서 진공을 설정하세요.');
+    equipmentVacuumPick = { ref, complete, controls: state.controls, controlsEnabled: state.controls?.enabled };
+    if (state.controls) state.controls.enabled = false;
+    setStatus('진공을 적용할 Tool의 면을 클릭하세요. ESC로 취소합니다.', '#60a5fa'); requestRender();
+}
+
+function acceptEquipmentVacuumFace(selection) {
+    if (!equipmentVacuumPick || !selection?.mesh) return false;
+    const pending = equipmentVacuumPick, source = equipmentApp.resolve(pending.ref);
+    let within = false;
+    for (let node = selection.mesh; node; node = node.parent) if (node === source?.object) within = true;
+    if (!within) { setStatus('선택한 Tool 또는 부품의 면을 클릭하세요.', '#f59e0b'); return false; }
+    const part = findSceneModelPartAncestor(selection.mesh, source.model);
+    const ref = equipmentObjectRef(ensureWorkspaceModelId(source.model), part ? getImportedModelParts(source.model).indexOf(part) : -1);
+    const face = { meshPath: getWorkspaceObjectPath(source.model, selection.mesh), triangleRanges: selection.triangleRanges.map(range => ({ first: range.first, last: range.last })) };
+    equipmentVacuumPick = null; if (pending.controls) pending.controls.enabled = pending.controlsEnabled;
+    selectSceneModelPart(source.model, part); pending.complete({ ref, face });
+    const geometry = equipmentApp.runtime.contact.proxy(selection.mesh, face.triangleRanges).geometry;
+    const material = new THREE.MeshBasicMaterial({ color: '#38bdf8', transparent: true, opacity: 0.4, side: THREE.DoubleSide, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 });
+    const overlay = new THREE.Mesh(geometry, material); overlay.userData.simulationSnapFaceOverlay = true; overlay.userData.collisionDisabled = true;
+    selection.mesh.add(overlay); requestRender();
+    setTimeout(() => { overlay.removeFromParent(); material.dispose(); requestRender(); }, 1500);
+    return true;
+}
+
+function handleEquipmentVacuumFaceClick(event) {
+    if (!equipmentVacuumPick || event.button !== 0 || state.sceneSelectionPointer?.moved) return;
+    event.preventDefault(); event.stopImmediatePropagation();
+    const source = equipmentApp.resolve(equipmentVacuumPick.ref), { camera, domElement } = getSimulationSnapViewport(event);
+    if (!source || !domElement) return;
+    const rect = domElement.getBoundingClientRect(), raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2((event.clientX - rect.left) / rect.width * 2 - 1, 1 - (event.clientY - rect.top) / rect.height * 2);
+    camera.updateMatrixWorld(true); source.object.updateWorldMatrix(true, true); raycaster.setFromCamera(pointer, camera);
+    const hit = raycaster.intersectObjects(equipmentApp.runtime.contact.meshes(source.object), false)[0];
+    if (hit && Number.isInteger(hit.faceIndex)) acceptEquipmentVacuumFace({ mesh: hit.object, triangleRanges: getSimulationSnapFaceTriangleRanges(hit.object, hit.faceIndex).triangleRanges });
+}
+
 const equipmentApp = createEquipmentApp({
     models: () => state.models, definitions: () => state.equipmentDefinitions,
     setDefinitions: definitions => { state.equipmentDefinitions = definitions; },
-    modelId: model => ensureWorkspaceModelId(model), modelLabel: displayNameForModelTree, parts: getImportedModelParts,
+    modelId: model => ensureWorkspaceModelId(model), modelLabel: displayNameForModelTree, partLabel: displayNameForModelPart, parts: getImportedModelParts,
+    objectPath: getWorkspaceObjectPath, objectAtPath: getWorkspaceObjectAtPath, pickVacuumFace: startEquipmentVacuumFacePick,
     selectedReferences: () => [...state.modelSelection].map(([object, model]) => equipmentObjectRef(ensureWorkspaceModelId(model), object === model ? -1 : getImportedModelParts(model).indexOf(object))),
     select(ref, additive = false) {
         const target = equipmentApp.resolve(ref);
@@ -36909,7 +37217,10 @@ const equipmentApp = createEquipmentApp({
     popout: () => popOutPanel('equipment-dialog'),
     hide() { if (state.panelWindows.has('equipment-dialog')) restorePanelFromWindow('equipment-dialog', true, true); },
     read: readOlpSimulatorBit,
-    sensor(address, value) {
+    robotRead: readRobotEquipmentIo,
+    sensor(address, value, def) {
+        const robot = equipmentApp.ioRobot(def);
+        if (robot) writeRobotEquipmentIo(robot, 'IN', { [address]: value ? 1 : 0 });
         if (readOlpSimulatorBit('IN', address) === (value ? 1 : 0)) return;
         writeOlpSimulatorBit('IN', address, value);
         markIoSimulatorDirty('IN', address, 1);
@@ -36923,8 +37234,8 @@ const equipmentApp = createEquipmentApp({
         if (model.userData.tcpFrame) { updateTcpPresentation(model); syncBaseJogGizmoFromRobot(model); }
     },
     isWorkpiece: model => isGripObjectTarget(model) && !model.userData.equipmentFilm,
-    grab: (candidate, robot) => attachEquipmentObject(candidate.model, null, robot, { recordHistory: false, select: false, announce: false, allowDuringMotion: true }),
-    release: candidate => { if (isGripObjectModelInUse(candidate.model)) detachEquipmentObject(candidate.model, { recordHistory: false, select: false, announce: false, allowDuringMotion: true }); },
+    grab: (candidate, robot) => attachEquipmentObject(candidate.model, null, robot, { recordHistory: false, select: false, announce: false, allowDuringMotion: true, deferUi: true }),
+    release: candidate => { if (isGripObjectModelInUse(candidate.model)) detachEquipmentObject(candidate.model, { recordHistory: false, select: false, announce: false, allowDuringMotion: true, deferUi: true }); },
     saveProgress: scheduleMotionProjectSave,
     conveyorControl(command, paused) {
         conveyorTransportSuspended = command === 'start' ? false : command === 'pause' ? paused : true;
@@ -36938,9 +37249,10 @@ const equipmentApp = createEquipmentApp({
     },
     snapshot: captureSceneSnapshot,
     history: (label, before) => recordHistory(label, before, captureSceneSnapshot()),
-    changed() { requestRender(); renderModelTree(); renderIoFunctionMappingEditorTargets(); renderIoFunctionMappingList(); scheduleMotionProjectSave(); },
+    changed({ runtimeOnly = false } = {}) { requestRender(); if (!runtimeOnly) { renderModelTree(); renderIoFunctionMappingEditorTargets(); renderIoFunctionMappingList(); } scheduleMotionProjectSave(); },
     bindings: getEquipmentIoBindings,
     updateBindings: setEquipmentIoBindings,
+    mappings: () => state.ioFunctionMappings,
     removeBindings(id) { state.ioFunctionMappings = state.ioFunctionMappings.filter(mapping => { if (mapping.gripObjectRef !== 'equipment:' + id) return true; state.ioFunctionMappingRuntimeValues.delete(mapping.id); return false; }); },
     saveConveyor: saveConveyorMotion,
     conveyorDefinition: getConveyorMotionDefinition,
@@ -36971,10 +37283,10 @@ function setEquipmentIoBindings(def, bindings) {
     state.ioFunctionMappings = state.ioFunctionMappings.filter(mapping => !existing.includes(mapping));
     existing.forEach(mapping => state.ioFunctionMappingRuntimeValues.delete(mapping.id));
     for (const [command, address] of [['FORWARD', bindings.forward], ['REVERSE', bindings.reverse]]) {
-        if (def.type === 'OBJECT' || address === null && def.type !== 'CONVEYOR') continue;
+        if (address === null && def.type !== 'CONVEYOR') continue;
         if (def.type === 'CONVEYOR' && command === 'REVERSE') continue;
         const previous = existing.find(mapping => mapping.equipmentCommand === command || def.type === 'CONVEYOR');
-        const mapping = normalizeIoFunctionMapping({ ...previous, id: previous?.id || createIoFunctionMappingId(), direction: bindings.direction, address: address ?? 512, triggerValue: bindings.triggerValue, enabled: address !== null, conveyorManualOnly: def.type === 'CONVEYOR' && address === null, action: def.type, gripObjectRef: target, equipmentCommand: command, conveyorAxis: def.axis, conveyorSpeed: def.speed });
+        const mapping = normalizeIoFunctionMapping({ ...previous, id: previous?.id || createIoFunctionMappingId(), direction: bindings.direction, address: address ?? 512, triggerValue: bindings.triggerValue, enabled: address !== null, conveyorManualOnly: def.type === 'CONVEYOR' && address === null, action: def.type, gripObjectRef: target, equipmentCommand: command, conveyorAxis: def.axis, conveyorSpeed: def.speed, conveyorName: def.name, conveyorCustomName: def.customName });
         state.ioFunctionMappings.push(mapping); conveyorManualCommands.delete(mapping.id); state.ioFunctionMappingRuntimeValues.set(mapping.id, readOlpSimulatorBit(mapping.direction, mapping.address)); activateIoFunctionMapping(mapping);
     }
     renderIoFunctionMappingList(); scheduleMotionProjectSave(); requestRender();
@@ -36987,7 +37299,7 @@ function getConveyorMotionDefinition(ref) {
     const target = conveyorTargetFromRef(ref);
     const mapping = state.ioFunctionMappings.find(item => item.action === 'CONVEYOR' && item.gripObjectRef === target);
     if (!mapping) return null;
-    return { id: target, type: 'CONVEYOR', name: '컨베이어 이송 / ' + (equipmentApp.references().find(item => item.value === ref)?.modelLabel || '모델'), movingRef: ref, movingRefs: [ref], axis: mapping.conveyorAxis, speed: mapping.conveyorSpeed };
+    return { id: target, type: 'CONVEYOR', customName: mapping.conveyorCustomName, name: mapping.conveyorCustomName ? mapping.conveyorName : '컨베이어 이송 / ' + (equipmentApp.references().find(item => item.value === ref)?.label || '모델'), movingRef: ref, movingRefs: [ref], axis: mapping.conveyorAxis, speed: mapping.conveyorSpeed };
 }
 function saveConveyorMotion(raw, bindings) {
     if (raw.movingRefs.length !== 1) throw new Error('컨베이어의 벨트 모델 또는 벨트 부품 하나를 선택하세요.');
@@ -37045,7 +37357,7 @@ function getIoFunctionMappingTargetReferences(action) {
     if (EQUIPMENT_TYPES.includes(action)) return equipmentApp.targets(action);
     if (action === IO_FUNCTION_MAPPING_ACTIONS.CONVEYOR) return state.models
         .filter(model => !model.userData.tcpFrame && !model.userData.attachmentHost && model.userData.placement === 'scene')
-        .flatMap(model => { const id = ensureWorkspaceModelId(model), label = model.userData.modelName || model.name; return [{ value: 'conveyor:' + id, label }, ...getImportedModelParts(model).map((part, index) => ({ value: 'conveyor:' + id + '/' + index, label: label + ' / ' + (part.userData.modelPartName || part.name || index + 1) }))]; });
+        .flatMap(model => { const id = ensureWorkspaceModelId(model), label = displayNameForModelTree(model); return [{ value: 'conveyor:' + id, label }, ...getImportedModelParts(model).map((part, index) => ({ value: 'conveyor:' + id + '/' + index, label: label + ' / ' + displayNameForModelPart(part) }))]; });
     if (action === IO_FUNCTION_MAPPING_ACTIONS.VIEW) return [];
     return [];
 }
@@ -37299,6 +37611,8 @@ function processIoFunctionMappings(change = {}) {
     requestRender();
     state.ioFunctionMappings.forEach((mapping) => {
         if (!isIoFunctionMappingAffected(mapping, change)) return;
+        const def = state.equipmentDefinitions.find(item => mapping.gripObjectRef === 'equipment:' + item.id);
+        if (equipmentApp.ioRobot(def)) return; // Tool mappings are notified by their own robot's bank.
         const current = readOlpSimulatorBit(mapping.direction, mapping.address);
         const previous = state.ioFunctionMappingRuntimeValues.get(mapping.id);
         state.ioFunctionMappingRuntimeValues.set(mapping.id, current);
@@ -37587,8 +37901,9 @@ function readOlpAddress(address, runtime = null) {
     const parsed = normalizeOlpAddress(address, project?.labels || {});
     if (!parsed) return 0;
     const key = canonicalOlpAddress(parsed);
+    const robot = runtime ? getOlpRuntimeRobot(runtime) : null;
     if (parsed.prefix === 'IN' || parsed.prefix === 'OUT') {
-        return readOlpSimulatorBit(parsed.prefix, parsed.index);
+        return readRobotProgramIoBit(robot, parsed.prefix, parsed.index);
     }
     if (['INB', 'OUTB', 'INW', 'OUTW'].includes(parsed.prefix)) {
         const direction = parsed.prefix.startsWith('OUT')
@@ -37597,7 +37912,7 @@ function readOlpAddress(address, runtime = null) {
         const bitStart = getOlpGroupedBitStart(parsed);
         const bitWidth = parsed.prefix.endsWith('B') ? 8 : 16;
         if (isOlpSimulatorBitAddress(bitStart)) {
-            return readIoSimulatorEntry({ bitStart, bitWidth }, (bit) => readOlpSimulatorBit(direction, bit));
+            return readIoSimulatorEntry({ bitStart, bitWidth }, (bit) => readRobotProgramIoBit(robot, direction, bit));
         }
         return getOlpSimulatorExtended(direction)?.get(key) || 0;
     }
@@ -37608,37 +37923,46 @@ function readOlpRawInputAddress(address, runtime = null) {
     const project = runtime?.project || getOlpProject();
     const parsed = normalizeOlpAddress(address, project?.labels || {});
     if (!parsed || !['IN', 'INB', 'INW'].includes(parsed.prefix)) return 0;
-    if (parsed.prefix === 'IN') return readOlpSimulatorBit(IO_SIMULATOR_DIRECTIONS.INPUT, parsed.index);
+    const robot = runtime ? getOlpRuntimeRobot(runtime) : null;
+    if (parsed.prefix === 'IN') return readRobotProgramIoBit(robot, IO_SIMULATOR_DIRECTIONS.INPUT, parsed.index);
     const bitStart = getOlpGroupedBitStart(parsed);
     const bitWidth = parsed.prefix === 'INB' ? 8 : 16;
     return isOlpSimulatorBitAddress(bitStart)
-        ? readIoSimulatorEntry({ bitStart, bitWidth }, (bit) => readOlpSimulatorBit(IO_SIMULATOR_DIRECTIONS.INPUT, bit))
+        ? readIoSimulatorEntry({ bitStart, bitWidth }, (bit) => readRobotProgramIoBit(robot, IO_SIMULATOR_DIRECTIONS.INPUT, bit))
         : (state.olp.inputExtended.get(canonicalOlpAddress(parsed)) || 0);
 }
 
-function isControllerOutputLive(bitStart, bitWidth) {
+function isControllerOutputLive(bitStart, bitWidth, robot = null) {
     return getVirtualControllerSessions().some((controller) => {
+        if (robot && controller.targetRobotId !== robot.userData.motionInstanceId) return false;
         if (!controller.wanted || controller.status !== 'streaming') return false;
         const outputs = controller.samples?.getLatest()?.outputs || {};
         return Object.keys(outputs).some((address) => Number(address) >= bitStart && Number(address) < bitStart + bitWidth);
     });
 }
 
-function writeOlpAddress(address, value, runtime = null, projectOverride = null) {
+function writeOlpAddress(address, value, runtime = null, projectOverride = null, robotOverride = null) {
     const project = projectOverride || runtime?.project || getOlpProject();
     const parsed = normalizeOlpAddress(address, project?.labels || {});
     if (!parsed || !['OUT', 'OUTB', 'OUTW'].includes(parsed.prefix)) return;
     const direction = IO_SIMULATOR_DIRECTIONS.OUTPUT;
     const bitStart = parsed.prefix === 'OUT' ? parsed.index : getOlpGroupedBitStart(parsed);
     const bitWidth = parsed.prefix === 'OUT' ? 1 : (parsed.prefix === 'OUTB' ? 8 : 16);
-    if (isControllerOutputLive(bitStart, bitWidth)) return;
+    const robot = robotOverride || (runtime ? getOlpRuntimeRobot(runtime) : null)
+        || (projectOverride ? getArticulatedRobots().find(candidate => getOlpProject(candidate) === projectOverride) : null);
+    if (isControllerOutputLive(bitStart, bitWidth, robot)) return;
     const supportedGroupedAddress = isOlpSimulatorBitAddress(bitStart);
     const numeric = parsed.prefix === 'OUT'
         ? (Number(value) ? 1 : 0)
         : (supportedGroupedAddress
             ? Math.max(0, Math.min((2 ** bitWidth) - 1, Math.trunc(Number(value) || 0)))
             : clampWord(value));
-    const previous = readOlpAddress(parsed, runtime || { project });
+    const previous = readOlpAddress(parsed, robot ? runtime || { robot, project } : null);
+    const bits = Object.fromEntries(Array.from({ length: bitWidth }, (_, index) => [bitStart + index, (numeric >>> index) & 1]));
+    writeRobotEquipmentIo(robot, direction, bits);
+    // Another robot's live controller must not prevent this robot's Tool IO,
+    // while the shared monitor keeps showing controller-owned output values.
+    if (robot && isControllerOutputLive(bitStart, bitWidth)) return;
     const key = canonicalOlpAddress(parsed);
     if (parsed.prefix === 'OUT') {
         writeOlpSimulatorBit(direction, parsed.index, numeric);
@@ -37663,9 +37987,132 @@ function writeOlpAddress(address, value, runtime = null, projectOverride = null)
     sendOlpOutputSnapshot();
 }
 
+// Main.js integration helper. Uses existing THREE, state, normalizeToolLoad,
+// ensureRobotTcpProfiles, normalizeArmLoadProperties and getArmLoadJointIndex.
+// All CoG values are mm; mass is kg; centered inertia is kg*m^2.
+function getRobotRapidMoveOptions(robot, motionOptions = {}) {
+    const data = robot?.userData || {};
+    const manifest = data.manifest || {};
+    const definition = data.motionModelDefinition || {};
+    const profiles = ensureRobotTcpProfiles(robot);
+    const profileIndex = Number(data.activeTcpProfileIndex) || 0;
+    // Tool 0 is the controller's zero-load profile even if a live editor exists.
+    const profile = profileIndex === 0
+        ? profiles[0]
+        : data.tcpLiveProfile || profiles[profileIndex];
+    const loadDiagnostics = [];
+    const diagonalTensor = (inertia) => [
+        [inertia[0], 0, 0],
+        [0, inertia[1], 0],
+        [0, 0, inertia[2]]
+    ];
+    const armLoads = [];
+    robot?.updateWorldMatrix(true, true);
+    for (const model of state.models) {
+        if (model?.userData?.placement !== 'arm-load'
+            || model.userData.attachmentHost !== robot) continue;
+        const properties = normalizeArmLoadProperties(model.userData.armLoadProperties);
+        if (!(Number.isFinite(properties.mass) && properties.mass > 0)) continue;
+        const linkIndex = getArmLoadJointIndex(model);
+        const frame = data.joints?.[linkIndex]?.group;
+        if (!frame) {
+            loadDiagnostics.push(`arm-load-missing-link:${linkIndex}`);
+            continue;
+        }
+        const label = model.userData.modelName || model.name || `J${linkIndex + 1}`;
+        const propertyNumber = (key) => {
+            const value = properties[key];
+            if (!Number.isFinite(value)) {
+                loadDiagnostics.push(`arm-load-missing-${key}:${label}`);
+                return 0;
+            }
+            return value;
+        };
+        frame.updateWorldMatrix(true, true);
+        model.updateWorldMatrix(true, false);
+        const rotation = model.getWorldQuaternion(new THREE.Quaternion()).premultiply(
+            frame.getWorldQuaternion(new THREE.Quaternion()).invert()
+        );
+        // Geometry calculation already includes model.scale. Rotating once and
+        // adding the model origin includes the accessory mount offset once.
+        const center = new THREE.Vector3(
+            propertyNumber('cogX'), propertyNumber('cogY'), propertyNumber('cogZ')
+        ).applyQuaternion(rotation).add(frame.worldToLocal(
+            model.getWorldPosition(new THREE.Vector3())
+        ));
+        const tensor = diagonalTensor([
+            Math.max(0, propertyNumber('ixx')),
+            Math.max(0, propertyNumber('iyy')),
+            Math.max(0, propertyNumber('izz'))
+        ]);
+        const matrix = new THREE.Matrix3().setFromMatrix4(
+            new THREE.Matrix4().makeRotationFromQuaternion(rotation)
+        ).elements;
+        const inertia = [0, 1, 2].map((axis) => {
+            let value = 0;
+            for (let a = 0; a < 3; a++) {
+                for (let b = 0; b < 3; b++) {
+                    value += matrix[a * 3 + axis] * tensor[a][b] * matrix[b * 3 + axis];
+                }
+            }
+            return Math.max(0, value);
+        });
+        armLoads.push({ linkIndex, mass: properties.mass, cog: center.toArray(), inertia });
+    }
+    const options = {
+        ...(manifest.rapidMove || {}),
+        structure: manifest.structure,
+        robotType: manifest.robotType,
+        modelName: data.motionModelName || definition.name || manifest.name || data.robotName || '',
+        modelFolder: data.motionModelFolder || definition.folder || '',
+        toolLoad: normalizeToolLoad(profile?.load),
+        armLoads,
+        ...motionOptions,
+        enabled: typeof motionOptions.rapidMove?.ptp === 'boolean'
+            ? motionOptions.rapidMove.ptp : manifest.rapidMove?.enabled === true,
+        accelerationPercent: motionOptions.accelerationPercent ?? motionOptions.acceleration,
+        decelerationPercent: motionOptions.decelerationPercent ?? motionOptions.deceleration,
+        jerkPercent: motionOptions.jerkPercent ?? motionOptions.accelerationRamp?.[0],
+        stopJerkPercent: motionOptions.stopJerkPercent ?? motionOptions.accelerationRamp?.[1],
+        loadDiagnostics: [...loadDiagnostics, ...(motionOptions.loadDiagnostics || [])]
+    };
+    // Native AsmLoadMassWithMat adds the selected Tool translation to GripCog.
+    // That observed path does not rotate GripCog; do not rotate it here again.
+    // The dynamics estimator receives the resulting physical-flange CoG.
+    // Do not infer a gripped object's mass from the default geometry material.
+    const gripLoad = (load) => {
+        if (load != null && load !== 0 && typeof load !== 'object') {
+            options.loadDiagnostics.push('unresolved-grip-load');
+        }
+        return normalizeToolLoad(load && typeof load === 'object' ? {
+            mass: load.mass ?? load.Mass,
+            cog: load.cog ?? load.Cog,
+            inertia: load.inertia ?? load.Inertia
+        } : null);
+    };
+    if (Object.prototype.hasOwnProperty.call(motionOptions, 'gripLoad')) {
+        options.gripLoad = gripLoad(motionOptions.gripLoad);
+    } else if (Array.isArray(motionOptions.gripLoads)) {
+        options.gripLoad = combineToolLoads(motionOptions.gripLoads.map((load) => {
+            const normalized = gripLoad(load);
+            return { ...normalized, inertia: diagonalTensor(normalized.inertia) };
+        }));
+    }
+    if (options.gripLoad) {
+        const translation = profile?.position?.isVector3
+            ? profile.position.toArray()
+            : Array.isArray(profile?.position) ? profile.position : [0, 0, 0];
+        options.gripLoad.cog = options.gripLoad.cog.map((value, axis) => (
+            value + (Number(translation[axis]) || 0)
+        ));
+    }
+    return options;
+}
+
+
 async function animateOlpJointMove(robot, targetAngles, speed, {
     motion = 'MOVJ', startPose = null, targetPose = null, speedProvider = null,
-    accelerationScale = 1, zone = null, shouldStop = null, onProgress = null, runtime = null
+    accelerationScale = 1, zone = null, shouldStop = null, onProgress = null, runtime = null, motionOptions = {}
 } = {}) {
     const starts = robot.userData.joints.map((joint) => joint.angle);
     const targets = robot.userData.joints.map((joint, index) => Number(targetAngles[index] ?? starts[index]));
@@ -37703,11 +38150,7 @@ async function animateOlpJointMove(robot, targetAngles, speed, {
             targets,
             robot.userData.joints,
             speedProvider?.() ?? speed,
-            {
-                ...(robot.userData.manifest?.rapidMove || {}),
-                structure: robot.userData.manifest?.structure,
-                robotType: robot.userData.manifest?.robotType
-            }
+            getRobotRapidMoveOptions(robot, motionOptions)
         )
         : null;
     const startAt = performance.now();
@@ -37720,13 +38163,16 @@ async function animateOlpJointMove(robot, targetAngles, speed, {
             return { interrupted: true, progress: distanceProgress };
         }
         const now = performance.now();
-        const durationMilliseconds = getDuration();
+        const durationMilliseconds = rapidMove?.durationSeconds
+            ? rapidMove.durationSeconds * 1000 : getDuration();
         const overrideScale = normalizeProgramSpeedOverride(state.programSpeedOverride) / 100;
         const elapsedMilliseconds = Math.max(0, now - previousAt) * overrideScale;
-        const deltaSeconds = Math.max(0, Math.min(
-            RAPID_MOVE_DEFAULTS.maxStepSeconds,
-            elapsedMilliseconds / 1000 / overrideScale
-        )) * overrideScale;
+        const deltaSeconds = rapidMove?.planner === 's7-rapid-dynamics'
+            ? elapsedMilliseconds / 1000
+            : Math.max(0, Math.min(
+                RAPID_MOVE_DEFAULTS.maxStepSeconds,
+                elapsedMilliseconds / 1000 / overrideScale
+            )) * overrideScale;
         previousAt = now;
         let progress;
         if (rapidMove?.enabled) {
@@ -37761,7 +38207,12 @@ async function animateOlpJointMove(robot, targetAngles, speed, {
             distance: pathDistance
         });
         if (progress >= 1) break;
-        await new Promise((resolve) => window.setTimeout(resolve, 16));
+        const waitMilliseconds = rapidMove?.planner === 's7-rapid-dynamics'
+            ? Math.min(16, Math.max(0,
+                (rapidMove.durationSeconds - rapidMove.elapsedSeconds) * 1000 / overrideScale
+                - (performance.now() - now)))
+            : 16;
+        await new Promise((resolve) => window.setTimeout(resolve, waitMilliseconds));
     }
     captureCurrentTcpTarget(robot);
     return { interrupted: false, progress: 1 };
@@ -37965,7 +38416,7 @@ async function moveOlpTarget(robot, motion, point, speed, runtime = null, option
     const accelerationScale = getOlpAccelerationScale(options);
     if (point.kind === 'jointPoint') {
         return animateOlpJointMove(robot, point.values, speed, {
-            motion: 'MOVJ', speedProvider, accelerationScale, zone: options.zone, runtime, ...callbacks
+            motion: 'MOVJ', speedProvider, accelerationScale, zone: options.zone, runtime, motionOptions: options, ...callbacks
         });
     }
     const target = buildOlpCartesianTarget(robot, point.values, options);
@@ -38002,6 +38453,7 @@ async function moveOlpTarget(robot, motion, point, speed, runtime = null, option
         accelerationScale,
         zone: options.zone,
         runtime,
+        motionOptions: options,
         ...callbacks
     });
 }
@@ -38201,16 +38653,33 @@ async function tryOlpZoneBlend(robot, motion, point, speed, project, runtime, op
     }
 }
 
-function applyOlpTcpProfile(robot, options = {}) {
-    if (options.tool === undefined || options.tool === null || options.tool === '') return;
-    const tool = Number(options.tool);
+function applyOlpTcpProfile(robot, options = {}, runtime = null) {
+    const specified = options.tool !== undefined && options.tool !== null && options.tool !== '';
+    const tool = specified ? Number(options.tool) : Number(robot?.userData?.activeTcpProfileIndex) || 0;
+    const overrides = tool === 0 ? null : runtime?.getToolOverrides?.(tool);
+    if (!specified && !overrides) return;
     if (!Number.isInteger(tool) || tool < 0 || tool >= TCP_PROFILE_COUNT) {
         throw new Error('Tool index must be 0 to ' + (TCP_PROFILE_COUNT - 1) + '.');
     }
     if (!robot?.userData?.tcpFrame) throw new Error('TCP frame is unavailable for the selected robot.');
-    ensureRobotTcpProfiles(robot);
+    const profiles = ensureRobotTcpProfiles(robot);
     delete robot.userData.tcpLiveProfile;
     robot.userData.activeTcpProfileIndex = tool;
+    if (overrides) {
+        const profile = normalizeTcpProfile(profiles[tool]);
+        profile.position.fromArray(overrides.frame.position.map((value, axis) => value ?? profile.position.getComponent(axis)));
+        const rotation = getTcpProfileRotationDegrees(profile);
+        const angles = [rotation.rx, rotation.ry, rotation.rz].map((value, axis) => (
+            THREE.MathUtils.degToRad(overrides.frame.rotation[axis] ?? value)
+        ));
+        profile.quaternion.setFromEuler(new THREE.Euler(...angles, 'ZYX')).normalize();
+        profile.load = normalizeToolLoad({
+            mass: overrides.load.mass ?? profile.load.mass,
+            cog: overrides.load.cog.map((value, axis) => value ?? profile.load.cog[axis]),
+            inertia: overrides.load.inertia.map((value, axis) => value ?? profile.load.inertia[axis])
+        });
+        robot.userData.tcpLiveProfile = profile;
+    }
     syncActiveTcpFrame(robot);
     captureCurrentTcpTarget(robot);
     if (robot === state.activeArticulatedModel) refreshTcpProfileUi(robot);
@@ -38219,7 +38688,7 @@ function applyOlpTcpProfile(robot, options = {}) {
 async function runOlpMove(motion, pointExpression, speed, project, runtime = null, options = {}) {
     const robot = getOlpRuntimeRobot(runtime);
     if (!robot) throw new Error('Select one robot before running OLP.');
-    applyOlpTcpProfile(robot, options);
+    applyOlpTcpProfile(robot, options, runtime);
     if (motion === 'MOVC') {
         const arcTargets = options.arcTargets || [];
         const middle = arcTargets[1];
@@ -38273,7 +38742,7 @@ async function runOlpJump(motion, pointExpression, speed, project, runtime = nul
     const robot = getOlpRuntimeRobot(runtime);
     if (!robot) throw new Error('Select one robot before running OLP.');
     if (robot.userData.manifest?.robotType !== 'scara') throw new Error(`${motion} is available only for SCARA robots.`);
-    applyOlpTcpProfile(robot, options);
+    applyOlpTcpProfile(robot, options, runtime);
     const point = getOlpMotionTarget(project, pointExpression, runtime, options);
     if (!point || point.kind === 'jointPoint') throw new Error(`${motion} requires a Cartesian P point.`);
     const start = getCurrentTcpPoseBase(robot);
@@ -39115,6 +39584,7 @@ async function connectVirtualController() {
 
 
     controller.samples?.clear();
+    clearVirtualControllerIo(controller);
     controller.lastAppliedSampleId = 0;
     controller.lastRateUpdateAt = 0;
     controller.sourceConnectedAt = 0;
@@ -39369,6 +39839,7 @@ function disconnectVirtualController(controller = state.virtualController) {
     controller.pendingInterferenceReads.clear();
     controller.pendingInterferenceToolReads.clear();
     controller.samples?.clear();
+    clearVirtualControllerIo(controller);
     controller.lastAppliedSampleId = 0;
     controller.sourceConnectedAt = 0;
     controller.lastSampleAt = 0;
@@ -39389,7 +39860,6 @@ function disconnectVirtualController(controller = state.virtualController) {
     }
     refreshViewPresetsUi();
     if (historyBefore) recordHistory('가상 컨트롤러 동기화', historyBefore, captureSceneSnapshot());
-    removeVirtualControllerSession(controller);
     refreshVirtualControllerUi();
 }
 
@@ -39423,6 +39893,36 @@ function isVirtualControllerSourceLive(timestamp, controller = state.virtualCont
 
 
 
+
+function applyVirtualControllerIo(values, direction, controller = state.virtualController) {
+    controller.ioValues ||= { IN: {}, OUT: {} };
+    const addresses = [];
+    for (const [address, value] of Object.entries(values || {})) {
+        if (value !== 0 && value !== 1) continue;
+        controller.ioValues[direction][address] = value;
+        addresses.push(address);
+    }
+    const sessions = getVirtualControllerSessions();
+    if (!sessions.includes(controller)) sessions.push(controller);
+    const robot = findProgramRobot(controller.targetRobotId);
+    if (robot) writeRobotEquipmentIo(robot, direction, values);
+    const merged = Object.fromEntries(addresses.map(address => [address,
+        sessions.some(candidate => candidate.wanted && candidate.ioValues?.[direction]?.[address] === 1) ? 1 : 0
+    ]));
+    if (direction === 'OUT') applyVirtualControllerOutputs(merged);
+    else applyVirtualControllerInputs(merged);
+}
+
+function clearVirtualControllerIo(controller) {
+    const previous = controller.ioValues;
+    controller.ioValues = null;
+    if (!previous) return;
+    for (const direction of ['IN', 'OUT']) {
+        const values = Object.fromEntries(Object.keys(previous[direction]).map(address => [address, 0]));
+        applyVirtualControllerIo(values, direction, controller);
+    }
+    controller.ioValues = null;
+}
 
 function applyVirtualControllerOutputs(outputs) {
     let changed = false;
@@ -39459,15 +39959,13 @@ function restoreControllerToolFrame(robot, notify = true) {
     const saved = robot?.userData.controllerToolFrame;
     const flange = robot?.userData.flangeFrame;
     if (!saved || !flange) return false;
+    if (saved.correctionFrame) {
+        saved.parent.add(flange);
+        saved.correctionFrame.removeFromParent();
+    }
     flange.position.copy(saved.position);
     flange.quaternion.copy(saved.quaternion);
     flange.scale.copy(saved.scale);
-    if (saved.tcpPosition && robot.userData.tcpFrame) {
-        const tcp = robot.userData.tcpFrame;
-        tcp.position.copy(saved.tcpPosition);
-        tcp.quaternion.copy(saved.tcpQuaternion);
-        tcp.scale.copy(saved.tcpScale);
-    }
     delete robot.userData.controllerToolFrame;
     delete robot.userData.controllerTcpPose;
     flange.updateWorldMatrix(true, true);
@@ -39484,37 +39982,41 @@ function applyControllerTcpPose(robot, pose, notify = true) {
     if (!pose || !flange?.parent || !tcp) return;
     if (!robot.userData.controllerToolFrame) {
         flange.updateMatrix();
+        const parent = flange.parent;
+        const correctionFrame = new THREE.Group();
+        correctionFrame.name = 'Controller flange correction';
+        parent.add(correctionFrame);
+        correctionFrame.add(flange);
         robot.userData.controllerToolFrame = {
+            parent,
+            correctionFrame,
             position: flange.position.clone(),
             quaternion: flange.quaternion.clone(),
             scale: flange.scale.clone(),
-            matrix: flange.matrix.clone(),
-            tcpPosition: tcp.position.clone(),
-            tcpQuaternion: tcp.quaternion.clone(),
-            tcpScale: tcp.scale.clone()
+            matrix: flange.matrix.clone()
         };
     }
-    flange.parent.updateWorldMatrix(true, false);
+    const saved = robot.userData.controllerToolFrame;
+    saved.parent.updateWorldMatrix(true, false);
     const base = getRobotControllerBaseFrame(robot);
     const worldPosition = base.localToWorld(pose.position.clone());
     const worldQuaternion = base.getWorldQuaternion(new THREE.Quaternion()).multiply(pose.quaternion);
-    // Joint feedback defines the physical flange. A reported TCP (including
-    // controller Tool/Wobj offsets) must never relocate that mounting zero.
-    flange.updateWorldMatrix(true, false);
-    const nominalTcpWorld = flange.matrixWorld.clone().multiply(new THREE.Matrix4().compose(
-        robot.userData.controllerToolFrame.tcpPosition,
-        robot.userData.controllerToolFrame.tcpQuaternion,
-        robot.userData.controllerToolFrame.tcpScale
-    ));
+    // Calibrated TCP feedback must drive the attached geometry as well as its
+    // readout. Remove the active Tool offset and authored flange transform so
+    // their local mounting zero and the received joint angles stay intact.
+    tcp.updateMatrix();
+    const nominalTcpWorld = saved.parent.matrixWorld.clone().multiply(saved.matrix).multiply(tcp.matrix);
     const targetTcpWorld = new THREE.Matrix4().compose(
         worldPosition, worldQuaternion, new THREE.Vector3().setFromMatrixScale(nominalTcpWorld)
     );
-    const targetTcpLocal = flange.matrixWorld.clone().invert().multiply(targetTcpWorld);
-    targetTcpLocal.decompose(tcp.position, tcp.quaternion, tcp.scale);
+    const correction = saved.parent.matrixWorld.clone().invert().multiply(targetTcpWorld)
+        .multiply(tcp.matrix.clone().invert()).multiply(saved.matrix.clone().invert());
+    correction.decompose(saved.correctionFrame.position, saved.correctionFrame.quaternion, saved.correctionFrame.scale);
+    saved.profileDirty = false;
     robot.userData.controllerTcpPose = {
         position: pose.position.clone(), quaternion: pose.quaternion.clone(), readout: pose.readout
     };
-    flange.updateWorldMatrix(false, true);
+    saved.correctionFrame.updateWorldMatrix(false, true);
     if (notify) {
         markSceneCollisionDirty(robot);
         requestRender();
@@ -39576,7 +40078,7 @@ function applyVirtualControllerFrameForController(timestamp, controller) {
         // Keep calibrated feedback independent of nominal link lengths and Euler conversion.
         pose.readout = displayPose;
         const previousPose = robot.userData.controllerTcpPose;
-        if (jointsChanged || !previousPose || previousPose.position.distanceToSquared(pose.position) > 1e-18
+        if (jointsChanged || robot.userData.controllerToolFrame?.profileDirty || !previousPose || previousPose.position.distanceToSquared(pose.position) > 1e-18
             || 1 - Math.abs(previousPose.quaternion.dot(pose.quaternion)) > 1e-12
             || sample.rotation.some((value, index) => value !== previousPose.readout?.rotation[index])) {
             applyControllerTcpPose(robot, pose, false);
@@ -39699,6 +40201,241 @@ function assignRobotInstanceMetadata(robot, modelDefinition, preferred = {}) {
     return robot.userData.motionInstanceId;
 }
 
+let positionPointsUi = null;
+const positionPointOlpHistories = new WeakMap();
+
+function getSimulationPositionPoints(program) {
+    return [...(program?.positions || []), ...(program?.steps || [])]
+        .filter(point => isMotionPointMotion(point.motion))
+        .sort((left, right) => left.pointIndex - right.pointIndex);
+}
+
+function getPositionPointsFile(robot = getOlpRobot()) {
+    if (!state.olp.enabled) return null;
+    return getOlpProject(robot)?.pointFiles?.find(file => /(^|\/)P\.pts$/i.test(file.path)) || null;
+}
+
+function positionPointToRecord(robot, point) {
+    const pose = motionStepTargetPose(point);
+    const rotation = getTcpRotationDegrees(robot, pose);
+    return { key: point.id, index: point.pointIndex, label: point.label || '', symbol: 'P',
+        values: [...pose.position.toArray(), rotation.rz, rotation.ry, rotation.rx],
+        armParameters: [...getStepArmParameters(robot, point)],
+        externalAxes: [...(point.externalAxes || [0, 0, 0, 0, 0, 0])] };
+}
+
+function getPositionPointRecords() {
+    const robot = getOlpRobot();
+    if (!robot) return [];
+    const file = getPositionPointsFile(robot);
+    if (state.olp.enabled && getOlpProject(robot) && !file) return [];
+    if (file) return file.records.map(record => ({ ...record,
+        key: `${record.sourceSymbol || 'P'}:${record.index}`, symbol: record.sourceSymbol || 'P', label: record.name,
+        values: Array.from({ length: 6 }, (_, i) => record.values[i] ?? 0),
+        armParameters: Array.from({ length: 4 }, (_, i) => record.armParameters[i] ?? 0),
+        externalAxes: Array.from({ length: 6 }, (_, i) => record.externalAxes[i] ?? 0) }));
+    return getSimulationPositionPoints(ensureMotionProgram(robot)).map(point => positionPointToRecord(robot, point));
+}
+
+function capturePositionPointRecord() {
+    const robot = getOlpRobot();
+    const point = robot && captureRobotMotionStep(robot);
+    if (!point) throw new Error(uiText('현재 로봇 위치를 읽을 수 없습니다.'));
+    return positionPointToRecord(robot, point);
+}
+
+function savePositionPointRecord(record, sourceKey) {
+    const robot = getOlpRobot();
+    if (!robot || isMotionActive() || isOlpRunning() || state.olp.manualMoveBusy || state.olp.workOriginBusy) {
+        throw new Error(uiText('로봇 정지 후 위치를 수정하세요.'));
+    }
+    if (!Number.isInteger(record.index) || record.index < 0 || record.index > 9999) {
+        throw new Error(uiText('포인트 번호는 0부터 9999 사이의 정수여야 합니다.'));
+    }
+    if (getPositionPointRecords().some(point => point.key !== sourceKey && point.index === record.index
+        && (point.symbol || 'P') === (record.symbol || 'P'))) {
+        throw new Error(uiText('이미 사용 중인 포인트 번호입니다.'));
+    }
+    const project = state.olp.enabled ? getOlpProject(robot) : null;
+    let file = getPositionPointsFile(robot);
+    if (project) {
+        if (/[;\r\n"\\]/.test(record.label)) throw new Error(uiText('위치 이름에 세미콜론, 따옴표, 줄바꿈을 사용할 수 없습니다.'));
+        const original = file?.records.find(point => `${point.sourceSymbol || 'P'}:${point.index}` === sourceKey);
+        if (sourceKey && !original) throw new Error(uiText('수정할 위치 포인트를 찾을 수 없습니다.'));
+        const symbol = original?.sourceSymbol || 'P';
+        let line = formatPositionPointRecordLine({ pointIndex: record.index, coordinates: record.values,
+            armParameters: record.armParameters, externalAxes: record.externalAxes, label: '' });
+        line = line.replace(/^P\[/, `${symbol}[`);
+        // Preserve unrelated metadata from the imported controller record.
+        const metadata = original?.sourceLine?.split(';').slice(3)
+            .filter(segment => segment.trim() && !/^\s*(?:Name|Notes)\s*=/i.test(segment)) || [];
+        line = `${line.split(';').slice(0, 3).join(';')};${metadata.length ? `${metadata.join(';')};` : ''}Name = "${record.label}";`;
+        if (!file) {
+            const directory = project.pointFiles?.[0]?.path.replace(/[^/]+$/, '') || '';
+            const path = `${directory}P.pts`;
+            project.files.set(path, { path, text: '', binary: false });
+            file = { path, records: [] };
+        }
+        const lines = String(project.files.get(file.path)?.text || '').split(/\r?\n/);
+        if (original) {
+            const index = lines.indexOf(original.sourceLine);
+            if (index < 0) throw new Error(uiText('원본 포인트 행을 찾을 수 없습니다.'));
+            lines[index] = line;
+        } else lines.push(line);
+        updateOlpFileText(project, file.path, lines.join('\n'));
+        state.olp.projectDirty = true;
+        saveActiveOlpProjectViewState();
+        renderOlpFileList(); scheduleMotionProjectSave(); requestRender();
+        return `${symbol}:${record.index}`;
+    }
+    if (!isValidMotionPointLabel(record.label)) {
+        throw new Error(uiText('라벨은 영문자로 시작하고 영문, 숫자, 밑줄만 사용하여 19자 이하로 입력하세요.'));
+    }
+    const program = ensureMotionProgram(robot);
+    const existing = getSimulationPositionPoints(program).find(point => point.id === sourceKey);
+    if (sourceKey && !existing) throw new Error(uiText('수정할 위치 포인트를 찾을 수 없습니다.'));
+    const before = captureSceneSnapshot();
+    const previous = existing && positionPointToRecord(robot, existing);
+    if (previous && ['values', 'armParameters', 'externalAxes'].every(field => (
+        record[field].length === previous[field].length && record[field].every((value, index) => value === previous[field][index])
+    ))) {
+        // Changing only the identifier or label does not require a reachable pose.
+        existing.pointIndex = record.index;
+        existing.name = formatMotionPointName(record.index);
+        existing.label = record.label;
+        recordHistory('위치 데이터 저장', before, captureSceneSnapshot());
+        scheduleMotionProjectSave(); renderMotionProgramPanel(); requestRender();
+        return existing.id;
+    }
+    const transform = captureClipboardTransform(robot);
+    const external = getRobotExternalAxes(robot);
+    const angles = robot.userData.joints.map(joint => joint.angle);
+    const tcp = { position: record.values.slice(0, 3),
+        quaternion: quaternionFromPointRotation(robot, record.values[5], record.values[4], record.values[3]).toArray() };
+    let solvedAngles;
+    try {
+        applyRobotTravelAxis(robot, record.externalAxes, { syncPresentation: false });
+        (existing?.joints || angles).forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle, false));
+        robot.updateMatrixWorld(true);
+        const result = solveRobotIK(robot, motionStepTargetPose({ tcp }, robot), {
+            positionTolerance: 0.001, rotationTolerance: THREE.MathUtils.degToRad(0.001), armParameters: record.armParameters
+        });
+        if (!result.success) throw new Error(uiText('입력한 위치가 로봇의 도달 범위 또는 관절 제한을 벗어났습니다.'));
+        solvedAngles = robot.userData.joints.map(joint => joint.angle);
+    } finally {
+        restoreRobotJointAngles(robot, angles);
+        applyClipboardTransform(robot, transform);
+        robot.userData.externalAxes = external;
+        robot.updateMatrixWorld(true); markSceneCollisionDirty(robot);
+        updateTcpPresentation(robot); syncBaseJogGizmoFromRobot(robot);
+    }
+    const point = { ...(existing || captureRobotMotionStep(robot)), pointIndex: record.index,
+        name: formatMotionPointName(record.index), label: record.label, tcp, joints: solvedAngles,
+        armParameters: [...record.armParameters], armParametersExplicit: true, externalAxes: [...record.externalAxes] };
+    if (existing) Object.assign(existing, point);
+    else (program.positions ||= []).push(point);
+    recordHistory('위치 데이터 저장', before, captureSceneSnapshot());
+    scheduleMotionProjectSave(); renderMotionProgramPanel(); requestRender();
+    return point.id;
+}
+
+function movePositionPointRecord(key) {
+    const robot = getOlpRobot();
+    if (!robot) throw new Error(uiText('Select one robot before moving to a point.'));
+    if (isVirtualControllerActiveForRobot(robot)) {
+        throw new Error(uiText('Point movement is unavailable while a controller is connected to this robot.'));
+    }
+    if (isMotionActive()) throw new Error(uiText('Stop this robot motion before moving to a point.'));
+    const record = getPositionPointRecords().find(point => point.key === key);
+    if (!record) throw new Error(uiText('수정할 위치 포인트를 찾을 수 없습니다.'));
+    const step = {
+        // Use a separate playback snapshot so the saved point and program stay intact.
+        id: createMotionId('position-move'), name: `${record.symbol || 'P'}[${record.index}]`,
+        motion: 'MOVJ', speed: getDefaultMotionSpeed(robot, 'MOVJ'), pointIndex: record.index,
+        label: '', armParameters: [...record.armParameters], armParametersExplicit: true,
+        externalAxes: [...record.externalAxes], joints: robot.userData.joints.map(joint => joint.angle),
+        tcp: { position: record.values.slice(0, 3),
+            quaternion: quaternionFromPointRotation(robot, record.values[5], record.values[4], record.values[3]).toArray() }
+    };
+    // The normal motion path validates IK, applies the selected Wobj and moves
+    // external axes together with the joints, including stop/collision handling.
+    startRobotMotionPlans([{ robot, steps: [step], repeat: false, reverseRepeat: false, controlScope: 'robot' }]);
+    if (!getMotionSession(robot)) throw new Error(uiText('모션 경로 검증에 실패했습니다.'));
+}
+
+function restorePositionPointFile(project, path, file) {
+    if (file) project.files.set(path, { ...file });
+    else project.files.delete(path);
+    refreshOlpProjectDerivedData(project);
+    state.olp.projectDirty = true;
+    saveActiveOlpProjectViewState();
+    renderOlpFileList(); scheduleMotionProjectSave(); requestRender();
+}
+
+function savePositionPointRecordBatch(updates) {
+    const robot = getOlpRobot();
+    if (!robot || !updates.length) return [];
+    const project = state.olp.enabled ? getOlpProject(robot) : null;
+    const path = getPositionPointsFile(robot)?.path || `${project?.pointFiles?.[0]?.path.replace(/[^/]+$/, '') || ''}P.pts`;
+    const beforeFile = project?.files.has(path) ? { ...project.files.get(path) } : null;
+    const beforeProgram = project ? null : cloneMotionProgram(ensureMotionProgram(robot));
+    const beforeScene = project ? null : captureSceneSnapshot();
+    const suspended = state.historySuspended, dirty = state.olp.projectDirty;
+    let keys;
+    state.historySuspended = true;
+    try {
+        keys = updates.map(({ record, sourceKey }) => savePositionPointRecord(record, sourceKey));
+    } catch (error) {
+        if (project) {
+            restorePositionPointFile(project, path, beforeFile);
+            state.olp.projectDirty = dirty; saveActiveOlpProjectViewState();
+        } else {
+            state.motionPrograms.set(robot.userData.motionInstanceId, beforeProgram);
+            scheduleMotionProjectSave(); renderMotionProgramPanel();
+        }
+        throw error;
+    } finally { state.historySuspended = suspended; }
+    if (project) {
+        const after = { ...project.files.get(path) };
+        if (!suspended && beforeFile?.text !== after.text) {
+            const history = positionPointOlpHistories.get(project) || { undo: [], redo: [] };
+            history.undo.push({ path, before: beforeFile, after });
+            if (history.undo.length > 100) history.undo.shift();
+            history.redo = []; positionPointOlpHistories.set(project, history);
+        }
+    } else recordHistory('위치 데이터 저장', beforeScene, captureSceneSnapshot());
+    return keys;
+}
+
+function restorePositionPointHistory(redo = false) {
+    if (isMotionActive() || isOlpRunning() || state.olp.manualMoveBusy || state.olp.workOriginBusy) return;
+    if (!state.olp.enabled) { if (redo) redoLastAction(); else undoLastAction(); return; }
+    const project = getOlpProject(), history = positionPointOlpHistories.get(project);
+    const entry = history?.[redo ? 'redo' : 'undo'].pop();
+    if (!entry) return;
+    restorePositionPointFile(project, entry.path, entry[redo ? 'after' : 'before']);
+    history[redo ? 'undo' : 'redo'].push(entry);
+}
+
+function setupPositionPointsPanel() {
+    positionPointsUi = createPositionPointsUi(document.getElementById('position-points-panel'), {
+        text: uiText,
+        robots: () => getArticulatedRobots().map(robot => ({ id: robot.userData.motionInstanceId, name: robot.userData.modelTreeName || robot.userData.motionDisplayName })),
+        robotId: () => getOlpRobot()?.userData.motionInstanceId || '',
+        contextKey: () => `${state.olp.enabled}:${getPositionPointsFile()?.path || ''}`,
+        selectRobot: id => selectProgramRobot(findProgramRobot(id)),
+        records: getPositionPointRecords, capture: capturePositionPointRecord,
+        save: (record, sourceKey) => savePositionPointRecordBatch([{ record, sourceKey }])[0],
+        saveBatch: savePositionPointRecordBatch,
+        history: restorePositionPointHistory,
+        active: () => state.panelOpenOrder.at(-1) === 'position-points-panel',
+        move: movePositionPointRecord,
+        exportPoints: exportPositionPoints,
+        locked: () => isMotionActive() || isOlpRunning() || state.olp.manualMoveBusy || state.olp.workOriginBusy
+    });
+    positionPointsUi.refresh();
+}
+
 function ensureMotionProgram(robot) {
     if (!robot?.userData.tcpFrame) return null;
     if (!robot.userData.motionInstanceId) {
@@ -39717,9 +40454,9 @@ function getMotionSession(robot) {
     return robot ? state.motionSessions.get(robot.userData.motionInstanceId) || null : null;
 }
 
-function isMotionActive() {
+function isMotionActive(includeController = true) {
     return isRobotMotionActive()
-        || isVirtualControllerActive();
+        || (includeController && isVirtualControllerActive());
 }
 
 function isAny3DTransformHandleDragging() {
@@ -39741,7 +40478,7 @@ function isRobotMotionActive() {
         || Boolean(state.olp.manualMoveBusy);
 }
 
-function isModelMotionActive(model) {
+function isModelMotionActive(model, includeController = true) {
     if (!model?.userData?.motionInstanceId) return false;
     const session = getMotionSession(model);
     if (session && ['running', 'paused'].includes(String(session.status || '').toLowerCase())) return true;
@@ -39749,7 +40486,7 @@ function isModelMotionActive(model) {
     if (isOlpRuntimeRunning(runtime)) return true;
     if (state.olp.runtime?.robot === model && isOlpRuntimeRunning(state.olp.runtime)) return true;
     if ((state.olp.workOriginBusy || state.olp.manualMoveBusy) && getOlpRobot() === model) return true;
-    return isVirtualControllerActiveForRobot(model);
+    return includeController && isVirtualControllerActiveForRobot(model);
 }
 
 function getMotionStatus(robot) {
@@ -40055,10 +40792,10 @@ function formatAutoPathCollisionPairs(hits, limit = 2) {
                 const jointIndex = Number(mesh?.userData?.robotJointIndex);
                 if (Number.isInteger(jointIndex)) return `J${jointIndex + 1}`;
                 for (let current = mesh; current && current !== root; current = current.parent) {
-                    const partName = current.userData?.modelPartName || current.userData?.cadPartName;
+                    const partName = current.userData?.modelTreeName || current.userData?.modelPartName || current.userData?.cadPartName;
                     if (partName) return partName;
                 }
-                return mesh?.userData?.modelPartName || mesh?.userData?.cadPartName || mesh?.name || '';
+                return mesh?.userData?.modelTreeName || mesh?.userData?.modelPartName || mesh?.userData?.cadPartName || mesh?.name || '';
             };
             const leftPart = describePart(hit.meshA, hit.objectA);
             const rightPart = describePart(hit.meshB, hit.objectB);
@@ -41629,7 +42366,7 @@ function renderWorkOriginDialog() {
     const workOrigin = getRobotWorkOrigin(robot);
     if (el.workOriginRobotName) {
         el.workOriginRobotName.textContent = robot
-            ? formatRobotPanelName(robot.userData.motionDisplayName)
+            ? robot.userData.modelTreeName || formatRobotPanelName(robot.userData.motionDisplayName)
             : uiText('로봇을 선택하세요');
     }
     if (el.workOriginOutputBit) el.workOriginOutputBit.value = String(workOrigin?.outputBit ?? 519);
@@ -41794,7 +42531,7 @@ function getWaitTargetRobots(robot = state.activeProgramRobot) {
 }
 
 function nextAvailablePointIndex(program, excludedStep = null) {
-    const used = new Set((program?.steps || [])
+    const used = new Set([...(program?.steps || []), ...(program?.positions || [])]
         .filter((step) => step !== excludedStep && isMotionPointMotion(step.motion))
         .map((step) => Number(step.pointIndex))
         .filter((value) => Number.isInteger(value) && value >= MIN_POINT_INDEX && value <= MAX_POINT_INDEX));
@@ -41964,7 +42701,7 @@ function handleProgramStepListInput(event) {
 
     if (control.dataset.programStepPointIndex === step.id) {
         const pointIndex = Number(control.value);
-        const duplicate = program.steps.some((candidate) => candidate !== step
+        const duplicate = [...program.steps, ...(program.positions || [])].some((candidate) => candidate !== step
             && isMotionPointMotion(candidate.motion)
             && candidate.pointIndex === pointIndex);
         if (Number.isInteger(pointIndex)
@@ -41992,6 +42729,8 @@ function renderMotionProgramPanel() {
             : robots[0] || null;
     }
     syncActiveOlpProjectView();
+    positionPointsUi?.refresh();
+    updatePanelLauncher('position-points-panel');
     el.programRobotList.replaceChildren();
     robots.forEach((robot) => {
         const program = ensureMotionProgram(robot);
@@ -42008,14 +42747,14 @@ function renderMotionProgramPanel() {
         included.checked = program.included;
         included.dataset.programRobotInclude = robot.userData.motionInstanceId;
         included.setAttribute('aria-label', uiFormat('{name} 동시 실행 대상', {
-            name: robot.userData.motionDisplayName
+            name: robot.userData.modelTreeName || robot.userData.motionDisplayName
         }));
 
         const select = document.createElement('button');
         select.type = 'button';
         select.className = 'program-robot-select';
         select.dataset.programRobotSelect = robot.userData.motionInstanceId;
-        select.textContent = formatRobotPanelName(robot.userData.motionDisplayName);
+        select.textContent = robot.userData.modelTreeName || formatRobotPanelName(robot.userData.motionDisplayName);
 
         const statusText = document.createElement('span');
         statusText.className = `program-robot-status ${state.olp.enabled
@@ -42044,7 +42783,7 @@ function renderMotionProgramPanel() {
     const robot = state.activeProgramRobot;
     const program = robot ? ensureMotionProgram(robot) : null;
     if (el.programRobotName) el.programRobotName.textContent = robot
-        ? formatRobotPanelName(robot.userData.motionDisplayName)
+        ? robot.userData.modelTreeName || formatRobotPanelName(robot.userData.motionDisplayName)
         : uiText('로봇을 선택하세요');
     updateCycleTimeReadout(performance.now(), true);
     el.programStepList.replaceChildren();
@@ -42188,7 +42927,7 @@ function renderMotionProgramPanel() {
                     waitTargets.forEach((targetRobot) => {
                         const option = document.createElement('option');
                         option.value = targetRobot.userData.motionInstanceId;
-                        option.textContent = formatRobotPanelName(targetRobot.userData.motionDisplayName);
+                        option.textContent = targetRobot.userData.modelTreeName || formatRobotPanelName(targetRobot.userData.motionDisplayName);
                         waitTargetRobot.appendChild(option);
                     });
                     const selectedTarget = waitTargets.some((targetRobot) => (
@@ -42294,7 +43033,10 @@ function findProgramRobot(instanceId) {
 function handleProgramRobotListClick(event) {
     const button = event.target.closest('[data-program-robot-select]');
     if (!button) return;
-    const robot = findProgramRobot(button.dataset.programRobotSelect);
+    selectProgramRobot(findProgramRobot(button.dataset.programRobotSelect));
+}
+
+function selectProgramRobot(robot) {
     if (!robot) return;
     flushOlpPendingEdit();
     state.activeProgramRobot = robot;
@@ -42742,7 +43484,7 @@ function handleProgramStepListChange(event) {
     }
     if (pointIndexControl) {
         const pointIndex = Number(pointIndexControl.value);
-        const duplicate = program.steps.some((candidate) => candidate !== step
+        const duplicate = [...program.steps, ...(program.positions || [])].some((candidate) => candidate !== step
             && isMotionPointMotion(candidate.motion)
             && candidate.pointIndex === pointIndex);
         if (!Number.isInteger(pointIndex)
@@ -43061,6 +43803,7 @@ function calculatePointArmParameters(robot, jointAngles) {
 // Stored values may predate the waist/elbow/wrist calculation, so derive them
 // from the point's joints whenever those are available.
 function getStepArmParameters(robot, step) {
+    if (step?.armParametersExplicit && Array.isArray(step.armParameters)) return step.armParameters;
     return Array.isArray(step?.joints) && step.joints.length
         ? calculatePointArmParameters(robot, step.joints)
         : (step?.armParameters || calculatePointArmParameters(robot));
@@ -43353,7 +44096,7 @@ function updateMotionUiLock() {
         .forEach((control) => { control.disabled = false; });
     el.jogPanel?.querySelectorAll('[data-panel-action]')
         .forEach((control) => { control.disabled = false; });
-    el.tcpProfilePanel?.querySelectorAll('button:not([data-panel-action]), input, select')
+    el.tcpProfilePanel?.querySelectorAll('button:not([data-panel-action]), input:not(#tcp-axes-visible), select')
         .forEach((control) => { control.disabled = locked; });
     el.tcpProfilePanel?.querySelectorAll('[data-panel-action]')
         .forEach((control) => { control.disabled = false; });
@@ -43882,6 +44625,7 @@ function serializeWorkspaceSnapshot() {
         ? getImportedModelParts(state.selectedModel).indexOf(state.selectedModelPart)
         : -1;
     const motionProject = serializeMotionProject();
+    const controllerConnections = serializeVirtualControllerConnections();
     const cameraChanged = state.camera && state.controls && (
         state.camera.position.distanceToSquared(new THREE.Vector3(1400, -1400, 1000)) > 1e-8
         || state.controls.target.lengthSq() > 1e-8
@@ -43905,6 +44649,7 @@ function serializeWorkspaceSnapshot() {
     // Keep the original singular field for older saved workspaces and tools.
     const olpProject = activeOlpProject;
     const hasWork = state.models.length > 0
+        || controllerConnections.controllers.length > 0
         || olpProjects.length > 0
         || state.viewPresets.some(Boolean)
         || state.grid?.visible === false
@@ -43922,10 +44667,12 @@ function serializeWorkspaceSnapshot() {
         schemaVersion: 1,
         hasWork,
         motionProject,
+        controllerConnections,
         robotRuntime: robots.map((robot) => ({
             instanceId: robot.userData.motionInstanceId,
             workspaceModelId: ensureWorkspaceModelId(robot),
             jointAngles: robot.userData.joints.map((joint) => Number(joint.angle) || 0),
+            equipmentIo: JSON.parse(JSON.stringify(robot.userData.equipmentIo || { IN: {}, OUT: {} })),
             transparency: getModelTransparencyPercent(robot),
             visible: isModelTreeVisible(robot)
         })),
@@ -44041,6 +44788,7 @@ function serializeMotionProject() {
                 activeTcpProfileIndex: robot.userData.activeTcpProfileIndex,
                 workObjects: serializeRobotWorkObjects(robot),
                 activeWorkObjectIndex: robot.userData.activeWorkObjectIndex,
+                positions: cloneMotionProgram(program).positions,
                 steps: program.steps.map((step) => ({
                     id: step.id,
                     name: step.name,
@@ -44050,6 +44798,7 @@ function serializeMotionProject() {
                         pointIndex: step.pointIndex,
                         label: step.label || '',
                         armParameters: [...getStepArmParameters(robot, step)],
+                        ...(step.armParametersExplicit ? { armParametersExplicit: true } : {}),
                         externalAxes: [...(step.externalAxes || [0, 0, 0, 0, 0, 0])]
                     } : {}),
                     ...(step.motion === 'DELAY'
@@ -44121,6 +44870,14 @@ async function persistImportedWorkspaceAsset(file, extension = getFileExtension(
 }
 
 function clearSceneForWorkspaceRestore() {
+    for (const controller of new Set([...getVirtualControllerSessions(), state.virtualController])) disconnectVirtualController(controller);
+    state.virtualControllers = [];
+    const controllerSettings = readVirtualControllerSettings();
+    state.virtualController = createVirtualControllerSession({
+        controllerKind: controllerSettings.controllerKind,
+        ipAddress: controllerSettings.ipAddresses[controllerSettings.controllerKind],
+        ipAddresses: controllerSettings.ipAddresses
+    });
     cancelMainViewTransition();
     if (state.sketch.active) exitSketchMode({ restoreCamera: false });
     if (state.zeroPointEdit.active) exitZeroPointEditor();
@@ -44817,6 +45574,7 @@ async function restoreWorkspaceSnapshot(snapshot) {
             const robot = robotsById.get(runtime?.instanceId);
             if (!robot) return;
             ensureWorkspaceModelId(robot, runtime.workspaceModelId);
+            for (const direction of ['IN', 'OUT']) writeRobotEquipmentIo(robot, direction, runtime.equipmentIo?.[direction] || {});
             if (Array.isArray(runtime.jointAngles)
                 && runtime.jointAngles.length === robot.userData.joints.length) {
                 restoreRobotJointAngles(robot, runtime.jointAngles);
@@ -45030,6 +45788,7 @@ async function restoreWorkspaceSnapshot(snapshot) {
         state.workObjectEditor.robotId = workObjectRobot?.userData.motionInstanceId || null;
         state.workObjectEditor.index = resolveWorkObjectIndex(workObjectRobot?.userData.activeWorkObjectIndex);
         renderWorkObjectPanel(workObjectRobot);
+        restoreVirtualControllerConnections(snapshot?.controllerConnections);
         updateUIStatus();
         renderModelTree();
         renderMotionProgramPanel();
@@ -46322,6 +47081,7 @@ async function restoreMotionProjectData(input) {
             included: robotProject.included,
             selectedStepId: robotProject.steps[0]?.id || null,
             workOrigin: robotProject.workOrigin,
+            positions: robotProject.positions,
             steps: robotProject.steps
         });
         state.motionPrograms.set(robotProject.instanceId, program);
@@ -46388,9 +47148,7 @@ function formatPositionPointRecord(robot, step) {
             rotation.rx
         ],
         armParameters: getStepArmParameters(robot, step),
-        // P.pts retains the six controller fields, but the simulation travel
-        // axis values are intentionally not exported.
-        externalAxes: [0, 0, 0, 0, 0, 0],
+        externalAxes: step.externalAxes || [0, 0, 0, 0, 0, 0],
         label: step.label
     });
 }
@@ -46776,9 +47534,7 @@ async function exportPositionPoints() {
     }
     const robot = state.activeProgramRobot;
     const program = ensureMotionProgram(robot);
-    const points = (program?.steps || [])
-        .filter((step) => isMotionPointMotion(step.motion))
-        .sort((left, right) => left.pointIndex - right.pointIndex);
+    const points = getSimulationPositionPoints(program);
     if (!robot || points.length === 0) {
         setMotionProgramStatus('내보낼 위치 포인트가 없습니다.', 'error');
         setStatus('내보낼 위치 포인트가 없습니다.', '#ef4444');
@@ -46889,6 +47645,7 @@ function serializeMotionProgramFileStep(step, robotIndexByInstanceId) {
         record.pointIndex = step.pointIndex;
         record.label = step.label || '';
         record.armParameters = [...(step.armParameters || [0, 0, 0, 1])];
+        if (step.armParametersExplicit) record.armParametersExplicit = true;
         record.externalAxes = [...(step.externalAxes || [0, 0, 0, 0, 0, 0])];
     }
     if (isIoMotion(motion)) Object.assign(record, normalizeProgramIoStep(step));
@@ -46937,6 +47694,7 @@ function serializeMotionProgramFile() {
                 included: Boolean(program.included),
                 selectedStepId: program.selectedStepId || null,
                 workOrigin: serializeMotionProgramFileWorkOrigin(program.workOrigin),
+                positions: (program.positions || []).map(point => serializeMotionProgramFileStep(point, robotIndexByInstanceId)),
                 steps: program.steps.filter(step => !['GRIP_USE','GRIP_RELEASE'].includes(step.motion)).map((step) => serializeMotionProgramFileStep(step, robotIndexByInstanceId))
             };
         })
@@ -46999,6 +47757,7 @@ function normalizeMotionProgramFileStep(step, jointCount, stepIndex) {
             4,
             `Program step ${stepIndex + 1} arm parameters`
         );
+        if (step.armParametersExplicit) normalized.armParametersExplicit = true;
         normalized.externalAxes = normalizeMotionProgramFileArray(
             step.externalAxes,
             6,
@@ -47077,6 +47836,7 @@ function normalizeMotionProgramFile(input) {
             included: entry.included !== false,
             selectedStepId: stepIds.has(entry.selectedStepId) ? entry.selectedStepId : null,
             workOrigin: normalizeMotionProgramFileWorkOrigin(entry.workOrigin, jointCount),
+            positions: normalizeRegisteredPositions(entry.positions, steps, jointCount),
             steps
         };
     });
@@ -47165,6 +47925,7 @@ function restoreMotionProgramFileData(input) {
             included: saved.included,
             selectedStepId: saved.selectedStepId,
             workOrigin: saved.workOrigin,
+            positions: saved.positions,
             steps
         }));
     });
@@ -48412,12 +49173,16 @@ function createMotionSegment(session, timestamp) {
         const startPose = getCurrentTcpPoseBase(robot);
         const targetAngles = isHome ? workOrigin.joints : step.joints;
         const targetPose = isHome ? workOriginTargetPose(workOrigin) : motionStepTargetPose(step, robot);
-        const robotMotionDuration = calculateMovjDuration(
+        const rapidMove = createRapidMoveState(
+            startAngles, targetAngles, robot.userData.joints, motionCommand.speed,
+            getRobotRapidMoveOptions(robot)
+        );
+        const robotMotionDuration = (rapidMove.durationSeconds ?? calculateMovjDuration(
             startAngles,
             targetAngles,
             robot.userData.joints,
             motionCommand.speed
-        ) * 1000;
+        )) * 1000;
         const robotPoseChanged = hasRobotPoseChanged(startPose, targetPose, startAngles, targetAngles);
         const externalMotion = getExternalAxisSegmentState(
             robot,
@@ -48428,17 +49193,6 @@ function createMotionSegment(session, timestamp) {
         const motionDuration = robotPoseChanged
             ? robotMotionDuration
             : externalMotion.externalMotionDuration;
-        const rapidMove = createRapidMoveState(
-            startAngles,
-            targetAngles,
-            robot.userData.joints,
-            motionCommand.speed,
-            {
-                ...(robot.userData.manifest?.rapidMove || {}),
-                structure: robot.userData.manifest?.structure,
-                robotType: robot.userData.manifest?.robotType
-            }
-        );
         return {
             type: isHome ? 'HOME' : motion,
             step,
@@ -48487,9 +49241,9 @@ function advanceMotionSegment(session, timestamp) {
     const { robot, segment } = session;
     if (isIoMotion(segment.type)) {
         const step = segment.step;
-        if (segment.type === 'IO_OUT') { writeOlpAddress('Out[' + step.ioAddress + ']', step.ioValue); return true; }
+        if (segment.type === 'IO_OUT') { writeOlpAddress('Out[' + step.ioAddress + ']', step.ioValue, null, null, robot); return true; }
         ensureMotionProgram(robot).progress = motionSessionProgress(session, 0);
-        return readOlpSimulatorBit('IN', step.ioAddress) === step.ioValue;
+        return readRobotProgramIoBit(robot, 'IN', step.ioAddress) === step.ioValue;
     }
     if (segment.type === 'WAIT') {
         const waitState = getMotionWaitState(session, segment);
@@ -48555,7 +49309,9 @@ function advanceMotionSegment(session, timestamp) {
     let progress;
     let rapidMoveSettling = false;
     if (rapidMoveEnabled) {
-        const deltaSeconds = Math.min(RAPID_MOVE_DEFAULTS.maxStepSeconds, clock.deltaMilliseconds / 1000) * clock.scale;
+        const deltaSeconds = (segment.rapidMove.planner === 's7-rapid-dynamics'
+            ? clock.deltaMilliseconds / 1000
+            : Math.min(RAPID_MOVE_DEFAULTS.maxStepSeconds, clock.deltaMilliseconds / 1000)) * clock.scale;
         segment.rapidMove.lastTimestamp = timestamp;
         const rapidMoveResult = advanceRapidMoveState(
             segment.rapidMove,
@@ -48571,7 +49327,9 @@ function advanceMotionSegment(session, timestamp) {
         if (rapidMoveResult.completed && !Number.isFinite(segment.rapidMove.completedAt)) {
             segment.rapidMove.completedAt = timestamp;
             segment.motionDuration = elapsed;
-            segment.duration = segment.motionDuration + MOTION_SETTLING_DELAY_SECONDS * 1000;
+            // The next segment is scheduled on performance.now(), not the
+            // speed-override clock. Using virtual elapsed here starts it early.
+            segment.duration = rawElapsed + MOTION_SETTLING_DELAY_SECONDS * 1000;
         }
         rapidMoveSettling = rapidMoveResult.completed
             && timestamp < segment.rapidMove.completedAt + MOTION_SETTLING_DELAY_SECONDS * 1000;
@@ -48780,16 +49538,29 @@ function isModelOutlineSelectionTarget(mesh, model) {
 }
 
 function updateModelSelectionOutlines({ ensureSelection = true } = {}) {
-    // Selection feedback remains visible even when the global outline mode is
-    // disabled. syncModelOutlines() creates only the selected outline in that
-    // mode, then calls this function with ensureSelection=false to avoid a
-    // recursive sync.
+    // Remove outlines and use a surface highlight when outlines are disabled.
     if (!state.outlineMode && ensureSelection) {
         syncModelOutlines();
         return;
     }
     state.models.forEach((model) => {
         model.traverse((mesh) => {
+            if (isOutlineMesh(mesh)) {
+                const highlighted = !state.outlineMode && isModelOutlineSelectionTarget(mesh, model);
+                ensureModelPartMaterialIsolation(mesh);
+                mesh.userData.modelPartMaterials?.forEach((entry) => {
+                    const { material } = entry;
+                    if (!entry.emissive || !material.emissive) return;
+                    const collision = state.collision.highlightedMaterials.get(material);
+                    const target = collision || material;
+                    target.emissive.copy(entry.emissive);
+                    target.emissiveIntensity = entry.emissiveIntensity;
+                    if (highlighted) {
+                        target.emissive.setHex(MODEL_SELECTION_OUTLINE_COLOR);
+                        target.emissiveIntensity = 0.45;
+                    }
+                });
+            }
             const line = mesh.userData?.outlineLine;
             if (!line) return;
             const nextColor = isModelOutlineSelectionTarget(mesh, model)
@@ -48808,8 +49579,7 @@ function syncModelOutlines() {
     state.models.forEach((model) => {
         model.traverse((mesh) => {
             if (!isOutlineMesh(mesh)) return;
-            const selected = isModelOutlineSelectionTarget(mesh, model);
-            if (!state.outlineMode && !selected) {
+            if (!state.outlineMode) {
                 disposeModelOutlineLine(mesh.userData.outlineLine);
                 return;
             }
@@ -48874,8 +49644,7 @@ function syncModelOutlines() {
             const line = mesh.userData.outlineLine;
             const transparency = getModelTransparencyForObject(mesh, model);
             applyModelTransparencyToMaterial(line.material, transparency);
-            line.visible = transparency < 100
-                && (state.outlineMode || selected);
+            line.visible = transparency < 100 && state.outlineMode;
         });
     });
     updateModelSelectionOutlines({ ensureSelection: false });
@@ -49217,11 +49986,11 @@ function syncEmptyStateVisibility() {
     el.emptyState.classList.toggle('hidden', hasTrackedModel || Boolean(hasSceneModel));
 }
 
-function updateUIStatus() {
+function updateUIStatus({ changedModels = null } = {}) {
     updateLargeModelPerformanceMode();
     syncModelOutlines();
     syncEmptyStateVisibility();
-    renderModelTree();
+    renderModelTree({ changedModels });
     renderPrimitiveShapePanel();
     updatePrimitiveDimensionOverlay();
     renderArmLoadPanel();
@@ -49233,6 +50002,11 @@ function updateUIStatus() {
     renderInterferenceZonePanel();
     updateInterferenceZoneVisuals();
     evaluateInterferenceZones(performance.now());
+    equipmentApp.ui.updateStatus();
+    if (el.ioFunctionMappingDialog?.open) {
+        renderIoFunctionMappingList();
+        renderIoFunctionMappingEditorTargets();
+    }
     setStatus('Ready', '#22c55e');
     requestRender();
 }
@@ -50127,7 +50901,7 @@ function selectToolLoadModel(models, { description = '부하 정보를 가져올
     models.forEach((model, index) => {
         const option = doc.createElement('option');
         option.value = String(index);
-        option.textContent = `${index + 1}. ${model.userData.modelName || model.name || uiText('Tool')}`;
+        option.textContent = `${index + 1}. ${displayNameForModelTree(model)}`;
         select.append(option);
     });
     if (allowAll && models.length > 1) {

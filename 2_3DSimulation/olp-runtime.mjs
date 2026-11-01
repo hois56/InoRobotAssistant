@@ -798,6 +798,30 @@ export class OlpRuntime {
         this.variables.set(raw, this.coerceVariableValue(raw, value));
     }
 
+    // Sparse program overrides: missing fields inherit the simulator's saved
+    // Tool data. Explicit zero values must remain distinguishable from missing.
+    getToolOverrides(index) {
+        const prefix = `TOOL[${index}].`;
+        const fields = new Map();
+        for (const [symbol, value] of this.variables) {
+            const key = String(symbol).replace(/\s+/g, '').toUpperCase();
+            if (key.startsWith(prefix)) fields.set(key.slice(prefix.length), value);
+        }
+        const read = (field) => {
+            if (!fields.has(field)) return undefined;
+            const number = Number(fields.get(field));
+            if (!Number.isFinite(number)) throw this.runtimeError(`Invalid Tool[${index}].${field}`);
+            return number;
+        };
+        const frame = {position: ['X','Y','Z'].map(axis => read(`TFRAME.${axis}`)),
+            rotation: ['C','B','A'].map(axis => read(`TFRAME.${axis}`))};
+        const load = {mass: read('TLOAD.MASS'),
+            cog: [0,1,2].map(axis => read(`TLOAD.COG[${axis}]`)),
+            inertia: [0,1,2].map(axis => read(`TLOAD.INERTIA[${axis}]`))};
+        return [...frame.position, ...frame.rotation, load.mass, ...load.cog, ...load.inertia]
+            .some(value => value !== undefined) ? {frame, load} : null;
+    }
+
     getPointRecordsForActiveFile() {
         const activePointFileName = this.activePointFile ? fileName(this.activePointFile).toLowerCase() : '';
         const activePointRecords = activePointFileName
@@ -1449,8 +1473,8 @@ export class OlpRuntime {
         const [globalAcceleration, globalDeceleration] = this.motionSettings.acceleration || [];
         const effectiveOptions = {
             ...options,
-            acceleration: options.acceleration ?? globalAcceleration ?? null,
-            deceleration: options.deceleration ?? globalDeceleration ?? null,
+            acceleration: globalAcceleration > 0 ? globalAcceleration : options.acceleration,
+            deceleration: globalDeceleration > 0 ? globalDeceleration : options.deceleration,
             accelerationRamp: this.motionSettings.accelerationRamp,
             rapidMove: this.motionSettings.rapidMove,
             slvsMode: this.motionSettings.slvsMode,
@@ -1651,7 +1675,16 @@ export class OlpRuntime {
         }
         const rapid = value.match(/^RapidMove\s*\((.*)\)\s*;?$/i);
         if (rapid) {
-            this.motionSettings.rapidMove = splitArguments(rapid[1]).map((argument) => String(argument).trim());
+            const [mode, state] = splitArguments(rapid[1]).map((argument) => String(argument).trim().replace(/^['"]|['"]$/g, '').toUpperCase());
+            if (!['CP', 'PTP', 'ALL'].includes(mode) || !['ON', 'OFF'].includes(state)) {
+                throw this.runtimeError('RapidMove requires CP/PTP/ALL and ON/OFF.');
+            }
+            const previous = this.motionSettings.rapidMove || {};
+            this.motionSettings.rapidMove = {
+                ...previous,
+                ...(mode === 'CP' || mode === 'ALL' ? {cp: state === 'ON'} : {}),
+                ...(mode === 'PTP' || mode === 'ALL' ? {ptp: state === 'ON'} : {})
+            };
             return;
         }
         const slvs = value.match(/^SLVSMode\s+(.+?)\s*;?$/i);

@@ -1,0 +1,173 @@
+{
+  "source": "Original unmodified MC_Scara_A and MC_Scara_R SPrfCalc ARM emulation. Native scalar path rad and ms. Matches ArticulatedArm_A cases and JS port.",
+  "cases": [
+    {
+      "input": {
+        "distance": 0.05,
+        "vMax": 0.002,
+        "aMax": 5e-06,
+        "dMax": 5e-06,
+        "jAccel": 1e-07,
+        "jDecel": 1e-07
+      },
+      "duration": 256.37759108040206,
+      "stageDurations": [
+        50.00000000000001,
+        27.73437499999999,
+        50.00000000000001,
+        0.9088410804020136,
+        50.00000000000001,
+        27.73437499999999,
+        50.00000000000001
+      ],
+      "model": "MC_Scara_A",
+      "entry": "0x80078",
+      "binary_sha256": "fe2d924b3e8ec17ea11305adfbc45d2ce1e553bdb35479b473874a6ca5452422",
+      "units": "native rad, ms"
+    },
+    {
+      "input": {
+        "distance": 1.25,
+        "vMax": 0.002,
+        "aMax": 5e-06,
+        "dMax": 5e-06,
+        "jAccel": 1e-07,
+        "jDecel": 1e-07
+      },
+      "duration": 1075.0,
+      "stageDurations": [
+        50.00000000000001,
+        350.0,
+        50.00000000000001,
+        174.99999999999997,
+        50.00000000000001,
+        350.0,
+        50.00000000000001
+      ],
+      "model": "MC_Scara_A",
+      "entry": "0x80078",
+      "binary_sha256": "fe2d924b3e8ec17ea11305adfbc45d2ce1e553bdb35479b473874a6ca5452422",
+      "units": "native rad, ms"
+    },
+    {
+      "input": {
+        "distance": 0.001,
+        "vMax": 0.002,
+        "aMax": 5e-06,
+        "dMax": 5e-06,
+        "jAccel": 1e-07,
+        "jDecel": 1e-07
+      },
+      "duration": 68.65805344178034,
+      "stageDurations": [
+        16.973094517500336,
+        0.0,
+        16.973094517500336,
+        0.7656753717789941,
+        16.973094517500336,
+        0.0,
+        16.973094517500336
+      ],
+      "model": "MC_Scara_A",
+      "entry": "0x80078",
+      "binary_sha256": "fe2d924b3e8ec17ea11305adfbc45d2ce1e553bdb35479b473874a6ca5452422",
+      "units": "native rad, ms"
+    },
+    {
+      "input": {
+        "distance": 0.05,
+        "vMax": 0.002,
+        "aMax": 5e-06,
+        "dMax": 5e-06,
+        "jAccel": 1e-07,
+        "jDecel": 1e-07
+      },
+      "duration": 256.37759108040206,
+      "stageDurations": [
+        50.00000000000001,
+        27.73437499999999,
+        50.00000000000001,
+        0.9088410804020136,
+        50.00000000000001,
+        27.73437499999999,
+        50.00000000000001
+      ],
+      "model": "MC_Scara_R",
+      "entry": "0x804a0",
+      "binary_sha256": "51c73cf7754a87944bc68032076d1abb3c2c096c43bd1ed2ce029657096a6d91",
+      "units": "native rad, ms"
+    },
+    {
+      "input": {
+        "distance": 1.25,
+        "vMax": 0.002,
+        "aMax": 5e-06,
+        "dMax": 5e-06,
+        "jAccel": 1e-07,
+        "jDecel": 1e-07
+      },
+      "duration": 1075.0,
+      "stageDurations": [
+        50.00000000000001,
+        350.0,
+        50.00000000000001,
+        174.99999999999997,
+        50.00000000000001,
+        350.0,
+        50.00000000000001
+      ],
+      "model": "MC_Scara_R",
+      "entry": "0x804a0",
+      "binary_sha256": "51c73cf7754a87944bc68032076d1abb3c2c096c43bd1ed2ce029657096a6d91",
+      "units": "native rad, ms"
+    },
+    {
+      "input": {
+        "distance": 0.001,
+        "vMax": 0.002,
+        "aMax": 5e-06,
+        "dMax": 5e-06,
+        "jAccel": 1e-07,
+        "jDecel": 1e-07
+      },
+      "duration": 68.65805344178034,
+      "stageDurations": [
+        16.973094517500336,
+        0.0,
+        16.973094517500336,
+        0.7656753717789941,
+        16.973094517500336,
+        0.0,
+        16.973094517500336
+      ],
+      "model": "MC_Scara_R",
+      "entry": "0x804a0",
+      "binary_sha256": "51c73cf7754a87944bc68032076d1abb3c2c096c43bd1ed2ce029657096a6d91",
+      "units": "native rad, ms"
+    },
+    {
+      "input": {
+        "distance": 0.5235987755982988,
+        "vMax": 0.006030220861063735,
+        "aMax": 2.254995457697159e-11,
+        "dMax": 1.1274982895724413e-05,
+        "jAccel": 7.181191826518084e-14,
+        "jDecel": 3.590597698923664e-08
+      },
+      "duration": 215665.82366140367,
+      "stageDurations": [
+        314.01409573409626,
+        215014.18065493825,
+        314.01409573409626,
+        0.3569466969550201,
+        11.628934150133437,
+        0.0,
+        11.628934150133437
+      ],
+      "model": "MC_Scara_A",
+      "entry": "0x80078",
+      "units": "native rad, ms",
+      "case": "tiny acceleration at torque velocity boundary requires more than 27 bisection iterations"
+    }
+  ]
+}

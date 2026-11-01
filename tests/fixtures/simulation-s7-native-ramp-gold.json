@@ -1,0 +1,235 @@
+{
+  "controller": "MC_Scara_A",
+  "defaultJerkTimeMs": 50.0,
+  "minimumJerkTimeMs": 25.0,
+  "runStrDefaultStartRampPercent": 50.0,
+  "runStrDefaultStopRampPercent": 50.0,
+  "selectedS7MechanicalParameters": [
+    0.0,
+    0.0,
+    0.0,
+    40.0,
+    40.0
+  ],
+  "mechanicalOracle": [
+    {
+      "armLengthMm": 0,
+      "payloadMassKg": 0,
+      "actualMechanicalJerkTimeSeconds": 0.0
+    },
+    {
+      "armLengthMm": 0,
+      "payloadMassKg": 0.763255778,
+      "actualMechanicalJerkTimeSeconds": 0.0
+    },
+    {
+      "armLengthMm": 0,
+      "payloadMassKg": 6,
+      "actualMechanicalJerkTimeSeconds": 0.0
+    },
+    {
+      "armLengthMm": 300,
+      "payloadMassKg": 0,
+      "actualMechanicalJerkTimeSeconds": 0.0
+    },
+    {
+      "armLengthMm": 300,
+      "payloadMassKg": 0.763255778,
+      "actualMechanicalJerkTimeSeconds": 0.0
+    },
+    {
+      "armLengthMm": 300,
+      "payloadMassKg": 6,
+      "actualMechanicalJerkTimeSeconds": 0.0
+    },
+    {
+      "armLengthMm": 600,
+      "payloadMassKg": 0,
+      "actualMechanicalJerkTimeSeconds": 0.0
+    },
+    {
+      "armLengthMm": 600,
+      "payloadMassKg": 0.763255778,
+      "actualMechanicalJerkTimeSeconds": 0.0
+    },
+    {
+      "armLengthMm": 600,
+      "payloadMassKg": 6,
+      "actualMechanicalJerkTimeSeconds": 0.0
+    },
+    {
+      "armLengthMm": 1000,
+      "payloadMassKg": 0,
+      "actualMechanicalJerkTimeSeconds": 0.0
+    },
+    {
+      "armLengthMm": 1000,
+      "payloadMassKg": 0.763255778,
+      "actualMechanicalJerkTimeSeconds": 0.0
+    },
+    {
+      "armLengthMm": 1000,
+      "payloadMassKg": 6,
+      "actualMechanicalJerkTimeSeconds": 0.0
+    }
+  ],
+  "preprocessingOracle": [
+    {
+      "startRampPercent": 1,
+      "stopRampPercent": 1,
+      "startLocalJerkRatioPerMs": 0.010126069188117981,
+      "stopLocalJerkRatioPerMs": 0.010126069188117981,
+      "storedJerkLevel": 1.975100040435791,
+      "freePlanSetJerkTimeMs": 98.7550048828125,
+      "startConfiguredRampMs": 98.7550036862684,
+      "stopConfiguredRampMs": 98.7550036862684
+    },
+    {
+      "startRampPercent": 25,
+      "stopRampPercent": 25,
+      "startLocalJerkRatioPerMs": 0.013913043774664402,
+      "stopLocalJerkRatioPerMs": 0.013913043774664402,
+      "storedJerkLevel": 1.4375,
+      "freePlanSetJerkTimeMs": 71.875,
+      "startConfiguredRampMs": 71.87499846877475,
+      "stopConfiguredRampMs": 71.87499846877475
+    },
+    {
+      "startRampPercent": 50,
+      "stopRampPercent": 50,
+      "startLocalJerkRatioPerMs": 0.019999999552965164,
+      "stopLocalJerkRatioPerMs": 0.019999999552965164,
+      "storedJerkLevel": 1.0,
+      "freePlanSetJerkTimeMs": 50.0,
+      "startConfiguredRampMs": 50.00000111758712,
+      "stopConfiguredRampMs": 50.00000111758712
+    },
+    {
+      "startRampPercent": 75,
+      "stopRampPercent": 75,
+      "startLocalJerkRatioPerMs": 0.02909090928733349,
+      "stopLocalJerkRatioPerMs": 0.02909090928733349,
+      "storedJerkLevel": 0.6875,
+      "freePlanSetJerkTimeMs": 34.375,
+      "startConfiguredRampMs": 34.37499976789695,
+      "stopConfiguredRampMs": 34.37499976789695
+    },
+    {
+      "startRampPercent": 100,
+      "stopRampPercent": 100,
+      "startLocalJerkRatioPerMs": 0.03999999910593033,
+      "stopLocalJerkRatioPerMs": 0.03999999910593033,
+      "storedJerkLevel": 0.5,
+      "freePlanSetJerkTimeMs": 25.0,
+      "startConfiguredRampMs": 25.00000055879356,
+      "stopConfiguredRampMs": 25.00000055879356
+    },
+    {
+      "startRampPercent": 120,
+      "stopRampPercent": 120,
+      "startLocalJerkRatioPerMs": 0.07999999821186066,
+      "stopLocalJerkRatioPerMs": 0.07999999821186066,
+      "storedJerkLevel": 0.25,
+      "freePlanSetJerkTimeMs": 12.5,
+      "startConfiguredRampMs": 12.50000027939678,
+      "stopConfiguredRampMs": 12.50000027939678
+    },
+    {
+      "startRampPercent": 50,
+      "stopRampPercent": 100,
+      "startLocalJerkRatioPerMs": 0.019999999552965164,
+      "stopLocalJerkRatioPerMs": 0.03999999910593033,
+      "storedJerkLevel": 0.5,
+      "freePlanSetJerkTimeMs": 50.0,
+      "startConfiguredRampMs": 50.00000111758712,
+      "stopConfiguredRampMs": 25.00000055879356
+    }
+  ],
+  "clampOracle": [
+    {
+      "setJerkTimeMs": 25,
+      "jerkLevel": 0.5,
+      "periodSeconds": 0.005,
+      "actualTransitionMs": 12.5,
+      "expectedTransitionMs": 12.5
+    },
+    {
+      "setJerkTimeMs": 25,
+      "jerkLevel": 0.5,
+      "periodSeconds": 0.04,
+      "actualTransitionMs": 20.0,
+      "expectedTransitionMs": 20.0
+    },
+    {
+      "setJerkTimeMs": 25,
+      "jerkLevel": 0.5,
+      "periodSeconds": 0.1,
+      "actualTransitionMs": 37.5,
+      "expectedTransitionMs": 37.5
+    },
+    {
+      "setJerkTimeMs": 25,
+      "jerkLevel": 1.0,
+      "periodSeconds": 0.005,
+      "actualTransitionMs": 12.5,
+      "expectedTransitionMs": 12.5
+    },
+    {
+      "setJerkTimeMs": 25,
+      "jerkLevel": 1.0,
+      "periodSeconds": 0.04,
+      "actualTransitionMs": 37.5,
+      "expectedTransitionMs": 37.5
+    },
+    {
+      "setJerkTimeMs": 25,
+      "jerkLevel": 1.0,
+      "periodSeconds": 0.1,
+      "actualTransitionMs": 37.5,
+      "expectedTransitionMs": 37.5
+    },
+    {
+      "setJerkTimeMs": 50,
+      "jerkLevel": 0.5,
+      "periodSeconds": 0.005,
+      "actualTransitionMs": 25.0,
+      "expectedTransitionMs": 25.0
+    },
+    {
+      "setJerkTimeMs": 50,
+      "jerkLevel": 0.5,
+      "periodSeconds": 0.04,
+      "actualTransitionMs": 25.0,
+      "expectedTransitionMs": 25.0
+    },
+    {
+      "setJerkTimeMs": 50,
+      "jerkLevel": 0.5,
+      "periodSeconds": 0.1,
+      "actualTransitionMs": 50.0,
+      "expectedTransitionMs": 50.0
+    },
+    {
+      "setJerkTimeMs": 50,
+      "jerkLevel": 1.0,
+      "periodSeconds": 0.005,
+      "actualTransitionMs": 25.0,
+      "expectedTransitionMs": 25.0
+    },
+    {
+      "setJerkTimeMs": 50,
+      "jerkLevel": 1.0,
+      "periodSeconds": 0.04,
+      "actualTransitionMs": 40.0,
+      "expectedTransitionMs": 40.0
+    },
+    {
+      "setJerkTimeMs": 50,
+      "jerkLevel": 1.0,
+      "periodSeconds": 0.1,
+      "actualTransitionMs": 75.0,
+      "expectedTransitionMs": 75.0
+    }
+  ],
+  "scope": "Real native leaf functions; DyncPlanJerkTimeCalc is stubbed only for isolated transition clamp testing. Full dynamic planner is not emulated."
+}

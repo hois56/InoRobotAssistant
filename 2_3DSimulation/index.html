@@ -8,7 +8,7 @@
     <title>3D Simulation | INOVANCE</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=20261031-work-origin-1">
+    <link rel="stylesheet" href="style.css?v=20261101-vacuum-surface-1">
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -28,6 +28,25 @@
     <script src="/Language/runtime/icon-fallback.js" defer></script>
     <script src="/analytics-config.js"></script>
     <script src="/analytics.js" defer></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -958,7 +977,7 @@
                 </div>
             </section>
             <section class="position-value-section">
-                <h3 data-i18n="legacy.외부 축 (주행축, 내보내기 적용 안됨)">외부 축 (주행축, 내보내기 적용 안됨)</h3>
+                <h3 data-i18n="legacy.외부 축">외부 축</h3>
                 <div class="position-value-grid external-grid">
                     <label><span>E1</span><input type="number" step="0.000001" data-position-external="0"></label>
                     <label><span>E2</span><input type="number" step="0.000001" data-position-external="1"></label>
@@ -1716,6 +1735,31 @@
                 </div>
                 <p id="base-jog-status" class="base-jog-status hidden" role="status"></p>
             </aside>
+            <aside id="position-points-panel" class="position-points-panel panel-user-hidden panel-edge-resizable" aria-label="P.pts">
+                <div class="tcp-profile-panel-header">
+                    <h2><i class="fa-solid fa-location-dot"></i> P.pts <small data-pts-count>0</small></h2>
+                    <div class="panel-header-actions">
+                        <button type="button" data-panel-action="popout" data-panel-id="position-points-panel" title="별도 창으로 분리" aria-label="별도 창으로 분리" data-i18n-title="legacy.별도 창으로 분리" data-i18n-aria-label="legacy.별도 창으로 분리"><i class="fa-solid fa-up-right-from-square"></i></button>
+                        <button type="button" data-panel-action="hide" data-panel-id="position-points-panel" title="숨기기" aria-label="숨기기" data-i18n-title="legacy.숨기기" data-i18n-aria-label="legacy.숨기기"><i class="fa-solid fa-eye-slash"></i></button>
+                    </div>
+                </div>
+                <div class="position-points-body" data-panel-drag-ignore>
+                    <div class="position-points-toolbar">
+                        <select data-pts-robot aria-label="로봇" data-i18n-aria-label="legacy.ROBOT"></select>
+                        <label class="position-points-standardization"><input type="checkbox" data-pts-standardized checked><span data-i18n="legacy.표준화 모드">표준화 모드</span></label>
+                        <button type="button" data-pts-new aria-keyshortcuts="A"><span data-i18n="legacy.위치 추가">위치 추가</span><kbd>A</kbd></button>
+                        <button type="button" data-pts-update disabled aria-keyshortcuts="U"><span data-i18n="legacy.위치 덮어쓰기">위치 덮어쓰기</span><kbd>U</kbd></button>
+                        <button type="button" data-pts-move disabled aria-keyshortcuts="M"><span data-i18n="legacy.위치로 이동">위치로 이동</span><kbd>M</kbd></button>
+                        <button type="button" data-pts-export disabled data-i18n="legacy.pts 내보내기">P.pts 내보내기</button>
+                    </div>
+                    <div class="position-points-table-scroll">
+                        <table aria-label="P.pts" role="grid" aria-multiselectable="true"><thead><tr><th>ID</th><th>Name</th><th>X</th><th>Y</th><th>Z</th><th>A</th><th>B</th><th>C</th><th>Arm 0</th><th>Arm 1</th><th>Arm 2</th><th>Arm 3</th><th>E1</th><th>E2</th><th>E3</th><th>E4</th><th>E5</th><th>E6</th></tr></thead><tbody></tbody></table>
+                    </div>
+                    <p data-pts-empty data-i18n="legacy.포인트 레코드가 없습니다.">포인트 레코드가 없습니다.</p>
+                    <p data-pts-error role="alert"></p>
+                </div>
+            </aside>
+
             <aside id="tcp-profile-panel" class="tcp-profile-panel frame-settings-panel panel-user-hidden" aria-label="Tool 설정">
                 <div class="tcp-profile-panel-header">
                     <h2><i class="fa-solid fa-crosshairs"></i> Tool 설정</h2>
@@ -2105,7 +2149,7 @@
                                 <option value="VIEW">뷰 전환</option>
                                 <option value="OBJECT_RESET">오브젝트 원위치</option>
                                 <option value="CONVEYOR">컨베이어 이송</option>
-                                <option value="CYLINDER">실린더</option><option value="LINEAR_AXIS">직선 외부 축</option><option value="ROTARY_AXIS">회전 외부 축</option><option value="GRIPPER">그리퍼</option><option value="FILM_PEEL">필름 박리</option><option value="VACUUM">진공</option><option value="VACUUM_RELEASE">파기</option>
+                                <option value="CYLINDER">실린더</option><option value="LINEAR_AXIS">직선 외부 축</option><option value="ROTARY_AXIS">회전 외부 축</option><option value="GRIPPER">그리퍼</option><option value="FILM_PEEL">필름 박리</option><option value="OBJECT">오브젝트</option><option value="OBJECT_RELEASE">파기</option>
                             </select>
                         </label>
                         <label id="io-function-mapping-grip-field">
@@ -2455,6 +2499,8 @@
         <button id="model-rename" type="button" role="menuitem"><i class="fa-solid fa-pen-to-square"></i><span>이름 변경</span></button>
         <button id="model-motion-settings" type="button" role="menuitem"><i class="fa-solid fa-gears"></i>동작 설정</button>
         <div id="model-motion-edit-options"></div>
+        <div id="model-motion-test-options"></div>
+        <button id="model-object-reset" type="button" role="menuitem" hidden><i class="fa-solid fa-rotate-left"></i><span data-i18n="legacy.원위치">원위치</span></button>
         <button id="model-motion-add-part" type="button" role="menuitem" hidden><i class="fa-solid fa-plus"></i>이동 대상으로 체크</button>
         <button id="model-group-parts" type="button" role="menuitem"><i class="fa-solid fa-folder-plus"></i>선택한 항목 그룹으로 묶기</button>
         <button id="model-ungroup-part" type="button" role="menuitem" hidden><i class="fa-solid fa-folder-minus"></i>항목 그룹에서 해제</button>
@@ -2552,6 +2598,7 @@
         <div id="panel-launcher" class="viewer-control-dock" aria-label="뷰어 제어 도크">
             <button type="button" data-panel-toggle="model-browser-panel" class="active" title="모델 트리 표시/숨김"><i class="fa-solid fa-list-ul"></i> 모델</button>
             <button type="button" data-panel-toggle="jog-panel" disabled title="로봇 JOG 패널 표시/숨김"><i class="fa-solid fa-gamepad"></i> JOG</button>
+            <button type="button" data-panel-toggle="position-points-panel" disabled title="P.pts"><i class="fa-solid fa-location-dot"></i> P.pts</button>
             <button type="button" data-panel-toggle="tcp-profile-panel" disabled title="Tool 설정"><i class="fa-solid fa-crosshairs"></i> <span id="tcp-launcher-label">Tool 0</span></button>
             <button id="btn-measurement" type="button" data-panel-toggle="measurement-panel" title="치수 측정 패널 표시/숨기기" aria-label="치수 측정 패널 표시/숨기기" aria-pressed="false"><i class="fa-solid fa-ruler-combined"></i> 치수</button>
             <button id="btn-shape-panel" type="button" data-panel-toggle="shape-panel" title="도형 생성 및 편집 표시/숨기기" aria-label="도형 생성 및 편집 표시/숨기기" aria-pressed="false"><i class="fa-solid fa-cubes-stacked"></i> 도형</button>
@@ -2574,7 +2621,7 @@
         </div>
     </footer>
 
-    <script type="module" src="main.js?v=20261031-work-origin-1"></script>
+    <script type="module" src="main.js?v=20261101-vacuum-surface-1&amp;rapid=20261102-s7-2"></script>
 <script src="/0_Home/tool-guide-embed.js?v=20260906-2"></script>
 </body>
 </html>
