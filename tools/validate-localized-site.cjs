@@ -356,7 +356,7 @@ releaseAssets.forEach(([relativePath, label]) => {
 });
 const debuggingHtml = read('7_DebuggingTool/index.html');
 assert(debuggingHtml.includes('https://github.com/hois56/InoRobotAssistant/releases/download/cad-lightweight-v1.2/CAD_Lightweight_V1.2.zip'), 'CAD Lightweight does not link its current GitHub Release asset.');
-assert(debuggingHtml.includes('CommunicationTester/InoRobot_Comm_Test_V3.3.zip')
+assert(debuggingHtml.includes('https://github.com/hois56/InoRobotAssistant/releases/download/communication-tester-v3.3/InoRobot_Comm_Test_V3.3.zip')
     && debuggingHtml.includes('Trace/InoRobotTrace_V1.5.zip'), 'Debugging Tool does not link the current release archives.');
 assert(!debuggingHtml.includes('InoRobot_Comm_Test_V2.8.zip') && !debuggingHtml.includes('InoRobotTrace_V1.4.zip'), 'Debugging Tool still links a retired release archive.');
 const simulationHtml = read('2_3DSimulation/index.html');

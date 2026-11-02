@@ -102,6 +102,15 @@
       "size": 57421952,
       "sha256": "1f55e096637de12b4c20add5c1cd964c5b4dc3d014fe79ecf812f3199fdf03d0",
       "url": "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/InoRobotTP_win_x86_V4R24C4SPC0L23F121.zip"
+    },
+    {
+      "paths": [
+        "7_DebuggingTool/CommunicationTester/InoRobot_Comm_Test_V3.3.zip"
+      ],
+      "fileName": "InoRobot_Comm_Test_V3.3.zip",
+      "size": 67904289,
+      "sha256": "279f032cc6d66f87a2b960892d528dba9e005c4cda4a54e0ef37204a4e27b67b",
+      "url": "https://github.com/hois56/InoRobotAssistant/releases/download/communication-tester-v3.3/InoRobot_Comm_Test_V3.3.zip"
     }
   ]
 }

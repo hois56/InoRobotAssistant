@@ -133,7 +133,11 @@ test('Communication Tester 다운로드는 실행 파일을 담은 ZIP 아카이
   const html = fs.readFileSync(path.join(repoRoot, '7_DebuggingTool/index.html'), 'utf8');
   const archivePath = path.join(repoRoot, '7_DebuggingTool/CommunicationTester/InoRobot_Comm_Test_V3.3.zip');
 
-  assert.match(html, /href="CommunicationTester\/InoRobot_Comm_Test_V3\.3\.zip"/);
+  const manifest = JSON.parse(fs.readFileSync(path.join(repoRoot, 'downloads/release-assets.json'), 'utf8'));
+  const asset = manifest.assets.find(asset => asset.fileName === 'InoRobot_Comm_Test_V3.3.zip');
+  assert.ok(asset);
+  assert.equal(asset.url, 'https://github.com/hois56/InoRobotAssistant/releases/download/communication-tester-v3.3/InoRobot_Comm_Test_V3.3.zip');
+  assert.ok(html.includes('href="' + asset.url + '"'));
   const archive = fs.readFileSync(archivePath);
   assert.equal(archive.readUInt32LE(0), 0x04034b50, 'Communication Tester 다운로드 파일이 ZIP 아카이브가 아닙니다.');
 });
