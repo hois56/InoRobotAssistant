@@ -1,0 +1,122 @@
+{
+  "source": "librobot.so",
+  "sha256": "64ec286570ddf869e98c279e70deff0094d8f01ced61c54748f61f23e8f22e0a",
+  "scope": "Original SetOriginPointIO, GetOriPoiOffsetByIndex, SetOriPointIOOutput and SetHomeIO/CancelSetHomeIO; configured native memory and home-pointer state supplied, feedback/count/mask services supplied, bus writes recorded. Not full machine configuration loading or realtime scheduler emulation.",
+  "toleranceEpsilon": 0.0009,
+  "cases": [
+    {
+      "mode": 0,
+      "configuredOutput": -1,
+      "joint1Delta": 0,
+      "independentAxisMask": 0,
+      "externalAxisCount": 0,
+      "external1Delta": 0,
+      "writes": []
+    },
+    {
+      "mode": 1,
+      "configuredOutput": 519,
+      "joint1Delta": 0,
+      "independentAxisMask": 0,
+      "externalAxisCount": 0,
+      "external1Delta": 0,
+      "writes": [
+        {
+          "index": 519,
+          "kind": 3,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "mode": 1,
+      "configuredOutput": 519,
+      "joint1Delta": 0.0108,
+      "independentAxisMask": 0,
+      "externalAxisCount": 0,
+      "external1Delta": 0,
+      "writes": [
+        {
+          "index": 519,
+          "kind": 3,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "mode": 1,
+      "configuredOutput": 519,
+      "joint1Delta": 0.011,
+      "independentAxisMask": 0,
+      "externalAxisCount": 0,
+      "external1Delta": 0,
+      "writes": [
+        {
+          "index": 519,
+          "kind": 3,
+          "value": 0
+        }
+      ]
+    },
+    {
+      "mode": 1,
+      "configuredOutput": 519,
+      "joint1Delta": 10,
+      "independentAxisMask": 1,
+      "externalAxisCount": 0,
+      "external1Delta": 0,
+      "writes": [
+        {
+          "index": 519,
+          "kind": 3,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "mode": 1,
+      "configuredOutput": 600,
+      "joint1Delta": 0,
+      "independentAxisMask": 0,
+      "externalAxisCount": 1,
+      "external1Delta": 100,
+      "writes": [
+        {
+          "index": 600,
+          "kind": 3,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "mode": 2,
+      "configuredOutput": 600,
+      "joint1Delta": 0,
+      "independentAxisMask": 0,
+      "externalAxisCount": 1,
+      "external1Delta": 100,
+      "writes": [
+        {
+          "index": 600,
+          "kind": 3,
+          "value": 0
+        }
+      ]
+    },
+    {
+      "mode": 2,
+      "configuredOutput": 600,
+      "joint1Delta": 0,
+      "independentAxisMask": 0,
+      "externalAxisCount": 1,
+      "external1Delta": 0.005,
+      "writes": [
+        {
+          "index": 600,
+          "kind": 3,
+          "value": 1
+        }
+      ]
+    }
+  ]
+}

@@ -322,7 +322,11 @@
                   "`[수정]` 가상컨트롤러 연결 시 수평 자세에서도 Tool의 사분점 높이가 달라지던 문제를 해결했습니다.",
                   "`[수정]` 충돌 감지를 켠 상태에서 부품이 많은 모델로 시뮬레이션할 때 화면이 버벅거리던 문제를 해결했습니다.",
                   "`[개선]` 동작 이름을 직접 편집하고 모델 트리 우클릭에서 등록된 동작을 시험할 수 있도록 했습니다. 이동 대상과 그리퍼 항목을 제거하고 IO 설정을 동작 조건·출력 신호·입력 신호 순으로 정리했습니다.",
-                  "`[개선]` S7-60 Z20의 RapidMove 이동 시간을 로봇 동역학과 Tool·암 부하, 가감속·램프 설정에 따라 계산하도록 개선하고, OLP 프로그램의 Tool 좌표·부하와 RapidMove 설정을 반영하도록 했습니다."
+                  "`[개선]` R7H·R10H·R25·R15H·S4·S7·S10·S25 등 로봇 기종별 동역학과 부하·가감속·램프 설정을 RapidMove 이동 시간에 반영하고, OLP의 Tool 설정과 연속 Z[0] 이동 처리를 개선했습니다.",
+                  "`[수정]` 천장형 TS 로봇의 Tool 기준 좌표가 맞지 않던 문제를 해결했습니다.",
+                  "`[추가]` 프로젝트 생성기로 만든 프로그램의 공정·티칭·레시피·백그라운드 PLC·비전 통신을 OLP에서 실행하고 가상 비전 응답을 입력할 수 있도록 지원했습니다.",
+                  "`[수정]` OLP의 직선 이동 경로와 Tool·Wobj 좌표 반영을 개선하고, 명령 반복 실행에 불필요한 대기 시간이 쌓이던 문제를 해결했습니다.",
+                  "`[수정]` OLP에서 일시정지 중에도 이동이 계속되거나 재시작 시 전역 변수와 레시피 선택이 초기화되던 문제를 해결했습니다."
                 ]
               },
               {
@@ -728,6 +732,12 @@
             "title": "Project Generator",
             "versions": [
               {
+                "title": "Ver 26.10.31",
+                "items": [
+                  "`[수정]` 불러온 설정의 추가 대기 위치가 8개를 넘으면 생성을 중단하여, 공정 프로그램과 P.pts의 위치 번호가 겹치는 파일이 생성되던 문제를 해결했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.10.17",
                 "items": [
                   "`[수정]` 프로젝트 생성기에서 R20H 모델을 선택할 수 없던 문제를 해결했습니다."
@@ -1072,7 +1082,8 @@
               {
                 "title": "Ver 26.11.02",
                 "items": [
-                  "`[변경]` CAD Lightweight를 `V1.2 → V1.3`으로 업데이트했습니다."
+                  "`[변경]` CAD Lightweight를 `V1.2 → V1.3`으로 업데이트했습니다.",
+                  "`[변경]` Communication Tester를 `V3.2 → V3.3`으로 업데이트했습니다."
                 ]
               },
               {
@@ -1219,6 +1230,21 @@
           {
             "title": "communicationTester",
             "versions": [
+              {
+                "title": "Ver 3.3 (2026.11.02)",
+                "items": [
+                  "`[개선]` 여러 컨트롤러에 동시에 연결하고 하나의 공용 HMI에서 컨트롤러별 입출력을 조작·확인할 수 있도록 개선했습니다.",
+                  "`[개선]` 컨트롤러별 이름·IP·연결 상태와 HMI 주소 설정을 저장하고, 한 대상의 연결 종료가 다른 대상의 통신에 영향을 주지 않도록 개선했습니다.",
+                  "`[개선]` 펑션 코드에서 컨트롤러별 AND·OR 조건과 개별 출력·묶음 펄스를 사용할 수 있도록 개선했습니다.",
+                  "`[수정]` 펑션블록에서 조건이 유지되는데도 다른 분기로 넘어가거나 시작 신호가 꺼지면 Wait 다음 단계로 진행하지 못하던 문제를 해결했습니다.",
+                  "`[개선]` 펑션 코드 편집기의 줄바꿈·복사·붙여넣기·실행 취소 문제를 해결하고, 자동완성·들여쓰기·문법 안내·예제·오류 줄 이동을 개선했습니다.",
+                  "`[수정]` MC 통신의 D 주소를 펑션 코드에서 인식하지 못하던 문제를 해결했습니다.",
+                  "`[수정]` EIP 연결 직후 입출력이 전달되지 않거나 부하가 발생하면 연결이 끊기던 문제를 해결했습니다.",
+                  "`[수정]` 여러 가상 EIP 대상에 연결할 때 UDP 포트가 겹쳐 입출력이 전달되지 않던 문제를 해결했습니다.",
+                  "`[수정]` 입출력 변화가 화면과 펑션블록에 늦게 반영되거나 화면 조작이 느려지던 문제를 해결했습니다.",
+                  "`[수정]` 저장된 빈 HMI로 인해 기본 화면이 표시되지 않던 문제를 해결했습니다."
+                ]
+              },
               {
                 "title": "Ver 3.2 (2026.10.07)",
                 "items": [
@@ -1756,7 +1782,11 @@
                   "`[Fixed]` Fixed Tool quadrant snap heights differing at a level pose while connected to a virtual controller.",
                   "`[Fixed]` Fixed simulation stuttering with collision detection enabled in scenes containing models with many parts.",
                   "`[Improved]` Action names are editable, and registered actions can be tested from the model-tree context menu. Removed the moving-target section and gripper option, and arranged IO settings into condition, output, and input rows.",
-                  "`[Improved]` S7-60 Z20 RapidMove timing now uses robot dynamics, Tool/arm loads, acceleration/deceleration and ramp settings. OLP now applies program-defined Tool frames, loads and RapidMove settings."
+                  "`[Improved]` RapidMove timing now accounts for model-specific dynamics, loads, acceleration/deceleration and ramp settings for R7H, R10H, R25, R15H, S4, S7, S10, S25 and other supported robots. Improved OLP Tool settings and consecutive Z[0] motion handling.",
+                  "`[Fixed]` Fixed an incorrect Tool reference frame on ceiling-mounted TS robots.",
+                  "`[Added]` OLP now runs process, teaching, recipe, background PLC and vision communication programs produced by Project Generator, with configurable virtual vision replies.",
+                  "`[Fixed]` Improved OLP linear paths and Tool/Wobj coordinates, and fixed unnecessary waits accumulating during repeated command execution.",
+                  "`[Fixed]` Fixed OLP motion continuing while paused and global variables or recipe selections being lost after Stop/Start."
                 ]
               },
               {
@@ -2145,6 +2175,12 @@
             "title": "Project Generator",
             "versions": [
               {
+                "title": "Ver 26.10.31",
+                "items": [
+                  "`[Fixed]` Generation now rejects imported settings with more than eight extra wait positions, preventing duplicate point numbers in process programs and P.pts."
+                ]
+              },
+              {
                 "title": "Ver 26.10.17",
                 "items": [
                   "`[Fixed]` Fixed the missing R20H model in the project generator."
@@ -2489,7 +2525,8 @@
               {
                 "title": "Ver 26.11.02",
                 "items": [
-                  "`[Changed]` Updated CAD Lightweight from `V1.2` to `V1.3`."
+                  "`[Changed]` Updated CAD Lightweight from `V1.2` to `V1.3`.",
+                  "`[Changed]` Updated Communication Tester from `V3.2` to `V3.3`."
                 ]
               },
               {
@@ -2630,6 +2667,21 @@
           {
             "title": "communicationTester",
             "versions": [
+              {
+                "title": "Ver 3.3 (2026.11.02)",
+                "items": [
+                  "`[Improved]` Added simultaneous controller connections and controller-specific IO control through one shared HMI.",
+                  "`[Improved]` Added saved controller names, IPs, connection status and HMI addresses, while keeping other connections running when one target closes.",
+                  "`[Improved]` Improved controller-specific AND/OR conditions, individual outputs and grouped pulses in function code.",
+                  "`[Fixed]` Fixed incorrect branch changes and command sequences being cancelled before Wait completed when the start signal cleared.",
+                  "`[Improved]` Improved function-code editing: line breaks, copy/paste, undo, completion, indentation, syntax help, examples and error-line navigation.",
+                  "`[Fixed]` Fixed MC D-register addresses not being recognized in function code.",
+                  "`[Fixed]` Fixed missing IO immediately after EIP connection and intermittent disconnections under load.",
+                  "`[Fixed]` Fixed UDP port conflicts preventing IO exchange with multiple virtual EIP targets.",
+                  "`[Fixed]` Fixed delayed IO reflection in the HMI and function blocks, and sluggish screen interaction.",
+                  "`[Fixed]` Fixed saved empty HMI layouts hiding the default screens."
+                ]
+              },
               {
                 "title": "Ver 3.1 (2026.09.02)",
                 "items": [
@@ -3161,7 +3213,11 @@
                   "`[修复]` 修复了连接虚拟控制器时，Tool 处于水平姿态但四象限捕捉点高度不一致的问题。",
                   "`[修复]` 修复了启用碰撞检测时，包含大量零件的模型导致仿真卡顿的问题。",
                   "`[改进]` 支持编辑动作名称并通过模型树右键菜单测试已注册动作。移除了移动目标区域和夹爪选项，将IO设置按动作条件、输出信号、输入信号分行排列。",
-                  "`[改进]` S7-60 Z20 的 RapidMove 时间计算现已考虑机器人动力学、Tool/臂部负载及加减速和斜坡设置；OLP 现可应用程序中的 Tool 坐标、负载和 RapidMove 设置。"
+                  "`[改进]` R7H、R10H、R25、R15H、S4、S7、S10、S25 等受支持机器人的 RapidMove 时间计算已考虑各型号动力学、负载、加减速和斜坡设置，并改进 OLP 的 Tool 设置及连续 Z[0] 移动处理。",
+                  "`[修复]` 修复天花板安装 TS 机器人的 Tool 参考坐标系不正确的问题。",
+                  "`[新增]` OLP 现可运行项目生成器生成的工序、示教、配方、后台 PLC 和视觉通信程序，并可设置虚拟视觉响应。",
+                  "`[修复]` 改进了 OLP 的直线运动路径及 Tool/Wobj 坐标处理，解决了重复执行命令时累积不必要等待时间的问题。",
+                  "`[修复]` 解决了 OLP 暂停时运动仍继续，以及停止后重新启动时全局变量和配方选择丢失的问题。"
                 ]
               },
               {
@@ -3550,6 +3606,12 @@
             "title": "Project Generator",
             "versions": [
               {
+                "title": "Ver 26.10.31",
+                "items": [
+                  "`[修复]` 导入设置中的附加等待位置超过 8 个时将停止生成，避免工序程序与 P.pts 中的位置编号重复。"
+                ]
+              },
+              {
                 "title": "Ver 26.10.17",
                 "items": [
                   "`[修复]` 修复了项目生成器中缺少 R20H 型号的问题。"
@@ -3894,7 +3956,8 @@
               {
                 "title": "Ver 26.11.02",
                 "items": [
-                  "`[变更]` CAD Lightweight 从 `V1.2` 更新至 `V1.3`。"
+                  "`[变更]` CAD Lightweight 从 `V1.2` 更新至 `V1.3`。",
+                  "`[变更]` Communication Tester 从 `V3.2` 更新至 `V3.3`。"
                 ]
               },
               {
@@ -4035,6 +4098,21 @@
           {
             "title": "communicationTester",
             "versions": [
+              {
+                "title": "Ver 3.3 (2026.11.02)",
+                "items": [
+                  "`[改进]` 支持同时连接多个控制器，并通过一个公共 HMI 分别控制和查看各控制器的 IO。",
+                  "`[改进]` 支持保存控制器名称、IP、连接状态和 HMI 地址，关闭单个目标时其他连接可继续运行。",
+                  "`[改进]` 改进功能代码中的控制器独立 AND/OR 条件、单独输出和分组脉冲。",
+                  "`[修复]` 修复条件保持时错误切换分支，以及启动信号关闭后在 Wait 完成前取消命令序列的问题。",
+                  "`[改进]` 改进功能代码编辑器的换行、复制粘贴、撤销、自动补全、缩进、语法帮助、示例和错误行跳转。",
+                  "`[修复]` 修复功能代码无法识别 MC 通信 D 地址的问题。",
+                  "`[修复]` 修复 EIP 连接后 IO 无法立即传输，以及负载较高时连接间歇断开的问题。",
+                  "`[修复]` 修复连接多个虚拟 EIP 目标时 UDP 端口冲突导致 IO 无法传输的问题。",
+                  "`[修复]` 修复 IO 变化在 HMI 和功能块中显示延迟，以及界面操作缓慢的问题。",
+                  "`[修复]` 修复已保存的空 HMI 布局导致默认画面不显示的问题。"
+                ]
+              },
               {
                 "title": "Ver 3.1 (2026.09.02)",
                 "items": [
@@ -4566,7 +4644,11 @@
                   "`[Sửa lỗi]` Đã sửa lỗi các điểm bắt phần tư của Tool có độ cao khác nhau khi nằm ngang trong lúc kết nối bộ điều khiển ảo.",
                   "`[Sửa lỗi]` Đã khắc phục tình trạng giật khi mô phỏng các mô hình có nhiều chi tiết với tính năng phát hiện va chạm được bật.",
                   "`[Cải tiến]` Cho phép sửa tên chuyển động và thử chuyển động đã đăng ký từ menu chuột phải của cây mô hình. Bỏ mục đối tượng di chuyển và tùy chọn kẹp, sắp xếp IO thành các hàng điều kiện, tín hiệu đầu ra và tín hiệu đầu vào.",
-                  "`[Cải tiến]` Tính thời gian RapidMove của S7-60 Z20 theo động lực học robot, tải Tool/tay máy và cài đặt tăng/giảm tốc, ramp. OLP áp dụng tọa độ, tải Tool và cài đặt RapidMove trong chương trình."
+                  "`[Cải tiến]` Thời gian RapidMove cho R7H, R10H, R25, R15H, S4, S7, S10, S25 và các robot được hỗ trợ khác có xét động lực học từng mẫu, tải, tăng/giảm tốc và ramp. Cải thiện cài đặt Tool trong OLP và xử lý chuyển động Z[0] liên tiếp.",
+                  "`[Sửa]` Đã sửa hệ tọa độ tham chiếu Tool không chính xác trên robot TS gắn trần.",
+                  "`[Thêm]` OLP có thể chạy các chương trình công đoạn, dạy điểm, công thức, PLC nền và giao tiếp thị giác do Trình tạo dự án tạo ra, đồng thời cho phép cấu hình phản hồi thị giác ảo.",
+                  "`[Sửa]` Cải thiện đường chuyển động thẳng và tọa độ Tool/Wobj trong OLP, đồng thời khắc phục thời gian chờ không cần thiết tích lũy khi lặp lại lệnh.",
+                  "`[Sửa]` Khắc phục chuyển động OLP vẫn tiếp tục khi tạm dừng và biến toàn cục hoặc lựa chọn công thức bị mất sau khi dừng rồi chạy lại."
                 ]
               },
               {
@@ -4955,6 +5037,12 @@
             "title": "Project Generator",
             "versions": [
               {
+                "title": "Ver 26.10.31",
+                "items": [
+                  "`[Sửa]` Dừng tạo khi cấu hình nhập có hơn 8 vị trí chờ bổ sung, tránh trùng số điểm trong chương trình công đoạn và P.pts."
+                ]
+              },
+              {
                 "title": "Ver 26.10.17",
                 "items": [
                   "`[Sửa lỗi]` Đã khắc phục việc thiếu mẫu R20H trong trình tạo dự án."
@@ -5299,7 +5387,8 @@
               {
                 "title": "Ver 26.11.02",
                 "items": [
-                  "`[Thay đổi]` Đã cập nhật CAD Lightweight từ `V1.2` lên `V1.3`."
+                  "`[Thay đổi]` Đã cập nhật CAD Lightweight từ `V1.2` lên `V1.3`.",
+                  "`[Thay đổi]` Đã cập nhật Communication Tester từ `V3.2` lên `V3.3`."
                 ]
               },
               {
@@ -5440,6 +5529,21 @@
           {
             "title": "communicationTester",
             "versions": [
+              {
+                "title": "Ver 3.3 (2026.11.02)",
+                "items": [
+                  "`[Cải tiến]` Hỗ trợ kết nối đồng thời nhiều bộ điều khiển và điều khiển IO riêng qua một HMI dùng chung.",
+                  "`[Cải tiến]` Lưu tên, IP, trạng thái kết nối và địa chỉ HMI; các kết nối khác tiếp tục hoạt động khi đóng một đối tượng.",
+                  "`[Cải tiến]` Cải thiện điều kiện AND/OR theo bộ điều khiển, đầu ra riêng và xung nhóm trong mã chức năng.",
+                  "`[Sửa lỗi]` Sửa lỗi chuyển nhánh sai và hủy chuỗi lệnh trước khi Wait hoàn tất khi tín hiệu bắt đầu tắt.",
+                  "`[Cải tiến]` Cải thiện xuống dòng, sao chép/dán, hoàn tác, tự hoàn thành, thụt lề, hướng dẫn cú pháp, ví dụ và chuyển đến dòng lỗi.",
+                  "`[Sửa lỗi]` Sửa lỗi không nhận dạng địa chỉ D của giao tiếp MC trong mã chức năng.",
+                  "`[Sửa lỗi]` Sửa lỗi IO không được truyền ngay sau khi kết nối EIP và kết nối bị ngắt gián đoạn khi có tải.",
+                  "`[Sửa lỗi]` Sửa xung đột cổng UDP làm gián đoạn IO khi kết nối nhiều đối tượng EIP ảo.",
+                  "`[Sửa lỗi]` Sửa độ trễ cập nhật IO trong HMI và khối chức năng, cùng tình trạng thao tác màn hình chậm.",
+                  "`[Sửa lỗi]` Sửa lỗi bố cục HMI trống đã lưu làm ẩn màn hình mặc định."
+                ]
+              },
               {
                 "title": "Ver 3.1 (2026.09.02)",
                 "items": [
@@ -5971,7 +6075,11 @@
                   "`[Düzeltildi]` Sanal denetleyiciye bağlıyken yatay konumdaki Tool çeyrek yakalama noktalarının yüksekliklerinin farklı olması giderildi.",
                   "`[Düzeltildi]` Çok sayıda parça içeren modellerin bulunduğu sahnelerde çarpışma algılama açıkken simülasyonun takılması sorunu giderildi.",
                   "`[İyileştirme]` Hareket adları düzenlenebilir ve kayıtlı hareketler model ağacının sağ tıklama menüsünden denenebilir. Hareket hedefi bölümü ve tutucu seçeneği kaldırıldı; IO ayarları koşul, çıkış ve giriş satırlarına ayrıldı.",
-                  "`[İyileştirme]` S7-60 Z20 RapidMove süre hesabı robot dinamiğini, Tool/kol yüklerini ve hızlanma/yavaşlama ile rampa ayarlarını kullanır. OLP, programdaki Tool koordinatlarını, yüklerini ve RapidMove ayarlarını uygular."
+                  "`[İyileştirme]` R7H, R10H, R25, R15H, S4, S7, S10, S25 ve desteklenen diğer robotlarda RapidMove süre hesabı modele özgü dinamik, yük, hızlanma/yavaşlama ve rampa ayarlarını dikkate alır. OLP Tool ayarları ve ardışık Z[0] hareket işlemleri iyileştirildi.",
+                  "`[Düzeltme]` Tavana monte TS robotlarda hatalı Tool referans koordinat sistemi sorunu giderildi.",
+                  "`[Eklendi]` OLP artık Proje Oluşturucu tarafından üretilen işlem, öğretme, reçete, arka plan PLC ve görüntü iletişimi programlarını çalıştırır; sanal görüntü yanıtları yapılandırılabilir.",
+                  "`[Düzeltildi]` OLP doğrusal hareket yolları ve Tool/Wobj koordinatları iyileştirildi; tekrarlanan komutlarda gereksiz bekleme sürelerinin birikmesi giderildi.",
+                  "`[Düzeltildi]` OLP hareketinin duraklatıldığında devam etmesi ve durdurup yeniden başlatınca genel değişkenlerin veya reçete seçiminin kaybolması giderildi."
                 ]
               },
               {
@@ -6360,6 +6468,12 @@
             "title": "Project Generator",
             "versions": [
               {
+                "title": "Ver 26.10.31",
+                "items": [
+                  "`[Düzeltildi]` İçe aktarılan ayarlarda sekizden fazla ek bekleme konumu varsa oluşturma durdurulur; işlem programları ve P.pts içinde yinelenen nokta numaraları önlenir."
+                ]
+              },
+              {
                 "title": "Ver 26.10.17",
                 "items": [
                   "`[Düzeltildi]` Proje oluşturucuda eksik olan R20H modeli eklendi."
@@ -6704,7 +6818,8 @@
               {
                 "title": "Ver 26.11.02",
                 "items": [
-                  "`[Değiştirildi]` CAD Lightweight, `V1.2` sürümünden `V1.3` sürümüne güncellendi."
+                  "`[Değiştirildi]` CAD Lightweight, `V1.2` sürümünden `V1.3` sürümüne güncellendi.",
+                  "`[Değiştirildi]` Communication Tester `V3.2` sürümünden `V3.3` sürümüne güncellendi."
                 ]
               },
               {
@@ -6845,6 +6960,21 @@
           {
             "title": "communicationTester",
             "versions": [
+              {
+                "title": "Ver 3.3 (2026.11.02)",
+                "items": [
+                  "`[İyileştirme]` Birden fazla denetleyiciye eşzamanlı bağlantı ve ortak HMI üzerinden denetleyiciye özel IO kontrolü eklendi.",
+                  "`[İyileştirme]` Denetleyici adı, IP, bağlantı durumu ve HMI adresleri kaydedilir; bir hedef kapatıldığında diğer bağlantılar çalışmaya devam eder.",
+                  "`[İyileştirme]` İşlev kodunda denetleyiciye özel AND/OR koşulları, ayrı çıkışlar ve toplu darbeler iyileştirildi.",
+                  "`[Düzeltildi]` Hatalı dal geçişleri ve başlangıç sinyali kapandığında Wait tamamlanmadan komut dizisinin iptal edilmesi düzeltildi.",
+                  "`[İyileştirme]` Satır sonu, kopyala/yapıştır, geri alma, otomatik tamamlama, girinti, sözdizimi yardımı, örnekler ve hata satırına geçiş iyileştirildi.",
+                  "`[Düzeltildi]` İşlev kodunda MC iletişiminin D adreslerinin tanınmaması düzeltildi.",
+                  "`[Düzeltildi]` EIP bağlantısından hemen sonra IO iletilememesi ve yük altında bağlantının aralıklı kopması düzeltildi.",
+                  "`[Düzeltildi]` Birden fazla sanal EIP hedefine bağlanırken IO aktarımını engelleyen UDP port çakışmaları düzeltildi.",
+                  "`[Düzeltildi]` HMI ve işlev bloklarında IO güncelleme gecikmesi ve yavaş ekran etkileşimi düzeltildi.",
+                  "`[Düzeltildi]` Kaydedilmiş boş HMI düzenlerinin varsayılan ekranları gizlemesi düzeltildi."
+                ]
+              },
               {
                 "title": "Ver 3.1 (2026.09.02)",
                 "items": [
@@ -7376,7 +7506,11 @@
                   "`[Исправлено]` Исправлены различия высоты точек привязки к квадрантам Tool в горизонтальном положении при подключении к виртуальному контроллеру.",
                   "`[Исправлено]` Исправлены задержки симуляции при включённом обнаружении столкновений в сценах с моделями из большого числа деталей.",
                   "`[Улучшено]` Названия действий можно редактировать, а зарегистрированные действия проверять через контекстное меню дерева моделей. Убраны раздел движущихся объектов и пункт захвата; настройки IO разделены на строки условия, выходных и входных сигналов.",
-                  "`[Улучшено]` Расчет времени RapidMove для S7-60 Z20 учитывает динамику робота, нагрузки Tool/руки и настройки ускорения, замедления и рампы. OLP применяет заданные в программе координаты Tool, нагрузки и настройки RapidMove."
+                  "`[Улучшено]` Расчёт времени RapidMove для R7H, R10H, R25, R15H, S4, S7, S10, S25 и других поддерживаемых роботов учитывает динамику модели, нагрузки, ускорение, замедление и рампу. Улучшены настройки Tool в OLP и обработка последовательных движений Z[0].",
+                  "`[Исправлено]` Исправлена неверная система координат Tool у потолочных роботов TS.",
+                  "`[Добавлено]` OLP поддерживает программы операций, обучения, рецептов, фонового ПЛК и обмена с системой машинного зрения из генератора проектов, а также настройку виртуальных ответов системы зрения.",
+                  "`[Исправлено]` Улучшены линейные траектории OLP и обработка координат Tool/Wobj; устранено накопление лишних задержек при повторном выполнении команд.",
+                  "`[Исправлено]` Устранены продолжение движения OLP во время паузы и потеря глобальных переменных или выбранного рецепта после остановки и повторного запуска."
                 ]
               },
               {
@@ -7765,6 +7899,12 @@
             "title": "Project Generator",
             "versions": [
               {
+                "title": "Ver 26.10.31",
+                "items": [
+                  "`[Исправлено]` Генерация останавливается, если импортированные настройки содержат более восьми дополнительных позиций ожидания, чтобы избежать повторения номеров точек в программах операций и P.pts."
+                ]
+              },
+              {
                 "title": "Ver 26.10.17",
                 "items": [
                   "`[Исправлено]` Исправлено отсутствие модели R20H в генераторе проектов."
@@ -8109,7 +8249,8 @@
               {
                 "title": "Ver 26.11.02",
                 "items": [
-                  "`[Изменено]` CAD Lightweight обновлён с `V1.2` до `V1.3`."
+                  "`[Изменено]` CAD Lightweight обновлён с `V1.2` до `V1.3`.",
+                  "`[Изменено]` Communication Tester обновлён с `V3.2` до `V3.3`."
                 ]
               },
               {
@@ -8250,6 +8391,21 @@
           {
             "title": "communicationTester",
             "versions": [
+              {
+                "title": "Ver 3.3 (2026.11.02)",
+                "items": [
+                  "`[Улучшено]` Добавлены одновременные подключения к нескольким контроллерам и управление их IO через общую HMI.",
+                  "`[Улучшено]` Сохраняются имена контроллеров, IP, состояние подключения и адреса HMI; закрытие одной цели не прерывает остальные подключения.",
+                  "`[Улучшено]` Улучшены условия AND/OR по контроллерам, отдельные выходы и групповые импульсы в функциональном коде.",
+                  "`[Исправлено]` Исправлены неверное переключение ветвей и отмена последовательности до завершения Wait при отключении стартового сигнала.",
+                  "`[Улучшено]` Улучшены перенос строк, копирование/вставка, отмена, автодополнение, отступы, справка по синтаксису, примеры и переход к строке ошибки.",
+                  "`[Исправлено]` Исправлено распознавание адресов D протокола MC в функциональном коде.",
+                  "`[Исправлено]` Исправлены отсутствие передачи IO сразу после подключения EIP и периодические разрывы соединения под нагрузкой.",
+                  "`[Исправлено]` Исправлены конфликты UDP-портов, мешавшие обмену IO с несколькими виртуальными целями EIP.",
+                  "`[Исправлено]` Исправлены задержки обновления IO в HMI и функциональных блоках и медленная работа интерфейса.",
+                  "`[Исправлено]` Исправлено скрытие стандартных экранов из-за сохранённой пустой компоновки HMI."
+                ]
+              },
               {
                 "title": "Ver 3.1 (2026.09.02)",
                 "items": [

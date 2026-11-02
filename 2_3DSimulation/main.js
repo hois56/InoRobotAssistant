@@ -4,6 +4,11 @@
  */
 
 import * as THREE from 'three';
+import {OlpSocketService} from './olp-socket-service.mjs?v=20261102-generator-2';
+import {evaluateOlpHomeStatus} from './olp-home-status.mjs?v=20261102-generator-2';
+import {OlpTorqueFeedback,sampleOlpJointMotion,finishOlpJointMotion,getOlpJointMotionSample} from './olp-torque-feedback.mjs?v=20261102-generator-2';
+import {RAPID_MODEL_DATA} from './rapid-model-data.mjs?v=20261102-models-2';
+import { hasRapidDynamicsModel, resolveRapidDynamicsModel } from './robot-rapid-dynamics.mjs?v=20261102-models-2';
 import { createPositionPointsUi } from './position-points-ui.mjs?v=20261031-9';
 import { normalizeToolLoad, buildToolProgram, buildFrameProgram, combineToolLoads } from './tool-data-core.mjs';
 import { VIEW_PRESET_COUNT } from './view-preset-core.mjs';
@@ -79,7 +84,7 @@ import {
     reorderMotionSteps,
     normalizeMotionProject,
     normalizeRegisteredPositions
-} from './motion-program-core.mjs?v=20261102-s7-native-2';
+} from './motion-program-core.mjs?v=20261102-models-2';
 import {
     INTERFERENCE_ZONE_COUNT,
     INTERFERENCE_COORDINATE_MIN,
@@ -121,7 +126,7 @@ import {
     resolveOlpPoint,
     refreshOlpProjectDerivedData,
     updateOlpFileText
-} from './olp-project-core.mjs';
+} from './olp-project-core.mjs?v=20261102-generator-2';
 import { createEquipmentApp } from './equipment-app.mjs?v=20261101-vacuum-surface-1';
 import { EQUIPMENT_TYPES, EQUIPMENT_IO_TYPES, EQUIPMENT_LABELS, normalizeEquipmentDefinition, equipmentMotionGroups, equipmentReferences, equipmentCommandOptions } from './equipment-core.mjs?v=20261101-vacuum-surface-1';
 import { equipmentObjectRef } from './equipment-scene.mjs?v=20261101-vacuum-surface-1';
@@ -185,7 +190,7 @@ import {
     OlpRuntime,
     clampWord,
     normalizeAddress as normalizeOlpAddress
-} from './olp-runtime.mjs?v=20261102-olp-tool-values-1';
+} from './olp-project-runtime.mjs?v=20261102-generator-2';
 import {
     COLLABORATION_STATE_INTERVAL_MS,
     MAX_COLLABORATION_MESSAGE_BYTES,
@@ -28380,7 +28385,10 @@ function createRobotManifest(modelDefinition) {
             rapidMove: normalizedRapidMove,
             tcp: wrist,
             ikRotationAxes: ['z'],
-            toolAxes: SCARA_TOOL_AXES,
+            // The native ceiling-SCARA zero flange is rotated pi around Z.
+            toolAxes: kinematicVariant === 'ceiling-scara'
+                ? { x: [-1, 0, 0], y: [0, -1, 0], z: [0, 0, 1] }
+                : SCARA_TOOL_AXES,
             base: { name: 'P0', mesh: 'P0.stl', color: bodyColor },
             tube: kinematicVariant === 'ceiling-scara'
                 ? null
@@ -33144,7 +33152,11 @@ function captureCurrentTcpTarget(robot) {
 
 function getTcpRotationDegrees(robot, pose) {
     if (robot.userData.manifest?.robotType === 'scara' && robot.userData.toolHomeQuaternion) {
-        const relativeRotation = quaternionErrorVector(pose.quaternion, robot.userData.toolHomeQuaternion);
+        // Ceiling SCARA reports absolute native A, including its pi flange
+        // offset. The internal IK still solves relative to toolHomeQuaternion.
+        const reference = robot.userData.manifest.kinematicVariant === 'ceiling-scara'
+            ? new THREE.Quaternion() : robot.userData.toolHomeQuaternion;
+        const relativeRotation = quaternionErrorVector(pose.quaternion, reference);
         return {
             rx: 0,
             ry: 0,
@@ -35879,6 +35891,7 @@ function setOlpMonitorAddress(element, entry) {
 }
 
 function renderOlpIoMonitorNow() {
+    renderOlpSocketSimulator();
     const project = getOlpProject();
     const inputBit = getOlpMonitorAddress('IN', state.olp.lastRawInputBitAddress, project);
     const outputBit = getOlpMonitorAddress('OUT', '', project);
@@ -36937,7 +36950,7 @@ function readOlpSimulatorBit(directionValue, bitAddress) {
         const words = getOlpSimulatorMemory(direction);
         return (words[Math.floor((bit - OLP_BIT_START) / 16)] >> ((bit - OLP_BIT_START) % 16)) & 1;
     }
-    if (!isOlpSimulatorBitAddress(bit)) return 0;
+    if (!isOlpSimulatorBitAddress(bit) && !(bit >= 12800 && bit <= 13823)) return 0;
     return getOlpSimulatorExtended(direction)?.get(`${direction}[${bit}]`) || 0;
 }
 
@@ -36955,7 +36968,7 @@ function writeOlpSimulatorBit(directionValue, bitAddress, enabled) {
         words[wordIndex] = numeric ? words[wordIndex] | mask : words[wordIndex] & ~mask;
         return;
     }
-    if (isOlpSimulatorBitAddress(bit)) getOlpSimulatorExtended(direction)?.set(`${direction}[${bit}]`, numeric);
+    if (isOlpSimulatorBitAddress(bit) || (bit >= 12800 && bit <= 13823)) getOlpSimulatorExtended(direction)?.set(`${direction}[${bit}]`, numeric);
 }
 
 function getOlpInputSignature() {
@@ -37786,13 +37799,16 @@ function handleIoFunctionMappingListClick(event) {
 function decodeOlpInputSnapshot(message) {
     const words = new Uint16Array(OLP_WORD_COUNT);
     words.set(message.words.slice(0, OLP_WORD_COUNT).map(clampWord));
-    const extended = new Map();
-    const readBit = (bit) => bit >= OLP_BIT_START
+    const extended = new Map([...(state.olp.inputExtended || new Map())].filter(([address]) => {
+        const match = String(address).match(/^IN\[(\d+)\]$/i);
+        return match && Number(match[1]) >= 12800 && Number(match[1]) <= 13823;
+    }));
+    const readBit = (bit) => bit >= OLP_BIT_START && bit < OLP_BIT_START + OLP_BIT_COUNT
         ? (words[Math.floor((bit - OLP_BIT_START) / 16)] >> ((bit - OLP_BIT_START) % 16)) & 1
         : extended.get(`IN[${bit}]`) || 0;
     const writeBit = (bit, enabled) => {
-        if (!isOlpSimulatorBitAddress(bit)) return;
-        if (bit < OLP_BIT_START) { extended.set(`IN[${bit}]`, enabled ? 1 : 0); return; }
+        if (!isOlpSimulatorBitAddress(bit) && !(bit >= 12800 && bit <= 13823)) return;
+        if (bit < OLP_BIT_START || bit >= 12800) { extended.set(`IN[${bit}]`, enabled ? 1 : 0); return; }
         const index = Math.floor((bit - OLP_BIT_START) / 16);
         const mask = 1 << ((bit - OLP_BIT_START) % 16);
         words[index] = enabled ? words[index] | mask : words[index] & ~mask;
@@ -37802,7 +37818,7 @@ function decodeOlpInputSnapshot(message) {
         if (!parsed || !['IN', 'INB', 'INW'].includes(parsed.prefix)) continue;
         const bitStart = getOlpGroupedBitStart(parsed);
         const bitWidth = parsed.prefix === 'IN' ? 1 : parsed.prefix === 'INB' ? 8 : 16;
-        if (isOlpSimulatorBitAddress(bitStart)) {
+        if (isOlpSimulatorBitAddress(bitStart) || (bitStart >= 12800 && bitStart + bitWidth - 1 <= 13823)) {
             writeIoSimulatorEntry({ bitStart, bitWidth }, value, writeBit);
         } else {
             extended.set(canonicalOlpAddress(parsed), clampWord(value));
@@ -37911,7 +37927,7 @@ function readOlpAddress(address, runtime = null) {
             : IO_SIMULATOR_DIRECTIONS.INPUT;
         const bitStart = getOlpGroupedBitStart(parsed);
         const bitWidth = parsed.prefix.endsWith('B') ? 8 : 16;
-        if (isOlpSimulatorBitAddress(bitStart)) {
+        if (isOlpSimulatorBitAddress(bitStart) || (bitStart >= 12800 && bitStart + bitWidth - 1 <= 13823)) {
             return readIoSimulatorEntry({ bitStart, bitWidth }, (bit) => readRobotProgramIoBit(robot, direction, bit));
         }
         return getOlpSimulatorExtended(direction)?.get(key) || 0;
@@ -37927,7 +37943,7 @@ function readOlpRawInputAddress(address, runtime = null) {
     if (parsed.prefix === 'IN') return readRobotProgramIoBit(robot, IO_SIMULATOR_DIRECTIONS.INPUT, parsed.index);
     const bitStart = getOlpGroupedBitStart(parsed);
     const bitWidth = parsed.prefix === 'INB' ? 8 : 16;
-    return isOlpSimulatorBitAddress(bitStart)
+    return (isOlpSimulatorBitAddress(bitStart) || (bitStart >= 12800 && bitStart + bitWidth - 1 <= 13823))
         ? readIoSimulatorEntry({ bitStart, bitWidth }, (bit) => readRobotProgramIoBit(robot, IO_SIMULATOR_DIRECTIONS.INPUT, bit))
         : (state.olp.inputExtended.get(canonicalOlpAddress(parsed)) || 0);
 }
@@ -37944,7 +37960,21 @@ function isControllerOutputLive(bitStart, bitWidth, robot = null) {
 function writeOlpAddress(address, value, runtime = null, projectOverride = null, robotOverride = null) {
     const project = projectOverride || runtime?.project || getOlpProject();
     const parsed = normalizeOlpAddress(address, project?.labels || {});
-    if (!parsed || !['OUT', 'OUTB', 'OUTW'].includes(parsed.prefix)) return;
+    if (!parsed) return;
+    if (['IN', 'INB', 'INW'].includes(parsed.prefix)) {
+        // Native program writes are legal only in the software/system input
+        // window. Physical equipment inputs remain owned by their producers.
+        const start = getOlpGroupedBitStart(parsed);
+        const width = parsed.prefix === 'IN' ? 1 : parsed.prefix === 'INB' ? 8 : 16;
+        if (start < 12800 || start + width - 1 > 13823)
+            throw new RangeError('Program input writes require IN[12800..13823]');
+        const numeric = width === 1 ? (Number(value) ? 1 : 0) : (Math.trunc(Number(value) || 0) >>> 0);
+        for (let i = 0; i < width; i++) writeOlpSimulatorBit(IO_SIMULATOR_DIRECTIONS.INPUT, start + i, (numeric >>> i) & 1);
+        state.olp.lastInputAt = Date.now();
+        renderOlpIoMonitor();
+        return;
+    }
+    if (!['OUT', 'OUTB', 'OUTW'].includes(parsed.prefix)) return;
     const direction = IO_SIMULATOR_DIRECTIONS.OUTPUT;
     const bitStart = parsed.prefix === 'OUT' ? parsed.index : getOlpGroupedBitStart(parsed);
     const bitWidth = parsed.prefix === 'OUT' ? 1 : (parsed.prefix === 'OUTB' ? 8 : 16);
@@ -37990,6 +38020,133 @@ function writeOlpAddress(address, value, runtime = null, projectOverride = null,
 // Main.js integration helper. Uses existing THREE, state, normalizeToolLoad,
 // ensureRobotTcpProfiles, normalizeArmLoadProperties and getArmLoadJointIndex.
 // All CoG values are mm; mass is kg; centered inertia is kg*m^2.
+const olpProjectMemoryBanks = new WeakMap();
+const olpSocketServices = new WeakMap();
+const olpTorqueServices = new WeakMap();
+const olpTorqueToolSnapshots = new WeakMap();
+
+function getRobotOlpSocketService(robot) {
+    if (!robot) throw new Error('Select one robot before using OLP Socket simulation.');
+    if (!olpSocketServices.has(robot)) {
+        olpSocketServices.set(robot, new OlpSocketService({
+            onChange: () => renderOlpSocketSimulator(),
+            onSend: ({channel, text}) => appendOlpConsole(`Socket Port[${channel}] → ${text}`)
+        }));
+    }
+    return olpSocketServices.get(robot);
+}
+
+function setupOlpSocketSimulator() {
+    const consoleElement = document.getElementById('olp-console');
+    if (!consoleElement || document.getElementById('olp-socket-simulator')) return;
+    const panel = document.createElement('details');
+    panel.id = 'olp-socket-simulator';
+    panel.className = 'olp-socket-simulator';
+    panel.dataset.panelDragIgnore = '';
+    panel.innerHTML = `<summary><span data-olp-socket-label="가상 비전 통신"></span></summary>
+        <div class="olp-socket-grid">
+            <label>Port <input id="olp-socket-channel" type="number" min="0" step="1" value="2"></label>
+            <label><input id="olp-socket-connected" type="checkbox"><span data-olp-socket-label="가상 장치 연결"></span></label>
+            <label class="olp-socket-response"><span data-olp-socket-label="수신 데이터"></span><input id="olp-socket-response" type="text" placeholder="X,Y,A" maxlength="1048576"></label>
+            <label><input id="olp-socket-auto-reply" type="checkbox"><span data-olp-socket-label="요청 시 자동 응답"></span></label>
+            <button id="olp-socket-inject" type="button" data-olp-socket-label="수신 데이터 입력"></button>
+            <small class="olp-socket-sent"><span data-olp-socket-label="마지막 송신"></span>: <output id="olp-socket-last-sent">—</output></small>
+        </div>`;
+    consoleElement.after(panel);
+    const selected = () => {
+        const robot = getOlpRobot();
+        const channel = Number(document.getElementById('olp-socket-channel').value);
+        return {robot, channel, service: robot ? getRobotOlpSocketService(robot) : null};
+    };
+    const configure = () => {
+        const {service, channel} = selected();
+        if (!service) return;
+        service.configure(channel, {
+            available: document.getElementById('olp-socket-connected').checked,
+            replyText: document.getElementById('olp-socket-auto-reply').checked
+                ? document.getElementById('olp-socket-response').value : null
+        });
+    };
+    document.getElementById('olp-socket-channel').addEventListener('change', renderOlpSocketSimulator);
+    document.getElementById('olp-socket-connected').addEventListener('change', configure);
+    document.getElementById('olp-socket-auto-reply').addEventListener('change', configure);
+    document.getElementById('olp-socket-response').addEventListener('input', configure);
+    document.getElementById('olp-socket-inject').addEventListener('click', () => {
+        const {service, channel} = selected();
+        if (!service) return;
+        service.inject(channel, document.getElementById('olp-socket-response').value);
+    });
+    renderOlpSocketSimulator();
+}
+
+function renderOlpSocketSimulator() {
+    const panel = document.getElementById('olp-socket-simulator');
+    if (!panel) return;
+    panel.querySelectorAll('[data-olp-socket-label]').forEach(element => {
+        element.textContent = uiText(element.dataset.olpSocketLabel);
+    });
+    const robot = getOlpRobot();
+    const channel = Number(document.getElementById('olp-socket-channel').value);
+    const service = robot ? olpSocketServices.get(robot) : null;
+    const snapshot = service?.snapshot(channel);
+    document.getElementById('olp-socket-connected').checked = snapshot?.available === true;
+    document.getElementById('olp-socket-auto-reply').checked = snapshot?.replyText !== null && snapshot?.replyText !== undefined;
+    const response = document.getElementById('olp-socket-response');
+    if (snapshot?.replyText !== null && snapshot?.replyText !== undefined && document.activeElement !== response)
+        response.value = snapshot.replyText;
+    document.getElementById('olp-socket-last-sent').textContent = snapshot?.lastSent || '—';
+    panel.querySelectorAll('input,button').forEach(element => {element.disabled = !robot;});
+}
+
+function readOlpTorqueFeedback(axis, runtime) {
+    const robot = getOlpRuntimeRobot(runtime);
+    if (!robot) throw new Error('Select one robot before reading torque.');
+    const toolIndex = Number(robot.userData.activeTcpProfileIndex) || 0;
+    const overrideKey = JSON.stringify([toolIndex, runtime?.getToolOverrides?.(toolIndex)]);
+    const applied = olpTorqueToolSnapshots.get(robot);
+    if (!applied || applied.memory !== runtime?.globalMemory || applied.key !== overrideKey) {
+        applyOlpTcpProfile(robot, {}, runtime);
+        olpTorqueToolSnapshots.set(robot, {memory: runtime?.globalMemory, key: overrideKey});
+    }
+    if (runtime && !runtime.torqueEstimateReported) {
+        runtime.torqueEstimateReported = true;
+        appendOlpConsole('OLP torque feedback is estimated from the robot dynamics model.');
+    }
+    const options = getRobotRapidMoveOptions(robot);
+    const requestedSource = runtime?.project?.projectInfo?.RobotName;
+    const catalog = RAPID_MODEL_DATA.models[options.modelFolder] || resolveRapidDynamicsModel(options)?.catalog;
+    if (requestedSource && catalog?.variantIds.includes(requestedSource)) options.sourceModel = requestedSource;
+    if (!olpTorqueServices.has(robot)) olpTorqueServices.set(robot, new OlpTorqueFeedback());
+    const sample = getOlpJointMotionSample(robot);
+    const joints = robot.userData.joints.map(joint => Number(joint.angle));
+    const fresh = sample && sample.joints.every((value,index) => Math.abs(value-joints[index])<1e-8);
+    return olpTorqueServices.get(robot).read(Number(axis), {
+        joints, options,
+        velocities: fresh ? sample.velocities : null,
+        accelerations: fresh ? sample.accelerations : null
+    });
+}
+
+function delayOlpWithSignal(milliseconds, _runtime, {signal} = {}) {
+    return new Promise((resolve,reject) => {
+        let timer;
+        const cleanup = () => signal?.removeEventListener('abort', abort);
+        const abort = () => {window.clearTimeout(timer);cleanup();reject(new Error('OLP stopped'));};
+        if (signal?.aborted) return abort();
+        signal?.addEventListener('abort', abort, {once:true});
+        timer = window.setTimeout(() => {cleanup();resolve();}, Math.max(0,milliseconds));
+    });
+}
+
+function handleOlpSavedPoints({path,text}, runtime) {
+    const robot = getOlpRuntimeRobot(runtime);
+    const project = runtime.project;
+    refreshOlpProjectDerivedData(project);
+    if (getOlpProjectForRobot(robot) === project && state.olp.selectedFile === path) setOlpEditorText(text);
+    appendOlpConsole(`SavePoints: ${path}`);
+}
+
+
 function getRobotRapidMoveOptions(robot, motionOptions = {}) {
     const data = robot?.userData || {};
     const manifest = data.manifest || {};
@@ -38057,7 +38214,24 @@ function getRobotRapidMoveOptions(robot, motionOptions = {}) {
             }
             return Math.max(0, value);
         });
-        armLoads.push({ linkIndex, mass: properties.mass, cog: center.toArray(), inertia });
+        let nativeCog = center.toArray();
+        let nativeInertia = inertia;
+        // CAD joint groups use the simulator's physical axes. Native Six body
+        // records use link inertia frames; the origins coincide for J3/J4.
+        if (manifest.robotType === 'six-axis') {
+            if (linkIndex === 2) {
+                nativeCog = [nativeCog[2], -nativeCog[0], -nativeCog[1]];
+                nativeInertia = [inertia[2], inertia[0], inertia[1]];
+            } else if (linkIndex === 3) {
+                nativeCog = [nativeCog[2], -nativeCog[1], nativeCog[0]];
+                nativeInertia = [inertia[2], inertia[1], inertia[0]];
+            } else {
+                throw new RangeError('Six-axis ArmLoad must be attached to J3 or J4');
+            }
+        } else if (manifest.kinematicVariant === 'ceiling-scara' && linkIndex === 1) {
+            nativeCog = [-nativeCog[0], -nativeCog[1], nativeCog[2]];
+        }
+        armLoads.push({ linkIndex, mass: properties.mass, cog: nativeCog, inertia: nativeInertia });
     }
     const options = {
         ...(manifest.rapidMove || {}),
@@ -38066,6 +38240,11 @@ function getRobotRapidMoveOptions(robot, motionOptions = {}) {
         modelName: data.motionModelName || definition.name || manifest.name || data.robotName || '',
         modelFolder: data.motionModelFolder || definition.folder || '',
         toolLoad: normalizeToolLoad(profile?.load),
+        // Native mechanical jerk distance uses the active TCP origin. Its
+        // translation is separate from the already flange-based load CoG.
+        toolTranslationMm: profile?.position?.isVector3
+            ? profile.position.toArray()
+            : Array.isArray(profile?.position) ? [...profile.position] : [0, 0, 0],
         armLoads,
         ...motionOptions,
         enabled: typeof motionOptions.rapidMove?.ptp === 'boolean'
@@ -38110,10 +38289,29 @@ function getRobotRapidMoveOptions(robot, motionOptions = {}) {
 }
 
 
+async function waitForOlpMotionResume(robot, runtime) {
+    // Preserve the motion history while the UI reports a stationary robot.
+    // Resuming shifts its timestamp rather than introducing an artificial
+    // zero-to-running acceleration sample or counting the paused wall time.
+    const startedAt = performance.now();
+    const previous = getOlpJointMotionSample(robot);
+    finishOlpJointMotion(robot, startedAt);
+    await runtime.waitIfPaused();
+    const pausedMilliseconds = Math.max(0, performance.now() - startedAt);
+    if (previous) sampleOlpJointMotion(robot, previous.timeMilliseconds + pausedMilliseconds, {
+        velocities: previous.velocities,
+        accelerations: previous.accelerations
+    });
+    else finishOlpJointMotion(robot, performance.now());
+    return pausedMilliseconds;
+}
+
 async function animateOlpJointMove(robot, targetAngles, speed, {
     motion = 'MOVJ', startPose = null, targetPose = null, speedProvider = null,
     accelerationScale = 1, zone = null, shouldStop = null, onProgress = null, runtime = null, motionOptions = {}
 } = {}) {
+    if (runtime) runtime.activeInterpolatedMotions = (runtime.activeInterpolatedMotions || 0) + 1;
+    try {
     const starts = robot.userData.joints.map((joint) => joint.angle);
     const targets = robot.userData.joints.map((joint, index) => Number(targetAngles[index] ?? starts[index]));
     const isLinear = motion === 'MOVL' && startPose && targetPose;
@@ -38121,11 +38319,13 @@ async function animateOlpJointMove(robot, targetAngles, speed, {
         if (runtime?.cancelled) throw new Error('OLP stopped');
         if (shouldStop?.()) {
             captureCurrentTcpTarget(robot);
+            finishOlpJointMotion(robot);
             return { interrupted: true, progress: 0 };
         }
         captureCurrentTcpTarget(robot);
         onProgress?.({ progress: 1, elapsedSeconds: 0, durationSeconds: 0, distance: 0 });
-        return { interrupted: false, progress: 1 };
+        finishOlpJointMotion(robot);
+    return { interrupted: false, progress: 1 };
     }
     const continuousPath = String(zone || '').trim().toUpperCase() === 'CP';
     const pathDistance = isLinear ? startPose.position.distanceTo(targetPose.position) : 0;
@@ -38139,10 +38339,13 @@ async function animateOlpJointMove(robot, targetAngles, speed, {
                 robot.userData.manifest?.cartesianMotion
             )
             : calculateMovjDuration(starts, targets, robot.userData.joints, effectiveSpeed);
-        // Preserve the controller's V[]/Velset relationship while keeping OLP
-        // responsive at intentionally low test speeds.
+        // Keep physical playback time at slow/long moves. UI responsiveness
+        // comes from yielding between frames, not shortening the motion.
         const scaledDuration = durationSeconds / Math.max(0.2, Math.min(1.2, Number(accelerationScale) || 1));
-        return Math.max(100, Math.min(8000, scaledDuration * 1000));
+        if (!Number.isFinite(scaledDuration) || scaledDuration <= 0) {
+            throw new Error('OLP motion duration is not finite and positive.');
+        }
+        return scaledDuration * 1000;
     };
     const rapidMove = !isLinear
         ? createRapidMoveState(
@@ -38153,13 +38356,24 @@ async function animateOlpJointMove(robot, targetAngles, speed, {
             getRobotRapidMoveOptions(robot, motionOptions)
         )
         : null;
-    const startAt = performance.now();
+    // A queued Z0 sequence follows one motion timeline. A late display
+    // callback must not move every subsequent segment's start into the future.
+    const queueTiming = rapidMove?.nativeScalarProfile === true
+        ? motionOptions.motionQueueTiming : null;
+    let startAt = Number.isFinite(queueTiming?.nextStartAt)
+        ? queueTiming.nextStartAt : performance.now();
     let previousAt = startAt;
     let distanceProgress = 0;
     while (true) {
         if (runtime?.cancelled) throw new Error('OLP stopped');
+        if (runtime?.paused) {
+            const pausedMilliseconds = await waitForOlpMotionResume(robot, runtime);
+            startAt += pausedMilliseconds;
+            previousAt += pausedMilliseconds;
+        }
         if (shouldStop?.()) {
             captureCurrentTcpTarget(robot);
+            finishOlpJointMotion(robot);
             return { interrupted: true, progress: distanceProgress };
         }
         const now = performance.now();
@@ -38167,7 +38381,7 @@ async function animateOlpJointMove(robot, targetAngles, speed, {
             ? rapidMove.durationSeconds * 1000 : getDuration();
         const overrideScale = normalizeProgramSpeedOverride(state.programSpeedOverride) / 100;
         const elapsedMilliseconds = Math.max(0, now - previousAt) * overrideScale;
-        const deltaSeconds = rapidMove?.planner === 's7-rapid-dynamics'
+        const deltaSeconds = rapidMove?.nativeScalarProfile === true
             ? elapsedMilliseconds / 1000
             : Math.max(0, Math.min(
                 RAPID_MOVE_DEFAULTS.maxStepSeconds,
@@ -38193,9 +38407,32 @@ async function animateOlpJointMove(robot, targetAngles, speed, {
         }
         const eased = rapidMove?.enabled || continuousPath
             ? progress
-            : progress * progress * (3 - 2 * progress);
-        targets.forEach((target, index) => setJointAngle(robot.userData.joints[index], starts[index] + (target - starts[index]) * eased, false));
+            : isLinear ? sCurveProgress(progress) : progress * progress * (3 - 2 * progress);
+        if (isLinear) {
+            // MOVL is a TCP line, not a joint-angle interpolation. Solve each
+            // Cartesian sample in the already resolved controller BASE frame.
+            const pose = {
+                position: startPose.position.clone().lerp(targetPose.position, eased),
+                quaternion: startPose.quaternion.clone().slerp(targetPose.quaternion, eased).normalize()
+            };
+            const previousAngles = robot.userData.joints.map(joint => joint.angle);
+            const solved = solveRobotIK(robot, pose, {
+                positionTolerance: 0.01,
+                rotationTolerance: THREE.MathUtils.degToRad(0.01),
+                armParameters: targetPose.armParameters || motionOptions.armParameters
+            });
+            if (!solved.success) {
+                restoreRobotJointAngles(robot, previousAngles);
+                throw new Error('IK failed for MOVL path: ' + (solved.reason || 'interpolated TCP pose is unreachable'));
+            }
+        } else {
+            targets.forEach((target, index) => setJointAngle(robot.userData.joints[index], starts[index] + (target - starts[index]) * eased, false));
+        }
         robot.updateMatrixWorld(true);
+        sampleOlpJointMotion(robot, performance.now(), rapidMove?.nativeScalarProfile ? {
+            velocities: targets.map((value,index) => (value-starts[index])*rapidMove.velocity*overrideScale),
+            accelerations: targets.map((value,index) => (value-starts[index])*rapidMove.acceleration*overrideScale*overrideScale)
+        } : null);
         syncJointControls(robot);
         captureCurrentTcpTarget(robot);
         appendTcpPathPoint(robot);
@@ -38206,8 +38443,15 @@ async function animateOlpJointMove(robot, targetAngles, speed, {
             durationSeconds: durationMilliseconds / 1000,
             distance: pathDistance
         });
-        if (progress >= 1) break;
-        const waitMilliseconds = rapidMove?.planner === 's7-rapid-dynamics'
+        if (progress >= 1) {
+            if (queueTiming) {
+                const overrunMilliseconds = Math.max(0,
+                    rapidMove.elapsedSeconds - rapidMove.durationSeconds) * 1000 / overrideScale;
+                queueTiming.nextStartAt = now - overrunMilliseconds;
+            }
+            break;
+        }
+        const waitMilliseconds = rapidMove?.nativeScalarProfile === true
             ? Math.min(16, Math.max(0,
                 (rapidMove.durationSeconds - rapidMove.elapsedSeconds) * 1000 / overrideScale
                 - (performance.now() - now)))
@@ -38215,7 +38459,11 @@ async function animateOlpJointMove(robot, targetAngles, speed, {
         await new Promise((resolve) => window.setTimeout(resolve, waitMilliseconds));
     }
     captureCurrentTcpTarget(robot);
+    finishOlpJointMotion(robot);
     return { interrupted: false, progress: 1 };
+    } finally {
+        if (runtime) runtime.activeInterpolatedMotions -= 1;
+    }
 }
 
 function getOlpMotionTarget(project, pointExpression, runtime = null, options = {}) {
@@ -38233,7 +38481,7 @@ function getOlpMotionTarget(project, pointExpression, runtime = null, options = 
 function resolveOlpWorkObjectIndex(robot, options = {}) {
     if (options.coordinateSpace === 'base') return WOBJ_WORLD_INDEX;
     const rawIndex = options.wobj === undefined || options.wobj === null || options.wobj === ''
-        ? WOBJ_WORLD_INDEX
+        ? resolveWorkObjectIndex(robot.userData.activeWorkObjectIndex)
         : Number(options.wobj);
     if (!Number.isInteger(rawIndex) || rawIndex < WOBJ_WORLD_INDEX || rawIndex > WOBJ_MAX_INDEX) {
         throw new Error(`Wobj index must be ${WOBJ_WORLD_INDEX} to ${WOBJ_MAX_INDEX}.`);
@@ -38247,59 +38495,22 @@ function resolveOlpWorkObjectIndex(robot, options = {}) {
 }
 
 function buildOlpCartesianTarget(robot, values, options = {}) {
-    const numeric = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
-    const source = [
-        numeric(values?.[0]),
-        numeric(values?.[1]),
-        numeric(values?.[2]),
-        numeric(values?.[3]),
-        numeric(values?.[4]),
-        numeric(values?.[5])
-    ];
+    const source = Array.from({ length: 6 }, (_, axis) => {
+        const value = values?.[axis] === undefined ? 0 : Number(values[axis]);
+        if (!Number.isFinite(value)) throw new Error('OLP Cartesian target must contain finite coordinates.');
+        return value;
+    });
     const adaptationDetails = [];
     const position = new THREE.Vector3(source[0], source[1], source[2]);
+    // Preserve the requested pose. Reach/axis limits are checked by IK after
+    // Wobj/TCP transforms; clamping in source coordinates moves another point.
     let quaternion;
-
-    if (robot.userData.manifest?.robotType === 'scara') {
-        const prismaticDefinition = robot.userData.joints?.[2]?.definition;
-        if (Number.isFinite(prismaticDefinition?.min) && Number.isFinite(prismaticDefinition?.max)) {
-            const adaptedZ = THREE.MathUtils.clamp(
-                position.z,
-                prismaticDefinition.min,
-                prismaticDefinition.max
-            );
-            if (Math.abs(adaptedZ - position.z) > 0.001) {
-                adaptationDetails.push('Z ' + position.z.toFixed(3) + ' -> ' + adaptedZ.toFixed(3));
-                position.z = adaptedZ;
-            }
-        }
-
-        const structure = robot.userData.manifest?.structure || [];
-        const arm1 = numeric(structure[0], NaN);
-        const arm2 = numeric(structure[1], NaN);
-        const radius = Math.hypot(position.x, position.y);
-        if (Number.isFinite(arm1) && Number.isFinite(arm2)) {
-            const minimumRadius = Math.max(0, Math.abs(arm1 - arm2) + 0.001);
-            const maximumRadius = Math.max(minimumRadius, arm1 + arm2 - 0.001);
-            const adaptedRadius = THREE.MathUtils.clamp(radius, minimumRadius, maximumRadius);
-            if (Math.abs(adaptedRadius - radius) > 0.001) {
-                if (radius < 0.001) {
-                    position.set(adaptedRadius, 0, position.z);
-                } else {
-                    const scale = adaptedRadius / radius;
-                    position.x *= scale;
-                    position.y *= scale;
-                }
-                adaptationDetails.push('XY radius ' + radius.toFixed(3) + ' -> ' + adaptedRadius.toFixed(3));
-            }
-        }
-
-        if (Math.abs(source[4]) > 0.01 || Math.abs(source[5]) > 0.01) {
-            adaptationDetails.push('SCARA tilt axes ignored');
-        }
-        // OLP point records use Rz, Ry, Rx order after XYZ. SCARA accepts Rz
-        // only, so preserve yaw and remove the unsupported tilt axes.
-        quaternion = quaternionFromTcpRotationDegrees(robot, 0, 0, source[3]);
+    if (robot.userData.manifest?.robotType === 'scara'
+        && (Math.abs(source[4]) > 1e-12 || Math.abs(source[5]) > 1e-12)) {
+        quaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+            THREE.MathUtils.degToRad(source[5]), THREE.MathUtils.degToRad(source[4]),
+            THREE.MathUtils.degToRad(source[3]), 'ZYX'
+        ));
     } else {
         quaternion = quaternionFromTcpRotationDegrees(robot, source[5], source[4], source[3]);
     }
@@ -38420,6 +38631,7 @@ async function moveOlpTarget(robot, motion, point, speed, runtime = null, option
         });
     }
     const target = buildOlpCartesianTarget(robot, point.values, options);
+    target.armParameters = point.armParameters;
     if (target.adaptation?.changed) {
         const notices = state.olp.modelAdaptationNotices || new Set();
         state.olp.modelAdaptationNotices = notices;
@@ -38435,8 +38647,10 @@ async function moveOlpTarget(robot, motion, point, speed, runtime = null, option
     const startPose = getCurrentTcpPoseBase(robot);
     const starts = robot.userData.joints.map((joint) => joint.angle);
     const solved = solveRobotIK(robot, target, {
-        positionTolerance: 0.8,
-        rotationTolerance: THREE.MathUtils.degToRad(0.5),
+        // A coarse endpoint solve can accept the unchanged current joints for
+        // a short MOVL, causing the no-motion fast path to discard that move.
+        positionTolerance: motion === 'MOVL' ? 0.01 : 0.8,
+        rotationTolerance: THREE.MathUtils.degToRad(motion === 'MOVL' ? 0.01 : 0.5),
         armParameters: point.armParameters
     });
     if (!solved.success) {
@@ -38543,6 +38757,8 @@ function buildOlpRoundedPath(poses, radiusForCorner) {
 }
 
 async function animateOlpCartesianPath(robot, motion, poses, speed, runtime = null, options = {}) {
+    if (runtime) runtime.activeInterpolatedMotions = (runtime.activeInterpolatedMotions || 0) + 1;
+    try {
     const startAngles = robot.userData.joints.map((joint) => joint.angle);
     const solvedPath = [startAngles];
     try {
@@ -38574,19 +38790,22 @@ async function animateOlpCartesianPath(robot, motion, poses, speed, runtime = nu
         const equivalentTargets = startAngles.map((angle, index) => angle + accumulatedJointTravel[index]);
         pathDuration = calculateMovjDuration(startAngles, equivalentTargets, robot.userData.joints, speedProvider());
     }
-    const duration = THREE.MathUtils.clamp(
-        pathDuration / accelerationScale,
-        0.1,
-        8
-    );
+    const duration = pathDuration / accelerationScale;
+    if (!Number.isFinite(duration) || duration <= 0) {
+        throw new Error('OLP motion duration is not finite and positive.');
+    }
     const callbacks = getOlpMotionCallbacks(runtime, options);
-    const startAt = performance.now();
+    let startAt = performance.now();
     let progress = 0;
     const speedClock = {};
     while (progress < 1) {
         if (runtime?.cancelled) throw new Error('OLP stopped');
+        if (runtime?.paused) {
+            startAt += await waitForOlpMotionResume(robot, runtime);
+        }
         if (options.until && runtime?.evaluate?.(options.until)) {
             captureCurrentTcpTarget(robot);
+            finishOlpJointMotion(robot);
             return { interrupted: true, progress };
         }
         progress = Math.min(1, advanceMotionSpeedClock(speedClock, performance.now() - startAt, state.programSpeedOverride).elapsedMilliseconds / (duration * 1000));
@@ -38600,6 +38819,7 @@ async function animateOlpCartesianPath(robot, motion, poses, speed, runtime = nu
         const to = solvedPath[segment + 1];
         from.forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle + (to[index] - angle) * local, false));
         robot.updateMatrixWorld(true);
+        sampleOlpJointMotion(robot, performance.now());
         syncJointControls(robot);
         captureCurrentTcpTarget(robot);
         appendTcpPathPoint(robot);
@@ -38608,7 +38828,11 @@ async function animateOlpCartesianPath(robot, motion, poses, speed, runtime = nu
         if (progress < 1) await new Promise((resolve) => window.setTimeout(resolve, 16));
     }
     captureCurrentTcpTarget(robot);
+    finishOlpJointMotion(robot);
     return { interrupted: false, progress: 1 };
+    } finally {
+        if (runtime) runtime.activeInterpolatedMotions -= 1;
+    }
 }
 
 async function tryOlpZoneBlend(robot, motion, point, speed, project, runtime, options) {
@@ -38654,6 +38878,9 @@ async function tryOlpZoneBlend(robot, motion, point, speed, project, runtime, op
 }
 
 function applyOlpTcpProfile(robot, options = {}, runtime = null) {
+    if (options.wobj !== undefined && options.wobj !== null) {
+        robot.userData.activeWorkObjectIndex = resolveOlpWorkObjectIndex(robot, options);
+    }
     const specified = options.tool !== undefined && options.tool !== null && options.tool !== '';
     const tool = specified ? Number(options.tool) : Number(robot?.userData?.activeTcpProfileIndex) || 0;
     const overrides = tool === 0 ? null : runtime?.getToolOverrides?.(tool);
@@ -38842,11 +39069,24 @@ async function runOlpJump(motion, pointExpression, speed, project, runtime = nul
 function getOlpCurrentPosition(kind = 'point', runtime = null) {
     const robot = getOlpRuntimeRobot(runtime);
     if (!robot) return null;
-    if (kind === 'jointPoint') return robot.userData.joints.map((joint) => Number(joint.angle) || 0);
+    if (kind === 'jointPoint') return robot.userData.joints.map(joint => Number(joint.angle) || 0);
+    // A program may edit the selected Tool frame before querying its pose.
+    applyOlpTcpProfile(robot, {}, runtime);
     const pose = getCurrentTcpPoseBase(robot);
     if (!pose) return null;
-    const rotation = getTcpRotationDegrees(robot, pose);
-    return [pose.position.x, pose.position.y, pose.position.z, rotation.rz, rotation.ry, rotation.rx];
+    const workObjectIndex = resolveOlpWorkObjectIndex(robot, {});
+    let position = pose.position.clone(), quaternion = pose.quaternion.clone();
+    if (workObjectIndex !== WOBJ_WORLD_INDEX) {
+        robot.updateMatrixWorld(true);
+        const base = getRobotControllerBaseFrame(robot);
+        const frame = getWorkObjectWorldPose(robot, workObjectIndex);
+        position = base.localToWorld(position).sub(frame.position).applyQuaternion(frame.quaternion.clone().invert());
+        quaternion = frame.quaternion.clone().invert()
+            .multiply(base.getWorldQuaternion(new THREE.Quaternion()))
+            .multiply(quaternion).normalize();
+    }
+    const rotation = getTcpRotationDegrees(robot, {position, quaternion});
+    return [position.x, position.y, position.z, rotation.rz, rotation.ry, rotation.rx];
 }
 
 function handleOlpAlarm(code, easyGo, runtime = null) {
@@ -38864,10 +39104,19 @@ function handleOlpAlarm(code, easyGo, runtime = null) {
 }
 
 function getOlpHomeTargetAngles(robot, homeIndex) {
+    if (!Number.isInteger(Number(homeIndex)) || Number(homeIndex) < 0 || Number(homeIndex) > 4)
+        throw new RangeError('Home index must be 0..4');
+    const configured = robot.userData.controllerHomePoints?.[homeIndex];
+    const registered = Number(homeIndex) === 0 && typeof getRobotWorkOrigin === 'function'
+        ? getRobotWorkOrigin(robot)?.joints : null;
+    const saved = configured || registered;
+    if (Array.isArray(saved) && saved.length === robot.userData.joints.length && saved.every(Number.isFinite)) return [...saved];
+    if (saved) throw new Error(`Home[${homeIndex}] has an invalid configured joint position`);
+    if (Number(homeIndex) !== 0) throw new Error(`Home[${homeIndex}] has no configured joint position`);
     const targets = robot.userData.joints.map(() => 0);
-    // Imported projects can use Home[0] without declaring a point.  In OLP it
-    // means the fixed Work Origin 0: zero all axes and fold J5 to -90 degrees.
-    // SCARA has its own mechanical zero convention, so it remains all zero.
+    // Compatibility pose for projects without a registered Home[0]. Native
+    // Home reads the controller's configured joint table; register Work Origin
+    // 0 (or controllerHomePoints) to use that pose in the simulator.
     if (Number(homeIndex) === 0 && robot.userData.manifest?.robotType !== 'scara') {
         const j5Index = robot.userData.joints.findIndex((joint) => joint.definition?.name === 'J5');
         if (j5Index >= 0) targets[j5Index] = -90;
@@ -38875,43 +39124,34 @@ function getOlpHomeTargetAngles(robot, homeIndex) {
     return targets;
 }
 
-function getOlpHomeStatusOutput(project = getOlpProject()) {
-    const labels = project?.labels || {};
-    const candidates = Object.entries(labels)
-        .map(([label, address]) => {
-            const parsed = normalizeOlpAddress(address, labels);
-            const compact = String(label || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
-            if (parsed?.prefix !== 'OUT' || !compact.includes('home') || !/(sts|status)$/.test(compact)) return null;
-            const score = (compact === 'yrobothomests' ? 1000 : 0)
-                + (/(?:home)(?:sts|status)$/.test(compact) ? 100 : 0)
-                + (compact.includes('robot') ? 10 : 0);
-            return { label, address: canonicalOlpAddress(parsed), score };
-        })
-        .filter(Boolean)
-        .sort((left, right) => right.score - left.score || left.label.localeCompare(right.label));
-    return candidates[0] || null;
+function getOlpHomeStatusOutput(project = getOlpProject(), robot = getOlpRobot()) {
+    // Native Home status is a configured origin output, not a label naming
+    // convention. Work Origin registration supplies the offline joint pose and
+    // output bit; a project label alone must never overwrite a user output.
+    const origin = getRobotWorkOrigin(robot);
+    const bit = Number(origin?.outputBit);
+    if (!origin || !Number.isSafeInteger(bit) || bit < 0) return null;
+    return {address: `OUT[${bit}]`, configuration: {
+        mode: 1, outputBit: bit, joints: getOlpHomeTargetAngles(robot, 0),
+        jointTolerance: origin.jointTolerance
+    }};
 }
 
 function syncOlpHomeStatus(robot, project = getOlpProject(robot)) {
-    const homeStatus = getOlpHomeStatusOutput(project);
+    const homeStatus = getOlpHomeStatusOutput(project, robot);
     if (!homeStatus || !robot?.userData?.joints?.length) return;
-    const homeTargets = getOlpHomeTargetAngles(robot, 0);
-    // The simulation uses degrees for rotary joints and millimetres for a SCARA
-    // vertical axis.  A small tolerance avoids an ON/OFF flicker at the final
-    // animation frame, while still making Out[519] reflect the actual pose.
-    const atWorkOrigin0 = robot.userData.joints.every((joint, index) => (
-        Math.abs(Number(joint.angle || 0) - Number(homeTargets[index] || 0)) <= 0.05
-    ));
-    writeOlpAddress(homeStatus.address, atWorkOrigin0 ? 1 : 0, null, project);
+    const reached = evaluateOlpHomeStatus(homeStatus.configuration,
+        robot.userData.joints.map(joint => Number(joint.angle)), [],
+        robot.userData.controllerIndependentAxisMask ?? 0);
+    if (reached !== null) writeOlpAddress(homeStatus.address, reached ? 1 : 0, null, project);
 }
 
 async function runOlpHome(homeIndex, speed, project, runtime = null) {
     const robot = getOlpRuntimeRobot(runtime);
     if (!robot) throw new Error('Select one robot before running OLP.');
-    const isScara = robot.userData.manifest?.robotType === 'scara';
-    const originDescription = Number(homeIndex) === 0
-        ? (isScara ? 'Work Origin 0 (SCARA joint zero)' : 'Work Origin 0 (J5 = -90°)')
-        : 'joint zero';
+    const registeredHome = robot.userData.controllerHomePoints?.[homeIndex]
+        || (Number(homeIndex) === 0 && getRobotWorkOrigin(robot)?.joints);
+    const originDescription = registeredHome ? `Work Origin ${homeIndex}` : 'simulator default pose';
     setOlpLastMotion('HOME[{index}] {origin} started on selected robot.', {
         index: homeIndex,
         origin: originDescription
@@ -39013,7 +39253,7 @@ async function handleOlpRemoteIoCommands(previousValues) {
     state.olp.remoteCommandBusy = true;
     try {
         if (rising.command === 'start') {
-            if (!isOlpRunning()) void startOlpSession();
+            if (!isOlpRunning()) void startOlpSession({ remoteIo: true });
         } else if (rising.command === 'stop') {
             await stopOlpSession('Remote IO program stop', { resetCursor: true });
         } else if (rising.command === 'reset') {
@@ -39327,7 +39567,7 @@ function connectOlpVirtualBus({ refreshMetadata = false } = {}) {
     });
 }
 
-async function startOlpSession({ step = false, robot = null } = {}) {
+async function startOlpSession({ step = false, robot = null, remoteIo = false } = {}) {
     const runtimeMap = state.olp.runtimes instanceof Map ? state.olp.runtimes : null;
     const resolveRobot = (candidate = null) => typeof getOlpRobot === 'function'
         ? getOlpRobot(candidate)
@@ -39381,17 +39621,36 @@ async function startOlpSession({ step = false, robot = null } = {}) {
     }
     let runtime;
     const sharedIoAdapter = getOlpSharedIoAdapter();
+    // Interpreter instances represent running tasks. Controller memory survives
+    // Stop/Start, and belongs to this robot and loaded project instead.
+    const savedMemory = olpProjectMemoryBanks.get(targetRobot);
+    const globalMemory = existingRuntime?.project === targetProject ? existingRuntime.globalMemory
+        : savedMemory?.project === targetProject ? savedMemory.memory : undefined;
     runtime = new OlpRuntime(targetProject, {
         ...sharedIoAdapter,
+        // A mapped Remote IO Start selects the simulated Remote IO automatic
+        // mode. A direct UI Start retains program-controlled Velset Rate.
+        getControllerExecutionMode: () => ({controlMode: remoteIo ? 3 : null, remoteManual: false}),
+        // Supported offline Z0 moves can be scanned ahead into the serial motion queue.
+        queueStopMoves: hasRapidDynamicsModel(getRobotRapidMoveOptions(targetRobot)),
         move: runOlpMove,
         jump: runOlpJump,
         home: runOlpHome,
         getCurrentPosition: (kind, currentRuntime) => getOlpCurrentPosition(kind, currentRuntime),
+        getTorque: (axis, currentRuntime) => readOlpTorqueFeedback(axis, currentRuntime),
+        socket: getRobotOlpSocketService(targetRobot),
+        savePoints: handleOlpSavedPoints,
+        globalMemory,
+        stopMotion: currentRuntime => {
+            const movingRobot = getOlpRuntimeRobot(currentRuntime);
+            if (movingRobot) finishOlpJointMotion(movingRobot);
+        },
         alarm: (code, easyGo, currentRuntime) => handleOlpAlarm(code, easyGo, currentRuntime),
-        delay: (milliseconds) => new Promise((resolve) => window.setTimeout(resolve, Math.max(0, milliseconds))),
+        delay: delayOlpWithSignal,
         log: appendOlpConsole,
         cursor: (snapshot) => queueOlpRuntimeView(runtime, snapshot),
         onStopped: (snapshot) => {
+            finishOlpJointMotion(targetRobot);
             setExecution(targetRobot, snapshot);
             const shouldResetCursor = state.olp.resetCursorOnStop
                 || state.olp.resetCursorRobotIds?.has(robotInstanceId);
@@ -39417,6 +39676,7 @@ async function startOlpSession({ step = false, robot = null } = {}) {
             }
         }
     });
+    olpProjectMemoryBanks.set(targetRobot, {project: targetProject, memory: runtime.globalMemory});
     runtime.robot = targetRobot;
     runtime.robotInstanceId = robotInstanceId;
     runtimeMap?.set(robotInstanceId, runtime);
@@ -43720,7 +43980,8 @@ function quaternionFromTcpRotationDegrees(robot, rx, ry, rz) {
             new THREE.Vector3(0, 0, 1),
             THREE.MathUtils.degToRad(rz)
         );
-        return yaw.multiply(robot.userData.toolHomeQuaternion.clone()).normalize();
+        return robot.userData.manifest.kinematicVariant === 'ceiling-scara'
+            ? yaw : yaw.multiply(robot.userData.toolHomeQuaternion.clone()).normalize();
     }
     const positionRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
         THREE.MathUtils.degToRad(rx),
@@ -49309,7 +49570,7 @@ function advanceMotionSegment(session, timestamp) {
     let progress;
     let rapidMoveSettling = false;
     if (rapidMoveEnabled) {
-        const deltaSeconds = (segment.rapidMove.planner === 's7-rapid-dynamics'
+        const deltaSeconds = (segment.rapidMove.nativeScalarProfile === true
             ? clock.deltaMilliseconds / 1000
             : Math.min(RAPID_MOVE_DEFAULTS.maxStepSeconds, clock.deltaMilliseconds / 1000)) * clock.scale;
         segment.rapidMove.lastTimestamp = timestamp;
@@ -50990,3 +51251,4 @@ async function importMountedToolLoad() {
 }
 
 init();
+setupOlpSocketSimulator();

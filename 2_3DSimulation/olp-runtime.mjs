@@ -2,7 +2,16 @@ const WORD_START = 32;
 const WORD_COUNT = 128;
 const BIT_START = 512;
 const BIT_COUNT = WORD_COUNT * 16;
-export const OLP_RUNTIME_BUILD = 'R33';
+export const OLP_RUNTIME_BUILD = 'R34';
+
+export function createOlpGlobalMemory() {
+    return {variables:new Map(),variableTypes:new Map(),arrayDeclarations:new Map(),positionVariables:new Map(),
+        ioGroups:new Map(),pallets:new Map(),initializedDeclarations:new Set()};
+}
+const DECLARATION_TYPES='Int|Real|Float|Bool|String|Byte|DInt|Double';
+const NO_BUILTIN=Symbol('not a native builtin');
+const isModuleLocal=symbol=>/^(?:LB|LR|LD|LP|LPR|LStr)\s*\[/i.test(symbol);
+const arrayBase=symbol=>String(symbol).match(/^([A-Za-z_]\w*)\s*\[/)?.[1]??null;
 
 export class OlpRuntimeError extends Error {
     constructor(message, runtime = null) {
@@ -203,100 +212,78 @@ function readExpressionToken(source, start) {
     return { value: source.slice(start, index), end: index };
 }
 
+
 function tokenizeNumericExpression(value) {
-    const source = String(value || '').trim();
-    const tokens = [];
-    let index = 0;
-    while (index < source.length) {
-        const char = source[index];
-        if (/\s/.test(char)) { index += 1; continue; }
-        const number = source.slice(index).match(/^(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?/);
-        if (number) {
-            tokens.push({ type: 'number', value: Number(number[0]) });
-            index += number[0].length;
-            continue;
+    const source=String(value||'').trim(),tokens=[];
+    for(let index=0;index<source.length;) {
+        const char=source[index];if(/\s/.test(char)){index++;continue;}
+        const start=index;
+        const number=source.slice(index).match(/^(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?/);
+        if(number){index+=number[0].length;tokens.push({type:'number',value:Number(number[0]),start,end:index});continue;}
+        if(char==='"'||char==="'") {
+            const quote=char;index++;let value='';
+            while(index<source.length&&source[index]!==quote){if(source[index]==='\\'&&index+1<source.length)index++;value+=source[index++];}
+            if(source[index]!==quote)return null;index++;tokens.push({type:'string',value,start,end:index});continue;
         }
-        if ('+-*/(),'.includes(char)) {
-            tokens.push({ type: char, value: char });
-            index += 1;
-            continue;
-        }
-        const symbol = readExpressionToken(source, index);
-        if (symbol) {
-            tokens.push({ type: 'symbol', value: symbol.value });
-            index = symbol.end;
-            continue;
-        }
+        if('+-*/(),'.includes(char)){index++;tokens.push({type:char,value:char,start,end:index});continue;}
+        const symbol=readExpressionToken(source,index);
+        if(symbol){index=symbol.end;tokens.push({type:'symbol',value:symbol.value,start,end:index});continue;}
         return null;
     }
     return tokens;
 }
 
-function evaluateNumericExpression(value, runtime) {
-    const tokens = tokenizeNumericExpression(value);
-    if (!tokens?.length) return undefined;
-    let cursor = 0;
-    const peek = () => tokens[cursor];
-    const consume = (type) => {
-        if (peek()?.type !== type) return null;
-        const token = tokens[cursor];
-        cursor += 1;
-        return token;
-    };
-    const parsePrimary = () => {
-        const number = consume('number');
-        if (number) return number.value;
-        const symbol = consume('symbol');
-        if (symbol) {
-            const name = symbol.value.toUpperCase();
-            if ((name === 'MAX' || name === 'MIN') && consume('(')) {
-                const left = parseAdditive();
-                if (!consume(',')) throw new Error('Expected function argument separator.');
-                const right = parseAdditive();
-                if (!consume(')')) throw new Error('Expected function closing parenthesis.');
-                return name === 'MAX' ? Math.max(left, right) : Math.min(left, right);
+function evaluateNumericExpression(value,runtime) {
+    const source=String(value||'').trim(),tokens=tokenizeNumericExpression(source);
+    if(!tokens?.length)return undefined;
+    let cursor=0;
+    const peek=()=>tokens[cursor];
+    const consume=type=>{if(peek()?.type!==type)return null;return tokens[cursor++];};
+    const primary=()=>{
+        const literal=consume('number')||consume('string');if(literal)return literal.value;
+        const symbol=consume('symbol');
+        if(symbol){
+            if(consume('(')) {
+                const args=[],raw=[];
+                if(peek()?.type!==')')do{
+                    const start=tokens[cursor]?.start;
+                    args.push(additive());
+                    raw.push(source.slice(start,tokens[cursor-1]?.end));
+                }while(consume(','));
+                if(!consume(')'))throw runtime.runtimeError('Expected function closing parenthesis.');
+                const result=runtime.callBuiltinSync(symbol.value,args,raw);
+                if(result===NO_BUILTIN)throw runtime.runtimeError(`Unknown or asynchronous function in expression: ${symbol.value}`);
+                return result;
             }
-            if (/^(ON|TRUE)$/i.test(symbol.value)) return 1;
-            if (/^(OFF|FALSE)$/i.test(symbol.value)) return 0;
-            const resolved = Number(runtime.readSymbol(symbol.value));
-            return Number.isFinite(resolved) ? resolved : 0;
+            if(/^(ON|TRUE)$/i.test(symbol.value))return 1;
+            if(/^(OFF|FALSE)$/i.test(symbol.value))return 0;
+            return runtime.readSymbol(symbol.value);
         }
-        if (consume('(')) {
-            const result = parseAdditive();
-            if (!consume(')')) throw new Error('Expected closing parenthesis.');
-            return result;
-        }
-        throw new Error('Expected numeric expression.');
+        if(consume('(')){const result=additive();if(!consume(')'))throw runtime.runtimeError('Expected closing parenthesis.');return result;}
+        throw runtime.runtimeError('Expected expression value.');
     };
-    const parseUnary = () => {
-        if (consume('+')) return parseUnary();
-        if (consume('-')) return -parseUnary();
-        return parsePrimary();
-    };
-    const parseMultiplicative = () => {
-        let result = parseUnary();
-        while (peek()?.type === '*' || peek()?.type === '/') {
-            const operator = tokens[cursor].type;
-            cursor += 1;
-            const right = parseUnary();
-            result = operator === '*' ? result * right : right === 0 ? 0 : result / right;
+    const unary=()=>consume('+')?Number(unary()):consume('-')?-Number(unary()):primary();
+    const multiply=()=>{
+        let result=unary();
+        while(peek()?.type==='*'||peek()?.type==='/'){
+            const op=tokens[cursor++].type,right=Number(unary());
+            if(op==='/'&&right===0)throw runtime.runtimeError('Division by zero.');
+            result=op==='*'?Number(result)*right:Number(result)/right;
         }
         return result;
     };
-    const parseAdditive = () => {
-        let result = parseMultiplicative();
-        while (peek()?.type === '+' || peek()?.type === '-') {
-            const operator = tokens[cursor].type;
-            cursor += 1;
-            const right = parseMultiplicative();
-            result = operator === '+' ? result + right : result - right;
+    const additive=()=>{
+        let result=multiply();
+        while(peek()?.type==='+'||peek()?.type==='-'){
+            const op=tokens[cursor++].type,right=multiply();
+            result=op==='+'?(typeof result==='string'||typeof right==='string'?String(result)+String(right):Number(result)+Number(right)):Number(result)-Number(right);
         }
         return result;
     };
-    try {
-        const result = parseAdditive();
-        return cursor === tokens.length && Number.isFinite(result) ? result : undefined;
-    } catch { return undefined; }
+    const result=additive();
+    if(cursor!==tokens.length)return undefined;
+    if(typeof result==='number'&&!Number.isFinite(result))throw runtime.runtimeError(`Non-finite expression: ${source}`);
+    return result;
 }
 
 function parseLiteral(value, runtime) {
@@ -342,19 +329,17 @@ function findMatching(lines, start, openName, closeName) {
 }
 
 function splitArguments(value) {
-    const result = [];
-    let start = 0;
-    let depth = 0;
-    String(value || '').split('').forEach((char, index) => {
-        if (char === '(' || char === '[') depth += 1;
-        else if (char === ')' || char === ']') depth -= 1;
-        else if (char === ',' && depth === 0) {
-            result.push(String(value).slice(start, index).trim());
-            start = index + 1;
-        }
-    });
-    const last = String(value || '').slice(start).trim();
-    if (last) result.push(last);
+    const source=String(value||''),result=[];
+    let start=0,depth=0,quote=null;
+    for(let index=0;index<source.length;index++) {
+        const char=source[index];
+        if(quote){if(char==='\\')index++;else if(char===quote)quote=null;continue;}
+        if(char==='"'||char==="'"){quote=char;continue;}
+        if('([{'.includes(char))depth++;
+        else if(')]}'.includes(char))depth--;
+        else if(char===','&&depth===0){result.push(source.slice(start,index).trim());start=index+1;}
+    }
+    const last=source.slice(start).trim();if(last)result.push(last);
     return result;
 }
 
@@ -432,6 +417,35 @@ function subtractPose(left, right) {
     return Array.from({ length }, (_, index) => Number(left?.[index] || 0) - Number(right?.[index] || 0));
 }
 
+// Public robot poses use [X,Y,Z,A(yaw Z),B(pitch Y),C(roll X)] in degrees.
+// Offset is rigid orientation composition; PR arithmetic remains a separate
+// language operation and must not be substituted for it.
+export function composeOlpOffset(base,offset,frame='WOBJ') {
+    const rad=Math.PI/180;
+    const rotation=pose=>{
+        const [a,b,c]=pose.slice(3,6).map(value=>Number(value||0)*rad);
+        const ca=Math.cos(a),sa=Math.sin(a),cb=Math.cos(b),sb=Math.sin(b),cc=Math.cos(c),sc=Math.sin(c);
+        return [ca*cb,ca*sb*sc-sa*cc,ca*sb*cc+sa*sc,
+            sa*cb,sa*sb*sc+ca*cc,sa*sb*cc-ca*sc,-sb,cb*sc,cb*cc];
+    };
+    const multiply=(a,b)=>Array.from({length:9},(_,index)=>{
+        const row=Math.floor(index/3),column=index%3;
+        return a[row*3]*b[column]+a[row*3+1]*b[column+3]+a[row*3+2]*b[column+6];
+    });
+    const rb=rotation(base),ro=rotation(offset),tool=String(frame).toUpperCase()==='TOOL';
+    const matrix=tool?multiply(rb,ro):multiply(ro,rb);
+    // Preserve the original MatrixToEuler singular branch, including its
+    // component-wise 1e-5 threshold and A=0 convention.
+    const singular=Math.abs(matrix[0])<1e-5&&Math.abs(matrix[3])<1e-5;
+    const negativePitch=Math.abs(matrix[6]-1)<1e-5;
+    const pitch=singular?(negativePitch?-Math.PI/2:Math.PI/2):Math.atan2(-matrix[6],Math.hypot(matrix[0],matrix[3]));
+    const yaw=singular?0:Math.atan2(matrix[3],matrix[0]);
+    const roll=singular?Math.atan2((negativePitch?-1:1)*matrix[1],matrix[4]):Math.atan2(matrix[7],matrix[8]);
+    const xyz=tool?[0,1,2].map(i=>Number(base[i]||0)+rb[i*3]*Number(offset[0]||0)+rb[i*3+1]*Number(offset[1]||0)+rb[i*3+2]*Number(offset[2]||0))
+        :[0,1,2].map(i=>Number(base[i]||0)+Number(offset[i]||0));
+    return [...xyz,yaw/rad,pitch/rad,roll/rad];
+}
+
 function splitTopLevel(value, operators = ['+', '-']) {
     const source = String(value || '').trim();
     let depth = 0;
@@ -474,18 +488,34 @@ export class OlpRuntime {
     constructor(project, adapter = {}) {
         this.project = project;
         this.adapter = adapter;
-        this.variables = new Map();
-        this.variableTypes = new Map();
+        // Optional offline debug guard. Native generated programs include
+        // permanent scan loops; normal execution has no iteration count cap.
+        if (adapter.maxLoopIterations !== undefined && adapter.maxLoopIterations !== Infinity
+            && (!Number.isInteger(adapter.maxLoopIterations) || adapter.maxLoopIterations <= 0)) {
+            throw new TypeError('maxLoopIterations must be a positive integer or Infinity.');
+        }
+        this.maxLoopIterations = adapter.maxLoopIterations ?? Infinity;
+        this.globalMemory = adapter.globalMemory || adapter.memory || createOlpGlobalMemory();
+        for (const name of ['variables','variableTypes','arrayDeclarations','positionVariables','ioGroups','pallets'])
+            this.globalMemory[name] ||= new Map();
+        this.globalMemory.initializedDeclarations ||= new Set();
+        this.variables = this.globalMemory.variables;
+        this.variableTypes = this.globalMemory.variableTypes;
+        this.arrayDeclarations = this.globalMemory.arrayDeclarations;
+        this.localsByModule = new Map();
+        this.functionScopes = [];
         this.running = false;
         this.paused = false;
         this.cancelled = false;
+        this.abortController = new AbortController();
         this.callStack = [];
-        this.positionVariables = new Map();
-        this.ioGroups = new Map();
-        this.pallets = new Map();
+        this.positionVariables = this.globalMemory.positionVariables;
+        this.ioGroups = this.globalMemory.ioGroups;
+        this.pallets = this.globalMemory.pallets;
         this.stopwatches = new Map();
         this.pulseTimers = new Set();
         this.pendingMotions = new Set();
+        this.stopMoveQueue = null;
         this.motionSettings = {
             acceleration: null,
             accelerationRamp: null,
@@ -507,7 +537,11 @@ export class OlpRuntime {
         this.breakRequested = false;
         this.stepMode = false;
         this.stepPermit = 0;
-        this.velocityRate = 100;
+        // Main's interpolation adapters mark work that can resume in place.
+        // A STEP resumes that current movement, rather than also granting
+        // the following queued movement a second physical dispatch.
+        this.activeInterpolatedMotions = 0;
+        this.globalMemory.velocityRate ??= 100;
         // `Velset Rate[n]` is the controller-wide override.  `Velset [n]`
         // separately replaces V[n] on following motion commands until OFF.
         this.velocitySet = null;
@@ -517,10 +551,14 @@ export class OlpRuntime {
         this.functionCache = new Map();
         this.instructionCount = 0;
         this.sliceStartedAt = performance.now();
-        this.activePointFile = project?.pointFiles?.find((file) => file.path?.toLowerCase().endsWith('/p.pts') || file.path?.toLowerCase() === 'p.pts')?.path
+        this.globalMemory.activePointFile ??= project?.pointFiles?.find((file) => file.path?.toLowerCase().endsWith('/p.pts') || file.path?.toLowerCase() === 'p.pts')?.path
             || project?.pointFiles?.[0]?.path
             || null;
+        this.globalMemory.currentPointsFileName ??= fileName(this.activePointFile || '');
     }
+
+    get activePointFile() {return this.globalMemory.activePointFile??null;}
+    set activePointFile(path) {this.globalMemory.activePointFile=path;}
 
     refreshProgramSources() {
         const nextPrograms = new Map((this.project?.programs || [])
@@ -563,14 +601,39 @@ export class OlpRuntime {
         };
     }
 
+    get velocityRate() {return this.globalMemory.velocityRate??100;}
+    set velocityRate(value) {this.globalMemory.velocityRate=value;}
+
+    scanRemoteVelocityInput() {
+        // Native input function 8296 is a changed-word trigger in Remote IO
+        // automatic mode. Labels do not select controller functions.
+        const mapping=this.project?.remoteIoMapping?.find(entry=>entry?.ioType===0&&entry?.funcId===8296
+            &&entry?.mapped!==false&&entry?.length===16&&Number.isInteger(entry?.memAddr)
+            &&entry.memAddr>=0&&entry.memAddr%16===0);
+        if(!mapping||!this.adapter.getControllerExecutionMode||!this.adapter.readAddress)return;
+        const key=String(mapping.memAddr);
+        let cached=this.globalMemory.remoteVelocityInput;
+        if(!cached||cached.key!==key)cached=this.globalMemory.remoteVelocityInput={
+            key,previousWord:0,changed:false,controlMode:null,remoteManual:false};
+        const mode=this.adapter.getControllerExecutionMode(this);
+        const controlMode=mode?.controlMode??null,remoteManual=Boolean(mode?.remoteManual);
+        const enteredRemote=controlMode===3&&cached.controlMode!==3;
+        cached.controlMode=controlMode;cached.remoteManual=remoteManual;
+        // No implicit controller mode is inferred from project labels or maps.
+        if(controlMode!==3||remoteManual)return;
+        const value=Number(this.adapter.readAddress({prefix:'INW',index:mapping.memAddr/16},this));
+        if(!Number.isFinite(value))return;
+        const word=Math.trunc(value)&0xffff;
+        const changed=word!==cached.previousWord;
+        const trigger=changed||cached.changed&&enteredRemote;
+        cached.previousWord=word;
+        if(changed)cached.changed=true;
+        // BusInst_VelSet rejects invalid mapped words; it does not clamp them.
+        if(trigger&&word>=1&&word<=100)this.velocityRate=word;
+    }
+
     getLiveVelocityRate() {
-        const labels = this.project?.labels || {};
-        const overrideLabel = Object.keys(labels).find((label) => /^xw_?set_?speed$/i.test(label))
-            || Object.keys(labels).find((label) => /(?:override|set).*speed/i.test(label));
-        const overrideValue = overrideLabel ? Number(this.readSymbol(overrideLabel)) : 0;
-        if (Number.isFinite(overrideValue) && overrideValue > 0) {
-            return Math.max(1, Math.min(100, overrideValue));
-        }
+        this.scanRemoteVelocityInput();
         return this.velocityRate;
     }
 
@@ -590,6 +653,9 @@ export class OlpRuntime {
         if (this.instructionCount % 256 !== 0 && performance.now() - this.sliceStartedAt < 4) return;
         this.sliceStartedAt = performance.now();
         await new Promise((resolve) => setTimeout(resolve, 0));
+        // A scheduler wait is not CPU work in the next slice. In particular,
+        // a coarse Windows zero-delay timer must not trigger another yield.
+        this.sliceStartedAt = performance.now();
     }
 
     async run(entryPath = null, { singleStep = false } = {}) {
@@ -598,6 +664,7 @@ export class OlpRuntime {
         if (!entry) throw new Error('The project does not contain a .pro program.');
         this.running = true;
         this.cancelled = false;
+        this.abortController = new AbortController();
         this.paused = false;
         this.stepMode = Boolean(singleStep);
         this.stepPermit = this.stepMode ? 1 : 0;
@@ -607,6 +674,7 @@ export class OlpRuntime {
         this.lastError = null;
         this.notifyCursor();
         try {
+            await this.initializeDeclarations();
             await this.executeFile(entry, true);
             if (this.pendingMotions.size) {
                 this.phase = 'draining';
@@ -639,13 +707,14 @@ export class OlpRuntime {
 
     stepOnce(entryPath = null) {
         if (this.running) {
+            const resumesCurrentMotion = this.paused && this.activeInterpolatedMotions > 0;
             if (!this.stepMode) {
                 // A normally paused RUN can be converted into single-step
                 // mode without restarting the program.
                 if (!this.paused) return false;
                 this.stepMode = true;
             }
-            this.stepPermit += 1;
+            if (!resumesCurrentMotion) this.stepPermit += 1;
             this.paused = false;
             this.phase = 'running';
             this.notifyCursor();
@@ -655,7 +724,9 @@ export class OlpRuntime {
     }
 
     stop() {
+        this.abortController.abort();
         this.cancelled = true;
+        if (this.stopMoveQueue) this.stopMoveQueue.cancelled = true;
         this.paused = false;
         this.stepPermit = 0;
         this.phase = 'stopping';
@@ -666,6 +737,7 @@ export class OlpRuntime {
     }
 
     togglePause() {
+        if (this.stopMoveQueue) this.stopMoveQueue.resetClockAfterPause = true;
         if (this.stepMode && this.paused) {
             // Pause/Resume from a stepped program switches back to continuous
             // execution, matching a controller's resume behavior.
@@ -683,24 +755,39 @@ export class OlpRuntime {
         this.adapter.status?.(this.paused ? 'OLP paused' : 'OLP running');
     }
 
+    async awaitKnownWait(pending) {
+        // Invoke external services before entering here, so their synchronous
+        // work remains part of the CPU budget. Only the awaited interval is
+        // excluded from the next cooperative slice; wall-clock timers retain it.
+        const started = performance.now();
+        try { return await pending; }
+        finally {
+            const finished = performance.now();
+            if (finished - started >= 4) this.sliceStartedAt = finished;
+        }
+    }
+
     async waitIfPaused() {
-        while (this.paused && !this.cancelled) await new Promise((resolve) => setTimeout(resolve, 50));
+        while (this.paused && !this.cancelled) await this.awaitKnownWait(new Promise((resolve) => setTimeout(resolve, 50)));
         if (this.cancelled) throw new Error('OLP stopped');
     }
 
-    async waitForExecutionPermit() {
+    async waitForExecutionPermit({ queuedMotion = false } = {}) {
+        if (this.paused && this.stopMoveQueue) this.stopMoveQueue.resetClockAfterPause = true;
         if (!this.stepMode) {
             await this.waitIfPaused();
-            return;
+            if (!this.stepMode) return;
         }
-        while (this.stepPermit <= 0 && !this.cancelled) {
+        // Already scanned physical tasks own the permits before new source lines.
+        if (!queuedMotion && this.stopMoveQueue) await this.drainStopMoveQueue();
+        while (this.stepMode && this.stepPermit <= 0 && !this.cancelled) {
             this.paused = true;
             this.phase = 'paused';
             this.notifyCursor();
-            await new Promise((resolve) => setTimeout(resolve, 50));
+            await this.awaitKnownWait(new Promise((resolve) => setTimeout(resolve, 50)));
         }
         if (this.cancelled) throw new Error('OLP stopped');
-        this.stepPermit -= 1;
+        if (this.stepMode) this.stepPermit -= 1;
         this.paused = false;
         this.phase = 'running';
         this.notifyCursor();
@@ -713,9 +800,11 @@ export class OlpRuntime {
         this.waitCondition = condition;
         this.notifyCursor();
         while (!this.evaluate(condition)) {
-            await this.waitForExecutionPermit();
+            // A Wait is one instruction. Polling an unfinished instruction
+            // must not consume additional STEP permits.
+            await this.waitIfPaused();
             if (timeout && performance.now() - startedAt >= timeout) return false;
-            await new Promise((resolve) => setTimeout(resolve, 20));
+            await this.awaitKnownWait(new Promise((resolve) => setTimeout(resolve, 20)));
         }
         this.phase = 'running';
         this.waitCondition = '';
@@ -723,83 +812,214 @@ export class OlpRuntime {
         return true;
     }
 
-    coerceVariableValue(symbol, value) {
-        const type = getCaseInsensitive(this.variableTypes, symbol);
-        if (!type) return value;
-        if (String(type).toUpperCase() === 'STRING') return String(value ?? '');
-        const numeric = Number(value) || 0;
-        switch (String(type).toUpperCase()) {
-            case 'BOOL': return numeric ? 1 : 0;
-            case 'BYTE': return ((Math.trunc(numeric) % 256) + 256) % 256;
-            // InoRobotLab's Int is a signed 32-bit integer, not a 16-bit word.
-            case 'INT': return Math.max(-2147483648, Math.min(2147483647, Math.trunc(numeric)));
-            case 'DINT': return Math.trunc(numeric);
-            case 'FLOAT': return Math.fround(numeric);
-            case 'REAL':
-            case 'DOUBLE': return numeric;
-            default: return value;
+    async waitForDelay(milliseconds) {
+        const duration=Number(milliseconds);
+        if(!Number.isFinite(duration)||duration<0)throw this.runtimeError('Delay requires a nonnegative finite duration.');
+        if(this.cancelled)throw this.runtimeError('OLP stopped');
+        if(this.adapter.delay) {
+            const signal=this.abortController.signal;
+            let abort;
+            const cancelled=new Promise((_,reject)=>{
+                abort=()=>reject(this.runtimeError('OLP stopped'));
+                signal.addEventListener('abort',abort,{once:true});
+            });
+            try {await this.awaitKnownWait(Promise.race([Promise.resolve(this.adapter.delay(duration,this,{signal})),cancelled]));}
+            finally {signal.removeEventListener('abort',abort);}
+        } else {
+            const end=performance.now()+duration;
+            do {
+                await this.waitIfPaused();
+                const remaining=end-performance.now();if(remaining<=0)break;
+                await this.awaitKnownWait(new Promise(resolve=>setTimeout(resolve,Math.min(20,remaining))));
+            } while(true);
+        }
+        if(this.cancelled)throw this.runtimeError('OLP stopped');
+    }
+
+
+    moduleBank(path=this.currentFilePath || this.project?.programPath || this.project?.programFiles?.[0] || '') {
+        if (!this.localsByModule.has(path)) this.localsByModule.set(path,{variables:new Map(),variableTypes:new Map(),arrayDeclarations:new Map(),positionVariables:new Map()});
+        return this.localsByModule.get(path);
+    }
+
+    resolveAlias(symbol) {
+        let value=String(symbol||'').trim();
+        for(let i=0;i<16;i++) {
+            const key=Object.keys(this.project?.labels||{}).find(key=>key.toLowerCase()===value.toLowerCase());
+            const next=key?this.project.labels[key]:null;
+            if(typeof next!=='string'||next.toLowerCase()===value.toLowerCase())break;
+            value=next;
+        }
+        return normalizeRuntimeSymbol(value,this);
+    }
+
+    variableBank(symbol) {
+        const base=arrayBase(symbol);
+        const scope=this.functionScopes.at(-1);
+        if(scope&&(getCaseInsensitive(scope.variableTypes,symbol)!==undefined||(base&&getCaseInsensitive(scope.arrayDeclarations,base))))return scope;
+        if(isModuleLocal(symbol))return this.moduleBank();
+        const local=this.moduleBank();
+        if(getCaseInsensitive(local.variableTypes,symbol)!==undefined||(base&&getCaseInsensitive(local.arrayDeclarations,base)))return local;
+        return this.globalMemory;
+    }
+
+    coerceVariableValue(symbol,value,bank=this.variableBank(symbol)) {
+        const type=getCaseInsensitive(bank.variableTypes,symbol)||getCaseInsensitive(bank.arrayDeclarations,arrayBase(symbol))?.type;
+        if(!type)return value;
+        if(type==='STRING')return String(value??'');
+        const numeric=Number(value)||0;
+        switch(type) {
+            case 'BOOL':return numeric?1:0;
+            case 'BYTE':return ((Math.trunc(numeric)%256)+256)%256;
+            case 'INT':return Math.max(-2147483648,Math.min(2147483647,Math.trunc(numeric)));
+            case 'DINT':return Math.trunc(numeric);
+            case 'FLOAT':return Math.fround(numeric);
+            default:return numeric;
         }
     }
 
-    declareVariable(symbol, type, initialValue = undefined) {
-        const raw = normalizeRuntimeSymbol(symbol, this);
-        if (!raw) return;
-        this.variableTypes.set(raw, String(type || '').toUpperCase());
-        if (initialValue !== undefined) this.writeSymbol(raw, initialValue);
+    declareVariable(symbol,type,initialValue=undefined,storage=null) {
+        const raw=this.resolveAlias(symbol),name=String(type||'').toUpperCase();
+        const bank=storage==='GLOBAL'?this.globalMemory:this.functionScopes.at(-1)||this.moduleBank();
+        const dimensions=[...raw.matchAll(/\[\s*(\d+)\s*\]/g)].map(match=>Number(match[1]));
+        if(dimensions.length) {
+            const base=arrayBase(raw);
+            if(!base||dimensions.some(n=>!Number.isInteger(n)||n<0))throw this.runtimeError(`Invalid array declaration: ${raw}`);
+            const total=dimensions.reduce((product,n)=>product*n,1);
+            if(total>1_000_000)throw this.runtimeError('Declared array exceeds the offline runtime memory limit.');
+            bank.arrayDeclarations.set(base,{type:name,dimensions});
+            const flatten=value=>Array.isArray(value)?value.flatMap(flatten):[value];
+            const values=initialValue===undefined?[]:flatten(initialValue);
+            if(values.length>total)throw this.runtimeError(`Too many array initializer values: ${raw}`);
+            for(let i=0;i<total;i++) {
+                let remainder=i;
+                const indexes=dimensions.map((n,index)=>{
+                    const stride=dimensions.slice(index+1).reduce((a,b)=>a*b,1);
+                    const coordinate=Math.floor(remainder/stride);remainder%=stride;return coordinate;
+                });
+                const key=base+indexes.map(i=>`[${i}]`).join('');
+                bank.variables.set(key,this.coerceVariableValue(key,values[i]??(name==='STRING'?'':0),bank));
+            }
+        } else {
+            bank.variableTypes.set(raw,name);
+            bank.variables.set(raw,this.coerceVariableValue(raw,initialValue??(name==='STRING'?'':0),bank));
+        }
+    }
+
+    parseDeclaration(line) {
+        const match=String(line).match(new RegExp(`^(?:(Global|Local)\\s+)?(${DECLARATION_TYPES})\\s+(.+?)\\s*;?$`,'i'));
+        if(!match)return null;
+        return {storage:match[1]?.toUpperCase()||null,type:match[2],entries:splitArguments(match[3].replace(/;$/,''))};
+    }
+
+    async executeDeclaration(definition) {
+        for(const entry of definition.entries) {
+            const equal=findTopLevelOperator(entry,['=']);
+            const target=(equal<0?entry:entry.slice(0,equal)).trim();
+            const expression=equal<0?null:entry.slice(equal+1).trim();
+            if(!/^[A-Za-z_]\w*(?:\s*\[[^\]]+\])*$/i.test(target))throw this.runtimeError(`Invalid declaration: ${target}`);
+            const raw=normalizeRuntimeSymbol(target,this);
+            const parseInitializer=text=>{
+                const source=String(text).trim();
+                return source.startsWith('{')&&source.endsWith('}')?splitArguments(source.slice(1,-1)).map(parseInitializer):parseLiteral(source,this);
+            };
+            let initial;
+            if(expression?.startsWith('{'))initial=parseInitializer(expression);
+            else if(expression!==null)initial=await this.evaluateAssignmentValue(expression);
+            this.declareVariable(raw,definition.type,initial,definition.storage);
+        }
+    }
+
+    async initializeDeclarations() {
+        const previous=this.currentFilePath;
+        try {
+            for(const [path,lines]of this.programLines) {
+                this.currentFilePath=path;
+                let inFunction=false,inProgram=false,inInfo=false;
+                for(let index=0;index<lines.length;index++) {
+                    const line=stripComments(lines[index]);
+                    if(/^ProgramInfo\b/i.test(line)){inInfo=true;continue;}
+                    if(/^EndProgramInfo\b/i.test(line)){inInfo=false;continue;}
+                    if(/^Func\b/i.test(line)){inFunction=true;continue;}
+                    if(/^EndFunc\b/i.test(line)){inFunction=false;continue;}
+                    if(/^Start\b/i.test(line)){inProgram=true;continue;}
+                    if(/^End\s*;?$/i.test(line)){inProgram=false;continue;}
+                    if(inFunction||inProgram||inInfo)continue;
+                    const declaration=this.parseDeclaration(line);
+                    if(!declaration)continue;
+                    const key=`${path}:${index}:${line}`;
+                    if(declaration.storage==='GLOBAL'&&this.globalMemory.initializedDeclarations.has(key))continue;
+                    await this.executeDeclaration(declaration);
+                    if(declaration.storage==='GLOBAL')this.globalMemory.initializedDeclarations.add(key);
+                }
+            }
+        } finally {this.currentFilePath=previous;}
+    }
+
+    typedIo(symbol) {
+        const match=String(symbol).match(/^(.+?)\.(Byte|Int|DInt|Double|Real|Float|Bool)$/i);
+        if(!match)return null;
+        const address=normalizeAddress(this.resolveAlias(match[1]),this.project?.labels||{});
+        return address?{address,type:match[2].toUpperCase()}:null;
+    }
+
+    readTypedIo({address,type}) {
+        const widths={BYTE:1,BOOL:1,INT:4,DINT:4,FLOAT:4,REAL:8,DOUBLE:8};
+        const width=widths[type],buffer=new ArrayBuffer(8),data=new DataView(buffer);
+        if(!/W$/.test(address.prefix))throw this.runtimeError('Typed I/O views require a word address.');
+        for(let offset=0;offset<width;offset+=2)data.setUint16(offset,Number(this.adapter.readAddress?.({...address,index:address.index+offset/2},this)??0)&0xffff,true);
+        switch(type) {
+            case 'BYTE':return data.getUint8(0);
+            case 'BOOL':return data.getUint8(0)?1:0;
+            case 'INT':case 'DINT':return data.getInt32(0,true);
+            case 'FLOAT':return data.getFloat32(0,true);
+            default:return data.getFloat64(0,true);
+        }
     }
 
     readSymbol(symbol) {
-        const source = String(symbol || '').trim();
-        if (!source) return 0;
-        const raw = normalizeRuntimeSymbol(source, this);
-        const group = getCaseInsensitive(this.ioGroups, raw);
-        if (group?.direction === 'IN') {
-            return group.addresses.reduce((result, address, index) => (
-                result | ((Number(this.readSymbol(address)) ? 1 : 0) << index)
-            ), 0);
-        }
-        const direct = getCaseInsensitive(this.variables, raw) ?? getCaseInsensitive(this.variables, source);
-        if (direct !== undefined) return direct;
-        const typed = raw.match(/^(.+?)\.(Byte|Int|DInt|Double|Real|Float|Bool)$/i);
-        if (typed) {
-            const base = Number(this.readSymbol(typed[1])) || 0;
-            const type = typed[2].toLowerCase();
-            if (type === 'bool') return base ? 1 : 0;
-            if (type === 'byte') return base & 0xff;
-            if (type === 'int' || type === 'dint') return Math.trunc(base);
-            return base;
-        }
-        const address = normalizeAddress(raw, this.project?.labels || {});
-        if (address) return this.adapter.readAddress?.(address, this) ?? 0;
+        const source=String(symbol||'').trim();if(!source)return 0;
+        const raw=this.resolveAlias(source),typed=this.typedIo(raw);
+        if(typed)return this.readTypedIo(typed);
+        const group=getCaseInsensitive(this.ioGroups,raw);
+        if(group?.direction==='IN')return group.addresses.reduce((result,address,index)=>result|((Number(this.readSymbol(address))?1:0)<<index),0);
+        const bank=this.variableBank(raw),direct=getCaseInsensitive(bank.variables,raw);
+        if(direct!==undefined)return direct;
+        const field=raw.match(/^(.+)\.([XYZABC])$/i);
+        if(field){const pose=this.readPositionSymbol(field[1]);if(pose)return pose['XYZABC'.indexOf(field[2].toUpperCase())]??0;}
+        const cast=raw.match(/^(.+?)\.(Byte|Int|DInt|Double|Real|Float|Bool)$/i);
+        if(cast){const number=Number(this.readSymbol(cast[1]))||0;return /bool/i.test(cast[2])?Number(Boolean(number)):/byte/i.test(cast[2])?number&255:/int/i.test(cast[2])?Math.trunc(number):number;}
+        const address=normalizeAddress(raw,this.project?.labels||{});
+        if(address)return this.adapter.readAddress?.(address,this)??0;
         return 0;
     }
 
-    writeSymbol(symbol, value) {
-        const source = String(symbol || '').trim();
-        if (!source) return;
-        const raw = normalizeRuntimeSymbol(source, this);
-        const position = getPositionSymbol(raw, this);
-        if (position) {
-            const pose = Array.isArray(value) ? value : this.readPositionExpression(value);
-            if (pose) this.positionVariables.set(position.key, normalizePose(pose, position.kind === 'JP' ? Math.max(6, pose.length) : 6));
-            return;
+    writeSymbol(symbol,value) {
+        const source=String(symbol||'').trim();if(!source)return;
+        const raw=this.resolveAlias(source),position=this.resolvePositionReference(raw);
+        if(position) {
+            const pose=Array.isArray(value)?value:this.readPositionExpression(value);
+            if(!pose)throw this.runtimeError(`Invalid position value: ${raw}`);
+            const positions=isModuleLocal(position.key)?this.moduleBank().positionVariables:this.positionVariables;
+            positions.set(position.key,normalizePose(pose,position.kind==='JP'?Math.max(6,pose.length):6));return;
         }
-        const group = getCaseInsensitive(this.ioGroups, raw);
-        if (group?.direction === 'OUT') {
-            const numeric = Number(value) || 0;
-            group.addresses.forEach((address, index) => this.writeSymbol(address, (numeric >> index) & 1));
-            return;
+        const typed=this.typedIo(raw);
+        if(typed) {
+            const {address,type}=typed,buffer=new ArrayBuffer(8),data=new DataView(buffer);
+            if(!/W$/.test(address.prefix))throw this.runtimeError('Typed I/O views require a word address.');
+            const width=/^(BYTE|BOOL)$/.test(type)?1:/^(INT|DINT|FLOAT)$/.test(type)?4:8;
+            if(width===1)data.setUint8(0,type==='BOOL'?Number(Boolean(value)):Number(value));
+            else if(type==='INT'||type==='DINT')data.setInt32(0,Number(value),true);
+            else if(type==='FLOAT')data.setFloat32(0,Number(value),true);else data.setFloat64(0,Number(value),true);
+            for(let offset=0;offset<width;offset+=2){let word=data.getUint16(offset,true);if(width===1)word=(Number(this.adapter.readAddress?.(address,this)??0)&0xff00)|data.getUint8(0);this.adapter.writeAddress?.({...address,index:address.index+offset/2},word,this);}return;
         }
-        const address = normalizeAddress(raw, this.project?.labels || {});
-        if (address) {
-            this.adapter.writeAddress?.(address, value, this);
-            return;
-        }
-        this.variables.set(raw, this.coerceVariableValue(raw, value));
+        const group=getCaseInsensitive(this.ioGroups,raw);
+        if(group?.direction==='OUT'){group.addresses.forEach((address,index)=>this.writeSymbol(address,((Number(value)||0)>>index)&1));return;}
+        const address=normalizeAddress(raw,this.project?.labels||{});
+        if(address){this.adapter.writeAddress?.(address,value,this);return;}
+        const bank=this.variableBank(raw);bank.variables.set(raw,this.coerceVariableValue(raw,value,bank));
     }
 
-    // Sparse program overrides: missing fields inherit the simulator's saved
-    // Tool data. Explicit zero values must remain distinguishable from missing.
     getToolOverrides(index) {
         const prefix = `TOOL[${index}].`;
         const fields = new Map();
@@ -833,19 +1053,24 @@ export class OlpRuntime {
         ];
     }
 
+
+    resolvePositionReference(symbol) {
+        const raw=this.resolveAlias(symbol),direct=getPositionSymbol(raw,this);
+        if(direct)return direct;
+        const record=(this.project?.pointRecords||[]).find(record=>String(record.name||'').toLowerCase()===raw.toLowerCase());
+        if(!record)return null;
+        const kind=record.sourceSymbol||(record.kind==='jointPoint'?'JP':'P');
+        return {kind,index:Number(record.index),key:`${kind}[${Number(record.index)}]`};
+    }
+
     readPositionSymbol(symbol) {
-        const position = getPositionSymbol(symbol, this);
-        if (!position) return null;
-        const saved = getCaseInsensitive(this.positionVariables, position.key);
-        if (saved) return [...saved];
-        if (position.kind === 'PR' || position.kind === 'LPR') return zeroPose();
-        const kind = position.kind === 'JP' ? 'jointPoint' : 'point';
-        const point = this.getPointRecordsForActiveFile().find((entry) => (
-            entry.kind === kind
-            && Number(entry.index) === position.index
-            && (!entry.sourceSymbol || entry.sourceSymbol === position.kind)
-        ));
-        return point?.values ? [...point.values] : null;
+        const position=this.resolvePositionReference(symbol);if(!position)return null;
+        const positions=isModuleLocal(position.key)?this.moduleBank().positionVariables:this.positionVariables;
+        const saved=getCaseInsensitive(positions,position.key);if(saved)return [...saved];
+        if(position.kind==='PR'||position.kind==='LPR')return zeroPose();
+        const kind=position.kind==='JP'?'jointPoint':'point';
+        const point=this.getPointRecordsForActiveFile().find(entry=>entry.kind===kind&&Number(entry.index)===position.index&&(!entry.sourceSymbol||entry.sourceSymbol===position.kind));
+        return point?.values?[...point.values]:null;
     }
 
     findProjectPoint(expression) {
@@ -858,7 +1083,7 @@ export class OlpRuntime {
         const records = this.getPointRecordsForActiveFile();
         const direct = this.readPositionSymbol(raw);
         if (direct) {
-            const position = getPositionSymbol(raw, this);
+            const position = this.resolvePositionReference(raw);
             const kind = position?.kind === 'JP' ? 'jointPoint' : 'point';
             const record = position
                 ? records.find((entry) => entry.kind === kind
@@ -886,9 +1111,13 @@ export class OlpRuntime {
             const base = this.readPositionExpression(argumentsList.shift());
             if (!base) return null;
             const offsetPose = zeroPose();
-            if (argumentsList.length === 1) {
+            if (argumentsList.length >= 1) {
                 const positionOffset = this.readPositionExpression(argumentsList[0]);
-                if (positionOffset) return addPose(base, positionOffset);
+                if (positionOffset) {
+                    const frame=String(argumentsList[1]||'WOBJ').trim().toUpperCase();
+                    if(!['WOBJ','TOOL'].includes(frame))throw this.runtimeError(`Unsupported Offset frame: ${frame}`);
+                    return composeOlpOffset(base,positionOffset,frame);
+                }
             }
             argumentsList.forEach((argument, index) => {
                 const axis = String(argument).match(/^([XYZABC])\s*\[\s*(.+)\]$/i);
@@ -899,7 +1128,7 @@ export class OlpRuntime {
                     offsetPose[index] = Number(parseLiteral(argument, this)) || 0;
                 }
             });
-            return addPose(base, offsetPose);
+            return composeOlpOffset(base,offsetPose);
         }
         const combined = splitTopLevel(raw);
         if (combined) {
@@ -976,14 +1205,14 @@ export class OlpRuntime {
         const lines = this.programLines.get(path) || [];
         const functions = new Map();
         lines.forEach((line, index) => {
-            const match = stripComments(line).match(/^Func\s+([\w.]+)\s*\((.*)\)\s*;?$/i);
+            const match = stripComments(line).match(/^Func\s+(?:(Int|Real|Float|Bool|String|Byte|DInt|Double)\s+)?([\w.]+)\s*\((.*)\)\s*;?$/i);
             if (!match) return;
             const end = lines.findIndex((candidate, candidateIndex) => candidateIndex > index && /^\s*EndFunc\b/i.test(candidate));
-            functions.set(match[1], {
+            functions.set(match[2], {
                 lines,
                 start: index + 1,
                 end: end >= 0 ? end : lines.length,
-                parameters: parseFunctionParameters(match[2])
+                returnType: match[1]?.toUpperCase() || null, parameters: parseFunctionParameters(match[3])
             });
         });
         this.functionCache.set(path, functions);
@@ -1005,9 +1234,10 @@ export class OlpRuntime {
             if (target === undefined) {
                 throw this.runtimeError(`Goto target not found: ${result.target}`);
             }
-            if (jumps++ > 100000) throw new Error('OLP Goto iteration limit exceeded.');
+            if (jumps++ >= this.maxLoopIterations) throw new Error('OLP configured Goto iteration limit exceeded.');
             cursor = target;
-            await new Promise((resolve) => setTimeout(resolve, 0));
+            // executeLines budgets each destination instruction; do not add a
+            // wall-clock delay for the jump itself.
         }
         return null;
     }
@@ -1042,57 +1272,22 @@ export class OlpRuntime {
         if (!entry) throw this.runtimeError(`Function not found: ${fileName(path)}.${functionName}`);
         this.callStack.push(`${path}:${functionName}`);
         if (this.callStack.length > 32) throw new Error('OLP function call depth exceeded.');
-        const parameterState = (entry.parameters || []).map((definition, index) => ({
-            parameter: definition.name,
-            type: definition.type,
-            hadValue: this.variables.has(definition.name),
-            previousValue: this.variables.get(definition.name),
-            hadType: this.variableTypes.has(definition.name),
-            previousType: this.variableTypes.get(definition.name),
-            value: argumentsList[index] ?? 0
-        }));
-        parameterState.forEach(({ parameter, type, value }) => {
-            if (type) this.declareVariable(parameter, type);
-            this.writeSymbol(parameter, value);
-        });
-        // Some generated projects expose a global process busy word in main.pro,
-        // while the position subprogram checks its own yP{n}_{mode}_pos_busy bit.
-        // Mirror that controller-side handoff so the imported project follows the
-        // same path and reaches its completion branch in OLP.
-        let positionBusyAddress = null;
-        const positionFunction = String(functionName).split('.').at(-1).match(/^P(\d+)_pos$/i);
-        if (positionFunction) {
-            const mode = this.readSymbol('xwProcess_work_pos') > 0
-                ? 'work'
-                : this.readSymbol('xwProcess_wait_pos') > 0 ? 'wait' : null;
-            if (mode) {
-                const symbol = `yP${positionFunction[1]}_${mode}_pos_busy`;
-                positionBusyAddress = normalizeAddress(symbol, this.project?.labels || {});
-                if (positionBusyAddress) {
-                    this.adapter.writeAddress?.(positionBusyAddress, 1, this);
-                }
-            }
-        }
+        const scope={variables:new Map(),variableTypes:new Map(),arrayDeclarations:new Map(),positionVariables:new Map()};
+        this.functionScopes.push(scope);
+        for(const [index,definition]of (entry.parameters||[]).entries())
+            this.declareVariable(definition.name,definition.type||'Double',argumentsList[index]??0);
         const previousFilePath = this.currentFilePath;
         this.currentFilePath = path;
         let returnValue;
         try {
             const result = await this.executeProgramBlock(entry.lines, entry.start, entry.end, path);
-            if (result?.type === 'return') returnValue = result.value;
+            if (result?.type === 'return') returnValue = entry.returnType
+                ? this.coerceVariableValue('$return',result.value,{variableTypes:new Map([['$return',entry.returnType]]),arrayDeclarations:new Map()})
+                : result.value;
             await this.awaitPendingMotions();
         }
         finally {
-            if (positionBusyAddress) {
-                // This is a runtime status output only.  Virtual Bus input
-                // state remains owned by the Communication Tester.
-                this.adapter.writeAddress?.(positionBusyAddress, 0, this);
-            }
-            parameterState.forEach(({ parameter, hadValue, previousValue, hadType, previousType }) => {
-                if (hadValue) this.variables.set(parameter, previousValue);
-                else this.variables.delete(parameter);
-                if (hadType) this.variableTypes.set(parameter, previousType);
-                else this.variableTypes.delete(parameter);
-            });
+            this.functionScopes.pop();
             this.currentFilePath = previousFilePath;
             this.callStack.pop();
         }
@@ -1100,10 +1295,108 @@ export class OlpRuntime {
         return returnValue;
     }
 
+    isStopMoveQueueCommand(command) {
+        const options = command?.options;
+        return this.adapter.queueStopMoves === true && !this.stepMode
+            && this.motionSettings.rapidMove?.ptp === true
+            && ['MOVJ', 'MOVABSJ'].includes(command?.motion)
+            && options?.zone !== null && options?.zone !== undefined
+            && String(options.zone).trim() !== '' && Number(options.zone) === 0
+            && !options.nwait && !options.until && !options.outEvents?.length
+            && options.vibrationMode == null && options.zoneRate == null;
+    }
+
+    stopMoveQueueKey(command) {
+        return JSON.stringify([command.options.tool ?? this.motionSettings.tool, command.options.wobj ?? this.motionSettings.wobj]);
+    }
+
+    stopMoveQueueCandidate(line) {
+        try { return this.parseMotion(line); } catch { return null; }
+    }
+
+    canContinueStopMoveQueue(command) {
+        return this.isStopMoveQueueCommand(command)
+            && (!this.stopMoveQueue || this.stopMoveQueue.key === this.stopMoveQueueKey(command));
+    }
+
+    async drainStopMoveQueue() {
+        const group = this.stopMoveQueue;
+        if (!group) return;
+        const waitStarted = performance.now();
+        try {
+            await group.tail;
+            if (group.error) throw group.error;
+        } finally {
+            if (performance.now() - waitStarted >= 4) this.sliceStartedAt = performance.now();
+            if (this.stopMoveQueue === group) this.stopMoveQueue = null;
+        }
+    }
+
+    async enqueueStopMove(command, effectiveOptions) {
+        let group = this.stopMoveQueue;
+        if (!group) {
+            group = { tail: null, timing: { nextStartAt: NaN }, tasks: new Set(),
+                key: this.stopMoveQueueKey(command), error: null, cancelled: false,
+                resetClockAfterPause: false, runningContext: null };
+            this.stopMoveQueue = group;
+        }
+        const context = { currentFilePath: this.currentFilePath, currentLineNumber: this.currentLineNumber,
+            currentCommand: this.currentCommand };
+        const invoke = async () => {
+            if (this.paused) {
+                group.resetClockAfterPause = true;
+                await this.waitIfPaused();
+            }
+            // A queued RUN movement still needs its own STEP permit.
+            if (this.stepMode) {
+                group.resetClockAfterPause = true;
+                await this.waitForExecutionPermit({ queuedMotion: true });
+            }
+            if (group.resetClockAfterPause) {
+                group.timing.nextStartAt = NaN;
+                group.resetClockAfterPause = false;
+            }
+            if (this.cancelled || group.cancelled) throw new Error('OLP stopped');
+            group.runningContext = context;
+            try {
+                return await this.adapter.move?.(command.motion, command.pointExpression, command.speed,
+                    this.project, this, { ...effectiveOptions, motionQueueTiming: group.timing });
+            } catch (error) {
+                const motionError = new OlpRuntimeError(error?.message || 'Queued motion failed', context);
+                motionError.cause = error;
+                throw motionError;
+            } finally {
+                if (group.runningContext === context) group.runningContext = null;
+            }
+        };
+        const task = group.tail ? group.tail.then(invoke) : invoke();
+        group.tail = task;
+        group.tasks.add(task);
+        this.pendingMotions.add(task);
+        const settled = error => {
+            if (error) group.error ||= error;
+            group.tasks.delete(task);
+            this.pendingMotions.delete(task);
+        };
+        task.then(() => settled(null), error => settled(error));
+        let next = null;
+        try { next = this.peekNextMotion(); } catch { /* Parse the next line after this barrier. */ }
+        if (!this.canContinueStopMoveQueue(next)) {
+            await this.drainStopMoveQueue();
+        } else if (group.tasks.size >= 3) {
+            // Implementation backpressure, not a claim about controller queue capacity.
+            const waitStarted = performance.now();
+            await Promise.race([...group.tasks]);
+            if (performance.now() - waitStarted >= 4) this.sliceStartedAt = performance.now();
+            if (group.error) throw group.error;
+        }
+    }
+
     async awaitPendingMotions() {
+        await this.awaitKnownWait(this.drainStopMoveQueue());
         if (!this.pendingMotions.size) return;
         const pending = [...this.pendingMotions];
-        await Promise.all(pending);
+        await this.awaitKnownWait(Promise.all(pending));
     }
 
     async waitForInPosition() {
@@ -1149,13 +1442,17 @@ export class OlpRuntime {
             // the current program line immediately before dispatching it so a
             // completed command is never changed, while the next command uses
             // the latest source.
-            this.refreshProgramSources();
+            const sourcesChanged = this.refreshProgramSources();
             const line = stripComments(lines[index]);
             this.currentFilePath = sourcePath || this.currentFilePath;
             this.currentLineNumber = index + 1;
             this.currentLineText = String(lines[index] || '').trim();
             this.currentCommand = line;
             this.notifyCursor();
+            if (this.stopMoveQueue && (sourcesChanged
+                || (line && !this.canContinueStopMoveQueue(this.stopMoveQueueCandidate(line))))) {
+                await this.drainStopMoveQueue();
+            }
             if (!line || /^ProgramInfo|^EndProgramInfo|^Func\b|^EndFunc\b/i.test(line)) { index += 1; continue; }
             if (/^(?:EndFor|EndWhile|EndIf|EndSwitch|ElseIf|Else|Case|Default)\b/i.test(line)) { index += 1; continue; }
             if (getLabelTarget(line)) { index += 1; continue; }
@@ -1200,13 +1497,17 @@ export class OlpRuntime {
                 if (initMatch) this.writeSymbol(initMatch[1], parseLiteral(initMatch[2], this));
                 let guard = 0;
                 while (this.evaluate(condition)) {
-                    if (guard++ > 100000) throw new Error('OLP For loop iteration limit exceeded.');
+                    if (guard++ >= this.maxLoopIterations) throw new Error('OLP configured For loop iteration limit exceeded.');
                     const result = await this.executeLines(lines, index + 1, close, labels, sourcePath);
                     if (result?.type === 'return') return result;
                     if (result?.type === 'goto') return result;
                     if (result?.type === 'break') break;
                     if (counter) this.writeSymbol(counter, Number(this.readSymbol(counter)) + step);
-                    await new Promise((resolve) => setTimeout(resolve, 0));
+                    // The loop condition/back edge is interpreter work even
+                    // for an empty body. Keep bounded cooperative execution
+                    // without a separate timer on every iteration.
+                    await this.waitIfPaused();
+                    await this.yieldExecutionSlice();
                 }
                 index = close + 1;
                 continue;
@@ -1217,12 +1518,16 @@ export class OlpRuntime {
                 const condition = line.replace(/^While\b/i, '').replace(/;$/, '').trim();
                 let guard = 0;
                 while (this.evaluate(condition)) {
-                    if (guard++ > 100000) throw new Error('OLP While loop iteration limit exceeded.');
+                    if (guard++ >= this.maxLoopIterations) throw new Error('OLP configured While loop iteration limit exceeded.');
                     const result = await this.executeLines(lines, index + 1, close, labels, sourcePath);
                     if (result?.type === 'return') return result;
                     if (result?.type === 'goto') return result;
                     if (result?.type === 'break') break;
-                    await new Promise((resolve) => setTimeout(resolve, 0));
+                    // The loop condition/back edge is interpreter work even
+                    // for an empty body. Keep bounded cooperative execution
+                    // without a separate timer on every iteration.
+                    await this.waitIfPaused();
+                    await this.yieldExecutionSlice();
                 }
                 index = close + 1;
                 continue;
@@ -1298,10 +1603,8 @@ export class OlpRuntime {
                     // jump instead of resuming after the nested construct.
                     if (target < start || target >= end) return action;
                     index = target;
-                    // A generated robot program commonly contains a permanent scan loop.
-                    // Yield on every jump so the browser remains responsive and Stop/Pause
-                    // can be handled without starving the event loop.
-                    await new Promise((resolve) => setTimeout(resolve, 0));
+                    // The next dispatch already observes Pause/Stop and the
+                    // cooperative instruction/CPU budget. No extra Goto timer.
                     continue;
                 }
                 throw this.runtimeError(`Goto target not found: ${action.target}`);
@@ -1311,16 +1614,79 @@ export class OlpRuntime {
         return null;
     }
 
-    async executeFunctionCall(target, argumentsList) {
-        const parts = String(target || '').split('.');
-        if (parts.length >= 2) {
-            const requested = parts[0].toLowerCase();
-            const file = this.project?.programFiles?.find((path) => fileName(path).replace(/\.pro$/i, '').toLowerCase() === requested);
-            if (file) return this.executeFunction(file, parts.slice(1).join('.'), argumentsList);
+
+    callBuiltinSync(target,args=[],rawArguments=[]) {
+        const name=String(target).toUpperCase();
+        const number=index=>{const value=Number(args[index]);if(!Number.isFinite(value))throw this.runtimeError(`Invalid ${target} numeric argument`);return value;};
+        switch(name) {
+            case 'ABS':return Math.abs(number(0));
+            case 'MAX':return Math.max(...args.map(Number));
+            case 'MIN':return Math.min(...args.map(Number));
+            case 'GETTORQUE': {
+                const axis=Math.trunc(number(0));
+                if(axis<1||axis>16)throw this.runtimeError('GetTorque axis must be positive and within the robot axis range.');
+                if(!this.adapter.getTorque)throw this.runtimeError('GetTorque requires a robot torque provider.');
+                const value=this.adapter.getTorque(axis,this);
+                if(!Number.isFinite(value))throw this.runtimeError('Robot torque provider must return a finite synchronous value.');
+                return value;
+            }
+            case 'GETCURPOINTSFILENAME':return this.globalMemory.currentPointsFileName??fileName(this.activePointFile||'');
+            case 'STRREPLACE':return String(args[0]??'').split(String(args[1]??'')).join(String(args[2]??''));
+            case 'STRTOR': {
+                const source=String(args[0]??'');
+                const prefix=source.slice(0,2).toLowerCase(),base=prefix==='0x'?16:prefix==='0b'?2:prefix==='0d'?10:10;
+                const text=['0x','0b','0d'].includes(prefix)?source.slice(2):source;
+                const pattern=base===16?/^\s*([+-]?[0-9a-f]+)/i:base===2?/^\s*([+-]?[01]+)/:/^\s*([+-]?\d+)/;
+                const match=text.match(pattern);return match?Number.parseInt(match[1],base)|0:0;
+            }
+            case 'STRGETDATA': {
+                const source=String(args[0]??''),delimiter=String(args[1]??'');
+                if(!delimiter)throw this.runtimeError('StrGetData delimiter must not be empty.');
+                const reference=this.resolveAlias(rawArguments[2]||'');
+                const target=reference.match(/^(LD|D)\s*\[\s*(\d+)\s*\]$/i);
+                if(!target)throw this.runtimeError('StrGetData requires a numeric D/LD output array reference.');
+                const values=source?source.split(delimiter):[];
+                if(source.endsWith(delimiter))values.pop();
+                values.forEach((value,index)=>{
+                    const number=Number.parseFloat(value);
+                    this.writeSymbol(`${target[1]}[${Number(target[2])+index}]`,Number.isNaN(number)?0:number);
+                });
+                return values.length;
+            }
+            case 'STRCMP': {
+                const a=new TextEncoder().encode(String(args[0]??'')),b=new TextEncoder().encode(String(args[1]??''));
+                for(let i=0;i<Math.max(a.length,b.length);i++){const d=(a[i]??0)-(b[i]??0);if(d)return d;}return 0;
+            }
+            case 'STRLEN':return new TextEncoder().encode(String(args[0]??'')).length;
+            case 'GETPORTSTATE': {
+                if(!this.adapter.socket?.getState)throw this.runtimeError('GetPortState requires a socket service.');
+                return this.adapter.socket.getState(Math.trunc(number(0)),this);
+            }
+            case 'GETPORTBUF': {
+                if(!this.adapter.socket?.getBuffer)throw this.runtimeError('GetPortbuf requires a socket service.');
+                return this.adapter.socket.getBuffer(Math.trunc(number(0)),Math.trunc(number(1)),Math.trunc(number(2)),this);
+            }
+            case 'DIST': {
+                const first=this.readPositionExpression(rawArguments[0]),second=this.readPositionExpression(rawArguments[1]);
+                if(!first||!second)throw this.runtimeError('Dist requires two valid position values.');
+                return Math.hypot(...[0,1,2].map(i=>Number(first[i]||0)-Number(second[i]||0)));
+            }
+            default:return NO_BUILTIN;
+        }
+    }
+
+    async executeFunctionCall(target,argumentsList,rawArguments=[]) {
+        const builtin=this.callBuiltinSync(target,argumentsList,rawArguments);
+        if(builtin!==NO_BUILTIN)return builtin;
+        const parts=String(target||'').split('.');
+        if(parts.length>=2) {
+            const requested=parts[0].toLowerCase();
+            const file=this.project?.programFiles?.find(path=>fileName(path).replace(/\.pro$/i,'').toLowerCase()===requested);
+            if(file)return this.executeFunction(file,parts.slice(1).join('.'),argumentsList);
             throw this.runtimeError(`Program module not found: ${target}`);
         }
-        if (!this.currentFilePath) throw this.runtimeError(`Function call has no active program: ${target}`);
-        return this.executeFunction(this.currentFilePath, target, argumentsList);
+        if(!this.currentFilePath)throw this.runtimeError(`Function call has no active program: ${target}`);
+        return this.executeFunction(this.currentFilePath,target,argumentsList);
     }
 
     parseOutEvent(value) {
@@ -1469,10 +1835,16 @@ export class OlpRuntime {
 
     async executeMotion(command) {
         const { motion, pointExpression, speed, options } = command;
-        if (!options.nwait) await this.awaitPendingMotions();
+        const queuedStop = this.isStopMoveQueueCommand(command);
+        if (this.stopMoveQueue && !this.canContinueStopMoveQueue(command)) await this.drainStopMoveQueue();
+        if (!options.nwait && (!queuedStop || !this.stopMoveQueue)) await this.awaitPendingMotions();
         const [globalAcceleration, globalDeceleration] = this.motionSettings.acceleration || [];
+        if(options.tool!==null&&options.tool!==undefined)this.motionSettings.tool=options.tool;
+        if(options.wobj!==null&&options.wobj!==undefined)this.motionSettings.wobj=options.wobj;
         const effectiveOptions = {
             ...options,
+            tool: options.tool ?? this.motionSettings.tool,
+            wobj: options.wobj ?? this.motionSettings.wobj,
             acceleration: globalAcceleration > 0 ? globalAcceleration : options.acceleration,
             deceleration: globalDeceleration > 0 ? globalDeceleration : options.deceleration,
             accelerationRamp: this.motionSettings.accelerationRamp,
@@ -1480,11 +1852,20 @@ export class OlpRuntime {
             slvsMode: this.motionSettings.slvsMode,
             gripLoad: this.motionSettings.gripLoad
         };
+        if (queuedStop) {
+            await this.enqueueStopMove(command, effectiveOptions);
+            return;
+        }
+        if ((motion === 'JUMP' || motion === 'JUMPL') ? !this.adapter.jump : !this.adapter.move) throw this.runtimeError(`No motion adapter for ${motion}`);
         const invoke = motion === 'JUMP' || motion === 'JUMPL'
             ? this.adapter.jump?.(motion, pointExpression, speed, this.project, this, effectiveOptions)
             : this.adapter.move?.(motion, pointExpression, speed, this.project, this, effectiveOptions);
         const started = this.startMotion(invoke, effectiveOptions);
-        if (started) await started;
+        if (started) {
+            const waitStarted = performance.now();
+            await started;
+            if (performance.now() - waitStarted >= 4) this.sliceStartedAt = performance.now();
+        }
     }
 
     resolvePalletTarget(argumentsList) {
@@ -1508,41 +1889,58 @@ export class OlpRuntime {
         return { kind: 'point', values: target, name: `Pallet[${key}](${rowIndex},${columnIndex},${layerIndex})` };
     }
 
-    async executeAssignment(target, expression) {
-        const variable = normalizeRuntimeSymbol(target, this);
-        const rawExpression = String(expression || '').trim().replace(/;$/, '');
-        const currentPosition = getPositionSymbol(variable, this);
-        const currentPoseMatch = rawExpression.match(/^GetCur(J)?Pos\s*\(.*\)$/i);
-        if (currentPosition && currentPoseMatch) {
-            const kind = currentPoseMatch[1] ? 'jointPoint' : 'point';
-            const pose = await this.adapter.getCurrentPosition?.(kind, this);
-            if (pose) this.writeSymbol(variable, pose);
-            return;
+
+
+    async savePoints() {
+        const file=this.project?.pointFiles?.find(file=>fileName(file.path).toLowerCase()===fileName(this.activePointFile).toLowerCase());
+        if(!file)throw this.runtimeError('SavePoints requires an active point file.');
+        const values=new Map();
+        for(const record of file.records||[]) {
+            const kind=record.sourceSymbol||(record.kind==='jointPoint'?'JP':'P'),key=`${kind}[${record.index}]`;
+            const bank=isModuleLocal(key)?this.moduleBank().positionVariables:this.positionVariables;
+            const pose=getCaseInsensitive(bank,key);
+            if(!pose)continue;
+            record.values=[...pose];values.set(key.toUpperCase(),pose);
         }
-        const distance = rawExpression.match(/^Dist\s*\((.*)\)$/i);
-        if (distance) {
-            const argumentsList = splitArguments(distance[1]);
-            const first = this.readPositionExpression(argumentsList[0]);
-            const second = this.readPositionExpression(argumentsList[1]);
-            const value = first && second ? Math.hypot(...[0, 1, 2].map((index) => Number(first[index] || 0) - Number(second[index] || 0))) : 0;
-            this.writeSymbol(variable, value);
-            return;
+        const record=this.project?.files?.get(file.path);
+        let text=record?.text??file.text;
+        if(typeof text==='string') {
+            text=text.replace(/\b(JP|LP|P)\s*\[\s*(\d+)\s*\]\s*=\s*([^;\r\n]+)/gi,(original,kind,index)=>{
+                const pose=values.get(`${kind.toUpperCase()}[${Number(index)}]`);
+                return pose?`${kind}[${index}] = ${pose.map(Number).join(', ')}`:original;
+            });
+            if(record)record.text=text;file.text=text;
         }
-        const pose = currentPosition ? this.readPositionExpression(rawExpression) : null;
-        if (currentPosition && pose) {
-            this.writeSymbol(variable, pose);
-            return;
+        await this.adapter.savePoints?.({path:file.path,text,records:file.records},this);
+    }
+
+    async evaluateAssignmentValue(expression) {
+        const source=String(expression||'').trim();
+        const current=source.match(/^GetCur(J)?Pos\s*\(.*\)$/i);
+        if(current) {
+            if(!this.adapter.getCurrentPosition)throw this.runtimeError('GetCurPos requires a robot position provider.');
+            const pose=await this.adapter.getCurrentPosition(current[1]?'jointPoint':'point',this);
+            if(!Array.isArray(pose))throw this.runtimeError('Robot position provider did not return a position.');
+            return pose;
         }
-        const call = rawExpression.match(/^([\w.]+)\s*\((.*)\)$/);
-        if (call && !/^(Max|Min|Offset|Dist|GetCurPos|GetCurJPos)$/i.test(call[1])) {
-            const result = await this.executeFunctionCall(call[1], splitArguments(call[2]).map((argument) => parseLiteral(argument, this)));
-            this.writeSymbol(variable, result ?? 0);
-            return;
+        const call=source.match(/^([\w.]+)\s*\((.*)\)$/);
+        if(call&&!/^(Offset)$/i.test(call[1])) {
+            const raw=splitArguments(call[2]);
+            return this.executeFunctionCall(call[1],raw.map(arg=>parseLiteral(arg,this)),raw);
         }
-        this.writeSymbol(variable, parseLiteral(rawExpression, this));
+        return parseLiteral(source,this);
+    }
+
+    async executeAssignment(target,expression) {
+        const variable=this.resolveAlias(target),rawExpression=String(expression||'').trim().replace(/;$/,'');
+        const currentPosition=this.resolvePositionReference(variable);
+        const pose=currentPosition&&!/^GetCur(J)?Pos\s*\(/i.test(rawExpression)?this.readPositionExpression(rawExpression):null;
+        if(currentPosition&&pose){this.writeSymbol(variable,pose);return;}
+        this.writeSymbol(variable,await this.evaluateAssignmentValue(rawExpression));
     }
 
     async executeLine(line) {
+        this.scanRemoteVelocityInput();
         const value = stripComments(line);
         if (!value || /^ElseIf|^Else|^EndIf|^Case|^Default|^EndSwitch|^End\s*;?\s*$/i.test(value)) return;
         const goto = value.match(/^Goto\s+(.+?)\s*;?$/i);
@@ -1560,7 +1958,14 @@ export class OlpRuntime {
             const requested = loadPoints[1].trim();
             const matched = this.project?.pointFiles?.find((file) => fileName(file.path).toLowerCase() === fileName(requested).toLowerCase());
             if (!matched) throw this.runtimeError(`Point file not found: ${requested}`);
-            this.activePointFile = matched?.path || requested;
+            if(Number(this.adapter.taskId||0)!==0)throw this.runtimeError('LoadPoints is available only in the main motion task.');
+            await this.waitForInPosition();
+            this.activePointFile = matched.path;
+            this.globalMemory.currentPointsFileName = requested;
+            for (const record of matched.records || []) {
+                const kind=record.sourceSymbol||(record.kind==='jointPoint'?'JP':'P');
+                this.writeSymbol(`${kind}[${record.index}]`,record.values);
+            }
             return;
         }
         const include = value.match(/^Include\s+["']?([^"';]+)["']?\s*;?$/i);
@@ -1570,48 +1975,75 @@ export class OlpRuntime {
             if (!present) throw this.runtimeError(`Included program file not found: ${requested}`);
             return;
         }
+
         if (/^Open\s+Socket\b/i.test(value)) {
-            if (!this.adapter.openSocket) throw this.runtimeError(`Unsupported OLP command without socket adapter: ${value}`);
-            const resultVariable = value.match(/,\s*([A-Za-z_]\w*(?:\s*\[[^\]]+\])?)\s*\)\s*;?$/i)?.[1];
-            await this.adapter.openSocket(value, this);
-            if (resultVariable) this.writeSymbol(resultVariable, 1);
+            const match=value.match(/^Open\s+Socket\s*\((.*)\)\s*;?$/i);
+            if(!match)throw this.runtimeError(`Invalid socket open: ${value}`);
+            const args=splitArguments(match[1]);
+            const config={host:String(parseLiteral(args[0],this)),port:Number(parseLiteral(args[1],this)),channel:Math.trunc(Number(parseLiteral(args[2],this))),mode:String(args[3]||'Single').trim()};
+            let result;
+            if(this.adapter.socket?.open)result=await this.adapter.socket.open(config,this);
+            else if(this.adapter.openSocket)result=await this.adapter.openSocket(value,this,config);
+            else throw this.runtimeError('Open Socket requires a socket service.');
+            if(result!==0&&result!==1)throw this.runtimeError('Socket open service must return native success 1 or failure 0.');
+            if(args[4])this.writeSymbol(args[4],result);
             return;
         }
-        const waitInPos = value.match(/^WaitInPos(?:\s*\(\s*[-+]?(?:\d+(?:\.\d*)?|\.\d+)\s*\))?\s*;?$/i);
-        if (waitInPos) {
-            // Controller exports use both WaitInPos; and WaitInPos(100);.
-            // Both forms are an in-position barrier in the simulator; motion
-            // completion, rather than an added delay, determines when it ends.
-            await this.waitForInPosition();
+        const waitInPos=value.match(/^WaitInPos(?:\s*\(\s*[-+]?(?:\d+(?:\.\d*)?|\.\d+)\s*\))?\s*;?$/i);
+        if(waitInPos){await this.waitForInPosition();return;}
+        const closeSocket=value.match(/^Close\s+Socket\s*,\s*(.+?)\s*;?$/i);
+        const sendPort=value.match(/^Send\s+Port\s*\[([^\]]+)\]\s*,\s*(.+?)\s*;?$/i);
+        const getPort=value.match(/^Get\s+Port\s*\[([^\]]+)\](?:\s*,\s*T\s*\[([^\]]+)\])?(?:\s*,\s*Goto\s+(.+?))?\s*;?$/i);
+        if(closeSocket||sendPort||getPort) {
+            const channel=Math.trunc(Number(parseLiteral((closeSocket||sendPort||getPort)[1],this)));
+            const operation=closeSocket?'close':sendPort?'send':'receive';
+            const options={operation,channel};
+            if(sendPort)options.data=String(parseLiteral(sendPort[2],this));
+            if(getPort)options.timeoutSeconds=getPort[2]?Number(parseLiteral(getPort[2],this)):null;
+            let result;
+            if(this.adapter.socket?.[operation]) {
+                const pending=this.adapter.socket[operation](channel,operation==='send'?options.data:operation==='receive'?options.timeoutSeconds:this,this);
+                result=operation==='receive'?await this.awaitKnownWait(pending):await pending;
+            } else if(this.adapter.socketCommand) {
+                const pending=this.adapter.socketCommand(value,this,options);
+                result=operation==='receive'?await this.awaitKnownWait(pending):await pending;
+            }
+            else throw this.runtimeError(`${operation} requires a socket service.`);
+            if(getPort&&result===false&&getPort[3])return {type:'goto',target:getPort[3].trim()};
+            if(getPort&&typeof result!=='boolean')throw this.runtimeError('Socket receive service must return a boolean completion result.');
             return;
         }
-        if (/^(?:Close\s+Socket|Send\s+|SetPortBuf)/i.test(value)) {
-            if (!this.adapter.socketCommand) throw this.runtimeError(`Unsupported OLP socket command: ${value}`);
-            await this.adapter.socketCommand(value, this);
-            return;
-        }
+        if(/^SetPortBuf\b/i.test(value))throw this.runtimeError('SetPortBuf is not emitted by the supported project generator.');
+        if(/^SavePoints\s*;?$/i.test(value)){await this.savePoints();return;}
         const print = value.match(/^Print\s+(.+?)\s*;?$/i);
         if (print) {
             this.adapter.log?.(`PRINT: ${formatPrintExpression(print[1], this)}`);
             return;
         }
 
-        const clear = value.match(/^Clear\s+(.+?)\s*;?$/i);
-        if (clear) {
-            if (/^All$/i.test(clear[1])) {
-                this.variables.clear();
-                this.variableTypes.clear();
-                this.positionVariables.clear();
-                this.ioGroups.clear();
-                this.pallets.clear();
-                this.stopwatches.clear();
-                this.motionSettings.acceleration = null;
-                this.motionSettings.accelerationRamp = null;
-                this.motionSettings.rapidMove = null;
-                this.motionSettings.slvsMode = 'OFF';
-                this.motionSettings.gripLoad = null;
-        this.velocitySet = null;
+
+        const clear=value.match(/^Clear\s+(.+?)\s*;?$/i);
+        if(clear) {
+            const args=splitArguments(clear[1].replace(/;$/,''));
+            if(/^All$/i.test(args[0])) {
+                for(const bank of [this.globalMemory,...this.localsByModule.values(),...this.functionScopes])
+                    for(const key of ['variables','variableTypes','arrayDeclarations','positionVariables'])bank[key]?.clear();
+                this.ioGroups.clear();this.pallets.clear();this.stopwatches.clear();
+                Object.assign(this.motionSettings,{acceleration:null,accelerationRamp:null,rapidMove:null,slvsMode:'OFF',gripLoad:null});
+                this.velocitySet=null;return;
             }
+            const port=args[0]?.match(/^Port\s*\[(.+)\]$/i);
+            if(port) {
+                if(!this.adapter.socket?.clear)throw this.runtimeError('Clear Port requires a socket service.');
+                await this.adapter.socket.clear(Math.trunc(Number(parseLiteral(port[1],this))),this);return;
+            }
+            const target=this.resolveAlias(args[0]),range=target.match(/^(.*)\[\s*(-?\d+)\s*\]$/);
+            const count=args[1]===undefined?1:Math.trunc(Number(parseLiteral(args[1],this)));
+            if(!Number.isInteger(count)||count<=0||count>1_000_000)throw this.runtimeError('Invalid Clear count.');
+            if(!range&&count!==1)throw this.runtimeError('Clear range requires an indexed target.');
+            const address=normalizeAddress(target,this.project?.labels||{});
+            const boundedCount=address?.prefix==='OUT'?Math.max(0,Math.min(count,13824-address.index)):count;
+            for(let i=0;i<boundedCount;i++)this.writeSymbol(range?`${range[1]}[${Number(range[2])+i}]`:target,/^(L?Str)/i.test(target)?'':0);
             return;
         }
         const group = value.match(/^Group\s+(.+?)\s*;?$/i);
@@ -1775,12 +2207,8 @@ export class OlpRuntime {
             this.writeSymbol(increment[2], Number(this.readSymbol(increment[2])) + delta);
             return;
         }
-        const declaration = value.match(/^(?:(?:Global|Local)\s+)?(Int|Real|Float|Bool|String|Byte|DInt|Double)\s+([^=;]+?)\s*;?$/i);
-        if (declaration) {
-            const initial = /^String$/i.test(declaration[1]) ? '' : 0;
-            splitArguments(declaration[2]).forEach((target) => this.declareVariable(target, declaration[1], initial));
-            return;
-        }
+        const declaration=this.parseDeclaration(value);
+        if(declaration){await this.executeDeclaration(declaration);return;}
         const assignment = value.match(/^(?:(?:Global|Local)\s+)?(?:(Int|Real|Float|Bool|String|Byte|DInt|Double)\s+)?(.+?)\s*(?:=|:=)\s*(.+?)\s*;?$/i);
         if (assignment && !/^If|^ElseIf|^Switch/i.test(value)) {
             if (assignment[1]) this.declareVariable(assignment[2], assignment[1]);
@@ -1789,12 +2217,12 @@ export class OlpRuntime {
         }
         const call = value.match(/^([\w.]+)\s*\((.*)\)\s*;?$/);
         if (call) {
-            await this.executeFunctionCall(call[1], splitArguments(call[2]).map((argument) => parseLiteral(argument, this)));
+            await this.executeFunctionCall(call[1], splitArguments(call[2]).map((argument) => parseLiteral(argument, this)),splitArguments(call[2]));
             return;
         }
         const delay = value.match(/^Delay\s+(?:T\s*\[\s*([^\]]+)\s*\]|\[?\s*([^\]\s]+)\s*\]?)\s*;?$/i);
         if (delay) {
-            await this.adapter.delay?.(timerMilliseconds(parseLiteral(delay[1] || delay[2], this)));
+            await this.waitForDelay(timerMilliseconds(parseLiteral(delay[1] || delay[2], this)));
             return;
         }
         if (/^(?:SetTool|SetWobj|SetFrame|SetPayload)\b/i.test(value)) {

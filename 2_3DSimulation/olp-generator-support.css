@@ -1,0 +1,13 @@
+.olp-socket-simulator { margin-top: .5rem; padding: .45rem .6rem; border: 1px solid var(--border-color, #3d4655); border-radius: 5px; font-size: 12px; }
+.olp-socket-simulator summary { cursor: pointer; font-weight: 600; }
+.olp-socket-grid { display: grid; grid-template-columns: minmax(70px, 1fr) minmax(0, 2fr); align-items: center; gap: .45rem; margin-top: .5rem; }
+.olp-socket-grid label { display: flex; align-items: center; gap: .35rem; min-width: 0; }
+.olp-socket-grid input[type=number] { width: 54px; }
+.olp-socket-response, .olp-socket-sent { grid-column: 1 / -1; }
+.olp-socket-response input { flex: 1; min-width: 0; }
+.olp-socket-sent { overflow-wrap: anywhere; opacity: .8; }
+
+.program-panel.olp-mode-active .olp-workspace {
+    grid-template-rows: auto minmax(140px, 1fr) auto minmax(35px, 95px) auto;
+    overflow: auto;
+}

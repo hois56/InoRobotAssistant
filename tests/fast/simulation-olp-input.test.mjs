@@ -10,6 +10,10 @@ function fixture(){
  const state={olp:{inputWords:new Uint16Array(128),inputExtended:new Map(),outputWords:new Uint16Array(128),outputExtended:new Map()},ioSimulator:{dirtyRanges:new Set()}};
  const context=vm.createContext({state,...io,OLP_BIT_START:512,OLP_BIT_COUNT:2048,OLP_WORD_START:32,OLP_WORD_COUNT:128,normalizeOlpAddress:normalizeAddress,clampWord,getOlpProject:()=>null});
  for(const name of ['getOlpGroupedBitStart','isOlpSimulatorBitAddress','getOlpSimulatorMemory','getOlpSimulatorExtended','readOlpSimulatorBit','canonicalOlpAddress','readOlpAddress','decodeOlpInputSnapshot','markIoSimulatorDirty']) vm.runInContext(functionSource(name),context);
+ // This fixture has no robot-scoped equipment. Delegate to the actual
+ // simulator bit reader so grouped IO still exercises the shared memory.
+ context.getOlpRuntimeRobot=runtime=>runtime?.robot||null;
+ context.readRobotProgramIoBit=(_robot,direction,address)=>context.readOlpSimulatorBit(direction,address);
  context.receive=(message)=>{const snapshot=context.decodeOlpInputSnapshot(message);state.olp.inputWords=snapshot.words;state.olp.inputExtended=snapshot.extended;};
  return context;
 }

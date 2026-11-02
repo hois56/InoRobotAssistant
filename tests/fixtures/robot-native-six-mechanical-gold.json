@@ -1,0 +1,383 @@
+{
+  "scope": "Original MC_ArticulatedArm_A MechLimitJerkTime(kind1), exact packaged storage, physical mm/kg; negative times retained before max with natural period; not complete FreePlan validation. Native third argument source is path.endPrm.load.mass (actual combined Tool/Grip).",
+  "cases": [
+    {
+      "catalogFolder": "IR-R7H-90",
+      "sourceModel": "IR-R7H-90S5-C2H-INT_01741200",
+      "parameters": {
+        "massSlope": 0,
+        "referenceMassKg": 0,
+        "baseTimeMilliseconds": 0,
+        "referenceLengthMm": 1492,
+        "lengthSlopeMillisecondsPerMm": 0.0745
+      },
+      "armLengthMm": 1000,
+      "actualToolGripMassKg": 0,
+      "nativeSeconds": -0.036654
+    },
+    {
+      "catalogFolder": "IR-R7H-90",
+      "sourceModel": "IR-R7H-90S5-C2H-INT_01741200",
+      "parameters": {
+        "massSlope": 0,
+        "referenceMassKg": 0,
+        "baseTimeMilliseconds": 0,
+        "referenceLengthMm": 1492,
+        "lengthSlopeMillisecondsPerMm": 0.0745
+      },
+      "armLengthMm": 1000,
+      "actualToolGripMassKg": 7,
+      "nativeSeconds": -0.036654
+    },
+    {
+      "catalogFolder": "IR-R7H-90",
+      "sourceModel": "IR-R7H-90S5-C2H-INT_01741200",
+      "parameters": {
+        "massSlope": 0,
+        "referenceMassKg": 0,
+        "baseTimeMilliseconds": 0,
+        "referenceLengthMm": 1492,
+        "lengthSlopeMillisecondsPerMm": 0.0745
+      },
+      "armLengthMm": 1000,
+      "actualToolGripMassKg": 25,
+      "nativeSeconds": -0.036654
+    },
+    {
+      "catalogFolder": "IR-R7H-90",
+      "sourceModel": "IR-R7H-90S5-C2H-INT_01741200",
+      "parameters": {
+        "massSlope": 0,
+        "referenceMassKg": 0,
+        "baseTimeMilliseconds": 0,
+        "referenceLengthMm": 1492,
+        "lengthSlopeMillisecondsPerMm": 0.0745
+      },
+      "armLengthMm": 1800,
+      "actualToolGripMassKg": 0,
+      "nativeSeconds": 0.022945999999999998
+    },
+    {
+      "catalogFolder": "IR-R7H-90",
+      "sourceModel": "IR-R7H-90S5-C2H-INT_01741200",
+      "parameters": {
+        "massSlope": 0,
+        "referenceMassKg": 0,
+        "baseTimeMilliseconds": 0,
+        "referenceLengthMm": 1492,
+        "lengthSlopeMillisecondsPerMm": 0.0745
+      },
+      "armLengthMm": 1800,
+      "actualToolGripMassKg": 7,
+      "nativeSeconds": 0.022945999999999998
+    },
+    {
+      "catalogFolder": "IR-R7H-90",
+      "sourceModel": "IR-R7H-90S5-C2H-INT_01741200",
+      "parameters": {
+        "massSlope": 0,
+        "referenceMassKg": 0,
+        "baseTimeMilliseconds": 0,
+        "referenceLengthMm": 1492,
+        "lengthSlopeMillisecondsPerMm": 0.0745
+      },
+      "armLengthMm": 1800,
+      "actualToolGripMassKg": 25,
+      "nativeSeconds": 0.022945999999999998
+    },
+    {
+      "catalogFolder": "IR-R7H-90",
+      "sourceModel": "IR-R7H-90S5-C2H-INT_01741200",
+      "parameters": {
+        "massSlope": 0,
+        "referenceMassKg": 0,
+        "baseTimeMilliseconds": 0,
+        "referenceLengthMm": 1492,
+        "lengthSlopeMillisecondsPerMm": 0.0745
+      },
+      "armLengthMm": 2500,
+      "actualToolGripMassKg": 0,
+      "nativeSeconds": 0.07509600000000001
+    },
+    {
+      "catalogFolder": "IR-R7H-90",
+      "sourceModel": "IR-R7H-90S5-C2H-INT_01741200",
+      "parameters": {
+        "massSlope": 0,
+        "referenceMassKg": 0,
+        "baseTimeMilliseconds": 0,
+        "referenceLengthMm": 1492,
+        "lengthSlopeMillisecondsPerMm": 0.0745
+      },
+      "armLengthMm": 2500,
+      "actualToolGripMassKg": 7,
+      "nativeSeconds": 0.07509600000000001
+    },
+    {
+      "catalogFolder": "IR-R7H-90",
+      "sourceModel": "IR-R7H-90S5-C2H-INT_01741200",
+      "parameters": {
+        "massSlope": 0,
+        "referenceMassKg": 0,
+        "baseTimeMilliseconds": 0,
+        "referenceLengthMm": 1492,
+        "lengthSlopeMillisecondsPerMm": 0.0745
+      },
+      "armLengthMm": 2500,
+      "actualToolGripMassKg": 25,
+      "nativeSeconds": 0.07509600000000001
+    },
+    {
+      "catalogFolder": "IR-R25-178",
+      "sourceModel": "IR-R25-178S5-D1NH-INT_01741089",
+      "parameters": {
+        "massSlope": 0.02475,
+        "referenceMassKg": 0,
+        "baseTimeMilliseconds": 103,
+        "referenceLengthMm": 1767,
+        "lengthSlopeMillisecondsPerMm": 0.1092
+      },
+      "armLengthMm": 1000,
+      "actualToolGripMassKg": 0,
+      "nativeSeconds": 0.0192436
+    },
+    {
+      "catalogFolder": "IR-R25-178",
+      "sourceModel": "IR-R25-178S5-D1NH-INT_01741089",
+      "parameters": {
+        "massSlope": 0.02475,
+        "referenceMassKg": 0,
+        "baseTimeMilliseconds": 103,
+        "referenceLengthMm": 1767,
+        "lengthSlopeMillisecondsPerMm": 0.1092
+      },
+      "armLengthMm": 1000,
+      "actualToolGripMassKg": 7,
+      "nativeSeconds": 0.0225775537
+    },
+    {
+      "catalogFolder": "IR-R25-178",
+      "sourceModel": "IR-R25-178S5-D1NH-INT_01741089",
+      "parameters": {
+        "massSlope": 0.02475,
+        "referenceMassKg": 0,
+        "baseTimeMilliseconds": 103,
+        "referenceLengthMm": 1767,
+        "lengthSlopeMillisecondsPerMm": 0.1092
+      },
+      "armLengthMm": 1000,
+      "actualToolGripMassKg": 25,
+      "nativeSeconds": 0.031150577500000002
+    },
+    {
+      "catalogFolder": "IR-R25-178",
+      "sourceModel": "IR-R25-178S5-D1NH-INT_01741089",
+      "parameters": {
+        "massSlope": 0.02475,
+        "referenceMassKg": 0,
+        "baseTimeMilliseconds": 103,
+        "referenceLengthMm": 1767,
+        "lengthSlopeMillisecondsPerMm": 0.1092
+      },
+      "armLengthMm": 1800,
+      "actualToolGripMassKg": 0,
+      "nativeSeconds": 0.1066036
+    },
+    {
+      "catalogFolder": "IR-R25-178",
+      "sourceModel": "IR-R25-178S5-D1NH-INT_01741089",
+      "parameters": {
+        "massSlope": 0.02475,
+        "referenceMassKg": 0,
+        "baseTimeMilliseconds": 103,
+        "referenceLengthMm": 1767,
+        "lengthSlopeMillisecondsPerMm": 0.1092
+      },
+      "armLengthMm": 1800,
+      "actualToolGripMassKg": 7,
+      "nativeSeconds": 0.1250726737
+    },
+    {
+      "catalogFolder": "IR-R25-178",
+      "sourceModel": "IR-R25-178S5-D1NH-INT_01741089",
+      "parameters": {
+        "massSlope": 0.02475,
+        "referenceMassKg": 0,
+        "baseTimeMilliseconds": 103,
+        "referenceLengthMm": 1767,
+        "lengthSlopeMillisecondsPerMm": 0.1092
+      },
+      "armLengthMm": 1800,
+      "actualToolGripMassKg": 25,
+      "nativeSeconds": 0.17256457749999998
+    },
+    {
+      "catalogFolder": "IR-R25-178",
+      "sourceModel": "IR-R25-178S5-D1NH-INT_01741089",
+      "parameters": {
+        "massSlope": 0.02475,
+        "referenceMassKg": 0,
+        "baseTimeMilliseconds": 103,
+        "referenceLengthMm": 1767,
+        "lengthSlopeMillisecondsPerMm": 0.1092
+      },
+      "armLengthMm": 2500,
+      "actualToolGripMassKg": 0,
+      "nativeSeconds": 0.1830436
+    },
+    {
+      "catalogFolder": "IR-R25-178",
+      "sourceModel": "IR-R25-178S5-D1NH-INT_01741089",
+      "parameters": {
+        "massSlope": 0.02475,
+        "referenceMassKg": 0,
+        "baseTimeMilliseconds": 103,
+        "referenceLengthMm": 1767,
+        "lengthSlopeMillisecondsPerMm": 0.1092
+      },
+      "armLengthMm": 2500,
+      "actualToolGripMassKg": 7,
+      "nativeSeconds": 0.21475590369999997
+    },
+    {
+      "catalogFolder": "IR-R25-178",
+      "sourceModel": "IR-R25-178S5-D1NH-INT_01741089",
+      "parameters": {
+        "massSlope": 0.02475,
+        "referenceMassKg": 0,
+        "baseTimeMilliseconds": 103,
+        "referenceLengthMm": 1767,
+        "lengthSlopeMillisecondsPerMm": 0.1092
+      },
+      "armLengthMm": 2500,
+      "actualToolGripMassKg": 25,
+      "nativeSeconds": 0.2963018275
+    },
+    {
+      "catalogFolder": "IR-R15H-145",
+      "sourceModel": "IR-R15H-145S5-C1NH-INT_01741446",
+      "parameters": {
+        "massSlope": 0.01,
+        "referenceMassKg": 8,
+        "baseTimeMilliseconds": 113,
+        "referenceLengthMm": 1492,
+        "lengthSlopeMillisecondsPerMm": 0.0745
+      },
+      "armLengthMm": 1000,
+      "actualToolGripMassKg": 0,
+      "nativeSeconds": 0.07023832
+    },
+    {
+      "catalogFolder": "IR-R15H-145",
+      "sourceModel": "IR-R15H-145S5-C1NH-INT_01741446",
+      "parameters": {
+        "massSlope": 0.01,
+        "referenceMassKg": 8,
+        "baseTimeMilliseconds": 113,
+        "referenceLengthMm": 1492,
+        "lengthSlopeMillisecondsPerMm": 0.0745
+      },
+      "armLengthMm": 1000,
+      "actualToolGripMassKg": 7,
+      "nativeSeconds": 0.07558254
+    },
+    {
+      "catalogFolder": "IR-R15H-145",
+      "sourceModel": "IR-R15H-145S5-C1NH-INT_01741446",
+      "parameters": {
+        "massSlope": 0.01,
+        "referenceMassKg": 8,
+        "baseTimeMilliseconds": 113,
+        "referenceLengthMm": 1492,
+        "lengthSlopeMillisecondsPerMm": 0.0745
+      },
+      "armLengthMm": 1000,
+      "actualToolGripMassKg": 25,
+      "nativeSeconds": 0.08932482
+    },
+    {
+      "catalogFolder": "IR-R15H-145",
+      "sourceModel": "IR-R15H-145S5-C1NH-INT_01741446",
+      "parameters": {
+        "massSlope": 0.01,
+        "referenceMassKg": 8,
+        "baseTimeMilliseconds": 113,
+        "referenceLengthMm": 1492,
+        "lengthSlopeMillisecondsPerMm": 0.0745
+      },
+      "armLengthMm": 1800,
+      "actualToolGripMassKg": 0,
+      "nativeSeconds": 0.12507032
+    },
+    {
+      "catalogFolder": "IR-R15H-145",
+      "sourceModel": "IR-R15H-145S5-C1NH-INT_01741446",
+      "parameters": {
+        "massSlope": 0.01,
+        "referenceMassKg": 8,
+        "baseTimeMilliseconds": 113,
+        "referenceLengthMm": 1492,
+        "lengthSlopeMillisecondsPerMm": 0.0745
+      },
+      "armLengthMm": 1800,
+      "actualToolGripMassKg": 7,
+      "nativeSeconds": 0.13458653999999998
+    },
+    {
+      "catalogFolder": "IR-R15H-145",
+      "sourceModel": "IR-R15H-145S5-C1NH-INT_01741446",
+      "parameters": {
+        "massSlope": 0.01,
+        "referenceMassKg": 8,
+        "baseTimeMilliseconds": 113,
+        "referenceLengthMm": 1492,
+        "lengthSlopeMillisecondsPerMm": 0.0745
+      },
+      "armLengthMm": 1800,
+      "actualToolGripMassKg": 25,
+      "nativeSeconds": 0.15905682
+    },
+    {
+      "catalogFolder": "IR-R15H-145",
+      "sourceModel": "IR-R15H-145S5-C1NH-INT_01741446",
+      "parameters": {
+        "massSlope": 0.01,
+        "referenceMassKg": 8,
+        "baseTimeMilliseconds": 113,
+        "referenceLengthMm": 1492,
+        "lengthSlopeMillisecondsPerMm": 0.0745
+      },
+      "armLengthMm": 2500,
+      "actualToolGripMassKg": 0,
+      "nativeSeconds": 0.17304832000000003
+    },
+    {
+      "catalogFolder": "IR-R15H-145",
+      "sourceModel": "IR-R15H-145S5-C1NH-INT_01741446",
+      "parameters": {
+        "massSlope": 0.01,
+        "referenceMassKg": 8,
+        "baseTimeMilliseconds": 113,
+        "referenceLengthMm": 1492,
+        "lengthSlopeMillisecondsPerMm": 0.0745
+      },
+      "armLengthMm": 2500,
+      "actualToolGripMassKg": 7,
+      "nativeSeconds": 0.18621504000000003
+    },
+    {
+      "catalogFolder": "IR-R15H-145",
+      "sourceModel": "IR-R15H-145S5-C1NH-INT_01741446",
+      "parameters": {
+        "massSlope": 0.01,
+        "referenceMassKg": 8,
+        "baseTimeMilliseconds": 113,
+        "referenceLengthMm": 1492,
+        "lengthSlopeMillisecondsPerMm": 0.0745
+      },
+      "armLengthMm": 2500,
+      "actualToolGripMassKg": 25,
+      "nativeSeconds": 0.22007232
+    }
+  ]
+}

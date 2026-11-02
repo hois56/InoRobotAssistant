@@ -2014,7 +2014,13 @@
     "오브젝트를 등록했습니다. Tool의 진공 동작으로 흡착할 수 있습니다.": "Đã đăng ký đối tượng. Có thể hút bằng chuyển động chân không của Tool.",
     "진공 동작을 편집하여 흡착 면을 선택하세요.": "Hãy chỉnh sửa chuyển động hút và chọn mặt tiếp xúc.",
     "2. IO 연결 (선택)": "2. Kết nối IO (tùy chọn)",
-    "진공 Output 번호": "Số Output hút"
+    "진공 Output 번호": "Số Output hút",
+    "가상 비전 통신": "Giao tiếp thị giác ảo",
+    "가상 장치 연결": "Bật thiết bị ảo",
+    "수신 데이터": "Dữ liệu nhận",
+    "요청 시 자동 응답": "Trả lời yêu cầu",
+    "수신 데이터 입력": "Nhập dữ liệu nhận",
+    "마지막 송신": "Đã gửi gần nhất"
   },
   "patterns": []
 }

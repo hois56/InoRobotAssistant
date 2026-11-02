@@ -172,39 +172,41 @@
     "티칭 저장": "Lưu teaching",
     "속도": "Tốc độ",
     "항목": "Hạng mục",
-    "코드": "Mã"
-    ,"InoRobot Project Generator Web - Expert Edition": "Trình tạo dự án InoRobot trên web - Bản chuyên gia"
-    ,"Based on R24.C4": "Dựa trên R24.C4"
-    ,"Inovance Robot Project Generator": "Trình tạo dự án robot Inovance"
-    ,"No use": "Không sử dụng"
-    ,"Wait Pos": "Vị trí chờ"
-    ,"Work Pos": "Vị trí làm việc"
-    ,"Work comp": "Hoàn tất công việc"
-    ,"yAlarm_sts OFF": "yAlarm_sts TẮT"
-    ,"yAlarm_sts ON": "yAlarm_sts BẬT"
-    ,"yProg_run_sts OFF": "yProg_run_sts TẮT"
-    ,"Recipe count must be between 2 and 127.": "Số recipe phải từ 2 đến 127."
-    ,"Process step not found.": "Không tìm thấy bước công đoạn."
-    ,"Process names must be unique.": "Tên công đoạn phải là duy nhất."
-    ,"Error generating zip: {message}": "Lỗi khi tạo ZIP: {message}"
-    ,"Processes (": "Quy trình ("
-    ,"Tray": "Tray"
-    ,"Stage": "Bệ"
-    ,"MCR": "MCR"
-    ,"Vision": "Thị giác"
-    ,"Trash": "Loại bỏ"
-    ,"Check": "Kiểm tra"
-    ,"Calibration": "Hiệu chuẩn"
-    ,"Peeling": "Bóc"
-    ,"Vacuum": "Chân không"
-    ,"Gripper": "Kẹp"
-    ,"PLC (IO)": "PLC (IO)"
-    ,"Vision (Socket)": "Vision (Socket)"
-    ,"Use - IO": "Dùng - IO"
-    ,"Use - Socket": "Dùng - Socket",
+    "코드": "Mã",
+    "InoRobot Project Generator Web - Expert Edition": "Trình tạo dự án InoRobot trên web - Bản chuyên gia",
+    "Based on R24.C4": "Dựa trên R24.C4",
+    "Inovance Robot Project Generator": "Trình tạo dự án robot Inovance",
+    "No use": "Không sử dụng",
+    "Wait Pos": "Vị trí chờ",
+    "Work Pos": "Vị trí làm việc",
+    "Work comp": "Hoàn tất công việc",
+    "yAlarm_sts OFF": "yAlarm_sts TẮT",
+    "yAlarm_sts ON": "yAlarm_sts BẬT",
+    "yProg_run_sts OFF": "yProg_run_sts TẮT",
+    "Recipe count must be between 2 and 127.": "Số recipe phải từ 2 đến 127.",
+    "Process step not found.": "Không tìm thấy bước công đoạn.",
+    "Process names must be unique.": "Tên công đoạn phải là duy nhất.",
+    "Error generating zip: {message}": "Lỗi khi tạo ZIP: {message}",
+    "Processes (": "Quy trình (",
+    "Tray": "Tray",
+    "Stage": "Bệ",
+    "MCR": "MCR",
+    "Vision": "Thị giác",
+    "Trash": "Loại bỏ",
+    "Check": "Kiểm tra",
+    "Calibration": "Hiệu chuẩn",
+    "Peeling": "Bóc",
+    "Vacuum": "Chân không",
+    "Gripper": "Kẹp",
+    "PLC (IO)": "PLC (IO)",
+    "Vision (Socket)": "Vision (Socket)",
+    "Use - IO": "Dùng - IO",
+    "Use - Socket": "Dùng - Socket",
     "Vision port must be an integer from 1 to 65535.": "Cổng Vision phải là số nguyên từ 1 đến 65535.",
     "Vision client host must be a valid IPv4 address or DNS host name.": "Máy chủ của máy khách Vision phải là địa chỉ IPv4 hoặc tên máy chủ DNS hợp lệ.",
-    "At least one process step is required.": "Cần có ít nhất một bước quy trình."
+    "At least one process step is required.": "Cần có ít nhất một bước quy trình.",
+    "Extra wait positions must be an integer from 0 to 8.": "Số vị trí chờ bổ sung phải là số nguyên từ 0 đến 8.",
+    "A process can have up to 8 extra wait positions.": "Mỗi công đoạn có thể có tối đa 8 vị trí chờ bổ sung."
   },
   "patterns": [
     {

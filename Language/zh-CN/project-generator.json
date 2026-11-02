@@ -172,39 +172,41 @@
     "티칭 저장": "保存示教",
     "속도": "速度",
     "항목": "项目",
-    "코드": "代码"
-    ,"InoRobot Project Generator Web - Expert Edition": "InoRobot Project Generator Web - 专业版"
-    ,"Based on R24.C4": "基于 R24.C4"
-    ,"Inovance Robot Project Generator": "Inovance 机器人项目生成器"
-    ,"No use": "不使用"
-    ,"Wait Pos": "等待位置"
-    ,"Work Pos": "工作位置"
-    ,"Work comp": "工作完成"
-    ,"yAlarm_sts OFF": "yAlarm_sts 关闭"
-    ,"yAlarm_sts ON": "yAlarm_sts 开启"
-    ,"yProg_run_sts OFF": "yProg_run_sts 关闭"
-    ,"Recipe count must be between 2 and 127.": "配方数量必须在 2 到 127 之间。"
-    ,"Process step not found.": "未找到工艺步骤。"
-    ,"Process names must be unique.": "工艺名称必须唯一。"
-    ,"Error generating zip: {message}": "生成 ZIP 时出错：{message}"
-    ,"Processes (": "工艺流程（"
-    ,"Tray": "Tray"
-    ,"Stage": "工作台"
-    ,"MCR": "MCR"
-    ,"Vision": "视觉"
-    ,"Trash": "废料"
-    ,"Check": "检查"
-    ,"Calibration": "标定"
-    ,"Peeling": "剥离"
-    ,"Vacuum": "真空"
-    ,"Gripper": "夹爪"
-    ,"PLC (IO)": "PLC (IO)"
-    ,"Vision (Socket)": "视觉（Socket）"
-    ,"Use - IO": "使用 - IO"
-    ,"Use - Socket": "使用 - Socket",
+    "코드": "代码",
+    "InoRobot Project Generator Web - Expert Edition": "InoRobot Project Generator Web - 专业版",
+    "Based on R24.C4": "基于 R24.C4",
+    "Inovance Robot Project Generator": "Inovance 机器人项目生成器",
+    "No use": "不使用",
+    "Wait Pos": "等待位置",
+    "Work Pos": "工作位置",
+    "Work comp": "工作完成",
+    "yAlarm_sts OFF": "yAlarm_sts 关闭",
+    "yAlarm_sts ON": "yAlarm_sts 开启",
+    "yProg_run_sts OFF": "yProg_run_sts 关闭",
+    "Recipe count must be between 2 and 127.": "配方数量必须在 2 到 127 之间。",
+    "Process step not found.": "未找到工艺步骤。",
+    "Process names must be unique.": "工艺名称必须唯一。",
+    "Error generating zip: {message}": "生成 ZIP 时出错：{message}",
+    "Processes (": "工艺流程（",
+    "Tray": "Tray",
+    "Stage": "工作台",
+    "MCR": "MCR",
+    "Vision": "视觉",
+    "Trash": "废料",
+    "Check": "检查",
+    "Calibration": "标定",
+    "Peeling": "剥离",
+    "Vacuum": "真空",
+    "Gripper": "夹爪",
+    "PLC (IO)": "PLC (IO)",
+    "Vision (Socket)": "视觉（Socket）",
+    "Use - IO": "使用 - IO",
+    "Use - Socket": "使用 - Socket",
     "Vision port must be an integer from 1 to 65535.": "Vision 端口必须是 1 到 65535 之间的整数。",
     "Vision client host must be a valid IPv4 address or DNS host name.": "Vision 客户端主机必须是有效的 IPv4 地址或 DNS 主机名。",
-    "At least one process step is required.": "至少需要一个处理步骤。"
+    "At least one process step is required.": "至少需要一个处理步骤。",
+    "Extra wait positions must be an integer from 0 to 8.": "额外等待位置数量必须是 0 到 8 之间的整数。",
+    "A process can have up to 8 extra wait positions.": "每个工序最多可设置 8 个额外等待位置。"
   },
   "patterns": [
     {

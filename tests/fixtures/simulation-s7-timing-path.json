@@ -55,5 +55,7 @@
         -55.30339764373479
       ]
     }
-  ]
+  ],
+  "referenceVcTimeSeconds": 0.864,
+  "referenceDescription": "User-reported steady TimeOut for three Z[0] S7-60 Z20 MovJ commands, V100, default Acc/Dec/ramp, matching Tool data."
 }

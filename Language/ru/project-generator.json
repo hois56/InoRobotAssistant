@@ -204,7 +204,9 @@
     "Use - Socket": "Использование — Гнездо",
     "Vision port must be an integer from 1 to 65535.": "Порт Vision должен быть целым числом от 1 до 65535.",
     "Vision client host must be a valid IPv4 address or DNS host name.": "Хост клиента Vision должен быть действительным IPv4-адресом или именем хоста DNS.",
-    "At least one process step is required.": "Требуется хотя бы один технологический этап."
+    "At least one process step is required.": "Требуется хотя бы один технологический этап.",
+    "Extra wait positions must be an integer from 0 to 8.": "Количество дополнительных позиций ожидания должно быть целым числом от 0 до 8.",
+    "A process can have up to 8 extra wait positions.": "Для одного процесса можно задать не более 8 дополнительных позиций ожидания."
   },
   "patterns": [
     {

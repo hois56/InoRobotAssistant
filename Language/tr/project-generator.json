@@ -204,7 +204,9 @@
     "Use - Socket": "Kullanım - Soket",
     "Vision port must be an integer from 1 to 65535.": "Vision portu 1 ile 65535 arasında bir tam sayı olmalıdır.",
     "Vision client host must be a valid IPv4 address or DNS host name.": "Vision istemci ana bilgisayarı geçerli bir IPv4 adresi veya DNS ana bilgisayar adı olmalıdır.",
-    "At least one process step is required.": "En az bir işlem adımı gereklidir."
+    "At least one process step is required.": "En az bir işlem adımı gereklidir.",
+    "Extra wait positions must be an integer from 0 to 8.": "Ek bekleme konumu sayısı 0 ile 8 arasında bir tam sayı olmalıdır.",
+    "A process can have up to 8 extra wait positions.": "Bir işlemde en fazla 8 ek bekleme konumu olabilir."
   },
   "patterns": [
     {

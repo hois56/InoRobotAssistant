@@ -1,0 +1,211 @@
+{
+  "scope": "Original MultiTaskSetReadyStatus, BusInst_VelSet, TriggerInputFunctionalData and MC RobotGetJointSpacePara; host mutex/scheduler/global-velocity setter recording, remote-manual mode selector, command-index and transport result collectors supplied. No full task thread or servo emulation.",
+  "hashes": {
+    "librobot.so": "64ec286570ddf869e98c279e70deff0094d8f01ced61c54748f61f23e8f22e0a",
+    "MC_ArticulatedArm_A": "bd0dcb35e7f33dfad6b69911549479edf0f3d10b92685c0e3faf17be2c27c145"
+  },
+  "taskEnd": [
+    {
+      "taskId": 1,
+      "type": 1,
+      "stateAfter": 1,
+      "rewindsToStart": true,
+      "calls": [
+        {
+          "name": "pthread_mutex_lock",
+          "args": [
+            16772256,
+            0,
+            4875512,
+            1
+          ]
+        },
+        {
+          "name": "SetRunLineNo",
+          "args": [
+            72579548,
+            7,
+            5081450,
+            5081450
+          ]
+        },
+        {
+          "name": "pthread_mutex_unlock",
+          "args": [
+            16772256,
+            7,
+            5081450,
+            5081450
+          ]
+        }
+      ]
+    },
+    {
+      "taskId": 1,
+      "type": 2,
+      "stateAfter": 10,
+      "rewindsToStart": false,
+      "calls": [
+        {
+          "name": "pthread_mutex_lock",
+          "args": [
+            16772256,
+            7,
+            4875512,
+            2
+          ]
+        },
+        {
+          "name": "pthread_mutex_unlock",
+          "args": [
+            16772256,
+            10,
+            4875528,
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "taskId": 1,
+      "type": 3,
+      "stateAfter": 10,
+      "rewindsToStart": false,
+      "calls": [
+        {
+          "name": "pthread_mutex_lock",
+          "args": [
+            16772256,
+            10,
+            4875512,
+            3
+          ]
+        },
+        {
+          "name": "pthread_mutex_unlock",
+          "args": [
+            16772256,
+            10,
+            4875528,
+            1
+          ]
+        },
+        {
+          "name": "InoUSleep",
+          "args": [
+            1000,
+            10,
+            4875528,
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "mappedVelocityHandler": [
+    {
+      "inputWord": 0,
+      "globalVelocitySetterCalls": []
+    },
+    {
+      "inputWord": 1,
+      "globalVelocitySetterCalls": [
+        [
+          1,
+          1
+        ]
+      ]
+    },
+    {
+      "inputWord": 50,
+      "globalVelocitySetterCalls": [
+        [
+          50,
+          1
+        ]
+      ]
+    },
+    {
+      "inputWord": 100,
+      "globalVelocitySetterCalls": [
+        [
+          100,
+          1
+        ]
+      ]
+    },
+    {
+      "inputWord": 101,
+      "globalVelocitySetterCalls": []
+    },
+    {
+      "inputWord": 65535,
+      "globalVelocitySetterCalls": []
+    }
+  ],
+  "mappedVelocityTrigger8296": [
+    {
+      "inputWord": 80,
+      "remoteManual": 0,
+      "globalVelocitySetterCalls": [
+        [
+          80,
+          1
+        ]
+      ],
+      "previousWordAfter": 80
+    },
+    {
+      "inputWord": 80,
+      "remoteManual": 0,
+      "globalVelocitySetterCalls": [],
+      "previousWordAfter": 80
+    },
+    {
+      "inputWord": 50,
+      "remoteManual": 0,
+      "globalVelocitySetterCalls": [
+        [
+          50,
+          1
+        ]
+      ],
+      "previousWordAfter": 50
+    },
+    {
+      "inputWord": 25,
+      "remoteManual": 1,
+      "globalVelocitySetterCalls": [],
+      "previousWordAfter": 50
+    },
+    {
+      "inputWord": 25,
+      "remoteManual": 0,
+      "globalVelocitySetterCalls": [
+        [
+          25,
+          1
+        ]
+      ],
+      "previousWordAfter": 25
+    }
+  ],
+  "getTorqueFeedbackUnits": [
+    {
+      "driveRawActualCurrent": 0,
+      "reportedActualCurPercent": 0.0
+    },
+    {
+      "driveRawActualCurrent": 1000,
+      "reportedActualCurPercent": 100.0
+    },
+    {
+      "driveRawActualCurrent": -500,
+      "reportedActualCurPercent": -50.0
+    },
+    {
+      "driveRawActualCurrent": 1234,
+      "reportedActualCurPercent": 123.4000015258789
+    }
+  ]
+}

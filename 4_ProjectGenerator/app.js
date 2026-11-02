@@ -438,7 +438,18 @@ window.updateTraySetting = function (idx, field, input) {
 
 window.addExtraWait = function (stepIdx) {
     if (!state.steps[stepIdx]) return;
-    state.steps[stepIdx].ExtraWaitCount = (state.steps[stepIdx].ExtraWaitCount || 0) + 1;
+    let count;
+    try {
+        count = Generator.ExtraWaitCount(state.steps[stepIdx]);
+    } catch (error) {
+        alert(uiText(error.message));
+        return;
+    }
+    if (count >= Generator.MAX_EXTRA_WAIT_COUNT) {
+        alert(uiText('A process can have up to 8 extra wait positions.'));
+        return;
+    }
+    state.steps[stepIdx].ExtraWaitCount = count + 1;
     updatePreview();
 };
 
@@ -1064,6 +1075,7 @@ async function exportProj() {
         const processNames = new Set();
         state.steps.forEach((step) => {
             const processName = validateIdentifier(step.ProcessName, 'Process name');
+            Generator.ExtraWaitCount(step);
             const key = processName.toLowerCase();
             if (processNames.has(key)) throw new Error(`Duplicate process name: ${processName}`);
             processNames.add(key);

@@ -1,6 +1,7 @@
 import { normalizeToolLoad } from './tool-data-core.mjs';
 import { planFirmwareSCurve } from './firmware-scurve.mjs?v=20261102-scurve160-1';
 import { buildS7RapidMoveLimits } from './s7-rapid-dynamics.mjs?v=20261102-s7-native-2';
+import { buildRobotRapidMoveLimits, resolveRapidDynamicsModel } from './robot-rapid-dynamics.mjs?v=20261102-models-2';
 import { normalizeWorkObjects } from './workobject-core.mjs?v=20261031-tool-wobj-1';
 import { VIEW_PRESET_COUNT } from './view-preset-core.mjs';
 
@@ -235,14 +236,17 @@ export function createRapidMoveState(startAngles, targetAngles, joints, speedPer
         };
     }
 
-    // The S7 model uses the firmware's native joint-path radians and ms.
-    // Keep those units through SPrfCalc: its short-move tolerance depends on units.
-    const s7ModelNames = ['IR-S7-60Z20', 'IR-S7-60Z20S-INT', 'IR-S7-60Z20S3-C2LH-INT_01741021'];
-    if (robotType === 'scara' && s7ModelNames.includes(profileOptions.modelName)
-        && (!profileOptions.modelFolder || profileOptions.modelFolder === 'IR-S7-60Z20')
-        && startAngles.length === 4 && targetAngles.length === 4) {
-        const dynamics = buildS7RapidMoveLimits({
-            ...profileOptions, startJoints: startAngles, endJoints: targetAngles, speedPercent
+    // Preserve native path radians and milliseconds through SPrfCalc; its
+    // short-move tolerance depends on units. Unmatched models retain the
+    // existing simulator planner rather than receiving another model's data.
+    const selectedModel = resolveRapidDynamicsModel({...profileOptions, robotType});
+    if (selectedModel && startAngles.length === selectedModel.model.axisCount
+        && targetAngles.length === selectedModel.model.axisCount) {
+        // Retain the validated S7-60 estimator and its supplied VC reference.
+        const isS7Reference = selectedModel.sourceModel === 'IR-S7-60Z20S3-C2LH-INT_01741021';
+        const buildLimits = isS7Reference ? buildS7RapidMoveLimits : buildRobotRapidMoveLimits;
+        const dynamics = buildLimits({
+            ...profileOptions, robotType, startJoints: startAngles, endJoints: targetAngles, speedPercent
         });
         const length = dynamics.scalarPathLengthRad;
         const motionProfile = planFirmwareSCurve({
@@ -254,7 +258,7 @@ export function createRapidMoveState(startAngles, targetAngles, joints, speedPer
             jDecel: dynamics.jDecel * length / 1e9
         });
         return {
-            enabled: true, planner: 's7-rapid-dynamics',
+            enabled: true, planner: isS7Reference ? 's7-rapid-dynamics' : 'firmware-rapid-dynamics', nativeScalarProfile: true,
             progress: 0, velocity: 0, acceleration: 0, elapsedSeconds: 0, completed: false,
             durationSeconds: motionProfile.duration / 1000,
             maxProgressVelocity: dynamics.vMax,
@@ -346,7 +350,7 @@ export function advanceRapidMoveState(
         accelerationScale: 1,
         completed: Boolean(state?.completed)
     };
-    if (state.planner === 's7-rapid-dynamics') {
+    if (state.nativeScalarProfile === true || state.planner === 's7-rapid-dynamics') {
         const delta = Number(deltaSeconds);
         if (Number.isFinite(delta) && delta > 0) state.elapsedSeconds += delta;
         const sample = state.motionProfile.evaluate(state.elapsedSeconds * 1000);

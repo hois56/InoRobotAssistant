@@ -1,0 +1,511 @@
+{
+  "source": "libRtKine-a.so",
+  "sha256": "798277c9bac6fb543a1e8583fb089320a57b477f2a200137c922f0380fb5b875",
+  "scope": "Original public Kine_WobjCoordOffset/Kine_ToolCoordOffset with native degree/radian preprocessing, matrix composition and output conversion. Standard memory and transcendental math hooks only.",
+  "cases": [
+    {
+      "function": "Kine_WobjCoordOffset",
+      "base": [
+        100,
+        200,
+        300,
+        30,
+        40,
+        50
+      ],
+      "offset": [
+        10,
+        -20,
+        5,
+        10,
+        20,
+        30
+      ],
+      "returnCode": 0,
+      "result": [
+        110.0,
+        180.0,
+        305.0,
+        62.645420888651955,
+        34.752905107898634,
+        94.69873815729967
+      ]
+    },
+    {
+      "function": "Kine_WobjCoordOffset",
+      "base": [
+        100,
+        200,
+        300,
+        0,
+        0,
+        90
+      ],
+      "offset": [
+        10,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "returnCode": 0,
+      "result": [
+        110.0,
+        200.0,
+        300.0,
+        0.0,
+        -0.0,
+        90.0
+      ]
+    },
+    {
+      "function": "Kine_WobjCoordOffset",
+      "base": [
+        100,
+        200,
+        300,
+        90,
+        0,
+        0
+      ],
+      "offset": [
+        10,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "returnCode": 0,
+      "result": [
+        110.0,
+        200.0,
+        300.0,
+        90.0,
+        -0.0,
+        0.0
+      ]
+    },
+    {
+      "function": "Kine_WobjCoordOffset",
+      "base": [
+        0,
+        0,
+        0,
+        80,
+        -20,
+        40
+      ],
+      "offset": [
+        1,
+        2,
+        3,
+        15,
+        -30,
+        25
+      ],
+      "returnCode": 0,
+      "result": [
+        1.0,
+        2.0,
+        3.0,
+        121.7728010585398,
+        -43.53008690733765,
+        3.7360935516861575
+      ]
+    },
+    {
+      "function": "Kine_WobjCoordOffset",
+      "base": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        10
+      ],
+      "offset": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        5
+      ],
+      "returnCode": 0,
+      "result": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -0.0,
+        15.000000000000002
+      ]
+    },
+    {
+      "function": "Kine_WobjCoordOffset",
+      "base": [
+        0,
+        0,
+        0,
+        30,
+        90,
+        20
+      ],
+      "offset": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "returnCode": 0,
+      "result": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        90.0,
+        -9.999999999999996
+      ]
+    },
+    {
+      "function": "Kine_WobjCoordOffset",
+      "base": [
+        0,
+        0,
+        0,
+        30,
+        -90,
+        20
+      ],
+      "offset": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "returnCode": 0,
+      "result": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -90.0,
+        49.99999999999999
+      ]
+    },
+    {
+      "function": "Kine_WobjCoordOffset",
+      "base": [
+        0,
+        0,
+        0,
+        30,
+        89.999999,
+        20
+      ],
+      "offset": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "returnCode": 0,
+      "result": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        90.0,
+        -10.0
+      ]
+    },
+    {
+      "function": "Kine_WobjCoordOffset",
+      "base": [
+        0,
+        0,
+        0,
+        170,
+        0,
+        170
+      ],
+      "offset": [
+        0,
+        0,
+        0,
+        30,
+        0,
+        0
+      ],
+      "returnCode": 0,
+      "result": [
+        0.0,
+        0.0,
+        0.0,
+        -160.0,
+        -0.0,
+        170.0
+      ]
+    },
+    {
+      "function": "Kine_ToolCoordOffset",
+      "base": [
+        100,
+        200,
+        300,
+        30,
+        40,
+        50
+      ],
+      "offset": [
+        10,
+        -20,
+        5,
+        10,
+        20,
+        30
+      ],
+      "returnCode": 0,
+      "result": [
+        108.2375455433378,
+        185.48864550307712,
+        284.2976615089958,
+        59.52015163485498,
+        41.87462100785332,
+        97.82400741109664
+      ]
+    },
+    {
+      "function": "Kine_ToolCoordOffset",
+      "base": [
+        100,
+        200,
+        300,
+        0,
+        0,
+        90
+      ],
+      "offset": [
+        10,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "returnCode": 0,
+      "result": [
+        110.0,
+        200.0,
+        300.0,
+        0.0,
+        -0.0,
+        90.0
+      ]
+    },
+    {
+      "function": "Kine_ToolCoordOffset",
+      "base": [
+        100,
+        200,
+        300,
+        90,
+        0,
+        0
+      ],
+      "offset": [
+        10,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "returnCode": 0,
+      "result": [
+        100.0,
+        210.0,
+        300.0,
+        90.0,
+        -0.0,
+        0.0
+      ]
+    },
+    {
+      "function": "Kine_ToolCoordOffset",
+      "base": [
+        0,
+        0,
+        0,
+        80,
+        -20,
+        40
+      ],
+      "offset": [
+        1,
+        2,
+        3,
+        15,
+        -30,
+        25
+      ],
+      "returnCode": 0,
+      "result": [
+        0.34058890219112836,
+        -0.3504750362002338,
+        3.7096046216146386,
+        66.12033492159823,
+        -51.39045993240529,
+        77.47884042404813
+      ]
+    },
+    {
+      "function": "Kine_ToolCoordOffset",
+      "base": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        10
+      ],
+      "offset": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        5
+      ],
+      "returnCode": 0,
+      "result": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -0.0,
+        15.000000000000002
+      ]
+    },
+    {
+      "function": "Kine_ToolCoordOffset",
+      "base": [
+        0,
+        0,
+        0,
+        30,
+        90,
+        20
+      ],
+      "offset": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "returnCode": 0,
+      "result": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        90.0,
+        -9.999999999999996
+      ]
+    },
+    {
+      "function": "Kine_ToolCoordOffset",
+      "base": [
+        0,
+        0,
+        0,
+        30,
+        -90,
+        20
+      ],
+      "offset": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "returnCode": 0,
+      "result": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -90.0,
+        49.99999999999999
+      ]
+    },
+    {
+      "function": "Kine_ToolCoordOffset",
+      "base": [
+        0,
+        0,
+        0,
+        30,
+        89.999999,
+        20
+      ],
+      "offset": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "returnCode": 0,
+      "result": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        90.0,
+        -10.0
+      ]
+    },
+    {
+      "function": "Kine_ToolCoordOffset",
+      "base": [
+        0,
+        0,
+        0,
+        170,
+        0,
+        170
+      ],
+      "offset": [
+        0,
+        0,
+        0,
+        30,
+        0,
+        0
+      ],
+      "returnCode": 0,
+      "result": [
+        0.0,
+        0.0,
+        0.0,
+        140.37834812480452,
+        -4.980925321928869,
+        171.31779609895383
+      ]
+    }
+  ]
+}

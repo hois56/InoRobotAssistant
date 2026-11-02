@@ -14,6 +14,16 @@ const TemplateHelper = {
 };
 
 const Generator = {
+    MAX_EXTRA_WAIT_COUNT: 8,
+
+    ExtraWaitCount(step) {
+        const count = step.ExtraWaitCount ?? 0;
+        if (!Number.isInteger(count) || count < 0 || count > Generator.MAX_EXTRA_WAIT_COUNT) {
+            throw new Error('Extra wait positions must be an integer from 0 to 8.');
+        }
+        return count;
+    },
+
     IsTray(step) {
         return step.WorkType === 'Tray' && (step.WorkMethod === 'Get' || step.WorkMethod === 'Put');
     },
@@ -107,7 +117,7 @@ EndFunc;
     },
 
     LastWaitOffset(step) {
-        return 1 + (step.ExtraWaitCount || 0);
+        return 1 + Generator.ExtraWaitCount(step);
     },
 
     OffsetCode(step, indent = "    ") {

@@ -1,0 +1,988 @@
+{
+  "source": "D:\\02_SW_Install\\R24C4\\V4R24C4SPC25\\IMC100R-PLCV4R24C4SPC25_PR-1_0_3_236\\.codex\\analysis\\sphere\\controller\\libTransfor-a.so",
+  "sha256": "ff10f21a7537e7d912d5b7ffe090d5e5229497df71ad7cc44b43742b5e862249",
+  "scope": "Original unmodified StrToR, StrGetData, StrRepalce, ExecuteClearCmd, SetIO_IN/INW/INB_Value, GetIO_INWINT_Value/GetIO_INW_Value and LD access; standard libc primitives, token-index/count expression resolution, output-write service and synthetic little-endian BusIO read/write service supplied. Not full program compilation/socket/servo emulation.",
+  "strToR": [
+    {
+      "input": "12",
+      "result": 12
+    },
+    {
+      "input": "-12",
+      "result": -12
+    },
+    {
+      "input": "12.9",
+      "result": 12
+    },
+    {
+      "input": " -12.9junk",
+      "result": -12
+    },
+    {
+      "input": "0d17",
+      "result": 17
+    },
+    {
+      "input": "0x20",
+      "result": 32
+    },
+    {
+      "input": "0b101",
+      "result": 5
+    },
+    {
+      "input": "0X2A",
+      "result": 42
+    },
+    {
+      "input": "0B110",
+      "result": 6
+    },
+    {
+      "input": " 0x20",
+      "result": 0
+    },
+    {
+      "input": "-0x20",
+      "result": 0
+    },
+    {
+      "input": "P01.pts",
+      "result": 0
+    },
+    {
+      "input": "1e3",
+      "result": 1
+    },
+    {
+      "input": "0.5",
+      "result": 0
+    },
+    {
+      "input": "",
+      "result": 0
+    }
+  ],
+  "strGetData": [
+    {
+      "input": "1.25,-2.5,3e2",
+      "delimiter": ",",
+      "resultCount": 3,
+      "values": [
+        1.25,
+        -2.5,
+        300.0,
+        96.0,
+        95.0,
+        94.0
+      ],
+      "errors": 0
+    },
+    {
+      "input": "1,,3",
+      "delimiter": ",",
+      "resultCount": 3,
+      "values": [
+        1.0,
+        0.0,
+        3.0,
+        96.0,
+        95.0,
+        94.0
+      ],
+      "errors": 0
+    },
+    {
+      "input": ",1,2",
+      "delimiter": ",",
+      "resultCount": 3,
+      "values": [
+        0.0,
+        1.0,
+        2.0,
+        96.0,
+        95.0,
+        94.0
+      ],
+      "errors": 0
+    },
+    {
+      "input": "1,2,",
+      "delimiter": ",",
+      "resultCount": 2,
+      "values": [
+        1.0,
+        2.0,
+        97.0,
+        96.0,
+        95.0,
+        94.0
+      ],
+      "errors": 0
+    },
+    {
+      "input": "abc,2",
+      "delimiter": ",",
+      "resultCount": 2,
+      "values": [
+        0.0,
+        2.0,
+        97.0,
+        96.0,
+        95.0,
+        94.0
+      ],
+      "errors": 0
+    },
+    {
+      "input": "1::2::3",
+      "delimiter": "::",
+      "resultCount": 3,
+      "values": [
+        1.0,
+        2.0,
+        3.0,
+        96.0,
+        95.0,
+        94.0
+      ],
+      "errors": 0
+    }
+  ],
+  "strReplace": [
+    {
+      "input": "P01.pts",
+      "old": "P",
+      "new": "",
+      "result": "01.pts",
+      "replacementCount": 1
+    },
+    {
+      "input": "P01.Pts.P",
+      "old": "P",
+      "new": "",
+      "result": "01.ts.",
+      "replacementCount": 3
+    },
+    {
+      "input": "abcabc",
+      "old": "ab",
+      "new": "X",
+      "result": "XcXc",
+      "replacementCount": 2
+    },
+    {
+      "input": "aaaa",
+      "old": "aa",
+      "new": "aaa",
+      "result": "aaaaaa",
+      "replacementCount": 2
+    }
+  ],
+  "clearOut": [
+    {
+      "start": 520,
+      "count": 120,
+      "return": 123,
+      "writes": [
+        {
+          "index": 520,
+          "value": 0
+        },
+        {
+          "index": 521,
+          "value": 0
+        },
+        {
+          "index": 522,
+          "value": 0
+        },
+        {
+          "index": 523,
+          "value": 0
+        },
+        {
+          "index": 524,
+          "value": 0
+        },
+        {
+          "index": 525,
+          "value": 0
+        },
+        {
+          "index": 526,
+          "value": 0
+        },
+        {
+          "index": 527,
+          "value": 0
+        },
+        {
+          "index": 528,
+          "value": 0
+        },
+        {
+          "index": 529,
+          "value": 0
+        },
+        {
+          "index": 530,
+          "value": 0
+        },
+        {
+          "index": 531,
+          "value": 0
+        },
+        {
+          "index": 532,
+          "value": 0
+        },
+        {
+          "index": 533,
+          "value": 0
+        },
+        {
+          "index": 534,
+          "value": 0
+        },
+        {
+          "index": 535,
+          "value": 0
+        },
+        {
+          "index": 536,
+          "value": 0
+        },
+        {
+          "index": 537,
+          "value": 0
+        },
+        {
+          "index": 538,
+          "value": 0
+        },
+        {
+          "index": 539,
+          "value": 0
+        },
+        {
+          "index": 540,
+          "value": 0
+        },
+        {
+          "index": 541,
+          "value": 0
+        },
+        {
+          "index": 542,
+          "value": 0
+        },
+        {
+          "index": 543,
+          "value": 0
+        },
+        {
+          "index": 544,
+          "value": 0
+        },
+        {
+          "index": 545,
+          "value": 0
+        },
+        {
+          "index": 546,
+          "value": 0
+        },
+        {
+          "index": 547,
+          "value": 0
+        },
+        {
+          "index": 548,
+          "value": 0
+        },
+        {
+          "index": 549,
+          "value": 0
+        },
+        {
+          "index": 550,
+          "value": 0
+        },
+        {
+          "index": 551,
+          "value": 0
+        },
+        {
+          "index": 552,
+          "value": 0
+        },
+        {
+          "index": 553,
+          "value": 0
+        },
+        {
+          "index": 554,
+          "value": 0
+        },
+        {
+          "index": 555,
+          "value": 0
+        },
+        {
+          "index": 556,
+          "value": 0
+        },
+        {
+          "index": 557,
+          "value": 0
+        },
+        {
+          "index": 558,
+          "value": 0
+        },
+        {
+          "index": 559,
+          "value": 0
+        },
+        {
+          "index": 560,
+          "value": 0
+        },
+        {
+          "index": 561,
+          "value": 0
+        },
+        {
+          "index": 562,
+          "value": 0
+        },
+        {
+          "index": 563,
+          "value": 0
+        },
+        {
+          "index": 564,
+          "value": 0
+        },
+        {
+          "index": 565,
+          "value": 0
+        },
+        {
+          "index": 566,
+          "value": 0
+        },
+        {
+          "index": 567,
+          "value": 0
+        },
+        {
+          "index": 568,
+          "value": 0
+        },
+        {
+          "index": 569,
+          "value": 0
+        },
+        {
+          "index": 570,
+          "value": 0
+        },
+        {
+          "index": 571,
+          "value": 0
+        },
+        {
+          "index": 572,
+          "value": 0
+        },
+        {
+          "index": 573,
+          "value": 0
+        },
+        {
+          "index": 574,
+          "value": 0
+        },
+        {
+          "index": 575,
+          "value": 0
+        },
+        {
+          "index": 576,
+          "value": 0
+        },
+        {
+          "index": 577,
+          "value": 0
+        },
+        {
+          "index": 578,
+          "value": 0
+        },
+        {
+          "index": 579,
+          "value": 0
+        },
+        {
+          "index": 580,
+          "value": 0
+        },
+        {
+          "index": 581,
+          "value": 0
+        },
+        {
+          "index": 582,
+          "value": 0
+        },
+        {
+          "index": 583,
+          "value": 0
+        },
+        {
+          "index": 584,
+          "value": 0
+        },
+        {
+          "index": 585,
+          "value": 0
+        },
+        {
+          "index": 586,
+          "value": 0
+        },
+        {
+          "index": 587,
+          "value": 0
+        },
+        {
+          "index": 588,
+          "value": 0
+        },
+        {
+          "index": 589,
+          "value": 0
+        },
+        {
+          "index": 590,
+          "value": 0
+        },
+        {
+          "index": 591,
+          "value": 0
+        },
+        {
+          "index": 592,
+          "value": 0
+        },
+        {
+          "index": 593,
+          "value": 0
+        },
+        {
+          "index": 594,
+          "value": 0
+        },
+        {
+          "index": 595,
+          "value": 0
+        },
+        {
+          "index": 596,
+          "value": 0
+        },
+        {
+          "index": 597,
+          "value": 0
+        },
+        {
+          "index": 598,
+          "value": 0
+        },
+        {
+          "index": 599,
+          "value": 0
+        },
+        {
+          "index": 600,
+          "value": 0
+        },
+        {
+          "index": 601,
+          "value": 0
+        },
+        {
+          "index": 602,
+          "value": 0
+        },
+        {
+          "index": 603,
+          "value": 0
+        },
+        {
+          "index": 604,
+          "value": 0
+        },
+        {
+          "index": 605,
+          "value": 0
+        },
+        {
+          "index": 606,
+          "value": 0
+        },
+        {
+          "index": 607,
+          "value": 0
+        },
+        {
+          "index": 608,
+          "value": 0
+        },
+        {
+          "index": 609,
+          "value": 0
+        },
+        {
+          "index": 610,
+          "value": 0
+        },
+        {
+          "index": 611,
+          "value": 0
+        },
+        {
+          "index": 612,
+          "value": 0
+        },
+        {
+          "index": 613,
+          "value": 0
+        },
+        {
+          "index": 614,
+          "value": 0
+        },
+        {
+          "index": 615,
+          "value": 0
+        },
+        {
+          "index": 616,
+          "value": 0
+        },
+        {
+          "index": 617,
+          "value": 0
+        },
+        {
+          "index": 618,
+          "value": 0
+        },
+        {
+          "index": 619,
+          "value": 0
+        },
+        {
+          "index": 620,
+          "value": 0
+        },
+        {
+          "index": 621,
+          "value": 0
+        },
+        {
+          "index": 622,
+          "value": 0
+        },
+        {
+          "index": 623,
+          "value": 0
+        },
+        {
+          "index": 624,
+          "value": 0
+        },
+        {
+          "index": 625,
+          "value": 0
+        },
+        {
+          "index": 626,
+          "value": 0
+        },
+        {
+          "index": 627,
+          "value": 0
+        },
+        {
+          "index": 628,
+          "value": 0
+        },
+        {
+          "index": 629,
+          "value": 0
+        },
+        {
+          "index": 630,
+          "value": 0
+        },
+        {
+          "index": 631,
+          "value": 0
+        },
+        {
+          "index": 632,
+          "value": 0
+        },
+        {
+          "index": 633,
+          "value": 0
+        },
+        {
+          "index": 634,
+          "value": 0
+        },
+        {
+          "index": 635,
+          "value": 0
+        },
+        {
+          "index": 636,
+          "value": 0
+        },
+        {
+          "index": 637,
+          "value": 0
+        },
+        {
+          "index": 638,
+          "value": 0
+        },
+        {
+          "index": 639,
+          "value": 0
+        }
+      ],
+      "errors": 0
+    },
+    {
+      "start": 100,
+      "count": 0,
+      "return": 4294967294,
+      "writes": [],
+      "errors": 1
+    },
+    {
+      "start": 13820,
+      "count": 10,
+      "return": 123,
+      "writes": [
+        {
+          "index": 13820,
+          "value": 0
+        },
+        {
+          "index": 13821,
+          "value": 0
+        },
+        {
+          "index": 13822,
+          "value": 0
+        },
+        {
+          "index": 13823,
+          "value": 0
+        }
+      ],
+      "errors": 0
+    }
+  ],
+  "ioUnion": [
+    {
+      "wordsLowFirst": [
+        65535,
+        65535
+      ],
+      "int32": -1,
+      "bareWord": 65535,
+      "serviceCalls": [
+        {
+          "task": 3,
+          "index": 54,
+          "kind": 5,
+          "bytes": 4
+        },
+        {
+          "task": 3,
+          "index": 54,
+          "kind": 5,
+          "bytes": 2
+        }
+      ],
+      "errors": 0
+    },
+    {
+      "wordsLowFirst": [
+        22136,
+        4660
+      ],
+      "int32": 305419896,
+      "bareWord": 22136,
+      "serviceCalls": [
+        {
+          "task": 3,
+          "index": 54,
+          "kind": 5,
+          "bytes": 4
+        },
+        {
+          "task": 3,
+          "index": 54,
+          "kind": 5,
+          "bytes": 2
+        }
+      ],
+      "errors": 0
+    },
+    {
+      "wordsLowFirst": [
+        0,
+        32768
+      ],
+      "int32": -2147483648,
+      "bareWord": 0,
+      "serviceCalls": [
+        {
+          "task": 3,
+          "index": 54,
+          "kind": 5,
+          "bytes": 4
+        },
+        {
+          "task": 3,
+          "index": 54,
+          "kind": 5,
+          "bytes": 2
+        }
+      ],
+      "errors": 0
+    },
+    {
+      "wordsLowFirst": [
+        34464,
+        1
+      ],
+      "int32": 100000,
+      "bareWord": 34464,
+      "serviceCalls": [
+        {
+          "task": 3,
+          "index": 54,
+          "kind": 5,
+          "bytes": 4
+        },
+        {
+          "task": 3,
+          "index": 54,
+          "kind": 5,
+          "bytes": 2
+        }
+      ],
+      "errors": 0
+    }
+  ],
+  "ioProgramInputWrites": [
+    {
+      "function": "SetIO_IN_Value",
+      "index": 617,
+      "value": 1,
+      "allowed": false,
+      "return": 0,
+      "serviceCalls": [],
+      "errors": 1
+    },
+    {
+      "function": "SetIO_IN_Value",
+      "index": 12799,
+      "value": 1,
+      "allowed": false,
+      "return": 0,
+      "serviceCalls": [],
+      "errors": 1
+    },
+    {
+      "function": "SetIO_IN_Value",
+      "index": 12800,
+      "value": 1,
+      "allowed": true,
+      "return": 0,
+      "serviceCalls": [
+        {
+          "task": 3,
+          "index": 12800,
+          "kind": 1,
+          "bytes": 1,
+          "value": 1
+        }
+      ],
+      "errors": 0
+    },
+    {
+      "function": "SetIO_IN_Value",
+      "index": 12800,
+      "value": 0,
+      "allowed": true,
+      "return": 0,
+      "serviceCalls": [
+        {
+          "task": 3,
+          "index": 12800,
+          "kind": 1,
+          "bytes": 1,
+          "value": 0
+        }
+      ],
+      "errors": 0
+    },
+    {
+      "function": "SetIO_IN_Value",
+      "index": 13823,
+      "value": 1,
+      "allowed": true,
+      "return": 0,
+      "serviceCalls": [
+        {
+          "task": 3,
+          "index": 13823,
+          "kind": 1,
+          "bytes": 1,
+          "value": 1
+        }
+      ],
+      "errors": 0
+    },
+    {
+      "function": "SetIO_IN_Value",
+      "index": 13824,
+      "value": 1,
+      "allowed": false,
+      "return": 0,
+      "serviceCalls": [],
+      "errors": 1
+    },
+    {
+      "function": "SetIO_INW_Value",
+      "index": 799,
+      "value": 65535,
+      "allowed": false,
+      "return": 0,
+      "serviceCalls": [],
+      "errors": 1
+    },
+    {
+      "function": "SetIO_INW_Value",
+      "index": 800,
+      "value": 4660,
+      "allowed": true,
+      "return": 0,
+      "serviceCalls": [
+        {
+          "task": 3,
+          "index": 800,
+          "kind": 5,
+          "bytes": 2,
+          "value": 4660
+        }
+      ],
+      "errors": 0
+    },
+    {
+      "function": "SetIO_INW_Value",
+      "index": 863,
+      "value": 22136,
+      "allowed": true,
+      "return": 0,
+      "serviceCalls": [
+        {
+          "task": 3,
+          "index": 863,
+          "kind": 5,
+          "bytes": 2,
+          "value": 22136
+        }
+      ],
+      "errors": 0
+    },
+    {
+      "function": "SetIO_INW_Value",
+      "index": 864,
+      "value": 0,
+      "allowed": false,
+      "return": 0,
+      "serviceCalls": [],
+      "errors": 1
+    },
+    {
+      "function": "SetIO_INB_Value",
+      "index": 1599,
+      "value": 255,
+      "allowed": false,
+      "return": 0,
+      "serviceCalls": [],
+      "errors": 1
+    },
+    {
+      "function": "SetIO_INB_Value",
+      "index": 1600,
+      "value": 18,
+      "allowed": true,
+      "return": 0,
+      "serviceCalls": [
+        {
+          "task": 3,
+          "index": 1600,
+          "kind": 9,
+          "bytes": 1,
+          "value": 18
+        }
+      ],
+      "errors": 0
+    },
+    {
+      "function": "SetIO_INB_Value",
+      "index": 1727,
+      "value": 52,
+      "allowed": true,
+      "return": 0,
+      "serviceCalls": [
+        {
+          "task": 3,
+          "index": 1727,
+          "kind": 9,
+          "bytes": 1,
+          "value": 52
+        }
+      ],
+      "errors": 0
+    },
+    {
+      "function": "SetIO_INB_Value",
+      "index": 1728,
+      "value": 0,
+      "allowed": false,
+      "return": 0,
+      "serviceCalls": [],
+      "errors": 1
+    }
+  ],
+  "localBank": {
+    "scope": "Current model pointer in task call-stack; changing current model changes implicit LD bank",
+    "modelAStored": 12.5,
+    "modelBStored": 25.0,
+    "modelAReread": 12.5
+  }
+}

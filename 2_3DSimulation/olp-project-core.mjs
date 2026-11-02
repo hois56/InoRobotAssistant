@@ -100,9 +100,14 @@ function parseLabels(value) {
     const labels = {};
     const groups = [
         ['InputBitLabels', 'In'],
+        ['InputByteLabels', 'InB'],
         ['InputWordLabels', 'InW'],
         ['OutputBitLabels', 'Out'],
-        ['OutputWordLabels', 'OutW']
+        ['OutputByteLabels', 'OutB'],
+        ['OutputWordLabels', 'OutW'],
+        ['BVarLabels', 'B'],
+        ['RVarLabels', 'R'],
+        ['DVarLabels', 'D']
     ];
     groups.forEach(([key, prefix]) => {
         const entries = value?.[key]?.LabelsArray;
@@ -313,10 +318,16 @@ export function resolveOlpPoint(project, expression, activePointFile = null) {
         ? records.find((record) => record.kind === kind && record.index === Number(indexMatch[2])
             && (!record.sourceSymbol || record.sourceSymbol === indexMatch[1].toUpperCase()))
         : null;
-    const point = direct || indexed;
-    if (!point) return null;
+    // A symbolic point name remains bound to its numeric index when a
+    // recipe file without Name fields replaces the active point coordinates.
+    const alias = direct || indexed;
+    if (!alias) return null;
+    const active = activeRecords.find(record => record.kind === alias.kind
+        && record.index === alias.index && (record.sourceSymbol || 'P') === (alias.sourceSymbol || 'P'));
+    const point = active || alias;
     return {
         ...point,
+        name: direct?.name || point.name,
         offsetExpression: offsetMatch?.[2]?.trim() || null
     };
 }

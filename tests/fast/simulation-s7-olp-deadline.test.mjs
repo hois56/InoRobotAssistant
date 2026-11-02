@@ -22,6 +22,7 @@ async function run({renderWorkMs=0,minimumTimerMs=0,override=100,enabled=true}={
         performance:{now:()=>clock},window:{setTimeout:(callback,delay)=>{waits.push(delay);clock+=Math.max(.000001,minimumTimerMs,delay);queueMicrotask(callback);}},
         normalizeArmLoadProperties:v=>v,getArmLoadJointIndex:m=>m.userData.attachmentJointIndex,
         setJointAngle:(joint,value)=>{joint.angle=value;},captureCurrentTcpTarget(){},appendTcpPathPoint(){},syncJointControls(){},
+        sampleOlpJointMotion(){},finishOlpJointMotion(){},
         requestRender:()=>{clock+=renderWorkMs;},
         createRapidMoveState:(...args)=>{const plan=core.createRapidMoveState(...args);plans.push(plan.durationSeconds);return plan;}});
     for(const name of names) vm.runInContext(source.match(new RegExp(`(?:async )?function ${name}\\([^]*?\\n\\}(?=\\r?\\n|$)`))[0],context);

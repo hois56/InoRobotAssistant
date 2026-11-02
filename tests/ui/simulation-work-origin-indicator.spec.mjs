@@ -49,22 +49,22 @@ for (const model of ['IR-S7-60Z20', 'IR-R10H-120']) {
     await expect(button).toBeEnabled();
     await expectReached(page, true);
 
-    // OLP uses fixed Work Origin 0 rather than the simulation's saved origin.
+    // OLP Home[0] follows the same explicitly registered controller home.
     await page.evaluate(() => {
       const a = window.__workOrigin, robot = a.state.activeArticulatedModel;
       a.state.olp.projects.set(robot.userData.motionInstanceId, { labels: {} });
       a.state.olp.enabled = true;
       a.updateWorkOriginButtonUi();
     });
-    await expectReached(page, false);
+    await expectReached(page, true);
     await page.evaluate(() => {
       const a = window.__workOrigin, robot = a.state.activeArticulatedModel;
       a.getOlpHomeTargetAngles(robot, 0).forEach((value, i) => a.setJointAngle(robot.userData.joints[i], value));
     });
     await expectReached(page, true);
-    await setLastJoint(page, 0.2);
+    await setLastJoint(page, 10.2);
     await expectReached(page, false);
-    await setLastJoint(page, 0);
+    await setLastJoint(page, 10);
     await expectReached(page, true);
   });
 }
