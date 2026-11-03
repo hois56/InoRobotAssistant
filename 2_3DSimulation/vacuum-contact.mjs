@@ -86,7 +86,7 @@ export class VacuumContact {
             const proxy = this.objectProxy(candidate.object);
             for (const source of sources) {
                 if (within(source.mesh, candidate.object) || within(candidate.object, source.mesh)) continue;
-                if (this.system.isWithinDistance(source.proxy, proxy, 1)) {
+                if (this.system.isWithinDistance(source.proxy, proxy, 2)) {
                     contacts.push({ candidate, source }); break;
                 }
             }

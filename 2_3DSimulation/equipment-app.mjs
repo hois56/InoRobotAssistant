@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { EquipmentScene, equipmentObjectRef } from './equipment-scene.mjs?v=20261101-vacuum-surface-1';
-import { createEquipmentUi } from './equipment-ui.mjs?v=20261101-vacuum-surface-1';
+import { EquipmentScene, equipmentObjectRef } from './equipment-scene.mjs?v=20261103-vacuum-signals-1';
+import { createEquipmentUi } from './equipment-ui.mjs?v=20261102-vacuum-range-2';
 import { EQUIPMENT_LABELS, normalizeEquipmentDefinition, validateEquipmentDefinitions, equipmentMotionGroups, equipmentReferences, normalizeEquipmentBindings } from './equipment-core.mjs?v=20261101-vacuum-surface-1';
 
 export function createEquipmentApp(adapter) {
@@ -224,7 +224,9 @@ export function createEquipmentApp(adapter) {
     function command(id, command) {
         if (command === 'RESET' && adapter.definitions().some(def => def.id === id && def.type === 'OBJECT')) { resetObjects('equipment:' + id); return; }
         if (adapter.definitions().some(def => def.id === id && def.type === 'VACUUM' && !def.enabled)) throw new Error('진공 동작을 편집하여 흡착 면을 선택하세요.');
-        runtime.manual.set(id, command); runtime.start(); adapter.changed({ runtimeOnly: true });
+        runtime.manual.set(id, command); runtime.start();
+        runtime.signalVacuum(adapter.definitions().find(def => def.id === id), adapter.mappings?.() || []);
+        adapter.changed({ runtimeOnly: true });
     }
     const ui = createEquipmentUi({
         definitions: adapter.definitions, references, label: definitionLabel, save, remove, select: adapter.select, selectedReferences: adapter.selectedReferences, popout: adapter.popout, hide: adapter.hide, front: adapter.front,
@@ -281,6 +283,15 @@ export function createEquipmentApp(adapter) {
     }
     return {
         runtime, ui, resolve, references, save, remove, objects, ioRobot, command,
+        needsVacuumIoPose(robot, direction, values) {
+            return (adapter.mappings?.() || []).some(mapping => {
+                if (!mapping.enabled || mapping.direction !== direction || values?.[mapping.address] !== mapping.triggerValue) return false;
+                const def = adapter.definitions().find(item => mapping.gripObjectRef === 'equipment:' + item.id);
+                if (!def?.enabled || def.type !== 'VACUUM' || ioRobot(def) !== robot) return false;
+                return mapping.equipmentCommand === 'FORWARD' ? !def.runtime.vacuumActive
+                    : ['REVERSE', 'RESET'].includes(mapping.equipmentCommand) && !!(def.runtime.vacuumActive || def.runtime.heldRef);
+            });
+        },
         signalRobotIo(robot, direction, addresses) {
             const changed = new Set(addresses.map(Number));
             for (const mapping of adapter.mappings?.() || []) {
@@ -288,6 +299,7 @@ export function createEquipmentApp(adapter) {
                 const def = adapter.definitions().find(item => mapping.gripObjectRef === 'equipment:' + item.id);
                 if (ioRobot(def) !== robot) continue;
                 runtime.manual.delete(def.id); runtime.start();
+                runtime.signalVacuum(def, adapter.mappings?.() || []);
             }
         },
         resetObjects,
@@ -324,7 +336,11 @@ export function createEquipmentApp(adapter) {
             }
             releaseUnregistered(); runtime.restore(adapter.definitions()); ui.render();
         },
-        signal(mapping) { runtime.manual.delete(mapping.gripObjectRef.replace('equipment:', '')); runtime.start(); },
+        signal(mapping) {
+            const id = mapping.gripObjectRef.replace('equipment:', '');
+            runtime.manual.delete(id); runtime.start();
+            runtime.signalVacuum(adapter.definitions().find(def => def.id === id), adapter.mappings?.() || []);
+        },
         active(mappings) { return runtime.hasWork(adapter.definitions(), mappings); },
         expectedContact,
         collision(hits, stop) {

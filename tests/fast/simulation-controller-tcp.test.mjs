@@ -66,8 +66,9 @@ function fixture({ wobj = 0, tool = false, scara = false, trace = false } = {}) 
     sendCollaborationRobotState() {}, closeVirtualControllerSocket() {},
     clearVirtualControllerStreamWatchdog() {}, refreshViewPresetsUi() {}, removeVirtualControllerSession() {} });
   vm.runInContext(functions, context);
-  function send(tcpValues = [708, -292, 215, 0, 0, 180]) {
+  function send(tcpValues = [708, -292, 215, 0, 0, 180], jointOffset = 0) {
     const joints = scara ? [20, -30, 360, 40] : [20, -30, 40, -110, 60, 200];
+    joints[0] += jointOffset;
     const data = trace
       ? { joints, ...Object.fromEntries(['x', 'y', 'z', 'a', 'b', 'c'].map((key, index) => [`pos_${key}`, tcpValues[index]])) }
       : { joints, tcp: tcpValues };
@@ -190,7 +191,7 @@ test('simulation interference stop never blocks subsequent controller positions'
 });
 
 for (const scara of [false, true]) for (const wobj of [0, 1]) {
-  test(`controller feedback aligns physical TCP and mounted Tool (SCARA ${scara}, Wobj ${wobj})`, () => {
+  test(`controller feedback keeps physical TCP and mounted Tool together at the wrist (SCARA ${scara}, Wobj ${wobj})`, () => {
     const f = fixture({ scara, wobj, tool: true });
     const profilePosition = f.tcp.position.clone(), profileQuaternion = f.tcp.quaternion.clone();
     const parent = f.flange.parent;
@@ -201,8 +202,7 @@ for (const scara of [false, true]) for (const wobj of [0, 1]) {
     const expectedQuaternion = base.getWorldQuaternion(new THREE.Quaternion()).multiply(reported.quaternion);
     assert.ok(f.tcp.getWorldPosition(new THREE.Vector3()).distanceTo(expectedPosition) < 1e-8);
     assert.ok(f.tcp.getWorldQuaternion(new THREE.Quaternion()).angleTo(expectedQuaternion) < 1e-7);
-    // This Tool point was authored at the profile's local position. It must
-    // follow the reported TCP together with the actual geometry, not just axes.
+    // Physical TCP and Tool must share the same joint-driven mounting frame.
     assert.ok(f.mountedTool.getWorldPosition(new THREE.Vector3()).distanceTo(expectedPosition) < 1e-8);
     assert.ok(f.tcp.position.distanceTo(profilePosition) < 1e-8);
     assert.ok(f.tcp.quaternion.angleTo(profileQuaternion) < 1e-7);
@@ -215,7 +215,7 @@ for (const scara of [false, true]) for (const wobj of [0, 1]) {
   });
 }
 
-test('editing a Tool waits for fresh feedback and preserves the selected profile after disconnect', () => {
+test('editing a local Tool preserves the physical mount through feedback and disconnect keeps the selected profile', () => {
   const f = fixture({ tool: true });
   f.send();
   const before = f.flange.matrixWorld.clone();
@@ -224,13 +224,93 @@ test('editing a Tool waits for fresh feedback and preserves the selected profile
   f.context.syncActiveTcpFrame(f.robot);
   assert.ok(f.flange.matrixWorld.elements.every((value, i) => Math.abs(value - before.elements[i]) < 1e-8));
   assert.equal(f.robot.userData.controllerToolFrame.profileDirty, true);
-  // Even an unchanged TCP sample must reconcile a newly selected local Tool.
+  const expectedTcp = f.tcp.getWorldPosition(new THREE.Vector3());
+  // Fresh feedback retains the controller's Tool definition and must not
+  // recalibrate the mount using the newly edited local Tool.
   f.send();
   assert.equal(f.robot.userData.controllerToolFrame.profileDirty, false);
-  const reported = f.context.getCurrentTcpPoseBase(f.robot);
-  const expected = f.robot.userData.controllerBaseFrame.localToWorld(reported.position.clone());
-  assert.ok(f.tcp.getWorldPosition(new THREE.Vector3()).distanceTo(expected) < 1e-8);
+  assert.ok(f.flange.matrixWorld.elements.every((value, i) => Math.abs(value - before.elements[i]) < 1e-8));
+  assert.ok(f.tcp.getWorldPosition(new THREE.Vector3()).distanceTo(expectedTcp) < 1e-8);
   f.context.disconnectVirtualController(f.controller);
   assert.deepEqual(f.tcp.position.toArray(), [-50, 70, 200]);
   assert.deepEqual(f.tcp.quaternion.toArray(), [0, 0, 0, 1]);
 });
+
+for (const scara of [false, true]) for (const trace of [false, true]) {
+  test(`local TCP edits preserve controller-driven Tool motion (SCARA ${scara}, Trace ${trace})`, () => {
+    const reference = fixture({ scara, trace, wobj: 1, tool: true });
+    const edited = fixture({ scara, trace, wobj: 1, tool: true });
+    reference.send(); edited.send();
+    edited.robot.userData.activeTcpProfileIndex = 1;
+    edited.robot.userData.tcpProfiles = [null, {
+      position: new THREE.Vector3(30, -20, 150.5),
+      quaternion: new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2)
+    }];
+    edited.context.syncActiveTcpFrame(edited.robot);
+    for (const [tcp, jointOffset] of [
+      [[708, -292, 215, 0, 0, 180], 0],
+      [[718, -282, 220, 20, 0, 180], 1],
+      [[730, -270, 230, 40, 0, 180], 2]
+    ]) {
+      reference.send(tcp, jointOffset); edited.send(tcp, jointOffset);
+      const expected = reference.mountedTool.getWorldPosition(new THREE.Vector3());
+      const expectedRotation = reference.mountedTool.getWorldQuaternion(new THREE.Quaternion());
+      assert.ok(edited.mountedTool.getWorldPosition(new THREE.Vector3()).distanceTo(expected) < 1e-8);
+      assert.ok(edited.mountedTool.getWorldQuaternion(new THREE.Quaternion()).angleTo(expectedRotation) < 1e-7);
+      assert.deepEqual(Array.from(edited.robot.userData.controllerTcpPose.readout.position.toArray()), tcp.slice(0, 3));
+    }
+    assert.deepEqual(edited.tcp.position.toArray(), [30, -20, 150.5]);
+  });
+}
+
+for (const scara of [false, true]) for (const trace of [false, true]) {
+  test(`controller Wobj edits preserve the physical mounting during subsequent motion (SCARA ${scara}, Trace ${trace})`, () => {
+    const f = fixture({ scara, trace, tool: true, wobj: 1 });
+    f.send([500, 100, 200, 0, 0, 0]);
+    const before = f.mountedTool.getWorldPosition(new THREE.Vector3());
+    const beforeRotation = f.mountedTool.getWorldQuaternion(new THREE.Quaternion());
+    const physical = f.context.getCurrentTcpPoseBase(f.robot);
+    // A translated/rotated controller Wobj changes Cartesian values, never joints.
+    f.send([100, -500, 50, -90, 0, 0]);
+    assert.ok(f.mountedTool.getWorldPosition(new THREE.Vector3()).distanceTo(before) < 1e-7);
+    assert.ok(f.mountedTool.getWorldQuaternion(new THREE.Quaternion()).angleTo(beforeRotation) < 1e-7);
+    const readout = f.context.getJogReadoutPose(f.robot, f.context.getCurrentTcpPoseBase(f.robot));
+    assert.deepEqual(readout.position.toArray(), [100, -500, 50]);
+    f.send([110, -500, 50, -90, 0, 0], 1);
+    // Fixture joints do not implement FK; move the wrist to represent joint motion.
+    f.flange.parent.position.x += 10;
+    f.send([9000, -8000, 7000, 120, 20, -30], 2);
+    const expectedTool = f.flange.localToWorld(f.mountedTool.position.clone());
+    assert.ok(f.mountedTool.getWorldPosition(new THREE.Vector3()).distanceTo(expectedTool) < 1e-7);
+    assert.deepEqual(f.context.getJogReadoutPose(f.robot, f.context.getCurrentTcpPoseBase(f.robot)).position.toArray(), [9000, -8000, 7000]);
+    const moved = f.mountedTool.getWorldPosition(new THREE.Vector3());
+    assert.ok(moved.distanceTo(before) > 1);
+    f.send([9000, -8000, 7000, 120, 20, -30], 2);
+    assert.ok(f.mountedTool.getWorldPosition(new THREE.Vector3()).distanceTo(moved) < 1e-7);
+    f.context.disconnectVirtualController(f.controller);
+    f.controller.wanted = true;
+    f.flange.parent.position.x -= 10;
+    f.send([500, 100, 200, 0, 0, 0]);
+    assert.ok(f.context.getCurrentTcpPoseBase(f.robot).position.distanceTo(physical.position) < 1e-7);
+  });
+}
+
+for (const scara of [false, true]) for (const trace of [false, true]) {
+  test(`controller TCP never detaches the flange from the wrist, including the first sample (SCARA ${scara}, Trace ${trace})`, () => {
+    const f = fixture({ scara, trace, tool: true, wobj: 1 });
+    const parent = f.flange.parent;
+    const toolPosition = f.mountedTool.getWorldPosition(new THREE.Vector3());
+    const toolRotation = f.mountedTool.getWorldQuaternion(new THREE.Quaternion());
+    for (const [tcp, offset] of [
+      [[5000, -3000, 1000, 90, 0, 0], 0],
+      [[-2000, 8000, -1000, -90, 0, 0], 0],
+      [[-1900, 8100, -900, -80, 0, 0], 1]
+    ]) {
+      f.send(tcp, offset);
+      assert.equal(f.flange.parent, parent, 'the Tool must stay directly attached to the authored wrist');
+      assert.ok(f.mountedTool.getWorldPosition(new THREE.Vector3()).distanceTo(toolPosition) < 1e-7);
+      assert.ok(f.mountedTool.getWorldQuaternion(new THREE.Quaternion()).angleTo(toolRotation) < 1e-7);
+      assert.deepEqual(f.context.getJogReadoutPose(f.robot, f.context.getCurrentTcpPoseBase(f.robot)).position.toArray(), tcp.slice(0, 3));
+    }
+  });
+}

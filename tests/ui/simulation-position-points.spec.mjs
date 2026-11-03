@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
 
 async function setup(page, model = 'IR-S7-60Z20') {
     await page.route('**/2_3DSimulation/main.js*', async route => {
@@ -11,7 +12,7 @@ async function setup(page, model = 'IR-S7-60Z20') {
             renderMotionProgramPanel, setJointAngle, capturePositionPointRecord, getMotionSession,
             applyRobotTravelAxis, savePositionPointRecord, stopActiveRobotMotion };` });
     });
-    await page.goto('/2_3DSimulation/index.html');
+    await page.goto('/2_3DSimulation/index.html', { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => window.__ptsReady && window.__pts);
     await page.evaluate(() => window.__ptsReady);
     await expect(page.locator('[data-panel-toggle="position-points-panel"]')).toBeDisabled();
@@ -106,8 +107,8 @@ test('프로그램의 선택 위치만 수정하고 같은 모델의 다른 로�
         return structuredClone(a.ensureMotionProgram(a.state.activeProgramRobot).steps[0]);
     });
     await page.locator('[data-pts-new]').click();
-    const untouched = await page.evaluate(() => window.__pts.getPositionPointRecords().find(p => p.index === 111));
-    await page.locator('[data-pts-row]').filter({ hasText: 'P[0]' }).click();
+    const untouched = await page.evaluate(index => window.__pts.getPositionPointRecords().find(p => p.index !== index), step.pointIndex);
+    await page.locator('[data-pts-row]').filter({ hasText: `P[${step.pointIndex}]` }).click();
     await page.evaluate(() => {
         const a = window.__pts, r = a.state.activeProgramRobot;
         a.setJointAngle(r.userData.joints[2], -41, false); r.updateMatrixWorld(true);
@@ -117,7 +118,7 @@ test('프로그램의 선택 위치만 수정하고 같은 모델의 다른 로�
     expect(updated.id).toBe(step.id); expect(updated.pointIndex).toBe(step.pointIndex);
     expect(updated.label).toBe(step.label); expect(updated.speed).toBe(step.speed);
     expect(updated.tcp.position[2]).toBeCloseTo(-41, 5);
-    expect(await page.evaluate(() => window.__pts.getPositionPointRecords().find(p => p.index === 111))).toEqual(untouched);
+    expect(await page.evaluate(index => window.__pts.getPositionPointRecords().find(p => p.index === index), untouched.index)).toEqual(untouched);
     await page.locator('#model-select').selectOption('robot:IR-S7-60Z20');
     await page.locator('#btn-add-robot-model-choice').click();
     await expect(page.locator('[data-pts-robot] option')).toHaveCount(2);
@@ -497,6 +498,78 @@ test('P.pts 표기와 짧은 로봇 선택 및 내보내기는 현재 목록의 
     await page.screenshot({ path: 'tmp/position-points-grid-export.png' });
     await page.locator('[data-pts-edit-field="index"]').dblclick();
     await page.screenshot({ path: 'tmp/position-points-number-editor.png' });
+});
+
+for (const olp of [false, true]) test(`P.pts 별도 창 내보내기는 해당 창에서 저장하고 취소 후 다시 저장한다 (${olp ? 'OLP' : '일반 위치'})`, async ({ page }) => {
+    await setup(page);
+    if (olp) {
+        await page.locator('[data-panel-toggle="position-points-panel"]').click();
+        await page.evaluate(async () => window.__pts.handleOlpFolderImport([
+            new File(['Start\nEnd'], 'main.pro'),
+            new File(['P[7]=1,2,3,4,5,6;0,0,0,1;10,20,30,40,50,60;Name=Imported;'], 'P.pts')
+        ], { connectBus: false }));
+        await page.locator('[data-panel-toggle="position-points-panel"]').click();
+    } else {
+        await page.locator('[data-pts-new]').click();
+        await editCell(page, 111, 'label', null, 'PopupExport');
+    }
+    await page.evaluate(() => {
+        window.__openerPtsPickerCalls = 0;
+        window.showSaveFilePicker = async () => {
+            window.__openerPtsPickerCalls++;
+            throw new DOMException('The opener has no user activation.', 'SecurityError');
+        };
+    });
+    const popupPromise = page.waitForEvent('popup');
+    await page.locator('#position-points-panel [data-panel-action="popout"]').click();
+    const popup = await popupPromise;
+    await popup.evaluate(() => {
+        window.__popupPtsPickerCalls = 0;
+        window.__popupPtsExports = [];
+        window.showSaveFilePicker = async options => {
+            if (++window.__popupPtsPickerCalls === 1) throw new DOMException('Cancelled', 'AbortError');
+            return { name: options.suggestedName, createWritable: async () => ({
+                write: async blob => window.__popupPtsExports.push({ name: options.suggestedName, text: await blob.text() }),
+                close: async () => {}
+            }) };
+        };
+    });
+    const button = popup.locator('[data-pts-export]');
+    await button.click();
+    await expect(button).toBeEnabled();
+    expect(await page.evaluate(() => window.__openerPtsPickerCalls)).toBe(0);
+    expect(await popup.evaluate(() => window.__popupPtsPickerCalls)).toBe(1);
+    await button.click();
+    await expect.poll(() => popup.evaluate(() => window.__popupPtsExports.length)).toBe(1);
+    const saved = await popup.evaluate(() => window.__popupPtsExports[0]);
+    expect(saved.name).toBe('P.pts');
+    expect(saved.text).toContain('ProgramInfo\r\n');
+    expect(saved.text).toContain(olp ? 'P[7]=1,2,3,4,5,6;' : 'P[111]');
+    expect(saved.text).toContain(olp ? '10,20,30,40,50,60;Name=Imported;' : 'Name=PopupExport;');
+    await expect(button).toBeEnabled();
+    await popup.close();
+});
+
+test('P.pts 별도 창 내보내기는 저장 대화상자 API가 없어도 해당 창에서 다운로드한다', async ({ page }) => {
+    await setup(page);
+    await page.locator('[data-pts-new]').click();
+    const popupPromise = page.waitForEvent('popup');
+    await page.locator('#position-points-panel [data-panel-action="popout"]').click();
+    const popup = await popupPromise;
+    await page.evaluate(() => {
+        window.showSaveFilePicker = async () => { throw new Error('The opener must not handle popup exports.'); };
+    });
+    await popup.evaluate(() => { window.showSaveFilePicker = undefined; });
+    const downloadPromise = popup.waitForEvent('download');
+    await popup.locator('[data-pts-export]').click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toBe('P.pts');
+    const content = await readFile(await download.path(), 'utf8');
+    expect(content).toContain('ProgramInfo\r\n');
+    expect(content).toContain('P[111]');
+    expect(content).toContain('Name=P1_Work;');
+    await expect(popup.locator('[data-pts-export]')).toBeEnabled();
+    await popup.close();
 });
 
 test('P.pts 창의 공통 분리·숨기기 버튼과 이름을 적용하고 편집 안내를 표시하지 않는다', async ({ page }) => {

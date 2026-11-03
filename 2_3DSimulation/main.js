@@ -1,3 +1,4 @@
+import { applyCadLightweightGltfUnits } from './gltf-import-units.mjs?v=20261103-1';
 /**
  * Inovance Robot 3D Simulation
  * Enhanced to support Multiple Models & Transformation
@@ -9,8 +10,8 @@ import {evaluateOlpHomeStatus} from './olp-home-status.mjs?v=20261102-generator-
 import {OlpTorqueFeedback,sampleOlpJointMotion,finishOlpJointMotion,getOlpJointMotionSample} from './olp-torque-feedback.mjs?v=20261102-generator-2';
 import {RAPID_MODEL_DATA} from './rapid-model-data.mjs?v=20261102-models-2';
 import { hasRapidDynamicsModel, resolveRapidDynamicsModel } from './robot-rapid-dynamics.mjs?v=20261102-models-2';
-import { createPositionPointsUi } from './position-points-ui.mjs?v=20261031-9';
-import { normalizeToolLoad, buildToolProgram, buildFrameProgram, combineToolLoads } from './tool-data-core.mjs';
+import { createPositionPointsUi, nextPositionPointMetadata } from './position-points-ui.mjs?v=20261102-popout-export-1';
+import { normalizeToolLoad, buildToolParamFile, buildWobjParamFile, combineToolLoads } from './tool-data-core.mjs?v=20261102-dat-export-1';
 import { VIEW_PRESET_COUNT } from './view-preset-core.mjs';
 import { renderWithContactAO, disposeContactAO } from './contact-ambient-occlusion.mjs?v=20261030-1';
 import { ROBOT_MOUNTING_HOLES } from './robot-mounting-holes.mjs?v=20261029-2';
@@ -36,8 +37,8 @@ import {
     createCoordinateFrame,
     integrateStepMesh
 } from '../3_ToolSelector/mass-properties.mjs';
-import { MeshCollisionSystem } from './collision-system.mjs?v=20261101-broad-phase-1';
-import { isSimulationCollisionPair, shouldReportSimulationCollision } from './collision-policy-core.mjs?v=20261021-robot-body-1';
+import { MeshCollisionSystem } from './collision-system.mjs?v=20261103-mount-faces-1';
+import { isSimulationCollisionPair, shouldReportSimulationCollision } from './collision-policy-core.mjs?v=20261103-mount-faces-1';
 import {
     MOTION_PROJECT_SCHEMA_VERSION,
     DEFAULT_MOVJ_SPEED,
@@ -127,9 +128,9 @@ import {
     refreshOlpProjectDerivedData,
     updateOlpFileText
 } from './olp-project-core.mjs?v=20261102-generator-2';
-import { createEquipmentApp } from './equipment-app.mjs?v=20261101-vacuum-surface-1';
+import { createEquipmentApp } from './equipment-app.mjs?v=20261103-vacuum-signals-1';
 import { EQUIPMENT_TYPES, EQUIPMENT_IO_TYPES, EQUIPMENT_LABELS, normalizeEquipmentDefinition, equipmentMotionGroups, equipmentReferences, equipmentCommandOptions } from './equipment-core.mjs?v=20261101-vacuum-surface-1';
-import { equipmentObjectRef } from './equipment-scene.mjs?v=20261101-vacuum-surface-1';
+import { equipmentObjectRef } from './equipment-scene.mjs?v=20261103-vacuum-signals-1';
 import { conveyorElapsedSeconds } from './conveyor-core.mjs';
 import { moveConveyorObjects } from './conveyor-scene.mjs';
 import * as WorkspaceRecovery from './workspace-recovery-core.mjs';
@@ -284,6 +285,7 @@ function prepareNumericInputForEditing(input) {
         input.dataset.numericInputOriginalMode = input.inputMode || '';
     }
     input.dataset.numericInput = 'true';
+    input.autocomplete = 'off';
     input.type = 'text';
     input.inputMode = 'decimal';
 }
@@ -727,6 +729,7 @@ const state = {
     undoStack: [],
     redoStack: [],
     historySuspended: false,
+    pendingModelColorHistory: null,
     pendingModelTransparencyHistory: null,
     pendingTransformHistory: null,
     pendingNumericHistory: null,
@@ -1446,7 +1449,7 @@ const el = {
     workObjectMultiCount: document.getElementById('workobject-multi-center-count'),
     btnWorkObjectMultiApply: document.getElementById('workobject-multi-center-apply'),
     btnWorkObjectMultiReset: document.getElementById('workobject-multi-center-reset'),
-    btnCopyWorkObject: document.getElementById('btn-copy-workobject-data'),
+    btnExportWorkObject: document.getElementById('btn-export-workobject-data'),
     workObjectStatus: document.getElementById('workobject-status'),
     armLoadPanel: document.getElementById('arm-load-panel'),
     armLoadList: document.getElementById('arm-load-list'),
@@ -1517,7 +1520,7 @@ const el = {
     btnApplyTcpProfile: document.getElementById('btn-apply-tcp-profile'),
     btnResetTcpProfile: document.getElementById('btn-reset-tcp-profile'),
     tcpProfileStatus: document.getElementById('tcp-profile-status'),
-    btnCopyToolData: document.getElementById('btn-copy-tool-data'),
+    btnExportToolData: document.getElementById('btn-export-tool-data'),
     btnToolLoadFromModels: document.getElementById('btn-tool-load-from-models'),
     btnToolLoadInfo: document.getElementById('btn-tool-load-info'),
     toolLoadInputs: Object.fromEntries([...document.querySelectorAll('[data-tool-load]')].map(input => [input.dataset.toolLoad, input])),
@@ -1595,6 +1598,7 @@ const el = {
     olpConsole: document.getElementById('olp-console'),
     programPointSection: document.getElementById('program-point-section'),
     programPointActions: document.getElementById('program-point-actions'),
+    programPointStandardized: document.getElementById('program-point-standardized'),
     programStepList: document.getElementById('program-step-list'),
     autoPathPanel: document.getElementById('auto-path-panel'),
     btnProgramAutoPath: document.getElementById('program-auto-path'),
@@ -10435,13 +10439,13 @@ function getSketchSnapCandidateLabel(candidate) {
     return uiText('스냅점');
 }
 
-function addSketchSnapCandidate(candidates, point, type, entityId = null, reference = null) {
+function addSketchSnapCandidate(candidates, point, type, entityId = null, reference = null, label = null) {
     if (!point?.isVector3 || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return;
     candidates.push({
         point: point.clone(),
         type,
         entityId,
-        label: getSketchSnapCandidateLabel({ type, entityId }),
+        label: label || getSketchSnapCandidateLabel({ type, entityId }),
         reference: normalizeSketchReference(reference || { kind: type, entityId })
     });
 }
@@ -10488,6 +10492,7 @@ function getSketchExternalSnapCandidates() {
         ? getArticulatedRobots()
         : [];
     if (sketchRobots.length) {
+        const tcpCandidates = getSimulationSnapRobotTcpCandidates('scene');
         sketchRobots.forEach((robot) => {
             if (!robot?.userData?.tcpFrame || robot.visible === false) return;
             robot.updateWorldMatrix?.(true, false);
@@ -10497,14 +10502,17 @@ function getSketchExternalSnapCandidates() {
                 kind: 'external',
                 point: sketchPoint.toArray()
             });
-            const tcpFrame = robot.userData.tcpFrame;
-            if (tcpFrame.visible === false) return;
-            tcpFrame.updateWorldMatrix?.(true, false);
-            const tcpWorldPoint = new THREE.Vector3().setFromMatrixPosition(tcpFrame.matrixWorld);
-            const tcpSketchPoint = tcpWorldPoint.sub(state.sketch.origin).setZ(0);
-            addSketchSnapCandidate(candidates, tcpSketchPoint, 'robot-tcp', null, {
-                kind: 'external',
-                point: tcpSketchPoint.toArray()
+            tcpCandidates.filter((candidate) => (
+                candidate.mesh === robot.userData.tcpFrame
+                || candidate.mesh === robot.userData.flangeFrame
+            )).forEach((candidate) => {
+                candidate.mesh.updateWorldMatrix?.(true, false);
+                const tcpSketchPoint = candidate.localPoint.clone().applyMatrix4(candidate.mesh.matrixWorld)
+                    .sub(state.sketch.origin).setZ(0);
+                addSketchSnapCandidate(candidates, tcpSketchPoint, 'robot-tcp', null, {
+                    kind: 'external',
+                    point: tcpSketchPoint.toArray()
+                }, getSimulationSnapCandidateLabel(candidate));
             });
         });
     } else if (typeof getSimulationSnapRobotBodyCenterCandidates === 'function') {
@@ -14656,7 +14664,9 @@ function getSceneModelAtPointer(event) {
         if (!isSceneModelObjectPickable(object, model)) return null;
         return {
             model,
-            part: findSceneModelPartAncestor(object, model)
+            // Single-part imports have only a model row in the tree. Picking
+            // their geometry must use that same root and coordinate frame.
+            part: shouldDisplayModelTreeParts(model) ? findSceneModelPartAncestor(object, model) : null
         };
     }).find((selection) => selection && (selection.part || getImportedModelParts(selection.model).length <= 1)) || null;
 }
@@ -15399,18 +15409,53 @@ function getSimulationSnapRobotTcpCandidates(scope = 'scene', faceSelections = [
         if (!isModelTreeVisible(robot) || (scope === 'zero' && !robot.userData.uploaded)) return [];
         const tcpFrame = robot.userData?.tcpFrame;
         if (!tcpFrame || tcpFrame.visible === false) return [];
-        return [{
+        const profiles = ensureRobotTcpProfiles(robot);
+        const activeIndex = robot.userData.activeTcpProfileIndex || 0;
+        const candidates = [{
             type: 'robot-tcp',
             mesh: tcpFrame,
-            localPoint: new THREE.Vector3()
+            localPoint: new THREE.Vector3(),
+            tcpProfileIndex: activeIndex,
+            activeTcp: true
         }];
+        const flangeFrame = robot.userData.flangeFrame;
+        if (!flangeFrame) return candidates;
+        profiles.forEach((profile, index) => {
+            if (index === 0 || index === activeIndex) return;
+            if (profile.position.lengthSq() <= 1e-12
+                && profile.quaternion.angleTo(new THREE.Quaternion()) <= 1e-6) return;
+            candidates.push({
+                type: 'robot-tcp',
+                mesh: flangeFrame,
+                localPoint: profile.position.clone(),
+                tcpProfileIndex: index,
+                activeTcp: false
+            });
+        });
+        return candidates;
     });
 }
 
+function getSimulationSnapRequiredType() {
+    const requestedType = state.zeroPointEdit.active && state.zeroPointEdit.snapMode
+        ? state.zeroPointEdit.snapType
+        : state.placement.active ? state.placement.snapType
+        : state.measurement.active ? state.measurement.snapType
+        : state.tcpSnapMode ? state.tcpSnapType : null;
+    return requestedType && requestedType !== 'auto' && requestedType !== 'multi-point-center'
+        ? requestedType
+        : null;
+}
+
 function getSimulationSnapRobotSpecialCandidates(scope = 'scene', faceSelections = []) {
-    // Once a face is selected, keep every snap candidate scoped to that face.
-    // Robot-wide reference points are only available before face selection.
-    if (faceSelections.length) return [];
+    // Keep geometry scoped to the selected face, while allowing an explicitly
+    // requested robot reference to remain selectable after face selection.
+    if (faceSelections.length) {
+        const requiredType = getSimulationSnapRequiredType();
+        if (requiredType === 'robot-tcp') return getSimulationSnapRobotTcpCandidates(scope, faceSelections);
+        if (requiredType === 'robot-base-center') return getSimulationSnapRobotBodyCenterCandidates(scope, faceSelections);
+        return [];
+    }
     return [
         ...getSimulationSnapSceneOriginCandidates(scope, faceSelections),
         ...getSimulationSnapRobotBodyCenterCandidates(scope, faceSelections),
@@ -15421,7 +15466,7 @@ function getSimulationSnapRobotSpecialCandidates(scope = 'scene', faceSelections
 
 function getSimulationSnapRobotSpecialCandidateSignature(candidates = []) {
     return candidates
-        .map((candidate) => `${candidate.type}:${candidate.mesh.uuid}:${candidate.mesh.geometry?.uuid || 'frame'}`)
+        .map((candidate) => `${candidate.type}:${candidate.mesh.uuid}:${candidate.mesh.geometry?.uuid || 'frame'}:${candidate.tcpProfileIndex ?? ''}:${candidate.localPoint.toArray().join(',')}`)
         .join('|');
 }
 
@@ -16535,10 +16580,13 @@ function updateSimulationSnapCandidateMarkers() {
     // selected face remains intact; markers are rebuilt once navigation ends.
     if (state.viewNavigationActive) return;
     const scope = getSimulationSnapScope();
+    const requiredType = getSimulationSnapRequiredType();
     const placementWaitingForFace = scope === 'placement'
         && state.placement.active
         && !getSimulationSnapFaceSelections().length
-        && !state.placement.sourcePoint;
+        && !state.placement.sourcePoint
+        && requiredType !== 'robot-tcp'
+        && requiredType !== 'robot-base-center';
     if (placementWaitingForFace) {
         // The first placement click must choose a face. Direct candidates
         // may already be prepared for the next step, but showing them now
@@ -16608,6 +16656,7 @@ function updateSimulationSnapCandidateMarkers() {
     let centerMarkerCount = 0;
     for (const candidate of orderedCandidates) {
         if (!candidate.mesh.visible || !candidate.snapWorldPoint) continue;
+        if (requiredType && candidate.type !== requiredType) continue;
         const isCenterMarker = SIMULATION_SNAP_CENTER_MARKER_TYPES.has(candidate.type);
         if (isCenterMarker && centerMarkerCount >= MAX_VISIBLE_SIMULATION_SNAP_CENTER_MARKERS) continue;
         projected.copy(candidate.snapWorldPoint).project(camera);
@@ -17135,6 +17184,14 @@ function snapTypeInfo(type) {
     return SNAP_TYPES[type] || SNAP_TYPES.vertex;
 }
 
+function getSimulationSnapCandidateLabel(candidate) {
+    const label = uiText(snapTypeInfo(candidate.type).label);
+    if (candidate.type !== 'robot-tcp' || !Number.isInteger(candidate.tcpProfileIndex)) return label;
+    return candidate.activeTcp
+        ? `${label} · Tool ${candidate.tcpProfileIndex}`
+        : `Tool ${candidate.tcpProfileIndex} TCP`;
+}
+
 function compareSimulationSnapCandidates(left, right) {
     const pixelDifference = left.pixelDistance - right.pixelDistance;
     const priorityDifference = snapTypeInfo(left.type).priority - snapTypeInfo(right.type).priority;
@@ -17159,13 +17216,14 @@ function isSimulationSnapInteractionActive() {
 function beginSimulationViewNavigation(event) {
     cancelMainViewTransition();
     if (state.viewNavigationActive) return;
-    if (!event?.surfaceWheelZoom && !state.sketch.active && !state.selectedViewPivot.enabled
+    // Face picking keeps the current view pivot, including a plain click.
+    if (!equipmentVacuumPick && !event?.surfaceWheelZoom && !state.sketch.active && !state.selectedViewPivot.enabled
         && mainOriginRotationGestures.has(state.controls) && !mainPannedOrbitControls.has(state.controls)) {
         state.camera.position.sub(state.controls.target);
         state.controls.target.set(0, 0, 0);
         state.controls.update();
     }
-    if (!event?.surfaceWheelZoom) updateSelectedViewPivot(true);
+    if (!equipmentVacuumPick && !event?.surfaceWheelZoom) updateSelectedViewPivot(true);
     state.viewNavigationActive = true;
     // Camera movement can generate a pointermove for every orbit/pan step.
     // Cancel any pending snap work before those events reach the snap picker.
@@ -17585,13 +17643,13 @@ function updateMeasurementUi() {
     el.measurementSnapControls?.classList.toggle('hidden', !measurementActive);
     if (el.measurementHoverReadout) {
         el.measurementHoverReadout.textContent = measurementActive && measurement.hover
-            ? `${uiText(snapTypeInfo(measurement.hover.type).label)} · ${formatMeasurementPoint(measurement.hover.worldPoint)}`
+            ? `${getSimulationSnapCandidateLabel(measurement.hover)} · ${formatMeasurementPoint(measurement.hover.worldPoint)}`
             : uiText('모델 형상 위로 포인터를 이동하세요.');
     }
     if (el.modelPlacementSnapType) el.modelPlacementSnapType.value = placement.snapType;
     if (el.modelPlacementHoverReadout) {
         el.modelPlacementHoverReadout.textContent = placementActive && placement.hover
-            ? `${uiText(snapTypeInfo(placement.hover.type).label)} · ${formatMeasurementPoint(placement.hover.worldPoint)}`
+            ? `${getSimulationSnapCandidateLabel(placement.hover)} · ${formatMeasurementPoint(placement.hover.worldPoint)}`
             : uiText('모델 형상 위로 포인터를 이동하세요.');
     }
     if (el.measurementP1Readout) el.measurementP1Readout.textContent = formatMeasurementPoint(measurementActive ? p1 : measurement.points[0]);
@@ -18709,16 +18767,10 @@ function findSimulationSnapAtPointer(pointerEvent) {
     const bounds = domElement.getBoundingClientRect();
     const pointerX = pointerEvent.clientX - bounds.left;
     const pointerY = pointerEvent.clientY - bounds.top;
-    const placementPicking = state.placement.active;
-    const measurementPicking = state.measurement.active && !placementPicking;
     const tcpPicking = state.tcpSnapMode;
-    const zeroPointPicking = state.zeroPointEdit.active && state.zeroPointEdit.snapMode;
-    const requestedType = zeroPointPicking
-        ? state.zeroPointEdit.snapType
-        : placementPicking ? state.placement.snapType
-        : measurementPicking ? state.measurement.snapType : state.tcpSnapType;
+    const requiredType = getSimulationSnapRequiredType();
     const allowTcpSurfaceSnap = tcpPicking
-        && requestedType === 'auto'
+        && state.tcpSnapType === 'auto'
         && !isSimulationSnapFaceSelectionActive(scope)
         && getSimulationSnapFaceSelections().length === 0;
     const tcpSurfaceSnap = allowTcpSurfaceSnap
@@ -18733,10 +18785,6 @@ function findSimulationSnapAtPointer(pointerEvent) {
         }
     }
     if (!state.snapCandidates.length) return tcpSurfaceSnap;
-    const requiredType = (placementPicking || measurementPicking || tcpPicking || zeroPointPicking)
-        && requestedType !== 'auto' && requestedType !== 'multi-point-center'
-        ? requestedType
-        : null;
     const snapRadius = SNAP_RADIUS_PX;
     const nearby = [];
     const candidatesNearPointer = getSimulationSnapCandidatesNearPointer(
@@ -18814,7 +18862,7 @@ function showSimulationSnapMarker(snap) {
     const symbol = el.snapMarker.querySelector('span');
     if (symbol) symbol.textContent = info.symbol;
     if (el.snapLabel) {
-        el.snapLabel.textContent = `${uiText(info.label)} · X ${snap.worldPoint.x.toFixed(3)}, Y ${snap.worldPoint.y.toFixed(3)}, Z ${snap.worldPoint.z.toFixed(3)}`;
+        el.snapLabel.textContent = `${getSimulationSnapCandidateLabel(snap)} · X ${snap.worldPoint.x.toFixed(3)}, Y ${snap.worldPoint.y.toFixed(3)}, Z ${snap.worldPoint.z.toFixed(3)}`;
     }
     el.snapMarker.classList.remove('hidden');
 }
@@ -19558,12 +19606,17 @@ function recreateMainOrbitControls(previousState = undefined) {
     if (restoredState) {
         applyMainOrbitControlState(controls, restoredState);
     }
-    mainPanReferenceDistances.set(controls, controls.getDistance());
+    resetMainOrbitControlDistances(controls);
     return controls;
 }
 
 const mainWheelZoomSteps = new WeakMap();
 const mainForwardedWheelEvents = new WeakSet();
+
+function resetMainOrbitControlDistances(controls) {
+    mainPanReferenceDistances.set(controls, controls.getDistance());
+    mainWheelZoomSteps.delete(controls);
+}
 
 function getMainWheelSpeedMultiplier(event) {
     return event.shiftKey ? 0.1 : event.ctrlKey ? 2 : 1;
@@ -19591,6 +19644,26 @@ function applyFineNativeWheelZoom(event, controls) {
     }
 }
 
+function applyMainForwardWheelZoom(event, camera, controls, step) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    mainPannedOrbitControls.add(controls);
+    controls.dispatchEvent({ type: 'start', surfaceWheelZoom: true });
+    const offset = controls.target.clone().sub(camera.position).normalize()
+        .multiplyScalar(event.deltaY < 0 ? step : -step);
+    const distance = controls.getDistance();
+    camera.position.add(offset);
+    const minimumDistance = Math.max(controls.minDistance, camera.near * 2);
+    if (event.deltaY < 0 && distance - step < minimumDistance) {
+        // Keep looking forward when the camera passes its old orbit target.
+        const forward = camera.getWorldDirection(new THREE.Vector3());
+        controls.target.copy(camera.position).addScaledVector(forward, Math.max(step, minimumDistance));
+    }
+    controls.update();
+    requestRender();
+    controls.dispatchEvent({ type: 'end' });
+}
+
 function handleMainSurfaceWheelZoom(event) {
     if (mainForwardedWheelEvents.has(event)) return;
     const { camera, controls } = state;
@@ -19605,24 +19678,7 @@ function handleMainSurfaceWheelZoom(event) {
     }
     const step = mainWheelZoomSteps.get(controls) * controls.zoomSpeed * 0.8 * getMainWheelSpeedMultiplier(event);
     if (!state.selectedViewPivot.enabled) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        mainPannedOrbitControls.add(controls);
-        controls.dispatchEvent({ type: 'start', surfaceWheelZoom: true });
-        const offset = controls.target.clone().sub(camera.position).normalize()
-            .multiplyScalar(event.deltaY < 0 ? step : -step);
-        const distance = controls.getDistance();
-        camera.position.add(offset);
-        const minimumDistance = Math.max(controls.minDistance, camera.near * 2);
-        if (event.deltaY < 0 && distance - step < minimumDistance) {
-            // Keep looking forward when the camera passes its old orbit target.
-            // A target behind the camera makes OrbitControls flip the view.
-            const forward = camera.getWorldDirection(new THREE.Vector3());
-            controls.target.copy(camera.position).addScaledVector(forward, Math.max(step, minimumDistance));
-        }
-        controls.update();
-        requestRender();
-        controls.dispatchEvent({ type: 'end' });
+        applyMainForwardWheelZoom(event, camera, controls, step);
         return;
     }
     const canvas = state.renderer.domElement;
@@ -19640,7 +19696,7 @@ function handleMainSurfaceWheelZoom(event) {
     raycaster.setFromCamera(pointer, camera);
     const hit = raycaster.intersectObjects(meshes, false)[0];
     if (!hit) {
-        applyFineNativeWheelZoom(event, controls);
+        applyMainForwardWheelZoom(event, camera, controls, step);
         return;
     }
     const forward = camera.getWorldDirection(new THREE.Vector3());
@@ -21816,6 +21872,9 @@ function setupEventListeners() {
     el.modelColorPicker?.addEventListener('input', () => {
         const target = getModelContextTarget();
         if (target) {
+            if (!state.historySuspended && !state.pendingModelColorHistory) {
+                state.pendingModelColorHistory = captureSceneSnapshot();
+            }
             (target.parts || [target.part]).forEach(part => applyModelColor(target.model, part, el.modelColorPicker.value));
             scheduleMotionProjectSave();
         }
@@ -22387,6 +22446,7 @@ function setupEventListeners() {
         if (state.virtualController.wanted) return;
         state.virtualController.ipAddress = el.virtualControllerIp.value.trim();
         saveVirtualControllerSettings();
+        refreshVirtualControllerUi();
     });
 
     el.btnVirtualControllerConnect?.addEventListener('click', () => {
@@ -22424,6 +22484,8 @@ function setupEventListeners() {
             state.virtualController = controller;
             refreshVirtualControllerUi();
             void connectVirtualController();
+        } else if (action.dataset.virtualControllerAction === 'delete') {
+            deleteVirtualControllerSession(controller);
         }
     });
     el.btnVirtualControllerBridgeStart?.addEventListener('click', launchVirtualControllerBridge);
@@ -22480,6 +22542,14 @@ function setupEventListeners() {
     el.btnProgramToggleTcpPath?.addEventListener('click', toggleTcpPathDisplay);
     setupTeachingPointControls();
     el.btnProgramAdd?.addEventListener('click', addCurrentMotionStep);
+    if (el.programPointStandardized) {
+        try { el.programPointStandardized.checked = localStorage.getItem(PROGRAM_POINT_STANDARDIZATION_STORAGE_KEY) !== 'false'; }
+        catch { /* Keep the default when storage is unavailable. */ }
+        el.programPointStandardized.addEventListener('change', () => {
+            try { localStorage.setItem(PROGRAM_POINT_STANDARDIZATION_STORAGE_KEY, String(el.programPointStandardized.checked)); }
+            catch { /* The setting still applies to the current session. */ }
+        });
+    }
     el.btnProgramAddDelay?.addEventListener('click', addDelayMotionStep);
     el.btnProgramAddWait?.addEventListener('click', addWaitMotionStep);
     el.btnProgramAddTimeStart?.addEventListener('click', () => addTimerMotionStep('TIME_START'));
@@ -22630,8 +22700,8 @@ function setupEventListeners() {
     el.btnApplyWorkObject?.addEventListener('click', applyWorkObjectEditor);
     el.btnResetWorkObject?.addEventListener('click', resetWorkObjectEditor);
     el.btnWorkObjectSnap?.addEventListener('click', toggleWorkObjectSnap);
-    el.btnCopyToolData?.addEventListener('click', copyToolData);
-    el.btnCopyWorkObject?.addEventListener('click', copyWorkObjectData);
+    el.btnExportToolData?.addEventListener('click', exportToolData);
+    el.btnExportWorkObject?.addEventListener('click', exportWorkObjectData);
     el.btnToolLoadFromModels?.addEventListener('click', importMountedToolLoad);
     el.btnToolLoadInfo?.addEventListener('click', showMountedToolLoadInfo);
     Object.values(el.toolLoadInputs || {}).forEach(input => {
@@ -23455,6 +23525,9 @@ function captureSceneSnapshot() {
             gripObjectSource: normalizeGripObjectSource(model.userData.gripObjectSource),
             visible: isModelTreeVisible(model),
             transparency: getModelTransparencyPercent(model),
+            materialColors: model.userData.uploaded || isPrimitiveShapeModel(model) || isSketchExtrusionModel(model)
+                ? captureWorkspaceMaterialColors(model)
+                : [],
             primitiveShapeType: isPrimitiveShapeModel(model) ? model.userData.primitiveShapeType : null,
             primitiveShapeDimensions: isPrimitiveShapeModel(model)
                 ? { ...getPrimitiveShapeDimensions(model) }
@@ -23580,6 +23653,7 @@ function sceneSnapshotsEqual(a, b) {
             || JSON.stringify(left.gripObjectSource || null) !== JSON.stringify(right.gripObjectSource || null)
             || Boolean(left.visible) !== Boolean(right.visible)
             || left.transparency !== right.transparency
+            || JSON.stringify(left.materialColors || []) !== JSON.stringify(right.materialColors || [])
             || left.primitiveShapeType !== right.primitiveShapeType
             || JSON.stringify(left.primitiveShapeDimensions || null) !== JSON.stringify(right.primitiveShapeDimensions || null)
             || left.primitiveShapeNameIndex !== right.primitiveShapeNameIndex
@@ -23662,6 +23736,7 @@ function sceneSnapshotsEqual(a, b) {
         || normalizeProgramSpeedOverride(a.programSpeedOverride) !== normalizeProgramSpeedOverride(b.programSpeedOverride)) return false;
     if (JSON.stringify(a.interferenceZones || []) !== JSON.stringify(b.interferenceZones || [])) return false;
     if (JSON.stringify(a.endMonitoringObjects || []) !== JSON.stringify(b.endMonitoringObjects || [])) return false;
+    if (JSON.stringify(a.equipmentDefinitions || []) !== JSON.stringify(b.equipmentDefinitions || [])) return false;
     if (JSON.stringify(a.ioFunctionMappings || []) !== JSON.stringify(b.ioFunctionMappings || [])) return false;
     const leftPrograms = (a.motionPrograms || []).map(({ robot, program }) => ({
         instanceId: robot.userData.motionInstanceId,
@@ -23769,6 +23844,7 @@ function applySceneSnapshot(snapshot) {
         getImportedModelParts(entry.model).forEach((part, index) => { part.userData.modelTreeName = entry.treeNames?.parts?.[index] || ''; });
         applyPrimitiveShapeSnapshot(entry.model, entry);
         applySketchFeatureSnapshot(entry.model, entry);
+        applyWorkspaceMaterialColors(entry.model, entry.materialColors);
         entry.model.position.fromArray(entry.position);
         entry.model.quaternion.fromArray(entry.quaternion);
         entry.model.scale.fromArray(entry.scale);
@@ -23776,22 +23852,22 @@ function applySceneSnapshot(snapshot) {
         (entry.childTransforms || []).forEach(({ child, matrix, matrixAutoUpdate }) => {
             if (!child || !entry.model.children.includes(child)) return;
             child.matrix.fromArray(matrix);
+            child.matrix.decompose(child.position, child.quaternion, child.scale);
             if (matrixAutoUpdate === false) {
                 child.matrixAutoUpdate = false;
                 child.matrixWorldNeedsUpdate = true;
             } else {
-                child.matrix.decompose(child.position, child.quaternion, child.scale);
                 child.matrixAutoUpdate = true;
             }
         });
         (entry.partTransforms || []).forEach(({ part, matrix, matrixAutoUpdate }) => {
             if (!part || !getImportedModelParts(entry.model).includes(part)) return;
             part.matrix.fromArray(matrix);
+            part.matrix.decompose(part.position, part.quaternion, part.scale);
             if (matrixAutoUpdate === false) {
                 part.matrixAutoUpdate = false;
                 part.matrixWorldNeedsUpdate = true;
             } else {
-                part.matrix.decompose(part.position, part.quaternion, part.scale);
                 part.matrixAutoUpdate = true;
             }
         });
@@ -23856,8 +23932,12 @@ function applySceneSnapshot(snapshot) {
     snapshot.joints.forEach(({ robot, angles, externalAxes, tcpProfiles, activeTcpProfileIndex, workObjects, activeWorkObjectIndex }) => {
         restoreRobotTcpProfiles(robot, tcpProfiles, activeTcpProfileIndex);
         restoreRobotWorkObjects(robot, workObjects, activeWorkObjectIndex);
-        angles.forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle, false));
-        robot.userData.externalAxes = normalizeExternalAxisValues(externalAxes);
+        // Scene edits can be undone while receiving controller feedback.
+        // The current controller posture must never rewind with an edit.
+        if (!isVirtualControllerActiveForRobot(robot)) {
+            angles.forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle, false));
+            robot.userData.externalAxes = normalizeExternalAxisValues(externalAxes);
+        }
         syncJointControls(robot);
         robot.updateMatrixWorld(true);
         captureCurrentTcpTarget(robot);
@@ -23907,12 +23987,19 @@ function applySceneSnapshot(snapshot) {
     state.historySuspended = false;
 }
 
+function canApplyHistorySnapshot(snapshot) {
+    if (!snapshot) return false;
+    const models = new Set(snapshot.models.map(entry => entry.model));
+    return getArticulatedRobots().every(robot => !isVirtualControllerActiveForRobot(robot) || models.has(robot));
+}
+
 function updateHistoryButtons() {
-    const locked = isMotionActive();
+    const locked = isRobotMotionActive();
     const undoEntries = state.sketch.active ? state.sketch.undoStack : state.undoStack;
     const redoEntries = state.sketch.active ? state.sketch.redoStack : state.redoStack;
     if (el.btnUndo) {
-        el.btnUndo.disabled = locked || undoEntries.length === 0;
+        el.btnUndo.disabled = locked || undoEntries.length === 0
+            || (!state.sketch.active && !canApplyHistorySnapshot(undoEntries.at(-1)?.before));
         el.btnUndo.title = undoEntries.length
             ? uiFormat('되돌리기: {action} (Ctrl+Z)', {
                 action: uiText(undoEntries[undoEntries.length - 1].label)
@@ -23920,7 +24007,8 @@ function updateHistoryButtons() {
             : uiText('되돌리기 (Ctrl+Z)');
     }
     if (el.btnRedo) {
-        el.btnRedo.disabled = locked || redoEntries.length === 0;
+        el.btnRedo.disabled = locked || redoEntries.length === 0
+            || (!state.sketch.active && !canApplyHistorySnapshot(redoEntries.at(-1)?.after));
         el.btnRedo.title = redoEntries.length
             ? uiFormat('다시 실행: {action} (Ctrl+Y)', {
                 action: uiText(redoEntries[redoEntries.length - 1].label)
@@ -23947,6 +24035,7 @@ function commitPendingHistory(label, stateKey) {
 function commitAllPendingHistories() {
     stopBaseJogHold();
     endBaseJogGizmoDrag();
+    commitPendingHistory('색상 변경', 'pendingModelColorHistory');
     commitPendingHistory('모델 투명도 변경', 'pendingModelTransparencyHistory');
     commitPendingHistory('수치 모델 변환', 'pendingNumericHistory');
     commitPendingHistory('도형 치수 변경', 'pendingPrimitiveShapeHistory');
@@ -23964,11 +24053,12 @@ function undoLastAction() {
         undoSketchAction();
         return;
     }
-    if (isMotionActive()) return;
+    if (isRobotMotionActive()) return;
     commitAllPendingHistories();
-    const entry = state.undoStack.pop();
-    if (!entry) return;
+    const entry = state.undoStack.at(-1);
+    if (!entry || !canApplyHistorySnapshot(entry.before)) return;
     applySceneSnapshot(entry.before);
+    state.undoStack.pop();
     state.redoStack.push(entry);
     updateHistoryButtons();
     setStatus('되돌리기: {action}', '#60a5fa', { action: uiText(entry.label) });
@@ -23979,11 +24069,12 @@ function redoLastAction() {
         redoSketchAction();
         return;
     }
-    if (isMotionActive()) return;
+    if (isRobotMotionActive()) return;
     commitAllPendingHistories();
-    const entry = state.redoStack.pop();
-    if (!entry) return;
+    const entry = state.redoStack.at(-1);
+    if (!entry || !canApplyHistorySnapshot(entry.after)) return;
     applySceneSnapshot(entry.after);
+    state.redoStack.pop();
     state.undoStack.push(entry);
     updateHistoryButtons();
     setStatus('다시 실행: {action}', '#60a5fa', { action: uiText(entry.label) });
@@ -25956,19 +26047,20 @@ function initializeClipboardPartMaterials(model) {
     });
 }
 
-function cloneClipboardMaterial(material) {
+function cloneClipboardMaterial(material, mesh) {
     const clonedMaterial = material?.clone?.() || material;
-    const collisionSnapshot = state.collision.highlightedMaterials.get(material);
-    if (!collisionSnapshot || clonedMaterial === material) return clonedMaterial;
-    if (collisionSnapshot.color && clonedMaterial.color) {
-        clonedMaterial.color.copy(collisionSnapshot.color);
+    const snapshot = mesh?.userData?.modelPartMaterials?.find((entry) => entry.material === material)
+        || state.collision.highlightedMaterials.get(material);
+    if (!snapshot || clonedMaterial === material) return clonedMaterial;
+    if (snapshot.color && clonedMaterial.color) {
+        clonedMaterial.color.copy(snapshot.color);
     }
-    if (collisionSnapshot.emissive && clonedMaterial.emissive) {
-        clonedMaterial.emissive.copy(collisionSnapshot.emissive);
+    if (snapshot.emissive && clonedMaterial.emissive) {
+        clonedMaterial.emissive.copy(snapshot.emissive);
     }
-    if (collisionSnapshot.emissiveIntensity !== null
+    if (Number.isFinite(snapshot.emissiveIntensity)
         && 'emissiveIntensity' in clonedMaterial) {
-        clonedMaterial.emissiveIntensity = collisionSnapshot.emissiveIntensity;
+        clonedMaterial.emissiveIntensity = snapshot.emissiveIntensity;
     }
     return clonedMaterial;
 }
@@ -26003,9 +26095,11 @@ function cloneClipboardObjectTemplate(source) {
     }
 
     const sourceToClone = new Map();
+    const cloneToSource = new Map();
     sourceRecords.forEach((record, index) => {
         const clonedObject = cloneObjects[index];
         sourceToClone.set(record.object, clonedObject);
+        cloneToSource.set(clonedObject, record.object);
         if (record.userData.collisionGeometry) {
             clonedObject.userData.collisionGeometry = record.userData.collisionGeometry;
         }
@@ -26030,7 +26124,7 @@ function cloneClipboardObjectTemplate(source) {
     clone.traverse((object) => {
         if (!object.isMesh) return;
         const sourceMaterials = Array.isArray(object.material) ? object.material : [object.material];
-        const materials = sourceMaterials.map(cloneClipboardMaterial);
+        const materials = sourceMaterials.map((material) => cloneClipboardMaterial(material, cloneToSource.get(object)));
         object.material = Array.isArray(object.material) ? materials : materials[0];
     });
 
@@ -26050,6 +26144,15 @@ function assignClipboardModelTreeIds(model) {
         state.modelPartIdCounter += 1;
         part.userData.modelPartId = `scene-model-part-${state.modelPartIdCounter}`;
     });
+}
+
+function assignClipboardModelTreeName(model, name = model.userData.modelTreeName) {
+    if (!name) return;
+    const baseName = name.replace(/\s+#\d+$/, '');
+    const usedNames = new Set(state.models.map(displayNameForModelTree));
+    let index = 2;
+    while (usedNames.has(`${baseName} #${index}`)) index += 1;
+    model.userData.modelTreeName = `${baseName} #${index}`;
 }
 
 function captureClipboardTransform(object, world = false) {
@@ -26118,6 +26221,7 @@ function captureRobotClipboardSnapshot(robot) {
     return {
         kind: 'robot',
         modelDefinition,
+        modelTreeName: robot.userData.modelTreeName,
         baseTransform: captureClipboardTransform(robot),
         externalAxes: getRobotExternalAxes(robot),
         jointAngles: robot.userData.joints.map((joint) => Number(joint.angle) || 0),
@@ -26280,6 +26384,7 @@ function pasteObjectClipboardSnapshot(snapshot, pasteNumber) {
         }
         pastedModel.updateMatrixWorld(true);
         assignClipboardModelTreeIds(pastedModel);
+        assignClipboardModelTreeName(pastedModel);
         state.models.push(pastedModel);
         syncModelTreeHiddenHost(host);
         finishModelClipboardPaste(pastedModel, addedModels, historyBefore);
@@ -26319,6 +26424,7 @@ async function pasteRobotClipboardSnapshot(snapshot, pasteNumber) {
         robot.updateMatrixWorld(true);
         captureCurrentTcpTarget(robot);
         assignClipboardModelTreeIds(robot);
+        assignClipboardModelTreeName(robot, snapshot.modelTreeName);
         state.models.push(robot);
         state.scene.add(robot);
         state.motionPrograms.set(robot.userData.motionInstanceId, cloneMotionProgram(snapshot.program));
@@ -26339,6 +26445,7 @@ async function pasteRobotClipboardSnapshot(snapshot, pasteNumber) {
             model.visible = visible !== false;
             model.updateMatrixWorld(true);
             assignClipboardModelTreeIds(model);
+            assignClipboardModelTreeName(model);
             state.models.push(model);
         });
 
@@ -26471,6 +26578,7 @@ function applyModelColor(model, part, colorValue) {
         getMeshMaterials(child).forEach((material) => {
             if (!material?.color) return;
             material.color.copy(color);
+            state.collision.highlightedMaterials.get(material)?.color?.copy(color);
             material.needsUpdate = true;
             child.userData.modelPartMaterials?.forEach((entry) => {
                 if (entry.material === material && entry.color) entry.color.copy(color);
@@ -26628,7 +26736,7 @@ function openModelContextMenu(event, model, part = null) {
         const icon = document.createElement('i'); icon.className = 'fa-solid fa-pen-to-square';
         button.append(icon, document.createTextNode(motions.length === 1 ? '동작 편집' : `동작 편집 · ${equipmentApp.label(motion)}`));
         button.addEventListener('click', () => { closeModelContextMenu(); equipmentApp.ui.open(ref, motion); }); edits.append(button);
-        const commands = motion.type === 'OBJECT' ? [] : motion.type === 'CONVEYOR' ? [['FORWARD','이송'],['STOP','정지']] : equipmentCommandOptions(motion.type);
+        const commands = motion.type === 'OBJECT' ? [] : motion.type === 'CONVEYOR' ? [['FORWARD','이송'],['STOP','정지']] : equipmentCommandOptions(motion.type).filter(([command]) => command !== 'STOP' && command !== 'RESET');
         for (const [command, label] of commands) {
             const test = document.createElement('button'); test.type = 'button'; test.setAttribute('role', 'menuitem');
             test.dataset.equipmentTestCommand = command; test.dataset.equipmentId = motion.id;
@@ -26703,6 +26811,7 @@ function positionModelContextMenu(event) {
 }
 
 function closeModelContextMenu() {
+    commitPendingHistory('색상 변경', 'pendingModelColorHistory');
     commitPendingHistory('모델 투명도 변경', 'pendingModelTransparencyHistory');
     if (!el.modelContextMenu) return;
     el.modelContextMenu.classList.add('hidden');
@@ -28074,9 +28183,15 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
     robot.userData.controllerBaseFrame = controllerBaseFrame;
 
     const baseMesh = createSTLMesh(geometries[0], manifest.base, meshAssets[0]?.collisionGeometry);
-    // P0 is the fixed mounting/base plate below J1. It is assembled to the
-    // equipment in the real installation, so it must not report a collision.
-    baseMesh.userData.collisionDisabled = true;
+    // Only contact at the physical mounting plane is allowed. The base sides
+    // and all moving links remain collision-enabled.
+    const baseCollisionGeometry = baseMesh.userData.collisionGeometry || baseMesh.geometry;
+    baseCollisionGeometry.computeBoundingBox();
+    const ceilingMount = manifest.kinematicVariant === 'ceiling-scara';
+    baseMesh.userData.collisionMountPlane = {
+        z: ceilingMount ? baseCollisionGeometry.boundingBox.max.z : baseCollisionGeometry.boundingBox.min.z,
+        inwardSign: ceilingMount ? -1 : 1
+    };
     baseMesh.userData.collisionRole = 'robot-mounted-base';
     controllerBaseFrame.add(baseMesh);
     if (manifest.tube) {
@@ -28117,14 +28232,9 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
                 meshAssets[index + 1]?.collisionGeometry
             );
             linkMesh.position.copy(pivot).multiplyScalar(-1);
-            // The final kinematic link is the Tool mounting link (J6 on a
-            // 6-axis robot, J4 on SCARA). SCARA models that expose a J3 mesh
-            // use it for the vertical ballscrew/mount assembly, which is also
-            // mechanically occupied by the attached Tool. Exclude only these
-            // attached Tool/mount contacts; other Tool-to-body checks stay on.
-            const isAttachedToolMountAssembly = index === manifest.joints.length - 1
+            // Identify the flange carrier, without exempting its whole body.
+            linkMesh.userData.collisionToolMountCarrier = index === manifest.joints.length - 1
                 || (manifest.robotType === 'scara' && jointDefinition.name === 'J3');
-            linkMesh.userData.collisionIgnoreAttachedToolContact = isAttachedToolMountAssembly;
             linkMesh.userData.robotJointIndex = index;
             jointGroup.add(linkMesh);
         }
@@ -29851,7 +29961,7 @@ function getLargeStepTessellationParameters(fileSizeBytes, qualityKey = 'auto') 
 
 function getStepImportCacheKey(file, parameters, qualityKey = 'auto') {
     return [
-        'step-mesh-v10-merged-face-colors',
+        'step-mesh-v11-direct-face-colors',
         file.name,
         file.size,
         file.lastModified || 0,
@@ -29969,7 +30079,7 @@ function resetStepImportWorkerSession(session = state.stepImportWorkerSession) {
 function getStepImportWorkerSession() {
     if (state.stepImportWorkerSession) return state.stepImportWorkerSession;
 
-    const workerUrl = new URL('./step-import-worker.js?v=20261031-merged-face-colors-2', import.meta.url);
+    const workerUrl = new URL('./step-import-worker.js?v=20261103-direct-face-colors-1', import.meta.url);
     const worker = new Worker(workerUrl);
     let readySettled = false;
     let resolveReady;
@@ -30340,6 +30450,7 @@ async function parseUploaded3DFile(file, extension, placement, qualityKey = 'aut
         const { GLTFLoader } = await importThreeAddonLoader('gltf');
         return new Promise((resolve, reject) => {
             new GLTFLoader().parse(data, '', (gltf) => {
+                applyCadLightweightGltfUnits(gltf);
                 onProgress?.(92);
                 resolve(gltf.scene);
             }, reject);
@@ -31295,11 +31406,8 @@ function applyTestTcpProfile(robot) {
 
 function applyTestToolCollisionProfile(tool) {
     if (!tool?.userData || tool.userData.placement !== 'tcp') return false;
-    // The supplied Test Tool model includes its flange collar, which overlaps
-    // the R-series wrist's J5/J6 CAD at the intended mounting interface.
-    // Treat that fixed assembly contact as mechanical fit-up, while leaving
-    // all earlier arm links and every scene obstacle collision-enabled.
-    tool.userData.collisionIgnoreHostWristJointCount = 2;
+    // Legacy scene/Test Tool wrist exemptions must not hide real interference.
+    delete tool.userData.collisionIgnoreHostWristJointCount;
     return true;
 }
 
@@ -31689,8 +31797,8 @@ function syncActiveTcpFrame(robot, profileOverride = null) {
     tcpFrame.scale.set(1, 1, 1);
     tcpFrame.updateMatrix();
     robot.updateMatrixWorld(true);
-    // A local Tool edit must not move the physical mount using feedback for
-    // the previous Tool. Reconcile it when a fresh controller sample arrives.
+    // Local Tool edits change the editable TCP, not the Tool definition that
+    // accompanies controller feedback or the physical mounting frame.
     if (robot.userData.controllerToolFrame) robot.userData.controllerToolFrame.profileDirty = true;
 }
 
@@ -31961,7 +32069,7 @@ function refreshTcpProfileUi(robot = state.activeArticulatedModel) {
     if (el.btnResetTcpProfile) el.btnResetTcpProfile.disabled = readOnly;
     if (el.btnToolLoadFromModels) el.btnToolLoadFromModels.disabled = readOnly;
     if (el.btnToolLoadInfo) el.btnToolLoadInfo.disabled = !available;
-    if (el.btnCopyToolData) el.btnCopyToolData.disabled = !available;
+    if (el.btnExportToolData) el.btnExportToolData.disabled = !available;
     if (!available) el.tcpProfilePanel?.classList.add('panel-user-hidden');
     updatePanelLauncher('tcp-profile-panel');
     updateTcpSnapUi();
@@ -32183,7 +32291,7 @@ function renderWorkObjectPanel(robot = getWorkObjectEditorRobot()) {
     }
     if (el.workObjectVisible) el.workObjectVisible.checked = workObject.visible;
     // Stored frames remain in scene coordinates for save-file compatibility.
-    // Editing and program copying both use the robot's Wobj 0 / BASE frame.
+    // Editing and parameter export both use the robot's Wobj 0 / BASE frame.
     const editorPose = available && activeIndex !== WOBJ_WORLD_INDEX && workObject.defined
         ? convertWorkObjectPose(robot, workObject, false) : workObject;
     const rotation = getWorkObjectRotationDegrees(editorPose);
@@ -32207,7 +32315,7 @@ function renderWorkObjectPanel(robot = getWorkObjectEditorRobot()) {
     if (el.btnResetWorkObject) el.btnResetWorkObject.disabled = readOnly;
     if (el.btnWorkObjectSnap) el.btnWorkObjectSnap.disabled = readOnly;
     if (el.workObjectSnapType) el.workObjectSnapType.disabled = readOnly;
-    if (el.btnCopyWorkObject) el.btnCopyWorkObject.disabled = !available;
+    if (el.btnExportWorkObject) el.btnExportWorkObject.disabled = !available;
     updateTcpSnapUi();
     updatePanelLauncher('workobject-panel');
     syncWorkObjectVisuals(robot);
@@ -33010,8 +33118,6 @@ function restoreRobotControllerBaseTransform(robot, transform) {
 }
 
 function getCurrentTcpPoseBase(robot) {
-    const feedback = robot.userData.controllerTcpPose;
-    if (feedback) return { position: feedback.position.clone(), quaternion: feedback.quaternion.clone() };
     const tcpFrame = robot.userData.tcpFrame;
     if (!tcpFrame) return null;
 
@@ -34967,6 +35073,29 @@ function registerVirtualControllerSession(controller) {
     return controller;
 }
 
+function deleteVirtualControllerSession(controller) {
+    const sessions = getVirtualControllerSessions();
+    const index = sessions.indexOf(controller);
+    if (index < 0) return;
+    if (controller.wanted || controller.socket || controller.historyBefore) {
+        disconnectVirtualController(controller);
+    } else {
+        // Cancel pending connection preparation without touching another
+        // session that may be driving the same robot.
+        closeVirtualControllerSocket(false, controller);
+    }
+    clearVirtualControllerStreamWatchdog(controller);
+    clearVirtualControllerBridgeHealthMonitor(controller);
+    controller.bridgeHealthCheckSequence += 1;
+    sessions.splice(index, 1);
+    if (state.virtualController === controller) {
+        state.virtualController = sessions[Math.min(index, sessions.length - 1)] || createVirtualControllerSession();
+    }
+    refreshVirtualControllerUi();
+    updateMotionUiLock();
+    scheduleMotionProjectSave();
+}
+
 function getVirtualControllerTargetRobot(controller = state.virtualController) {
     const robot = findProgramRobot(controller?.targetRobotId);
     return isCollaborationRobotLocallyControllable(robot) ? robot : null;
@@ -35109,7 +35238,8 @@ function refreshVirtualControllerUi() {
                     <i class="fa-solid fa-circle virtual-controller-connection-dot"></i>
                     <span class="virtual-controller-connection-copy"><strong></strong><small></small></span>
                 </button>
-                <button type="button" class="virtual-controller-connection-toggle" data-virtual-controller-action="${connectionAction}" data-virtual-controller-session="${candidate.sessionId}" title="${connectionLabel}" aria-label="${connectionLabel}"><i class="fa-solid ${connectionIcon}"></i></button>`;
+                <button type="button" class="virtual-controller-connection-toggle" data-virtual-controller-action="${connectionAction}" data-virtual-controller-session="${candidate.sessionId}" title="${connectionLabel}" aria-label="${connectionLabel}"><i class="fa-solid ${connectionIcon}"></i></button>
+                <button type="button" class="virtual-controller-connection-toggle" data-virtual-controller-action="delete" data-virtual-controller-session="${candidate.sessionId}" title="${uiText('삭제')}" aria-label="${uiText('삭제')}"><i class="fa-solid fa-trash-can"></i></button>`;
             row.querySelector('strong').textContent = label;
             row.querySelector('small').textContent = uiText(candidate.statusMessage || statusLabels[candidate.status] || '연결 안 됨') + ` · ${detail}`;
             return row;
@@ -35255,10 +35385,17 @@ function handleVirtualControllerMessage(raw, controller = state.virtualControlle
     if (!controller.core || !controller.samples) return;
     const parsed = controller.core.parseVirtualControllerMessage(raw, performance.now());
     if (parsed.kind === 'state') {
-        applyVirtualControllerIo(parsed.outputs, 'OUT', controller);
-        applyVirtualControllerIo(parsed.inputs, 'IN', controller);
         controller.samples.push(parsed);
         controller.lastSampleAt = parsed.receivedAt;
+        const robot = getVirtualControllerTargetRobot(controller);
+        if (robot && (equipmentApp.needsVacuumIoPose(robot, 'OUT', parsed.outputs)
+            || equipmentApp.needsVacuumIoPose(robot, 'IN', parsed.inputs))) {
+            // Capture vacuum at the pose delivered with the signal, even when
+            // several controller samples arrive before the next render frame.
+            applyVirtualControllerFrameForController(parsed.receivedAt, controller);
+        }
+        applyVirtualControllerIo(parsed.outputs, 'OUT', controller);
+        applyVirtualControllerIo(parsed.inputs, 'IN', controller);
         if (controller.status !== 'streaming') {
             setVirtualControllerStatus('streaming', '', controller);
         } else if (controller.statusMessage) {
@@ -36152,6 +36289,7 @@ function updateOlpProgramPanelUi() {
     el.programPanel?.classList.toggle('olp-mode-active', enabled);
     moveOlpRobotControls(enabled);
     el.programPointActions?.classList.toggle('hidden', enabled);
+    el.programPointStandardized?.parentElement.classList.toggle('hidden', enabled);
     el.programStepList?.classList.toggle('hidden', enabled);
     el.programCycleTimePanel?.classList.toggle('hidden', enabled);
 
@@ -37178,7 +37316,6 @@ function startEquipmentVacuumFacePick(ref, complete) {
     const source = equipmentApp.resolve(ref);
     if (!source || source.model.userData.placement !== 'tcp' || !source.model.userData.attachmentHost) throw new Error('로봇에 설치한 Tool에서 진공을 설정하세요.');
     equipmentVacuumPick = { ref, complete, controls: state.controls, controlsEnabled: state.controls?.enabled };
-    if (state.controls) state.controls.enabled = false;
     setStatus('진공을 적용할 Tool의 면을 클릭하세요. ESC로 취소합니다.', '#60a5fa'); requestRender();
 }
 
@@ -39789,7 +39926,9 @@ async function stopOlpSession(reason = 'OLP stopped', { closeBus = false, resetC
 
 async function connectVirtualController() {
     const controller = state.virtualController;
+    const requestGeneration = controller.socketGeneration;
     if (isOlpRunning() || state.olp.socket) await stopOlpSession('Controller connection requested; OLP and Virtual Bus closed.', { closeBus: true });
+    if (controller.socketGeneration !== requestGeneration) return;
     refreshVirtualControllerRobotOptions();
     const ipAddress = el.virtualControllerIp?.value.trim() ?? controller.ipAddress ?? '';
     if (getVirtualControllerSourceConfig(controller).id === 'bridge' && !ipAddress) {
@@ -39799,6 +39938,7 @@ async function connectVirtualController() {
     }
     controller.ipAddress = ipAddress;
     saveVirtualControllerSettings(controller);
+    refreshVirtualControllerUi();
     const targetRobot = getVirtualControllerTargetRobot(controller);
     if (!targetRobot) {
         setVirtualControllerStatus(
@@ -39826,12 +39966,15 @@ async function connectVirtualController() {
     try {
         await ensureVirtualControllerCore(controller);
     } catch (error) {
+        if (controller.socketGeneration !== requestGeneration) return;
         console.error('Virtual controller support failed to load:', error);
         setVirtualControllerStatus('error', '가상 컨트롤러 기능을 불러올 수 없습니다.');
         return;
     }
+    if (controller.socketGeneration !== requestGeneration) return;
     if (getVirtualControllerSourceConfig(controller).id === 'bridge' && !controller.bridgeToken) {
         const bridgeRunning = await isVirtualControllerBridgeRunning(controller);
+        if (controller.socketGeneration !== requestGeneration) return;
         if (!bridgeRunning || !controller.bridgeToken) {
             setVirtualControllerStatus('error', '브리지 인증 설정이 없어 연결할 수 없습니다. 운영 Origin과 토큰을 설정해 주세요.');
             return;
@@ -39856,8 +39999,7 @@ async function connectVirtualController() {
     requestRender();
 }
 
-function clearVirtualControllerBridgeHealthMonitor() {
-    const controller = state.virtualController;
+function clearVirtualControllerBridgeHealthMonitor(controller = state.virtualController) {
     if (controller.bridgeHealthTimer) {
         clearTimeout(controller.bridgeHealthTimer);
         controller.bridgeHealthTimer = null;
@@ -40238,45 +40380,23 @@ function restoreControllerToolFrame(robot, notify = true) {
 
 function applyControllerTcpPose(robot, pose, notify = true) {
     const flange = robot?.userData.flangeFrame;
-    const tcp = robot?.userData.tcpFrame;
-    if (!pose || !flange?.parent || !tcp) return;
+    if (!pose || !flange?.parent || !robot.userData.tcpFrame) return;
+    // Remove a correction left by an older live session before applying feedback.
+    // Controller Cartesian values use an independent Tool/Wobj definition and
+    // cannot move the physical flange away from the received joint pose.
+    if (robot.userData.controllerToolFrame?.correctionFrame) restoreControllerToolFrame(robot, false);
     if (!robot.userData.controllerToolFrame) {
-        flange.updateMatrix();
-        const parent = flange.parent;
-        const correctionFrame = new THREE.Group();
-        correctionFrame.name = 'Controller flange correction';
-        parent.add(correctionFrame);
-        correctionFrame.add(flange);
         robot.userData.controllerToolFrame = {
-            parent,
-            correctionFrame,
+            parent: flange.parent,
             position: flange.position.clone(),
             quaternion: flange.quaternion.clone(),
-            scale: flange.scale.clone(),
-            matrix: flange.matrix.clone()
+            scale: flange.scale.clone()
         };
     }
-    const saved = robot.userData.controllerToolFrame;
-    saved.parent.updateWorldMatrix(true, false);
-    const base = getRobotControllerBaseFrame(robot);
-    const worldPosition = base.localToWorld(pose.position.clone());
-    const worldQuaternion = base.getWorldQuaternion(new THREE.Quaternion()).multiply(pose.quaternion);
-    // Calibrated TCP feedback must drive the attached geometry as well as its
-    // readout. Remove the active Tool offset and authored flange transform so
-    // their local mounting zero and the received joint angles stay intact.
-    tcp.updateMatrix();
-    const nominalTcpWorld = saved.parent.matrixWorld.clone().multiply(saved.matrix).multiply(tcp.matrix);
-    const targetTcpWorld = new THREE.Matrix4().compose(
-        worldPosition, worldQuaternion, new THREE.Vector3().setFromMatrixScale(nominalTcpWorld)
-    );
-    const correction = saved.parent.matrixWorld.clone().invert().multiply(targetTcpWorld)
-        .multiply(tcp.matrix.clone().invert()).multiply(saved.matrix.clone().invert());
-    correction.decompose(saved.correctionFrame.position, saved.correctionFrame.quaternion, saved.correctionFrame.scale);
-    saved.profileDirty = false;
+    robot.userData.controllerToolFrame.profileDirty = false;
     robot.userData.controllerTcpPose = {
         position: pose.position.clone(), quaternion: pose.quaternion.clone(), readout: pose.readout
     };
-    saved.correctionFrame.updateWorldMatrix(false, true);
     if (notify) {
         markSceneCollisionDirty(robot);
         requestRender();
@@ -40334,12 +40454,13 @@ function applyVirtualControllerFrameForController(timestamp, controller) {
             quaternion: new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz, 'ZYX')),
             rotation: sample.rotation.slice()
         };
-        pose = getBasePoseFromJogReadout(robot, displayPose);
-        // Keep calibrated feedback independent of nominal link lengths and Euler conversion.
-        pose.readout = displayPose;
         const previousPose = robot.userData.controllerTcpPose;
+        pose = getBasePoseFromJogReadout(robot, displayPose);
+        // Preserve the controller's exact readout independently of physical FK.
+        pose.readout = displayPose;
         if (jointsChanged || robot.userData.controllerToolFrame?.profileDirty || !previousPose || previousPose.position.distanceToSquared(pose.position) > 1e-18
             || 1 - Math.abs(previousPose.quaternion.dot(pose.quaternion)) > 1e-12
+            || displayPose.position.distanceToSquared(previousPose.readout.position) > 1e-18
             || sample.rotation.some((value, index) => value !== previousPose.readout?.rotation[index])) {
             applyControllerTcpPose(robot, pose, false);
             changed = true;
@@ -40352,7 +40473,7 @@ function applyVirtualControllerFrameForController(timestamp, controller) {
     syncWorkOriginOutputStates();
     requestRender();
     queueCollaborationRobotState(robot);
-    pose ||= getCurrentTcpPoseBase(robot);
+    pose = getCurrentTcpPoseBase(robot);
     if (pose) {
         robot.userData.baseJogTarget = {
             position: pose.position.clone(),
@@ -40461,6 +40582,7 @@ function assignRobotInstanceMetadata(robot, modelDefinition, preferred = {}) {
     return robot.userData.motionInstanceId;
 }
 
+const PROGRAM_POINT_STANDARDIZATION_STORAGE_KEY = 'inorobot-simulation-program-point-standardization';
 let positionPointsUi = null;
 const positionPointOlpHistories = new WeakMap();
 
@@ -42790,6 +42912,23 @@ function getWaitTargetRobots(robot = state.activeProgramRobot) {
     return getArticulatedRobots().filter((candidate) => candidate && candidate !== robot);
 }
 
+function nextProgramPointMetadata(program, excludedStep = null) {
+    if (el.programPointStandardized?.checked === false) {
+        const pointIndex = nextAvailablePointIndex(program, excludedStep);
+        return pointIndex === null ? null : { pointIndex, label: '' };
+    }
+    const records = [...(program?.steps || []), ...(program?.positions || [])]
+        .filter((step) => step !== excludedStep && isMotionPointMotion(step.motion))
+        .map((step) => ({ index: step.pointIndex }));
+    try {
+        const { index, label } = nextPositionPointMetadata(records);
+        return { pointIndex: index, label };
+    } catch (error) {
+        if (error instanceof RangeError) return null;
+        throw error;
+    }
+}
+
 function nextAvailablePointIndex(program, excludedStep = null) {
     const used = new Set([...(program?.steps || []), ...(program?.positions || [])]
         .filter((step) => step !== excludedStep && isMotionPointMotion(step.motion))
@@ -43846,19 +43985,19 @@ function handleProgramStepListChange(event) {
             renderMotionProgramPanel();
             return;
         }
-        const allocatedPointIndex = isPoint && !wasPoint
-            ? nextAvailablePointIndex(program, step)
+        const pointMetadata = isPoint && !wasPoint
+            ? nextProgramPointMetadata(program, step)
             : null;
-        if (isPoint && !wasPoint && allocatedPointIndex === null) {
+        if (isPoint && !wasPoint && !pointMetadata) {
             setMotionProgramStatus('사용 가능한 포인트 번호가 없습니다.', 'error');
             renderMotionProgramPanel();
             return;
         }
         step.motion = nextMotion;
         if (isPoint && !wasPoint) {
-            step.pointIndex = allocatedPointIndex;
-            step.name = formatMotionPointName(allocatedPointIndex);
-            step.label = '';
+            step.pointIndex = pointMetadata.pointIndex;
+            step.name = formatMotionPointName(pointMetadata.pointIndex);
+            step.label = pointMetadata.label;
             step.armParameters = calculatePointArmParameters(robot, step.joints);
             step.externalAxes = getRobotExternalAxes(robot);
         } else if (!isPoint) {
@@ -44143,7 +44282,12 @@ function addCurrentMotionStep() {
     if (!state.activeProgramRobot) return;
     const before = captureSceneSnapshot();
     const program = ensureMotionProgram(state.activeProgramRobot);
-    const step = captureRobotMotionStep(state.activeProgramRobot);
+    const metadata = nextProgramPointMetadata(program);
+    if (!metadata) {
+        setMotionProgramStatus('사용 가능한 포인트 번호가 없습니다.', 'error');
+        return;
+    }
+    const step = captureRobotMotionStep(state.activeProgramRobot, metadata);
     if (!step) return;
     insertMotionStepAfterSelected(program, step);
     program.selectedStepId = step.id;
@@ -44592,6 +44736,7 @@ function applyWorkspaceMaterialColors(model, records) {
                 const colorHex = record.colors[index];
                 if (!material?.color || typeof colorHex !== 'string' || !/^[0-9a-f]{6}$/i.test(colorHex)) return;
                 material.color.setHex(Number.parseInt(colorHex, 16));
+                state.collision.highlightedMaterials.get(material)?.color?.copy(material.color);
                 material.needsUpdate = true;
                 mesh.userData.modelPartMaterials?.forEach((entry) => {
                     if (entry.material === material && entry.color) entry.color.copy(material.color);
@@ -44634,6 +44779,44 @@ function applyWorkspacePartState(model, records) {
             applyModelTransparencyVisual(model, part, record.transparency);
         }
     });
+}
+
+function consolidateWorkspaceSinglePartTransform(model, originalPartMatrix) {
+    const parts = getImportedModelParts(model);
+    if (!originalPartMatrix || parts.length !== 1 || model.userData.placement !== 'scene') return;
+    const part = parts[0];
+    if (part === model || !part.parent) return;
+    const rootRef = equipmentObjectRef(ensureWorkspaceModelId(model));
+    const prefix = rootRef.slice(0, rootRef.lastIndexOf('/') + 1);
+    // Keep independently registered part motions and structural equipment frames.
+    if (state.equipmentDefinitions.some(def => def.type !== 'OBJECT'
+        ? JSON.stringify(def).includes(prefix)
+        : equipmentReferences(def).some(ref => ref.startsWith(prefix) && ref !== rootRef))) return;
+    model.updateWorldMatrix(true, true);
+    const parent = model.matrixWorld.clone().invert().multiply(part.parent.matrixWorld);
+    const correction = parent.clone().multiply(part.matrix)
+        .multiply(originalPartMatrix.clone().invert()).multiply(parent.clone().invert());
+    if (numberArraysEqual(correction.elements, new THREE.Matrix4().elements)) return;
+    const matrix = model.matrix.clone().multiply(correction);
+    const position = new THREE.Vector3(), quaternion = new THREE.Quaternion(), scale = new THREE.Vector3();
+    matrix.decompose(position, quaternion, scale);
+    // A sheared frame cannot be represented by the numeric position/rotation inputs.
+    if (!matrix.elements.every(Number.isFinite)
+        || !numberArraysEqual(matrix.elements, new THREE.Matrix4().compose(position, quaternion, scale).elements)) return;
+    model.position.copy(position); model.quaternion.copy(quaternion); model.scale.copy(scale);
+    model.matrix.copy(matrix); model.matrixWorldNeedsUpdate = true;
+    part.matrix.copy(originalPartMatrix);
+    part.matrix.decompose(part.position, part.quaternion, part.scale);
+    part.matrixWorldNeedsUpdate = true;
+    model.updateWorldMatrix(true, true);
+    // Preserve each object's registered reset pose after moving its internal
+    // transform into the root. No geometry moves while opening the project.
+    for (const def of state.equipmentDefinitions) {
+        const origin = def.type === 'OBJECT' && def.origins?.objectWorld?.[rootRef];
+        if (Array.isArray(origin) && origin.length === 16) {
+            def.origins.objectWorld[rootRef] = new THREE.Matrix4().fromArray(origin).multiply(correction).toArray();
+        }
+    }
 }
 
 function getWorkspaceCatalogKey(model) {
@@ -45679,9 +45862,14 @@ async function restoreWorkspaceImportedModel(entry, robotsById) {
     } else if (entry.kind !== 'grip-part') {
         delete model.userData.gripObjectSource;
     }
+    const parts = model.userData.placement === 'scene' ? getImportedModelParts(model) : [];
+    const singlePart = parts.length === 1 ? parts[0] : null;
+    if (singlePart?.matrixAutoUpdate) singlePart.updateMatrix();
+    const originalPartMatrix = singlePart?.matrix.clone() || null;
     applyWorkspaceChildMatrices(model, entry.childMatrices);
     applyModelTransparencyVisual(model, null, entry.transparency);
     applyWorkspacePartState(model, entry.partState);
+    if (singlePart) consolidateWorkspaceSinglePartTransform(model, originalPartMatrix);
     applyWorkspaceMaterialColors(model, entry.materialColors);
     return model;
 }
@@ -47707,10 +47895,10 @@ async function importSimulationWorkspaceProject(file) {
     }
 }
 
-async function saveStandalonePFile(content, suggestedName = 'P.pts') {
+async function saveStandalonePFile(content, suggestedName = 'P.pts', saveWindow = window) {
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    if (typeof window.showSaveFilePicker === 'function') {
-        const fileHandle = await window.showSaveFilePicker({
+    if (typeof saveWindow.showSaveFilePicker === 'function') {
+        const fileHandle = await saveWindow.showSaveFilePicker({
             id: 'inorobot-position-points',
             suggestedName,
             startIn: 'documents',
@@ -47725,7 +47913,19 @@ async function saveStandalonePFile(content, suggestedName = 'P.pts') {
         await writable.close();
         return fileHandle.name;
     }
-    saveAs(blob, suggestedName);
+    if (saveWindow === window) {
+        saveAs(blob, suggestedName);
+    } else {
+        const url = saveWindow.URL.createObjectURL(blob);
+        const anchor = saveWindow.document.createElement('a');
+        anchor.href = url;
+        anchor.download = suggestedName;
+        anchor.style.display = 'none';
+        saveWindow.document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        saveWindow.setTimeout(() => saveWindow.URL.revokeObjectURL(url), 40_000);
+    }
     return suggestedName;
 }
 
@@ -47768,7 +47968,8 @@ function normalizeExportedPFileContent(content, robotName = getSelectedRobotProg
     return `${header}\r\n${body ? `${body.replace(/\n/g, '\r\n')}\r\n` : ''}`;
 }
 
-async function exportPositionPoints() {
+async function exportPositionPoints(event = null) {
+    const saveWindow = event?.currentTarget?.ownerDocument?.defaultView || window;
     const activeOlpProject = getOlpProject();
     if (state.olp.enabled && activeOlpProject) {
         const pointFile = activeOlpProject.pointFiles?.find((entry) => /(^|\/)P\.pts$/i.test(entry.path))
@@ -47781,7 +47982,8 @@ async function exportPositionPoints() {
         try {
             const name = await saveStandalonePFile(
                 normalizeExportedPFileContent(record.text),
-                'P.pts'
+                'P.pts',
+                saveWindow
             );
             setMotionProgramStatus('P.pts 내보내기 완료: {name}', '', { name });
             setStatus('P.pts 내보내기 완료', '#22c55e');
@@ -47823,27 +48025,9 @@ async function exportPositionPoints() {
         `${points.map((step) => formatPositionPointRecord(robot, step)).join('\n')}\n`,
         getSelectedRobotProgramName()
     );
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     try {
-        if (typeof window.showSaveFilePicker === 'function') {
-            const fileHandle = await window.showSaveFilePicker({
-                id: 'inorobot-position-points',
-                suggestedName: 'P.pts',
-                startIn: 'documents',
-                excludeAcceptAllOption: true,
-                types: [{
-                    description: 'InoRobot P.pts position file',
-                    accept: { 'text/plain': ['.pts'] }
-                }]
-            });
-            const writable = await fileHandle.createWritable();
-            await writable.write(blob);
-            await writable.close();
-            setMotionProgramStatus('P.pts 내보내기 완료: {name}', '', { name: fileHandle.name });
-        } else {
-            saveAs(blob, 'P.pts');
-            setMotionProgramStatus('P.pts 내보내기 완료: {name}', '', { name: 'P.pts' });
-        }
+        const name = await saveStandalonePFile(content, 'P.pts', saveWindow);
+        setMotionProgramStatus('P.pts 내보내기 완료: {name}', '', { name });
         setStatus('P.pts 내보내기 완료', '#22c55e');
     } catch (error) {
         if (error?.name === 'AbortError') {
@@ -50996,6 +51180,7 @@ function fitCameraToBounds(bounds, { topOnly = false } = {}) {
     state.controls.target.copy(center);
     state.camera.lookAt(center);
     state.controls.update();
+    resetMainOrbitControlDistances(state.controls);
     if (state.snapMoveMode) captureSimulationSnapMarkerReferenceDistance();
     requestRender();
     return true;
@@ -51083,49 +51268,50 @@ function readToolLoadEditor() {
     return normalizeToolLoad({ mass: values.mass, cog: [values.cogX, values.cogY, values.cogZ], inertia: [values.ix, values.iy, values.iz] });
 }
 
-async function copyRobotProgram(code, button, status) {
+function downloadRobotParameterFile(content, fileName, button, status) {
     try {
         const doc = button.ownerDocument;
-        const clipboard = doc.defaultView.navigator.clipboard;
-        try {
-            if (!clipboard?.writeText) throw new Error('Clipboard API unavailable');
-            await clipboard.writeText(code);
-        } catch {
-            const text = doc.createElement('textarea');
-            text.value = code;
-            text.style.cssText = 'position:fixed;left:-10000px;top:0';
-            const active = doc.activeElement;
-            doc.body.append(text);
-            try {
-                text.select();
-                if (!doc.execCommand('copy')) throw new Error('Clipboard copy failed');
-            } finally { text.remove(); active?.focus(); }
-        }
-        status('로봇 프로그램 코드를 복사했습니다.', 'success');
-    } catch { status('데이터를 복사하지 못했습니다. 다시 시도하세요.', 'error'); }
+        const view = doc.defaultView;
+        const url = view.URL.createObjectURL(new view.Blob([content], { type: 'application/octet-stream' }));
+        const link = doc.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        doc.body.append(link);
+        link.click();
+        link.remove();
+        view.setTimeout(() => view.URL.revokeObjectURL(url), 40_000);
+        status('파일 내보내기를 완료했습니다.', 'success');
+    } catch { status('파일 내보내기에 실패했습니다.', 'error'); }
 }
 
-function copyToolData() {
+function exportToolData() {
     const robot = state.activeArticulatedModel;
     if (!robot?.userData?.tcpFrame) return;
+    const profiles = ensureRobotTcpProfiles(robot);
     const index = robot.userData.activeTcpProfileIndex;
     const values = index === 0 ? getTcpProfileEditorValues(createDefaultTcpProfile()) : readTcpProfileEditorValues();
     const load = index === 0 ? normalizeToolLoad() : readToolLoadEditor();
     if (!values || !load) { setTcpProfileStatus('Tool 오프셋 입력값을 확인하세요.', 'error'); return; }
-    const code = buildToolProgram(index, [values.x, values.y, values.z], [values.rx, values.ry, values.rz], load);
-    void copyRobotProgram(code, el.btnCopyToolData, setTcpProfileStatus);
+    const tools = profiles.map(profile => {
+        const pose = getTcpProfileEditorValues(profile);
+        return { position: [pose.x, pose.y, pose.z], rotation: [pose.rx, pose.ry, pose.rz], load: profile.load };
+    });
+    tools[index] = { position: [values.x, values.y, values.z], rotation: [values.rx, values.ry, values.rz], load };
+    const content = buildToolParamFile(tools, { robotName: robot.userData.robotName || robot.userData.modelName || robot.name });
+    downloadRobotParameterFile(content, 'ToolParam.dat', el.btnExportToolData, setTcpProfileStatus);
 }
 
-function copyWorkObjectData() {
+function exportWorkObjectData() {
     const robot = getWorkObjectEditorRobot();
     if (!robot) return;
     const index = state.workObjectEditor.index;
     const values = readWorkObjectEditorValues();
     if (!values) { setWorkObjectStatus('Wobj 입력값을 확인하세요.', 'error'); return; }
-    const position = index === WOBJ_WORLD_INDEX ? [0, 0, 0] : values.position;
-    const rotation = index === WOBJ_WORLD_INDEX ? [0, 0, 0] : values.rotation;
-    const code = buildFrameProgram(`Wobj[${index}].UFrame`, position, rotation);
-    void copyRobotProgram(code, el.btnCopyWorkObject, setWorkObjectStatus);
+    const workObjects = ensureRobotWorkObjects(robot).map((workObject, slot) =>
+        slot !== WOBJ_WORLD_INDEX && workObject.defined ? convertWorkObjectPose(robot, workObject, false) : null);
+    workObjects[index] = values;
+    const content = buildWobjParamFile(workObjects, { robotName: robot.userData.robotName || robot.userData.modelName || robot.name });
+    downloadRobotParameterFile(content, 'WobjParam.dat', el.btnExportWorkObject, setWorkObjectStatus);
 }
 
 function selectToolLoadModel(models, { description = '부하 정보를 가져올 Tool 모델을 선택하세요.', confirmLabel = '가져오기', allowAll = false } = {}) {

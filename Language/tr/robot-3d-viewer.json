@@ -2004,8 +2004,6 @@
     "흡착 면 선택": "Vakum yüzeyi seç",
     "흡착 면이 선택되었습니다.": "Vakum yüzeyi seçildi.",
     "흡착 면 선택을 누른 뒤 3D 화면의 면을 클릭하세요.": "Vakum yüzeyi seç düğmesine basın, ardından 3D görünümde bir yüzeye tıklayın.",
-    "선택한 모델 또는 부품 전체에서 1mm 이내의 오브젝트를 찾습니다.": "Seçilen modelin veya parçanın tüm yüzeyine en fazla 1 mm uzaklıktaki nesneler aranır.",
-    "진공 신호가 한 번 들어오면 파기 신호까지 유지됩니다. 진공을 켤 때만 1mm 이내의 등록 오브젝트를 검색합니다.": "Vakum, bırakma sinyaline kadar etkin kalır. 1 mm içindeki kayıtlı nesneler yalnızca vakum açıldığında bir kez aranır.",
     "로봇에 설치한 Tool에서 진공을 설정하세요.": "Vakumu robota takılı bir Tool üzerinde ayarlayın.",
     "진공을 적용할 Tool의 면을 클릭하세요. ESC로 취소합니다.": "Vakum için Tool yüzeyine tıklayın. İptal için ESC tuşuna basın.",
     "선택한 Tool 또는 부품의 면을 클릭하세요.": "Seçilen Tool veya parçanın bir yüzeyine tıklayın.",
@@ -2020,7 +2018,11 @@
     "수신 데이터": "Alınan veri",
     "요청 시 자동 응답": "İstekleri yanıtla",
     "수신 데이터 입력": "Alınan veriyi gir",
-    "마지막 송신": "Son gönderilen"
+    "마지막 송신": "Son gönderilen",
+    "파일 내보내기를 완료했습니다.": "Dosya dışa aktarıldı.",
+    "파일 내보내기에 실패했습니다.": "Dosya dışa aktarılamadı.",
+    "선택한 모델 또는 부품 전체에서 2mm 이내의 오브젝트를 찾습니다.": "Seçilen modelin veya parçanın tüm yüzeyine en fazla 2 mm uzaklıktaki nesneler aranır.",
+    "진공 신호가 한 번 들어오면 파기 신호까지 유지됩니다. 진공을 켤 때만 2mm 이내의 등록 오브젝트를 검색합니다.": "Vakum, bırakma sinyaline kadar etkin kalır. 2 mm içindeki kayıtlı nesneler yalnızca vakum açıldığında bir kez aranır."
   },
   "patterns": []
 }

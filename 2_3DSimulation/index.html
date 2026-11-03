@@ -8,7 +8,7 @@
     <title>3D Simulation | INOVANCE</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=20261101-vacuum-surface-1">
+    <link rel="stylesheet" href="style.css?v=20261101-vacuum-surface-1&amp;points=20261102-standardization-1&amp;controllers=20261102-delete-1">
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -23,11 +23,15 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/Language/runtime/i18n.css">
-    <script src="/Language/runtime/locales-data.js?v=20261031-view-no-jog-1" defer></script>
+    <script src="/Language/runtime/locales-data.js?v=53a8b65e742e" defer></script>
     <script src="/Language/runtime/i18n.js" defer></script>
     <script src="/Language/runtime/icon-fallback.js" defer></script>
     <script src="/analytics-config.js"></script>
     <script src="/analytics.js" defer></script>
+
+
+
+
 
 
 
@@ -1841,7 +1845,7 @@
                             <button id="btn-tool-load-from-models" type="button" data-i18n="legacy.모델 부하 가져오기">모델 부하 가져오기</button>
                         </div>
                         <div class="tcp-profile-actions">
-                            <button id="btn-copy-tool-data" type="button"><i class="fa-solid fa-copy"></i> <span data-i18n="legacy.데이터 복사">데이터 복사</span></button>
+                            <button id="btn-export-tool-data" type="button"><i class="fa-solid fa-file-export"></i> <span data-i18n="legacy.파일 내보내기">파일 내보내기</span></button>
                             <button id="btn-reset-tcp-profile" type="button"><i class="fa-solid fa-rotate-left"></i> 초기화</button>
                             <button id="btn-apply-tcp-profile" type="button" class="primary"><i class="fa-solid fa-check"></i> 적용</button>
                         </div>
@@ -1891,7 +1895,7 @@
                             <button id="workobject-multi-center-reset" type="button" disabled data-i18n="legacy.선택 초기화">선택 초기화</button>
                         </div>
                         <div class="tcp-profile-actions workobject-actions">
-                            <button id="btn-copy-workobject-data" type="button"><i class="fa-solid fa-copy"></i> <span data-i18n="legacy.데이터 복사">데이터 복사</span></button>
+                            <button id="btn-export-workobject-data" type="button"><i class="fa-solid fa-file-export"></i> <span data-i18n="legacy.파일 내보내기">파일 내보내기</span></button>
                             <button id="btn-reset-workobject" type="button"><i class="fa-solid fa-rotate-left"></i> <span data-i18n="legacy.초기화">초기화</span></button>
                             <button id="btn-apply-workobject" type="button" class="primary"><i class="fa-solid fa-check"></i> <span data-i18n="legacy.적용">적용</span></button>
                         </div>
@@ -2249,6 +2253,7 @@
                             <button id="program-delete-step" type="button" data-program-edit title="포인트 삭제"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
+                    <label class="program-point-standardization" data-panel-drag-ignore><input id="program-point-standardized" type="checkbox" checked><span data-i18n="legacy.표준화 모드">표준화 모드</span></label>
                      <div id="program-step-list" class="program-step-list" data-panel-drag-ignore></div>
                  </div>
                 <section id="auto-path-panel" class="auto-path-panel hidden" aria-label="자동 경로 생성">
@@ -2627,7 +2632,7 @@
         </div>
     </footer>
 
-    <script type="module" src="main.js?v=20261101-vacuum-surface-1&amp;rapid=20261102-models-2&amp;olp=20261102-generator-2"></script>
+    <script type="module" src="main.js?v=20261102-coordinates-1&amp;rapid=20261102-models-2&amp;olp=20261102-generator-2&amp;tcp=20261102-multi-center-1&amp;clipboard=20261102-name-color-1&amp;points=20261102-standardization-1&amp;pts=20261102-popout-export-1&amp;params=20261102-dat-export-1&amp;vacuum=20261102-face-navigation-1&amp;toolMenu=20261102-actions-1&amp;snap=20261102-type-selection-1&amp;undo=20261102-history-1&amp;controllers=20261102-delete-1&amp;vacuumRange=20261102-vacuum-range-2&amp;inputFix=20261103-view-tcp-vacuum-1&amp;stepColors=20261103-direct-1&amp;glbUnits=20261103-1&amp;glbCollision=20261103-1&amp;mountContact=20261103-1"></script>
 <script src="/0_Home/tool-guide-embed.js?v=20260906-2"></script>
 </body>
 </html>

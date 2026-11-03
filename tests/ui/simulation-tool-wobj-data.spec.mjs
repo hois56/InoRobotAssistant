@@ -8,7 +8,6 @@ async function fillNumber(page, selector, value) {
 }
 
 async function setup(page, model = 'IR-S7-60Z20') {
-  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.route('**/2_3DSimulation/main.js*', async route => {
     const response = await route.fetch();
     await route.fulfill({ response, body: `${await response.text()}
@@ -22,7 +21,23 @@ window.__toolWobj = { state, THREE, selectTcpProfile, applyTcpSnapPoint, seriali
   await expect(page.locator('[data-panel-toggle="tcp-profile-panel"]')).toBeEnabled();
 }
 
-test('Tool 0~15와 부하 정보는 저장·복원·실행 취소 및 로봇 코드 복사에서 유지된다', async ({ page }) => {
+async function exportParameters(page, kind) {
+  const pending = page.waitForEvent('download');
+  await page.locator(kind === 'Tool' ? '#btn-export-tool-data' : '#btn-export-workobject-data').click();
+  const download = await pending;
+  expect(download.suggestedFilename()).toBe(`${kind === 'Tool' ? 'Tool' : 'Wobj'}Param.dat`);
+  const stream = await download.createReadStream();
+  const chunks = [];
+  for await (const chunk of stream) chunks.push(chunk);
+  const text = Buffer.concat(chunks).toString('utf8');
+  expect(text).toMatch(/^FileInfo\r\n/);
+  expect(text).toMatch(/    CheckCode="[0-9A-F]{8}"\r\nEndFileInfo\r\n/);
+  const records = JSON.parse(text.split('EndFileInfo\r\n')[1]);
+  expect(records).toHaveLength(16);
+  return records;
+}
+
+test('Tool 0~15와 부하 정보는 저장·복원·실행 취소 및 dat 내보내기에서 유지된다', async ({ page }) => {
   test.setTimeout(90000);
   await setup(page);
   await page.locator('[data-panel-toggle="tcp-profile-panel"]').click();
@@ -38,13 +53,13 @@ test('Tool 0~15와 부하 정보는 저장·복원·실행 취소 및 로봇 코
   await page.evaluate(() => window.__toolWobj.undoLastAction());
   await expect(page.locator('[data-tool-load="mass"]')).toHaveValue('0');
   await page.evaluate(() => window.__toolWobj.redoLastAction());
-  await page.locator('#btn-copy-tool-data').click();
-  const code = await page.evaluate(() => navigator.clipboard.readText());
-  expect(code).toContain('Tool[15].TFrame.X = 123.5;');
-  expect(code).toContain('Tool[15].TFrame.C = 30;');
-  expect(code).toContain('Tool[15].TLoad.Mass = 7;');
-  expect(code).toContain('Tool[15].TLoad.Cog[0] = 10.125;');
-  expect(code).toContain('Tool[15].TLoad.Inertia[0] = 0.000012345;');
+  const records = await exportParameters(page, 'Tool');
+  expect(records[15].TFrame.Data).toEqual([123.5, 0, 0, 0, 0, 30]);
+  expect(records[15].TLoad.mass).toBe(7);
+  expect(records[15].TLoad.cog[0]).toBe(10.125);
+  expect(records[15].TLoad.inertia[0]).toBe(0.000012345);
+  expect(records[0].TFrame.Data).toEqual([0, 0, 0, 0, 0, 0]);
+  expect(records[0].TLoad.mass).toBe(0);
   await page.evaluate(async () => {
     const a = window.__toolWobj;
     await a.restoreWorkspaceSnapshot(JSON.parse(JSON.stringify(a.serializeWorkspaceSnapshot())));
@@ -58,7 +73,7 @@ test('Tool 0~15와 부하 정보는 저장·복원·실행 취소 및 로봇 코
   await expect(page.locator('[data-tcp-offset="x"]')).toHaveValue('0');
 });
 
-test('Wobj 0 표시와 장면 스냅은 좌표를 보존하고 UFrame을 로봇 베이스 기준으로 복사한다', async ({ page }) => {
+test('Wobj 0 표시와 장면 스냅은 좌표를 보존하고 UFrame을 로봇 베이스 기준으로 내보낸다', async ({ page }) => {
   test.setTimeout(90000);
   await setup(page);
   await page.locator('[data-panel-toggle="workobject-panel"]').click();
@@ -76,13 +91,11 @@ test('Wobj 0 표시와 장면 스냅은 좌표를 보존하고 UFrame을 로봇 
   await expect(page.locator('[data-workobject-pose="z"]')).toHaveValue('145');
   await expect(page.locator('[data-workobject-pose="rz"]')).toHaveValue('90');
   await page.locator('#btn-apply-workobject').click();
-  await page.locator('#btn-copy-workobject-data').click();
-  const code = await page.evaluate(() => navigator.clipboard.readText());
+  const records = await exportParameters(page, 'Wobj');
   // This SCARA controller base is offset by X=36.5, Z=155 in the scene.
-  expect(code).toContain('Wobj[1].UFrame.X = 63.5;');
-  expect(code).toContain('Wobj[1].UFrame.Z = 145;');
-  expect(code).toContain('Wobj[1].UFrame.A = 90;');
-  expect(code.trim().split('\n')).toHaveLength(6);
+  expect(records[1].UFrame.Data).toEqual([63.5, 200, 145, 90, 0, 0]);
+  expect(records[0].UFrame.Data).toEqual([0, 0, 0, 0, 0, 0]);
+  expect(records[2].UFrame.Data).toEqual([0, 0, 0, 0, 0, 0]);
   expect(await page.evaluate(() => window.__toolWobj.state.activeArticulatedModel.userData.workObjects[1].position)).toEqual([100, 200, 300]);
 });
 
@@ -111,7 +124,7 @@ test('모델 부하 가져오기는 장착 위치와 회전 및 관성 축을 �
   await page.setViewportSize({ width: 1440, height: 1200 });
   await page.locator('#tcp-profile-panel').screenshot({ path: 'tmp/tool-panel-preview.png' });
   await page.locator('#inorobot-language-select').selectOption('en');
-  await expect(page.locator('#btn-copy-tool-data')).toContainText('Copy data');
+  await expect(page.locator('#btn-export-tool-data')).toContainText('Export file');
 });
 
 async function addToolLoadChoices(page) {
@@ -202,7 +215,7 @@ test('여러 Tool 모델은 선택 창에서 하나를 골라 가져오고 취�
   await expect(page.locator('[data-tool-load="cogZ"]')).toHaveValue('30');
 });
 
-test('모두 다는 Tool 모델들의 질량·무게중심·회전·평행축 관성을 합산하고 저장·복사한다', async ({ page }) => {
+test('모두 다는 Tool 모델들의 질량·무게중심·회전·평행축 관성을 합산하고 저장·내보낸다', async ({ page }) => {
   test.setTimeout(90000);
   await addToolLoadChoices(page);
   await page.evaluate(() => {
@@ -234,11 +247,10 @@ test('모두 다는 Tool 모델들의 질량·무게중심·회전·평행축 �
     await a.restoreWorkspaceSnapshot(JSON.parse(JSON.stringify(a.serializeWorkspaceSnapshot())));
   });
   await expect(page.locator('[data-tool-load="mass"]')).toHaveValue('10');
-  await page.locator('#btn-copy-tool-data').click();
-  const code = await page.evaluate(() => navigator.clipboard.readText());
-  expect(code).toContain('Tool[1].TLoad.Mass = 10;');
-  expect(code).toContain('Tool[1].TLoad.Cog[1] = 14;');
-  expect(code).toContain('Tool[1].TLoad.Inertia[0] = 0.003638333;');
+  const records = await exportParameters(page, 'Tool');
+  expect(records[1].TLoad.mass).toBe(10);
+  expect(records[1].TLoad.cog[1]).toBe(14);
+  expect(records[1].TLoad.inertia[0]).toBeCloseTo(0.003638333, 9);
 });
 
 for (const failure of ['deleted', 'invalid-geometry']) test(`모두 다의 일부 모델을 사용할 수 없으면 기존 부하 값을 유지한다 (${failure})`, async ({ page }) => {
@@ -301,6 +313,8 @@ test('분리한 Tool 설정 창에서도 모델을 선택하여 해당 부하만
     await expect(page.locator('#tool-load-selected-name')).toContainText('Gripper B');
     await expect(page.locator('#tool-load-result-mass')).toHaveText('7.0000 kg');
     await expect(popup.locator('[data-tool-load="mass"]')).toHaveValue('3');
+    const records = await exportParameters(popup, 'Tool');
+    expect(records[1].TLoad.mass).toBe(3);
   } finally { await popup.close(); }
 });
 
@@ -356,7 +370,7 @@ test('Wobj 스냅은 3D 장면에서 선택한 면의 꼭짓점을 클릭하여 
   expect(errors).toEqual([]);
 });
 
-for (const model of ['IR-S7-60Z20', 'IR-R10H-120']) test(`이동·회전한 로봇의 Wobj 화면·스냅·복사·저장은 같은 Wobj 0 기준을 사용한다 (${model})`, async ({ page }) => {
+for (const model of ['IR-S7-60Z20', 'IR-R10H-120']) test(`이동·회전한 로봇의 Wobj 화면·스냅·내보내기·저장은 같은 Wobj 0 기준을 사용한다 (${model})`, async ({ page }) => {
   test.setTimeout(90000);
   await setup(page, model);
   await page.locator('[data-panel-toggle="workobject-panel"]').click();
@@ -392,10 +406,43 @@ for (const model of ['IR-S7-60Z20', 'IR-R10H-120']) test(`이동·회전한 로�
   });
   await expect(page.locator('[data-workobject-pose="x"]')).toHaveValue('12.5');
   await expect(page.locator('[data-workobject-pose="rz"]')).toHaveValue('40');
-  await page.locator('#btn-copy-workobject-data').click();
-  const code = await page.evaluate(() => navigator.clipboard.readText());
-  expect(code).toContain('Wobj[1].UFrame.X = 12.5;');
-  expect(code).toContain('Wobj[1].UFrame.Y = 20;');
-  expect(code).toContain('Wobj[1].UFrame.Z = 30;');
-  expect(code).toContain('Wobj[1].UFrame.A = 40;');
+  // Export an already-saved frame and the current, unapplied slot together.
+  await page.locator('[data-work-object-index="15"]').click();
+  await fillNumber(page, '[data-workobject-pose="x"]', '99');
+  const records = await exportParameters(page, 'Wobj');
+  expect(records[1].UFrame.Data).toEqual([12.5, 20, 30, 40, 0, 0]);
+  expect(records[15].UFrame.Data).toEqual([99, 0, 0, 0, 0, 0]);
+  expect(records[2].UFrame.Data).toEqual([0, 0, 0, 0, 0, 0]);
+});
+
+test('Tool dat는 다른 번호의 저장된 값과 현재 입력값을 함께 내보내며 Wobj 분리 창도 dat를 저장한다', async ({ page }) => {
+  test.setTimeout(90000);
+  await setup(page);
+  await page.locator('[data-panel-toggle="tcp-profile-panel"]').click();
+  await page.locator('[data-tcp-profile="1"]').click();
+  await fillNumber(page, '[data-tcp-offset="x"]', '11');
+  await page.locator('#btn-apply-tcp-profile').click();
+  await page.locator('[data-tcp-profile="15"]').click();
+  for (const [key, value] of Object.entries({ x: '123.4567', rx: '10', ry: '20', rz: '30' })) {
+    await fillNumber(page, `[data-tcp-offset="${key}"]`, value);
+  }
+  await fillNumber(page, '[data-tool-load="mass"]', '7');
+  const tools = await exportParameters(page, 'Tool');
+  expect(tools[1].TFrame.Data).toEqual([11, 0, 0, 0, 0, 0]);
+  expect(tools[15].TFrame.Data).toEqual([123.4567, 0, 0, 30, 20, 10]);
+  expect(tools[15].TLoad.mass).toBe(7);
+  expect(await page.evaluate(() => window.__toolWobj.state.activeArticulatedModel.userData.tcpProfiles[15].load.mass)).toBe(0);
+  await page.locator('[data-panel-action="hide"][data-panel-id="tcp-profile-panel"]').click();
+  await page.locator('[data-panel-toggle="workobject-panel"]').click();
+  await page.locator('[data-work-object-index="15"]').click();
+  await fillNumber(page, '[data-workobject-pose="z"]', '77');
+  const popupPromise = page.waitForEvent('popup');
+  await page.locator('[data-panel-action="popout"][data-panel-id="workobject-panel"]').click();
+  const popup = await popupPromise;
+  try {
+    const workObjects = await exportParameters(popup, 'Wobj');
+    expect(workObjects[15].UFrame.Data).toEqual([0, 0, 77, 0, 0, 0]);
+    expect(workObjects[0].UFrame.Data).toEqual([0, 0, 0, 0, 0, 0]);
+    await popup.locator('#workobject-panel').screenshot({ path: 'tmp/wobj-dat-export-preview.png' });
+  } finally { await popup.close(); }
 });

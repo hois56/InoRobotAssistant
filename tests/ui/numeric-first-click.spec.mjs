@@ -10,6 +10,7 @@ test('시뮬레이션 숫자 입력칸은 첫 클릭으로 맨 앞에 커서를 
     for(const selector of ['#model-position-x','#model-rotation-x','#tcp-x','#tcp-rz']){
         await page.locator('#model-browser-panel h2').click();
         const input=page.locator(selector);await input.click();await expect(input).toBeFocused();
+        await expect(input).toHaveAttribute('autocomplete','off');
         const caret=await input.evaluate(node=>({start:node.selectionStart,end:node.selectionEnd,length:node.value.length,type:node.type}));
         expect(caret.type).toBe('text');expect(caret.start).toBe(caret.end);expect(caret.start).toBe(0);
         const value=await input.inputValue();await page.keyboard.type('1');await expect(input).toHaveValue('1'+value);

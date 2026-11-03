@@ -14,6 +14,112 @@ async function revealCadAssemblyPart(page, partId) {
     }
 }
 
+test('모델 트리의 고정 행렬 부품 이동은 되돌리기와 다시 실행 후에도 좌표를 복원한다', async ({page}) => {
+    const errors = await setup(page);
+    await page.evaluate(() => {
+        for (const part of window.__treeMotion.state.models[0].userData.importedParts) {
+            part.updateMatrix(); part.matrixAutoUpdate = false;
+        }
+    });
+    const part = page.locator('button[data-model-part-id="test-part-0"]');
+    const position = () => page.evaluate(() => {
+        const p = window.__treeMotion.state.models[0].userData.importedParts[0];
+        return {x:p.position.x, matrixX:p.matrix.elements[12]};
+    });
+    await part.click();
+    await setTransformValue(page, '#model-position-x', '50');
+    expect(await position()).toEqual({x:50, matrixX:50});
+    await page.locator('#btn-undo').click();
+    expect(await position()).toEqual({x:-120, matrixX:-120});
+    await page.locator('#btn-redo').click();
+    expect(await position()).toEqual({x:50, matrixX:50});
+    await part.click();
+    await setTransformValue(page, '#model-position-y', '30');
+    await page.keyboard.press('Control+z');
+    expect(await position()).toEqual({x:50, matrixX:50});
+    await part.click();
+    await page.locator('[data-transform-mode="translate"]').click();
+    await page.evaluate(() => {
+        const c = window.__treeMotion.state.transformControls;
+        c.dispatchEvent({type:'mouseDown'});
+        c.object.position.x = 90;
+        c.dispatchEvent({type:'objectChange'});
+        c.dispatchEvent({type:'mouseUp'});
+    });
+    expect(await position()).toEqual({x:90, matrixX:90});
+    await page.locator('#btn-undo').click();
+    expect(await position()).toEqual({x:50, matrixX:50});
+    await page.locator('#btn-redo').click();
+    expect(await position()).toEqual({x:90, matrixX:90});
+    expect(errors).toEqual([]);
+});
+
+for (const placement of ['scene', 'tcp', 'arm-load', 'grip-object']) test(`단일 부품의 3D 선택과 모델 트리 선택은 같은 좌표와 이동 대상을 사용한다 (${placement})`, async ({page}) => {
+    await page.setViewportSize({width:1600, height:1000});
+    const errors = await setup(page, false);
+    await page.evaluate(placement => {
+        const {state, THREE, updateUIStatus} = window.__treeMotion;
+        const model = new THREE.Group();
+        model.userData = {modelName:'좌표 확인 모델', uploaded:true, placement};
+        model.position.set(200, -40, 80);
+        model.rotation.z = Math.PI / 6;
+        const part = new THREE.Mesh(new THREE.BoxGeometry(100, 80, 60), new THREE.MeshStandardMaterial());
+        part.position.set(30, 10, 0);
+        part.userData = {modelPartId:'coordinate-single-part', modelPartName:'내부 부품'};
+        part.updateMatrix(); part.matrixAutoUpdate = false;
+        model.add(part); model.userData.importedParts = [part];
+        if (placement !== 'scene') {
+            const host = new THREE.Group(); host.userData.modelName = '부착 부모';
+            host.position.set(-70, 20, 10); host.rotation.z = Math.PI / 4;
+            state.scene.add(host); state.models.push(host); host.add(model);
+            model.userData.attachmentHost = host;
+        } else state.scene.add(model);
+        state.models.push(model); updateUIStatus();
+        state.controls.target.set(0, 0, 0);
+        state.camera.position.set(0, -1200, 850); state.camera.up.set(0, 0, 1);
+        state.camera.lookAt(0, 0, 0); state.controls.update();
+    }, placement);
+    const modelButton = page.locator('.model-tree-button').filter({hasText:'좌표 확인 모델'});
+    const coordinates = () => page.locator('#model-position-x, #model-position-y, #model-position-z, #model-rotation-x, #model-rotation-y, #model-rotation-z').evaluateAll(inputs => inputs.map(input => input.value));
+    const clickModel = async (button = 'left') => {
+        const point = await page.evaluate(() => {
+            const {state, THREE} = window.__treeMotion, model = state.models.at(-1);
+            state.scene.updateMatrixWorld(true); state.camera.updateMatrixWorld(true);
+            const p = new THREE.Box3().setFromObject(model).getCenter(new THREE.Vector3()).project(state.camera);
+            const rect = state.renderer.domElement.getBoundingClientRect();
+            return {x:rect.left+(p.x+1)*rect.width/2, y:rect.top+(1-p.y)*rect.height/2};
+        });
+        await page.mouse.click(point.x, point.y, {button});
+    };
+    await modelButton.click();
+    await expect(page.locator('#model-position-x')).toHaveValue('200');
+    const treeCoordinates = await coordinates();
+    await clickModel();
+    expect(await coordinates()).toEqual(treeCoordinates);
+    expect(await page.evaluate(() => {
+        const {state} = window.__treeMotion;
+        return state.selectedModelPart === null && state.modelSelection.has(state.models.at(-1));
+    })).toBe(true);
+    await page.keyboard.down('Control');
+    try { await clickModel(); } finally { await page.keyboard.up('Control'); }
+    expect(await page.evaluate(() => window.__treeMotion.state.modelSelection.size)).toBe(0);
+    await clickModel();
+    await modelButton.click({modifiers:['Control']});
+    expect(await page.evaluate(() => window.__treeMotion.state.modelSelection.size)).toBe(0);
+    await clickModel();
+    await setTransformValue(page, '#model-position-x', '250');
+    expect(await page.evaluate(() => {
+        const model = window.__treeMotion.state.models.at(-1);
+        return {modelX:model.position.x, partX:model.userData.importedParts[0].position.x};
+    })).toEqual({modelX:250, partX:30});
+    const movedCoordinates = await coordinates();
+    await modelButton.click(); expect(await coordinates()).toEqual(movedCoordinates);
+    await clickModel('right'); expect(await coordinates()).toEqual(movedCoordinates);
+    await expect(page.locator('#model-context-menu')).toBeVisible();
+    expect(await page.locator('#model-context-menu').getAttribute('data-model-part-id')).toBeNull();
+    expect(errors).toEqual([]);
+});
+
 test('그룹의 부모와 부착 모델을 함께 선택해도 부착 모델을 두 번 변환하지 않는다', async ({page}) => {
     const errors=await setup(page,false);
     await page.evaluate(()=>{

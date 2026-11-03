@@ -279,6 +279,36 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.11.03",
+                "items": [
+                  "`[수정]` 일부 대용량 STEP 파일을 가져올 때 면 색상 처리 중 오류로 불러오지 못하던 문제를 해결했습니다.",
+                  "`[수정]` CAD_Lightweight에서 저장한 GLB 모델이 너무 작게 불러와져 보이지 않던 문제를 해결했습니다.",
+                  "`[수정]` GLB·STEP 및 배치 모델과 로봇 본체의 충돌을 감지하고, 설치 바닥면과 플랜지·툴 장착면의 정상 접촉만 제외하도록 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.11.02",
+                "items": [
+                  "`[추가]` 프로그램 패널에 표준화 모드를 추가해 새 이동 명령의 P 변수 번호와 라벨을 자동 생성하도록 했습니다.",
+                  "`[수정]` 이름을 변경한 모델을 복사·붙여넣기할 때 이름에 순번이 붙지 않거나 선택 강조색이 함께 복사되던 문제를 해결했습니다.",
+                  "`[수정]` 모델 트리에서 부품을 이동한 뒤 되돌리기·다시 실행 시 좌표가 올바르게 복원되지 않던 문제를 해결했습니다.",
+                  "`[수정]` 복사한 오브젝트에 같은 위치 값을 입력해도 서로 다른 높이에 놓이던 문제를 해결했습니다. 기존 프로젝트의 배치와 등록 원위치를 유지하면서 3D 화면과 모델 트리의 이동 기준을 통일했습니다.",
+                  "`[수정]` 컨트롤러 프로그램 실행 중 유저 좌표계가 변경될 때 Tool이 로봇에서 떨어지거나 다른 위치로 이동하던 문제를 해결했습니다.",
+                  "`[수정]` 숫자 입력 시 불필요한 자동완성 목록이 표시되던 문제를 해결했습니다.",
+                  "`[수정]` 다중 점 스냅으로 TCP를 계산하거나 Tool 오프셋을 바꿀 때 장착한 Tool이 미세하게 이동하여 계산 위치가 어긋나던 문제를 해결했습니다.",
+                  "`[수정]` P.pts를 별도 창으로 열었을 때 내보내기가 동작하지 않던 문제를 해결했습니다.",
+                  "`[변경]` Tool·Wobj 데이터를 텍스트 대신 `ToolParam.dat`·`WobjParam.dat` 파일로 내보내도록 변경했습니다.",
+                  "`[수정]` Tool의 흡착 면을 선택하는 동안 화면 이동·회전·확대가 막히던 문제를 해결했습니다.",
+                  "`[변경]` 모델 트리의 Tool 동작 우클릭 메뉴에서 정지와 원위치 명령을 제거했습니다.",
+                  "`[수정]` 모델 트리 이동에서 표시된 스냅을 선택할 수 없던 문제를 해결했습니다.",
+                  "`[수정]` 컨트롤러 연결 시 실행 취소·다시 실행이 비활성화되거나 Tool 동작 설정·모델 색상 변경이 기록되지 않던 문제를 해결했습니다.",
+                  "`[추가]` 컨트롤러 연결 목록에서 저장된 설정을 삭제할 수 있도록 추가했습니다.",
+                  "`[개선]` 진공 흡착 허용 거리를 2mm로 늘리고, 화면 지연 시 흡착 신호나 위치를 놓치던 문제를 해결했습니다.",
+                  "`[수정]` 선택 모델 중심 회전에서 확대·축소 속도가 느려지고 뷰 초기화 후에도 화면 조작이 느리게 유지되던 문제를 해결했습니다.",
+                  "`[개선]` 현재 TCP와 함께 기본값이 아닌 저장된 Tool TCP도 스냅으로 선택할 수 있도록 개선했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.10.31",
                 "items": [
                   "`[추가]` R35-185·R50-250 로봇을 PI2.0 색상과 INOVANCE 로고로 시뮬레이션할 수 있도록 지원했습니다.",
@@ -939,6 +969,12 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.11.02",
+                "items": [
+                  "`[변경]` IR-S25-80·IR-S25-100의 클린 사양 CAD 다운로드 버튼을 삭제했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.10.30",
                 "items": [
                   "`[수정]` API 실습 자료 다운로드 문제를 해결하고, Display 교육 자료를 비밀번호 없이 열람하고 다운로드할 수 있도록 공개했습니다."
@@ -1237,7 +1273,7 @@
                   "`[개선]` 컨트롤러별 이름·IP·연결 상태와 HMI 주소 설정을 저장하고, 한 대상의 연결 종료가 다른 대상의 통신에 영향을 주지 않도록 개선했습니다.",
                   "`[개선]` 펑션 코드에서 컨트롤러별 AND·OR 조건과 개별 출력·묶음 펄스를 사용할 수 있도록 개선했습니다.",
                   "`[수정]` 펑션블록에서 조건이 유지되는데도 다른 분기로 넘어가거나 시작 신호가 꺼지면 Wait 다음 단계로 진행하지 못하던 문제를 해결했습니다.",
-                  "`[개선]` 펑션 코드 편집기의 줄바꿈·복사·붙여넣기·실행 취소 문제를 해결하고, 자동완성·들여쓰기·문법 안내·예제·오류 줄 이동을 개선했습니다.",
+                  "`[개선]` 펑션 코드 편집기의 줄바꿈·복사·붙여넣기·실행 취소 문제를 해결하고, 전체 코드 복사·자동완성·들여쓰기·문법 안내·예제·오류 줄 이동을 개선했습니다.",
                   "`[수정]` MC 통신의 D 주소를 펑션 코드에서 인식하지 못하던 문제를 해결했습니다.",
                   "`[수정]` EIP 연결 직후 입출력이 전달되지 않거나 부하가 발생하면 연결이 끊기던 문제를 해결했습니다.",
                   "`[수정]` 여러 가상 EIP 대상에 연결할 때 UDP 포트가 겹쳐 입출력이 전달되지 않던 문제를 해결했습니다.",
@@ -1738,6 +1774,36 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.11.03",
+                "items": [
+                  "`[Fix]` Fixed an import failure while processing face colors in some large STEP files.",
+                  "`[Fix]` Fixed GLB models exported by CAD_Lightweight importing too small to see.",
+                  "`[Fix]` Fixed robot body collision detection against GLB, STEP and scene models, allowing only normal contact at the base mounting surface and flange/tool mounting interface."
+                ]
+              },
+              {
+                "title": "Ver 26.11.02",
+                "items": [
+                  "`[Added]` Added a standardization mode to the Program Panel to automatically generate P variable numbers and labels for new motion commands.",
+                  "`[Fixed]` Fixed model copies retaining renamed names without a copy number or inheriting the selection highlight color.",
+                  "`[Fixed]` Fixed part coordinates not restoring correctly when undoing or redoing movement from the model tree.",
+                  "`[Fixed]` Fixed copied objects appearing at different heights after entering the same position. Unified movement from the 3D view and model tree while preserving existing project placement and registered reset poses.",
+                  "`[Fixed]` Fixed the Tool detaching from the robot or jumping when the user coordinate system changes during controller program execution.",
+                  "`[Fixed]` Disabled unwanted autocomplete suggestions when entering numeric values.",
+                  "`[Fixed]` Fixed mounted Tools shifting slightly and invalidating calculated TCP positions after multi-point snapping or Tool offset edits.",
+                  "`[Fixed]` Fixed P.pts export not working when its panel was opened in a separate window.",
+                  "`[Changed]` Tool and Wobj data now exports as `ToolParam.dat` and `WobjParam.dat` files.",
+                  "`[Fixed]` Fixed view panning, rotation and zoom being blocked while selecting a Tool suction face.",
+                  "`[Changed]` Removed stop and reset commands from the model tree context menu for Tool actions.",
+                  "`[Fixed]` Fixed snap points being displayed but not selectable when moving models from the model tree.",
+                  "`[Fixed]` Fixed undo and redo being disabled while connected to a controller, and missing undo history for Tool action settings and model color changes.",
+                  "`[Added]` Added deletion of saved settings from the controller connection list.",
+                  "`[Improved]` Increased the vacuum pickup tolerance to 2 mm and fixed missed pickup signals or positions when rendering is delayed.",
+                  "`[Fixed]` Fixed zoom slowing down with rotation around the selected model and navigation remaining slow after resetting the view.",
+                  "`[Improved]` Saved Tool TCPs with non-default offsets can now be selected as snap points alongside the current TCP."
+                ]
+              },
               {
                 "title": "Ver 26.10.31",
                 "items": [
@@ -2382,6 +2448,12 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.11.02",
+                "items": [
+                  "`[Changed]` Removed the clean-specification CAD download buttons for IR-S25-80 and IR-S25-100."
+                ]
+              },
+              {
                 "title": "Ver 26.10.30",
                 "items": [
                   "`[Fixed]` Fixed API practice downloads and made Display training documents available to view and download without a password."
@@ -2674,7 +2746,7 @@
                   "`[Improved]` Added saved controller names, IPs, connection status and HMI addresses, while keeping other connections running when one target closes.",
                   "`[Improved]` Improved controller-specific AND/OR conditions, individual outputs and grouped pulses in function code.",
                   "`[Fixed]` Fixed incorrect branch changes and command sequences being cancelled before Wait completed when the start signal cleared.",
-                  "`[Improved]` Improved function-code editing: line breaks, copy/paste, undo, completion, indentation, syntax help, examples and error-line navigation.",
+                  "`[Improved]` Improved function-code editing: line breaks, copy/paste, undo, full-code copying, completion, indentation, syntax help, examples and error-line navigation.",
                   "`[Fixed]` Fixed MC D-register addresses not being recognized in function code.",
                   "`[Fixed]` Fixed missing IO immediately after EIP connection and intermittent disconnections under load.",
                   "`[Fixed]` Fixed UDP port conflicts preventing IO exchange with multiple virtual EIP targets.",
@@ -3169,6 +3241,36 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.11.03",
+                "items": [
+                  "`[修复]` 修复了部分大型 STEP 文件因处理面颜色出错而无法导入的问题。",
+                  "`[修复]` 修复了 CAD_Lightweight 导出的 GLB 模型导入后尺寸过小而无法看见的问题。",
+                  "`[修复]` 修复了机器人本体与 GLB、STEP 及场景模型的碰撞检测，仅排除底座安装面及法兰与工具安装面的正常接触。"
+                ]
+              },
+              {
+                "title": "Ver 26.11.02",
+                "items": [
+                  "`[新增]` 在程序面板中新增标准化模式，可为新建的运动指令自动生成 P 变量编号和标签。",
+                  "`[修复]` 修复了重命名模型复制粘贴后名称未添加序号或保留选中高亮颜色的问题。",
+                  "`[修复]` 修复了在模型树中移动部件后撤销或重做时坐标无法正确恢复的问题。",
+                  "`[修复]` 修复了复制的对象输入相同位置后高度仍不一致的问题。在保留现有项目布局和已登记复位位置的同时，统一了3D视图与模型树的移动基准。",
+                  "`[修复]` 修复了控制器程序运行中切换用户坐标系时 Tool 脱离机器人或跳到其他位置的问题。",
+                  "`[修复]` 修复了输入数值时出现多余自动完成列表的问题。",
+                  "`[修复]` 修复了通过多点捕捉计算 TCP 或修改 Tool 偏移时，已安装的 Tool 轻微移动导致计算位置偏差的问题。",
+                  "`[修复]` 修复了在独立窗口中打开 P.pts 面板时无法导出的问题。",
+                  "`[变更]` Tool·Wobj 数据改为导出为 `ToolParam.dat`·`WobjParam.dat` 文件。",
+                  "`[修复]` 修复了选择 Tool 吸附面时无法平移、旋转和缩放视图的问题。",
+                  "`[变更]` 从模型树的 Tool 动作右键菜单中移除了停止和复位命令。",
+                  "`[修复]` 修复了从模型树移动模型时显示的捕捉点无法选择的问题。",
+                  "`[修复]` 修复了连接控制器时撤销和重做被禁用，以及 Tool 动作设置和模型颜色更改未记录到撤销历史的问题。",
+                  "`[新增]` 支持从控制器连接列表中删除已保存的设置。",
+                  "`[改进]` 将真空吸附距离容差增至2mm，并解决画面延迟时错过吸附信号或位置的问题。",
+                  "`[修复]` 解决开启围绕所选模型旋转后缩放速度变慢，以及重置视图后操作仍然缓慢的问题。",
+                  "`[改进]` 除当前TCP外，已保存且偏移不为默认值的Tool TCP也可作为捕捉点选择。"
+                ]
+              },
               {
                 "title": "Ver 26.10.31",
                 "items": [
@@ -3813,6 +3915,12 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.11.02",
+                "items": [
+                  "`[变更]` 删除了 IR-S25-80 和 IR-S25-100 洁净型 CAD 下载按钮。"
+                ]
+              },
+              {
                 "title": "Ver 26.10.30",
                 "items": [
                   "`[修复]` 修复了 API 实践资料下载问题，并开放 Display 培训资料，无需密码即可查看和下载。"
@@ -4105,7 +4213,7 @@
                   "`[改进]` 支持保存控制器名称、IP、连接状态和 HMI 地址，关闭单个目标时其他连接可继续运行。",
                   "`[改进]` 改进功能代码中的控制器独立 AND/OR 条件、单独输出和分组脉冲。",
                   "`[修复]` 修复条件保持时错误切换分支，以及启动信号关闭后在 Wait 完成前取消命令序列的问题。",
-                  "`[改进]` 改进功能代码编辑器的换行、复制粘贴、撤销、自动补全、缩进、语法帮助、示例和错误行跳转。",
+                  "`[改进]` 改进功能代码编辑器的换行、复制粘贴、撤销、复制完整代码、自动补全、缩进、语法帮助、示例和错误行跳转。",
                   "`[修复]` 修复功能代码无法识别 MC 通信 D 地址的问题。",
                   "`[修复]` 修复 EIP 连接后 IO 无法立即传输，以及负载较高时连接间歇断开的问题。",
                   "`[修复]` 修复连接多个虚拟 EIP 目标时 UDP 端口冲突导致 IO 无法传输的问题。",
@@ -4600,6 +4708,36 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.11.03",
+                "items": [
+                  "`[Sửa lỗi]` Đã khắc phục lỗi không thể nhập một số tệp STEP lớn khi xử lý màu của các mặt.",
+                  "`[Sửa lỗi]` Đã khắc phục mô hình GLB xuất từ CAD_Lightweight bị nhập quá nhỏ nên không nhìn thấy.",
+                  "`[Sửa lỗi]` Đã sửa phát hiện va chạm giữa thân robot với GLB, STEP và mô hình trong cảnh, chỉ bỏ qua tiếp xúc đúng tại mặt lắp đế và mặt lắp bích/dụng cụ."
+                ]
+              },
+              {
+                "title": "Ver 26.11.02",
+                "items": [
+                  "`[Thêm]` Đã thêm chế độ tiêu chuẩn hóa trong Bảng chương trình để tự động tạo số và nhãn biến P cho các lệnh chuyển động mới.",
+                  "`[Sửa lỗi]` Đã khắc phục lỗi tên mô hình sau khi đổi tên không được đánh số khi sao chép và dán, hoặc bản sao giữ màu tô sáng khi được chọn.",
+                  "`[Sửa lỗi]` Đã sửa lỗi tọa độ chi tiết không được khôi phục đúng khi hoàn tác hoặc làm lại thao tác di chuyển từ cây mô hình.",
+                  "`[Sửa lỗi]` Đã sửa lỗi các đối tượng được sao chép có độ cao khác nhau dù nhập cùng vị trí. Thống nhất di chuyển từ khung nhìn 3D và cây mô hình, đồng thời giữ nguyên bố trí và vị trí đặt lại đã đăng ký.",
+                  "`[Sửa lỗi]` Đã sửa lỗi Tool tách khỏi robot hoặc nhảy vị trí khi đổi hệ tọa độ người dùng trong lúc chạy chương trình bộ điều khiển.",
+                  "`[Sửa lỗi]` Đã tắt các gợi ý tự động hoàn thành không cần thiết khi nhập số.",
+                  "`[Sửa lỗi]` Đã sửa lỗi Tool đã lắp bị dịch chuyển nhẹ, làm lệch vị trí TCP sau khi tính bằng bắt nhiều điểm hoặc chỉnh độ lệch Tool.",
+                  "`[Sửa lỗi]` Đã khắc phục lỗi không thể xuất P.pts khi mở bảng trong cửa sổ riêng.",
+                  "`[Thay đổi]` Dữ liệu Tool và Wobj được xuất thành tệp `ToolParam.dat` và `WobjParam.dat`.",
+                  "`[Sửa lỗi]` Đã sửa lỗi không thể di chuyển, xoay và thu phóng góc nhìn khi chọn mặt hút của Tool.",
+                  "`[Thay đổi]` Đã bỏ lệnh dừng và về vị trí ban đầu khỏi menu chuột phải của thao tác Tool trong cây mô hình.",
+                  "`[Sửa]` Đã khắc phục lỗi các điểm bắt dính hiển thị nhưng không thể chọn khi di chuyển mô hình từ cây mô hình.",
+                  "`[Sửa lỗi]` Đã sửa lỗi hoàn tác và làm lại bị vô hiệu hóa khi kết nối bộ điều khiển, cùng lỗi không ghi lịch sử hoàn tác cho cài đặt thao tác Tool và thay đổi màu mô hình.",
+                  "`[Thêm]` Đã thêm chức năng xóa cấu hình đã lưu trong danh sách kết nối bộ điều khiển.",
+                  "`[Cải tiến]` Tăng dung sai khoảng cách hút chân không lên 2 mm và khắc phục việc bỏ lỡ tín hiệu hoặc vị trí hút khi hình ảnh cập nhật chậm.",
+                  "`[Sửa lỗi]` Khắc phục tốc độ thu phóng chậm khi xoay quanh mô hình đã chọn và thao tác vẫn chậm sau khi đặt lại góc nhìn.",
+                  "`[Cải tiến]` Có thể chọn các TCP Tool đã lưu có độ lệch khác mặc định làm điểm bắt dính cùng với TCP hiện tại."
+                ]
+              },
               {
                 "title": "Ver 26.10.31",
                 "items": [
@@ -5244,6 +5382,12 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.11.02",
+                "items": [
+                  "`[Thay đổi]` Đã xóa các nút tải CAD phiên bản phòng sạch của IR-S25-80 và IR-S25-100."
+                ]
+              },
+              {
                 "title": "Ver 26.10.30",
                 "items": [
                   "`[Sửa lỗi]` Đã khắc phục lỗi tải tài liệu thực hành API và cho phép xem, tải tài liệu đào tạo Display không cần mật khẩu."
@@ -5536,7 +5680,7 @@
                   "`[Cải tiến]` Lưu tên, IP, trạng thái kết nối và địa chỉ HMI; các kết nối khác tiếp tục hoạt động khi đóng một đối tượng.",
                   "`[Cải tiến]` Cải thiện điều kiện AND/OR theo bộ điều khiển, đầu ra riêng và xung nhóm trong mã chức năng.",
                   "`[Sửa lỗi]` Sửa lỗi chuyển nhánh sai và hủy chuỗi lệnh trước khi Wait hoàn tất khi tín hiệu bắt đầu tắt.",
-                  "`[Cải tiến]` Cải thiện xuống dòng, sao chép/dán, hoàn tác, tự hoàn thành, thụt lề, hướng dẫn cú pháp, ví dụ và chuyển đến dòng lỗi.",
+                  "`[Cải tiến]` Cải thiện xuống dòng, sao chép/dán, hoàn tác, sao chép toàn bộ mã, tự hoàn thành, thụt lề, hướng dẫn cú pháp, ví dụ và chuyển đến dòng lỗi.",
                   "`[Sửa lỗi]` Sửa lỗi không nhận dạng địa chỉ D của giao tiếp MC trong mã chức năng.",
                   "`[Sửa lỗi]` Sửa lỗi IO không được truyền ngay sau khi kết nối EIP và kết nối bị ngắt gián đoạn khi có tải.",
                   "`[Sửa lỗi]` Sửa xung đột cổng UDP làm gián đoạn IO khi kết nối nhiều đối tượng EIP ảo.",
@@ -6031,6 +6175,36 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.11.03",
+                "items": [
+                  "`[Düzeltme]` Bazı büyük STEP dosyalarında yüz renkleri işlenirken oluşan içe aktarma hatası giderildi.",
+                  "`[Düzeltme]` CAD_Lightweight ile dışa aktarılan GLB modellerinin görünemeyecek kadar küçük içe aktarılması giderildi.",
+                  "`[Düzeltme]` Robot gövdesinin GLB, STEP ve sahne modelleriyle çarpışma algılaması düzeltildi; yalnızca taban ve flanş/takım montaj yüzeylerindeki normal temaslar hariç tutulur."
+                ]
+              },
+              {
+                "title": "Ver 26.11.02",
+                "items": [
+                  "`[Eklendi]` Yeni hareket komutları için P değişkeni numaralarını ve etiketlerini otomatik oluşturan standartlaştırma modu Program Paneline eklendi.",
+                  "`[Düzeltildi]` Yeniden adlandırılan modeller kopyalanıp yapıştırıldığında adlara sıra numarası eklenmemesi veya seçim vurgusu renginin kopyalanması sorunu giderildi.",
+                  "`[Düzeltildi]` Model ağacından taşınan parçaların koordinatlarının geri alma ve yineleme sırasında doğru geri yüklenmemesi sorunu giderildi.",
+                  "`[Düzeltildi]` Kopyalanan nesnelere aynı konum girildiğinde farklı yüksekliklerde görünmeleri düzeltildi. Mevcut proje yerleşimi ve kayıtlı sıfırlama konumları korunarak 3D görünüm ile model ağacının taşıma referansı birleştirildi.",
+                  "`[Düzeltildi]` Kontrolör programı çalışırken kullanıcı koordinat sistemi değiştiğinde Tool’un robottan ayrılması veya konumunun sıçraması sorunu giderildi.",
+                  "`[Düzeltildi]` Sayısal değer girerken çıkan gereksiz otomatik tamamlama önerileri kapatıldı.",
+                  "`[Düzeltildi]` Çoklu nokta yakalama ile TCP hesaplanırken veya Tool ofseti düzenlenirken takılı Tool hafifçe kayarak hesaplanan konumu bozması giderildi.",
+                  "`[Düzeltildi]` P.pts paneli ayrı bir pencerede açıldığında dışa aktarmanın çalışmaması sorunu giderildi.",
+                  "`[Değiştirildi]` Tool ve Wobj verileri artık `ToolParam.dat` ve `WobjParam.dat` dosyaları olarak dışa aktarılıyor.",
+                  "`[Düzeltildi]` Tool vakum yüzeyi seçilirken görünüm kaydırma, döndürme ve yakınlaştırmanın engellenmesi giderildi.",
+                  "`[Değiştirildi]` Model ağacındaki Tool hareketlerinin sağ tıklama menüsünden durdurma ve başlangıç konumuna dönme komutları kaldırıldı.",
+                  "`[Düzeltme]` Model ağacından modeller taşınırken görüntülenen yakalama noktalarının seçilememesi sorunu giderildi.",
+                  "`[Düzeltildi]` Kontrolör bağlıyken geri alma ve yinelemenin devre dışı kalması, Tool hareket ayarları ve model renk değişikliklerinin geri alma geçmişine kaydedilmemesi sorunları giderildi.",
+                  "`[Eklendi]` Kontrolör bağlantı listesindeki kayıtlı ayarları silme özelliği eklendi.",
+                  "`[İyileştirme]` Vakum yakalama toleransı 2 mm olarak artırıldı ve görüntü geciktiğinde yakalama sinyalinin veya konumunun kaçırılması düzeltildi.",
+                  "`[Düzeltme]` Seçili model çevresinde döndürmede yakınlaştırmanın yavaşlaması ve görünüm sıfırlandıktan sonra gezinmenin yavaş kalması düzeltildi.",
+                  "`[İyileştirme]` Geçerli TCP ile birlikte varsayılan dışı ofsetlere sahip kayıtlı Tool TCP noktaları da yakalama noktası olarak seçilebilir."
+                ]
+              },
               {
                 "title": "Ver 26.10.31",
                 "items": [
@@ -6675,6 +6849,12 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.11.02",
+                "items": [
+                  "`[Değişiklik]` IR-S25-80 ve IR-S25-100 temiz oda modellerinin CAD indirme düğmeleri kaldırıldı."
+                ]
+              },
+              {
                 "title": "Ver 26.10.30",
                 "items": [
                   "`[Düzeltildi]` API uygulama indirmeleri düzeltildi ve Display eğitim belgeleri parolasız görüntülenebilir ve indirilebilir hâle getirildi."
@@ -6967,7 +7147,7 @@
                   "`[İyileştirme]` Denetleyici adı, IP, bağlantı durumu ve HMI adresleri kaydedilir; bir hedef kapatıldığında diğer bağlantılar çalışmaya devam eder.",
                   "`[İyileştirme]` İşlev kodunda denetleyiciye özel AND/OR koşulları, ayrı çıkışlar ve toplu darbeler iyileştirildi.",
                   "`[Düzeltildi]` Hatalı dal geçişleri ve başlangıç sinyali kapandığında Wait tamamlanmadan komut dizisinin iptal edilmesi düzeltildi.",
-                  "`[İyileştirme]` Satır sonu, kopyala/yapıştır, geri alma, otomatik tamamlama, girinti, sözdizimi yardımı, örnekler ve hata satırına geçiş iyileştirildi.",
+                  "`[İyileştirme]` Satır sonu, kopyala/yapıştır, geri alma, tüm kodu kopyalama, otomatik tamamlama, girinti, sözdizimi yardımı, örnekler ve hata satırına geçiş iyileştirildi.",
                   "`[Düzeltildi]` İşlev kodunda MC iletişiminin D adreslerinin tanınmaması düzeltildi.",
                   "`[Düzeltildi]` EIP bağlantısından hemen sonra IO iletilememesi ve yük altında bağlantının aralıklı kopması düzeltildi.",
                   "`[Düzeltildi]` Birden fazla sanal EIP hedefine bağlanırken IO aktarımını engelleyen UDP port çakışmaları düzeltildi.",
@@ -7462,6 +7642,36 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.11.03",
+                "items": [
+                  "`[Исправлено]` Устранена ошибка импорта некоторых больших STEP-файлов при обработке цветов граней.",
+                  "`[Исправлено]` Устранено отображение GLB-моделей из CAD_Lightweight в слишком маленьком масштабе при импорте.",
+                  "`[Исправлено]` Исправлено обнаружение столкновений корпуса робота с GLB, STEP и моделями сцены; исключён только нормальный контакт на монтажной поверхности основания и стыке фланца с инструментом."
+                ]
+              },
+              {
+                "title": "Ver 26.11.02",
+                "items": [
+                  "`[Добавлено]` В панель программы добавлен режим стандартизации для автоматического создания номеров и меток переменных P новых команд движения.",
+                  "`[Исправлено]` Исправлена ошибка, из-за которой при копировании и вставке переименованных моделей к имени не добавлялся номер копии или сохранялся цвет выделения.",
+                  "`[Исправлено]` Исправлено некорректное восстановление координат деталей при отмене и повторе перемещения из дерева моделей.",
+                  "`[Исправлено]` Исправлено различие высоты скопированных объектов при вводе одинаковой позиции. Перемещение из 3D-вида и дерева моделей приведено к единой системе отсчёта с сохранением расположения объектов и зарегистрированных позиций возврата.",
+                  "`[Исправлено]` Исправлен отрыв или скачок Tool при смене пользовательской системы координат во время выполнения программы контроллера.",
+                  "`[Исправлено]` Отключены ненужные подсказки автозаполнения при вводе чисел.",
+                  "`[Исправлено]` Устранено небольшое смещение установленного Tool, вызывавшее ошибку положения TCP после расчёта по нескольким точкам или изменения смещения Tool.",
+                  "`[Исправлено]` Исправлена ошибка экспорта P.pts при открытии панели в отдельном окне.",
+                  "`[Изменено]` Данные Tool и Wobj теперь экспортируются в файлы `ToolParam.dat` и `WobjParam.dat`.",
+                  "`[Исправлено]` Устранена блокировка перемещения, вращения и масштабирования вида при выборе поверхности присоски Tool.",
+                  "`[Изменено]` Из контекстного меню действий Tool в дереве моделей убраны команды остановки и возврата в исходное положение.",
+                  "`[Исправлено]` Исправлена невозможность выбрать отображаемые точки привязки при перемещении моделей из дерева моделей.",
+                  "`[Исправлено]` Исправлена блокировка отмены и повтора при подключённом контроллере, а также отсутствие истории отмены для настроек действий Tool и изменения цвета моделей.",
+                  "`[Добавлено]` Добавлено удаление сохранённых настроек из списка подключений контроллеров.",
+                  "`[Улучшено]` Допуск расстояния вакуумного захвата увеличен до 2 мм; устранён пропуск сигнала или позиции захвата при задержках отображения.",
+                  "`[Исправлено]` Устранено замедление масштабирования при вращении вокруг выбранной модели и сохранение медленной навигации после сброса вида.",
+                  "`[Улучшено]` Сохранённые TCP Tool с нестандартными смещениями теперь доступны для привязки наряду с текущим TCP."
+                ]
+              },
               {
                 "title": "Ver 26.10.31",
                 "items": [
@@ -8106,6 +8316,12 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.11.02",
+                "items": [
+                  "`[Изменено]` Удалены кнопки загрузки CAD для исполнений IR-S25-80 и IR-S25-100 для чистых помещений."
+                ]
+              },
+              {
                 "title": "Ver 26.10.30",
                 "items": [
                   "`[Исправлено]` Исправлена загрузка практических материалов API, учебные материалы Display открыты для просмотра и загрузки без пароля."
@@ -8398,7 +8614,7 @@
                   "`[Улучшено]` Сохраняются имена контроллеров, IP, состояние подключения и адреса HMI; закрытие одной цели не прерывает остальные подключения.",
                   "`[Улучшено]` Улучшены условия AND/OR по контроллерам, отдельные выходы и групповые импульсы в функциональном коде.",
                   "`[Исправлено]` Исправлены неверное переключение ветвей и отмена последовательности до завершения Wait при отключении стартового сигнала.",
-                  "`[Улучшено]` Улучшены перенос строк, копирование/вставка, отмена, автодополнение, отступы, справка по синтаксису, примеры и переход к строке ошибки.",
+                  "`[Улучшено]` Улучшены перенос строк, копирование/вставка, отмена, копирование всего кода, автодополнение, отступы, справка по синтаксису, примеры и переход к строке ошибки.",
                   "`[Исправлено]` Исправлено распознавание адресов D протокола MC в функциональном коде.",
                   "`[Исправлено]` Исправлены отсутствие передачи IO сразу после подключения EIP и периодические разрывы соединения под нагрузкой.",
                   "`[Исправлено]` Исправлены конфликты UDP-портов, мешавшие обмену IO с несколькими виртуальными целями EIP.",

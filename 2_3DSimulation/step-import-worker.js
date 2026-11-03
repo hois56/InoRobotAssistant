@@ -1,8 +1,8 @@
 /* global importScripts, occtimportjs */
 
 const OCCT_IMPORT_BASE_URL = 'https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/';
-const LARGE_OCCT_MODULE_URL = 'https://cdn.jsdelivr.net/npm/occt-wasm@5.3.4/dist/index.js';
-const LARGE_OCCT_WASM_URL = 'https://cdn.jsdelivr.net/npm/occt-wasm@5.3.4/dist/occt-wasm.wasm';
+const LARGE_OCCT_MODULE_URL = 'https://cdn.jsdelivr.net/npm/occt-wasm@5.15.0/dist/index.js';
+const LARGE_OCCT_WASM_URL = 'https://cdn.jsdelivr.net/npm/occt-wasm@5.15.0/dist/occt-wasm.wasm';
 const STEP_MESH_CHUNK_TARGET_BYTES = 6 * 1024 * 1024;
 const LARGE_STEP_MESH_CHUNK_TARGET_BYTES = 4 * 1024 * 1024;
 const STEP_VERTEX_LOOKUP_MAX_BYTES = 16 * 1024 * 1024;
@@ -706,8 +706,8 @@ function collectXcafParts(document, labelNames = new Map(), mergedTags = new Map
             const children = document.getChildren(referred ?? label);
             const local = document.getLocation?.(label) || identity;
             const placement = composeStepPlacement(parentPlacement, local);
-            const color = instance.hasColor ? instance.color
-                : prototype.hasColor ? prototype.color : inheritedColor;
+            const color = instance.hasColor ? stepSrgbToLinear(instance.color)
+                : prototype.hasColor ? stepSrgbToLinear(prototype.color) : inheritedColor;
             const instanceName = String(instance.name || '').trim();
             const prototypeName = String(prototype.name || '').trim();
             const name = (instanceName && !/^NAUO\d+$/i.test(instanceName) ? instanceName : prototypeName)
@@ -733,6 +733,7 @@ function collectXcafParts(document, labelNames = new Map(), mergedTags = new Map
                     assemblyPath,
                     ...(atomic || {}),
                     labelPath: currentLabelPath.join('/'),
+                    prototypeLabel: referred ?? label,
                     shapeHandle: prototype.shapeHandle,
                     placement: document.getLocation ? placement : null,
                     color: color || DEFAULT_COLOR
@@ -830,6 +831,54 @@ function resolveLargeStepSurfaceColors(mesh, part, styles) {
     };
 }
 
+function stepSrgbToLinear(color) {
+    return color.map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
+}
+
+// Read XCAF surface colours directly. Exporting the entire document to GLB just
+// to obtain its materials can trap in WASM even when each part meshes correctly.
+function resolveXcafFaceColors(kernel, document, mesh, part, placedShape = part.shapeHandle) {
+    if (!document.getSubShapes || part.prototypeLabel == null) return part;
+    const colors = new Map();
+    const entries = [];
+    try {
+        for (const label of document.getSubShapes(part.prototypeLabel)) {
+            const info = document.getLabelInfo(label);
+            if (info.shapeHandle == null) continue;
+            entries.push(info);
+        }
+        // A face's own style takes precedence over a containing body's style.
+        entries.sort((a, b) => Number(kernel.getShapeType(a.shapeHandle) === 'face')
+            - Number(kernel.getShapeType(b.shapeHandle) === 'face'));
+        for (const info of entries) {
+            if (!info.hasColor) continue;
+            const hashes = kernel.subShapeHashes(info.shapeHandle, 'face', 2147483647);
+            const color = stepSrgbToLinear(info.color);
+            for (const hash of hashes) colors.set(hash, color);
+        }
+    } finally {
+        for (const info of entries) kernel.release(info.shapeHandle);
+    }
+    if (!colors.size) return part;
+    // Independently constructed TopLoc locations have different native hashes,
+    // even for equal matrices. Pair the same prototype's face traversal before
+    // and after placement instead of locating each colour label separately.
+    const originalHashes = kernel.subShapeHashes(part.shapeHandle, 'face', 2147483647);
+    const placedHashes = kernel.subShapeHashes(placedShape, 'face', 2147483647);
+    if (originalHashes.length !== placedHashes.length) throw new Error('STEP face placement mismatch.');
+    const placedColors = new Map();
+    originalHashes.forEach((hash, index) => {
+        if (colors.has(hash)) placedColors.set(placedHashes[index], colors.get(hash));
+    });
+    const faces = getCompleteLargeMeshFaceRanges(mesh);
+    if (!faces || !ArrayBuffer.isView(mesh.faceGroups) || mesh.faceGroups.length !== faces.length * 3)
+        throw new Error('STEP surface colors do not match the imported faces.');
+    const faceColors = faces.map((_, index) => placedColors.get(mesh.faceGroups[index * 3 + 2]) || part.color || DEFAULT_COLOR);
+    const color = faceColors[0];
+    return { ...part, color, ...(faceColors.some(entry => entry.some((value, index) => value !== color[index]))
+        ? { surfaceFaceColors: faceColors } : {}) };
+}
+
 async function parseLargeStepFile(message, requestId) {
     const startedAt = performance.now();
     const kernel = await ensureLargeOcctKernel();
@@ -865,9 +914,6 @@ async function parseLargeStepFile(message, requestId) {
         if (parts.length) {
             sourceBuffer = null;
             self.postMessage({ type: 'progress', requestId, phase: 'tessellating', partIndex: 0, partCount: parts.length });
-            const surfaceStyles = measureStepPhase(timings, 'tessellationMs', () => (
-                readXcafSurfaceStyles(kernel, document, labelNames, message.parameters || {})
-            ));
             let meshCount = 0;
             const atomicEntries = new Map(), atomicRemaining = new Map();
             for (const part of parts) if (part.mergedAtomic)
@@ -886,7 +932,7 @@ async function parseLargeStepFile(message, requestId) {
                     if (!mesh?.positions?.length || !mesh?.indices?.length) {
                         throw new Error('STEP part contains no triangulated mesh: ' + part.partName);
                     }
-                    const coloredPart = resolveLargeStepSurfaceColors(mesh, part, surfaceStyles.get(part.labelPath));
+                    const coloredPart = resolveXcafFaceColors(kernel, document, mesh, part, placedShape ?? part.shapeHandle);
                     meshCount += measureStepPhase(timings, 'packingMs', () => {
                         if (!part.mergedAtomic) return postLargeMeshChunks(mesh, message, requestId, coloredPart);
                         const entries = atomicEntries.get(part.partId) || [];

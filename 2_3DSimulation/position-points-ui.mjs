@@ -395,10 +395,10 @@ export function createPositionPointsUi(panel, api) {
         try { showError(); api.move(selectedKey); } catch (exception) { showError(exception.message); }
         refresh();
     });
-    query('[data-pts-export]').addEventListener('click', async () => {
+    query('[data-pts-export]').addEventListener('click', async (event) => {
         if (!finishEdit() || api.locked() || exporting) return;
         exporting = true; syncSelection();
-        try { showError(); await api.exportPoints(); } catch (exception) { showError(exception.message); }
+        try { showError(); await api.exportPoints(event); } catch (exception) { showError(exception.message); }
         finally { exporting = false; refresh(); }
     });
     standardized.addEventListener('change', () => {

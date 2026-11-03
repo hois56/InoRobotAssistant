@@ -12,9 +12,9 @@ async function setup(page) {
     });
     await page.route('**/2_3DSimulation/main.js*', async route => {
         const response = await route.fetch();
-        await route.fulfill({ response, body: await response.text() + '\nwindow.__controllerConfig={state,togglePanelVisibility,refreshVirtualControllerUi,serializeWorkspaceSnapshot,restoreWorkspaceSnapshot,getArticulatedRobots,saveMotionProjectNow};' });
+        await route.fulfill({ response, body: await response.text() + '\nwindow.__controllerConfig={state,togglePanelVisibility,refreshVirtualControllerUi,serializeWorkspaceSnapshot,restoreWorkspaceSnapshot,getArticulatedRobots,saveMotionProjectNow,connectVirtualController};' });
     });
-    await page.goto('/2_3DSimulation/index.html');
+    await page.goto('/2_3DSimulation/index.html', { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => window.__controllerConfig?.state.workspaceRecovery.ready);
     await page.evaluate(() => window.__controllerConfig.togglePanelVisibility('virtual-controller-panel'));
     return { errors, commands };
@@ -73,7 +73,7 @@ test('컨트롤러 구성만 수정해도 자동 저장되고 새로고침 후 �
         return controllers?.length === 2 && controllers[1].source === 'trace';
     })).toBe(true);
     const before = await page.evaluate(() => window.__controllerConfig.state.workspaceRecovery.workspace.state.controllerConnections);
-    await page.reload();
+    await page.reload({ waitUntil: 'domcontentloaded' });
     await page.locator('#btn-workspace-restore').click();
     await page.waitForFunction(() => window.__controllerConfig?.state.workspaceRecovery.ready);
     const after = await page.evaluate(() => ({ config: window.__controllerConfig.serializeWorkspaceSnapshot().controllerConnections, active: window.__controllerConfig.state.virtualControllers.some(c => c.wanted) }));
@@ -108,5 +108,124 @@ test('연결 설정이 없는 예전 프로젝트에 다른 프로젝트의 구�
         return { config: a.serializeWorkspaceSnapshot().controllerConnections, wanted: a.state.virtualController.wanted };
     });
     expect(result).toEqual({ config: { controllers: [], selectedIndex: -1 }, wanted: false });
+    expect(errors).toEqual([]);
+});
+
+test('같은 IP의 저장된 구성 하나를 삭제하고 다시 열어도 남은 구성만 복원한다', async ({ page }) => {
+    const { errors } = await setup(page);
+    await page.locator('#virtual-controller-ip').fill('127.0.0.9');
+    await page.locator('#virtual-controller-add').click();
+    await page.locator('#virtual-controller-ip').fill('127.0.0.9');
+    const rows = page.locator('.virtual-controller-connection-row');
+    await expect(rows).toHaveCount(2);
+    const selectedId = await rows.last().getAttribute('data-virtual-controller-session');
+    await rows.first().getByRole('button', { name: '삭제', exact: true }).click();
+    await expect(rows).toHaveCount(1);
+    await expect(rows).toHaveAttribute('data-virtual-controller-session', selectedId);
+    await expect(rows).toHaveClass(/selected/);
+    await expect.poll(() => page.evaluate(() =>
+        window.__controllerConfig.state.workspaceRecovery.workspace?.state.controllerConnections?.controllers.length
+    )).toBe(1);
+    const saved = await page.evaluate(() => window.__controllerConfig.serializeWorkspaceSnapshot().controllerConnections);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.locator('#btn-workspace-restore').click();
+    await page.waitForFunction(() => window.__controllerConfig?.state.workspaceRecovery.ready);
+    expect(await page.evaluate(() => window.__controllerConfig.serializeWorkspaceSnapshot().controllerConnections)).toEqual(saved);
+    await expect(rows).toHaveCount(1);
+    expect(errors).toEqual([]);
+});
+
+test('선택한 구성과 마지막 구성도 삭제하고 빈 목록에서 새 설정을 저장할 수 있다', async ({ page }) => {
+    const { errors } = await setup(page);
+    await page.locator('#virtual-controller-ip').fill('127.0.0.8');
+    await page.locator('#virtual-controller-add').click();
+    const rows = page.locator('.virtual-controller-connection-row');
+    const firstId = await rows.first().getAttribute('data-virtual-controller-session');
+    await rows.last().getByRole('button', { name: '삭제', exact: true }).click();
+    await expect(rows).toHaveCount(1);
+    await expect(rows).toHaveAttribute('data-virtual-controller-session', firstId);
+    await expect(page.locator('#virtual-controller-ip')).toHaveValue('127.0.0.8');
+    await rows.getByRole('button', { name: '삭제', exact: true }).click();
+    await expect(rows).toHaveCount(0);
+    await expect.poll(() => page.evaluate(() =>
+        window.__controllerConfig.state.workspaceRecovery.workspace?.state.controllerConnections
+    )).toEqual({ controllers: [], selectedIndex: -1 });
+    const restored = await page.evaluate(async () => {
+        const a = window.__controllerConfig, snapshot = JSON.parse(JSON.stringify(a.serializeWorkspaceSnapshot()));
+        await a.restoreWorkspaceSnapshot(snapshot);
+        return a.serializeWorkspaceSnapshot().controllerConnections;
+    });
+    expect(restored).toEqual({ controllers: [], selectedIndex: -1 });
+    await page.locator('#virtual-controller-ip').fill('127.0.0.7');
+    await expect(rows).toHaveCount(1);
+    expect(await page.evaluate(() => window.__controllerConfig.serializeWorkspaceSnapshot().controllerConnections.controllers[0].ipAddress)).toBe('127.0.0.7');
+    expect(errors).toEqual([]);
+});
+
+test('연결된 항목을 삭제하면 해당 소켓만 종료하고 다른 컨트롤러 연결을 유지한다', async ({ page }) => {
+    test.setTimeout(60_000);
+    const { errors, commands } = await setup(page);
+    for (let index = 0; index < 2; index++) {
+        await page.locator('#model-select').selectOption('robot:IR-R7H-90');
+        if (index) await page.locator('#btn-add-robot-model-choice').click();
+        await page.waitForFunction(count => window.__controllerConfig.getArticulatedRobots().length === count, index + 1);
+    }
+    await page.locator('#virtual-controller-connect').click();
+    await expect(page.locator('.virtual-controller-connection-row.connected')).toHaveCount(1);
+    await page.locator('#virtual-controller-add').click();
+    await page.locator('#virtual-controller-connect').click();
+    await expect(page.locator('.virtual-controller-connection-row.connected')).toHaveCount(2);
+    await page.evaluate(() => {
+        const sessions = window.__controllerConfig.state.virtualControllers;
+        window.__deletedController = sessions[0];
+        window.__remainingController = sessions[1];
+        window.__remainingControllerSocket = sessions[1].socket;
+    });
+    await page.locator('.virtual-controller-connection-row').first().getByRole('button', { name: '삭제', exact: true }).click();
+    await expect(page.locator('.virtual-controller-connection-row.connected')).toHaveCount(1);
+    const result = await page.evaluate(() => {
+        const a = window.__controllerConfig, removed = window.__deletedController;
+        return { count: a.state.virtualControllers.length, selected: a.state.virtualController === window.__remainingController,
+            remainingLive: window.__remainingController.wanted && window.__remainingController.socket === window.__remainingControllerSocket,
+            removed: { wanted: removed.wanted, socket: removed.socket, reconnectTimer: removed.reconnectTimer,
+                streamWatchdogTimer: removed.streamWatchdogTimer, bridgeHealthTimer: removed.bridgeHealthTimer } };
+    });
+    expect(result).toEqual({ count: 1, selected: true, remainingLive: true,
+        removed: { wanted: false, socket: null, reconnectTimer: null, streamWatchdogTimer: null, bridgeHealthTimer: null } });
+    await expect.poll(() => commands.filter(command => command.type === 'disconnect').length).toBe(1);
+    expect(errors).toEqual([]);
+});
+
+test('연결 준비 중 삭제한 설정은 인증 응답이 늦게 도착해도 다시 등록하거나 연결하지 않는다', async ({ page }) => {
+    const { errors, commands } = await setup(page);
+    await page.locator('#model-select').selectOption('robot:IR-R7H-90');
+    await page.waitForFunction(() => window.__controllerConfig.getArticulatedRobots().length === 1);
+    await page.evaluate(() => {
+        const controller = window.__controllerConfig.state.virtualController;
+        clearTimeout(controller.bridgeHealthTimer);
+        controller.bridgeHealthTimer = null;
+        controller.bridgeHealthMonitorGeneration += 1;
+        controller.bridgeToken = null;
+    });
+    let releaseHealth;
+    const pendingHealth = new Promise(resolve => { releaseHealth = resolve; });
+    let requested = false;
+    await page.route('http://127.0.0.1:5055/api/health', async route => {
+        requested = true;
+        await pendingHealth;
+        await route.fulfill({ json: { service: 'InoRobotVirtualControllerBridge', pairingToken: 'delayed-test-token' } });
+    });
+    await page.evaluate(() => { window.__pendingControllerConnect = window.__controllerConfig.connectVirtualController(); });
+    try {
+        await expect.poll(() => requested).toBe(true);
+        await page.locator('.virtual-controller-connection-row').getByRole('button', { name: '삭제', exact: true }).click();
+    } finally {
+        releaseHealth();
+    }
+    await page.evaluate(() => window.__pendingControllerConnect);
+    await expect(page.locator('.virtual-controller-connection-row')).toHaveCount(0);
+    expect(commands.filter(command => command.type === 'connect')).toHaveLength(0);
+    expect(await page.evaluate(() => window.__controllerConfig.serializeWorkspaceSnapshot().controllerConnections))
+        .toEqual({ controllers: [], selectedIndex: -1 });
     expect(errors).toEqual([]);
 });

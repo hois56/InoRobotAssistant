@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { VacuumContact } from './vacuum-contact.mjs?v=20261101-vacuum-surface-1';
+import { VacuumContact } from './vacuum-contact.mjs?v=20261102-vacuum-range-2';
 import { equipmentFeedback, resolveEquipmentCommand, stepEquipmentPosition, equipmentMotionGroups, equipmentReferences } from './equipment-core.mjs?v=20261101-vacuum-surface-1';
 import { createFilmState, stepFilm, getFilmGripLayout, getFilmPeelFromGrip } from './film-peeling-core.mjs';
 import { conveyorLocalBounds } from './conveyor-scene.mjs';
@@ -126,6 +126,34 @@ export class EquipmentScene {
         return resolveEquipmentCommand(commands, ['OBJECT', 'VACUUM'].includes(def.type) ? 'STOP' : def.runtime.motionCommand);
     }
 
+    syncVacuum(def, command) {
+        // IO can arrive and end between render frames. Capture contact at the
+        // signal's pose, and carry the object to the release pose before dropping it.
+        if (def.runtime.heldRef && (command === 'REVERSE' || command === 'RESET')) this.followVacuum(def);
+        if (command === 'FORWARD') def.runtime.vacuumActive = true;
+        else if (command === 'REVERSE' || command === 'RESET') def.runtime.vacuumActive = false;
+        else def.runtime.vacuumActive ??= !!def.runtime.heldRef;
+        this.applyVacuum(def, def.runtime.vacuumActive);
+        this.writeFeedback(def, !!def.runtime.heldRef);
+        this.status.set(def.id, { phase: def.runtime.heldRef ? '흡착 중' : def.runtime.vacuumActive ? '흡착 대기' : '해제', position: 0, error: '', held: !!def.runtime.heldRef });
+    }
+
+    signalVacuum(def, mappings) {
+        if (def?.type !== 'VACUUM' || !def.enabled || this.signalingVacuum?.has(def.id)) return;
+        this.signalingVacuum ||= new Set();
+        this.signalingVacuum.add(def.id);
+        try {
+            const { command, error } = this.commands(def, mappings);
+            if (error) throw new Error(error);
+            this.syncVacuum(def, command);
+        } catch (error) {
+            this.status.set(def.id, { phase: '오류', position: 0, error: error.message });
+            this.writeFeedback(def, false, true);
+        } finally {
+            this.signalingVacuum.delete(def.id);
+        }
+    }
+
     start() { this.suspended = false; this.paused = false; this.lastTime = null; this.accumulator = 0; }
     pause() { this.paused = !this.paused; this.lastTime = null; this.accumulator = 0; }
     stop(preserveCommands = false) {
@@ -228,13 +256,7 @@ export class EquipmentScene {
                     this.status.set(def.id, { phase: '등록됨', position: 0, error: '' }); continue;
                 }
                 if (def.type === 'VACUUM') {
-                    // A dual-solenoid valve keeps its last state after the pulse ends.
-                    if (command === 'FORWARD') def.runtime.vacuumActive = true;
-                    else if (command === 'REVERSE' || command === 'RESET') def.runtime.vacuumActive = false;
-                    else def.runtime.vacuumActive ??= !!def.runtime.heldRef;
-                    this.applyVacuum(def, def.runtime.vacuumActive);
-                    this.writeFeedback(def, !!def.runtime.heldRef);
-                    this.status.set(def.id, { phase: def.runtime.heldRef ? '흡착 중' : def.runtime.vacuumActive ? '흡착 대기' : '해제', position: 0, error: '', held: !!def.runtime.heldRef });
+                    this.syncVacuum(def, command);
                     continue;
                 }
                 if (def.type === 'FILM_PEEL' && command === 'REVERSE') throw new Error('박리한 필름은 후진으로 재부착할 수 없습니다. 초기화를 사용하세요.');

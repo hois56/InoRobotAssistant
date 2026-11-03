@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
-test('컨트롤러의 수평 TCP 자세가 STEP Tool 형상과 사분점에도 적용된다', async ({ page }) => {
+test('컨트롤러 TCP 좌표계가 달라도 STEP Tool과 사분점은 관절 기준 장착 위치를 유지한다', async ({ page }) => {
   test.setTimeout(90_000);
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
@@ -63,8 +63,7 @@ test('컨트롤러의 수평 TCP 자세가 STEP Tool 형상과 사분점에도 �
   });
   expect(Math.max(...result.before) - Math.min(...result.before)).toBeGreaterThan(0.05);
   expect(result.after).toHaveLength(4);
-  expect(Math.max(...result.after) - Math.min(...result.after)).toBeLessThan(1e-7);
-  expect(new Set(result.after.map(z => z.toFixed(3))).size).toBe(1);
+  result.after.forEach((z, i) => expect(z).toBeCloseTo(result.before[i], 7));
   expect(result.repeated).toEqual(result.after);
   expect(result.mountError).toBeLessThan(1e-7);
   expect(result.correctedJoints).toEqual(result.joints);

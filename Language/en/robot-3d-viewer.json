@@ -2004,8 +2004,6 @@
     "흡착 면 선택": "Select vacuum face",
     "흡착 면이 선택되었습니다.": "Vacuum face selected.",
     "흡착 면 선택을 누른 뒤 3D 화면의 면을 클릭하세요.": "Click Select vacuum face, then click a face in the 3D view.",
-    "선택한 모델 또는 부품 전체에서 1mm 이내의 오브젝트를 찾습니다.": "Search for objects within 1 mm of the entire selected model or part.",
-    "진공 신호가 한 번 들어오면 파기 신호까지 유지됩니다. 진공을 켤 때만 1mm 이내의 등록 오브젝트를 검색합니다.": "Vacuum stays active until the release signal. Registered objects within 1 mm are searched only once when vacuum is activated.",
     "로봇에 설치한 Tool에서 진공을 설정하세요.": "Configure vacuum on a Tool installed on a robot.",
     "진공을 적용할 Tool의 면을 클릭하세요. ESC로 취소합니다.": "Click the Tool face for vacuum. Press ESC to cancel.",
     "선택한 Tool 또는 부품의 면을 클릭하세요.": "Click a face on the selected Tool or part.",
@@ -2020,7 +2018,11 @@
     "수신 데이터": "Received data",
     "요청 시 자동 응답": "Reply to requests",
     "수신 데이터 입력": "Inject received data",
-    "마지막 송신": "Last sent"
+    "마지막 송신": "Last sent",
+    "파일 내보내기를 완료했습니다.": "The file was exported.",
+    "파일 내보내기에 실패했습니다.": "File export failed.",
+    "선택한 모델 또는 부품 전체에서 2mm 이내의 오브젝트를 찾습니다.": "Search for objects within 2 mm of the entire selected model or part.",
+    "진공 신호가 한 번 들어오면 파기 신호까지 유지됩니다. 진공을 켤 때만 2mm 이내의 등록 오브젝트를 검색합니다.": "Vacuum stays active until the release signal. Registered objects within 2 mm are searched only once when vacuum is activated."
   },
   "patterns": []
 }

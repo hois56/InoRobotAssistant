@@ -1,3 +1,5 @@
 # Download binaries are distributed through GitHub Releases or private R2.
 .githooks/* text eol=lf
 tests/fixtures/project-generator/*.snapshot text eol=lf
+# Preserve controller parameter samples byte-for-byte for checksum tests.
+tests/fixtures/simulation-*-params.dat -text

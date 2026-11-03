@@ -4,7 +4,7 @@ async function setup(page) {
     const errors = []; page.on('pageerror', error => errors.push(error.message));
     await page.route('**/2_3DSimulation/main.js*', async route => {
         const response = await route.fetch();
-        await route.fulfill({ response, body: await response.text() + '\nwindow.__surface={state,equipmentApp,THREE,createPrimitiveShapeRoot,ensureWorkspaceModelId,getArticulatedRobots,getRobotToolMountFrame,getWorkspaceObjectPath,writeOlpAddress,readOlpSimulatorBit,serializeWorkspaceSnapshot,restoreWorkspaceSnapshot,updateUIStatus,openModelContextMenu};' });
+        await route.fulfill({ response, body: await response.text() + '\nwindow.__surface={state,equipmentApp,THREE,createPrimitiveShapeRoot,ensureWorkspaceModelId,getArticulatedRobots,getRobotToolMountFrame,getWorkspaceObjectPath,writeOlpAddress,readOlpSimulatorBit,serializeWorkspaceSnapshot,restoreWorkspaceSnapshot,updateUIStatus,openModelContextMenu,isPickingVacuumFace:()=>Boolean(equipmentVacuumPick)};' });
     });
     await page.goto('/2_3DSimulation/index.html'); await page.waitForFunction(() => window.__surface?.state.workspaceRecovery.ready);
     await page.locator('#model-select').selectOption('robot:IR-R7H-90');
@@ -12,7 +12,7 @@ async function setup(page) {
     return errors;
 }
 
-test('선택 면의 1mm 경계·단발 검색·양솔 유지·실린더 추종·전체 부품·저장 복원을 확인한다', async ({ page }) => {
+test('선택 면의 2mm 경계·단발 검색·양솔 유지·실린더 추종·전체 부품·저장 복원을 확인한다', async ({ page }) => {
     const errors = await setup(page);
     const result = await page.evaluate(async () => {
         const a=window.__surface, app=a.equipmentApp, T=a.THREE, robot=a.getArticulatedRobots()[0];
@@ -22,7 +22,7 @@ test('선택 면의 1mm 경계·단발 검색·양솔 유지·실린더 추종·
         const product=(name,xyz,registered=true)=>{const m=a.createPrimitiveShapeRoot('box',{x:20,y:20,z:20},{name});
             m.position.copy(tool.localToWorld(new T.Vector3(...xyz)));m.quaternion.copy(tool.getWorldQuaternion(new T.Quaternion()));a.state.scene.add(m);a.state.models.push(m);
             if(registered)app.save({id:name,type:'OBJECT',movingRef:ref(m)});return m;};
-        const near=product('near',[0,0,20.5]),boundary=product('boundary',[0,0,21]),far=product('far',[0,0,21.01]),side=product('side',[20.5,0,-5]),unregistered=product('unregistered',[0,0,20.5],false);
+        const near=product('near',[0,0,21.5]),boundary=product('boundary',[0,0,22]),far=product('far',[0,0,22.01]),side=product('side',[20.5,0,-5]),unregistered=product('unregistered',[0,0,20.5],false);
         const def=app.save({id:'surface-vacuum',type:'VACUUM',movingRef:ref(tool),vacuumMode:'FACE',vacuumFace:{meshPath:a.getWorkspaceObjectPath(tool,tool.children[0]),triangleRanges:[{first:8,last:9}]},feedbackGrip:620},{forward:512,reverse:513});
         const cylinder=app.save({id:'tool-cylinder',type:'CYLINDER',movingRef:ref(tool),axis:'Z',travel:100,speed:1000},{forward:514,reverse:515});
         let searches=0;const find=app.runtime.contact.find.bind(app.runtime.contact);app.runtime.contact.find=(...args)=>{searches++;return find(...args);};
@@ -49,6 +49,70 @@ test('선택 면의 1mm 경계·단발 검색·양솔 유지·실린더 추종·
     expect(result.acquired).toEqual([true,true,false,false,false]);expect(result.jump).toBeCloseTo(0,6);expect(result.travel).toBeCloseTo(100,5);
     expect(result.cylinderPosition).toBe(100);expect(result.noRescan).toBe(true);expect(result.searches).toBe(2);expect(result.sensor).toBe(1);expect(result.released).toBe(true);expect(result.wholeHeld).toBe(true);
     expect(result.restored).toEqual({mode:'WHOLE',name:'전체 진공',customName:true,held:true});expect(result.resetReleased).toBe(true);expect(result.objectMappings).toBe(false);expect(errors).toEqual([]);
+});
+
+test('흡착 면 선택 중 화면 이동·회전·확대와 ESC 취소 후 면 선택을 지원한다', async ({ page }) => {
+    test.setTimeout(90_000);
+    const errors = await setup(page);
+    const ref = await page.evaluate(() => {
+        const a = window.__surface, T = a.THREE, robot = a.getArticulatedRobots()[0];
+        const tool = a.createPrimitiveShapeRoot('box', { x: 40, y: 40, z: 40 }, { name: '탐색할 흡착 Tool' });
+        a.getRobotToolMountFrame(robot).add(tool); tool.position.z = 100;
+        tool.userData.placement = 'tcp'; tool.userData.attachmentHost = robot;
+        a.state.models.push(tool); a.updateUIStatus();
+        const ref = 'equipment-model:' + a.ensureWorkspaceModelId(tool) + '/-1';
+        a.equipmentApp.ui.open(ref);
+        const center = tool.localToWorld(new T.Vector3(0, 0, 20));
+        const normal = new T.Vector3(0, 0, 1).transformDirection(tool.matrixWorld);
+        a.state.selectedViewPivot.enabled = false;
+        a.state.camera.position.copy(center).addScaledVector(normal, 240);
+        a.state.camera.up.set(0, 1, 0); a.state.controls.target.copy(center);
+        a.state.controls.update(); a.state.camera.lookAt(center); a.state.camera.updateMatrixWorld(true);
+        return ref;
+    });
+    await page.locator('#equipment-form [name="type"]').selectOption('VACUUM');
+    await page.locator('#equipment-pick-face').click();
+    async function point() {
+        return page.evaluate(ref => {
+            const a = window.__surface, tool = a.equipmentApp.resolve(ref).object;
+            a.state.camera.updateMatrixWorld(true);
+            const p = tool.localToWorld(new a.THREE.Vector3(0, 0, 20)).project(a.state.camera);
+            const r = a.state.renderer.domElement.getBoundingClientRect();
+            return { x: r.left + (p.x + 1) * r.width / 2, y: r.top + (1 - p.y) * r.height / 2 };
+        }, ref);
+    }
+    async function drag(button, dx, dy) {
+        const p = await point();
+        await page.mouse.move(p.x, p.y); await page.mouse.down({ button });
+        await page.mouse.move(p.x + dx, p.y + dy, { steps: 8 }); await page.mouse.up({ button });
+    }
+    const before = await page.evaluate(() => window.__surface.state.camera.position.toArray());
+    await drag('right', 12, 8);
+    await expect.poll(() => page.evaluate(before => window.__surface.state.camera.position
+        .distanceTo(new window.__surface.THREE.Vector3().fromArray(before)), before)).toBeGreaterThan(1);
+    expect(await page.evaluate(() => window.__surface.isPickingVacuumFace())).toBe(true);
+    const orientation = await page.evaluate(() => window.__surface.state.camera.quaternion.toArray());
+    await drag('left', 20, -10);
+    expect(await page.evaluate(before => window.__surface.state.camera.quaternion
+        .angleTo(new window.__surface.THREE.Quaternion().fromArray(before)), orientation)).toBeGreaterThan(0.001);
+    // A navigation drag must not commit the face under its release position.
+    expect(await page.evaluate(() => window.__surface.isPickingVacuumFace())).toBe(true);
+    const distance = await page.evaluate(() => window.__surface.state.controls.getDistance());
+    const zoomPoint = await point(); await page.mouse.move(zoomPoint.x, zoomPoint.y); await page.mouse.wheel(0, -180);
+    await expect.poll(() => page.evaluate(() => window.__surface.state.controls.getDistance())).toBeLessThan(distance - 1);
+    expect(await page.evaluate(() => window.__surface.isPickingVacuumFace())).toBe(true);
+    await expect(page.locator('#equipment-dialog')).not.toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#equipment-dialog')).toBeVisible();
+    expect(await page.evaluate(() => ({ picking: window.__surface.isPickingVacuumFace(), enabled: window.__surface.state.controls.enabled })))
+        .toEqual({ picking: false, enabled: true });
+    await page.locator('#equipment-pick-face').click();
+    const clickPoint = await point();
+    await page.mouse.click(clickPoint.x, clickPoint.y);
+    await expect(page.locator('#equipment-face-status')).toContainText('선택되었습니다');
+    expect(await page.evaluate(() => ({ picking: window.__surface.isPickingVacuumFace(), enabled: window.__surface.state.controls.enabled })))
+        .toEqual({ picking: false, enabled: true });
+    expect(errors).toEqual([]);
 });
 
 test('오브젝트 등록만·실제 면 클릭·이름 편집·IO 세 행·우클릭 시험 메뉴를 지원한다', async ({ page }) => {
@@ -78,11 +142,21 @@ test('오브젝트 등록만·실제 면 클릭·이름 편집·IO 세 행·우�
     const saved=await page.evaluate(()=>window.__surface.state.equipmentDefinitions.find(d=>d.type==='VACUUM'));
     expect(saved.name).toBe('상부 진공');expect(saved.customName).toBe(true);expect(saved.vacuumFace.triangleRanges.length).toBeGreaterThan(0);
     await page.evaluate(ref=>{const a=window.__surface;a.equipmentApp.ui.dialog.close();a.openModelContextMenu({clientX:300,clientY:200},a.equipmentApp.resolve(ref).model);},refs.tool);
-    await expect(page.locator('#model-motion-test-options')).toContainText('진공');await expect(page.locator('#model-motion-test-options')).toContainText('파기');await expect(page.locator('#model-motion-test-options')).toContainText('원위치');
+    await expect(page.locator('#model-motion-test-options')).toContainText('진공');await expect(page.locator('#model-motion-test-options')).toContainText('파기');
+    await expect(page.locator('#model-motion-test-options [data-equipment-test-command="RESET"]')).toHaveCount(0);
     await page.locator('#model-motion-test-options [data-equipment-test-command="FORWARD"]').click();
     await expect.poll(()=>page.evaluate(()=>window.__surface.state.equipmentDefinitions.find(d=>d.type==='VACUUM').runtime.vacuumActive)).toBe(true);
     await page.evaluate(ref=>window.__surface.openModelContextMenu({clientX:300,clientY:200},window.__surface.equipmentApp.resolve(ref).model),refs.tool);
     await page.locator('#model-motion-test-options [data-equipment-test-command="REVERSE"]').click();
     await expect.poll(()=>page.evaluate(()=>window.__surface.state.equipmentDefinitions.find(d=>d.type==='VACUUM').runtime.vacuumActive)).toBe(false);
+    await page.evaluate(ref=>{
+        const a=window.__surface;
+        a.equipmentApp.save({id:'menu-cylinder',type:'CYLINDER',movingRef:ref,axis:'Z',travel:10,speed:100},{forward:524,reverse:525});
+        a.openModelContextMenu({clientX:300,clientY:200},a.equipmentApp.resolve(ref).model);
+    },refs.tool);
+    await expect(page.locator('#model-motion-test-options [data-equipment-test-command="FORWARD"]')).toHaveCount(2);
+    await expect(page.locator('#model-motion-test-options [data-equipment-test-command="REVERSE"]')).toHaveCount(2);
+    await expect(page.locator('#model-motion-test-options [data-equipment-test-command="STOP"], #model-motion-test-options [data-equipment-test-command="RESET"]')).toHaveCount(0);
+    await expect(page.locator('#model-object-reset')).not.toBeVisible();
     expect(errors).toEqual([]);
 });

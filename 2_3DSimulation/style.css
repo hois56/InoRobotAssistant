@@ -4732,6 +4732,7 @@ button.io-simulator-entry:hover {
 }
 
 .virtual-controller-connection-toggle {
+    flex: none;
     width: 32px;
     background: transparent;
     color: #fca5a5;
@@ -5758,6 +5759,23 @@ body.view-window-popout-body {
 .program-point-actions {
     display: flex;
     gap: 0.2rem;
+}
+
+.program-point-standardization {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-self: flex-start;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 0.45rem;
+    color: var(--text-2);
+    font-size: 0.7rem;
+    white-space: nowrap;
+}
+
+.program-point-standardization input {
+    width: auto;
+    margin: 0;
 }
 
 .program-point-actions button {

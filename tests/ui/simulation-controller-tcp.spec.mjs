@@ -23,6 +23,7 @@ test('R7H-90 controller TCP updates JOG and mounted geometry while preserving lo
     robot.userData.workObjects[1] = { index: 1, defined: true, position: [130, -70, 40], rotation: [10, -20, 30] };
     robot.userData.activeWorkObjectIndex = 1;
     const flange = robot.userData.flangeFrame;
+    const wrist = flange.parent;
     window.__originalMount = { position: flange.position.toArray(), quaternion: flange.quaternion.toArray() };
     const tool = new a.THREE.Group();
     tool.position.set(10, 20, 30); flange.add(tool);
@@ -46,13 +47,35 @@ test('R7H-90 controller TCP updates JOG and mounted geometry while preserving lo
         .applyQuaternion(profile.quaternion.clone().invert()));
     };
     const firstToolError = firstToolWorld.distanceTo(expectedToolWorld());
+    const initialParentIntact = flange.parent === wrist;
     a.handleVirtualControllerMessage(JSON.stringify({ type: 'robotState', data: { joints, tcp: [808, -192, 315, 20, 30, 40] } }), controller);
     a.applyVirtualControllerFrameForController(performance.now(), controller);
     const toolShift = tool.getWorldPosition(new a.THREE.Vector3()).distanceTo(firstToolWorld);
     const secondToolError = tool.getWorldPosition(new a.THREE.Vector3()).distanceTo(expectedToolWorld());
+    const changedReadout = a.getJogReadoutPose(robot, a.getCurrentTcpPoseBase(robot)).position.toArray();
+    a.handleVirtualControllerMessage(JSON.stringify({ type: 'robotState', data: { joints: [21, ...joints.slice(1)], tcp: [818, -192, 315, 20, 30, 40] } }), controller);
+    a.applyVirtualControllerFrameForController(performance.now(), controller);
+    const movedToolWorld = tool.getWorldPosition(new a.THREE.Vector3());
+    const motionShift = movedToolWorld.distanceTo(firstToolWorld);
+    a.handleVirtualControllerMessage(JSON.stringify({ type: 'robotState', data: { joints: [21, ...joints.slice(1)], tcp: [818, -192, 315, 20, 30, 40] } }), controller);
+    a.applyVirtualControllerFrameForController(performance.now(), controller);
+    const repeatedMotionShift = tool.getWorldPosition(new a.THREE.Vector3()).distanceTo(movedToolWorld);
+    // Program changes Wobj while joints are moving; Cartesian values jump but
+    // Tool must still match the authored wrist transform at every sample.
+    let maxWristError = 0;
+    for (let i = 0; i < 6; i++) {
+      a.handleVirtualControllerMessage(JSON.stringify({ type: 'robotState', data: {
+        joints: [22 + i, -29 + i, 41, -109, 61, 201],
+        tcp: [9000 - i * 100, -8000 + i * 200, 7000, 120, 20, -30]
+      } }), controller);
+      a.applyVirtualControllerFrameForController(performance.now(), controller);
+      wrist.updateWorldMatrix(true, false); flange.updateMatrix(); tool.updateMatrix();
+      const expected = new a.THREE.Vector3().setFromMatrixPosition(wrist.matrixWorld.clone().multiply(flange.matrix).multiply(tool.matrix));
+      maxWristError = Math.max(maxWristError, tool.getWorldPosition(new a.THREE.Vector3()).distanceTo(expected));
+    }
     a.handleVirtualControllerMessage(JSON.stringify({ type: 'robotState', data: { joints, tcp: [708, -292, 215, 0, 0, 180] } }), controller);
     a.applyVirtualControllerFrameForController(performance.now(), controller);
-    return { joints: robot.userData.joints.map(joint => joint.angle), arm: a.calculatePointArmParameters(robot), toolShift, firstToolError, secondToolError,
+    return { joints: robot.userData.joints.map(joint => joint.angle), arm: a.calculatePointArmParameters(robot), toolShift, firstToolError, secondToolError, changedReadout, motionShift, repeatedMotionShift, initialParentIntact, maxWristError,
       mountShift: flange.position.distanceTo(new a.THREE.Vector3().fromArray(window.__originalMount.position)),
       mountRotation: flange.quaternion.angleTo(new a.THREE.Quaternion().fromArray(window.__originalMount.quaternion)),
       distance: new a.THREE.Vector3().fromArray(tcpWorld).distanceTo(new a.THREE.Vector3().fromArray(mtcp)) };
@@ -60,7 +83,12 @@ test('R7H-90 controller TCP updates JOG and mounted geometry while preserving lo
   expect(result.joints).toEqual([20, -30, 40, -110, 60, 200]);
   // J5 = 60° is wrist flipped: forward, elbow upward, flipped -> ArmType[3] 0.
   expect(result.arm).toEqual([0, -2, 2, 0]);
-  expect(result.toolShift).toBeGreaterThan(1);
+  expect(result.initialParentIntact).toBe(true);
+  expect(result.maxWristError).toBeLessThan(1e-7);
+  expect(result.toolShift).toBeLessThan(1e-7);
+  expect(result.changedReadout).toEqual([808, -192, 315]);
+  expect(result.motionShift).toBeGreaterThan(1);
+  expect(result.repeatedMotionShift).toBeLessThan(1e-7);
   expect(result.firstToolError).toBeLessThan(1e-7);
   expect(result.secondToolError).toBeLessThan(1e-7);
   expect(result.mountShift).toBeLessThan(1e-7);

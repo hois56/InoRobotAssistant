@@ -102,8 +102,6 @@ window.InoRobotDocumentCadData = [
         model: "IR-S25-100",
         folder: "SCARA/IR-S25-100",
         files: [
-            "IR-S25-100Z36C_2D.dwg",
-            "IR-S25-100Z36C_3D.stp",
             "IR-S25-100Z42S_2D.dwg",
             "IR-S25-100Z42S_3D.stp"
         ]
@@ -119,8 +117,6 @@ window.InoRobotDocumentCadData = [
         model: "IR-S25-80",
         folder: "SCARA/IR-S25-80",
         files: [
-            "IR-S25-80Z36C_2D.dwg",
-            "IR-S25-80Z36C_3D.stp",
             "IR-S25-80Z42S_2D.dwg",
             "IR-S25-80Z42S_3D.stp"
         ]

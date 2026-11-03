@@ -593,7 +593,7 @@ function hasMatrixWorldChanged(meshEntry) {
     return false;
 }
 
-function meshPairIntersects(colliderA, colliderB, epsilon, stats) {
+function meshPairIntersects(colliderA, colliderB, epsilon, stats, isMountContact) {
     const { mesh: meshA, bvh: bvhA, collider: meshColliderA } = colliderA;
     const { mesh: meshB, bvh: bvhB, collider: meshColliderB } = colliderB;
     if (!bvhA.root || !bvhB.root || !meshColliderA.worldBounds || !meshColliderB.worldBounds) return null;
@@ -622,6 +622,7 @@ function meshPairIntersects(colliderA, colliderB, epsilon, stats) {
                     stats.triangleTests += 1;
                     bvhB.readTriangleWorld(meshB, indexB, triangleB, localTriangleB);
                     if (trianglesIntersect(triangleA, triangleB, epsilon)) {
+                        if (isMountContact?.(triangleA, triangleB)) continue;
                         const point = new THREE.Vector3(
                             (triangleA[0] + triangleA[3] + triangleA[6]) / 3,
                             (triangleA[1] + triangleA[4] + triangleA[7]) / 3,
@@ -691,32 +692,60 @@ function isAttachedModelDescendant(object, root) {
     return false;
 }
 
-function isAttachedToolMountContact(leftRoot, leftMesh, rightRoot, rightMesh) {
-    const leftIsTool = leftRoot?.userData?.placement !== 'arm-load'
-        && leftRoot?.userData?.attachmentHost === rightRoot;
-    const rightIsTool = rightRoot?.userData?.placement !== 'arm-load'
-        && rightRoot?.userData?.attachmentHost === leftRoot;
-    if (!leftIsTool && !rightIsTool) return false;
-    const toolRoot = leftIsTool ? leftRoot : rightRoot;
-    const robotRoot = leftIsTool ? rightRoot : leftRoot;
-    const robotMesh = leftIsTool ? rightMesh : leftMesh;
-    if (robotMesh?.userData?.collisionIgnoreAttachedToolContact === true) return true;
-
-    // Some CAD Tools include their physical flange collar. That collar is
-    // intentionally embedded in the final wrist stack when mounted, so the
-    // Test Tool must not permanently report a robot/Tool self-collision.
-    // Keep the preceding arm links active: only the configured final wrist
-    // meshes are an allowed mechanical interface.
-    const ignoredWristJointCount = Math.max(0, Math.floor(Number(
-        toolRoot?.userData?.collisionIgnoreHostWristJointCount
-    ) || 0));
-    const jointIndex = Number(robotMesh?.userData?.robotJointIndex);
-    const finalJointIndex = (robotRoot?.userData?.joints?.length || 0) - 1;
-    return ignoredWristJointCount > 0
-        && Number.isInteger(jointIndex)
-        && finalJointIndex >= 0
-        && jointIndex >= Math.max(0, finalJointIndex - ignoredWristJointCount + 1);
+// The plane normal points into the robot. A permitted mounting contact has
+// both triangles on opposite sides, touching only within 0.01 mm of the plane.
+// Checking half-spaces also handles the side-triangle edges of a tessellated
+// mounting face. Penetration and contacts elsewhere in the same mesh are kept.
+function createMountContactFilter(leftRoot, leftMesh, rightRoot, rightMesh) {
+    let robotIsLeft, frame, localZ, inwardSign;
+    for (const [robotRoot, robotMesh, otherRoot, isLeft] of [
+        [leftRoot, leftMesh, rightRoot, true],
+        [rightRoot, rightMesh, leftRoot, false]
+    ]) {
+        if (!robotRoot?.userData?.tcpFrame) continue;
+        const mount = robotMesh.userData?.collisionMountPlane;
+        if (mount && Number.isFinite(mount.z)
+            && (mount.inwardSign === 1 || mount.inwardSign === -1)
+            && otherRoot?.userData?.placement === 'scene'
+            && !otherRoot.userData.attachmentHost) {
+            robotIsLeft = isLeft;
+            frame = robotMesh;
+            localZ = mount.z;
+            inwardSign = mount.inwardSign;
+            break;
+        }
+        const isTool = otherRoot?.userData?.attachmentHost === robotRoot
+            && otherRoot.userData.placement === 'tcp';
+        const jointIndex = robotMesh.userData?.robotJointIndex;
+        const finalJointIndex = (robotRoot.userData.joints?.length || 0) - 1;
+        if (isTool && robotRoot.userData.flangeFrame
+            && (robotMesh.userData.collisionToolMountCarrier === true
+                || (Number.isInteger(jointIndex) && jointIndex === finalJointIndex))) {
+            robotIsLeft = isLeft;
+            frame = robotRoot.userData.flangeFrame;
+            localZ = 0;
+            inwardSign = -1;
+            break;
+        }
+    }
+    if (!frame) return null;
+    const plane = new THREE.Plane(new THREE.Vector3(0, 0, inwardSign), -localZ * inwardSign)
+        .applyMatrix4(frame.matrixWorld);
+    const { x, y, z } = plane.normal;
+    const tolerance = 0.01; // mm, numerical contact tolerance, not a fit/clearance allowance.
+    return (triangleA, triangleB) => {
+        const robot = robotIsLeft ? triangleA : triangleB;
+        const other = robotIsLeft ? triangleB : triangleA;
+        let minRobot = Infinity, maxOther = -Infinity;
+        for (let i = 0; i < 9; i += 3) {
+            minRobot = Math.min(minRobot, x * robot[i] + y * robot[i + 1] + z * robot[i + 2] + plane.constant);
+            maxOther = Math.max(maxOther, x * other[i] + y * other[i + 1] + z * other[i + 2] + plane.constant);
+        }
+        return minRobot >= -tolerance && minRobot <= tolerance
+            && maxOther <= tolerance && maxOther >= -tolerance;
+    };
 }
+
 
 function isAttachedArmLoadHostLinkContact(leftRoot, leftMesh, rightRoot, rightMesh) {
     const leftIsArmLoad = leftRoot?.userData?.placement === 'arm-load'
@@ -905,7 +934,7 @@ export class MeshCollisionSystem {
             : `${rightRoot.uuid}|${leftRoot.uuid}`;
     }
 
-    checkMeshPair(leftMesh, rightMesh, stats) {
+    checkMeshPair(leftMesh, rightMesh, stats, isMountContact = null) {
         if (!leftMesh.worldBounds || !rightMesh.worldBounds) return null;
         if (!leftMesh.worldBounds.intersectsBox(rightMesh.worldBounds)) return null;
         const bvhA = this.getGeometryBVH(leftMesh.geometry);
@@ -917,11 +946,12 @@ export class MeshCollisionSystem {
             { mesh: leftMesh.mesh, bvh: bvhA, collider: leftMesh },
             { mesh: rightMesh.mesh, bvh: bvhB, collider: rightMesh },
             this.epsilon,
-            stats
+            stats,
+            isMountContact
         );
     }
 
-    recheckCachedSurfaceHit(leftMesh, rightMesh, hit, stats) {
+    recheckCachedSurfaceHit(leftMesh, rightMesh, hit, stats, isMountContact = null) {
         if (hit?.kind !== 'surface'
             || hit.meshA !== leftMesh.mesh
             || hit.meshB !== rightMesh.mesh
@@ -947,7 +977,8 @@ export class MeshCollisionSystem {
         );
         stats.cachedTriangleRechecks += 1;
         stats.triangleTests += 1;
-        return trianglesIntersect(this.cachedTriangleA, this.cachedTriangleB, this.epsilon)
+        return !isMountContact?.(this.cachedTriangleA, this.cachedTriangleB)
+            && trianglesIntersect(this.cachedTriangleA, this.cachedTriangleB, this.epsilon)
             ? hit
             : null;
     }
@@ -976,22 +1007,23 @@ export class MeshCollisionSystem {
             if (cachedRightMesh
                 && leftMesh.worldBounds?.intersectsBox(cachedRightMesh.worldBounds)
                 && (!meshPairFilter || meshPairFilter(left.root, leftMesh.mesh, right.root, cachedRightMesh.mesh))
-                && !isAttachedToolMountContact(left.root, leftMesh.mesh, right.root, cachedRightMesh.mesh)
                 && !isAttachedArmLoadHostLinkContact(left.root, leftMesh.mesh, right.root, cachedRightMesh.mesh)) {
                 // AABB overlap is only a broad-phase result. It can remain
                 // true after a moving link has already cleared the obstacle,
                 // so never reuse a previous hit from the bounds alone. The
                 // cached triangle test is constant-time and keeps the JOG
                 // fast without enlarging the effective collision envelope.
+                const isMountContact = createMountContactFilter(left.root, leftMesh.mesh, right.root, cachedRightMesh.mesh);
                 const cachedSurfaceHit = allowWarmHitReuse
                     ? this.recheckCachedSurfaceHit(
                         leftMesh,
                         cachedRightMesh,
                         cachedEntry.hit,
-                        stats
+                        stats,
+                        isMountContact
                     )
                     : null;
-                const cachedHit = cachedSurfaceHit || this.checkMeshPair(leftMesh, cachedRightMesh, stats);
+                const cachedHit = cachedSurfaceHit || this.checkMeshPair(leftMesh, cachedRightMesh, stats, isMountContact);
                 if (cachedHit) {
                     cachedEntry.hit = cachedHit;
                     cachedEntry.lastConfirmedAt = now;
@@ -1012,12 +1044,9 @@ export class MeshCollisionSystem {
                 if (!includeSelf && left.root === right.root) continue;
                 if (left.root === right.root
                     && (isDescendantOf(leftMesh.mesh, rightMesh.mesh) || isDescendantOf(rightMesh.mesh, leftMesh.mesh))) continue;
-                // The marked Tool mounting assembly (J6, or SCARA J3
-                // ballscrew/J4) is a shared mechanical interface. Exclude
-                // only that contact; other Tool-to-link combinations remain.
-                if (isAttachedToolMountContact(left.root, leftMesh.mesh, right.root, rightMesh.mesh)
-                    || isAttachedArmLoadHostLinkContact(left.root, leftMesh.mesh, right.root, rightMesh.mesh)) continue;
-                const hit = this.checkMeshPair(leftMesh, rightMesh, stats);
+                if (isAttachedArmLoadHostLinkContact(left.root, leftMesh.mesh, right.root, rightMesh.mesh)) continue;
+                const isMountContact = createMountContactFilter(left.root, leftMesh.mesh, right.root, rightMesh.mesh);
+                const hit = this.checkMeshPair(leftMesh, rightMesh, stats, isMountContact);
                 if (hit) {
                     hits.push({ ...hit, objectA: left.root, objectB: right.root });
                     this.hitMeshPairCache.set(cacheKey, {

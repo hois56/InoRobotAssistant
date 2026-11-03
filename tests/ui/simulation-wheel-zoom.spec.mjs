@@ -136,7 +136,6 @@ test('Ctrl 휠은 기본의 2배이며 스케치·빈 공간에서도 감도를 
           canvas.dispatchEvent(new WheelEvent('wheel', { deltaY, ...modifiers,
             clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2, bubbles: true, cancelable: true }));
           if (mode === 'sketch') return Math.log(state.camera.zoom);
-          if (mode === 'empty') return Math.log(state.controls.getDistance() / 100);
           return state.camera.position.y + 100;
         };
         const normal = measure({});
@@ -221,7 +220,9 @@ test('Shift 휠은 빈 공간과 스케치에서도 세밀하게 동작하고 �
       const normal = value();
       wheel(true); wheel(true);
       await Promise.resolve();
-      results.push({ ratio: Math.log(value() / normal) / Math.log(normal / before), speed: state.controls.zoomSpeed });
+      const ratio = sketch ? Math.log(value() / normal) / Math.log(normal / before)
+        : (value() - normal) / (normal - before);
+      results.push({ ratio, speed: state.controls.zoomSpeed });
     }
     return results;
   });

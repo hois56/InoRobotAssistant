@@ -2004,8 +2004,6 @@
     "흡착 면 선택": "Chọn mặt hút",
     "흡착 면이 선택되었습니다.": "Đã chọn mặt hút.",
     "흡착 면 선택을 누른 뒤 3D 화면의 면을 클릭하세요.": "Nhấn Chọn mặt hút, rồi nhấp một mặt trong khung nhìn 3D.",
-    "선택한 모델 또는 부품 전체에서 1mm 이내의 오브젝트를 찾습니다.": "Tìm đối tượng cách toàn bộ bề mặt mô hình hoặc chi tiết đã chọn không quá 1 mm.",
-    "진공 신호가 한 번 들어오면 파기 신호까지 유지됩니다. 진공을 켤 때만 1mm 이내의 등록 오브젝트를 검색합니다.": "Trạng thái hút được giữ đến khi có tín hiệu nhả. Chỉ tìm một lần các đối tượng đã đăng ký trong phạm vi 1 mm khi bật hút.",
     "로봇에 설치한 Tool에서 진공을 설정하세요.": "Hãy cài đặt hút trên Tool đã lắp vào robot.",
     "진공을 적용할 Tool의 면을 클릭하세요. ESC로 취소합니다.": "Nhấp mặt Tool dùng để hút. Nhấn ESC để hủy.",
     "선택한 Tool 또는 부품의 면을 클릭하세요.": "Hãy nhấp một mặt của Tool hoặc chi tiết đã chọn.",
@@ -2020,7 +2018,11 @@
     "수신 데이터": "Dữ liệu nhận",
     "요청 시 자동 응답": "Trả lời yêu cầu",
     "수신 데이터 입력": "Nhập dữ liệu nhận",
-    "마지막 송신": "Đã gửi gần nhất"
+    "마지막 송신": "Đã gửi gần nhất",
+    "파일 내보내기를 완료했습니다.": "Đã xuất tệp.",
+    "파일 내보내기에 실패했습니다.": "Xuất tệp thất bại.",
+    "선택한 모델 또는 부품 전체에서 2mm 이내의 오브젝트를 찾습니다.": "Tìm đối tượng cách toàn bộ bề mặt mô hình hoặc chi tiết đã chọn không quá 2 mm.",
+    "진공 신호가 한 번 들어오면 파기 신호까지 유지됩니다. 진공을 켤 때만 2mm 이내의 등록 오브젝트를 검색합니다.": "Trạng thái hút được giữ đến khi có tín hiệu nhả. Chỉ tìm một lần các đối tượng đã đăng ký trong phạm vi 2 mm khi bật hút."
   },
   "patterns": []
 }
