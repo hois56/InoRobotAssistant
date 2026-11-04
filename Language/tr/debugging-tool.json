@@ -68,7 +68,9 @@
     "Zero Calibration Tool | Inovance": "Sıfır Kalibrasyon Aracı | Yenilik",
     "Calibration Mode": "Kalibrasyon Modu",
     "내장된 디버깅 툴 버전 기록을 읽지 못했습니다.": "Gömülü hata ayıklama aracı sürüm geçmişi okunamadı.",
-    "Embedded history data is unavailable": "Gömülü sürüm geçmişi verileri kullanılamıyor."
+    "Embedded history data is unavailable": "Gömülü sürüm geçmişi verileri kullanılamıyor.",
+    "Log Analyzer": "Günlük Analizörü",
+    "로봇의 시스템 진단 ZIP·폴더를 열어 오류 발생 시점과 관련 로그를 함께 분석하는 프로그램입니다. 오류·서보 알람 조회, 트레이스 그래프와 A/B 측정, 보고서·CSV 저장을 지원합니다.": "Robot sistem tanılama ZIP dosyalarını veya klasörlerini açarak hataları ilgili günlüklerle birlikte analiz eder. Hata ve servo alarmı arama, iz grafikleri, A/B ölçümü ve rapor/CSV aktarımı sunar."
   },
   "patterns": []
 }

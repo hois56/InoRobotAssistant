@@ -68,5 +68,19 @@
         "url": "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/InoRobotTP_win_x86_V4R24C4SPC0L23F121.zip"
       }
     ]
+  },
+  {
+    "productId": "InoRobotKoreanInstaller",
+    "version": "V1.0 Beta",
+    "isLocked": false,
+    "downloads": [
+      {
+        "label": "Download Install",
+        "type": "install",
+        "path": "InoRobotKoreanInstaller/InoRobotKoreanInstaller_V1.0.zip",
+        "assetId": null,
+        "url": "https://github.com/hois56/InoRobotAssistant/releases/download/inorobot-korean-installer-v1.0-beta/InoRobotKoreanInstaller_V1.0.zip"
+      }
+    ]
   }
 ]

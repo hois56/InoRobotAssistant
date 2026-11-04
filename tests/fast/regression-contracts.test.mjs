@@ -131,12 +131,12 @@ test('주요 화면의 로컬 스크립트와 스타일 경로가 실제 파일�
 
 test('Communication Tester 다운로드는 실행 파일을 담은 ZIP 아카이브를 가리킨다', () => {
   const html = fs.readFileSync(path.join(repoRoot, '7_DebuggingTool/index.html'), 'utf8');
-  const archivePath = path.join(repoRoot, '7_DebuggingTool/CommunicationTester/InoRobot_Comm_Test_V3.3.zip');
+  const archivePath = path.join(repoRoot, '7_DebuggingTool/CommunicationTester/InoRobot_Comm_Test_V4.0.zip');
 
   const manifest = JSON.parse(fs.readFileSync(path.join(repoRoot, 'downloads/release-assets.json'), 'utf8'));
-  const asset = manifest.assets.find(asset => asset.fileName === 'InoRobot_Comm_Test_V3.3.zip');
+  const asset = manifest.assets.find(asset => asset.fileName === 'InoRobot_Comm_Test_V4.0.zip');
   assert.ok(asset);
-  assert.equal(asset.url, 'https://github.com/hois56/InoRobotAssistant/releases/download/communication-tester-v3.3/InoRobot_Comm_Test_V3.3.zip');
+  assert.equal(asset.url, 'https://github.com/hois56/InoRobotAssistant/releases/download/communication-tester-v4.0/InoRobot_Comm_Test_V4.0.zip');
   assert.ok(html.includes('href="' + asset.url + '"'));
   const archive = fs.readFileSync(archivePath);
   assert.equal(archive.readUInt32LE(0), 0x04034b50, 'Communication Tester 다운로드 파일이 ZIP 아카이브가 아닙니다.');
@@ -144,7 +144,7 @@ test('Communication Tester 다운로드는 실행 파일을 담은 ZIP 아카이
 
 test('CAD Lightweight 다운로드는 실제 ZIP을 제공하는 릴리스 첨부파일을 가리킨다', () => {
   const html = fs.readFileSync(path.join(repoRoot, '7_DebuggingTool/index.html'), 'utf8');
-  const downloadUrl = 'https://github.com/hois56/InoRobotAssistant/releases/download/cad-lightweight-v1.2/CAD_Lightweight_V1.2.zip';
+  const downloadUrl = 'https://github.com/hois56/InoRobotAssistant/releases/download/cad-lightweight-v1.3/CAD_Lightweight_V1.3.zip';
   assert.ok(html.includes(`href="${downloadUrl}"`), 'CAD Lightweight 다운로드는 릴리스 ZIP 첨부파일 주소를 사용해야 합니다.');
-  assert.match(html, /data-debug-history="cadLightweight" data-current-version="V1\.2"/);
+  assert.match(html, /data-debug-history="cadLightweight" data-current-version="V1\.3"/);
 });

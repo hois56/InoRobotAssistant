@@ -4,6 +4,7 @@ const { sortHistoryMarkdown } = require('./version-history.cjs');
 
 const root = path.resolve(__dirname, '..');
 const histories = {
+    logAnalyzer: '7_DebuggingTool/InoRobotLogAnalyzer/업데이트_기록.md',
     communicationTester: '7_DebuggingTool/CommunicationTester/업데이트_기록.md',
     labelGenerator: '7_DebuggingTool/InoRobotLabelGen/업데이트기록.md',
     trace: '7_DebuggingTool/Trace/업데이트_기록.md',

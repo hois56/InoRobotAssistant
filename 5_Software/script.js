@@ -1,6 +1,6 @@
 /**
  * Software Data
- * InoRobotLab, InoRobotTP 두 가지 메인 소프트웨어와 버전을 관리합니다.
+ * InoRobotLab, InoRobotTP 및 한글 패치기의 버전과 다운로드를 관리합니다.
  */
 const softwareGroups = [
     {
@@ -55,6 +55,22 @@ const softwareGroups = [
                 updates: ["Display 최적화"],
                 downloads: [
                     { label: "Download Portable", type: "portable", size: "57MB", path: "InoRobotTP/Display/InoRobotTP_win_x86_V4R24C4SPC0L23F121.zip", url: "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/InoRobotTP_win_x86_V4R24C4SPC0L23F121.zip" }
+                ]
+            }
+        ]
+    },
+    {
+        name: "InoRobotKoreanInstaller",
+        fullName: "InoRobotKoreanInstaller",
+        id: "InoRobotKoreanInstaller",
+        icon: "languages",
+        versions: [
+            {
+                tagName: "V1.0 Beta",
+                description: "InoRobotLab·InoRobotTP R24C4 계열 표준·Display 버전용 한글 패치기(베타 버전)",
+                date: "2026-11-04",
+                downloads: [
+                    { label: "Download Install", type: "install", size: "79MB", path: "InoRobotKoreanInstaller/InoRobotKoreanInstaller_V1.0.zip", url: "https://github.com/hois56/InoRobotAssistant/releases/download/inorobot-korean-installer-v1.0-beta/InoRobotKoreanInstaller_V1.0.zip" }
                 ]
             }
         ]

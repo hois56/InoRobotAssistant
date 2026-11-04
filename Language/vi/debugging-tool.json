@@ -61,14 +61,16 @@
     "각 축의 티칭값을 입력합니다. (Zero 파라미터에 현재 값 읽기를 클릭하여 현재 로봇의 위치 값을 엔코더 값으로 읽을 수 있습니다.)": "Nhập giá trị teaching cho từng trục. Dùng Read Current Value trong tham số Zero để đọc giá trị encoder hiện tại.",
     "현재 위치의 엔코더 값을 '티칭값' 항목에 입력합니다.": "Nhập giá trị encoder tại vị trí hiện tại vào Teaching Value.",
     "'최종 결과' 항목에 계산된 값을 확인합니다.": "Kiểm tra giá trị tính trong Final Result.",
-    "로봇 Zero 파라미터에 계산된 값을 입력합니다.": "Nhập giá trị đã tính vào tham số Zero của robot."
-    ,"Inovance Debugging Support Tool": "Công cụ hỗ trợ gỡ lỗi Inovance"
-    ,"CAD Lightweight": "CAD nhẹ"
-    ,"Zero Calibration Tool": "Công cụ hiệu chỉnh điểm gốc"
-    ,"Zero Calibration Tool | Inovance": "Công cụ hiệu chỉnh điểm gốc | Inovance"
-    ,"Calibration Mode": "Chế độ hiệu chỉnh"
-    ,"내장된 디버깅 툴 버전 기록을 읽지 못했습니다.": "Không thể đọc lịch sử phiên bản công cụ gỡ lỗi tích hợp.",
-    "Embedded history data is unavailable": "Dữ liệu lịch sử phiên bản được nhúng không khả dụng."
+    "로봇 Zero 파라미터에 계산된 값을 입력합니다.": "Nhập giá trị đã tính vào tham số Zero của robot.",
+    "Inovance Debugging Support Tool": "Công cụ hỗ trợ gỡ lỗi Inovance",
+    "CAD Lightweight": "CAD nhẹ",
+    "Zero Calibration Tool": "Công cụ hiệu chỉnh điểm gốc",
+    "Zero Calibration Tool | Inovance": "Công cụ hiệu chỉnh điểm gốc | Inovance",
+    "Calibration Mode": "Chế độ hiệu chỉnh",
+    "내장된 디버깅 툴 버전 기록을 읽지 못했습니다.": "Không thể đọc lịch sử phiên bản công cụ gỡ lỗi tích hợp.",
+    "Embedded history data is unavailable": "Dữ liệu lịch sử phiên bản được nhúng không khả dụng.",
+    "Log Analyzer": "Phân tích nhật ký",
+    "로봇의 시스템 진단 ZIP·폴더를 열어 오류 발생 시점과 관련 로그를 함께 분석하는 프로그램입니다. 오류·서보 알람 조회, 트레이스 그래프와 A/B 측정, 보고서·CSV 저장을 지원합니다.": "Mở ZIP hoặc thư mục chẩn đoán hệ thống robot để phân tích lỗi cùng nhật ký liên quan. Hỗ trợ tra cứu lỗi và cảnh báo servo, đồ thị trace, đo A/B và xuất báo cáo/CSV."
   },
   "patterns": []
 }

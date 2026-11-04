@@ -61,14 +61,16 @@
     "각 축의 티칭값을 입력합니다. (Zero 파라미터에 현재 값 읽기를 클릭하여 현재 로봇의 위치 값을 엔코더 값으로 읽을 수 있습니다.)": "Enter the teaching value for each axis. Use Read Current Value in the Zero parameters to read the current encoder values.",
     "현재 위치의 엔코더 값을 '티칭값' 항목에 입력합니다.": "Enter the encoder value at the current position in Teaching Value.",
     "'최종 결과' 항목에 계산된 값을 확인합니다.": "Check the calculated values under Final Result.",
-    "로봇 Zero 파라미터에 계산된 값을 입력합니다.": "Enter the calculated values in the robot Zero parameters."
-    ,"Inovance Debugging Support Tool": "Inovance Debugging Support Tool"
-    ,"CAD Lightweight": "CAD Lightweight"
-    ,"Zero Calibration Tool": "Zero Calibration Tool"
-    ,"Zero Calibration Tool | Inovance": "Zero Calibration Tool | Inovance"
-    ,"Calibration Mode": "Calibration Mode"
-    ,"내장된 디버깅 툴 버전 기록을 읽지 못했습니다.": "Could not read the embedded debugging-tool version history.",
-    "Embedded history data is unavailable": "Embedded history data is unavailable"
+    "로봇 Zero 파라미터에 계산된 값을 입력합니다.": "Enter the calculated values in the robot Zero parameters.",
+    "Inovance Debugging Support Tool": "Inovance Debugging Support Tool",
+    "CAD Lightweight": "CAD Lightweight",
+    "Zero Calibration Tool": "Zero Calibration Tool",
+    "Zero Calibration Tool | Inovance": "Zero Calibration Tool | Inovance",
+    "Calibration Mode": "Calibration Mode",
+    "내장된 디버깅 툴 버전 기록을 읽지 못했습니다.": "Could not read the embedded debugging-tool version history.",
+    "Embedded history data is unavailable": "Embedded history data is unavailable",
+    "Log Analyzer": "Log Analyzer",
+    "로봇의 시스템 진단 ZIP·폴더를 열어 오류 발생 시점과 관련 로그를 함께 분석하는 프로그램입니다. 오류·서보 알람 조회, 트레이스 그래프와 A/B 측정, 보고서·CSV 저장을 지원합니다.": "Analyze robot system diagnostic ZIP files or folders with errors and related logs in one place. Includes error and servo alarm lookup, trace graphs, A/B measurements, and report/CSV export."
   },
   "patterns": []
 }

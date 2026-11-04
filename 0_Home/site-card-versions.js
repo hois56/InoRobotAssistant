@@ -5,7 +5,7 @@ window.SITE_CARD_VERSIONS = {
     robot3dViewer: '26.11.03',
     toolSelector: '26.10.27',
     projectGenerator: '26.10.31',
-    software: '26.10.30',
+    software: '26.11.04',
     manual: '26.11.02',
-    debuggingTool: '26.11.02'
+    debuggingTool: '26.11.04'
 };

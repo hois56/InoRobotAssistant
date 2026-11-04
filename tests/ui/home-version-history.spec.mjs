@@ -37,9 +37,9 @@ for (const fallback of [false, true]) {
         const body = page.locator('#debug-history-body');
         await expect(body).toBeVisible();
         await expect(body).toContainText('Ver 3.1');
-        await expect(body).toContainText('Ver 3.3 (2026.11.02)');
-        await expect(page.locator('[data-debug-history="communicationTester"]')).toHaveAttribute('data-current-version', 'V3.3');
-        await expect(page.locator('a[href="CommunicationTester/InoRobot_Comm_Test_V3.3.zip"]')).toHaveCount(1);
+        await expect(body).toContainText('Ver 4.0 (2026.11.04)');
+        await expect(page.locator('[data-debug-history="communicationTester"]')).toHaveAttribute('data-current-version', 'V4.0');
+        await expect(page.locator('a[href="https://github.com/hois56/InoRobotAssistant/releases/download/communication-tester-v4.0/InoRobot_Comm_Test_V4.0.zip"]')).toHaveCount(1);
         await expectGroupedHistory(body);
     });
 }

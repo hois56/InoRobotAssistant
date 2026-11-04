@@ -42,7 +42,9 @@
     "Inovance Robot Software Center": "İnovasyon Robot Yazılım Merkezi",
     "다운로드 권한을 확인할 수 없습니다. 관리자에게 문의하세요.": "İndirme izni doğrulanamadı. Yöneticiyle iletişime geç.",
     "Download URL was not returned.": "İndirme URL'si döndürülmedi.",
-    "Standard와 Display 버전을 바로 다운로드할 수 있습니다.": "Standard ve Display sürümlerini doğrudan indirin."
+    "Standard와 Display 버전을 바로 다운로드할 수 있습니다.": "Standard ve Display sürümlerini doğrudan indirin.",
+    "한글 패치기": "Korece Yama Yükleyicisi",
+    "InoRobotLab·InoRobotTP R24C4 계열 표준·Display 버전용 한글 패치기(베타 버전)": "InoRobotLab·InoRobotTP R24C4 ailesinin Standard ve Display sürümleri için Korece yama yükleyicisi (Beta)"
   },
   "patterns": []
 }

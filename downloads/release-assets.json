@@ -111,6 +111,42 @@
       "size": 67904289,
       "sha256": "279f032cc6d66f87a2b960892d528dba9e005c4cda4a54e0ef37204a4e27b67b",
       "url": "https://github.com/hois56/InoRobotAssistant/releases/download/communication-tester-v3.3/InoRobot_Comm_Test_V3.3.zip"
+    },
+    {
+      "paths": [
+        "7_DebuggingTool/CADLightweight/CAD_Lightweight_V1.3.zip"
+      ],
+      "fileName": "CAD_Lightweight_V1.3.zip",
+      "size": 111590874,
+      "sha256": "53158d23b75a4c5b33ab1906cb6d49eba93959671a993b5e41faa122447da550",
+      "url": "https://github.com/hois56/InoRobotAssistant/releases/download/cad-lightweight-v1.3/CAD_Lightweight_V1.3.zip"
+    },
+    {
+      "paths": [
+        "5_Software/InoRobotKoreanInstaller/InoRobotKoreanInstaller_V1.0.zip"
+      ],
+      "fileName": "InoRobotKoreanInstaller_V1.0.zip",
+      "size": 79075445,
+      "sha256": "bcabc6679d23aa5a342c13b8eb4c212322393b48d40529329a179e21e42e57af",
+      "url": "https://github.com/hois56/InoRobotAssistant/releases/download/inorobot-korean-installer-v1.0-beta/InoRobotKoreanInstaller_V1.0.zip"
+    },
+    {
+      "paths": [
+        "7_DebuggingTool/CommunicationTester/InoRobot_Comm_Test_V4.0.zip"
+      ],
+      "fileName": "InoRobot_Comm_Test_V4.0.zip",
+      "size": 67916744,
+      "sha256": "ba42a56763fc903759ad58ac56d78b24b713e4ce1accca35a0b880f9ab1d5a40",
+      "url": "https://github.com/hois56/InoRobotAssistant/releases/download/communication-tester-v4.0/InoRobot_Comm_Test_V4.0.zip"
+    },
+    {
+      "paths": [
+        "7_DebuggingTool/InoRobotLogAnalyzer/InoDiagAnalyzer_V1.1.zip"
+      ],
+      "fileName": "InoDiagAnalyzer_V1.1.zip",
+      "size": 63713866,
+      "sha256": "a4c1db949b20ff511ae213e875263243450fc7d6f735bd3dfa97bea47f2be959",
+      "url": "https://github.com/hois56/InoRobotAssistant/releases/download/log-analyzer-v1.1/InoDiagAnalyzer_V1.1.zip"
     }
   ]
 }

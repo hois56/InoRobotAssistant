@@ -2,6 +2,7 @@
     'use strict';
 
     const tools = {
+        logAnalyzer: { title: 'Log Analyzer', markdownPath: './InoRobotLogAnalyzer/업데이트_기록.md' },
         communicationTester: {
             title: 'Communication Tester',
             markdownPath: './CommunicationTester/업데이트_기록.md'

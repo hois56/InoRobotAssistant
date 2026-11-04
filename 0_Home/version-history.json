@@ -882,6 +882,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.04",
+                "items": [
+                  "`[추가]` InoRobotLab·InoRobotTP용 한글 패치기 `V1.0 Beta`를 추가했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.10.30",
                 "items": [
                   "`[수정]` 소프트웨어 다운로드가 중단되던 문제를 해결하고, Display 버전을 비밀번호 없이 다운로드할 수 있도록 공개했습니다."
@@ -1116,6 +1122,13 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.11.04",
+                "items": [
+                  "`[변경]` Communication Tester를 `V3.3 → V4.0`으로 업데이트했습니다.",
+                  "`[배포]` 로그 분석기 V1.1을 배포했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.11.02",
                 "items": [
                   "`[변경]` CAD Lightweight를 `V1.2 → V1.3`으로 업데이트했습니다.",
@@ -1266,6 +1279,16 @@
           {
             "title": "communicationTester",
             "versions": [
+              {
+                "title": "Ver 4.0 (2026.11.04)",
+                "items": [
+                  "`[개선]` 가상판과 실제 연결판을 하나로 통합하고, 컨트롤러별로 가상·실제 연결을 선택하여 함께 사용할 수 있도록 개선했습니다.",
+                  "`[개선]` C1~C4를 기본으로 제공하고 가상 연결은 127.0.0.1~4, 실제 연결은 192.168.0.201~204를 기본 IP로 사용하도록 개선했습니다.",
+                  "`[개선]` 기존 연결 설정·HMI·펑션블록을 가져와 사용할 수 있도록 개선하고, 연결 방식과 설정을 저장하도록 개선했습니다.",
+                  "`[변경]` 프로그램 UI를 영어로 변경하고, 간결한 컨트롤러·통신 탭으로 화면을 개선했습니다.",
+                  "`[수정]` 비어 있는 HMI 저장 파일 때문에 기본 버튼이 표시되지 않던 문제를 해결했습니다. 기존 파일을 백업하고 Basic·Offset 기본 화면을 복원합니다."
+                ]
+              },
               {
                 "title": "Ver 3.3 (2026.11.02)",
                 "items": [
@@ -1520,6 +1543,17 @@
                   "`[신규]` 비교 화면에서 파일을 직접 수정하고 저장하는 기능을 추가했습니다.",
                   "`[신규]` 기존 프로젝트를 복사하는 `다른 이름으로 저장` 기능을 추가했습니다.",
                   "`[추가]` 한국어·영어·중국어·베트남어 UI를 지원합니다."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "logAnalyzer",
+            "versions": [
+              {
+                "title": "Ver 1.1 (2026.11.04)",
+                "items": [
+                  "`[추가]` 시스템 진단 ZIP·폴더 분석, 오류·서보 알람 조회, 트레이스 그래프·A/B 측정 및 보고서·CSV 저장을 지원합니다."
                 ]
               }
             ]
@@ -2361,6 +2395,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.04",
+                "items": [
+                  "`[Added]` Added the Korean patch installer `V1.0 Beta` for InoRobotLab and InoRobotTP."
+                ]
+              },
+              {
                 "title": "Ver 26.10.30",
                 "items": [
                   "`[Fixed]` Fixed interrupted software downloads and made Display versions available without a password."
@@ -2595,6 +2635,13 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.11.04",
+                "items": [
+                  "`[Changed]` Updated Communication Tester from `V3.3` to `V4.0`.",
+                  "`[Distribution]` Released Log Analyzer V1.1."
+                ]
+              },
+              {
                 "title": "Ver 26.11.02",
                 "items": [
                   "`[Changed]` Updated CAD Lightweight from `V1.2` to `V1.3`.",
@@ -2739,6 +2786,16 @@
           {
             "title": "communicationTester",
             "versions": [
+              {
+                "title": "Ver 4.0 (2026.11.04)",
+                "items": [
+                  "`[Improved]` Combined virtual and physical connections in one program, with an independent connection mode for each controller.",
+                  "`[Improved]` Provided C1-C4 by default, using 127.0.0.1-4 for virtual connections and 192.168.0.201-204 for physical connections.",
+                  "`[Improved]` Added import of existing controller settings, HMI layouts, and function code, with saved connection modes and settings.",
+                  "`[Changed]` Changed the program UI to English and simplified the controller and protocol tabs.",
+                  "`[Fixed]` Fixed missing default buttons when an empty HMI layout was saved. The previous file is backed up before restoring the Basic and Offset pages."
+                ]
+              },
               {
                 "title": "Ver 3.3 (2026.11.02)",
                 "items": [
@@ -2987,6 +3044,17 @@
                   "**[New]** Added direct file editing and saving in the comparison view.",
                   "**[New]** Added Save As for copying an existing project.",
                   "**[Added]** Supports Korean, English, Chinese, and Vietnamese UI."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "logAnalyzer",
+            "versions": [
+              {
+                "title": "Ver 1.1 (2026.11.04)",
+                "items": [
+                  "`[Added]` Diagnostic ZIP/folder analysis, error and servo alarm lookup, trace graphs, A/B measurements, and report/CSV export."
                 ]
               }
             ]
@@ -3828,6 +3896,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.04",
+                "items": [
+                  "`[新增]` 添加了适用于 InoRobotLab·InoRobotTP 的韩语补丁安装器 `V1.0 Beta`。"
+                ]
+              },
+              {
                 "title": "Ver 26.10.30",
                 "items": [
                   "`[修复]` 修复了软件下载中断的问题，并开放 Display 版本，无需密码即可下载。"
@@ -4062,6 +4136,13 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.11.04",
+                "items": [
+                  "`[变更]` 将 Communication Tester 从 `V3.3` 更新至 `V4.0`。",
+                  "`[新增]` 发布日志分析器V1.1。"
+                ]
+              },
+              {
                 "title": "Ver 26.11.02",
                 "items": [
                   "`[变更]` CAD Lightweight 从 `V1.2` 更新至 `V1.3`。",
@@ -4206,6 +4287,16 @@
           {
             "title": "communicationTester",
             "versions": [
+              {
+                "title": "Ver 4.0 (2026.11.04)",
+                "items": [
+                  "`[改进]` 将虚拟连接和实体连接合并到同一程序，可为每个控制器单独选择连接模式并混合使用。",
+                  "`[改进]` 默认提供 C1-C4，虚拟连接默认 IP 为 127.0.0.1-4，实体连接为 192.168.0.201-204。",
+                  "`[改进]` 支持导入原有控制器设置、HMI 和功能代码，并保存连接模式和设置。",
+                  "`[变更]` 将程序界面改为英语，并简化控制器和通信协议选项卡。",
+                  "`[修复]` 修复保存了空 HMI 文件时默认按钮不显示的问题，备份原文件后恢复 Basic 和 Offset 默认页面。"
+                ]
+              },
               {
                 "title": "Ver 3.3 (2026.11.02)",
                 "items": [
@@ -4454,6 +4545,17 @@
                   "`[New]` 可在比较画面直接编辑并保存文件。",
                   "`[New]` 添加复制现有项目的另存为功能。",
                   "`[新增]` 支持韩语、英语、中文和越南语界面。"
+                ]
+              }
+            ]
+          },
+          {
+            "title": "logAnalyzer",
+            "versions": [
+              {
+                "title": "Ver 1.1 (2026.11.04)",
+                "items": [
+                  "`[新增]` 支持诊断ZIP与文件夹分析、错误与伺服报警查询、轨迹曲线、A/B测量及报告和CSV导出。"
                 ]
               }
             ]
@@ -5295,6 +5397,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.04",
+                "items": [
+                  "`[Thêm]` Đã thêm trình cài bản vá tiếng Hàn `V1.0 Beta` cho InoRobotLab·InoRobotTP."
+                ]
+              },
+              {
                 "title": "Ver 26.10.30",
                 "items": [
                   "`[Sửa lỗi]` Đã khắc phục việc tải phần mềm bị gián đoạn và cho phép tải phiên bản Display không cần mật khẩu."
@@ -5529,6 +5637,13 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.11.04",
+                "items": [
+                  "`[Thay đổi]` Cập nhật Communication Tester từ `V3.3` lên `V4.0`.",
+                  "`[Phân phối]` Phát hành công cụ phân tích nhật ký V1.1."
+                ]
+              },
+              {
                 "title": "Ver 26.11.02",
                 "items": [
                   "`[Thay đổi]` Đã cập nhật CAD Lightweight từ `V1.2` lên `V1.3`.",
@@ -5673,6 +5788,16 @@
           {
             "title": "communicationTester",
             "versions": [
+              {
+                "title": "Ver 4.0 (2026.11.04)",
+                "items": [
+                  "`[Cải tiến]` Hợp nhất kết nối ảo và kết nối thực trong một chương trình, cho phép chọn chế độ riêng cho từng bộ điều khiển và sử dụng kết hợp.",
+                  "`[Cải tiến]` Cung cấp sẵn C1-C4 với IP mặc định 127.0.0.1-4 cho kết nối ảo và 192.168.0.201-204 cho kết nối thực.",
+                  "`[Cải tiến]` Cho phép nhập cài đặt bộ điều khiển, HMI và mã chức năng hiện có, đồng thời lưu chế độ kết nối và cài đặt.",
+                  "`[Thay đổi]` Chuyển giao diện chương trình sang tiếng Anh và đơn giản hóa các tab bộ điều khiển và giao thức.",
+                  "`[Sửa lỗi]` Khắc phục lỗi không hiển thị nút mặc định khi tệp HMI trống. Sao lưu tệp cũ trước khi khôi phục trang Basic và Offset."
+                ]
+              },
               {
                 "title": "Ver 3.3 (2026.11.02)",
                 "items": [
@@ -5921,6 +6046,17 @@
                   "**[Mới]** Có thể sửa và lưu tệp trực tiếp trong màn hình so sánh.",
                   "**[Mới]** Thêm Lưu thành để sao chép dự án hiện có.",
                   "**[Thêm]** Hỗ trợ giao diện tiếng Hàn, Anh, Trung và Việt."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "logAnalyzer",
+            "versions": [
+              {
+                "title": "Ver 1.1 (2026.11.04)",
+                "items": [
+                  "`[Thêm]` Phân tích ZIP/thư mục chẩn đoán, tra cứu lỗi và cảnh báo servo, đồ thị trace, đo A/B và xuất báo cáo/CSV."
                 ]
               }
             ]
@@ -6762,6 +6898,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.04",
+                "items": [
+                  "`[Eklendi]` InoRobotLab ve InoRobotTP için Korece yama yükleyicisi `V1.0 Beta` eklendi."
+                ]
+              },
+              {
                 "title": "Ver 26.10.30",
                 "items": [
                   "`[Düzeltildi]` Kesintiye uğrayan yazılım indirmeleri düzeltildi ve Display sürümleri parolasız indirilebilir hâle getirildi."
@@ -6996,6 +7138,13 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.11.04",
+                "items": [
+                  "`[Değiştirildi]` Communication Tester `V3.3` sürümünden `V4.0` sürümüne güncellendi.",
+                  "`[Dağıtım]` Günlük Analizörü V1.1 yayımlandı."
+                ]
+              },
+              {
                 "title": "Ver 26.11.02",
                 "items": [
                   "`[Değiştirildi]` CAD Lightweight, `V1.2` sürümünden `V1.3` sürümüne güncellendi.",
@@ -7140,6 +7289,16 @@
           {
             "title": "communicationTester",
             "versions": [
+              {
+                "title": "Ver 4.0 (2026.11.04)",
+                "items": [
+                  "`[İyileştirme]` Sanal ve fiziksel bağlantılar tek programda birleştirildi; her denetleyici için ayrı bağlantı modu seçilip birlikte kullanılabilir.",
+                  "`[İyileştirme]` C1-C4 varsayılan olarak sunulur; sanal bağlantı IP adresleri 127.0.0.1-4, fiziksel bağlantı IP adresleri 192.168.0.201-204 olarak ayarlandı.",
+                  "`[İyileştirme]` Mevcut denetleyici ayarları, HMI ve işlev kodu içe aktarılabilir; bağlantı modları ve ayarlar kaydedilir.",
+                  "`[Değiştirildi]` Program arayüzü İngilizceye çevrildi ve denetleyici ile protokol sekmeleri sadeleştirildi.",
+                  "`[Düzeltildi]` Boş HMI dosyası nedeniyle varsayılan düğmelerin görünmemesi düzeltildi. Basic ve Offset sayfaları geri yüklenmeden önce eski dosya yedeklenir."
+                ]
+              },
               {
                 "title": "Ver 3.3 (2026.11.02)",
                 "items": [
@@ -7388,6 +7547,17 @@
                   "**[Yeni]** Karşılaştırma görünümüne doğrudan dosya düzenleme ve kaydetme eklendi.",
                   "**[Yeni]** Mevcut bir projeyi kopyalamak için Farklı Kaydet eklendi.",
                   "**[Eklendi]** Korece, İngilizce, Çince ve Vietnamca kullanıcı arayüzünü destekler."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "logAnalyzer",
+            "versions": [
+              {
+                "title": "Ver 1.1 (2026.11.04)",
+                "items": [
+                  "`[Eklendi]` Tanılama ZIP/klasör analizi, hata ve servo alarmı arama, iz grafikleri, A/B ölçümü ve rapor/CSV aktarımı."
                 ]
               }
             ]
@@ -8229,6 +8399,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.04",
+                "items": [
+                  "`[Добавлено]` Добавлен установщик корейского языка `V1.0 Beta` для InoRobotLab·InoRobotTP."
+                ]
+              },
+              {
                 "title": "Ver 26.10.30",
                 "items": [
                   "`[Исправлено]` Исправлена остановка загрузки программ, версии Display открыты для загрузки без пароля."
@@ -8463,6 +8639,13 @@
             "title": "Debugging Tool",
             "versions": [
               {
+                "title": "Ver 26.11.04",
+                "items": [
+                  "`[Изменено]` Communication Tester обновлён с `V3.3` до `V4.0`.",
+                  "`[Распространение]` Выпущен анализатор журналов V1.1."
+                ]
+              },
+              {
                 "title": "Ver 26.11.02",
                 "items": [
                   "`[Изменено]` CAD Lightweight обновлён с `V1.2` до `V1.3`.",
@@ -8607,6 +8790,16 @@
           {
             "title": "communicationTester",
             "versions": [
+              {
+                "title": "Ver 4.0 (2026.11.04)",
+                "items": [
+                  "`[Улучшено]` Виртуальные и физические подключения объединены в одной программе с независимым выбором режима для каждого контроллера.",
+                  "`[Улучшено]` По умолчанию доступны C1-C4 с IP 127.0.0.1-4 для виртуальных подключений и 192.168.0.201-204 для физических.",
+                  "`[Улучшено]` Добавлен импорт существующих настроек контроллеров, HMI и функционального кода с сохранением режимов подключения и настроек.",
+                  "`[Изменено]` Интерфейс программы переведён на английский язык, вкладки контроллеров и протоколов упрощены.",
+                  "`[Исправлено]` Исправлено отсутствие стандартных кнопок при пустом файле HMI. Перед восстановлением страниц Basic и Offset сохраняется резервная копия исходного файла."
+                ]
+              },
               {
                 "title": "Ver 3.3 (2026.11.02)",
                 "items": [
@@ -8855,6 +9048,17 @@
                   "**[Новое]** Добавлено прямое редактирование и сохранение файлов в режиме сравнения.",
                   "**[Новое]** Добавлено сохранение как для копирования существующего проекта.",
                   "**[Добавлено]** Поддержка пользовательского интерфейса на корейском, английском, китайском и вьетнамском языках."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "logAnalyzer",
+            "versions": [
+              {
+                "title": "Ver 1.1 (2026.11.04)",
+                "items": [
+                  "`[Добавлено]` Анализ ZIP/папок диагностики, поиск ошибок и аварий сервопривода, графики трассировки, измерения A/B и экспорт отчётов/CSV."
                 ]
               }
             ]

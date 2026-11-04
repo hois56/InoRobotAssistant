@@ -61,14 +61,16 @@
     "각 축의 티칭값을 입력합니다. (Zero 파라미터에 현재 값 읽기를 클릭하여 현재 로봇의 위치 값을 엔코더 값으로 읽을 수 있습니다.)": "각 축의 티칭값을 입력합니다. Zero 파라미터의 현재 값 읽기로 현재 엔코더값을 확인할 수 있습니다.",
     "현재 위치의 엔코더 값을 '티칭값' 항목에 입력합니다.": "현재 위치의 엔코더값을 티칭값에 입력합니다.",
     "'최종 결과' 항목에 계산된 값을 확인합니다.": "최종 결과에서 계산값을 확인합니다.",
-    "로봇 Zero 파라미터에 계산된 값을 입력합니다.": "계산값을 로봇 Zero 파라미터에 입력합니다."
-    ,"Inovance Debugging Support Tool": "Inovance 디버깅 지원 도구"
-    ,"CAD Lightweight": "CAD 경량화"
-    ,"Zero Calibration Tool": "영점 보정 툴"
-    ,"Zero Calibration Tool | Inovance": "영점 보정 툴 | Inovance"
-    ,"Calibration Mode": "보정 모드"
-    ,"내장된 디버깅 툴 버전 기록을 읽지 못했습니다.": "내장된 디버깅 툴 버전 기록을 읽지 못했습니다.",
-    "Embedded history data is unavailable": "내장된 버전 기록 데이터를 사용할 수 없습니다."
+    "로봇 Zero 파라미터에 계산된 값을 입력합니다.": "계산값을 로봇 Zero 파라미터에 입력합니다.",
+    "Inovance Debugging Support Tool": "Inovance 디버깅 지원 도구",
+    "CAD Lightweight": "CAD 경량화",
+    "Zero Calibration Tool": "영점 보정 툴",
+    "Zero Calibration Tool | Inovance": "영점 보정 툴 | Inovance",
+    "Calibration Mode": "보정 모드",
+    "내장된 디버깅 툴 버전 기록을 읽지 못했습니다.": "내장된 디버깅 툴 버전 기록을 읽지 못했습니다.",
+    "Embedded history data is unavailable": "내장된 버전 기록 데이터를 사용할 수 없습니다.",
+    "Log Analyzer": "로그 분석기",
+    "로봇의 시스템 진단 ZIP·폴더를 열어 오류 발생 시점과 관련 로그를 함께 분석하는 프로그램입니다. 오류·서보 알람 조회, 트레이스 그래프와 A/B 측정, 보고서·CSV 저장을 지원합니다.": "로봇의 시스템 진단 ZIP·폴더를 열어 오류 발생 시점과 관련 로그를 함께 분석하는 프로그램입니다. 오류·서보 알람 조회, 트레이스 그래프와 A/B 측정, 보고서·CSV 저장을 지원합니다."
   },
   "patterns": []
 }

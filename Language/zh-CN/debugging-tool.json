@@ -61,14 +61,16 @@
     "각 축의 티칭값을 입력합니다. (Zero 파라미터에 현재 값 읽기를 클릭하여 현재 로봇의 위치 값을 엔코더 값으로 읽을 수 있습니다.)": "输入各轴示教值。可在 Zero 参数中点击读取当前值以获取编码器值。",
     "현재 위치의 엔코더 값을 '티칭값' 항목에 입력합니다.": "将当前位置的编码器值输入示教值。",
     "'최종 결과' 항목에 계산된 값을 확인합니다.": "在最终结果中确认计算值。",
-    "로봇 Zero 파라미터에 계산된 값을 입력합니다.": "将计算值输入机器人 Zero 参数。"
-    ,"Inovance Debugging Support Tool": "Inovance 调试支持工具"
-    ,"CAD Lightweight": "CAD 轻量化"
-    ,"Zero Calibration Tool": "零点校准工具"
-    ,"Zero Calibration Tool | Inovance": "零点校准工具 | Inovance"
-    ,"Calibration Mode": "校准模式"
-    ,"내장된 디버깅 툴 버전 기록을 읽지 못했습니다.": "无法读取内置调试工具版本记录。",
-    "Embedded history data is unavailable": "嵌入的版本记录数据不可用。"
+    "로봇 Zero 파라미터에 계산된 값을 입력합니다.": "将计算值输入机器人 Zero 参数。",
+    "Inovance Debugging Support Tool": "Inovance 调试支持工具",
+    "CAD Lightweight": "CAD 轻量化",
+    "Zero Calibration Tool": "零点校准工具",
+    "Zero Calibration Tool | Inovance": "零点校准工具 | Inovance",
+    "Calibration Mode": "校准模式",
+    "내장된 디버깅 툴 버전 기록을 읽지 못했습니다.": "无法读取内置调试工具版本记录。",
+    "Embedded history data is unavailable": "嵌入的版本记录数据不可用。",
+    "Log Analyzer": "日志分析器",
+    "로봇의 시스템 진단 ZIP·폴더를 열어 오류 발생 시점과 관련 로그를 함께 분석하는 프로그램입니다. 오류·서보 알람 조회, 트레이스 그래프와 A/B 측정, 보고서·CSV 저장을 지원합니다.": "打开机器人系统诊断ZIP文件或文件夹，结合相关日志分析故障发生时刻。支持错误与伺服报警查询、轨迹曲线、A/B测量及报告和CSV导出。"
   },
   "patterns": []
 }
