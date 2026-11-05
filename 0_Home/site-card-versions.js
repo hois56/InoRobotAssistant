@@ -6,6 +6,6 @@ window.SITE_CARD_VERSIONS = {
     toolSelector: '26.10.27',
     projectGenerator: '26.10.31',
     software: '26.11.04',
-    manual: '26.11.02',
+    manual: '26.11.05',
     debuggingTool: '26.11.04'
 };

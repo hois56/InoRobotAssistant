@@ -420,6 +420,16 @@ const manualData = [
         downloadPath: "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/API.zip",
         description: "Application Level - API"
     },
+    {
+        id: "edu_advanced_string_api",
+        title: "문자열 API 예제",
+        robotType: "none",
+        category: "advanced",
+        date: "2026-11-05",
+        lang: "KR",
+        path: "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/문자열API_예제.zip",
+        description: "Application Level - String API"
+    },
     // 6-3. For Display Education
     {
         id: "edu_disp_1",

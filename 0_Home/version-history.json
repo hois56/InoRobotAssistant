@@ -975,6 +975,12 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.11.05",
+                "items": [
+                  "`[추가]` 응용과정 교육 자료에 문자열 API 예제를 추가했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.11.02",
                 "items": [
                   "`[변경]` IR-S25-80·IR-S25-100의 클린 사양 CAD 다운로드 버튼을 삭제했습니다."
@@ -2488,6 +2494,12 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.11.05",
+                "items": [
+                  "`[Added]` Added a string API example to the advanced training materials."
+                ]
+              },
+              {
                 "title": "Ver 26.11.02",
                 "items": [
                   "`[Changed]` Removed the clean-specification CAD download buttons for IR-S25-80 and IR-S25-100."
@@ -3988,6 +4000,12 @@
           {
             "title": "Document",
             "versions": [
+              {
+                "title": "Ver 26.11.05",
+                "items": [
+                  "`[新增]` 在进阶培训资料中添加了字符串 API 示例。"
+                ]
+              },
               {
                 "title": "Ver 26.11.02",
                 "items": [
@@ -5490,6 +5508,12 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.11.05",
+                "items": [
+                  "`[Thêm]` Đã thêm ví dụ API chuỗi vào tài liệu đào tạo nâng cao."
+                ]
+              },
+              {
                 "title": "Ver 26.11.02",
                 "items": [
                   "`[Thay đổi]` Đã xóa các nút tải CAD phiên bản phòng sạch của IR-S25-80 và IR-S25-100."
@@ -6991,6 +7015,12 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.11.05",
+                "items": [
+                  "`[Eklendi]` İleri eğitim materyallerine bir dize API örneği eklendi."
+                ]
+              },
+              {
                 "title": "Ver 26.11.02",
                 "items": [
                   "`[Değişiklik]` IR-S25-80 ve IR-S25-100 temiz oda modellerinin CAD indirme düğmeleri kaldırıldı."
@@ -8491,6 +8521,12 @@
           {
             "title": "Document",
             "versions": [
+              {
+                "title": "Ver 26.11.05",
+                "items": [
+                  "`[Добавлено]` В материалы углубленного обучения добавлен пример строкового API."
+                ]
+              },
               {
                 "title": "Ver 26.11.02",
                 "items": [
