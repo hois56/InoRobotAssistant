@@ -34,6 +34,12 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.11.05",
+                "items": [
+                  "`[변경]` 푸시할 때 GitHub 자동 회귀 검사를 실행하지 않도록 변경했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.10.31",
                 "items": [
                   "`[개선]` 수정 범위에 맞춰 검사하도록 개선해 간단한 수정의 검증 대기 시간을 줄였습니다.",
@@ -1576,6 +1582,12 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.11.05",
+                "items": [
+                  "`[Changed]` Disabled automatic GitHub regression checks on push."
+                ]
+              },
+              {
                 "title": "Ver 26.10.31",
                 "items": [
                   "`[Improved]` Reduced validation waits for small changes by checking the affected areas.",
@@ -3082,6 +3094,12 @@
           {
             "title": "InoRobot Assistant",
             "versions": [
+              {
+                "title": "Ver 26.11.05",
+                "items": [
+                  "`[变更]` 已停用推送时的 GitHub 自动回归检查。"
+                ]
+              },
               {
                 "title": "Ver 26.10.31",
                 "items": [
@@ -4590,6 +4608,12 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.11.05",
+                "items": [
+                  "`[Thay đổi]` Đã tắt kiểm tra hồi quy tự động trên GitHub khi đẩy mã."
+                ]
+              },
+              {
                 "title": "Ver 26.10.31",
                 "items": [
                   "`[Cải tiến]` Giảm thời gian chờ kiểm tra cho thay đổi nhỏ bằng cách kiểm tra theo phạm vi thay đổi.",
@@ -6097,6 +6121,12 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.11.05",
+                "items": [
+                  "`[Değişiklik]` Gönderim sırasında otomatik GitHub regresyon kontrolleri devre dışı bırakıldı."
+                ]
+              },
+              {
                 "title": "Ver 26.10.31",
                 "items": [
                   "`[İyileştirme]` Değiştirilen alanları denetleyerek küçük değişikliklerde doğrulama bekleme süresini kısalttık.",
@@ -7603,6 +7633,12 @@
           {
             "title": "InoRobot Assistant",
             "versions": [
+              {
+                "title": "Ver 26.11.05",
+                "items": [
+                  "`[Изменено]` Отключены автоматические регрессионные проверки GitHub при отправке изменений."
+                ]
+              },
               {
                 "title": "Ver 26.10.31",
                 "items": [
