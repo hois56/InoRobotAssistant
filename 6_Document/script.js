@@ -427,7 +427,7 @@ const manualData = [
         category: "advanced",
         date: "2026-11-05",
         lang: "KR",
-        path: "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/문자열API_예제.zip",
+        path: "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/String_API_Example.zip",
         description: "Application Level - String API"
     },
     // 6-3. For Display Education
