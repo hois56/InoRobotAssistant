@@ -888,6 +888,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.05",
+                "items": [
+                  "`[추가]` 가상 컨트롤러와 펜던트를 포함한 InoRobotLab 시뮬레이션 버전(MultiVC) 다운로드를 추가했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.11.04",
                 "items": [
                   "`[추가]` InoRobotLab·InoRobotTP용 한글 패치기 `V1.0 Beta`를 추가했습니다."
@@ -2413,6 +2419,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.05",
+                "items": [
+                  "`[Added]` Added the InoRobotLab simulation version (MultiVC) download with virtual controllers and pendant."
+                ]
+              },
+              {
                 "title": "Ver 26.11.04",
                 "items": [
                   "`[Added]` Added the Korean patch installer `V1.0 Beta` for InoRobotLab and InoRobotTP."
@@ -3925,6 +3937,12 @@
           {
             "title": "Software",
             "versions": [
+              {
+                "title": "Ver 26.11.05",
+                "items": [
+                  "`[新增]` 添加了包含虚拟控制器和示教器的 InoRobotLab 仿真版本（MultiVC）下载。"
+                ]
+              },
               {
                 "title": "Ver 26.11.04",
                 "items": [
@@ -5439,6 +5457,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.05",
+                "items": [
+                  "`[Thêm]` Đã thêm bản tải xuống InoRobotLab mô phỏng (MultiVC), gồm bộ điều khiển ảo và tay dạy."
+                ]
+              },
+              {
                 "title": "Ver 26.11.04",
                 "items": [
                   "`[Thêm]` Đã thêm trình cài bản vá tiếng Hàn `V1.0 Beta` cho InoRobotLab·InoRobotTP."
@@ -6952,6 +6976,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.05",
+                "items": [
+                  "`[Eklendi]` Sanal kontrolör ve el terminali içeren InoRobotLab simülasyon sürümü (MultiVC) indirmesi eklendi."
+                ]
+              },
+              {
                 "title": "Ver 26.11.04",
                 "items": [
                   "`[Eklendi]` InoRobotLab ve InoRobotTP için Korece yama yükleyicisi `V1.0 Beta` eklendi."
@@ -8464,6 +8494,12 @@
           {
             "title": "Software",
             "versions": [
+              {
+                "title": "Ver 26.11.05",
+                "items": [
+                  "`[Добавлено]` Добавлена загрузка версии InoRobotLab для симуляции (MultiVC) с виртуальными контроллерами и пультом."
+                ]
+              },
               {
                 "title": "Ver 26.11.04",
                 "items": [

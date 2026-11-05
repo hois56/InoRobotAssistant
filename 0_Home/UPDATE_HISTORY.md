@@ -688,6 +688,10 @@
 
 ## Software
 
+### Ver 26.11.05
+
+- `[추가]` 가상 컨트롤러와 펜던트를 포함한 InoRobotLab 시뮬레이션 버전(MultiVC) 다운로드를 추가했습니다.
+
 ### Ver 26.11.04
 
 - `[추가]` InoRobotLab·InoRobotTP용 한글 패치기 `V1.0 Beta`를 추가했습니다.
