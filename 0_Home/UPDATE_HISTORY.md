@@ -688,6 +688,10 @@
 
 ## Software
 
+### Ver 26.11.11
+
+- `[업데이트]` InoRobotLab·InoRobotTP 시뮬레이션 버전(MultiVC)을 SPC25K13(2026-11-11)으로 업데이트했습니다.
+
 ### Ver 26.11.05
 
 - `[추가]` 가상 컨트롤러와 펜던트를 포함한 InoRobotLab 시뮬레이션 버전(MultiVC) 다운로드를 추가했습니다.
