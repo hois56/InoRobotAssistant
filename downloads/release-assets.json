@@ -15,6 +15,15 @@
     },
     {
       "paths": [
+        "5_Software/InoRobotLab/Simulation/InoRobotLab_TP_SPC25K13_MultiVC_20261111.zip"
+      ],
+      "fileName": "InoRobotLab_TP_SPC25K13_MultiVC_20261111.zip",
+      "size": 640454257,
+      "sha256": "173d19b3332e41d16bb19b90c7c832cc62b5d9c8bbf4ee35cbeb9ceacb08e2d1",
+      "url": "https://github.com/hois56/InoRobotAssistant/releases/download/inorobotlab-simulation-20261111/InoRobotLab_TP_SPC25K13_MultiVC_20261111.zip"
+    },
+    {
+      "paths": [
         "5_Software/InoRobotLab/InoRobotLabSetUp_V4R24C4SPC25_x64.zip"
       ],
       "fileName": "InoRobotLabSetUp_V4R24C4SPC25_x64.zip",
