@@ -166,6 +166,22 @@ export class ConveyorTracking {
         return structuredClone(this.lastFrame);
     }
 
+    resumeEvents(reply) {
+        if (reply.session !== this.session) throw new RangeError('conveyor session');
+        const { eventId, flags: requestId } = reply;
+        const retained = this.acknowledge(reply);
+        // A reset controller starts over. A live controller can only accept a
+        // camera response for its current request, including delayed results.
+        const stillRequested = event => !event.requestId || event.requestId === requestId;
+        this.pending = retained ? this.pending.filter(stillRequested) : [];
+        this.processingCaptures = retained
+            ? this.processingCaptures.filter(({ event }) => stillRequested(event)) : [];
+        this.eventId = this.acknowledged = eventId;
+        for (const event of this.pending) event.id = ++this.eventId;
+        return Boolean(requestId && (this.pending.some(event => event.requestId === requestId)
+            || this.processingCaptures.some(({ event }) => event.requestId === requestId)));
+    }
+
     acknowledge({ session, eventId }) {
         if (session !== this.session) return false;
         integer(eventId, 'event acknowledgement', 0, this.eventId);

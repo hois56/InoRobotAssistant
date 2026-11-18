@@ -329,7 +329,7 @@
                   "`[수정]` R4H 등 일부 로봇 모델에서 INOVANCE 로고가 표시되지 않던 문제를 해결했습니다.",
                   "`[추가]` 3D 화면에서 모서리·곡선을 클릭해 위치값을 자동 생성하는 기능을 추가했습니다. 간격·시작 번호·방향·오프셋을 설정하고 좌표를 미리 본 뒤 P.pts에 저장하거나 내보낼 수 있습니다.",
                   "`[수정]` 3D 시뮬레이션의 동작 관리, I/O 매핑, 컨베이어 및 테스트 모델 창에서 안내와 상태를 선택한 언어로 표시합니다.",
-                  "`[수정]` 컨베이어 웹 연동을 다시 연결할 때 기존 엔코더와 대기 물체 정보를 유지하며, 확인 응답이 유실된 검출 결과도 중복 등록하지 않고 이어서 처리합니다."
+                  "`[수정]` 컨베이어 웹 연동을 다시 연결할 때 기존 엔코더와 대기 물체 정보를 유지하며, 확인 응답이 유실된 검출 결과도 중복 등록하지 않고 이어서 처리합니다. K14 가상 컨트롤러를 다시 시작한 뒤에도 웹 컨베이어를 연동할 수 있습니다."
                 ]
               },
               {
@@ -1967,7 +1967,7 @@
                   "`[Fix]` Fixed missing INOVANCE logos on R4H and some other robot models.",
                   "`[Added]` Added automatic position generation by clicking edges and curves in the 3D view. Set spacing, first point number, direction and offsets, preview coordinates, then save or export them through P.pts.",
                   "`[Fixed]` Motion management, I/O mapping, conveyor and test model panels now show instructions and status in the selected language.",
-                  "`[Fixed]` Reconnecting the web conveyor preserves encoder counts and queued workpieces, and retries detections without duplicating objects when acknowledgements are lost."
+                  "`[Fixed]` Reconnecting the web conveyor preserves encoder counts and queued workpieces, and retries detections without duplicating objects when acknowledgements are lost. Web conveyor linking also recovers after the K14 virtual controller restarts."
                 ]
               },
               {
@@ -3576,7 +3576,7 @@
                   "`[修复]` 修复了 R4H 等部分机器人模型不显示 INOVANCE 标识的问题。",
                   "`[新增]` 新增在3D视图中点击边和曲线自动生成位置值的功能。可设置间距、起始编号、方向和偏移，预览坐标后通过P.pts保存或导出。",
                   "`[修复]` 动作管理、I/O 映射、输送带和测试模型面板现按所选语言显示说明与状态。",
-                  "`[修复]` 重新连接网页传送带时保留编码器计数和待处理工件，确认响应丢失时重传检测结果也不会重复登记。"
+                  "`[修复]` 重新连接网页传送带时保留编码器计数和待处理工件，确认响应丢失时重传检测结果也不会重复登记。 K14 虚拟控制器重启后也可以重新连接网页传送带。"
                 ]
               },
               {
@@ -5185,7 +5185,7 @@
                   "`[Sửa lỗi]` Đã khắc phục lỗi không hiển thị logo INOVANCE trên R4H và một số mô hình robot khác.",
                   "`[Thêm]` Thêm tạo vị trí tự động bằng cách nhấp vào cạnh và đường cong trong khung nhìn 3D. Đặt khoảng cách, số bắt đầu, hướng và độ lệch, xem trước tọa độ rồi lưu hoặc xuất qua P.pts.",
                   "`[Đã sửa]` Các bảng quản lý chuyển động, ánh xạ I/O, băng tải và mô hình thử hiện hiển thị hướng dẫn và trạng thái theo ngôn ngữ đã chọn.",
-                  "`[Sửa]` Kết nối lại băng tải web giữ nguyên bộ đếm encoder và phôi đang chờ; kết quả nhận dạng được gửi lại khi mất xác nhận không tạo phôi trùng."
+                  "`[Sửa]` Kết nối lại băng tải web giữ nguyên bộ đếm encoder và phôi đang chờ; kết quả nhận dạng được gửi lại khi mất xác nhận không tạo phôi trùng. Có thể kết nối lại băng tải web sau khi bộ điều khiển ảo K14 khởi động lại."
                 ]
               },
               {
@@ -6794,7 +6794,7 @@
                   "`[Düzeltme]` R4H ve bazı diğer robot modellerinde INOVANCE logosunun görünmemesi sorunu giderildi.",
                   "`[Eklendi]` 3B görünümde kenar ve eğrilere tıklayarak otomatik konum oluşturma eklendi. Aralık, ilk nokta numarası, yön ve ofsetleri ayarlayıp koordinatları önizleyebilir, P.pts ile kaydedebilir veya dışa aktarabilirsiniz.",
                   "`[Düzeltildi]` Hareket yönetimi, G/Ç eşleme, konveyör ve test modeli panellerindeki açıklamalar ve durum bilgileri artık seçili dilde gösterilir.",
-                  "`[Düzeltildi]` Web konveyörü yeniden bağlandığında enkoder sayacı ve bekleyen parçalar korunur; onay kaybolduğunda algılamaların yeniden gönderilmesi parçaları çoğaltmaz."
+                  "`[Düzeltildi]` Web konveyörü yeniden bağlandığında enkoder sayacı ve bekleyen parçalar korunur; onay kaybolduğunda algılamaların yeniden gönderilmesi parçaları çoğaltmaz. K14 sanal kontrolörü yeniden başlatıldıktan sonra web konveyörü yeniden bağlanabilir."
                 ]
               },
               {
@@ -8403,7 +8403,7 @@
                   "`[Исправление]` Исправлено отсутствие логотипа INOVANCE на R4H и некоторых других моделях роботов.",
                   "`[Добавлено]` Добавлено автоматическое создание позиций щелчками по рёбрам и кривым в 3D-окне. Можно задать шаг, начальный номер, направление и смещения, просмотреть координаты и сохранить или экспортировать их через P.pts.",
                   "`[Исправлено]` Инструкции и сообщения о состоянии на панелях управления движениями, назначения ввода-вывода, конвейера и тестовых моделей отображаются на выбранном языке.",
-                  "`[Исправлено]` При повторном подключении веб-конвейера сохраняются счётчик энкодера и очередь деталей; повторная отправка результатов при потере подтверждения не создаёт дубликатов."
+                  "`[Исправлено]` При повторном подключении веб-конвейера сохраняются счётчик энкодера и очередь деталей; повторная отправка результатов при потере подтверждения не создаёт дубликатов. Веб-конвейер можно повторно подключить после перезапуска виртуального контроллера K14."
                 ]
               },
               {

@@ -148,7 +148,7 @@ import { conveyorElapsedSeconds } from './conveyor-core.mjs?v=20261117-run-1';
 import { moveConveyorObjects } from './conveyor-scene.mjs?v=20261116-feed-1';
 import { createConveyorFeedApp } from './conveyor-feed-app.mjs?v=20261117-variation-1';
 import { createConveyorVisuals } from './conveyor-visuals.mjs?v=20261117-catalog-belt-2';
-import { createConveyorTrackingApp } from './conveyor-tracking-app.mjs?v=20261118-request-capture-1';
+import { createConveyorTrackingApp } from './conveyor-tracking-app.mjs?v=20261119-controller-reconnect-1';
 import * as WorkspaceRecovery from './workspace-recovery-core.mjs';
 import {
     calculateMeasurementResult,

@@ -125,3 +125,19 @@ test('reconnecting preserves encoder, occupied sensor and unacknowledged detecti
     assert.deepEqual(after.events,[]);
     assert.equal(after.encoder,first.encoder);
 });
+
+test('reconnecting discards obsolete capture results and retains a current delayed capture', () => {
+    const tracking = create({ sensors: [] });
+    tracking.sample({ seconds: .01, distance: 1, captures: [{ requestId: 7, objects: [] }, { objects: [] }] });
+    tracking.sample({ seconds: .01, distance: 1, captureDelaySeconds: .5,
+        captures: [{ requestId: 7, objects: [] }, { requestId: 8, objects: [] }] });
+
+    assert.equal(tracking.resumeEvents({ session: tracking.session, eventId: 0, flags: 8 }), true);
+    const resumed = tracking.reconnectFrame();
+    assert.equal(resumed.encoder, '2000');
+    assert.deepEqual(resumed.events.map(event => [event.id, event.requestId]), [[1, 0]]);
+
+    tracking.sample({ seconds: .25, distance: 0 });
+    const frame = tracking.sample({ seconds: .25, distance: 0 });
+    assert.deepEqual(frame.events.map(event => [event.id, event.requestId]), [[1, 0], [2, 8]]);
+});

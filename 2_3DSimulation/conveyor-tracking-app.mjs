@@ -1,7 +1,7 @@
 import { fillConveyorForm } from './wasm/forms.mjs';
 import { uiText, uiFormat } from './ui-language.mjs';
 import * as THREE from 'three';
-import { ConveyorTracking, isConveyorSensorAddress } from './conveyor-tracking-core.mjs?v=20261118-request-capture-1';
+import { ConveyorTracking, isConveyorSensorAddress } from './conveyor-tracking-core.mjs?v=20261119-controller-reconnect-1';
 import { conveyorLocalBounds } from './conveyor-scene.mjs?v=20261116-feed-1';
 import { normalizeSensorSettings, conveyorSensorLayout, createConveyorSensorVisual, createConveyorSensorPreview } from './conveyor-sensor-preview.mjs?v=20261118-request-capture-1';
 
@@ -231,6 +231,8 @@ export function createConveyorTrackingApp(adapter) {
             address, position: x, width, objectType });
         adapter.save?.();
         link.latest = tracker.reconnectFrame();
+        // Check what the controller retained before replaying browser events.
+        if (previous?.tracker === tracker) link.probe = { ...link.latest, events: [] };
         report('K14 컨트롤러의 응답을 기다립니다.'); flush(); render();
     }
     function releaseController(controller) {
@@ -257,10 +259,11 @@ export function createConveyorTrackingApp(adapter) {
         for (const link of [...links.values()]) {
             if (link.controller.status !== 'streaming') { fail(link, new Error('가상 컨트롤러 연결이 끊어져 컨베이어를 정지했습니다.')); continue; }
             if (link.pending) { if (now - link.pendingAt > 1800) fail(link, new Error('K14 컨베이어 응답 시간이 초과되었습니다.')); continue; }
-            if (!link.latest || link.latest.sequence <= link.lastSent) continue;
+            const frame = link.probe || link.latest;
+            if (!frame || frame.sequence <= link.lastSent) continue;
             if (link.controller.socket?.bufferedAmount > 60000) { fail(link, new Error('컨베이어 전송이 지연되어 정지했습니다.')); continue; }
-            if (!adapter.send({ type: 'conveyorFrame', frame: link.latest }, link.controller)) { fail(link, new Error('전용 브리지에 연결할 수 없습니다.')); continue; }
-            link.pending = true; link.pendingAt = now; link.lastSent = link.latest.sequence;
+            if (!adapter.send({ type: 'conveyorFrame', frame }, link.controller)) { fail(link, new Error('전용 브리지에 연결할 수 없습니다.')); continue; }
+            link.pending = true; link.pendingAt = now; link.lastSent = frame.sequence;
         }
         render();
     }
@@ -360,7 +363,14 @@ export function createConveyorTrackingApp(adapter) {
             if (!link) return true;
             if (message.sequence !== link.lastSent) return true;
             try {
-                link.tracker.acknowledge(message); link.pending = false; link.lastReply = message; link.message = '연동 중'; report('컨베이어 엔코더·센서·비전 입력을 전송하고 있습니다.');
+                if (link.probe) {
+                    if (link.tracker.resumeEvents(message)) link.lastCaptureRequest = message.flags;
+                    link.probe = null;
+                    link.latest = link.tracker.reconnectFrame();
+                } else {
+                    link.tracker.acknowledge(message);
+                }
+                link.pending = false; link.lastReply = message; link.message = '연동 중'; report('컨베이어 엔코더·센서·비전 입력을 전송하고 있습니다.');
                 if (message.flags && message.flags !== link.lastCaptureRequest) { link.lastCaptureRequest = message.flags; link.captureRequest = message.flags; }
             }
             catch (error) { fail(link, error); }
