@@ -2,12 +2,13 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import { loadOlpRuntime } from '../support/load-olp-runtime.mjs';
 const source=fs.readFileSync(new URL('../../2_3DSimulation/olp-runtime.mjs',import.meta.url),'utf8');
 function fixture(kind='long') {
     let clock=0;const timers=[];
     const delay=(callback,ms)=>{timers.push(ms);queueMicrotask(()=>{clock+=ms;callback();});};
     const context=vm.createContext({ AbortController,performance:{now:()=>clock},setTimeout:delay,clearTimeout(){},console});
-    vm.runInContext(source.replace(/\bexport\s+(?=(?:const|class|function))/g,'').replace(/^export\s*\{[^}]+\};?\s*$/mg,'')+'\nglobalThis.Runtime=OlpRuntime;',context);
+    context.Runtime = loadOlpRuntime(source, context);
     const move=kind==='sync'?()=>{clock+=1;}:()=>new Promise(resolve=>delay(resolve,kind==='long'?100:1));
     const runtime=new context.Runtime({programPath:'main.pro',programs:[{path:'main.pro',text:'Start;\nEnd;'}]},{move});
     return {runtime,timers};

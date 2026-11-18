@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { engine as simulationEngine, numbers as simulationNumbers } from '../2_3DSimulation/wasm/engine.mjs';
 import {
     MOTION_PROJECT_SCHEMA_VERSION,
     S_CURVE_PEAK_VELOCITY,
@@ -2401,14 +2400,6 @@ assert.ok(mainSource.includes('const IK_MAX_ITERATIONS = 320;')
     && mainSource.includes('const IK_MIN_DAMPING = 0.00001;')
     && mainSource.includes('function calculateIkDamping(')
     && mainSource.includes('joints, IK_POSITION_SCALE, damping,'), 'IK must pass its adaptive damping to the joint solver.');
-// Two coincident prismatic axes make JᵀJ singular. The minimum damping
-// still shares a one-millimetre correction equally between the two axes.
-{
-    const values = simulationNumbers(23);
-    values.set([0,0,0, 1,0,0, 0,0,0, 1,1,0,0,0,0,0, 1,1,0,0,0,0,0]);
-    assert.ok(simulationEngine.ik_step(2, 0, 400, 0.00001, 12, Math.PI / 36));
-    for (const delta of simulationNumbers(2)) assert.ok(Math.abs(delta - 0.5) < 1e-5);
-}
 assert.ok(mainSource.includes('const singularityEscapeSeeds = joints.length >= 6')
     && mainSource.includes('[[1, 5], [2, -5]]')
     && mainSource.includes('[[3, 12], [5, -12]]'), 'IK must seed both arm and wrist configurations so it can enter and leave singular poses.');

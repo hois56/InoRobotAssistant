@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import { loadOlpRuntime } from '../support/load-olp-runtime.mjs';
 import test from 'node:test';
 import { performance } from 'node:perf_hooks';
 
@@ -22,8 +23,7 @@ function fixture(lines, { source = patched, optIn = true, rapidLine = true, cont
             if (controlledClock) queueMicrotask(() => { clock += delay; callback(); });
             else return setTimeout(callback, delay);
         }, clearTimeout, console });
-    vm.runInContext(source.replace(/\bexport\s+(?=(?:const|class|function))/g, '')
-        .replace(/^export\s*\{[^}]+\};?\s*$/mg, '') + '\nglobalThis.OlpRuntime = OlpRuntime;', context);
+    context.OlpRuntime = loadOlpRuntime(source, context);
     const text = ['Start;', ...(rapidLine ? ['RapidMove(ALL,ON);'] : []), ...lines, 'End;'].join('\n');
     const project = { programPath: 'main.pro', programFiles: ['main.pro'], programs: [{ path: 'main.pro', text }],
         pointRecords: Array.from({ length: 8 }, (_, index) => ({ kind: 'point', index: index + 1, values: [index, 0, 0, 0, 0, 0] })) };

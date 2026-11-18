@@ -61,6 +61,59 @@ pub extern "C" fn six_rotation() {
     });
 }
 
+fn yaw_pitch_roll(a: f64, b: f64, c: f64) -> Matrix {
+    let (sa, ca) = a.to_radians().sin_cos();
+    let (sb, cb) = b.to_radians().sin_cos();
+    let (sc, cc) = c.to_radians().sin_cos();
+    [
+        ca * cb,
+        ca * sb * sc - sa * cc,
+        ca * sb * cc + sa * sc,
+        sa * cb,
+        sa * sb * sc + ca * cc,
+        sa * sb * cc - ca * sc,
+        -sb,
+        cb * sc,
+        cb * cc,
+    ]
+}
+
+#[no_mangle]
+pub extern "C" fn olp_offset(tool: bool) {
+    with_buffer(|b| {
+        let base = yaw_pitch_roll(b[3], b[4], b[5]);
+        let offset = yaw_pitch_roll(b[9], b[10], b[11]);
+        let m = if tool {
+            multiply(base, offset)
+        } else {
+            multiply(offset, base)
+        };
+        // The controller chooses yaw zero in the component-wise singular branch.
+        let (yaw, pitch, roll) = if m[0].abs() < 1e-5 && m[3].abs() < 1e-5 {
+            let sign = if (m[6] - 1.).abs() < 1e-5 { -1. } else { 1. };
+            (
+                0.,
+                sign * std::f64::consts::FRAC_PI_2,
+                (sign * m[1]).atan2(m[4]),
+            )
+        } else {
+            (
+                m[3].atan2(m[0]),
+                (-m[6]).atan2(m[0].hypot(m[3])),
+                m[7].atan2(m[8]),
+            )
+        };
+        for i in 0..3 {
+            b[i] = if tool {
+                b[i] + base[3 * i] * b[6] + base[3 * i + 1] * b[7] + base[3 * i + 2] * b[8]
+            } else {
+                b[i] + b[i + 6]
+            };
+        }
+        b[3..6].copy_from_slice(&[yaw.to_degrees(), pitch.to_degrees(), roll.to_degrees()]);
+    })
+}
+
 #[no_mangle]
 pub extern "C" fn six_position(with_tool: bool) {
     with_buffer(|b| {

@@ -25,7 +25,7 @@ node node_modules/@playwright/test/cli.js test --config=simulator-rust/playwrigh
 
 ## 구현 범위
 
-Rust 엔진은 6축 플랜지·TCP 순기구학, SCARA 해석 역기구학, 직교 조그의 감쇠 최소자승 관절 보정, 6축·SCARA SPC25 동역학 행렬, S자 가감속 궤적을 계산한다. 장애물 우회에는 Rust에서 구현한 양방향 RRT와 웨이포인트 최단 경로를 사용한다.
+Rust 엔진은 6축 플랜지·TCP 순기구학, SCARA 해석 역기구학, 직교 조그의 감쇠 최소자승 관절 보정, 6축·SCARA SPC25 동역학 행렬, S자 가감속 궤적을 계산한다. 장애물 우회에는 Rust에서 구현한 양방향 RRT와 웨이포인트 최단 경로를 사용한다. OLP 수식의 해석·산술 연산과 Tool·Wobj 오프셋의 자세 합성도 Rust로 실행한다.
 
 삼각형 교차 판정, ASCII·바이너리 STL 읽기와 대형 메시 충돌 형상 생성, CAD 원호·타원·폴리라인 샘플링, 폐곡선 연결과 구멍 판별, CAD 곡선의 로봇 궤적 생성, 컨베이어 이송·공급과 센서 통과 구간, 비전의 아핀·호모그래피 및 회전 중심 보정도 Rust에서 실행한다.
 

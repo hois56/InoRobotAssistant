@@ -1,3 +1,5 @@
+import { evaluateOlpExpression, olpPoseOffset } from './wasm/engine.mjs';
+
 const WORD_START = 32;
 const WORD_COUNT = 128;
 const BIT_START = 512;
@@ -18,7 +20,6 @@ const arrayBase=symbol=>String(symbol).match(/^([A-Za-z_]\w*)\s*\[/)?.[1]??null;
 // and Wait time. Pauses, the playback speed override and the browser frame rate
 // do not change it, so one program gives the same per-move times on every run.
 // TimeStart/TimeOut keep measuring wall time; for this log they only mark cycles.
-// (Kept in this file: tests load the runtime as a plain script without imports.)
 const TACT_MAX_MOVES = 5000;
 const TACT_MAX_CYCLES = 1000;
 
@@ -328,104 +329,8 @@ function normalizeRuntimeSymbol(value, runtime) {
     return source;
 }
 
-function readExpressionToken(source, start) {
-    let index = start;
-    if (!/[A-Za-z_]/.test(source[index] || '')) return null;
-    index += 1;
-    while (/[\w]/.test(source[index] || '')) index += 1;
-    while (true) {
-        if (source[index] === '[') {
-            let depth = 1;
-            index += 1;
-            while (index < source.length && depth > 0) {
-                if (source[index] === '[') depth += 1;
-                else if (source[index] === ']') depth -= 1;
-                index += 1;
-            }
-            continue;
-        }
-        if (source[index] === '.' && /[A-Za-z_]/.test(source[index + 1] || '')) {
-            index += 2;
-            while (/[\w]/.test(source[index] || '')) index += 1;
-            continue;
-        }
-        break;
-    }
-    return { value: source.slice(start, index), end: index };
-}
-
-
-function tokenizeNumericExpression(value) {
-    const source=String(value||'').trim(),tokens=[];
-    for(let index=0;index<source.length;) {
-        const char=source[index];if(/\s/.test(char)){index++;continue;}
-        const start=index;
-        const number=source.slice(index).match(/^(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?/);
-        if(number){index+=number[0].length;tokens.push({type:'number',value:Number(number[0]),start,end:index});continue;}
-        if(char==='"'||char==="'") {
-            const quote=char;index++;let value='';
-            while(index<source.length&&source[index]!==quote){if(source[index]==='\\'&&index+1<source.length)index++;value+=source[index++];}
-            if(source[index]!==quote)return null;index++;tokens.push({type:'string',value,start,end:index});continue;
-        }
-        if('+-*/(),'.includes(char)){index++;tokens.push({type:char,value:char,start,end:index});continue;}
-        const symbol=readExpressionToken(source,index);
-        if(symbol){index=symbol.end;tokens.push({type:'symbol',value:symbol.value,start,end:index});continue;}
-        return null;
-    }
-    return tokens;
-}
-
-function evaluateNumericExpression(value,runtime) {
-    const source=String(value||'').trim(),tokens=tokenizeNumericExpression(source);
-    if(!tokens?.length)return undefined;
-    let cursor=0;
-    const peek=()=>tokens[cursor];
-    const consume=type=>{if(peek()?.type!==type)return null;return tokens[cursor++];};
-    const primary=()=>{
-        const literal=consume('number')||consume('string');if(literal)return literal.value;
-        const symbol=consume('symbol');
-        if(symbol){
-            if(consume('(')) {
-                const args=[],raw=[];
-                if(peek()?.type!==')')do{
-                    const start=tokens[cursor]?.start;
-                    args.push(additive());
-                    raw.push(source.slice(start,tokens[cursor-1]?.end));
-                }while(consume(','));
-                if(!consume(')'))throw runtime.runtimeError('Expected function closing parenthesis.');
-                const result=runtime.callBuiltinSync(symbol.value,args,raw);
-                if(result===NO_BUILTIN)throw runtime.runtimeError(`Unknown or asynchronous function in expression: ${symbol.value}`);
-                return result;
-            }
-            if(/^(ON|TRUE)$/i.test(symbol.value))return 1;
-            if(/^(OFF|FALSE)$/i.test(symbol.value))return 0;
-            return runtime.readSymbol(symbol.value);
-        }
-        if(consume('(')){const result=additive();if(!consume(')'))throw runtime.runtimeError('Expected closing parenthesis.');return result;}
-        throw runtime.runtimeError('Expected expression value.');
-    };
-    const unary=()=>consume('+')?Number(unary()):consume('-')?-Number(unary()):primary();
-    const multiply=()=>{
-        let result=unary();
-        while(peek()?.type==='*'||peek()?.type==='/'){
-            const op=tokens[cursor++].type,right=Number(unary());
-            if(op==='/'&&right===0)throw runtime.runtimeError('Division by zero.');
-            result=op==='*'?Number(result)*right:Number(result)/right;
-        }
-        return result;
-    };
-    const additive=()=>{
-        let result=multiply();
-        while(peek()?.type==='+'||peek()?.type==='-'){
-            const op=tokens[cursor++].type,right=multiply();
-            result=op==='+'?(typeof result==='string'||typeof right==='string'?String(result)+String(right):Number(result)+Number(right)):Number(result)-Number(right);
-        }
-        return result;
-    };
-    const result=additive();
-    if(cursor!==tokens.length)return undefined;
-    if(typeof result==='number'&&!Number.isFinite(result))throw runtime.runtimeError(`Non-finite expression: ${source}`);
-    return result;
+function evaluateNumericExpression(value, runtime) {
+    return evaluateOlpExpression(value, runtime, NO_BUILTIN);
 }
 
 function parseLiteral(value, runtime) {
@@ -562,30 +467,8 @@ function subtractPose(left, right) {
 // Public robot poses use [X,Y,Z,A(yaw Z),B(pitch Y),C(roll X)] in degrees.
 // Offset is rigid orientation composition; PR arithmetic remains a separate
 // language operation and must not be substituted for it.
-export function composeOlpOffset(base,offset,frame='WOBJ') {
-    const rad=Math.PI/180;
-    const rotation=pose=>{
-        const [a,b,c]=pose.slice(3,6).map(value=>Number(value||0)*rad);
-        const ca=Math.cos(a),sa=Math.sin(a),cb=Math.cos(b),sb=Math.sin(b),cc=Math.cos(c),sc=Math.sin(c);
-        return [ca*cb,ca*sb*sc-sa*cc,ca*sb*cc+sa*sc,
-            sa*cb,sa*sb*sc+ca*cc,sa*sb*cc-ca*sc,-sb,cb*sc,cb*cc];
-    };
-    const multiply=(a,b)=>Array.from({length:9},(_,index)=>{
-        const row=Math.floor(index/3),column=index%3;
-        return a[row*3]*b[column]+a[row*3+1]*b[column+3]+a[row*3+2]*b[column+6];
-    });
-    const rb=rotation(base),ro=rotation(offset),tool=String(frame).toUpperCase()==='TOOL';
-    const matrix=tool?multiply(rb,ro):multiply(ro,rb);
-    // Preserve the original MatrixToEuler singular branch, including its
-    // component-wise 1e-5 threshold and A=0 convention.
-    const singular=Math.abs(matrix[0])<1e-5&&Math.abs(matrix[3])<1e-5;
-    const negativePitch=Math.abs(matrix[6]-1)<1e-5;
-    const pitch=singular?(negativePitch?-Math.PI/2:Math.PI/2):Math.atan2(-matrix[6],Math.hypot(matrix[0],matrix[3]));
-    const yaw=singular?0:Math.atan2(matrix[3],matrix[0]);
-    const roll=singular?Math.atan2((negativePitch?-1:1)*matrix[1],matrix[4]):Math.atan2(matrix[7],matrix[8]);
-    const xyz=tool?[0,1,2].map(i=>Number(base[i]||0)+rb[i*3]*Number(offset[0]||0)+rb[i*3+1]*Number(offset[1]||0)+rb[i*3+2]*Number(offset[2]||0))
-        :[0,1,2].map(i=>Number(base[i]||0)+Number(offset[i]||0));
-    return [...xyz,yaw/rad,pitch/rad,roll/rad];
+export function composeOlpOffset(base, offset, frame = 'WOBJ') {
+    return olpPoseOffset(base, offset, String(frame).toUpperCase() === 'TOOL');
 }
 
 function splitTopLevel(value, operators = ['+', '-']) {

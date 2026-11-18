@@ -5,6 +5,8 @@ mod inverse;
 mod kinematics;
 mod matrix;
 mod motion;
+#[cfg(target_arch = "wasm32")]
+mod olp;
 mod planner;
 mod stl;
 mod trajectory;

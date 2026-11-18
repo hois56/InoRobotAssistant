@@ -55,7 +55,8 @@ function testAreas(file, source) {
 }
 
 function fileAreas(file) {
-  if (file.startsWith('simulator-rust/') || file === 'tests/support/load-collision-system.mjs') return ['simulation'];
+  if (file.startsWith('simulator-rust/') || file.startsWith('test-fixtures/cad/')
+    || ['tests/support/load-collision-system.mjs', 'tests/support/load-olp-runtime.mjs'].includes(file)) return ['simulation'];
   if (file === '0_Home/UPDATE_HISTORY.md') return ['history'];
   if (/^2_3DSimulation\/VirtualControllerBridge\//.test(file) || /^tests\/dotnet\//.test(file)) return ['bridge'];
   if (/^(test-fixtures\/generator-harness\/|tests\/fixtures\/generator-output-sha256\.json$|tools\/test-generator\.mjs$)/.test(file)) return ['generator'];

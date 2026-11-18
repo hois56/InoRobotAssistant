@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import { loadOlpRuntime } from '../support/load-olp-runtime.mjs';
 import test from 'node:test';
 
 const source=fs.readFileSync(process.env.OLP_RUNTIME_TEST_SOURCE||new URL('../../2_3DSimulation/olp-runtime.mjs',import.meta.url),'utf8');
@@ -13,7 +14,7 @@ function fixture(body,{onTimer=()=>{},readAddress=()=>0,maxLoopIterations,adapte
         performance:{now:()=>clock},clearTimeout(){},setTimeout:(callback,ms)=>{
             timers.push(ms);queueMicrotask(()=>{clock+=ms===0?15.625:ms;onTimer(ms,runtime);callback();});return timers.length;
         }});
-    vm.runInContext(source.replace(/\bexport\s+(?=(?:const|class|function))/g,'').replace(/^export\s*\{[^}]+\};?\s*$/mg,'')+'\nglobalThis.Runtime=OlpRuntime;',context);
+    context.Runtime = loadOlpRuntime(source, context);
     runtime=new context.Runtime({programPath:'main.pro',programFiles:['main.pro'],programs:[{path:'main.pro',text:`Start;\n${body}\nEnd;`}]},{...adapter,readAddress:adapter.readAddress||readAddress,maxLoopIterations});
     return {runtime,timers,getClock:()=>clock,advance:ms=>{clock+=ms;},delay:ms=>new Promise(resolve=>context.setTimeout(resolve,ms))};
 }

@@ -1,3 +1,5 @@
+import { evaluateWithEngine, olpImports } from './olp-host.mjs';
+
 const url = new URL('./simulation.wasm', import.meta.url);
 async function load() {
     if (url.protocol === 'file:' && typeof process !== 'undefined' && process.versions?.node) {
@@ -9,7 +11,21 @@ async function load() {
     return response.arrayBuffer();
 }
 
-export const engine = (await WebAssembly.instantiate(await load())).instance.exports;
+export const engine = (await WebAssembly.instantiate(await load(), { olp: olpImports })).instance.exports;
+
+export function evaluateOlpExpression(value, runtime, unknown) {
+    return evaluateWithEngine(engine, value, runtime, unknown);
+}
+
+export function olpPoseOffset(base, offset, tool) {
+    const pose = numbers(12);
+    for (let i = 0; i < 6; i++) {
+        pose[i] = Number(base[i] || 0);
+        pose[6+i] = Number(offset[i] || 0);
+    }
+    engine.olp_offset(tool);
+    return Array.from(numbers(6));
+}
 
 export function numbers(length) {
     const address = engine.number_buffer(length);

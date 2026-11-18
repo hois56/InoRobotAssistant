@@ -4,6 +4,32 @@ import { buildCadProfileRegions, sampleBulgeArc, samplePolylineVertices } from '
 import { scaraInverse } from '../../2_3DSimulation/inverse-kinematics.mjs';
 import { planJointPath } from '../../2_3DSimulation/path-planning-core.mjs';
 import { parseStl } from '../../2_3DSimulation/stl-core.mjs';
+import { engine, evaluateOlpExpression, numbers } from '../../2_3DSimulation/wasm/engine.mjs';
+
+test('minimum IK damping gives a finite correction for coincident prismatic axes', () => {
+    numbers(23).set([0,0,0, 1,0,0, 0,0,0, 1,1,0,0,0,0,0, 1,1,0,0,0,0,0]);
+    assert.ok(engine.ik_step(2, 0, 400, 0.00001, 12, Math.PI / 36));
+    for (const delta of numbers(2)) assert.ok(Math.abs(delta - 0.5) < 1e-5);
+});
+
+test('nested OLP evaluation preserves raw arguments, register lookups and exceptions', () => {
+    const missing = Symbol('missing');
+    const failure = new Error('register could not be read');
+    const runtime = {
+        runtimeError: message => new Error(message),
+        readSymbol(name) { if (name === 'broken') throw failure; return 4; },
+        callBuiltinSync(name, args, raw) {
+            if (name !== 'Nested') return missing;
+            assert.deepEqual(raw, ['R[1+1] * -2', '"한글😀"']);
+            assert.deepEqual(args, [-8, '한글😀']);
+            return evaluateOlpExpression('3 / (1 + 2)', runtime, missing);
+        }
+    };
+    assert.equal(evaluateOlpExpression('Nested(R[1+1] * -2, "한글😀") + " mm"', runtime, missing), '1 mm');
+    assert.throws(() => evaluateOlpExpression('broken + 1', runtime, missing), error => error === failure);
+    assert.throws(() => evaluateOlpExpression('1 / 0', runtime, missing), /Division by zero/);
+    assert.equal(evaluateOlpExpression('ON + --2', runtime, missing), 3);
+});
 
 test('STL imports retain per-facet colours, normals, solid names and byte offsets', () => {
     const bytes = new Uint8Array(84 + 100);
