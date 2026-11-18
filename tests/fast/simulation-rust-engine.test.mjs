@@ -4,8 +4,24 @@ import { buildCadProfileRegions, sampleBulgeArc, samplePolylineVertices } from '
 import { scaraInverse } from '../../2_3DSimulation/inverse-kinematics.mjs';
 import { planJointPath } from '../../2_3DSimulation/path-planning-core.mjs';
 import { parseStl } from '../../2_3DSimulation/stl-core.mjs';
+import { parseDxfBuffer, parseDxfText } from '../../2_3DSimulation/dxf-parser-core.mjs';
 import { engine, evaluateOlpExpression, numbers } from '../../2_3DSimulation/wasm/engine.mjs';
 import { dragPanel, fitPanel, panelResizeEdge, resizePanel, stackPanels } from '../../2_3DSimulation/wasm/panels.mjs';
+
+test('DXF retains MTEXT formatting, cyclic INSERT diagnostics and declared legacy encodings', async () => {
+    const drawing = [
+        [0,'SECTION'],[2,'HEADER'],[9,'$DWGCODEPAGE'],[3,'ANSI_1252'],[0,'ENDSEC'],
+        [0,'SECTION'],[2,'BLOCKS'],[0,'BLOCK'],[2,'Part'],[0,'INSERT'],[2,'Part'],[0,'ENDBLK'],[0,'ENDSEC'],
+        [0,'SECTION'],[2,'ENTITIES'],[0,'INSERT'],[2,'Part'],[0,'MTEXT'],[40,2],[3,'{Café\\P'],
+        [1,'\\S1^2; %%d}'],[0,'ENDSEC'],[0,'EOF']
+    ].flat().join('\r');
+    const result = await parseDxfBuffer(Buffer.from(drawing,'latin1'));
+    assert.equal(result.entities[0].geometry.text, 'Café\n1/2 °');
+    assert.equal(result.skippedCount, 1);
+    assert.equal(result.warnings.find(row => row.code === 'CAD_BLOCK_CYCLE').message,
+        'Cyclic DXF block reference was ignored: Part -> Part.');
+    assert.throws(() => parseDxfText('0\nEOF'), e => e.code === 'CAD_DXF_PARSE_FAILED');
+});
 
 test('panel resizing and dragging preserve the opposite edge and fit a smaller viewport', () => {
     const canvas = { left: 5, top: 50, width: 480, height: 280 };

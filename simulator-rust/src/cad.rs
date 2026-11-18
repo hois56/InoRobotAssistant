@@ -1,7 +1,7 @@
 use crate::{with_buffer, BUFFER};
 use std::{collections::VecDeque, f64::consts::TAU};
 
-type Point = [f64; 2];
+pub(crate) type Point = [f64; 2];
 const JOIN: f64 = 1e-7;
 fn distance(a: Point, b: Point) -> f64 {
     (a[0] - b[0]).hypot(a[1] - b[1])
@@ -44,6 +44,25 @@ pub extern "C" fn cad_arc(
     segments: f64,
     ellipse: bool,
 ) -> usize {
+    output_points(&arc_points(
+        [x, y],
+        [mx, my],
+        ratio,
+        start,
+        end,
+        segments,
+        ellipse,
+    ))
+}
+pub(crate) fn arc_points(
+    [x, y]: Point,
+    [mx, my]: Point,
+    ratio: f64,
+    start: f64,
+    end: f64,
+    segments: f64,
+    ellipse: bool,
+) -> Vec<Point> {
     let mut sweep = end - start;
     if !sweep.is_finite() {
         sweep = TAU;
@@ -51,15 +70,14 @@ pub extern "C" fn cad_arc(
     if sweep <= 0. {
         sweep += TAU;
     }
-    let result = curve(start, sweep, samples(sweep, segments, 8.), |angle| {
+    curve(start, sweep, samples(sweep, segments, 8.), |angle| {
         let (s, c) = angle.sin_cos();
         if ellipse {
             [x + mx * c - my * ratio * s, y + my * c + mx * ratio * s]
         } else {
             [x + c * mx, y + s * mx]
         }
-    });
-    output_points(&result)
+    })
 }
 fn bulge(a: Point, b: Point, value: f64, segments: f64) -> Vec<Point> {
     if value.abs() < 1e-9 {
@@ -97,26 +115,30 @@ pub extern "C" fn cad_polyline(count: usize, closed: bool, segments: f64) -> usi
             .chunks_exact(3)
             .map(|p| ([p[0], p[1]], p[2]))
             .collect();
-        let mut result = Vec::new();
-        if vertices.is_empty() {
-            return result;
-        }
-        for i in 0..if closed { count } else { count - 1 } {
-            let (a, b) = (vertices[i], vertices[(i + 1) % count]);
-            let edge = bulge(a.0, b.0, a.1, segments);
-            result.extend(edge.into_iter().skip(usize::from(i > 0)));
-        }
-        if !closed && result.is_empty() {
-            result.push(vertices[0].0);
-        }
-        if closed && result.len() > 1 && distance(result[0], *result.last().unwrap()) > JOIN {
-            result.push(result[0]);
-        }
-        result
+        polyline(&vertices, closed, segments)
     });
     output_points(&result)
 }
-fn bounds(p: &[Point]) -> [f64; 4] {
+pub(crate) fn polyline(vertices: &[(Point, f64)], closed: bool, segments: f64) -> Vec<Point> {
+    let count = vertices.len();
+    let mut result = Vec::new();
+    if vertices.is_empty() {
+        return result;
+    }
+    for i in 0..if closed { count } else { count - 1 } {
+        let (a, b) = (vertices[i], vertices[(i + 1) % count]);
+        let edge = bulge(a.0, b.0, a.1, segments);
+        result.extend(edge.into_iter().skip(usize::from(i > 0)));
+    }
+    if !closed && result.is_empty() {
+        result.push(vertices[0].0);
+    }
+    if closed && result.len() > 1 && distance(result[0], *result.last().unwrap()) > JOIN {
+        result.push(result[0]);
+    }
+    result
+}
+pub(crate) fn bounds(p: &[Point]) -> [f64; 4] {
     let mut b = [
         f64::INFINITY,
         f64::INFINITY,

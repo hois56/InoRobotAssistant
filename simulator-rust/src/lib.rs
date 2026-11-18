@@ -1,6 +1,8 @@
 mod cad;
 mod collision;
 mod conveyor;
+#[cfg(target_arch = "wasm32")]
+mod dxf;
 mod flow;
 mod inverse;
 mod kinematics;

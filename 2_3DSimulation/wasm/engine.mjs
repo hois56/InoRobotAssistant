@@ -1,5 +1,6 @@
 import { conditionWithEngine, evaluateWithEngine, olpImports } from './olp-host.mjs';
 import { domImports } from './dom.mjs';
+import { dxfImports } from './dxf-host.mjs';
 
 const url = new URL('./simulation.wasm', import.meta.url);
 async function load() {
@@ -12,7 +13,7 @@ async function load() {
     return response.arrayBuffer();
 }
 
-export const engine = (await WebAssembly.instantiate(await load(), { olp: olpImports, dom: domImports })).instance.exports;
+export const engine = (await WebAssembly.instantiate(await load(), { olp: olpImports, dom: domImports, dxf: dxfImports })).instance.exports;
 
 export function evaluateOlpExpression(value, runtime, unknown) {
     return evaluateWithEngine(engine, value, runtime, unknown);

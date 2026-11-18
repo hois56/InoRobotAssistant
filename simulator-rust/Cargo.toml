@@ -12,3 +12,6 @@ opt-level = 3
 lto = true
 panic = "abort"
 strip = true
+
+[dependencies]
+serde_json = { version = "1", features = ["preserve_order"] }
