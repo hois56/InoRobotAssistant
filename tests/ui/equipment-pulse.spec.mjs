@@ -9,7 +9,7 @@ async function setup(page, type = 'CYLINDER', triggerValue = 1) {
         await route.fulfill({ response, body: await response.text() + '\nwindow.__equipment={state,equipmentApp,THREE,createPrimitiveShapeRoot,ensureWorkspaceModelId,normalizeEquipmentDefinition,EQUIPMENT_LABELS,writeOlpAddress,readOlpSimulatorBit,serializeWorkspaceSnapshot,restoreWorkspaceSnapshot};' });
     });
     await page.goto('/2_3DSimulation/index.html');
-    await page.waitForFunction(() => window.__equipment);
+    await page.waitForFunction(() => window.__equipment?.state.workspaceRecovery.ready);
     const id = await createEquipmentFixture(page, type);
     await page.evaluate(({ id, triggerValue }) => {
         const a = window.__equipment, def = a.state.equipmentDefinitions.find(item => item.id === id);

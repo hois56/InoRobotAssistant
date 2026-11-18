@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 test('수동 Input은 ON/OFF를 유지하고 OLP 대기 조건에 반영된다', async ({ page }) => {
  const errors=[]; page.on('pageerror', e=>errors.push(e.message));
  await page.route('**/2_3DSimulation/main.js*', async route=> { const response=await route.fetch(); await route.fulfill({response,body:`${await response.text()}\nwindow.__io={state,readOlpAddress,readOlpSimulatorBit,connectOlpVirtualBus};`}); });
- await page.goto('/2_3DSimulation/index.html'); await page.waitForFunction(()=>window.__io);
+ await page.goto('/2_3DSimulation/index.html'); await page.waitForFunction(()=>window.__io?.state.workspaceRecovery.ready);
  await page.locator('#btn-io-simulator').click();
  for(const bit of [0,1,37]) {
   const button=page.locator(`[data-io-simulator-entry="IN:bit:${bit}"]`);
@@ -15,7 +15,7 @@ test('수동 Input은 ON/OFF를 유지하고 OLP 대기 조건에 반영된다',
 
 test('가상 버스 반복 수신 중에도 수동 입력을 전환하고 InW[37] 주소별 값을 읽는다', async ({ page }) => {
  await page.route('**/2_3DSimulation/main.js*', async route=> { const response=await route.fetch(); await route.fulfill({response,body:`${await response.text()}\nwindow.__io={state,readOlpAddress,connectOlpVirtualBus};`}); });
- await page.goto('/2_3DSimulation/index.html'); await page.waitForFunction(()=>window.__io);
+ await page.goto('/2_3DSimulation/index.html'); await page.waitForFunction(()=>window.__io?.state.workspaceRecovery.ready);
  await page.evaluate(()=>{
   window.WebSocket=class { static OPEN=1; static CONNECTING=0; readyState=1; listeners={}; constructor(){window.__bus=this;} addEventListener(type,fn){this.listeners[type]=fn;} send(){} close(){} };
   window.__io.state.olp.virtualBusWanted=true; window.__io.connectOlpVirtualBus(); window.__io.state.olp.busConnected=true;

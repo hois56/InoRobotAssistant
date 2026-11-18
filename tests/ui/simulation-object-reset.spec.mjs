@@ -6,7 +6,7 @@ async function setup(page) {
     await route.fulfill({ response, body: await response.text() + '\nwindow.__objectReset={state,equipmentApp,THREE,createPrimitiveShapeRoot,ensureWorkspaceModelId,serializeWorkspaceSnapshot,restoreWorkspaceSnapshot,writeOlpAddress,readOlpSimulatorBit,updateConveyorSimulation};' });
   });
   await page.goto('/2_3DSimulation/index.html');
-  await page.waitForFunction(() => window.__objectReset);
+  await page.waitForFunction(() => window.__objectReset?.state.workspaceRecovery.ready);
 }
 
 test('오브젝트 편집의 저장 버튼 옆에서 해당 등록만 원위치로 되돌린다', async ({ page }) => {

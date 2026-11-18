@@ -6,7 +6,7 @@ async function setup(page) {
     await route.fulfill({ response, body: await response.text() + '\nwindow.__assemblyMenu = { state, THREE, renderModelTree, selectSceneModelPart };' });
   });
   await page.goto('/2_3DSimulation/index.html');
-  await page.waitForFunction(() => window.__assemblyMenu?.state.scene);
+  await page.waitForFunction(() => window.__assemblyMenu?.state.workspaceRecovery.ready);
   await page.evaluate(() => {
     const { state, THREE, renderModelTree } = window.__assemblyMenu;
     const root = new THREE.Group();

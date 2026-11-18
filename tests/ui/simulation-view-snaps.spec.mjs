@@ -6,12 +6,10 @@ test('고정 뷰와 팝업에서 스냅 측정하고 메인 뷰로 복귀한다'
   page.on('pageerror', error => errors.push(error.message));
   await context.route('**/2_3DSimulation/main.js*', async route => {
     const response = await route.fetch();
-    const source = (await response.text()).replace(/^init\(\);\s*$/m, 'window.__viewSnapReady = init();\n');
-    await route.fulfill({ response, body: `${source}\nwindow.__viewSnapTest = { state, THREE, openViewWindow, popOutViewWindow, hideViewWindow, buildSimulationSnapCandidates, requestRender };` });
+    await route.fulfill({ response, body: `${await response.text()}\nwindow.__viewSnapTest = { state, THREE, openViewWindow, popOutViewWindow, hideViewWindow, buildSimulationSnapCandidates, requestRender };` });
   });
   await page.goto('/2_3DSimulation/index.html');
-  await page.waitForFunction(() => window.__viewSnapTest && window.__viewSnapReady);
-  await page.evaluate(() => window.__viewSnapReady);
+  await page.waitForFunction(() => window.__viewSnapTest?.state.workspaceRecovery.ready);
   await page.evaluate(async () => {
     const { state, THREE, openViewWindow, buildSimulationSnapCandidates } = window.__viewSnapTest;
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(100, 100, 100), new THREE.MeshBasicMaterial());
