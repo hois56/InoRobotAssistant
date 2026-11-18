@@ -1,136 +1,74 @@
-// A rectangular film lattice in mm. Rows run from the leading edge to the
-// bonded trailing edge. End rows are constrained; free rows obey distance,
-// bending, gravity and damping constraints with an explicit puller or after
-// release. The built-in preview uses a smooth bend. Adhesion is kinematic.
+import { engine, numbers } from './wasm/engine.mjs';
+
+const gripSides = ['X-', 'X+', 'Y-', 'Y+'];
+const errors = ['', '필름을 완전히 박리한 후 파지를 해제하세요.', '파지점이 필름 자유 길이를 초과했습니다.'];
+
 export function getFilmGripLayout(def, point = null) {
-    const l = def.filmLength, w = def.filmWidth;
-    let side = def.filmGripSide || 'X-', offset = (def.filmGripOffset ?? 50) / 100;
-    if (point) {
-        const distances = { 'X-': Math.abs(point[0]), 'X+': Math.abs(point[0] - l), 'Y-': Math.abs(point[1] + w / 2), 'Y+': Math.abs(point[1] - w / 2) };
-        side = Object.keys(distances).sort((a, b) => distances[a] - distances[b])[0];
-        offset = side === 'X-' ? 0.5 + point[1] / w : side === 'X+' ? 0.5 - point[1] / w : side === 'Y-' ? 1 - point[0] / l : point[0] / l;
-    }
-    const across = side.startsWith('Y');
-    const origin = side === 'X+' ? [l, 0, 0] : side === 'Y-' ? [l / 2, -w / 2, 0] : side === 'Y+' ? [l / 2, w / 2, 0] : [0, 0, 0];
-    return { side, length: across ? w : l, width: across ? l : w, origin,
-        angle: side === 'X+' ? Math.PI : side === 'Y-' ? Math.PI / 2 : side === 'Y+' ? -Math.PI / 2 : 0,
-        gripOffset: Math.max(0, Math.min(1, offset)), gripWidth: Math.min(def.filmGripWidth ?? 20, across ? l : w) };
+    const side = def.filmGripSide || 'X-';
+    const buffer = numbers(8);
+    if (point) buffer.set(point.slice(0, 2));
+    const selected = engine.film_layout(def.filmLength, def.filmWidth, def.filmGripWidth ?? 20,
+        (def.filmGripOffset ?? 50) / 100, gripSides.indexOf(side), Boolean(point));
+    const [length, width, x, y, z, angle, gripOffset, gripWidth] = numbers(8);
+    return { side: gripSides[selected] ?? side, length, width, origin: [x,y,z], angle, gripOffset, gripWidth };
 }
 
 export function getFilmPeelFromGrip(state, anchor) {
-    const y = anchor[1] - state.width * ((state.gripOffset ?? 0.5) - 0.5);
-    const [x, , z] = anchor;
-    if (Math.hypot(x, y, z) < 1e-8) return 0;
-    if (x <= 1e-8) throw new Error('손잡이를 제품 안쪽 방향으로 당기며 들어 올리세요.');
-    // The peeled length must reach from the adhesion front to the held patch.
-    const length = (x * x + y * y + z * z) / (2 * x);
-    return length >= state.length - 1e-9 ? state.length : length;
+    const length = engine.film_peel(state.length, state.width, state.gripOffset ?? 0.5, ...anchor);
+    if (length < 0) throw new Error('손잡이를 제품 안쪽 방향으로 당기며 들어 올리세요.');
+    return length;
+}
+
+function packPoints(buffer, start, points) {
+    for (let i = 0; i < points.length; i++) buffer.set(points[i], start + 3 * i);
+}
+function unpackPoints(buffer, start, points) {
+    for (let i = 0; i < points.length; i++) {
+        const k = start + 3 * i;
+        points[i] = [buffer[k], buffer[k+1], buffer[k+2]];
+    }
 }
 
 export function createFilmState(length, width, rows = 40, columns = 6, { gripOffset = 0.5, gripWidth = width } = {}) {
-    const points = [], previous = [];
-    for (let row = 0; row <= rows; row++) for (let column = 0; column <= columns; column++) {
-        const point = [length * row / rows, width * (column / columns - 0.5), 0];
-        points.push(point); previous.push([...point]);
-    }
-    return { length, width, rows, columns, points, previous, gripOffset, gripWidth };
+    const count = (rows + 1) * (columns + 1);
+    numbers(3 * count);
+    engine.film_grid(rows, columns, length, width);
+    const points = new Array(count);
+    unpackPoints(numbers(3 * count), 0, points);
+    return { length, width, rows, columns, points, previous: points.map(p => [...p]), gripOffset, gripWidth };
 }
 
 export function stepFilm(state, peel, seconds, { stiffness = 0.05, damping = 0.96, anchor = null, gripEdge = null, released = false, groundPlane = null } = {}) {
-    const { length, width, rows, columns, points, previous } = state;
-    const rowWidth = columns + 1, ds = length / rows, dw = width / columns;
-    const freeLength = Math.max(0, Math.min(length, peel));
-    if (released && freeLength < length) return { error: '필름을 완전히 박리한 후 파지를 해제하세요.', freeLength };
-    // The built-in test puller follows a continuous bend, instead of allowing
-    // an unsupported cloth to sag back onto the product between grid steps.
-    const angle = Math.PI * (2 / 3 - Math.max(0, Math.min(1, stiffness)) / 6);
-    const radius = freeLength / angle;
-    const curve = row => {
-        const s = Math.max(0, freeLength - row * ds), theta = radius ? s / radius : 0;
-        return s ? [freeLength - radius * Math.sin(theta), radius * (1 - Math.cos(theta))] : [row * ds, 0];
-    };
-    if (!released && (!anchor && !gripEdge || freeLength === 0)) {
-        for (let row = 0; row <= rows; row++) for (let column = 0; column <= columns; column++) {
-            const [x, z] = curve(row), i = row * rowWidth + column;
-            points[i] = [x, width * (column / columns - 0.5), z];
-            previous[i] = [...points[i]];
-        }
-        return { error: '', freeLength };
+    const { rows, columns, length, width, points, previous } = state;
+    const currentStart = 8 + 4 * (columns + 1);
+    const previousStart = currentStart + 3 * points.length;
+    const size = previousStart + 3 * previous.length;
+    const buffer = numbers(size);
+    if (anchor) buffer.set(anchor, 0);
+    if (groundPlane) {
+        buffer.set(groundPlane.normal, 3);
+        buffer[6] = groundPlane.offset;
     }
-    const freeRow = Math.ceil(freeLength / ds);
-    const [endX, endZ] = curve(0);
-    const gripY = width * ((state.gripOffset ?? 0.5) - 0.5);
-    const end = anchor || [endX, gripY, endZ];
-    const distance = Math.hypot(freeLength - end[0], end[1] - gripY, end[2]);
-    if (!released && freeLength < length && distance > freeLength * 1.005) return { error: '파지점이 필름 자유 길이를 초과했습니다.', freeLength };
-    const fixed = index => {
-        const row = Math.floor(index / rowWidth), column = index % rowWidth;
-        const y = width * (column / columns - 0.5);
-        const inGrip = Math.abs(y - gripY) <= (state.gripWidth ?? width) / 2 || column === Math.round((state.gripOffset ?? 0.5) * columns);
-        if (row === 0 && !released && inGrip) return gripEdge?.[column] || [end[0], end[1] + y - gripY, end[2]];
-        if (row >= freeRow && freeLength < length) return [row * ds, width * (column / columns - 0.5), 0];
-        return null;
-    };
-    const dt = Math.min(1 / 60, Math.max(0, seconds));
-    const decay = damping ** (dt * 60);
-    for (let i = 0; i < points.length; i++) {
-        const pin = fixed(i);
-        if (pin) { points[i] = pin; previous[i] = [...pin]; continue; }
-        const old = [...points[i]];
-        for (let k = 0; k < 3; k++) points[i][k] += (points[i][k] - previous[i][k]) * decay;
-        const gravity = groundPlane?.normal || [0, 0, 1];
-        const norm = Math.hypot(...gravity) || 1;
-        for (let k = 0; k < 3; k++) points[i][k] -= gravity[k] / norm * 9810 * dt * dt;
-        previous[i] = old;
-    }
-    const constrain = (a, b, rest, strength = 1) => {
-        const p = points[a], q = points[b], delta = q.map((v, i) => v - p[i]);
-        const magnitude = Math.hypot(...delta); if (magnitude < 1e-10) return;
-        const wa = fixed(a) ? 0 : 1, wb = fixed(b) ? 0 : 1;
-        if (!wa && !wb) return;
-        const factor = (magnitude - rest) / magnitude * strength / (wa + wb);
-        for (let k = 0; k < 3; k++) { p[k] += delta[k] * factor * wa; q[k] -= delta[k] * factor * wb; }
-    };
-    for (let iteration = 0; iteration < 24; iteration++) {
-        for (let row = 0; row < rows; row++) for (let column = 0; column <= columns; column++) {
-            const i = row * rowWidth + column;
-            const partialFront = !released && freeLength < length && row < freeRow && row + 1 === freeRow;
-            if (partialFront) {
-                // Pin the sub-grid adhesion front; the rest of this segment
-                // stays bonded without snapping the peel position to a row.
-                const p = points[i], front = [freeLength, width * (column / columns - 0.5), 0];
-                const delta = p.map((v, k) => v - front[k]), distance = Math.hypot(...delta);
-                const rest = freeLength - row * ds;
-                if (!fixed(i) && distance > 1e-10) for (let k = 0; k < 3; k++) p[k] = front[k] + delta[k] * rest / distance;
-            } else constrain(i, i + rowWidth, ds);
-            if (column < columns) {
-                constrain(i, i + 1, dw);
-                constrain(i, i + rowWidth + 1, Math.hypot(ds, dw));
-                constrain(i + 1, i + rowWidth, Math.hypot(ds, dw));
-            }
-            if (row + 2 <= rows) constrain(i, i + 2 * rowWidth, 2 * ds, stiffness);
-        }
-        for (let i = 0; i < points.length; i++) {
-            const pin = fixed(i); if (pin) points[i] = pin;
-            // Product surface collision. Full CAD/self collision is a separate path.
-            else if (points[i][0] >= 0 && points[i][0] <= length && Math.abs(points[i][1]) <= width / 2) points[i][2] = Math.max(0.3, points[i][2]);
-            if (!pin && groundPlane) {
-                const n = groundPlane.normal;
-                const signed = n.reduce((sum, value, k) => sum + value * points[i][k], groundPlane.offset);
-                const norm = n.reduce((sum, value) => sum + value * value, 0);
-                if (signed < 0 && norm > 0) for (let k = 0; k < 3; k++) points[i][k] -= signed * n[k] / norm;
-            }
+    if (gripEdge) {
+        for (let col = 0; col <= columns; col++) {
+            const k = 8 + col * 4;
+            buffer[k] = Number(Boolean(gripEdge[col]));
+            if (gripEdge[col]) buffer.set(gripEdge[col], k + 1);
         }
     }
-    return { error: '', freeLength };
+    packPoints(buffer, currentStart, points);
+    packPoints(buffer, previousStart, previous);
+    const status = engine.film_step(rows, columns, length, width, peel, seconds, stiffness, damping,
+        state.gripOffset ?? 0.5, state.gripWidth ?? width, Boolean(anchor), Boolean(gripEdge), released, Boolean(groundPlane));
+    const result = numbers(size);
+    if (status === 0) {
+        unpackPoints(result, currentStart, points);
+        unpackPoints(result, previousStart, previous);
+    }
+    return { error: errors[status], freeLength: result[7] };
 }
 
 export function filmLengthError(state) {
-    const stride = state.columns + 1, rest = state.length / state.rows;
-    let max = 0;
-    for (let row = 0; row < state.rows; row++) for (let col = 0; col <= state.columns; col++) {
-        const a = state.points[row * stride + col], b = state.points[(row + 1) * stride + col];
-        max = Math.max(max, Math.abs(Math.hypot(...b.map((v, i) => v - a[i])) - rest));
-    }
-    return max;
+    packPoints(numbers(3 * state.points.length), 0, state.points);
+    return engine.film_length_error(state.rows, state.columns, state.length);
 }
