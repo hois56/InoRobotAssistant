@@ -493,6 +493,13 @@ export function buildStepSnapCandidates(meshDefinition, options = {}) {
   });
   const nodeSet = new Set([...endpointIds, ...vertexIds]);
   const chains = buildFeatureChains(featureEdges, graph, nodeSet);
+  // Reuse the same welded CAD face boundaries for offline curve teaching.
+  // Opt-in: normal snap callers retain their existing result and cost.
+  if (options.featureChainsOnly) {
+    return { curves: chains.map(chain => ({
+      points: chain.path.map(id => positions[id].slice()), closed: chain.closed
+    })) };
+  }
   // Keep the normal chain segmentation for reliable vertex/edge snaps, but
   // use a more tolerant chain only while fitting circles. This lets a coarse
   // tessellated arc remain continuous without hiding real sharp vertices.

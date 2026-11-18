@@ -38,6 +38,23 @@ function number(value, fallback, min, max, label) {
     return result;
 }
 
+export function normalizeObjectRandomHome(source = {}) {
+    return {
+        randomHome: source.randomHome === true,
+        randomRangeX: number(source.randomRangeX, 10, 0, 10000, '무작위 X 범위'),
+        randomRangeY: number(source.randomRangeY, 10, 0, 10000, '무작위 Y 범위'),
+        randomRangeRz: number(source.randomRangeRz, 5, 0, 180, '무작위 회전 범위')
+    };
+}
+
+// Uniform deviation from the registered home: World X/Y in mm and rotation about World Z in degrees.
+export function randomObjectHomeOffset(def, random = Math.random) {
+    if (def?.type !== 'OBJECT' || def.randomHome !== true) return null;
+    const spread = range => (random() * 2 - 1) * (Number(range) || 0);
+    const offset = { x: spread(def.randomRangeX), y: spread(def.randomRangeY), rz: spread(def.randomRangeRz) };
+    return offset.x || offset.y || offset.rz ? offset : null;
+}
+
 // Keep the first reference for older workspaces and integrations using singular fields.
 export function equipmentReferences(source, key = 'movingRef') {
     const values = Array.isArray(source[`${key}s`]) ? source[`${key}s`].map(String).filter(Boolean) : [];
@@ -77,6 +94,7 @@ export function normalizeEquipmentDefinition(source) {
             vacuumMode, vacuumFace, pullerRef: '', axis: 'X', travel: 0, speed: 0, reverseSpeed: 0, externalAxis: 0,
             feedbackHome: null, feedbackEnd: null, feedbackGrip: source.type === 'VACUUM' ? sensor(source.feedbackGrip) : null,
             enabled: source.enabled !== false && (source.type === 'OBJECT' || vacuumMode === 'WHOLE' || !!vacuumFace),
+            ...(source.type === 'OBJECT' ? normalizeObjectRandomHome(source) : {}),
             origins: source.type === 'OBJECT' && source.origins && typeof source.origins === 'object' ? JSON.parse(JSON.stringify(source.origins)) : {}, runtime: source.runtime ? JSON.parse(JSON.stringify(source.runtime)) : { position: 0, heldRef: '', heldLocal: null } };
     }
     const rotary = source.type === 'ROTARY_AXIS';
@@ -144,7 +162,7 @@ function sensor(value) {
 export function normalizeEquipmentBindings(source) {
     const forward = sensor(source.forward), reverse = sensor(source.reverse);
     if (forward !== null && forward === reverse) throw new Error('전진과 후진에는 서로 다른 IO 번호를 지정하세요.');
-    return { direction: 'OUT', triggerValue: Number(source.triggerValue) === 0 ? 0 : 1, forward, reverse };
+    return { direction: 'OUT', triggerValue: Number(source.triggerValue) === 0 ? 0 : 1, forward, reverse, resetAll: source.resetAll === true };
 }
 
 export function validateEquipmentDefinitions(definitions) {

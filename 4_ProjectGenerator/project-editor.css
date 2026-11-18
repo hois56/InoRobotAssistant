@@ -1,0 +1,47 @@
+.project-edit-status{padding:12px 20px;border-radius:12px;display:grid;gap:8px}
+.project-step-detail{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.project-edit-status p{font-size:13px;color:var(--tool-muted);margin:0}
+.project-edit-status button,.project-step-detail button,#projectReviewDialog button{padding:7px 12px;border:1px solid var(--tool-line);background:var(--tool-surface);border-radius:8px;color:var(--tool-ink);cursor:pointer;font-size:12px}
+.project-edit-status button:hover,.project-step-detail button:hover,#projectReviewDialog button:hover{background:var(--tool-hover)}
+.project-import-control{position:relative}
+#projectImportMenu{position:absolute;right:0;top:calc(100% + 8px);z-index:1100;min-width:180px;padding:6px;display:grid;gap:4px;background:var(--tool-surface);border:1px solid var(--tool-line);border-radius:12px;box-shadow:var(--tool-shadow)}
+#projectImportMenu button{width:100%;justify-content:flex-start;padding:10px 14px;font-size:13px;border:0;border-radius:6px;color:var(--tool-ink);background:transparent;text-align:left;white-space:nowrap}
+#projectImportMenu button:hover,#projectImportMenu button:focus-visible{background:var(--tool-hover)}
+#btnNewProject[hidden],#projectImportMenu[hidden],#projectEditStatus[hidden],#projectReviewDialog [hidden]{display:none!important}
+.project-step-detail{width:100%;border-top:1px solid var(--tool-line);padding-top:8px;font-size:11px;color:var(--tool-muted)}
+.project-step-detail input{width:50px;background:var(--tool-surface);color:var(--tool-ink);border:1px solid var(--tool-line);border-radius:5px;padding:3px}
+#projectImportIssues:not(:empty){padding:12px;border:1px solid var(--tool-line);border-radius:8px;color:var(--tool-warning);font-size:13px}
+#projectImportIssues>div,#projectDeleted>div{margin:6px 0}
+#projectDeleted{font-size:12px;color:var(--tool-danger)}
+.project-edit-status .edit-error{color:var(--tool-danger);white-space:pre-wrap}
+#projectReviewDialog{width:min(1500px,96vw);max-width:96vw;max-height:94vh;margin:auto;padding:20px;border:1px solid var(--tool-line);border-radius:16px;background:var(--tool-surface);color:var(--tool-ink);overflow:auto}
+#projectReviewDialog::backdrop{background:#020617bd}
+.project-review-header,.project-review-footer{display:flex;justify-content:space-between;align-items:center;gap:12px}
+#projectReviewSummary,#projectModelNotice{font-size:13px;white-space:pre-wrap;padding:12px 0;color:var(--tool-warning)}
+.project-review-layout{display:grid;grid-template-columns:230px minmax(0,1fr);gap:16px}
+#projectReviewFiles{max-height:56vh;overflow:auto;display:flex;flex-direction:column;align-items:stretch;gap:6px}
+#projectReviewFiles button{text-align:left;overflow-wrap:anywhere;flex-shrink:0}
+#projectReviewFiles button[aria-pressed="true"]{border-color:var(--tool-border-strong);background:var(--tool-selected)}
+.project-review-code{min-width:0;display:grid;gap:10px}
+.project-review-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.project-review-pane{min-width:0}
+.project-review-pane>strong,.project-pane-heading{display:flex;align-items:center;justify-content:space-between;min-height:32px;font-size:12px;color:var(--tool-muted)}
+.project-diff-view,.project-review-columns textarea{width:100%;height:48vh;overflow:auto;background:var(--tool-surface);color:var(--tool-ink);border:1px solid var(--tool-line);border-radius:8px;font:12px/20px Consolas,monospace;tab-size:4}
+.project-review-columns textarea{display:block;padding:0 12px;resize:vertical;white-space:pre}
+.project-diff-lines{min-width:100%;width:max-content}
+.project-diff-line{display:grid;grid-template-columns:44px 20px minmax(0,1fr);min-height:20px;white-space:pre}
+.project-diff-number,.project-diff-marker{user-select:none;color:var(--tool-muted);text-align:right;padding-right:8px}
+.project-diff-number{border-right:1px solid #33415580}
+.project-diff-marker{text-align:center;padding:0}
+.project-diff-text{padding-right:12px}
+.project-diff-removed{background:#7f1d1d55}
+.project-diff-added{background:#14532d66}
+.project-diff-removed .project-diff-marker{color:var(--tool-danger)}
+.project-diff-added .project-diff-marker{color:var(--tool-accent)}
+.project-diff-empty{background:var(--tool-surface)}
+.project-diff-legend{display:flex;gap:12px;font-size:12px;margin-bottom:12px}
+.project-diff-legend span{padding:3px 8px;border-radius:4px}
+.project-review-footer{justify-content:flex-end;margin-top:16px}
+#projectReviewDialog #projectDownload{background:var(--tool-inset);border-color:var(--tool-line);font-size:14px}
+#projectReviewDialog button:disabled{opacity:.4;cursor:not-allowed}
+@media(max-width:850px){.project-review-layout{grid-template-columns:1fr}#projectReviewFiles{max-height:150px}.project-review-columns{grid-template-columns:1fr}.project-diff-view,.project-review-columns textarea{height:220px}}

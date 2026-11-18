@@ -2,6 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { acceptVirtualVisionSocket } = require('./virtual-vision-server.cjs');
 
 const root = path.resolve(__dirname, '..');
 const host = process.env.INOROBOT_SERVER_HOST || '127.0.0.1';
@@ -22,7 +23,7 @@ const landingFiles = new Map([
 const publicTopLevelDirectories = new Set([
     '0_Home', '1_RobotModelSelect', '2_3DSimulation', '3_ToolSelector',
     '4_ProjectGenerator', '5_Software', '6_Document', '7_DebuggingTool',
-    'Language', 'privacy', 'Servo'
+    'Language', 'privacy', 'Servo', 'shared'
 ]);
 const publicRootFiles = new Set([
     'CNAME', 'favicon.png', 'robots.txt', 'sitemap.xml', 'analytics.js', 'analytics-config.js', 'visitor-counter.js',
@@ -412,6 +413,11 @@ server.on('upgrade', (request, socket, head) => {
     try { pathname = new URL(request.url, `http://${host}`).pathname; }
     catch { socket.destroy(); return; }
     if (pathname === '/api/page-presence') { acceptPagePresenceSocket(request, socket); return; }
+    if (pathname === '/virtualvision/' || pathname === '/virtualvision') {
+        // Virtual vision protocol servers share the Virtual Bus pairing token.
+        acceptVirtualVisionSocket(request, socket, head, { token: virtualBusToken, allowedOrigin, log: message => console.log(message) });
+        return;
+    }
     if (pathname !== '/virtualbus/' && pathname !== '/virtualbus') { socket.destroy(); return; }
     if (!virtualBusToken || (request.headers.origin && !allowedOrigin(request.headers.origin))) { socket.destroy(); return; }
     const key = request.headers['sec-websocket-key'];
@@ -447,6 +453,7 @@ server.listen(port, host, () => {
     console.log('InoRobot Assistant local server is running.');
     console.log('Open: http://' + host + ':' + port + '/');
     console.log('Virtual Bus broker: ws://' + host + ':' + port + '/virtualbus/');
+    console.log('Virtual vision endpoint: ws://' + host + ':' + port + '/virtualvision/');
     console.log(virtualBusToken ? 'Virtual Bus pairing token is configured.' : 'Virtual Bus disabled: set INOROBOT_VIRTUAL_BUS_TOKEN to a high-entropy token.');
     console.log('Stop: Ctrl+C');
     if (exitWhenPagesClosed) {

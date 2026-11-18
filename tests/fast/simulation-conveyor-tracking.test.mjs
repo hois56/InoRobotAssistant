@@ -1,0 +1,108 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { ConveyorTracking, sweptSensorInterval } from '../../2_3DSimulation/conveyor-tracking-core.mjs';
+
+const box = (x, width = 2) => ({ min: { x, y: 0, z: 0 }, max: { x: x + width, y: 2, z: 2 } });
+const sensor = { id: 'photo', address: 512, bounds: box(10, 1), capture: true };
+const create = options => new ConveyorTracking({ session: 'test-1', sensors: [sensor], ...options });
+
+test('sensor exposure samples scene at the crossing; empty requested captures still acknowledge the trigger', () => {
+    const tracking = create({ captureOffset: [10, 20, 30, 0, 0, 90] });
+    const frame = tracking.sample({ seconds: .02, distance: 20, objects: [{ before: box(0), after: box(20) }],
+        captureAt: fraction => { assert.equal(fraction, .4); return [{ id: 'work', type: 2, pose: [10, 0, 2, 0, 0, 0] }]; },
+        captures: [{ fraction: 1, requestId: 7, objects: [] }] });
+    const shots = frame.events.filter(event => event.kind === 'vision');
+    assert.equal(shots[0].encoder, '8000'); assert.equal(shots[0].requestId, 0);
+    assert.equal(shots[1].requestId, 7); assert.equal(shots[1].objects.length, 0);
+    assert.deepEqual(frame.captureOffset, [10, 20, 30, 0, 0, 90]);
+});
+
+test('fractional pulses accumulate, forward and reverse quadrature use signed counts', () => {
+    const tracking = create({ countsPerMm: 3 });
+    for (let i = 0; i < 10; ++i) tracking.sample({ seconds: 0.01, distance: 0.1 });
+    assert.equal(tracking.lastFrame.encoder, '3');
+    const reverse = create({ countsPerMm: 10 });
+    const frame = reverse.sample({ seconds: 0.01, distance: -0.1 });
+    assert.equal(frame.encoder, '-1'); assert.deepEqual(frame.quadrature, [1, 0]);
+});
+
+test('camera processing delays delivery while retaining the exposure position and encoder', () => {
+    const tracking = create({ sensors: [] });
+    let frame=tracking.sample({ seconds:.02,distance:2,captureDelaySeconds:.1,
+        captures:[{fraction:.5,requestId:4,objects:[{id:'moving',type:1,pose:[100,0,0,0,0,0]}]}] });
+    assert.equal(frame.events.length,0);
+    for(let i=0;i<5;i++)frame=tracking.sample({seconds:.02,distance:2});
+    assert.equal(frame.encoder,'12000');assert.equal(frame.events.length,1);
+    assert.equal(frame.events[0].encoder,'1000');assert.equal(frame.events[0].position,1);
+    assert.equal(frame.events[0].time,.01);assert.equal(frame.events[0].requestId,4);
+});
+
+test('fast object generates both sensor edges and latches the crossing encoder', () => {
+    const tracking = create();
+    const frame = tracking.sample({ seconds: 0.02, distance: 20, objects: [{ before: box(0), after: box(20) }] });
+    assert.deepEqual(frame.events.map(e => [e.value, e.encoder]), [[1, '8000'], [0, '11000']]);
+    assert.equal(frame.events[0].capture, true); assert.equal(frame.sensors[0].value, 0);
+    assert.equal(frame.events[0].time, 0.008);
+});
+
+test('overlapping objects form one sensor pulse; stopping preserves occupied level', () => {
+    const tracking = create();
+    const frame = tracking.sample({ seconds: 0.02, distance: 10,
+        objects: [{ before: box(0, 5), after: box(10, 5) }, { before: box(-3, 5), after: box(7, 5) }] });
+    assert.equal(frame.events.length, 1); assert.equal(frame.sensors[0].value, 1);
+    tracking.acknowledge({ session: 'test-1', eventId: 1 });
+    const stop = tracking.sample({ seconds: 0.1, distance: 0, objects: [{ before: box(10, 5), after: box(10, 5) }] });
+    assert.equal(stop.encoder, '10000'); assert.equal(stop.events.length, 0); assert.equal(stop.sensors[0].value, 1);
+});
+
+test('reverse traversal and sensor across another lane', () => {
+    assert.deepEqual(sweptSensorInterval(box(20), box(0), sensor.bounds), [0.45, 0.6]);
+    const otherLane = box(10); otherLane.min.y = 3; otherLane.max.y = 5;
+    assert.equal(sweptSensorInterval(box(0), box(20), otherLane), null);
+});
+
+test('vision captures preserve trigger count, type and six-axis pose while responses are retried', () => {
+    const tracking = create();
+    const object = { id: 'part', type: 3, pose: [10, 4, 2, 0, 0, 30] };
+    const first = tracking.sample({ seconds: 0.1, distance: 10, captures: [{ fraction: 0.25, objects: [object] }] });
+    assert.equal(first.events[0].encoder, '2500'); assert.deepEqual(first.events[0].objects[0], object);
+    object.pose[0] = 99; first.events[0].objects[0].pose[0] = 88;
+    const second = tracking.sample({ seconds: 0.1, distance: 10 });
+    assert.equal(second.events[0].id, 1); assert.equal(second.events[0].objects[0].pose[0], 10);
+    assert.equal(tracking.acknowledge({ session: 'wrong', eventId: 1 }), false);
+    tracking.acknowledge({ session: 'test-1', eventId: 1 });
+    assert.equal(tracking.sample({ seconds: 0, distance: 0 }).events.length, 0);
+});
+
+test('invalid data and event overflow are transactional; resets require a new session', () => {
+    const tracking = create();
+    assert.throws(() => tracking.sample({ seconds: 2, distance: 100 }), RangeError);
+    assert.throws(() => tracking.sample({ seconds: 0, distance: 1 }), RangeError);
+    assert.throws(() => tracking.sample({ seconds: 0.1, distance: 1, captures: [{ objects: [{ type: 16, pose: [0, 0, 0, 0, 0, 0] }] }] }), RangeError);
+    assert.equal(tracking.sequence, 0); assert.equal(tracking.position, 0);
+    for (let i = 0; i < 500; ++i) tracking.sample({ seconds: 0, distance: 0, captures: [{ objects: [] }] });
+    assert.throws(() => tracking.sample({ seconds: 0.1, distance: 10, captures: [{ objects: [] }] }), /full/);
+    assert.equal(tracking.position, 0); assert.equal(tracking.sequence, 500);
+});
+
+test('channels and mapping errors are isolated', () => {
+    const one = create({ conveyor: 1 }), two = create({ conveyor: 2 });
+    one.sample({ seconds: 0.1, distance: 10 });
+    assert.equal(two.position, 0);
+    assert.throws(() => create({ sensors: [sensor, sensor] }), /mapping/);
+    assert.throws(() => create({ sensors: [{ ...sensor, address: 100 }] }), /sensor address/);
+    assert.throws(() => create({ conveyor: 4 }), RangeError);
+    assert.throws(() => create({ countsPerMm: NaN }), RangeError);
+    assert.throws(() => create({ countsPerMm: .000001 }), RangeError);
+});
+
+test('standard sensor inputs preserve address zero and sensor edges', () => {
+    for (const address of [0, 1, 64, 512, 2559]) {
+        const tracking = create({ sensors: [{ ...sensor, address }] });
+        const frame = tracking.sample({ seconds: .02, distance: 20, objects: [{ before: box(0), after: box(20) }] });
+        assert.equal(frame.sensors[0].address, address);
+        assert.deepEqual(frame.events.map(event => [event.address, event.value]), [[address, 1], [address, 0]]);
+    }
+    for (const address of [-1, 65, 511, 2560, .5])
+        assert.throws(() => create({ sensors: [{ ...sensor, address }] }), RangeError);
+});

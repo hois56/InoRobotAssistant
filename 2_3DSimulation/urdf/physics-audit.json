@@ -1,0 +1,5254 @@
+{
+  "archive": "IMC100R-PLCV4R24C4SPC25_PR-1_0_3_236.zip",
+  "archiveSha256": "a75412bd78294b0b3cfb1b3cbc41d4bc52f1bb33290afea6fc8933b5ac9233e3",
+  "torquePolicy": "Nominal ideal ratedTrq * abs(ratio); SCARA J3 force=2*pi*torque/lead_m; efficiency=1, no peak/planning multiplier",
+  "models": [
+    {
+      "outputFile": "IR-R7H-70S5-C2H-INT_01741199.urdf",
+      "model": "IR-R7H-70S-INT",
+      "folder": "IR-R7H-70",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-R7H-70S5-C2H-INT_01741199/IR-R7H-70S5-C2H-INT_01741199.json",
+      "sourceSha256": "16c09474785d985e417f2260393ced8c1908f5f1797543284920383a1cf39453",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 4.828,
+          "origin": [
+            0.013009899139404297,
+            -0.000001522064208984375,
+            0.30650059509277344
+          ],
+          "inertia": [
+            0.04210258752361409,
+            0,
+            0,
+            0.034982620111103264,
+            0,
+            0.04126023881639814
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 1.6,
+          "gearRatio": 86.95652,
+          "nominalJointTorqueNm": 139.130432,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 7.3303828583761845
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 10.3439124404,
+          "origin": [
+            -0.0077202317,
+            -0.0188713289,
+            0.1219436084
+          ],
+          "inertia": [
+            0.1415079199,
+            0,
+            0,
+            0.1499608914,
+            0,
+            0.0463665039
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 1.6,
+          "gearRatio": 101,
+          "nominalJointTorqueNm": 161.60000000000002,
+          "boundsMesh": null,
+          "velocitySI": 5.8643062867009474
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 3.0792925264,
+          "origin": [
+            0.0084625904,
+            -0.0097142666,
+            0.0097972619
+          ],
+          "inertia": [
+            0.0113776961,
+            0,
+            0,
+            0.0151689793,
+            0,
+            0.0122419308
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 1.27,
+          "gearRatio": 67.2,
+          "nominalJointTorqueNm": 85.34400000000001,
+          "boundsMesh": null,
+          "velocitySI": 8.508480103472357
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 4.7813750891,
+          "origin": [
+            0.1741207804,
+            -0.0029379066,
+            -0.000152
+          ],
+          "inertia": [
+            0.0111380103,
+            0,
+            0,
+            0.0397227399,
+            0,
+            0.033497232
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 0.48,
+          "gearRatio": 69.444,
+          "nominalJointTorqueNm": 33.33312,
+          "boundsMesh": null,
+          "velocitySI": 9.599310885968812
+        },
+        {
+          "link": "link_5",
+          "joint": "J5",
+          "mass": 1.3430479759,
+          "origin": [
+            0.0161822016,
+            -0.00223,
+            -0.0000494
+          ],
+          "inertia": [
+            0.00163,
+            0,
+            0,
+            0.0020346096,
+            0,
+            0.0024805966
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 0.29,
+          "gearRatio": 87.80488,
+          "nominalJointTorqueNm": 25.463415199999996,
+          "boundsMesh": null,
+          "velocitySI": 7.644542123735164
+        },
+        {
+          "link": "link_6",
+          "joint": "J6",
+          "mass": 0.5857143936,
+          "origin": [
+            -0.006104024700000002,
+            -0.00000524,
+            -0.0000168
+          ],
+          "inertia": [
+            0.0007384,
+            0,
+            0,
+            0.00037,
+            0,
+            0.000371
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 0.48,
+          "gearRatio": 49.5833,
+          "nominalJointTorqueNm": 23.799984,
+          "boundsMesh": null,
+          "velocitySI": 13.346532790000639
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-R7H-90S5-C2H-INT_01741200.urdf",
+      "model": "IR-R7H-90S-INT",
+      "folder": "IR-R7H-90",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-R7H-90S5-C2H-INT_01741200/IR-R7H-90S5-C2H-INT_01741200.json",
+      "sourceSha256": "046967a185c1a6d69178530dc25367a17b8d781563a0e153db695ceda24123d9",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 4.862,
+          "origin": [
+            0.013009899139404297,
+            -0.000001522064208984375,
+            0.30650059509277344
+          ],
+          "inertia": [
+            0.04239908461885081,
+            0,
+            0,
+            0.035228976590758916,
+            0,
+            0.04155080387848545
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 1.6,
+          "gearRatio": 108.69565,
+          "nominalJointTorqueNm": 173.91304000000002,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 5.8643062867009474
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 9.718,
+          "origin": [
+            -0.00727,
+            -0.0196,
+            0.188
+          ],
+          "inertia": [
+            0.308,
+            0,
+            0,
+            0.28,
+            0,
+            0.0507
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 1.6,
+          "gearRatio": 121,
+          "nominalJointTorqueNm": 193.60000000000002,
+          "boundsMesh": null,
+          "velocitySI": 4.886921905584122
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 3.704,
+          "origin": [
+            0.00659,
+            -0.0107,
+            0.012
+          ],
+          "inertia": [
+            0.0119,
+            0,
+            0,
+            0.0123,
+            0,
+            0.0126
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 1.27,
+          "gearRatio": 84,
+          "nominalJointTorqueNm": 106.68,
+          "boundsMesh": null,
+          "velocitySI": 6.806784082777885
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 5.015,
+          "origin": [
+            0.25,
+            -0.00256,
+            -0.000151
+          ],
+          "inertia": [
+            0.00985,
+            0,
+            0,
+            0.0621,
+            0,
+            0.0634
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 0.48,
+          "gearRatio": 69.44444,
+          "nominalJointTorqueNm": 33.333331199999996,
+          "boundsMesh": null,
+          "velocitySI": 9.599310885968812
+        },
+        {
+          "link": "link_5",
+          "joint": "J5",
+          "mass": 1.387,
+          "origin": [
+            0.0226,
+            -0.0025,
+            -0.0000488
+          ],
+          "inertia": [
+            0.00165,
+            0,
+            0,
+            0.00185,
+            0,
+            0.00223
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 0.29,
+          "gearRatio": 87.8049,
+          "nominalJointTorqueNm": 25.463421,
+          "boundsMesh": null,
+          "velocitySI": 7.644542123735164
+        },
+        {
+          "link": "link_6",
+          "joint": "J6",
+          "mass": 0.614,
+          "origin": [
+            -0.012899999999999995,
+            0.00000521,
+            -0.0000167
+          ],
+          "inertia": [
+            0.000572,
+            0,
+            0,
+            0.000372,
+            0,
+            0.000376
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 0.48,
+          "gearRatio": 49.5833,
+          "nominalJointTorqueNm": 23.799984,
+          "boundsMesh": null,
+          "velocitySI": 13.346532790000639
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-R10H-120S5-C2H-INT_01741201.urdf",
+      "model": "IR-R10H-120S-INT",
+      "folder": "IR-R10H-120",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-R10H-120S5-C2H-INT_01741201/IR-R10H-120S5-C2H-INT_01741201.json",
+      "sourceSha256": "92dd1d90c5c9f598c8dafd2191b12d2f0738ac95c15d0a742990385a310b7aeb",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 7.2345,
+          "origin": [
+            0.007941749572753906,
+            -1.7547607421875e-7,
+            0.3512932891845703
+          ],
+          "inertia": [
+            0.08749301708582206,
+            0,
+            0,
+            0.07420803677326658,
+            0,
+            0.06946101568017991
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 2.39,
+          "gearRatio": 120,
+          "nominalJointTorqueNm": 286.8,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 4.1887902047863905
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 15.6254,
+          "origin": [
+            -0.0074,
+            -0.0295,
+            0.1454
+          ],
+          "inertia": [
+            0.7271,
+            0,
+            0,
+            0.71,
+            0,
+            0.0966
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 2.39,
+          "gearRatio": 161,
+          "nominalJointTorqueNm": 384.79,
+          "boundsMesh": null,
+          "velocitySI": 3.141592653589793
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 4.9193866543,
+          "origin": [
+            0.0078,
+            -0.0131,
+            0.0088
+          ],
+          "inertia": [
+            0.0198,
+            0,
+            0,
+            0.0224,
+            0,
+            0.0162
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 1.6,
+          "gearRatio": 112.5,
+          "nominalJointTorqueNm": 180,
+          "boundsMesh": null,
+          "velocitySI": 5.759586531581287
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 5.5745,
+          "origin": [
+            0.3697845458984375,
+            6.4849853515625e-8,
+            0.00818463134765625
+          ],
+          "inertia": [
+            0.014362497169587428,
+            0,
+            0,
+            0.16298012777769044,
+            0,
+            0.1634617696686946
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 0.48,
+          "gearRatio": 83.3333,
+          "nominalJointTorqueNm": 39.999984,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 8.203047484373348
+        },
+        {
+          "link": "link_5",
+          "joint": "J5",
+          "mass": 1.2953,
+          "origin": [
+            0.0247,
+            -0.0026,
+            -0.0000862
+          ],
+          "inertia": [
+            0.0018,
+            0,
+            0,
+            0.0022,
+            0,
+            0.003
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 0.29,
+          "gearRatio": 87.8049,
+          "nominalJointTorqueNm": 25.463421,
+          "boundsMesh": null,
+          "velocitySI": 7.644542123735164
+        },
+        {
+          "link": "link_6",
+          "joint": "J6",
+          "mass": 0.5802,
+          "origin": [
+            -0.017300000000000003,
+            0.0000246,
+            -0.0000798
+          ],
+          "inertia": [
+            0.0007067,
+            0,
+            0,
+            0.000413,
+            0,
+            0.000414
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 0.48,
+          "gearRatio": 49.5833,
+          "nominalJointTorqueNm": 23.799984,
+          "boundsMesh": null,
+          "velocitySI": 13.346532790000639
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-R25-178S5-D1NH-INT_01741089.urdf",
+      "model": "IR-R25-178S-INT",
+      "folder": "IR-R25-178",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-R25-178S5-D1NH-INT_01741089/IR-R25-178S5-D1NH-INT_01741089.json",
+      "sourceSha256": "d23bb7922e39179498315df40619ceb0106c39fe86405f30e5bc90c0bc572459",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 67.3917002317603,
+          "origin": [
+            0.07025617218017578,
+            0.03425,
+            0.42475
+          ],
+          "inertia": [
+            1.7156831763877405,
+            0,
+            0,
+            2.18118310284421,
+            0,
+            1.957779616575924
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 9.55,
+          "gearRatio": 111.24225,
+          "nominalJointTorqueNm": 1062.3634875,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 3.3161255787892263
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 37.779,
+          "origin": [
+            -0.0001592998504638672,
+            -0.1675,
+            0.416515625
+          ],
+          "inertia": [
+            3.6546898943088384,
+            0,
+            0,
+            3.668289323392528,
+            0,
+            0.2886368455836889
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 9.55,
+          "gearRatio": 161,
+          "nominalJointTorqueNm": 1537.5500000000002,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 3.0543261909900767
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 40.5444,
+          "origin": [
+            0.0414042553794442,
+            0.0368297437622497,
+            0.0449510898358097
+          ],
+          "inertia": [
+            0.418982368287015,
+            0,
+            0,
+            0.6578,
+            0,
+            0.476938352563414
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 5.73,
+          "gearRatio": 121,
+          "nominalJointTorqueNm": 693.33,
+          "boundsMesh": null,
+          "velocitySI": 3.490658503988659
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 17.151673097482,
+          "origin": [
+            0.5425088195800781,
+            0.0000026512145996093752,
+            0
+          ],
+          "inertia": [
+            0.08159305576881198,
+            0,
+            0,
+            0.4492372229452741,
+            0,
+            0.46907186426692604
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 1.27,
+          "gearRatio": 76.95,
+          "nominalJointTorqueNm": 97.7265,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 6.981317007977318
+        },
+        {
+          "link": "link_5",
+          "joint": "J5",
+          "mass": 3.03701929646371,
+          "origin": [
+            0.0254778339328972,
+            -0.00126,
+            -0.00000656
+          ],
+          "inertia": [
+            0.004136,
+            0,
+            0,
+            0.00518513255089738,
+            0,
+            0.00151474562989259
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 1.27,
+          "gearRatio": 94.736842,
+          "nominalJointTorqueNm": 120.31578934,
+          "boundsMesh": null,
+          "velocitySI": 6.283185307179586
+        },
+        {
+          "link": "link_6",
+          "joint": "J6",
+          "mass": 1.18605803651678,
+          "origin": [
+            -0.03702769439042229,
+            0.0000134,
+            0.00000142
+          ],
+          "inertia": [
+            0.00083174,
+            0,
+            0,
+            0.0006716,
+            0,
+            0.0006717
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 0.64,
+          "gearRatio": 56.25,
+          "nominalJointTorqueNm": 36,
+          "boundsMesh": null,
+          "velocitySI": 10.64650843716541
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-R15H-145S5-C1NH-INT_01741446.urdf",
+      "model": "IR-R15H-145S-K-INT",
+      "folder": "IR-R15H-145",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-R15H-145S5-C1NH-INT_01741446/IR-R15H-145S5-C1NH-INT_01741446.json",
+      "sourceSha256": "5aad5037eb193af4b577ae3b894b8cafb249ab648133211f2a7213e0220be428",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 46.8589424122616,
+          "origin": [
+            0.048762664794921876,
+            0.0049477615356445315,
+            0.4071612548828125
+          ],
+          "inertia": [
+            1.3534159689118592,
+            0,
+            0,
+            1.3317561805309241,
+            0,
+            1.3830599862949455
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 4.9,
+          "gearRatio": 141,
+          "nominalJointTorqueNm": 690.9000000000001,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 4.537856055185257
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 43.407,
+          "origin": [
+            -0.000044857025146484376,
+            0.006169631958007813,
+            0.2957494659423828
+          ],
+          "inertia": [
+            2.8855610889421066,
+            0,
+            0,
+            2.5204523108696653,
+            0,
+            0.6997781813670868
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 4.9,
+          "gearRatio": 140,
+          "nominalJointTorqueNm": 686,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 4.1887902047863905
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 7.777,
+          "origin": [
+            0.12425607941059,
+            -0.00921918456585706,
+            0.17878
+          ],
+          "inertia": [
+            0.0763433176387671,
+            0,
+            0,
+            0.0744732443671014,
+            0,
+            0.00837000467453162
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 2.39,
+          "gearRatio": 151.875,
+          "nominalJointTorqueNm": 362.98125000000005,
+          "boundsMesh": null,
+          "velocitySI": 4.537856055185257
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 7.693,
+          "origin": [
+            0.43498968505859376,
+            0.00002283477783203125,
+            0.0104990234375
+          ],
+          "inertia": [
+            0.039166979780719265,
+            0,
+            0,
+            0.26943432267787343,
+            0,
+            0.27536545392440476
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 1.27,
+          "gearRatio": 59.302,
+          "nominalJointTorqueNm": 75.31354,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 8.203047484373348
+        },
+        {
+          "link": "link_5",
+          "joint": "J5",
+          "mass": 1.81758595535793,
+          "origin": [
+            0.0215965576171875,
+            -0.0037540550231933596,
+            -0.00025372314453125
+          ],
+          "inertia": [
+            0.003535504081120314,
+            0,
+            0,
+            0.004837218240463631,
+            0,
+            0.005000018038369007
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 0.64,
+          "gearRatio": 92.727,
+          "nominalJointTorqueNm": 59.34528,
+          "boundsMesh": "P5.stl",
+          "velocitySI": 7.853981633974483
+        },
+        {
+          "link": "link_6",
+          "joint": "J6",
+          "mass": 0.642122129580798,
+          "origin": [
+            -0.0050013427734375004,
+            0.0009866065979003906,
+            -0.00000616455078125
+          ],
+          "inertia": [
+            0.0005864739056738001,
+            0,
+            0,
+            0.0003296670330616461,
+            0,
+            0.0003291709755749512
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 0.64,
+          "gearRatio": 59.16,
+          "nominalJointTorqueNm": 37.8624,
+          "boundsMesh": "P6.stl",
+          "velocitySI": 12.304571226560023
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-S4-40Z15S3-C2LH-INT_01741009.urdf",
+      "model": "IR-S4-40Z15S-INT",
+      "folder": "IR-S4-40Z15",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-S4-40Z15S3-C2LH-INT_01741009/IR-S4-40Z15S3-C2LH-INT_01741009.json",
+      "sourceSha256": "bd4efdd2791e9e17feddfc16cdf8c3db93e409f6aa7044d12d597b1963fef0ec",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 2.5,
+          "origin": [
+            0.1102779598236084,
+            -0.000010332107543945312,
+            0.03975890350341797
+          ],
+          "inertia": [
+            0.0025880756111616235,
+            0,
+            0,
+            0.021912761351028338,
+            0,
+            0.023479164791037357
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 0.96,
+          "gearRatio": 51,
+          "nominalJointTorqueNm": 48.96,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 12.320279189827971
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 4.29,
+          "origin": [
+            0.08422144317626953,
+            0.0000013580322265625,
+            0.18443642234802246
+          ],
+          "inertia": [
+            0.036487680567086754,
+            0,
+            0,
+            0.0577267169416324,
+            0,
+            0.03187636910178209
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 0.48,
+          "gearRatio": 51,
+          "nominalJointTorqueNm": 24.48,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 13.039354841649637
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 0.4885,
+          "origin": [
+            0.0000119171142578125,
+            0,
+            0.1667000061273575
+          ],
+          "inertia": [
+            0.004742513343727951,
+            0,
+            0,
+            0.004742426491866308,
+            0,
+            0.00007317249574556955
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 0.32,
+          "gearRatio": 1.1463414634,
+          "nominalJointTorqueNm": 0.366829268288,
+          "boundsMesh": "P4.stl",
+          "nominalScrewForceN": 144.0535167969125,
+          "velocitySI": 1.3259555555555556
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 0.4885,
+          "origin": [
+            0.0000119171142578125,
+            0,
+            0.1667000061273575
+          ],
+          "inertia": [
+            0.004742513343727951,
+            0,
+            0,
+            0.004742426491866308,
+            0,
+            0.00007317249574556955
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 0.32,
+          "gearRatio": 12,
+          "nominalJointTorqueNm": 3.84,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 45.378560551852566
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-S7-50Z20S3-C2LH-INT_01741022.urdf",
+      "model": "IR-S7-50Z20S-INT",
+      "folder": "IR-S7-50Z20",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-S7-50Z20S3-C2LH-INT_01741022/IR-S7-50Z20S3-C2LH-INT_01741022.json",
+      "sourceSha256": "a710f738636ddbb5c4ab3c0771d6c95f9caafe57d17719b4bd9a2db5cb8330d0",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 3.7594130947,
+          "origin": [
+            0.10700609397888183,
+            -0.000024625778198242187,
+            0.04449568557739258
+          ],
+          "inertia": [
+            0.006095897489077511,
+            0,
+            0,
+            0.03707625746744508,
+            0,
+            0.04060642094428709
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 1.6,
+          "gearRatio": 81,
+          "nominalJointTorqueNm": 129.6,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 7.239625737272479
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 6.0092323171,
+          "origin": [
+            0.13335572052001954,
+            0.000003429412841796875,
+            0.19113642883300783
+          ],
+          "inertia": [
+            0.053326252561457864,
+            0,
+            0,
+            0.11996254618279183,
+            0,
+            0.08358674115945046
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 0.96,
+          "gearRatio": 51,
+          "nominalJointTorqueNm": 48.96,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 12.833405989914304
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 0.4947,
+          "origin": [
+            7.32421875e-7,
+            0.00009278488159179688,
+            0.2
+          ],
+          "inertia": [
+            0.006662573428708729,
+            0,
+            0,
+            0.006661955169033773,
+            0,
+            0.0001325285977424994
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 0.48,
+          "gearRatio": 1.2682926829,
+          "nominalJointTorqueNm": 0.608780487792,
+          "boundsMesh": "P4.stl",
+          "nominalScrewForceN": 191.2540308096158,
+          "velocitySI": 1.6058333333333332
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 0.4947,
+          "origin": [
+            7.32421875e-7,
+            0.00009278488159179688,
+            0.2
+          ],
+          "inertia": [
+            0.006662573428708729,
+            0,
+            0,
+            0.006661955169033773,
+            0,
+            0.0001325285977424994
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 0.48,
+          "gearRatio": 13.6363636364,
+          "nominalJointTorqueNm": 6.545454545472,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 34.90658503988659
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-S7-60Z20S3-C2LH-INT_01741021.urdf",
+      "model": "IR-S7-60Z20S-INT",
+      "folder": "IR-S7-60Z20",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-S7-60Z20S3-C2LH-INT_01741021/IR-S7-60Z20S3-C2LH-INT_01741021.json",
+      "sourceSha256": "93852072012378f40d8db0661b603e4b35d2076e89cf73cbcfe9fa4d52c82360",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 3.4141462617,
+          "origin": [
+            0.1570055446624756,
+            -0.000025136947631835938,
+            0.04429362487792969
+          ],
+          "inertia": [
+            0.005521453684284138,
+            0,
+            0,
+            0.05573503262640451,
+            0,
+            0.058955728235800815
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 1.6,
+          "gearRatio": 81,
+          "nominalJointTorqueNm": 129.6,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 7.239625737272479
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 6.2271917368,
+          "origin": [
+            0.13335572814941407,
+            0.000003429412841796875,
+            0.19113642883300783
+          ],
+          "inertia": [
+            0.05526043623912937,
+            0,
+            0,
+            0.12431367270203157,
+            0,
+            0.08661848960581285
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 0.96,
+          "gearRatio": 51,
+          "nominalJointTorqueNm": 48.96,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 12.833405989914304
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 0.4947,
+          "origin": [
+            7.32421875e-7,
+            0.00009278488159179688,
+            0.2
+          ],
+          "inertia": [
+            0.006662573428708729,
+            0,
+            0,
+            0.006661955169033773,
+            0,
+            0.0001325285977424994
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 0.48,
+          "gearRatio": 1.2682926829,
+          "nominalJointTorqueNm": 0.608780487792,
+          "boundsMesh": "P4.stl",
+          "nominalScrewForceN": 191.2540308096158,
+          "velocitySI": 1.6058333333333332
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 0.4947,
+          "origin": [
+            7.32421875e-7,
+            0.00009278488159179688,
+            0.2
+          ],
+          "inertia": [
+            0.006662573428708729,
+            0,
+            0,
+            0.006661955169033773,
+            0,
+            0.0001325285977424994
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 0.48,
+          "gearRatio": 13.6363636364,
+          "nominalJointTorqueNm": 6.545454545472,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 34.90658503988659
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-S7-70Z20S3-C2LH-INT_01741020.urdf",
+      "model": "IR-S7-70Z20S-INT",
+      "folder": "IR-S7-70Z20",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-S7-70Z20S3-C2LH-INT_01741020/IR-S7-70Z20S3-C2LH-INT_01741020.json",
+      "sourceSha256": "d249585c6fdbe91c7db47f9532300ebe76f2e8ecfc4a6ea4a054ba98d69de4ac",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 6.3316497748,
+          "origin": [
+            0.2070064754486084,
+            0.000022562026977539064,
+            0.04505196762084961
+          ],
+          "inertia": [
+            0.010330333548925614,
+            0,
+            0,
+            0.15496510759100085,
+            0,
+            0.16082263459028381
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 1.6,
+          "gearRatio": 81,
+          "nominalJointTorqueNm": 129.6,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 7.239625737272479
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 5.9635230573,
+          "origin": [
+            0.13335572814941407,
+            0.000026203155517578124,
+            0.19113642883300783
+          ],
+          "inertia": [
+            0.05292062611803414,
+            0,
+            0,
+            0.11905004451929256,
+            0,
+            0.08295093226376361
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 0.96,
+          "gearRatio": 51,
+          "nominalJointTorqueNm": 48.96,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 12.833405989914304
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 0.4947,
+          "origin": [
+            7.32421875e-7,
+            0.00011555671691894531,
+            0.2
+          ],
+          "inertia": [
+            0.006662573428708729,
+            0,
+            0,
+            0.006661955169033773,
+            0,
+            0.0001325285977424994
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 0.48,
+          "gearRatio": 1.2682926829,
+          "nominalJointTorqueNm": 0.608780487792,
+          "boundsMesh": "P4.stl",
+          "nominalScrewForceN": 191.2540308096158,
+          "velocitySI": 1.6058333333333332
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 0.4947,
+          "origin": [
+            7.32421875e-7,
+            0.00011555671691894531,
+            0.2
+          ],
+          "inertia": [
+            0.006662573428708729,
+            0,
+            0,
+            0.006661955169033773,
+            0,
+            0.0001325285977424994
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 0.48,
+          "gearRatio": 13.6363636364,
+          "nominalJointTorqueNm": 6.545454545472,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 34.90658503988659
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-S10-60Z20S3-C2LH-INT_01741025.urdf",
+      "model": "IR-S10-60Z20S-INT",
+      "folder": "IR-S10-60Z20",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-S10-60Z20S3-C2LH-INT_01741025/IR-S10-60Z20S3-C2LH-INT_01741025.json",
+      "sourceSha256": "47225c129edd4b45d9f44fdc5d644267a79a8f5e3eb66272aa0bed0dc0484367",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 4.1935445086,
+          "origin": [
+            0.10700609397888183,
+            -0.000024625778198242187,
+            0.04399568557739258
+          ],
+          "inertia": [
+            0.006799842634040054,
+            0,
+            0,
+            0.04135776834986297,
+            0,
+            0.04529558983685026
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 1.6,
+          "gearRatio": 81,
+          "nominalJointTorqueNm": 129.6,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 7.239625737272479
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 9.3568768113,
+          "origin": [
+            0.18384976959228516,
+            -0.0003292045593261719,
+            0.19059426879882813
+          ],
+          "inertia": [
+            0.08992156782660649,
+            0,
+            0,
+            0.2566527027586625,
+            0,
+            0.20510681547266738
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 0.96,
+          "gearRatio": 51,
+          "nominalJointTorqueNm": 48.96,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 12.833405989914304
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 0.7704986878,
+          "origin": [
+            -0.00000592041015625,
+            0.00015517520904541015,
+            0.2
+          ],
+          "inertia": [
+            0.010377526219398591,
+            0,
+            0,
+            0.010375987555618698,
+            0,
+            0.00020688210035061736
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 0.64,
+          "gearRatio": 1.2682926829,
+          "nominalJointTorqueNm": 0.8117073170560001,
+          "boundsMesh": "P4.stl",
+          "nominalScrewForceN": 255.00537441282106,
+          "velocitySI": 1.5769222222222223
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 0.7704986878,
+          "origin": [
+            -0.00000592041015625,
+            0.00015517520904541015,
+            0.2
+          ],
+          "inertia": [
+            0.010377526219398591,
+            0,
+            0,
+            0.010375987555618698,
+            0,
+            0.00020688210035061736
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 0.48,
+          "gearRatio": 13.6363636364,
+          "nominalJointTorqueNm": 6.545454545472,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 47.211156266446615
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-S10-70Z20S3-C2LH-INT_01741018.urdf",
+      "model": "IR-S10-70Z20S-INT",
+      "folder": "IR-S10-70Z20",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-S10-70Z20S3-C2LH-INT_01741018/IR-S10-70Z20S3-C2LH-INT_01741018.json",
+      "sourceSha256": "d3fc07e51ddf1f252f5d4efd1e2b674785dd12bb254a5840239b46477f435085",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 4.381335846,
+          "origin": [
+            0.1570055446624756,
+            -0.000025136947631835938,
+            0.04379362487792969
+          ],
+          "inertia": [
+            0.00708561997485641,
+            0,
+            0,
+            0.07152414618653583,
+            0,
+            0.07565722896649751
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 1.6,
+          "gearRatio": 81,
+          "nominalJointTorqueNm": 129.6,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 7.239625737272479
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 9.6675042161,
+          "origin": [
+            0.18384811401367188,
+            -0.00033858108520507814,
+            0.16204233932495118
+          ],
+          "inertia": [
+            0.06782905717380881,
+            0,
+            0,
+            0.24009244140622907,
+            0,
+            0.21192742317696256
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 0.96,
+          "gearRatio": 51,
+          "nominalJointTorqueNm": 48.96,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 12.833405989914304
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 0.8138820321,
+          "origin": [
+            -0.00000592041015625,
+            0.00015517520904541015,
+            0.2
+          ],
+          "inertia": [
+            0.010961838431848859,
+            0,
+            0,
+            0.01096021313277473,
+            0,
+            0.00021853070862358525
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 0.64,
+          "gearRatio": 1.2682926829,
+          "nominalJointTorqueNm": 0.8117073170560001,
+          "boundsMesh": "P4.stl",
+          "nominalScrewForceN": 255.00537441282106,
+          "velocitySI": 1.5769222222222223
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 0.8138820321,
+          "origin": [
+            -0.00000592041015625,
+            0.00015517520904541015,
+            0.2
+          ],
+          "inertia": [
+            0.010961838431848859,
+            0,
+            0,
+            0.01096021313277473,
+            0,
+            0.00021853070862358525
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 0.48,
+          "gearRatio": 13.6363636364,
+          "nominalJointTorqueNm": 6.545454545472,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 47.211156266446615
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-S10-80Z20S3-C2LH-INT_01741017.urdf",
+      "model": "IR-S10-80Z20S-INT",
+      "folder": "IR-S10-80Z20",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-S10-80Z20S3-C2LH-INT_01741017/IR-S10-80Z20S3-C2LH-INT_01741017.json",
+      "sourceSha256": "c2576caf721d1573b9a11b761d4059a95681ada35a6e60b3d1bad22ccab3ce33",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 4.1717188259,
+          "origin": [
+            0.20699646949768066,
+            0.000022562026977539064,
+            0.04455196762084961
+          ],
+          "inertia": [
+            0.0068063219661009455,
+            0,
+            0,
+            0.10210148407098302,
+            0,
+            0.10596081876655977
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 1.6,
+          "gearRatio": 81,
+          "nominalJointTorqueNm": 129.6,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 7.239625737272479
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 5.716377172,
+          "origin": [
+            0.18384811401367188,
+            -0.00033858108520507814,
+            0.16204233932495118
+          ],
+          "inertia": [
+            0.04010719471742435,
+            0,
+            0,
+            0.1419662118107649,
+            0,
+            0.12531228917925316
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 0.96,
+          "gearRatio": 51,
+          "nominalJointTorqueNm": 48.96,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 12.833405989914304
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 0.7659097345,
+          "origin": [
+            -0.000015899658203125,
+            0.0001779470443725586,
+            0.2
+          ],
+          "inertia": [
+            0.010315719516876721,
+            0,
+            0,
+            0.010314189705548921,
+            0,
+            0.00020564963575897088
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 0.64,
+          "gearRatio": 1.2682926829,
+          "nominalJointTorqueNm": 0.8117073170560001,
+          "boundsMesh": "P4.stl",
+          "nominalScrewForceN": 255.00537441282106,
+          "velocitySI": 1.5769222222222223
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 0.7659097345,
+          "origin": [
+            -0.000015899658203125,
+            0.0001779470443725586,
+            0.2
+          ],
+          "inertia": [
+            0.010315719516876721,
+            0,
+            0,
+            0.010314189705548921,
+            0,
+            0.00020564963575897088
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 0.48,
+          "gearRatio": 13.6363636364,
+          "nominalJointTorqueNm": 6.545454545472,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 47.211156266446615
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-S25-80Z42S5-C2LNHX-INT_01741354.urdf",
+      "model": "IR-S25-80Z42S",
+      "folder": "IR-S25-80Z42",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-S25-80Z42S5-C2LNHX-INT_01741354/IR-S25-80Z42S5-C2LNHX-INT_01741354.json",
+      "sourceSha256": "04213d93755b3524f7c0036fcd465e8dcb575c9c09a5906746c1c1872ce1ce74",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 16.550174701,
+          "origin": [
+            0.16949740600585939,
+            -8.1634521484375e-7,
+            0.06805165386199952
+          ],
+          "inertia": [
+            0.06405900643128473,
+            0,
+            0,
+            0.42911296067399407,
+            0,
+            0.4527178003240298
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 6.36,
+          "gearRatio": 81,
+          "nominalJointTorqueNm": 515.1600000000001,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 6.632251157578453
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 24.7123719843,
+          "origin": [
+            0.2116631317138672,
+            0.00003366470336914063,
+            0.24849764060974122
+          ],
+          "inertia": [
+            0.45635081166995056,
+            0,
+            0,
+            1.1378082117246873,
+            0,
+            0.8984322124392555
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 2.39,
+          "gearRatio": 80,
+          "nominalJointTorqueNm": 191.20000000000002,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 6.283185307179586
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 1.106,
+          "origin": [
+            -0.00009664916992187501,
+            -0.000020529747009277345,
+            0.3849882816076279
+          ],
+          "inertia": [
+            0.054797917895884146,
+            0,
+            0,
+            0.054795755237519395,
+            0,
+            0.00029443512754480855
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 1.6,
+          "gearRatio": 2.5,
+          "nominalJointTorqueNm": 4,
+          "boundsMesh": "P4.stl",
+          "nominalScrewForceN": 502.6548245743669,
+          "velocitySI": 2.1464583333333334
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 1.106,
+          "origin": [
+            -0.00009664916992187501,
+            -0.000020529747009277345,
+            0.3849882816076279
+          ],
+          "inertia": [
+            0.054797917895884146,
+            0,
+            0,
+            0.054795755237519395,
+            0,
+            0.00029443512754480855
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 1.27,
+          "gearRatio": 51,
+          "nominalJointTorqueNm": 64.77,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 12.304571226560023
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-S25-100Z42S5-C2LNHX-INT_01741353.urdf",
+      "model": "IR-S25-100Z42S",
+      "folder": "IR-S25-100Z42",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-S25-100Z42S5-C2LNHX-INT_01741353/IR-S25-100Z42S5-C2LNHX-INT_01741353.json",
+      "sourceSha256": "567df6d32a09a926e93e8f98c8b08d847a251688b0f769271defefca5f9cdf34",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 18.8644931778,
+          "origin": [
+            0.2695007553100586,
+            0.00000276947021484375,
+            0.06804712963104248
+          ],
+          "inertia": [
+            0.07303001029341197,
+            0,
+            0,
+            0.8943899188386305,
+            0,
+            0.9213156836296735
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 6.36,
+          "gearRatio": 81,
+          "nominalJointTorqueNm": 515.1600000000001,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 6.632251157578453
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 26.0872516035,
+          "origin": [
+            0.2116631774902344,
+            0.00003366470336914063,
+            0.24849764060974122
+          ],
+          "inertia": [
+            0.48173999949330654,
+            0,
+            0,
+            1.2011105670259739,
+            0,
+            0.9484168028876728
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 2.39,
+          "gearRatio": 80,
+          "nominalJointTorqueNm": 191.20000000000002,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 6.283185307179586
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 1.106493266,
+          "origin": [
+            -0.0001429443359375,
+            0.00002774524688720703,
+            0.38498888432979583
+          ],
+          "inertia": [
+            0.0548214716628334,
+            0,
+            0,
+            0.054819343344339605,
+            0,
+            0.00029317288778850923
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 1.6,
+          "gearRatio": 2.5,
+          "nominalJointTorqueNm": 4,
+          "boundsMesh": "P4.stl",
+          "nominalScrewForceN": 502.6548245743669,
+          "velocitySI": 2.1464583333333334
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 1.106493266,
+          "origin": [
+            -0.0001429443359375,
+            0.00002774524688720703,
+            0.38498888432979583
+          ],
+          "inertia": [
+            0.0548214716628334,
+            0,
+            0,
+            0.054819343344339605,
+            0,
+            0.00029317288778850923
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 1.27,
+          "gearRatio": 51,
+          "nominalJointTorqueNm": 64.77,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 12.304571226560023
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-S25-120Z42S-C2LSXD-INT_01741364.urdf",
+      "model": "IR-S25-120Z42S-INT",
+      "folder": "IR-S25-120Z42",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-S25-120Z42S-C2LSXD-INT_01741364/IR-S25-120Z42S-C2LSXD-INT_01741364.json",
+      "sourceSha256": "3f98317e1d4f55fe6a4a2ce8a70bbcc30f2a3cbb9319257f4c3a9a5bd18c79a3",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 21.7074752142,
+          "origin": [
+            0.36950119400024417,
+            -0.00000440216064453125,
+            0.06804899597167968
+          ],
+          "inertia": [
+            0.08403907919751785,
+            0,
+            0,
+            1.640193360417246,
+            0,
+            1.671176752079034
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 6.36,
+          "gearRatio": 81,
+          "nominalJointTorqueNm": 515.1600000000001,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 5.515240436302081
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 22.3019622186,
+          "origin": [
+            0.21166500854492187,
+            -0.000012325286865234375,
+            0.24849770736694338
+          ],
+          "inertia": [
+            0.41185509468267184,
+            0,
+            0,
+            1.026841927359477,
+            0,
+            0.8108308268712833
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 2.39,
+          "gearRatio": 80,
+          "nominalJointTorqueNm": 191.20000000000002,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 6.283185307179586
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 2.5232236578,
+          "origin": [
+            0.000131591796875,
+            -0.000006445884704589844,
+            0.38500140666216615
+          ],
+          "inertia": [
+            0.12501833290335304,
+            0,
+            0,
+            0.12501423750146576,
+            0,
+            0.0006708825157776795
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 1.6,
+          "gearRatio": 2.5,
+          "nominalJointTorqueNm": 4,
+          "boundsMesh": "P4.stl",
+          "nominalScrewForceN": 502.6548245743669,
+          "velocitySI": 1.25
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 2.5232236578,
+          "origin": [
+            0.000131591796875,
+            -0.000006445884704589844,
+            0.38500140666216615
+          ],
+          "inertia": [
+            0.12501833290335304,
+            0,
+            0,
+            0.12501423750146576,
+            0,
+            0.0006708825157776795
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 1.27,
+          "gearRatio": 51,
+          "nominalJointTorqueNm": 64.77,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 12.304571226560023
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-TS4-35Z15S3-C2LH-INT_01741011.urdf",
+      "model": "IR-TS4-35Z15S-INT",
+      "folder": "IR-TS4-35Z15",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-TS4-35Z15S3-C2LH-INT_01741011/IR-TS4-35Z15S3-C2LH-INT_01741011.json",
+      "sourceSha256": "8225ac7747389f9cc7103b42d88bedea8e6d5eeba8018caa3868e5cb5c916598",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 4.6517586333,
+          "origin": [
+            0.0835,
+            0,
+            0.3876500091552734
+          ],
+          "inertia": [
+            0.018777700293342085,
+            0,
+            0,
+            0.052642890790318864,
+            0,
+            0.04502941121689678
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 1.75,
+          "gearRatio": 50,
+          "nominalJointTorqueNm": 87.5,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 11.498229112138642
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 4.2925362713,
+          "origin": [
+            -0.08549997329711914,
+            -0.00001386260986328125,
+            0.1855798797607422
+          ],
+          "inertia": [
+            0.035653444006488254,
+            0,
+            0,
+            0.056401772011193445,
+            0,
+            0.031405967059436615
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 1.27,
+          "gearRatio": 50,
+          "nominalJointTorqueNm": 63.5,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 12.320279189827971
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 0.3601370679,
+          "origin": [
+            -0.000011926174163818359,
+            -0.0001224236488342285,
+            0.16
+          ],
+          "inertia": [
+            0.0031006168084243475,
+            0,
+            0,
+            0.0031001101386318414,
+            0,
+            0.00005438765489618898
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 0.32,
+          "gearRatio": 1.1463414634,
+          "nominalJointTorqueNm": 0.366829268288,
+          "boundsMesh": "P4.stl",
+          "nominalScrewForceN": 144.0535167969125,
+          "velocitySI": 1.3259555555555556
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 0.3601370679,
+          "origin": [
+            -0.000011926174163818359,
+            -0.0001224236488342285,
+            0.16
+          ],
+          "inertia": [
+            0.0031006168084243475,
+            0,
+            0,
+            0.0031001101386318414,
+            0,
+            0.00005438765489618898
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 0.32,
+          "gearRatio": 12,
+          "nominalJointTorqueNm": 3.84,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 45.378560551852566
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-TS5-55Z15S3-C2LH-INT_01741007.urdf",
+      "model": "IR-TS5-55Z15S-INT",
+      "folder": "IR-TS5-55Z15",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-TS5-55Z15S3-C2LH-INT_01741007/IR-TS5-55Z15S3-C2LH-INT_01741007.json",
+      "sourceSha256": "12809130b85fd007e2ad5692acd09ec2ed95cecfd16627da6304aaf3dbbe9444",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 7.3392418728,
+          "origin": [
+            0.1335,
+            0,
+            0.39695001220703124
+          ],
+          "inertia": [
+            0.02962622592740835,
+            0,
+            0,
+            0.12819285588260174,
+            0,
+            0.1161808104499134
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 1.75,
+          "gearRatio": 50,
+          "nominalJointTorqueNm": 87.5,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 11.498229112138642
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 8.5616152603,
+          "origin": [
+            -0.1344701843261719,
+            0.00002808380126953125,
+            0.19187773132324218
+          ],
+          "inertia": [
+            0.07779443315052113,
+            0,
+            0,
+            0.17149145120383988,
+            0,
+            0.11787607673124478
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 1.27,
+          "gearRatio": 50,
+          "nominalJointTorqueNm": 63.5,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 12.320279189827971
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 0.8076148419,
+          "origin": [
+            -0.0000018978118896484375,
+            -0.00010383987426757813,
+            0.1655
+          ],
+          "inertia": [
+            0.00748216060795099,
+            0,
+            0,
+            0.0074812437674654534,
+            0,
+            0.00021622275984879255
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 0.48,
+          "gearRatio": 1.2682926829,
+          "nominalJointTorqueNm": 0.608780487792,
+          "boundsMesh": "P4.stl",
+          "nominalScrewForceN": 191.2540308096158,
+          "velocitySI": 1.6063611111111111
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 0.8076148419,
+          "origin": [
+            -0.0000018978118896484375,
+            -0.00010383987426757813,
+            0.1655
+          ],
+          "inertia": [
+            0.00748216060795099,
+            0,
+            0,
+            0.0074812437674654534,
+            0,
+            0.00021622275984879255
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 0.48,
+          "gearRatio": 12.1818181818,
+          "nominalJointTorqueNm": 5.847272727264,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 34.90658503988659
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-S35-80Z42S5-C2LNHX-INT_01741206.urdf",
+      "model": "IR-S35-80Z42S-INT",
+      "folder": "IR-S35-80Z42",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-S35-80Z42S5-C2LNHX-INT_01741206/IR-S35-80Z42S5-C2LNHX-INT_01741206.json",
+      "sourceSha256": "e12d8cbde9f2bb9fbebb784b373d7666678110211e77af3ac7cd21b905b258e0",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 16.550174701,
+          "origin": [
+            0.16949885177612306,
+            -0.000005611419677734375,
+            0.09304947090148925
+          ],
+          "inertia": [
+            0.0640760433000589,
+            0,
+            0,
+            0.42919535047195745,
+            0,
+            0.4528201412334678
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 6.36,
+          "gearRatio": 81,
+          "nominalJointTorqueNm": 515.1600000000001,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 6.632251157578453
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 24.7123719843,
+          "origin": [
+            0.21168329620361329,
+            -0.00000252532958984375,
+            0.2734987907409668
+          ],
+          "inertia": [
+            0.45639084479621506,
+            0,
+            0,
+            1.1379270667830286,
+            0,
+            0.8985842169653404
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 2.39,
+          "gearRatio": 80,
+          "nominalJointTorqueNm": 191.20000000000002,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 6.283185307179586
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 3.1393454589,
+          "origin": [
+            -0.03308773803710938,
+            4.634857177734375e-7,
+            0.3849998168945313
+          ],
+          "inertia": [
+            0.15669552011040186,
+            0,
+            0,
+            0.15927595995495294,
+            0,
+            0.005751629581636191
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 1.6,
+          "gearRatio": 2.5,
+          "nominalJointTorqueNm": 4,
+          "boundsMesh": "P3.stl",
+          "nominalScrewForceN": 502.6548245743669,
+          "velocitySI": 2.1464583333333334
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 3.1393454589,
+          "origin": [
+            -2.7465820312500003e-7,
+            0,
+            0.3849996948863409
+          ],
+          "inertia": [
+            0.155273334407746,
+            0,
+            0,
+            0.15527334159321646,
+            0,
+            0.00032702233743921383
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 1.27,
+          "gearRatio": 51,
+          "nominalJointTorqueNm": 64.77,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 12.304571226560023
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-S35-100Z42S5-C2LNHX-INT_01741207.urdf",
+      "model": "IR-S35-100Z42S-INT",
+      "folder": "IR-S35-100Z42",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-S35-100Z42S5-C2LNHX-INT_01741207/IR-S35-100Z42S5-C2LNHX-INT_01741207.json",
+      "sourceSha256": "e17c9a1238685d89a4fa85d607ab1a7ee2c0e8b5bc68abde873a7ab60e8790c0",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 18.8644931778,
+          "origin": [
+            0.2694992370605469,
+            3.08990478515625e-7,
+            0.09305542182922363
+          ],
+          "inertia": [
+            0.07303903374839578,
+            0,
+            0,
+            0.8944844939112387,
+            0,
+            0.9214066500240062
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 6.36,
+          "gearRatio": 81,
+          "nominalJointTorqueNm": 515.1600000000001,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 6.632251157578453
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 26.0872516035,
+          "origin": [
+            0.2116851043701172,
+            -0.00000252532958984375,
+            0.27349770736694334
+          ],
+          "inertia": [
+            0.4817784031995247,
+            0,
+            0,
+            1.2012223416871641,
+            0,
+            0.9485674584248299
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 2.39,
+          "gearRatio": 80,
+          "nominalJointTorqueNm": 191.20000000000002,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 6.283185307179586
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 3.328493266,
+          "origin": [
+            -0.03308477783203125,
+            -3.08990478515625e-7,
+            0.38499969482421875
+          ],
+          "inertia": [
+            0.16613578432102782,
+            0,
+            0,
+            0.1688711711334355,
+            0,
+            0.006096345885896646
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 1.6,
+          "gearRatio": 2.5,
+          "nominalJointTorqueNm": 4,
+          "boundsMesh": "P3.stl",
+          "nominalScrewForceN": 502.6548245743669,
+          "velocitySI": 2.1464583333333334
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 3.328493266,
+          "origin": [
+            -2.7465820312500003e-7,
+            0,
+            0.3849996948861081
+          ],
+          "inertia": [
+            0.16462866375568133,
+            0,
+            0,
+            0.16462867137408152,
+            0,
+            0.0003467256669418603
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 1.27,
+          "gearRatio": 51,
+          "nominalJointTorqueNm": 64.77,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 12.304571226560023
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-S35-120Z42S-C2LSXD-INT_01741363.urdf",
+      "model": "IR-S35-120Z42S-INT",
+      "folder": "IR-S35-120Z42",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-S35-120Z42S-C2LSXD-INT_01741363/IR-S35-120Z42S-C2LSXD-INT_01741363.json",
+      "sourceSha256": "bdca0f8611deda29ac7b7bf1c064d6c9ddb6c8875eaf692b300ff5eded056ef9",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 19.1005353288,
+          "origin": [
+            0.3695000228881836,
+            -0.000003692626953125,
+            0.0960499267578125
+          ],
+          "inertia": [
+            0.07394496399048191,
+            0,
+            0,
+            1.4432657693055866,
+            0,
+            1.4705252859542286
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 6.36,
+          "gearRatio": 81,
+          "nominalJointTorqueNm": 515.1600000000001,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 5.515240436302081
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 22.6444441222,
+          "origin": [
+            0.21166824340820312,
+            0.0000060272216796875,
+            0.2764977111816406
+          ],
+          "inertia": [
+            0.4182113050131768,
+            0,
+            0,
+            1.0425955746884021,
+            0,
+            0.8232988297123042
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 2.39,
+          "gearRatio": 80,
+          "nominalJointTorqueNm": 191.20000000000002,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 6.283185307179586
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 3.9262717005,
+          "origin": [
+            -0.0330850830078125,
+            -1.068115234375e-7,
+            0.40375
+          ],
+          "inertia": [
+            0.17753843176347908,
+            0,
+            0,
+            0.18076573972077373,
+            0,
+            0.0071932348006855966
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 1.6,
+          "gearRatio": 2.5,
+          "nominalJointTorqueNm": 4,
+          "boundsMesh": "P3.stl",
+          "nominalScrewForceN": 502.6548245743669,
+          "velocitySI": 1.25
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 3.9262717005,
+          "origin": [
+            -0.000067626953125,
+            0.00001630210876464844,
+            0.38499265480041506
+          ],
+          "inertia": [
+            0.1945306099380739,
+            0,
+            0,
+            0.1945319783378562,
+            0,
+            0.0010480031759160355
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 1.27,
+          "gearRatio": 51,
+          "nominalJointTorqueNm": 64.77,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 12.304571226560023
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-S60-120Z40S5-A1LSSH-INT_01741335.urdf",
+      "model": "IR-S60-120Z40S-INT",
+      "folder": "IR-S60-120Z40",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-S60-120Z40S5-A1LSSH-INT_01741335/IR-S60-120Z40S5-A1LSSH-INT_01741335.json",
+      "sourceSha256": "f2d06e8513b326bd45cde96e07508bbc7dcd14239975d1680642c32da314e174",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 25.7726918119,
+          "origin": [
+            0.3000062370300293,
+            -1.9073486328125e-8,
+            0.09875799560546875
+          ],
+          "inertia": [
+            0.20842710900093234,
+            0,
+            0,
+            1.5835986880659503,
+            0,
+            1.5980297490795852
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 5.7,
+          "gearRatio": 121,
+          "nominalJointTorqueNm": 689.7,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 3.895574890451343
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 42.1592263001,
+          "origin": [
+            0.2841804656982422,
+            0.00000846099853515625,
+            0.42934996795654295
+          ],
+          "inertia": [
+            1.9312869825288976,
+            0,
+            0,
+            3.854300789726407,
+            0,
+            2.37496831467883
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 2.39,
+          "gearRatio": 121,
+          "nominalJointTorqueNm": 289.19,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 4.586725274241099
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 2,
+          "origin": [
+            -0.03015899658203125,
+            -0.0000020904541015625,
+            0.3654999856948853
+          ],
+          "inertia": [
+            0.09228917596242657,
+            0,
+            0,
+            0.091724441632492,
+            0,
+            0.005893270318866437
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 2.39,
+          "gearRatio": 1.33,
+          "nominalJointTorqueNm": 3.1787000000000005,
+          "boundsMesh": "P3.stl",
+          "nominalScrewForceN": 998.6180567965876,
+          "velocitySI": 1.282
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 1.9156446409,
+          "origin": [
+            2.44140625e-7,
+            0,
+            0.385
+          ],
+          "inertia": [
+            0.09474858212418104,
+            0,
+            0,
+            0.09474858602160809,
+            0,
+            0.0001995502141874764
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 1.27,
+          "gearRatio": 50,
+          "nominalJointTorqueNm": 63.5,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 10.471975511965978
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-GS60-120Z40S5-C1LNSX-INT_01741178.urdf",
+      "model": "IR-GS60-120Z40S-INT",
+      "folder": "IR-GS60-120Z40",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-GS60-120Z40S5-C1LNSX-INT_01741178/IR-GS60-120Z40S5-C1LNSX-INT_01741178.json",
+      "sourceSha256": "c42f852a121e8f75b87a5e40a6e1e3116433f57a8d3c2ce19d96fe54a3c46a53",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 25.7726918119,
+          "origin": [
+            0.3000103988647461,
+            1.2969970703125e-7,
+            0.09874075317382813
+          ],
+          "inertia": [
+            0.20860986806377393,
+            0,
+            0,
+            1.5834928299134283,
+            0,
+            1.5981698826183655
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 5.7,
+          "gearRatio": 129,
+          "nominalJointTorqueNm": 735.3000000000001,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 3.895574890451343
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 42.1592263001,
+          "origin": [
+            0.28424913024902343,
+            0.00000421142578125,
+            0.430217041015625
+          ],
+          "inertia": [
+            1.9227888969919535,
+            0,
+            0,
+            3.846097902848287,
+            0,
+            2.375227240190589
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 2.39,
+          "gearRatio": 121,
+          "nominalJointTorqueNm": 289.19,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 4.586725274241099
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 2,
+          "origin": [
+            -0.030157470703125,
+            0.0000038604736328125,
+            0.382248046875
+          ],
+          "inertia": [
+            0.07973085889923465,
+            0,
+            0,
+            0.07916624841626486,
+            0,
+            0.0058932596541632284
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 2.39,
+          "gearRatio": 1.33,
+          "nominalJointTorqueNm": 3.1787000000000005,
+          "boundsMesh": "P3.stl",
+          "nominalScrewForceN": 998.6180567965876,
+          "velocitySI": 1.282
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 1.9156446409,
+          "origin": [
+            -0.0001019287109375,
+            -1.52587890625e-8,
+            0.3654996032714844
+          ],
+          "inertia": [
+            0.08558913328392988,
+            0,
+            0,
+            0.08564235955410808,
+            0,
+            0.0006164258969092524
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation",
+          "motorRatedTorqueNm": 1.27,
+          "gearRatio": 50,
+          "nominalJointTorqueNm": 63.5,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 10.471975511965978
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-R4-56S5-C1H-INT_01741030.urdf",
+      "model": "IR-R4-56S-INT",
+      "folder": "IR-R4-56",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-R4-56S5-C1H-INT_01741030/IR-R4-56S5-C1H-INT_01741030.json",
+      "sourceSha256": "0ced54ba23cc600cb4ef339ebf762687573ed8e07b84ecfd6066eb347a574c2d",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 4.8243121763,
+          "origin": [
+            0.000013824462890625,
+            7.2479248046875e-8,
+            0.28190240478515627
+          ],
+          "inertia": [
+            0.03467695760162639,
+            0,
+            0,
+            0.027172415059834764,
+            0,
+            0.02440329003352776
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 1.27,
+          "gearRatio": 86.95,
+          "nominalJointTorqueNm": 110.4265,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 7.3303828583761845
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 6.2806266195,
+          "origin": [
+            -0.0113790061,
+            -0.0206042089,
+            0.09956072
+          ],
+          "inertia": [
+            0.0908016503,
+            0,
+            0,
+            0.0859103215,
+            0,
+            0.0285001118
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 1.27,
+          "gearRatio": 81,
+          "nominalJointTorqueNm": 102.87,
+          "boundsMesh": null,
+          "velocitySI": 7.3303828583761845
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 3.42463613,
+          "origin": [
+            -0.0035770354,
+            -0.0018735,
+            -0.0011979657
+          ],
+          "inertia": [
+            0.00628574,
+            0,
+            0,
+            0.0078624231,
+            0,
+            0.0075255039
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 0.96,
+          "gearRatio": 54.87,
+          "nominalJointTorqueNm": 52.6752,
+          "boundsMesh": null,
+          "velocitySI": 9.075712110370514
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 2.9996817674,
+          "origin": [
+            0.1924501702,
+            -0.0014579482,
+            -0.001145
+          ],
+          "inertia": [
+            0.0047609631,
+            0,
+            0,
+            0.0211304027,
+            0,
+            0.0239750563
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 0.29,
+          "gearRatio": 66.66,
+          "nominalJointTorqueNm": 19.3314,
+          "boundsMesh": null,
+          "velocitySI": 9.773843811168245
+        },
+        {
+          "link": "link_5",
+          "joint": "J5",
+          "mass": 1.0018796351,
+          "origin": [
+            0.020907322,
+            -0.00203,
+            -0.000222
+          ],
+          "inertia": [
+            0.0007117,
+            0,
+            0,
+            0.0014317907,
+            0,
+            0.0020408274
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 0.29,
+          "gearRatio": 40.24,
+          "nominalJointTorqueNm": 11.669599999999999,
+          "boundsMesh": null,
+          "velocitySI": 9.773843811168245
+        },
+        {
+          "link": "link_6",
+          "joint": "J6",
+          "mass": 0.3229063444,
+          "origin": [
+            -0.004828600000000002,
+            -0.0000178,
+            -0.0000308
+          ],
+          "inertia": [
+            0.0002082903,
+            0,
+            0,
+            0.0001048,
+            0,
+            0.0001049
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 0.29,
+          "gearRatio": 38.9,
+          "nominalJointTorqueNm": 11.280999999999999,
+          "boundsMesh": null,
+          "velocitySI": 15.707963267948966
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-R4H-54S5-C1H-INT_01741031.urdf",
+      "model": "IR-R4H-54S-INT",
+      "folder": "IR-R4H-54",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-R4H-54S5-C1H-INT_01741031/IR-R4H-54S5-C1H-INT_01741031.json",
+      "sourceSha256": "b7608c351678f58ab75e27582ad9813d67b9332088d0996ac28763871a7e3e41",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 4.6511829668,
+          "origin": [
+            0.000013824462890625,
+            7.2479248046875e-8,
+            0.28190240478515627
+          ],
+          "inertia": [
+            0.03343251196087206,
+            0,
+            0,
+            0.026197283565934825,
+            0,
+            0.02352753362343073
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 1.27,
+          "gearRatio": 86.95,
+          "nominalJointTorqueNm": 110.4265,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 7.3303828583761845
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 5.8442506454,
+          "origin": [
+            -0.012871671676635742,
+            -5.7220458984375e-8,
+            0.1277687530517578
+          ],
+          "inertia": [
+            0.08829057495476063,
+            0,
+            0,
+            0.07998406732909508,
+            0,
+            0.029572097553150562
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 1.27,
+          "gearRatio": 81,
+          "nominalJointTorqueNm": 102.87,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 7.3303828583761845
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 2.8319447962,
+          "origin": [
+            -0.0029101889,
+            -0.0019966877,
+            -0.0011573396
+          ],
+          "inertia": [
+            0.0074433738,
+            0,
+            0,
+            0.0068158704,
+            0,
+            0.0088166332
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 0.96,
+          "gearRatio": 54.87,
+          "nominalJointTorqueNm": 52.6752,
+          "boundsMesh": null,
+          "velocitySI": 9.075712110370514
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 3.0134778527,
+          "origin": [
+            0.210755068,
+            -0.0015454637,
+            -0.001145
+          ],
+          "inertia": [
+            0.0050897251,
+            0,
+            0,
+            0.0201337033,
+            0,
+            0.0177743394
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 0.32,
+          "gearRatio": 66.66,
+          "nominalJointTorqueNm": 21.3312,
+          "boundsMesh": null,
+          "velocitySI": 9.773843811168245
+        },
+        {
+          "link": "link_5",
+          "joint": "J5",
+          "mass": 1.0055499561,
+          "origin": [
+            0.012617797851562501,
+            1.9073486328125e-9,
+            -0.001
+          ],
+          "inertia": [
+            0.0012110173841652627,
+            0,
+            0,
+            0.0014705668409703868,
+            0,
+            0.0014420763125830495
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 0.16,
+          "gearRatio": 66.67,
+          "nominalJointTorqueNm": 10.667200000000001,
+          "boundsMesh": "P5.stl",
+          "velocitySI": 9.773843811168245
+        },
+        {
+          "link": "link_6",
+          "joint": "J6",
+          "mass": 0.3340476631,
+          "origin": [
+            -0.0045001678466796875,
+            9.5367431640625e-10,
+            0
+          ],
+          "inertia": [
+            0.0002139277551246796,
+            0,
+            0,
+            0.00011928288871212403,
+            0,
+            0.00011919744101073697
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 0.32,
+          "gearRatio": 39.67,
+          "nominalJointTorqueNm": 12.694400000000002,
+          "boundsMesh": "P6.stl",
+          "velocitySI": 14.988887616127302
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-R10-110S5-C1H-INT_01741036.urdf",
+      "model": "IR-R10-110S-INT",
+      "folder": "IR-R10-110",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-R10-110S5-C1H-INT_01741036/IR-R10-110S5-C1H-INT_01741036.json",
+      "sourceSha256": "45adf831dbd6a42cc15026c5febc187e1560fde44d07cbaa777fc9cd8b315c6a",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 10.182811708,
+          "origin": [
+            0.007948215484619141,
+            -1.3732910156250002e-7,
+            0.3548096923828125
+          ],
+          "inertia": [
+            0.11992218031251207,
+            0,
+            0,
+            0.1012248492609299,
+            0,
+            0.09777376716960605
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 2.39,
+          "gearRatio": 120,
+          "nominalJointTorqueNm": 286.8,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 4.1887902047863905
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 15.7569518526,
+          "origin": [
+            -0.0063551041,
+            -0.025691483,
+            0.1451788886
+          ],
+          "inertia": [
+            0.7395372385,
+            0,
+            0,
+            0.752390289,
+            0,
+            0.0776941586
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 2.39,
+          "gearRatio": 161,
+          "nominalJointTorqueNm": 384.79,
+          "boundsMesh": null,
+          "velocitySI": 3.141592653589793
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 4.9193866543,
+          "origin": [
+            0.0077329372,
+            -0.0116418281,
+            0.0095832628
+          ],
+          "inertia": [
+            0.018652974,
+            0,
+            0,
+            0.0243223636,
+            0,
+            0.0181159716
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 1.6,
+          "gearRatio": 112.5,
+          "nominalJointTorqueNm": 180,
+          "boundsMesh": null,
+          "velocitySI": 5.759586531581287
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 6.7627694796,
+          "origin": [
+            0.3726250915527344,
+            -3.814697265625e-9,
+            0.005636199951171875
+          ],
+          "inertia": [
+            0.018404306423178723,
+            0,
+            0,
+            0.08679827774785849,
+            0,
+            0.08863268842524347
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 0.48,
+          "gearRatio": 83.3333,
+          "nominalJointTorqueNm": 39.999984,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 7.853981633974483
+        },
+        {
+          "link": "link_5",
+          "joint": "J5",
+          "mass": 1.4016606233,
+          "origin": [
+            0.00375006103515625,
+            -0.0023999977111816406,
+            -0.000990966796875
+          ],
+          "inertia": [
+            0.0015031058815083863,
+            0,
+            0,
+            0.0018834736066122067,
+            0,
+            0.0016184640018702325
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 0.48,
+          "gearRatio": 80,
+          "nominalJointTorqueNm": 38.4,
+          "boundsMesh": "P5.stl",
+          "velocitySI": 7.3303828583761845
+        },
+        {
+          "link": "link_6",
+          "joint": "J6",
+          "mass": 0.3811634537,
+          "origin": [
+            -0.009439510799999995,
+            0,
+            0
+          ],
+          "inertia": [
+            0.00023504,
+            0,
+            0,
+            0.0001702,
+            0,
+            0.0001703
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 0.29,
+          "gearRatio": 50,
+          "nominalJointTorqueNm": 14.499999999999998,
+          "boundsMesh": null,
+          "velocitySI": 12.566370614359172
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-R11-90S5-C1H-INT_01741035.urdf",
+      "model": "IR-R11-90S-INT",
+      "folder": "IR-R11-90",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-R11-90S5-C1H-INT_01741035/IR-R11-90S5-C1H-INT_01741035.json",
+      "sourceSha256": "c32ccdf1b3a69ab02d884e1f28994856309ef17e9ac0f146ccca9a4910872ed9",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 7.6072110565,
+          "origin": [
+            0.007948215484619141,
+            -1.3732910156250002e-7,
+            0.3548096923828125
+          ],
+          "inertia": [
+            0.08958953206177939,
+            0,
+            0,
+            0.07562143095362554,
+            0,
+            0.0730432520974475
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 2.39,
+          "gearRatio": 120,
+          "nominalJointTorqueNm": 286.8,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 4.1887902047863905
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 15.4347817427,
+          "origin": [
+            -0.0055099244,
+            -0.01653112,
+            0.1842
+          ],
+          "inertia": [
+            0.5423797795,
+            0,
+            0,
+            0.4718702962,
+            0,
+            0.0828898302
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 2.39,
+          "gearRatio": 161,
+          "nominalJointTorqueNm": 384.79,
+          "boundsMesh": null,
+          "velocitySI": 3.141592653589793
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 4.6971197555,
+          "origin": [
+            0.0156194983,
+            -0.01386,
+            0.0101016915
+          ],
+          "inertia": [
+            0.0143232032,
+            0,
+            0,
+            0.015402051,
+            0,
+            0.0125815055
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 1.6,
+          "gearRatio": 112.5,
+          "nominalJointTorqueNm": 180,
+          "boundsMesh": null,
+          "velocitySI": 5.759586531581287
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 4.7135325336,
+          "origin": [
+            0.2774703113,
+            0.0002051349,
+            -0.00004
+          ],
+          "inertia": [
+            0.0099732,
+            0,
+            0,
+            0.0662074401,
+            0,
+            0.0620510072
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 0.48,
+          "gearRatio": 83.33,
+          "nominalJointTorqueNm": 39.9984,
+          "boundsMesh": null,
+          "velocitySI": 7.853981633974483
+        },
+        {
+          "link": "link_5",
+          "joint": "J5",
+          "mass": 1.6150480311,
+          "origin": [
+            0.0175748278,
+            -0.001394,
+            0.0000084
+          ],
+          "inertia": [
+            0.001377,
+            0,
+            0,
+            0.0020817124,
+            0,
+            0.0014767206
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 0.48,
+          "gearRatio": 80,
+          "nominalJointTorqueNm": 38.4,
+          "boundsMesh": null,
+          "velocitySI": 7.3303828583761845
+        },
+        {
+          "link": "link_6",
+          "joint": "J6",
+          "mass": 0.4521092301,
+          "origin": [
+            -0.011384000000000005,
+            0,
+            0
+          ],
+          "inertia": [
+            0.0002388,
+            0,
+            0,
+            0.0001677,
+            0,
+            0.0001677
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 0.29,
+          "gearRatio": 50,
+          "nominalJointTorqueNm": 14.499999999999998,
+          "boundsMesh": null,
+          "velocitySI": 12.566370614359172
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-R10-140S5-D1NH-INT_01741041.urdf",
+      "model": "IR-R10-140S-INT",
+      "folder": "IR-R10-140",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-R10-140S5-D1NH-INT_01741041/IR-R10-140S5-D1NH-INT_01741041.json",
+      "sourceSha256": "853dc73a9cd22686617a090f20c50b4eab6fd1920d6265d45cf429178f002685",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 43.0575514756926,
+          "origin": [
+            0.060007408142089845,
+            0.013005393981933594,
+            0.3915
+          ],
+          "inertia": [
+            1.0814640051925826,
+            0,
+            0,
+            0.9293880756143872,
+            0,
+            1.2435019271829142
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 5.73,
+          "gearRatio": 101.53938,
+          "nominalJointTorqueNm": 581.8206474,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 3.490658503988659
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 13.0040769104878,
+          "origin": [
+            -1.9073486328125e-9,
+            -0.14,
+            0.29600001525878905
+          ],
+          "inertia": [
+            0.6579445670382708,
+            0,
+            0,
+            0.6681782096667802,
+            0,
+            0.05517573243115539
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 5.73,
+          "gearRatio": 120.92579,
+          "nominalJointTorqueNm": 692.9047767000001,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 3.490658503988659
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 12.9668142571606,
+          "origin": [
+            0.0174020625105489,
+            -0.00682588571958379,
+            0.0485155699919579
+          ],
+          "inertia": [
+            0.0931440976322062,
+            0,
+            0,
+            0.116113554551641,
+            0,
+            0.11781645181988
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 2.39,
+          "gearRatio": 121.02,
+          "nominalJointTorqueNm": 289.2378,
+          "boundsMesh": null,
+          "velocitySI": 3.490658503988659
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 9.82570857577016,
+          "origin": [
+            0.43546524047851565,
+            -0.008754661560058594,
+            0.00199273681640625
+          ],
+          "inertia": [
+            0.038691797932235705,
+            0,
+            0,
+            0.24232600453649514,
+            0,
+            0.25972989353772546
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 0.64,
+          "gearRatio": 81.5758,
+          "nominalJointTorqueNm": 52.208512,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 6.544984694978735
+        },
+        {
+          "link": "link_5",
+          "joint": "J5",
+          "mass": 2.10894755147814,
+          "origin": [
+            0.00665643310546875,
+            -0.0095,
+            0
+          ],
+          "inertia": [
+            0.004062711712293347,
+            0,
+            0,
+            0.007124498353092437,
+            0,
+            0.007237854283984387
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 0.64,
+          "gearRatio": 90.015,
+          "nominalJointTorqueNm": 57.6096,
+          "boundsMesh": "P5.stl",
+          "velocitySI": 6.544984694978735
+        },
+        {
+          "link": "link_6",
+          "joint": "J6",
+          "mass": 0.95503128270796,
+          "origin": [
+            -0.010499987792968795,
+            0,
+            -0.00003179931640625
+          ],
+          "inertia": [
+            0.0006311157592387495,
+            0,
+            0,
+            0.00034707353857335696,
+            0,
+            0.00034771097284592317
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 0.32,
+          "gearRatio": 49.9851,
+          "nominalJointTorqueNm": 15.995232000000001,
+          "boundsMesh": "P6.stl",
+          "velocitySI": 10.471975511965978
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-R16-210S5-D1NH-INT_01741090.urdf",
+      "model": "IR-R16-210S-INT",
+      "folder": "IR-R16-210",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-R16-210S5-D1NH-INT_01741090/IR-R16-210S5-D1NH-INT_01741090.json",
+      "sourceSha256": "69982f1f84204bedbe989e6f197fab1523d333733cbac4078695f8c2d39b3e2a",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 94.5161630970042,
+          "origin": [
+            0.07025550079345703,
+            0.022973098754882813,
+            0.42474960327148437
+          ],
+          "inertia": [
+            2.2807285166350124,
+            0,
+            0,
+            3.059071741370362,
+            0,
+            2.6202616403844066
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 9.55,
+          "gearRatio": 111.24225,
+          "nominalJointTorqueNm": 1062.3634875,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 3.3161255787892263
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 37.779,
+          "origin": [
+            1.068115234375e-7,
+            -0.1675,
+            0.4165036163330078
+          ],
+          "inertia": [
+            3.6548497363756742,
+            0,
+            0,
+            3.6752766591330737,
+            0,
+            0.29546433925739984
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 9.55,
+          "gearRatio": 161,
+          "nominalJointTorqueNm": 1537.5500000000002,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 3.0543261909900767
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 40.5444,
+          "origin": [
+            0.0460101584786166,
+            0.0248482350067784,
+            0.0543472164831447
+          ],
+          "inertia": [
+            0.492541510386366,
+            0,
+            0,
+            0.420771135850888,
+            0,
+            0.517760491282435
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 5.73,
+          "gearRatio": 121,
+          "nominalJointTorqueNm": 693.33,
+          "boundsMesh": null,
+          "velocitySI": 3.490658503988659
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 18.2929047519168,
+          "origin": [
+            0.7075493774414062,
+            -1.3732910156250002e-7,
+            1.220703125e-7
+          ],
+          "inertia": [
+            0.08704116880870232,
+            0,
+            0,
+            1.1843766269415301,
+            0,
+            1.2055358992862042
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 1.27,
+          "gearRatio": 76.95,
+          "nominalJointTorqueNm": 97.7265,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 6.981317007977318
+        },
+        {
+          "link": "link_5",
+          "joint": "J5",
+          "mass": 3.38342854070159,
+          "origin": [
+            0.02875,
+            -0.00375,
+            -0.0012523193359375
+          ],
+          "inertia": [
+            0.005527844275514951,
+            0,
+            0,
+            0.009237209765637458,
+            0,
+            0.009404944509826048
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 1.27,
+          "gearRatio": 94.736842,
+          "nominalJointTorqueNm": 120.31578934,
+          "boundsMesh": "P5.stl",
+          "velocitySI": 6.283185307179586
+        },
+        {
+          "link": "link_6",
+          "joint": "J6",
+          "mass": 1.16637043674354,
+          "origin": [
+            -0.0036599999999999966,
+            0.0000134,
+            0.00000142
+          ],
+          "inertia": [
+            0.00070718915805185,
+            0,
+            0,
+            0.0006716,
+            0,
+            0.0006717
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 0.64,
+          "gearRatio": 56.25,
+          "nominalJointTorqueNm": 36,
+          "boundsMesh": null,
+          "velocitySI": 10.64650843716541
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-R20H-120S5-C1NH-INT_01741447.urdf",
+      "model": "IR-R20H-120S-K-INT",
+      "folder": "IR-R20H-120",
+      "sourceSelectionRequired": false,
+      "sourcePath": "params_package/Standard/Body/IR-R20H-120S5-C1NH-INT_01741447/IR-R20H-120S5-C1NH-INT_01741447.json",
+      "sourceSha256": "89846869f9e3eed4bd8fa52d6bdf8d5c34436ff1f6e8a23537920c2deb94a662",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 51.29,
+          "origin": [
+            0.048762664794921876,
+            0.0049477615356445315,
+            0.4071612548828125
+          ],
+          "inertia": [
+            1.4813971778271495,
+            0,
+            0,
+            1.4576892047302692,
+            0,
+            1.5138443815690046
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 4.9,
+          "gearRatio": 141,
+          "nominalJointTorqueNm": 690.9000000000001,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 4.537856055185257
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 32.38,
+          "origin": [
+            0.00744,
+            -0.0186,
+            0.22
+          ],
+          "inertia": [
+            1.92,
+            0,
+            0,
+            1.68,
+            0,
+            0.408
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 4.9,
+          "gearRatio": 140,
+          "nominalJointTorqueNm": 686,
+          "boundsMesh": null,
+          "velocitySI": 4.1887902047863905
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 10.71,
+          "origin": [
+            0.0252,
+            0.0054,
+            0.033
+          ],
+          "inertia": [
+            0.088,
+            0,
+            0,
+            0.0844,
+            0,
+            0.0877
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 2.39,
+          "gearRatio": 151.875,
+          "nominalJointTorqueNm": 362.98125000000005,
+          "boundsMesh": null,
+          "velocitySI": 4.537856055185257
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 9.14,
+          "origin": [
+            0.36,
+            -0.007,
+            0.000353
+          ],
+          "inertia": [
+            0.032443793233059,
+            0,
+            0,
+            0.15,
+            0,
+            0.17
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 1.27,
+          "gearRatio": 59.302,
+          "nominalJointTorqueNm": 75.31354,
+          "boundsMesh": null,
+          "velocitySI": 8.203047484373348
+        },
+        {
+          "link": "link_5",
+          "joint": "J5",
+          "mass": 1.98,
+          "origin": [
+            0.031018051,
+            -0.008,
+            0.0000661
+          ],
+          "inertia": [
+            0.00377,
+            0,
+            0,
+            0.0030742545,
+            0,
+            0.0041
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 0.64,
+          "gearRatio": 92.727,
+          "nominalJointTorqueNm": 59.34528,
+          "boundsMesh": null,
+          "velocitySI": 7.853981633974483
+        },
+        {
+          "link": "link_6",
+          "joint": "J6",
+          "mass": 0.642122129580798,
+          "origin": [
+            -0.0050013427734375004,
+            0.0009861984252929688,
+            -0.00000616455078125
+          ],
+          "inertia": [
+            0.0005864739056738001,
+            0,
+            0,
+            0.0003296670330616461,
+            0,
+            0.0003291709755749512
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 0.64,
+          "gearRatio": 59.16,
+          "nominalJointTorqueNm": 37.8624,
+          "boundsMesh": "P6.stl",
+          "velocitySI": 12.304571226560023
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-R35-185S7-B1NH_01740676.urdf",
+      "model": "IR-R35-185S-INT",
+      "folder": "IR-R35-185",
+      "sourceSelectionRequired": true,
+      "sourcePath": "params_package/Standard/Body/IR-R35-185S7-B1NH_01740676/IR-R35-185S7-B1NH_01740676.json",
+      "sourceSha256": "3e81b71cca048b12e82a7a6ec550b04c9eb0eb9b9943a489f587c0ef787125fd",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 96.7918,
+          "origin": [
+            0.07025617218017578,
+            0.056,
+            0.4338000030517578
+          ],
+          "inertia": [
+            2.741248270144544,
+            0,
+            0,
+            3.138778502292386,
+            0,
+            3.0829219313478426
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 12.6,
+          "gearRatio": 111.2432432,
+          "nominalJointTorqueNm": 1401.6648643199999,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 3.490658503988659
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 60.4453,
+          "origin": [
+            -0.00015972709655761718,
+            -0.1675,
+            0.4165157165527344
+          ],
+          "inertia": [
+            5.847395468635379,
+            0,
+            0,
+            5.869158874236738,
+            0,
+            0.46181526381802596
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 12.6,
+          "gearRatio": 161,
+          "nominalJointTorqueNm": 2028.6,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 3.141592653589793
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 35.9662,
+          "origin": [
+            0.0587,
+            0.0254,
+            0.0509
+          ],
+          "inertia": [
+            0.3623,
+            0,
+            0,
+            0.5154,
+            0,
+            0.3919
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 6.36,
+          "gearRatio": 121,
+          "nominalJointTorqueNm": 769.5600000000001,
+          "boundsMesh": null,
+          "velocitySI": 4.223696789826278
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 14.9733,
+          "origin": [
+            0.582968017578125,
+            -0.0065851745605468755,
+            0
+          ],
+          "inertia": [
+            0.08695347210632916,
+            0,
+            0,
+            0.5209525954126618,
+            0,
+            0.5562835512972796
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 1.6,
+          "gearRatio": 76.95,
+          "nominalJointTorqueNm": 123.12,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 7.853981633974483
+        },
+        {
+          "link": "link_5",
+          "joint": "J5",
+          "mass": 5.0492,
+          "origin": [
+            0.0223,
+            -0.008,
+            0.00015
+          ],
+          "inertia": [
+            0.0112,
+            0,
+            0,
+            0.0148,
+            0,
+            0.0087
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 1.6,
+          "gearRatio": 100,
+          "nominalJointTorqueNm": 160,
+          "boundsMesh": null,
+          "velocitySI": 5.8643062867009474
+        },
+        {
+          "link": "link_6",
+          "joint": "J6",
+          "mass": 1.0012,
+          "origin": [
+            -0.038000000000000006,
+            0,
+            -0.00011
+          ],
+          "inertia": [
+            0.002,
+            0,
+            0,
+            0.0011,
+            0,
+            0.0011
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 1.27,
+          "gearRatio": 81,
+          "nominalJointTorqueNm": 102.87,
+          "boundsMesh": null,
+          "velocitySI": 7.103490055616922
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-R35-185S7-B1ZD_01740679.urdf",
+      "model": "IR-R35-185S-INT",
+      "folder": "IR-R35-185",
+      "sourceSelectionRequired": true,
+      "sourcePath": "params_package/Standard/Body/IR-R35-185S7-B1ZD_01740679/IR-R35-185S7-B1ZD_01740679.json",
+      "sourceSha256": "25fc9bfb594fd702b29428d92adea3cf9fa44840174c6c3b1e74f74bffd6fc90",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 86.2861,
+          "origin": [
+            0.07025617218017578,
+            0.056,
+            0.4338000030517578
+          ],
+          "inertia": [
+            2.443715504438591,
+            0,
+            0,
+            2.7980981418534534,
+            0,
+            2.748304195814864
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 12.6,
+          "gearRatio": 111.243,
+          "nominalJointTorqueNm": 1401.6617999999999,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 3.490658503988659
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 53.8271,
+          "origin": [
+            -0.000081213,
+            -0.1408,
+            0.3953
+          ],
+          "inertia": [
+            6.3807,
+            0,
+            0,
+            6.282,
+            0,
+            0.3653
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 12.6,
+          "gearRatio": 156.78,
+          "nominalJointTorqueNm": 1975.4279999999999,
+          "boundsMesh": null,
+          "velocitySI": 3.141592653589793
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 29.6787,
+          "origin": [
+            0.0504,
+            0.0281,
+            0.0521
+          ],
+          "inertia": [
+            0.4333,
+            0,
+            0,
+            0.4375,
+            0,
+            0.4381
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 6.36,
+          "gearRatio": 121,
+          "nominalJointTorqueNm": 769.5600000000001,
+          "boundsMesh": null,
+          "velocitySI": 4.223696789826278
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 15.1321,
+          "origin": [
+            0.582968017578125,
+            -0.0065851745605468755,
+            0
+          ],
+          "inertia": [
+            0.08787566102730753,
+            0,
+            0,
+            0.5264775813644246,
+            0,
+            0.562183241275174
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 1.6,
+          "gearRatio": 76.95,
+          "nominalJointTorqueNm": 123.12,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 7.853981633974483
+        },
+        {
+          "link": "link_5",
+          "joint": "J5",
+          "mass": 5.2792,
+          "origin": [
+            0.0197,
+            -0.008,
+            0.00015
+          ],
+          "inertia": [
+            0.0112,
+            0,
+            0,
+            0.0118,
+            0,
+            0.0056
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 1.6,
+          "gearRatio": 100,
+          "nominalJointTorqueNm": 160,
+          "boundsMesh": null,
+          "velocitySI": 5.8643062867009474
+        },
+        {
+          "link": "link_6",
+          "joint": "J6",
+          "mass": 1.2274,
+          "origin": [
+            -0.04640000000000001,
+            0,
+            -0.00011
+          ],
+          "inertia": [
+            0.0022,
+            0,
+            0,
+            0.0011,
+            0,
+            0.0011
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 1.27,
+          "gearRatio": 81,
+          "nominalJointTorqueNm": 102.87,
+          "boundsMesh": null,
+          "velocitySI": 7.103490055616922
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-R35-185S7-D1SD_01741293.urdf",
+      "model": "IR-R35-185S-INT",
+      "folder": "IR-R35-185",
+      "sourceSelectionRequired": true,
+      "sourcePath": "params_package/Standard/Body/IR-R35-185S7-D1SD_01741293/IR-R35-185S7-D1SD_01741293.json",
+      "sourceSha256": "58c44edd02f511a274c7fcb4fde78863b94b7dad76659597ae4e901c9a70f8eb",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 86.2861,
+          "origin": [
+            0.07025617218017578,
+            0.056,
+            0.4338000030517578
+          ],
+          "inertia": [
+            2.443715504438591,
+            0,
+            0,
+            2.7980981418534534,
+            0,
+            2.748304195814864
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 12.6,
+          "gearRatio": 111.243,
+          "nominalJointTorqueNm": 1401.6617999999999,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 3.490658503988659
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 53.8271,
+          "origin": [
+            -0.000081213,
+            -0.1408,
+            0.3953
+          ],
+          "inertia": [
+            6.3807,
+            0,
+            0,
+            6.282,
+            0,
+            0.3653
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 12.6,
+          "gearRatio": 161,
+          "nominalJointTorqueNm": 2028.6,
+          "boundsMesh": null,
+          "velocitySI": 3.141592653589793
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 29.6787,
+          "origin": [
+            0.0504,
+            0.0281,
+            0.0521
+          ],
+          "inertia": [
+            0.4333,
+            0,
+            0,
+            0.4375,
+            0,
+            0.4381
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 6.36,
+          "gearRatio": 121,
+          "nominalJointTorqueNm": 769.5600000000001,
+          "boundsMesh": null,
+          "velocitySI": 4.223696789826278
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 15.1321,
+          "origin": [
+            0.582968017578125,
+            -0.0065851745605468755,
+            0
+          ],
+          "inertia": [
+            0.08787566102730753,
+            0,
+            0,
+            0.5264775813644246,
+            0,
+            0.562183241275174
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 1.6,
+          "gearRatio": 76.95,
+          "nominalJointTorqueNm": 123.12,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 7.853981633974483
+        },
+        {
+          "link": "link_5",
+          "joint": "J5",
+          "mass": 5.2792,
+          "origin": [
+            0.0197,
+            -0.008,
+            0.00015
+          ],
+          "inertia": [
+            0.0112,
+            0,
+            0,
+            0.0118,
+            0,
+            0.0056
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 1.6,
+          "gearRatio": 100,
+          "nominalJointTorqueNm": 160,
+          "boundsMesh": null,
+          "velocitySI": 5.8643062867009474
+        },
+        {
+          "link": "link_6",
+          "joint": "J6",
+          "mass": 1.2274,
+          "origin": [
+            -0.04640000000000001,
+            0,
+            -0.00011
+          ],
+          "inertia": [
+            0.0022,
+            0,
+            0,
+            0.0011,
+            0,
+            0.0011
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 1.27,
+          "gearRatio": 81,
+          "nominalJointTorqueNm": 102.87,
+          "boundsMesh": null,
+          "velocitySI": 7.103490055616922
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-R50-250S7-E1N_01740564.urdf",
+      "model": "IR-R50-250S-INT",
+      "folder": "IR-R50-250",
+      "sourceSelectionRequired": true,
+      "sourcePath": "params_package/Standard/Body/IR-R50-250S7-E1N_01740564/IR-R50-250S7-E1N_01740564.json",
+      "sourceSha256": "79da8f7de1727d758786627cc65d6078117b22f269bd936eed0426fd61911433",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 196.7288804099,
+          "origin": [
+            0.06594114685058594,
+            0.00160125732421875,
+            0.4831187133789063
+          ],
+          "inertia": [
+            8.157118891721334,
+            0,
+            0,
+            10.352473629685681,
+            0,
+            9.291148384857912
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 35,
+          "gearRatio": 140,
+          "nominalJointTorqueNm": 4900,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 3.0543261909900767
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 139.5684148743,
+          "origin": [
+            1.7166137695312502e-8,
+            -0.170999963760376,
+            0.6269619598388672
+          ],
+          "inertia": [
+            29.382191568892278,
+            0,
+            0,
+            29.835315573275654,
+            0,
+            1.8722797410965244
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 35,
+          "gearRatio": 171,
+          "nominalJointTorqueNm": 5985,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 2.6179938779914944
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 80.7766083402,
+          "origin": [
+            0.0581552105,
+            0.028590443,
+            0.1105845928
+          ],
+          "inertia": [
+            1.5145537699,
+            0,
+            0,
+            2.0080774947,
+            0,
+            1.8463212988
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 12.733333,
+          "gearRatio": 171,
+          "nominalJointTorqueNm": 2177.399943,
+          "boundsMesh": null,
+          "velocitySI": 3.0543261909900767
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 68.3163291488,
+          "origin": [
+            0.6776134033203125,
+            -0.009490257263183593,
+            6.103515625e-8
+          ],
+          "inertia": [
+            0.842336499645523,
+            0,
+            0,
+            4.741270037684076,
+            0,
+            5.023480770084499
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 4.775,
+          "gearRatio": 101.5248,
+          "nominalJointTorqueNm": 484.78092000000004,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 4.363323129985824
+        },
+        {
+          "link": "link_5",
+          "joint": "J5",
+          "mass": 16.1766732152,
+          "origin": [
+            0.0214168572,
+            -0.012,
+            -0.00000284
+          ],
+          "inertia": [
+            0.0761,
+            0,
+            0,
+            0.0777263809,
+            0,
+            0.110273389
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 4.775,
+          "gearRatio": 110.4,
+          "nominalJointTorqueNm": 527.1600000000001,
+          "boundsMesh": null,
+          "velocitySI": 4.363323129985824
+        },
+        {
+          "link": "link_6",
+          "joint": "J6",
+          "mass": 4.6834496148,
+          "origin": [
+            -0.008811925199999987,
+            0,
+            0
+          ],
+          "inertia": [
+            0.0098588609,
+            0,
+            0,
+            0.00664,
+            0,
+            0.00664
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 3.18333,
+          "gearRatio": 88.04347826,
+          "nominalJointTorqueNm": 280.27144564940585,
+          "boundsMesh": null,
+          "velocitySI": 6.19591884457987
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-R50-250S7-E1N_01740675.urdf",
+      "model": "IR-R50-250S-INT",
+      "folder": "IR-R50-250",
+      "sourceSelectionRequired": true,
+      "sourcePath": "params_package/Standard/Body/IR-R50-250S7-E1N_01740675/IR-R50-250S7-E1N_01740675.json",
+      "sourceSha256": "f15ba873d627eb689bc3156652a5b9cb3bd55d7073732258f9bbd4b3d2907c94",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 196.7288804099,
+          "origin": [
+            0.06594114685058594,
+            0.00160125732421875,
+            0.4831187133789063
+          ],
+          "inertia": [
+            8.157118891721334,
+            0,
+            0,
+            10.352473629685681,
+            0,
+            9.291148384857912
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 35,
+          "gearRatio": 140,
+          "nominalJointTorqueNm": 4900,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 3.0543261909900767
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 139.5684148743,
+          "origin": [
+            1.7166137695312502e-8,
+            -0.170999963760376,
+            0.6269619598388672
+          ],
+          "inertia": [
+            29.382191568892278,
+            0,
+            0,
+            29.835315573275654,
+            0,
+            1.8722797410965244
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 35,
+          "gearRatio": 171,
+          "nominalJointTorqueNm": 5985,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 2.6179938779914944
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 80.7766083402,
+          "origin": [
+            0.0581552105,
+            0.028590443,
+            0.1105845928
+          ],
+          "inertia": [
+            1.5145537699,
+            0,
+            0,
+            2.0080774947,
+            0,
+            1.8463212988
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 12.733333,
+          "gearRatio": 171,
+          "nominalJointTorqueNm": 2177.399943,
+          "boundsMesh": null,
+          "velocitySI": 3.0543261909900767
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 68.3163291488,
+          "origin": [
+            0.6776134033203125,
+            -0.009490257263183593,
+            6.103515625e-8
+          ],
+          "inertia": [
+            0.842336499645523,
+            0,
+            0,
+            4.741270037684076,
+            0,
+            5.023480770084499
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 4.775,
+          "gearRatio": 101.5248,
+          "nominalJointTorqueNm": 484.78092000000004,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 4.363323129985824
+        },
+        {
+          "link": "link_5",
+          "joint": "J5",
+          "mass": 16.1766732152,
+          "origin": [
+            0.0214168572,
+            -0.012,
+            -0.00000284
+          ],
+          "inertia": [
+            0.0761,
+            0,
+            0,
+            0.0777263809,
+            0,
+            0.110273389
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 4.775,
+          "gearRatio": 110.4,
+          "nominalJointTorqueNm": 527.1600000000001,
+          "boundsMesh": null,
+          "velocitySI": 4.363323129985824
+        },
+        {
+          "link": "link_6",
+          "joint": "J6",
+          "mass": 4.6834496148,
+          "origin": [
+            -0.008811925199999987,
+            0,
+            0
+          ],
+          "inertia": [
+            0.0098588609,
+            0,
+            0,
+            0.00664,
+            0,
+            0.00664
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 3.18333,
+          "gearRatio": 88.04347826,
+          "nominalJointTorqueNm": 280.27144564940585,
+          "boundsMesh": null,
+          "velocitySI": 6.19591884457987
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-R50-250S7-E1ZN_01740600.urdf",
+      "model": "IR-R50-250S-INT",
+      "folder": "IR-R50-250",
+      "sourceSelectionRequired": true,
+      "sourcePath": "params_package/Standard/Body/IR-R50-250S7-E1ZN_01740600/IR-R50-250S7-E1ZN_01740600.json",
+      "sourceSha256": "d8bf55f74774f69edef9fd7d75219ac79d18c1f4f1c7a2dbe9f0a6ce998fd40a",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 196.7288804099,
+          "origin": [
+            0.06594114685058594,
+            0.00160125732421875,
+            0.4831187133789063
+          ],
+          "inertia": [
+            8.157118891721334,
+            0,
+            0,
+            10.352473629685681,
+            0,
+            9.291148384857912
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 35,
+          "gearRatio": 140,
+          "nominalJointTorqueNm": 4900,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 3.0543261909900767
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 139.5684148743,
+          "origin": [
+            1.7166137695312502e-8,
+            -0.170999963760376,
+            0.6269619598388672
+          ],
+          "inertia": [
+            29.382191568892278,
+            0,
+            0,
+            29.835315573275654,
+            0,
+            1.8722797410965244
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 35,
+          "gearRatio": 171,
+          "nominalJointTorqueNm": 5985,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 2.6179938779914944
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 80.7766083402,
+          "origin": [
+            0.0581552105,
+            0.028590443,
+            0.1105845928
+          ],
+          "inertia": [
+            1.5145537699,
+            0,
+            0,
+            2.0080774947,
+            0,
+            1.8463212988
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 12.733333,
+          "gearRatio": 171,
+          "nominalJointTorqueNm": 2177.399943,
+          "boundsMesh": null,
+          "velocitySI": 3.0543261909900767
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 68.3163291488,
+          "origin": [
+            0.6776134033203125,
+            -0.009490257263183593,
+            6.103515625e-8
+          ],
+          "inertia": [
+            0.842336499645523,
+            0,
+            0,
+            4.741270037684076,
+            0,
+            5.023480770084499
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 4.775,
+          "gearRatio": 101.5248,
+          "nominalJointTorqueNm": 484.78092000000004,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 4.363323129985824
+        },
+        {
+          "link": "link_5",
+          "joint": "J5",
+          "mass": 16.1766732152,
+          "origin": [
+            0.0214168572,
+            -0.012,
+            -0.00000284
+          ],
+          "inertia": [
+            0.0761,
+            0,
+            0,
+            0.0777263809,
+            0,
+            0.110273389
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 4.775,
+          "gearRatio": 110.4,
+          "nominalJointTorqueNm": 527.1600000000001,
+          "boundsMesh": null,
+          "velocitySI": 4.363323129985824
+        },
+        {
+          "link": "link_6",
+          "joint": "J6",
+          "mass": 4.6834496148,
+          "origin": [
+            -0.008811925199999987,
+            0,
+            0
+          ],
+          "inertia": [
+            0.0098588609,
+            0,
+            0,
+            0.00664,
+            0,
+            0.00664
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 3.18333,
+          "gearRatio": 88.04347826,
+          "nominalJointTorqueNm": 280.27144564940585,
+          "boundsMesh": null,
+          "velocitySI": 6.19591884457987
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-R50-250S7-E1ZN_01740674.urdf",
+      "model": "IR-R50-250S-INT",
+      "folder": "IR-R50-250",
+      "sourceSelectionRequired": true,
+      "sourcePath": "params_package/Standard/Body/IR-R50-250S7-E1ZN_01740674/IR-R50-250S7-E1ZN_01740674.json",
+      "sourceSha256": "dd5a2b2324b99970f12809fbe4f5f52c67bc52888d62a5f1808055e03cf62498",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 196.7288804099,
+          "origin": [
+            0.06594114685058594,
+            0.00160125732421875,
+            0.4831187133789063
+          ],
+          "inertia": [
+            8.157118891721334,
+            0,
+            0,
+            10.352473629685681,
+            0,
+            9.291148384857912
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 35,
+          "gearRatio": 140,
+          "nominalJointTorqueNm": 4900,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 3.0543261909900767
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 139.5684148743,
+          "origin": [
+            1.7166137695312502e-8,
+            -0.170999963760376,
+            0.6269619598388672
+          ],
+          "inertia": [
+            29.382191568892278,
+            0,
+            0,
+            29.835315573275654,
+            0,
+            1.8722797410965244
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 35,
+          "gearRatio": 171,
+          "nominalJointTorqueNm": 5985,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 2.6179938779914944
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 80.7766083402,
+          "origin": [
+            0.0581552105,
+            0.028590443,
+            0.1105845928
+          ],
+          "inertia": [
+            1.5145537699,
+            0,
+            0,
+            2.0080774947,
+            0,
+            1.8463212988
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 12.733333,
+          "gearRatio": 171,
+          "nominalJointTorqueNm": 2177.399943,
+          "boundsMesh": null,
+          "velocitySI": 3.0543261909900767
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 68.3163291488,
+          "origin": [
+            0.6776134033203125,
+            -0.009490257263183593,
+            6.103515625e-8
+          ],
+          "inertia": [
+            0.842336499645523,
+            0,
+            0,
+            4.741270037684076,
+            0,
+            5.023480770084499
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 4.775,
+          "gearRatio": 101.5248,
+          "nominalJointTorqueNm": 484.78092000000004,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 4.363323129985824
+        },
+        {
+          "link": "link_5",
+          "joint": "J5",
+          "mass": 16.1766732152,
+          "origin": [
+            0.0214168572,
+            -0.012,
+            -0.00000284
+          ],
+          "inertia": [
+            0.0761,
+            0,
+            0,
+            0.0777263809,
+            0,
+            0.110273389
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 4.775,
+          "gearRatio": 110.4,
+          "nominalJointTorqueNm": 527.1600000000001,
+          "boundsMesh": null,
+          "velocitySI": 4.363323129985824
+        },
+        {
+          "link": "link_6",
+          "joint": "J6",
+          "mass": 4.6834496148,
+          "origin": [
+            -0.008811925199999987,
+            0,
+            0
+          ],
+          "inertia": [
+            0.0098588609,
+            0,
+            0,
+            0.00664,
+            0,
+            0.00664
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 3.18333,
+          "gearRatio": 88.04347826,
+          "nominalJointTorqueNm": 280.27144564940585,
+          "boundsMesh": null,
+          "velocitySI": 6.19591884457987
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-R50-250S7-E1ZY_01741085.urdf",
+      "model": "IR-R50-250S-INT",
+      "folder": "IR-R50-250",
+      "sourceSelectionRequired": true,
+      "sourcePath": "params_package/Standard/Body/IR-R50-250S7-E1ZY_01741085/IR-R50-250S7-E1ZY_01741085.json",
+      "sourceSha256": "75957f5ea2a8dcb5baf25ef467667eac397ec512f6f3647f7e5d33a1edf336f1",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 196.7288804099,
+          "origin": [
+            0.06594114685058594,
+            0.00160125732421875,
+            0.4831187133789063
+          ],
+          "inertia": [
+            8.157118891721334,
+            0,
+            0,
+            10.352473629685681,
+            0,
+            9.291148384857912
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 35,
+          "gearRatio": 140,
+          "nominalJointTorqueNm": 4900,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 3.0543261909900767
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 139.5684148743,
+          "origin": [
+            1.7166137695312502e-8,
+            -0.170999963760376,
+            0.6269619598388672
+          ],
+          "inertia": [
+            29.382191568892278,
+            0,
+            0,
+            29.835315573275654,
+            0,
+            1.8722797410965244
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 35,
+          "gearRatio": 171,
+          "nominalJointTorqueNm": 5985,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 2.6179938779914944
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 80.7766083402,
+          "origin": [
+            0.0581552105,
+            0.028590443,
+            0.1105845928
+          ],
+          "inertia": [
+            1.5145537699,
+            0,
+            0,
+            2.0080774947,
+            0,
+            1.8463212988
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 12.733333,
+          "gearRatio": 171,
+          "nominalJointTorqueNm": 2177.399943,
+          "boundsMesh": null,
+          "velocitySI": 3.0543261909900767
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 68.3163291488,
+          "origin": [
+            0.6776134033203125,
+            -0.009490257263183593,
+            6.103515625e-8
+          ],
+          "inertia": [
+            0.842336499645523,
+            0,
+            0,
+            4.741270037684076,
+            0,
+            5.023480770084499
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 4.775,
+          "gearRatio": 101.5248,
+          "nominalJointTorqueNm": 484.78092000000004,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 4.363323129985824
+        },
+        {
+          "link": "link_5",
+          "joint": "J5",
+          "mass": 16.1766732152,
+          "origin": [
+            0.0214168572,
+            -0.012,
+            -0.00000284
+          ],
+          "inertia": [
+            0.0761,
+            0,
+            0,
+            0.0777263809,
+            0,
+            0.110273389
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 4.775,
+          "gearRatio": 112.7333333333,
+          "nominalJointTorqueNm": 538.3016666665076,
+          "boundsMesh": null,
+          "velocitySI": 4.363323129985824
+        },
+        {
+          "link": "link_6",
+          "joint": "J6",
+          "mass": 4.6834496148,
+          "origin": [
+            -0.008811925199999987,
+            0,
+            0
+          ],
+          "inertia": [
+            0.0098588609,
+            0,
+            0,
+            0.00664,
+            0,
+            0.00664
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 3.18333,
+          "gearRatio": 96.7391304347,
+          "nominalJointTorqueNm": 307.95257608669357,
+          "boundsMesh": null,
+          "velocitySI": 6.19591884457987
+        }
+      ]
+    },
+    {
+      "outputFile": "IR-R50-250S7-F1S_01741336.urdf",
+      "model": "IR-R50-250S-INT",
+      "folder": "IR-R50-250",
+      "sourceSelectionRequired": true,
+      "sourcePath": "params_package/Standard/Body/IR-R50-250S7-F1S_01741336/IR-R50-250S7-F1S_01741336.json",
+      "sourceSha256": "8bfb03ed062d05eeb6e578efdd7f35e8dd9a34cd6b7687fd951c399a14f7eb17",
+      "links": [
+        {
+          "link": "link_1",
+          "joint": "J1",
+          "mass": 196.7288804099,
+          "origin": [
+            0.06594114685058594,
+            0.00160125732421875,
+            0.4831187133789063
+          ],
+          "inertia": [
+            8.157118891721334,
+            0,
+            0,
+            10.352473629685681,
+            0,
+            9.291148384857912
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 35,
+          "gearRatio": 140,
+          "nominalJointTorqueNm": 4900,
+          "boundsMesh": "P1.stl",
+          "velocitySI": 3.0543261909900767
+        },
+        {
+          "link": "link_2",
+          "joint": "J2",
+          "mass": 139.5684148743,
+          "origin": [
+            1.7166137695312502e-8,
+            -0.170999963760376,
+            0.6269619598388672
+          ],
+          "inertia": [
+            29.382191568892278,
+            0,
+            0,
+            29.835315573275654,
+            0,
+            1.8722797410965244
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 35,
+          "gearRatio": 171,
+          "nominalJointTorqueNm": 5985,
+          "boundsMesh": "P2.stl",
+          "velocitySI": 2.6179938779914944
+        },
+        {
+          "link": "link_3",
+          "joint": "J3",
+          "mass": 80.7766083402,
+          "origin": [
+            0.0581552105,
+            0.028590443,
+            0.1105845928
+          ],
+          "inertia": [
+            1.5145537699,
+            0,
+            0,
+            2.0080774947,
+            0,
+            1.8463212988
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 12.733333,
+          "gearRatio": 171,
+          "nominalJointTorqueNm": 2177.399943,
+          "boundsMesh": null,
+          "velocitySI": 3.0543261909900767
+        },
+        {
+          "link": "link_4",
+          "joint": "J4",
+          "mass": 68.3163291488,
+          "origin": [
+            0.6776134033203125,
+            -0.009490257263183593,
+            6.103515625e-8
+          ],
+          "inertia": [
+            0.842336499645523,
+            0,
+            0,
+            4.741270037684076,
+            0,
+            5.023480770084499
+          ],
+          "source": "bounding-box-fallback",
+          "reason": "Effective firmware principal moments are not physically realizable; no unit guessing applied",
+          "motorRatedTorqueNm": 4.775,
+          "gearRatio": 101.5248,
+          "nominalJointTorqueNm": 484.78092000000004,
+          "boundsMesh": "P4.stl",
+          "velocitySI": 4.363323129985824
+        },
+        {
+          "link": "link_5",
+          "joint": "J5",
+          "mass": 16.1766732152,
+          "origin": [
+            0.0214168572,
+            -0.012,
+            -0.00000284
+          ],
+          "inertia": [
+            0.0761,
+            0,
+            0,
+            0.0777263809,
+            0,
+            0.110273389
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 4.775,
+          "gearRatio": 110.4,
+          "nominalJointTorqueNm": 527.1600000000001,
+          "boundsMesh": null,
+          "velocitySI": 4.363323129985824
+        },
+        {
+          "link": "link_6",
+          "joint": "J6",
+          "mass": 4.6834496148,
+          "origin": [
+            -0.008811925199999987,
+            0,
+            0
+          ],
+          "inertia": [
+            0.0098588609,
+            0,
+            0,
+            0.00664,
+            0,
+            0.00664
+          ],
+          "source": "firmware-effective-si",
+          "reason": null,
+          "motorRatedTorqueNm": 3.18333,
+          "gearRatio": 88.04347826,
+          "nominalJointTorqueNm": 280.27144564940585,
+          "boundsMesh": null,
+          "velocitySI": 6.19591884457987
+        }
+      ]
+    }
+  ]
+}

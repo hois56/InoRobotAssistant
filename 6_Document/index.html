@@ -1,684 +1,27 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html data-design-system="astryx" lang="ko" data-astryx-theme="neutral">
 
 <head>
-    <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png?v=20260813">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Search robot manuals, training materials, certificates, and communication profiles.">
+    <meta name="theme-color" content="#fafaf6">
     <title>INOVANCE Robot Technical Document Center</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@0.468.0"></script>
-    <!-- Google Fonts -->
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png?v=20260813">
+    <link rel="stylesheet" href="assets/astryx/reset.css">
+    <link rel="stylesheet" href="assets/astryx/astryx.css">
+    <link rel="stylesheet" href="assets/astryx/neutral.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/Language/runtime/i18n.css">
+    <link rel="stylesheet" href="style.css?v=20261114-cad-variants&amp;palette=20261118-2">
     <script src="/Language/runtime/locales-data.js" defer></script>
     <script src="/Language/runtime/i18n.js" defer></script>
     <script src="/Language/runtime/icon-fallback.js" defer></script>
     <script src="/analytics-config.js"></script>
     <script src="/analytics.js" defer></script>
-    <script src="cad-data.js?v=20261102-1"></script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    <script src="cad-data.js?v=20261114-cad-variants"></script>
 
 
 
@@ -716,445 +59,166 @@
     <meta name="twitter:title" content="INOVANCE Robot Technical Document Center">
     <meta name="twitter:description" content="Search robot manuals, training materials, certificates, and communication profiles.">
     <!-- SUBPAGE-SEO:END -->
+    <link rel="stylesheet" href="/shared/astryx-theme.css?v=20261118-tools-1">
+    <link rel="stylesheet" href="/shared/tool-colors.css?v=20261118-1">
 </head>
 
-<body class="bg-[#0b0e14] text-slate-200 min-h-screen overflow-x-hidden">
-    <div class="ambient-glow"></div>
-
-    <!-- Header Section -->
-    <header
-        class="inorobot-responsive-header sticky top-0 w-full flex flex-row justify-between items-center bg-[rgba(15,19,28,0.9)] backdrop-blur-xl border-b border-white/[0.05] px-8 py-0 shrink-0 h-[72px] z-50">
-        <div class="inorobot-header-brand flex flex-row items-center gap-6">
-            <a href="/" class="logo-link group" title="메인 페이지로">
-                <img src="../1_RobotModelSelect/INOVANCE_Logo.png" alt="Inovance"
-                    class="logo-img h-[60px] w-auto transition-transform group-hover:scale-105">
+<body data-design-page="document">
+    <header class="document-header">
+        <div class="header-inner">
+            <a href="/" class="logo-link" title="메인 페이지로">
+                <img src="../1_RobotModelSelect/INOVANCE_Logo.png" alt="Inovance" width="224" height="60">
             </a>
-            <div class="header-separator header-divider h-8 w-px bg-white/[0.1] mx-2"></div>
-            <h1 class="text-xl font-bold font-outfit text-white tracking-tight" data-i18n-skip>Technical Manual Center</h1>
-        </div>
-        <div class="inorobot-header-actions flex items-center gap-4" data-i18n-language-slot>
+            <h1 class="header-title">Technical Manual Center</h1>
+            <div class="header-actions" data-i18n-language-slot></div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto p-6 md:p-12">
-        <!-- Hero Search Section -->
-        <section class="text-center mb-16 animate-fade-in-up" style="animation: fadeInUp 0.8s ease forwards;">
-            <h2 class="text-4xl md:text-5xl font-extrabold font-outfit text-white mb-6 font-bold">도움이 필요하신가요?</h2>
-            <p class="text-slate-400 text-lg max-w-2xl mx-auto mb-10 italic">필요한 매뉴얼을 검색하거나 모델별 카테고리를 선택하세요.</p>
-
-            <div class="relative max-w-2xl mx-auto">
-                <i data-lucide="search"
-                    class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 font-bold"></i>
-                <input type="text" id="manualSearch" placeholder="키워드(예: SCARA, 설치, 통신)를 입력하세요..."
-                    class="w-full bg-slate-900/40 border border-white/10 rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 backdrop-blur-md transition-all text-white placeholder-slate-600">
+    <main id="main-content" class="document-main">
+        <div class="document-layout">
+            <div class="page-intro">
+                <h2 class="page-title">도움이 필요하신가요?</h2>
+                <p class="page-lead">필요한 매뉴얼을 검색하거나 모델별 카테고리를 선택하세요.</p>
             </div>
-        </section>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 document-content-grid">
-            <!-- Sidebar Filters -->
-            <aside class="lg:col-span-3 document-sidebar">
-                <div class="filter-panel">
-                    <div class="filter-panel-header">
-                        <div>
-                            <p class="filter-panel-kicker">DOCUMENT FILTERS</p>
-                            <h3 class="filter-panel-title">문서 항목 탐색</h3>
-                        </div>
-                        <div class="filter-panel-actions">
-                            <button type="button" id="expandAllFilters" class="filter-panel-action">펼치기</button>
-                            <button type="button" id="collapseAllFilters" class="filter-panel-action">접기</button>
-                        </div>
-                    </div>
-                <section class="filter-section is-collapsed" data-filter-section>
-                    <button type="button" class="filter-section-toggle" aria-expanded="false">
-                        <span class="flex items-center gap-2"><i data-lucide="boxes" class="w-4 h-4 text-emerald-500"></i> CAD</span>
-                        <i data-lucide="chevron-up" class="filter-section-chevron w-4 h-4"></i>
-                    </button>
-                    <div class="filter-section-content">
-                    <div class="space-y-1" id="cadFilters">
-                        <button class="filter-btn w-full text-left" data-cad="cad">All CAD Files</button>
-                        <button class="filter-btn w-full text-left" data-cad="6axis">6-Axis CAD</button>
-                        <button class="filter-btn w-full text-left" data-cad="scara">SCARA CAD</button>
-                        <button class="filter-btn w-full text-left" data-cad="controller">Controller CAD</button>
-                        <button class="filter-btn w-full text-left" data-cad="accessory">Accessory CAD</button>
-                    </div>
-                    </div>
-                </section>
+            <div class="search-field">
+<!-- ASTRYX:SEARCH:START -->
+<div class="astryx-field x78zum5 xdt5ytf xc8icb0 xeuugli x5lhr3w" style="--x-width:100%"><label for="manualSearch" class="astryx-field-label x78zum5 x6s0dn4 xzye2dw x9ynric xcr08ib x1kq96og x1e4wzip xv1l7n4 x1ypdohk x16khyan xng3xce xzpqnlu xjm9jq1 x1o0tod xkdpibf xb3r6kr x1717udv x47corl x10l6tqk x13vifvy x87ps6o xuxw1ft x1i1rx1s">키워드(예: SCARA, 설치, 통신)를 입력하세요...</label><div class="x78zum5 xdt5ytf xc8icb0 x19nvjgn xlumz0n x1qs65gq"><div class="astryx-text-input x9f619 x1n2onr6 x1vjfegm x78zum5 x6s0dn4 x1txdalj xu0wf1k xf314gf x1litavf x1y0btm7 xvy26l8 x6q1khz xohk9ji x1832zxr xvdfih8 x10xzikg x12zzom9 xlr8y92 x1gnnqk1 x1xqjsvb xuihb5h x1a2a7pz xuedmi6 xuh6ohu xzyh0sv xssyfek search-control" data-size="lg"><svg aria-hidden="true" class="astryx-icon x2lah0s xv9yike xomy6nw x14eyxzr" data-size="sm" data-color="secondary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg><input autoComplete="off" id="manualSearch" type="search" enterKeyHint="search" spellCheck="false" placeholder="키워드(예: SCARA, 설치, 통신)를 입력하세요..." class="x1lliihq x98rzlu xeuugli xc342km xng3xce x1717udv x9ynric xjm74w1 xf9zqsd xw6l6zx x1tgivj0 xjbqb8w x1a2a7pz xeyghm5" value=""/></div></div></div>
+<!-- ASTRYX:SEARCH:END -->
+            </div>
 
-                <section class="filter-section is-collapsed" data-filter-section>
-                    <button type="button" class="filter-section-toggle" aria-expanded="false">
-                        <span class="flex items-center gap-2"><i data-lucide="layers" class="w-4 h-4 text-emerald-500"></i> Hardware Manual</span>
-                        <i data-lucide="chevron-up" class="filter-section-chevron w-4 h-4"></i>
-                    </button>
-                    <div class="filter-section-content">
-                    <div class="space-y-1" id="typeFilters">
-                        <button class="filter-btn active w-full text-left" data-type="all">All Model</button>
-                        <button class="filter-btn w-full text-left" data-type="scara">SCARA Robots</button>
-                        <button class="filter-btn w-full text-left" data-type="6axis">6-Axis Robots</button>
-                        <button class="filter-btn w-full text-left" data-type="controller">Controllers</button>
-                        <button class="filter-btn w-full text-left" data-type="expansion">Expansion Card</button>
-                        <button class="filter-btn w-full text-left" data-type="safetyFunction">Safety Function</button>
-                        <button class="filter-btn w-full text-left" data-type="selection">Selection Guide</button>
-                    </div>
-                    </div>
-                </section>
-
-                <section class="filter-section is-collapsed" data-filter-section>
-                    <button type="button" class="filter-section-toggle" aria-expanded="false">
-                        <span class="flex items-center gap-2"><i data-lucide="tag" class="w-4 h-4 text-emerald-500"></i> Software Manual</span>
-                        <i data-lucide="chevron-up" class="filter-section-chevron w-4 h-4"></i>
-                    </button>
-                    <div class="filter-section-content">
-                    <div class="space-y-1" id="catFilters">
-                        <button class="filter-btn active w-full text-left" data-cat="all">All Category</button>
-                        <button class="filter-btn w-full text-left" data-cat="lab">InoRobotLab</button>
-                        <button class="filter-btn w-full text-left" data-cat="pendant">Pendant</button>
-                        <button class="filter-btn w-full text-left" data-cat="comm">Communication</button>
-                        <button class="filter-btn w-full text-left" data-cat="api">Instruction</button>
-                    </div>
-                    </div>
-                </section>
-
-                <section class="filter-section is-collapsed" data-filter-section>
-                    <button type="button" class="filter-section-toggle" aria-expanded="false">
-                        <span class="flex items-center gap-2"><i data-lucide="graduation-cap" class="w-4 h-4 text-emerald-500"></i> Training Manual</span>
-                        <i data-lucide="chevron-up" class="filter-section-chevron w-4 h-4"></i>
-                    </button>
-                    <div class="filter-section-content">
-                    <div class="space-y-1" id="eduFilters">
-                        <button class="filter-btn active w-full text-left" data-cat="all">All Training Manual</button>
-                        <button class="filter-btn w-full text-left" data-cat="entry">Beginner Level</button>
-                        <button class="filter-btn w-full text-left" data-cat="basic">Basic Level</button>
-                        <button class="filter-btn w-full text-left" data-cat="advanced">Application Level</button>
-                        <button class="filter-btn w-full text-left" data-cat="display">For Display</button>
-                    </div>
-                    </div>
-                </section>
-
-                <section class="filter-section is-collapsed" data-filter-section>
-                    <button type="button" class="filter-section-toggle" aria-expanded="false">
-                        <span class="flex items-center gap-2"><i data-lucide="network" class="w-4 h-4 text-emerald-500"></i> Communication Profile</span>
-                        <i data-lucide="chevron-up" class="filter-section-chevron w-4 h-4"></i>
-                    </button>
-                    <div class="filter-section-content">
-                    <div class="space-y-1" id="profileFilters">
-                        <button class="filter-btn w-full text-left" data-cat="commProfile">All Profile</button>
-                        <button class="filter-btn w-full text-left" data-cat="profile-ethercat">EtherCAT</button>
-                        <button class="filter-btn w-full text-left" data-cat="profile-profinet">PROFINET</button>
-                        <button class="filter-btn w-full text-left" data-cat="profile-ethernetip">EtherNet/IP</button>
-                    </div>
-                    </div>
-                </section>
-
-                <section class="filter-section is-collapsed" data-filter-section>
-                    <button type="button" class="filter-section-toggle" aria-expanded="false">
-                        <span class="flex items-center gap-2"><i data-lucide="badge-check" class="w-4 h-4 text-emerald-500"></i> Certificate</span>
-                        <i data-lucide="chevron-up" class="filter-section-chevron w-4 h-4"></i>
-                    </button>
-                    <div class="filter-section-content">
-                    <div class="space-y-1" id="certFilters">
-                        <button class="filter-btn w-full text-left" data-cat="cert-kc">KCs</button>
-                        <div class="certificate-subfilters space-y-1 ml-3 pl-3 border-l border-white/10" id="kcsFilters">
-                            <button class="filter-btn certificate-subfilter w-full text-left" data-cat="cert-kcs-6axis">6-Axis</button>
-                            <button class="filter-btn certificate-subfilter w-full text-left" data-cat="cert-kcs-6axis-high">6-Axis High Protection</button>
-                            <button class="filter-btn certificate-subfilter w-full text-left" data-cat="cert-kcs-6axis-ip67">6-Axis IP67 Option</button>
-                            <button class="filter-btn certificate-subfilter w-full text-left" data-cat="cert-kcs-6axis-sol">6-Axis Sol/VV Option</button>
-                            <button class="filter-btn certificate-subfilter w-full text-left" data-cat="cert-kcs-scara">SCARA</button>
-                            <button class="filter-btn certificate-subfilter w-full text-left" data-cat="cert-kcs-scara-high">SCARA High Protection</button>
-                        </div>
-                        <button class="filter-btn w-full text-left" data-cat="cert-ce">CE</button>
-                        <button class="filter-btn w-full text-left" data-cat="cert-csgsus">cSGSus</button>
-                        <button class="filter-btn w-full text-left" data-cat="cert-clean">Clean</button>
-                        <button class="filter-btn w-full text-left" data-cat="cert-fcc">FCC</button>
-                        <button class="filter-btn w-full text-left" data-cat="cert-fs">Safety</button>
-                        <button class="filter-btn w-full text-left" data-cat="cert-mtbf">MTBF</button>
-                    </div>
-                    </div>
-                </section>
+            <aside class="document-sidebar" aria-labelledby="sidebarHeading">
+                <div class="sidebar-head">
+                    <h2 id="sidebarHeading" class="sidebar-heading">문서 항목 탐색</h2>
+<!-- ASTRYX:FILTER_ACTIONS:START -->
+<div class="filter-actions"><button type="button" class="astryx-button x1k57tk5 x1vidyx5 x1t137rt x1jhp3zv xx47ajj x16bblx1 x1wfwxd8 x13aywxo x1n2onr6 x3nfvp2 x6s0dn4 xl56j7k x1txdalj xce4md1 xrrkdod xc342km xng3xce x1jxw6zd xjb2p0i xcr08ib x1kq96og x1e4wzip xuxw1ft xeuugli x193iq5w x1ypdohk x16khyan xrafxwg xuedmi6 x12w9bfk xlr8y92 x7xd7g3 x11z29ks xli5ek3 xem8lmn xogcwkh x1t1ddl7 xziyay6 xz2mauf x1l7afqf x14e4jsf x6su2wr xif6eam x1ocadqd x1ukh9kf xrkptjy xjscm90 x1kec4ew x13r5q6d x1dn949c xw7rim2 xr9xsjc x1bxn267 x1osot8d xbkwwzw x10t12yn x1dn5vsf x7uyq82 x3f84ok x7ngsy6 x10ogxw0 xubczrd x18xnkjv xmvprkv xetgvay x1mrddfy x3oybdh x8ppqj x1249l8d xbht4k1 x1ex9uxt x3y5scg xg3abmg xoigjuk x1gnnqk1 xjbqb8w x1tgivj0 filter-action" data-variant="ghost" data-size="sm" data-elevation="none" data-astryx-pressable="" id="expandAllFilters" data-astryx-edge-comp=""><span class="x78zum5 x1iyjqo2 xs83m0k xdl72j9 xkh2ocl x1beo9mf x18qz0cn x1h91t0o xarpa2k x14kbac9 xeuugli x1fjtqre x7b72wb x1ukc1h5 x1c440c0"><span class="xb3r6kr xlyipyv xeuugli">펼치기</span></span><span role="status" aria-live="polite" class="x10l6tqk x1i1rx1s xjm9jq1 xkdpibf x1717udv xb3r6kr xzpqnlu xuxw1ft xng3xce x13vifvy x1o0tod x47corl x87ps6o"></span></button><button type="button" class="astryx-button x1k57tk5 x1vidyx5 x1t137rt x1jhp3zv xx47ajj x16bblx1 x1wfwxd8 x13aywxo x1n2onr6 x3nfvp2 x6s0dn4 xl56j7k x1txdalj xce4md1 xrrkdod xc342km xng3xce x1jxw6zd xjb2p0i xcr08ib x1kq96og x1e4wzip xuxw1ft xeuugli x193iq5w x1ypdohk x16khyan xrafxwg xuedmi6 x12w9bfk xlr8y92 x7xd7g3 x11z29ks xli5ek3 xem8lmn xogcwkh x1t1ddl7 xziyay6 xz2mauf x1l7afqf x14e4jsf x6su2wr xif6eam x1ocadqd x1ukh9kf xrkptjy xjscm90 x1kec4ew x13r5q6d x1dn949c xw7rim2 xr9xsjc x1bxn267 x1osot8d xbkwwzw x10t12yn x1dn5vsf x7uyq82 x3f84ok x7ngsy6 x10ogxw0 xubczrd x18xnkjv xmvprkv xetgvay x1mrddfy x3oybdh x8ppqj x1249l8d xbht4k1 x1ex9uxt x3y5scg xg3abmg xoigjuk x1gnnqk1 xjbqb8w x1tgivj0 filter-action" data-variant="ghost" data-size="sm" data-elevation="none" data-astryx-pressable="" id="collapseAllFilters" data-astryx-edge-comp=""><span class="x78zum5 x1iyjqo2 xs83m0k xdl72j9 xkh2ocl x1beo9mf x18qz0cn x1h91t0o xarpa2k x14kbac9 xeuugli x1fjtqre x7b72wb x1ukc1h5 x1c440c0"><span class="xb3r6kr xlyipyv xeuugli">접기</span></span><span role="status" aria-live="polite" class="x10l6tqk x1i1rx1s xjm9jq1 xkdpibf x1717udv xb3r6kr xzpqnlu xuxw1ft xng3xce x13vifvy x1o0tod x47corl x87ps6o"></span></button></div>
+<!-- ASTRYX:FILTER_ACTIONS:END -->
                 </div>
+
+                <section class="filter-section is-collapsed" data-filter-section>
+                    <button type="button" class="filter-section-toggle" id="filterToggleCad" aria-expanded="false" aria-controls="filterPanelCad">
+                        <span class="filter-section-title">CAD</span>
+                        <svg class="filter-section-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+                    </button>
+                    <div class="filter-section-content" id="filterPanelCad" role="group" aria-labelledby="filterToggleCad">
+                        <div class="filter-list" id="cadFilters">
+                            <button type="button" class="filter-btn" data-cad="cad">All CAD Files</button>
+                            <button type="button" class="filter-btn" data-cad="6axis">6-Axis CAD</button>
+                            <button type="button" class="filter-btn" data-cad="scara">SCARA CAD</button>
+                            <button type="button" class="filter-btn" data-cad="controller">Controller CAD</button>
+                            <button type="button" class="filter-btn" data-cad="accessory">Accessory CAD</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="filter-section is-collapsed" data-filter-section>
+                    <button type="button" class="filter-section-toggle" id="filterToggleHardware" aria-expanded="false" aria-controls="filterPanelHardware">
+                        <span class="filter-section-title">Hardware Manual</span>
+                        <svg class="filter-section-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+                    </button>
+                    <div class="filter-section-content" id="filterPanelHardware" role="group" aria-labelledby="filterToggleHardware">
+                        <div class="filter-list" id="typeFilters">
+                            <button type="button" class="filter-btn active" data-type="all">All Model</button>
+                            <button type="button" class="filter-btn" data-type="scara">SCARA Robots</button>
+                            <button type="button" class="filter-btn" data-type="6axis">6-Axis Robots</button>
+                            <button type="button" class="filter-btn" data-type="controller">Controllers</button>
+                            <button type="button" class="filter-btn" data-type="expansion">Expansion Card</button>
+                            <button type="button" class="filter-btn" data-type="safetyFunction">Safety Function</button>
+                            <button type="button" class="filter-btn" data-type="selection">Selection Guide</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="filter-section is-collapsed" data-filter-section>
+                    <button type="button" class="filter-section-toggle" id="filterToggleSoftware" aria-expanded="false" aria-controls="filterPanelSoftware">
+                        <span class="filter-section-title">Software Manual</span>
+                        <svg class="filter-section-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+                    </button>
+                    <div class="filter-section-content" id="filterPanelSoftware" role="group" aria-labelledby="filterToggleSoftware">
+                        <div class="filter-list" id="catFilters">
+                            <button type="button" class="filter-btn active" data-cat="all">All Category</button>
+                            <button type="button" class="filter-btn" data-cat="lab">InoRobotLab</button>
+                            <button type="button" class="filter-btn" data-cat="pendant">Pendant</button>
+                            <button type="button" class="filter-btn" data-cat="comm">Communication</button>
+                            <button type="button" class="filter-btn" data-cat="api">Instruction</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="filter-section is-collapsed" data-filter-section>
+                    <button type="button" class="filter-section-toggle" id="filterToggleTraining" aria-expanded="false" aria-controls="filterPanelTraining">
+                        <span class="filter-section-title">Training Manual</span>
+                        <svg class="filter-section-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+                    </button>
+                    <div class="filter-section-content" id="filterPanelTraining" role="group" aria-labelledby="filterToggleTraining">
+                        <div class="filter-list" id="eduFilters">
+                            <button type="button" class="filter-btn active" data-cat="all">All Training Manual</button>
+                            <button type="button" class="filter-btn" data-cat="entry">Beginner Level</button>
+                            <button type="button" class="filter-btn" data-cat="basic">Basic Level</button>
+                            <button type="button" class="filter-btn" data-cat="advanced">Application Level</button>
+                            <button type="button" class="filter-btn" data-cat="display">For Display</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="filter-section is-collapsed" data-filter-section>
+                    <button type="button" class="filter-section-toggle" id="filterToggleProfile" aria-expanded="false" aria-controls="filterPanelProfile">
+                        <span class="filter-section-title">Communication Profile</span>
+                        <svg class="filter-section-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+                    </button>
+                    <div class="filter-section-content" id="filterPanelProfile" role="group" aria-labelledby="filterToggleProfile">
+                        <div class="filter-list" id="profileFilters">
+                            <button type="button" class="filter-btn" data-cat="commProfile">All Profile</button>
+                            <button type="button" class="filter-btn" data-cat="profile-ethercat">EtherCAT</button>
+                            <button type="button" class="filter-btn" data-cat="profile-profinet">PROFINET</button>
+                            <button type="button" class="filter-btn" data-cat="profile-ethernetip">EtherNet/IP</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="filter-section is-collapsed" data-filter-section>
+                    <button type="button" class="filter-section-toggle" id="filterToggleCertificate" aria-expanded="false" aria-controls="filterPanelCertificate">
+                        <span class="filter-section-title">Certificate</span>
+                        <svg class="filter-section-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+                    </button>
+                    <div class="filter-section-content" id="filterPanelCertificate" role="group" aria-labelledby="filterToggleCertificate">
+                        <div class="filter-list" id="certFilters">
+                            <button type="button" class="filter-btn" data-cat="cert-kc">KCs</button>
+                            <div class="certificate-subfilters filter-list" id="kcsFilters">
+                                <button type="button" class="filter-btn certificate-subfilter" data-cat="cert-kcs-6axis">6-Axis</button>
+                                <button type="button" class="filter-btn certificate-subfilter" data-cat="cert-kcs-6axis-high">6-Axis High Protection</button>
+                                <button type="button" class="filter-btn certificate-subfilter" data-cat="cert-kcs-6axis-ip67">6-Axis IP67 Option</button>
+                                <button type="button" class="filter-btn certificate-subfilter" data-cat="cert-kcs-6axis-sol">6-Axis Sol/VV Option</button>
+                                <button type="button" class="filter-btn certificate-subfilter" data-cat="cert-kcs-scara">SCARA</button>
+                                <button type="button" class="filter-btn certificate-subfilter" data-cat="cert-kcs-scara-high">SCARA High Protection</button>
+                            </div>
+                            <button type="button" class="filter-btn" data-cat="cert-ce">CE</button>
+                            <button type="button" class="filter-btn" data-cat="cert-csgsus">cSGSus</button>
+                            <button type="button" class="filter-btn" data-cat="cert-clean">Clean</button>
+                            <button type="button" class="filter-btn" data-cat="cert-fcc">FCC</button>
+                            <button type="button" class="filter-btn" data-cat="cert-fs">Safety</button>
+                            <button type="button" class="filter-btn" data-cat="cert-mtbf">MTBF</button>
+                        </div>
+                    </div>
+                </section>
             </aside>
 
-            <!-- Manual List -->
-            <div class="lg:col-span-9">
-                <div id="manualList" class="space-y-4">
+            <div class="document-results">
+                <p class="result-count" id="manualCount" aria-live="polite"><span id="manualCountValue">0</span><span class="result-count-unit">개</span></p>
+                <div id="manualList" class="manual-list">
                     <!-- Items populated by script -->
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- Footer removed -->
+<!-- ASTRYX:TEMPLATES:START -->
+<template id="manualRowTemplate"><article class="manual-item"><div class="manual-main"><h3 class="manual-title"></h3><div class="manual-meta"><span class="astryx-token x3nfvp2 x6s0dn4 xzye2dw xt970qd xc342km xng3xce xx3sua9 xjb2p0i x1ltkj2j x1e4wzip xuxw1ft x1hl2dhg x193iq5w xb3r6kr xzydfjl x141an7d xf314gf x17x4s8c x1tgivj0 manual-code" data-color="default" data-size="sm"><span dir="ltr" class="xb3r6kr xlyipyv xuxw1ft xeuugli x4ej8vm" data-slot="code"></span></span><span class="manual-tag"></span><span class="manual-extra"></span><time class="manual-date"></time></div></div><div class="manual-actions"><button type="button" class="astryx-button x1k57tk5 x1vidyx5 x1t137rt x1jhp3zv xx47ajj x16bblx1 x1wfwxd8 x13aywxo x1n2onr6 x3nfvp2 x6s0dn4 xl56j7k x1txdalj xce4md1 xrrkdod x1jxw6zd xjb2p0i xcr08ib x1kq96og x1e4wzip xuxw1ft xeuugli x193iq5w x1ypdohk x16khyan xrafxwg xuedmi6 x12w9bfk xlr8y92 x11l75t8 x11z29ks xli5ek3 xem8lmn xogcwkh x1t1ddl7 xziyay6 xz2mauf x1l7afqf x14e4jsf x6su2wr xif6eam x1ocadqd x1ukh9kf xrkptjy xjscm90 x1kec4ew x13r5q6d x1dn949c xw7rim2 xr9xsjc x1bxn267 x1osot8d xbkwwzw x10t12yn x1dn5vsf x7uyq82 x3f84ok x7ngsy6 x10ogxw0 xubczrd x18xnkjv xmvprkv xetgvay x1mrddfy x3oybdh x8ppqj x1249l8d xbht4k1 x1ex9uxt x3y5scg xg3abmg xoigjuk x1gnnqk1 xc342km x13rsnn2 xng3xce xx61lck x1ylmb6m x17x4s8c x1tgivj0 manual-action manual-action-view" data-variant="secondary" data-size="md" data-elevation="none" data-astryx-pressable="" data-action="view"><span class="x78zum5 x1iyjqo2 xs83m0k xdl72j9 xkh2ocl x1beo9mf x18qz0cn x1h91t0o xarpa2k x14kbac9 xeuugli x1fjtqre x7b72wb x1ukc1h5 x1c440c0"><span class="x3nfvp2 x6s0dn4 xl56j7k x2lah0s xcdlrvm x1l36t39 x1jchvi3"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0"></path><circle cx="12" cy="12" r="3"></circle></svg></span><span class="xb3r6kr xlyipyv xeuugli">미리보기</span></span><span role="status" aria-live="polite" class="x10l6tqk x1i1rx1s xjm9jq1 xkdpibf x1717udv xb3r6kr xzpqnlu xuxw1ft xng3xce x13vifvy x1o0tod x47corl x87ps6o"></span></button><button type="button" class="astryx-button x1k57tk5 x1vidyx5 x1t137rt x1jhp3zv xx47ajj x16bblx1 x1wfwxd8 x13aywxo x1n2onr6 x3nfvp2 x6s0dn4 xl56j7k x1txdalj xce4md1 xrrkdod x1jxw6zd xjb2p0i xcr08ib x1kq96og x1e4wzip xuxw1ft xeuugli x193iq5w x1ypdohk x16khyan xrafxwg xuedmi6 x12w9bfk xlr8y92 x11l75t8 x11z29ks xli5ek3 xem8lmn xogcwkh x1t1ddl7 xziyay6 xz2mauf x1l7afqf x14e4jsf x6su2wr xif6eam x1ocadqd x1ukh9kf xrkptjy xjscm90 x1kec4ew x13r5q6d x1dn949c xw7rim2 xr9xsjc x1bxn267 x1osot8d xbkwwzw x10t12yn x1dn5vsf x7uyq82 x3f84ok x7ngsy6 x10ogxw0 xubczrd x18xnkjv xmvprkv xetgvay x1mrddfy x3oybdh x8ppqj x1249l8d xbht4k1 x1ex9uxt x3y5scg xg3abmg xoigjuk x1gnnqk1 xc342km x13rsnn2 xng3xce xx61lck x1ylmb6m x17x4s8c x1tgivj0 manual-action manual-action-download" data-variant="secondary" data-size="md" data-elevation="none" data-astryx-pressable="" data-action="download"><span class="x78zum5 x1iyjqo2 xs83m0k xdl72j9 xkh2ocl x1beo9mf x18qz0cn x1h91t0o xarpa2k x14kbac9 xeuugli x1fjtqre x7b72wb x1ukc1h5 x1c440c0"><span class="x3nfvp2 x6s0dn4 xl56j7k x2lah0s xcdlrvm x1l36t39 x1jchvi3"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3v12m-5-5 5 5 5-5M5 16v5h14v-5"></path></svg></span><span class="xb3r6kr xlyipyv xeuugli">다운로드</span></span><span role="status" aria-live="polite" class="x10l6tqk x1i1rx1s xjm9jq1 xkdpibf x1717udv xb3r6kr xzpqnlu xuxw1ft xng3xce x13vifvy x1o0tod x47corl x87ps6o"></span></button></div></article></template>
+<template id="manualCadButtonTemplate"><button type="button" class="astryx-button x1k57tk5 x1vidyx5 x1t137rt x1jhp3zv xx47ajj x16bblx1 x1wfwxd8 x13aywxo x1n2onr6 x3nfvp2 x6s0dn4 xl56j7k x1txdalj xce4md1 xrrkdod x1jxw6zd xjb2p0i xcr08ib x1kq96og x1e4wzip xuxw1ft xeuugli x193iq5w x1ypdohk x16khyan xrafxwg xuedmi6 x12w9bfk xlr8y92 x11l75t8 x11z29ks xli5ek3 xem8lmn xogcwkh x1t1ddl7 xziyay6 xz2mauf x1l7afqf x14e4jsf x6su2wr xif6eam x1ocadqd x1ukh9kf xrkptjy xjscm90 x1kec4ew x13r5q6d x1dn949c xw7rim2 xr9xsjc x1bxn267 x1osot8d xbkwwzw x10t12yn x1dn5vsf x7uyq82 x3f84ok x7ngsy6 x10ogxw0 xubczrd x18xnkjv xmvprkv xetgvay x1mrddfy x3oybdh x8ppqj x1249l8d xbht4k1 x1ex9uxt x3y5scg xg3abmg xoigjuk x1gnnqk1 xc342km x13rsnn2 xng3xce xx61lck x1ylmb6m x17x4s8c x1tgivj0 manual-action manual-action-download" data-variant="secondary" data-size="md" data-elevation="none" data-astryx-pressable="" data-action="download"><span class="x78zum5 x1iyjqo2 xs83m0k xdl72j9 xkh2ocl x1beo9mf x18qz0cn x1h91t0o xarpa2k x14kbac9 xeuugli x1fjtqre x7b72wb x1ukc1h5 x1c440c0"><span class="x3nfvp2 x6s0dn4 xl56j7k x2lah0s xcdlrvm x1l36t39 x1jchvi3"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3v12m-5-5 5 5 5-5M5 16v5h14v-5"></path></svg></span><span class="xb3r6kr xlyipyv xeuugli" data-slot="label"></span></span><span role="status" aria-live="polite" class="x10l6tqk x1i1rx1s xjm9jq1 xkdpibf x1717udv xb3r6kr xzpqnlu xuxw1ft xng3xce x13vifvy x1o0tod x47corl x87ps6o"></span></button></template>
+<!-- ASTRYX:TEMPLATES:END -->
 
-    <style>
-        .font-outfit {
-            font-family: 'Outfit', sans-serif;
-        }
-
-        .ambient-glow {
-            position: fixed;
-            bottom: 10%;
-            right: 10%;
-            width: 50vw;
-            height: 50vh;
-            background: radial-gradient(circle, rgba(16, 185, 129, 0.05) 0%, rgba(15, 23, 42, 0) 70%);
-            z-index: -1;
-            filter: blur(100px);
-            pointer-events: none;
-        }
-
-        .document-content-grid {
-            align-items: start;
-        }
-
-        .document-sidebar {
-            position: sticky;
-            top: 88px;
-            max-height: calc(100vh - 104px);
-            overflow-y: auto;
-            padding-right: 0.35rem;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(100, 116, 139, 0.45) transparent;
-        }
-
-        .filter-panel {
-            padding: 0.85rem;
-            border-radius: 1.25rem;
-            background: rgba(15, 23, 42, 0.52);
-            border: 1px solid rgba(255, 255, 255, 0.07);
-        }
-
-        .filter-panel-header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 0.75rem;
-            padding: 0.35rem 0.35rem 0.7rem;
-        }
-
-        .filter-panel-kicker {
-            margin: 0 0 0.2rem;
-            color: #10b981;
-            font-size: 0.6rem;
-            font-weight: 800;
-            letter-spacing: 0.12em;
-        }
-
-        .filter-panel-title {
-            margin: 0;
-            color: #f8fafc;
-            font-size: 0.95rem;
-            font-weight: 800;
-        }
-
-        .filter-panel-actions {
-            display: flex;
-            flex-shrink: 0;
-            gap: 0.3rem;
-        }
-
-        .filter-panel-action {
-            padding: 0.3rem 0.4rem;
-            color: #64748b;
-            font-size: 0.65rem;
-            font-weight: 700;
-            transition: color 0.2s ease;
-        }
-
-        .filter-panel-action:hover {
-            color: #a7f3d0;
-        }
-
-        .filter-section + .filter-section {
-            margin-top: 0.45rem;
-        }
-
-        .filter-section-toggle {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            width: 100%;
-            padding: 0.55rem 0.45rem;
-            border-radius: 0.65rem;
-            color: #e2e8f0;
-            font-size: 0.75rem;
-            font-weight: 800;
-            text-align: left;
-            transition: background 0.2s ease, color 0.2s ease;
-        }
-
-        .filter-section-toggle:hover {
-            color: #fff;
-            background: rgba(255, 255, 255, 0.045);
-        }
-
-        .filter-section-chevron {
-            color: #64748b;
-            transition: transform 0.2s ease;
-        }
-
-        .filter-section.is-collapsed .filter-section-chevron {
-            transform: rotate(180deg);
-        }
-
-        .filter-section-content {
-            padding: 0.1rem 0 0.35rem;
-        }
-
-        .filter-section.is-collapsed .filter-section-content {
-            display: none;
-        }
-
-        @media (max-width: 1023px) {
-            .document-sidebar {
-                position: static;
-                max-height: none;
-                overflow: visible;
-                padding-right: 0;
-            }
-
-            .manual-item {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .document-action-row {
-                flex: 1 1 100% !important;
-            }
-        }
-
-        .filter-btn {
-            padding: 0.5rem 0.75rem;
-            border-radius: 0.625rem;
-            background: transparent;
-            border: 1px solid transparent;
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: #94a3b8;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            text-align: left;
-        }
-
-        .certificate-subfilters {
-            margin-top: 0.25rem;
-            margin-bottom: 0.25rem;
-        }
-
-        .filter-btn.certificate-subfilter {
-            padding: 0.375rem 0.625rem;
-            font-size: 0.75rem;
-            color: #64748b;
-        }
-
-        .filter-btn:hover {
-            background: rgba(30, 41, 59, 0.4);
-            color: #fff;
-        }
-
-        .filter-btn.active {
-            background: rgba(16, 185, 129, 0.1);
-            border-color: rgba(16, 185, 129, 0.3);
-            color: #10b981;
-            font-weight: 700;
-        }
-
-        .manual-item {
-            background: rgba(30, 41, 59, 0.4);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: all 0.3s ease;
-        }
-
-        .manual-item:hover {
-            background: rgba(30, 41, 59, 0.7);
-            border-color: rgba(16, 185, 129, 0.4);
-            transform: translateX(8px);
-        }
-
-        .download-btn {
-            background: rgba(37, 99, 235, 0.1);
-            border: 1px solid rgba(37, 99, 235, 0.2);
-            color: #60a5fa;
-            transition: all 0.2s;
-        }
-
-        .download-btn:hover {
-            background: #2563eb;
-            color: #fff;
-            border-color: #2563eb;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-        }
-
-        .view-btn {
-            background: rgba(16, 185, 129, 0.08);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-            color: #34d399;
-            transition: all 0.2s;
-        }
-
-        .view-btn:hover {
-            background: #059669;
-            color: #fff;
-            border-color: #059669;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-        }
-
-        .locked-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #64748b;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .locked-btn:hover {
-            border-color: #f59e0b;
-            color: #f59e0b;
-            background: rgba(245, 158, 11, 0.05);
-        }
-
-        @media (max-width: 1023px) {
-            .document-action-row,
-            .document-action-buttons {
-                box-sizing: border-box;
-                width: 100%;
-                min-width: 0;
-                max-width: 100%;
-                flex: 1 1 100% !important;
-                flex-wrap: wrap;
-            }
-
-            .document-action-buttons {
-                margin-left: 0 !important;
-            }
-
-            .document-action-button {
-                box-sizing: border-box;
-                flex: 1 1 7rem;
-                min-width: 0 !important;
-                max-width: 100%;
-                justify-content: center;
-                padding: 0.6rem 0.65rem !important;
-                white-space: normal;
-                line-height: 1.25;
-                text-align: center;
-            }
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(2rem);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-    </style>
-    <script src="script.js?v=20261105-string-api-2"></script>
-    <script src="/0_Home/tool-guide-embed.js?v=20260813-10"></script>
+    <script src="script.js?v=20261118-xlsx-preview"></script>
+    <script src="/0_Home/tool-guide-embed.js?v=20261118-guide-light"></script>
 </body>
 
 </html>

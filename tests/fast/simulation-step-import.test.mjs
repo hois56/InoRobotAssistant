@@ -11,9 +11,9 @@ test('Tool 하중 계산은 세부 부품만 사용하고 기존 조립품의 �
         getImportedModelParts: model => model.parts,
         normalizeToolLoadProperties: value => value,
         TOOL_LOAD_MATERIALS: { aluminum: { densityKgPerMm3: 0.0000027 } },
-        uiFormat: value => value
+        uiText: value => value
     });
-    vm.runInContext(['getToolLoadPartRoots', 'getToolLoadPartKey', 'getToolLoadPartSettings'].map(name => source.match(new RegExp(`function ${name}\\([^)]*\\) \\{[\\s\\S]*?\\n\\}`))[0]).join('\n'), context);
+    vm.runInContext(['modelTreeDisplayName', 'displayNameForModelPart', 'getToolLoadPartRoots', 'getToolLoadPartKey', 'getToolLoadPartSettings'].map(name => source.match(new RegExp(`function ${name}\\([^)]*\\) \\{[\\s\\S]*?\\n\\}`))[0]).join('\n'), context);
     const model = { parts: [{ userData: { modelPartAggregate: true, cadPartKey: 'old' } },
         { userData: { cadPartKey: 'body', cadParentPartKey: 'old' } },
         { userData: { cadPartKey: 'rod', cadParentPartKey: 'old' } }],

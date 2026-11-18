@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { EQUIPMENT_TYPES, normalizeEquipmentDefinition, stepEquipmentPosition, equipmentFeedback, resolveEquipmentCommand, validateEquipmentDefinitions, equipmentMotionGroups, normalizeEquipmentBindings } from '../../2_3DSimulation/equipment-core.mjs';
+import { EQUIPMENT_TYPES, normalizeEquipmentDefinition, stepEquipmentPosition, equipmentFeedback, resolveEquipmentCommand, validateEquipmentDefinitions, equipmentMotionGroups, normalizeEquipmentBindings, randomObjectHomeOffset } from '../../2_3DSimulation/equipment-core.mjs';
 import { createFilmState, stepFilm, filmLengthError } from '../../2_3DSimulation/film-peeling-core.mjs';
 import { normalizeIoFunctionMapping } from '../../2_3DSimulation/io-function-mapping-core.mjs';
 import * as filmCore from '../../2_3DSimulation/film-peeling-core.mjs';
@@ -42,6 +42,28 @@ test('등록 오브젝트의 초기 위치는 프로젝트 정규화·복사 후
     restored.origins.objectWorld['part-a'][12] = 900;
     assert.equal(matrix[12], 10);
     assert.deepEqual(normalizeEquipmentDefinition({ id: 'legacy-object', type: 'OBJECT', movingRef: 'part-a' }).origins, {});
+});
+
+test('오브젝트 무작위 원위치 범위와 원위치 IO 소유 정보를 보존한다', () => {
+    const def = normalizeEquipmentDefinition({ id: 'random-object', type: 'OBJECT', movingRef: 'part-a', randomHome: true, randomRangeX: '20', randomRangeY: 0, randomRangeRz: 15 });
+    assert.deepEqual([def.randomHome, def.randomRangeX, def.randomRangeY, def.randomRangeRz], [true, 20, 0, 15]);
+    const plain = normalizeEquipmentDefinition({ id: 'plain-object', type: 'OBJECT', movingRef: 'part-a' });
+    assert.deepEqual([plain.randomHome, plain.randomRangeX, plain.randomRangeY, plain.randomRangeRz], [false, 10, 10, 5]);
+    assert.equal(normalizeEquipmentDefinition({ id: 'vacuum', type: 'VACUUM', movingRef: 'pad', randomHome: true }).randomHome, undefined);
+    assert.throws(() => normalizeEquipmentDefinition({ ...def, randomRangeRz: 181 }), /무작위 회전 범위/);
+    assert.throws(() => normalizeEquipmentDefinition({ ...def, randomRangeX: -1 }), /무작위 X 범위/);
+    assert.deepEqual(normalizeEquipmentDefinition(JSON.parse(JSON.stringify(def))).randomRangeRz, 15);
+    // random() 0 and 1 are the range limits; 0.5 is the registered pose.
+    const values = [0, 0.5, 1];
+    assert.deepEqual(randomObjectHomeOffset(def, () => values.shift()), { x: -20, y: 0, rz: 15 });
+    assert.equal(randomObjectHomeOffset(def, () => 0.5), null);
+    assert.equal(randomObjectHomeOffset(plain, () => 0), null);
+    assert.equal(randomObjectHomeOffset({ ...def, type: 'CYLINDER' }, () => 0), null);
+    assert.equal(normalizeEquipmentBindings({ forward: 600, resetAll: true }).resetAll, true);
+    assert.equal(normalizeEquipmentBindings({ forward: 600 }).resetAll, false);
+    const mapping = normalizeIoFunctionMapping({ id: 'home', action: 'OBJECT_RESET', direction: 'OUT', address: 600, gripObjectRef: 'all', objectResetOwner: 'random-object' });
+    assert.equal(mapping.objectResetOwner, 'random-object'); assert.equal(mapping.gripObjectRef, 'all');
+    assert.equal(normalizeIoFunctionMapping({ ...mapping, action: 'VIEW' }).objectResetOwner, undefined);
 });
 
 test('실린더·외부 축은 속도로 이동하고 중간 반전과 끝단 센서를 처리한다', () => {

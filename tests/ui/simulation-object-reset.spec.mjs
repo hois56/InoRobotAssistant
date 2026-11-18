@@ -171,3 +171,167 @@ test('컨베이어가 이송한 오브젝트도 이송 시작점 대신 등록 �
     return a.equipmentApp.resolve(a.state.equipmentDefinitions.find(def => def.id === 'belt-object-reset').movingRef).object.position.toArray();
   })).toEqual([-100, 0, 30]);
 });
+
+test('오브젝트 설정의 원위치 Output·전체 원위치·무작위 범위를 저장하고 IO로 실행한다', async ({ page }) => {
+  await setup(page);
+  await page.waitForFunction(() => window.__objectReset.state.workspaceRecovery.ready);
+  const refs = await page.evaluate(() => {
+    const a = window.__objectReset;
+    const box = (name, xyz, rz) => {
+      const model = a.createPrimitiveShapeRoot('box', { x: 40, y: 20, z: 10 }, { name });
+      model.position.fromArray(xyz); model.rotation.z = rz; a.state.scene.add(model); a.state.models.push(model); return model;
+    };
+    const ref = model => 'equipment-model:' + a.ensureWorkspaceModelId(model) + '/-1';
+    const first = box('비전 제품 A', [100, 50, 5], 0.3), second = box('비전 제품 B', [300, 0, 5], 0);
+    a.equipmentApp.ui.open(ref(first));
+    return { first: ref(first), second: ref(second) };
+  });
+  const form = page.locator('#equipment-form');
+  // Number fields select their text on the first click; clear them so typing replaces the default.
+  const fillNumber = async (input, value) => { await input.evaluate(node => { node.value = ''; }); await input.fill(value); await expect(input).toHaveValue(value); };
+  await form.locator('[name="type"]').selectOption('OBJECT');
+  await expect(page.locator('#equipment-forward-label')).toHaveText('원위치 Output 번호');
+  await expect(form.locator('[name="reverseAddress"]')).toBeHidden();
+  await expect(form.locator('[name="resetAll"]')).toBeVisible();
+  await expect(form.locator('[name="randomRangeX"]')).toBeDisabled();
+  await fillNumber(form.locator('[name="forwardAddress"]'), '600');
+  await form.locator('[name="randomHome"]').check();
+  await expect(form.locator('[name="randomRangeX"]')).toBeEnabled();
+  await fillNumber(form.locator('[name="randomRangeX"]'), '20');
+  await fillNumber(form.locator('[name="randomRangeY"]'), '30');
+  await fillNumber(form.locator('[name="randomRangeRz"]'), '15');
+  await form.locator('button[type="submit"]').click();
+  await expect(page.locator('#equipment-error')).toContainText('등록');
+
+  // An Output that already matches the condition must not move anything on save.
+  await page.evaluate(({ first, second }) => {
+    const a = window.__objectReset, app = a.equipmentApp;
+    app.resolve(first).object.position.set(900, 900, 5);
+    a.writeOlpAddress('Out[601]', 1);
+    app.ui.open(second);
+  }, refs);
+  await form.locator('[name="type"]').selectOption('OBJECT');
+  await fillNumber(form.locator('[name="forwardAddress"]'), '601');
+  await form.locator('[name="resetAll"]').check();
+  await form.locator('button[type="submit"]').click();
+  await expect(page.locator('#equipment-error')).toContainText('등록');
+
+  const result = await page.evaluate(async ({ first, second }) => {
+    const a = window.__objectReset, app = a.equipmentApp, THREE = a.THREE;
+    const objectOf = ref => app.resolve(ref).object;
+    const pose = ref => {
+      const object = objectOf(ref); object.updateWorldMatrix(true, true);
+      return { center: new THREE.Box3().setFromObject(object).getCenter(new THREE.Vector3()).toArray(), rz: new THREE.Euler().setFromRotationMatrix(object.matrixWorld).z, z: object.matrixWorld.elements[14] };
+    };
+    const homeOf = ref => a.state.equipmentDefinitions.find(def => def.type === 'OBJECT' && def.movingRef === ref);
+    const savedPosition = objectOf(first).position.toArray();
+    app.runtime.adapter.random = () => 0.9;
+    a.writeOlpAddress('Out[601]', 0);
+    const afterOff = objectOf(first).position.toArray();
+    objectOf(second).position.set(-400, -400, 5);
+    a.writeOlpAddress('Out[601]', 1);
+    const all = { first: pose(first), second: pose(second) };
+    objectOf(first).position.set(700, 0, 5); objectOf(second).position.set(-700, 0, 5);
+    a.writeOlpAddress('Out[600]', 1);
+    const single = { first: pose(first), second: objectOf(second).position.toArray() };
+    const owners = a.state.ioFunctionMappings.filter(m => m.action === 'OBJECT_RESET').map(m => [m.address, m.gripObjectRef, m.objectResetOwner]);
+    await a.restoreWorkspaceSnapshot(JSON.parse(JSON.stringify(a.serializeWorkspaceSnapshot())));
+    const restored = homeOf(first);
+    const restoredOwners = a.state.ioFunctionMappings.filter(m => m.action === 'OBJECT_RESET').map(m => [m.address, m.gripObjectRef, m.objectResetOwner]);
+    objectOf(first).position.set(800, 0, 5);
+    a.writeOlpAddress('Out[600]', 0); a.writeOlpAddress('Out[600]', 1);
+    const afterRestore = pose(first);
+    return { savedPosition, afterOff, all, single, owners, restoredOwners, afterRestore,
+      ids: { first: homeOf(first).id, second: homeOf(second).id },
+      random: [restored.randomHome, restored.randomRangeX, restored.randomRangeY, restored.randomRangeRz] };
+  }, refs);
+  // 0.9 maps to +80% of each range: X +16 mm, Y +24 mm, R +12 deg about the part center.
+  const near = (actual, expected) => actual.forEach((value, index) => expect(value).toBeCloseTo(expected[index], 4));
+  expect(result.savedPosition).toEqual([900, 900, 5]); expect(result.afterOff).toEqual([900, 900, 5]);
+  near(result.all.first.center, [116, 74, 10]); expect(result.all.first.rz).toBeCloseTo(0.3 + 12 * Math.PI / 180, 6); expect(result.all.first.z).toBeCloseTo(5, 6);
+  near(result.all.second.center, [300, 0, 10]); expect(result.all.second.rz).toBeCloseTo(0, 6);
+  near(result.single.first.center, [116, 74, 10]); expect(result.single.second).toEqual([-700, 0, 5]);
+  expect(result.owners).toEqual([[600, 'equipment:' + result.ids.first, result.ids.first], [601, 'all', result.ids.second]]);
+  expect(result.restoredOwners).toEqual(result.owners); expect(result.random).toEqual([true, 20, 30, 15]);
+  // After a project restore the default random source is used, so the pose stays inside the range.
+  expect(Math.abs(result.afterRestore.center[0] - 100)).toBeLessThanOrEqual(20 + 1e-6);
+  expect(Math.abs(result.afterRestore.center[1] - 50)).toBeLessThanOrEqual(30 + 1e-6);
+  expect(Math.abs(result.afterRestore.rz - 0.3)).toBeLessThanOrEqual(15 * Math.PI / 180 + 1e-6);
+
+  await page.evaluate(ref => window.__objectReset.equipmentApp.ui.open(ref), refs.second);
+  await page.locator('#equipment-registered').evaluate(node => node.open = true);
+  await page.locator(`[data-equipment-id="${result.ids.second}"] [data-equipment-command="EDIT"]`).click();
+  await expect(form.locator('[name="forwardAddress"]')).toHaveValue('601');
+  await expect(form.locator('[name="resetAll"]')).toBeChecked();
+  await expect(form.locator('[name="randomHome"]')).not.toBeChecked();
+  await page.locator(`[data-equipment-id="${result.ids.first}"] [data-equipment-command="EDIT"]`).click();
+  await expect(form.locator('[name="forwardAddress"]')).toHaveValue('600');
+  await expect(form.locator('[name="resetAll"]')).not.toBeChecked();
+  await expect(form.locator('[name="randomHome"]')).toBeChecked();
+  await expect(form.locator('[name="randomRangeY"]')).toHaveValue('30');
+  // Removing a registration also removes the home IO configured in its settings.
+  expect(await page.evaluate(id => {
+    const a = window.__objectReset; a.equipmentApp.remove(id);
+    return a.state.ioFunctionMappings.filter(m => m.action === 'OBJECT_RESET').map(m => m.address);
+  }, result.ids.second)).toEqual([600]);
+});
+
+test('원위치로 등록 버튼은 현재 위치·회전을 새 원위치로 저장하고 되돌릴 수 있다', async ({ page }) => {
+  await setup(page);
+  await page.waitForFunction(() => window.__objectReset.state.workspaceRecovery.ready);
+  const ref = await page.evaluate(() => {
+    const a = window.__objectReset, app = a.equipmentApp;
+    const model = a.createPrimitiveShapeRoot('box', { x: 40, y: 20, z: 10 }, { name: '원위치 변경 제품' });
+    model.position.set(10, 20, 0); a.state.scene.add(model); a.state.models.push(model);
+    const ref = 'equipment-model:' + a.ensureWorkspaceModelId(model) + '/-1';
+    app.save({ id: 'home-update-object', type: 'OBJECT', movingRef: ref });
+    model.position.set(150, -40, 0); model.rotation.z = 0.5;
+    app.ui.open(ref);
+    return ref;
+  });
+  const form = page.locator('#equipment-form'), status = page.locator('#equipment-error');
+  const pose = () => page.evaluate(ref => {
+    const a = window.__objectReset, object = a.equipmentApp.resolve(ref).object;
+    object.updateWorldMatrix(true, false);
+    return { current: object.matrixWorld.toArray(), home: a.state.equipmentDefinitions.find(def => def.id === 'home-update-object').origins.objectWorld[ref], position: [...object.position.toArray(), object.rotation.z] };
+  }, ref);
+  const same = (actual, expected) => actual.forEach((value, index) => expect(value).toBeCloseTo(expected[index], 6));
+  const registered = await pose();
+  expect(registered.home[12]).toBeCloseTo(10, 6);
+
+  await page.locator('#equipment-registered').evaluate(node => node.open = true);
+  await page.locator('[data-equipment-id="home-update-object"] [data-equipment-command="EDIT"]').click();
+  const setHome = form.locator('.equipment-toolbar #equipment-object-set-home');
+  await expect(setHome).toBeVisible(); await expect(setHome).toBeEnabled();
+  await expect(page.locator('#equipment-current-controls [data-equipment-command="SET_HOME"]')).toBeVisible();
+  await setHome.click();
+  await expect(status).toContainText('원위치로 등록했습니다');
+  const first = await pose();
+  same(first.home, first.current);
+
+  // Moving away and homing returns to the newly registered pose, not the first registration.
+  await page.evaluate(ref => { const object = window.__objectReset.equipmentApp.resolve(ref).object; object.position.set(500, 500, 0); object.rotation.z = 0; }, ref);
+  await form.locator('#equipment-object-reset').click();
+  same((await pose()).position, [150, -40, 0, 0.5]);
+
+  // A registration in the list can be updated without opening its editor.
+  await page.locator('#equipment-new').click();
+  await page.evaluate(ref => { const object = window.__objectReset.equipmentApp.resolve(ref).object; object.position.set(-60, 80, 0); object.rotation.z = -0.2; }, ref);
+  await page.locator('#equipment-list [data-equipment-id="home-update-object"] [data-equipment-command="SET_HOME"]').click();
+  await expect(status).toContainText('원위치로 등록했습니다');
+  const second = await pose();
+  same(second.home, second.current);
+
+  // A held object cannot become the home, and the registered pose stays unchanged.
+  const refused = await page.evaluate(ref => {
+    const app = window.__objectReset.equipmentApp, model = app.resolve(ref).model, saved = { ...model.userData };
+    model.userData.placement = 'grip-object'; model.userData.attachmentHost = model.parent;
+    try { app.command('home-update-object', 'SET_HOME'); return ''; } catch (error) { return error.message; }
+    finally { model.userData.placement = saved.placement; model.userData.attachmentHost = saved.attachmentHost; }
+  }, ref);
+  expect(refused).toContain('흡착을 해제');
+  same((await pose()).home, second.home);
+
+  await page.evaluate(() => document.getElementById('btn-undo').click());
+  same((await pose()).home, first.home);
+});

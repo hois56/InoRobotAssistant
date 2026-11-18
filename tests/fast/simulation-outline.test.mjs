@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { buildCleanOutlinePositions } from '../../2_3DSimulation/outline-geometry-core.mjs';
+import { buildCleanOutlinePositions, buildRobotLogoOutlineBounds } from '../../2_3DSimulation/outline-geometry-core.mjs';
 import { ROBOT_LOGO_FACES, createRobotLogoIndex } from '../../2_3DSimulation/robot-logo-material-core.mjs';
 
 test('평면 삼각형 분할과 반대 방향 중복면은 제거하고 실제 테두리는 유지한다', () => {
@@ -72,6 +72,19 @@ test('표면 로고 영역을 통과하는 외곽선은 영역 바깥 부분만 
     assert.equal(buildCleanOutlinePositions(vertices, indices).length / 6, 4);
 });
 
+test('양쪽 로고의 색상 면 뒤에 있는 글자 경계만 제거하고 본체 안쪽 모서리는 유지한다', () => {
+    const triangle = y => [0,y,0, 10,y,0, 0,y,10];
+    const positions = [...triangle(-10), ...triangle(10), ...triangle(-9.8), ...triangle(9.8), ...triangle(0)];
+    const faceRanges = [{ start: 0, count: 6 }];
+    const excludedBounds = buildRobotLogoOutlineBounds(positions, null, { faceRanges });
+    const options = { excludedIndexRanges: faceRanges };
+    assert.equal(buildCleanOutlinePositions(positions, null, options).length / 6, 9);
+    const lines = buildCleanOutlinePositions(positions, null, { ...options, excludedBounds });
+    assert.equal(lines.length / 6, 3, '로고 뒤의 본체 모서리 유지');
+    assert.ok(Array.from(lines).every((value, i) => i % 3 !== 1 || value === 0));
+    assert.deepEqual(buildRobotLogoOutlineBounds(positions, null), [], '일반 모델은 제외하지 않음');
+});
+
 test('모든 로봇의 로고 글자 모서리를 제외해도 본체 외곽선과 원본 형상은 유지된다', () => {
     for (const [file, mask] of Object.entries(ROBOT_LOGO_FACES)) {
         const stl = readFileSync(new URL(`../../2_3DSimulation/models/${file}`, import.meta.url));
@@ -92,13 +105,18 @@ test('모든 로봇의 로고 글자 모서리를 제외해도 본체 외곽선�
             const points = [0,1,2].map(offset => Array.from(positions.slice(index[i+offset]*3,index[i+offset]*3+3)));
             for (const [a,b] of [[0,1],[1,2],[2,0]]) logoEdges.add(edgeKey(points[a],points[b]));
         }
+        const excludedIndexRanges = [{ start: bodyCount, count: index.length - bodyCount }];
+        const excludedBounds = buildRobotLogoOutlineBounds(positions, index, { faceRanges: excludedIndexRanges });
         const lines = buildCleanOutlinePositions(positions, index, {
             thresholdAngle: 55, minimumAspectRatio: 0.01, pruneDanglingEdges: true,
-            excludedIndexRanges: [{ start: bodyCount, count: index.length - bodyCount }]
+            excludedIndexRanges, excludedBounds
         });
         assert.ok(lines.length > 0, `${file}: 본체 외곽선`);
         for (let i=0;i<lines.length;i+=6) {
             assert.equal(logoEdges.has(edgeKey(Array.from(lines.slice(i,i+3)),Array.from(lines.slice(i+3,i+6)))),false,file);
+            const midpoint = [0,1,2].map(axis => (lines[i+axis] + lines[i+3+axis]) / 2);
+            assert.equal(excludedBounds.some(box => midpoint.every((value, axis) =>
+                value > box.min[axis] + 1e-4 && value < box.max[axis] - 1e-4)), false, `${file}: 글자 측면/바닥 경계`);
         }
         assert.deepEqual(positions, original, file);
     }

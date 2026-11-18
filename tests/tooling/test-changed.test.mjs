@@ -7,12 +7,12 @@ function cli(...args) {
   return spawnSync(process.execPath, ['tools/test-changed.mjs', ...args], { cwd: repoRoot, encoding: 'utf8' });
 }
 
-test('CLI preview selects contracts and one browser suite for software changes', () => {
+test('CLI preview selects contracts and related browser suites for software changes', () => {
   const result = cli('--list', '--ui', '--', '5_Software/script.js');
   assert.equal(result.status, 0, result.stderr);
   const plan = JSON.parse(result.stdout);
   assert.deepEqual(plan.fast, ['tests/fast/regression-contracts.test.mjs']);
-  assert.deepEqual(plan.ui, ['tests/ui/core-flows.spec.mjs']);
+  assert.deepEqual(plan.ui, ['tests/ui/core-flows.spec.mjs', 'tests/ui/software-readability.spec.mjs']);
   assert.equal(plan.bridge, false);
   assert.equal(plan.generator, false);
 });

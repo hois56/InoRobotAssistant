@@ -95,6 +95,11 @@ export function createPositionPointsUi(panel, api) {
             left: Math.min(selectionAnchor?.column ?? activeCell.column, activeCell.column),
             right: Math.max(selectionAnchor?.column ?? activeCell.column, activeCell.column) };
     }
+    function selectedRecords(records = api.records()) {
+        if (selectedRows) return records.filter(record => selectedRows.has(record.key));
+        const bounds = selectionBounds(records);
+        return bounds ? records.slice(bounds.top, bounds.bottom + 1) : [];
+    }
     function syncSelection(records = api.records()) {
         const available = new Set(records.map(record => record.key));
         if (selectedRows) {
@@ -120,6 +125,7 @@ export function createPositionPointsUi(panel, api) {
         standardized.disabled = locked;
         query('[data-pts-new]').disabled = locked;
         query('[data-pts-update]').disabled = locked || !single;
+        query('[data-pts-delete]').disabled = locked || !selectedRecords(records).length;
         query('[data-pts-move]').disabled = locked || !single;
         query('[data-pts-export]').disabled = locked || exporting || !records.length;
     }
@@ -277,7 +283,7 @@ export function createPositionPointsUi(panel, api) {
                         if (target) { event.preventDefault(); event.stopPropagation(); focusCell(target, true, event.shiftKey && event.key !== 'Tab' && event.key !== 'Enter'); return; }
                         if (event.ctrlKey || event.metaKey || event.altKey || event.key === 'Tab') return;
                         if (event.key === 'F2') { event.preventDefault(); event.stopPropagation(); beginEdit(cell, record.key, columnIndex); }
-                        else if (event.key === 'Backspace' || event.key === 'Delete' || event.key.length === 1 || event.key === 'Process') {
+                        else if (event.key === 'Backspace' || event.key.length === 1 || event.key === 'Process') {
                             const value = event.key.length === 1 ? event.key : '';
                             if (column.field === 'index' && value && !/^\d$/.test(value)) { event.preventDefault(); return; }
                             if (event.key !== 'Process') event.preventDefault();
@@ -341,7 +347,8 @@ export function createPositionPointsUi(panel, api) {
             return true;
         }
         if (control || event.altKey) return false;
-        const action = { KeyA: 'new', KeyU: 'update', KeyM: 'move' }[event.code] || { a: 'new', u: 'update', m: 'move' }[key];
+        const action = { KeyA: 'new', KeyU: 'update', KeyM: 'move', Delete: 'delete' }[event.code]
+            || { a: 'new', u: 'update', m: 'move', delete: 'delete' }[key];
         if (!action) return false;
         event.preventDefault(); event.stopPropagation();
         const button = query(`[data-pts-${action}]`);
@@ -390,6 +397,20 @@ export function createPositionPointsUi(panel, api) {
         } catch (exception) { showError(api.text(exception.message)); refresh(); }
     });
     robotSelect.addEventListener('change', () => { cancelEdit(); api.selectRobot(robotSelect.value); refresh(); });
+    query('[data-pts-delete]').addEventListener('click', () => {
+        if (!finishEdit() || api.locked()) return;
+        const records = api.records(), targets = selectedRecords(records);
+        if (!targets.length) return;
+        const row = records.findIndex(record => record.key === targets[0].key), column = activeCell?.column || 0;
+        try {
+            api.remove(targets.map(record => record.key));
+            selectedRows = null; selectedKey = null; activeCell = null; selectionAnchor = null; rowAnchorKey = null;
+            showError(); refresh();
+            const remaining = api.records(), next = remaining[Math.min(row, remaining.length - 1)];
+            if (next) focusCell({ key: next.key, column });
+            else panel.focus();
+        } catch (exception) { showError(api.text(exception.message)); refresh(); }
+    });
     query('[data-pts-move]').addEventListener('click', () => {
         if (!finishEdit() || api.locked() || !selectedKey) return;
         try { showError(); api.move(selectedKey); } catch (exception) { showError(exception.message); }

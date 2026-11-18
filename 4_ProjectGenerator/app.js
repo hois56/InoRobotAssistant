@@ -97,6 +97,7 @@ const state = {
     optionsDraft: null,
     userEdits: {}, // { filename: "edited code without ProgramInfo" }
     labelOverrides: {}, // { oldLabel: newLabel } - label renames to propagate
+    simulation: null, // last simulation project settings (form values)
     editMode: false
 };
 
@@ -107,6 +108,13 @@ function initApp() {
 
     const btnGenerate = document.getElementById('btnGenerate');
     if (btnGenerate) btnGenerate.onclick = exportProj;
+
+    const btnSimulation = document.getElementById('btnSimulation');
+    if (btnSimulation) btnSimulation.onclick = openSimulationModal;
+    const btnExportSimulation = document.getElementById('btnExportSimulation');
+    if (btnExportSimulation) btnExportSimulation.onclick = exportSimulationProject;
+    const btnCancelSimulation = document.getElementById('btnCancelSimulation');
+    if (btnCancelSimulation) btnCancelSimulation.onclick = closeSimulationModal;
 
     // Guide modal
     document.getElementById('btnGuide').onclick = () => {
@@ -363,7 +371,9 @@ function initRobots() {
 
 function addStep() {
     if (state.steps.length >= 15) { alert(uiText("Max 15 processes.")); return; }
-    state.steps.push(new ProcessStep(state.steps.length + 1));
+    const number = window.ProjectEditUI?.session ? window.ProjectEditUI.nextNumber() : state.steps.length + 1;
+    if (!number) return;
+    state.steps.push(new ProcessStep(number));
     renderSteps();
 }
 
@@ -371,7 +381,7 @@ function rStep(idx) {
     const removed = state.steps[idx];
     state.steps.splice(idx, 1);
     if (removed?.id) delete state.options.VisionConfigs[removed.id];
-    state.steps.forEach((s, i) => s.No = i + 1);
+    if (!window.ProjectEditUI?.session) state.steps.forEach((s, i) => s.No = i + 1);
     // clean vision configs if needed, but not strictly necessary
     renderSteps();
 }
@@ -419,7 +429,7 @@ window.uStep = function (idx, field, val) {
     state.steps[idx][field] = val;
     updateRowRules(state.steps[idx]);
     let s = state.steps[idx];
-    if ((s.WorkMethod === "Check" && s.VisionUse === "Use - Socket") || (s.WorkMethod === "Calibration" && s.ToolType === "Vision (Socket)")) {
+    if (Generator.UsesVisionSocket(s)) {
         openVisionModal(idx);
     }
     renderSteps();
@@ -534,10 +544,10 @@ function handleGeneratedContent(file) {
         code = Generator.DataPoints(state.steps, state.options, file);
     }
     else if (file.endsWith(".prj")) code = Generator.DataPrj(state.steps, state.options, file.replace(/\.prj$/, ''));
-    else if (file && file.startsWith("sP")) {
+    else if (state.steps.some(s => `${s.ProcessName}.pro` === file)) {
         const stepName = file.replace(".pro", "");
         let stageIdx = 0;
-        state.steps.forEach(s => { if (s.WorkType === "Stage") stageIdx++; if (s.ProcessName === stepName) code = Generator.ProcessProgram(s, state.options, stageIdx); });
+        state.steps.forEach(s => { if (s.WorkType === "Stage") stageIdx++; if (s.ProcessName === stepName) code = Generator.ProcessProgram(s, state.options, s.StageSlot || stageIdx); });
     }
 
     return code;
@@ -568,6 +578,7 @@ function applyDynamicOverrides(file, code) {
 }
 
 function getFinalFileContent(file) {
+    if (window.ProjectEditUI?.session) return window.ProjectEditUI.fileContent(file);
     let generated = applyDynamicOverrides(file, handleGeneratedContent(file));
     let edited = state.userEdits[file];
 
@@ -672,6 +683,7 @@ function renderSteps() {
     uSelector();
     updatePreview();
     if (window.lucide) lucide.createIcons();
+    window.ProjectEditUI?.decorate();
 }
 
 function uSelector() {
@@ -717,6 +729,7 @@ function uSelector() {
     editBtn.style.opacity = isReadOnly ? '0.3' : '1';
     editBtn.style.cursor = isReadOnly ? 'not-allowed' : 'pointer';
     editBtn.title = isReadOnly ? 'This file is read-only' : 'Toggle Edit Mode';
+    window.ProjectEditUI?.addFiles();
 }
 
 // ── 표 렌더링 헬퍼 ──────────────────────────────────
@@ -729,6 +742,7 @@ function buildTable(headers, rows) {
 }
 
 function updatePreview() {
+    if (window.ProjectEditUI?.session) { window.ProjectEditUI.preview(); return; }
     const file = document.getElementById('fileSelector').value;
     const editor = document.getElementById('codeEditor');
     const prismCon = document.getElementById('prismContainer');
@@ -1034,7 +1048,7 @@ async function buildIOMapExcel() {
         const xml = new DOMParser().parseFromString(await workbook.file(sheetPath).async('string'), 'application/xml');
         const ns = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
         const cells = [...xml.getElementsByTagNameNS(ns, 'c')];
-        for (const [ref, value] of [['F83', state.labelOverrides.xwTray_index || 'xwTray_index'], ['G83', 'Tray cell index (1-based)']]) {
+        for (const [ref, value] of [['F83', state.labelOverrides.xwTray_index || state.options.LabelAliases?.xwTray_index || 'xwTray_index'], ['G83', 'Tray cell index (1-based)']]) {
             const cell = cells.find(item => item.getAttribute('r') === ref);
             if (!cell) throw new Error(`Missing IO map cell: ${ref}`);
             cell.replaceChildren();
@@ -1068,6 +1082,7 @@ async function buildIOMapExcel() {
 }
 
 async function exportProj() {
+    if (window.ProjectEditUI?.session) { window.ProjectEditUI.review(); return; }
     const name = document.getElementById('prjName').value || state.projectName;
     try {
         validateIdentifier(name, 'Project name');
@@ -1164,8 +1179,97 @@ async function exportProj() {
             includePattern.lastIndex = 0;
         }
 
+        if (typeof ProjectEditor !== 'undefined') {
+            const settings = ProjectEditor.config(state.steps, state.options, name);
+            root.file(ProjectEditor.META, ProjectEditor.metadata(settings, ProjectEditor.generate(settings, Generator)));
+        }
         const blob = await zip.generateAsync({ type: "blob" });
         saveAs(blob, `${name}.zip`);
+    } catch (e) {
+        console.error(e);
+        alert(uiFormat('Error generating zip: {message}', { message: e.message || e }));
+    }
+}
+
+// ── Simulation project ───────────────────────────────────────────────
+// A separate download for the 3D simulator. The controller project above is not affected.
+const SIMULATION_FIELDS = [
+    ['simSequence', 'Sequence'], ['simCycles', 'Cycles'], ['simSpeedRate', 'SpeedRate'],
+    ['simToolTime', 'ToolTime'], ['simVisionTime', 'VisionTime'], ['simTrayCell', 'TrayCell'], ['simPeelSpeed', 'PeelSpeed']
+];
+
+function openSimulationModal() {
+    const values = { ...Generator.SIMULATION_DEFAULTS, ...state.simulation };
+    SIMULATION_FIELDS.forEach(([id, key]) => { document.getElementById(id).value = values[key]; });
+    document.getElementById('simTrayCell').disabled = !state.steps.some(Generator.UsesTrayOffset);
+    document.getElementById('simPeelSpeed').disabled = !state.steps.some(Generator.IsPeeling);
+    const modal = document.getElementById('simulationModal');
+    modal.classList.remove('hidden');
+    if (window.InoRobotI18n) window.InoRobotI18n.apply(modal);
+    if (window.lucide) lucide.createIcons();
+    else if (window.InoRobotIconFallback) window.InoRobotIconFallback.apply(modal);
+    document.getElementById('simSequence').focus();
+}
+
+function closeSimulationModal() {
+    document.getElementById('simulationModal').classList.add('hidden');
+}
+
+function readSimulationForm() {
+    return Object.fromEntries(SIMULATION_FIELDS.map(([id, key]) => [key, document.getElementById(id).value]));
+}
+
+// Same label renames as the controller export, so programs and Labels.jsn agree.
+function applySimulationLabelNames(code) {
+    let result = code;
+    for (const [oldLabel, newLabel] of Object.entries(state.labelOverrides)) {
+        if (oldLabel && newLabel && oldLabel !== newLabel) result = result.replaceAll(oldLabel, newLabel);
+    }
+    const aliases = state.options.LabelAliases;
+    if (aliases && Object.keys(aliases).length) result = result.replace(/\b[A-Za-z_]\w*\b/g, token => aliases[token] || token);
+    return result;
+}
+
+function buildSimulationProjectFiles(name, input) {
+    const sim = Generator.SimulationSettings(state.steps, state.options, input);
+    const programs = Generator.SimulationProgramFiles(state.steps, state.options, sim);
+    const files = {};
+    for (const [file, code] of Object.entries(programs)) files[file] = applySimulationLabelNames(code);
+    files[`${name}.prj`] = Generator.SimulationProjectInfo(Object.keys(programs));
+    // Teaching points and labels come from the same source as the controller export.
+    for (const data of ['P.pts', 'JP.pts', 'Labels.jsn', 'UserDefineWarning.jsn']) files[`Data/${data}`] = getFinalFileContent(data);
+    files['Data/BreakPoints.jsn'] = '{\n  "ProgramsCount": 0,\n  "ProgramsBreaks": []\n}';
+    files['Data/MonitorVars.jsn'] = '[]';
+    files['Data/MonitorGlobalVars.jsn'] = applySimulationLabelNames(JSON.stringify(['B_Cur_process', 'B_path', 'R_Cur_pos']));
+    return { sim, files };
+}
+
+async function exportSimulationProject() {
+    const name = `${document.getElementById('prjName').value || state.projectName}_SIM`;
+    const input = readSimulationForm();
+    let built;
+    try {
+        validateIdentifier(name, 'Project name');
+        const processNames = new Set();
+        state.steps.forEach((step) => {
+            const key = validateIdentifier(step.ProcessName, 'Process name').toLowerCase();
+            if (processNames.has(key)) throw new Error('Process names must be unique.');
+            processNames.add(key);
+            Generator.ExtraWaitCount(step);
+            if (Generator.IsTray(step)) Generator.TraySettings(step);
+        });
+        built = buildSimulationProjectFiles(name, input);
+    } catch (error) {
+        alert(uiText(error.message));
+        return;
+    }
+    state.simulation = input;
+    try {
+        const zip = new JSZip();
+        const root = zip.folder(name);
+        for (const [file, content] of Object.entries(built.files)) root.file(file, content.replace(/\r?\n/g, '\r\n'));
+        saveAs(await zip.generateAsync({ type: "blob" }), `${name}.zip`);
+        closeSimulationModal();
     } catch (e) {
         console.error(e);
         alert(uiFormat('Error generating zip: {message}', { message: e.message || e }));

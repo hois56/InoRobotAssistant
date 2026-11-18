@@ -1,3 +1,4 @@
+import { StandardInputClient } from './standard-input-client.mjs?v=20261114-inputs65-1';
 import { applyCadLightweightGltfUnits } from './gltf-import-units.mjs?v=20261103-1';
 /**
  * Inovance Robot 3D Simulation
@@ -5,19 +6,22 @@ import { applyCadLightweightGltfUnits } from './gltf-import-units.mjs?v=20261103
  */
 
 import * as THREE from 'three';
-import {OlpSocketService} from './olp-socket-service.mjs?v=20261102-generator-2';
+import { createCurveTrajectoryApp } from './curve-trajectory-app.mjs?v=20261117-selection-1';
+import { curveSegmentKeys, orderConnectedCurves, planarFaceTriangleRanges } from './curve-trajectory-selection.mjs?v=20261117-selection-1';
+import {OlpSocketService} from './olp-socket-service.mjs?v=20261107-vision-1';
 import {evaluateOlpHomeStatus} from './olp-home-status.mjs?v=20261102-generator-2';
 import {OlpTorqueFeedback,sampleOlpJointMotion,finishOlpJointMotion,getOlpJointMotionSample} from './olp-torque-feedback.mjs?v=20261102-generator-2';
 import {RAPID_MODEL_DATA} from './rapid-model-data.mjs?v=20261102-models-2';
 import { hasRapidDynamicsModel, resolveRapidDynamicsModel } from './robot-rapid-dynamics.mjs?v=20261102-models-2';
-import { createPositionPointsUi, nextPositionPointMetadata } from './position-points-ui.mjs?v=20261102-popout-export-1';
+import { createPositionPointsUi, nextPositionPointMetadata } from './position-points-ui.mjs?v=20261117-delete-1';
 import { normalizeToolLoad, buildToolParamFile, buildWobjParamFile, combineToolLoads } from './tool-data-core.mjs?v=20261102-dat-export-1';
 import { VIEW_PRESET_COUNT } from './view-preset-core.mjs';
 import { renderWithContactAO, disposeContactAO } from './contact-ambient-occlusion.mjs?v=20261030-1';
+import { usesSoftwareRasterizer, renderPacedSoftwareFrame } from './software-renderer.mjs?v=20261117-3';
 import { ROBOT_MOUNTING_HOLES } from './robot-mounting-holes.mjs?v=20261029-2';
 import { collectTeachingPoints, normalizeTeachingPointSettings } from './teaching-point-core.mjs?v=20261023-teaching-defaults-1';
 import { TeachingPointScene, teachingJointMatrix } from './teaching-point-scene.mjs?v=20261023-teaching-labels-2';
-import { buildCleanOutlinePositions } from './outline-geometry-core.mjs?v=20261031-logo-outline-1';
+import { buildCleanOutlinePositions, buildRobotLogoOutlineBounds } from './outline-geometry-core.mjs?v=20261117-logo-outline-2';
 import { computeSmoothTriangleNormals } from './smooth-triangle-normals-core.mjs';
 import { armQuadrant, closestArmTurnCandidates, scaraArmParameters, sixAxisArmParameters } from './arm-parameter-core.mjs';
 import { ROBOT_LOGO_COLOR, ROBOT_LOGO_FACES, ROBOT_LOGO_PROJECTIONS, createRobotLogoIndex } from './robot-logo-material-core.mjs?v=20261031-r35-r50-1';
@@ -25,13 +29,15 @@ import { ROBOT_JOINT_ACCENT_COLOR, applyRobotJointAccent } from './robot-joint-a
 import { applyRobotLogoProjection } from './robot-logo-projection.mjs';
 import { buildCadAssemblyTree } from './cad-assembly-tree.mjs';
 import { writeWorkspaceArchive } from './workspace-archive.mjs';
-import { TEST_MODEL_CATALOG, getTestModelSelection, getTestModelSelectionForRobot, getEducationalModelSelection, getImportedModelColor } from './test-model-catalog.mjs';
+import { TEST_MODEL_CATALOG, getTestModelSelection, getTestModelSelectionForRobot, getEducationalModelSelection, getImportedModelColor } from './test-model-catalog.mjs?v=20261117-model-sizes-2';
 import { getTestModelTreePreset } from './test-model-tree-presets.mjs';
+import { resizeConveyorContent } from './conveyor-model.mjs';
+import { getTestModelDimensionFields, normalizeTestModelDimensions, resizeTestModelContent } from './test-model-dimensions.mjs';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { clone as cloneObjectWithSkeletons } from 'three/addons/utils/SkeletonUtils.js';
 import { enableContinuousTransformRotation } from '../3_ToolSelector/continuous-transform-rotation.mjs';
-import { buildStepSnapCandidates } from '../3_ToolSelector/snap-geometry.mjs';
+import { buildStepSnapCandidates } from '../3_ToolSelector/snap-geometry.mjs?v=20261110-curves-1';
 import {
     combineStepParts,
     createCoordinateFrame,
@@ -85,7 +91,7 @@ import {
     reorderMotionSteps,
     normalizeMotionProject,
     normalizeRegisteredPositions
-} from './motion-program-core.mjs?v=20261102-models-2';
+} from './motion-program-core.mjs?v=20261114-motion-limits-1';
 import {
     INTERFERENCE_ZONE_COUNT,
     INTERFERENCE_COORDINATE_MIN,
@@ -128,11 +134,17 @@ import {
     refreshOlpProjectDerivedData,
     updateOlpFileText
 } from './olp-project-core.mjs?v=20261102-generator-2';
-import { createEquipmentApp } from './equipment-app.mjs?v=20261103-vacuum-signals-1';
-import { EQUIPMENT_TYPES, EQUIPMENT_IO_TYPES, EQUIPMENT_LABELS, normalizeEquipmentDefinition, equipmentMotionGroups, equipmentReferences, equipmentCommandOptions } from './equipment-core.mjs?v=20261101-vacuum-surface-1';
-import { equipmentObjectRef } from './equipment-scene.mjs?v=20261103-vacuum-signals-1';
-import { conveyorElapsedSeconds } from './conveyor-core.mjs';
-import { moveConveyorObjects } from './conveyor-scene.mjs';
+import { createEquipmentApp } from './equipment-app.mjs?v=20261107-object-home-1';
+import { createVisionApp } from './vision-app.mjs?v=20261112-conveyor-k14-1';
+import { EQUIPMENT_TYPES, EQUIPMENT_IO_TYPES, EQUIPMENT_LABELS, normalizeEquipmentDefinition, equipmentMotionGroups, equipmentReferences, equipmentCommandOptions } from './equipment-core.mjs?v=20261107-object-home-1';
+import { equipmentObjectRef } from './equipment-scene.mjs?v=20261107-object-home-1';
+import { normalizeModelGroupTree, walkModelGroups, modelGroupPath, modelGroupAtPath, dissolveModelGroup, moveModelsToGroup } from './model-group-tree-core.mjs';
+import { conveyorSensorLayout } from './conveyor-sensor-preview.mjs?v=20261114-sensor-input-0';
+import { conveyorElapsedSeconds } from './conveyor-core.mjs?v=20261117-run-1';
+import { moveConveyorObjects } from './conveyor-scene.mjs?v=20261116-feed-1';
+import { createConveyorFeedApp } from './conveyor-feed-app.mjs?v=20261117-variation-1';
+import { createConveyorVisuals } from './conveyor-visuals.mjs?v=20261117-catalog-belt-2';
+import { createConveyorTrackingApp } from './conveyor-tracking-app.mjs?v=20261117-run-1';
 import * as WorkspaceRecovery from './workspace-recovery-core.mjs';
 import {
     calculateMeasurementResult,
@@ -190,8 +202,10 @@ import {
     WORD_START as OLP_WORD_START,
     OlpRuntime,
     clampWord,
+    formatOlpTactCsv,
+    olpTactMovesForCycle,
     normalizeAddress as normalizeOlpAddress
-} from './olp-project-runtime.mjs?v=20261102-generator-2';
+} from './olp-project-runtime.mjs?v=20261114-tact-1';
 import {
     COLLABORATION_STATE_INTERVAL_MS,
     MAX_COLLABORATION_MESSAGE_BYTES,
@@ -219,7 +233,7 @@ import {
     isSupportedIoFunctionMappingAddress,
     normalizeIoFunctionMapping,
     normalizeIoFunctionMappings
-} from './io-function-mapping-core.mjs?v=20261101-vacuum-surface-1';
+} from './io-function-mapping-core.mjs?v=20261107-object-home-1';
 import {
     TRACE_INTERVALS,
     TRACE_MAX_POINTS,
@@ -2019,7 +2033,9 @@ const PANEL_MINIMUM_SIZES = Object.freeze({
     'measurement-panel': { width: 300, height: 520 },
     'shape-panel': { width: 300, height: 460 },
     'tool-load-info-panel': { width: 390, height: 560 },
-    'work-origin-dialog': { width: 320, height: 220 }
+    'work-origin-dialog': { width: 320, height: 220 },
+    'vision-panel': { width: 400, height: 520 },
+    'conveyor-tracking-dialog': { width: 340, height: 360 }
 });
 const PANEL_STACK_BASE_Z_INDEX = 70;
 const PANEL_IDS = Object.freeze(Object.keys(PANEL_MINIMUM_SIZES));
@@ -2449,6 +2465,12 @@ function setupUI() {
     state.virtualController.ipAddresses = { ...controllerSettings.ipAddresses };
     ensureEndMonitoringUi();
     loadViewConfiguration();
+    if (!IS_MANUAL_GUIDE_EMBED && window.matchMedia('(max-width: 768px)').matches) {
+        for (const panel of [el.modelBrowserPanel, el.jogPanel]) {
+            panel.classList.add('panel-user-hidden');
+            updatePanelLauncher(panel.id);
+        }
+    }
 
     if (el.panelLauncher && !el.panelLauncher.querySelector('[data-panel-toggle="program-panel"]')) {
         const programButton = document.createElement('button');
@@ -2502,6 +2524,8 @@ function setupUI() {
     updateInterferenceZoneVisuals();
     resetIoFunctionMappingRuntimeValues();
     renderIoFunctionMappingList();
+    visionApp.start();
+    conveyorTrackingApp.start();
 
     setupSimulationTooltips();
     updateCollisionUi();
@@ -2533,7 +2557,18 @@ function refreshTestModelSelection() {
     const inputs = [...el.testModelDialog.querySelectorAll('[data-test-quantity]')];
     const total = inputs.reduce((sum, input) => sum + (Number(input.value) || 0), 0);
     el.testModelDialog.querySelector('#test-model-total').textContent = uiFormat('선택 수량: {count}개', { count: total });
-    el.btnConfirmTestModel.disabled = total === 0 || total > 100 || inputs.some(input => !input.checkValidity());
+    let dimensionsValid = true;
+    for (const group of el.testModelDialog.querySelectorAll('[data-test-model-dimensions]')) {
+        const assetId = group.dataset.testModelDimensions;
+        const selected = Number(inputs.find(input => input.dataset.testQuantity === assetId)?.value) > 0;
+        const dimensions = [...group.querySelectorAll('[data-test-model-dimension]')];
+        dimensions.forEach(input => { input.disabled = !selected; });
+        if (!selected) continue;
+        try { normalizeTestModelDimensions(assetId, Object.fromEntries(dimensions.map(input => [input.dataset.testModelDimension, input.value]))); }
+        catch { dimensionsValid = false; }
+    }
+    el.btnConfirmTestModel.disabled = total === 0 || total > 100
+        || !dimensionsValid || inputs.some(input => !input.checkValidity());
 }
 
 function requestTestModelConfirmation() {
@@ -2542,7 +2577,8 @@ function requestTestModelConfirmation() {
         const list = el.testModelDialog.querySelector('[data-test-category="' + category + '"]');
         list.replaceChildren();
         for (const asset of TEST_MODEL_CATALOG.filter(item => item.category === category)) {
-            const card = document.createElement('label');
+            const dimensionFields = getTestModelDimensionFields(asset.id);
+            const card = document.createElement(dimensionFields.length ? 'div' : 'label');
             card.className = 'test-model-card';
             const image = document.createElement('img');
             image.src = asset.image;
@@ -2550,7 +2586,8 @@ function requestTestModelConfirmation() {
             image.width = 240;
             image.height = 160;
             const name = document.createElement('strong');
-            name.textContent = asset.name;
+            name.textContent = ['base', 'square-object', 'flat-tray', 'scara-height-base'].includes(asset.id)
+                ? asset.name.replace(/\s+\d+(?:\s*×\s*\d+)*(?:\s*mm)?$/, '') : asset.name;
             const quantityLabel = document.createElement('span');
             quantityLabel.textContent = uiText('가져올 수량');
             const input = document.createElement('input');
@@ -2565,7 +2602,44 @@ function requestTestModelConfirmation() {
             input.addEventListener('input', refreshTestModelSelection);
             input.addEventListener('focus', () => input.select());
             input.addEventListener('click', () => input.select());
-            card.append(image, name, quantityLabel, input);
+            if (dimensionFields.length) {
+                image.addEventListener('click', () => { input.focus(); input.select(); });
+                const details = document.createElement('div');
+                details.className = 'test-model-details';
+                const quantity = document.createElement('label');
+                quantity.className = 'test-model-quantity';
+                quantity.append(name, quantityLabel, input);
+                const dimensions = document.createElement('div');
+                dimensions.className = 'test-model-dimensions';
+                dimensions.dataset.testModelDimensions = asset.id;
+                dimensions.setAttribute('role', 'group');
+                dimensions.setAttribute('aria-label', asset.name + ' · ' + uiText('모델 전체 치수 (mm)'));
+                for (const field of dimensionFields) {
+                    const label = document.createElement('label');
+                    const text = document.createElement('span');
+                    text.textContent = uiText(field.label) + ' :';
+                    const dimension = document.createElement('input');
+                    dimension.type = 'number';
+                    dimension.min = String(field.min);
+                    dimension.max = String(field.max);
+                    dimension.step = '0.1';
+                    dimension.value = String(field.value);
+                    dimension.required = true;
+                    dimension.dataset.testModelDimension = field.key;
+                    if (asset.id === 'conveyor') dimension.dataset.testConveyorDimension = field.key;
+                    dimension.setAttribute('aria-label', asset.name + ' ' + uiText(field.label) + ' (mm)');
+                    dimension.title = uiText('모델 전체 치수 (mm)') + ` · ${field.min}–${field.max}`;
+                    dimension.addEventListener('input', refreshTestModelSelection);
+                    dimension.addEventListener('focus', () => dimension.select());
+                    dimension.addEventListener('click', () => dimension.select());
+                    const unit = document.createElement('span');
+                    unit.textContent = 'mm';
+                    label.append(text, dimension, unit);
+                    dimensions.append(label);
+                }
+                details.append(quantity, dimensions);
+                card.append(image, details);
+            } else card.append(image, name, quantityLabel, input);
             list.append(card);
         }
     }
@@ -2580,7 +2654,10 @@ function confirmTestModelSelection() {
     try {
         const quantities = Object.fromEntries([...el.testModelDialog.querySelectorAll('[data-test-quantity]')]
             .map(input => [input.dataset.testQuantity, input.value]));
-        const selection = getTestModelSelection(quantities);
+        const dimensions = Object.fromEntries([...el.testModelDialog.querySelectorAll('[data-test-model-dimensions]')]
+            .map(group => [group.dataset.testModelDimensions, Object.fromEntries([...group.querySelectorAll('[data-test-model-dimension]')]
+                .map(input => [input.dataset.testModelDimension, input.value]))]));
+        const selection = getTestModelSelection(quantities, dimensions);
         if (!selection.length) return;
         if (selection.some(item => item.asset.category === 'tool') && !getArticulatedRobotForAttachment()) {
             alert(uiText('Tool을 장착할 로봇을 먼저 불러와 주세요.'));
@@ -5047,6 +5124,7 @@ function createViewWindowCell(slot, fallbackPreset = null) {
     controls.addEventListener('end', requestRender);
     const cell = { slot: Number(slot), element, renderer, camera, controls, canvas, preset,
         selectedViewPivot: { enabled: false, object: null, center: null } };
+    curveTrajectoryApp.bindCanvas(canvas, () => cell.camera);
     const actions = ownerDocument.createElement('div');
     actions.className = 'view-window-cell-actions';
     const selectedPivotButton = ownerDocument.createElement('button');
@@ -5069,7 +5147,7 @@ function createViewWindowCell(slot, fallbackPreset = null) {
     actions.append(selectedPivotButton);
     element.append(actions);
     controls.addEventListener('start', () => {
-        updateOrbitSelectedViewPivot(cell.selectedViewPivot, camera, controls,
+        if (!curveTrajectoryApp.isPicking()) updateOrbitSelectedViewPivot(cell.selectedViewPivot, camera, controls,
             state.sketch.active ? null : getSelectedViewPivotReference(), true);
         requestRender();
     });
@@ -14240,20 +14318,21 @@ function finishSelectedPrimitiveShapeDimension() {
 
 function setupScene() {
     state.scene = new THREE.Scene();
-    state.scene.background = new THREE.Color(0x0b0e14);
+    state.scene.background = new THREE.Color(0xe7e8e3);
     state.camera = new THREE.PerspectiveCamera(45, el.canvasContainer.clientWidth / el.canvasContainer.clientHeight, 0.1, 1e7);
     state.camera.up.set(0, 0, 1);
     state.camera.position.set(1400, -1400, 1000);
     state.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    state.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const softwareRasterizer = usesSoftwareRasterizer(state.renderer);
+    state.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, softwareRasterizer ? 1 : 2));
     state.renderer.setSize(el.canvasContainer.clientWidth, el.canvasContainer.clientHeight);
-    state.renderer.shadowMap.enabled = true;
+    state.renderer.shadowMap.enabled = !softwareRasterizer;
     state.renderer.toneMapping = THREE.ReinhardToneMapping;
     state.renderer.toneMappingExposure = 2.3;
     el.canvasContainer.appendChild(state.renderer.domElement);
     state.renderer.domElement.addEventListener('mousedown', preventMiddleButtonAutoscroll, { capture: true });
 
-    state.grid = new THREE.GridHelper(10000, 100, 0x475569, 0x1e293b);
+    state.grid = new THREE.GridHelper(10000, 100, 0xa6ada0, 0xcdd2c7);
     state.grid.rotateX(Math.PI / 2);
     // Keep the reference grid on the world XY plane. Render it first without
     // writing depth so opaque model surfaces always cover it, even when a
@@ -14262,6 +14341,7 @@ function setupScene() {
     state.grid.renderOrder = -100;
     const gridMaterials = Array.isArray(state.grid.material) ? state.grid.material : [state.grid.material];
     gridMaterials.forEach((material) => {
+        material.toneMapped = false;
         material.depthTest = true;
         material.depthWrite = false;
     });
@@ -14753,7 +14833,7 @@ function updateModelRenderComplexity(model) {
 }
 
 function updateLargeModelPerformanceMode() {
-    const enabled = state.models.some((model) => (
+    const enabled = usesSoftwareRasterizer(state.renderer) || state.models.some((model) => (
         model.userData.largeModelMode && isModelTreeVisible(model)
     ));
     if (state.largeModelPerformanceMode === enabled || !state.renderer) return;
@@ -17217,13 +17297,13 @@ function beginSimulationViewNavigation(event) {
     cancelMainViewTransition();
     if (state.viewNavigationActive) return;
     // Face picking keeps the current view pivot, including a plain click.
-    if (!equipmentVacuumPick && !event?.surfaceWheelZoom && !state.sketch.active && !state.selectedViewPivot.enabled
+    if (!equipmentVacuumPick && !curveTrajectoryApp.isPicking() && !event?.surfaceWheelZoom && !state.sketch.active && !state.selectedViewPivot.enabled
         && mainOriginRotationGestures.has(state.controls) && !mainPannedOrbitControls.has(state.controls)) {
         state.camera.position.sub(state.controls.target);
         state.controls.target.set(0, 0, 0);
         state.controls.update();
     }
-    if (!equipmentVacuumPick && !event?.surfaceWheelZoom) updateSelectedViewPivot(true);
+    if (!equipmentVacuumPick && !curveTrajectoryApp.isPicking() && !event?.surfaceWheelZoom) updateSelectedViewPivot(true);
     state.viewNavigationActive = true;
     // Camera movement can generate a pointermove for every orbit/pan step.
     // Cancel any pending snap work before those events reach the snap picker.
@@ -19364,7 +19444,7 @@ async function toggleSimulationSnapMoveMode() {
 
 function addGridLabels() {
     const intervals = [500, 1000, 1500, 2000, 3000, 4000, 5000];
-    const labelColor = '#94a3b8';
+    const labelColor = '#43523e';
     // Keep floor dimensions behind model meshes while leaving the axis labels
     // as front-facing orientation cues.
     // The reference grid is at z=0. These are camera-facing sprites, so placing
@@ -21374,6 +21454,7 @@ function setupEventListeners() {
     window.addEventListener('resize', onResize);
     setupOlpConsoleScroll();
     setupOlpEditorScroll();
+    setupOlpTactPanel();
     setupTracePanel();
     document.addEventListener('pointermove', handleFullscreenUiPointerMove);
     document.addEventListener('click', requestRender);
@@ -21437,6 +21518,7 @@ function setupEventListeners() {
     });
     el.btnCancelTestModel?.addEventListener('click', () => resolveTestModelConfirmation(false));
     el.btnConfirmTestModel?.addEventListener('click', confirmTestModelSelection);
+    document.getElementById('btn-tracking-test-model')?.addEventListener('click', () => resolveTestModelConfirmation({ tracking: true }));
     document.getElementById('btn-educational-test-model')?.addEventListener('click', () => {
         resolveTestModelConfirmation({ educational: true });
     });
@@ -21580,6 +21662,7 @@ function setupEventListeners() {
     }, { capture: true, passive: true });
     state.renderer.domElement.addEventListener('pointerleave', hideSimulationSnapMarker);
     state.renderer.domElement.addEventListener('pointerleave', requestRender);
+    curveTrajectoryApp.bindCanvas(state.renderer.domElement, () => state.camera);
     state.renderer.domElement.addEventListener('click', handleCadCanvasClick, { capture: true });
     state.renderer.domElement.addEventListener('click', handleEquipmentVacuumFaceClick, { capture: true });
     window.addEventListener('keydown', event => {
@@ -22208,7 +22291,10 @@ function setupEventListeners() {
         if (!node || node.tagName !== 'BUTTON') return;
         const entry = createIoSimulatorEntryFromElement(node);
         if (!entry || entry.mode !== IO_SIMULATOR_DISPLAY_MODES.BIT) return;
-        const current = readIoSimulatorEntry(entry, (bit) => readOlpSimulatorBit(entry.direction, bit));
+        const remote = entry.direction === 'IN' && entry.bitStart >= 0 && entry.bitEnd <= 64 && getIoStandardInputTarget();
+        const current = remote ? standardInputClient.view(remote, entry.bitStart).value
+            : readIoSimulatorEntry(entry, (bit) => readOlpSimulatorBit(entry.direction, bit));
+        if (remote && current === null) return;
         handleIoSimulatorEntryChange(node, current ? 0 : 1);
     });
     el.ioSimulatorList?.addEventListener('change', (event) => {
@@ -22254,6 +22340,14 @@ function setupEventListeners() {
         }
     });
     document.getElementById('io-equipment-settings')?.addEventListener('click', () => equipmentApp.ui.open());
+    document.getElementById('model-vision-camera')?.addEventListener('click', () => {
+        const target = getModelContextTarget();
+        closeModelContextMenu();
+        if (!target) return;
+        if (visionApp.isCameraModel(target.model)) visionApp.unregisterCameraModel();
+        else visionApp.registerCameraModel(target.model, target.part || null);
+        renderModelTree();
+    });
     document.getElementById('model-object-reset')?.addEventListener('click', () => {
         const target = getModelContextTarget();
         closeModelContextMenu();
@@ -22315,7 +22409,7 @@ function setupEventListeners() {
         const modelGroup = getContextModelGroup();
         if (modelGroup) {
             closeModelContextMenu();
-            changeModelGroups('모델 그룹 해제', () => { state.modelGroups = state.modelGroups.filter(group => group !== modelGroup); });
+            changeModelGroups('모델 그룹 해제', () => { dissolveModelGroup(state.modelGroups, modelGroup); });
             return;
         }
         const target = getModelContextTarget(), index = Number(el.modelContextMenu.dataset.partGroup);
@@ -22407,9 +22501,9 @@ function setupEventListeners() {
     document.getElementById('view-window-pin')?.addEventListener('click', toggleViewWindowAlwaysOnTop);
     el.viewWindowHide?.addEventListener('click', hideViewWindow);
     [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.collaborationPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.ioSimulatorPanel, el.programPanel, el.tracePanel, el.measurementPanel, el.shapePanel, el.viewWindow, el.armLoadPanel, el.toolLoadInfoPanel, el.workOriginDialog, el.positionValueDialog].forEach(makePanelDraggable);
-    [el.tcpProfilePanel, el.workObjectPanel, document.getElementById('position-points-panel')].forEach(makePanelDraggable);
+    [el.tcpProfilePanel, el.workObjectPanel, document.getElementById('position-points-panel'), document.getElementById('vision-panel'), document.getElementById('conveyor-tracking-dialog')].forEach(makePanelDraggable);
     [el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.collaborationPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.ioSimulatorPanel, el.programPanel, el.tracePanel, el.measurementPanel, el.shapePanel, el.viewWindow, el.armLoadPanel, el.toolLoadInfoPanel, el.workOriginDialog].forEach(makePanelEdgeResizable);
-    [el.tcpProfilePanel, el.workObjectPanel, document.getElementById('position-points-panel')].forEach(makePanelEdgeResizable);
+    [el.tcpProfilePanel, el.workObjectPanel, document.getElementById('position-points-panel'), document.getElementById('conveyor-tracking-dialog')].forEach(makePanelEdgeResizable);
     renderIoSimulatorPanel();
     makeModelTransformSplitResizable(el.modelBrowserPanel);
     [el.interferenceZoneDialog, el.endMonitoringDialog].forEach(setupInterferenceZoneDialogDragging);
@@ -22556,6 +22650,8 @@ function setupEventListeners() {
     el.btnProgramAddView?.addEventListener('click', addViewMotionStep);
 
     el.btnProgramAutoPath?.addEventListener('click', openAutoPathPanel);
+    document.getElementById('program-curve-trajectory')?.addEventListener('click', openCurveTrajectoryPanel);
+    document.querySelector('[data-pts-trajectory]')?.addEventListener('click', openCurveTrajectoryPanel);
     el.btnAutoPathGenerate?.addEventListener('click', () => void generateAutoPath());
     el.btnAutoPathApply?.addEventListener('click', applyAutoPath);
     el.btnAutoPathCancel?.addEventListener('click', () => closeAutoPathPanel());
@@ -23509,6 +23605,7 @@ function captureSceneSnapshot() {
     const currentModels = new Set(state.models);
     return {
         modelGroups: JSON.parse(JSON.stringify(state.modelGroups)),
+        conveyorFeeds: conveyorFeedApp.serialize(),
         modelTreeOrder: normalizeModelTreeOrder(state.modelTreeOrder),
         models: state.models.map((model) => ({
             model,
@@ -23815,6 +23912,7 @@ function applySceneSnapshot(snapshot) {
 
     state.models = snapshot.models.map((entry) => entry.model);
     state.modelGroups = JSON.parse(JSON.stringify(snapshot.modelGroups || []));
+    conveyorFeedApp.restore(snapshot.conveyorFeeds);
     state.modelTreeOrder = normalizeModelTreeOrder(snapshot.modelTreeOrder);
     // History snapshots can remove and later restore a CAD root. Rebuild the
     // document index from the restored roots so selection and layer controls
@@ -24102,7 +24200,9 @@ function getPanelElement(panelId) {
         'tool-load-info-panel': el.toolLoadInfoPanel,
         'work-origin-dialog': el.workOriginDialog,
         'equipment-dialog': document.getElementById('equipment-dialog'),
-        'io-function-mapping-dialog': el.ioFunctionMappingDialog
+        'io-function-mapping-dialog': el.ioFunctionMappingDialog,
+        'vision-panel': document.getElementById('vision-panel') || state.panelWindows.get('vision-panel')?.panel,
+        'conveyor-tracking-dialog': document.getElementById('conveyor-tracking-dialog') || state.panelWindows.get('conveyor-tracking-dialog')?.panel
     }[panelId] || null;
 }
 
@@ -24350,6 +24450,8 @@ function togglePanelVisibility(panelId) {
         state.ioSimulator.renderedKey = '';
         renderIoSimulatorPanel();
     }
+    if (panelId === 'vision-panel' && isVisible) visionApp.open();
+    if (panelId === 'conveyor-tracking-dialog' && isVisible) conveyorTrackingApp.open();
     if (panelId === 'trace-panel' && isVisible) {
         refreshTraceSelectors(true);
         updateTraceControls();
@@ -24487,6 +24589,8 @@ function getPanelWindowTitle(panelId) {
             ? uiText('도형 생성 및 편집')
         : panelId === 'tool-load-info-panel'
             ? uiText('Tool 부하 정보')
+        : panelId === 'conveyor-tracking-dialog'
+            ? uiText('컨베이어')
         : panelId === 'work-origin-dialog'
             ? uiText('Work Origin')
             : uiText('JOG Panel');
@@ -25090,6 +25194,9 @@ function markModelTreeGroupSelection(name, details, containsSelection) {
 }
 
 function getModelTreeMeta(model) {
+    if (visionApp.isCameraModel(model)) {
+        return { kind: '비전 카메라', className: 'vision-camera', icon: 'fa-camera-retro' };
+    }
     if (model.userData.placement === 'arm-load') {
         return { kind: '암 로드', className: 'arm-load', icon: 'fa-gears' };
     }
@@ -25487,16 +25594,8 @@ function getSelectedGroupableModels() {
 function normalizeModelGroups(groups) {
     // Held objects appear under the robot temporarily; retain their home folder membership.
     const available = new Set(state.models.filter(model => isGroupableModel(model)
-        || model.userData.placement === 'grip-object').map(ensureWorkspaceModelId)), used = new Set();
-    return (Array.isArray(groups) ? groups : []).flatMap(group => {
-        if (!group || typeof group.name !== 'string' || !group.name.trim() || !Array.isArray(group.modelIds)) return [];
-        const modelIds = group.modelIds.filter(id => {
-            if (!available.has(id) || used.has(id)) return false;
-            used.add(id); return true;
-        });
-        return modelIds.length ? [{ name: group.name.trim(), modelIds, collapsed: Boolean(group.collapsed),
-            ...(typeof group.treeOrderId === 'string' ? { treeOrderId: group.treeOrderId } : {}) }] : [];
-    });
+        || model.userData.placement === 'grip-object').map(ensureWorkspaceModelId));
+    return normalizeModelGroupTree(groups, available);
 }
 
 function getModelGroupMembers(group) {
@@ -25505,7 +25604,7 @@ function getModelGroupMembers(group) {
 
 function getContextModelGroup() {
     const index = el.modelContextMenu?.dataset.modelGroup;
-    return index === undefined ? null : state.modelGroups[Number(index)] || null;
+    return index === undefined ? null : modelGroupAtPath(state.modelGroups, index.split('/').map(Number));
 }
 
 function changeModelGroups(label, change) {
@@ -25558,7 +25657,7 @@ function createModelTreeModelGroup(group, members, reusableNodes = null) {
     summary.addEventListener('contextmenu', event => {
         event.preventDefault(); event.stopPropagation();
         openModelContextMenu(event, members[0]);
-        el.modelContextMenu.dataset.modelGroup = String(state.modelGroups.indexOf(group));
+        el.modelContextMenu.dataset.modelGroup = (modelGroupPath(state.modelGroups, group) || []).join('/');
         el.modelContextMenu.classList.add('model-group-menu'); positionModelContextMenu(event);
     });
     summary.addEventListener('dragover', event => {
@@ -25573,12 +25672,15 @@ function createModelTreeModelGroup(group, members, reusableNodes = null) {
         ids = [...new Set(ids)].filter(id => state.models.some(model => ensureWorkspaceModelId(model) === id && isGroupableModel(model)));
         if (!ids.length || ids.every(id => group.modelIds.includes(id))) return;
         changeModelGroups('모델 그룹으로 이동', () => {
-            state.modelGroups.forEach(candidate => { candidate.modelIds = candidate.modelIds.filter(id => !ids.includes(id)); });
-            group.modelIds.push(...ids);
+            moveModelsToGroup(state.modelGroups, group, ids);
         });
     });
     const children = details.querySelector(':scope > .model-tree-children') || document.createElement('ul'); children.className = 'model-tree-children'; children.setAttribute('role', 'group');
-    reconcileModelTreeItems(children, members.map(model => createModelTreeNode(model, reusableNodes)));
+    const nestedIds = new Set((group.children || []).flatMap(child => child.modelIds));
+    reconcileModelTreeItems(children, [
+        ...(group.children || []).map(child => createModelTreeModelGroup(child, getModelGroupMembers(child), reusableNodes)),
+        ...members.filter(model => !nestedIds.has(ensureWorkspaceModelId(model))).map(model => createModelTreeNode(model, reusableNodes))
+    ]);
     const previousSummary = details.querySelector(':scope > summary');
     if (previousSummary) previousSummary.replaceWith(summary);
     else details.prepend(summary);
@@ -25689,9 +25791,9 @@ function renderModelTree({ changedModels = null } = {}) {
                 changedKeys.add(`model:${ensureWorkspaceModelId(root)}`);
             }
         }
-        for (const group of state.modelGroups) {
+        walkModelGroups(state.modelGroups, group => {
             if (group.modelIds.some(id => changedKeys.has(`model:${id}`))) changedKeys.add(`folder:${group.treeOrderId}`);
-        }
+        });
         reusableNodes = new Map([...el.modelTree.querySelectorAll('.model-tree-node, .model-tree-model-group')]
             .filter(node => !changedKeys.has(node.dataset.treeOrderKey))
             .map(node => [node.dataset.treeOrderKey, node]));
@@ -25988,6 +26090,8 @@ const MODEL_CLIPBOARD_USER_DATA_OMIT_KEYS = new Set([
     'modelTreeId',
     'workspaceModelId',
     'outlineLine',
+    'conveyorFeedSource',
+    'conveyorFeedBelt',
     'pendingToolAttachment',
     'pendingGripObjectAttachment',
     'pendingArmLoadAttachment',
@@ -26771,6 +26875,11 @@ function openModelContextMenu(event, model, part = null) {
     }
     if (el.modelInstallTool) {
         el.modelInstallTool.hidden = !isToolAttachableSceneTarget(model, part);
+    }
+    const visionCameraButton = document.getElementById('model-vision-camera');
+    if (visionCameraButton) {
+        visionCameraButton.hidden = Boolean(model.userData.tcpFrame);
+        document.getElementById('model-vision-camera-label').textContent = uiText(visionApp.isCameraModel(model) ? '비전 카메라 해제' : '비전 카메라로 등록');
     }
     if (el.modelArmLoad) {
         const isArmLoad = !part && model.userData.placement === 'arm-load';
@@ -28272,7 +28381,11 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
     if (logoProjection) {
         const partIndex = meshDefinitions.findIndex(definition => definition.mesh === logoProjection.mesh);
         const partMesh = robot.getObjectsByProperty('geometry', geometries[partIndex])[0];
-        if (partMesh) await applyRobotLogoProjection(partMesh, logoProjection);
+        if (partMesh) {
+            // Material.clone() drops shader callbacks. Prepare selection materials first.
+            ensureModelPartMaterialIsolation(partMesh);
+            await applyRobotLogoProjection(partMesh, logoProjection);
+        }
     }
 
     // TUBE.stl already contains the conduit and both rotary connector details.
@@ -31101,6 +31214,12 @@ async function handle3DImport(options = {}) {
                 : progress;
             reportProgress(5 + Math.round((Number(parserProgress) || 0) * 0.65));
         });
+        const conveyorDimensions = options.conveyorDimensions
+            ? resizeConveyorContent(content, options.conveyorDimensions) : null;
+        const testModelAssetId = options.testModelAssetId || (options.testModel
+            ? TEST_MODEL_CATALOG.find(asset => asset.file.split('/').pop().toLowerCase() === file.name.toLowerCase())?.id : null);
+        const testModelDimensions = options.testModelDimensions
+            ? resizeTestModelContent(content, testModelAssetId, options.testModelDimensions) : null;
         reportProgress(72);
         if (options.testModel && extension === 'fbx') applyFBXMaterial(content);
         const meshCount = prepareImportedObject(content, performanceMode);
@@ -31143,6 +31262,9 @@ async function handle3DImport(options = {}) {
         if (options.workspaceAssetId) importedModel.userData.workspaceAssetId = options.workspaceAssetId;
         ensureWorkspaceModelId(importedModel, options.workspaceModelId);
         if (options.testModel) importedModel.userData.testModel = true;
+        if (conveyorDimensions) importedModel.userData.conveyorDimensions = conveyorDimensions;
+        if (testModelAssetId) importedModel.userData.testModelAssetId = testModelAssetId;
+        if (testModelDimensions) importedModel.userData.testModelDimensions = testModelDimensions;
 
         // Capture history immediately before integrating this finished import.
         // This keeps overlapping imports in completion order instead of making
@@ -31164,6 +31286,9 @@ async function handle3DImport(options = {}) {
             if (options.testToolPositionZero) importedModel.position.set(0, 0, 0);
             if (placement === 'tcp' && options.testModel && robot.userData.manifest?.robotType === 'scara') {
                 importedModel.rotation.y = Math.PI;
+                if (!options.workspaceModelId && !options.transform && file.name.toLowerCase() === 'scara_adapter.step') {
+                    importedModel.position.z = 12;
+                }
             }
             if (!options.preserveSelection && state.activeArticulatedModel !== robot) {
                 state.activeArticulatedModel = robot;
@@ -31213,6 +31338,11 @@ async function handle3DImport(options = {}) {
                         state.modelGroups.push(folder);
                     }
                     folder.modelIds.push(ensureWorkspaceModelId(importedModel));
+                }
+                if (file.name.toLowerCase() === 'vision_module.step') {
+                    const parts = getImportedModelParts(importedModel);
+                    const camera = preset.groups.find(group => group.name === 'Camera');
+                    if (camera) visionApp.registerCameraModel(importedModel, camera.parts.map(index => parts[index]).filter(Boolean), { direction: 'up' });
                 }
             }
         }
@@ -31381,7 +31511,7 @@ function removeExistingTestModels() {
     return true;
 }
 
-function applyTestTcpProfile(robot) {
+function applyTestTcpProfile(robot, position = null) {
     if (!robot?.userData?.tcpFrame) return false;
     if (state.activeArticulatedModel !== robot) {
         state.activeArticulatedModel = robot;
@@ -31394,7 +31524,7 @@ function applyTestTcpProfile(robot) {
     const profile = profiles[1];
     robot.userData.activeTcpProfileIndex = 1;
     const isScara = robot.userData.manifest?.robotType === 'scara';
-    profile.position.set(200, 0, isScara ? -33 : 33);
+    profile.position.fromArray(position || [200, 0, isScara ? -33 : 33]);
     profile.quaternion.identity();
     syncActiveTcpFrame(robot);
     captureCurrentTcpTarget(robot);
@@ -31428,33 +31558,185 @@ async function importTestModelFile(file, placement, options = {}) {
     return handle3DImport({ ...options, suppressErrorAlert: true });
 }
 
+function resizeTrackingConveyor(model) {
+    // Bake the enlargement into CAD child transforms, which the workspace already
+    // saves. Keep the belt's motion frame at unit scale: 100 mm/s remains 100 mm/s.
+    model.updateWorldMatrix(true,true);
+    const stretch = model.matrixWorld.clone().multiply(new THREE.Matrix4().makeScale(2.5,1.5,1)).multiply(model.matrixWorld.clone().invert());
+    for (const part of getImportedModelParts(model)) {
+        part.updateWorldMatrix(true,true);
+        const oldWorld=part.matrixWorld.clone(), nextWorld=oldWorld.clone();
+        nextWorld.setPosition(new THREE.Vector3().setFromMatrixPosition(oldWorld).applyMatrix4(stretch));
+        const correction=nextWorld.clone().invert().multiply(stretch).multiply(oldWorld);
+        part.userData.trackingContentTransform=true;
+        for(const child of part.children) { child.updateMatrix();child.applyMatrix4(correction); }
+        const local=part.parent.matrixWorld.clone().invert().multiply(nextWorld);
+        local.decompose(part.position,part.quaternion,part.scale);part.updateMatrixWorld(true);
+    }
+    markSceneCollisionDirty(model);
+}
+
+function resolveTrackingSensor(settings) {
+    return settings.sensorModelId ? state.models.find(model=>ensureWorkspaceModelId(model)===settings.sensorModelId) || null : null;
+}
+
+function placeTrackingSensor(settings) {
+    const sensor=resolveTrackingSensor(settings),mapping=state.ioFunctionMappings.find(item=>item.gripObjectRef===settings.belt);
+    const belt=mapping&&resolveConveyorBelt(mapping);if(!sensor||!belt)return;
+    const layout=conveyorSensorLayout(belt,mapping,settings);
+    setVisionModelWorldMatrix(sensor,layout.frame.matrixWorld.clone().multiply(new THREE.Matrix4().makeTranslation(settings.position,layout.box.min.y-9,layout.z-12)).toArray());
+}
+
+function configureTrackingModule(belt, objects, camera, stand, arm, settings, created = []) {
+    if (settings.presetVersion !== 2) {
+        resizeTrackingConveyor(belt);
+        // The positive X direction starts at the negative X end of the belt.
+        const toWorld=point=>belt.localToWorld(new THREE.Vector3(...point));
+        const at=point=>new THREE.Matrix4().copy(belt.matrixWorld).multiply(new THREE.Matrix4().makeTranslation(...point)).toArray();
+        objects.forEach((model,index)=>{model.position.copy(toWorld([-585+index*65,0,190]));model.updateMatrixWorld(true);
+            equipmentApp.save({type:'OBJECT',id:'tracking-'+ensureWorkspaceModelId(model),movingRef:equipmentObjectRef(ensureWorkspaceModelId(model)),name:'Tracking workpiece',customName:true});});
+        setVisionModelWorldMatrix(camera,at([-400,0,550]));
+        setVisionModelWorldMatrix(stand,at([-400,175,0]));
+        setVisionModelWorldMatrix(arm,at([-400,85,590]));
+        // Stretch only the arm's Y dimension to reach the relocated support.
+        arm.scale.y=180/140;arm.updateMatrixWorld(true);
+        settings={...settings,position:-400,height:20,presetVersion:2};
+        visionApp.update();
+    }
+    let sensor=resolveTrackingSensor(settings);
+    if(!sensor) {
+        sensor=createPrimitiveShapeRoot('box',{x:16,y:16,z:24},{name:'Tracking Sensor',materialColor:'#334155'});
+        sensor.userData.testModel=true;state.scene.add(sensor);state.models.push(sensor);created.push(sensor);
+        settings={...settings,sensorModelId:ensureWorkspaceModelId(sensor)};
+    }
+    settings={...settings,moduleModelIds:{camera:ensureWorkspaceModelId(camera),stand:ensureWorkspaceModelId(stand),arm:ensureWorkspaceModelId(arm),objects:objects.map(ensureWorkspaceModelId)}};
+    conveyorTrackingApp.configure(settings);
+    const ids=models=>models.map(ensureWorkspaceModelId);
+    const members=[belt,...objects,camera,stand,arm,sensor],memberIds=ids(members),memberSet=new Set(memberIds);
+    state.modelGroups.forEach(group=>{group.modelIds=group.modelIds.filter(id=>!memberSet.has(id));});
+    state.modelGroups.push({name:'컨베이어 모듈',modelIds:memberIds,collapsed:false,children:[
+        {name:'컨베이어',modelIds:ids([belt,...objects]),collapsed:true},
+        {name:'비전 카메라',modelIds:ids([camera,stand,arm]),collapsed:true},
+        {name:'센서',modelIds:ids([sensor]),collapsed:true}
+    ]});
+    updateUIStatus();scheduleMotionProjectSave();requestRender();
+}
+
+function upgradeTrackingTestModule(settings) {
+    const mapping=state.ioFunctionMappings.find(item=>item.gripObjectRef===settings.belt),part=mapping&&resolveConveyorBelt(mapping);
+    const belt=state.models.find(model=>model===part||getImportedModelParts(model).includes(part));
+    const camera=state.models.find(model=>ensureWorkspaceModelId(model)===(settings.moduleModelIds?.camera || visionApp.config.camera.mountId));
+    const stand=state.models.find(model=>settings.moduleModelIds?.stand ? ensureWorkspaceModelId(model)===settings.moduleModelIds.stand : model.userData.modelName==='Camera stand');
+    const arm=state.models.find(model=>settings.moduleModelIds?.arm ? ensureWorkspaceModelId(model)===settings.moduleModelIds.arm : model.userData.modelName==='Camera arm');
+    const objects=equipmentApp.objects().filter(item=>item.definition?.id?.startsWith('tracking-')).map(item=>item.model);
+    // Existing OBJECT definitions retain stable ids in older saved test scenes.
+    const workpieces=objects.length?objects:state.models.filter(model=>state.equipmentDefinitions.some(def=>def.id==='tracking-'+ensureWorkspaceModelId(model)));
+    if(!belt||!camera||!stand||!arm)throw new Error('테스트 모듈의 카메라 또는 지지대가 없습니다. 기존 작업 파일을 확인하세요.');
+    if (settings.presetVersion===2 && resolveTrackingSensor(settings) && state.modelGroups.some(group=>group.modelIds.includes(ensureWorkspaceModelId(belt))&&group.children?.length)) return belt;
+    configureTrackingModule(belt,workpieces,camera,stand,arm,settings);
+    return belt;
+}
+
+async function createTrackingTestModel() {
+    const existing = conveyorTrackingApp.serialize().find(item => item.preset === 'tracking-test'
+        && state.ioFunctionMappings.some(mapping => mapping.gripObjectRef === item.belt && resolveConveyorBelt(mapping)));
+    if (existing) {
+        try { upgradeTrackingTestModule(existing); } catch(error) { alert(error.message); return; }
+        if (document.getElementById('conveyor-tracking-dialog').classList.contains('panel-user-hidden')) togglePanelVisibility('conveyor-tracking-dialog');
+        conveyorTrackingApp.open();
+        setStatus('기존 컨베이어 트래킹 테스트 모델을 사용합니다.', '#22c55e');
+        return;
+    }
+    el.btnTestModel.disabled = true;
+    const created = [], oldVision = visionApp.serialize(), oldTracking = conveyorTrackingApp.serialize();
+    const oldMappings = [...state.ioFunctionMappings], oldEquipment = [...state.equipmentDefinitions], oldGroups = structuredClone(state.modelGroups);
+    try {
+        const importAsset = async (id, position) => {
+            const asset = TEST_MODEL_CATALOG.find(item => item.id === id);
+            const file = await loadTestModelAssetFile(asset.path);
+            const model = await importTestModelFile(file, 'scene', { file, placement: 'scene', testModel: true,
+                suppressFit: true, suppressSuccessStatus: true, throwOnError: true,
+                transform: { position, quaternion: [0,0,0,1], scale: [1,1,1] } });
+            if (!model) throw new Error(asset.name);
+            created.push(model); return model;
+        };
+        const belt = await importAsset('conveyor', [0,0,0]);
+        const partIndex = getImportedModelParts(belt).findIndex(part => {
+            let match = false; part.traverse(o => { if (/^Endless_belt_/i.test(o.userData.cadPartName || o.name)) match = true; }); return match;
+        });
+        if (partIndex < 0) throw new Error('테스트 모델의 벨트 부품을 찾을 수 없습니다.');
+        const beltRef = equipmentObjectRef(ensureWorkspaceModelId(belt), partIndex);
+        const beltPart = getImportedModelParts(belt)[partIndex];
+        const top = new THREE.Box3().setFromObject(beltPart).max.z;
+        const objects = [];
+        for (const x of [-190,-110,-30]) objects.push(await importAsset('square-object', [x,0,top]));
+        const camera = createVisionCameraSceneModel({ name: 'Tracking Camera' });created.push(camera);camera.userData.testModel = true;
+        camera.position.set(60,0,top+360);camera.updateMatrixWorld(true);
+        for (const [name,size,pos] of [
+            ['Camera stand',{x:20,y:20,z:top+440},[60,135,0]],
+            ['Camera arm',{x:20,y:140,z:20},[60,65,top+400]]
+        ]) {
+            const model = createPrimitiveShapeRoot('box',size,{name,materialColor:'#64748b'});
+            model.userData.testModel=true;model.position.fromArray(pos);state.scene.add(model);state.models.push(model);created.push(model);
+        }
+        saveConveyorMotion({ type:'CONVEYOR', movingRef:beltRef, movingRefs:[beltRef], axis:'X', speed:100,
+            name:'Tracking Conveyor',customName:true }, {direction:'OUT',forward:null,reverse:null,triggerValue:1});
+        for (const model of objects) equipmentApp.save({type:'OBJECT',id:'tracking-'+ensureWorkspaceModelId(model),movingRef:equipmentObjectRef(ensureWorkspaceModelId(model)),name:'Tracking workpiece',customName:true});
+        visionApp.restore({enabled:true,name:'Tracking Camera',camera:{x:60,y:0,z:top+360,rx:0,ry:0,rz:0,direction:'down',
+            mountId:ensureWorkspaceModelId(camera),mountPartIndex:-1,mountLocal:new THREE.Matrix4().toArray(),builtIn:true,
+            focalLengthMm:12,resolutionWidth:1280,resolutionHeight:1024,pixelSizeUm:4.8,workPlaneZ:top+40,
+            noisePx:0,processingMs:80,showFrustum:true},calibration:{showMark:false},detection:{minScore:60},link:{active:false}});
+        const used = new Set(oldTracking.map(item=>item.address));let address=512;while(used.has(address)&&address<=2559)address++;
+        configureTrackingModule(belt,objects,camera,created.find(model=>model.userData.modelName==='Camera stand'),created.find(model=>model.userData.modelName==='Camera arm'),{preset:'tracking-test',belt:conveyorTargetFromRef(beltRef),controllerIp:'',channel:0,scale:1000,
+            address,position:60,width:2,height:20,capture:true,objectType:0},created);
+        updateUIStatus();selectSceneModel(null);
+        const bounds = new THREE.Box3();created.forEach(model=>bounds.union(new THREE.Box3().setFromObject(model)));
+        fitCameraToBounds(bounds);
+        if (document.getElementById('conveyor-tracking-dialog').classList.contains('panel-user-hidden')) togglePanelVisibility('conveyor-tracking-dialog');
+        conveyorTrackingApp.open();scheduleMotionProjectSave();requestRender();
+        setStatus('컨베이어·레이저 센서·카메라 설정 완료. 운전 시작 또는 JOG로 시험하세요.', '#22c55e');
+    } catch(error) {
+        for(const model of created)removeVisionWorkObject(model);
+        state.ioFunctionMappings=oldMappings;state.equipmentDefinitions=oldEquipment;state.modelGroups=oldGroups;
+        visionApp.restore(oldVision);conveyorTrackingApp.restore(oldTracking);updateUIStatus();requestRender();
+        alert(uiFormat('테스트 모델을 불러오지 못했습니다.\n{message}',{message:error.message||String(error)}));
+    } finally {state.pendingImportFile=null;el.btnTestModel.disabled=false;}
+}
+
 async function handleTestModelImport() {
     if (el.btnTestModel.disabled) return;
     const choice = await requestTestModelConfirmation();
     if (!choice) return;
+    if (choice.tracking) { await createTrackingTestModel(); return; }
     const robot = getArticulatedRobotForAttachment();
     const robotType = robot?.userData?.manifest?.robotType;
-    const selection = choice.educational
+    const selection = getTestModelSelectionForRobot(choice.educational
         ? getEducationalModelSelection({ robotType, robotModel: robot?.userData.motionModelFolder, robotPosition: robot?.position.toArray() })
-        : getTestModelSelectionForRobot(choice.selection, robotType, state.models.some(model =>
+        : choice.selection, robotType, state.models.some(model =>
             model.userData.placement === 'tcp' && model.userData.attachmentHost === robot
             && model.userData.modelName === 'Scara_adapter.step'));
     el.btnTestModel.disabled = true;
     let completed = 0;
     const failures = [];
     try {
-        for (const { asset, quantity, position = [0, 0, 0] } of selection) {
+        for (const { asset, quantity, dimensions, position = [0, 0, 0] } of selection) {
             try {
                 const file = await loadTestModelAssetFile(asset.path);
                 const placement = asset.category === 'tool' ? 'tcp' : 'scene';
                 for (let index = 0; index < quantity; index++) {
                     const model = await importTestModelFile(file, placement, {
                         file, placement, attachmentRobot: robot, testModel: true,
+                        conveyorDimensions: asset.id === 'conveyor' ? dimensions : undefined,
+                        testModelAssetId: asset.id,
+                        testModelDimensions: asset.id !== 'conveyor' ? dimensions : undefined,
                         suppressFit: true, suppressSuccessStatus: true,
                         transform: placement === 'scene' ? { position, quaternion: [0, 0, 0, 1], scale: [1, 1, 1] } : undefined,
                         throwOnError: true
                     });
                     if (!model) throw new Error(asset.name);
+                    if (choice.educational && asset.id === 'single-vac') {
+                        applyTestTcpProfile(robot, [0, 0, robotType === 'scara' ? -100 : 100]);
+                    }
                     if (choice.educational && robotType === 'scara' && asset.id === 'scara-height-base') {
                         const before = captureSceneSnapshot();
                         robot.position.z = 200;
@@ -35395,7 +35677,8 @@ function handleVirtualControllerMessage(raw, controller = state.virtualControlle
             applyVirtualControllerFrameForController(parsed.receivedAt, controller);
         }
         applyVirtualControllerIo(parsed.outputs, 'OUT', controller);
-        applyVirtualControllerIo(parsed.inputs, 'IN', controller);
+        const standardInput = standardInputClient.view(controller);
+        applyVirtualControllerIo(standardInput.values === null ? parsed.inputs : { ...parsed.inputs, ...standardInput.values }, 'IN', controller);
         if (controller.status !== 'streaming') {
             setVirtualControllerStatus('streaming', '', controller);
         } else if (controller.statusMessage) {
@@ -35412,6 +35695,8 @@ function handleVirtualControllerMessage(raw, controller = state.virtualControlle
     }
     if (parsed.kind !== 'event') return;
     const message = parsed.message;
+    if (standardInputClient.message(message, controller)) return;
+    if (conveyorTrackingApp.message(message, controller)) return;
     if (parsed.type === 'interferenceZoneReadResult') {
         applyInterferenceZoneControllerResult(message.result, controller);
     } else if (parsed.type === 'interferenceToolReadResult') {
@@ -35840,6 +36125,166 @@ function appendOlpConsole(message, replacements = {}) {
     renderOlpConsole();
 }
 
+// ── OLP per-move times ───────────────────────────────────────────────
+// The runtime records every move on a simulation clock (planned motion time plus
+// Delay/Wait). Logs are kept per robot so the table stays after Stop.
+const OLP_TACT_RENDER_INTERVAL_MS = 150;
+const OLP_TACT_MOTION_LABELS = {
+    MOVJ: 'MovJ', MOVL: 'MovL', MOVC: 'MovC', MOVABSJ: 'MovAbsJ', JUMP: 'Jump', JUMPL: 'JumpL', HOME: 'Home'
+};
+
+function scheduleOlpTactRender() {
+    if (state.olp.tactRenderTimer) return;
+    state.olp.tactRenderTimer = window.setTimeout(() => {
+        state.olp.tactRenderTimer = null;
+        renderOlpTactPanel();
+    }, OLP_TACT_RENDER_INTERVAL_MS);
+}
+
+function noteOlpTactChange(runtime) {
+    if (!runtime?.tactLog) return;
+    const key = getOlpRuntimeRobot(runtime)?.userData?.motionInstanceId || runtime.robotInstanceId || 'active-robot';
+    if (!(state.olp.tactLogs instanceof Map)) state.olp.tactLogs = new Map();
+    // A new run shows its own latest cycle instead of a cycle picked in the previous run.
+    if (state.olp.tactLogs.get(key) !== runtime.tactLog) state.olp.tactSelectedCycle = null;
+    state.olp.tactLogs.set(key, runtime.tactLog);
+    scheduleOlpTactRender();
+}
+
+function getOlpTactLog() {
+    const logs = state.olp.tactLogs;
+    if (!(logs instanceof Map) || !logs.size) return null;
+    const key = getOlpRobotInstanceId();
+    return (key && logs.get(key)) || (logs.size === 1 ? [...logs.values()][0] : null);
+}
+
+function formatOlpTactSeconds(value) {
+    return Number.isFinite(value) ? value.toFixed(3) : '--';
+}
+
+function formatOlpTactCommand(move) {
+    const parts = [OLP_TACT_MOTION_LABELS[move.motion] || move.motion];
+    if (move.motion !== 'HOME' && Number.isFinite(move.speed)) {
+        parts.push(move.speedMode === 'absolute' ? `${move.speed} mm/s` : `V${move.speed}`);
+    }
+    if (move.zone !== null && move.zone !== undefined && move.zone !== '') parts.push(`Z[${move.zone}]`);
+    return parts.join(' ');
+}
+
+function renderOlpTactPanel() {
+    const body = document.getElementById('olp-tact-body');
+    const summary = document.getElementById('olp-tact-summary');
+    const select = document.getElementById('olp-tact-cycle');
+    const exportButton = document.getElementById('olp-tact-export');
+    if (!body || !summary || !select) return;
+    const log = getOlpTactLog();
+    const cycles = log?.cycles || [];
+    const open = log?.openCycle || null;
+    const choices = cycles.map((cycle) => ({ value: String(cycle.index), label: uiFormat('사이클 {index}', { index: cycle.index }) }));
+    if (open) choices.push({ value: String(open.index), label: uiFormat('사이클 {index} (진행 중)', { index: open.index }) });
+    if (log?.moves.some((move) => move.cycle === null)) choices.push({ value: 'none', label: uiText('사이클 밖 이동') });
+    let selected = choices.some((choice) => choice.value === state.olp.tactSelectedCycle) ? state.olp.tactSelectedCycle : null;
+    // Default: the running cycle, then the latest finished cycle, then moves outside cycles.
+    selected ??= open ? String(open.index) : cycles.length ? String(cycles.at(-1).index) : choices[0]?.value ?? null;
+    select.replaceChildren(...choices.map((choice) => new Option(choice.label, choice.value, false, choice.value === selected)));
+    select.disabled = choices.length < 2;
+    if (exportButton) exportButton.disabled = !log?.moves.length;
+    if (!log?.moves.length) {
+        summary.textContent = uiText('OLP를 실행하면 이동마다 시간이 기록됩니다.');
+        body.replaceChildren();
+        return;
+    }
+    const cycleIndex = selected === 'none' || selected === null ? null : Number(selected);
+    const moves = olpTactMovesForCycle(log, cycleIndex);
+    const finished = moves.filter((move) => move.done && !move.failed);
+    const motionSeconds = finished.reduce((sum, move) => sum + move.seconds, 0);
+    const cycle = cycles.find((entry) => entry.index === cycleIndex) || null;
+    let base = moves[0]?.start ?? 0;
+    if (cycle) {
+        base = cycle.start;
+        const previous = cycles.find((entry) => entry.index === cycle.index - 1);
+        const delta = previous ? cycle.seconds - previous.seconds : null;
+        summary.textContent = uiFormat('사이클 {index}: {seconds} s (이동 {motion} s + 비이동 {wait} s, {count}회 이동)', {
+            index: cycle.index,
+            seconds: formatOlpTactSeconds(cycle.seconds),
+            motion: formatOlpTactSeconds(cycle.motionSeconds),
+            wait: formatOlpTactSeconds(cycle.waitSeconds),
+            count: cycle.moveCount
+        }) + (delta === null ? '' : ` · ${uiFormat('이전 사이클보다 {delta} s', {
+            delta: `${delta >= 0 ? '+' : ''}${delta.toFixed(3)}`
+        })}`);
+    } else if (open && cycleIndex === open.index) {
+        base = open.start;
+        summary.textContent = uiFormat('사이클 {index} 진행 중: {seconds} s, {count}회 이동', {
+            index: open.index,
+            seconds: formatOlpTactSeconds(log.clock - open.start),
+            count: moves.length
+        });
+    } else {
+        summary.textContent = uiFormat('사이클 밖: 이동 {motion} s, {count}회 이동', {
+            motion: formatOlpTactSeconds(motionSeconds),
+            count: moves.length
+        });
+    }
+    const longest = finished.reduce((max, move) => Math.max(max, move.seconds), 0);
+    body.replaceChildren(...moves.map((move, index) => {
+        const row = document.createElement('tr');
+        const cumulative = move.done && !move.failed ? move.end - base : null;
+        // Target first; the calling function and command are a quieter second line.
+        const targetCell = document.createElement('td');
+        const target = document.createElement('span');
+        target.className = 'olp-tact-target';
+        target.textContent = move.target;
+        const meta = document.createElement('span');
+        meta.className = 'olp-tact-meta';
+        meta.textContent = `${move.functionName === move.process ? move.process : `${move.process} › ${move.functionName}`} · ${formatOlpTactCommand(move)}`;
+        targetCell.append(target, meta);
+        const numberCell = (text) => {
+            const cell = document.createElement('td');
+            cell.className = 'num';
+            cell.textContent = text;
+            return cell;
+        };
+        row.append(
+            numberCell(String(index + 1)),
+            targetCell,
+            numberCell(move.failed ? uiText('중단됨') : move.done ? formatOlpTactSeconds(move.seconds) : uiText('이동 중')),
+            numberCell(move.gapSeconds >= 0.0005 ? formatOlpTactSeconds(move.gapSeconds) : ''),
+            numberCell(cumulative === null ? '' : formatOlpTactSeconds(cumulative))
+        );
+        const notes = [`${move.file || 'OLP'}:${move.line}`];
+        if (move.blended) notes.push(uiText('다음 이동과 합쳐 재생'));
+        if (move.estimated) notes.push(uiText('계획 시간이 없어 실제 경과 시간으로 기록'));
+        row.title = notes.join(' · ');
+        row.classList.toggle('longest', longest > 0 && move.done && !move.failed && move.seconds === longest);
+        row.classList.toggle('blended', move.blended);
+        return row;
+    }));
+}
+
+function exportOlpTactCsv() {
+    const log = getOlpTactLog();
+    if (!log?.moves.length) return;
+    // BOM: spreadsheet programs then read the file as UTF-8.
+    const url = URL.createObjectURL(new Blob(['\uFEFF' + formatOlpTactCsv(log)], { type: 'text/csv;charset=utf-8' }));
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `olp-move-times-${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+    anchor.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function setupOlpTactPanel() {
+    document.getElementById('olp-tact-cycle')?.addEventListener('change', (event) => {
+        state.olp.tactSelectedCycle = event.target.value;
+        renderOlpTactPanel();
+    });
+    document.getElementById('olp-tact-export')?.addEventListener('click', exportOlpTactCsv);
+    document.addEventListener('inorobot:i18nready', renderOlpTactPanel);
+    document.addEventListener('inorobot:languagechange', renderOlpTactPanel);
+    renderOlpTactPanel();
+}
+
 function setOlpLastMotion(source, replacements = {}) {
     state.olp.lastMotionSource = String(source || '');
     state.olp.lastMotionReplacements = replacements;
@@ -36261,6 +36706,7 @@ function setOlpStatus(status, message = '', replacements = {}) {
 function updateOlpProgramPanelUi() {
     const enabled = Boolean(state.olp.enabled);
     syncActiveOlpProjectView();
+    scheduleOlpTactRender();
     refreshMotionProgramFileUi();
     const activeRobot = getOlpRobot();
     const activeRuntime = getOlpRuntimeForRobot(activeRobot);
@@ -37146,15 +37592,20 @@ function setIoSimulatorStatus(message, replacements = {}) {
 
 function renderIoSimulatorEntryValue(node, entry) {
     if (!node || !entry) return;
-    const value = readIoSimulatorEntry(entry, (bit) => readOlpSimulatorBit(entry.direction, bit));
-    const active = value !== 0;
+    const remote = entry.direction === 'IN' && entry.bitStart >= 0 && entry.bitEnd <= 64 && getIoStandardInputTarget();
+    const feedback = remote ? standardInputClient.view(remote, entry.bitStart) : null;
+    const value = remote ? (feedback.values ? readIoSimulatorEntry(entry, bit => feedback.values[bit]) : null)
+        : readIoSimulatorEntry(entry, (bit) => readOlpSimulatorBit(entry.direction, bit));
+    const active = value !== null && value !== 0;
     node.classList.toggle('on', active);
     node.dataset.ioSimulatorValue = String(value);
     const valueNode = node.querySelector('.io-simulator-entry-value');
-    if (valueNode) valueNode.textContent = formatIoSimulatorValue(value, entry.mode);
+    if (valueNode) valueNode.textContent = value === null ? '—' : formatIoSimulatorValue(value, entry.mode);
     const input = node.querySelector('.io-simulator-entry-input');
-    if (input && document.activeElement !== input) input.value = String(value);
+    if (input) input.disabled = Boolean(remote);
+    if (input && document.activeElement !== input) input.value = value === null ? '' : String(value);
     if (node.tagName === 'BUTTON') {
+        node.disabled = Boolean(remote && (value === null || feedback.writing));
         node.setAttribute('aria-pressed', active ? 'true' : 'false');
         node.title = `${entry.runtimeAddress} · ${formatIoSimulatorValue(value, entry.mode)}`;
     }
@@ -37310,6 +37761,7 @@ function renderIoSimulatorPanel() {
 let conveyorTransportSuspended = false;
 const conveyorResetTransforms = new Map();
 const conveyorManualCommands = new Map();
+const conveyorVisuals = createConveyorVisuals();
 let equipmentVacuumPick = null;
 
 function startEquipmentVacuumFacePick(ref, complete) {
@@ -37391,26 +37843,379 @@ const equipmentApp = createEquipmentApp({
         conveyorTransportSuspended = command === 'start' ? false : command === 'pause' ? paused : true;
         conveyorLastTimestamp = null;
         conveyorManualCommands.clear();
+        if (command === 'reset') conveyorVisuals.reset();
         if (command === 'reset') conveyorResetTransforms.forEach((transform, model) => {
             const owner = state.models.find(root => root === model || getImportedModelParts(root).includes(model));
             if (!owner || owner.userData.attachmentHost) return;
             applyClipboardTransform(model, transform); markSceneCollisionDirty(owner);
         });
     },
+    // Homing (possibly randomized) moves objects outside the gizmo, so refresh the selected model's numbers.
+    posesChanged() { if (state.selectedModel) { updateSelectedModelTransformInputs(); updatePrimitiveDimensionOverlay(); } },
     snapshot: captureSceneSnapshot,
     history: (label, before) => recordHistory(label, before, captureSceneSnapshot()),
     changed({ runtimeOnly = false } = {}) { requestRender(); if (!runtimeOnly) { renderModelTree(); renderIoFunctionMappingEditorTargets(); renderIoFunctionMappingList(); } scheduleMotionProjectSave(); },
     bindings: getEquipmentIoBindings,
     updateBindings: setEquipmentIoBindings,
     mappings: () => state.ioFunctionMappings,
-    removeBindings(id) { state.ioFunctionMappings = state.ioFunctionMappings.filter(mapping => { if (mapping.gripObjectRef !== 'equipment:' + id) return true; state.ioFunctionMappingRuntimeValues.delete(mapping.id); return false; }); },
+    removeBindings(id, { legacyOnly = false } = {}) {
+        state.ioFunctionMappings = state.ioFunctionMappings.filter(mapping => {
+            if (mapping.gripObjectRef !== 'equipment:' + id && mapping.objectResetOwner !== id) return true;
+            if (legacyOnly && mapping.action === IO_FUNCTION_MAPPING_ACTIONS.OBJECT_RESET) return true;
+            state.ioFunctionMappingRuntimeValues.delete(mapping.id); return false;
+        });
+    },
     saveConveyor: saveConveyorMotion,
     conveyorDefinition: getConveyorMotionDefinition,
     conveyorCommand: runConveyorCommand
 
 });
+
+// Virtual vision: robot TCP pose in the controller BASE frame with the tool
+// yaw (rotation of the tool X axis about base Z) used as the robot R value.
+function getVisionTcpPose(robot) {
+    const pose = robot ? getCurrentTcpPoseBase(robot) : null;
+    if (!pose) return { x: 0, y: 0, z: 0, r: 0 };
+    const xAxis = new THREE.Vector3(1, 0, 0).applyQuaternion(pose.quaternion);
+    const zAxis = new THREE.Vector3(0, 0, 1).applyQuaternion(pose.quaternion);
+    return {
+        x: pose.position.x, y: pose.position.y, z: pose.position.z,
+        r: THREE.MathUtils.radToDeg(Math.atan2(xAxis.y, xAxis.x)),
+        vertical: Math.abs(zAxis.z) > 0.9
+    };
+}
+
+function moveRobotTcpForVision(robot, { x, y, z, r }) {
+    const current = getCurrentTcpPoseBase(robot);
+    if (!current || isVirtualControllerActiveForRobot(robot)) return false;
+    const zAxis = new THREE.Vector3(0, 0, 1).applyQuaternion(current.quaternion);
+    const zRotation = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), THREE.MathUtils.degToRad(r));
+    // A vertical tool keeps its tilt and only turns about base Z. Any other
+    // tool orientation uses the standard downward pose (A=r, B=0, C=180) so
+    // the mark stays horizontal and the tool yaw is well defined.
+    const quaternion = Math.abs(zAxis.z) > 0.9
+        ? new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), THREE.MathUtils.degToRad(r - getVisionTcpPose(robot).r)).multiply(current.quaternion)
+        : zRotation.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI));
+    const target = { position: new THREE.Vector3(x, y, z), quaternion: quaternion.normalize() };
+    const previousAngles = robot.userData.joints.map((joint) => joint.angle);
+    const result = solveRobotIK(robot, target, { positionTolerance: 0.001, rotationTolerance: THREE.MathUtils.degToRad(0.001) });
+    const reached = result.success && getCurrentTcpPoseBase(robot)?.position.distanceTo(target.position) < 0.05;
+    if (!reached) {
+        previousAngles.forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle, false));
+        robot.updateMatrixWorld(true);
+        return false;
+    }
+    robot.userData.baseJogTarget = target;
+    syncJointControls(robot);
+    updateTcpPresentation(robot, target);
+    syncBaseJogGizmoFromRobot(robot, target);
+    markSceneCollisionDirty(robot);
+    requestRender();
+    return true;
+}
+
+function saveVisionRobotState(robot) {
+    const angles = robot.userData.joints.map((joint) => joint.angle);
+    const target = robot.userData.baseJogTarget;
+    return () => {
+        if (!state.models.includes(robot)) return;
+        angles.forEach((angle, index) => setJointAngle(robot.userData.joints[index], angle, false));
+        robot.userData.baseJogTarget = target;
+        robot.updateMatrixWorld(true);
+        syncJointControls(robot);
+        updateTcpPresentation(robot);
+        syncBaseJogGizmoFromRobot(robot);
+        markSceneCollisionDirty(robot);
+        requestRender();
+    };
+}
+
+function visionWorkDefinitionId(model) {
+    return `vision-work-${ensureWorkspaceModelId(model)}`;
+}
+
+/** Work objects from the random generator are registered pickable objects. */
+function createVisionWorkObject({ shape, sizeX, sizeY, sizeZ, color, name }) {
+    const model = createPrimitiveShapeRoot(shape, { x: sizeX, y: shape === 'cylinder' ? sizeX : sizeY, z: sizeZ }, { name, materialColor: color });
+    state.scene.add(model);
+    state.models.push(model);
+    if (state.collision.enabled) state.collision.system?.prepare([model]);
+    markSceneCollisionDirty(model);
+    updateModelRenderComplexity(model);
+    updateUIStatus();
+    return model;
+}
+
+function setVisionWorkPose(model, { x, y, z, rz }) {
+    model.position.set(x, y, z);
+    model.rotation.set(0, 0, THREE.MathUtils.degToRad(rz));
+    model.updateMatrixWorld(true);
+    const def = normalizeEquipmentDefinition({
+        type: 'OBJECT', id: visionWorkDefinitionId(model), name: model.userData.modelName, customName: true,
+        movingRefs: [equipmentObjectRef(ensureWorkspaceModelId(model))]
+    });
+    equipmentApp.runtime.captureObjectOrigins?.(def, null);
+    state.equipmentDefinitions = [...state.equipmentDefinitions.filter((item) => item.id !== def.id), def];
+    markSceneCollisionDirty(model);
+    equipmentApp.ui.updateStatus?.();
+    requestRender();
+}
+
+function removeVisionWorkObject(model) {
+    if (!state.models.includes(model)) return;
+    const selected = state.selectedModel === model;
+    if (selected) state.transformControls.detach();
+    state.equipmentDefinitions = state.equipmentDefinitions.filter((item) => item.id !== visionWorkDefinitionId(model));
+    disposeCollisionDebugForModel(model);
+    disposeModelOutlines(model);
+    model.removeFromParent();
+    state.models.splice(state.models.indexOf(model), 1);
+    if (selected && isPrimitiveShapeModel(model)) disposePrimitiveDimensionOverlay();
+    markSceneCollisionDirty();
+    updateUIStatus();
+    if (selected) selectSceneModel(null);
+    requestRender();
+}
+
+/** Built-in vision camera: a primitive box in the model tree with a lens. */
+function createVisionCameraSceneModel({ name }) {
+    const model = createPrimitiveShapeRoot('box', { x: 60, y: 60, z: 90 }, { name: name || 'VISION 1', materialColor: '#1f2937' });
+    state.scene.add(model);
+    state.models.push(model);
+    decorateVisionCameraModel(model);
+    if (state.collision.enabled) state.collision.system?.prepare([model]);
+    markSceneCollisionDirty(model);
+    updateModelRenderComplexity(model);
+    updateUIStatus();
+    return model;
+}
+
+function decorateVisionCameraModel(model) {
+    if (!model || model.children.some((child) => child.userData?.visionCameraLens)) return;
+    const lens = new THREE.Mesh(
+        new THREE.CylinderGeometry(18, 18, 24, 32),
+        new THREE.MeshStandardMaterial({ color: '#0f172a', roughness: 0.3, metalness: 0.6 })
+    );
+    lens.rotation.x = Math.PI / 2;
+    lens.position.z = -12;
+    lens.name = 'Vision lens';
+    lens.userData.visionCameraLens = true;
+    model.add(lens);
+    model.updateMatrixWorld(true);
+}
+
+function setVisionModelWorldMatrix(model, elements) {
+    const world = new THREE.Matrix4().fromArray(elements);
+    const parent = model.parent || state.scene;
+    parent.updateWorldMatrix(true, false);
+    const local = new THREE.Matrix4().copy(parent.matrixWorld).invert().multiply(world);
+    const scale = model.scale.clone();
+    local.decompose(model.position, model.quaternion, new THREE.Vector3());
+    model.scale.copy(scale);
+    model.updateMatrixWorld(true);
+    markSceneCollisionDirty(model);
+    if (state.selectedModel === model) syncModelOutlines();
+    requestRender();
+    scheduleMotionProjectSave();
+}
+
+function writeVisionInputWord(word, value) {
+    const bitStart = OLP_BIT_START + (word - OLP_WORD_START) * 16;
+    setOlpInputFromIoSimulator({
+        direction: IO_SIMULATOR_DIRECTIONS.INPUT, bitStart, bitEnd: bitStart + 15, bitWidth: 16,
+        runtimeAddress: `InW[${word}]`, mode: IO_SIMULATOR_DISPLAY_MODES.WORD
+    }, value & 0xffff);
+}
+
+const visionApp = createVisionApp({
+    panel: () => getPanelElement('vision-panel'),
+    scene: () => state.scene,
+    renderer: () => state.renderer,
+    requestRender,
+    status: (message, color) => setStatus(message, color),
+    text: uiText,
+    format: uiFormat,
+    robots: () => getArticulatedRobots(),
+    robotId: (robot) => ensureWorkspaceModelId(robot),
+    robotLabel: (robot) => displayNameForModelTree(robot),
+    tcpFrame: (robot) => robot?.userData?.tcpFrame || null,
+    baseFrame: (robot) => getRobotControllerBaseFrame(robot),
+    worldToBase: (robot, point) => {
+        robot.updateMatrixWorld(true);
+        return getRobotControllerBaseFrame(robot).worldToLocal(new THREE.Vector3(...point)).toArray();
+    },
+    baseToWorld: (robot, point) => {
+        robot.updateMatrixWorld(true);
+        return getRobotControllerBaseFrame(robot).localToWorld(new THREE.Vector3(...point)).toArray();
+    },
+    tcpPose: getVisionTcpPose,
+    moveTcp: moveRobotTcpForVision,
+    saveRobotState: saveVisionRobotState,
+    isExternallyDriven: (robot) => isVirtualControllerActiveForRobot(robot),
+    isBusy: () => isRobotMotionActive() || isOlpRunning(),
+    models: () => state.models,
+    modelId: (model) => ensureWorkspaceModelId(model),
+    modelLabel: (model) => displayNameForModelTree(model),
+    isWorkpiece: (model) => isGripObjectTarget(model),
+    isHeld: (model) => isGripObjectModelInUse(model) || Boolean(model?.userData?.attachmentHost),
+    worldPosition: (model) => model.getWorldPosition(new THREE.Vector3()).toArray(),
+    createWorkObject: createVisionWorkObject,
+    setWorldPose: setVisionWorkPose,
+    removeModel: removeVisionWorkObject,
+    createCameraModel: createVisionCameraSceneModel,
+    decorateCameraModel: decorateVisionCameraModel,
+    modelWorldMatrix: (model) => { model.updateWorldMatrix(true, false); return model.matrixWorld.clone(); },
+    modelParts: getImportedModelParts,
+    setModelWorldMatrix: setVisionModelWorldMatrix,
+    worldBounds: (object) => { object.updateWorldMatrix(true, true); const box = new THREE.Box3().setFromObject(object); return box.isEmpty() ? null : box; },
+    selectedModel: () => state.selectedModel,
+    selectModel: (model) => { if (model && state.models.includes(model)) selectSceneModel(model); },
+    refreshModelTree: () => renderModelTree(),
+    captureHidden: () => [state.grid, state.transformControls, ...(state.labels || []), ...(state.scene?.children || []).filter((child) => child.isTransformControlsGizmo || child.userData?.simulationSnapMarker)],
+    readRobotOutput: (robot, bit) => readRobotEquipmentIo(robot, 'OUT', bit),
+    olp: {
+        readOutputWord: (word) => Number(readOlpAddress(`OutW[${word}]`)) || 0,
+        writeInputWord: writeVisionInputWord
+    },
+    saveProgress: () => scheduleMotionProjectSave(),
+    serverToken: () => getOlpVirtualBusToken({ force: true }),
+    serverUrl: () => `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/virtualvision/`
+});
+
+function getIoStandardInputTarget() {
+    const controller = state.virtualController;
+    return controller && (controller.wanted || controller.targetRobotId) ? controller : null;
+}
+function refreshStandardInputUi() {
+    const controller = getIoStandardInputTarget();
+    const label = document.getElementById('io-standard-input-status');
+    if (label) {
+        const feedback = controller ? standardInputClient.view(controller) : null;
+        const name = controller ? `${getVirtualControllerTargetRobot(controller)?.name || '컨트롤러'} (${controller.ipAddress})` : '';
+        label.textContent = controller
+            ? `입력 대상: ${name} · In[0]–In[64] · ${feedback.pending?.write ? 'In[' + feedback.pending.address + '] 적용 확인 중' : feedback.values === null ? '상태 확인 불가' : '실제 입력 ON ' + Object.values(feedback.values).filter(Boolean).length + ' / 65'}${feedback.error ? ' · ' + feedback.error : ''}`
+            : '로컬 OLP 입력 · 가상 컨트롤러 연결 시 In[0]–In[64] 연동';
+    }
+    markIoSimulatorDirty('IN', 0, 65);
+    renderIoSimulatorDirtyEntries();
+}
+const standardInputClient = new StandardInputClient({
+    send: sendVirtualControllerCommand,
+    changed(controller) {
+        const feedback = standardInputClient.view(controller);
+        if (feedback.values !== null) applyVirtualControllerIo(feedback.values, 'IN', controller);
+        refreshStandardInputUi();
+    }
+});
+window.setInterval(() => {
+    getVirtualControllerSessions().forEach(controller => standardInputClient.tick(controller));
+    refreshStandardInputUi();
+}, 250);
+
+const conveyorFeedApp = createConveyorFeedApp({
+    mappings: () => state.ioFunctionMappings,
+    resolveBelt: resolveConveyorBelt,
+    objects: () => equipmentApp.objects(),
+    models: () => state.models,
+    clone: cloneClipboardObjectTemplate,
+    label: item => item.object === item.model ? displayNameForModelTree(item.model) : displayNameForModelTree(item.model) + ' / ' + displayNameForModelPart(item.object),
+    requestRender,
+    save: () => scheduleMotionProjectSave(),
+    report: message => setStatus(message, '#f59e0b'),
+    add(model, feed) {
+        const id = ensureWorkspaceModelId(model), ref = equipmentObjectRef(id);
+        assignClipboardModelTreeIds(model);
+        state.scene.add(model); state.models.push(model); model.updateMatrixWorld(true);
+        let group = state.modelGroups.find(group => group.treeOrderId === feed.groupId);
+        if (!group) { group = { name: '자동 공급 · ' + (state.ioFunctionMappings.find(m => m.gripObjectRef === feed.belt)?.conveyorName || '컨베이어'), modelIds: [], collapsed: true, treeOrderId: feed.groupId }; state.modelGroups.push(group); }
+        group.modelIds.push(id);
+        let definition = state.equipmentDefinitions.find(def => def.id === feed.groupId);
+        if (!definition) {
+            definition = normalizeEquipmentDefinition({ id: feed.groupId, name: group.name, customName: true, type: 'OBJECT', movingRef: ref });
+            definition.origins = { objectWorld: {} }; state.equipmentDefinitions.push(definition);
+        } else definition.movingRefs.push(ref);
+        definition.origins.objectWorld[ref] = model.matrixWorld.toArray();
+        updateModelRenderComplexity(model);
+        if (state.collision.enabled) state.collision.system?.prepare([model]);
+    },
+    remove(model) {
+        const id = ensureWorkspaceModelId(model), ref = equipmentObjectRef(id);
+        state.equipmentDefinitions = state.equipmentDefinitions.filter(def => {
+            if (def.type !== 'OBJECT' || !def.movingRefs.includes(ref)) return true;
+            def.movingRefs = def.movingRefs.filter(value => value !== ref); def.movingRef = def.movingRefs[0] || '';
+            if (def.origins?.objectWorld) delete def.origins.objectWorld[ref];
+            return def.movingRefs.length > 0;
+        });
+        walkModelGroups(state.modelGroups, group => { group.modelIds = group.modelIds.filter(value => value !== id); });
+        conveyorResetTransforms.delete(model);
+        delete state.modelTreeOrder['model:' + id];
+        for (const key of Object.keys(state.modelTreeOrder)) state.modelTreeOrder[key] = state.modelTreeOrder[key].filter(value => value !== 'model:' + id);
+        state.modelTreeCollapsedIds.delete(model.userData.modelTreeId);
+        state.modelSelection.delete(model);
+        if (state.selectedModel === model) { state.transformControls?.detach(); state.selectedModel = null; state.selectedModelPart = null; }
+        disposeCollisionDebugForModel(model); disposeModelOutlines(model);
+        model.removeFromParent(); state.models.splice(state.models.indexOf(model), 1);
+        // Geometry/textures belong to the original; only the cloned materials are owned here.
+        disposeClipboardTemplateMaterials(model);
+    },
+    changed() { markSceneCollisionDirty(); renderModelTree(); requestRender(); }
+});
+
+const conveyorTrackingApp = createConveyorTrackingApp({
+    // Sample the actual scene on the transport clock as well as on paint frames.
+    advanceSimulation: updateConveyorSimulation,
+    feed: conveyorFeedApp,
+    mappings: () => state.ioFunctionMappings,
+    resolveBelt: resolveConveyorBelt,
+    resolveSensor: resolveTrackingSensor,
+    placeSensor: placeTrackingSensor,
+    controllers: getVirtualControllerSessions,
+    controllerBase: controller => {
+        const robot = getVirtualControllerTargetRobot(controller);
+        return robot ? getRobotControllerBaseFrame(robot) : null;
+    },
+    vision: () => visionApp,
+    requestRender,
+    scene: () => state.scene,
+    send: sendVirtualControllerCommand,
+    save: () => scheduleMotionProjectSave(),
+    drive: mapping => {
+        for (const item of state.ioFunctionMappings) if (item.gripObjectRef === mapping.gripObjectRef)
+            conveyorManualCommands.set(item.id, true);
+        conveyorTransportSuspended = false; requestRender();
+    },
+    isDriving: mapping => !conveyorTransportSuspended && resolveConveyorBelt(mapping)?.visible !== false
+        && state.ioFunctionMappings.some(item => item.gripObjectRef === mapping.gripObjectRef && conveyorManualCommands.get(item.id) === true),
+    stop: mapping => {
+        for (const item of state.ioFunctionMappings) if (item.gripObjectRef === mapping.gripObjectRef)
+            conveyorManualCommands.set(item.id, false);
+        requestRender();
+    }
+});
 let conveyorLastTimestamp = null;
+// The home Output set in an object's motion settings; a mapping made in the IO mapping list for that object is edited there too.
+function isObjectHomeBinding(mapping, id) {
+    return mapping.action === IO_FUNCTION_MAPPING_ACTIONS.OBJECT_RESET && mapping.direction === 'OUT'
+        && (mapping.objectResetOwner ? mapping.objectResetOwner === id : mapping.gripObjectRef === 'equipment:' + id);
+}
+function setObjectHomeBinding(def, bindings) {
+    const existing = state.ioFunctionMappings.filter(mapping => isObjectHomeBinding(mapping, def.id));
+    state.ioFunctionMappings = state.ioFunctionMappings.filter(mapping => !existing.includes(mapping));
+    existing.forEach(mapping => state.ioFunctionMappingRuntimeValues.delete(mapping.id));
+    if (bindings.forward !== null) {
+        const mapping = normalizeIoFunctionMapping({ id: existing[0]?.id || createIoFunctionMappingId(), action: IO_FUNCTION_MAPPING_ACTIONS.OBJECT_RESET, direction: 'OUT',
+            address: bindings.forward, triggerValue: bindings.triggerValue, enabled: true, gripObjectRef: bindings.resetAll ? 'all' : 'equipment:' + def.id, objectResetOwner: def.id });
+        state.ioFunctionMappings.push(mapping);
+        // Homing follows a signal change only, so saving never moves objects on an Output that already matches.
+        state.ioFunctionMappingRuntimeValues.set(mapping.id, readOlpSimulatorBit(mapping.direction, mapping.address));
+    }
+    renderIoFunctionMappingList(); scheduleMotionProjectSave(); requestRender();
+}
 function getEquipmentIoBindings(def, ref) {
+    if (def?.type === 'OBJECT') {
+        const mapping = state.ioFunctionMappings.find(item => isObjectHomeBinding(item, def.id));
+        return { direction: 'OUT', triggerValue: mapping?.triggerValue ?? 1, forward: mapping?.address ?? '', reverse: '', resetAll: mapping?.gripObjectRef === 'all' };
+    }
     const target = def?.type === 'CONVEYOR' || !def ? conveyorTargetFromRef(ref) : 'equipment:' + def.id;
     const mappings = state.ioFunctionMappings.filter(mapping => mapping.gripObjectRef === target);
     const forward = mappings.find(mapping => mapping.action === 'CONVEYOR' || mapping.equipmentCommand === 'FORWARD');
@@ -37428,6 +38233,7 @@ function activateIoFunctionMapping(mapping) {
     requestRender();
 }
 function setEquipmentIoBindings(def, bindings) {
+    if (def.type === 'OBJECT') { setObjectHomeBinding(def, bindings); return; }
     const target = def.type === 'CONVEYOR' ? conveyorTargetFromRef(def.movingRef) : 'equipment:' + def.id;
     const existing = state.ioFunctionMappings.filter(mapping => mapping.gripObjectRef === target && (mapping.action === 'CONVEYOR' || ['FORWARD', 'REVERSE'].includes(mapping.equipmentCommand)));
     state.ioFunctionMappings = state.ioFunctionMappings.filter(mapping => !existing.includes(mapping));
@@ -37477,21 +38283,29 @@ function runConveyorCommand(ref, command) {
     renderIoFunctionMappingList(); scheduleMotionProjectSave(); requestRender();
 }
 function activeConveyorMappings() {
-    if (document.hidden || conveyorTransportSuspended) return [];
+    if (conveyorTransportSuspended) return [];
     return state.ioFunctionMappings.filter(mapping => mapping.action === IO_FUNCTION_MAPPING_ACTIONS.CONVEYOR
         && (conveyorManualCommands.has(mapping.id) ? conveyorManualCommands.get(mapping.id) : mapping.enabled && readOlpSimulatorBit(mapping.direction, mapping.address) === mapping.triggerValue)
-        && resolveConveyorBelt(mapping)?.visible !== false && resolveConveyorBelt(mapping));
+        && resolveConveyorBelt(mapping)?.visible !== false && resolveConveyorBelt(mapping))
+        .map(mapping => conveyorTrackingApp.testMapping(mapping));
 }
 function updateConveyorSimulation(timestamp) {
     const mappings = activeConveyorMappings();
-    const seconds = conveyorElapsedSeconds(conveyorLastTimestamp, timestamp);
-    conveyorLastTimestamp = mappings.length ? timestamp : null;
-    if (!mappings.length || !seconds) return;
+    const seconds = conveyorElapsedSeconds(conveyorLastTimestamp, timestamp, document.hidden);
+    conveyorLastTimestamp = mappings.length || conveyorTrackingApp.active || conveyorTrackingApp.monitoring ? timestamp : null;
+    conveyorVisuals.update(state.ioFunctionMappings, mappings, resolveConveyorBelt, seconds,
+        state.models.filter(model => model.userData.testModelAssetId === 'conveyor'
+            || (model.userData.testModel && /^Conveyor\.step$/i.test(model.userData.modelName || ''))));
+    if (!mappings.length && !conveyorTrackingApp.active && !conveyorTrackingApp.monitoring) return;
+    conveyorFeedApp.beforeStep(mappings, seconds);
     const candidates = equipmentApp.objects().filter(item => !item.model.userData.attachmentHost).map(item => item.object);
+    conveyorTrackingApp.beforeStep(candidates);
     const moved = moveConveyorObjects(mappings, candidates, resolveConveyorBelt, seconds, model => {
         if (!conveyorResetTransforms.has(model)) conveyorResetTransforms.set(model, captureClipboardTransform(model));
     });
     moved.forEach(object => markSceneCollisionDirty(equipmentApp.objects().find(item => item.object === object)?.model || object));
+    conveyorTrackingApp.afterStep(seconds, mappings, candidates);
+    conveyorFeedApp.afterStep();
 }
 function ioFunctionMappingActionLabel(action) {
     if (action === IO_FUNCTION_MAPPING_ACTIONS.OBJECT_RESET) return uiText('오브젝트 원위치');
@@ -37897,6 +38711,8 @@ function updateIoFunctionMapping(id, field, value) {
         }
     }
     if (next.action === 'CONVEYOR' && ['enabled', 'address', 'direction', 'triggerValue'].includes(field) && next.enabled) delete next.conveyorManualOnly;
+    // Retargeting an object's home IO to another single object hands it over to that object's settings.
+    if (next.objectResetOwner && !['all', 'equipment:' + next.objectResetOwner].includes(next.gripObjectRef)) delete next.objectResetOwner;
     state.ioFunctionMappings[index] = normalizeIoFunctionMapping(next, index);
     state.ioFunctionMappingRuntimeValues.set(id, readOlpSimulatorBit(next.direction, next.address));
     activateIoFunctionMapping(state.ioFunctionMappings[index]);
@@ -37977,6 +38793,13 @@ function decodeOlpInputSnapshot(message) {
 
 function setOlpInputFromIoSimulator(entry, value) {
     if (!entry || entry.direction !== IO_SIMULATOR_DIRECTIONS.INPUT) return;
+    const controller = getIoStandardInputTarget();
+    if (controller && entry.bitStart >= 0 && entry.bitEnd <= 64) {
+        if (entry.bitWidth !== 1) { setIoSimulatorStatus('가상 컨트롤러 입력은 Bit 모드에서 조작하세요.'); return; }
+        if (!standardInputClient.request(controller, Number(value) ? 1 : 0, entry.bitStart))
+            setIoSimulatorStatus('입력 연결 상태를 확인하세요.');
+        return;
+    }
     if (state.equipmentDefinitions.some(def => [def.feedbackHome, def.feedbackEnd, def.feedbackGrip].some(address => address !== null && address >= entry.bitStart && address <= entry.bitEnd))) {
         setIoSimulatorStatus('설비 센서에 연결된 입력은 설비 상태에서 자동으로 갱신됩니다.'); return;
     }
@@ -38167,6 +38990,7 @@ function getRobotOlpSocketService(robot) {
     if (!olpSocketServices.has(robot)) {
         olpSocketServices.set(robot, new OlpSocketService({
             onChange: () => renderOlpSocketSimulator(),
+            resolvePeer: (request) => visionApp.resolveOlpSocketPeer(robot, request),
             onSend: ({channel, text}) => appendOlpConsole(`Socket Port[${channel}] → ${text}`)
         }));
     }
@@ -38475,10 +39299,12 @@ async function animateOlpJointMove(robot, targetAngles, speed, {
                 effectiveSpeed,
                 robot.userData.manifest?.cartesianMotion
             )
-            : calculateMovjDuration(starts, targets, robot.userData.joints, effectiveSpeed);
+            : calculateMovjDuration(starts, targets, robot.userData.joints, effectiveSpeed, motionOptions);
         // Keep physical playback time at slow/long moves. UI responsiveness
         // comes from yielding between frames, not shortening the motion.
-        const scaledDuration = durationSeconds / Math.max(0.2, Math.min(1.2, Number(accelerationScale) || 1));
+        const scaledDuration = isLinear
+            ? durationSeconds / Math.min(1, Number(accelerationScale) > 0 ? Number(accelerationScale) : 1)
+            : durationSeconds;
         if (!Number.isFinite(scaledDuration) || scaledDuration <= 0) {
             throw new Error('OLP motion duration is not finite and positive.');
         }
@@ -38534,7 +39360,7 @@ async function animateOlpJointMove(robot, targetAngles, speed, {
                 targets,
                 robot.userData.manifest?.structure,
                 robot.userData.manifest?.robotType,
-                accelerationScale
+                1 // Instruction Acc/Dec already applied by the planner.
             );
             progress = rapidMoveResult.progress;
             distanceProgress = progress;
@@ -38544,7 +39370,7 @@ async function animateOlpJointMove(robot, targetAngles, speed, {
         }
         const eased = rapidMove?.enabled || continuousPath
             ? progress
-            : isLinear ? sCurveProgress(progress) : progress * progress * (3 - 2 * progress);
+            : sCurveProgress(progress);
         if (isLinear) {
             // MOVL is a TCP line, not a joint-angle interpolation. Solve each
             // Cartesian sample in the already resolved controller BASE frame.
@@ -38698,11 +39524,9 @@ function getOlpAccelerationScale(options = {}) {
     const deceleration = Number(options.deceleration);
     const values = [acceleration, deceleration].filter((value) => Number.isFinite(value) && value > 0);
     if (!values.length) return 1;
-    // SetAcc/Acc/Dec values are percentages.  The S-curve duration is scaled
-    // conservatively so a lower value visibly slows the OLP motion without
-    // exceeding the model's configured acceleration limits.
-    const average = values.reduce((sum, value) => sum + value, 0) / values.length;
-    return Math.sqrt(Math.max(0.05, Math.min(1.2, average / 100)));
+    // A symmetric Cartesian profile must obey both requested limits. Averaging
+    // them could exceed the lower one. Joint MOVJ applies each limit directly.
+    return Math.sqrt(Math.min(1, Math.min(...values) / 100));
 }
 
 function getOlpEffectiveMotionSpeed(robot, motion, speed, runtime = null, options = {}) {
@@ -38925,9 +39749,9 @@ async function animateOlpCartesianPath(robot, motion, poses, speed, runtime = nu
         const accumulatedJointTravel = solvedPath[0].map((_angle, jointIndex) => solvedPath.slice(1)
             .reduce((distance, angles, index) => distance + Math.abs(angles[jointIndex] - solvedPath[index][jointIndex]), 0));
         const equivalentTargets = startAngles.map((angle, index) => angle + accumulatedJointTravel[index]);
-        pathDuration = calculateMovjDuration(startAngles, equivalentTargets, robot.userData.joints, speedProvider());
+        pathDuration = calculateMovjDuration(startAngles, equivalentTargets, robot.userData.joints, speedProvider(), options);
     }
-    const duration = pathDuration / accelerationScale;
+    const duration = motion === 'MOVL' ? pathDuration / accelerationScale : pathDuration;
     if (!Number.isFinite(duration) || duration <= 0) {
         throw new Error('OLP motion duration is not finite and positive.');
     }
@@ -39100,6 +39924,8 @@ async function runOlpMove(motion, pointExpression, speed, project, runtime = nul
             point: point.name
         });
     renderOlpIoMonitor();
+    // blendedNext tells the per-move time log that this move also covered the next corner.
+    return result;
 }
 
 async function runOlpJump(motion, pointExpression, speed, project, runtime = null, options = {}) {
@@ -39283,7 +40109,7 @@ function syncOlpHomeStatus(robot, project = getOlpProject(robot)) {
     if (reached !== null) writeOlpAddress(homeStatus.address, reached ? 1 : 0, null, project);
 }
 
-async function runOlpHome(homeIndex, speed, project, runtime = null) {
+async function runOlpHome(homeIndex, speed, project, runtime = null, options = {}) {
     const robot = getOlpRuntimeRobot(runtime);
     if (!robot) throw new Error('Select one robot before running OLP.');
     const registeredHome = robot.userData.controllerHomePoints?.[homeIndex]
@@ -39296,7 +40122,9 @@ async function runOlpHome(homeIndex, speed, project, runtime = null) {
     renderOlpIoMonitor();
     await animateOlpJointMove(robot, getOlpHomeTargetAngles(robot, homeIndex), speed, {
         speedProvider: () => runtime?.getEffectiveMotionSpeed?.(speed, 'percent') ?? speed,
-        runtime
+        runtime,
+        // Reports the planned Home duration to the per-move time log.
+        onProgress: (metrics) => runtime?.handleMotionProgress?.(options, metrics)
     });
     syncOlpHomeStatus(robot, project);
     setOlpLastMotion('HOME[{index}] completed.', { index: homeIndex });
@@ -39786,6 +40614,7 @@ async function startOlpSession({ step = false, robot = null, remoteIo = false } 
         delay: delayOlpWithSignal,
         log: appendOlpConsole,
         cursor: (snapshot) => queueOlpRuntimeView(runtime, snapshot),
+        tactChanged: noteOlpTactChange,
         onStopped: (snapshot) => {
             finishOlpJointMotion(targetRobot);
             setExecution(targetRobot, snapshot);
@@ -40754,6 +41583,14 @@ function restorePositionPointFile(project, path, file) {
     renderOlpFileList(); scheduleMotionProjectSave(); requestRender();
 }
 
+function recordPositionPointFileHistory(project, path, before, after) {
+    if (state.historySuspended || before?.text === after?.text) return;
+    const history = positionPointOlpHistories.get(project) || { undo: [], redo: [] };
+    history.undo.push({ path, before, after });
+    if (history.undo.length > 100) history.undo.shift();
+    history.redo = []; positionPointOlpHistories.set(project, history);
+}
+
 function savePositionPointRecordBatch(updates) {
     const robot = getOlpRobot();
     if (!robot || !updates.length) return [];
@@ -40778,15 +41615,47 @@ function savePositionPointRecordBatch(updates) {
         throw error;
     } finally { state.historySuspended = suspended; }
     if (project) {
-        const after = { ...project.files.get(path) };
-        if (!suspended && beforeFile?.text !== after.text) {
-            const history = positionPointOlpHistories.get(project) || { undo: [], redo: [] };
-            history.undo.push({ path, before: beforeFile, after });
-            if (history.undo.length > 100) history.undo.shift();
-            history.redo = []; positionPointOlpHistories.set(project, history);
-        }
+        recordPositionPointFileHistory(project, path, beforeFile, { ...project.files.get(path) });
     } else recordHistory('위치 데이터 저장', beforeScene, captureSceneSnapshot());
     return keys;
+}
+
+function deletePositionPointRecords(keys) {
+    const robot = getOlpRobot();
+    if (!robot || isMotionActive() || isOlpRunning() || state.olp.manualMoveBusy || state.olp.workOriginBusy) {
+        throw new Error(uiText('로봇 정지 후 위치를 수정하세요.'));
+    }
+    const selected = new Set(keys);
+    if (!selected.size) return;
+    const records = getPositionPointRecords();
+    if ([...selected].some(key => !records.some(record => record.key === key))) {
+        throw new Error(uiText('삭제할 위치 포인트를 찾을 수 없습니다.'));
+    }
+    const project = state.olp.enabled ? getOlpProject(robot) : null;
+    if (project) {
+        const file = getPositionPointsFile(robot), original = project.files.get(file.path);
+        const sources = new Set(file.records.filter(record => selected.has(`${record.sourceSymbol || 'P'}:${record.index}`))
+            .map(record => record.sourceLine));
+        // Retain the untouched lines byte for byte, including CRLF and file metadata.
+        const lines = original.text.split(/(?<=\n)/);
+        if ([...sources].some(source => !lines.some(line => line.replace(/\r?\n$/, '') === source))) {
+            throw new Error(uiText('원본 포인트 행을 찾을 수 없습니다.'));
+        }
+        const before = { ...original }, after = { ...original,
+            text: lines.filter(line => !sources.has(line.replace(/\r?\n$/, ''))).join('') };
+        restorePositionPointFile(project, file.path, after);
+        recordPositionPointFileHistory(project, file.path, before, after);
+        return;
+    }
+    const program = ensureMotionProgram(robot);
+    // A normal program stores each motion and its position in the same record.
+    if (program.steps.some(step => selected.has(step.id))) {
+        throw new Error(uiText('프로그램에서 사용하는 위치는 먼저 해당 이동 명령을 삭제하세요.'));
+    }
+    const before = captureSceneSnapshot();
+    program.positions = (program.positions || []).filter(point => !selected.has(point.id));
+    recordHistory('위치 데이터 삭제', before, captureSceneSnapshot());
+    scheduleMotionProjectSave(); renderMotionProgramPanel(); requestRender();
 }
 
 function restorePositionPointHistory(redo = false) {
@@ -40809,6 +41678,7 @@ function setupPositionPointsPanel() {
         records: getPositionPointRecords, capture: capturePositionPointRecord,
         save: (record, sourceKey) => savePositionPointRecordBatch([{ record, sourceKey }])[0],
         saveBatch: savePositionPointRecordBatch,
+        remove: deletePositionPointRecords,
         history: restorePositionPointHistory,
         active: () => state.panelOpenOrder.at(-1) === 'position-points-panel',
         move: movePositionPointRecord,
@@ -40914,6 +41784,165 @@ function setMotionProgramStatus(message, type = '', replacements = {}) {
     state.motionProgramStatus = { message, type, replacements };
     refreshMotionProgramStatus();
 }
+
+function collectCurveTrajectoryFeatures(model) {
+    model.updateWorldMatrix(true, true);
+    const curves = [];
+    const add = (points, closed, matrix, label, mesh = null) => {
+        if (points.length < 2) return;
+        curves.push({ points: points.map(point => new THREE.Vector3(...point).applyMatrix4(matrix).toArray()), closed, label, mesh });
+    };
+    const profiles = getSketchFeatureEntities(model).flatMap(entity => [entity, ...(entity.holes || [])]).filter(entity => entity.type !== 'text');
+    if (profiles.length) {
+        const offset = getSketchFeatureOriginOffset(model);
+        profiles.forEach(entity => add(getSketchFeatureEntityPoints(entity, 0).map(p => p.sub(offset).toArray()),
+            entity.type !== 'line' && entity.closed !== false, model.matrixWorld, entity.type));
+    } else if (isCad2dModel(model)) {
+        for (const entity of model.userData.cadDocument?.entities || []) {
+            const layer = model.userData.cadLayerGroups?.get(entity.layerId) || model;
+            if (!layer.visible || model.userData.cadLayerVisibility?.[entity.layerId] === false) continue;
+            if (entity.renderType === 'point' || entity.geometry?.kind === 'text') continue;
+            add((entity.renderPoints || []).map(p => [p[0], p[1], 0]), entity.closed, layer.matrixWorld, entity.type);
+        }
+    } else {
+        model.traverse(mesh => {
+            if (!mesh.isMesh || !mesh.geometry?.attributes?.position || !mesh.visible) return;
+            for (let parent = mesh.parent; parent; parent = parent.parent) if (!parent.visible) return;
+            const position = mesh.geometry.attributes.position;
+            const definition = { attributes: { position: { array: position.array } },
+                index: { array: mesh.geometry.index?.array || Array.from({ length: position.count }, (_, i) => i) },
+                brep_faces: getValidatedStepBrepFaces(mesh) || getPrimitiveShapeBrepFaces(mesh) || [] };
+            const result = buildStepSnapCandidates(definition, { featureChainsOnly: true });
+            (result.curves || []).forEach(curve => add(curve.points, curve.closed, mesh.matrixWorld, mesh.name, mesh));
+        });
+    }
+    return curves;
+}
+
+function collectCurveTrajectoryFaceFeatures(model, hit, curves) {
+    const mesh = hit.object, geometry = mesh.geometry;
+    const definition = { attributes: geometry.attributes, index: geometry.index };
+    const face = getSimulationSnapFaceTriangleRanges(mesh, hit.faceIndex);
+    const triangleRanges = face.key.includes(':triangle:')
+        ? planarFaceTriangleRanges(definition, hit.faceIndex) : face.triangleRanges;
+    if (!triangleRanges.length) return [];
+    const faceKey = face.key.includes(':triangle:')
+        ? `${mesh.uuid}:planar:${triangleRanges.map(range => `${range.first}-${range.last}`).join(',')}` : face.key;
+    const boundaries = (buildStepSnapCandidates(definition, {
+        triangleRanges, featureChainsOnly: true, sharpAngleDegrees: 180
+    }).curves || []).map(curve => ({ ...curve, mesh,
+        points: curve.points.map(point => new THREE.Vector3(...point).applyMatrix4(mesh.matrixWorld).toArray()) }));
+    const boundaryKeys = new Set(boundaries.flatMap(curve => curveSegmentKeys(curve)));
+    const matched = curves.filter(curve => curve.mesh === mesh && curveSegmentKeys(curve).every(key => boundaryKeys.has(key)));
+    const covered = new Set(matched.flatMap(curve => curveSegmentKeys(curve)));
+    for (const boundary of boundaries) {
+        const keys = curveSegmentKeys(boundary);
+        if (keys.every(key => covered.has(key))) continue;
+        const additions = keys.some(key => covered.has(key))
+            ? keys.flatMap((key, index) => covered.has(key) ? [] : [{ ...boundary, closed: false,
+                points: [boundary.points[index], boundary.points[(index + 1) % boundary.points.length]] }])
+            : [boundary];
+        additions.forEach((curve, index) => matched.push({ ...curve, face: { object: mesh, faceIndex: hit.faceIndex },
+            index: `${faceKey}:boundary:${boundaries.indexOf(boundary)}:${index}` }));
+    }
+    return orderConnectedCurves(matched);
+}
+
+function buildCurvePositionData({ robot, points, options }) {
+    if (!robot || robot !== getOlpRobot() || !state.models.includes(robot)) throw new Error(uiText('활성 로봇을 선택하세요.'));
+    if (!Array.isArray(points) || !points.length || points.length > 2000
+        || points.some(point => !Array.isArray(point) || point.length !== 3 || !point.every(Number.isFinite))
+        || !Array.isArray(options.rotation) || options.rotation.length !== 3 || !options.rotation.every(Number.isFinite)) {
+        throw new Error(uiText('곡선 좌표가 올바르지 않습니다.'));
+    }
+    const first = options.firstIndex;
+    if (!Number.isInteger(first) || first < MIN_POINT_INDEX || first + points.length - 1 > MAX_POINT_INDEX) {
+        throw new Error(uiText('사용 가능한 포인트 번호가 없습니다.'));
+    }
+    const used = new Set(getPositionPointRecords().filter(record => record.symbol === 'P').map(record => record.index));
+    if (points.some((_, index) => used.has(first + index))) throw new Error(uiText('이미 사용 중인 포인트 번호입니다.'));
+    const quaternion = getCurrentTcpPoseBase(robot).quaternion.multiply(new THREE.Quaternion().setFromEuler(
+        new THREE.Euler(...options.rotation.map(THREE.MathUtils.degToRad), 'ZYX'))).normalize();
+    const base = getRobotControllerBaseFrame(robot);
+    base.updateWorldMatrix(true, false);
+    const inverse = base.matrixWorld.clone().invert();
+    const positions = points.map((point, index) => {
+        const pointIndex = first + index;
+        const saved = captureRobotMotionStep(robot, { motion: 'MOVL', pointIndex, label: `Curve_${pointIndex}` });
+        // A registered position stores Cartesian data. Joints remain an IK seed for a later explicit move.
+        saved.tcp = captureMotionPointCoordinates(robot, { position: new THREE.Vector3(...point).applyMatrix4(inverse), quaternion });
+        saved.armParametersExplicit = true;
+        return saved;
+    });
+    return { positions, records: positions.map(point => positionPointToRecord(robot, point)) };
+}
+
+function applyCurveTrajectory(route) {
+    if (isMotionActive() || state.autoPath.planning) throw new Error(uiText('로봇 정지 후 위치를 수정하세요.'));
+    const { robot } = route;
+    const { positions, records } = buildCurvePositionData(route);
+    if (state.olp.enabled && getOlpProject(robot)) {
+        savePositionPointRecordBatch(records.map(record => ({ record })));
+    } else {
+        const before = captureSceneSnapshot();
+        (ensureMotionProgram(robot).positions ||= []).push(...positions);
+        recordHistory('자동 궤적 생성', before, captureSceneSnapshot());
+        renderMotionProgramPanel(); scheduleMotionProjectSave(); requestRender();
+    }
+    showCurvePositionsPanel();
+    setStatus(uiFormat('위치값 {count}개를 P.pts에 추가했습니다.', { count: records.length }), '#22c55e');
+    return records;
+}
+
+function showCurvePositionsPanel() {
+    const panel = getPanelElement('position-points-panel');
+    panel.classList.remove('hidden', 'panel-user-hidden');
+    positionPointsUi?.refresh(); updatePanelLauncher('position-points-panel'); bringPanelToFront('position-points-panel');
+    state.panelWindows.get('position-points-panel')?.popup?.focus();
+}
+
+let curveTrajectoryReturnToPositions = false;
+function openCurveTrajectoryPanel() {
+    if (state.autoPath.planning || isMotionActive()) return;
+    closeAutoPathPanel();
+    const positions = getPanelElement('position-points-panel');
+    curveTrajectoryReturnToPositions = Boolean(positions && !positions.classList.contains('panel-user-hidden')
+        && !state.panelWindows.has('position-points-panel'));
+    if (curveTrajectoryReturnToPositions) {
+        positions.classList.add('panel-user-hidden'); updatePanelLauncher('position-points-panel');
+    }
+    el.programPanel.classList.remove('hidden', 'panel-user-hidden');
+    updatePanelLauncher('program-panel');
+    curveTrajectoryApp.open();
+}
+
+const curveTrajectoryApp = createCurveTrajectoryApp({
+    text: uiText, scene: () => state.scene, canvas: () => state.renderer.domElement, camera: () => state.camera,
+    panel: () => el.programPanel.querySelector('#curve-trajectory-panel'),
+    onClose: () => {
+        if (curveTrajectoryReturnToPositions) showCurvePositionsPanel();
+        curveTrajectoryReturnToPositions = false;
+    },
+    requestRender, isBusy: () => isMotionActive() || state.autoPath.planning, robot: getAutoPathRobot,
+    models: () => state.models.filter(model => !model.userData.joints && !model.userData.attachmentHost && model.visible),
+    occluders: () => state.models.filter(model => model.visible),
+    modelLabel: displayNameForModelTree,
+    curves: collectCurveTrajectoryFeatures, faceCurves: collectCurveTrajectoryFaceFeatures,
+    faceKey: hit => getSimulationSnapFaceTriangleRanges(hit.object, hit.faceIndex).key,
+    apply: applyCurveTrajectory, positionData: buildCurvePositionData,
+    nextIndex: () => Math.max(-1, ...getPositionPointRecords().filter(record => record.symbol === 'P').map(record => record.index)) + 1,
+    context: () => {
+        const robot = getOlpRobot();
+        return robot ? `${displayNameForModelTree(robot)} · Tool[${robot.userData.activeTcpProfileIndex ?? 0}] · Wobj[${resolveWorkObjectIndex(robot.userData.activeWorkObjectIndex)}]` : '';
+    },
+    bringToFront: () => bringPanelToFront('program-panel'),
+    offsetPoints: (robot, points, offset) => {
+        const base = getRobotControllerBaseFrame(robot);
+        base.updateWorldMatrix(true, false);
+        const delta = new THREE.Vector3(...offset).applyMatrix4(base.matrixWorld).sub(base.getWorldPosition(new THREE.Vector3()));
+        return points.map(point => new THREE.Vector3(...point).add(delta).toArray());
+    }
+});
 
 function setAutoPathStatus(message, type = '', replacements = {}) {
     if (!el.autoPathStatus) return;
@@ -41033,6 +42062,7 @@ function closeAutoPathPanel({ preserveStatus = false } = {}) {
 
 function openAutoPathPanel() {
     if (isMotionActive()) return;
+    curveTrajectoryApp.close();
     const robot = getAutoPathRobot();
     const program = robot ? ensureMotionProgram(robot) : null;
     if (!robot || !program) {
@@ -44754,7 +45784,8 @@ function captureWorkspacePartState(model) {
             visible: part.visible !== false,
             transparency: part.parent?.userData.modelPartAggregate ? getModelTransparencyForObject(part, model) : getModelTransparencyPercent(part),
             matrix: part.matrix.toArray(),
-            matrixAutoUpdate: part.matrixAutoUpdate !== false
+            matrixAutoUpdate: part.matrixAutoUpdate !== false,
+            ...(part.userData.trackingContentTransform ? { childMatrices: captureWorkspaceChildMatrices(part) } : {})
         };
     });
 }
@@ -44764,6 +45795,7 @@ function applyWorkspacePartState(model, records) {
     (Array.isArray(records) ? records : []).forEach((record) => {
         const part = parts[Number(record?.index)];
         if (!part) return;
+        if (Array.isArray(record.childMatrices)) { applyWorkspaceChildMatrices(part, record.childMatrices); part.userData.trackingContentTransform = true; }
         part.visible = record.visible !== false;
         if (Array.isArray(record.matrix) && record.matrix.length === 16) {
             part.matrix.fromArray(record.matrix);
@@ -44869,6 +45901,12 @@ function serializeWorkspaceGripPartModel(model) {
 function serializeWorkspaceSceneModel(model) {
     const workspaceModelId = ensureWorkspaceModelId(model);
     const transform = captureClipboardTransform(model);
+    if (model.userData.conveyorFeedSource) return {
+        kind: 'conveyor-copy', workspaceModelId, sourceRef: model.userData.conveyorFeedSource,
+        belt: model.userData.conveyorFeedBelt, transform, visible: model.visible !== false,
+        name: model.userData.modelTreeName || model.userData.modelName || model.name,
+        placement: model.userData.placement, hostRobotInstanceId: model.userData.attachmentHost?.userData?.motionInstanceId || null
+    };
     const toolPartRecord = serializeWorkspaceToolPartModel(model);
     if (toolPartRecord) return toolPartRecord;
     const gripPartRecord = serializeWorkspaceGripPartModel(model);
@@ -45012,6 +46050,9 @@ function serializeWorkspaceSceneModel(model) {
             importQuality: model.userData.importQuality || 'auto',
             largeModelMode: Boolean(model.userData.largeModelMode),
             testModel: Boolean(model.userData.testModel),
+            ...(model.userData.conveyorDimensions ? { conveyorDimensions: { ...model.userData.conveyorDimensions } } : {}),
+            ...(model.userData.testModelAssetId ? { testModelAssetId: model.userData.testModelAssetId } : {}),
+            ...(model.userData.testModelDimensions ? { testModelDimensions: { ...model.userData.testModelDimensions } } : {}),
             sceneModelAnchor: model.userData.sceneModelAnchor || '',
             childMatrices: captureWorkspaceChildMatrices(model),
             partState: captureWorkspacePartState(model),
@@ -45104,6 +46145,7 @@ function serializeWorkspaceSnapshot() {
         || monitoringChanged
         || simulationIoChanged
         || ioFunctionMappingsChanged
+        || visionApp.config.enabled
         || Boolean(state.tcpPath.enabled)
         || teachingPointsChanged
         || measurement.points.length > 0;
@@ -45126,6 +46168,9 @@ function serializeWorkspaceSnapshot() {
         },
         equipmentDefinitions: JSON.parse(JSON.stringify(state.equipmentDefinitions)),
         ioFunctionMappings: cloneIoFunctionMappings(state.ioFunctionMappings),
+        virtualVision: visionApp.serialize(),
+        conveyorTracking: conveyorTrackingApp.serialize(),
+        conveyorFeeds: conveyorFeedApp.serialize(),
         tcpPath: {
             enabled: Boolean(state.tcpPath.enabled)
         },
@@ -45135,7 +46180,7 @@ function serializeWorkspaceSnapshot() {
             instanceId: robot.userData.motionInstanceId,
             selectedStepId: ensureMotionProgram(robot).selectedStepId || null
         })),
-        importedModels: sceneModels.filter((model) => model.kind === 'uploaded' || model.kind === 'primitive-shape' || model.kind === 'sketch-feature' || model.kind === 'cad-2d' || model.kind === 'cad-extrude-feature' || model.kind === 'grip-part'),
+        importedModels: sceneModels.filter((model) => model.kind === 'uploaded' || model.kind === 'primitive-shape' || model.kind === 'sketch-feature' || model.kind === 'cad-2d' || model.kind === 'cad-extrude-feature' || model.kind === 'grip-part' || model.kind === 'conveyor-copy'),
         catalogModels: sceneModels.filter((model) => model.kind === 'catalog'),
         olpProject,
         olpProjects,
@@ -45314,6 +46359,9 @@ async function persistImportedWorkspaceAsset(file, extension = getFileExtension(
 }
 
 function clearSceneForWorkspaceRestore() {
+    conveyorTrackingApp.reset();
+    conveyorFeedApp.reset();
+    conveyorVisuals.dispose();
     for (const controller of new Set([...getVirtualControllerSessions(), state.virtualController])) disconnectVirtualController(controller);
     state.virtualControllers = [];
     const controllerSettings = readVirtualControllerSettings();
@@ -45836,6 +46884,9 @@ async function restoreWorkspaceImportedModel(entry, robotsById) {
         workspaceModelId: entry.workspaceModelId,
         transform,
         testModel: Boolean(entry.testModel),
+        conveyorDimensions: entry.conveyorDimensions,
+        testModelAssetId: entry.testModelAssetId,
+        testModelDimensions: entry.testModelDimensions,
         skipAssetPersistence: true,
         suppressHistory: true,
         suppressFit: true,
@@ -46053,6 +47104,8 @@ async function restoreWorkspaceSnapshot(snapshot) {
             catch (error) { warnings.push('설비: ' + error.message); }
         }
         state.ioFunctionMappings = normalizeIoFunctionMappings(snapshot?.ioFunctionMappings);
+        visionApp.restore(snapshot?.virtualVision);
+        conveyorTrackingApp.restore(snapshot?.conveyorTracking);
         resetIoFunctionMappingRuntimeValues();
         renderIoFunctionMappingList();
         renderInterferenceZonePanel();
@@ -46113,6 +47166,7 @@ async function restoreWorkspaceSnapshot(snapshot) {
             && model?.kind !== 'cad-extrude-feature'
             && model?.kind !== 'tool-part'
             && model?.kind !== 'grip-part'
+            && model?.kind !== 'conveyor-copy'
             && model?.placement !== 'tcp'
         ))) {
             try {
@@ -46129,6 +47183,7 @@ async function restoreWorkspaceSnapshot(snapshot) {
             && model?.kind !== 'cad-extrude-feature'
             && model?.kind !== 'tool-part'
             && model?.kind !== 'grip-part'
+            && model?.kind !== 'conveyor-copy'
             && model?.placement === 'tcp'
         ))) {
             try {
@@ -46153,6 +47208,25 @@ async function restoreWorkspaceSnapshot(snapshot) {
                 console.warn('Workspace grip object part restore failed:', error);
                 warnings.push(entry?.name || uiText('물건 잡기 대상'));
             }
+        }
+
+        for (const entry of importedModels.filter(model => model?.kind === 'conveyor-copy')) {
+            try {
+                const source = equipmentApp.resolve(entry.sourceRef);
+                if (!source) throw new Error('자동 공급 원본이 없습니다.');
+                const model = cloneClipboardObjectTemplate(source.object);
+                model.visible = entry.visible !== false;
+                model.userData.modelTreeName = entry.name;
+                model.userData.conveyorFeedSource = entry.sourceRef; model.userData.conveyorFeedBelt = entry.belt;
+                model.userData.uploaded = true;
+                model.userData.placement = 'scene';
+                ensureWorkspaceModelId(model, entry.workspaceModelId); assignClipboardModelTreeIds(model);
+                const robot = entry.placement === 'grip-object' ? robotsById.get(entry.hostRobotInstanceId) : null;
+                if (entry.placement === 'grip-object' && !robot) throw new Error('공급 물체를 잡고 있던 로봇이 없습니다.');
+                if (robot) { getRobotToolMountFrame(robot).add(model); model.userData.attachmentHost = robot; model.userData.attachmentFrame = 'grip'; model.userData.placement = 'grip-object'; }
+                else state.scene.add(model);
+                applyClipboardTransform(model, entry.transform); state.models.push(model); updateModelRenderComplexity(model);
+            } catch (error) { warnings.push((entry.name || '자동 공급 물체') + ': ' + error.message); }
         }
 
         const measurementRestore = restoreWorkspaceMeasurement(snapshot);
@@ -46185,6 +47259,7 @@ async function restoreWorkspaceSnapshot(snapshot) {
             if (model) model.userData.modelPartGroups = JSON.parse(JSON.stringify(entry.groups));
         }
         state.modelGroups = normalizeModelGroups(snapshot?.modelGroups);
+        conveyorFeedApp.restore(snapshot?.conveyorFeeds);
         for (const entry of snapshot?.modelCadAssemblyExpanded || []) {
             const model = findModelByWorkspaceId(entry.modelId);
             if (model) model.userData.cadAssemblyExpanded = (entry.expanded || []).filter(id => typeof id === 'string');
@@ -50041,23 +51116,17 @@ function syncModelOutlines() {
                     )) : positions.array;
                 const edgeGeometry = new THREE.BufferGeometry();
                 const isRobot = Boolean(model.userData.manifest);
-                const logoProjection = isRobot && mesh.userData.robotLogoProjection;
-                // Embossed letter edges can extend slightly beyond the painted logo.
-                const logoOutlinePadding = 1;
-                const excludedBounds = logoProjection ? [
-                    { min: [logoProjection.negative[0] - logoOutlinePadding, -Infinity, logoProjection.negative[1] - logoOutlinePadding],
-                      max: [logoProjection.negative[0] + logoProjection.negative[2] + logoOutlinePadding, -logoProjection.minDepth,
-                          logoProjection.negative[1] + logoProjection.negative[3] + logoOutlinePadding] },
-                    { min: [logoProjection.positive[0] - logoOutlinePadding, logoProjection.minDepth, logoProjection.positive[1] - logoOutlinePadding],
-                      max: [logoProjection.positive[0] + logoProjection.positive[2] + logoOutlinePadding, Infinity,
-                          logoProjection.positive[1] + logoProjection.positive[3] + logoOutlinePadding] }
-                ] : [];
+                const excludedIndexRanges = isRobot && mesh.userData.robotLogoMaterialIndex === 1
+                    ? mesh.geometry.groups.filter(group => group.materialIndex === 1) : [];
+                const excludedBounds = buildRobotLogoOutlineBounds(packedPositions, mesh.geometry.index?.array, {
+                    faceRanges: excludedIndexRanges,
+                    projection: isRobot ? mesh.userData.robotLogoProjection : null
+                });
                 edgeGeometry.setAttribute('position', new THREE.BufferAttribute(
                     buildCleanOutlinePositions(packedPositions, mesh.geometry.index?.array, {
                         thresholdAngle: isRobot ? 55 : 40,
                         pruneDanglingEdges: isRobot,
-                        excludedIndexRanges: isRobot && mesh.userData.robotLogoMaterialIndex === 1
-                            ? mesh.geometry.groups.filter(group => group.materialIndex === 1) : [],
+                        excludedIndexRanges,
                         excludedBounds,
                         minimumAspectRatio: model.userData.manifest || model.userData.sourceExtension === 'stl' ? 0.01 : 0
                     }), 3
@@ -51023,6 +52092,7 @@ function installSimulationManualGuide() {
 function requiresContinuousRendering() {
     return Boolean(state.viewTransition && state.viewTransition.session?.status !== 'paused')
         || equipmentApp.active(state.ioFunctionMappings)
+        || conveyorTrackingApp.previewPending
         || activeConveyorMappings().length > 0
         || isViewWindowOpen()
         || state.trace.running
@@ -51069,7 +52139,14 @@ function requestRender() {
 }
 
 function renderSimulationScene(renderer, camera) {
-    renderWithContactAO(renderer, state.scene, camera, state.models);
+    // CPU rasterizers in VMs can block the transport timer during AO passes.
+    // Keep every original mesh, transform and collision shape; omit only the
+    // optional lighting post-process and render at the existing reduced DPR.
+    if (usesSoftwareRasterizer(renderer)) {
+        const painted = renderPacedSoftwareFrame(renderer, () => renderer.render(state.scene, camera));
+        // Also retry an on-demand edit; a skipped final frame must not be lost.
+        if (!painted) requestRender();
+    } else renderWithContactAO(renderer, state.scene, camera, state.models);
 }
 
 function animate(timestamp = performance.now()) {
@@ -51121,6 +52198,7 @@ function animate(timestamp = performance.now()) {
     updatePrimitiveDimensionOverlay();
     updateSketchPreview();
     updateTeachingPointDisplay();
+    visionApp.update();
     renderSimulationScene(state.renderer, state.camera);
     renderViewWindow();
     updateZeroPointCurrentMarker();
@@ -51148,6 +52226,8 @@ function onResize() {
         if (panel?.dataset.userResized === 'true') normalizePanelResizeBox(panel, { viewportResize: true });
         else if (panel === el.workOriginDialog) constrainWorkOriginDialogToLayoutBounds();
     });
+    const conveyorPanel = getPanelElement('conveyor-tracking-dialog');
+    if (isPanelOpenInDocument(conveyorPanel)) normalizePanelResizeBox(conveyorPanel, { viewportResize: true });
     resizeViewWindow();
     requestRender();
 }

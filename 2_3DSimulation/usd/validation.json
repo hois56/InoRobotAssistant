@@ -1,0 +1,55 @@
+{
+  "openUsdVersion": [
+    0,
+    24,
+    11
+  ],
+  "isaacSimRuntimeTested": false,
+  "models": [
+    {
+      "file": "IR-R4H-54.usd",
+      "status": "passed",
+      "rigidBodies": 7,
+      "revoluteJoints": 6,
+      "embeddedMeshes": 7,
+      "externalDependencies": 0,
+      "jointPoseSamples": 3,
+      "maxKinematicMatrixError": 2.3413701704005827e-08,
+      "complianceWarnings": []
+    },
+    {
+      "file": "IR-R7H-70.usd",
+      "status": "passed",
+      "rigidBodies": 7,
+      "revoluteJoints": 6,
+      "embeddedMeshes": 7,
+      "externalDependencies": 0,
+      "jointPoseSamples": 3,
+      "maxKinematicMatrixError": 2.3413701704005827e-08,
+      "complianceWarnings": []
+    },
+    {
+      "file": "IR-R7H-90.usd",
+      "status": "passed",
+      "rigidBodies": 7,
+      "revoluteJoints": 6,
+      "embeddedMeshes": 7,
+      "externalDependencies": 0,
+      "jointPoseSamples": 3,
+      "maxKinematicMatrixError": 2.3413701704005827e-08,
+      "complianceWarnings": []
+    },
+    {
+      "file": "IR-R10H-120.usd",
+      "status": "passed",
+      "rigidBodies": 7,
+      "revoluteJoints": 6,
+      "embeddedMeshes": 7,
+      "externalDependencies": 0,
+      "jointPoseSamples": 3,
+      "maxKinematicMatrixError": 2.3413701704005827e-08,
+      "complianceWarnings": []
+    }
+  ],
+  "overview": "passed; all four references resolve"
+}

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html data-design-system="astryx" lang="ko">
 <head>
     <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png?v=20260813">
     <meta charset="UTF-8">
@@ -8,7 +8,8 @@
     <title>3D Simulation | INOVANCE</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=20261101-vacuum-surface-1&amp;points=20261102-standardization-1&amp;controllers=20261102-delete-1">
+    <link rel="stylesheet" href="style.css?v=20261101-vacuum-surface-1&amp;points=20261102-standardization-1&amp;controllers=20261102-delete-1&amp;vision=20261109-lab-2&amp;objectHome=20261107-1&amp;conveyorTracking=20261114-sensor-input-0&amp;standardInput=20261114-inputs65-1&amp;conveyorSize=20261117-1&amp;modelSize=20261117-2&amp;theme=20261118-1">
+    <link rel="stylesheet" href="curve-trajectory.css?v=20261118-1">
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -23,11 +24,57 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/Language/runtime/i18n.css">
-    <script src="/Language/runtime/locales-data.js?v=53a8b65e742e" defer></script>
+    <script src="/Language/runtime/locales-data.js?v=a3a6b6551e76" defer></script>
     <script src="/Language/runtime/i18n.js" defer></script>
     <script src="/Language/runtime/icon-fallback.js" defer></script>
     <script src="/analytics-config.js"></script>
     <script src="/analytics.js" defer></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -710,9 +757,10 @@
     <meta name="twitter:title" content="3D Simulation | INOVANCE">
     <meta name="twitter:description" content="Simulate INOVANCE robots and 3D models and test JOG motion.">
     <!-- SUBPAGE-SEO:END -->
-    <link rel="stylesheet" href="olp-generator-support.css?v=20261102-generator-2">
+    <link rel="stylesheet" href="olp-generator-support.css?v=20261118-1">
+    <link rel="stylesheet" href="workspace-light.css?v=20261118-1">
 </head>
-<body>
+<body data-design-page="simulation">
 
     <header id="topbar">
         <div class="topbar-left">
@@ -798,6 +846,7 @@
             </div>
             <p id="test-model-total" aria-live="polite">선택 수량: 0개</p>
             <div class="simulation-reset-dialog-actions">
+                <button id="btn-tracking-test-model" type="button" class="secondary">컨베이어 트래킹 모델링 생성</button>
                 <button id="btn-educational-test-model" type="button" class="secondary">교육용 모델링 생성</button>
                 <button id="btn-cancel-test-model" type="button" class="secondary">취소</button>
                 <button id="btn-confirm-test-model" type="button" class="primary" disabled>일괄 가져오기</button>
@@ -1758,8 +1807,10 @@
                     <div class="position-points-toolbar">
                         <select data-pts-robot aria-label="로봇" data-i18n-aria-label="legacy.ROBOT"></select>
                         <label class="position-points-standardization"><input type="checkbox" data-pts-standardized checked><span data-i18n="legacy.표준화 모드">표준화 모드</span></label>
+                        <button type="button" data-pts-trajectory data-i18n="legacy.곡선에서 위치 생성">곡선에서 위치 생성</button>
                         <button type="button" data-pts-new aria-keyshortcuts="A"><span data-i18n="legacy.위치 추가">위치 추가</span><kbd>A</kbd></button>
                         <button type="button" data-pts-update disabled aria-keyshortcuts="U"><span data-i18n="legacy.위치 덮어쓰기">위치 덮어쓰기</span><kbd>U</kbd></button>
+                        <button type="button" data-pts-delete disabled aria-keyshortcuts="Delete"><span data-i18n="legacy.위치 삭제">위치 삭제</span><kbd>Del</kbd></button>
                         <button type="button" data-pts-move disabled aria-keyshortcuts="M"><span data-i18n="legacy.위치로 이동">위치로 이동</span><kbd>M</kbd></button>
                         <button type="button" data-pts-export disabled data-i18n="legacy.pts 내보내기">P.pts 내보내기</button>
                     </div>
@@ -1925,9 +1976,10 @@
                         </select>
                     </label>
                     <div class="virtual-controller-bridge-actions" data-virtual-controller-source="bridge">
-                        <a class="virtual-controller-bridge-download" href="./bridge/InoRobotVirtualControllerBridge.zip?v=20261030-fieldbus-io-1" download>
+                        <a class="virtual-controller-bridge-download" href="./bridge/InoRobotVirtualControllerBridge.zip?v=2.0" download>
                             <i class="fa-solid fa-download"></i>
                             <span>브리지 다운로드</span>
+                            <span translate="no">V2.0</span>
                         </a>
                         <button id="virtual-controller-bridge-start" type="button" title="설치된 전용 브리지 실행">
                             <i class="fa-solid fa-play"></i><span>실행</span>
@@ -2122,8 +2174,19 @@
                         <button type="button" role="tab" data-io-simulator-range="fieldbus" aria-selected="false" tabindex="-1" data-i18n="legacy.필드버스 IO" data-i18n-aria-label="legacy.필드버스 IO">필드버스 IO</button>
                     </div>
                     <div id="io-simulator-list" class="io-simulator-list"></div>
+                    <p id="io-standard-input-status" class="io-simulator-status">로컬 OLP 입력 · 가상 컨트롤러 연결 시 In[0]–In[64] 연동</p>
                     <p id="io-simulator-status" class="io-simulator-status" role="status" aria-live="polite"></p>
                 </div>
+            </aside>
+            <aside id="vision-panel" class="vision-panel panel-user-hidden panel-edge-resizable" aria-label="가상 비전">
+                <div class="vision-header">
+                    <h2><i class="fa-solid fa-camera-retro" aria-hidden="true"></i> 가상 비전</h2>
+                    <div class="panel-header-actions">
+                        <button type="button" data-panel-action="popout" data-panel-id="vision-panel" title="별도 창으로 분리" aria-label="가상 비전을 별도 창으로 분리"><i class="fa-solid fa-up-right-from-square"></i></button>
+                        <button type="button" data-panel-action="hide" data-panel-id="vision-panel" title="숨기기" aria-label="가상 비전 숨기기"><i class="fa-solid fa-eye-slash"></i></button>
+                    </div>
+                </div>
+                <div class="vision-content" data-vision-content></div>
             </aside>
             <dialog id="io-function-mapping-dialog" class="io-function-mapping-dialog" aria-labelledby="io-function-mapping-title">
                 <form method="dialog">
@@ -2251,12 +2314,14 @@
                             <button id="program-add-time-start" type="button" data-program-edit title="TIME START 추가"><i class="fa-solid fa-stopwatch"></i></button>
                             <button id="program-add-view" type="button" data-program-edit title="화면 뷰 전환 추가"><i class="fa-solid fa-camera"></i></button>
                             <button id="program-auto-path" type="button" data-program-edit title="자동 경로 생성" aria-label="자동 경로 생성"><i class="fa-solid fa-route"></i></button>
+                            <button id="program-curve-trajectory" type="button" data-program-edit title="자동 궤적 생성" aria-label="자동 궤적 생성" data-i18n-title="legacy.자동 궤적 생성" data-i18n-aria-label="legacy.자동 궤적 생성"><i class="fa-solid fa-bezier-curve"></i></button>
                             <button id="program-delete-step" type="button" data-program-edit title="포인트 삭제"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
                     <label class="program-point-standardization" data-panel-drag-ignore><input id="program-point-standardized" type="checkbox" checked><span data-i18n="legacy.표준화 모드">표준화 모드</span></label>
                      <div id="program-step-list" class="program-step-list" data-panel-drag-ignore></div>
                  </div>
+                <section id="curve-trajectory-panel" class="hidden" aria-label="자동 궤적 생성" data-i18n-aria-label="legacy.자동 궤적 생성"></section>
                 <section id="auto-path-panel" class="auto-path-panel hidden" aria-label="자동 경로 생성">
                     <div class="auto-path-heading">
                     <strong><i class="fa-solid fa-route"></i> <span data-i18n="legacy.자동 경로 생성">자동 경로 생성</span></strong>
@@ -2312,6 +2377,29 @@
                         <span id="olp-io-note">Virtual Bus: load an OLP project to show its mapped IO addresses</span>
                     </div>
                     <pre id="olp-console" class="olp-console" data-panel-drag-ignore aria-live="polite">OLP ready.</pre>
+                    <section id="olp-tact-panel" class="olp-tact-panel" data-panel-drag-ignore aria-labelledby="olp-tact-title">
+                        <div class="olp-tact-header">
+                            <strong id="olp-tact-title"><i class="fa-solid fa-stopwatch" aria-hidden="true"></i> <span data-i18n="legacy.이동별 시간">이동별 시간</span></strong>
+                            <select id="olp-tact-cycle" aria-label="사이클 선택" data-i18n-aria-label="legacy.사이클 선택" disabled></select>
+                            <button id="olp-tact-export" type="button" data-i18n="legacy.CSV 저장" disabled>CSV 저장</button>
+                        </div>
+                        <p id="olp-tact-summary" class="olp-tact-summary" role="status" aria-live="polite" data-i18n-skip></p>
+                        <div class="olp-tact-table-wrap">
+                            <table class="olp-tact-table">
+                                <thead>
+                                    <tr>
+                                        <th scope="col" class="num">#</th>
+                                        <th scope="col" data-i18n="legacy.목표 위치">목표 위치</th>
+                                        <th scope="col" class="num" data-i18n="legacy.이동 (s)">이동 (s)</th>
+                                        <th scope="col" class="num" data-i18n="legacy.앞 대기 (s)">앞 대기 (s)</th>
+                                        <th scope="col" class="num" data-i18n="legacy.누적 (s)">누적 (s)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="olp-tact-body" data-i18n-skip></tbody>
+                            </table>
+                        </div>
+                        <p class="olp-tact-note" data-i18n="legacy.이동별 시간 안내">시뮬레이터 모델이 계산한 이동 시간에 Delay·Wait 시간을 더한 값입니다. 일시정지와 재생 속도는 반영하지 않습니다. 연속 경로(Z[CP]) 블렌딩은 일부만 반영되므로 실제 컨트롤러와 다를 수 있습니다.</p>
+                    </section>
                 </section>
                 <div id="program-playback" class="program-playback">
                     <div id="program-control-robot" class="program-control-row">
@@ -2543,6 +2631,10 @@
             <i class="fa-solid fa-eye-slash"></i>
             <span id="model-hide-label">숨기기</span>
         </button>
+        <button id="model-vision-camera" type="button" role="menuitem" hidden>
+            <i class="fa-solid fa-camera-retro"></i>
+            <span id="model-vision-camera-label">비전 카메라로 등록</span>
+        </button>
         <button id="model-install-tool" type="button" role="menuitem" hidden>
             <i class="fa-solid fa-screwdriver-wrench"></i>
             <span data-i18n="legacy.Tool에 설치">Tool에 설치</span>
@@ -2617,6 +2709,7 @@
             <button type="button" data-panel-toggle="view-presets-panel" title="사용자 뷰 표시/숨김"><i class="fa-solid fa-camera"></i> 뷰</button>
             <button type="button" data-panel-toggle="collaboration-panel" title="4인 협업 표시/숨김" aria-label="4인 협업 표시/숨김"><i class="fa-solid fa-people-arrows"></i> <span data-i18n="legacy.협업">협업</span></button>
             <button type="button" data-panel-toggle="virtual-controller-panel" disabled title="컨트롤러 연결 표시/숨김" aria-label="컨트롤러 연결 표시/숨김"><i id="virtual-controller-launcher-antenna" class="fa-solid fa-tower-broadcast virtual-controller-antenna disconnected"></i> 컨트롤러 연결</button>
+            <button id="btn-vision-panel" type="button" data-panel-toggle="vision-panel" title="가상 비전 표시/숨김" aria-label="가상 비전 표시/숨김"><i class="fa-solid fa-camera-retro"></i> 비전</button>
             <button id="btn-io-simulator" type="button" data-panel-toggle="io-simulator-panel" title="IO 테스트 표시/숨김" aria-label="IO 테스트 표시/숨김"><i class="fa-solid fa-toggle-on"></i> IO 테스트</button>
             <span class="viewer-control-divider"></span>
             <button id="btn-undo" type="button" disabled title="되돌리기 (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
@@ -2633,7 +2726,7 @@
         </div>
     </footer>
 
-    <script type="module" src="main.js?v=20261102-coordinates-1&amp;rapid=20261102-models-2&amp;olp=20261102-generator-2&amp;tcp=20261102-multi-center-1&amp;clipboard=20261102-name-color-1&amp;points=20261102-standardization-1&amp;pts=20261102-popout-export-1&amp;params=20261102-dat-export-1&amp;vacuum=20261102-face-navigation-1&amp;toolMenu=20261102-actions-1&amp;snap=20261102-type-selection-1&amp;undo=20261102-history-1&amp;controllers=20261102-delete-1&amp;vacuumRange=20261102-vacuum-range-2&amp;inputFix=20261103-view-tcp-vacuum-1&amp;stepColors=20261103-direct-1&amp;glbUnits=20261103-1&amp;glbCollision=20261103-1&amp;mountContact=20261103-1"></script>
-<script src="/0_Home/tool-guide-embed.js?v=20260906-2"></script>
+    <script type="module" src="main.js?v=20261102-coordinates-1&amp;rapid=20261102-models-2&amp;olp=20261102-generator-2&amp;tcp=20261102-multi-center-1&amp;clipboard=20261102-name-color-1&amp;points=20261102-standardization-1&amp;pts=20261117-delete-1&amp;params=20261102-dat-export-1&amp;vacuum=20261102-face-navigation-1&amp;toolMenu=20261102-actions-1&amp;snap=20261102-type-selection-1&amp;undo=20261102-history-1&amp;controllers=20261102-delete-1&amp;vacuumRange=20261102-vacuum-range-2&amp;inputFix=20261103-view-tcp-vacuum-1&amp;stepColors=20261103-direct-1&amp;glbUnits=20261103-1&amp;glbCollision=20261103-1&amp;mountContact=20261103-1&amp;vision=20261109-lab-2&amp;objectHome=20261107-1&amp;conveyorTracking=20261117-run-1&amp;standardInput=20261114-inputs65-1&amp;logo=20261117-outline-2&amp;trajectory=20261117-selection-1&amp;tact=20261114-1&amp;motionLimits=20261114-1&amp;conveyorSize=20261117-1&amp;modelSize=20261117-2&amp;theme=20261118-1"></script>
+<script src="/0_Home/tool-guide-embed.js?v=20261118-guide-light"></script>
 </body>
 </html>

@@ -41,8 +41,8 @@ export const MOVL_ROTATION_RATE = 90;
 export const S_CURVE_PEAK_VELOCITY = 15 / 8;
 export const S_CURVE_PEAK_ACCELERATION = 10 / Math.sqrt(3);
 export const MOTION_SETTLING_DELAY_SECONDS = 0.02;
-// Simulation-only acceleration tuning; robot catalog values remain unchanged.
-export const RAPID_MOVE_ACCELERATION_BOOST = 1.1;
+// Unmatched models must stay within the catalog limits; no extra 10% boost.
+export const RAPID_MOVE_ACCELERATION_BOOST = 1;
 export const RAPID_MOVE_DEFAULTS = Object.freeze({
     minAccelerationScale: 0.95,
     maxAccelerationScale: 1,
@@ -100,8 +100,15 @@ export function slerpQuaternion(start, target, progress) {
     return normalize(left.map((value, index) => value * leftWeight + right[index] * rightWeight));
 }
 
-export function calculateMovjDuration(startAngles, targetAngles, joints, speedPercent) {
+function instructionAccelerationScale(value) {
+    const number = Number(value);
+    return Number.isFinite(number) && number > 0 ? Math.min(number, 100) / 100 : 1;
+}
+
+export function calculateMovjDuration(startAngles, targetAngles, joints, speedPercent, options = {}) {
     const speedScale = clamp(Number(speedPercent) || DEFAULT_MOVJ_SPEED, 1, 100) / 100;
+    const accelerationScale = instructionAccelerationScale(options.accelerationPercent ?? options.acceleration);
+    const decelerationScale = instructionAccelerationScale(options.decelerationPercent ?? options.deceleration);
     const durations = targetAngles.map((target, index) => {
         const start = Number(startAngles[index]) || 0;
         const distance = Math.abs(Number(target) - start);
@@ -115,7 +122,7 @@ export function calculateMovjDuration(startAngles, targetAngles, joints, speedPe
             ? configuredRate
             : fallbackRate;
         const speedLimitedDuration = distance * S_CURVE_PEAK_VELOCITY / (rate * speedScale);
-        const accelerationLimit = [configuredAcceleration, configuredDeceleration]
+        const accelerationLimit = [configuredAcceleration * accelerationScale, configuredDeceleration * decelerationScale]
             .filter((value) => Number.isFinite(value) && value > 0)
             .reduce((minimum, value) => Math.min(minimum, value), Infinity);
         const accelerationLimitedDuration = Number.isFinite(accelerationLimit)
@@ -275,13 +282,15 @@ export function createRapidMoveState(startAngles, targetAngles, joints, speedPer
     const accelerationValues = movingIndexes.map((index) => {
         const acceleration = Number(joints[index]?.definition?.maxAcceleration);
         return Number.isFinite(acceleration) && acceleration > 0
-            ? acceleration * RAPID_MOVE_ACCELERATION_BOOST / distances[index]
+            ? acceleration * RAPID_MOVE_ACCELERATION_BOOST
+                * instructionAccelerationScale(profileOptions.accelerationPercent ?? profileOptions.acceleration) / distances[index]
             : Infinity;
     });
     const decelerationValues = movingIndexes.map((index) => {
         const deceleration = Number(joints[index]?.definition?.maxDeceleration);
         return Number.isFinite(deceleration) && deceleration > 0
-            ? deceleration * RAPID_MOVE_ACCELERATION_BOOST / distances[index]
+            ? deceleration * RAPID_MOVE_ACCELERATION_BOOST
+                * instructionAccelerationScale(profileOptions.decelerationPercent ?? profileOptions.deceleration) / distances[index]
             : Infinity;
     });
     const profile = {

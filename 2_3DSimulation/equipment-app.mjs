@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { EquipmentScene, equipmentObjectRef } from './equipment-scene.mjs?v=20261103-vacuum-signals-1';
-import { createEquipmentUi } from './equipment-ui.mjs?v=20261102-vacuum-range-2';
-import { EQUIPMENT_LABELS, normalizeEquipmentDefinition, validateEquipmentDefinitions, equipmentMotionGroups, equipmentReferences, normalizeEquipmentBindings } from './equipment-core.mjs?v=20261101-vacuum-surface-1';
+import { EquipmentScene, equipmentObjectRef } from './equipment-scene.mjs?v=20261107-object-home-1';
+import { createEquipmentUi } from './equipment-ui.mjs?v=20261107-object-home-1';
+import { EQUIPMENT_LABELS, normalizeEquipmentDefinition, validateEquipmentDefinitions, equipmentMotionGroups, equipmentReferences, normalizeEquipmentBindings } from './equipment-core.mjs?v=20261107-object-home-1';
 
 export function createEquipmentApp(adapter) {
     const resolve = ref => {
@@ -87,7 +87,7 @@ export function createEquipmentApp(adapter) {
     });
     function save(def, bindings = null) {
         def = normalizeEquipmentDefinition(def);
-        if (bindings) bindings = normalizeEquipmentBindings(bindings);
+        if (bindings) bindings = normalizeEquipmentBindings(def.type === 'OBJECT' ? { ...bindings, reverse: null } : bindings);
         ioRobot(def, true);
         adapter.definitions().forEach(item => ioRobot(item));
         if (def.type === 'VACUUM') {
@@ -161,8 +161,9 @@ export function createEquipmentApp(adapter) {
         adapter.setDefinitions(next);
         releaseUnregistered();
         runtime.restore(next);
-        if (def.type === 'OBJECT') adapter.removeBindings?.(def.id);
-        else if (bindings) adapter.updateBindings(def, bindings);
+        // Objects keep only their home IO; older grip mappings on the object are dropped.
+        if (def.type === 'OBJECT') adapter.removeBindings?.(def.id, { legacyOnly: true });
+        if (bindings) adapter.updateBindings(def, bindings);
         adapter.history('설비 동작 설정', before);
         adapter.changed(); return def;
     }
@@ -219,9 +220,27 @@ export function createEquipmentApp(adapter) {
             }
             runtime.resetObjects(definitions);
             adapter.history('오브젝트 원위치', before);
+            adapter.posesChanged?.();
             adapter.changed({ runtimeOnly: true });
     }
+    // Replace the registered home with the object's current pose.
+    function setObjectHome(id) {
+        const def = adapter.definitions().find(item => item.id === id && item.type === 'OBJECT');
+        if (!def) throw new Error('원위치로 등록할 오브젝트를 찾을 수 없습니다.');
+        const targets = equipmentReferences(def).map(resolve);
+        if (!targets.length || targets.some(item => !item)) throw new Error('선택한 모델 또는 부품을 찾을 수 없습니다.');
+        const held = adapter.definitions().flatMap(item => [item.runtime.heldRef, ...(item.runtime.heldObjects || []).map(object => object.ref)]).map(resolve).filter(Boolean);
+        if (targets.some(target => target.model.userData.placement === 'grip-object' && target.model.userData.attachmentHost
+            || held.some(item => within(item.object, target.object) || within(target.object, item.object)))) throw new Error('흡착을 해제하고 오브젝트를 내려놓은 뒤 원위치로 등록하세요.');
+        const before = adapter.snapshot();
+        const objectWorld = {};
+        for (const target of targets) { target.object.updateWorldMatrix(true, false); objectWorld[target.ref] = target.object.matrixWorld.toArray(); }
+        def.origins = { ...def.origins, objectWorld };
+        adapter.history('오브젝트 원위치 등록', before);
+        adapter.changed();
+    }
     function command(id, command) {
+        if (command === 'SET_HOME') { setObjectHome(id); return; }
         if (command === 'RESET' && adapter.definitions().some(def => def.id === id && def.type === 'OBJECT')) { resetObjects('equipment:' + id); return; }
         if (adapter.definitions().some(def => def.id === id && def.type === 'VACUUM' && !def.enabled)) throw new Error('진공 동작을 편집하여 흡착 면을 선택하세요.');
         runtime.manual.set(id, command); runtime.start();
@@ -246,6 +265,7 @@ export function createEquipmentApp(adapter) {
                 runtime.reset(adapter.definitions());
                 adapter.conveyorControl?.('stop', runtime.paused);
                 adapter.history('모두 원위치', before);
+                adapter.posesChanged?.();
             }
             else runtime.stop();
             if (command !== 'reset') adapter.conveyorControl?.(command, runtime.paused);
@@ -303,6 +323,7 @@ export function createEquipmentApp(adapter) {
             }
         },
         resetObjects,
+        setObjectHome,
         isRegistered(model, part = null) {
             const source = model.userData.gripObjectSource;
             const original = source?.mode === 'part-copy' ? resolve(equipmentObjectRef(source.sourceModelId, source.sourcePartIndex)) : null;
@@ -324,10 +345,10 @@ export function createEquipmentApp(adapter) {
         restore() {
             for (const def of adapter.definitions()) {
                 if (def.type === 'OBJECT') {
-                    def.runtime.legacyIoMappings ||= JSON.parse(JSON.stringify((adapter.mappings?.() || []).filter(mapping => mapping.gripObjectRef === 'equipment:' + def.id)));
+                    def.runtime.legacyIoMappings ||= JSON.parse(JSON.stringify((adapter.mappings?.() || []).filter(mapping => mapping.gripObjectRef === 'equipment:' + def.id && mapping.action !== 'OBJECT_RESET')));
                     def.runtime.legacyFeedbackGrip ??= def.feedbackGrip;
                     runtime.release(def); def.feedbackGrip = null;
-                    adapter.removeBindings?.(def.id);
+                    adapter.removeBindings?.(def.id, { legacyOnly: true });
                     continue;
                 }
                 if (def.type === 'VACUUM' && !def.enabled) runtime.release(def);

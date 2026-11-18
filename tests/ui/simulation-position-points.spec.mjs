@@ -791,3 +791,130 @@ test('Windows 방식 Shift·Ctrl 클릭으로 행을 범위·추가·해제 선�
     await popup.screenshot({ path: 'tmp/position-points-windows-selection.png' });
     await popup.locator('[data-panel-action="hide"]').click();
 });
+
+test('P.pts 위치 삭제는 선택한 여러 행만 지우고 한 번에 실행 취소·다시 실행 및 저장된다', async ({ page }) => {
+    await setup(page);
+    const remove = page.locator('[data-pts-delete]');
+    await expect(remove).toBeDisabled();
+    for (let i = 0; i < 4; i++) await page.locator('[data-pts-new]').click();
+    const original = await page.evaluate(() => window.__pts.getPositionPointRecords());
+    const pose = await currentPose(page);
+    const row = index => page.locator('[data-pts-row]').filter({ hasText: `P[${index}]` });
+    await row(100).locator('td').first().click();
+    await row(100).locator('td').first().click({ modifiers: ['Control'] });
+    await expect(remove).toBeDisabled();
+    await row(100).locator('td').first().click();
+    await row(110).locator('td').first().click({ modifiers: ['Control'] });
+    await expect(remove).toBeEnabled();
+    await remove.click();
+    const remaining = original.filter(record => ![100, 110].includes(record.index));
+    expect(await page.evaluate(() => window.__pts.getPositionPointRecords())).toEqual(remaining);
+    await expect(page.locator('[data-pts-count]')).toHaveText('2');
+    await expect(page.locator('[data-pts-error]')).toBeEmpty();
+    expect(await currentPose(page)).toEqual(pose);
+    await page.keyboard.press('Control+z');
+    expect(await page.evaluate(() => window.__pts.getPositionPointRecords())).toEqual(original);
+    await page.keyboard.press('Control+y');
+    expect(await page.evaluate(() => window.__pts.getPositionPointRecords())).toEqual(remaining);
+    const serialized = await page.evaluate(() => {
+        const a = window.__pts;
+        return a.normalizeMotionProgramFile(a.serializeMotionProgramFile()).robots[0].positions.map(point => point.pointIndex);
+    });
+    expect(serialized.sort((a, b) => a - b)).toEqual(remaining.map(record => record.index));
+    await page.keyboard.press('Control+a');
+    await remove.click();
+    await expect(page.locator('[data-pts-row]')).toHaveCount(0);
+    await expect(page.locator('[data-pts-empty]')).toBeVisible();
+    await expect(remove).toBeDisabled();
+    await expect(page.locator('[data-pts-export]')).toBeDisabled();
+    await page.keyboard.press('Control+z');
+    expect(await page.evaluate(() => window.__pts.getPositionPointRecords())).toEqual(remaining);
+});
+
+test('가져온 P.pts 삭제는 P·LP를 구분하고 다른 파일·메타데이터·줄바꿈과 실행 취소를 보존한다', async ({ page }) => {
+    await setup(page);
+    await page.locator('[data-panel-toggle="position-points-panel"]').click();
+    const lines = ['ProgramInfo', '    RobotName = "Keep"', 'EndProgramInfo', '# Keep comment',
+        '  P[7]=1,2,3,4,5,6;0,0,0,1;10,20,30,40,50,60;Name=Original;User=Keep;',
+        'LP[7]=7,8,9,0,0,0;0,0,0,1;0,0,0,0,0,0;Name=Local;User=Local;',
+        'P[8]=10,20,30,0,0,0;0,0,0,1;0,0,0,0,0,0;Name=Last;', ''];
+    const text = lines.join('\r\n');
+    await page.evaluate(async text => window.__pts.handleOlpFolderImport([
+        new File(['Start\nEnd'], 'main.pro'), new File([text], 'P.pts'),
+        new File(['P[7]=99,99,99,0,0,0;Name=Recipe;'], 'P01.pts')
+    ], { connectBus: false }), text);
+    await page.locator('[data-panel-toggle="position-points-panel"]').click();
+    const pose = await currentPose(page);
+    const files = await page.evaluate(() => [...window.__pts.getOlpProject().files].map(([path, file]) => [path, file.text]));
+    await page.locator('[data-pts-row="P:7"] td').first().click();
+    await page.locator('[data-pts-delete]').click();
+    const edited = lines.filter(line => !line.startsWith('  P[7]')).join('\r\n');
+    expect(await page.evaluate(() => window.__pts.getOlpProject().files.get('P.pts').text)).toBe(edited);
+    await expect(page.locator('[data-pts-row="LP:7"]')).toHaveCount(1);
+    expect(await currentPose(page)).toEqual(pose);
+    expect(await page.evaluate(() => [...window.__pts.getOlpProject().files].filter(([path]) => path !== 'P.pts').map(([path, file]) => [path, file.text])))
+        .toEqual(files.filter(([path]) => path !== 'P.pts'));
+    await page.keyboard.press('Control+z');
+    expect(await page.evaluate(() => window.__pts.getOlpProject().files.get('P.pts').text)).toBe(text);
+    await page.keyboard.press('Control+y');
+    expect(await page.evaluate(() => window.__pts.getOlpProject().files.get('P.pts').text)).toBe(edited);
+    await page.keyboard.press('Control+a');
+    await page.keyboard.press('Delete');
+    await expect(page.locator('[data-pts-row]')).toHaveCount(0);
+    expect(await page.evaluate(() => window.__pts.getOlpProject().files.get('P.pts').text)).toBe(lines.slice(0, 4).join('\r\n') + '\r\n');
+    await page.keyboard.press('Control+z');
+    expect(await page.evaluate(() => window.__pts.getOlpProject().files.get('P.pts').text)).toBe(edited);
+});
+
+test('P.pts 별도 창의 Delete는 행을 삭제하며 셀 입력·반복 키·로봇 동작 중에는 삭제하지 않는다', async ({ page }) => {
+    await setup(page);
+    for (let i = 0; i < 3; i++) await page.locator('[data-pts-new]').click();
+    const popupPromise = page.waitForEvent('popup');
+    await page.locator('#position-points-panel [data-panel-action="popout"]').click();
+    const popup = await popupPromise;
+    const first = popup.locator('[data-pts-row]').first();
+    await first.locator('[data-pts-edit-field="label"]').dblclick();
+    await popup.keyboard.press('Home');
+    await popup.keyboard.press('Delete');
+    await expect(popup.locator('[data-pts-row]')).toHaveCount(3);
+    await popup.keyboard.press('Escape');
+    await first.locator('td').first().click();
+    await popup.locator('[data-pts-row]').nth(1).locator('td').first().click({ modifiers: ['Shift'] });
+    await popup.locator('#position-points-panel').dispatchEvent('keydown', { key: 'Delete', code: 'Delete', repeat: true });
+    await expect(popup.locator('[data-pts-row]')).toHaveCount(3);
+    await page.evaluate(() => { window.__pts.state.olp.manualMoveBusy = true; window.__pts.renderMotionProgramPanel(); });
+    await expect(popup.locator('[data-pts-delete]')).toBeDisabled();
+    await popup.keyboard.press('Delete');
+    await expect(popup.locator('[data-pts-row]')).toHaveCount(3);
+    await page.evaluate(() => { window.__pts.state.olp.manualMoveBusy = false; window.__pts.renderMotionProgramPanel(); });
+    await popup.keyboard.press('Delete');
+    await expect(popup.locator('[data-pts-row]')).toHaveCount(1);
+    await popup.keyboard.press('Control+z');
+    await expect(popup.locator('[data-pts-row]')).toHaveCount(3);
+    await popup.keyboard.press('Control+y');
+    await expect(popup.locator('[data-pts-row]')).toHaveCount(1);
+    await popup.screenshot({ path: 'tmp/position-points-delete-popup.png' });
+    await popup.locator('[data-panel-action="hide"]').click();
+});
+
+test('프로그램이 사용하는 위치를 함께 삭제하면 전체 선택을 보존하고 다른 로봇에도 영향을 주지 않는다', async ({ page }) => {
+    await setup(page);
+    await page.evaluate(() => window.__pts.addCurrentMotionStep());
+    await page.locator('[data-pts-new]').click();
+    const firstId = await page.locator('[data-pts-robot]').inputValue();
+    const original = await page.evaluate(() => window.__pts.getPositionPointRecords());
+    const program = await page.evaluate(() => structuredClone(window.__pts.ensureMotionProgram(window.__pts.state.activeProgramRobot)));
+    await page.locator('[data-pts-row]').first().locator('td').first().click();
+    await page.keyboard.press('Control+a');
+    await page.locator('[data-pts-delete]').click();
+    await expect(page.locator('[data-pts-error]')).toContainText('이동 명령');
+    expect(await page.evaluate(() => window.__pts.getPositionPointRecords())).toEqual(original);
+    expect(await page.evaluate(() => window.__pts.ensureMotionProgram(window.__pts.state.activeProgramRobot))).toEqual(program);
+    await page.locator('#model-select').selectOption('robot:IR-S7-60Z20');
+    await page.locator('#btn-add-robot-model-choice').click();
+    await page.locator('[data-pts-new]').click();
+    await page.locator('[data-pts-delete]').click();
+    await expect(page.locator('[data-pts-row]')).toHaveCount(0);
+    await page.locator('[data-pts-robot]').selectOption(firstId);
+    expect(await page.evaluate(() => window.__pts.getPositionPointRecords())).toEqual(original);
+});

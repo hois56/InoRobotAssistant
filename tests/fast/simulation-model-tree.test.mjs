@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import { normalizeModelGroupTree } from '../../2_3DSimulation/model-group-tree-core.mjs';
 
 const source = readFileSync(new URL('../../2_3DSimulation/main.js', import.meta.url), 'utf8');
 const functions = ['shouldDisplayModelTreeParts', 'modelTreeHasChildren'].map(name => (
@@ -14,7 +15,7 @@ test('조립 그룹 메뉴는 중첩 부품을 포함하고 같은 모델의 다
     const c = { userData: { modelPartId: 'c', cadAssemblyPath: [{ id: 'other' }] } };
     const model = { userData: { modelTreeId: 'root' }, parts: [a, b, c] };
     const menu = { dataset: { modelTreeId: 'root', modelPartId: 'a', cadAssemblyId: 'module' } };
-    const context = vm.createContext({ state: { models: [model] }, el: { modelContextMenu: menu }, getImportedModelParts: model => model.parts });
+    const context = vm.createContext({normalizeModelGroupTree, state: { models: [model] }, el: { modelContextMenu: menu }, getImportedModelParts: model => model.parts });
     vm.runInContext(source.match(/function getModelContextTarget\(\) \{[\s\S]*?\n\}/)[0], context);
     assert.deepEqual(Array.from(context.getModelContextTarget().parts), [a, b]);
     delete menu.dataset.cadAssemblyId;
@@ -23,7 +24,7 @@ test('조립 그룹 메뉴는 중첩 부품을 포함하고 같은 모델의 다
 });
 
 test('파츠가 하나인 모든 모델은 하위 파츠와 펼치기 버튼을 표시하지 않는다', () => {
-    const context = vm.createContext({
+    const context = vm.createContext({normalizeModelGroupTree,
         state: { models: [] },
         getImportedModelParts: model => model.parts,
         isPrimitiveShapeModel: () => false,
@@ -46,7 +47,7 @@ test('파츠가 하나인 모든 모델은 하위 파츠와 펼치기 버튼을 
 test('모델 폴더 복원은 중복·삭제된 모델·부착 모델을 제외하고 기존 프로젝트를 허용한다', () => {
     const first = { id: 'a', userData: {} }, second = { id: 'b', userData: {} };
     const tool = { id: 'tool', userData: { attachmentHost: first } };
-    const context = vm.createContext({ state: { models: [first, second, tool] }, ensureWorkspaceModelId: model => model.id });
+    const context = vm.createContext({normalizeModelGroupTree, state: { models: [first, second, tool] }, ensureWorkspaceModelId: model => model.id });
     const names = ['isGroupableModel', 'normalizeModelGroups'];
     vm.runInContext(names.map(name => source.match(new RegExp(`function ${name}\\([^)]*\\) \\{[\\s\\S]*?\\n\\}`))[0]).join('\n'), context);
     assert.equal(JSON.stringify(context.normalizeModelGroups(undefined)), '[]');
@@ -63,7 +64,7 @@ test('모델 폴더 복원은 중복·삭제된 모델·부착 모델을 제외�
 
 
 test('모델 트리 표시 이름은 파일 확장자만 숨기고 순번과 점이 들어간 이름을 보존한다', () => {
-    const context = vm.createContext({});
+    const context = vm.createContext({normalizeModelGroupTree,});
     const helper = source.match(/function modelTreeDisplayName\(name\) \{[\s\S]*?\n\}/);
     assert.ok(helper, '모델 트리 표시 이름 함수가 필요합니다.');
     vm.runInContext(helper[0], context);
@@ -73,7 +74,7 @@ test('모델 트리 표시 이름은 파일 확장자만 숨기고 순번과 점
 
 test('임시로 잡힌 오브젝트의 그룹 소속과 폴더 상태를 유지하고 놓으면 같은 순서로 표시한다', () => {
  const robot={id:'robot',userData:{}},held={id:'held',userData:{attachmentHost:robot,placement:'grip-object'}},peer={id:'peer',userData:{}};
- const context=vm.createContext({state:{models:[robot,held,peer]},ensureWorkspaceModelId:model=>model.id});
+ const context=vm.createContext({normalizeModelGroupTree,state:{models:[robot,held,peer]},ensureWorkspaceModelId:model=>model.id});
  vm.runInContext(['isGroupableModel','normalizeModelGroups','getModelGroupMembers'].map(name=>source.match(new RegExp('function '+name+'\\([^)]*\\) \\{[\\s\\S]*?\\n\\}'))[0]).join('\n'),context);
  const group={name:'제품',modelIds:['held','peer'],collapsed:true,treeOrderId:'products'};
  const normalized=context.normalizeModelGroups([group]);assert.equal(JSON.stringify(normalized),JSON.stringify([group]));

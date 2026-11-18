@@ -1,0 +1,5 @@
+# Not needed when running with Isaac Sim's Python (pxr and numpy are bundled).
+# Full compliance needs the standard USD shader registry from a complete SDK;
+# some standalone wheels omit its resource files.
+usd-core==24.11
+numpy>=1.26,<3

@@ -260,6 +260,7 @@ const manualData = [
         date: "2026-04-13",
         lang: "KR",
         path: "Software_manual/Remote_IO_List.xlsx",
+        previewPath: "Software_manual/Remote_IO_List.html",
         description: "Remote IO Address List",
         tagLabel: "Remote IO"
     },
@@ -651,6 +652,19 @@ function translateUiText(value) {
     return window.InoRobotI18n ? window.InoRobotI18n.translate(String(value || '')) : String(value || '');
 }
 
+const robotTypeLabels = {
+    scara: 'SCARA',
+    '6axis': '6-Axis',
+    controller: 'Controller'
+};
+
+const cadGroupLabels = {
+    '6axis': '6-Axis',
+    scara: 'SCARA',
+    controller: 'Controller',
+    accessory: 'Accessory'
+};
+
 function getManualTagLabel(man) {
     const categories = getCategories(man);
     const certificateCategory = categories.find(cat => cat.startsWith('cert-'));
@@ -668,7 +682,7 @@ function getManualTagLabel(man) {
     if (man.robotType === 'safetyFunction') return 'Safety Function';
     if (man.robotType === 'selection') return 'Selection Guide';
     if (man.robotType === 'none') return 'Common';
-    return man.robotType;
+    return robotTypeLabels[man.robotType] || man.robotType;
 }
 
 function getCadFileKind(fileName) {
@@ -697,11 +711,12 @@ function createCadDocuments() {
         cadGroup: entry.group,
         category: ['cad', `cad-${entry.group}`],
         cadModel: entry.model,
+        cadVariant: entry.variant || '',
         cadFolder: entry.folder,
         date: '2026-09-13',
         lang: getCadFileKind(file),
         path: `../1_RobotModelSelect/Robot_CAD/${entry.folder}/${file}`,
-        description: `${entry.model} CAD`,
+        description: [entry.model, entry.variant, 'CAD'].filter(Boolean).join(' '),
         tagLabel: 'CAD',
         additionalTag: entry.model
     })));
@@ -710,53 +725,155 @@ function createCadDocuments() {
 manualData.push(...createCadDocuments());
 
 function getCadGroupKey(man) {
-    return `${man.cadFolder || ''}|${man.cadModel || man.additionalTag || ''}`;
+    return `${man.cadFolder || ''}|${man.cadModel || man.additionalTag || ''}|${man.cadVariant || ''}`;
+}
+
+// Filter groups in the sidebar. `key` names the selection field, `attribute` is the data-* attribute on its buttons.
+const filterGroups = [
+    { id: 'cadFilters', attribute: 'cad', key: 'cad' },
+    { id: 'typeFilters', attribute: 'type', key: 'type' },
+    { id: 'catFilters', attribute: 'cat', key: 'software' },
+    { id: 'eduFilters', attribute: 'cat', key: 'edu' },
+    { id: 'profileFilters', attribute: 'cat', key: 'profile' },
+    { id: 'certFilters', attribute: 'cat', key: 'cert' }
+];
+
+// A clicked hardware reset means all hardware manuals, while the initial view still lists every resource.
+let selectedFilterGroup = null;
+
+function createEmptySelection() {
+    const selection = { search: '', hardwareOnly: false };
+    filterGroups.forEach(group => { selection[group.key] = 'all'; });
+    return selection;
+}
+
+function readSelection() {
+    const selection = createEmptySelection();
+    filterGroups.forEach(group => {
+        const active = document.querySelector(`#${group.id} .active`);
+        selection[group.key] = active ? active.dataset[group.attribute] || 'all' : 'all';
+    });
+    selection.hardwareOnly = selectedFilterGroup === 'typeFilters';
+    const input = document.getElementById('manualSearch');
+    selection.search = input ? input.value.toLowerCase() : '';
+    return selection;
+}
+
+function matchesFilters(man, selection) {
+    if (selection.hardwareOnly && !['hardware', 'expansion', 'safetyFunction', 'selection'].some(category => hasCategory(man, category))) return false;
+
+    if (selection.cad !== 'all') {
+        if (man.robotType !== 'cad') return false;
+        if (selection.cad !== 'cad' && man.cadGroup !== selection.cad) return false;
+    }
+
+    if (selection.type !== 'all') {
+        if (man.robotType !== selection.type) return false;
+    }
+
+    if (selection.software !== 'all' && !hasCategory(man, selection.software)) return false;
+    if (selection.edu !== 'all' && !hasCategory(man, selection.edu)) return false;
+    if (selection.profile !== 'all' && !hasCategory(man, selection.profile)) return false;
+    if (selection.cert !== 'all' && !hasCategory(man, selection.cert)) return false;
+    return true;
+}
+
+function matchesSearch(man, searchTerm) {
+    return man.title.toLowerCase().includes(searchTerm) ||
+        man.description.toLowerCase().includes(searchTerm) ||
+        man.path.toLowerCase().includes(searchTerm) ||
+        String(man.additionalTag || '').toLowerCase().includes(searchTerm) ||
+        translateUiText(man.title).toLowerCase().includes(searchTerm) ||
+        translateUiText(man.description).toLowerCase().includes(searchTerm) ||
+        translateUiText(man.additionalTag).toLowerCase().includes(searchTerm) ||
+        translateUiText(man.cadVariant).toLowerCase().includes(searchTerm);
+}
+
+// Each model and product variant gets one row; counts follow rows rather than files.
+function countRows(documents) {
+    const cadModels = new Set();
+    let rows = 0;
+    documents.forEach(man => {
+        if (!hasCategory(man, 'cad')) {
+            rows += 1;
+            return;
+        }
+        const key = getCadGroupKey(man);
+        if (cadModels.has(key)) return;
+        cadModels.add(key);
+        rows += 1;
+    });
+    return rows;
+}
+
+function cloneTemplate(id) {
+    const template = document.getElementById(id);
+    return template ? template.content.firstElementChild.cloneNode(true) : null;
+}
+
+let manualRowSequence = 0;
+
+function createManualRow({ title, code, tag, extra, date }) {
+    const row = cloneTemplate('manualRowTemplate');
+    const titleId = `manual-title-${manualRowSequence += 1}`;
+    const heading = row.querySelector('.manual-title');
+    heading.id = titleId;
+    heading.textContent = title;
+    row.querySelector('[data-slot="code"]').textContent = code;
+    row.querySelector('.manual-tag').textContent = tag;
+
+    const extraNode = row.querySelector('.manual-extra');
+    if (extra) extraNode.textContent = extra;
+    else extraNode.remove();
+
+    const time = row.querySelector('.manual-date');
+    time.textContent = date;
+    time.dateTime = date;
+
+    // Several rows share the same button labels, so tie each action to its row title.
+    row.querySelectorAll('[data-action]').forEach(button => button.setAttribute('aria-describedby', titleId));
+    return row;
 }
 
 function renderCadModelCard(list, documents) {
     const first = documents[0];
     if (!first) return;
 
-    const twoD = documents.filter(man => getCadDownloadType(man.title) === '2D');
-    const threeD = documents.filter(man => getCadDownloadType(man.title) === '3D');
-    const downloadButtons = [
-        ...twoD.map(man => `
-            <button onclick="handleDownload('${man.id}')" title="${man.title}"
-                    class="download-btn px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 min-w-[112px] justify-center">
-                <i data-lucide="download" class="w-3.5 h-3.5"></i> 2D 다운로드
-            </button>
-        `),
-        ...threeD.map(man => `
-            <button onclick="handleDownload('${man.id}')" title="${man.title}"
-                    class="download-btn px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 min-w-[112px] justify-center">
-                <i data-lucide="download" class="w-3.5 h-3.5"></i> 3D 다운로드
-            </button>
-        `)
-    ].join('');
+    const row = createManualRow({
+        title: first.cadModel,
+        code: 'CAD',
+        tag: cadGroupLabels[first.cadGroup] || first.cadGroup,
+        extra: first.cadVariant,
+        date: first.date
+    });
+    const titleId = row.querySelector('.manual-title').id;
+    const actions = row.querySelector('.manual-actions');
+    actions.replaceChildren();
 
-    const item = document.createElement('div');
-    item.className = 'manual-item p-6 rounded-2xl flex flex-col md:flex-row items-start md:items-center gap-6 group';
-    item.innerHTML = `
-        <div class="w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-cyan-400 flex-shrink-0 group-hover:bg-cyan-500 group-hover:text-white transition-all">
-            <i data-lucide="boxes" class="w-7 h-7"></i>
-        </div>
+    [['2D', '2D 다운로드'], ['3D', '3D 다운로드']].forEach(([kind, label]) => {
+        documents.filter(man => getCadDownloadType(man.title) === kind).forEach(man => {
+            const button = cloneTemplate('manualCadButtonTemplate');
+            button.querySelector('[data-slot="label"]').textContent = label;
+            button.setAttribute('aria-describedby', titleId);
+            button.title = man.title;
+            button.dataset.id = man.id;
+            actions.append(button);
+        });
+    });
 
-        <div class="flex-grow">
-            <div class="flex flex-wrap items-center gap-2 mb-2">
-                <span class="text-[12px] font-bold text-slate-500 bg-white/5 px-2.5 py-1 rounded border border-white/5 font-outfit capitalize">CAD</span>
-                <span class="text-[12px] font-bold text-fuchsia-300 bg-fuchsia-500/10 px-2.5 py-1 rounded border border-fuchsia-400/20 font-outfit">${first.cadGroup}</span>
-                <span class="text-[11px] text-slate-600 ml-1 opacity-70">${first.date}</span>
-            </div>
-            <h3 class="text-lg font-bold text-white mb-1 group-hover:text-white transition-colors" style="word-break: break-all;">${first.cadModel}</h3>
-        </div>
+    list.appendChild(row);
+}
 
-        <div class="flex items-center gap-2 pt-4 md:pt-0 shrink-0 w-full md:w-auto">
-            <div class="flex flex-wrap gap-2 ml-auto">
-                ${downloadButtons}
-            </div>
-        </div>
-    `;
-    list.appendChild(item);
+function renderManualDocument(list, man) {
+    const row = createManualRow({
+        title: man.title,
+        code: man.lang,
+        tag: getManualTagLabel(man),
+        extra: man.additionalTag,
+        date: man.date
+    });
+    row.querySelectorAll('[data-action]').forEach(button => { button.dataset.id = man.id; });
+    list.appendChild(row);
 }
 
 function setupFilterSections() {
@@ -780,80 +897,80 @@ function setupFilterSections() {
     });
 }
 
+function isResetFilter(button) {
+    if (selectedFilterGroup === 'typeFilters' && button.closest('#typeFilters')) return false;
+    return (button.dataset.type || button.dataset.cat || button.dataset.cad) === 'all';
+}
+
+// Each group keeps its own "all" button active while another group filters, so several buttons carry
+// .active at once. Only the real selection is exposed as pressed. Hardware "all" remains a scoped
+// selection after a click; the initial unfiltered view highlights only the first group's reset.
+function syncFilterState() {
+    const buttons = Array.from(document.querySelectorAll('.filter-btn'));
+    const isFiltering = buttons.some(button => button.classList.contains('active') && !isResetFilter(button));
+
+    buttons.forEach(button => {
+        const active = button.classList.contains('active');
+        const quiet = active && isResetFilter(button) && (isFiltering || !button.closest('#typeFilters'));
+        button.toggleAttribute('data-quiet', quiet);
+        button.setAttribute('aria-pressed', String(active && !quiet));
+    });
+
+    // Open a section whose filter is in use so the selection is visible.
+    document.querySelectorAll('[data-filter-section]').forEach(section => {
+        const inUse = Array.from(section.querySelectorAll('.filter-btn.active')).some(button => !isResetFilter(button));
+        if (!inUse || !section.classList.contains('is-collapsed')) return;
+        section.classList.remove('is-collapsed');
+        section.querySelector('.filter-section-toggle')?.setAttribute('aria-expanded', 'true');
+    });
+}
+
+function renderFilterCounts() {
+    filterGroups.forEach(group => {
+        document.querySelectorAll(`#${group.id} .filter-btn`).forEach(button => {
+            const value = button.dataset[group.attribute];
+            // Leave reset buttons without a count; the result count shows the selected scope.
+            if (!value || value === 'all' || button.querySelector('.filter-count')) return;
+
+            const selection = createEmptySelection();
+            selection[group.key] = value;
+            const count = document.createElement('span');
+            count.className = 'filter-count';
+            count.textContent = String(countRows(manualData.filter(man => matchesFilters(man, selection))));
+            button.append(count);
+        });
+    });
+}
+
+function updateResultCount(rows) {
+    const value = document.getElementById('manualCountValue');
+    if (value) value.textContent = String(rows);
+}
+
 function init() {
-    renderManuals();
     setupFilterSections();
     setupFilters();
     setupSearch();
+    setupActions();
+    renderFilterCounts();
+    renderManuals();
     document.addEventListener('inorobot:languagechange', renderManuals);
-    if(window.lucide) lucide.createIcons();
 }
 
 function renderManuals() {
     const list = document.getElementById('manualList');
-    list.innerHTML = '';
+    list.replaceChildren();
 
-    const activeTypeBtn = document.querySelector('#typeFilters .active');
-    const activeSoftwareBtn = document.querySelector('#catFilters .active');
-    const activeEduBtn = document.querySelector('#eduFilters .active');
-    const activeProfileBtn = document.querySelector('#profileFilters .active');
-    const activeCertBtn = document.querySelector('#certFilters .active');
-    const activeCadBtn = document.querySelector('#cadFilters .active');
-
-    const activeType = activeTypeBtn ? activeTypeBtn.dataset.type : 'all';
-    const activeSoftware = activeSoftwareBtn ? activeSoftwareBtn.dataset.cat : 'all';
-    const activeEdu = activeEduBtn ? activeEduBtn.dataset.cat : 'all';
-    const activeProfile = activeProfileBtn ? activeProfileBtn.dataset.cat : 'all';
-    const activeCert = activeCertBtn ? activeCertBtn.dataset.cat : 'all';
-    const activeCad = activeCadBtn ? activeCadBtn.dataset.cad : 'all';
-    
-    const searchTerm = document.getElementById('manualSearch').value.toLowerCase();
-
-    const filtered = manualData.filter(man => {
-        if (activeCad !== 'all') {
-            if (man.robotType !== 'cad') return false;
-            if (activeCad !== 'cad' && man.cadGroup !== activeCad) return false;
-        }
-
-        if (activeType !== 'all') {
-            const matchesCadGroup = man.robotType === 'cad' && man.cadGroup === activeType;
-            if (man.robotType !== activeType && !matchesCadGroup) return false;
-        }
-
-        if (activeSoftware !== 'all') {
-            if (!hasCategory(man, activeSoftware)) return false;
-        }
-
-        if (activeEdu !== 'all') {
-            if (!hasCategory(man, activeEdu)) return false;
-        }
-
-        if (activeProfile !== 'all') {
-            if (!hasCategory(man, activeProfile)) return false;
-        }
-
-        if (activeCert !== 'all') {
-            if (!hasCategory(man, activeCert)) return false;
-        }
-
-        const matchesSearch = man.title.toLowerCase().includes(searchTerm) ||
-                             man.description.toLowerCase().includes(searchTerm) ||
-                             man.path.toLowerCase().includes(searchTerm) ||
-                             String(man.additionalTag || '').toLowerCase().includes(searchTerm) ||
-                             translateUiText(man.title).toLowerCase().includes(searchTerm) ||
-                             translateUiText(man.description).toLowerCase().includes(searchTerm) ||
-                             translateUiText(man.additionalTag).toLowerCase().includes(searchTerm);
-        return matchesSearch;
-    });
+    const selection = readSelection();
+    const filtered = manualData.filter(man => matchesFilters(man, selection) && matchesSearch(man, selection.search));
 
     if (filtered.length === 0) {
-        list.innerHTML = `
-            <div class="py-20 text-center text-slate-500">
-                <i data-lucide="file-x" class="w-12 h-12 mx-auto mb-4 opacity-20"></i>
-                <p>매뉴얼을 찾을 수 없습니다.</p>
-            </div>
-        `;
-        if(window.lucide) lucide.createIcons();
+        const empty = document.createElement('p');
+        empty.className = 'empty-state';
+        empty.textContent = '매뉴얼을 찾을 수 없습니다.';
+        list.appendChild(empty);
+        updateResultCount(0);
+        syncFilterState();
         return;
     }
 
@@ -867,61 +984,11 @@ function renderManuals() {
             return;
         }
 
-        const item = document.createElement('div');
-        item.className = 'manual-item p-6 rounded-2xl flex flex-col md:flex-row items-start md:items-center gap-6 group';
-        
-        let iconColor = "text-emerald-500";
-        let bgColor = "group-hover:bg-emerald-500";
-        if (hasCategory(man, 'selection')) { iconColor = "text-blue-500"; bgColor = "group-hover:bg-blue-500"; }
-        if (hasCategory(man, 'expansion')) { iconColor = "text-cyan-500"; bgColor = "group-hover:bg-cyan-500"; }
-        if (hasCategory(man, 'safetyFunction')) { iconColor = "text-red-400"; bgColor = "group-hover:bg-red-500"; }
-        if (hasCategory(man, 'comm') || hasCategory(man, 'commProfile')) { iconColor = "text-amber-500"; bgColor = "group-hover:bg-amber-500"; }
-        if (hasCategory(man, 'pendant')) { iconColor = "text-indigo-500"; bgColor = "group-hover:bg-indigo-500"; }
-        if (hasCategory(man, 'api')) { iconColor = "text-rose-500"; bgColor = "group-hover:bg-rose-500"; }
-        if (hasCategory(man, 'entry') || hasCategory(man, 'basic') || hasCategory(man, 'display')) { iconColor = "text-fuchsia-500"; bgColor = "group-hover:bg-fuchsia-500"; }
-        if (hasCategory(man, 'advanced')) { iconColor = "text-orange-400"; bgColor = "group-hover:bg-orange-500"; }
-        if (hasCategory(man, 'certificate')) { iconColor = "text-violet-500"; bgColor = "group-hover:bg-violet-500"; }
-        if (hasCategory(man, 'cad')) { iconColor = "text-cyan-400"; bgColor = "group-hover:bg-cyan-500"; }
-
-        item.innerHTML = `
-            <div class="w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center ${iconColor} flex-shrink-0 ${bgColor} group-hover:text-white transition-all">
-                <i data-lucide="file-text" class="w-7 h-7"></i>
-            </div>
-            
-            <div class="flex-grow">
-                <div class="flex flex-wrap items-center gap-2 mb-2">
-                    <div class="flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-md border border-white/10">
-                        <span class="text-[12px] font-bold text-slate-300 font-outfit tracking-tighter">${man.lang}</span>
-                    </div>
-                    <span class="text-[12px] font-bold text-slate-500 bg-white/5 px-2.5 py-1 rounded border border-white/5 font-outfit capitalize">
-                        ${getManualTagLabel(man)}
-                    </span>
-                    ${man.additionalTag ? `
-                    <span class="text-[12px] font-bold text-fuchsia-300 bg-fuchsia-500/10 px-2.5 py-1 rounded border border-fuchsia-400/20 font-outfit">
-                        ${man.additionalTag}
-                    </span>` : ''}
-                    <span class="text-[11px] text-slate-600 ml-1 opacity-70">${man.date}</span>
-                </div>
-                <h3 class="text-lg font-bold text-white mb-1 group-hover:text-white transition-colors" style="word-break: break-all;">${man.title}</h3>
-            </div>
-            
-            <div class="document-action-row flex items-center gap-2 pt-4 md:pt-0 shrink-0 w-full md:w-auto">
-                <div class="document-action-buttons flex gap-2 ml-auto">
-                    <button onclick="handleView('${man.id}')"
-                            class="document-action-button px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 min-w-[100px] justify-center view-btn">
-                        <i data-lucide="eye" class="w-3.5 h-3.5"></i> 미리보기
-                    </button>
-                    <button onclick="handleDownload('${man.id}')"
-                            class="document-action-button px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 min-w-[100px] justify-center download-btn">
-                        <i data-lucide="download" class="w-3.5 h-3.5"></i> 다운로드
-                    </button>
-                </div>
-            </div>
-        `;
-        list.appendChild(item);
+        renderManualDocument(list, man);
     });
 
-    if(window.lucide) lucide.createIcons();
+    updateResultCount(list.children.length);
+    syncFilterState();
 }
 
 function setupFilters() {
@@ -930,13 +997,13 @@ function setupFilters() {
         btn.addEventListener('click', () => {
             const parent = btn.parentElement;
             const filterGroup = btn.closest('#certFilters') || parent;
+            selectedFilterGroup = filterGroup.id;
             filterGroup.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
 
-            const groupIds = ['typeFilters', 'catFilters', 'eduFilters', 'profileFilters', 'certFilters', 'cadFilters'];
-            groupIds.forEach(gid => {
-                if (gid !== filterGroup.id) {
-                    const group = document.getElementById(gid);
+            filterGroups.forEach(({ id }) => {
+                if (id !== filterGroup.id) {
+                    const group = document.getElementById(id);
                     if (group) {
                         group.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                         const allBtn = group.querySelector('[data-type="all"]') || group.querySelector('[data-cat="all"]');
@@ -951,17 +1018,17 @@ function setupFilters() {
     });
 }
 
+// Bring the results into view after a filter change, but leave the page alone when they are already visible.
 function scrollToManualList() {
     const list = document.getElementById('manualList');
-    const header = document.querySelector('header');
     if (!list) return;
 
-    const headerHeight = header ? header.getBoundingClientRect().height : 0;
-    const top = window.scrollY + list.getBoundingClientRect().top - headerHeight - 16;
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const rect = list.getBoundingClientRect();
+    if (rect.top >= 0 && rect.top <= window.innerHeight * 0.5) return;
 
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     window.scrollTo({
-        top: Math.max(0, top),
+        top: Math.max(0, window.scrollY + rect.top - 24),
         behavior: reduceMotion ? 'auto' : 'smooth'
     });
 }
@@ -969,6 +1036,16 @@ function scrollToManualList() {
 function setupSearch() {
     const input = document.getElementById('manualSearch');
     input.addEventListener('input', renderManuals);
+}
+
+function setupActions() {
+    const list = document.getElementById('manualList');
+    list.addEventListener('click', event => {
+        const button = event.target.closest('[data-action]');
+        if (!button || !list.contains(button)) return;
+        if (button.dataset.action === 'view') handleView(button.dataset.id);
+        if (button.dataset.action === 'download') handleDownload(button.dataset.id);
+    });
 }
 
 function encodeManualPath(path) {
@@ -987,7 +1064,7 @@ function resolveManualUrl(path) {
 function handleView(id) {
     const man = manualData.find(m => m.id === id);
     if (!man) return;
-    window.open(resolveManualUrl(man.path), '_blank');
+    window.open(resolveManualUrl(man.previewPath || man.path), '_blank');
 }
 
 function handleDownload(id) {

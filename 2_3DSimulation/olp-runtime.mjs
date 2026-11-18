@@ -13,6 +13,148 @@ const NO_BUILTIN=Symbol('not a native builtin');
 const isModuleLocal=symbol=>/^(?:LB|LR|LD|LP|LPR|LStr)\s*\[/i.test(symbol);
 const arrayBase=symbol=>String(symbol).match(/^([A-Za-z_]\w*)\s*\[/)?.[1]??null;
 
+// ── Per-move time log ──────────────────────────────────────────────────────
+// Times use a simulation clock: the planned duration of each motion plus Delay
+// and Wait time. Pauses, the playback speed override and the browser frame rate
+// do not change it, so one program gives the same per-move times on every run.
+// TimeStart/TimeOut keep measuring wall time; for this log they only mark cycles.
+// (Kept in this file: tests load the runtime as a plain script without imports.)
+const TACT_MAX_MOVES = 5000;
+const TACT_MAX_CYCLES = 1000;
+
+export function createOlpTactLog() {
+    return { clock: 0, lastMotionEnd: 0, moves: [], cycles: [], openCycle: null, sequence: 0, version: 0 };
+}
+
+const tactFrameName = frame => String(frame || '').split(':').at(-1).split('.').at(-1);
+
+// The point name of a motion target, e.g. "Offset(P2_Pre_work, PR[B_PR])" -> "P2_Pre_work".
+export function describeOlpTactTarget(expression) {
+    const text = String(expression || '').trim();
+    const offset = text.match(/^Offset\s*\(\s*([^,]+?)\s*,/i);
+    return offset ? offset[1] : text;
+}
+
+function createOlpTactRecord(runtime, { motion, pointExpression, speed, options = {} }) {
+    const stack = runtime?.callStack || [];
+    return {
+        sequence: 0, cycle: null,
+        motion: String(motion || '').toUpperCase(),
+        target: describeOlpTactTarget(pointExpression),
+        speed: Number(speed),
+        speedMode: options.speedMode || 'percent',
+        zone: options.zone ?? null,
+        acceleration: options.acceleration ?? null,
+        deceleration: options.deceleration ?? null,
+        file: runtime?.currentFilePath || '',
+        line: runtime?.currentLineNumber || 0,
+        // Outermost called function (e.g. P2_pos) and the function issuing the move (e.g. Return_move).
+        process: tactFrameName(stack[0]) || 'main',
+        functionName: tactFrameName(stack.at(-1)) || 'main',
+        plannedSeconds: null, seconds: null, gapSeconds: 0, start: null, end: null,
+        wallStart: null, wallSeconds: null, estimated: false, blended: false, failed: false, done: false
+    };
+}
+
+function beginOlpTactMotion(log, record) {
+    // Non-motion time (Delay, Wait, tool and vision time) since the previous move or the cycle start.
+    const baseline = Math.max(log.lastMotionEnd, log.openCycle ? log.openCycle.start : -Infinity);
+    record.sequence = ++log.sequence;
+    record.cycle = log.openCycle?.index ?? null;
+    record.start = log.clock;
+    record.gapSeconds = Math.max(0, log.clock - baseline);
+    record.wallStart = performance.now();
+    log.moves.push(record);
+    if (log.moves.length > TACT_MAX_MOVES) log.moves.splice(0, log.moves.length - TACT_MAX_MOVES);
+    log.version += 1;
+    return record;
+}
+
+function recordOlpTactProgress(record, durationSeconds) {
+    const duration = Number(durationSeconds);
+    if (record && !record.done && Number.isFinite(duration) && duration >= 0) record.plannedSeconds = duration;
+}
+
+function finishOlpTactMotion(log, record, result = null) {
+    if (!record || record.done) return;
+    record.wallSeconds = Math.max(0, (performance.now() - record.wallStart) / 1000);
+    // An adapter that reports no planned duration falls back to elapsed wall time.
+    record.estimated = !Number.isFinite(record.plannedSeconds);
+    record.seconds = record.estimated ? record.wallSeconds : record.plannedSeconds;
+    record.blended = Boolean(result?.blendedNext);
+    record.end = record.start + record.seconds;
+    record.done = true;
+    // An Nwait move can overlap later instructions: the clock only moves forward.
+    log.clock = Math.max(log.clock, record.end);
+    log.lastMotionEnd = Math.max(log.lastMotionEnd, record.end);
+    log.version += 1;
+}
+
+function abandonOlpTactMotion(log, record) {
+    if (!record || record.done) return;
+    record.done = true;
+    record.failed = true;
+    log.version += 1;
+}
+
+// A Delay/Wait that began at `start` ends at `start + seconds`. An Nwait move may run
+// during it, so the clock moves to the later of the two instead of adding both.
+function advanceOlpTactClock(log, start, seconds) {
+    const value = Number(seconds);
+    if (value > 0 && Number.isFinite(start)) log.clock = Math.max(log.clock, start + value);
+}
+
+function startOlpTactCycle(log, timer) {
+    if (log.openCycle) return null;
+    log.openCycle = { index: (log.cycles.at(-1)?.index ?? 0) + 1, timer, start: log.clock };
+    log.version += 1;
+    return log.openCycle;
+}
+
+function endOlpTactCycle(log, timer, wallSeconds = null) {
+    const open = log.openCycle;
+    if (!open || open.timer !== timer) return null;
+    const moves = log.moves.filter(move => move.cycle === open.index && move.done && !move.failed);
+    const seconds = Math.max(0, log.clock - open.start);
+    const motionSeconds = moves.reduce((sum, move) => sum + move.seconds, 0);
+    const cycle = { index: open.index, timer, start: open.start, end: log.clock, seconds, motionSeconds,
+        waitSeconds: Math.max(0, seconds - motionSeconds), moveCount: moves.length,
+        wallSeconds: Number.isFinite(Number(wallSeconds)) ? Number(wallSeconds) : null };
+    log.cycles.push(cycle);
+    if (log.cycles.length > TACT_MAX_CYCLES) log.cycles.splice(0, log.cycles.length - TACT_MAX_CYCLES);
+    log.openCycle = null;
+    log.version += 1;
+    return cycle;
+}
+
+// Moves of one cycle, or the moves outside any cycle when cycleIndex is null.
+export function olpTactMovesForCycle(log, cycleIndex) {
+    return (log?.moves || []).filter(move => move.cycle === cycleIndex);
+}
+
+export function formatOlpTactCsv(log) {
+    const field = value => {
+        const text = value === null || value === undefined ? '' : String(value);
+        return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+    };
+    const fixed = value => (Number.isFinite(value) ? value.toFixed(3) : '');
+    const rows = [['cycle', 'sequence', 'process', 'function', 'file', 'line', 'motion', 'target', 'speed', 'zone',
+        'acc', 'dec', 'move_s', 'gap_s', 'start_s', 'end_s', 'blended', 'estimated', 'failed']];
+    for (const move of log?.moves || []) {
+        rows.push([move.cycle ?? '', move.sequence, move.process, move.functionName, move.file, move.line, move.motion,
+            move.target, move.speedMode === 'absolute' ? `Speed[${move.speed}]` : `V[${move.speed}]`, move.zone ?? '',
+            move.acceleration ?? '', move.deceleration ?? '', fixed(move.seconds), fixed(move.gapSeconds), fixed(move.start),
+            fixed(move.end), move.blended ? 1 : 0, move.estimated ? 1 : 0, move.failed ? 1 : 0]);
+    }
+    rows.push([]);
+    rows.push(['cycle', 'cycle_s', 'motion_s', 'non_motion_s', 'moves', 'timeout_wall_s']);
+    for (const cycle of log?.cycles || []) {
+        rows.push([cycle.index, fixed(cycle.seconds), fixed(cycle.motionSeconds), fixed(cycle.waitSeconds), cycle.moveCount,
+            fixed(cycle.wallSeconds)]);
+    }
+    return rows.map(row => row.map(field).join(',')).join('\r\n') + '\r\n';
+}
+
 export class OlpRuntimeError extends Error {
     constructor(message, runtime = null) {
         const location = runtime?.currentFilePath
@@ -513,6 +655,8 @@ export class OlpRuntime {
         this.ioGroups = this.globalMemory.ioGroups;
         this.pallets = this.globalMemory.pallets;
         this.stopwatches = new Map();
+        // Per-move times of the current run (see olp-tact-log.mjs).
+        this.tactLog = createOlpTactLog();
         this.pulseTimers = new Set();
         this.pendingMotions = new Set();
         this.stopMoveQueue = null;
@@ -672,6 +816,8 @@ export class OlpRuntime {
         this.sliceStartedAt = performance.now();
         this.phase = 'running';
         this.lastError = null;
+        this.tactLog = createOlpTactLog();
+        this.adapter.tactChanged?.(this);
         this.notifyCursor();
         try {
             await this.initializeDeclarations();
@@ -796,6 +942,7 @@ export class OlpRuntime {
     async waitForCondition(condition, timeoutValue = null) {
         const timeout = timeoutValue === null ? 0 : timerMilliseconds(parseLiteral(timeoutValue, this));
         const startedAt = performance.now();
+        const tactStart = this.tactLog.clock;
         this.phase = 'waiting';
         this.waitCondition = condition;
         this.notifyCursor();
@@ -803,9 +950,14 @@ export class OlpRuntime {
             // A Wait is one instruction. Polling an unfinished instruction
             // must not consume additional STEP permits.
             await this.waitIfPaused();
-            if (timeout && performance.now() - startedAt >= timeout) return false;
+            if (timeout && performance.now() - startedAt >= timeout) {
+                advanceOlpTactClock(this.tactLog, tactStart, (performance.now() - startedAt) / 1000);
+                return false;
+            }
             await this.awaitKnownWait(new Promise((resolve) => setTimeout(resolve, 20)));
         }
+        // A satisfied Wait still costs the time it actually waited for its input.
+        advanceOlpTactClock(this.tactLog, tactStart, (performance.now() - startedAt) / 1000);
         this.phase = 'running';
         this.waitCondition = '';
         this.notifyCursor();
@@ -816,6 +968,7 @@ export class OlpRuntime {
         const duration=Number(milliseconds);
         if(!Number.isFinite(duration)||duration<0)throw this.runtimeError('Delay requires a nonnegative finite duration.');
         if(this.cancelled)throw this.runtimeError('OLP stopped');
+        const tactStart=this.tactLog.clock;
         if(this.adapter.delay) {
             const signal=this.abortController.signal;
             let abort;
@@ -834,6 +987,8 @@ export class OlpRuntime {
             } while(true);
         }
         if(this.cancelled)throw this.runtimeError('OLP stopped');
+        // The programmed Delay is the simulated time, independent of timer resolution.
+        advanceOlpTactClock(this.tactLog,tactStart,duration/1000);
     }
 
 
@@ -1358,10 +1513,15 @@ export class OlpRuntime {
             }
             if (this.cancelled || group.cancelled) throw new Error('OLP stopped');
             group.runningContext = context;
+            // A queued move starts on the simulation clock when it actually leaves the queue.
+            const record = this.beginTactMotion(effectiveOptions.tactRecord);
             try {
-                return await this.adapter.move?.(command.motion, command.pointExpression, command.speed,
+                const result = await this.adapter.move?.(command.motion, command.pointExpression, command.speed,
                     this.project, this, { ...effectiveOptions, motionQueueTiming: group.timing });
+                this.finishTactMotion(record, result);
+                return result;
             } catch (error) {
+                this.abandonTactMotion(record);
                 const motionError = new OlpRuntimeError(error?.message || 'Queued motion failed', context);
                 motionError.cause = error;
                 throw motionError;
@@ -1711,7 +1871,24 @@ export class OlpRuntime {
         return event;
     }
 
+    beginTactMotion(record) {
+        beginOlpTactMotion(this.tactLog, record);
+        this.adapter.tactChanged?.(this);
+        return record;
+    }
+
+    finishTactMotion(record, result) {
+        finishOlpTactMotion(this.tactLog, record, result);
+        this.adapter.tactChanged?.(this);
+    }
+
+    abandonTactMotion(record) {
+        abandonOlpTactMotion(this.tactLog, record);
+        this.adapter.tactChanged?.(this);
+    }
+
     handleMotionProgress(options, { progress = 0, elapsedSeconds = 0, durationSeconds = 0, distance = 0 } = {}) {
+        recordOlpTactProgress(options?.tactRecord, durationSeconds);
         (options?.outEvents || []).forEach((event) => {
             if (event.fired) return;
             const threshold = Math.abs(Number(event.threshold) || 0);
@@ -1852,15 +2029,31 @@ export class OlpRuntime {
             slvsMode: this.motionSettings.slvsMode,
             gripLoad: this.motionSettings.gripLoad
         };
+        // The adapter reports the planned duration through handleMotionProgress(options).
+        effectiveOptions.tactRecord = createOlpTactRecord(this, command);
         if (queuedStop) {
             await this.enqueueStopMove(command, effectiveOptions);
             return;
         }
         if ((motion === 'JUMP' || motion === 'JUMPL') ? !this.adapter.jump : !this.adapter.move) throw this.runtimeError(`No motion adapter for ${motion}`);
-        const invoke = motion === 'JUMP' || motion === 'JUMPL'
-            ? this.adapter.jump?.(motion, pointExpression, speed, this.project, this, effectiveOptions)
-            : this.adapter.move?.(motion, pointExpression, speed, this.project, this, effectiveOptions);
-        const started = this.startMotion(invoke, effectiveOptions);
+        const record = this.beginTactMotion(effectiveOptions.tactRecord);
+        let invoke;
+        try {
+            invoke = motion === 'JUMP' || motion === 'JUMPL'
+                ? this.adapter.jump?.(motion, pointExpression, speed, this.project, this, effectiveOptions)
+                : this.adapter.move?.(motion, pointExpression, speed, this.project, this, effectiveOptions);
+        } catch (error) {
+            this.abandonTactMotion(record);
+            throw error;
+        }
+        const tracked = Promise.resolve(invoke).then((result) => {
+            this.finishTactMotion(record, result);
+            return result;
+        }, (error) => {
+            this.abandonTactMotion(record);
+            throw error;
+        });
+        const started = this.startMotion(tracked, effectiveOptions);
         if (started) {
             const waitStarted = performance.now();
             await started;
@@ -2144,7 +2337,10 @@ export class OlpRuntime {
         }
         const timeStart = value.match(/^TimeStart\s*\(\s*([^\)]+)\)\s*;?$/i);
         if (timeStart) {
-            this.stopwatches.set(Math.trunc(Number(parseLiteral(timeStart[1], this)) || 0), performance.now());
+            const index = Math.trunc(Number(parseLiteral(timeStart[1], this)) || 0);
+            this.stopwatches.set(index, performance.now());
+            // The timer also opens a cycle in the per-move log (simulation clock).
+            if (startOlpTactCycle(this.tactLog, index)) this.adapter.tactChanged?.(this);
             return;
         }
         const timeOut = value.match(/^TimeOut\s*\(\s*([^,]+)\s*,\s*([^\)]+)\)\s*;?$/i);
@@ -2153,6 +2349,7 @@ export class OlpRuntime {
             const elapsed = this.stopwatches.has(index) ? (performance.now() - this.stopwatches.get(index)) / 1000 : 0;
             this.writeSymbol(timeOut[2], elapsed);
             this.stopwatches.delete(index);
+            if (endOlpTactCycle(this.tactLog, index, elapsed)) this.adapter.tactChanged?.(this);
             return;
         }
         const alarm = value.match(/^Alarm\s*\[\s*([^\]]+)\s*\]\s*(?:,\s*(EasyGo))?\s*;?$/i);
@@ -2191,8 +2388,15 @@ export class OlpRuntime {
             await this.awaitPendingMotions();
             const homeIndex = Number(parseLiteral(home[1], this)) || 0;
             const speed = Number(parseLiteral(home[2] || '100', this)) || 100;
-            if (this.adapter.home) await this.adapter.home(homeIndex, speed, this.project, this);
-            else throw this.runtimeError(`Unsupported Home command: ${value}`);
+            if (!this.adapter.home) throw this.runtimeError(`Unsupported Home command: ${value}`);
+            const record = this.beginTactMotion(createOlpTactRecord(this, { motion: 'HOME', pointExpression: `Home[${homeIndex}]`, speed }));
+            try {
+                const result = await this.adapter.home(homeIndex, speed, this.project, this, { tactRecord: record });
+                this.finishTactMotion(record, result);
+            } catch (error) {
+                this.abandonTactMotion(record);
+                throw error;
+            }
             return;
         }
 

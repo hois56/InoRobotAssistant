@@ -3,7 +3,7 @@ import {
     normalizeIoSimulatorDirection
 } from './io-simulator-core.mjs';
 import { normalizeConveyorSettings } from './conveyor-core.mjs';
-import { EQUIPMENT_IO_TYPES, equipmentCommandOptions } from './equipment-core.mjs?v=20261101-vacuum-surface-1';
+import { EQUIPMENT_IO_TYPES, equipmentCommandOptions } from './equipment-core.mjs?v=20261107-object-home-1';
 import { VIEW_PRESET_COUNT } from './view-preset-core.mjs';
 
 export const IO_FUNCTION_MAPPING_SCHEMA_VERSION = 1;
@@ -51,6 +51,8 @@ export function normalizeIoFunctionMapping(value, index = 0) {
         action,
         gripObjectRef: String(source.gripObjectRef || '').trim(),
         viewSlot,
+        // Object home IO configured from an object's motion settings, including an "all objects" target.
+        ...(action === IO_FUNCTION_MAPPING_ACTIONS.OBJECT_RESET && source.objectResetOwner ? { objectResetOwner: String(source.objectResetOwner) } : {}),
         ...(action === IO_FUNCTION_MAPPING_ACTIONS.CONVEYOR ? { ...normalizeConveyorSettings(source), conveyorName: String(source.conveyorName || ''), conveyorCustomName: source.conveyorCustomName === true, ...(source.conveyorManualOnly ? { conveyorManualOnly: true } : {}) } : {}),
         ...(EQUIPMENT_IO_TYPES.includes(action) || legacyGripper || removedAction ? { equipmentCommand: equipmentCommandOptions(action).some(([command]) => command === source.equipmentCommand) ? source.equipmentCommand : 'FORWARD' } : {}),
         enabled: !removedAction && source.enabled !== false

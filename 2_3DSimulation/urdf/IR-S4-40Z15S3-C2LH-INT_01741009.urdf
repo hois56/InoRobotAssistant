@@ -1,7 +1,8 @@
 <?xml version="1.0"?>
-<!-- Generated from IR-S4-40Z15S3-C2LH-INT_01741009.json and models.json. Coordinates are Z-up; mesh units are millimetres and converted with mesh scale 0.001. -->
+<!-- Firmware source: params_package/Standard/Body/IR-S4-40Z15S3-C2LH-INT_01741009/IR-S4-40Z15S3-C2LH-INT_01741009.json; SHA256 bd4efdd2791e9e17feddfc16cdf8c3db93e409f6aa7044d12d597b1963fef0ec. -->
+<!-- Z-up; STL mm scaled to m. Effective firmware mass properties are SI and transformed into CAD link frames. -->
+<!-- Revolute effort is nominal output torque; prismatic effort is ideal screw force. See physics-audit.json for approximations. -->
 <robot name="IR-S4-40Z15S3-C2LH-INT_01741009">
-  <!-- Payload limit from controller JSON: 4 kg -->
   <link name="base_link">
 
     <visual name="base">
@@ -40,6 +41,7 @@
   <link name="link_1">
 
     <!-- inertial source: bounding-box-fallback -->
+    <!-- SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation -->
     <inertial>
       <origin xyz="0.110277959824 -0.000010332108 0.039758903503" rpy="0 0 0"/>
       <mass value="2.5"/>
@@ -66,6 +68,7 @@
   <link name="link_2">
 
     <!-- inertial source: bounding-box-fallback -->
+    <!-- SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation -->
     <inertial>
       <origin xyz="0.084221443176 0.000001358032 0.184436422348" rpy="0 0 0"/>
       <mass value="4.29"/>
@@ -92,16 +95,18 @@
   <link name="link_3">
 
     <!-- inertial source: bounding-box-fallback -->
+    <!-- SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation -->
     <inertial>
-      <origin xyz="-0.4 0 0" rpy="0 0 0"/>
+      <origin xyz="0.000011917114 0 0.166700006127" rpy="0 0 0"/>
       <mass value="0.4885"/>
-      <inertia ixx="0.000203541667" ixy="0" ixz="0" iyy="0.000203541667" iyz="0" izz="0.000203541667"/>
+      <inertia ixx="0.004742513344" ixy="0" ixz="0" iyy="0.004742426492" iyz="0" izz="0.000073172496"/>
     </inertial>
   </link>
 
   <link name="link_4">
 
     <!-- inertial source: bounding-box-fallback -->
+    <!-- SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation -->
     <inertial>
       <origin xyz="0.000011917114 0 0.166700006127" rpy="0 0 0"/>
       <mass value="0.4885"/>
@@ -130,7 +135,7 @@
     <child link="link_1"/>
     <origin xyz="0 0 0" rpy="0 0 0"/>
     <axis xyz="0 0 1"/>
-    <limit lower="-2.303834612633" upper="2.303834612633" effort="0.96" velocity="12.320279189828"/>
+    <limit lower="-2.303834612633" upper="2.303834612633" effort="48.96" velocity="12.320279189828"/>
   </joint>
 
   <joint name="J2" type="revolute">
@@ -138,7 +143,7 @@
     <child link="link_2"/>
     <origin xyz="0.225 0 0" rpy="0 0 0"/>
     <axis xyz="0 0 1"/>
-    <limit lower="-2.460914245312" upper="2.460914245312" effort="0.48" velocity="13.03935484165"/>
+    <limit lower="-2.460914245312" upper="2.460914245312" effort="24.48" velocity="13.03935484165"/>
   </joint>
 
   <joint name="J3" type="prismatic">
@@ -146,7 +151,7 @@
     <child link="link_3"/>
     <origin xyz="0.175 0 0" rpy="0 0 0"/>
     <axis xyz="0 0 1"/>
-    <limit lower="-0.15" upper="0.000444444444" effort="0" velocity="0.058931358044"/> <!-- source ratedTrq is torque; prismatic force was not supplied -->
+    <limit lower="-0.15" upper="0.000444444444" effort="144.053516796913" velocity="1.325955555556"/> <!-- ideal screw force: 2*pi*ratedTrq*abs(ratio)/lead_m; efficiency=1 -->
   </joint>
 
   <joint name="J4" type="revolute">
@@ -154,7 +159,7 @@
     <child link="link_4"/>
     <origin xyz="0 0 0" rpy="0 0 0"/>
     <axis xyz="0 0 1"/>
-    <limit lower="-6.28318530718" upper="6.28318530718" effort="0.32" velocity="45.378560551853"/>
+    <limit lower="-6.28318530718" upper="6.28318530718" effort="3.84" velocity="45.378560551853"/>
   </joint>
 
   <link name="tool0"/>

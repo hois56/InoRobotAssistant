@@ -300,7 +300,7 @@ test('분리한 Tool 설정 창에서도 모델을 선택하여 해당 부하만
     await popup.locator('#btn-tool-load-from-models').click();
     await expect(popup.locator('#tool-load-model-dialog')).toBeVisible();
     await expect(page.locator('#tool-load-model-dialog')).toHaveCount(0);
-    await expect(popup.locator('#tool-load-model-dialog')).toHaveCSS('background-color', 'rgb(17, 24, 39)');
+    await expect(popup.locator('#tool-load-model-dialog')).toHaveCSS('background-color', 'rgb(253, 254, 251)');
     await popup.locator('#tool-load-model-dialog').screenshot({ path: 'tmp/tool-load-model-choice-preview.png' });
     await popup.locator('#tool-load-model-select').selectOption('0');
     await popup.locator('#tool-load-model-confirm').click();

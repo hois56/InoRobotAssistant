@@ -29,7 +29,7 @@ const softwareGroups = [
             },
             {
                 tagName: "Display Version (V4R24C4SPC0L23F121)",
-                description: "Display 공정용 특수 버전 소프트웨어",
+                description: "디스플레이 공정 전용 소프트웨어",
                 date: "2026-09-08",
                 isLocked: false,
                 updates: ["Display 모듈 지원"],
@@ -57,7 +57,7 @@ const softwareGroups = [
             },
             {
                 tagName: "Display Version (V4R24C4SPC0L23F121)",
-                description: "Display 공정용 TP 소프트웨어",
+                description: "디스플레이 공정용 티칭 펜던트 소프트웨어",
                 date: "2026-09-08",
                 isLocked: false,
                 updates: ["Display 최적화"],
@@ -75,7 +75,7 @@ const softwareGroups = [
         versions: [
             {
                 tagName: "V1.0 Beta",
-                description: "InoRobotLab·InoRobotTP R24C4 계열 표준·Display 버전용 한글 패치기(베타 버전)",
+                description: "InoRobotLab·InoRobotTP R24C4 계열 표준·디스플레이 버전용 한글 패치기(베타 버전)",
                 date: "2026-11-04",
                 downloads: [
                     { label: "Download Install", type: "install", size: "79MB", path: "InoRobotKoreanInstaller/InoRobotKoreanInstaller_V1.0.zip", url: "https://github.com/hois56/InoRobotAssistant/releases/download/inorobot-korean-installer-v1.0-beta/InoRobotKoreanInstaller_V1.0.zip" }
@@ -89,147 +89,44 @@ function translateUiText(value) {
     return window.InoRobotI18n ? window.InoRobotI18n.translate(String(value || '')) : String(value || '');
 }
 
-// Initialize
-document.addEventListener('DOMContentLoaded', () => {
-    init();
-});
+document.addEventListener('DOMContentLoaded', init);
 
 function init() {
-    renderSoftwareList('all');
-    setupFilters();
-    setupSearch();
-    const renderCurrentLocale = () => {
-        const activeFilter = document.querySelector('.filter-btn.active')?.dataset.type || 'all';
-        renderSoftwareList(activeFilter, document.getElementById('softwareSearch').value);
-    };
-    document.addEventListener('inorobot:i18nready', renderCurrentLocale);
-    document.addEventListener('inorobot:languagechange', renderCurrentLocale);
-    if(window.lucide) lucide.createIcons();
+    document.querySelectorAll('.filter-btn').forEach(button => {
+        button.addEventListener('click', () => selectSoftwareFilter(button.dataset.type));
+    });
+    document.getElementById('softwareList').addEventListener('click', event => {
+        const button = event.target.closest('button[data-download-key]');
+        if (button && button.getAttribute('aria-disabled') !== 'true') {
+            downloadFile(decodeURIComponent(button.dataset.downloadKey));
+        }
+    });
+    const updateResults = () => renderSoftwareList(document.querySelector('.filter-btn.active')?.dataset.type || 'all');
+    document.addEventListener('inorobot:i18nready', updateResults);
+    document.addEventListener('inorobot:languagechange', updateResults);
+    updateResults();
 }
 
-/**
- * 소프트웨어 리스트 렌더링
- * @param {string} filterType 'all', 'InoRobotLab', 'InoRobotTP'
- * @param {string} searchTerm 검색어
- */
-function renderSoftwareList(filterType = 'all', searchTerm = '') {
-    const listContainer = document.getElementById('softwareList');
-    listContainer.innerHTML = '';
-
+/** Show product groups without rebuilding Astryx controls or moving keyboard focus. */
+function renderSoftwareList(filterType = 'all') {
     let matchCount = 0;
-
-    softwareGroups.forEach(group => {
-        // 필터링 적용
-        if (filterType !== 'all' && group.id !== filterType) return;
-
-        group.versions.forEach(ver => {
-            // 검색 가공
-            const isMatch = group.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          ver.tagName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          ver.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          translateUiText(ver.description).toLowerCase().includes(searchTerm.toLowerCase());
-            
-            if (!isMatch) return;
-            matchCount++;
-
-            const card = document.createElement('div');
-            card.className = 'software-card p-6 md:p-8 flex flex-col md:flex-row gap-8 items-start animate-fade-in-up';
-            
-            // 아이콘 및 헤더
-            const verBadgeClass = "bg-blue-600/10 text-blue-400 border-blue-500/20";
-            const verIcon = "check-circle";
-            const downloadButtons = ver.downloads.map(dl => {
-                const downloadKey = dl.url;
-                const isDisabled = dl.disabled || !downloadKey;
-                const downloadDataAttrs = isDisabled
-                    ? ''
-                    : `data-download-key="${encodeURIComponent(downloadKey)}" data-download-locked="false"${dl.path ? ` data-download-path="${encodeURIComponent(dl.path)}"` : ''}`;
-                const disabledAttr = isDisabled ? 'disabled aria-disabled="true"' : '';
-                const buttonClass = isDisabled ? 'disabled-btn' : 'download-btn';
-                const icon = isDisabled ? 'ban' : 'download';
-
-                const sizeLabel = dl.size && dl.size !== '-' ? ` ${dl.size}` : '';
-
-                return `
-                    <button type="button" ${downloadDataAttrs} ${disabledAttr}
-                            class="px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${buttonClass}">
-                        <i data-lucide="${icon}" class="w-3.5 h-3.5"></i> ${translateUiText(dl.label)}${sizeLabel}
-                    </button>
-                `;
-            }).join('');
-
-            card.innerHTML = `
-                <div class="flex-shrink-0 w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400">
-                    <i data-lucide="${group.icon}" class="w-8 h-8"></i>
-                </div>
-                <div class="flex-grow space-y-4">
-                    <div class="flex flex-wrap items-center gap-3">
-                        <h3 class="text-2xl font-bold text-white font-outfit">${group.name}</h3>
-                        <div class="px-3 py-1 rounded-full border ${verBadgeClass} text-[11px] font-bold flex items-center gap-1.5 uppercase tracking-wide">
-                            <i data-lucide="${verIcon}" class="w-3 h-3"></i> ${ver.tagName}
-                        </div>
-                    </div>
-                    <p class="text-slate-400 text-sm italic">${translateUiText(ver.description)}</p>
-                    
-                    <div class="flex flex-wrap items-center gap-4 pt-4 border-t border-white/[0.05]">
-                        <div class="flex items-center gap-6 text-xs text-slate-500 font-mono">
-                            <span class="flex items-center gap-1.5"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> ${ver.date}</span>
-                        </div>
-                        <div class="flex flex-wrap gap-3 ml-auto">
-                            ${downloadButtons}
-                        </div>
-                    </div>
-                </div>
-            `;
-            listContainer.appendChild(card);
-
-            card.querySelectorAll('button[data-download-key]').forEach(button => {
-                button.addEventListener('click', () => {
-                    handleDownload(decodeURIComponent(button.dataset.downloadKey));
-                });
-            });
-        });
+    document.querySelectorAll('#softwareList .software-group').forEach(section => {
+        const visible = filterType === 'all' || filterType === section.dataset.group;
+        section.hidden = !visible;
+        if (visible) matchCount += section.querySelectorAll('.software-card').length;
     });
-
-    if (matchCount === 0) {
-        listContainer.innerHTML = `
-            <div class="py-20 text-center text-slate-500">
-                <i data-lucide="alert-circle" class="w-12 h-12 mx-auto mb-4 opacity-20"></i>
-                <p class="text-lg">${translateUiText('해당 조건에 맞는 소프트웨어가 없습니다.')}</p>
-            </div>
-        `;
-    }
-
-    if(window.lucide) lucide.createIcons();
+    const count = document.getElementById('softwareResultCount');
+    const label = matchCount + ' ' + translateUiText('개');
+    if (count.textContent !== label) count.textContent = label;
 }
 
-/**
- * 필터 설정
- */
-function setupFilters() {
-    const filterBtns = document.querySelectorAll('.filter-btn');
-    filterBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            filterBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            renderSoftwareList(btn.dataset.type, document.getElementById('softwareSearch').value);
-        });
+function selectSoftwareFilter(type) {
+    document.querySelectorAll('.filter-btn').forEach(button => {
+        const active = button.dataset.type === type;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-pressed', String(active));
     });
-}
-
-/**
- * 검색 설정
- */
-function setupSearch() {
-    const searchInput = document.getElementById('softwareSearch');
-    searchInput.addEventListener('input', (e) => {
-        const activeFilter = document.querySelector('.filter-btn.active').dataset.type;
-        renderSoftwareList(activeFilter, e.target.value);
-    });
-}
-
-function handleDownload(url) {
-    downloadFile(url);
+    renderSoftwareList(type);
 }
 
 function downloadFile(url, fileName = '') {
@@ -238,6 +135,5 @@ function downloadFile(url, fileName = '') {
     link.download = fileName || url.split('/').pop();
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
+    link.remove();
 }
-

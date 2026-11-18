@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { MeshCollisionSystem } from './collision-system.mjs';
-import { equipmentReferences } from './equipment-core.mjs?v=20261101-vacuum-surface-1';
+import { equipmentReferences } from './equipment-core.mjs?v=20261107-object-home-1';
 
 const within = (object, root) => { for (let node = object; node; node = node.parent) if (node === root) return true; return false; };
 const visible = object => { for (let node = object; node; node = node.parent) if (node.visible === false) return false; return true; };

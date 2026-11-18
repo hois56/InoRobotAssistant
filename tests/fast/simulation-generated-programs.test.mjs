@@ -97,6 +97,21 @@ test('tray and vision offsets read signed 32-bit input fields and use typed inte
     coordinateEqual(f.runtime.readPositionSymbol('PR[10]'),[-13.9845,24.25,-3,8,0,0]);
 });
 
+test('Socket Tray Get and Calibration combine process offsets with camera data without reusing tray pitch as vision data',async()=>{
+    for(const method of ['Get','Calibration']) {
+        const entry=cases.find(entry=>entry.steps.length===1&&entry.steps[0].WorkMethod===method&&
+            (method==='Get'?entry.steps[0].WorkType==='Tray'&&entry.steps[0].VisionUse==='Use - Socket':
+                entry.steps[0].ToolType==='Vision (Socket)'));
+        const f=await setup(entry);
+        for(const[name,value]of Object.entries({xwOffset_1_X:10000,xwOffset_1_Y:20000,xwOffset_1_Z:30000,xwOffset_1_A:40000}))
+            f.plant.setInt(name,value);
+        if(method==='Get')f.plant.set('xwTray_index',5);
+        await execute(f,[...seedLines(1),`${entry.steps[0].ProcessName}.P1_pos();`,'s02_offset.Set_PR();']);
+        coordinateEqual(f.runtime.readPositionSymbol('PR[10]'),method==='Get'?[-55.75,-58.5,3,7.75,0,0]:[2.25,-0.5,3,7.75,0,0]);
+        assert.ok(f.plant.calls.socket.some(call=>call.kind==='send'&&call.text==='Shot'));
+    }
+});
+
 test('generated return paths retain switch fall-through, range cases and explicit return-path breaks',async()=>{
     for(const [returnPath,expected,count]of [[10,110,1],[1,103,4],[0,100,5]]) {
         const f=await setup();

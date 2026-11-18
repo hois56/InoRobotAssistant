@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { buildRobotModelPages } = require('./robot-model-pages.cjs');
 const {
     historyToMarkdown,
     loadVersionHistory,
@@ -436,8 +437,8 @@ function buildLocaleBundle(locales) {
     writeFile('Language/runtime/locales-data.js', serializeLocaleBundle(locales));
 }
 
-function buildSitemap() {
-    const urls = [...localeCodes.map(code => localeRoutes[code]), ...subpageSeoDefinitions.map(definition => definition.route), '/privacy/'];
+function buildSitemap(modelRoutes) {
+    const urls = [...localeCodes.map(code => localeRoutes[code]), ...subpageSeoDefinitions.map(definition => definition.route), ...modelRoutes, '/privacy/'];
     const xml = [
         '<?xml version="1.0" encoding="UTF-8"?>',
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
@@ -466,8 +467,9 @@ const historyCacheVersion = getVersionHistoryCacheVersion();
 const localeBundleCacheVersion = getLocaleBundleCacheVersion(locales);
 buildLocaleBundle(locales);
 integrateSubpages(locales);
+const modelRoutes = buildRobotModelPages(root);
 updatePrivacyLocaleCacheVersion(localeBundleCacheVersion);
 buildLandingPages(locales, siteCardVersions, historyCacheVersion, localeBundleCacheVersion);
-buildSitemap();
+buildSitemap(modelRoutes);
 buildRobotsTxt();
 console.log('Built locales and landing routes: ' + localeCodes.map(code => localeRoutes[code]).join(', ') + ', /kr/');

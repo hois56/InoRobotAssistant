@@ -9,7 +9,9 @@ test('model and software edits retain purchase/download contracts without simula
   for (const file of ['1_RobotModelSelect/data.js', '5_Software/script.js', 'downloads/release-assets.json']) {
     const result = plan([file], true);
     assert.ok(result.fast.includes('tests/fast/regression-contracts.test.mjs'));
-    assert.deepEqual(result.ui, ['tests/ui/core-flows.spec.mjs']);
+    assert.ok(result.ui.includes('tests/ui/core-flows.spec.mjs'));
+    if (!file.startsWith('1_RobotModelSelect/')) assert.ok(result.ui.includes('tests/ui/software-readability.spec.mjs'));
+    assert.ok(!result.ui.some(file => file.includes('simulation-')));
     assert.equal(result.bridge, false);
     assert.equal(result.generator, false);
     assert.ok(!result.fast.some(file => file.includes('simulation-')));
@@ -57,6 +59,15 @@ test('documentation and local test artifacts do not schedule application checks'
   for (const file of ['.serena/memories/test.md', 'a/bin/Debug/a.cs', 'test-results-foo/report.js']) {
     assert.ok(isIgnoredPath(file));
   }
+});
+
+test('home guide edits run the guide walkthroughs without every simulation screen', () => {
+  for (const file of ['0_Home/tool-guide.js', '0_Home/tool-guide-embed.js', '0_Home/robot-select-guide.css']) {
+    const result = plan([file], true);
+    assert.ok(result.ui.includes('tests/ui/tool-guides.spec.mjs'));
+    assert.ok(!result.ui.some(spec => spec.includes('simulation-')));
+  }
+  assert.ok(plan(['6_Document/script.js'], true).ui.includes('tests/ui/tool-guides.spec.mjs'));
 });
 
 test('history updates keep the multilingual history consistency check', () => {

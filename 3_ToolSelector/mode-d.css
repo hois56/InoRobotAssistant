@@ -30,7 +30,7 @@ input[type="number"]::-webkit-outer-spin-button {
 
 .cad-import-section {
   padding-left: 20px;
-  border-left: 1px solid rgba(255,255,255,.07);
+  border-left: 1px solid var(--tool-line);
 }
 
 .cad-import-bar {
@@ -58,15 +58,15 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .cad-export-button {
-  background: rgba(14,165,233,.14);
-  border: 1px solid rgba(56,189,248,.36);
+  background: var(--tool-inset);
+  border: 1px solid var(--tool-line);
   box-shadow: none;
-  color: #7dd3fc;
+  color: var(--tool-accent);
 }
 
 .cad-export-button:hover:not(:disabled) {
-  background: rgba(14,165,233,.24);
-  color: #e0f2fe;
+  background: var(--tool-hover);
+  color: var(--tool-muted);
 }
 
 .cad-export-button:disabled,
@@ -78,7 +78,7 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .cad-file-name {
-  color: #cbd5e1;
+  color: var(--tool-muted);
   font-size: 13px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -92,13 +92,13 @@ input[type="number"]::-webkit-outer-spin-button {
   gap: 6px 10px;
   align-items: center;
   padding: 9px 10px;
-  border: 1px solid rgba(96,165,250,.18);
+  border: 1px solid var(--tool-line);
   border-radius: 10px;
-  background: rgba(15,23,42,.4);
+  background: var(--tool-inset);
 }
 
 .cad-import-quality label {
-  color: #cbd5e1;
+  color: var(--tool-muted);
   font-size: 12px;
   font-weight: 700;
 }
@@ -106,9 +106,9 @@ input[type="number"]::-webkit-outer-spin-button {
 .cad-import-quality select {
   min-width: 0;
   padding: 7px 9px;
-  color: #e2e8f0;
-  background: rgba(15,23,42,.75);
-  border: 1px solid rgba(255,255,255,.1);
+  color: var(--tool-ink);
+  background: var(--tool-inset);
+  border: 1px solid var(--tool-line);
   border-radius: 8px;
   font: inherit;
   font-size: 12px;
@@ -116,30 +116,30 @@ input[type="number"]::-webkit-outer-spin-button {
 
 .cad-import-quality select:focus {
   outline: none;
-  border-color: rgba(96,165,250,.65);
-  box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+  border-color: var(--tool-line);
+  box-shadow: 0 0 0 2px var(--tool-selected);
 }
 
 .cad-import-quality small {
   grid-column: 1 / -1;
-  color: #64748b;
+  color: var(--tool-muted);
   font-size: 10px;
   line-height: 1.35;
 }
 
 .cad-export-note {
-  color: #64748b;
+  color: var(--tool-muted);
   font-size: 10px;
   line-height: 1.4;
 }
 
 .cad-status {
-  color: #94a3b8;
+  color: var(--tool-muted);
   font-size: 12px;
 }
 
-.cad-status.error { color: #f87171; }
-.cad-status.ok { color: #34d399; }
+.cad-status.error { color: var(--tool-danger); }
+.cad-status.ok { color: var(--tool-accent); }
 
 .cad-workspace {
   display: grid;
@@ -150,9 +150,9 @@ input[type="number"]::-webkit-outer-spin-button {
 
 .cad-panel,
 .cad-viewport-shell {
-  border: 1px solid rgba(255,255,255,.07);
+  border: 1px solid var(--tool-line);
   border-radius: 16px;
-  background: rgba(15,23,42,.48);
+  background: var(--tool-inset);
   overflow: hidden;
 }
 
@@ -162,7 +162,7 @@ input[type="number"]::-webkit-outer-spin-button {
 
 .cad-panel h3 {
   margin: 0 0 12px;
-  color: #93c5fd;
+  color: var(--tool-accent);
   font-family: 'Outfit', sans-serif;
   font-size: 13px;
   letter-spacing: .04em;
@@ -177,7 +177,7 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .cad-parts-head {
-  color: #64748b;
+  color: var(--tool-muted);
   font-size: 10px;
   text-transform: uppercase;
   margin-bottom: 6px;
@@ -195,10 +195,10 @@ input[type="number"]::-webkit-outer-spin-button {
   gap: 8px;
   align-items: center;
   padding: 8px 9px;
-  border: 1px solid rgba(96,165,250,.22);
+  border: 1px solid var(--tool-line);
   border-radius: 9px;
-  background: rgba(37,99,235,.1);
-  color: #dbeafe;
+  background: var(--tool-inset);
+  color: var(--tool-muted);
 }
 
 .cad-model-tree-root-icon,
@@ -207,8 +207,8 @@ input[type="number"]::-webkit-outer-spin-button {
   place-items: center;
   flex: 0 0 auto;
   border-radius: 6px;
-  background: rgba(96,165,250,.14);
-  color: #60a5fa;
+  background: var(--tool-inset);
+  color: var(--tool-accent);
 }
 
 .cad-model-tree-root-icon {
@@ -236,7 +236,7 @@ input[type="number"]::-webkit-outer-spin-button {
 
 .cad-model-tree-root-name small {
   margin-top: 3px;
-  color: #64748b;
+  color: var(--tool-muted);
   font-size: 9px;
   font-weight: 700;
   letter-spacing: .06em;
@@ -245,18 +245,18 @@ input[type="number"]::-webkit-outer-spin-button {
 .cad-model-tree-children {
   margin: 5px 0 0 13px;
   padding-left: 10px;
-  border-left: 1px solid rgba(148,163,184,.26);
+  border-left: 1px solid var(--tool-line);
 }
 
 .cad-part-row {
   padding: 9px 0;
-  border-top: 1px solid rgba(255,255,255,.05);
+  border-top: 1px solid var(--tool-line);
 }
 
 .cad-part-row.active {
   border-radius: 8px;
-  background: rgba(34,211,238,.08);
-  box-shadow: inset 2px 0 0 #22d3ee;
+  background: var(--tool-selected);
+  box-shadow: var(--tool-shadow);
 }
 
 .cad-part-name {
@@ -268,7 +268,7 @@ input[type="number"]::-webkit-outer-spin-button {
   border: 1px solid transparent;
   border-radius: 7px;
   background: transparent;
-  color: #cbd5e1;
+  color: var(--tool-muted);
   font-size: 11px;
   text-align: left;
   cursor: pointer;
@@ -276,15 +276,15 @@ input[type="number"]::-webkit-outer-spin-button {
 
 .cad-part-name:hover,
 .cad-part-name.active {
-  border-color: rgba(34,211,238,.36);
-  background: rgba(34,211,238,.1);
-  color: #ecfeff;
+  border-color: var(--tool-border-strong);
+  background: var(--tool-hover);
+  color: var(--tool-ink);
 }
 
 .cad-part-tree-icon {
   width: 21px;
   height: 21px;
-  color: #67e8f9;
+  color: var(--tool-accent);
   font-size: 10px;
 }
 
@@ -297,7 +297,7 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .cad-part-name small {
-  color: #64748b;
+  color: var(--tool-muted);
   margin-top: 3px;
 }
 
@@ -314,22 +314,22 @@ input[type="number"]::-webkit-outer-spin-button {
   width: 100%;
   min-width: 0;
   padding: 7px 8px;
-  color: #fff;
-  background: rgba(2,6,23,.65);
-  border: 1px solid rgba(255,255,255,.08);
+  color: var(--tool-ink);
+  background: var(--tool-inset);
+  border: 1px solid var(--tool-line);
   border-radius: 8px;
   font: inherit;
   font-size: 11px;
 }
 
 .cad-density-unit {
-  color: #64748b;
+  color: var(--tool-muted);
   font-size: 10px;
   white-space: nowrap;
 }
 
 .cad-empty {
-  color: #64748b;
+  color: var(--tool-muted);
   text-align: center;
   font-size: 12px;
   padding: 34px 12px;
@@ -358,24 +358,24 @@ input[type="number"]::-webkit-outer-spin-button {
   right: 12px;
   min-width: 88px;
   padding: 7px 11px;
-  border: 1px solid rgba(148,163,184,.28);
+  border: 1px solid var(--tool-line);
   border-radius: 9px;
-  background: rgba(2,6,23,.78);
-  color: #94a3b8;
+  background: var(--tool-inset);
+  color: var(--tool-muted);
   font: 700 10px 'Outfit', sans-serif;
   letter-spacing: .04em;
   cursor: pointer;
 }
 
 .cad-grid-toggle:hover {
-  border-color: rgba(96,165,250,.55);
-  color: #e2e8f0;
+  border-color: var(--tool-border-strong);
+  color: var(--tool-ink);
 }
 
 .cad-grid-toggle.is-active {
-  border-color: rgba(34,211,238,.62);
-  background: rgba(8,145,178,.18);
-  color: #67e8f9;
+  border-color: var(--tool-line);
+  background: var(--tool-inset);
+  color: var(--tool-accent);
 }
 
 .cad-outline-toggle {
@@ -388,24 +388,24 @@ input[type="number"]::-webkit-outer-spin-button {
   gap: 6px;
   min-width: 88px;
   padding: 7px 11px;
-  border: 1px solid rgba(148,163,184,.28);
+  border: 1px solid var(--tool-line);
   border-radius: 9px;
-  background: rgba(2,6,23,.78);
-  color: #94a3b8;
+  background: var(--tool-inset);
+  color: var(--tool-muted);
   font: 700 10px 'Outfit', sans-serif;
   letter-spacing: .04em;
   cursor: pointer;
 }
 
 .cad-outline-toggle:hover {
-  border-color: rgba(96,165,250,.55);
-  color: #e2e8f0;
+  border-color: var(--tool-border-strong);
+  color: var(--tool-ink);
 }
 
 .cad-outline-toggle.is-active {
-  border-color: rgba(96,165,250,.62);
-  background: rgba(37,99,235,.18);
-  color: #bfdbfe;
+  border-color: var(--tool-line);
+  background: var(--tool-inset);
+  color: var(--tool-accent);
 }
 
 .cad-marker-legend {
@@ -416,10 +416,10 @@ input[type="number"]::-webkit-outer-spin-button {
   display: flex;
   gap: 12px;
   padding: 7px 9px;
-  border: 1px solid rgba(255,255,255,.08);
+  border: 1px solid var(--tool-line);
   border-radius: 8px;
-  background: rgba(2,6,23,.78);
-  color: #94a3b8;
+  background: var(--tool-inset);
+  color: var(--tool-muted);
   font-size: 9px;
   pointer-events: none;
 }
@@ -455,8 +455,8 @@ input[type="number"]::-webkit-outer-spin-button {
   z-index: 2;
   border-radius: 9px;
   padding: 8px 10px;
-  background: rgba(2,6,23,.76);
-  color: #94a3b8;
+  background: var(--tool-inset);
+  color: var(--tool-muted);
   font-size: 10px;
   pointer-events: none;
 }
@@ -550,14 +550,14 @@ input[type="number"]::-webkit-outer-spin-button {
   gap: 8px;
   padding: 10px;
   margin-bottom: 8px;
-  border: 1px solid rgba(96,165,250,.15);
+  border: 1px solid var(--tool-line);
   border-radius: 10px;
-  background: rgba(2,6,23,.34);
+  background: var(--tool-inset);
 }
 
 .cad-snap-controls label {
   min-width: 0;
-  color: #94a3b8;
+  color: var(--tool-muted);
   font-size: 9px;
 }
 
@@ -572,10 +572,10 @@ input[type="number"]::-webkit-outer-spin-button {
   width: 100%;
   min-width: 0;
   padding: 7px 8px;
-  border: 1px solid rgba(255,255,255,.08);
+  border: 1px solid var(--tool-line);
   border-radius: 8px;
-  background: rgba(2,6,23,.65);
-  color: #fff;
+  background: var(--tool-inset);
+  color: var(--tool-ink);
   font: inherit;
   font-size: 10px;
 }
@@ -584,8 +584,8 @@ input[type="number"]::-webkit-outer-spin-button {
   min-height: 34px;
   padding: 8px 9px;
   border-radius: 8px;
-  background: rgba(15,23,42,.62);
-  color: #64748b;
+  background: var(--tool-inset);
+  color: var(--tool-muted);
   font-size: 9px;
   line-height: 1.45;
 }
@@ -597,29 +597,29 @@ input[type="number"]::-webkit-outer-spin-button {
   gap: 6px;
   margin-top: 7px;
   padding: 7px 8px;
-  border: 1px solid rgba(34,211,238,.2);
+  border: 1px solid var(--tool-line);
   border-radius: 8px;
-  background: rgba(8,47,73,.28);
+  background: var(--tool-inset);
 }
 
 .cad-multi-center-controls[hidden] { display: none; }
 
 .cad-multi-center-controls span {
-  color: #a5f3fc;
+  color: var(--tool-accent);
   font-size: 9px;
 }
 
 .cad-multi-center-controls button {
   padding: 6px 8px;
-  border: 1px solid rgba(34,211,238,.35);
+  border: 1px solid var(--tool-line);
   border-radius: 7px;
-  background: rgba(8,145,178,.18);
-  color: #cffafe;
+  background: var(--tool-inset);
+  color: var(--tool-muted);
   font: 700 9px/1 'Noto Sans KR', sans-serif;
   cursor: pointer;
 }
 
-.cad-multi-center-controls button:hover:not(:disabled) { background: rgba(8,145,178,.34); }
+.cad-multi-center-controls button:hover:not(:disabled) { background: var(--tool-hover); }
 
 .cad-multi-center-controls button:disabled {
   opacity: .38;
@@ -628,7 +628,7 @@ input[type="number"]::-webkit-outer-spin-button {
 
 .cad-vector-block {
   padding: 11px 0;
-  border-top: 1px solid rgba(255,255,255,.06);
+  border-top: 1px solid var(--tool-line);
 }
 
 .cad-vector-block:first-of-type { border-top: 0; }
@@ -639,7 +639,7 @@ input[type="number"]::-webkit-outer-spin-button {
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 7px;
-  color: #cbd5e1;
+  color: var(--tool-muted);
   font-size: 11px;
 }
 
@@ -647,7 +647,7 @@ input[type="number"]::-webkit-outer-spin-button {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  color: #93c5fd;
+  color: var(--tool-accent);
   cursor: pointer;
   font-size: 9px;
   white-space: nowrap;
@@ -660,17 +660,17 @@ input[type="number"]::-webkit-outer-spin-button {
 .cad-pick-button {
   padding: 5px 8px;
   border-radius: 7px;
-  border: 1px solid rgba(96,165,250,.28);
-  background: rgba(37,99,235,.12);
-  color: #93c5fd;
+  border: 1px solid var(--tool-line);
+  background: var(--tool-inset);
+  color: var(--tool-accent);
   cursor: pointer;
   font-size: 10px;
 }
 
 .cad-pick-button.active {
-  border-color: #f59e0b;
-  background: rgba(245,158,11,.18);
-  color: #fbbf24;
+  border-color: var(--tool-border-strong);
+  background: var(--tool-selected);
+  color: var(--tool-warning);
 }
 
 .cad-vector {
@@ -680,7 +680,7 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .cad-vector label {
-  color: #64748b;
+  color: var(--tool-muted);
   font-size: 9px;
 }
 
@@ -692,14 +692,14 @@ input[type="number"]::-webkit-outer-spin-button {
   margin-top: 8px;
   padding: 8px;
   border-radius: 8px;
-  background: rgba(2,6,23,.38);
+  background: var(--tool-inset);
 }
 
 .cad-axis-directions div {
   display: grid;
   grid-template-columns: 18px 1fr;
   align-items: center;
-  color: #64748b;
+  color: var(--tool-muted);
   font: 9px/1.35 ui-monospace, SFMono-Regular, Consolas, monospace;
 }
 
@@ -707,7 +707,7 @@ input[type="number"]::-webkit-outer-spin-button {
 .cad-axis-directions div:nth-child(1) b { color: #d32f2f; }
 .cad-axis-directions div:nth-child(2) b { color: #388e3c; }
 .cad-axis-directions div:nth-child(3) b { color: #1976d2; }
-.cad-axis-directions output { color: #94a3b8; }
+.cad-axis-directions output { color: var(--tool-muted); }
 
 .cad-calculate {
   width: 100%;
@@ -722,23 +722,23 @@ input[type="number"]::-webkit-outer-spin-button {
 
 .cad-result-section {
   padding: 16px;
-  border: 1px solid rgba(255,255,255,.06);
+  border: 1px solid var(--tool-line);
   border-radius: 13px;
-  background: rgba(15,23,42,.5);
+  background: var(--tool-inset);
 }
 
 .cad-result-section.wide { grid-column: 1 / -1; }
 
 .cad-result-section h3 {
   margin: 0 0 11px;
-  color: #94a3b8;
+  color: var(--tool-muted);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: .05em;
 }
 
 .cad-result-value {
-  color: #fff;
+  color: var(--tool-ink);
   font: 700 21px 'Outfit', sans-serif;
 }
 
@@ -751,15 +751,15 @@ input[type="number"]::-webkit-outer-spin-button {
 .cad-result-values div {
   padding: 10px;
   border-radius: 9px;
-  background: rgba(2,6,23,.55);
-  color: #64748b;
+  background: var(--tool-inset);
+  color: var(--tool-muted);
   font-size: 10px;
 }
 
 .cad-result-values b {
   display: block;
   margin-top: 4px;
-  color: #fff;
+  color: var(--tool-ink);
   font-size: 14px;
 }
 
@@ -769,7 +769,7 @@ input[type="number"]::-webkit-outer-spin-button {
 
 .cad-robot-description {
   margin: -4px 0 16px;
-  color: #94a3b8;
+  color: var(--tool-muted);
   font-size: 12px;
 }
 
@@ -788,12 +788,12 @@ input[type="number"]::-webkit-outer-spin-button {
 .cad-robot-result {
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 1px solid rgba(255,255,255,.08);
+  border-top: 1px solid var(--tool-line);
 }
 
 .cad-robot-result h3 {
   margin: 0 0 14px;
-  color: #94a3b8;
+  color: var(--tool-muted);
   font-size: 11px;
   letter-spacing: .05em;
   text-transform: uppercase;
@@ -806,7 +806,7 @@ input[type="number"]::-webkit-outer-spin-button {
   .cad-import-section {
     padding-top: 16px;
     padding-left: 0;
-    border-top: 1px solid rgba(255,255,255,.07);
+    border-top: 1px solid var(--tool-line);
     border-left: 0;
   }
   .cad-workspace { grid-template-columns: 1fr; }

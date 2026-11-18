@@ -1,0 +1,2266 @@
+{
+  "models": [
+    {
+      "folder": "IR-S4-40Z15",
+      "sourceId": "IR-S4-40Z15S3-C2LH-INT_01741009",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          705.9,
+          747.1,
+          1325.955556,
+          2600
+        ],
+        "acceleration": [
+          1920,
+          1920,
+          3413.333333,
+          8000
+        ],
+        "deceleration": [
+          1920,
+          1920,
+          3413.333333,
+          8000
+        ],
+        "cartesian": {
+          "maxSpeed": 1000,
+          "maxAcceleration": 5333.333333,
+          "maxRotationSpeed": 900,
+          "maxRotationAcceleration": 4800,
+          "stopDeceleration": 6666.666667,
+          "rotationStopDeceleration": 6000
+        }
+      },
+      "expected": {
+        "speed": [
+          705.9,
+          747.1,
+          1325.9555555555555,
+          2600
+        ],
+        "acceleration": [
+          1920,
+          1920,
+          3413.3333333333335,
+          8000
+        ],
+        "deceleration": [
+          1920,
+          1920,
+          3413.3333333333335,
+          8000
+        ],
+        "cartesian": {
+          "maxSpeed": 1000,
+          "maxAcceleration": 5333.333333,
+          "maxRotationSpeed": 900,
+          "maxRotationAcceleration": 4800,
+          "stopDeceleration": 6666.666667,
+          "rotationStopDeceleration": 6000
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        7000,
+        16000,
+        800000,
+        80000
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-S7-50Z20",
+      "sourceId": "IR-S7-50Z20S3-C2LH-INT_01741022",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          414.8,
+          735.3,
+          1605.833333,
+          2000
+        ],
+        "acceleration": [
+          1200,
+          2150,
+          4444.444444,
+          8000
+        ],
+        "deceleration": [
+          1200,
+          2150,
+          4444.444444,
+          8000
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 10000,
+          "maxRotationSpeed": 1000,
+          "maxRotationAcceleration": 6666,
+          "stopDeceleration": 10000,
+          "rotationStopDeceleration": 6666
+        }
+      },
+      "expected": {
+        "speed": [
+          414.8,
+          735.3,
+          1605.8333333333333,
+          2000
+        ],
+        "acceleration": [
+          1200,
+          2150,
+          4444.444444444444,
+          8000
+        ],
+        "deceleration": [
+          1200,
+          2150,
+          4444.444444444444,
+          8000
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 10000,
+          "maxRotationSpeed": 1000,
+          "maxRotationAcceleration": 6666,
+          "stopDeceleration": 10000,
+          "rotationStopDeceleration": 6666
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        6000,
+        6000,
+        800000,
+        80000
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-S7-60Z20",
+      "sourceId": "IR-S7-60Z20S3-C2LH-INT_01741021",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          414.8,
+          735.3,
+          1605.833333,
+          2000
+        ],
+        "acceleration": [
+          1200,
+          2150,
+          4444.444444,
+          8000
+        ],
+        "deceleration": [
+          1200,
+          2150,
+          4444.444444,
+          8000
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 10000,
+          "maxRotationSpeed": 1000,
+          "maxRotationAcceleration": 6666,
+          "stopDeceleration": 10000,
+          "rotationStopDeceleration": 6666
+        }
+      },
+      "expected": {
+        "speed": [
+          414.8,
+          735.3,
+          1605.8333333333333,
+          2000
+        ],
+        "acceleration": [
+          1200,
+          2150,
+          4444.444444444444,
+          8000
+        ],
+        "deceleration": [
+          1200,
+          2150,
+          4444.444444444444,
+          8000
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 10000,
+          "maxRotationSpeed": 1000,
+          "maxRotationAcceleration": 6666,
+          "stopDeceleration": 10000,
+          "rotationStopDeceleration": 6666
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        6000,
+        6000,
+        800000,
+        80000
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-S7-70Z20",
+      "sourceId": "IR-S7-70Z20S3-C2LH-INT_01741020",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          414.8,
+          735.3,
+          1605.833333,
+          2000
+        ],
+        "acceleration": [
+          960,
+          1720,
+          3555.555556,
+          6400
+        ],
+        "deceleration": [
+          960,
+          1720,
+          3555.555556,
+          6400
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 10000,
+          "maxRotationSpeed": 1000,
+          "maxRotationAcceleration": 5332.8,
+          "stopDeceleration": 10000,
+          "rotationStopDeceleration": 5332.8
+        }
+      },
+      "expected": {
+        "speed": [
+          414.8,
+          735.3,
+          1605.8333333333333,
+          2000
+        ],
+        "acceleration": [
+          960,
+          1720,
+          3555.5555555555557,
+          6400
+        ],
+        "deceleration": [
+          960,
+          1720,
+          3555.5555555555557,
+          6400
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 10000,
+          "maxRotationSpeed": 1000,
+          "maxRotationAcceleration": 5332.8,
+          "stopDeceleration": 10000,
+          "rotationStopDeceleration": 5332.8
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        5000,
+        5000,
+        800000,
+        80000
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-S10-60Z20",
+      "sourceId": "IR-S10-60Z20S3-C2LH-INT_01741025",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          414.8,
+          735.3,
+          1576.922222,
+          2705
+        ],
+        "acceleration": [
+          944,
+          823,
+          2702.388889,
+          3039
+        ],
+        "deceleration": [
+          944,
+          823,
+          2702.388889,
+          3039
+        ],
+        "cartesian": {
+          "maxSpeed": 2000,
+          "maxAcceleration": 8400,
+          "maxRotationSpeed": 965,
+          "maxRotationAcceleration": 3860,
+          "stopDeceleration": 8400,
+          "rotationStopDeceleration": 3860
+        }
+      },
+      "expected": {
+        "speed": [
+          414.8,
+          735.3,
+          1576.9222222222222,
+          2705
+        ],
+        "acceleration": [
+          944,
+          823,
+          2702.3888888888887,
+          3039
+        ],
+        "deceleration": [
+          944,
+          823,
+          2702.3888888888887,
+          3039
+        ],
+        "cartesian": {
+          "maxSpeed": 2000,
+          "maxAcceleration": 8400,
+          "maxRotationSpeed": 965,
+          "maxRotationAcceleration": 3860,
+          "stopDeceleration": 8400,
+          "rotationStopDeceleration": 3860
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        5514,
+        4710,
+        644076,
+        64331
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-S10-70Z20",
+      "sourceId": "IR-S10-70Z20S3-C2LH-INT_01741018",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          414.8,
+          735.3,
+          1576.922222,
+          2705
+        ],
+        "acceleration": [
+          687,
+          823,
+          2702.388889,
+          3039
+        ],
+        "deceleration": [
+          687,
+          823,
+          2702.388889,
+          3039
+        ],
+        "cartesian": {
+          "maxSpeed": 2000,
+          "maxAcceleration": 8400,
+          "maxRotationSpeed": 965,
+          "maxRotationAcceleration": 3860,
+          "stopDeceleration": 8400,
+          "rotationStopDeceleration": 3860
+        }
+      },
+      "expected": {
+        "speed": [
+          414.8,
+          735.3,
+          1576.9222222222222,
+          2705
+        ],
+        "acceleration": [
+          687,
+          823,
+          2702.3888888888887,
+          3039
+        ],
+        "deceleration": [
+          687,
+          823,
+          2702.3888888888887,
+          3039
+        ],
+        "cartesian": {
+          "maxSpeed": 2000,
+          "maxAcceleration": 8400,
+          "maxRotationSpeed": 965,
+          "maxRotationAcceleration": 3860,
+          "stopDeceleration": 8400,
+          "rotationStopDeceleration": 3860
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        5514,
+        4710,
+        644076,
+        64331
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-S10-80Z20",
+      "sourceId": "IR-S10-80Z20S3-C2LH-INT_01741017",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          414.8,
+          735.3,
+          1576.922222,
+          2705
+        ],
+        "acceleration": [
+          516,
+          823,
+          2702.388889,
+          3039
+        ],
+        "deceleration": [
+          516,
+          823,
+          2702.388889,
+          3039
+        ],
+        "cartesian": {
+          "maxSpeed": 2000,
+          "maxAcceleration": 8400,
+          "maxRotationSpeed": 965,
+          "maxRotationAcceleration": 3860,
+          "stopDeceleration": 8400,
+          "rotationStopDeceleration": 3860
+        }
+      },
+      "expected": {
+        "speed": [
+          414.8,
+          735.3,
+          1576.9222222222222,
+          2705
+        ],
+        "acceleration": [
+          516,
+          823,
+          2702.3888888888887,
+          3039
+        ],
+        "deceleration": [
+          516,
+          823,
+          2702.3888888888887,
+          3039
+        ],
+        "cartesian": {
+          "maxSpeed": 2000,
+          "maxAcceleration": 8400,
+          "maxRotationSpeed": 965,
+          "maxRotationAcceleration": 3860,
+          "stopDeceleration": 8400,
+          "rotationStopDeceleration": 3860
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        5514,
+        4710,
+        644076,
+        64331
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-TS4-35Z15",
+      "sourceId": "IR-TS4-35Z15S3-C2LH-INT_01741011",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          658.8,
+          705.9,
+          1325.955556,
+          2600
+        ],
+        "acceleration": [
+          1920,
+          1920,
+          3413.333333,
+          8000
+        ],
+        "deceleration": [
+          1920,
+          1920,
+          3413.333333,
+          8000
+        ],
+        "cartesian": {
+          "maxSpeed": 1000,
+          "maxAcceleration": 5333.333333,
+          "maxRotationSpeed": 900,
+          "maxRotationAcceleration": 4800,
+          "stopDeceleration": 6666.666667,
+          "rotationStopDeceleration": 6000
+        }
+      },
+      "expected": {
+        "speed": [
+          658.8,
+          705.9,
+          1325.9555555555555,
+          2600
+        ],
+        "acceleration": [
+          1920,
+          1920,
+          3413.3333333333335,
+          8000
+        ],
+        "deceleration": [
+          1920,
+          1920,
+          3413.3333333333335,
+          8000
+        ],
+        "cartesian": {
+          "maxSpeed": 1000,
+          "maxAcceleration": 5333.333333,
+          "maxRotationSpeed": 900,
+          "maxRotationAcceleration": 4800,
+          "stopDeceleration": 6666.666667,
+          "rotationStopDeceleration": 6000
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        8000,
+        8000,
+        800000,
+        120000
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-TS5-55Z15",
+      "sourceId": "IR-TS5-55Z15S3-C2LH-INT_01741007",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          658.8,
+          705.9,
+          1606.361111,
+          2000
+        ],
+        "acceleration": [
+          1214,
+          1418,
+          2563.333333,
+          16746
+        ],
+        "deceleration": [
+          1214,
+          1418,
+          2563.333333,
+          16746
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 10000,
+          "maxRotationSpeed": 1000,
+          "maxRotationAcceleration": 6666,
+          "stopDeceleration": 10000,
+          "rotationStopDeceleration": 6666
+        }
+      },
+      "expected": {
+        "speed": [
+          658.8,
+          705.9,
+          1606.361111111111,
+          2000
+        ],
+        "acceleration": [
+          1214,
+          1418,
+          2563.3333333333335,
+          16746
+        ],
+        "deceleration": [
+          1214,
+          1418,
+          2563.3333333333335,
+          16746
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 10000,
+          "maxRotationSpeed": 1000,
+          "maxRotationAcceleration": 6666,
+          "stopDeceleration": 10000,
+          "rotationStopDeceleration": 6666
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        7000,
+        8000,
+        800000,
+        300000
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-S25-80Z42",
+      "sourceId": "IR-S25-80Z42S5-C2LNHX-INT_01741354",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          380,
+          360,
+          2146.458333,
+          705
+        ],
+        "acceleration": [
+          380,
+          700,
+          13888.888889,
+          3000
+        ],
+        "deceleration": [
+          380,
+          700,
+          13888.888889,
+          3000
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 4000,
+          "maxRotationSpeed": 705,
+          "maxRotationAcceleration": 3000,
+          "stopDeceleration": 4000,
+          "rotationStopDeceleration": 3000
+        }
+      },
+      "expected": {
+        "speed": [
+          380,
+          360,
+          2146.4583333333335,
+          705
+        ],
+        "acceleration": [
+          380,
+          700,
+          13888.888888888889,
+          3000
+        ],
+        "deceleration": [
+          380,
+          700,
+          13888.888888888889,
+          3000
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 4000,
+          "maxRotationSpeed": 705,
+          "maxRotationAcceleration": 3000,
+          "stopDeceleration": 4000,
+          "rotationStopDeceleration": 3000
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        4000,
+        5000,
+        500000,
+        6000
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-S25-100Z42",
+      "sourceId": "IR-S25-100Z42S5-C2LNHX-INT_01741353",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          380,
+          360,
+          2146.458333,
+          705
+        ],
+        "acceleration": [
+          380,
+          700,
+          13888.888889,
+          3000
+        ],
+        "deceleration": [
+          380,
+          700,
+          13888.888889,
+          3000
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 4000,
+          "maxRotationSpeed": 705,
+          "maxRotationAcceleration": 3000,
+          "stopDeceleration": 4000,
+          "rotationStopDeceleration": 3000
+        }
+      },
+      "expected": {
+        "speed": [
+          380,
+          360,
+          2146.4583333333335,
+          705
+        ],
+        "acceleration": [
+          380,
+          700,
+          13888.888888888889,
+          3000
+        ],
+        "deceleration": [
+          380,
+          700,
+          13888.888888888889,
+          3000
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 4000,
+          "maxRotationSpeed": 705,
+          "maxRotationAcceleration": 3000,
+          "stopDeceleration": 4000,
+          "rotationStopDeceleration": 3000
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        4000,
+        5000,
+        500000,
+        6000
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-S25-120Z42",
+      "sourceId": "IR-S25-120Z42S-C2LSXD-INT_01741364",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          316,
+          360,
+          1250,
+          705
+        ],
+        "acceleration": [
+          380,
+          700,
+          13888.888889,
+          3000
+        ],
+        "deceleration": [
+          380,
+          700,
+          13888.888889,
+          3000
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 4000,
+          "maxRotationSpeed": 705,
+          "maxRotationAcceleration": 3000,
+          "stopDeceleration": 4000,
+          "rotationStopDeceleration": 3000
+        }
+      },
+      "expected": {
+        "speed": [
+          316,
+          360,
+          1250,
+          705
+        ],
+        "acceleration": [
+          380,
+          700,
+          13888.888888888889,
+          3000
+        ],
+        "deceleration": [
+          380,
+          700,
+          13888.888888888889,
+          3000
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 4000,
+          "maxRotationSpeed": 705,
+          "maxRotationAcceleration": 3000,
+          "stopDeceleration": 4000,
+          "rotationStopDeceleration": 3000
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        2300,
+        3500,
+        180000,
+        5100
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-S35-80Z42",
+      "sourceId": "IR-S35-80Z42S5-C2LNHX-INT_01741206",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          380,
+          360,
+          2146.458333,
+          705
+        ],
+        "acceleration": [
+          380,
+          700,
+          13888.888889,
+          3000
+        ],
+        "deceleration": [
+          380,
+          700,
+          13888.888889,
+          3000
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 4000,
+          "maxRotationSpeed": 705,
+          "maxRotationAcceleration": 3000,
+          "stopDeceleration": 4000,
+          "rotationStopDeceleration": 3000
+        }
+      },
+      "expected": {
+        "speed": [
+          380,
+          360,
+          2146.4583333333335,
+          705
+        ],
+        "acceleration": [
+          380,
+          700,
+          13888.888888888889,
+          3000
+        ],
+        "deceleration": [
+          380,
+          700,
+          13888.888888888889,
+          3000
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 4000,
+          "maxRotationSpeed": 705,
+          "maxRotationAcceleration": 3000,
+          "stopDeceleration": 4000,
+          "rotationStopDeceleration": 3000
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        4000,
+        5000,
+        500000,
+        6000
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-S35-100Z42",
+      "sourceId": "IR-S35-100Z42S5-C2LNHX-INT_01741207",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          380,
+          360,
+          2146.458333,
+          705
+        ],
+        "acceleration": [
+          380,
+          700,
+          13888.888889,
+          3000
+        ],
+        "deceleration": [
+          380,
+          700,
+          13888.888889,
+          3000
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 4000,
+          "maxRotationSpeed": 705,
+          "maxRotationAcceleration": 3000,
+          "stopDeceleration": 4000,
+          "rotationStopDeceleration": 3000
+        }
+      },
+      "expected": {
+        "speed": [
+          380,
+          360,
+          2146.4583333333335,
+          705
+        ],
+        "acceleration": [
+          380,
+          700,
+          13888.888888888889,
+          3000
+        ],
+        "deceleration": [
+          380,
+          700,
+          13888.888888888889,
+          3000
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 4000,
+          "maxRotationSpeed": 705,
+          "maxRotationAcceleration": 3000,
+          "stopDeceleration": 4000,
+          "rotationStopDeceleration": 3000
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        4000,
+        5000,
+        500000,
+        6000
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-S35-120Z42",
+      "sourceId": "IR-S35-120Z42S-C2LSXD-INT_01741363",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          316,
+          360,
+          1250,
+          705
+        ],
+        "acceleration": [
+          380,
+          700,
+          13888.888889,
+          3000
+        ],
+        "deceleration": [
+          380,
+          700,
+          13888.888889,
+          3000
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 4000,
+          "maxRotationSpeed": 705,
+          "maxRotationAcceleration": 3000,
+          "stopDeceleration": 4000,
+          "rotationStopDeceleration": 3000
+        }
+      },
+      "expected": {
+        "speed": [
+          316,
+          360,
+          1250,
+          705
+        ],
+        "acceleration": [
+          380,
+          700,
+          13888.888888888889,
+          3000
+        ],
+        "deceleration": [
+          380,
+          700,
+          13888.888888888889,
+          3000
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 4000,
+          "maxRotationSpeed": 705,
+          "maxRotationAcceleration": 3000,
+          "stopDeceleration": 4000,
+          "rotationStopDeceleration": 3000
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        2200,
+        3500,
+        180000,
+        5100
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-S60-120Z40",
+      "sourceId": "IR-S60-120Z40S5-A1LSSH-INT_01741335",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          223.2,
+          262.8,
+          1282,
+          600
+        ],
+        "acceleration": [
+          450,
+          1000,
+          13888.888889,
+          3000
+        ],
+        "deceleration": [
+          450,
+          1000,
+          13888.888889,
+          3000
+        ],
+        "cartesian": {
+          "maxSpeed": 2000,
+          "maxAcceleration": 6000,
+          "maxRotationSpeed": 600,
+          "maxRotationAcceleration": 3000,
+          "stopDeceleration": 6000,
+          "rotationStopDeceleration": 3000
+        }
+      },
+      "expected": {
+        "speed": [
+          223.2,
+          262.8,
+          1282,
+          600
+        ],
+        "acceleration": [
+          450,
+          1000,
+          13888.888888888889,
+          3000
+        ],
+        "deceleration": [
+          450,
+          1000,
+          13888.888888888889,
+          3000
+        ],
+        "cartesian": {
+          "maxSpeed": 2000,
+          "maxAcceleration": 6000,
+          "maxRotationSpeed": 600,
+          "maxRotationAcceleration": 3000,
+          "stopDeceleration": 6000,
+          "rotationStopDeceleration": 3000
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        2500,
+        2800,
+        1000000,
+        8000
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-GS60-120Z40",
+      "sourceId": "IR-GS60-120Z40S5-C1LNSX-INT_01741178",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          223.2,
+          262.8,
+          1282,
+          600
+        ],
+        "acceleration": [
+          450,
+          1000,
+          13888.888889,
+          3000
+        ],
+        "deceleration": [
+          450,
+          1000,
+          13888.888889,
+          3000
+        ],
+        "cartesian": {
+          "maxSpeed": 2000,
+          "maxAcceleration": 6000,
+          "maxRotationSpeed": 600,
+          "maxRotationAcceleration": 3000,
+          "stopDeceleration": 6000,
+          "rotationStopDeceleration": 3000
+        }
+      },
+      "expected": {
+        "speed": [
+          223.2,
+          262.8,
+          1282,
+          600
+        ],
+        "acceleration": [
+          450,
+          1000,
+          13888.888888888889,
+          3000
+        ],
+        "deceleration": [
+          450,
+          1000,
+          13888.888888888889,
+          3000
+        ],
+        "cartesian": {
+          "maxSpeed": 2000,
+          "maxAcceleration": 6000,
+          "maxRotationSpeed": 600,
+          "maxRotationAcceleration": 3000,
+          "stopDeceleration": 6000,
+          "rotationStopDeceleration": 3000
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        2500,
+        2800,
+        1000000,
+        8000
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-R4-56",
+      "sourceId": "IR-R4-56S5-C1H-INT_01741030",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          420,
+          420,
+          520,
+          560,
+          560,
+          900
+        ],
+        "acceleration": [
+          2200,
+          1400,
+          1200,
+          4000,
+          4000,
+          4000
+        ],
+        "deceleration": [
+          2200,
+          1400,
+          1200,
+          4000,
+          4000,
+          4000
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 6000,
+          "maxRotationSpeed": 900,
+          "maxRotationAcceleration": 4000,
+          "stopDeceleration": 6000,
+          "rotationStopDeceleration": 4000
+        }
+      },
+      "expected": {
+        "speed": [
+          420,
+          420,
+          520,
+          560,
+          560,
+          900
+        ],
+        "acceleration": [
+          2200,
+          1400,
+          1200,
+          4000,
+          4000,
+          4000
+        ],
+        "deceleration": [
+          2200,
+          1400,
+          1200,
+          4000,
+          4000,
+          4000
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 6000,
+          "maxRotationSpeed": 900,
+          "maxRotationAcceleration": 4000,
+          "stopDeceleration": 6000,
+          "rotationStopDeceleration": 4000
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        12000,
+        12000,
+        12000,
+        22000,
+        22000,
+        24000
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-R4H-54",
+      "sourceId": "IR-R4H-54S5-C1H-INT_01741031",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          420,
+          420,
+          520,
+          560,
+          560,
+          858.8
+        ],
+        "acceleration": [
+          2200,
+          1400,
+          1200,
+          4000,
+          2500,
+          4000
+        ],
+        "deceleration": [
+          2200,
+          1400,
+          1200,
+          4000,
+          2500,
+          4000
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 6000,
+          "maxRotationSpeed": 900,
+          "maxRotationAcceleration": 4000,
+          "stopDeceleration": 6000,
+          "rotationStopDeceleration": 4000
+        }
+      },
+      "expected": {
+        "speed": [
+          420,
+          420,
+          520,
+          560,
+          560,
+          858.8
+        ],
+        "acceleration": [
+          2200,
+          1400,
+          1200,
+          4000,
+          2500,
+          4000
+        ],
+        "deceleration": [
+          2200,
+          1400,
+          1200,
+          4000,
+          2500,
+          4000
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 6000,
+          "maxRotationSpeed": 900,
+          "maxRotationAcceleration": 4000,
+          "stopDeceleration": 6000,
+          "rotationStopDeceleration": 4000
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        6000,
+        6000,
+        6000,
+        11000,
+        6000,
+        10000
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-R7H-70",
+      "sourceId": "IR-R7H-70S5-C2H-INT_01741199",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          420,
+          336,
+          487.5,
+          550,
+          438,
+          764.7
+        ],
+        "acceleration": [
+          1200,
+          1100,
+          1800,
+          2500,
+          2800,
+          1500
+        ],
+        "deceleration": [
+          1200,
+          1100,
+          1800,
+          2500,
+          2800,
+          1500
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 6000,
+          "maxRotationSpeed": 720,
+          "maxRotationAcceleration": 4500,
+          "stopDeceleration": 6000,
+          "rotationStopDeceleration": 4500
+        }
+      },
+      "expected": {
+        "speed": [
+          420,
+          336,
+          487.5,
+          550,
+          438,
+          764.7
+        ],
+        "acceleration": [
+          1200,
+          1100,
+          1800,
+          2500,
+          2800,
+          1500
+        ],
+        "deceleration": [
+          1200,
+          1100,
+          1800,
+          2500,
+          2800,
+          1500
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 6000,
+          "maxRotationSpeed": 720,
+          "maxRotationAcceleration": 4500,
+          "stopDeceleration": 6000,
+          "rotationStopDeceleration": 4500
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        3300,
+        1300,
+        2200,
+        9000,
+        11000,
+        16000
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-R7H-90",
+      "sourceId": "IR-R7H-90S5-C2H-INT_01741200",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          336,
+          280,
+          390,
+          550,
+          438,
+          764.7
+        ],
+        "acceleration": [
+          850,
+          500,
+          1500,
+          3500,
+          4000,
+          3500
+        ],
+        "deceleration": [
+          850,
+          500,
+          1500,
+          3500,
+          4000,
+          3500
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 6000,
+          "maxRotationSpeed": 720,
+          "maxRotationAcceleration": 4500,
+          "stopDeceleration": 6000,
+          "rotationStopDeceleration": 4500
+        }
+      },
+      "expected": {
+        "speed": [
+          336,
+          280,
+          390,
+          550,
+          438,
+          764.7
+        ],
+        "acceleration": [
+          850,
+          500,
+          1500,
+          3500,
+          4000,
+          3500
+        ],
+        "deceleration": [
+          850,
+          500,
+          1500,
+          3500,
+          4000,
+          3500
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 6000,
+          "maxRotationSpeed": 720,
+          "maxRotationAcceleration": 4500,
+          "stopDeceleration": 6000,
+          "rotationStopDeceleration": 4500
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        3300,
+        1300,
+        2200,
+        9000,
+        11000,
+        16000
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-R10-110",
+      "sourceId": "IR-R10-110S5-C1H-INT_01741036",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          240,
+          180,
+          330,
+          450,
+          420,
+          720
+        ],
+        "acceleration": [
+          700,
+          400,
+          700,
+          4500,
+          4500,
+          6000
+        ],
+        "deceleration": [
+          700,
+          400,
+          700,
+          4500,
+          4500,
+          6000
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 6000,
+          "maxRotationSpeed": 720,
+          "maxRotationAcceleration": 4500,
+          "stopDeceleration": 6000,
+          "rotationStopDeceleration": 4500
+        }
+      },
+      "expected": {
+        "speed": [
+          240,
+          180,
+          330,
+          450,
+          420,
+          720
+        ],
+        "acceleration": [
+          700,
+          400,
+          700,
+          4500,
+          4500,
+          6000
+        ],
+        "deceleration": [
+          700,
+          400,
+          700,
+          4500,
+          4500,
+          6000
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 6000,
+          "maxRotationSpeed": 720,
+          "maxRotationAcceleration": 4500,
+          "stopDeceleration": 6000,
+          "rotationStopDeceleration": 4500
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        3300,
+        1300,
+        2200,
+        9000,
+        11000,
+        16000
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-R10H-120",
+      "sourceId": "IR-R10H-120S5-C2H-INT_01741201",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          240,
+          180,
+          330,
+          470,
+          438,
+          764.7
+        ],
+        "acceleration": [
+          550,
+          400,
+          600,
+          2800,
+          2800,
+          2000
+        ],
+        "deceleration": [
+          550,
+          400,
+          600,
+          2800,
+          2800,
+          2000
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 6000,
+          "maxRotationSpeed": 720,
+          "maxRotationAcceleration": 4500,
+          "stopDeceleration": 6000,
+          "rotationStopDeceleration": 4500
+        }
+      },
+      "expected": {
+        "speed": [
+          240,
+          180,
+          330,
+          470,
+          438,
+          764.7
+        ],
+        "acceleration": [
+          550,
+          400,
+          600,
+          2800,
+          2800,
+          2000
+        ],
+        "deceleration": [
+          550,
+          400,
+          600,
+          2800,
+          2800,
+          2000
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 6000,
+          "maxRotationSpeed": 720,
+          "maxRotationAcceleration": 4500,
+          "stopDeceleration": 6000,
+          "rotationStopDeceleration": 4500
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        3300,
+        1300,
+        2200,
+        9000,
+        11000,
+        16000
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-R11-90",
+      "sourceId": "IR-R11-90S5-C1H-INT_01741035",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          240,
+          180,
+          330,
+          450,
+          420,
+          720
+        ],
+        "acceleration": [
+          700,
+          400,
+          700,
+          4500,
+          4500,
+          6000
+        ],
+        "deceleration": [
+          700,
+          400,
+          700,
+          4500,
+          4500,
+          6000
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 6000,
+          "maxRotationSpeed": 720,
+          "maxRotationAcceleration": 4500,
+          "stopDeceleration": 6000,
+          "rotationStopDeceleration": 4500
+        }
+      },
+      "expected": {
+        "speed": [
+          240,
+          180,
+          330,
+          450,
+          420,
+          720
+        ],
+        "acceleration": [
+          700,
+          400,
+          700,
+          4500,
+          4500,
+          6000
+        ],
+        "deceleration": [
+          700,
+          400,
+          700,
+          4500,
+          4500,
+          6000
+        ],
+        "cartesian": {
+          "maxSpeed": 1500,
+          "maxAcceleration": 6000,
+          "maxRotationSpeed": 720,
+          "maxRotationAcceleration": 4500,
+          "stopDeceleration": 6000,
+          "rotationStopDeceleration": 4500
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        3300,
+        1300,
+        2200,
+        9000,
+        11000,
+        16000
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-R10-140",
+      "sourceId": "IR-R10-140S5-D1NH-INT_01741041",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          200,
+          200,
+          200,
+          375,
+          375,
+          600
+        ],
+        "acceleration": [
+          900,
+          700,
+          1300,
+          4000,
+          4000,
+          8000
+        ],
+        "deceleration": [
+          900,
+          700,
+          1300,
+          4000,
+          4000,
+          8000
+        ],
+        "cartesian": {
+          "maxSpeed": 2500,
+          "maxAcceleration": 5000,
+          "maxRotationSpeed": 600,
+          "maxRotationAcceleration": 4000,
+          "stopDeceleration": 5000,
+          "rotationStopDeceleration": 4000
+        }
+      },
+      "expected": {
+        "speed": [
+          200,
+          200,
+          200,
+          375,
+          375,
+          600
+        ],
+        "acceleration": [
+          900,
+          700,
+          1300,
+          4000,
+          4000,
+          8000
+        ],
+        "deceleration": [
+          900,
+          700,
+          1300,
+          4000,
+          4000,
+          8000
+        ],
+        "cartesian": {
+          "maxSpeed": 2500,
+          "maxAcceleration": 5000,
+          "maxRotationSpeed": 600,
+          "maxRotationAcceleration": 4000,
+          "stopDeceleration": 5000,
+          "rotationStopDeceleration": 4000
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        5000,
+        8000,
+        7000,
+        5000,
+        8000,
+        10000
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-R15H-145",
+      "sourceId": "IR-R15H-145S5-C1NH-INT_01741446",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          260,
+          240,
+          260,
+          470,
+          450,
+          705
+        ],
+        "acceleration": [
+          600,
+          800,
+          1000,
+          1500,
+          2500,
+          1800
+        ],
+        "deceleration": [
+          600,
+          800,
+          1000,
+          1500,
+          2500,
+          1800
+        ],
+        "cartesian": {
+          "maxSpeed": 2500,
+          "maxAcceleration": 5000,
+          "maxRotationSpeed": 600,
+          "maxRotationAcceleration": 4000,
+          "stopDeceleration": 5000,
+          "rotationStopDeceleration": 4000
+        }
+      },
+      "expected": {
+        "speed": [
+          260,
+          240,
+          260,
+          470,
+          450,
+          705
+        ],
+        "acceleration": [
+          600,
+          800,
+          1000,
+          1500,
+          2500,
+          1800
+        ],
+        "deceleration": [
+          600,
+          800,
+          1000,
+          1500,
+          2500,
+          1800
+        ],
+        "cartesian": {
+          "maxSpeed": 2500,
+          "maxAcceleration": 5000,
+          "maxRotationSpeed": 600,
+          "maxRotationAcceleration": 4000,
+          "stopDeceleration": 5000,
+          "rotationStopDeceleration": 4000
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        5000,
+        8000,
+        7000,
+        5000,
+        8000,
+        10000
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-R16-210",
+      "sourceId": "IR-R16-210S5-D1NH-INT_01741090",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          190,
+          175,
+          200,
+          400,
+          360,
+          610
+        ],
+        "acceleration": [
+          500,
+          500,
+          800,
+          3500,
+          3000,
+          3500
+        ],
+        "deceleration": [
+          500,
+          500,
+          800,
+          3500,
+          3000,
+          3500
+        ],
+        "cartesian": {
+          "maxSpeed": 2000,
+          "maxAcceleration": 5000,
+          "maxRotationSpeed": 533.3,
+          "maxRotationAcceleration": 3000,
+          "stopDeceleration": 5000,
+          "rotationStopDeceleration": 3000
+        }
+      },
+      "expected": {
+        "speed": [
+          190,
+          175,
+          200,
+          400,
+          360,
+          610
+        ],
+        "acceleration": [
+          500,
+          500,
+          800,
+          3500,
+          3000,
+          3500
+        ],
+        "deceleration": [
+          500,
+          500,
+          800,
+          3500,
+          3000,
+          3500
+        ],
+        "cartesian": {
+          "maxSpeed": 2000,
+          "maxAcceleration": 5000,
+          "maxRotationSpeed": 533.3,
+          "maxRotationAcceleration": 3000,
+          "stopDeceleration": 5000,
+          "rotationStopDeceleration": 3000
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        10000,
+        8000,
+        10000,
+        12000,
+        12000,
+        12000
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-R20H-120",
+      "sourceId": "IR-R20H-120S5-C1NH-INT_01741447",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          260,
+          240,
+          260,
+          470,
+          450,
+          705
+        ],
+        "acceleration": [
+          600,
+          800,
+          1000,
+          1500,
+          2500,
+          1800
+        ],
+        "deceleration": [
+          600,
+          800,
+          1000,
+          1500,
+          2500,
+          1800
+        ],
+        "cartesian": {
+          "maxSpeed": 2500,
+          "maxAcceleration": 5000,
+          "maxRotationSpeed": 600,
+          "maxRotationAcceleration": 4000,
+          "stopDeceleration": 5000,
+          "rotationStopDeceleration": 4000
+        }
+      },
+      "expected": {
+        "speed": [
+          260,
+          240,
+          260,
+          470,
+          450,
+          705
+        ],
+        "acceleration": [
+          600,
+          800,
+          1000,
+          1500,
+          2500,
+          1800
+        ],
+        "deceleration": [
+          600,
+          800,
+          1000,
+          1500,
+          2500,
+          1800
+        ],
+        "cartesian": {
+          "maxSpeed": 2500,
+          "maxAcceleration": 5000,
+          "maxRotationSpeed": 600,
+          "maxRotationAcceleration": 4000,
+          "stopDeceleration": 5000,
+          "rotationStopDeceleration": 4000
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        5000,
+        8000,
+        7000,
+        5000,
+        8000,
+        10000
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-R25-178",
+      "sourceId": "IR-R25-178S5-D1NH-INT_01741089",
+      "status": "matched",
+      "actual": {
+        "speed": [
+          190,
+          175,
+          200,
+          400,
+          360,
+          610
+        ],
+        "acceleration": [
+          600,
+          400,
+          650,
+          1500,
+          1400,
+          3000
+        ],
+        "deceleration": [
+          600,
+          400,
+          650,
+          1500,
+          1400,
+          3000
+        ],
+        "cartesian": {
+          "maxSpeed": 2000,
+          "maxAcceleration": 5000,
+          "maxRotationSpeed": 533.3,
+          "maxRotationAcceleration": 2800,
+          "stopDeceleration": 5000,
+          "rotationStopDeceleration": 2800
+        }
+      },
+      "expected": {
+        "speed": [
+          190,
+          175,
+          200,
+          400,
+          360,
+          610
+        ],
+        "acceleration": [
+          600,
+          400,
+          650,
+          1500,
+          1400,
+          3000
+        ],
+        "deceleration": [
+          600,
+          400,
+          650,
+          1500,
+          1400,
+          3000
+        ],
+        "cartesian": {
+          "maxSpeed": 2000,
+          "maxAcceleration": 5000,
+          "maxRotationSpeed": 533.3,
+          "maxRotationAcceleration": 2800,
+          "stopDeceleration": 5000,
+          "rotationStopDeceleration": 2800
+        }
+      },
+      "rapidAccelerationDefaultsControllerUnits": [
+        11000,
+        8000,
+        12000,
+        10000,
+        12000,
+        12000
+      ],
+      "rapidPlanner": "firmware dynamics estimate: stBest defaults, torque/posture/load and instruction percentages",
+      "mismatches": []
+    },
+    {
+      "folder": "IR-R35-185",
+      "status": "source-selection-required",
+      "sourceId": null,
+      "sourceVariants": [
+        "IR-R35-185S7-B1NH_01740676",
+        "IR-R35-185S7-B1ZD_01740679",
+        "IR-R35-185S7-D1SD_01741293"
+      ],
+      "actual": {
+        "speed": [
+          200,
+          180,
+          242,
+          450,
+          336,
+          407
+        ],
+        "acceleration": [
+          350,
+          250,
+          350,
+          1000,
+          1200,
+          1000
+        ],
+        "deceleration": [
+          350,
+          250,
+          350,
+          1000,
+          1200,
+          1000
+        ],
+        "cartesian": {
+          "maxSpeed": 2000,
+          "maxAcceleration": 5000,
+          "maxRotationSpeed": 533.3,
+          "maxRotationAcceleration": 2800,
+          "stopDeceleration": 5000,
+          "rotationStopDeceleration": 2800
+        }
+      },
+      "rapidPlanner": "catalog-based estimate until an exact controller variant is selected"
+    },
+    {
+      "folder": "IR-R50-250",
+      "status": "source-selection-required",
+      "sourceId": null,
+      "sourceVariants": [
+        "IR-R50-250S7-E1N_01740564",
+        "IR-R50-250S7-E1N_01740675",
+        "IR-R50-250S7-E1ZN_01740600",
+        "IR-R50-250S7-E1ZN_01740674",
+        "IR-R50-250S7-E1ZY_01741085",
+        "IR-R50-250S7-F1S_01741336"
+      ],
+      "actual": {
+        "speed": [
+          175,
+          150,
+          175,
+          250,
+          250,
+          355
+        ],
+        "acceleration": [
+          300,
+          235,
+          300,
+          450,
+          750,
+          750
+        ],
+        "deceleration": [
+          300,
+          235,
+          300,
+          450,
+          750,
+          750
+        ],
+        "cartesian": {
+          "maxSpeed": 2000,
+          "maxAcceleration": 5000,
+          "maxRotationSpeed": 533.3,
+          "maxRotationAcceleration": 2800,
+          "stopDeceleration": 5000,
+          "rotationStopDeceleration": 2800
+        }
+      },
+      "rapidPlanner": "catalog-based estimate until an exact controller variant is selected"
+    }
+  ]
+}

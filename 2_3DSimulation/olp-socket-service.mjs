@@ -1,17 +1,19 @@
 /** Virtual external peer for the robot language's Port/Socket commands.
  * A peer must be configured explicitly. Sending never invents a camera result.
  * Buffers contain bytes; offsets/lengths are not JavaScript UTF-16 indices.
+ * `resolvePeer({host,port,channel,mode,server})` may attach a simulated device
+ * (the virtual vision) that answers with `peer.receive(text, reply)`.
  */
 export class OlpSocketService {
-    constructor({onChange=null,onSend=null,now=()=>performance.now(),pollMilliseconds=10}={}) {
-        this.ports=new Map();this.onChange=onChange;this.onSend=onSend;
+    constructor({onChange=null,onSend=null,resolvePeer=null,now=()=>performance.now(),pollMilliseconds=10}={}) {
+        this.ports=new Map();this.onChange=onChange;this.onSend=onSend;this.resolvePeer=resolvePeer;
         this.now=now;this.pollMilliseconds=pollMilliseconds;
         this.encoder=new TextEncoder();this.decoder=new TextDecoder();
     }
     port(channel) {
         if(!Number.isInteger(channel)||channel<0)throw new RangeError('Socket channel must be a nonnegative integer');
         if(!this.ports.has(channel))this.ports.set(channel,{channel,available:false,connected:false,
-            host:'',port:null,mode:null,replyText:null,incoming:[],buffer:new Uint8Array(),lastSent:'',sent:[]});
+            host:'',port:null,mode:null,replyText:null,incoming:[],buffer:new Uint8Array(),lastSent:'',sent:[],peer:null});
         return this.ports.get(channel);
     }
     changed(port) {this.onChange?.(this.snapshot(port.channel));}
@@ -24,25 +26,28 @@ export class OlpSocketService {
     snapshot(channel=2) {
         const port=this.port(channel);
         return {channel,available:port.available,connected:port.connected,host:port.host,port:port.port,mode:port.mode,
-            replyText:port.replyText,lastSent:port.lastSent,pendingFrames:port.incoming.length,bufferBytes:port.buffer.length};
+            replyText:port.replyText,lastSent:port.lastSent,pendingFrames:port.incoming.length,bufferBytes:port.buffer.length,
+            peer:port.peer?.label||''};
     }
     open({host,port:portNumber,channel,mode}) {
         if(typeof host!=='string'||!host.trim()||!Number.isInteger(portNumber)||portNumber<1||portNumber>65535)
             throw new RangeError('Open Socket requires a host and a TCP port in 1..65535');
         const port=this.port(channel);
-        Object.assign(port,{host,port:portNumber,mode,connected:port.available});
+        const peer=this.resolvePeer?.({host:host.trim(),port:portNumber,channel,mode,server:false})||null;
+        Object.assign(port,{host,port:portNumber,mode,peer,connected:port.available||Boolean(peer)});
         this.changed(port);return port.connected?1:0;
     }
     close(channel) {
         const port=this.port(channel);
-        port.connected=false;port.mode=null;port.incoming=[];port.buffer=new Uint8Array();
+        port.connected=false;port.mode=null;port.peer=null;port.incoming=[];port.buffer=new Uint8Array();
         this.changed(port);
     }
     getState(channel) {
         const port=this.port(channel);
         // A configured virtual peer reconnects to a generated server program.
         // Client programs instead establish the session with Open Socket.
-        if(port.available&&!port.mode)port.connected=true;
+        if(!port.mode&&!port.peer)port.peer=this.resolvePeer?.({host:'',port:null,channel,mode:null,server:true})||null;
+        if((port.available||port.peer)&&!port.mode)port.connected=true;
         return port.connected?1:0;
     }
     send(channel,text,runtime=null) {
@@ -51,7 +56,9 @@ export class OlpSocketService {
         text=String(text);port.lastSent=text;port.sent.push(text);
         if(port.sent.length>128)port.sent.shift();
         this.onSend?.({channel,text,host:port.host,port:port.port},runtime);
-        if(port.replyText!==null)this.inject(channel,port.replyText);
+        const peer=port.peer;
+        if(peer)peer.receive(text,reply=>{if(port.peer===peer&&reply!==null&&reply!==undefined)this.inject(channel,reply);});
+        else if(port.replyText!==null)this.inject(channel,port.replyText);
         this.changed(port);
     }
     inject(channel,text) {

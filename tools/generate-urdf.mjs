@@ -1,11 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { firmwareInertial, boxInertial, nominalJointTorque, nominalScrewForce } from './urdf-physics.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const SIMULATION_DIR = path.join(ROOT, '2_3DSimulation');
 const MODELS_DIR = path.join(SIMULATION_DIR, 'models');
-const DYNAMICS_DIR = path.join(SIMULATION_DIR, '새 폴더');
 const OUTPUT_DIR = path.join(SIMULATION_DIR, 'urdf');
+const FIRMWARE_FILE = path.join(OUTPUT_DIR, 'firmware-spc25.json');
 
 const MM_TO_M = 0.001;
 const DEG_TO_RAD = Math.PI / 180;
@@ -96,7 +98,8 @@ function createKinematicManifest(definition) {
                 direction: 1,
                 type: 'prismatic',
                 limits: controllerLimits.map((value) => finiteNumber(value) * screwLead / 360),
-                speed: finiteNumber(speed[2]) * screwLead / 360
+                speed: finiteNumber(speed[2]) * screwLead / 360,
+                screwLeadMeters: screwLead * MM_TO_M
             },
             { name: 'J4', mesh: 'P4.stl', pivot: wrist, axis: [0, 0, 1], direction: 1, type: 'revolute', limits: limits[3], speed: speed[3] }
         );
@@ -153,56 +156,6 @@ function readStlBounds(filePath) {
     return { min, max, center: min.map((value, axis) => (value + max[axis]) / 2) };
 }
 
-function sourceCogToMeters(cog) {
-    return numberArray(cog).map((value) => Math.abs(value) > 10 ? value * MM_TO_M : value);
-}
-
-function sourceInertiaToMetersSquared(values) {
-    return numberArray(values, 6).map((value) => Math.abs(value) > 10 ? value * 1e-6 : value);
-}
-
-function isPositiveDefinite(matrix) {
-    const [a, b, c, d, e, f] = matrix;
-    if (![a, b, c, d, e, f].every(Number.isFinite) || a <= 0 || d <= 0 || f <= 0) return false;
-    const minor2 = a * d - b * b;
-    const determinant = a * (d * f - e * e) - b * (b * f - c * e) + c * (b * e - c * d);
-    return minor2 > 1e-12 && determinant > 1e-15;
-}
-
-function boundingBoxInertial(mass, bounds, pivot) {
-    const fallbackSize = [50, 50, 50];
-    const min = bounds?.min || fallbackSize.map((value) => -value / 2);
-    const max = bounds?.max || fallbackSize.map((value) => value / 2);
-    const size = min.map((value, axis) => Math.max(Math.abs(max[axis] - value), 1));
-    const center = bounds?.center || [0, 0, 0];
-    return {
-        origin: center.map((value, axis) => value * MM_TO_M - pivot[axis] * MM_TO_M),
-        inertia: [
-            mass * (size[1] * size[1] + size[2] * size[2]) * MM_TO_M * MM_TO_M / 12,
-            0,
-            0,
-            mass * (size[0] * size[0] + size[2] * size[2]) * MM_TO_M * MM_TO_M / 12,
-            0,
-            mass * (size[0] * size[0] + size[1] * size[1]) * MM_TO_M * MM_TO_M / 12
-        ],
-        source: 'bounding-box-fallback'
-    };
-}
-
-function createInertialData(dynamicLink, meshBounds, pivot) {
-    const mass = finiteNumber(dynamicLink?.mass);
-    if (mass <= 0) return null;
-    const sourceInertia = sourceInertiaToMetersSquared(dynamicLink?.inertia);
-    const sourceMatrix = [sourceInertia[0], sourceInertia[3], sourceInertia[4], sourceInertia[1], sourceInertia[5], sourceInertia[2]];
-    // The controller JSON stores each link COG in that link's dynamic frame;
-    // unlike the STL bounds fallback, it must not be shifted by the joint pivot.
-    const sourceOrigin = sourceCogToMeters(dynamicLink?.cog);
-    if (isPositiveDefinite(sourceMatrix)) {
-        return { mass, origin: sourceOrigin, inertia: sourceMatrix, source: 'controller-json' };
-    }
-    return { ...boundingBoxInertial(mass, meshBounds, pivot), mass };
-}
-
 function colorForLink(index) {
     return index % 2 === 0 ? '0.84 0.86 0.89 1' : '0.94 0.95 0.96 1';
 }
@@ -215,7 +168,8 @@ function visualXml({ mesh, origin, name, color }) {
 function inertialXml(inertial) {
     if (!inertial) return '';
     const [ixx, ixy, ixz, iyy, iyz, izz] = inertial.inertia;
-    return `\n    <!-- inertial source: ${inertial.source} -->\n    <inertial>\n      <origin xyz="${vectorText(inertial.origin)}" rpy="0 0 0"/>\n      <mass value="${formatNumber(inertial.mass)}"/>\n      <inertia ixx="${formatNumber(ixx)}" ixy="${formatNumber(ixy)}" ixz="${formatNumber(ixz)}" iyy="${formatNumber(iyy)}" iyz="${formatNumber(iyz)}" izz="${formatNumber(izz)}"/>\n    </inertial>`;
+    const reason = inertial.reason ? `\n    <!-- ${xmlEscape(inertial.reason)} -->` : '';
+    return `\n    <!-- inertial source: ${inertial.source} -->${reason}\n    <inertial>\n      <origin xyz="${vectorText(inertial.origin)}" rpy="0 0 0"/>\n      <mass value="${formatNumber(inertial.mass)}"/>\n      <inertia ixx="${formatNumber(ixx)}" ixy="${formatNumber(ixy)}" ixz="${formatNumber(ixz)}" iyy="${formatNumber(iyy)}" iyz="${formatNumber(iyz)}" izz="${formatNumber(izz)}"/>\n    </inertial>`;
 }
 
 function createJointXml(joint, index, previousPivot, dynamicLink, robotType) {
@@ -225,29 +179,45 @@ function createJointXml(joint, index, previousPivot, dynamicLink, robotType) {
     const lower = finiteNumber(joint.limits?.[0]) * (isPrismatic ? MM_TO_M : DEG_TO_RAD);
     const upper = finiteNumber(joint.limits?.[1]) * (isPrismatic ? MM_TO_M : DEG_TO_RAD);
     const velocity = finiteNumber(joint.speed) * (isPrismatic ? MM_TO_M : DEG_TO_RAD);
-    const effort = isPrismatic ? 0 : Math.max(0, finiteNumber(dynamicLink?.ratedTrq));
-    const effortComment = isPrismatic ? ' <!-- source ratedTrq is torque; prismatic force was not supplied -->' : '';
+    const effort = isPrismatic ? nominalScrewForce(dynamicLink, joint.screwLeadMeters) : nominalJointTorque(dynamicLink);
+    const effortComment = isPrismatic ? ' <!-- ideal screw force: 2*pi*ratedTrq*abs(ratio)/lead_m; efficiency=1 -->' : '';
     return `\n  <joint name="${xmlEscape(joint.name)}" type="${isPrismatic ? 'prismatic' : 'revolute'}">\n    <parent link="${index === 0 ? 'base_link' : `link_${index}`}"/>\n    <child link="link_${index + 1}"/>\n    <origin xyz="${vectorText(origin)}" rpy="0 0 0"/>\n    <axis xyz="${vectorText(axis)}"/>\n    <limit lower="${formatNumber(lower)}" upper="${formatNumber(upper)}" effort="${formatNumber(effort)}" velocity="${formatNumber(velocity)}"/>${effortComment}\n  </joint>`;
 }
 
-function buildUrdf(definition, dynamicConfig) {
+export function buildUrdf(catalogDefinition, robotName, record, { meshPrefix = '../models', audit = [] } = {}) {
+    const axes = catalogDefinition.robotType === 'scara' ? 4 : 6;
+    if (record.links?.length !== axes) throw new Error('Firmware axis count does not match catalog');
+    // Playback records are in controller degrees (including the SCARA screw).
+    // The live catalog already converts J3 speed to mm/s; using that and
+    // converting again was the old URDF speed error.
+    const definition = { ...catalogDefinition,
+        jointSpeeds: record.playback.stJoint.dMaxVel.slice(0, axes),
+        limits: record.jointLimits.dNegLimit.map((v, i) => [v, record.jointLimits.dPosLimit[i]]),
+        j3ControllerLimits: catalogDefinition.robotType === 'scara'
+            ? [record.jointLimits.dNegLimit[2], record.jointLimits.dPosLimit[2]] : null,
+    };
+    if (!definition.jointSpeeds.every(v => Number.isFinite(v) && v > 0)) {
+        throw new Error('Missing positive firmware playback speed');
+    }
     const manifest = createKinematicManifest(definition);
-    const dynamicLinks = Array.isArray(dynamicConfig?.stRobotBody?.stDynamics?.stLink)
-        ? dynamicConfig.stRobotBody.stDynamics.stLink
-        : [];
-    const robotName = dynamicConfig?.stRobotBody?.cRobotName || definition.name;
+    const dynamicLinks = record.links;
     const robotFolder = definition.folder;
+    const meshFile = name => `${meshPrefix}/${robotFolder}/${name}`;
+    for (const name of ['P0.stl', ...manifest.joints.map(joint => joint.mesh).filter(Boolean)]) {
+        if (!fs.existsSync(path.join(MODELS_DIR, robotFolder, name))) throw new Error(`Missing mesh: ${robotFolder}/${name}`);
+    }
     const lines = [
         '<?xml version="1.0"?>',
-        `<!-- Generated from ${dynamicConfig.__sourceFile} and models.json. Coordinates are Z-up; mesh units are millimetres and converted with mesh scale 0.001. -->`,
+        `<!-- Firmware source: ${xmlEscape(record.sourcePath)}; SHA256 ${record.sourceSha256}. -->`,
+        '<!-- Z-up; STL mm scaled to m. Effective firmware mass properties are SI and transformed into CAD link frames. -->',
+        '<!-- Revolute effort is nominal output torque; prismatic effort is ideal screw force. See physics-audit.json for approximations. -->',
         `<robot name="${xmlEscape(robotName)}">`,
-        `  <!-- Payload limit from controller JSON: ${formatNumber(dynamicConfig.stRobotBody?.stBase?.u16LoadMass)} kg -->`,
         '  <link name="base_link">',
-        visualXml({ mesh: `../models/${robotFolder}/P0.stl`, origin: [0, 0, 0], name: 'base', color: '0.31 0.35 0.41 1' }),
+        visualXml({ mesh: meshFile('P0.stl'), origin: [0, 0, 0], name: 'base', color: '0.31 0.35 0.41 1' }),
     ];
     const tubePath = path.join(MODELS_DIR, robotFolder, 'TUBE.stl');
     if (definition.robotType === 'scara' && fs.existsSync(tubePath) && definition.kinematicVariant !== 'ceiling-scara') {
-        lines.push(visualXml({ mesh: `../models/${robotFolder}/TUBE.stl`, origin: [0, 0, 0], name: 'conduit', color: '0.16 0.17 0.18 1' }));
+        lines.push(visualXml({ mesh: meshFile('TUBE.stl'), origin: [0, 0, 0], name: 'conduit', color: '0.16 0.17 0.18 1' }));
     }
     lines.push('  </link>');
 
@@ -255,9 +225,21 @@ function buildUrdf(definition, dynamicConfig) {
         const pivot = joint.pivot;
         const meshPath = joint.mesh ? path.join(MODELS_DIR, robotFolder, joint.mesh) : null;
         const meshExists = meshPath ? fs.existsSync(meshPath) : false;
-        const meshBounds = meshExists ? readStlBounds(meshPath) : null;
-        const inertial = createInertialData(dynamicLinks[index], meshBounds, pivot);
-        const meshUri = meshExists ? `../models/${robotFolder}/${joint.mesh}` : null;
+        // Some SCARAs author the translating shaft only as P4. P4's bounds
+        // explicitly proxy the unmeshed J3 carriage; never invent a 50mm cube.
+        const boundsMesh = meshExists ? joint.mesh : definition.robotType === 'scara' && index === 2 ? 'P4.stl' : null;
+        const meshBounds = boundsMesh ? readStlBounds(path.join(MODELS_DIR, robotFolder, boundsMesh)) : null;
+        const inertial = definition.robotType === 'six-axis'
+            ? firmwareInertial(dynamicLinks[index], index, meshBounds, pivot, definition.structure[4] * MM_TO_M)
+            : { ...boxInertial(dynamicLinks[index].mass, meshBounds, pivot),
+                reason: 'SCARA firmware contains planar inertia, not a full 3D tensor; uniform mesh-bounds approximation' };
+        const meshUri = meshExists ? meshFile(joint.mesh) : null;
+        audit.push({ link: `link_${index + 1}`, joint: joint.name, ...inertial,
+            motorRatedTorqueNm: dynamicLinks[index].ratedTrq, gearRatio: dynamicLinks[index].ratio,
+            nominalJointTorqueNm: nominalJointTorque(dynamicLinks[index]),
+            boundsMesh: inertial.reason ? boundsMesh : null,
+            ...(joint.type === 'prismatic' ? { nominalScrewForceN: nominalScrewForce(dynamicLinks[index], joint.screwLeadMeters) } : {}),
+            velocitySI: joint.speed * (joint.type === 'prismatic' ? MM_TO_M : DEG_TO_RAD) });
         lines.push(`\n  <link name="link_${index + 1}">`);
         if (joint.mesh && !meshExists) lines.push(`    <!-- Mesh not found in this model folder: ${xmlEscape(joint.mesh)} -->`);
         lines.push(inertialXml(inertial));
@@ -277,31 +259,89 @@ function buildUrdf(definition, dynamicConfig) {
     });
     const lastLink = manifest.joints.length;
     const tcpOffset = difference(manifest.tcp, manifest.joints[lastLink - 1].pivot).map((value) => value * MM_TO_M);
-    lines.push(`\n  <link name="tool0"/>\n  <joint name="tool0_fixed" type="fixed">\n    <parent link="link_${lastLink}"/>\n    <child link="tool0"/>\n    <origin xyz="${vectorText(tcpOffset)}" rpy="0 0 0"/>\n  </joint>`);
+    // CAD J6 rotates around local X; the controller flange uses local Z.
+    // Rz(0) Ry(-pi/2) Rx(pi) matches manifest.toolAxes/native FK.
+    const toolRpy = definition.robotType === 'six-axis' ? [Math.PI, -Math.PI / 2, 0]
+        : [0, 0, definition.kinematicVariant === 'ceiling-scara' ? Math.PI : 0];
+    lines.push(`\n  <link name="tool0"/>\n  <joint name="tool0_fixed" type="fixed">\n    <parent link="link_${lastLink}"/>\n    <child link="tool0"/>\n    <origin xyz="${vectorText(tcpOffset)}" rpy="${vectorText(toolRpy)}"/>\n  </joint>`);
     lines.push('</robot>');
     return lines.filter((line) => line !== '').join('\n').replace(/\n{3,}/g, '\n\n') + '\n';
 }
 
 function main() {
+    const args = process.argv.slice(2);
+    let outputDir = OUTPUT_DIR;
+    let requested = null;
+    for (let i = 0; i < args.length; i++) {
+        if (args[i] === '--output-dir' && args[i + 1]) outputDir = path.resolve(args[++i]);
+        else if (args[i] === '--models' && args[i + 1]) requested = args[++i].split(',');
+        else throw new Error(`Unknown or incomplete argument: ${args[i]}`);
+    }
+    const firmware = readJson(FIRMWARE_FILE);
     const definitions = readJson(path.join(MODELS_DIR, 'models.json'));
-    const dynamicFiles = fs.readdirSync(DYNAMICS_DIR)
-        .filter((file) => file.toLowerCase().endsWith('.json'))
-        .sort();
-    fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+    const entries = Object.entries(firmware.models);
+    let selected = entries;
+    if (requested) {
+        selected = [];
+        for (const name of requested) {
+            const matches = entries.filter(([key]) => key === name || findModelDefinition(key, definitions).folder === name);
+            if (matches.length !== 1) throw new Error(`No verified firmware record for model: ${name}`);
+            if (!selected.some(([key]) => key === matches[0][0])) selected.push(matches[0]);
+        }
+    }
+    // Validate every explicit source before writing anything.
+    fs.mkdirSync(outputDir, { recursive: true });
     const generated = [];
-    for (const file of dynamicFiles) {
-        const dynamicConfig = readJson(path.join(DYNAMICS_DIR, file));
-        dynamicConfig.__sourceFile = file;
-        const robotName = dynamicConfig.stRobotBody?.cRobotName || path.basename(file, '.json');
+    const meshPrefix = path.relative(outputDir, MODELS_DIR).replaceAll('\\', '/') || '.';
+    for (const [robotName, record] of selected) {
         const definition = findModelDefinition(robotName, definitions);
         const outputFile = `${robotName}.urdf`;
-        fs.writeFileSync(path.join(OUTPUT_DIR, outputFile), buildUrdf(definition, dynamicConfig), 'utf8');
-        generated.push({ outputFile, model: definition.name, type: definition.robotType });
+        const links = [];
+        const urdf = buildUrdf(definition, robotName, record, { meshPrefix, audit: links });
+        generated.push({ outputFile, model: definition.name, folder: definition.folder,
+            sourceSelectionRequired: record.sourceSelectionRequired, sourcePath: record.sourcePath,
+            sourceSha256: record.sourceSha256, links, urdf });
     }
-    const readme = `# Generated URDF files\n\nGenerated from the 29 controller configuration JSON files in ../새 폴더 and the simulation kinematic catalog in ../models/models.json.\n\n- Meshes are referenced from ../models/<folder>/*.stl and scaled from millimetres to metres.\n- Revolute limits and velocities are converted from degrees to radians.\n- SCARA J3 is exported as a prismatic joint using its screw lead.\n- Link mass, centre of gravity, inertia, and payload metadata come from the controller JSON.\n- If a source inertia tensor is not positive-definite or a source mesh is absent, the generator uses a bounding-box inertia fallback and marks it in the URDF comment.\n- The controller JSON inertia field contains model-specific unit/ordering quirks; validate the generated inertial frames before using Gazebo or another dynamics engine for quantitative results.\n\nGenerated files: ${generated.length}\n`;
-    fs.writeFileSync(path.join(OUTPUT_DIR, 'README.md'), readme, 'utf8');
-    console.log(`Generated ${generated.length} URDF files in ${path.relative(ROOT, OUTPUT_DIR)}.`);
-    generated.forEach(({ outputFile, model, type }) => console.log(`- ${outputFile} (${model}, ${type})`));
+    for (const { outputFile, urdf } of generated) fs.writeFileSync(path.join(outputDir, outputFile), urdf, 'utf8');
+    fs.writeFileSync(path.join(outputDir, 'physics-audit.json'), JSON.stringify({
+        archive: firmware.archive, archiveSha256: firmware.archiveSha256,
+        torquePolicy: 'Nominal ideal ratedTrq * abs(ratio); SCARA J3 force=2*pi*torque/lead_m; efficiency=1, no peak/planning multiplier',
+        models: generated.map(({ urdf, ...entry }) => entry),
+    }, null, 2) + '\n', 'utf8');
+    const table = generated.map(({ outputFile, links }) => `| ${outputFile.replace(/\.urdf$/, '')} | ${links.filter(link => link.reason).map(link => link.link).join(', ') || 'none'} |`).join('\n');
+    const readme = `# Firmware-checked robot URDFs
+
+Source: ${firmware.archive}. This export contains ${generated.length} exact firmware records across ${new Set(generated.map(entry => entry.folder)).size} catalog families.
+R35/R50 have no INT default in this firmware: each available source variant is exported under its real name. Choose the actual controller variant; no INT identity is invented.
+
+## Regenerate
+
+    node tools/generate-urdf.mjs
+    node tools/generate-urdf.mjs --models IR-R7H-90
+
+Use an exact firmware model name for an ambiguous family. Optional --output-dir writes a separate export with relative mesh paths.
+Extract again with Python tools/extract-urdf-firmware.py <installer.zip> (standard-library Python and the project's Node runtime). Firmware code is never executed.
+
+## Physical data
+
+- Exact source paths/hashes and raw records: firmware-spc25.json. Per-link decisions: physics-audit.json. Binary evidence: FIRMWARE_FINDINGS.md.
+- STL mm are scaled to m; effective six-axis mass properties are SI, transformed into CAD link frames. No magnitude-based unit guessing.
+- Invalid six-axis tensors and incomplete planar SCARA tensors use source mass and uniform STL bounding-box approximations, explicitly marked. SCARA without a P3 mesh uses P4 bounds as the declared J3 carriage proxy.
+- Revolute effort is ratedTrq * abs(ratio); SCARA J3 effort is 2*pi*torque/lead_m with ideal efficiency. These are nominal values, not peak servo limits.
+- Joint limits and speeds come from the exact firmware record. SCARA J3 degrees are converted to metres once. URDF does not encode a playback acceleration planner.
+- Tool frames match the six-axis or standard/ceiling SCARA zero-flange orientation.
+
+| Model | Approximate links |
+| --- | --- |
+${table}
+
+## Isaac Sim validation still required
+
+Import with a fixed base. Configure convex collision approximations/contact filters and joint drives/gains, then validate gravity holding and trajectory following. Detailed STL geometry remains collision input. USD conversion and Isaac Sim execution have not been performed. Rapid Move is separate runtime code and is not embedded in these URDFs.
+`;
+    fs.writeFileSync(path.join(outputDir, 'README.md'), readme, 'utf8');
+    console.log(`Generated ${generated.length} firmware-checked URDFs in ${path.relative(ROOT, outputDir)}.`);
+    generated.forEach(({ outputFile, links }) => console.log(`- ${outputFile}: ${links.filter(link => link.reason).length} approximate links`));
 }
 
-main();
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) main();

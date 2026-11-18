@@ -1,34 +1,42 @@
 (function () {
     'use strict';
 
+    // Runs inside the real tool page that the home "사용 가이드" player shows in an iframe.
+    // Every guide is a list of steps. The player owns the clock and tells this script which
+    // step is active and how far into it we are; everything visible (scroll, pointer, clicks,
+    // typing, dropdowns, toasts) is derived from that time, so pausing and seeking always
+    // land on the same picture.
     const params = new URLSearchParams(window.location.search);
-    if (params.get('embed') !== 'manual-guide' || window.self === window.top) return;
-
+    const embedMode = params.get('embed');
     const path = window.location.pathname;
-    const app = path.includes('/2_3DSimulation/') ? 'simulation'
-        : path.includes('/3_ToolSelector/') ? 'tool'
-            : path.includes('/4_ProjectGenerator/') ? 'project'
-                : path.includes('/6_Document/') ? 'document' : '';
+    const app = window.self === window.top ? ''
+        : path.includes('/1_RobotModelSelect/') ? (embedMode === 'manual' ? 'model' : '')
+            : embedMode !== 'manual-guide' ? ''
+                : path.includes('/2_3DSimulation/') ? 'simulation'
+                    : path.includes('/3_ToolSelector/') ? 'tool'
+                        : path.includes('/4_ProjectGenerator/') ? 'project'
+                            : path.includes('/6_Document/') ? 'document' : '';
     if (!app) return;
 
     document.documentElement.dataset.toolGuideEmbed = app;
 
-    let cursor = null;
-    let spotlight = null;
-    let ripple = null;
-    let toast = null;
-    let preview = null;
-    let focusPoint = null;
-    let activeCue = '';
-    let effectToken = 0;
-    let prepared = false;
-    let demoModelLoaded = false;
-    let guidePaused = true;
-    let scrollFollowFrame = null;
-    let activeScrollNodes = [];
-    let activeScroll = null;
-    let pausedScroll = null;
+    // A page scroll takes SCROLL_MS, longer for a long way so the page never rushes past in a blur:
+    // dense text sweeping by faster than SCROLL_PEAK_SPEED (page px per ms, at the middle of the
+    // eased scroll) flickers. SCROLL_MAX_MS only bounds very long scrolls.
+    const SCROLL_MS = 420;
+    const SCROLL_MAX_MS = 2000;
+    const SCROLL_PEAK_SPEED = 1.2;
+    const GLIDE_MS = 520;
+    const CLICK_MS = 460;
+    const TYPE_MS = 85;
+    // After a click opens or changes something, the lit area moves to that result this much later.
+    const RESULT_DELAY = 350;
+    // Size the camera reserves for the download/notice toast (bottom right of the page).
+    const TOAST_BOX = { width: 460, height: 70, right: 24, bottom: 22 };
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const translate = source => window.InoRobotI18n?.translate(source) || source;
+    const $ = selector => document.querySelector(selector);
+    const ease = value => { const t = Math.max(0, Math.min(1, value)); return t * t * (3 - 2 * t); };
 
     function waitFor(test, timeout = 15000, interval = 100) {
         return new Promise((resolve, reject) => {
@@ -44,6 +52,18 @@
         });
     }
 
+    // ---------------------------------------------------------------- effects
+
+    let cursor = null;
+    let ring = null;
+    let ripple = null;
+    let caret = null;
+    let toast = null;
+    let menuEl = null;
+    let menuKey = '';
+    let pressedEl = null;
+    let cursorAt = null;
+
     function injectStyles() {
         if (document.querySelector('[data-tool-guide-runtime-style]')) return;
         const style = document.createElement('style');
@@ -56,43 +76,53 @@
             html[data-tool-guide-embed] a[href="/"],
             html[data-tool-guide-embed] .logo-link { pointer-events: none !important; }
             html[data-tool-guide-embed="simulation"] #program-panel { left:16px !important; right:auto !important; width:300px !important; }
-            .tool-guide-cursor { position:fixed; left:0; top:0; z-index:2147483642; width:25px; height:31px; color:#fff; opacity:0; pointer-events:none; filter:drop-shadow(0 4px 5px rgba(0,0,0,.8)); transform:translate3d(-60px,-60px,0); transition:transform .55s cubic-bezier(.16,1,.3,1),opacity .18s ease; }
-            .tool-guide-cursor svg { display:block; width:100%; height:100%; }
+            html[data-tool-guide-embed="project"] #prjName { caret-color:transparent; }
+            html[data-tool-guide-embed="project"] #prismContainer { max-height:410px !important; min-height:0 !important; overflow:auto !important; }
+            .tool-guide-cursor { position:fixed; left:0; top:0; z-index:2147483646; width:26px; height:32px; color:var(--tool-action, #304735); opacity:0; pointer-events:none; filter:drop-shadow(0 1px 2px rgba(0,0,0,.28)); transform:translate3d(-80px,-80px,0); transition:opacity .16s ease; }
+            .tool-guide-cursor svg { display:block; width:100%; height:100%; transform-origin:top left; }
             .tool-guide-cursor.is-visible { opacity:1; }
-            .tool-guide-spotlight { position:fixed; z-index:2147483640; border:2px solid rgba(56,189,248,.95); opacity:0; pointer-events:none; box-shadow:0 0 0 4px rgba(56,189,248,.1),0 10px 28px rgba(14,165,233,.2); transition:left .42s cubic-bezier(.16,1,.3,1),top .42s cubic-bezier(.16,1,.3,1),width .42s cubic-bezier(.16,1,.3,1),height .42s cubic-bezier(.16,1,.3,1),opacity .18s ease; }
-            .tool-guide-spotlight.is-visible { opacity:1; }
-            .tool-guide-spotlight.is-pulsing { animation:toolGuideSpotlightOnce .55s ease-out 1; }
-            .tool-guide-ripple { position:fixed; z-index:2147483643; width:12px; height:12px; margin:-6px 0 0 -6px; border:2px solid rgba(255,255,255,.92); border-radius:999px; opacity:0; pointer-events:none; }
-            .tool-guide-ripple.is-visible { animation:toolGuideClickRipple .45s ease-out 1; }
-            .tool-guide-hover { filter:brightness(1.1) !important; }
-            .tool-guide-pressed { transform:scale(.97) !important; transition:transform .12s ease !important; }
-            .tool-guide-toast { position:fixed; right:24px; bottom:22px; z-index:2147483645; display:flex; align-items:center; gap:12px; min-width:310px; max-width:calc(100vw - 48px); padding:13px 16px; border:1px solid rgba(148,163,184,.22); border-radius:12px; background:rgba(15,23,42,.97); color:#e2e8f0; box-shadow:0 18px 45px rgba(0,0,0,.48); animation:toolGuideToastIn .3s cubic-bezier(.16,1,.3,1) 1; }
-            .tool-guide-toast-check { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; flex:0 0 auto; border-radius:999px; background:rgba(16,185,129,.18); color:#6ee7b7; font-weight:800; }
+            .tool-guide-ring { position:fixed; left:0; top:0; z-index:2147483643; border:2px solid var(--tool-accent, #36552f); border-radius:8px; opacity:0; pointer-events:none; box-shadow:0 0 0 3px rgb(255 255 255 / 65%); transition:opacity .2s ease; }
+            .tool-guide-ring.is-visible { opacity:1; }
+            .tool-guide-ripple { position:fixed; left:0; top:0; z-index:2147483645; width:14px; height:14px; margin:-7px 0 0 -7px; border:2px solid var(--tool-accent, #36552f); box-shadow:0 0 0 1px white; border-radius:999px; opacity:0; pointer-events:none; }
+            .tool-guide-caret { position:fixed; z-index:2147483644; width:2px; background:var(--tool-accent, #36552f); pointer-events:none; }
+            .tool-guide-pressed { transform:scale(.97) !important; transition:transform .1s ease !important; }
+            .tool-guide-toast { position:fixed; right:24px; bottom:22px; z-index:2147483645; display:flex; align-items:center; gap:12px; min-width:320px; max-width:calc(100vw - 48px); padding:14px 16px; border:1px solid var(--tool-border-strong, #82947a); border-radius:10px; background:var(--tool-surface, #fdfefb); color:var(--tool-ink, #1b2325); box-shadow:0 4px 16px rgb(32 42 34 / 16%); animation:toolGuideToastIn .3s cubic-bezier(.16,1,.3,1) 1; }
+            .tool-guide-toast-check { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; flex:0 0 auto; border-radius:999px; background:var(--tool-selected, #e0eccf); color:var(--tool-accent, #36552f); font-weight:800; }
             .tool-guide-toast strong,.tool-guide-toast small { display:block; }
-            .tool-guide-toast strong { font:700 13px/1.3 system-ui,sans-serif; }
-            .tool-guide-toast small { margin-top:3px; color:#94a3b8; font:11px/1.3 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
-            .tool-guide-document-viewer { position:fixed; inset:18px; z-index:2147483638; display:flex; overflow:hidden; flex-direction:column; border:1px solid rgba(148,163,184,.24); border-radius:16px; background:#cbd5e1; box-shadow:0 28px 80px rgba(0,0,0,.7); animation:toolGuideViewerIn .36s cubic-bezier(.16,1,.3,1) 1; }
-            .tool-guide-document-viewer>header { display:flex; align-items:center; gap:12px; min-height:58px; padding:10px 16px; border-bottom:1px solid rgba(148,163,184,.2); background:#0f172a; color:#f8fafc; }
-            .tool-guide-document-icon { display:inline-flex; align-items:center; justify-content:center; width:42px; height:30px; flex:0 0 auto; border-radius:7px; background:#ef4444; color:#fff; font:800 11px/1 system-ui,sans-serif; letter-spacing:.04em; }
-            .tool-guide-document-title { min-width:0; flex:1; }
-            .tool-guide-document-title strong,.tool-guide-document-title small { display:block; }
-            .tool-guide-document-title strong { overflow:hidden; font:700 14px/1.25 system-ui,sans-serif; text-overflow:ellipsis; white-space:nowrap; }
-            .tool-guide-document-title small { margin-top:3px; color:#94a3b8; font:10px/1.2 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
-            .tool-guide-document-close { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; flex:0 0 auto; border:1px solid rgba(148,163,184,.2); border-radius:8px; background:rgba(255,255,255,.06); color:#cbd5e1; font:500 22px/1 system-ui,sans-serif; }
-            .tool-guide-document-page-wrap { flex:1; overflow:auto; padding:26px; }
-            .tool-guide-document-page { width:min(680px,100%); min-height:820px; margin:0 auto; padding:56px 62px; background:#fff; color:#0f172a; box-shadow:0 12px 34px rgba(15,23,42,.28); font-family:Arial,sans-serif; }
-            .tool-guide-document-page .doc-brand { color:#e11d48; font-size:12px; font-weight:800; letter-spacing:.12em; }
-            .tool-guide-document-page h1 { margin:42px 0 12px; font-size:28px; line-height:1.25; }
-            .tool-guide-document-page p { color:#475569; font-size:14px; line-height:1.65; }
-            .tool-guide-document-page .doc-line { height:10px; margin:13px 0; border-radius:4px; background:#e2e8f0; }
-            .tool-guide-document-page .doc-line.short { width:62%; }
-            .tool-guide-document-page .doc-section { margin-top:42px; padding-top:20px; border-top:2px solid #0f172a; font-size:17px; font-weight:800; }
-            html.tool-guide-paused .tool-guide-cursor,html.tool-guide-paused .tool-guide-spotlight { transition-duration:0s !important; }
-            @keyframes toolGuideSpotlightOnce { 0%{box-shadow:0 0 0 0 rgba(56,189,248,.35)} 100%{box-shadow:0 0 0 9px rgba(56,189,248,0),0 10px 28px rgba(14,165,233,.16)} }
-            @keyframes toolGuideClickRipple { 0%{opacity:.95;transform:scale(.45)} 100%{opacity:0;transform:scale(4.2)} }
+            .tool-guide-toast strong { font:700 15px/1.3 system-ui,sans-serif; }
+            .tool-guide-toast small { margin-top:4px; color:var(--tool-muted, #505c53); font:13px/1.3 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+            .tool-guide-menu { position:fixed; z-index:2147483642; overflow:auto; max-height:252px; padding:6px; border:1px solid var(--tool-border-strong, #82947a); border-radius:10px; background:var(--tool-surface, #fdfefb); color:var(--tool-ink, #1b2325); box-shadow:0 4px 16px rgb(32 42 34 / 16%); pointer-events:none; font:500 16px/1.4 system-ui,sans-serif; }
+            .tool-guide-menu [role="option"] { min-height:40px; padding:9px 12px; border-radius:5px; white-space:nowrap; }
+            .tool-guide-menu [aria-selected="true"] { background:var(--tool-inset, #edf0e8); }
+            .tool-guide-menu .is-hovered { background:var(--tool-selected, #e0eccf); box-shadow:inset 3px 0 var(--tool-accent, #36552f); }
+            .tool-guide-menu-group { padding:7px 12px; color:var(--tool-muted, #505c53); font-size:13px; }
+            .tool-guide-snap-anchor { position:fixed; width:120px; height:120px; pointer-events:none; }
+            html[data-tool-guide-embed="document"] .tool-guide-revealing .filter-section-content { animation:toolGuideSectionOpen .26s cubic-bezier(.16,1,.3,1) 1; }
+            .tool-guide-document-viewer { position:fixed; inset:20px 64px; z-index:2147483638; display:flex; overflow:hidden; flex-direction:column; border:1px solid var(--tool-border-strong, #82947a); border-radius:10px; background:var(--tool-inset, #edf0e8); box-shadow:0 8px 28px rgb(32 42 34 / 18%); animation:toolGuideViewerIn .32s cubic-bezier(.16,1,.3,1) 1 both; }
+            .tool-guide-document-viewer.is-instant { animation:none; }
+            .tool-guide-document-viewer.is-closing { animation:toolGuideViewerOut .2s cubic-bezier(.4,0,1,1) 1 forwards; }
+            .tool-guide-document-viewer>header { display:flex; align-items:center; gap:12px; min-height:48px; padding:0 8px 0 16px; border-bottom:1px solid var(--tool-line, #cdd3c8); background:var(--tool-header, #fafaf6); color:var(--tool-ink, #1b2325); }
+            .tool-guide-document-icon { display:inline-flex; align-items:center; justify-content:center; width:34px; height:22px; flex:0 0 auto; border-radius:4px; background:#d64545; color:#fff; font:800 11px/1 system-ui,sans-serif; letter-spacing:.04em; }
+            .tool-guide-document-title { min-width:0; flex:1; overflow:hidden; font:600 14px/1.25 system-ui,sans-serif; text-overflow:ellipsis; white-space:nowrap; }
+            .tool-guide-document-close { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; flex:0 0 auto; padding:0; border:0; border-radius:6px; background:transparent; color:var(--tool-muted, #505c53); font:400 24px/1 system-ui,sans-serif; }
+            .tool-guide-document-page-wrap { flex:1; overflow:auto; padding:28px 28px 4px; scrollbar-width:thin; scrollbar-color:#8b95a5 transparent; }
+            .tool-guide-document-page { position:relative; display:flex; flex-direction:column; width:min(600px,100%); aspect-ratio:210/297; margin:0 auto 24px; padding:48px 52px 36px; background:#fff; color:#111827; box-shadow:0 1px 4px rgba(15,23,42,.3); font-family:Arial,Helvetica,sans-serif; }
+            .tool-guide-document-page .doc-brand { color:#1f5fa8; font-size:14px; font-weight:800; letter-spacing:.16em; }
+            .tool-guide-document-page .doc-art { display:block; width:100%; height:auto; margin-top:36px; }
+            .tool-guide-document-page h1,.tool-guide-document-page h2 { color:#111827; font-family:Arial,Helvetica,sans-serif; font-weight:700; letter-spacing:0; }
+            .tool-guide-document-page h1 { margin:40px 0 10px; font-size:30px; line-height:1.2; }
+            .tool-guide-document-page .doc-sub { color:#475569; font-size:17px; line-height:1.4; }
+            .tool-guide-document-page .doc-rule { width:56px; height:3px; margin:22px 0; background:#1f5fa8; }
+            .tool-guide-document-page .doc-foot { display:flex; justify-content:space-between; margin-top:auto; padding-top:12px; border-top:1px solid #d5dbe3; color:#64748b; font-size:12px; }
+            .tool-guide-document-page h2 { margin:0 0 20px; padding-bottom:12px; border-bottom:2px solid #111827; font-size:22px; line-height:1.2; }
+            .tool-guide-document-page .doc-toc { display:flex; align-items:baseline; gap:10px; padding:10px 0; border-bottom:1px solid #e5e9ef; font-size:15px; line-height:1.4; }
+            .tool-guide-document-page .doc-toc b { width:22px; color:#1f5fa8; }
+            .tool-guide-document-page .doc-toc i { flex:1; align-self:flex-end; margin-bottom:5px; border-bottom:1px dotted #9aa5b4; }
             @keyframes toolGuideToastIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
             @keyframes toolGuideViewerIn { from{opacity:0;transform:translateY(14px) scale(.985)} to{opacity:1;transform:translateY(0) scale(1)} }
-            @media (prefers-reduced-motion:reduce) { .tool-guide-cursor,.tool-guide-spotlight,.tool-guide-ripple,.tool-guide-toast,.tool-guide-document-viewer { animation:none !important; transition:none !important; } }
+            @keyframes toolGuideViewerOut { from{opacity:1;transform:translateY(0) scale(1)} to{opacity:0;transform:translateY(10px) scale(.985)} }
+            @keyframes toolGuideSectionOpen { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+            @media (prefers-reduced-motion:reduce) { .tool-guide-toast,.tool-guide-document-viewer,.tool-guide-revealing .filter-section-content { animation:none !important; } }
         `;
         document.head.appendChild(style);
     }
@@ -103,14 +133,22 @@
         cursor = document.createElement('div');
         cursor.className = 'tool-guide-cursor';
         cursor.setAttribute('aria-hidden', 'true');
-        cursor.innerHTML = '<svg viewBox="0 0 24 30" fill="currentColor"><path d="M2.2 1.6 20.4 17c.9.8.3 2.3-.9 2.3h-7l-3.7 7.8c-.5 1.1-2.1.9-2.4-.2L.4 3.2c-.4-1.4.8-2.5 1.8-1.6Z"/></svg>';
-        spotlight = document.createElement('div');
-        spotlight.className = 'tool-guide-spotlight';
-        spotlight.setAttribute('aria-hidden', 'true');
+        cursor.innerHTML = '<svg viewBox="0 0 24 30" fill="currentColor" stroke="white" stroke-width="1.5" stroke-linejoin="round"><path d="M2.2 1.6 20.4 17c.9.8.3 2.3-.9 2.3h-7l-3.7 7.8c-.5 1.1-2.1.9-2.4-.2L.4 3.2c-.4-1.4.8-2.5 1.8-1.6Z"/></svg>';
+        ring = document.createElement('div');
+        ring.className = 'tool-guide-ring';
+        ring.setAttribute('aria-hidden', 'true');
         ripple = document.createElement('div');
         ripple.className = 'tool-guide-ripple';
         ripple.setAttribute('aria-hidden', 'true');
-        document.body.append(cursor, spotlight, ripple);
+        document.body.append(ring, ripple, cursor);
+    }
+
+    // A native modal <dialog> sits in the top layer, so effects must live inside it to stay visible.
+    function mountEffects() {
+        const host = document.querySelector('dialog[open]') || document.body;
+        [ring, ripple, cursor, caret, menuEl, toast].forEach(element => {
+            if (element && element.parentElement !== host) host.appendChild(element);
+        });
     }
 
     function closeToast() {
@@ -118,238 +156,87 @@
         toast = null;
     }
 
-    function closePreview() {
-        preview?.remove();
-        preview = null;
-    }
-
-    function clearEffects(options = {}) {
-        effectToken += 1;
-        stopActiveScroll();
-        document.querySelectorAll('.tool-guide-hover,.tool-guide-pressed').forEach(element => element.classList.remove('tool-guide-hover', 'tool-guide-pressed'));
-        cursor?.classList.remove('is-visible');
-        spotlight?.classList.remove('is-visible', 'is-pulsing');
-        ripple?.classList.remove('is-visible');
-        focusPoint = null;
-        if (!options.keepToast) closeToast();
-        if (!options.keepPreview) closePreview();
-    }
-
-    function resolveTarget(target) {
-        if (target instanceof Element) return target;
-        return typeof target === 'string' ? document.querySelector(target) : null;
-    }
-
-    function getScrollableNodes(target) {
-        const nodes = [];
-        let parent = target.parentElement;
-        while (parent && parent !== document.body && parent !== document.documentElement) {
-            const style = getComputedStyle(parent);
-            const canScrollY = /(auto|scroll|overlay)/.test(style.overflowY) && parent.scrollHeight > parent.clientHeight;
-            const canScrollX = /(auto|scroll|overlay)/.test(style.overflowX) && parent.scrollWidth > parent.clientWidth;
-            if (canScrollY || canScrollX) nodes.push(parent);
-            parent = parent.parentElement;
-        }
-        const scrollingElement = document.scrollingElement;
-        if (scrollingElement) nodes.push(scrollingElement);
-        return nodes;
-    }
-
-    function getScrollNodePosition(node) {
-        if (node === document.scrollingElement) {
-            return { left: window.scrollX, top: window.scrollY };
-        }
-        return { left: node.scrollLeft, top: node.scrollTop };
-    }
-
-    function getScrollDistance(target, nodes) {
-        const targetRect = target.getBoundingClientRect();
-        return nodes.reduce((largest, node) => {
-            const root = node === document.scrollingElement;
-            const bounds = root
-                ? { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight }
-                : node.getBoundingClientRect();
-            const current = getScrollNodePosition(node);
-            const maximumLeft = root
-                ? Math.max(0, document.documentElement.scrollWidth - window.innerWidth)
-                : Math.max(0, node.scrollWidth - node.clientWidth);
-            const maximumTop = root
-                ? Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
-                : Math.max(0, node.scrollHeight - node.clientHeight);
-            const relativeLeft = targetRect.left - bounds.left;
-            const relativeTop = targetRect.top - bounds.top;
-            const desiredLeft = current.left + relativeLeft - Math.max(0, (bounds.width - targetRect.width) / 2);
-            const desiredTop = current.top + relativeTop - Math.max(0, (bounds.height - targetRect.height) / 2);
-            const nextLeft = Math.max(0, Math.min(maximumLeft, desiredLeft));
-            const nextTop = Math.max(0, Math.min(maximumTop, desiredTop));
-            return Math.max(largest, Math.abs(nextLeft - current.left), Math.abs(nextTop - current.top));
-        }, 0);
-    }
-
-    function getScrollSnapshot(nodes) {
-        return nodes.map(node => getScrollNodePosition(node));
-    }
-
-    function scrollSnapshotChanged(previous, next) {
-        return next.some((position, index) => (
-            Math.abs(position.left - (previous[index]?.left ?? position.left)) > .5
-            || Math.abs(position.top - (previous[index]?.top ?? position.top)) > .5
-        ));
-    }
-
-    function stopActiveScroll(preserve = false) {
-        if (scrollFollowFrame !== null) cancelAnimationFrame(scrollFollowFrame);
-        scrollFollowFrame = null;
-        pausedScroll = preserve && activeScroll?.token === effectToken ? activeScroll : null;
-        activeScrollNodes.forEach(node => {
-            if (node === document.scrollingElement) {
-                window.scrollTo({ left: window.scrollX, top: window.scrollY, behavior: 'auto' });
-                return;
-            }
-            node.scrollTo({ left: node.scrollLeft, top: node.scrollTop, behavior: 'auto' });
-        });
-        activeScrollNodes = [];
-        activeScroll = null;
-    }
-
-    function positionHighlight(target, options, pulse) {
-        if (!target.isConnected) return false;
-        const rect = target.getBoundingClientRect();
-        if (!rect.width || !rect.height) return false;
-        const cursorX = Math.min(window.innerWidth - 28, Math.max(8, rect.left + Math.min(rect.width * .72, rect.width - 8)));
-        const cursorY = Math.min(window.innerHeight - 34, Math.max(8, rect.top + Math.min(rect.height * .66, rect.height - 6)));
-        focusPoint = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-        cursor.style.transform = `translate3d(${cursorX}px,${cursorY}px,0)`;
-        cursor.classList.add('is-visible');
-        if (options.ring !== false) {
-            const radius = getComputedStyle(target).borderRadius || '10px';
-            Object.assign(spotlight.style, { left: `${Math.round(rect.left - 4)}px`, top: `${Math.round(rect.top - 4)}px`, width: `${Math.round(rect.width + 8)}px`, height: `${Math.round(rect.height + 8)}px`, borderRadius: radius });
-            spotlight.classList.add('is-visible');
-            if (pulse) {
-                spotlight.classList.remove('is-pulsing');
-                void spotlight.offsetWidth;
-                spotlight.classList.add('is-pulsing');
-            }
-        }
-        if (options.hover) target.classList.add('tool-guide-hover');
-        if (options.press && pulse) {
-            target.classList.add('tool-guide-pressed');
-            ripple.style.left = `${cursorX}px`;
-            ripple.style.top = `${cursorY}px`;
-            ripple.classList.remove('is-visible');
-            void ripple.offsetWidth;
-            ripple.classList.add('is-visible');
-        }
-        return true;
-    }
-
-    function scheduleActivation(options, token) {
-        if (typeof options.onActivate !== 'function') return;
-        const delay = Math.max(0, Number(options.delay ?? options.activateDelay ?? 120) || 0);
-        window.setTimeout(() => {
-            if (token !== effectToken) return;
-            options.onActivate();
-        }, delay);
-    }
-
-    function finishHighlight(target, options, token) {
-        if (token !== effectToken || !target.isConnected) return;
-        if (positionHighlight(target, options, true)) scheduleActivation(options, token);
-        activeScrollNodes = [];
-        activeScroll = null;
-    }
-
-    function followTargetDuringScroll(target, options, token, animateScroll, scrollDistance = 0) {
-        if (!animateScroll || scrollDistance <= 1) {
-            finishHighlight(target, options, token);
-            return;
-        }
-        const rect = target.getBoundingClientRect();
-        const cursorX = Math.min(window.innerWidth - 28, Math.max(8, rect.left + Math.min(rect.width * .72, rect.width - 8)));
-        const cursorY = Math.min(window.innerHeight - 34, Math.max(8, rect.top + Math.min(rect.height * .66, rect.height - 6)));
-        cursor.style.transform = `translate3d(${cursorX}px,${cursorY}px,0)`;
-        cursor.classList.add('is-visible');
-        spotlight?.classList.remove('is-visible', 'is-pulsing');
-        ripple?.classList.remove('is-visible');
-        const started = performance.now();
-        let previousSnapshot = getScrollSnapshot(activeScrollNodes);
-        let stableFrames = 0;
-        const follow = now => {
-            if (token !== effectToken || !target.isConnected) return;
-            const nextSnapshot = getScrollSnapshot(activeScrollNodes);
-            if (scrollSnapshotChanged(previousSnapshot, nextSnapshot)) stableFrames = 0;
-            else stableFrames += 1;
-            previousSnapshot = nextSnapshot;
-            const elapsed = now - started;
-            const finished = elapsed >= 900 || (elapsed >= 160 && stableFrames >= 4);
-            if (!finished) {
-                scrollFollowFrame = requestAnimationFrame(follow);
-                return;
-            }
-            scrollFollowFrame = null;
-            finishHighlight(target, options, token);
-        };
-        scrollFollowFrame = requestAnimationFrame(follow);
-    }
-
-    function resumePausedScroll() {
-        const state = pausedScroll;
-        pausedScroll = null;
-        if (!state || state.token !== effectToken || !state.target.isConnected || reducedMotion.matches) return;
-        activeScroll = state;
-        activeScrollNodes = getScrollableNodes(state.target);
-        const scrollDistance = getScrollDistance(state.target, activeScrollNodes);
-        state.target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-        followTargetDuringScroll(state.target, state.options, state.token, true, scrollDistance);
-    }
-
-    function highlight(targetLike, options = {}) {
-        ensureEffects();
-        clearEffects({ keepToast: options.keepToast, keepPreview: options.keepPreview });
-        const target = resolveTarget(targetLike);
-        if (!target) return false;
-        const token = effectToken;
-        activeScrollNodes = options.scroll === false ? [] : getScrollableNodes(target);
-        const scrollDistance = options.scroll === false ? 0 : getScrollDistance(target, activeScrollNodes);
-        const animateScroll = options.scroll !== false && scrollDistance > 1 && !guidePaused && !reducedMotion.matches;
-        if (options.scroll !== false) {
-            target.scrollIntoView({ behavior: animateScroll ? 'smooth' : 'auto', block: 'center', inline: 'center' });
-        }
-        activeScroll = animateScroll ? { target, options, token } : null;
-        followTargetDuringScroll(target, options, token, animateScroll, scrollDistance);
-        return true;
-    }
-
-    function showToast(title, fileName) {
+    function showToast(title, detail) {
         closeToast();
         toast = document.createElement('div');
         toast.className = 'tool-guide-toast';
         toast.setAttribute('role', 'status');
         toast.innerHTML = '<span class="tool-guide-toast-check" aria-hidden="true">✓</span><span><strong></strong><small></small></span>';
-        toast.querySelector('strong').textContent = window.InoRobotI18n?.translate(title) || title;
-        toast.querySelector('small').textContent = fileName;
-        document.body.appendChild(toast);
-        focusPoint = { x: window.innerWidth - Math.min(180, window.innerWidth / 3), y: window.innerHeight - 54 };
+        toast.querySelector('strong').textContent = translate(title);
+        toast.querySelector('small').textContent = detail || '';
+        (document.querySelector('dialog[open]') || document.body).appendChild(toast);
     }
 
-    function showDocumentPreview() {
-        closePreview();
-        const item = document.querySelector('#manualList .manual-item');
-        const title = item?.querySelector('h3')?.textContent.trim() || 'IR-S4 & S7 & S10 Series User Guide.pdf';
-        preview = document.createElement('section');
-        preview.className = 'tool-guide-document-viewer';
-        preview.setAttribute('aria-hidden', 'true');
-        preview.innerHTML = `
-            <header><span class="tool-guide-document-icon">PDF</span><span class="tool-guide-document-title"><strong></strong><small>Document preview · Page 1</small></span><button type="button" class="tool-guide-document-close" aria-label="Close preview">×</button></header>
-            <div class="tool-guide-document-page-wrap"><article class="tool-guide-document-page"><div class="doc-brand">INOVANCE ROBOTICS</div><h1></h1><p>User Guide · Manipulator</p><div class="doc-section">1. Safety and product overview</div><div class="doc-line"></div><div class="doc-line"></div><div class="doc-line short"></div><div class="doc-section">2. Installation</div><div class="doc-line"></div><div class="doc-line short"></div></article></div>`;
-        preview.querySelector('header strong').textContent = title;
-        preview.querySelector('h1').textContent = title.replace(/\.pdf$/i, '');
-        document.body.appendChild(preview);
-        focusPoint = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    function closeMenu() {
+        menuEl?.remove();
+        menuEl = null;
+        menuKey = '';
+    }
+
+    function setPressed(element) {
+        if (pressedEl === element) return;
+        pressedEl?.classList.remove('tool-guide-pressed');
+        pressedEl = element || null;
+        pressedEl?.classList.add('tool-guide-pressed');
+    }
+
+    function clearEffects() {
+        cursor?.classList.remove('is-visible');
+        ring?.classList.remove('is-visible');
+        if (ripple) ripple.style.opacity = '0';
+        caret?.remove();
+        caret = null;
+        closeMenu();
+        closeToast();
+        setPressed(null);
+        cursorAt = null;
+        APP.clearEffects?.();
+    }
+
+    // ---------------------------------------------------------------- DOM helpers
+
+    function resolveOne(item, elapsed) {
+        const value = typeof item === 'function' ? item(elapsed) : item;
+        if (value instanceof Element) return value.isConnected ? value : null;
+        return typeof value === 'string' ? document.querySelector(value) : null;
+    }
+
+    function resolveAll(target, elapsed) {
+        const value = typeof target === 'function' ? target(elapsed) : target;
+        return (Array.isArray(value) ? value : [value]).map(item => resolveOne(item, elapsed)).filter(Boolean);
+    }
+
+    function resolve(target, elapsed) {
+        return resolveAll(target, elapsed)[0] || null;
+    }
+
+    // Keep a result toast inside the highlighted area so the player does not dim it.
+    const withToast = target => Object.assign(elapsed => [...resolveAll(target, elapsed), toast], { withToast: true });
+
+    function rectOf(element) {
+        const rect = element.getBoundingClientRect();
+        if (!rect.width && !rect.height) return null;
+        if (element.matches('input[type="range"]')) {
+            const min = Number(element.min || 0);
+            const max = Number(element.max || 100);
+            const fraction = Math.max(0, Math.min(1, (Number(element.value) - min) / ((max - min) || 1)));
+            return { left: rect.left + 8 + (rect.width - 16) * fraction - 12, top: rect.top + rect.height / 2 - 12, width: 24, height: 24 };
+        }
+        return { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+    }
+
+    function unionRect(elements) {
+        const rects = elements.map(rectOf).filter(Boolean);
+        if (!rects.length) return null;
+        const left = Math.min(...rects.map(rect => rect.left));
+        const top = Math.min(...rects.map(rect => rect.top));
+        const right = Math.max(...rects.map(rect => rect.left + rect.width));
+        const bottom = Math.max(...rects.map(rect => rect.top + rect.height));
+        return { left, top, width: right - left, height: bottom - top };
     }
 
     function setValue(targetLike, value, eventType = 'input') {
-        const element = resolveTarget(targetLike);
+        const element = resolveOne(targetLike);
         if (!element) return null;
         const prototype = element instanceof HTMLInputElement ? HTMLInputElement.prototype
             : element instanceof HTMLSelectElement ? HTMLSelectElement.prototype
@@ -366,850 +253,1171 @@
         const option = Array.from(select.options).find(candidate => candidate.value && matcher(candidate))
             || Array.from(select.options).find(candidate => candidate.value);
         if (!option) return null;
-        select.value = option.value;
-        select.dispatchEvent(new Event('change', { bubbles: true }));
+        if (select.value !== option.value) {
+            select.value = option.value;
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+        }
         return option;
     }
 
-    const TOOL_DEMO_MODEL = /R25/i;
-
-    function chooseBaselineOption(select, excludedMatcher) {
-        return chooseOption(select, option => option.value && !excludedMatcher(option));
+    function scrollPosition(node) {
+        return node === document.scrollingElement
+            ? { left: window.scrollX, top: window.scrollY }
+            : { left: node.scrollLeft, top: node.scrollTop };
     }
 
-    function chooseToolDemoModel() {
-        return chooseOption(document.getElementById('robot'), option => TOOL_DEMO_MODEL.test(option.textContent));
+    function setScrollPosition(node, position) {
+        if (node === document.scrollingElement) window.scrollTo(position.left, position.top);
+        else { node.scrollLeft = position.left; node.scrollTop = position.top; }
     }
 
-    function toolReset(options = {}) {
-        document.querySelector('.tab[data-mode="direct"]')?.click();
-        chooseBaselineOption(document.getElementById('robot'), option => TOOL_DEMO_MODEL.test(option.textContent));
-        [['#d_m', 0], ['#d_lx', 0], ['#d_ly', 0], ['#d_lz', 0], ['#d_ixx', 0], ['#d_iyy', 0], ['#d_izz', 0]].forEach(([selector, value]) => setValue(selector, value));
-        document.getElementById('result')?.classList.add('hide');
-        if (options.scroll !== false) window.scrollTo(0, 0);
+    // Bottom edge of a header that stays pinned to the top of the page while it scrolls.
+    function pinnedTop() {
+        let inset = 0;
+        document.querySelectorAll('body > header, body > nav').forEach(element => {
+            if (!/sticky|fixed/.test(getComputedStyle(element).position)) return;
+            const rect = element.getBoundingClientRect();
+            if (rect.top <= 1 && rect.height < window.innerHeight / 3) inset = Math.max(inset, rect.bottom);
+        });
+        return inset;
     }
 
-    function setToolMass() {
-        setValue('#d_m', 5);
+    // A fixed or sticky element (a modal, a toolbar) does not move when its page scrolls.
+    function pinnedWithin(element, container) {
+        for (let node = element; node && node !== container && node !== document.body; node = node.parentElement) {
+            const position = getComputedStyle(node).position;
+            if (position === 'fixed' || position === 'sticky') return true;
+        }
+        return false;
     }
 
-    function setToolDistance() {
-        setValue('#d_lx', 35);
-        setValue('#d_ly', 0);
-        setValue('#d_lz', 120);
+    // Already readable where it is: inside the page view (below a pinned header) and inside every
+    // scrolling box around it.
+    function comfortablyVisible(rect, nodes) {
+        let top = pinnedTop();
+        let bottom = window.innerHeight;
+        let left = 0;
+        let right = window.innerWidth;
+        nodes.forEach(node => {
+            if (node === document.scrollingElement) return;
+            const box = node.getBoundingClientRect();
+            top = Math.max(top, box.top);
+            bottom = Math.min(bottom, box.top + node.clientHeight);
+            left = Math.max(left, box.left);
+            right = Math.min(right, box.left + node.clientWidth);
+        });
+        const margin = 8;
+        return rect.top >= top + margin && rect.top + rect.height <= bottom - margin && rect.left >= left - 1 && rect.left + rect.width <= right + 1;
     }
 
-    function setToolInertia() {
-        setValue('#d_ixx', .018);
-        setValue('#d_iyy', .021);
-        setValue('#d_izz', .015);
+    function getScrollableNodes(target) {
+        const nodes = [];
+        let parent = target.parentElement;
+        while (parent && parent !== document.body && parent !== document.documentElement) {
+            const style = getComputedStyle(parent);
+            const canScrollY = /(auto|scroll|overlay)/.test(style.overflowY) && parent.scrollHeight > parent.clientHeight + 1;
+            const canScrollX = /(auto|scroll|overlay)/.test(style.overflowX) && parent.scrollWidth > parent.clientWidth + 1;
+            if (canScrollY || canScrollX) nodes.push(parent);
+            parent = parent.parentElement;
+        }
+        if (document.scrollingElement) nodes.push(document.scrollingElement);
+        return nodes;
     }
 
-    function calculateToolResult() {
-        if (typeof window.calculate === 'function') window.calculate();
-    }
+    // ---------------------------------------------------------------- pieces drawn each frame
 
-    const TOOL_CUES = [
-        'tool_reset', 'tool_model_focus', 'tool_model_select', 'tool_mass_focus', 'tool_mass_value',
-        'tool_distance_focus', 'tool_distance_value', 'tool_inertia_focus', 'tool_inertia_value',
-        'tool_calculate_focus', 'tool_calculate_press', 'tool_result', 'tool_overall'
-    ];
-
-    function renderTool(cue) {
-        const rank = Math.max(0, TOOL_CUES.indexOf(cue));
-        toolReset({ scroll: false });
-        if (rank > 2) chooseToolDemoModel();
-        if (rank > 4) setToolMass();
-        if (rank > 6) setToolDistance();
-        if (rank > 8) setToolInertia();
-        if (rank > 10) calculateToolResult();
-        const targets = {
-            tool_reset: '#robot-card', tool_model_focus: '#robot', tool_model_select: '#robot',
-            tool_mass_focus: '#d_m', tool_mass_value: '#d_m', tool_distance_focus: '#d_lz', tool_distance_value: '#d_lz',
-            tool_inertia_focus: '#d_izz', tool_inertia_value: '#d_izz', tool_calculate_focus: '#main-calculate',
-            tool_calculate_press: '#main-calculate', tool_result: '#summary', tool_overall: '#overall'
+    // Where the fake dropdown sits: under the select, or above it when there is no room below.
+    function menuPlacement(select, height) {
+        const rect = select.getBoundingClientRect();
+        const width = Math.min(window.innerWidth - 32, Math.max(260, rect.width));
+        return {
+            left: Math.max(16, Math.min(rect.left, window.innerWidth - width - 16)),
+            top: rect.bottom + height + 12 <= window.innerHeight ? rect.bottom + 6 : Math.max(12, rect.top - height - 6),
+            width,
+            height
         };
-        const actions = {
-            tool_model_select: chooseToolDemoModel,
-            tool_mass_value: setToolMass,
-            tool_distance_value: setToolDistance,
-            tool_inertia_value: setToolInertia,
-            tool_calculate_press: calculateToolResult
+    }
+
+    // The dropdown's box before it opens, so the camera can frame it from the start of the step.
+    function predictMenuRect(spec, elapsed) {
+        const select = resolve(spec.select, elapsed);
+        if (!select) return null;
+        if (menuEl && menuKey === `${stepIndex}:${select.id || select.name || ''}`) return menuPlacement(select, menuEl.offsetHeight);
+        const options = Array.from(select.options).filter(option => option.value);
+        const groups = new Set(options.map(option => (option.parentElement.tagName === 'OPTGROUP' ? option.parentElement : null)).filter(Boolean)).size;
+        return menuPlacement(select, Math.min(252, options.length * 40 + groups * 31) + 14);
+    }
+
+    function toastArea() {
+        return {
+            left: window.innerWidth - TOAST_BOX.right - TOAST_BOX.width,
+            top: window.innerHeight - TOAST_BOX.bottom - TOAST_BOX.height,
+            width: TOAST_BOX.width,
+            height: TOAST_BOX.height
         };
-        highlight(targets[cue], {
-            press: /select|value|press/.test(cue),
-            hover: /focus|press/.test(cue),
-            ring: !['tool_reset', 'tool_result'].includes(cue),
-            onActivate: actions[cue]
+    }
+
+    function renderMenu(spec, elapsed) {
+        const select = spec && resolve(spec.select, elapsed);
+        if (!select || elapsed < spec.open || elapsed >= spec.pick + 260) { closeMenu(); return null; }
+        const key = `${stepIndex}:${select.id || select.name || ''}`;
+        if (key !== menuKey) {
+            closeMenu();
+            menuKey = key;
+            menuEl = document.createElement('div');
+            menuEl.className = 'tool-guide-menu notranslate';
+            menuEl.setAttribute('translate', 'no');
+            menuEl.setAttribute('data-i18n-skip', '');
+            menuEl.setAttribute('role', 'listbox');
+            menuEl.setAttribute('aria-hidden', 'true');
+            let group = null;
+            Array.from(select.options).filter(option => option.value).forEach(option => {
+                if (option.parentElement.tagName === 'OPTGROUP' && group !== option.parentElement) {
+                    group = option.parentElement;
+                    const label = document.createElement('div');
+                    label.className = 'tool-guide-menu-group';
+                    label.textContent = group.label;
+                    menuEl.appendChild(label);
+                }
+                const row = document.createElement('div');
+                row.setAttribute('role', 'option');
+                row.textContent = option.textContent;
+                row.dataset.value = option.value;
+                if (spec.match(option) && !menuEl.querySelector('[data-demo-option]')) row.dataset.demoOption = 'true';
+                menuEl.appendChild(row);
+            });
+            (document.querySelector('dialog[open]') || document.body).appendChild(menuEl);
+            const option = menuEl.querySelector('[data-demo-option]');
+            menuEl.scrollTop = Math.max(0, (option?.offsetTop || 0) - 100);
+        }
+        const place = menuPlacement(select, menuEl.offsetHeight);
+        Object.assign(menuEl.style, { width: `${place.width}px`, left: `${place.left}px`, top: `${place.top}px` });
+        const demo = menuEl.querySelector('[data-demo-option]');
+        demo?.classList.toggle('is-hovered', elapsed >= spec.pick - 450);
+        menuEl.querySelectorAll('[role="option"]').forEach(row => row.setAttribute('aria-selected', String(row.dataset.value === select.value)));
+        return demo;
+    }
+
+    function applyMenu(spec) {
+        if (spec.apply) { spec.apply(); return; }
+        chooseOption(resolve(spec.select), spec.match);
+    }
+
+    function renderTyping(list, elapsed, final) {
+        let active = null;
+        for (const [selector, text, at] of list || []) {
+            const input = resolveOne(selector);
+            if (!input) continue;
+            if (final) {
+                if (input.value !== text) setValue(input, text);
+                continue;
+            }
+            if (elapsed < at - 200) continue;
+            const count = elapsed < at ? 0 : Math.min(text.length, Math.floor((elapsed - at) / TYPE_MS) + 1);
+            let value = text.slice(0, count);
+            // A number field rejects "0." as a value; keep the previous character until it is valid again.
+            if (input.type === 'number' && /[.-]$/.test(value)) value = text.slice(0, count - 1);
+            if (input.value !== value) setValue(input, value);
+            if (elapsed < at + text.length * TYPE_MS + 250) active = input;
+        }
+        return active;
+    }
+
+    function drawCaret(input, elapsed) {
+        if (!input) { caret?.remove(); caret = null; return; }
+        if (!caret) {
+            caret = document.createElement('div');
+            caret.className = 'tool-guide-caret';
+            caret.setAttribute('aria-hidden', 'true');
+        }
+        mountEffects();
+        const rect = input.getBoundingClientRect();
+        const style = getComputedStyle(input);
+        const context = document.createElement('canvas').getContext('2d');
+        context.font = style.font;
+        const left = style.textAlign === 'right' || style.textAlign === 'end'
+            ? rect.right - parseFloat(style.paddingRight) - 2
+            : rect.left + parseFloat(style.paddingLeft) + context.measureText(input.value).width + 1;
+        Object.assign(caret.style, {
+            left: `${left}px`,
+            top: `${rect.top + rect.height * .24}px`,
+            height: `${Math.max(12, rect.height * .52)}px`,
+            opacity: Math.floor(elapsed / 450) % 2 ? '0' : '1'
         });
     }
 
-    // Inputs, pointer, scroll and click feedback share the media clock.
-    const TOOL_INPUTS = [
-        [7000, '#d_m', '5'], [10000, '#d_lx', '35'], [13000, '#d_lz', '120'],
-        [16000, '#d_ixx', '0.018'], [18500, '#d_iyy', '0.021'], [21000, '#d_izz', '0.015']
-    ];
-    const TOOL_SHOTS = [[0, '#robot'], [2700, 'option'], [5200, '#robot'],
-        ...TOOL_INPUTS.map(([at, selector]) => [at, selector]),
-        [24000, '#main-calculate'], [27700, '#summary'], [32000, '#overall']];
-    const TOOL_CLICKS = [1750, 4800, ...TOOL_INPUTS.map(([at]) => at + 800), 25900];
-    let demoTime = -1;
-    let demoCalculated = false;
-    let simulationTarget = null;
-    let simulationCueStart = 0;
-    let simulationCueKey = '';
-
-    function resetDemoMotion() {
-        demoTime = -1;
-        demoCalculated = false;
-        projectShot = -1;
-        projectMotion = null;
-        projectRect = null;
-        closeProjectMenu();
-        projectCaret?.remove();
-        projectCaret = null;
+    function cursorTarget(rect, centered) {
+        if (centered) return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+        return {
+            x: Math.min(window.innerWidth - 28, Math.max(8, rect.left + Math.min(rect.width * .72, rect.width - 8))),
+            y: Math.min(window.innerHeight - 34, Math.max(8, rect.top + Math.min(rect.height * .66, rect.height - 6)))
+        };
     }
 
-    function prepareClockEffects() {
-        ensureEffects();
-        ensureProjectStyles();
-        for (const element of [cursor, spotlight, ripple]) {
-            element.style.setProperty('transition', 'none', 'important');
-            element.style.setProperty('animation', 'none', 'important');
+    function drawPointer(element, elapsed) {
+        const rect = element && rectOf(element);
+        if (!rect) {
+            cursor.classList.remove('is-visible');
+            run.arrived = true;
+            return;
+        }
+        const destination = cursorTarget(rect, run.step.center);
+        if (run.pointerEl !== element) {
+            // The first target is reached from the start of the step (it follows the page while it
+            // scrolls), so a seek into the middle of a step shows the pointer already there; later
+            // targets glide from where it is. Short hops between neighbouring fields are quicker.
+            run.pointerFrom = cursorAt;
+            run.pointerSince = run.pointerEl ? elapsed : 0;
+            run.previousPointerEl = run.pointerEl;
+            run.pointerEl = element;
+            const distance = cursorAt ? Math.hypot(destination.x - cursorAt.x, destination.y - cursorAt.y) : 140;
+            run.glide = Math.max(220, Math.min(GLIDE_MS, 200 + distance));
+        }
+        const from = run.pointerFrom || { x: destination.x + 90, y: destination.y + 70 };
+        const progress = reducedMotion.matches ? 1 : ease((elapsed - run.pointerSince) / run.glide);
+        const x = from.x + (destination.x - from.x) * progress;
+        const y = from.y + (destination.y - from.y) * progress;
+        cursor.style.transform = `translate3d(${x}px,${y}px,0)`;
+        cursor.classList.add('is-visible');
+        cursorAt = { x, y };
+        run.arrived = progress >= 1;
+    }
+
+    function drawRing(rect, visible) {
+        if (!rect || !visible) { ring.classList.remove('is-visible'); return; }
+        Object.assign(ring.style, {
+            transform: `translate3d(${Math.round(rect.left - 5)}px,${Math.round(rect.top - 5)}px,0)`,
+            width: `${Math.round(rect.width + 10)}px`,
+            height: `${Math.round(rect.height + 10)}px`
+        });
+        ring.classList.add('is-visible');
+    }
+
+    const clickTimes = step => [...(step.click || []), ...(step.menu ? [step.menu.open, step.menu.pick] : [])];
+
+    // The ring marks the control being used, so it goes away once the clicks and typing are done.
+    function interactionEnd(step) {
+        const ends = [
+            ...clickTimes(step).map(time => time + CLICK_MS),
+            ...(step.type || []).map(([, text, at]) => at + text.length * TYPE_MS + 250)
+        ];
+        return ends.length ? Math.max(...ends) : Infinity;
+    }
+
+    // When a click opens or changes something, the lit area moves from the control to that result.
+    function resultTime(step) {
+        if (!step.result) return Infinity;
+        if (step.resultAt !== undefined) return step.resultAt;
+        const times = [...clickTimes(step), ...(step.actions || []).map(([at]) => at)];
+        return (times.length ? Math.max(...times) : 0) + RESULT_DELAY;
+    }
+
+    function drawClick(step, elapsed) {
+        const clicks = clickTimes(step);
+        const at = clicks.find(time => elapsed >= time && elapsed < time + CLICK_MS);
+        const art = cursor.querySelector('svg');
+        if (at === undefined || !cursorAt) {
+            ripple.style.opacity = '0';
+            art.style.transform = 'scale(1)';
+            setPressed(null);
+            return;
+        }
+        // The ripple stays where the click happened even if the pointer already heads to the next control.
+        if (run.clickAt !== at) {
+            const leaving = run.pointerSince === elapsed && run.previousPointerEl;
+            run.clickAt = at;
+            run.clickPoint = { ...cursorAt };
+            run.clickEl = leaving ? run.previousPointerEl : run.pointerEl;
+        }
+        const progress = (elapsed - at) / CLICK_MS;
+        Object.assign(ripple.style, {
+            transform: `translate3d(${run.clickPoint.x}px,${run.clickPoint.y}px,0) scale(${.5 + progress * 3.7})`,
+            opacity: String(1 - progress)
+        });
+        art.style.transform = progress < .3 && run.clickEl === run.pointerEl ? 'scale(.86)' : 'scale(1)';
+        setPressed(progress < .35 && run.clickEl?.isConnected ? run.clickEl : null);
+    }
+
+    // ---------------------------------------------------------------- engine
+
+    let prepared = false;
+    let paused = true;
+    let cueId = '';
+    let cueStart = 0;
+    let forceRebuild = false;
+    let stepIndex = -1;
+    let stepStart = 0;
+    let lastTime = -1;
+    let run = null;
+    let focusRect = null;
+    let focusKey = '';
+    let cameraRect = null;
+    let APP = null;
+    const elementKeys = new WeakMap();
+    let nextElementKey = 1;
+
+    function elementKey(element) {
+        if (!elementKeys.has(element)) elementKeys.set(element, nextElementKey++);
+        return elementKeys.get(element);
+    }
+
+    function rebuild(index) {
+        clearEffects();
+        APP.reset();
+        const from = APP.absolute ? Math.max(0, index - 1) : 0;
+        for (let i = from; i < index; i += 1) completeStep(APP.steps[i]);
+    }
+
+    function completeStep(step) {
+        if (step.complete) { step.complete(); return; }
+        step.enter?.(true);
+        if (step.menu) applyMenu(step.menu);
+        (step.actions || []).forEach(([, action]) => action(false));
+        renderTyping(step.type, 0, true);
+    }
+
+    function finishStep(current) {
+        const { step } = current;
+        (step.actions || []).forEach(([, action], index) => {
+            if (current.fired.has(index)) return;
+            current.fired.add(index);
+            action(false);
+        });
+        if (step.menu && !current.menuApplied) applyMenu(step.menu);
+        renderTyping(step.type, 0, true);
+        closeMenu();
+        drawCaret(null);
+        setPressed(null);
+    }
+
+    const inResult = (step, elapsed) => elapsed >= resultTime(step);
+    const targetOf = (step, elapsed) => (inResult(step, elapsed) ? step.result : step.target);
+
+    // What the player's camera should frame: the lit target without the passing dropdown or toast,
+    // plus the room those will need, so opening a dropdown or a toast never moves the picture.
+    function cameraBox(step, elapsed) {
+        const result = inResult(step, elapsed);
+        const elements = resolveAll(result ? step.result : (step.view || step.target), elapsed).filter(element => element !== menuEl && element !== toast);
+        const rects = [unionRect(elements)];
+        if (step.menu && !result) rects.push(predictMenuRect(step.menu, elapsed));
+        if (step.toast || step.target?.withToast) rects.push(toastArea());
+        const present = rects.filter(Boolean);
+        if (!present.length) return null;
+        const left = Math.min(...present.map(rect => rect.left));
+        const top = Math.min(...present.map(rect => rect.top));
+        return {
+            left, top,
+            width: Math.max(...present.map(rect => rect.left + rect.width)) - left,
+            height: Math.max(...present.map(rect => rect.top + rect.height)) - top
+        };
+    }
+
+    // Scroll the step's target into view over SCROLL_MS, but only when it is not readable where it
+    // already is. Called when a step starts and again whenever the step's target becomes a different
+    // element (a dialog opened or closed, say).
+    function planScroll(current, elapsed = 0, instant = false) {
+        const { step } = current;
+        if (step.scroll === false) return;
+        const spec = inResult(step, elapsed) ? step.result : (step.scrollTarget || step.target);
+        const anchor = resolve(spec, elapsed);
+        if (anchor === current.scrollAnchor) return;
+        // Something that is not shown yet (still loading, say) is planned again once it appears.
+        const rect = anchor && rectOf(anchor);
+        if (!rect) return;
+        current.scrollAnchor = anchor;
+        const nodes = getScrollableNodes(anchor);
+        // Everything lit together (a part list and its 3D view, say) should come into view together.
+        const area = unionRect(resolveAll(spec, elapsed).filter(element => element !== menuEl && element !== toast)) || rect;
+        if (pinnedWithin(anchor, nodes[0]) || comfortablyVisible(area, nodes)) return;
+        const before = nodes.map(scrollPosition);
+        // Scroll margins make the browser frame the whole area: centred below the pinned header, or
+        // starting at its top when it is taller than the view.
+        const header = pinnedTop();
+        const tall = area.height > (window.innerHeight - header) * .8;
+        const margins = [anchor.style.scrollMarginTop, anchor.style.scrollMarginBottom];
+        anchor.style.scrollMarginTop = `${rect.top - area.top + header + (tall ? 12 : 0)}px`;
+        anchor.style.scrollMarginBottom = `${tall ? 0 : area.top + area.height - rect.top - rect.height}px`;
+        anchor.scrollIntoView({ block: tall ? 'start' : 'center', inline: 'nearest' });
+        [anchor.style.scrollMarginTop, anchor.style.scrollMarginBottom] = margins;
+        const after = nodes.map(scrollPosition);
+        current.finalRect = cameraBox(step, elapsed);
+        nodes.forEach((node, index) => setScrollPosition(node, before[index]));
+        const distance = Math.max(0, ...after.map((position, index) => Math.abs(position.top - before[index].top) + Math.abs(position.left - before[index].left)));
+        if (distance > 1) {
+            // The eased scroll peaks at 1.5x its average speed.
+            const duration = Math.round(Math.min(SCROLL_MAX_MS, Math.max(SCROLL_MS, 280 + distance * 0.36, distance * 1.5 / SCROLL_PEAK_SPEED)));
+            // A seek that lands after the target changed shows the finished scroll, not its start.
+            current.scroll = { nodes, before, after, duration, at: instant ? elapsed - duration : elapsed };
+            current.scrollDone = false;
         }
     }
 
-    function renderToolTime(time) {
-        prepareClockEffects();
-        const snap = demoTime < 0 || time < demoTime || time - demoTime > 250;
-        if (demoTime < 0 || time < demoTime) {
-            toolReset();
-            resetDemoMotion();
-        }
-        if (time >= 4920 && demoTime < 4920) chooseToolDemoModel();
-        for (const [at, selector, text] of TOOL_INPUTS) {
-            const count = Math.max(0, Math.min(text.length, Math.floor((time - at - 1100) / 180)));
-            const value = time < at + 1000 ? '0' : text.slice(0, count);
-            const input = document.querySelector(selector);
-            if (input.value !== value) setValue(input, value);
-        }
-        if (time >= 26020 && !demoCalculated) { calculateToolResult(); demoCalculated = true; }
-        updateProjectMenu(time);
-        let shot = 0;
-        TOOL_SHOTS.forEach(([at], index) => { if (time >= at) shot = index; });
-        drawProjectPointer(time, shot, snap, TOOL_SHOTS, TOOL_CLICKS);
-        const typing = TOOL_INPUTS.find(([at]) => time >= at + 800 && time < at + 2500);
-        projectCaret?.remove(); projectCaret = null;
-        if (typing) {
-            const input = document.querySelector(typing[1]);
-            input.focus({ preventScroll:true });
-            input.style.caretColor = 'transparent';
-            const rect = input.getBoundingClientRect(), style = getComputedStyle(input);
-            const context = document.createElement('canvas').getContext('2d');
-            context.font = style.font;
-            projectCaret = document.createElement('div');
-            projectCaret.className = 'project-guide-caret';
-            const caretX = style.textAlign === 'right' ? rect.right - parseFloat(style.paddingRight) - 2
-                : rect.left + parseFloat(style.paddingLeft) + context.measureText(input.value).width + 2;
-            Object.assign(projectCaret.style, { left:`${caretX}px`, top:`${rect.top + 8}px`, height:`${Math.max(12, rect.height - 16)}px`, opacity:Math.floor(time / 450) % 2 ? '0' : '1' });
-            document.body.appendChild(projectCaret);
-        } else if (document.activeElement?.matches('input')) document.activeElement.blur();
-        demoTime = time;
+    function enterStep(index) {
+        const step = APP.steps[index];
+        stepIndex = index;
+        stepStart = cueStart;
+        if (!step.keepToast) closeToast();
+        run = { step, fired: new Set(), menuApplied: false, toastShown: false, scroll: null, scrollDone: false, scrollAnchor: undefined, finalRect: null, pointerEl: null, pointerFrom: cursorAt, pointerSince: 0, glide: GLIDE_MS, arrived: false, firstTick: true };
+        step.enter?.(false);
+        planScroll(run, 0);
     }
 
-    function renderSimulationTime(time) {
-        prepareClockEffects();
-        // Native modal dialogs occupy the top layer, above body z-indexes.
-        const effectHost = document.querySelector('dialog[open]') || document.body;
-        for (const effect of [cursor, spotlight, ripple]) {
-            if (effect.parentElement !== effectHost) effectHost.appendChild(effect);
+    function tickStep(elapsed) {
+        const current = run;
+        const { step } = current;
+        mountEffects();
+        // While paused the clock does not move, so a scroll planned now is shown already finished.
+        planScroll(current, elapsed, (current.firstTick && elapsed > 0) || paused);
+        current.firstTick = false;
+        if (current.scroll && !current.scrollDone) {
+            const progress = reducedMotion.matches ? 1 : ease((elapsed - current.scroll.at) / current.scroll.duration);
+            current.scroll.nodes.forEach((node, index) => {
+                const a = current.scroll.before[index];
+                const b = current.scroll.after[index];
+                setScrollPosition(node, { left: a.left + (b.left - a.left) * progress, top: a.top + (b.top - a.top) * progress });
+            });
+            current.scrollDone = progress >= 1;
         }
-        const snap = demoTime < 0 || time < demoTime || time - demoTime > 250;
-        updateProjectMenu(time);
-        let target = simulationTarget;
-        let start = simulationCueStart;
-        if (/simulation_snap_(face|target)_/.test(activeCue)) {
-            const point = getSimulationApi()?.getSnapScreenPoint?.();
-            if (point) {
-                let anchor = document.getElementById('guide-snap-anchor');
-                if (!anchor) {
-                    anchor = document.createElement('div');
-                    anchor.id = 'guide-snap-anchor';
-                    anchor.style.cssText = 'position:fixed;width:20px;height:20px;pointer-events:none';
-                    document.body.appendChild(anchor);
-                }
-                anchor.style.left = `${point.x - 10}px`;
-                anchor.style.top = `${point.y - 10}px`;
-                target = anchor;
+        (step.actions || []).forEach(([at, action], index) => {
+            if (elapsed < at || current.fired.has(index)) return;
+            current.fired.add(index);
+            action(true);
+        });
+        if (run !== current) return;
+        if (step.toast && elapsed >= step.toast[0] && !current.toastShown) {
+            current.toastShown = true;
+            showToast(step.toast[1], typeof step.toast[2] === 'function' ? step.toast[2]() : step.toast[2]);
+        }
+        step.tick?.(elapsed);
+        let menuOption = null;
+        if (step.menu) {
+            menuOption = renderMenu(step.menu, elapsed);
+            if (elapsed >= step.menu.pick && !current.menuApplied) {
+                current.menuApplied = true;
+                applyMenu(step.menu);
             }
         }
-        if (time < 3800) {
-            target = time >= 2300 ? 'option' : '#model-select';
-            start = time >= 2300 ? 2300 : 0;
+        const typing = renderTyping(step.type, elapsed, false);
+        const pointer = step.pointer === false ? null
+            : menuOption && elapsed >= step.menu.open + 120 ? menuOption
+                : typing || resolve(step.pointer !== undefined ? step.pointer : step.target, elapsed);
+        // After the click the pointer rests where it clicked, like a real mouse, even if the page scrolls.
+        const resting = inResult(step, elapsed) && pointer && pointer === current.pointerEl && cursorAt;
+        if (!resting) drawPointer(pointer, elapsed);
+        const litElements = resolveAll(targetOf(step, elapsed), elapsed);
+        const live = unionRect(litElements);
+        focusRect = live;
+        // Tells the player when the lit target becomes something else, so it slides the lit area there.
+        focusKey = `${stepIndex}:${litElements.map(elementKey).join(',')}`;
+        cameraRect = current.scroll && !current.scrollDone ? current.finalRect || cameraBox(step, elapsed) : cameraBox(step, elapsed);
+        // The ring marks the control being used; the lit (undimmed) area around it is the step's target.
+        // Once the control has been used (or what it opened is lit instead) the ring goes away.
+        const ringOn = (typeof step.ring === 'function' ? step.ring(elapsed) : step.ring !== false)
+            && !inResult(step, elapsed) && elapsed < interactionEnd(step);
+        drawRing(pointer ? rectOf(pointer) : live, ringOn && (current.arrived || !pointer));
+        drawClick(step, elapsed);
+        drawCaret(typing, elapsed);
+    }
+
+    // The lit area where it will be once the page has finished scrolling, so the player moves the
+    // highlight there once while the page scrolls under it. key changes when the lit target becomes
+    // another element; moving is true while the page scrolls.
+    function settledFocusRect() {
+        if (!focusRect) return null;
+        const scroll = run?.scroll;
+        const moving = Boolean(scroll && !run.scrollDone);
+        let left = 0;
+        let top = 0;
+        if (moving) {
+            scroll.nodes.forEach((node, index) => {
+                const position = scrollPosition(node);
+                left += scroll.after[index].left - position.left;
+                top += scroll.after[index].top - position.top;
+            });
         }
-        const key = `${activeCue}:${start}`;
-        if (key !== simulationCueKey) { projectShot = -1; simulationCueKey = key; }
-        const clicks = time < 3800 ? [1380, 3300] : activeCue.endsWith('_press') ? [start] : [];
-        drawProjectPointer(time, 0, snap, [[start, target]], clicks);
-        if (target === '#canvas-container') { cursor.classList.remove('is-visible'); spotlight.classList.remove('is-visible'); }
-        demoTime = time;
+        return { ...focusRect, left: focusRect.left - left, top: focusRect.top - top, key: focusKey, moving };
     }
 
-    const PROJECT_DEMO_NAME = 'InoRobot_Demo';
-    const PROJECT_BASE_NAME = 'InoRobot_';
-    const PROJECT_DEMO_MODEL = /R25/i;
-
-    function setProjectName(value) {
-        setValue('#prjName', value);
-    }
-
-    function chooseProjectDemoModel() {
-        return chooseOption(document.getElementById('cmbRobotModel'), option => PROJECT_DEMO_MODEL.test(option.textContent));
-    }
-
-    function setProjectCheckbox(id, checked) {
-        const checkbox = document.getElementById(id);
-        if (!checkbox) return false;
-        checkbox.checked = Boolean(checked);
-        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+    function renderTimelineCue(id, start = 0, force = false) {
+        if (!prepared || !id) return false;
+        if (force || id !== cueId || Number(start) !== cueStart) forceRebuild = forceRebuild || Boolean(force);
+        cueId = String(id);
+        cueStart = Number(start) || 0;
         return true;
     }
 
-    function openProjectOptions() {
-        const modal = document.getElementById('optionsModal');
-        if (!modal || !modal.classList.contains('hidden')) return Boolean(modal);
-        document.getElementById('btnOption')?.click();
-        return !modal.classList.contains('hidden');
-    }
-
-    function applyProjectOptions() {
-        const modal = document.getElementById('optionsModal');
-        if (!modal || modal.classList.contains('hidden')) return false;
-        document.getElementById('btnApplyOptions')?.click();
-        return modal.classList.contains('hidden');
-    }
-
-    function resetProjectOptions() {
-        const modal = document.getElementById('optionsModal');
-        if (!modal) return;
-        if (!modal.classList.contains('hidden')) document.getElementById('btnCancelOptions')?.click();
-        openProjectOptions();
-        modal.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-            checkbox.checked = false;
-            checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-        });
-        setValue('#numRecipeCount', 2, 'change');
-        applyProjectOptions();
-    }
-
-    function setProjectProcessChoice(rowIndex, selectIndex, value) {
-        const row = document.querySelectorAll('#stepsList > div')[rowIndex];
-        const select = row?.querySelectorAll('select')[selectIndex];
-        if (!select) return false;
-        select.value = value;
-        select.dispatchEvent(new Event('change', { bubbles: true }));
-        return true;
-    }
-
-    function projectReset() {
-        document.getElementById('guideModal')?.classList.add('hidden');
-        document.getElementById('visionModal')?.classList.add('hidden');
-        const optionsModal = document.getElementById('optionsModal');
-        if (optionsModal && !optionsModal.classList.contains('hidden')) document.getElementById('btnCancelOptions')?.click();
-        while (document.querySelectorAll('#stepsList > div').length > 1 && typeof window.rStep === 'function') {
-            window.rStep(document.querySelectorAll('#stepsList > div').length - 1);
+    function setTimelineTime(time) {
+        if (!prepared || !cueId) return;
+        const t = Math.max(0, Number(time) || 0);
+        const index = APP.steps.findIndex(step => step.id === cueId);
+        if (index < 0) return;
+        const jumped = forceRebuild || lastTime < 0 || t < lastTime - 1 || t - lastTime > 400;
+        if (index !== stepIndex || jumped) {
+            if (!jumped && index === stepIndex + 1 && run) finishStep(run);
+            else rebuild(index);
+            enterStep(index);
         }
-        setProjectName(PROJECT_BASE_NAME);
-        chooseBaselineOption(document.getElementById('cmbRobotModel'), option => PROJECT_DEMO_MODEL.test(option.textContent));
-        resetProjectOptions();
-        setProjectProcessChoice(0, 0, 'Tray');
-        setProjectProcessChoice(0, 1, 'Get');
+        forceRebuild = false;
+        lastTime = t;
+        tickStep(Math.max(0, t - stepStart));
     }
 
-    function ensureProjectSecondStep() {
-        if (document.querySelectorAll('#stepsList > div').length < 2) document.getElementById('btnAdd')?.click();
-        return document.querySelectorAll('#stepsList > div').length >= 2;
+    function resetTimeline() {
+        clearEffects();
+        if (prepared) APP.reset();
+        cueId = '';
+        stepIndex = -1;
+        lastTime = -1;
+        run = null;
+        focusRect = null;
+        focusKey = '';
+        cameraRect = null;
     }
 
-    // Every visible effect uses the player's clock; no timeout can finish an
-    // action while paused or leak into a different chapter after seeking.
-    const projectRowSelect = index => document.querySelectorAll('#stepsList > div')[1]?.querySelectorAll('select')[index];
-    const PROJECT_SHOTS = [
-        [0, '#prjName'], [4300, '#cmbRobotModel'], [6000, 'option'],
-        [7400, '#cmbRobotModel'], [9000, '#btnAdd'],
-        [11000, () => projectRowSelect(0)], [12600, 'option'],
-        [14000, () => projectRowSelect(0)], [14600, () => projectRowSelect(1)],
-        [16300, 'option'], [17700, () => projectRowSelect(1)],
-        [18500, '#prismContainer'], [22000, '#btnOption'],
-        [23300, '#chkTcpSpeed'], [27300, '#btnApplyOptions'],
-        [29300, '#btnOption'], [30300, '#prismContainer'], [33000, '#btnGenerate']
-    ];
-    const PROJECT_CLICKS = [1600, 5100, 7000, 9800, 11800, 13700, 15400, 17400, 23000, 25100, 28700, 35000];
-    const PROJECT_ACTIONS = [
-        [7120, chooseProjectDemoModel], [9920, ensureProjectSecondStep],
-        [13820, () => setProjectProcessChoice(1, 0, 'Stage')],
-        [17520, () => setProjectProcessChoice(1, 1, 'Put')],
-        [23120, openProjectOptions], [25220, () => setProjectCheckbox('chkTcpSpeed', true)],
-        [28820, applyProjectOptions]
-    ];
-    let projectTime = -1;
-    let projectAction = 0;
-    let projectShot = -1;
-    let projectMotion = null;
-    let projectRect = null;
-    let projectMenu = null;
-    let projectMenuKey = '';
-    let projectCaret = null;
+    // ---------------------------------------------------------------- Tool Selector (mode D · STEP CAD)
+
+    // A vacuum Tool (flange face at Z 0, Ø40 suction pad tip at Z 100) whose parts carry readable names.
+    const TOOL_CAD_URL = '/0_Home/guide-assets/Single_VAC_Tool.step';
+    const TOOL_CAD_NAME = 'Single_VAC_Tool.step';
+    // A fixed date keeps the file identical between plays, so the page reuses its import cache.
+    const TOOL_CAD_MODIFIED = Date.UTC(2026, 10, 16);
+    const TOOL_CAD_PART = 'Air_fitting';
+    const TOOL_CAD_MATERIAL = 'brass';
+    const TOOL_TCP_Z = '100';
+    const TOOL_ROBOT = 'S4';
+    const TOOL_DEFAULT_ROBOT = 'R25';
+    let toolCadFile = null;
+    let toolCadJob = Promise.resolve();
+    let toolCadGeneration = 0;
+
+    const modeD = () => window.ToolModeD || null;
+    const toolCadPart = () => Array.from(document.querySelectorAll('#cad-parts-list .cad-part-row'))
+        .find(row => row.querySelector('b')?.textContent === TOOL_CAD_PART) || null;
+    const toolCadMaterial = () => toolCadPart()?.querySelector('[data-part-material]') || null;
+    const toolTcpZ = () => $('[data-vector="tcp"][data-axis="z"]');
+    const isToolRobot = name => option => option.textContent.trim() === name;
+
+    async function fetchToolCad() {
+        if (!toolCadFile) {
+            const response = await fetch(TOOL_CAD_URL);
+            if (!response.ok) throw new Error('The guide CAD sample is missing.');
+            toolCadFile = new File([await response.arrayBuffer()], TOOL_CAD_NAME, { lastModified: TOOL_CAD_MODIFIED });
+        }
+        return toolCadFile;
+    }
+
+    // Reading the CAD file is asynchronous, so everything that needs the loaded parts runs in order
+    // behind it. Rewinding the guide starts a new generation and drops whatever was still queued.
+    function queueToolCad(task) {
+        const generation = toolCadGeneration;
+        toolCadJob = toolCadJob
+            .then(() => (generation === toolCadGeneration ? task() : null))
+            .catch(error => console.error('Tool guide CAD step failed:', error));
+        return toolCadJob;
+    }
+
+    const loadToolCad = () => queueToolCad(async () => modeD()?.loadFile(await fetchToolCad()));
+    // Press the page's own buttons so it calculates exactly as for a user. The page's own smooth
+    // scroll to the result is skipped: the guide scrolls to the result itself, and two scrolls
+    // running at once made the picture shake.
+    const pressToolCad = selector => () => queueToolCad(() => {
+        const button = $(selector);
+        if (!button) return;
+        const scrollIntoView = Element.prototype.scrollIntoView;
+        Element.prototype.scrollIntoView = function () {};
+        try { button.click(); } finally { Element.prototype.scrollIntoView = scrollIntoView; }
+    });
+
+    const TOOL = {
+        prepare: async () => {
+            await waitFor(() => $('#cad-robot')?.options.length && modeD()?.loadFile);
+            // Read the sample once up front so the first play shows the model straight away.
+            try { await modeD().loadFile(await fetchToolCad()); } catch (error) { console.error('Tool guide CAD warm-up failed:', error); }
+            modeD().reset();
+        },
+        reset() {
+            toolCadGeneration += 1;
+            toolCadJob = Promise.resolve();
+            modeD()?.reset();
+            chooseOption($('#cad-robot'), isToolRobot(TOOL_DEFAULT_ROBOT));
+            $('.tab[data-mode="direct"]')?.click();
+            window.scrollTo(0, 0);
+        },
+        steps: [
+            {
+                id: 'tool_mode', target: '.tabs', pointer: '.tab[data-mode="cad"]', click: [800],
+                actions: [[800, () => $('.tab[data-mode="cad"]')?.click()]], result: '#mode-cad .cad-top-grid'
+            },
+            {
+                // The file dialog is skipped: the sample file is "chosen" a moment after the click.
+                id: 'tool_cad_load', target: '.cad-import-section', pointer: '.cad-file-button', click: [800],
+                actions: [[1100, loadToolCad]], result: ['.cad-parts-section', '.cad-viewport-shell'], resultAt: 1400
+            },
+            {
+                id: 'tool_cad_material', target: () => [toolCadPart(), menuEl], pointer: toolCadMaterial,
+                menu: {
+                    select: toolCadMaterial, open: 800, pick: 2000, match: option => option.value === TOOL_CAD_MATERIAL,
+                    apply: () => queueToolCad(() => chooseOption(toolCadMaterial(), option => option.value === TOOL_CAD_MATERIAL))
+                }
+            },
+            {
+                id: 'tool_cad_tcp', target: () => [toolTcpZ()?.closest('.cad-vector-block'), $('.cad-viewport-shell')], pointer: toolTcpZ,
+                click: [800], type: [[toolTcpZ, TOOL_TCP_Z, 950]],
+                actions: [[1300, () => queueToolCad(() => setValue(toolTcpZ(), TOOL_TCP_Z, 'change'))]]
+            },
+            { id: 'tool_cad_calc', target: '#cad-calculate', click: [800], actions: [[800, pressToolCad('#cad-calculate')]], result: '#cad-result', resultAt: 900 },
+            {
+                id: 'tool_cad_robot', target: () => [$('#cad-robot')?.closest('.row'), $('#cad-robot-spec'), menuEl], pointer: '#cad-robot',
+                menu: {
+                    select: '#cad-robot', open: 800, pick: 2000, match: isToolRobot(TOOL_ROBOT),
+                    apply: () => queueToolCad(() => chooseOption($('#cad-robot'), isToolRobot(TOOL_ROBOT)))
+                }
+            },
+            { id: 'tool_cad_judge', target: '#cad-robot-calculate', click: [800], actions: [[800, pressToolCad('#cad-robot-calculate')]], result: '#cad-robot-result' },
+            { id: 'tool_overall', target: '#cad-robot-overall', pointer: false }
+        ],
+        state: () => ({
+            mode: $('.tab.active')?.dataset.mode || '',
+            parts: document.querySelectorAll('#cad-parts-list .cad-part-row').length,
+            material: toolCadMaterial()?.value || '',
+            tcp: toolTcpZ()?.value || '',
+            mass: $('#cad-result')?.classList.contains('hide') ? '' : $('#cad-result-mass')?.textContent.trim() || '',
+            robot: $('#cad-robot')?.selectedOptions[0]?.textContent.trim() || '',
+            overall: $('#cad-robot-result')?.hidden ? '' : $('#cad-robot-overall')?.textContent.trim() || ''
+        })
+    };
+
+    // ---------------------------------------------------------------- Project Generator
+
+    const PROJECT_MODEL = /R25/i;
     let projectPackage = null;
     let projectPackageStarted = false;
     let projectGeneration = 0;
     let projectExportJob = Promise.resolve();
 
-    function closeProjectMenu() {
-        projectMenu?.remove();
-        projectMenu = null;
-        projectMenuKey = '';
+    const projectRow = index => document.querySelectorAll('#stepsList > div')[index] || null;
+    const projectRowSelect = (row, index) => projectRow(row)?.querySelectorAll('select')[index] || null;
+
+    function setProjectCheckbox(id, checked) {
+        const checkbox = document.getElementById(id);
+        if (!checkbox || checkbox.checked === Boolean(checked)) return;
+        checkbox.checked = Boolean(checked);
+        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
-    function resetProjectPlayback() {
-        clearEffects();
-        closeProjectMenu();
-        projectCaret?.remove();
-        projectCaret = null;
-        projectTime = -1;
-        projectAction = 0;
-        projectShot = -1;
-        projectMotion = null;
-        projectRect = null;
-        projectPackage = null;
-        projectPackageStarted = false;
-        projectGeneration += 1;
-        projectReset();
-        window.scrollTo(0, 0);
+    function openProjectOptions() {
+        const modal = $('#optionsModal');
+        if (modal?.classList.contains('hidden')) $('#btnOption')?.click();
     }
 
-    function ensureProjectStyles() {
-        if (document.querySelector('[data-project-guide-style]')) return;
-        const style = document.createElement('style');
-        style.dataset.projectGuideStyle = 'true';
-        style.textContent = `
-            html[data-tool-guide-embed="project"] .tool-guide-cursor,
-            html[data-tool-guide-embed="project"] .tool-guide-spotlight,
-            html[data-tool-guide-embed="project"] .tool-guide-ripple,
-            html[data-tool-guide-embed="project"] .tool-guide-toast { transition:none !important; animation:none !important; }
-            html[data-tool-guide-embed="project"] #prjName { caret-color:transparent; }
-            html[data-tool-guide-embed="project"] #prismContainer { max-height:410px !important; min-height:0 !important; overflow:auto !important; }
-            .project-guide-menu { position:fixed; z-index:2147483639; overflow:auto; max-height:252px; padding:6px; border:1px solid #64748b; border-radius:10px; background:#111e32; color:#f1f5f9; box-shadow:0 16px 40px #0009; pointer-events:none; font:500 16px/1.4 system-ui,sans-serif; }
-            .project-guide-menu [role="option"] { padding:9px 12px; min-height:40px; border-radius:5px; white-space:nowrap; }
-            .project-guide-menu [aria-selected="true"] { background:#334155; }
-            .project-guide-menu .is-hovered { background:#0369a1; box-shadow:inset 3px 0 #7dd3fc; }
-            .project-guide-group { padding:7px 12px; color:#94a3b8; font-size:12px; }
-            .project-guide-caret { position:fixed; z-index:2147483641; width:2px; background:#7dd3fc; pointer-events:none; }
-        `;
-        document.head.appendChild(style);
+    function applyProjectOptions() {
+        const modal = $('#optionsModal');
+        if (modal && !modal.classList.contains('hidden')) $('#btnApplyOptions')?.click();
     }
 
-    function projectMenuAt(time) {
-        if (app === 'tool') return time >= 1900 && time < 5200 ? { key:'tool-model', select:document.getElementById('robot'), matches:option => TOOL_DEMO_MODEL.test(option.textContent), hover:2700 } : null;
-        if (app === 'simulation') return time >= 1500 && time < 3800 ? { key:'simulation-model', select:document.getElementById('model-select'), matches:option => /IR-S4/i.test(option.textContent), hover:2300 } : null;
-        if (time >= 5220 && time < 7400) return { key:'model', select:document.getElementById('cmbRobotModel'), matches: option => PROJECT_DEMO_MODEL.test(option.textContent), hover:6000 };
-        if (time >= 11920 && time < 14000) return { key:'type', select:projectRowSelect(0), matches:option => option.value === 'Stage', hover:12600 };
-        if (time >= 15520 && time < 17700) return { key:'method', select:projectRowSelect(1), matches:option => option.value === 'Put', hover:16300 };
-        return null;
+    function setProjectProcess(row, index, value) {
+        const select = projectRowSelect(row, index);
+        if (!select || select.value === value) return;
+        select.value = value;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
-    function updateProjectMenu(time) {
-        // Process vocabulary is the same English vocabulary as the generator.
+    // Process vocabulary in the generator is English; keep the demo dropdowns untranslated.
+    function normalizeProjectSelects() {
         document.querySelectorAll('#stepsList select').forEach(select => {
             if (select.hasAttribute('data-i18n-skip')) return;
             select.setAttribute('data-i18n-skip', '');
             select.classList.add('notranslate');
             select.setAttribute('translate', 'no');
-            Array.from(select.options).forEach(option => {
-                if (option.textContent !== option.value) option.textContent = option.value;
-            });
+            Array.from(select.options).forEach(option => { if (option.textContent !== option.value) option.textContent = option.value; });
         });
-        const menu = projectMenuAt(time);
-        if (!menu?.select) { closeProjectMenu(); return; }
-        if (projectMenuKey !== menu.key) {
-            closeProjectMenu();
-            projectMenuKey = menu.key;
-            projectMenu = document.createElement('div');
-            projectMenu.className = 'project-guide-menu notranslate';
-            projectMenu.setAttribute('translate', 'no');
-            projectMenu.setAttribute('data-i18n-skip', '');
-            projectMenu.setAttribute('role', 'listbox');
-            projectMenu.setAttribute('aria-label', menu.select.id || menu.key);
-            let group = null;
-            Array.from(menu.select.options).forEach(option => {
-                if (option.parentElement.tagName === 'OPTGROUP' && group !== option.parentElement) {
-                    group = option.parentElement;
-                    const label = document.createElement('div');
-                    label.className = 'project-guide-group';
-                    label.textContent = group.label;
-                    projectMenu.appendChild(label);
-                }
-                const row = document.createElement('div');
-                row.setAttribute('role', 'option');
-                row.setAttribute('aria-selected', String(option.selected));
-                row.textContent = option.textContent;
-                row.dataset.value = option.value;
-                if (menu.matches(option) && !projectMenu.querySelector('[data-demo-option]')) row.dataset.demoOption = 'true';
-                projectMenu.appendChild(row);
-            });
-            document.body.appendChild(projectMenu);
-            const option = projectMenu.querySelector('[data-demo-option]');
-            projectMenu.scrollTop = Math.max(0, (option?.offsetTop || 0) - 100);
-        }
-        const rect = menu.select.getBoundingClientRect();
-        const width = Math.min(window.innerWidth - 32, Math.max(260, rect.width));
-        const height = projectMenu.offsetHeight;
-        Object.assign(projectMenu.style, {
-            width:`${width}px`, left:`${Math.max(16, Math.min(rect.left, window.innerWidth - width - 16))}px`,
-            top:`${rect.bottom + height + 12 <= window.innerHeight ? rect.bottom + 6 : Math.max(12, rect.top - height - 6)}px`
-        });
-        const option = projectMenu.querySelector('[data-demo-option]');
-        option?.classList.toggle('is-hovered', time >= menu.hover + 650);
-        for (const row of projectMenu.querySelectorAll('[role="option"]')) row.setAttribute('aria-selected', String(row.dataset.value === menu.select.value));
     }
 
-    function projectTarget(shot, shots = PROJECT_SHOTS) {
-        const target = shots[shot][1];
-        if (target === 'option') return projectMenu?.querySelector('[data-demo-option]');
-        return resolveTarget(typeof target === 'function' ? target() : target);
-    }
-
-    function projectBounds(target) {
-        const rect = target.getBoundingClientRect();
-        if (app === 'simulation' && target.matches('input[type="range"]')) {
-            const fraction = Math.max(0, Math.min(1, (Number(target.value) - Number(target.min || 0)) / (Number(target.max || 100) - Number(target.min || 0) || 1)));
-            return { left:rect.left + 8 + (rect.width - 16) * fraction - 12, top:rect.top + rect.height / 2 - 12, width:24, height:24 };
-        }
-        const width = target.id === 'prismContainer' ? Math.min(rect.width, 600) : rect.width;
-        return { left:rect.left - 4, top:rect.top - 4, width:width + 8, height:rect.height + 8 };
-    }
-
-    const projectEase = value => { const t = Math.max(0, Math.min(1, value)); return t * t * (3 - 2 * t); };
-
-    function drawProjectPointer(time, shot, snap, shots = PROJECT_SHOTS, clicks = PROJECT_CLICKS) {
-        let target = projectTarget(shot, shots);
-        if (!target) return;
-        if (shot !== projectShot || snap) {
-            const from = projectRect || projectBounds(target);
-            const nodes = target.closest('header,#optionsModal,.project-guide-menu') ? [] : getScrollableNodes(target);
-            const before = getScrollSnapshot(nodes);
-            if (nodes.length) target.scrollIntoView({ behavior:'instant', block:'center', inline:'center' });
-            const after = getScrollSnapshot(nodes);
-            projectMotion = { from, nodes, before, after };
-            projectShot = shot;
-        }
-        const elapsed = time - shots[shot][0];
-        const motion = projectMotion;
-        const scrollProgress = snap || reducedMotion.matches ? 1 : projectEase(elapsed / 260);
-        motion.nodes.forEach((node, index) => {
-            const a = motion.before[index], b = motion.after[index];
-            node.scrollLeft = a.left + (b.left - a.left) * scrollProgress;
-            node.scrollTop = a.top + (b.top - a.top) * scrollProgress;
-        });
-        updateProjectMenu(time);
-        target = projectTarget(shot, shots) || target;
-        const to = projectBounds(target);
-        // A single interpolated rectangle owns both cursor and selection box.
-        const movingScroll = motion.before.some((a, index) => Math.abs(a.top - motion.after[index].top) > 1 || Math.abs(a.left - motion.after[index].left) > 1);
-        const progress = snap || reducedMotion.matches ? 1 : projectEase((elapsed - (movingScroll ? 260 : 0)) / 480);
-        projectRect = Object.fromEntries(Object.keys(to).map(key => [key, motion.from[key] + (to[key] - motion.from[key]) * progress]));
-        const rect = projectRect;
-        Object.assign(spotlight.style, { left:`${rect.left}px`, top:`${rect.top}px`, width:`${rect.width}px`, height:`${rect.height}px`, borderRadius:'8px' });
-        spotlight.classList.add('is-visible');
-        const x = rect.left + Math.min(rect.width * .72, rect.width - 8);
-        const y = rect.top + Math.min(rect.height * .66, rect.height - 6);
-        cursor.style.transform = `translate3d(${x}px,${y}px,0)`;
-        cursor.classList.add('is-visible');
-        focusPoint = { x:to.left + to.width / 2, y:to.top + to.height / 2 };
-        const click = clicks.find(at => time >= at && time < at + 460);
-        const clickProgress = click === undefined ? 1 : (time - click) / 460;
-        Object.assign(ripple.style, { left:`${x}px`, top:`${y}px`, opacity:String(1 - clickProgress), transform:`scale(${.5 + clickProgress * 3.7})` });
-        // Scale the artwork only; scaling the positioned cursor also scales
-        // its translation and moves the click away from the target.
-        const pointerArt = cursor.querySelector('svg');
-        pointerArt.style.transformOrigin = 'top left';
-        pointerArt.style.transform = click !== undefined && clickProgress < .3 ? 'scale(.88)' : 'scale(1)';
-    }
-
-    function drawProjectTyping(time) {
-        const input = document.getElementById('prjName');
-        const count = time < 1850 ? 0 : Math.min(PROJECT_DEMO_NAME.length, Math.floor((time - 1850) / 145));
-        const value = time < 1740 ? PROJECT_BASE_NAME : PROJECT_DEMO_NAME.slice(0, count);
-        if (input.value !== value) setProjectName(value);
-        if (time < 1600 || time >= 4300) {
-            projectCaret?.remove(); projectCaret = null;
-            if (document.activeElement === input) input.blur();
-            return;
-        }
-        input.focus({ preventScroll:true });
-        input.setSelectionRange(value.length, value.length);
-        if (!projectCaret) {
-            projectCaret = document.createElement('div');
-            projectCaret.className = 'project-guide-caret';
-            projectCaret.setAttribute('aria-hidden', 'true');
-            document.body.appendChild(projectCaret);
-        }
-        const rect = input.getBoundingClientRect();
-        const style = getComputedStyle(input);
-        const context = document.createElement('canvas').getContext('2d');
-        context.font = style.font;
-        Object.assign(projectCaret.style, { left:`${rect.left + parseFloat(style.paddingLeft) + context.measureText(value).width + 1}px`, top:`${rect.top + 13}px`, height:`${rect.height - 26}px`, opacity:time < 3800 || Math.floor(time / 450) % 2 === 0 ? '1' : '0' });
-    }
-
-    function generateProjectGuidePackage() {
+    function generateProjectPackage() {
         if (projectPackageStarted) return;
         projectPackageStarted = true;
         const generation = projectGeneration;
         projectExportJob = projectExportJob.then(async () => {
             if (generation !== projectGeneration) return;
             const originalSaveAs = window.saveAs;
-            // Exercise the real generator, but keep the tutorial ZIP in memory.
-            window.saveAs = (blob, name) => {
-                if (generation === projectGeneration) {
-                    projectPackage = { size:blob.size, name };
-                    if (projectTime >= 37500 && blob.size && !toast) showToast('Project package is ready', name);
-                }
-            };
+            // Run the real generator but keep the tutorial ZIP in memory instead of downloading it.
+            window.saveAs = (blob, name) => { if (generation === projectGeneration) projectPackage = { size: blob.size, name }; };
             try { await window.exportProj(); }
             finally { window.saveAs = originalSaveAs; }
         }).catch(error => console.error('Project guide generation failed:', error));
     }
 
-    function renderProjectTime(time) {
-        ensureEffects();
-        ensureProjectStyles();
-        const snap = projectTime < 0 || time < projectTime || Math.abs(time - projectTime) > 250;
-        if (snap) resetProjectPlayback();
-        while (projectAction < PROJECT_ACTIONS.length && time >= PROJECT_ACTIONS[projectAction][0]) PROJECT_ACTIONS[projectAction++][1]();
-        if (snap && time >= 11000) {
-            const anchor = time >= 18500 ? document.getElementById('prismContainer') : projectRowSelect(0);
-            anchor?.scrollIntoView({ behavior:'instant', block:'center', inline:'center' });
-        }
-        updateProjectMenu(time);
-        let shot = 0;
-        PROJECT_SHOTS.forEach(([at], index) => { if (time >= at) shot = index; });
-        drawProjectPointer(time, shot, snap);
-        drawProjectTyping(time);
-        if (time >= 35120) generateProjectGuidePackage();
-        if (time >= 37500 && projectPackage?.size && !toast) showToast('Project package is ready', projectPackage.name);
-        projectTime = time;
-    }
-
-    function documentReset(options = {}) {
-        closePreview();
-        closeToast();
-        document.querySelectorAll('.filter-btn').forEach(button => button.classList.remove('active'));
-        ['#typeFilters [data-type="all"]', '#catFilters [data-cat="all"]', '#eduFilters [data-cat="all"]'].forEach(selector => document.querySelector(selector)?.classList.add('active'));
-        const search = document.getElementById('manualSearch');
-        if (search) search.value = '';
-        if (typeof window.renderManuals === 'function') window.renderManuals();
-        if (options.scroll !== false) window.scrollTo(0, 0);
-    }
-
-    const DOCUMENT_CUES = [
-        'document_reset', 'document_type_focus', 'document_type_select', 'document_search_focus',
-        'document_search_type', 'document_results', 'document_card_focus', 'document_view_focus',
-        'document_view_press', 'document_preview', 'document_preview_close_focus', 'document_preview_close_press',
-        'document_download_focus', 'document_download_press', 'document_download_done'
-    ];
-
-    function selectDocumentType(useActualClick = false) {
-        const button = document.querySelector('#typeFilters [data-type="scara"]');
-        if (!button) return false;
-        if (useActualClick) {
-            button.click();
-            cursor?.classList.remove('is-visible');
-            spotlight?.classList.remove('is-visible', 'is-pulsing');
-            return true;
-        }
-        document.querySelectorAll('#typeFilters .filter-btn').forEach(candidate => candidate.classList.remove('active'));
-        button.classList.add('active');
-        if (typeof window.renderManuals === 'function') window.renderManuals();
-        return true;
-    }
-
-    function typeDocumentSearch(value) {
-        const input = document.getElementById('manualSearch');
-        if (!input) return;
-        const typingToken = effectToken;
-        let length = 0;
-        const typeNext = () => {
-            if (typingToken !== effectToken) return;
-            length += 1;
-            setValue(input, value.slice(0, length));
-            if (length < value.length) window.setTimeout(typeNext, 120);
-        };
-        typeNext();
-    }
-
-    function renderDocument(cue) {
-        const rank = Math.max(0, DOCUMENT_CUES.indexOf(cue));
-        documentReset({ scroll: false });
-        if (rank > 2) selectDocumentType(false);
-        if (rank > 4) setValue('#manualSearch', 'IR-S4');
-        const item = document.querySelector('#manualList .manual-item');
-        const buttons = item ? item.querySelectorAll('button') : [];
-        const viewButton = buttons[0];
-        const downloadButton = buttons[1];
-        if (['document_preview', 'document_preview_close_focus', 'document_preview_close_press'].includes(cue)) {
-            showDocumentPreview();
-        }
-        const previewClose = preview?.querySelector('.tool-guide-document-close');
-        const itemTitle = item?.querySelector('h3') || item;
-        const targets = {
-            document_reset: '#typeFilters', document_type_focus: '#typeFilters [data-type="scara"]', document_type_select: '#typeFilters [data-type="scara"]',
-            document_search_focus: '#manualSearch', document_search_type: '#manualSearch', document_results: item || '#manualList',
-            document_card_focus: itemTitle || '#manualList', document_view_focus: viewButton, document_view_press: viewButton,
-            document_preview: preview, document_preview_close_focus: previewClose, document_preview_close_press: previewClose,
-            document_download_focus: downloadButton, document_download_press: downloadButton,
-            document_download_done: downloadButton
-        };
-        if (cue === 'document_preview') {
-            clearEffects({ keepPreview: true });
-            focusPoint = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-            return;
-        }
-        if (cue === 'document_download_done') {
-            clearEffects();
-            showToast('Document download is ready', item?.querySelector('h3')?.textContent.trim() || 'IR-S4 User Guide.pdf');
-            return;
-        }
-        const actions = {
-            document_type_select: () => selectDocumentType(true),
-            document_search_type: () => typeDocumentSearch('IR-S4'),
-            document_preview_close_press: () => {
-                closePreview();
-                clearEffects();
+    const PROJECT = {
+        prepare: () => waitFor(() => $('#stepsList > div')),
+        reset() {
+            $('#guideModal')?.classList.add('hidden');
+            $('#visionModal')?.classList.add('hidden');
+            const options = $('#optionsModal');
+            if (options && !options.classList.contains('hidden')) $('#btnCancelOptions')?.click();
+            while (document.querySelectorAll('#stepsList > div').length > 1 && typeof window.rStep === 'function') {
+                window.rStep(document.querySelectorAll('#stepsList > div').length - 1);
             }
-        };
-        highlight(targets[cue], {
-            press: /select|type|press/.test(cue),
-            hover: /focus|press/.test(cue),
-            ring: !['document_reset', 'document_results'].includes(cue),
-            scroll: !cue.startsWith('document_preview_close_'),
-            keepPreview: cue.startsWith('document_preview_close_'),
-            delay: cue === 'document_preview_close_press' ? 180 : 120,
-            onActivate: actions[cue]
-        });
+            setValue('#prjName', 'InoRobot_');
+            chooseOption($('#cmbRobotModel'), option => !PROJECT_MODEL.test(option.textContent));
+            openProjectOptions();
+            options?.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                if (!checkbox.checked) return;
+                checkbox.checked = false;
+                checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+            setValue('#numRecipeCount', 2, 'change');
+            applyProjectOptions();
+            setProjectProcess(0, 0, 'Tray');
+            setProjectProcess(0, 1, 'Get');
+            normalizeProjectSelects();
+            projectGeneration += 1;
+            projectPackage = null;
+            projectPackageStarted = false;
+            window.scrollTo(0, 0);
+        },
+        steps: [
+            { id: 'project_name', target: '#prjName', click: [800], type: [['#prjName', 'InoRobot_Demo', 950]] },
+            { id: 'project_model', target: () => [$('#cmbRobotModel'), menuEl], pointer: '#cmbRobotModel', menu: { select: '#cmbRobotModel', open: 800, pick: 2000, match: option => PROJECT_MODEL.test(option.textContent) } },
+            { id: 'project_row', target: () => projectRow(0), pointer: false },
+            { id: 'project_add', target: '#btnAdd', click: [800], actions: [[800, () => { if (!projectRow(1)) $('#btnAdd')?.click(); normalizeProjectSelects(); }]], result: () => projectRow(1) },
+            { id: 'project_type', target: () => [projectRow(1), menuEl], pointer: () => projectRowSelect(1, 0), menu: { select: () => projectRowSelect(1, 0), open: 800, pick: 2000, match: option => option.value === 'Stage' } },
+            { id: 'project_method', target: () => [projectRow(1), menuEl], pointer: () => projectRowSelect(1, 1), menu: { select: () => projectRowSelect(1, 1), open: 800, pick: 2000, match: option => option.value === 'Put' } },
+            { id: 'project_preview', target: '#prismContainer', pointer: false },
+            { id: 'project_options', target: '#btnOption', click: [800], actions: [[800, openProjectOptions]], result: '#optionsModal > div' },
+            { id: 'project_option_pick', target: () => $('#chkTcpSpeed')?.closest('label') || $('#chkTcpSpeed'), click: [800], actions: [[800, () => setProjectCheckbox('chkTcpSpeed', true)]] },
+            { id: 'project_apply', target: '#btnApplyOptions', click: [700], actions: [[700, applyProjectOptions]], result: '#prismContainer' },
+            {
+                id: 'project_generate', target: withToast('#btnGenerate'), pointer: '#btnGenerate', click: [700], actions: [[700, generateProjectPackage]],
+                tick: elapsed => { if (elapsed >= 1200 && projectPackage?.size && !toast) showToast('Project package is ready', projectPackage.name); }
+            }
+        ],
+        state: () => ({ package: projectPackage, rows: document.querySelectorAll('#stepsList > div').length })
+    };
+
+    // ---------------------------------------------------------------- Document
+
+    const DOCUMENT_HARDWARE_TOGGLE = '#filterToggleHardware';
+    const DOCUMENT_QUERY = 'IR-S4';
+    let preview = null;
+
+    function closePreview() {
+        preview?.remove();
+        preview = null;
+        document.querySelectorAll('.tool-guide-document-viewer').forEach(viewer => viewer.remove());
     }
 
-    function simulationPanel(panelId, visible) {
-        const panel = document.getElementById(panelId);
-        if (!panel) return;
-        const hidden = panel.classList.contains('hidden') || panel.classList.contains('panel-user-hidden');
-        if (visible === hidden) document.querySelector(`[data-panel-toggle="${panelId}"]`)?.click();
+    function dismissPreview() {
+        const closing = preview;
+        if (!closing) return;
+        preview = null;
+        closing.classList.add('is-closing');
+        window.setTimeout(() => closing.remove(), reducedMotion.matches ? 0 : 220);
     }
 
-    function getSimulationApi() {
-        return window.InoRobotSimulationManual || null;
+    // The real "preview" button opens the PDF in a new tab, so the guide shows a PDF viewer tab
+    // with a cover page and a table of contents.
+    function showDocumentPreview(instant) {
+        closePreview();
+        const fileName = $('#manualList .manual-item h3')?.textContent.trim() || 'IR-S4&S7&S10 Series User Guide - Manipulator.pdf';
+        const [heading, subtitle] = fileName.replace(/\.pdf$/i, '').split(/\s+-\s+/);
+        preview = document.createElement('section');
+        preview.className = `tool-guide-document-viewer${instant ? ' is-instant' : ''}`;
+        preview.setAttribute('aria-hidden', 'true');
+        preview.innerHTML = `
+            <header><span class="tool-guide-document-icon">PDF</span><span class="tool-guide-document-title"></span><button type="button" class="tool-guide-document-close" aria-label="Close preview">×</button></header>
+            <div class="tool-guide-document-page-wrap">
+                <article class="tool-guide-document-page"><div class="doc-brand">INOVANCE</div><svg class="doc-art" viewBox="0 0 320 150" aria-hidden="true"><rect width="320" height="150" fill="#eef1f5"/><rect x="36" y="118" width="72" height="14" rx="2" fill="#c3ccd8"/><rect x="60" y="66" width="24" height="54" rx="3" fill="#9aa8ba"/><rect x="48" y="52" width="140" height="22" rx="11" fill="#1f5fa8"/><rect x="164" y="52" width="104" height="22" rx="11" fill="#2f78c7"/><rect x="250" y="64" width="8" height="52" fill="#6b7a8f"/><rect x="242" y="114" width="24" height="6" fill="#4a5568"/><circle cx="72" cy="63" r="5" fill="#eef1f5"/><circle cx="176" cy="63" r="5" fill="#eef1f5"/></svg><h1></h1><div class="doc-sub"></div><div class="doc-rule"></div><div class="doc-foot"><span>Inovance Technology</span><span>User Guide</span></div></article>
+                <article class="tool-guide-document-page"><h2>Contents</h2>
+                    <div class="doc-toc"><b>1</b>Safety Precautions<i></i>5</div><div class="doc-toc"><b>2</b>Product Overview<i></i>13</div><div class="doc-toc"><b>3</b>Installation<i></i>27</div><div class="doc-toc"><b>4</b>Electrical Connection<i></i>45</div><div class="doc-toc"><b>5</b>Maintenance<i></i>71</div></article>
+            </div>`;
+        preview.querySelector('.tool-guide-document-title').textContent = fileName;
+        preview.querySelector('h1').textContent = heading;
+        preview.querySelector('.doc-sub').textContent = subtitle || 'User Guide';
+        document.body.appendChild(preview);
     }
 
-    function simulationResetPose() {
-        getSimulationApi()?.reset?.();
+    // Scroll from the cover to the table of contents, stopping with the contents at the top.
+    function scrollDocumentPreview(progress) {
+        const wrap = preview?.querySelector('.tool-guide-document-page-wrap');
+        if (!wrap) return;
+        const contents = wrap.querySelectorAll('.tool-guide-document-page')[1];
+        const maximum = Math.max(0, wrap.scrollHeight - wrap.clientHeight);
+        const end = contents
+            ? Math.min(maximum, wrap.scrollTop + contents.getBoundingClientRect().top - wrap.getBoundingClientRect().top - 24)
+            : maximum;
+        wrap.scrollTop = Math.max(0, end) * ease(progress);
     }
 
-    const SIMULATION_CUES = [
-        'simulation_reset', 'simulation_model_focus', 'simulation_model_press', 'simulation_model_loading', 'simulation_model_loaded',
-        'simulation_jog_focus', 'simulation_jog_move', 'simulation_jog_done',
-        'simulation_test_focus', 'simulation_test_press', 'simulation_test_dialog', 'simulation_test_confirm_focus', 'simulation_test_confirm_press', 'simulation_test_loading', 'simulation_test_ready',
-        'simulation_snap_panel', 'simulation_snap_focus', 'simulation_snap_press', 'simulation_snap_active',
-        'simulation_snap_face_focus', 'simulation_snap_face_press', 'simulation_snap_face_selected',
-        'simulation_snap_target_focus', 'simulation_snap_target_press', 'simulation_snap_target_selected', 'simulation_snap_move', 'simulation_snap_done',
-        'simulation_program_focus', 'simulation_program_launcher_press', 'simulation_program_open', 'simulation_program_pose_a',
-        'simulation_program_teach_a_focus', 'simulation_program_teach_a_press', 'simulation_program_teach_a_done',
-        'simulation_program_pose_b', 'simulation_program_teach_b_focus', 'simulation_program_teach_b_press', 'simulation_program_teach_b_done',
-        'simulation_program_repeat_focus', 'simulation_program_repeat_press', 'simulation_program_repeat_done',
-        'simulation_program_run_focus', 'simulation_program_run_press', 'simulation_program_run_started', 'simulation_program_running',
-        'simulation_program_close_focus', 'simulation_program_close_press', 'simulation_program_close_done',
-        'simulation_jog_close_focus', 'simulation_jog_close_press', 'simulation_jog_close_done',
-        'simulation_full_view_running'
-    ];
-
-    function applySimulationMilestone(api, name) {
-        api?.applyMilestone?.(name);
+    function openDocumentSection(animate) {
+        const toggle = $(DOCUMENT_HARDWARE_TOGGLE);
+        const section = toggle?.closest('[data-filter-section]');
+        if (!section || !section.classList.contains('is-collapsed')) return;
+        if (animate) {
+            section.classList.add('tool-guide-revealing');
+            window.setTimeout(() => section.classList.remove('tool-guide-revealing'), 400);
+        }
+        toggle.click();
     }
 
-    function renderSimulation(cue) {
-        const api = getSimulationApi();
+    function selectDocumentType() {
+        const button = $('#typeFilters [data-type="scara"]');
+        if (button && !button.classList.contains('active')) button.click();
+    }
+
+    const documentRow = selector => () => $(`#manualList .manual-item ${selector}`);
+
+    const DOCUMENT = {
+        prepare: () => waitFor(() => $('#manualList .manual-item')),
+        clearEffects: closePreview,
+        reset() {
+            closePreview();
+            document.querySelectorAll('.filter-btn').forEach(button => button.classList.remove('active'));
+            ['#typeFilters [data-type="all"]', '#catFilters [data-cat="all"]', '#eduFilters [data-cat="all"]'].forEach(selector => $(selector)?.classList.add('active'));
+            document.querySelectorAll('[data-filter-section]').forEach(section => {
+                section.classList.add('is-collapsed');
+                section.classList.remove('tool-guide-revealing');
+                section.querySelector('.filter-section-toggle')?.setAttribute('aria-expanded', 'false');
+            });
+            const search = $('#manualSearch');
+            if (search) search.value = '';
+            window.renderManuals?.();
+            window.scrollTo(0, 0);
+        },
+        steps: [
+            {
+                id: 'doc_section', target: DOCUMENT_HARDWARE_TOGGLE, click: [800], actions: [[800, live => openDocumentSection(live)]],
+                result: () => $(DOCUMENT_HARDWARE_TOGGLE)?.closest('[data-filter-section]')
+            },
+            { id: 'doc_type', target: '#typeFilters', pointer: '#typeFilters [data-type="scara"]', click: [800], actions: [[800, selectDocumentType]] },
+            { id: 'doc_count', target: '.document-results', pointer: false, scroll: false },
+            { id: 'doc_search', target: '#manualSearch', click: [800], type: [['#manualSearch', DOCUMENT_QUERY, 950]] },
+            { id: 'doc_result', target: documentRow(''), pointer: false },
+            {
+                // The PDF opens like a new tab, so the pointer leaves the page with it.
+                id: 'doc_view', click: [800], actions: [[1100, live => showDocumentPreview(!live)]],
+                target: documentRow('[data-action="view"]'), result: '.tool-guide-document-viewer', resultAt: 1100,
+                pointer: elapsed => (elapsed < 1100 ? documentRow('[data-action="view"]')() : null)
+            },
+            {
+                id: 'doc_preview', target: '.tool-guide-document-viewer', pointer: false, scroll: false, ring: false,
+                enter: () => { if (!preview) showDocumentPreview(true); },
+                tick: elapsed => scrollDocumentPreview((elapsed - 300) / 2800),
+                complete: () => { if (!preview) showDocumentPreview(true); scrollDocumentPreview(1); }
+            },
+            {
+                id: 'doc_close', scroll: false, click: [800],
+                target: '.tool-guide-document-close', result: documentRow(''), resultAt: 800,
+                pointer: elapsed => (elapsed < 800 ? '.tool-guide-document-close' : null),
+                enter: () => { if (!preview) { showDocumentPreview(true); scrollDocumentPreview(1); } },
+                actions: [[800, live => (live ? dismissPreview() : closePreview())]]
+            },
+            { id: 'doc_download', target: withToast(documentRow('[data-action="download"]')), pointer: documentRow('[data-action="download"]'), click: [800], toast: [1300, 'Document download is ready', () => $('#manualList .manual-item h3')?.textContent.trim() || 'IR-S4 User Guide.pdf'] }
+        ],
+        state: () => ({ count: $('#manualCountValue')?.textContent || '', query: $('#manualSearch')?.value || '', preview: Boolean(preview) })
+    };
+
+    // ---------------------------------------------------------------- Robot Model Select
+
+    const MODEL_ID = 'IR-R25-178S-INT';
+    const MODEL_FILTERS = [['Type', '6-Axis'], ['Payload(kg)', '25'], ['Manipulator Length(mm)', '1783']];
+    const modelApi = () => window.InoRobotModelManual || null;
+    const modelFilter = index => () => document.querySelector(`.filter-option[data-filter-id="${CSS.escape(MODEL_FILTERS[index][0])}"][data-option-id="${CSS.escape(MODEL_FILTERS[index][1])}"]`);
+    const modelCard = () => document.querySelector(`#product-container [data-product-id="${MODEL_ID}"]`);
+    const modelOption = (name, value) => () => Array.from(document.querySelectorAll(`.modal-body input[name="${name}"]`)).find(input => input.value === value)?.closest('label') || null;
+    const modelFilterRow = index => () => modelFilter(index)()?.closest('.filter-options')?.parentElement || modelFilter(index)();
+    const modelOptionGroup = (name, value) => () => modelOption(name, value)()?.parentElement || null;
+    const modelModalOpen = () => Boolean(document.querySelector('.modal-overlay[style*="flex"], #modal-overlay[style*="flex"]')) || Boolean(modelApi()?.getState?.().modalOpen);
+
+    function selectModelFilter(index) {
+        const button = modelFilter(index)();
+        if (button && !button.classList.contains('active')) button.click();
+    }
+
+    function chooseModelOption(name, value) {
+        const label = modelOption(name, value)();
+        const input = label?.querySelector('input');
+        if (input && !input.checked) label.click();
+    }
+
+    function openModelCard() {
+        if (modelApi()?.getState?.().productId === MODEL_ID && modelModalOpen()) return;
+        modelCard()?.click();
+    }
+
+    const MODEL = {
+        prepare: () => waitFor(() => modelApi() && $('#product-container [data-product-id]')),
+        reset() {
+            modelApi()?.cancel?.();
+            window.scrollTo(0, 0);
+        },
+        // Choice steps light up the whole group of choices; the pointer and ring mark the one picked.
+        steps: [
+            { id: 'model_type', target: modelFilterRow(0), pointer: modelFilter(0), click: [800], actions: [[800, () => selectModelFilter(0)]] },
+            { id: 'model_payload', target: modelFilterRow(1), pointer: modelFilter(1), click: [800], actions: [[800, () => selectModelFilter(1)]] },
+            { id: 'model_reach', target: modelFilterRow(2), pointer: modelFilter(2), click: [800], actions: [[800, () => selectModelFilter(2)]] },
+            { id: 'model_result', target: modelCard, pointer: false },
+            { id: 'model_open', target: modelCard, center: true, click: [800], actions: [[800, openModelCard]], result: '#options-modal .modal-content' },
+            { id: 'model_cable', target: modelOptionGroup('cableTypeSelection', 'High Flex (유연형)'), pointer: modelOption('cableTypeSelection', 'High Flex (유연형)'), click: [800], actions: [[800, () => chooseModelOption('cableTypeSelection', 'High Flex (유연형)')]] },
+            { id: 'model_pendant', target: modelOptionGroup('pendantConfig', 'without-cover'), pointer: modelOption('pendantConfig', 'without-cover'), click: [800], actions: [[800, () => chooseModelOption('pendantConfig', 'without-cover')]] },
+            // The communication card is far down the options window; the scroll there takes about 1.3 s.
+            { id: 'model_comm', target: modelOptionGroup('commSelection', 'IRCB501-2PN-BD'), pointer: modelOption('commSelection', 'IRCB501-2PN-BD'), click: [1500], actions: [[1500, () => chooseModelOption('commSelection', 'IRCB501-2PN-BD')]] },
+            { id: 'model_code', target: '#dynamic-purchase-code', pointer: false },
+            { id: 'model_cad', target: withToast('#download-cad-btn'), pointer: '#download-cad-btn', scroll: false, click: [700], toast: [1100, '다운로드 완료', `Inovance_CAD_${MODEL_ID}.zip`] },
+            { id: 'model_excel', target: withToast('#download-components-btn'), pointer: '#download-components-btn', scroll: false, click: [700], toast: [1100, '다운로드 완료', `Inovance_Config_${MODEL_ID}.xlsx`] },
+            {
+                id: 'model_preview', target: '.model-manual-document-viewer', pointer: false, scroll: false, ring: false,
+                enter: () => modelApi()?.renderTimelineCue?.('preview', { force: true }),
+                tick: elapsed => modelApi()?.setPreviewScroll?.(ease((elapsed - 400) / 2400)),
+                complete: () => { modelApi()?.renderTimelineCue?.('preview', { force: true }); modelApi()?.setPreviewScroll?.(1); }
+            }
+        ],
+        state: () => modelApi()?.getState?.() || null
+    };
+
+    // ---------------------------------------------------------------- 3D Simulation
+
+    const simApi = () => window.InoRobotSimulationManual || null;
+    let snapAnchor = null;
+
+    function snapAnchorElement() {
+        const point = simApi()?.getSnapScreenPoint?.();
+        if (!point) return null;
+        if (!snapAnchor) {
+            snapAnchor = document.createElement('div');
+            snapAnchor.className = 'tool-guide-snap-anchor';
+            snapAnchor.setAttribute('aria-hidden', 'true');
+            document.body.appendChild(snapAnchor);
+        }
+        snapAnchor.style.left = `${point.x - 60}px`;
+        snapAnchor.style.top = `${point.y - 60}px`;
+        return snapAnchor;
+    }
+
+    // The real Test button fills the picker with the test models. Close it through its own Cancel
+    // button so the app's pending confirmation is resolved and the next open works again.
+    function closeTestPicker() {
+        const dialog = document.getElementById('test-model-dialog');
+        if (dialog?.open) document.getElementById('btn-cancel-test-model')?.click();
+        if (dialog?.open) simApi()?.closeTestDialog?.();
+    }
+
+    function openTestPicker() {
+        const dialog = document.getElementById('test-model-dialog');
+        if (dialog?.open) return;
+        document.getElementById('btn-test-model')?.click();
+        if (!dialog?.open) simApi()?.showTestDialog?.();
+    }
+
+    const testQuantity = category => () => document.querySelector(`#test-model-dialog [data-test-category="${category}"] [data-test-quantity]`);
+
+    // Puts the 3D app into the state that matched one moment of the original walkthrough.
+    // The app keeps snapshots ("milestones") for each of these states.
+    function simulationScene(cue) {
+        const api = simApi();
         if (!api) return;
+        const pickerCue = ['simulation_test_dialog', 'simulation_test_confirm_focus', 'simulation_test_confirm_press'].includes(cue);
+        if (!pickerCue) closeTestPicker();
         api.setCue?.(cue);
-        clearEffects();
-        closeToast();
-
-        let timelineBase = null;
-        if (['simulation_reset', 'simulation_model_focus', 'simulation_model_press', 'simulation_model_loading'].includes(cue)) {
-            applySimulationMilestone(api, 'blank');
-        } else if (['simulation_model_loaded', 'simulation_jog_focus', 'simulation_jog_move'].includes(cue)) {
-            timelineBase = 'robot';
-            applySimulationMilestone(api, timelineBase);
-        } else if (['simulation_jog_done', 'simulation_test_focus', 'simulation_test_press', 'simulation_test_dialog',
-            'simulation_test_confirm_focus', 'simulation_test_confirm_press', 'simulation_test_loading'].includes(cue)) {
-            applySimulationMilestone(api, 'jog');
-        } else if (['simulation_test_ready', 'simulation_snap_panel', 'simulation_snap_focus', 'simulation_snap_press', 'simulation_snap_active',
+        const has = list => list.includes(cue);
+        let base = null;
+        if (has(['simulation_reset', 'simulation_model_focus', 'simulation_model_press', 'simulation_model_loading'])) {
+            api.applyMilestone?.('blank');
+        } else if (has(['simulation_model_loaded', 'simulation_jog_focus', 'simulation_jog_move'])) {
+            base = 'robot';
+            api.applyMilestone?.(base);
+        } else if (has(['simulation_jog_done', 'simulation_test_focus', 'simulation_test_press', 'simulation_test_dialog',
+            'simulation_test_confirm_focus', 'simulation_test_confirm_press', 'simulation_test_loading'])) {
+            api.applyMilestone?.('jog');
+        } else if (has(['simulation_test_ready', 'simulation_snap_panel', 'simulation_snap_focus', 'simulation_snap_press', 'simulation_snap_active',
             'simulation_snap_face_focus', 'simulation_snap_face_press', 'simulation_snap_face_selected',
-            'simulation_snap_target_focus', 'simulation_snap_target_press', 'simulation_snap_target_selected', 'simulation_snap_move'].includes(cue)) {
-            timelineBase = 'test';
-            applySimulationMilestone(api, timelineBase);
-        } else if (['simulation_snap_done', 'simulation_program_focus', 'simulation_program_launcher_press', 'simulation_program_open', 'simulation_program_pose_a'].includes(cue)) {
-            timelineBase = ['simulation_program_open', 'simulation_program_pose_a'].includes(cue) ? 'programBase' : 'snap';
-            applySimulationMilestone(api, timelineBase);
-        } else if (['simulation_program_teach_a_focus', 'simulation_program_teach_a_press'].includes(cue)) {
-            applySimulationMilestone(api, 'programPoseA');
-        } else if (['simulation_program_teach_a_done', 'simulation_program_pose_b'].includes(cue)) {
-            timelineBase = 'programP0';
-            applySimulationMilestone(api, timelineBase);
-        } else if (['simulation_program_teach_b_focus', 'simulation_program_teach_b_press'].includes(cue)) {
-            applySimulationMilestone(api, 'programPoseB');
-        } else if (['simulation_program_teach_b_done', 'simulation_program_repeat_focus', 'simulation_program_repeat_press'].includes(cue)) {
-            applySimulationMilestone(api, 'programP1');
-        } else if (['simulation_program_repeat_done', 'simulation_program_run_focus', 'simulation_program_run_press'].includes(cue)) {
-            applySimulationMilestone(api, 'programReady');
-        } else if (['simulation_program_run_started', 'simulation_program_running',
-            'simulation_program_close_focus', 'simulation_program_close_press', 'simulation_program_close_done',
-            'simulation_jog_close_focus', 'simulation_jog_close_press', 'simulation_jog_close_done', 'simulation_full_view_running'].includes(cue)) {
+            'simulation_snap_target_focus', 'simulation_snap_target_press', 'simulation_snap_target_selected', 'simulation_snap_move'])) {
+            base = 'test';
+            api.applyMilestone?.(base);
+        } else if (has(['simulation_snap_done', 'simulation_program_focus', 'simulation_program_launcher_press', 'simulation_program_open', 'simulation_program_pose_a'])) {
+            base = has(['simulation_program_open', 'simulation_program_pose_a']) ? 'programBase' : 'snap';
+            api.applyMilestone?.(base);
+        } else if (has(['simulation_program_teach_a_focus', 'simulation_program_teach_a_press'])) {
+            api.applyMilestone?.('programPoseA');
+        } else if (has(['simulation_program_teach_a_done', 'simulation_program_pose_b'])) {
+            base = 'programP0';
+            api.applyMilestone?.(base);
+        } else if (has(['simulation_program_teach_b_focus', 'simulation_program_teach_b_press'])) {
+            api.applyMilestone?.('programPoseB');
+        } else if (has(['simulation_program_teach_b_done', 'simulation_program_repeat_focus', 'simulation_program_repeat_press'])) {
+            api.applyMilestone?.('programP1');
+        } else if (has(['simulation_program_repeat_done', 'simulation_program_run_focus', 'simulation_program_run_press'])) {
+            api.applyMilestone?.('programReady');
+        } else if (has(['simulation_program_run_started', 'simulation_program_running', 'simulation_program_close_focus', 'simulation_program_close_press',
+            'simulation_program_close_done', 'simulation_jog_close_focus', 'simulation_jog_close_press', 'simulation_jog_close_done', 'simulation_full_view_running'])) {
             const programState = api.getState?.();
-            if (!programState?.robotName || programState.programSteps !== 2 || !programState.repeat) applySimulationMilestone(api, 'programReady');
+            if (!programState?.robotName || programState.programSteps !== 2 || !programState.repeat) api.applyMilestone?.('programReady');
             if (cue === 'simulation_program_run_started') api.startProgram?.();
             else api.ensureProgramRunning?.();
         }
 
-        if (['simulation_reset', 'simulation_model_focus', 'simulation_model_press'].includes(cue)) api.showModelSelection?.(false);
-        else api.showModelSelection?.(true);
+        api.showModelSelection?.(!has(['simulation_reset', 'simulation_model_focus', 'simulation_model_press']));
         api.showLoading?.(cue === 'simulation_model_loading', '로봇 모델을 생성하는 중...');
-        if (['simulation_test_dialog', 'simulation_test_confirm_focus', 'simulation_test_confirm_press'].includes(cue)) api.showTestDialog?.();
-        else api.closeTestDialog?.();
+        if (pickerCue) openTestPicker();
         if (cue === 'simulation_test_loading') api.showLoading?.(true, 'Test 설비와 Tool을 배치하는 중...');
-        const snapActivated = ['simulation_snap_active', 'simulation_snap_face_focus', 'simulation_snap_face_press', 'simulation_snap_face_selected',
-            'simulation_snap_target_focus', 'simulation_snap_target_press', 'simulation_snap_target_selected', 'simulation_snap_move', 'simulation_snap_done'].includes(cue);
-        if ((['simulation_jog_focus', 'simulation_jog_move', 'simulation_snap_panel', 'simulation_snap_focus', 'simulation_snap_press'].includes(cue)
+        const snapActivated = has(['simulation_snap_active', 'simulation_snap_face_focus', 'simulation_snap_face_press', 'simulation_snap_face_selected',
+            'simulation_snap_target_focus', 'simulation_snap_target_press', 'simulation_snap_target_selected', 'simulation_snap_move', 'simulation_snap_done']);
+        if ((has(['simulation_jog_focus', 'simulation_jog_move', 'simulation_snap_panel', 'simulation_snap_focus', 'simulation_snap_press'])
             || cue.startsWith('simulation_program_')) && !snapActivated) {
             api.setJogMode?.('joint');
         }
         if (snapActivated) api.setSnapMode?.(true);
-        if (['simulation_snap_face_selected', 'simulation_snap_target_focus', 'simulation_snap_target_press',
-            'simulation_snap_target_selected', 'simulation_snap_move', 'simulation_snap_done'].includes(cue)) api.showSnapSelection?.();
-        if (['simulation_snap_target_selected', 'simulation_snap_move', 'simulation_snap_done'].includes(cue)) api.showSnapTarget?.();
-        if (timelineBase) api.setCue?.(cue);
+        if (has(['simulation_snap_face_selected', 'simulation_snap_target_focus', 'simulation_snap_target_press',
+            'simulation_snap_target_selected', 'simulation_snap_move', 'simulation_snap_done'])) api.showSnapSelection?.();
+        if (has(['simulation_snap_target_selected', 'simulation_snap_move', 'simulation_snap_done'])) api.showSnapTarget?.();
+        if (base) api.setCue?.(cue);
 
-        const jogPanel = document.getElementById('jog-panel');
-        const programPanel = document.getElementById('program-panel');
-        const showModelPanel = cue === 'simulation_test_ready';
-        const showJogPanel = ['simulation_jog_focus', 'simulation_jog_move'].includes(cue)
+        const showJogPanel = has(['simulation_jog_focus', 'simulation_jog_move'])
             || cue.startsWith('simulation_snap_')
-            || (cue.startsWith('simulation_program_') && !['simulation_program_focus', 'simulation_program_launcher_press'].includes(cue))
-            || ['simulation_jog_close_focus', 'simulation_jog_close_press'].includes(cue);
+            || (cue.startsWith('simulation_program_') && !has(['simulation_program_focus', 'simulation_program_launcher_press']))
+            || has(['simulation_jog_close_focus', 'simulation_jog_close_press']);
         const showProgramPanel = cue.startsWith('simulation_program_')
-            && !['simulation_program_focus', 'simulation_program_launcher_press', 'simulation_program_close_done'].includes(cue);
-        api.setPanelVisible?.('model-browser-panel', showModelPanel);
+            && !has(['simulation_program_focus', 'simulation_program_launcher_press', 'simulation_program_close_done']);
+        api.setPanelVisible?.('model-browser-panel', cue === 'simulation_test_ready');
         api.setPanelVisible?.('jog-panel', showJogPanel);
         api.setPanelVisible?.('program-panel', showProgramPanel);
-        if (['simulation_model_loaded', 'simulation_jog_done', 'simulation_program_focus', 'simulation_program_launcher_press',
-            'simulation_program_open', 'simulation_full_view_running'].includes(cue)) api.focusRobot?.();
+        if (has(['simulation_model_loaded', 'simulation_jog_done', 'simulation_program_focus', 'simulation_program_launcher_press',
+            'simulation_program_open', 'simulation_full_view_running'])) api.focusRobot?.();
+    }
 
-        let jointInput = document.querySelector('#jog-controls .jog-row input[type="range"]');
-        const programRows = document.querySelectorAll('#program-step-list [data-program-step-id]');
-        const targets = {
-            simulation_reset: '.select-wrapper', simulation_model_focus: '.select-wrapper', simulation_model_press: '.select-wrapper',
-            simulation_model_loading: '#canvas-container', simulation_model_loaded: '#canvas-container',
-            simulation_jog_focus: '#jog-panel', simulation_jog_move: jointInput, simulation_jog_done: '#canvas-container',
-            simulation_test_focus: '#btn-test-model', simulation_test_press: '#btn-test-model', simulation_test_dialog: '#test-model-dialog',
-            simulation_test_confirm_focus: '#btn-confirm-test-model', simulation_test_confirm_press: '#btn-confirm-test-model',
-            simulation_test_loading: '#canvas-container', simulation_test_ready: '#model-browser-panel',
-            simulation_snap_panel: '#jog-panel', simulation_snap_focus: '#btn-snap-move', simulation_snap_press: '#btn-snap-move', simulation_snap_active: '#btn-snap-move',
-            simulation_snap_face_focus: '#canvas-container', simulation_snap_face_press: '#canvas-container', simulation_snap_face_selected: '#canvas-container',
-            simulation_snap_target_focus: '#canvas-container', simulation_snap_target_press: '#canvas-container', simulation_snap_target_selected: '#simulation-snap-marker',
-            simulation_snap_move: '#canvas-container', simulation_snap_done: '#canvas-container',
-            simulation_program_focus: '[data-panel-toggle="program-panel"]', simulation_program_launcher_press: '[data-panel-toggle="program-panel"]', simulation_program_open: '#program-panel',
-            simulation_program_pose_a: jointInput, simulation_program_teach_a_focus: '#program-add-step', simulation_program_teach_a_press: '#program-add-step', simulation_program_teach_a_done: programRows[0] || '#program-step-list',
-            simulation_program_pose_b: jointInput, simulation_program_teach_b_focus: '#program-add-step', simulation_program_teach_b_press: '#program-add-step', simulation_program_teach_b_done: programRows[1] || '#program-step-list',
-            simulation_program_repeat_focus: '#program-repeat-robot', simulation_program_repeat_press: '#program-repeat-robot', simulation_program_repeat_done: '#program-repeat-robot',
-            simulation_program_run_focus: '#program-run-robot', simulation_program_run_press: '#program-run-robot', simulation_program_run_started: '#program-step-list',
-            simulation_program_running: programRows[0] || '#program-step-list',
-            simulation_program_close_focus: programPanel?.querySelector('[data-panel-action="hide"]'),
-            simulation_program_close_press: programPanel?.querySelector('[data-panel-action="hide"]'),
-            simulation_program_close_done: '#jog-panel',
-            simulation_jog_close_focus: jogPanel?.querySelector('[data-panel-action="hide"]'),
-            simulation_jog_close_press: jogPanel?.querySelector('[data-panel-action="hide"]'),
-            simulation_jog_close_done: '#canvas-container',
-            simulation_full_view_running: '#canvas-container'
+    const scene = cue => () => simulationScene(cue);
+
+    // The app interpolates its robot motion inside fixed windows of the original 75 s timeline;
+    // map this step's own time onto that window.
+    function motion(cue, windowStart, windowEnd, from, to) {
+        return elapsed => {
+            if (elapsed > to + 120) return;
+            const api = simApi();
+            api?.setCue?.(cue);
+            const progress = Math.max(0, Math.min(1, (elapsed - from) / (to - from)));
+            api?.setTimelineTime?.(windowStart + (windowEnd - windowStart) * progress);
         };
-        const target = targets[cue];
-        const canvasCue = target === '#canvas-container';
-        simulationTarget = targets[cue];
-        if (cue === 'simulation_test_ready') showToast('Test 모델 배치 완료', 'Test_Equipment_CAD.step · Vacuum_Tool_X200mm.stl');
-        if (cue === 'simulation_snap_done') showToast('스냅 이동 완료', '선택한 CAD 스냅 위치');
-        if (cue === 'simulation_program_run_started' || cue === 'simulation_program_running') showToast('자동 반복 운전 중', 'P[0] Pick ↔ P[1] Place');
-        if (cue === 'simulation_full_view_running') showToast('패널을 닫고 반복 동작 확인', 'P[0] Pick ↔ P[1] Place');
     }
 
-    async function prepareSimulation() {
-        const api = await waitFor(() => getSimulationApi(), 20000);
-        await api.prepare();
-        const preparedState = api.getState?.();
-        demoModelLoaded = Boolean(preparedState?.prepared);
-    }
+    const sceneThenMotion = (cue, windowStart, windowEnd) => () => {
+        simulationScene(cue);
+        motion(cue, windowStart, windowEnd, 0, 1)(1);
+    };
+
+    const panelHide = id => () => document.getElementById(id)?.querySelector('[data-panel-action="hide"]') || null;
+    const jogSlider = () => document.querySelector('#jog-controls .jog-row input[type="range"]');
+
+    const SIMULATION = {
+        absolute: true,
+        prepare: async () => {
+            const api = await waitFor(() => simApi(), 20000);
+            await api.prepare();
+        },
+        clearEffects: () => { snapAnchor?.remove(); snapAnchor = null; },
+        reset() {
+            closeTestPicker();
+            simApi()?.setPaused?.(true);
+            simApi()?.reset?.();
+        },
+        steps: [
+            {
+                id: 'sim_model', enter: scene('simulation_reset'),
+                target: () => ['#model-select', menuEl], result: '#canvas-container', resultAt: 2300,
+                pointer: elapsed => (elapsed < 2300 ? '#model-select' : null),
+                menu: { select: '#model-select', open: 800, pick: 2000, match: option => /IR-S4/i.test(option.textContent), apply: scene('simulation_model_loading') },
+                actions: [[3400, scene('simulation_model_loaded')]],
+                complete: scene('simulation_model_loaded')
+            },
+            { id: 'sim_view', enter: scene('simulation_model_loaded'), target: '#canvas-container', pointer: false, ring: false, scroll: false },
+            {
+                id: 'sim_jog_open', enter: scene('simulation_model_loaded'), target: '[data-panel-toggle="jog-panel"]', scroll: false, click: [800],
+                actions: [[800, scene('simulation_jog_focus')]], result: '#jog-panel', complete: scene('simulation_jog_focus')
+            },
+            {
+                id: 'sim_jog_move', enter: scene('simulation_jog_move'), target: () => jogSlider()?.closest('.jog-row') || jogSlider(), pointer: jogSlider, center: true, scroll: false,
+                click: [500], tick: motion('simulation_jog_move', 13000, 16000, 600, 2800),
+                complete: sceneThenMotion('simulation_jog_move', 13000, 16000)
+            },
+            {
+                id: 'sim_test_open', enter: scene('simulation_test_focus'), target: '#btn-test-model', scroll: false, click: [800],
+                actions: [[800, scene('simulation_test_dialog')]], result: '#test-model-dialog', complete: scene('simulation_test_dialog')
+            },
+            {
+                // Enter a quantity for one model and one tool, then press "일괄 가져오기".
+                id: 'sim_test_import', enter: scene('simulation_test_dialog'),
+                // The picker closes at 2100 when the import starts; the 3D view is lit from then on.
+                target: elapsed => (elapsed < 1700 ? '#test-model-dialog .test-model-picker-body' : elapsed < 2100 ? '#test-model-dialog .simulation-reset-dialog-actions' : '#canvas-container'),
+                pointer: elapsed => (elapsed < 1150 ? testQuantity('model')() : elapsed < 1700 ? testQuantity('tool')() : elapsed < 2100 ? '#btn-confirm-test-model' : null),
+                scrollTarget: elapsed => (elapsed < 1150 ? testQuantity('model')() : elapsed < 1700 ? testQuantity('tool')() : '#btn-confirm-test-model'),
+                ring: elapsed => elapsed < 2100,
+                click: [500, 1250, 1950], type: [[testQuantity('model'), '1', 700], [testQuantity('tool'), '1', 1450]],
+                actions: [[2100, scene('simulation_test_loading')], [3200, scene('simulation_test_ready')]],
+                toast: [3200, 'Test 모델 배치 완료', 'Test_Equipment_CAD.step · Vacuum_Tool_X200mm.stl'],
+                complete: scene('simulation_test_ready')
+            },
+            { id: 'sim_test_tree', enter: scene('simulation_test_ready'), target: '#model-browser-panel', pointer: false, scroll: false, keepToast: true, complete: scene('simulation_test_ready') },
+            { id: 'sim_snap_button', enter: scene('simulation_snap_panel'), target: '#btn-snap-move', scroll: false, click: [800], actions: [[800, scene('simulation_snap_active')]], complete: scene('simulation_snap_active') },
+            { id: 'sim_snap_face', enter: scene('simulation_snap_active'), target: snapAnchorElement, center: true, scroll: false, click: [1000], actions: [[1000, scene('simulation_snap_face_selected')]], complete: scene('simulation_snap_face_selected') },
+            { id: 'sim_snap_point', enter: scene('simulation_snap_face_selected'), target: snapAnchorElement, center: true, scroll: false, click: [900], actions: [[900, scene('simulation_snap_target_selected')]], complete: scene('simulation_snap_target_selected') },
+            {
+                id: 'sim_snap_move', enter: scene('simulation_snap_move'), target: '#canvas-container', pointer: false, ring: false, scroll: false,
+                tick: motion('simulation_snap_move', 41500, 44500, 200, 2400),
+                actions: [[2500, scene('simulation_snap_done')]], toast: [2500, '스냅 이동 완료', '선택한 CAD 스냅 위치'],
+                complete: scene('simulation_snap_done')
+            },
+            {
+                id: 'sim_program_open', enter: scene('simulation_program_focus'), target: '[data-panel-toggle="program-panel"]', scroll: false, click: [800],
+                actions: [[800, scene('simulation_program_open')]], result: '#program-panel', complete: scene('simulation_program_open')
+            },
+            // While the robot moves to the pose, show the whole scene; then point at the + button.
+            {
+                id: 'sim_teach_a', enter: scene('simulation_program_pose_a'), scroll: false,
+                target: elapsed => (elapsed < 1600 ? '#canvas-container' : '#program-panel'), pointer: '#program-add-step', ring: elapsed => elapsed >= 1600,
+                tick: motion('simulation_program_pose_a', 49500, 51000, 200, 1500),
+                click: [2100], actions: [[2100, scene('simulation_program_teach_a_done')]], complete: scene('simulation_program_teach_a_done')
+            },
+            {
+                id: 'sim_teach_b', enter: scene('simulation_program_pose_b'), scroll: false,
+                target: elapsed => (elapsed < 1600 ? '#canvas-container' : '#program-panel'), pointer: '#program-add-step', ring: elapsed => elapsed >= 1600,
+                tick: motion('simulation_program_pose_b', 53100, 54500, 200, 1500),
+                click: [2100], actions: [[2100, scene('simulation_program_teach_b_done')]], complete: scene('simulation_program_teach_b_done')
+            },
+            { id: 'sim_repeat', enter: scene('simulation_program_repeat_focus'), target: '#program-repeat-robot', click: [800], actions: [[800, scene('simulation_program_repeat_done')]], complete: scene('simulation_program_repeat_done') },
+            {
+                id: 'sim_run', enter: scene('simulation_program_run_focus'), target: withToast('#program-run-robot'), pointer: '#program-run-robot', scrollTarget: '#program-run-robot', click: [800],
+                actions: [[800, scene('simulation_program_run_started')]], toast: [900, '자동 반복 운전 중', 'P[0] Pick ↔ P[1] Place'],
+                complete: scene('simulation_program_running')
+            },
+            {
+                id: 'sim_watch', enter: scene('simulation_program_close_focus'), scroll: false,
+                // Each hide button stays the target until it is clicked; the panel it closes is gone after that.
+                target: elapsed => (elapsed < 800 ? panelHide('program-panel')() : elapsed < 1600 ? panelHide('jog-panel')() : '#canvas-container'),
+                pointer: elapsed => (elapsed < 800 ? panelHide('program-panel')() : elapsed < 1600 ? panelHide('jog-panel')() : null),
+                ring: elapsed => elapsed < 1600,
+                click: [800, 1600],
+                actions: [[800, scene('simulation_program_close_done')], [1600, scene('simulation_jog_close_done')], [2100, scene('simulation_full_view_running')]],
+                toast: [2100, '패널을 닫고 반복 동작 확인', 'P[0] Pick ↔ P[1] Place'],
+                complete: scene('simulation_full_view_running')
+            }
+        ],
+        state: () => simApi()?.getState?.() || null
+    };
+
+    const APPS = { tool: TOOL, project: PROJECT, document: DOCUMENT, model: MODEL, simulation: SIMULATION };
+    APP = APPS[app];
 
     async function prepare() {
         ensureEffects();
         if (prepared) return true;
-        if (app === 'simulation') await prepareSimulation();
-        if (app === 'tool') await waitFor(() => document.getElementById('robot')?.options.length ? true : false);
-        if (app === 'project') await waitFor(() => document.querySelector('#stepsList > div'));
-        if (app === 'document') await waitFor(() => document.querySelector('#manualList .manual-item'));
+        await APP.prepare();
         prepared = true;
         return true;
     }
 
-    function renderTimelineCue(cue, cueStart = 0) {
-        if (!prepared || !cue) return false;
-        activeCue = cue;
-        simulationCueStart = cueStart;
-        if (app === 'simulation') renderSimulation(cue);
-        // Project playback is driven by the media clock, including seeks and pauses.
-        if (app === 'document') renderDocument(cue);
-        return true;
-    }
-
-    function setTimelineTime(time) {
-        if (app === 'tool' && prepared) renderToolTime(Math.max(0, Number(time) || 0));
-        if (app === 'project' && prepared) renderProjectTime(Math.max(0, Number(time) || 0));
-        if (app === 'simulation') getSimulationApi()?.setTimelineTime?.(Number(time) || 0);
-        if (app === 'simulation' && prepared) renderSimulationTime(Math.max(0, Number(time) || 0));
-        if (app === 'document' && preview?.isConnected) {
-            const pageWrap = preview.querySelector('.tool-guide-document-page-wrap');
-            if (pageWrap) {
-                const progress = Math.max(0, Math.min(1, ((Number(time) || 0) - 22400) / 3000));
-                pageWrap.scrollTop = Math.max(0, pageWrap.scrollHeight - pageWrap.clientHeight) * progress;
-            }
-        }
-    }
-
-    function resetTimeline() {
-        activeCue = '';
-        clearEffects();
-        if (app === 'tool' || app === 'simulation') resetDemoMotion();
-        if (app === 'tool') toolReset();
-        if (app === 'project') resetProjectPlayback();
-        if (app === 'document') documentReset();
-        if (app === 'simulation') simulationResetPose();
-    }
-
-    function setGuidePaused(paused) {
-        const wasPaused = guidePaused;
-        guidePaused = Boolean(paused);
-        document.documentElement.classList.toggle('tool-guide-paused', guidePaused);
-        if (guidePaused && !wasPaused) stopActiveScroll(true);
-        else if (!guidePaused && wasPaused) resumePausedScroll();
-        if (app === 'simulation') {
-            const api = getSimulationApi();
-            api?.setPaused?.(guidePaused);
-            if (!paused && activeCue === 'simulation_full_view_running') api?.ensureProgramRunning?.();
-        }
+    function setPaused(nextPaused) {
+        paused = Boolean(nextPaused);
+        document.documentElement.classList.toggle('tool-guide-paused', paused);
+        if (app === 'simulation') simApi()?.setPaused?.(paused);
+        if (app === 'model') modelApi()?.setPaused?.(paused);
     }
 
     window.InoRobotToolManual = Object.freeze({
@@ -1218,15 +1426,22 @@
         renderTimelineCue,
         setTimelineTime,
         resetTimeline,
-        getFocusPoint: () => focusPoint,
-        setPaused: setGuidePaused,
+        setPaused,
+        steps: () => APP.steps.map(step => step.id),
+        getFocusRect: settledFocusRect,
+        getPointer: () => (cursorAt && cursor?.classList.contains('is-visible') ? { ...cursorAt } : null),
+        getCameraRect: () => (cameraRect ? { ...cameraRect } : null),
+        getFocusPoint: () => (focusRect ? { x: focusRect.left + focusRect.width / 2, y: focusRect.top + focusRect.height / 2 } : null),
         getState: () => ({
             app,
             prepared,
-            activeCue,
-            demoModelLoaded,
-            project: app === 'project' ? { time:projectTime, package:projectPackage } : null,
-            simulation: app === 'simulation' ? getSimulationApi()?.getState?.() || null : null
+            paused,
+            activeCue: cueId,
+            step: run?.step.id || '',
+            cursorVisible: Boolean(cursor?.classList.contains('is-visible')),
+            ringVisible: Boolean(ring?.classList.contains('is-visible')),
+            toast: toast?.querySelector('small')?.textContent || '',
+            [app]: APP.state?.() ?? null
         })
     });
 }());

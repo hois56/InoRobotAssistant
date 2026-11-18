@@ -34,3 +34,12 @@ test('컨베이어 설정은 매핑 저장에서 보존하고 기존 매핑은 �
 });
 
 test('IO 미연결 컨베이어와 벨트 부품 대상은 저장·복원에서 유지한다',()=>{const mapping=normalizeIoFunctionMapping({action:'CONVEYOR',gripObjectRef:'conveyor:assembly/1',conveyorManualOnly:true,enabled:false,conveyorAxis:'Y',conveyorSpeed:140});assert.deepEqual(cloneIoFunctionMappings([mapping])[0],mapping);assert.equal(mapping.enabled,false);assert.equal(mapping.conveyorManualOnly,true);assert.equal(mapping.gripObjectRef,'conveyor:assembly/1');});
+
+test('background timer throttling keeps transport moving without replaying a long browser suspension', () => {
+    assert.equal(conveyorElapsedSeconds(1000, 2000, true), 1);
+    assert.equal(conveyorElapsedSeconds(1000, 1100, true), 0.1);
+    assert.equal(conveyorElapsedSeconds(1000, 61000, true), 1);
+    assert.equal(conveyorElapsedSeconds(null, 2000, true), 0);
+    assert.equal(conveyorElapsedSeconds(2000, 1000, true), 0);
+    assert.equal(conveyorElapsedSeconds(1000, Infinity, true), 0);
+});

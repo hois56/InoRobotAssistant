@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const isManualEmbed = new URLSearchParams(window.location.search).get('embed') === 'manual';
+    const modelPages = window.InoRobotModelPages;
     if (isManualEmbed) document.documentElement.dataset.modelSelectEmbed = 'manual';
 
     const uiText = (value) => window.InoRobotI18n
@@ -7,6 +8,37 @@ document.addEventListener('DOMContentLoaded', () => {
         : String(value);
     let displayTranslationLocale = '';
     let displayTranslationFragments = [];
+    // Opening a model window used to run every fragment's expression over every label and froze
+    // the page for most of a second. A fragment is now tried only when the text can contain it:
+    // - an ASCII fragment must appear in the lower-cased text (the only non-ASCII letters that
+    //   match ASCII ones case-insensitively are the long s and the Kelvin sign);
+    // - any other fragment must contain its longest run of caseless characters (Hangul, digits,
+    //   punctuation, spaces), which case-insensitive matching never changes.
+    // Expressions are compiled only when first needed.
+    const foldAsciiCase = (text) => text.toLowerCase().replace(/\u017f/g, 's');
+    const getCaselessRun = (source) => {
+        let longest = '';
+        let run = '';
+        for (const character of source) {
+            if (character.toLowerCase() === character && character.toUpperCase() === character) {
+                run += character;
+                if (run.length > longest.length) longest = run;
+            } else {
+                run = '';
+            }
+        }
+        return longest;
+    };
+    const getFragmentExpression = (fragment) => {
+        if (fragment.expression) return fragment.expression;
+        const escaped = fragment.source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const startsWithWord = /^[\p{L}\p{N}]/u.test(fragment.source);
+        const endsWithWord = /[\p{L}\p{N}]$/u.test(fragment.source);
+        const leadingBoundary = startsWithWord ? '(?<![\\p{L}\\p{N}])' : '';
+        const trailingBoundary = endsWithWord ? '(?![\\p{L}\\p{N}])' : '';
+        fragment.expression = new RegExp(`${leadingBoundary}${escaped}${trailingBoundary}`, 'giu');
+        return fragment.expression;
+    };
     const getDisplayTranslationFragments = () => {
         const i18n = window.InoRobotI18n;
         const locale = i18n?.locale || 'ko';
@@ -24,12 +56,14 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .sort(([left], [right]) => right.length - left.length)
             .map(([source, target]) => {
-                const escaped = source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const startsWithWord = /^[\p{L}\p{N}]/u.test(source);
-                const endsWithWord = /[\p{L}\p{N}]$/u.test(source);
-                const leadingBoundary = startsWithWord ? '(?<![\\p{L}\\p{N}])' : '';
-                const trailingBoundary = endsWithWord ? '(?![\\p{L}\\p{N}])' : '';
-                return { expression: new RegExp(`${leadingBoundary}${escaped}${trailingBoundary}`, 'giu'), target };
+                const ascii = /^[\x00-\x7f]*$/.test(source);
+                return {
+                    source,
+                    target,
+                    folded: ascii ? source.toLowerCase() : '',
+                    required: ascii ? '' : getCaselessRun(source),
+                    expression: null
+                };
             });
         displayTranslationLocale = locale;
         return displayTranslationFragments;
@@ -38,10 +72,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const source = String(value ?? '');
         const exact = uiText(source);
         if (exact !== source) return exact;
-        return getDisplayTranslationFragments().reduce(
-            (text, fragment) => text.replace(fragment.expression, fragment.target),
-            source
-        );
+        let text = source;
+        let folded = foldAsciiCase(text);
+        getDisplayTranslationFragments().forEach(fragment => {
+            if (fragment.folded ? !folded.includes(fragment.folded) : fragment.required && !text.includes(fragment.required)) return;
+            const next = text.replace(getFragmentExpression(fragment), fragment.target);
+            if (next === text) return;
+            text = next;
+            folded = foldAsciiCase(text);
+        });
+        return text;
     };
     const formatAxisLabel = (axis) => {
         const source = String(axis ?? '');
@@ -159,16 +199,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getDisplayModelName(product, bodyOptionValue = 'standard') {
         if (!product) return '';
-
-        let displayName = product.name;
-        if (product.specs?.Type === 'SCARA' && product.specs['Clean Type'] === 'Yes') {
-            displayName = displayName.replace(/\s*\(Clean Type\)\s*/gi, '');
-            displayName = displayName.replace(/Z(\d+)([S])/gi, (match, p1, p2) => `Z${parseInt(p1, 10) - 3}C`);
-        }
-        if (product.specs?.Type === '6-Axis') {
-            return getBodyOptionModelName(product.name, bodyOptionValue);
-        }
-        return displayName;
+        if (product.specs?.Type === '6-Axis') return getBodyOptionModelName(product.name, bodyOptionValue);
+        return modelPages.displayName(product);
     }
 
     function getMatchedCableSelection(product, root = modalBody) {
@@ -223,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function isHiddenProduct(product) {
-        return product?.specs?.Type === 'SCARA' && String(product.name || '').toUpperCase().startsWith('IR-CS');
+        return modelPages.isHiddenProduct(product);
     }
 
     function getModalRobotQuantity() {
@@ -660,75 +692,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         filteredProducts.forEach(product => {
-            const card = document.createElement('div');
+            const card = document.createElement('a');
             card.className = 'product-card';
+            card.href = modelPages.modelPath(product.id);
             card.dataset.productId = product.id;
 
-            const name = product.name.toUpperCase();
-            const isClean = product.specs['Clean Type'] === 'Yes';
-            let scaraSubtype = '일반형';
-            let img = 'robot.png';
-
-            if (product.specs.Type === 'SCARA') {
-                scaraSubtype = product.specs['Sub Type'];
-
-                // 이미지 선택 로직 (SCARA)
-                if (name.includes('TS4')) img = 'IR-TS4.png';
-                else if (name.includes('TS5')) img = 'IR-TS5.png';
-                else if (name.includes('S4')) {
-                    img = isClean ? 'IR-S4_Clean.png' : 'IR-S4.png';
-                } else if (name.includes('S7')) {
-                    if (isClean && name.includes('-50')) img = 'IR-S7-50_Clean.png';
-                    else if (isClean && name.includes('-60')) img = 'IR-S7-60_Clean.png';
-                    else if (isClean && name.includes('-70')) img = 'IR-S7-70_Clean.png';
-                    else img = 'IR-S7.png';
-                } else if (name.includes('S10')) {
-                    if (isClean && name.includes('-60')) img = 'IR-S10-60_Clean.png';
-                    else if (isClean && name.includes('-70')) img = 'IR-S10-70_Clean.png';
-                    else if (isClean && name.includes('-80')) img = 'IR-S10-80_Clean.png';
-                    else img = 'IR-S10.png';
-                } else if (name.includes('S25')) {
-                    img = isClean ? 'IR-S25-Clean.png' : 'IR-S25.png';
-                } else if (name.includes('S35')) {
-                    // 암 길이 매칭 로직
-                    if (name.includes('-80')) {
-                        img = isClean ? 'IR-S35-80_Clean.png' : 'IR-S35-80.png';
-                    } else if (name.includes('-100') || name.includes('-120')) {
-                        // 120은 100의 이미지 공유
-                        img = isClean ? 'IR-S35-100_Clean.png' : 'IR-S35-100.png';
-                    } else {
-                        img = isClean ? 'IR-S35-100_Clean.png' : 'IR-S35-100.png';
-                    }
-                } else if (name.includes('S60')) img = 'IR-S60.png';
-                else img = 'scara_std.png';
-            } else {
-                // 6축 로봇 이미지 선택
-                if (name.includes('IR-R4H')) img = 'IR-R4H.png';
-                else if (name.includes('IR-R4')) img = 'IR-R4.png';
-                else if (name.includes('IR-R7H')) img = 'IR-R7H.png';
-                else if (name.includes('IR-R10-110')) img = 'IR-R10-110.png';
-                else if (name.includes('IR-R10-140')) img = 'IR-R10-140.png';
-                else if (name.includes('IR-R10H-120')) img = 'IR-R10H-120.png';
-                else if (name.includes('IR-R11')) img = 'IR-R11.png';
-                else if (name.includes('IR-R15H')) img = 'IR-R15H.png';
-                else if (name.includes('IR-R16')) img = 'IR-R16.png';
-                else if (name.includes('IR-R20H')) img = 'IR-R20H.png';
-                else if (name.includes('IR-R25')) img = 'IR-R25.png';
-                else img = 'axis6_std.png';
-            }
-
-            product.image = 'Model_image/' + img;
-
-            // Rename SCARA clean types
-            let displayName = product.name;
-            if (product.specs.Type === 'SCARA' && product.specs['Clean Type'] === 'Yes') {
-                // e.g. IR-TS4-35Z15S-INT (Clean Type) -> IR-TS4-35Z12C-INT
-                displayName = displayName.replace(/\s*\(Clean Type\)\s*/gi, '');
-                displayName = displayName.replace(/Z(\d+)([S])/gi, (match, p1, p2) => {
-                    let newNum = parseInt(p1) - 3;
-                    return 'Z' + newNum + 'C';
-                });
-            }
+            const scaraSubtype = product.specs['Sub Type'] || '일반형';
+            product.image = modelPages.imagePath(product);
+            const displayName = modelPages.displayName(product);
 
             let extraSpecsHTML = '';
             if (product.specs.Type === 'SCARA') {
@@ -767,7 +738,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
 
-            card.addEventListener('click', () => {
+            card.addEventListener('click', event => {
+                if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                event.preventDefault();
                 openOptionsModal(product.id);
             });
             productContainer.appendChild(card);
@@ -1430,8 +1403,76 @@ document.addEventListener('DOMContentLoaded', () => {
         return [...new Set(paths)];
     }
 
+    // Permalinks are real static routes; modal navigation is enhanced with browser history.
+    const initialCatalogUrl = new URL(window.location.href);
+    if (initialCatalogUrl.pathname.startsWith(modelPages.routePrefix)) initialCatalogUrl.pathname = modelPages.catalogPath;
+    initialCatalogUrl.searchParams.delete('model');
+    const catalogNavigationUrl = initialCatalogUrl.pathname + initialCatalogUrl.search + initialCatalogUrl.hash;
+
+    function updateModelPageMetadata(product) {
+        const i18n = window.InoRobotI18n;
+        const title = product
+            ? getDisplayModelName(product) + ' ' + uiText('제품 상세 및 구성') + ' | INOVANCE'
+            : (i18n?.get('pages.robotSelect.title') || 'INOVANCE Robot Model Selection');
+        const description = product
+            ? getDisplayModelName(product) + ' · ' + uiText('가반 하중 (kg)') + ': ' + product.specs['Payload(kg)'] + ' · ' + uiText('리치 (mm)') + ': ' + product.specs['Manipulator Length(mm)'] + '. ' + uiText('제품 상세 및 구성')
+            : (i18n?.get('pages.robotSelect.description') || 'Select an INOVANCE robot and configure its options.');
+        const canonical = 'https://inovancerobot.com' + (product ? modelPages.modelPath(product.id) : modelPages.catalogPath);
+        document.title = title;
+        let schema = document.querySelector('script[data-model-structured-data]');
+        if (product) {
+            if (!schema) {
+                schema = document.createElement('script');
+                schema.type = 'application/ld+json';
+                schema.dataset.modelStructuredData = '';
+                document.head.appendChild(schema);
+            }
+            schema.textContent = JSON.stringify({
+                '@context': 'https://schema.org', '@type': 'Product', name: getDisplayModelName(product),
+                sku: product.id, url: canonical, description,
+                image: 'https://inovancerobot.com/1_RobotModelSelect/' + modelPages.imagePath(product),
+                brand: {'@type': 'Brand', name: 'INOVANCE'},
+                additionalProperty: Object.entries(product.specs).map(([name, value]) => ({'@type': 'PropertyValue', name, value}))
+            });
+        } else schema?.remove();
+        document.querySelector('link[rel="canonical"]')?.setAttribute('href', canonical);
+        for (const [selector, value] of [
+            ['meta[name="description"]', description], ['meta[property="og:title"]', title],
+            ['meta[property="og:description"]', description], ['meta[property="og:url"]', canonical],
+            ['meta[name="twitter:title"]', title], ['meta[name="twitter:description"]', description]
+        ]) document.querySelector(selector)?.setAttribute('content', value);
+    }
+
+    function showModelRoute(product, replace = false) {
+        if (isManualEmbed || isHiddenProduct(product)) return;
+        updateModelPageMetadata(product);
+        const target = new URL(window.location.href);
+        target.pathname = modelPages.modelPath(product.id);
+        target.searchParams.delete('model');
+        target.hash = '';
+        if (target.pathname + target.search === window.location.pathname + window.location.search) return;
+        const previous = history.state && typeof history.state === 'object' ? history.state : {};
+        const nextState = {...previous};
+        if (!replace) nextState.inorobotModelModal = {listUrl: catalogNavigationUrl};
+        history[replace ? 'replaceState' : 'pushState'](nextState, '', target.pathname + target.search);
+    }
+
+    function restoreModelFromLocation() {
+        if (isManualEmbed) return;
+        const product = modelPages.productFromUrl(window.location.href, state.products);
+        if (product) {
+            openOptionsModal(product.id, null, {syncUrl: false});
+            showModelRoute(product, true);
+        } else {
+            closeOptionsModal({syncUrl: false});
+            updateModelPageMetadata(null);
+        }
+    }
+
+    window.addEventListener('popstate', restoreModelFromLocation);
+
     // Modal Logic
-    function openOptionsModal(productId, cartItem = null) {
+    function openOptionsModal(productId, cartItem = null, {syncUrl = true} = {}) {
         const product = state.products.find(p => p.id === productId);
         if (!product) return;
 
@@ -1597,7 +1638,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const specHtml = `
-            <div style="margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px;">
+            <div style="margin-top: 20px; padding: 15px; background: var(--tool-inset); border: 1px solid var(--tool-line); border-radius: 8px;">
                 <h4 style="margin-bottom: 12px; color: var(--primary-blue); border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 8px;">로봇 스펙 정보</h4>
                 <table style="width:100%; font-size:13px; border-collapse: collapse; color: var(--text-main);">
                     <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>가반 하중(Payload)</strong></td><td colspan="2" style="text-align:right;">${product.specs['Payload(kg)'] || '-'} kg</td></tr>
@@ -1646,17 +1687,17 @@ document.addEventListener('DOMContentLoaded', () => {
             <h4 style="margin-bottom: 12px; color: var(--text-main);">로봇 구성 선택</h4>
             
             <div style="margin-bottom:16px;">
-                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">파워/엔코더 케이블 길이 <span style="color:#ef4444">*</span></label>
+                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">파워/엔코더 케이블 길이 <span style="color:var(--tool-danger)">*</span></label>
                 <div id="cable-len-container" style="display:flex; gap:10px; flex-wrap:wrap;"></div>
             </div>
             <div style="margin-bottom:20px;">
-                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">파워/엔코더 케이블 타입 <span style="color:#ef4444">*</span></label>
+                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">파워/엔코더 케이블 타입 <span style="color:var(--tool-danger)">*</span></label>
                 <div id="cable-type-container" style="display:flex; gap:10px; flex-wrap:wrap;"></div>
             </div>
 
             ${product.specs.Type === '6-Axis' ? `
             <div style="margin-bottom:20px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
-                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">로봇 바디 옵션 <span style="color:#ef4444">*</span></label>
+                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">로봇 바디 옵션 <span style="color:var(--tool-danger)">*</span></label>
                 <div id="robot-body-option-container" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
             </div>` : ''}
 
@@ -1963,7 +2004,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         pendantContainer.innerHTML = `
             <div>
-                <div style="font-size:12px; margin-bottom:5px; color:#aaa;">${uiText('펜던트 사용 여부 선택')}</div>
+                <div style="font-size:12px; margin-bottom:5px; color:var(--text-muted);">${uiText('펜던트 사용 여부 선택')}</div>
                 <div style="display:flex; flex-wrap:wrap; gap:10px;" id="pendant-config-radios">
                     <label class="cable-option" style="margin:0;">
                         <input type="radio" name="pendantConfig" value="none" checked data-label="사용안함">
@@ -1980,7 +2021,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
             <div style="margin-top:4px;">
-                <div style="font-size:12px; margin-bottom:5px; color:#aaa;">${uiText('펜던트 길이 선택')}</div>
+                <div style="font-size:12px; margin-bottom:5px; color:var(--text-muted);">${uiText('펜던트 길이 선택')}</div>
                 <div style="display:flex; flex-wrap:wrap; gap:10px;" id="pendant-length-radios"></div>
             </div>
         `;
@@ -2041,7 +2082,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 armContainer.innerHTML = '';
                 const groupDiv = document.createElement('div');
                 groupDiv.style.marginBottom = '12px';
-                groupDiv.innerHTML = `<div style="font-size:12px; margin-bottom:5px; color:#aaa;">${uiText('케이블 선택')}</div>
+                groupDiv.innerHTML = `<div style="font-size:12px; margin-bottom:5px; color:var(--text-muted);">${uiText('케이블 선택')}</div>
                     <div style="display:flex; flex-direction:column; gap:10px;" id="io-cable-set-radios"></div>`;
                 armContainer.appendChild(groupDiv);
 
@@ -2075,7 +2116,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 Object.keys(pinGroups).forEach(pin => {
                     const groupDiv = document.createElement('div');
                     groupDiv.style.marginBottom = '12px';
-                    groupDiv.innerHTML = `<div style="font-size:12px; margin-bottom:5px; color:#aaa;">${formatPinCount(pin)} ${uiText('케이블 선택')}</div>
+                    groupDiv.innerHTML = `<div style="font-size:12px; margin-bottom:5px; color:var(--text-muted);">${formatPinCount(pin)} ${uiText('케이블 선택')}</div>
                         <div style="display:flex; flex-wrap:wrap; gap:10px;" id="arm-radios-${pin}">
                             <label class="cable-option" style="margin:0;"><input type="radio" name="armSelection_${pin}" value="none" checked><span>${uiText('사용안함')}</span></label>
                         </div>`;
@@ -2109,7 +2150,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 Object.keys(bodyPinGroups).forEach(pin => {
                     const groupDiv = document.createElement('div');
                     groupDiv.style.marginBottom = '12px';
-                    groupDiv.innerHTML = `<div style="font-size:12px; margin-bottom:5px; color:#aaa;">${formatPinCount(pin)} ${uiText('케이블 선택')}</div>
+                    groupDiv.innerHTML = `<div style="font-size:12px; margin-bottom:5px; color:var(--text-muted);">${formatPinCount(pin)} ${uiText('케이블 선택')}</div>
                         <div style="display:flex; flex-wrap:wrap; gap:10px;" id="body-radios-${pin}">
                             <label class="cable-option" style="margin:0;"><input type="radio" name="bodySelection_${pin}" value="none" checked><span>${uiText('사용안함')}</span></label>
                         </div>`;
@@ -2154,7 +2195,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="flex:1;">
                         <strong>${uiText(acc.name || 'Accessory')}</strong>
                         <span class="item-code-inline code-badge" style="display:none; margin-left:8px;">${acc.code}</span>
-                        <br><span style="color:#888; font-size:13px;">${uiText(acc.description)}</span>
+                        <br><span style="color:var(--text-muted); font-size:13px;">${uiText(acc.description)}</span>
                     </div>
                 `;
                 otherAccContainer.appendChild(lbl);
@@ -2177,7 +2218,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="flex:1;">
                         <strong>${uiText(acc.name)}</strong>
                         <span class="exp-code-inline code-badge" style="display:none; margin-left:8px;">${acc.code}</span>
-                        <br><span style="color:#888; font-size:13px;">${uiText(acc.description)}</span>
+                        <br><span style="color:var(--text-muted); font-size:13px;">${uiText(acc.description)}</span>
                     </div>
                 `;
                 expContainer.appendChild(lbl);
@@ -2200,7 +2241,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="flex:1;">
                         <strong>${uiText(acc.name)}</strong>
                         <span class="remote-coupler-code-inline code-badge" style="display:none; margin-left:8px;">${acc.code}</span>
-                        <br><span style="color:#888; font-size:13px;">${uiText(acc.description)}</span>
+                        <br><span style="color:var(--text-muted); font-size:13px;">${uiText(acc.description)}</span>
                     </div>
                 `;
                 remoteCouplerContainer.appendChild(lbl);
@@ -2225,12 +2266,23 @@ document.addEventListener('DOMContentLoaded', () => {
             window.InoRobotI18n.apply(modalBody);
         }
         modalOverlay.style.display = 'flex';
+        if (syncUrl) showModelRoute(product);
     }
 
-    function closeOptionsModal() {
+    function closeOptionsModal({syncUrl = true} = {}) {
+        const wasOpen = modalOverlay.style.display !== 'none';
         modalOverlay.style.display = 'none';
         currentActiveProduct = null;
         editingCartItemId = null;
+        if (!syncUrl || isManualEmbed || !wasOpen) return;
+        updateModelPageMetadata(null);
+        if (history.state?.inorobotModelModal) {
+            history.back();
+        } else {
+            const previous = history.state && typeof history.state === 'object' ? {...history.state} : {};
+            delete previous.inorobotModelModal;
+            history.replaceState(previous, '', catalogNavigationUrl);
+        }
     }
 
     closeModalBtn.addEventListener('click', closeOptionsModal);
@@ -2797,6 +2849,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderFilters();
     renderProducts();
     renderCart();
+    restoreModelFromLocation();
 
     if (isManualEmbed) {
         const demoFilters = [
@@ -3284,10 +3337,24 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!manualFiltersMatch(count)) setManualFilters(demoFilters.slice(0, count));
         }
 
+        // The demo options already picked in the open window (by a guide clicking them, say).
+        function countAppliedDemoOptions() {
+            const applied = demoOptions.findIndex(([name, value]) => (
+                modalBody.querySelector(`input[name="${name}"]:checked`)?.value !== value
+            ));
+            return applied < 0 ? demoOptions.length : applied;
+        }
+
         function prepareManualConfiguredModal(optionCount = 0) {
             const previousScrollTop = modalOverlay.style.display === 'flex' ? modalBody.scrollTop : 0;
-            const canReuseModal = modalOverlay.style.display === 'flex'
-                && currentActiveProduct?.id === demoProductId
+            const demoModalOpen = modalOverlay.style.display === 'flex'
+                && currentActiveProduct?.id === demoProductId;
+            // A window opened by clicking the card (not through this timeline) is reused as well, so
+            // the picture does not close and rebuild under the next cue.
+            if (demoModalOpen && manualConfiguredOptionCount < 0) {
+                manualConfiguredOptionCount = Math.min(optionCount, countAppliedDemoOptions());
+            }
+            const canReuseModal = demoModalOpen
                 && manualConfiguredOptionCount >= 0
                 && optionCount >= manualConfiguredOptionCount;
             closeManualPreview();
@@ -3500,6 +3567,7 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             cancel: () => {
                 manualCue = '';
+                manualConfiguredOptionCount = -1;
                 closeManualPreview();
                 closeManualToast();
                 clearManualTargets();

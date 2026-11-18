@@ -224,7 +224,7 @@ function cacheElements() {
 
 function setupScene() {
   state.scene = new THREE.Scene();
-  state.scene.background = new THREE.Color(0x080b11);
+  state.scene.background = new THREE.Color(0xe7e8e3);
   state.scene.add(state.modelGroup);
 
   state.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 1e8);
@@ -243,7 +243,7 @@ function setupScene() {
   fillLight.position.set(-500, 350, 250);
   state.scene.add(fillLight);
 
-  state.gridHelper = new THREE.GridHelper(4000, 40, 0x334155, 0x1e293b);
+  state.gridHelper = new THREE.GridHelper(4000, 40, 0xa6ada0, 0xcdd2c7);
   state.gridHelper.rotation.x = Math.PI / 2;
   state.gridHelper.visible = state.gridVisible;
   state.scene.add(state.gridHelper);
@@ -2529,6 +2529,18 @@ function init() {
       });
     },
     calculate: calculateMassProperties,
+    // The home usage guide loads a sample Tool CAD file and starts over when it is rewound.
+    loadFile: loadCadFile,
+    reset() {
+      state.cadImportGeneration += 1;
+      cancelModeDStepImports();
+      clearParts();
+      resetCoordinateValues();
+      el.calculate.disabled = true;
+      el.fileName.textContent = uiText('STEP/STP/STL 파일을 지원합니다.');
+      setStatus('CAD 파일을 먼저 불러오세요.');
+      setSnapReadout('점 찍기를 누른 뒤 스냅할 CAD 면을 클릭하세요.');
+    },
     getSnapState() {
       return {
         type: state.snapType,

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../../2_3DSimulation/VirtualControllerBridge/BridgeWindow.cs" Link="BridgeWindow.cs" />
+    <Compile Include="../../../2_3DSimulation/VirtualControllerBridge/BridgeInfo.cs" Link="BridgeInfo.cs" />
+    <EmbeddedResource Include="../../../2_3DSimulation/VirtualControllerBridge/Assets/bridge.ico"
+                      LogicalName="InoRobotVirtualControllerBridge.bridge.ico" />
+  </ItemGroup>
+</Project>

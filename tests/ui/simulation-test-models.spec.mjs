@@ -1,5 +1,88 @@
 import { test, expect } from '@playwright/test';
 
+test('컨베이어 카드 오른쪽 치수로 여러 모델을 생성하고 저장·복원한다', async ({ page }) => {
+    test.setTimeout(180000);
+    const errors = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.route('**/2_3DSimulation/main.js*', async route => {
+        const response = await route.fetch();
+        await route.fulfill({ response, body: `${await response.text()}\nwindow.__conveyorSize = { state, THREE, getImportedModelParts, serializeWorkspaceSnapshot, restoreWorkspaceSnapshot, createPrimitiveShapeRoot, moveConveyorObjects };` });
+    });
+    await page.goto('/2_3DSimulation/index.html');
+    await page.waitForFunction(() => window.__conveyorSize);
+    await page.locator('#btn-test-model').click();
+    const card = page.locator('.test-model-card').filter({ has: page.locator('[data-test-quantity="conveyor"]') });
+    const quantity = card.locator('[data-test-quantity="conveyor"]');
+    const dimensions = { length: 1000, width: 400, height: 700 };
+    for (const [key, value] of Object.entries({ length: 500, width: 200, height: 200 })) {
+        await expect(card.locator(`[data-test-conveyor-dimension="${key}"]`)).toHaveValue(String(value));
+    }
+    await quantity.fill('2');
+    for (const [key, value] of Object.entries(dimensions)) await card.locator(`[data-test-conveyor-dimension="${key}"]`).fill(String(value));
+    const quantityBox = await quantity.boundingBox(), lengthBox = await card.locator('[data-test-conveyor-dimension="length"]').boundingBox();
+    expect(lengthBox.x).toBeGreaterThan(quantityBox.x + quantityBox.width);
+    await expect(page.locator('#test-model-total')).toContainText('2');
+    await card.locator('[data-test-conveyor-dimension="width"]').fill('0');
+    await expect(page.locator('#btn-confirm-test-model')).toBeDisabled();
+    // Invalid dimensions of an unselected conveyor must not block other models.
+    await quantity.fill('0');
+    await page.locator('[data-test-quantity="square-object"]').fill('1');
+    await expect(page.locator('#btn-confirm-test-model')).toBeEnabled();
+    await page.locator('[data-test-quantity="square-object"]').fill('0');
+    await quantity.fill('2');
+    await card.locator('[data-test-conveyor-dimension="width"]').fill('400');
+    for (const width of [390, 768, 1280]) {
+        await page.setViewportSize({ width, height: 844 });
+        const bounds = await card.boundingBox();
+        for (const key of Object.keys(dimensions)) {
+            const box = await card.locator(`[data-test-conveyor-dimension="${key}"]`).boundingBox();
+            expect(box.x + box.width).toBeLessThanOrEqual(bounds.x + bounds.width);
+        }
+    }
+    await card.screenshot({ path: test.info().outputPath('conveyor-dimensions-card.png') });
+    await page.locator('#btn-confirm-test-model').click();
+    await expect(page.locator('#btn-test-model')).toBeEnabled({ timeout: 120000 });
+    const inspect = () => page.evaluate(() => {
+        const a = window.__conveyorSize;
+        return a.state.models.filter(m => m.userData.testModel).map(model => {
+            const bounds = new a.THREE.Box3().setFromObject(model);
+            const parts = a.getImportedModelParts(model);
+            const partSize = name => new a.THREE.Box3().setFromObject(parts.find(p => p.name === name)).getSize(new a.THREE.Vector3()).toArray();
+            return { min: bounds.min.toArray(), size: bounds.getSize(new a.THREE.Vector3()).toArray(), scale: model.scale.toArray(),
+                dimensions: model.userData.conveyorDimensions, parts: parts.length, motor: partSize('Drive_motor'), roller: partSize('Roller_220_D54'),
+                groups: model.userData.modelPartGroups.map(g => g.name) };
+        });
+    });
+    const before = await inspect();
+    expect(before).toHaveLength(2);
+    for (const model of before) {
+        expect(model.min).toEqual([-500, -200, 0]);
+        expect(model.size).toEqual([1000, 400, 700]);
+        expect(model.scale).toEqual([1, 1, 1]);
+        expect(model.dimensions).toEqual(dimensions);
+        expect(model.parts).toBe(41);
+        expect(model.groups).toEqual(['Base', 'Motor', 'Roller_1', 'Roller_2']);
+        expect(model.motor).toEqual([52, 28, 36]);
+        expect(model.roller[1]).toBeCloseTo(300, 3);
+        expect(model.roller[2]).toBeCloseTo(54, 3);
+    }
+    await page.evaluate(async () => {
+        const a = window.__conveyorSize;
+        await a.restoreWorkspaceSnapshot(a.serializeWorkspaceSnapshot());
+    });
+    expect(await inspect()).toEqual(before);
+    const travel = await page.evaluate(() => {
+        const a = window.__conveyorSize, model = a.state.models.find(m => m.userData.testModel);
+        const belt = a.getImportedModelParts(model).find(p => p.name.startsWith('Endless_belt_'));
+        const object = a.createPrimitiveShapeRoot('box', { x: 40, y: 40, z: 40 });
+        object.position.set(-400, 0, 690);
+        a.moveConveyorObjects([{ conveyorAxis: 'X', conveyorSpeed: 100 }], [object], () => belt, .1);
+        return object.position.x + 400;
+    });
+    expect(travel).toBeCloseTo(10, 4);
+    expect(errors).toEqual([]);
+});
+
 test('테스트 모델과 툴은 참조 프로젝트의 부품 그룹으로 불러오고 저장한다',async({page})=>{
     test.setTimeout(180000);
     await page.route('**/2_3DSimulation/main.js*',async route=>{
@@ -53,7 +136,7 @@ test('테스트 창에서 모델과 툴을 미리보고 수량대로 일괄 추�
     await page.goto('/2_3DSimulation/index.html');
     await page.waitForFunction(() => window.__testAssets);
     await page.locator('#btn-test-model').click();
-    await expect(page.locator('[data-test-category="model"] .test-model-card')).toHaveCount(9);
+    await expect(page.locator('[data-test-category="model"] .test-model-card')).toHaveCount(10);
     await expect(page.locator('[data-test-category="tool"] .test-model-card')).toHaveCount(6);
     await expect(page.locator('#btn-confirm-test-model')).toBeDisabled();
     await page.waitForFunction(() => [...document.querySelectorAll('.test-model-card img')].every(image => image.complete && image.naturalWidth > 0));
@@ -95,7 +178,7 @@ test('테스트 창에서 모델과 툴을 미리보고 수량대로 일괄 추�
     expect(errors).toEqual([]);
 });
 
-test('교육용 모델링 버튼은 스테이지 버큠 없이 베이스와 모듈 4개, 트레이 오브젝트 9개를 생성한다', async ({ page }) => {
+test('교육용 모델링 버튼은 평면 트레이를 X650 Y350에 추가하고 기존 모듈과 오브젝트를 보존한다', async ({ page }) => {
     test.setTimeout(180_000);
     await page.route('**/2_3DSimulation/main.js*', async route => {
         const response = await route.fetch();
@@ -129,12 +212,13 @@ test('교육용 모델링 버튼은 스테이지 버큠 없이 베이스와 모�
             })
         };
     });
-    expect(result.models).toHaveLength(14);
+    expect(result.models).toHaveLength(15);
     expect(result.models.some(model => model.name === 'Stage_VAC_module.step')).toBe(false);
     expect(result.models.slice(0, 5).map(model => model.position)).toEqual([
         [100, 350, 0], [650, -350, 0], [650, 0, 0], [-50, -350, 0], [0, 0, 0]
     ]);
     expect(result.models[4].name).toBe('Base_1000x1000x500.step');
+    expect(result.models.filter(model => model.name === 'Flat_Tray_Module.step').map(model => model.position)).toEqual([[650, 350, 0]]);
     const colors = new Map(result.models.map(model => [model.name, model.color]));
     expect(new Set(colors.values()).size).toBe(colors.size);
     expect(result.models.filter(model => model.name === 'Square_object_40x40x40.step').every(model => model.color === colors.get('Square_object_40x40x40.step'))).toBe(true);
@@ -170,6 +254,7 @@ test('툴을 선택한 수량대로 로봇 TCP에 장착하고 기존 TCP 설정
             tcp: api.ensureRobotTcpProfiles(robot)[0].position.toArray(),
             tools: api.state.models.filter(model => model.userData.testModel).map(model => ({
                 name: model.userData.modelName,
+                position: model.position.toArray(),
                 ry: api.THREE.MathUtils.radToDeg(model.rotation.y),
                 quaternion: model.quaternion.toArray(),
                 placement: model.userData.placement, attached: model.parent === api.getRobotToolMountFrame(robot) && model.userData.attachmentHost === robot,
@@ -182,20 +267,23 @@ test('툴을 선택한 수량대로 로봇 TCP에 장착하고 기존 TCP 설정
     expect(result.tools.filter(tool => tool.name === 'Scara_adapter.step')).toHaveLength(1);
     expect(result.tools.filter(tool => tool.name === 'Single_VAC_Tool.step')).toHaveLength(2);
     expect(result.tools.every(tool => tool.placement === 'tcp' && tool.attached)).toBe(true);
-    expect(result.tools.every(tool => tool.tcpDistance < 0.001)).toBe(true);
+    expect(result.tools.map(tool => tool.position)).toEqual([[0, 0, 12], [0, 0, 0], [0, 0, 0]]);
+    result.tools.forEach(tool => expect(tool.tcpDistance).toBeCloseTo(tool.name === 'Scara_adapter.step' ? 12 : 0, 3));
     expect(result.tools.map(tool => tool.ry)).toEqual([180, 180, 180]);
     await expect(page.locator('#model-rotation-y')).toHaveValue('180');
     const restored = await page.evaluate(async () => {
         const api = window.__testAssets;
+        api.state.models.find(model => model.userData.modelName === 'Scara_adapter.step').position.z = 26;
         await api.restoreWorkspaceSnapshot(JSON.parse(JSON.stringify(api.serializeWorkspaceSnapshot())));
         return api.state.models.filter(model => model.userData.testModel).map(model => ({
-            name: model.userData.modelName, quaternion: model.quaternion.toArray(),
+            name: model.userData.modelName, quaternion: model.quaternion.toArray(), position: model.position.toArray(),
             attached: model.parent === api.getRobotToolMountFrame(model.userData.attachmentHost)
         }));
     });
     expect(restored.map(tool => tool.name)).toEqual(result.tools.map(tool => tool.name));
     restored.forEach((tool, index) => {
         expect(tool.attached).toBe(true);
+        expect(tool.position).toEqual([0, 0, tool.name === 'Scara_adapter.step' ? 26 : 0]);
         tool.quaternion.forEach((value, axis) => expect(value).toBeCloseTo(result.tools[index].quaternion[axis], 8));
     });
     await page.locator('#model-select').selectOption('robot:IR-S4-40Z15');
@@ -224,7 +312,7 @@ test('선택한 SCARA의 교육용 구성은 높이 베이스를 추가하고 Z2
     const errors = []; page.on('pageerror', error => errors.push(error.message));
     await page.route('**/2_3DSimulation/main.js*', async route => {
         const response = await route.fetch();
-        await route.fulfill({ response, body: `${await response.text()}\nwindow.__scaraEducation = { state, THREE, selectSceneModel, serializeWorkspaceSnapshot, restoreWorkspaceSnapshot, getRobotControllerBaseFrame };` });
+        await route.fulfill({ response, body: `${await response.text()}\nwindow.__scaraEducation = { state, THREE, selectSceneModel, serializeWorkspaceSnapshot, restoreWorkspaceSnapshot, getRobotControllerBaseFrame, getRobotToolMountFrame };` });
     });
     await page.goto('/2_3DSimulation/index.html');
     await expect(page.locator('#model-select option[value="robot:IR-S10-80Z20"]')).toHaveCount(1);
@@ -238,6 +326,14 @@ test('선택한 SCARA의 교육용 구성은 높이 베이스를 추가하고 Z2
         window.__otherRobotPosition = a.state.models.filter(model => model.userData.tcpFrame)[1].position.toArray();
         robot.position.set(120, -30, 0); a.selectSceneModel(robot);
     });
+    await page.locator('#btn-test-model').click();
+    await page.locator('[data-test-quantity="scara-adapter"]').fill('1');
+    await page.locator('#btn-confirm-test-model').click();
+    await expect(page.locator('#btn-test-model')).toBeEnabled({ timeout: 60000 });
+    expect(await page.evaluate(() => window.__scaraEducation.state.models
+        .find(model => model.userData.modelName === 'Scara_adapter.step').position.toArray())).toEqual([0, 0, 12]);
+    await page.evaluate(() => { window.__scaraEducation.state.models
+        .find(model => model.userData.modelName === 'Scara_adapter.step').position.z = 26; });
     await page.locator('#btn-test-model').click(); await page.locator('#btn-educational-test-model').click();
     await expect(page.locator('#btn-test-model')).toBeEnabled({ timeout: 150000 });
     const result = await page.evaluate(async () => {
@@ -250,8 +346,14 @@ test('선택한 SCARA의 교육용 구성은 높이 베이스를 추가하고 Z2
             const frame = a.getRobotControllerBaseFrame(robots[0]);
             const mountingMesh = frame.children.find(child => child.userData.collisionRole === 'robot-mounted-base');
             return { robots: robots.map(robot => robot.position.toArray()), basePosition: base.position.toArray(),
+                tcp: robots.map(robot => ({ tool: robot.userData.activeTcpProfileIndex, position: robot.userData.tcpFrame.position.toArray() })),
                 baseTop: bounds.max.z, robotBottom: new a.THREE.Box3().setFromObject(mountingMesh).min.z,
                 groups: base.userData.modelPartGroups.map(group => group.name),
+                flatTrayPosition: a.state.models.find(model => model.userData.modelName === 'Flat_Tray_Module.step').position.toArray(),
+                tools: a.state.models.filter(model => model.userData.testModel && model.userData.placement === 'tcp').map(model => ({
+                    name: model.userData.modelName, position: model.position.toArray(),
+                    attached: model.userData.attachmentHost === robots[0] && model.parent === a.getRobotToolMountFrame(robots[0])
+                })),
                 testCount: a.state.models.filter(model => model.userData.testModel).length };
         }
         const before = inspect(); await a.restoreWorkspaceSnapshot(JSON.parse(JSON.stringify(a.serializeWorkspaceSnapshot())));
@@ -260,7 +362,13 @@ test('선택한 SCARA의 교육용 구성은 높이 베이스를 추가하고 Z2
     expect(result.before.robots).toEqual([[120, -30, 200], result.otherRobotPosition]);
     expect(result.before.basePosition).toEqual([120, -30, 0]);
     expect(result.before.baseTop).toBeCloseTo(200, 3); expect(result.before.robotBottom).toBeCloseTo(200, 3);
-    expect(result.before.groups).toEqual(['Mount Plates', 'Column', 'Gussets']); expect(result.before.testCount).toBe(15);
+    expect(result.before.groups).toEqual(['Mount Plates', 'Column', 'Gussets']); expect(result.before.testCount).toBe(18);
+    expect(result.before.flatTrayPosition).toEqual([650, 350, 0]);
+    expect(result.before.tools).toEqual([
+        { name: 'Scara_adapter.step', position: [0, 0, 26], attached: true },
+        { name: 'Single_VAC_Tool.step', position: [0, 0, 0], attached: true }
+    ]);
+    expect(result.before.tcp).toEqual([{ tool: 1, position: [0, 0, -100] }, { tool: 0, position: [0, 0, 0] }]);
     expect(result.after).toEqual(result.before); expect(errors).toEqual([]);
 });
 
@@ -268,7 +376,7 @@ test('6축 로봇에 테스트 툴을 불러오면 SCARA 어댑터를 자동 추
     test.setTimeout(90000);
     await page.route('**/2_3DSimulation/main.js*', async route => {
         const response = await route.fetch();
-        await route.fulfill({ response, body: `${await response.text()}\nwindow.__normalTool = { state };` });
+        await route.fulfill({ response, body: `${await response.text()}\nwindow.__normalTool = { state, getRobotToolMountFrame };` });
     });
     await page.goto('/2_3DSimulation/index.html');
     await expect(page.locator('#model-select option[value="robot:IR-R10H-120"]')).toHaveCount(1);
@@ -278,6 +386,22 @@ test('6축 로봇에 테스트 툴을 불러오면 SCARA 어댑터를 자동 추
     await page.locator('#btn-confirm-test-model').click(); await expect(page.locator('#btn-test-model')).toBeEnabled({ timeout: 60000 });
     expect(await page.evaluate(() => window.__normalTool.state.models.filter(model => model.userData.testModel).map(model => model.userData.modelName))).toEqual(['Single_VAC_Tool.step']);
     expect(await page.evaluate(() => window.__normalTool.state.models.find(model => model.userData.testModel).rotation.y)).toBe(0);
+    await page.locator('#btn-test-model').click();
+    await page.locator('#btn-educational-test-model').click();
+    await expect(page.locator('#btn-test-model')).toBeEnabled({ timeout: 60000 });
+    const educationalTools = await page.evaluate(() => {
+        const a = window.__normalTool, robot = a.state.models.find(model => model.userData.tcpFrame);
+        return { tool: robot.userData.activeTcpProfileIndex, tcp: robot.userData.tcpFrame.position.toArray(),
+            tools: a.state.models.filter(model => model.userData.testModel && model.userData.placement === 'tcp').map(model => ({
+            name: model.userData.modelName, position: model.position.toArray(), ry: model.rotation.y,
+            attached: model.userData.attachmentHost === robot && model.parent === a.getRobotToolMountFrame(robot)
+        })) };
+    });
+    expect(educationalTools.tool).toBe(1);
+    expect(educationalTools.tcp).toEqual([0, 0, 100]);
+    expect(educationalTools.tools).toEqual(Array.from({ length: 2 }, () => ({
+        name: 'Single_VAC_Tool.step', position: [0, 0, 0], ry: 0, attached: true
+    })));
 });
 
 for (const robotModel of ['IR-S4-40Z15','IR-S7-50Z20','IR-S7-60Z20','IR-S7-70Z20','IR-S10-60Z20','IR-S10-70Z20']) {
@@ -322,13 +446,18 @@ test('짧은 리치 교육용 배치는 실제 형상 간 20 mm 간격과 S4 저
     await page.waitForFunction(()=>window.__compactImport?.state.models.some(model=>model.userData.tcpFrame));
     await page.locator('#btn-test-model').click();await page.locator('#btn-educational-test-model').click();
     await expect(page.locator('#btn-test-model')).toBeEnabled({timeout:150000});
+    expect(await page.evaluate(() => window.__compactImport.state.models
+        .filter(model => model.userData.testModel && model.userData.placement === 'tcp')
+        .map(model => model.userData.modelName))).toEqual(['Scara_adapter.step', 'Single_VAC_Tool.step']);
+    expect(await page.evaluate(() => window.__compactImport.state.models
+        .find(model => model.userData.modelName === 'Scara_adapter.step').position.toArray())).toEqual([0, 0, 12]);
     await page.screenshot({path:test.info().outputPath('short-reach-layout.png')});
     const result=await page.evaluate(async()=>{
         const a=window.__compactImport;
-        const inspect=()=>a.state.models.filter(model=>model.userData.testModel).map(model=>({name:model.userData.modelName,position:model.position.toArray()}));
+        const inspect=()=>a.state.models.filter(model=>model.userData.testModel && model.userData.placement==='scene').map(model=>({name:model.userData.modelName,position:model.position.toArray()}));
         const before=inspect();
         a.state.scene.updateMatrixWorld(true);
-        const moduleNames=['Conveyor.step','Square_Tray_3x3.step','Vision_module.step','SCARA_height_base.step'];
+        const moduleNames=['Conveyor.step','Square_Tray_3x3.step','Vision_module.step','SCARA_height_base.step','Flat_Tray_Module.step'];
         const bounds=new Map(a.state.models.filter(model=>moduleNames.includes(model.userData.modelName)).map(model=>[model.userData.modelName,new a.THREE.Box3().setFromObject(model).translate(model.position.clone().negate())]));
         const layoutChecks=['IR-S4-40Z15','IR-S7-50Z20','IR-S7-60Z20','IR-S7-70Z20','IR-S10-60Z20','IR-S10-70Z20','IR-R4-56','IR-R4H-54','IR-R7H-70'].map(robotModel=>{
             const selection=a.getEducationalModelSelection({robotModel,robotType:robotModel.startsWith('IR-S')?'scara':'articulated'});
@@ -350,6 +479,7 @@ test('짧은 리치 교육용 배치는 실제 형상 간 20 mm 간격과 S4 저
     expect(result.layoutChecks.filter(check=>check.tooClose.length)).toEqual([]);
     expect(result.before.slice(0,5).map(model=>model.position)).toEqual([[40,250,0],[240,-190,0],[280,30,0],[-50,-250,0],[0,0,0]]);
     expect(result.before.some(model=>model.name==='Stage_VAC_module.step')).toBe(false);
+    expect(result.before.filter(model=>model.name==='Flat_Tray_Module.step').map(model=>model.position)).toEqual([[650,350,0]]);
     expect(result.before.filter(model=>model.name==='Square_object_40x40x40.step').map(model=>model.position)).toEqual([-58,0,58].flatMap(x=>[-58,0,58].map(y=>[240+x,-190+y,176])));
     expect(result.before.at(-1).position).toEqual([0,0,0]);expect(result.after).toEqual(result.before);
 });

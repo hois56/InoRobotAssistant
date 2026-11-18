@@ -31,15 +31,23 @@ internal static class Program
     [STAThread]
     public static async Task Main(string[] args)
     {
-        using Mutex singleInstance = new(true, "Local\\InoRobotVirtualControllerBridge", out bool ownsMutex);
+        bool headless = args.Contains("--headless", StringComparer.Ordinal);
+        int listenPort = BridgePort;
+        if (headless && Environment.GetEnvironmentVariable("INOROBOT_BRIDGE_TEST_PORT") is string portText)
+        {
+            if (!int.TryParse(portText, out listenPort) || listenPort < 1024 || listenPort > 65535)
+                throw new ArgumentException("Invalid local test bridge port.");
+        }
+        string instanceName = "Local\\InoRobotVirtualControllerBridge" + (listenPort == BridgePort ? "" : "_" + listenPort);
+        using Mutex singleInstance = new(true, instanceName, out bool ownsMutex);
         if (!ownsMutex)
             return;
 
-        BridgeProtocolRegistrar.RegisterForCurrentUser();
+        if (!headless) BridgeProtocolRegistrar.RegisterForCurrentUser();
         NativeRobotClient.PrepareNativeLibrary();
-        WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+        WebApplicationBuilder builder = WebApplication.CreateBuilder(args.Where(arg => arg != "--headless").ToArray());
         builder.Logging.ClearProviders();
-        builder.WebHost.UseUrls($"http://127.0.0.1:{BridgePort}");
+        builder.WebHost.UseUrls($"http://127.0.0.1:{listenPort}");
 
         await using WebApplication app = builder.Build();
         app.Use(async (context, next) =>
@@ -74,15 +82,17 @@ internal static class Program
             if (!IsAllowedOrigin(context.Request.Headers.Origin.FirstOrDefault()))
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
             if (string.IsNullOrWhiteSpace(PairingToken) || AllowedOrigins.Count == 0)
-                return Results.Json(new { service = "InoRobotVirtualControllerBridge", configured = false }, statusCode: StatusCodes.Status503ServiceUnavailable, options: JsonOptions);
+                return Results.Json(new { service = "InoRobotVirtualControllerBridge", version = BridgeInfo.Version, configured = false }, statusCode: StatusCodes.Status503ServiceUnavailable, options: JsonOptions);
             return Results.Json(new
             {
                 service = "InoRobotVirtualControllerBridge",
+                version = BridgeInfo.Version,
                 configured = true,
                 connected = ActiveSessions.Values.Any(robot => robot.IsConnected),
                 connectionCount = ActiveSessions.Count,
                 controllerPort = ControllerPort,
                 sampleIntervalMs = DefaultSampleIntervalMs,
+                conveyorTrackingVersion = 1,
                 pairingToken = PairingToken
             }, JsonOptions);
         });
@@ -96,12 +106,17 @@ internal static class Program
         {
             MessageBox.Show(
                 $"전용 브리지를 시작할 수 없습니다.\n\n{exception.Message}",
-                "InoRobot Virtual Controller Bridge",
+                BridgeInfo.DisplayName,
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
             return;
         }
 
+        if (headless)
+        {
+            await app.WaitForShutdownAsync();
+            return;
+        }
         ApplicationConfiguration.Initialize();
         using BridgeWindow bridgeWindow = new();
         using CancellationTokenRegistration stoppingRegistration =
@@ -165,12 +180,14 @@ internal static class Program
         using CancellationTokenSource sessionCancellation =
             CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted);
         using SemaphoreSlim sendLock = new(1, 1);
+        using ConveyorPipeClient conveyor = new();
         int streaming = 0;
         int controllerReconnectEnabled = 0;
         int sampleIntervalMs = DefaultSampleIntervalMs;
         string controllerIp = string.Empty;
         bool robotConnectedByThisSession = false;
         bool realControllerByThisSession = false;
+        bool softwareControllerByThisSession = false;
         int communicationId = -1;
         Guid sessionId = Guid.Empty;
         NativeRobotClient robot = null!;
@@ -214,7 +231,7 @@ internal static class Program
             robot = new NativeRobotClient(communicationId);
             ActiveSessions[sessionId] = robot;
 
-            await SendAsync(new { type = "bridgeReady", sampleIntervalMs = DefaultSampleIntervalMs });
+            await SendAsync(new { type = "bridgeReady", version = BridgeInfo.Version, sampleIntervalMs = DefaultSampleIntervalMs });
             Task receiveTask = ReceiveCommandsAsync();
             Task streamTask = StreamRobotStateAsync();
             await Task.WhenAny(receiveTask, streamTask);
@@ -286,6 +303,8 @@ internal static class Program
                                 });
                                 continue;
                             }
+                            conveyor.Dispose();
+                            softwareControllerByThisSession = false;
                             controllerIp = ip;
                             robot.EnableFieldbusIo = !requestedRealController;
                             (bool success, string message) = robot.Connect(
@@ -295,7 +314,62 @@ internal static class Program
                             Interlocked.Exchange(ref controllerReconnectEnabled, success ? 1 : 0);
                             robotConnectedByThisSession = success;
                             realControllerByThisSession = success;
+                            softwareControllerByThisSession = success && !requestedRealController
+                                && IPAddress.TryParse(ip, out IPAddress? softwareAddress) && IPAddress.IsLoopback(softwareAddress);
                             await SendAsync(new { type = "connectResult", success, message });
+                        }
+                        else if (type is "readStandardInput" or "readStandardInputs" or "setStandardInput")
+                        {
+                            string requestId = root.TryGetProperty("requestId", out JsonElement request)
+                                && request.ValueKind == JsonValueKind.String ? request.GetString() ?? "" : "";
+                            try
+                            {
+                                if (!softwareControllerByThisSession || !robot.IsConnected)
+                                    throw new ArgumentException("Connect a local K14 virtual controller first.");
+                                if (requestId.Length is < 1 or > 80)
+                                    throw new ArgumentException("A bounded requestId is required.");
+                                int address = ReadBoundedInt(root, "address", 0, StandardInputPipeClient.LastAddress);
+                                int? value = type == "setStandardInput" ? ReadBoundedInt(root, "value", 0, 1) : null;
+                                if (value.HasValue)
+                                {
+                                    await StandardInputPipeClient.ExchangeAsync(controllerIp, address, value, sessionCancellation.Token);
+                                    await Task.Delay(50, sessionCancellation.Token);
+                                }
+                                Dictionary<int,int> inputs = await StandardInputPipeClient.ReadAsync(controllerIp, sessionCancellation.Token);
+                                await SendAsync(new { type = "standardInputResult", requestId, success = true, address, value = inputs[address], inputs });
+                            }
+                            catch (Exception error) when (error is ArgumentException or InvalidOperationException
+                                or KeyNotFoundException or IOException or TimeoutException or OperationCanceledException)
+                            {
+                                await SendAsync(new { type = "standardInputResult", requestId, success = false, address = 0,
+                                    message = "K14 입력 연결 실패: 가상 컨트롤러와 브리지를 최신 버전으로 다시 시작하세요. " + error.Message });
+                            }
+                        }
+                        else if (type == "conveyorFrame")
+                        {
+                            try
+                            {
+                                if (!softwareControllerByThisSession || !robot.IsConnected)
+                                    throw new ArgumentException("Connect a local K14 virtual controller before sending conveyor inputs.");
+                                ConveyorProtocol.Request request = ConveyorProtocol.Encode(root.GetProperty("frame"));
+                                ConveyorProtocol.Reply reply = await conveyor.ExchangeAsync(controllerIp, request, sessionCancellation.Token);
+                                await SendAsync(new { type = "conveyorFrameResult", success = reply.Status == 0,
+                                    session = request.Session, conveyor = request.Conveyor, sequence = reply.Sequence,
+                                    eventId = reply.EventId, encoder = reply.Encoder.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                                    objects = reply.Objects, sensorCount = reply.Sensors, status = reply.Status, flags = reply.Flags,
+                                    message = ConveyorProtocol.RejectionMessage(reply) });
+                            }
+                            catch (Exception error) when (error is ArgumentException or InvalidOperationException
+                                or KeyNotFoundException or IOException or TimeoutException or OperationCanceledException)
+                            {
+                                conveyor.Dispose();
+                                await SendAsync(new { type = "conveyorFrameResult", success = false, message = error.Message });
+                            }
+                        }
+                        else if (type == "conveyorRelease")
+                        {
+                            conveyor.Dispose();
+                            await SendAsync(new { type = "conveyorReleaseResult", success = true });
                         }
                         else if (type == "readInterferenceZone")
                         {
@@ -326,6 +400,7 @@ internal static class Program
                         }
                         else if (type == "disconnect")
                         {
+                            conveyor.Dispose(); softwareControllerByThisSession = false;
                             Interlocked.Exchange(ref controllerReconnectEnabled, 0);
                             Interlocked.Exchange(ref streaming, 0);
                             robot.Disconnect();
@@ -340,6 +415,7 @@ internal static class Program
                                 await SendAsync(new { type = "shutdownResult", success = false, message = "Explicit shutdown permission is required." });
                                 continue;
                             }
+                            conveyor.Dispose(); softwareControllerByThisSession = false;
                             Interlocked.Exchange(ref controllerReconnectEnabled, 0);
                             Interlocked.Exchange(ref streaming, 0);
                             robot.Disconnect();

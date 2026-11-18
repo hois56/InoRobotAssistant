@@ -1,5 +1,5 @@
-// Generated from 1_RobotModelSelect/Robot_CAD.
-// Keep this list in sync when CAD files are added, removed, or renamed.
+// Customer CAD downloads from 1_RobotModelSelect/Robot_CAD.
+// Keep DWG/DXF/STEP downloads and product variants in sync; omit renderer-only OBJ/MTL files.
 window.InoRobotDocumentCadData = [
     {
         group: "6axis",
@@ -163,8 +163,6 @@ window.InoRobotDocumentCadData = [
         folder: "SCARA/IR-S7-60",
         files: [
             "IR-S7-60Z20S-INT_2D.dwg",
-            "IR-S7-60Z20S-INT_3D.mtl",
-            "IR-S7-60Z20S-INT_3D.obj",
             "IR-S7-60Z20S-INT_3D.stp"
         ]
     },
@@ -225,12 +223,15 @@ window.InoRobotDocumentCadData = [
     {
         group: "accessory",
         model: "IR-TP-200",
+        variant: "비상정지 보호 커버 없음",
         folder: "IR-TP-200",
-        files: [
-            "IR-TP-200_2D-INT.dwg",
-            "IR-TP-200_3D-INT.stp",
-            "IR-TP200-EMO-INT.dwg",
-            "IR-TP200-EMO-INT.stp"
-        ]
+        files: ["IR-TP-200_2D-INT.dwg", "IR-TP-200_3D-INT.stp"]
+    },
+    {
+        group: "accessory",
+        model: "IR-TP-200",
+        variant: "비상정지 보호 커버 있음",
+        folder: "IR-TP-200",
+        files: ["IR-TP200-EMO-INT.dwg", "IR-TP200-EMO-INT.stp"]
     }
 ];

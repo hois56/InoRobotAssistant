@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { VacuumContact } from './vacuum-contact.mjs?v=20261102-vacuum-range-2';
-import { equipmentFeedback, resolveEquipmentCommand, stepEquipmentPosition, equipmentMotionGroups, equipmentReferences } from './equipment-core.mjs?v=20261101-vacuum-surface-1';
+import { VacuumContact } from './vacuum-contact.mjs?v=20261107-object-home-1';
+import { equipmentFeedback, resolveEquipmentCommand, stepEquipmentPosition, equipmentMotionGroups, equipmentReferences, randomObjectHomeOffset } from './equipment-core.mjs?v=20261107-object-home-1';
 import { createFilmState, stepFilm, getFilmGripLayout, getFilmPeelFromGrip } from './film-peeling-core.mjs';
 import { conveyorLocalBounds } from './conveyor-scene.mjs';
 
@@ -193,12 +193,23 @@ export class EquipmentScene {
                 if (!target || !Array.isArray(matrix) || matrix.length !== 16 || !matrix.every(Number.isFinite)) continue;
                 if (target.object === target.model) this.adapter.release(target);
                 delete target.object.userData.equipmentOwner;
-                if (!entries.has(target.object)) entries.set(target.object, { ...target, matrix });
+                if (!entries.has(target.object)) entries.set(target.object, { ...target, matrix, def });
             }
         }
         const depth = object => { let result = 0; while (object.parent) { result++; object = object.parent; } return result; };
         for (const target of [...entries.values()].sort((a, b) => depth(a.object) - depth(b.object))) {
-            this.applyWorld(target.object, new THREE.Matrix4().fromArray(target.matrix));
+            const home = new THREE.Matrix4().fromArray(target.matrix);
+            this.applyWorld(target.object, home);
+            const offset = randomObjectHomeOffset(target.def, this.adapter.random || Math.random);
+            if (offset) {
+                // Turn about the vertical axis through the home center so the part stays inside its spread area.
+                const box = new THREE.Box3().setFromObject(target.object);
+                const center = box.isEmpty() ? new THREE.Vector3().setFromMatrixPosition(home) : box.getCenter(new THREE.Vector3());
+                const shift = new THREE.Matrix4().makeTranslation(center.x + offset.x, center.y + offset.y, center.z)
+                    .multiply(new THREE.Matrix4().makeRotationZ(THREE.MathUtils.degToRad(offset.rz)))
+                    .multiply(new THREE.Matrix4().makeTranslation(-center.x, -center.y, -center.z));
+                this.applyWorld(target.object, shift.multiply(home));
+            }
             this.adapter.dirty(target.model);
         }
     }

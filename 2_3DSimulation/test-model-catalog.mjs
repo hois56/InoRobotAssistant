@@ -1,4 +1,6 @@
-const MODEL_COLORS = ['#94a3b8', '#3b82f6', '#f59e0b', '#14b8a6', '#a78bfa', '#f472b6', '#ef4444', '#84cc16', '#fb923c', '#facc15', '#22d3ee', '#e879f9', '#fda4af', '#60a5fa', '#10b981'];
+import { getTestModelDimensionFields, normalizeTestModelDimensions } from './test-model-dimensions.mjs';
+
+const MODEL_COLORS = ['#94a3b8', '#3b82f6', '#f59e0b', '#14b8a6', '#a78bfa', '#f472b6', '#ef4444', '#84cc16', '#fb923c', '#facc15', '#22d3ee', '#e879f9', '#fda4af', '#60a5fa', '#10b981', '#cbd5e1'];
 
 export const TEST_MODEL_CATALOG = Object.freeze([
     ['base', '3D_model/Base_1000x1000x500.step', 'Base 1000 × 1000 × 500', 'model'],
@@ -15,7 +17,8 @@ export const TEST_MODEL_CATALOG = Object.freeze([
     ['single-vac', 'Tool/Single_VAC_Tool.step', 'Single VAC Tool', 'tool'],
     ['teaching-pointer', 'Tool/Teaching_pointer.step', 'Teaching pointer', 'tool'],
     ['vacuum-x200', 'Vacuum_Tool_X200mm.stl', 'Vacuum Tool X200 mm', 'tool'],
-    ['scara-height-base', '3D_model/SCARA_height_base.step', 'SCARA height base 200 mm', 'model']
+    ['scara-height-base', '3D_model/SCARA_height_base.step', 'SCARA height base 200 mm', 'model'],
+    ['flat-tray', '3D_model/Flat_Tray_Module.step', 'Flat Tray module 240 × 240', 'model']
 ].map(([id, file, name, category], index) => Object.freeze({
     id, file, name, category, path: `./test-assets/${file}`,
     image: `./test-assets/previews/${id}.png`, color: MODEL_COLORS[index]
@@ -30,13 +33,16 @@ export function getImportedModelColor(fileName) {
     return `hsl(${hash % 360}, 58%, 62%)`;
 }
 
-export function getTestModelSelection(quantities) {
+export function getTestModelSelection(quantities, modelDimensions = {}) {
     const selection = TEST_MODEL_CATALOG.flatMap(asset => {
         const quantity = Number(quantities[asset.id] ?? 0);
         if (!Number.isInteger(quantity) || quantity < 0 || quantity > 20) {
             throw new Error('모델별 수량은 0~20 사이의 정수로 입력해 주세요.');
         }
-        return quantity ? [{ asset, quantity }] : [];
+        return quantity ? [{ asset, quantity,
+            ...(getTestModelDimensionFields(asset.id).length ? { dimensions: normalizeTestModelDimensions(asset.id,
+                modelDimensions[asset.id] ?? (asset.id === 'conveyor' ? modelDimensions : undefined)) } : {})
+        }] : [];
     });
     if (selection.reduce((sum, item) => sum + item.quantity, 0) > 100) {
         throw new Error('한 번에 최대 100개까지 가져올 수 있습니다.');
@@ -81,14 +87,16 @@ export function getEducationalModelSelection({ robotType, robotModel, robotPosit
         ['square-tray', at(trayX, trayY)],
         ['vision', at(visionX, reach ? 30 : 0)],
         ['square-tray', at(-50, -leftTrayY)],
-        ['base', [0, 0, 0]]
+        ['base', [0, 0, 0]],
+        ['flat-tray', [650, 350, 0]]
     ];
     // STEP tray openings: centers -58/0/58 mm, inner floor at Z=176 mm.
     const objects = [-58, 0, 58].flatMap(x => [-58, 0, 58].map(y => (
         ['square-object', at(trayX + x, trayY + y, 176)]
     )));
     const scaraBase = robotType === 'scara' ? [['scara-height-base', [robotPosition[0], robotPosition[1], 0]]] : [];
-    return [...modules, ...objects, ...scaraBase].map(([id, position]) => ({
+    const tools = robotType ? [['single-vac', [0, 0, 0]]] : [];
+    return [...modules, ...objects, ...tools, ...scaraBase].map(([id, position]) => ({
         asset: TEST_MODEL_CATALOG.find(asset => asset.id === id), quantity: 1, position
     }));
 }

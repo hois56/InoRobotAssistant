@@ -1,0 +1,188 @@
+/* The simulation uses the home page's paper, ink and green selection colours. */
+:root {
+    --bg-card: var(--surface);
+    --border-color: var(--border);
+    --inorobot-language-bg: var(--surface);
+    --inorobot-language-border: var(--border);
+    --inorobot-language-text: var(--text-1);
+    --panel-shadow: 0 5px 18px rgba(39, 51, 38, .10);
+}
+
+#topbar, #stats-bar {
+    background: var(--bar-bg);
+    border-color: var(--border);
+    box-shadow: none;
+}
+
+#topbar { padding-inline: clamp(12px, 1.6vw, 24px); }
+#topbar .logo { width: clamp(104px, 10vw, 150px); height: auto; }
+#topbar .logo-link:hover { transform: none; }
+#topbar .app-title {
+    margin-right: 0;
+    padding-left: 16px;
+    font-size: .92rem;
+    font-weight: 650;
+    letter-spacing: -.025em;
+}
+.topbar-left, .topbar-right { gap: clamp(5px, .7vw, 12px); }
+#topbar :is(.ui-btn, .simulation-reset-btn, .inorobot-language-switcher) {
+    border-radius: 7px;
+    border-color: var(--border);
+    color: var(--button-text);
+    background: var(--surface);
+    box-shadow: none;
+}
+#topbar .simulation-reset-btn { color: var(--danger-ink); }
+#topbar .simulation-reset-btn:hover { background: #faebe7; border-color: #cb8d85; }
+#topbar .ui-btn:hover:not(:disabled) {
+    background: var(--hover-fill);
+    color: var(--text-1);
+    border-color: var(--focus-line);
+    transform: none;
+}
+#topbar .ui-btn.active { background: var(--selected-fill); border-color: var(--focus-line); }
+#topbar #model-select {
+    border-radius: 7px;
+    background: #2f4435;
+    border-color: #2f4435;
+    color: white;
+    font-size: .9rem;
+}
+#topbar .select-icon { color: #d9f2ac; }
+#topbar .arrow-icon { color: #eaf2e1; }
+#topbar #model-select:hover { background: #3c5542; }
+#topbar #model-select:focus-visible { outline-offset: 2px; }
+body :is(select option, select optgroup), #topbar #model-select option {
+    color: var(--text-1);
+    background: var(--surface);
+}
+body :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+body :is(input, select, textarea) { accent-color: var(--accent); }
+.viewer-language-row .inorobot-language-select { color: var(--text-1); }
+
+:is(.model-browser-panel, .jog-panel, .program-panel, .io-simulator-panel,
+    .tcp-profile-panel, .arm-load-panel, .tool-load-info-panel, .virtual-controller-panel,
+    .collaboration-panel, .view-presets-panel, .measurement-panel, .shape-panel,
+    .interference-zone-panel, .position-points-panel, .vision-panel, .trace-panel,
+    .view-window, .equipment-dialog) {
+    background: var(--surface);
+    border-color: var(--border);
+    border-radius: 9px;
+    box-shadow: var(--panel-shadow);
+}
+:is(.model-browser-header, .jog-panel-header, .program-panel-header, .io-simulator-header,
+    .tcp-profile-panel-header, .arm-load-panel-header, .tool-load-info-panel-header,
+    .virtual-controller-header, .collaboration-header, .view-presets-header,
+    .measurement-panel-header, .shape-panel-header, .interference-zone-header,
+    .position-points-header, .vision-header, .trace-panel-header, .equipment-header) {
+    background: var(--bar-bg);
+    border-bottom: 1px solid var(--border);
+}
+.model-browser-header h2, .jog-panel-header h2 { font-size: .97rem; letter-spacing: -.025em; }
+.model-browser-header { padding-block: .7rem; }
+.panel-header-actions button, .viewer-control-dock button {
+    color: var(--button-text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+}
+.panel-header-actions button:hover:not(:disabled), .viewer-control-dock button:hover:not(:disabled) {
+    color: var(--text-1);
+    background: var(--hover-fill);
+    border-color: var(--focus-line);
+}
+.viewer-control-dock button.active:not([data-collision-mode]),
+.model-tree-button.active, .model-tree-part-button.active,
+.model-tree-group-name.active, .program-robot-row.active, .program-step-row.active {
+    color: var(--accent);
+    background: var(--selected-fill);
+    border-color: #9aac8c;
+}
+.model-tree-button.active, .model-tree-part-button.active { box-shadow: inset 3px 0 var(--accent); }
+.model-tree-count { border-color: var(--border); background: var(--inset); color: var(--accent); }
+.model-tree-icon { background: #e1ead7; }
+.numeric-position-editor, .jog-mode-tabs { background: var(--inset); }
+.model-transform-panel { border-color: var(--border); }
+.numeric-position-grid label, .base-jog-value input, .base-step-settings input, .jog-frame-setting select { background: #fff; }
+.jog-mode-btn.active:not(:disabled), .base-gizmo-mode button.active, .transform-mode-buttons button.active {
+    color: #fff;
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: none;
+}
+.base-jog-row button { border-color: var(--border); background: var(--inset); }
+.base-jog-row button.is-held, .base-jog-row button:active { background: var(--selected-fill); }
+.base-jog-title, .numeric-position-title > span { color: var(--text-2); letter-spacing: .03em; }
+:is(.base-jog-value, .base-step-settings, .numeric-position-grid) input { font-variant-numeric: tabular-nums; }
+#stats-bar .stat-item label { white-space: nowrap; }
+
+#empty-state {
+    width: max-content;
+    max-width: min(360px, calc(100% - 32px));
+    padding: 22px 26px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--text-1);
+    box-shadow: var(--panel-shadow);
+}
+#empty-state .hero-icon-wrap {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 12px;
+    border-radius: 9px;
+    background: var(--selected-fill);
+    color: var(--accent);
+    font-size: 18px;
+}
+#empty-state h2 { margin-bottom: 7px; font-size: 1.3rem; line-height: 1.25; letter-spacing: -.035em; }
+#empty-state p { font-size: .85rem; text-wrap: pretty; }
+#empty-state .hint { margin-top: 12px; color: var(--text-2); opacity: 1; font-size: .73rem; }
+
+:is(.simulation-reset-dialog, .workspace-recovery-dialog, .import-dialog,
+    .position-value-dialog, .work-origin-dialog, .io-function-mapping-dialog, .interference-zone-dialog) {
+    background: var(--surface);
+    color: var(--text-1);
+    border-radius: 10px;
+    box-shadow: 0 16px 50px rgba(35, 46, 34, .2);
+}
+dialog::backdrop { background: rgba(31, 40, 32, .33); }
+button.primary:not(:disabled), .shape-primary-button:not(:disabled), .import-primary-btn:not(:disabled),
+#curve-trajectory-panel button.primary { color: white; background: var(--accent); }
+#simulation-reset-dialog .primary { background: #a33d35; color: white; }
+.panel-popout-body, .panel-popout-body > .panel-popout {
+    background: var(--surface);
+    color: var(--text-1);
+    border-radius: 0;
+    box-shadow: none;
+}
+@media (max-width: 768px) {
+    #topbar .logo { width: 90px; }
+    #topbar .topbar-right { gap: 4px; }
+    #topbar .topbar-right > button {
+        width: 32px;
+        min-width: 32px;
+        height: 34px;
+        padding: 0;
+        flex: 0 0 32px;
+    }
+    #topbar .viewer-language-row { flex: 0 0 auto; }
+    #topbar .inorobot-language-select { width: 76px; min-width: 0; }
+    #canvas-container > .model-browser-panel:not(.panel-edge-resized) {
+        top: 8px;
+        height: auto;
+        min-height: 0;
+        max-height: 44%;
+    }
+    #topbar #model-select { font-size: .78rem; }
+}
+@media (max-width: 520px) {
+    :root { --topbar-h: 100px; }
+    #topbar { grid-template-columns: auto minmax(0, 1fr); grid-template-rows: 38px 36px; }
+    #topbar .topbar-center { grid-column: 2; grid-row: 1; }
+    #topbar .topbar-right { grid-row: 2; }
+    #topbar .workspace-list-btn, #topbar .simulation-reset-btn { width: 32px; height: 34px; padding: 0; }
+    #topbar .workspace-list-btn span { display: none; }
+}

@@ -1,0 +1,221 @@
+/* Paper and ink shared by the catalogue, engineering tools and resource pages. */
+html:root {
+    color-scheme: light;
+    --tool-paper: #f3f4ef;
+    --tool-header: #fafaf6;
+    --tool-surface: #fdfefb;
+    --tool-inset: #edf0e8;
+    --tool-hover: #e5eade;
+    --tool-ink: #1b2325;
+    --tool-muted: #505c53;
+    --tool-line: #cdd3c8;
+    --tool-border-strong: #82947a;
+    --tool-accent: #36552f;
+    --tool-selected: #e0eccf;
+    --tool-action: #304735;
+    --tool-action-hover: #405d45;
+    --tool-danger: #963a32;
+    --tool-warning: #7c501d;
+    --tool-shadow: 0 3px 12px rgba(37, 49, 35, .055);
+    --ino-bg: var(--tool-paper);
+    --ino-surface: var(--tool-surface);
+    --ino-primary: var(--tool-ink);
+    --ino-secondary: var(--tool-muted);
+    --ino-muted: var(--tool-muted);
+    --ino-line: var(--tool-line);
+    --ino-shadow: var(--tool-shadow);
+    background: var(--tool-paper);
+}
+html body[data-design-page] {
+    --page-accent: var(--tool-accent);
+    --page-edge: var(--tool-border-strong);
+    --page-button: var(--tool-action);
+    --page-button-hover: var(--tool-action-hover);
+    --page-icon-top: var(--tool-selected);
+    --page-icon-bottom: var(--tool-selected);
+    --color-background-body: var(--tool-paper);
+    --color-background-surface: var(--tool-surface);
+    --color-text-primary: var(--tool-ink);
+    --color-text-secondary: var(--tool-muted);
+    --color-text-accent: var(--tool-accent);
+    --color-icon-accent: var(--tool-accent);
+    --color-border: var(--tool-line);
+    --color-border-emphasized: var(--tool-border-strong);
+    --inorobot-language-text: var(--tool-ink);
+    --inorobot-language-border: var(--tool-line);
+    --inorobot-language-bg: var(--tool-surface);
+    color-scheme: light;
+    color: var(--tool-ink);
+    background: var(--tool-paper);
+    font-family: Inter, "Segoe UI", "Noto Sans KR", "Malgun Gothic", "Microsoft YaHei", sans-serif;
+}
+body[data-design-page] [data-theme-accent="blue"] {
+    --page-button: var(--tool-action);
+    --page-button-hover: var(--tool-action-hover);
+    --page-accent: #315474;
+    --page-icon-top: #dceaf4;
+    --page-icon-bottom: #dceaf4;
+    --page-edge: #9ab1c2;
+}
+body[data-design-page] [data-theme-accent="teal"] {
+    --page-button: var(--tool-action);
+    --page-button-hover: var(--tool-action-hover);
+    --page-accent: #365c46;
+    --page-icon-top: #e1eddb;
+    --page-icon-bottom: #e1eddb;
+    --page-edge: #9aad95;
+}
+body[data-design-page] [data-theme-accent="gold"] {
+    --page-button: var(--tool-action);
+    --page-button-hover: var(--tool-action-hover);
+    --page-accent: #6f542c;
+    --page-icon-top: #f1e8d7;
+    --page-icon-bottom: #f1e8d7;
+    --page-edge: #bbab8d;
+}
+html body[data-design-page] > :is(header#topbar, .inorobot-responsive-header, .document-header, .site-header, .software-header) {
+    background: var(--tool-header);
+    border-bottom: 1px solid var(--tool-line);
+    box-shadow: none;
+}
+html body[data-design-page] > header::after { display: none; }
+body[data-design-page] > header :is(.app-title, .site-heading, .header-title, .header-divider, .inorobot-header-brand > h1) {
+    color: var(--tool-ink);
+    border-color: var(--tool-line);
+}
+body[data-design-page] > header .header-divider h1 { color: var(--tool-ink); }
+body[data-design-page] > header .inorobot-language-switcher { box-shadow: none; }
+body[data-design-page] select option,
+body[data-design-page] .inorobot-language-select option { background: var(--tool-surface); color: var(--tool-ink); }
+
+@media (min-width: 721px) {
+    html body[data-design-page]:not([data-design-page="simulation"]) > :is(header#topbar, .inorobot-responsive-header, .document-header, .site-header) {
+        min-height: 68px;
+        padding-block: 8px !important;
+    }
+    body[data-design-page] > header .header-inner { min-height: 52px; }
+    body[data-design-page="software"] .header-inner { min-height: 68px; padding-block: 8px; }
+    html body[data-design-page]:not([data-design-page="simulation"]) > header :is(.logo-link img, .inorobot-header-brand > a > img) {
+        width: 150px !important;
+        height: 40px !important;
+    }
+    body[data-design-page="project"] > header #appLogo { padding: 0; }
+}
+
+html body[data-design-page] :is(.glass-card, .glass, .filter-section, .content-card, .history-dialog, .modal-content, .cart-panel) {
+    background-color: var(--tool-surface);
+    background-image: none;
+    border-color: var(--tool-line);
+    box-shadow: var(--tool-shadow);
+}
+html body[data-design-page] :is(.history-dialog-header, .modal-header, .cart-panel-header) { background: var(--tool-header); }
+html body[data-design-page] :is(.history-entry code, .history-close-button, .history-button, .secondary-btn, .btn.sec) {
+    color: var(--tool-accent) !important;
+    border-color: var(--tool-line) !important;
+    background: var(--tool-inset) !important;
+}
+html body[data-design-page] :is(.history-close-button, .history-button, .secondary-btn, .btn.sec):hover { background: var(--tool-hover) !important; }
+html body[data-design-page]:not([data-design-page="simulation"]) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="button"]), select, textarea:not(#codeEditor)) {
+    color: var(--tool-ink);
+    background-color: var(--tool-surface);
+    border-color: var(--tool-line);
+}
+body[data-design-page] :is(input, select, textarea)::placeholder { color: var(--tool-muted); }
+body[data-design-page] :is(.site-feature-icon, .section-number) { box-shadow: none; }
+
+/* Tailwind components in the generator and diagnostic tools use the same surfaces as native controls. */
+body:is([data-design-page="project"], [data-design-page="debugging"], [data-design-page="calibration"]) :is(.text-white, .text-slate-100, .text-slate-200, .text-slate-300) { color: var(--tool-ink); }
+body:is([data-design-page="project"], [data-design-page="debugging"], [data-design-page="calibration"]) :is(.text-slate-400, .text-slate-500, .text-slate-600) { color: var(--tool-muted); }
+body:is([data-design-page="project"], [data-design-page="debugging"], [data-design-page="calibration"]) :is([class~="bg-slate-900"], [class*="bg-slate-900/"], [class~="bg-slate-800"], [class*="bg-slate-800/"], [class~="bg-slate-700"], [class*="bg-slate-700/"]) { background-color: var(--tool-inset); }
+body:is([data-design-page="project"], [data-design-page="debugging"], [data-design-page="calibration"]) :is(.text-blue-400, .text-sky-400, .text-emerald-400, .text-cyan-400) { color: var(--tool-accent); }
+body:is([data-design-page="project"], [data-design-page="debugging"], [data-design-page="calibration"]) :is(.text-amber-300, .text-amber-400, .text-yellow-400) { color: var(--tool-warning); }
+body:is([data-design-page="project"], [data-design-page="debugging"], [data-design-page="calibration"]) :is(.text-red-400, .text-rose-400) { color: var(--tool-danger); }
+body:is([data-design-page="project"], [data-design-page="debugging"], [data-design-page="calibration"]) [class*="border-white/"] { border-color: var(--tool-line); }
+
+body[data-design-page="model"] {
+    --primary-blue: var(--tool-ink);
+    --light-blue: var(--tool-selected);
+    --white: var(--tool-surface);
+    --text-main: var(--tool-ink);
+    --text-muted: var(--tool-muted);
+    --border-color: var(--tool-line);
+    --glass-bg: var(--tool-surface);
+}
+body[data-design-page="model"] .product-image { filter: drop-shadow(0 4px 4px #26342618); }
+body[data-design-page="model"] .product-card { border-top: 1px solid var(--tool-line); }
+body[data-design-page="model"] .product-card:hover { border-color: var(--tool-border-strong); }
+body[data-design-page="model"] .filter-option.active { color: var(--tool-accent); background: var(--tool-selected); }
+body[data-design-page="model"] :is(#add-to-cart-btn, #download-cad-btn) { color: white; }
+body[data-design-page="tool"] :is(.hero h2, .summary div b, .card td, .info-tip p) { color: var(--tool-ink); }
+body[data-design-page="tool"] :is(.summary > div, th) { background: var(--tool-inset); }
+body[data-design-page="tool"] :is(th, td) { border-color: var(--tool-line); }
+body[data-design-page="tool"] :is(.overall.ok, td.ok) { color: #28623d; }
+body[data-design-page="tool"] :is(.overall.ng, td.ng, .delbtn) { color: var(--tool-danger); }
+body[data-design-page="tool"] .warn { color: var(--tool-warning); }
+body[data-design-page="tool"] .info-tip { color: var(--tool-ink); background: var(--tool-surface); }
+
+body[data-design-page="project"] > header :is(#btnGuide, #btnOption) {
+    background: var(--tool-inset);
+    color: var(--tool-accent);
+    border-color: var(--tool-line);
+}
+body[data-design-page="project"] > header :is(#btnGuide, #btnOption):hover { background: var(--tool-hover); }
+body[data-design-page="project"] #guideModal :is(.guide-desc, .tc-lbl, .tc-sh-lbl) { color: var(--tool-muted); }
+body[data-design-page="project"] #guideModal .tc-in { color: #2c5278; }
+body[data-design-page="project"] #guideModal .tc-out { color: #365d3d; }
+body[data-design-page="project"] #codeOutput .token.punctuation { color: var(--tool-muted); }
+body[data-design-page="project"] :is(#prismContainer, #codeEditor, #codeOutput, pre[class*="language-"], code[class*="language-"]) {
+    color: var(--tool-ink);
+    text-shadow: none;
+}
+body[data-design-page="project"] :is(#codeOutput, .project-review-code) .token:is(.keyword,.operator,.boolean) { color: #644686; }
+body[data-design-page="project"] :is(#codeOutput, .project-review-code) .token:is(.number,.constant,.function) { color: #28567b; }
+body[data-design-page="project"] :is(#codeOutput, .project-review-code) .token:is(.string,.comment) { color: #426149; }
+body[data-design-page="debugging"] .glass-card:hover { background: var(--tool-surface); border-color: var(--page-edge); box-shadow: var(--tool-shadow); }
+body[data-design-page="debugging"] .tool-version-actions > span { color: var(--tool-muted) !important; background: var(--tool-inset) !important; }
+body[data-design-page="debugging"] :is(.history-version-title, .history-entry) { color: var(--tool-ink); }
+body[data-design-page="debugging"] .history-message { color: var(--tool-muted); }
+body[data-design-page="debugging"] .history-tag { color: var(--tool-muted); background: var(--tool-inset); }
+body[data-design-page="debugging"] .history-tag:is([data-tag="신규"], [data-tag="추가"]) { color: #375d40; background: #e3eedd; }
+body[data-design-page="debugging"] .history-tag[data-tag="수정"] { color: #745126; background: #f3eada; }
+body[data-design-page="debugging"] .history-tag[data-tag="변경"] { color: #355674; background: #e0eaf3; }
+body[data-design-page="debugging"] .history-tag:is([data-tag="개선"], [data-tag="배포"]) { color: #59456e; background: #eae4f1; }
+body[data-design-page="calibration"] #axis-rows input { background: var(--tool-surface); color: var(--tool-ink); }
+body[data-design-page="servo"] .model-name b { color: var(--tool-muted); }
+body[data-design-page="servo"] .hero { background: #e8eee2; border-color: var(--tool-line); color: var(--tool-ink); }
+body[data-design-page="servo"] :is(.hero h2, .hero-lead, .hero-with, .model-tags span) { color: var(--tool-ink); }
+body[data-design-page="privacy"] :is(h1, h3, .meta strong) { color: var(--tool-ink); }
+body[data-design-page="privacy"] a { color: var(--tool-accent); }
+
+body[data-design-page="document"] {
+    --document-header: var(--tool-header);
+    --document-hover: var(--tool-hover);
+    --document-selected: var(--tool-selected);
+    --document-selected-border: var(--tool-border-strong);
+    --document-selected-text: var(--tool-accent);
+}
+body[data-design-page="document"] .filter-btn.active:not([data-quiet]) { color: var(--tool-accent); }
+body[data-design-page="document"] .manual-actions .manual-action-download { background: var(--tool-action); color: white; }
+body[data-design-page="document"] .search-control input { border: 0 !important; background: transparent !important; }
+body[data-design-page="software"] { --software-accent: var(--tool-accent); }
+body[data-design-page="software"] .software-group {
+    --product-accent: var(--tool-accent);
+    --product-border: var(--tool-line);
+    --product-button: var(--tool-action);
+    --product-button-hover: var(--tool-action-hover);
+    --product-button-edge: var(--tool-action);
+    --product-icon-top: var(--tool-selected);
+    --product-icon-bottom: var(--tool-selected);
+}
+body[data-design-page="software"] .software-group[data-group="InoRobotTP"] {
+    --product-accent: #315474;
+    --product-icon-top: #dceaf4;
+    --product-icon-bottom: #dceaf4;
+}
+body[data-design-page="software"] .software-group[data-group="InoRobotKoreanInstaller"] {
+    --product-accent: #6f542c;
+    --product-icon-top: #f1e8d7;
+    --product-icon-bottom: #f1e8d7;
+}
+body[data-design-page="software"] .filter-btn.active { background: var(--tool-selected); color: var(--tool-accent); }
+body[data-design-page="software"] .release-list { background: var(--tool-surface); border: 1px solid var(--tool-line); }

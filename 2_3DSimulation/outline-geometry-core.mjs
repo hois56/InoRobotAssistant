@@ -1,3 +1,37 @@
+// Bundled robot lettering lies on the two local Y sides. Its painted faces do
+// not include every embossed/recessed wall or the loop where it meets the body.
+// Keep a shallow, separate region per side so internal body edges survive.
+export function buildRobotLogoOutlineBounds(positions, indices, { faceRanges = [], projection = null } = {}) {
+    const bounds = [];
+    const sides = [null, null];
+    for (const { start, count } of faceRanges) {
+        for (let i = start; i < start + count; i++) {
+            const offset = (indices ? indices[i] : i) * 3;
+            const side = Number(positions[offset + 1] >= 0);
+            const box = sides[side] ??= { min: [Infinity, Infinity, Infinity], max: [-Infinity, -Infinity, -Infinity] };
+            for (let axis = 0; axis < 3; axis++) {
+                box.min[axis] = Math.min(box.min[axis], positions[offset + axis]);
+                box.max[axis] = Math.max(box.max[axis], positions[offset + axis]);
+            }
+        }
+    }
+    // Letter bevels extend beyond the color mask; their depth can exceed 1 mm.
+    for (const box of sides.filter(Boolean)) {
+        bounds.push({ min: box.min.map((value, axis) => value - (axis === 1 ? 2 : 1)),
+            max: box.max.map((value, axis) => value + (axis === 1 ? 2 : 1)) });
+    }
+    if (projection) {
+        for (const side of ['negative', 'positive']) {
+            const [x, z, width, height] = projection[side];
+            bounds.push({
+                min: [x - 1, side === 'negative' ? -Infinity : projection.minDepth, z - 1],
+                max: [x + width + 1, side === 'negative' ? -projection.minDepth : Infinity, z + height + 1]
+            });
+        }
+    }
+    return bounds;
+}
+
 // Extract CAD feature edges from triangle positions without changing the mesh.
 // STL can duplicate faces, reverse winding, and leave small coordinate seams.
 export function buildCleanOutlinePositions(positions, indices = null, {

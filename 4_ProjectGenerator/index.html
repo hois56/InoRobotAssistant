@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html data-design-system="astryx" lang="ko">
 
 <head>
     <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png?v=20260813">
@@ -14,8 +14,6 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700&display=swap"
         rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -148,10 +146,19 @@
             padding: 0 !important;
         }
 
-        .token.comment {
-            color: #4ade80 !important;
+        #codeOutput {
+            font-family: Consolas, "Liberation Mono", monospace;
+            tab-size: 4;
+        }
+
+        #prismContainer #codeOutput .token.comment {
+            color: #16722e;
             font-style: italic;
         }
+        #prismContainer #codeOutput .token.string { color: #9b3944; }
+        #prismContainer #codeOutput .token.keyword { color: #693596; }
+        #prismContainer #codeOutput .token.number { color: #9a4817; }
+        #prismContainer #codeOutput .token.function { color: #145aa1; }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/Language/runtime/i18n.css">
@@ -160,6 +167,38 @@
     <script src="/Language/runtime/icon-fallback.js" defer></script>
     <script src="/analytics-config.js"></script>
     <script src="/analytics.js" defer></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -849,9 +888,11 @@
     <meta name="twitter:title" content="INOVANCE Robot Project Generator">
     <meta name="twitter:description" content="Generate an INOVANCE robot project from the selected process and options.">
     <!-- SUBPAGE-SEO:END -->
+    <link rel="stylesheet" href="/shared/astryx-theme.css?v=20261118-tools-1">
+    <link rel="stylesheet" href="/shared/tool-colors.css?v=20261118-1">
 </head>
 
-<body class="p-0">
+<body data-design-page="project" class="p-0">
     <header
         class="inorobot-responsive-header sticky top-0 w-full flex flex-row justify-between items-center bg-[rgba(15,19,28,0.95)] backdrop-blur-xl border-b border-white/[0.09] px-8 shrink-0 gap-6 h-[72px] z-50">
         <div class="inorobot-header-brand flex flex-row items-center gap-6 flex-shrink-0">
@@ -873,6 +914,22 @@
             <button id="btnOption"
                 class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-xl font-medium transition-colors flex items-center gap-2 text-sm h-10">
                 <i data-lucide="settings" class="w-4 h-4"></i> Options
+            </button>
+            <div id="projectImportControl" class="project-import-control">
+                <button id="btnImportProject" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="projectImportMenu"
+                    class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-xl font-medium transition-colors flex items-center gap-2 text-sm h-10">
+                    <i data-lucide="folder-open" class="w-4 h-4"></i> Load
+                </button>
+                <div id="projectImportMenu" role="menu" hidden>
+                    <button id="btnImportZip" type="button" role="menuitem">ZIP file</button>
+                    <button id="btnImportFolder" type="button" role="menuitem">Project folder</button>
+                </div>
+            </div>
+            <button id="btnNewProject" type="button" hidden
+                class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-xl font-medium transition-colors text-sm h-10">New project</button>
+            <button id="btnSimulation" type="button"
+                class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-xl font-medium transition-colors flex items-center gap-2 text-sm h-10">
+                <i data-lucide="timer" class="w-4 h-4 text-amber-300"></i> Simulation
             </button>
             <button id="btnGenerate"
                 class="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl font-medium transition-colors shadow-lg shadow-blue-600/20 flex items-center gap-2 text-sm h-10">
@@ -928,7 +985,7 @@
                         <div class="min-w-[650px] flex-1 flex flex-col min-h-0 pb-2">
                             <!-- Headers -->
                             <div class="flex gap-2 px-3 mb-2 text-sm font-semibold text-slate-500 flex-shrink-0">
-                                <span class="w-6 text-center">No</span>
+                                <span class="min-w-8 text-center whitespace-nowrap">No</span>
                                 <span class="w-10 text-center">Name</span>
                                 <span class="flex-1 text-center flex items-center justify-center gap-1 group relative">
                                     Type
@@ -1156,6 +1213,51 @@
                     <p id="optDescText" class="text-slate-400 leading-relaxed text-sm text-center">항목 위에 마우스를 올리면 상세 설명이
                         표시됩니다.</p>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simulation Project Modal -->
+    <div id="simulationModal"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div class="glass w-full max-w-lg p-6 rounded-3xl shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto scroll-custom"
+            role="dialog" aria-modal="true" aria-labelledby="simulationModalTitle">
+            <h2 id="simulationModalTitle" class="text-lg font-bold flex items-center gap-2"><i data-lucide="timer"
+                    class="w-5 h-5 text-white"></i> Simulation Project</h2>
+            <p class="text-sm text-slate-300 leading-relaxed">Removes PLC signals, IO waits, teaching, recipes and monitoring tasks. Tool and vision feedback become the times below. Motion statements are the same as the generated project.</p>
+            <div class="space-y-4 text-sm">
+                <label class="block text-slate-300">Process order
+                    <input type="text" id="simSequence" placeholder="1, 2, 3" autocomplete="off" spellcheck="false"
+                        class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-200 font-mono">
+                    <span class="block mt-1 text-xs text-slate-400">Leave empty to run every process in list order. Add W for a wait-position call, e.g. 2W.</span>
+                </label>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="block text-slate-300">Cycles
+                        <input type="number" id="simCycles" min="1" max="100" step="1"
+                            class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-200"></label>
+                    <label class="block text-slate-300">Speed (%)
+                        <input type="number" id="simSpeedRate" min="1" max="100" step="1"
+                            class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-200"></label>
+                    <label class="block text-slate-300">Tool time (s)
+                        <input type="number" id="simToolTime" min="0" max="60" step="0.05"
+                            class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-200"></label>
+                    <label class="block text-slate-300">Vision time (s)
+                        <input type="number" id="simVisionTime" min="0" max="60" step="0.05"
+                            class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-200"></label>
+                    <label class="block text-slate-300">Tray cell
+                        <input type="number" id="simTrayCell" min="1" step="1"
+                            class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-200 disabled:opacity-50"></label>
+                    <label class="block text-slate-300">Peeling speed (mm/s)
+                        <input type="number" id="simPeelSpeed" min="1" max="5000" step="1"
+                            class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-200 disabled:opacity-50"></label>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button id="btnCancelSimulation" type="button"
+                    class="px-4 py-2 hover:bg-slate-800 rounded-xl text-sm transition-colors text-slate-400">Cancel</button>
+                <button id="btnExportSimulation" type="button"
+                    class="px-5 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-medium shadow-lg shadow-blue-600/20 flex items-center gap-2"><i
+                        data-lucide="download" class="w-4 h-4"></i> Download</button>
             </div>
         </div>
     </div>
@@ -2425,18 +2527,25 @@
 
     <!-- Scripts -->
     <script src="assets.js"></script>
+    <script src="vendor/prism-1.30.0/prism-core.min.js" data-manual></script>
+    <script src="vendor/prism-1.30.0/prism-clike.min.js"></script>
     <script>
         document.getElementById('appLogo').src = 'data:image/png;base64,' + Assets.Logo_PNG;
         Prism.languages.robot = Prism.languages.extend('clike', {
-            'comment': {
-                pattern: /#.*/,
-                greedy: true
-            }
+            comment: { pattern: /#.*/, greedy: true },
+            keyword: [
+                /\b(?:ProgramInfo|EndProgramInfo|Include|Start|End|Global|Func|EndFunc|Int|Double|String|If|ElseIf|Else|EndIf|For|To|Step|EndFor|While|EndWhile|Switch|Case|Default|EndSwitch|Break|Continue|Return|Goto|And|Or|Not|MovJ|MovL|MovC|Jump|Velset|Delay|Wait|Print|Set|Get|Clear|Open|Close|Send|SavePoints)\b/i,
+                Prism.languages.clike.keyword
+            ],
+            boolean: /\b(?:On|Off|True|False)\b/i
         });
     </script>
-    <script src="generator.js?v=20261102-wait-limit-1"></script>
-    <script src="app.js?v=20261102-wait-limit-1"></script>
-    <script src="/0_Home/tool-guide-embed.js?v=20260906-1"></script>
+    <link rel="stylesheet" href="project-editor.css?v=20261114-edit-2&amp;palette=20261118-1">
+    <script src="generator.js?v=20261114-sim-1"></script>
+    <script src="project-editor.js?v=20261114-edit-2"></script>
+    <script src="app.js?v=20261114-sim-1"></script>
+    <script src="project-editor-ui.js?v=20261114-edit-2"></script>
+    <script src="/0_Home/tool-guide-embed.js?v=20261118-guide-light"></script>
 </body>
 
 </html>

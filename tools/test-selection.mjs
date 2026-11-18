@@ -40,8 +40,10 @@ export function collectTests(root = repoRoot) {
 
 function testAreas(file, source) {
   if (file.startsWith('tests/tooling/')) return ['tooling'];
+  // The home guides replay every tool page, so they follow the guide scripts and each replayed page.
+  if (file.includes('tool-guides.')) return ['guide', 'model', 'simulation', 'tool', 'project', 'document'];
   if (file.includes('regression-contracts.')) return Object.values(pageRoots);
-  if (file.includes('version-history')) return ['home'];
+  if (file.includes('version-history')) return ['home', 'history'];
   if (file.includes('bridge-output-scheduling.')) return ['bridge'];
   if (file.includes('project-generator-')) return ['project'];
   if (file.includes('servo-')) return ['servo'];
@@ -52,6 +54,7 @@ function testAreas(file, source) {
 }
 
 function fileAreas(file) {
+  if (file === '0_Home/UPDATE_HISTORY.md') return ['history'];
   if (/^2_3DSimulation\/VirtualControllerBridge\//.test(file) || /^tests\/dotnet\//.test(file)) return ['bridge'];
   if (/^(test-fixtures\/generator-harness\/|tests\/fixtures\/generator-output-sha256\.json$|tools\/test-generator\.mjs$)/.test(file)) return ['generator'];
   if (/\.(md|txt)$/i.test(file) && !/(UPDATE_HISTORY|업데이트_기록)\.md$/i.test(file)) return [];
@@ -63,6 +66,7 @@ function fileAreas(file) {
   if (file.startsWith('tests/tooling/')) return ['tooling'];
   if (file.startsWith('.githooks/')) return ['tooling'];
   if (file === 'tools/serve-local.cjs') return ['servo'];
+  if (/^0_Home\/(tool-guide|robot-select-guide)/.test(file)) return ['guide', 'home'];
   if (file === 'tools/static-server.mjs' || file === 'playwright.config.mjs') return ['all'];
   if (/^tools\/(build-localized-site|build-version-history|version-history|sync-.*history-data)\.cjs$/.test(file)) return ['all'];
   if (file.startsWith('tools/')) return ['tooling'];

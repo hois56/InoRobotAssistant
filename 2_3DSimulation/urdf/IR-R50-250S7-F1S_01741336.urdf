@@ -1,0 +1,238 @@
+<?xml version="1.0"?>
+<!-- Firmware source: params_package/Standard/Body/IR-R50-250S7-F1S_01741336/IR-R50-250S7-F1S_01741336.json; SHA256 8bfb03ed062d05eeb6e578efdd7f35e8dd9a34cd6b7687fd951c399a14f7eb17. -->
+<!-- Z-up; STL mm scaled to m. Effective firmware mass properties are SI and transformed into CAD link frames. -->
+<!-- Revolute effort is nominal output torque; prismatic effort is ideal screw force. See physics-audit.json for approximations. -->
+<robot name="IR-R50-250S7-F1S_01741336">
+  <link name="base_link">
+
+    <visual name="base">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R50-250/P0.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="base_material">
+        <color rgba="0.31 0.35 0.41 1"/>
+      </material>
+    </visual>
+    <collision name="base_collision">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R50-250/P0.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="link_1">
+
+    <!-- inertial source: bounding-box-fallback -->
+    <!-- Effective firmware principal moments are not physically realizable; no unit guessing applied -->
+    <inertial>
+      <origin xyz="0.065941146851 0.001601257324 0.483118713379" rpy="0 0 0"/>
+      <mass value="196.7288804099"/>
+      <inertia ixx="8.157118891721" ixy="0" ixz="0" iyy="10.352473629686" iyz="0" izz="9.291148384858"/>
+    </inertial>
+
+    <visual name="link_1">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R50-250/P1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="link_1_material">
+        <color rgba="0.84 0.86 0.89 1"/>
+      </material>
+    </visual>
+    <collision name="link_1_collision">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R50-250/P1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="link_2">
+
+    <!-- inertial source: bounding-box-fallback -->
+    <!-- Effective firmware principal moments are not physically realizable; no unit guessing applied -->
+    <inertial>
+      <origin xyz="0.000000017166 -0.17099996376 0.626961959839" rpy="0 0 0"/>
+      <mass value="139.5684148743"/>
+      <inertia ixx="29.382191568892" ixy="0" ixz="0" iyy="29.835315573276" iyz="0" izz="1.872279741097"/>
+    </inertial>
+
+    <visual name="link_2">
+      <origin xyz="-0.187 0 -0.565" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R50-250/P2.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="link_2_material">
+        <color rgba="0.94 0.95 0.96 1"/>
+      </material>
+    </visual>
+    <collision name="link_2_collision">
+      <origin xyz="-0.187 0 -0.565" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R50-250/P2.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="link_3">
+
+    <!-- inertial source: firmware-effective-si -->
+    <inertial>
+      <origin xyz="0.0581552105 0.028590443 0.1105845928" rpy="0 0 0"/>
+      <mass value="80.7766083402"/>
+      <inertia ixx="1.5145537699" ixy="0" ixz="0" iyy="2.0080774947" iyz="0" izz="1.8463212988"/>
+    </inertial>
+
+    <visual name="link_3">
+      <origin xyz="-0.187 0 -1.835" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R50-250/P3.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="link_3_material">
+        <color rgba="0.84 0.86 0.89 1"/>
+      </material>
+    </visual>
+    <collision name="link_3_collision">
+      <origin xyz="-0.187 0 -1.835" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R50-250/P3.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="link_4">
+
+    <!-- inertial source: bounding-box-fallback -->
+    <!-- Effective firmware principal moments are not physically realizable; no unit guessing applied -->
+    <inertial>
+      <origin xyz="0.67761340332 -0.009490257263 0.000000061035" rpy="0 0 0"/>
+      <mass value="68.3163291488"/>
+      <inertia ixx="0.842336499646" ixy="0" ixz="0" iyy="4.741270037684" iyz="0" izz="5.023480770084"/>
+    </inertial>
+
+    <visual name="link_4">
+      <origin xyz="-0.187 0 -2.035" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R50-250/P4.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="link_4_material">
+        <color rgba="0.94 0.95 0.96 1"/>
+      </material>
+    </visual>
+    <collision name="link_4_collision">
+      <origin xyz="-0.187 0 -2.035" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R50-250/P4.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="link_5">
+
+    <!-- inertial source: firmware-effective-si -->
+    <inertial>
+      <origin xyz="0.0214168572 -0.012 -0.00000284" rpy="0 0 0"/>
+      <mass value="16.1766732152"/>
+      <inertia ixx="0.0761" ixy="0" ixz="0" iyy="0.0777263809" iyz="0" izz="0.110273389"/>
+    </inertial>
+
+    <visual name="link_5">
+      <origin xyz="-1.22 0 -2.035" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R50-250/P5.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="link_5_material">
+        <color rgba="0.84 0.86 0.89 1"/>
+      </material>
+    </visual>
+    <collision name="link_5_collision">
+      <origin xyz="-1.22 0 -2.035" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R50-250/P5.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="link_6">
+
+    <!-- inertial source: firmware-effective-si -->
+    <inertial>
+      <origin xyz="-0.0088119252 0 0" rpy="0 0 0"/>
+      <mass value="4.6834496148"/>
+      <inertia ixx="0.0098588609" ixy="0" ixz="0" iyy="0.00664" iyz="0" izz="0.00664"/>
+    </inertial>
+
+    <visual name="link_6">
+      <origin xyz="-1.4 0 -2.035" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R50-250/P6.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="link_6_material">
+        <color rgba="0.94 0.95 0.96 1"/>
+      </material>
+    </visual>
+    <collision name="link_6_collision">
+      <origin xyz="-1.4 0 -2.035" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../models/IR-R50-250/P6.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="J1" type="revolute">
+    <parent link="base_link"/>
+    <child link="link_1"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.14159265359" upper="3.14159265359" effort="4900" velocity="3.05432619099"/>
+  </joint>
+
+  <joint name="J2" type="revolute">
+    <parent link="link_1"/>
+    <child link="link_2"/>
+    <origin xyz="0.187 0 0.565" rpy="0 0 0"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="-2.356194490192" upper="1.570796326795" effort="5985" velocity="2.617993877991"/>
+  </joint>
+
+  <joint name="J3" type="revolute">
+    <parent link="link_2"/>
+    <child link="link_3"/>
+    <origin xyz="0 0 1.27" rpy="0 0 0"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="-1.396263401595" upper="2.96705972839" effort="2177.399943" velocity="3.05432619099"/>
+  </joint>
+
+  <joint name="J4" type="revolute">
+    <parent link="link_3"/>
+    <child link="link_4"/>
+    <origin xyz="0 0 0.2" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-3.316125578789" upper="3.316125578789" effort="484.78092" velocity="4.363323129986"/>
+  </joint>
+
+  <joint name="J5" type="revolute">
+    <parent link="link_4"/>
+    <child link="link_5"/>
+    <origin xyz="1.033 0 0" rpy="0 0 0"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="-2.181661564993" upper="2.181661564993" effort="527.16" velocity="4.363323129986"/>
+  </joint>
+
+  <joint name="J6" type="revolute">
+    <parent link="link_5"/>
+    <child link="link_6"/>
+    <origin xyz="0.18 0 0" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-6.28318530718" upper="6.28318530718" effort="280.271445649406" velocity="6.19591884458"/>
+  </joint>
+
+  <link name="tool0"/>
+  <joint name="tool0_fixed" type="fixed">
+    <parent link="link_6"/>
+    <child link="tool0"/>
+    <origin xyz="0 0 0" rpy="3.14159265359 -1.570796326795 0"/>
+  </joint>
+</robot>

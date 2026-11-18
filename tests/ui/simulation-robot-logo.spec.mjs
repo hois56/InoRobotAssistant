@@ -56,9 +56,26 @@ for (const model of models) {
                 const width = gl.drawingBufferWidth, height = gl.drawingBufferHeight;
                 const pixels = new Uint8Array(width * height * 4);
                 gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+                let minX = width * 0.25, maxX = width * 0.75;
+                let minY = height * 0.3, maxY = height * 0.7;
+                const projection = logoMesh.userData.robotLogoProjection;
+                if (projection) {
+                    // Count the lettering area only; blue joint covers are not logos.
+                    const cameraLocal = logoMesh.worldToLocal(state.camera.position.clone());
+                    const side = cameraLocal.y < 0 ? 'negative' : 'positive';
+                    const [x, z, w, h] = projection[side];
+                    geometry.computeBoundingBox();
+                    const y = side === 'negative' ? geometry.boundingBox.min.y : geometry.boundingBox.max.y;
+                    const corners = [[x, z], [x + w, z], [x, z + h], [x + w, z + h]]
+                        .map(([px, pz]) => logoMesh.localToWorld(new THREE.Vector3(px, y, pz)).project(state.camera));
+                    minX = Math.max(0, Math.min(...corners.map(p => (p.x + 1) * width / 2)));
+                    maxX = Math.min(width, Math.max(...corners.map(p => (p.x + 1) * width / 2)));
+                    minY = Math.max(0, Math.min(...corners.map(p => (p.y + 1) * height / 2)));
+                    maxY = Math.min(height, Math.max(...corners.map(p => (p.y + 1) * height / 2)));
+                }
                 let blue = 0;
-                for (let y = Math.floor(height * 0.3); y < height * 0.7; y += 2) {
-                    for (let x = Math.floor(width * 0.25); x < width * 0.75; x += 2) {
+                for (let y = Math.floor(minY); y < maxY; y += 2) {
+                    for (let x = Math.floor(minX); x < maxX; x += 2) {
                         const i = (y * width + x) * 4;
                         if (pixels[i + 1] > 40 && pixels[i + 2] > 60
                             && pixels[i + 1] > pixels[i] * 1.8 && pixels[i + 2] > pixels[i] * 1.8) blue++;

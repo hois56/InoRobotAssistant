@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { advanceConveyorObject } from './conveyor-core.mjs';
+import { advanceConveyorObject } from './conveyor-core.mjs?v=20261116-feed-1';
 
 export function conveyorLocalBounds(model, frame) {
     const bounds = new THREE.Box3();
@@ -34,7 +34,7 @@ export function moveConveyorObjects(mappings, models, resolveBelt, seconds, befo
                 || (object.userData.placement && object.userData.placement !== 'scene')) continue;
             const bounds = conveyorLocalBounds(object, belt);
             if (bounds.isEmpty()) continue;
-            const distance = advanceConveyorObject(beltBounds, bounds, mapping.conveyorAxis, mapping.conveyorSpeed, seconds);
+            const distance = advanceConveyorObject(beltBounds, bounds, mapping.conveyorAxis, mapping.conveyorSpeed, seconds, 2, Boolean(object.userData.conveyorFeedSource) && object.userData.conveyorFeedBelt === mapping.gripObjectRef);
             if (!distance) continue;
             const delta = new THREE.Vector3();
             delta[mapping.conveyorAxis.endsWith('Y') ? 'y' : 'x'] = distance;

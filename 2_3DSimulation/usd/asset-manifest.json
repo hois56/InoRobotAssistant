@@ -1,0 +1,550 @@
+{
+  "format": "binary USD crate 0.8.0; Z-up, metres, kilograms",
+  "models": [
+    {
+      "name": "IR-R4H-54",
+      "file": "IR-R4H-54.usd",
+      "sourceModel": "IR-R4H-54S5-C1H-INT_01741031",
+      "sourceUrdfSha256": "e84f082d4b536438ae3ef18cfa0feaf9e4f2ff81e7e59bdf5814da675895952c",
+      "articulationRoot": "/Robot",
+      "toolFrame": "/Robot/link_6/tool0",
+      "fixedBase": true,
+      "approximateInertiaLinks": [
+        "link_1",
+        "link_2",
+        "link_5",
+        "link_6"
+      ],
+      "meshes": [
+        {
+          "source": "P0.stl",
+          "sha256": "cc473c7976d6c904ccca95c9267c0d689fe61687af3c0789f496516f25886d27",
+          "triangles": 4308,
+          "removedDegenerateTriangles": 0,
+          "uniquePoints": 2264,
+          "prim": "/Robot/base_link/geometry"
+        },
+        {
+          "source": "P1.stl",
+          "sha256": "cbe2c41fe9526c7dce46143a2cf3d335df5638052fc7f2e1048378e9052c8e18",
+          "triangles": 12270,
+          "removedDegenerateTriangles": 0,
+          "uniquePoints": 6157,
+          "prim": "/Robot/link_1/geometry"
+        },
+        {
+          "source": "P2.stl",
+          "sha256": "f384bd69c3b7f88a5a955a2028a5837437acecc1b00d69ac5d964145ffe6c796",
+          "triangles": 38450,
+          "removedDegenerateTriangles": 0,
+          "uniquePoints": 19249,
+          "prim": "/Robot/link_2/geometry"
+        },
+        {
+          "source": "P3.stl",
+          "sha256": "bb7da2bba9c211af19c38c3193f4bd2d5bfe818f752574db19296f7ebb0f9193",
+          "triangles": 8172,
+          "removedDegenerateTriangles": 0,
+          "uniquePoints": 4088,
+          "prim": "/Robot/link_3/geometry"
+        },
+        {
+          "source": "P4.stl",
+          "sha256": "76942505613f529dfbb6881178e4dd9f5894e00d1b03332238320ca2a5d862b7",
+          "triangles": 25124,
+          "removedDegenerateTriangles": 0,
+          "uniquePoints": 12556,
+          "prim": "/Robot/link_4/geometry"
+        },
+        {
+          "source": "P5.stl",
+          "sha256": "8f871ef7646839dff7cf714eef0a58de78054d0c79d60a6e1531f307bbe756c4",
+          "triangles": 12712,
+          "removedDegenerateTriangles": 0,
+          "uniquePoints": 6387,
+          "prim": "/Robot/link_5/geometry"
+        },
+        {
+          "source": "P6.stl",
+          "sha256": "fc0827b3e85dc126c27326fef7099634c4d69e3ccc0c231ee0ab490afedc5800",
+          "triangles": 1594,
+          "removedDegenerateTriangles": 0,
+          "uniquePoints": 797,
+          "prim": "/Robot/link_6/geometry"
+        }
+      ],
+      "joints": [
+        {
+          "name": "J1",
+          "lowerDeg": -169.99999999997937,
+          "upperDeg": 169.99999999997937,
+          "maxVelocityDegPerSec": 419.9999999999894,
+          "nominalMaxTorqueNm": 110.4265,
+          "reflectedMotorInertiaKgM2": 0.9966255366087501,
+          "stiffnessPerDegree": 92.60712520443982,
+          "dampingPerDegree": 2.9477763483633295
+        },
+        {
+          "name": "J2",
+          "lowerDeg": -119.9999999999888,
+          "upperDeg": 110.00000000001361,
+          "maxVelocityDegPerSec": 419.9999999999894,
+          "nominalMaxTorqueNm": 102.87,
+          "reflectedMotorInertiaKgM2": 0.7478634582,
+          "stiffnessPerDegree": 120.33550509592146,
+          "dampingPerDegree": 3.8303980930951727
+        },
+        {
+          "name": "J3",
+          "lowerDeg": -64.999999999982,
+          "upperDeg": 195.0000000000033,
+          "maxVelocityDegPerSec": 520.0000000000279,
+          "nominalMaxTorqueNm": 52.6752,
+          "reflectedMotorInertiaKgM2": 0.19033962991983,
+          "stiffnessPerDegree": 33.46000765819645,
+          "dampingPerDegree": 1.0650651229389279
+        },
+        {
+          "name": "J4",
+          "lowerDeg": -189.99999999998704,
+          "upperDeg": 189.99999999998704,
+          "maxVelocityDegPerSec": 559.9999999999859,
+          "nominalMaxTorqueNm": 21.3312,
+          "reflectedMotorInertiaKgM2": 0.15602479036056,
+          "stiffnessPerDegree": 11.20026740615192,
+          "dampingPerDegree": 0.35651558432802377
+        },
+        {
+          "name": "J5",
+          "lowerDeg": -119.9999999999888,
+          "upperDeg": 119.9999999999888,
+          "maxVelocityDegPerSec": 559.9999999999859,
+          "nominalMaxTorqueNm": 10.6672,
+          "reflectedMotorInertiaKgM2": 0.03922081067582,
+          "stiffnessPerDegree": 2.9374692550937165,
+          "dampingPerDegree": 0.09350255042572654
+        },
+        {
+          "name": "J6",
+          "lowerDeg": -360.0000000000237,
+          "upperDeg": 360.0000000000237,
+          "maxVelocityDegPerSec": 858.7999999999827,
+          "nominalMaxTorqueNm": 12.6944,
+          "reflectedMotorInertiaKgM2": 0.1364311193766,
+          "stiffnessPerDegree": 9.415231418566663,
+          "dampingPerDegree": 0.2996961241238004
+        }
+      ],
+      "sha256": "2af21db05c0279725693a430981a9d52c5d0d1f065ae3f029d7c342fe12b2e2c",
+      "bytes": 4713814
+    },
+    {
+      "name": "IR-R7H-70",
+      "file": "IR-R7H-70.usd",
+      "sourceModel": "IR-R7H-70S5-C2H-INT_01741199",
+      "sourceUrdfSha256": "b556f6e499aadd107425a414188b9ceaba2f9115c7cfe8aa4f72e59478d821da",
+      "articulationRoot": "/Robot",
+      "toolFrame": "/Robot/link_6/tool0",
+      "fixedBase": true,
+      "approximateInertiaLinks": [
+        "link_1"
+      ],
+      "meshes": [
+        {
+          "source": "P0.stl",
+          "sha256": "b0f6aa70887e050eea37db540cc13c72417fafa8c4dc2d627eea956dcfae9b48",
+          "triangles": 50408,
+          "removedDegenerateTriangles": 44,
+          "uniquePoints": 25164,
+          "prim": "/Robot/base_link/geometry"
+        },
+        {
+          "source": "P1.stl",
+          "sha256": "7912190ebfd3509cb828dc5a73013cbdfb239bbd36ad39e3eb695c01b8901536",
+          "triangles": 41808,
+          "removedDegenerateTriangles": 19,
+          "uniquePoints": 20909,
+          "prim": "/Robot/link_1/geometry"
+        },
+        {
+          "source": "P2.stl",
+          "sha256": "cfe9911ebe84aed84dc2a13698e44e180faec27a7b1ced046525f4a7c99c2a5b",
+          "triangles": 24178,
+          "removedDegenerateTriangles": 37,
+          "uniquePoints": 12161,
+          "prim": "/Robot/link_2/geometry"
+        },
+        {
+          "source": "P3.stl",
+          "sha256": "a6523ec68bad6399bbdb7d2d3ed2d8d974fe4e0041153c922123d04c24cf945c",
+          "triangles": 14006,
+          "removedDegenerateTriangles": 1,
+          "uniquePoints": 7005,
+          "prim": "/Robot/link_3/geometry"
+        },
+        {
+          "source": "P4.stl",
+          "sha256": "9209199d2c71de6191b71b271c792eb34f1cb7e054a25cbabccc2a7d772853d2",
+          "triangles": 38042,
+          "removedDegenerateTriangles": 45,
+          "uniquePoints": 19024,
+          "prim": "/Robot/link_4/geometry"
+        },
+        {
+          "source": "P5.stl",
+          "sha256": "e6c9e919d21e892e4e93809b67510d7b94b23cb23c7eb631ebf8ac6cece72292",
+          "triangles": 11544,
+          "removedDegenerateTriangles": 0,
+          "uniquePoints": 5772,
+          "prim": "/Robot/link_5/geometry"
+        },
+        {
+          "source": "P6.stl",
+          "sha256": "0f408a9d791b144a870fc34a355f67e082e9b6c12a9d058544a810ab7e54680c",
+          "triangles": 3602,
+          "removedDegenerateTriangles": 10,
+          "uniquePoints": 1801,
+          "prim": "/Robot/link_6/geometry"
+        }
+      ],
+      "joints": [
+        {
+          "name": "J1",
+          "lowerDeg": -169.99999999997937,
+          "upperDeg": 169.99999999997937,
+          "maxVelocityDegPerSec": 419.9999999999894,
+          "nominalMaxTorqueNm": 139.130432,
+          "reflectedMotorInertiaKgM2": 1.4401920028838113,
+          "stiffnessPerDegree": 151.3778483903358,
+          "dampingPerDegree": 4.818506569187491
+        },
+        {
+          "name": "J2",
+          "lowerDeg": -134.99999999998022,
+          "upperDeg": 79.99999999997344,
+          "maxVelocityDegPerSec": 336.000000000003,
+          "nominalMaxTorqueNm": 161.6,
+          "reflectedMotorInertiaKgM2": 1.2193612335000001,
+          "stiffnessPerDegree": 225.28179621766253,
+          "dampingPerDegree": 7.170942291332408
+        },
+        {
+          "name": "J3",
+          "lowerDeg": -69.99999999999824,
+          "upperDeg": 189.99999999998704,
+          "maxVelocityDegPerSec": 487.49999999997954,
+          "nominalMaxTorqueNm": 85.344,
+          "reflectedMotorInertiaKgM2": 0.504845171712,
+          "stiffnessPerDegree": 68.07943105826205,
+          "dampingPerDegree": 2.1670355951612614
+        },
+        {
+          "name": "J4",
+          "lowerDeg": -189.99999999998704,
+          "upperDeg": 189.99999999998704,
+          "maxVelocityDegPerSec": 550.0000000000108,
+          "nominalMaxTorqueNm": 33.33312,
+          "reflectedMotorInertiaKgM2": 0.32001905186496,
+          "stiffnessPerDegree": 22.984162201423533,
+          "dampingPerDegree": 0.7316086054364909
+        },
+        {
+          "name": "J5",
+          "lowerDeg": -119.9999999999888,
+          "upperDeg": 119.9999999999888,
+          "maxVelocityDegPerSec": 437.9999999999907,
+          "nominalMaxTorqueNm": 25.4634152,
+          "reflectedMotorInertiaKgM2": 0.2587428264907575,
+          "stiffnessPerDegree": 18.226640867255025,
+          "dampingPerDegree": 0.5801719979968774
+        },
+        {
+          "name": "J6",
+          "lowerDeg": -360.0000000000237,
+          "upperDeg": 360.0000000000237,
+          "maxVelocityDegPerSec": 764.7000000000207,
+          "nominalMaxTorqueNm": 23.799984,
+          "reflectedMotorInertiaKgM2": 0.24215842897447892,
+          "stiffnessPerDegree": 16.736280643498937,
+          "dampingPerDegree": 0.5327323586772127
+        }
+      ],
+      "sha256": "ddc1f69906ff2bf2d5a3142a8891a1e6df7e066216b5fa4a60f40522b118f61b",
+      "bytes": 8438957
+    },
+    {
+      "name": "IR-R7H-90",
+      "file": "IR-R7H-90.usd",
+      "sourceModel": "IR-R7H-90S5-C2H-INT_01741200",
+      "sourceUrdfSha256": "306a180e1f9cbca1f661bfd794baafc86b8b599530d2b7b249ed953dca7866ec",
+      "articulationRoot": "/Robot",
+      "toolFrame": "/Robot/link_6/tool0",
+      "fixedBase": true,
+      "approximateInertiaLinks": [
+        "link_1"
+      ],
+      "meshes": [
+        {
+          "source": "P0.stl",
+          "sha256": "44e1010cc487040ef3743c167d2066f534266435f6cf26edadf941b62e358500",
+          "triangles": 50408,
+          "removedDegenerateTriangles": 44,
+          "uniquePoints": 25164,
+          "prim": "/Robot/base_link/geometry"
+        },
+        {
+          "source": "P1.stl",
+          "sha256": "7912190ebfd3509cb828dc5a73013cbdfb239bbd36ad39e3eb695c01b8901536",
+          "triangles": 41808,
+          "removedDegenerateTriangles": 19,
+          "uniquePoints": 20909,
+          "prim": "/Robot/link_1/geometry"
+        },
+        {
+          "source": "P2.stl",
+          "sha256": "e1912e9df6a68f87ae5b0a35eef98e0feddf2c6c3e036a68845ab7359fd20e25",
+          "triangles": 27854,
+          "removedDegenerateTriangles": 67,
+          "uniquePoints": 13978,
+          "prim": "/Robot/link_2/geometry"
+        },
+        {
+          "source": "P3.stl",
+          "sha256": "3479762f65587cec9554f3527f8f307562ed2592aa842d3b22911561258c5db4",
+          "triangles": 14000,
+          "removedDegenerateTriangles": 1,
+          "uniquePoints": 7002,
+          "prim": "/Robot/link_3/geometry"
+        },
+        {
+          "source": "P4.stl",
+          "sha256": "dfba8e0d61bad13d2ab11da7249b1bf23f6b5c03dcc8a6971b38e410886a995f",
+          "triangles": 43794,
+          "removedDegenerateTriangles": 45,
+          "uniquePoints": 21903,
+          "prim": "/Robot/link_4/geometry"
+        },
+        {
+          "source": "P5.stl",
+          "sha256": "ad9182547b62794b18eee3cf1b1c9d4b32606953e9ee7837050632b31456f53b",
+          "triangles": 11544,
+          "removedDegenerateTriangles": 0,
+          "uniquePoints": 5772,
+          "prim": "/Robot/link_5/geometry"
+        },
+        {
+          "source": "P6.stl",
+          "sha256": "96d3e2229d9dc189be20d23d46748e15a0b7ea53c7be988e7958082308347ce4",
+          "triangles": 3596,
+          "removedDegenerateTriangles": 16,
+          "uniquePoints": 1801,
+          "prim": "/Robot/link_6/geometry"
+        }
+      ],
+      "joints": [
+        {
+          "name": "J1",
+          "lowerDeg": -169.99999999997937,
+          "upperDeg": 169.99999999997937,
+          "maxVelocityDegPerSec": 336.000000000003,
+          "nominalMaxTorqueNm": 173.91304,
+          "reflectedMotorInertiaKgM2": 1.8868146693289232,
+          "stiffnessPerDegree": 210.5683595530134,
+          "dampingPerDegree": 6.702599056322721
+        },
+        {
+          "name": "J2",
+          "lowerDeg": -134.99999999998022,
+          "upperDeg": 79.99999999997344,
+          "maxVelocityDegPerSec": 279.99999999999295,
+          "nominalMaxTorqueNm": 193.6,
+          "reflectedMotorInertiaKgM2": 1.566587,
+          "stiffnessPerDegree": 369.9678895480655,
+          "dampingPerDegree": 11.776443681370198
+        },
+        {
+          "name": "J3",
+          "lowerDeg": -69.99999999999824,
+          "upperDeg": 189.99999999998704,
+          "maxVelocityDegPerSec": 390.0000000000066,
+          "nominalMaxTorqueNm": 106.68,
+          "reflectedMotorInertiaKgM2": 0.6463296000000001,
+          "stiffnessPerDegree": 100.90379382275091,
+          "dampingPerDegree": 3.211867512723252
+        },
+        {
+          "name": "J4",
+          "lowerDeg": -189.99999999998704,
+          "upperDeg": 189.99999999998704,
+          "maxVelocityDegPerSec": 550.0000000000108,
+          "nominalMaxTorqueNm": 33.3333312,
+          "reflectedMotorInertiaKgM2": 0.2690971877777789,
+          "stiffnessPerDegree": 19.37622473623593,
+          "dampingPerDegree": 0.6167643890462808
+        },
+        {
+          "name": "J5",
+          "lowerDeg": -119.9999999999888,
+          "upperDeg": 119.9999999999888,
+          "maxVelocityDegPerSec": 437.9999999999907,
+          "nominalMaxTorqueNm": 25.463421,
+          "reflectedMotorInertiaKgM2": 0.240542654477112,
+          "stiffnessPerDegree": 16.9552808045347,
+          "dampingPerDegree": 0.5397033503105652
+        },
+        {
+          "name": "J6",
+          "lowerDeg": -360.0000000000237,
+          "upperDeg": 360.0000000000237,
+          "maxVelocityDegPerSec": 764.7000000000207,
+          "nominalMaxTorqueNm": 23.799984,
+          "reflectedMotorInertiaKgM2": 0.19668029111120003,
+          "stiffnessPerDegree": 13.591242488540322,
+          "dampingPerDegree": 0.43262268496235695
+        }
+      ],
+      "sha256": "e881848bf746bda0aa0179371de3522106a6dee21ac0787f29fc3b70faf9be50",
+      "bytes": 8876582
+    },
+    {
+      "name": "IR-R10H-120",
+      "file": "IR-R10H-120.usd",
+      "sourceModel": "IR-R10H-120S5-C2H-INT_01741201",
+      "sourceUrdfSha256": "c0b8bbff3f8d6f38996eddd5a30b4d9de23ed37b308b55ba3e3d35d19152f994",
+      "articulationRoot": "/Robot",
+      "toolFrame": "/Robot/link_6/tool0",
+      "fixedBase": true,
+      "approximateInertiaLinks": [
+        "link_1",
+        "link_4"
+      ],
+      "meshes": [
+        {
+          "source": "P0.stl",
+          "sha256": "c812fb192f05277973a9b278475dfcd2ed0ad49f9ae92bfaa642016354740d83",
+          "triangles": 20806,
+          "removedDegenerateTriangles": 0,
+          "uniquePoints": 10427,
+          "prim": "/Robot/base_link/geometry"
+        },
+        {
+          "source": "P1.stl",
+          "sha256": "3b85faf259db857d322f8f759f5f53d81596c255a1fdc87c32832e5e716d5436",
+          "triangles": 13460,
+          "removedDegenerateTriangles": 0,
+          "uniquePoints": 6736,
+          "prim": "/Robot/link_1/geometry"
+        },
+        {
+          "source": "P2.stl",
+          "sha256": "eb5c674ead57edacd7d9f29cc9ec3e4ac6c812e2a483aec6b05246b316dc6e72",
+          "triangles": 8884,
+          "removedDegenerateTriangles": 0,
+          "uniquePoints": 4446,
+          "prim": "/Robot/link_2/geometry"
+        },
+        {
+          "source": "P3.stl",
+          "sha256": "1f80abac3d87ca7c4970580e80e09a15c82c697fe739cf69d62ec9ed41d8ec55",
+          "triangles": 4374,
+          "removedDegenerateTriangles": 0,
+          "uniquePoints": 2189,
+          "prim": "/Robot/link_3/geometry"
+        },
+        {
+          "source": "P4.stl",
+          "sha256": "2c1f5faa092ef94f61c20724eab48f601a8fa6ab90714eb2470307b274104487",
+          "triangles": 22310,
+          "removedDegenerateTriangles": 0,
+          "uniquePoints": 11151,
+          "prim": "/Robot/link_4/geometry"
+        },
+        {
+          "source": "P5.stl",
+          "sha256": "717d63d86ba8ee1c1d3fc77b905d94001f6448b17f27e5b5559fab0914ceedcc",
+          "triangles": 5668,
+          "removedDegenerateTriangles": 0,
+          "uniquePoints": 2834,
+          "prim": "/Robot/link_5/geometry"
+        },
+        {
+          "source": "P6.stl",
+          "sha256": "69f75f868f3b448a375f458dcb9d0e80cf54f89dfd55d8dbea201e1b39605a1b",
+          "triangles": 2038,
+          "removedDegenerateTriangles": 0,
+          "uniquePoints": 1019,
+          "prim": "/Robot/link_6/geometry"
+        }
+      ],
+      "joints": [
+        {
+          "name": "J1",
+          "lowerDeg": -169.99999999997937,
+          "upperDeg": 169.99999999997937,
+          "maxVelocityDegPerSec": 239.9999999999776,
+          "nominalMaxTorqueNm": 286.8,
+          "reflectedMotorInertiaKgM2": 6.566544,
+          "stiffnessPerDegree": 597.1600565259324,
+          "dampingPerDegree": 19.008194962627556
+        },
+        {
+          "name": "J2",
+          "lowerDeg": -134.99999999998022,
+          "upperDeg": 99.99999999998113,
+          "maxVelocityDegPerSec": 180.00000000001185,
+          "nominalMaxTorqueNm": 384.79,
+          "reflectedMotorInertiaKgM2": 7.214591930000001,
+          "stiffnessPerDegree": 987.3652297191151,
+          "dampingPerDegree": 31.42881138937238
+        },
+        {
+          "name": "J3",
+          "lowerDeg": -65.99999999998525,
+          "upperDeg": 209.9999999999947,
+          "maxVelocityDegPerSec": 329.9999999999836,
+          "nominalMaxTorqueNm": 180.0,
+          "reflectedMotorInertiaKgM2": 2.1668765625,
+          "stiffnessPerDegree": 270.69865151270926,
+          "dampingPerDegree": 8.61660569531161
+        },
+        {
+          "name": "J4",
+          "lowerDeg": -189.99999999998704,
+          "upperDeg": 189.99999999998704,
+          "maxVelocityDegPerSec": 469.99999999998005,
+          "nominalMaxTorqueNm": 39.999984,
+          "reflectedMotorInertiaKgM2": 0.47749961800007634,
+          "stiffnessPerDegree": 34.08974828160241,
+          "dampingPerDegree": 1.0851103895550938
+        },
+        {
+          "name": "J5",
+          "lowerDeg": -119.9999999999888,
+          "upperDeg": 119.9999999999888,
+          "maxVelocityDegPerSec": 437.9999999999907,
+          "nominalMaxTorqueNm": 25.463421,
+          "reflectedMotorInertiaKgM2": 0.4004418421006794,
+          "stiffnessPerDegree": 27.973369896620373,
+          "dampingPerDegree": 0.8904200187970307
+        },
+        {
+          "name": "J6",
+          "lowerDeg": -360.0000000000237,
+          "upperDeg": 360.0000000000237,
+          "maxVelocityDegPerSec": 764.7000000000207,
+          "nominalMaxTorqueNm": 23.799984,
+          "reflectedMotorInertiaKgM2": 0.21949028787282143,
+          "stiffnessPerDegree": 15.172197456889085,
+          "dampingPerDegree": 0.48294604456603635
+        }
+      ],
+      "sha256": "d13474136a7ab621838e347f2fff456f3ef4c0998bf018180045cf997417059d",
+      "bytes": 3573229
+    }
+  ],
+  "drivePolicy": "Generic 10Hz critically damped force drives, gains converted per radian to per degree; nominal torque caps",
+  "collisionPolicy": "Convex hull per link; self-collision disabled; contact offset 2mm",
+  "baseMassPolicy": "Fixed root; base mass is inferred by the runtime from collision geometry, not a fabricated source mass",
+  "firmwareArchiveSha256": "a75412bd78294b0b3cfb1b3cbc41d4bc52f1bb33290afea6fc8933b5ac9233e3",
+  "isaacSimRuntimeTested": false
+}

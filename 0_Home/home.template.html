@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html data-design-system="astryx" lang="ko">
 
 <head>
     <meta charset="UTF-8">
@@ -45,197 +45,12 @@
     <!-- I18N-SOCIAL:END -->
 
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@0.468.0"></script>
-    <!-- Google Fonts -->
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap"
-        rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: radial-gradient(circle at top right, #0f172a, #020617);
-            color: #e2e8f0;
-            min-height: 100vh;
-            margin: 0;
-            overflow-x: hidden;
-        }
-
-        .font-outfit {
-            font-family: 'Outfit', sans-serif;
-        }
-
-        /* Ambient Background Glow */
-        .ambient-glow {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80vw;
-            height: 80vh;
-            background: radial-gradient(circle, rgba(56, 189, 248, 0.1) 0%, rgba(15, 23, 42, 0) 70%);
-            z-index: -1;
-            pointer-events: none;
-            filter: blur(100px);
-            animation: pulse-glow 8s infinite alternate;
-        }
-
-        @keyframes pulse-glow {
-            0% {
-                transform: translate(-50%, -50%) scale(1);
-                opacity: 0.5;
-            }
-
-            100% {
-                transform: translate(-50%, -50%) scale(1.1);
-                opacity: 0.8;
-            }
-        }
-
-        /* Premium Glass Card Effect */
-        .glass-card {
-            background: rgba(30, 41, 59, 0.4);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            position: relative;
-            overflow: hidden;
-            border-radius: 1.5rem;
-        }
-
-        .glass-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 50%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
-            transform: skewX(-20deg);
-            transition: left 0.5s ease;
-        }
-
-        .glass-card:hover {
-            transform: translateY(-10px) scale(1.02);
-            border-color: rgba(56, 189, 248, 0.3);
-            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 189, 248, 0.2);
-            background: rgba(30, 41, 59, 0.6);
-        }
-
-        .glass-card:hover::before {
-            left: 200%;
-        }
-
-        .card-icon-container {
-            position: relative;
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            width: 4rem;
-            height: 4rem;
-            border-radius: 1rem;
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            margin-bottom: 1.5rem;
-            transition: all 0.3s ease;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-        }
-
-        .glass-card:hover .card-icon-container {
-            transform: scale(1.1) rotate(5deg);
-            background: rgba(15, 23, 42, 0.8);
-        }
-
-        /* Generator specific colors */
-        .glass-card:hover .generator-icon {
-            box-shadow: 0 0 25px rgba(56, 189, 248, 0.4);
-            border-color: rgba(56, 189, 248, 0.4);
-        }
-
-        .glass-card:hover .generator-icon i {
-            color: #38bdf8;
-        }
-
-        /* Selector specific colors */
-        .glass-card:hover .selector-icon {
-            box-shadow: 0 0 25px rgba(52, 211, 153, 0.4);
-            border-color: rgba(52, 211, 153, 0.4);
-        }
-
-        .glass-card:hover .selector-icon i {
-            color: #34d399;
-        }
-
-        .btn-launch {
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .btn-launch::after {
-            content: '';
-            position: absolute;
-            background: white;
-            opacity: 0.1;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            transition: all 0.3s ease;
-        }
-
-        .btn-launch:hover::after {
-            left: 0;
-        }
-
-        /* Title Gradients */
-        .title-gradient {
-            background: linear-gradient(135deg, #e0e7ff 0%, #38bdf8 50%, #34d399 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            display: inline-block;
-        }
-
-        /* Logo: always white regardless of browser/device */
-        .site-logo {
-            filter: brightness(0) invert(1) !important;
-            -webkit-filter: brightness(0) invert(1) !important;
-        }
-
-        .history-button {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-            padding: 0.375rem 0.7rem;
-            border: 1px solid rgba(56, 189, 248, 0.22);
-            border-radius: 0.55rem;
-            background: rgba(14, 165, 233, 0.08);
-            color: #7dd3fc;
-            font-size: 0.72rem;
-            font-weight: 700;
-            line-height: 1;
-            cursor: pointer;
-            transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease, transform 0.2s ease;
-        }
-
-        .history-button:hover,
-        .history-button:focus-visible {
-            border-color: rgba(56, 189, 248, 0.65);
-            background: rgba(14, 165, 233, 0.18);
-            color: #e0f2fe;
-            outline: none;
-            transform: translateY(-1px);
-        }
-
         .history-modal {
             position: fixed;
             inset: 0;
-            z-index: 100;
+            /* Above the sticky site header (z-index 200 in shared/astryx-theme.css). */
+            z-index: 1000;
             display: none;
             align-items: center;
             justify-content: center;
@@ -451,29 +266,36 @@
             z-index: 2147483647 !important;
         }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/Language/runtime/i18n.css">
-    <link rel="stylesheet" href="/0_Home/robot-select-guide.css?v=20260813-5">
+    <link rel="stylesheet" href="/0_Home/robot-select-guide.css?v=20261118-guide-light">
     <script src="/Language/runtime/locales-data.js?v=20260730-3" defer></script>
     <script src="/Language/runtime/i18n.js" defer></script>
     <script src="/analytics-config.js"></script>
     <script src="/analytics.js" defer></script>
     <script src="/visitor-counter.js?v=20260812-1" defer></script>
+    <link rel="stylesheet" href="/shared/astryx-theme.css?v=20261114-title-2">
+    <link rel="stylesheet" href="/0_Home/home.css?v=20261118-6">
 </head>
 
-<body class="relative flex flex-col items-center justify-center min-h-screen p-6">
-    <div id="inorobot-language-switcher" class="inorobot-language-switcher" data-landing="true"
-        data-i18n-skip aria-label="언어 선택">
-        <span class="inorobot-language-label" aria-hidden="true">Language</span>
-        <select id="inorobot-language-select" class="inorobot-language-select" aria-label="언어 선택">
-            <option value="ko">한국어</option>
-            <option value="en">English</option>
-            <option value="zh-CN">简体中文</option>
-            <option value="vi">Tiếng Việt</option>
-            <option value="tr">Türkçe</option>
-            <option value="ru">Русский</option>
-        </select>
-    </div>
+<body data-design-page="home">
+    <header class="site-header" id="home-header">
+        <a class="logo-link" href="/" title="메인 페이지로"><img src="/1_RobotModelSelect/INOVANCE_Logo.png" alt="INOVANCE" width="224" height="60"></a>
+        <span class="site-heading" data-i18n-skip>InoRobot Assistant</span>
+        <div class="header-actions" data-i18n-language-slot>
+            <div id="inorobot-language-switcher" class="inorobot-language-switcher" data-landing="true"
+                data-i18n-skip aria-label="언어 선택">
+                <span class="inorobot-language-label" aria-hidden="true">Language</span>
+                <select id="inorobot-language-select" class="inorobot-language-select" aria-label="언어 선택">
+                    <option value="ko">한국어</option>
+                    <option value="en">English</option>
+                    <option value="zh-CN">简体中文</option>
+                    <option value="vi">Tiếng Việt</option>
+                    <option value="tr">Türkçe</option>
+                    <option value="ru">Русский</option>
+                </select>
+            </div>
+        </div>
+    </header>
     <script>
         // Keep route switching functional even when the shared translation runtime is delayed.
         (() => {
@@ -500,354 +322,138 @@
         })();
     </script>
 
-    <!-- Ambient background glow -->
-    <div class="ambient-glow"></div>
-
-    <main class="w-full max-w-5xl mx-auto z-10 flex flex-col items-center">
-        <!-- Header -->
-        <header class="text-center mb-16 opacity-0 translate-y-8 animate-fade-in-up"
-            style="animation: fadeInUp 0.5s ease forwards;">
-            <div class="inline-flex items-center justify-center mb-8">
-                <img src="/1_RobotModelSelect/INOVANCE_Logo.png" alt="INOVANCE Logo"
-                    class="site-logo h-16 md:h-24 w-auto object-contain"
-                    onerror="this.hidden=true; this.nextElementSibling.hidden=false">
-                <span hidden class="font-outfit text-3xl md:text-5xl font-extrabold tracking-wide text-white">INOVANCE</span>
+    <main id="home-main">
+        <section class="hero" aria-labelledby="hero-title">
+            <div class="home-width hero-layout">
+                <div class="hero-copy">
+                    <p class="hero-kicker"><span class="stripe-mark" aria-hidden="true"></span>ROBOT ENGINEERING</p>
+                    <h1 id="hero-title" data-i18n-skip>InoRobot <span>Assistant<span class="title-stop" aria-hidden="true">.</span></span></h1>
+                </div>
+                <p class="hero-tagline">이노밴스 로봇을 더 쉽게</p>
             </div>
-            <h1 class="font-outfit text-5xl md:text-7xl font-extrabold mb-4 tracking-tight drop-shadow-xl">
-                <span class="title-gradient pt-2 pb-2">InoRobot Assistant</span>
-            </h1>
-            <p class="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-                <span>이노로봇(InoRobot Assistant)은 이노밴스 로봇(INOVANCE robot)의 모델 선택, 3D 시뮬레이션, 프로젝트 생성, 소프트웨어, 문서와 디버깅을 지원합니다.</span>
-                <span>필요한 도구를 선택하여 작업을 시작하세요.</span>
-            </p>
-        </header>
-
-        <!-- Tool Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
-
-            <!-- 1. Robot Selector Card -->
-            <article class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8"
-                style="animation: fadeInUp 0.5s ease 0.1s forwards;">
-                <a href="/1_RobotModelSelect/" class="flex flex-col flex-grow" style="text-decoration: none;">
-                    <div
-                        class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
-                        <i data-lucide="bot" class="w-8 h-8 text-white"></i>
+        </section>
+        <section id="workspace" aria-labelledby="workspace-title">
+            <div class="home-width">
+                <div class="workspace-header">
+                    <h2 id="workspace-title">도구 모음</h2>
+                    <div class="tool-filters" role="group" aria-labelledby="workspace-title" hidden>
+                        <button type="button" data-filter="all" aria-pressed="true"><span>전체</span> <small>8</small></button>
+                        <button type="button" data-filter="design" aria-pressed="false">설계·개발</button>
+                        <button type="button" data-filter="support" aria-pressed="false">자료·지원</button>
                     </div>
-                    <h2 class="font-outfit text-2xl font-bold mb-3 text-white">
-                        Robot Model Select
-                    </h2>
-                    <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
-                        INOVANCE 로봇의 라인업을 확인하세요. 선택한 모델과 옵션 구성을 PDF로 저장하여 발주시 활용할 수 있습니다.
-                        또한 2D, 3D CAD 파일도 다운로드 받을 수 있습니다.
-                    </p>
-                </a>
-                <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
-                    <button type="button" id="robot-select-guide-trigger" class="manual-info-button" data-manual-open
-                        aria-label="Robot Model Select 사용 방법 보기" aria-haspopup="dialog"
-                        aria-controls="robot-select-guide-modal" aria-expanded="false" title="사용 방법">i</button>
-                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg"
-                        data-site-card-version="robotSelect">Ver</span>
-                    <button type="button" class="history-button" data-history-card="robotSelect"
-                        aria-label="Robot Model Select 버전 기록 보기">
-                        <i data-lucide="history" class="w-3.5 h-3.5"></i>
-                        버전 기록
-                    </button>
                 </div>
-            </article>
-
-            <!-- 2. 3D Simulation Card (가운데 위치) -->
-            <a href="/2_3DSimulation/" class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8"
-                style="animation: fadeInUp 0.5s ease 0.2s forwards; text-decoration: none;">
-                <div
-                    class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
-                    <i data-lucide="box" class="w-8 h-8 text-white"></i>
-                </div>
-                <h2 class="font-outfit text-2xl font-bold mb-3 text-white">
-                    3D Simulation
-                </h2>
-                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
-                    INOVANCE 로봇의 관절 및 Base JOG, Tool·설비 배치와 3D 모델 시뮬레이션을 지원합니다.
-                </p>
-                <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
-                    <button type="button" class="manual-info-button tool-manual-open" data-tool-guide="simulation"
-                        aria-label="3D Simulation 사용 방법 보기" aria-haspopup="dialog" aria-controls="tool-guide-modal" aria-expanded="false" title="사용 방법">i</button>
-                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20"
-                        data-site-card-version="robot3dViewer">Ver</span>
-                    <button type="button" class="history-button" data-history-card="robot3dViewer"
-                        aria-label="3D Simulation 버전 기록 보기">
-                        <i data-lucide="history" class="w-3.5 h-3.5"></i>
-                        버전 기록
-                    </button>
-                </div>
-            </a>
-
-            <!-- 3. Tool Select Card -->
-            <a href="/3_ToolSelector/" class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8"
-                style="animation: fadeInUp 0.5s ease 0.3s forwards; text-decoration: none;">
-                <div
-                    class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
-                    <i data-lucide="wrench" class="w-8 h-8 text-white"></i>
-                </div>
-                <h2 class="font-outfit text-2xl font-bold mb-3 text-white">
-                    Tool Selector
-                </h2>
-                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
-                    로봇 Tool 부하 조건에 따른 모델 적합성을 판정합니다. 관성 모멘트 및 허용 하중을 계산하여 최적의 모델을 선택하세요.
-                </p>
-                <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
-                    <button type="button" class="manual-info-button tool-manual-open" data-tool-guide="tool"
-                        aria-label="Robot Tool Selector 사용 방법 보기" aria-haspopup="dialog" aria-controls="tool-guide-modal" aria-expanded="false" title="사용 방법">i</button>
-                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20"
-                        data-site-card-version="toolSelector">Ver</span>
-                    <button type="button" class="history-button" data-history-card="toolSelector"
-                        aria-label="Robot Tool Selector 버전 기록 보기">
-                        <i data-lucide="history" class="w-3.5 h-3.5"></i>
-                        버전 기록
-                    </button>
-                </div>
-            </a>
-
-            <!-- 4. Project Generator Card -->
-            <a href="/4_ProjectGenerator/"
-                class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8"
-                style="animation: fadeInUp 0.5s ease 0.4s forwards; text-decoration: none;">
-
-                <div
-                    class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
-                    <i data-lucide="file-code-2" class="w-8 h-8 text-white"></i>
-                </div>
-                <h2 class="font-outfit text-2xl font-bold mb-3 text-white">
-                    Project Generator
-                </h2>
-                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
-                    로봇 모델과 공정 구성을 선택하면, 컨트롤러에 바로 적용 가능한 프로젝트 파일 구조를 자동으로 생성합니다. 번거로운 초기 설정 없이 티칭 수정만으로 프로그램을 바로 완성해보세요.
-                </p>
-
-                <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
-                    <button type="button" class="manual-info-button tool-manual-open" data-tool-guide="project"
-                        aria-label="Project Generator 사용 방법 보기" aria-haspopup="dialog" aria-controls="tool-guide-modal" aria-expanded="false" title="사용 방법">i</button>
-                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg"
-                        data-site-card-version="projectGenerator">Ver</span>
-                    <button type="button" class="history-button" data-history-card="projectGenerator"
-                        aria-label="Project Generator 버전 기록 보기">
-                        <i data-lucide="history" class="w-3.5 h-3.5"></i>
-                        버전 기록
-                    </button>
-                </div>
-            </a>
-
-            <!-- 5. Software Card -->
-            <a href="/5_Software/" class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8"
-                style="animation: fadeInUp 0.5s ease 0.5s forwards; text-decoration: none;">
-                <div
-                    class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
-                    <i data-lucide="monitor" class="w-8 h-8 text-white"></i>
-                </div>
-                <h2 class="font-outfit text-2xl font-bold mb-3 text-white">
-                    Software
-                </h2>
-                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
-                    로봇 제어 및 설정을 위한 최신 소프트웨어를 다운로드할 수 있습니다.
-                </p>
-                <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
-                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20"
-                        data-site-card-version="software">Ver</span>
-                    <button type="button" class="history-button" data-history-card="software"
-                        aria-label="Software 버전 기록 보기">
-                        <i data-lucide="history" class="w-3.5 h-3.5"></i>
-                        버전 기록
-                    </button>
-                </div>
-            </a>
-
-            <!-- 6. Document Card -->
-            <a href="/6_Document/" class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8"
-                style="animation: fadeInUp 0.5s ease 0.6s forwards; text-decoration: none;">
-                <div
-                    class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
-                    <i data-lucide="book-open" class="w-8 h-8 text-white"></i>
-                </div>
-                <h2 class="font-outfit text-2xl font-bold mb-3 text-white">
-                    Document
-                </h2>
-                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
-                    로봇 매뉴얼, 교육자료, 인증서, 통신 프로파일 다운로드 및 조회
-                </p>
-                <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
-                    <button type="button" class="manual-info-button tool-manual-open" data-tool-guide="document"
-                        aria-label="Document 사용 방법 보기" aria-haspopup="dialog" aria-controls="tool-guide-modal" aria-expanded="false" title="사용 방법">i</button>
-                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20"
-                        data-site-card-version="manual">Ver</span>
-                    <button type="button" class="history-button" data-history-card="manual"
-                        aria-label="Document 버전 기록 보기">
-                        <i data-lucide="history" class="w-3.5 h-3.5"></i>
-                        버전 기록
-                    </button>
-                </div>
-            </a>
-
-            <!-- 7. Debugging Tool Card -->
-            <a href="/7_DebuggingTool/"
-                class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8"
-                style="animation: fadeInUp 0.5s ease 0.7s forwards; text-decoration: none;">
-                <div
-                    class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
-                    <i data-lucide="bug" class="w-8 h-8 text-white"></i>
-                </div>
-                <h2 class="font-outfit text-2xl font-bold mb-3 text-white">
-                    Debugging Tool
-                </h2>
-                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
-                    로봇 디버깅 및 트러블 슈팅에 유용한 툴을 지원합니다.
-                </p>
-                <div class="mt-auto flex items-center justify-end gap-2 border-t border-slate-700/50 pt-5">
-                    <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/20"
-                        data-site-card-version="debuggingTool">Ver</span>
-                    <button type="button" class="history-button" data-history-card="debuggingTool"
-                        aria-label="Debugging Tool 버전 기록 보기">
-                        <i data-lucide="history" class="w-3.5 h-3.5"></i>
-                        버전 기록
-                    </button>
-                </div>
-            </a>
-
-            <!-- 8. Servo System Solution Card -->
-            <a id="motion-card" href="/Servo/"
-                class="glass-card p-6 md:p-8 flex flex-col h-full group opacity-0 translate-y-8"
-                style="animation: fadeInUp 0.5s ease 0.8s forwards; text-decoration: none;" aria-labelledby="motion-card-title">
-                <div
-                    class="w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
-                    <i data-lucide="activity" class="w-8 h-8 text-white" aria-hidden="true"></i>
-                </div>
-                <h2 id="motion-card-title" class="font-outfit text-2xl font-bold mb-3 text-white">
-                    Servo System Solution
-                </h2>
-                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
-                    INOVANCE 서보의 PC 기반 Ethernet 모션 제어 구성과 주요 사양을 확인하세요.
-                </p>
-            </a>
-
-        </div>
-
-
-        <!-- Footer removed -->
-    </main>
-
-    <div id="robot-select-guide-modal" class="manual-guide-modal" aria-hidden="true">
-        <section class="manual-guide-dialog" role="dialog" aria-modal="true"
-            aria-labelledby="robot-select-guide-title" tabindex="-1">
-            <header class="manual-guide-header">
-                <div class="min-w-0">
-                    <div class="manual-guide-kicker">
-                        <span class="manual-guide-live-dot" aria-hidden="true"></span>
-                        빠른 사용 가이드 · 약 36초
-                    </div>
-                    <h2 id="robot-select-guide-title" class="manual-guide-title">Robot Model Select 사용 가이드</h2>
-                </div>
-                <button type="button" class="manual-guide-close" data-manual-close aria-label="사용 가이드 닫기">
-                    <i data-lucide="x" aria-hidden="true"></i>
-                </button>
-            </header>
-
-            <div class="manual-guide-body">
-                <nav class="manual-guide-steps" aria-label="가이드 단계 선택">
-                    <button type="button" class="manual-step-button is-active" data-manual-step="0" aria-current="step">
-                        <span class="manual-step-number">01</span>
-                        <span class="manual-step-copy">
-                            <strong>필요한 사양을 선택하세요</strong>
-                            <small>로봇 유형, 가반하중, 리치 등 필요한 조건을 필터에서 선택합니다.</small>
-                        </span>
-                    </button>
-                    <button type="button" class="manual-step-button" data-manual-step="1">
-                        <span class="manual-step-number">02</span>
-                        <span class="manual-step-copy">
-                            <strong>모델을 선택하고 옵션을 구성하세요</strong>
-                            <small>모델 카드를 선택해 상세 구성 화면을 열고 케이블, 티치펜던트와 통신 옵션을 구성합니다.</small>
-                        </span>
-                    </button>
-                    <button type="button" class="manual-step-button" data-manual-step="2">
-                        <span class="manual-step-number">03</span>
-                        <span class="manual-step-copy">
-                            <strong>파일을 내려받고 구성 내역을 확인하세요</strong>
-                            <small>CAD와 구성 내역을 내려받은 뒤 구성서를 열어 선택한 모델과 옵션을 확인합니다.</small>
-                        </span>
-                    </button>
-                </nav>
-
-                <div class="manual-guide-player">
-                    <div class="manual-guide-viewport" aria-hidden="true">
-                        <div class="manual-real-ui-stage" data-manual-stage>
-                            <div class="manual-real-ui-canvas" data-manual-canvas>
-                                <iframe id="robot-select-guide-frame"
-                                    data-src="/1_RobotModelSelect/?embed=manual"
-                                    title="실제 Model Select 화면"
-                                    sandbox="allow-scripts allow-same-origin"
-                                    tabindex="-1" aria-hidden="true"></iframe>
-                            </div>
-                            <div class="manual-frame-state" data-manual-loading>
-                                <span class="manual-frame-spinner" aria-hidden="true"></span>
-                                <strong>실제 Model Select 화면을 불러오는 중입니다.</strong>
-                            </div>
-                            <div class="manual-frame-state manual-frame-error" data-manual-error hidden>
-                                <strong>실제 화면을 불러오지 못했습니다.</strong>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="manual-guide-caption">
-                        <strong data-manual-caption-title>필요한 사양을 선택하세요</strong>
-                        <span data-manual-caption-copy>로봇 유형, 가반하중, 리치 등 필요한 조건을 필터에서 선택합니다.</span>
-                    </div>
-                    <div class="manual-guide-transport">
-                        <button type="button" class="manual-guide-control manual-guide-play" data-manual-play
-                            aria-label="일시정지" aria-pressed="false">
-                            <span data-manual-pause-icon><i data-lucide="pause" aria-hidden="true"></i></span>
-                            <span data-manual-play-icon hidden><i data-lucide="play" aria-hidden="true"></i></span>
-                            <span data-manual-pause-label hidden>일시정지</span>
-                            <span data-manual-play-label hidden>재생</span>
-                            <span data-manual-replay-label hidden>다시 재생</span>
-                        </button>
-                        <output class="manual-guide-time" data-manual-time aria-hidden="true">00:00 / 00:36</output>
-                        <div class="manual-timeline-shell">
-                            <input type="range" class="manual-timeline-range" data-manual-seek
-                                min="0" max="36000" step="100" value="0"
-                                aria-label="가이드 재생 위치" aria-valuetext="00:00 / 00:36">
-                            <div class="manual-timeline-markers">
-                                <button type="button" data-manual-marker="0" style="--manual-marker-position: 0%"
-                                    aria-label="필터 선택 단계로 이동"><span aria-hidden="true">필터 선택</span></button>
-                                <button type="button" data-manual-marker="8000" style="--manual-marker-position: 22.22%"
-                                    aria-label="모델 선택 및 옵션 구성 단계로 이동"><span aria-hidden="true">모델·옵션</span></button>
-                                <button type="button" data-manual-marker="22000" style="--manual-marker-position: 61.11%"
-                                    aria-label="파일 다운로드 및 구성 내역 확인 단계로 이동"><span aria-hidden="true">다운로드·확인</span></button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="manual-guide-footer">
-                        <button type="button" class="manual-guide-control" data-manual-previous>
-                            <i data-lucide="chevron-left" aria-hidden="true"></i><span>이전 단계</span>
-                        </button>
-                        <button type="button" class="manual-guide-control" data-manual-next>
-                            <span>다음 단계</span><i data-lucide="chevron-right" aria-hidden="true"></i>
-                        </button>
-                        <a href="/1_RobotModelSelect/" class="manual-guide-launch">
-                            <span>직접 사용해 보기</span><i data-lucide="arrow-up-right" aria-hidden="true"></i>
+                <div class="tool-grid">
+                    <article class="tool-card" data-group="design">
+                        <a href="/1_RobotModelSelect/" class="tool-link" aria-labelledby="tool-model">
+                            <span class="tool-icon" aria-hidden="true"><svg viewBox="0 0 24 24" data-lucide="bot"><path d="M12 8V4H9"/><rect x="3" y="8" width="18" height="12" rx="3"/><path d="M7 13v2m10-2v2M1 12v4m22-4v4"/></svg></span>
+                            <span class="open-arrow" aria-hidden="true">↗</span>
+                            <h2 id="tool-model">Robot Model Select</h2>
+                            <p>모델별 사양을 비교하고 옵션 구성을 PDF로 저장하거나 CAD 파일을 받으세요.</p>
                         </a>
-                    </div>
-                    <p class="manual-guide-sr-status" data-manual-status aria-live="polite"></p>
+                        <div class="tool-meta">
+                            <span data-site-card-version="robotSelect">Ver</span>
+                            <button type="button" id="robot-select-guide-trigger" class="manual-info-button tool-manual-open" data-tool-guide="model" aria-label="Robot Model Select 사용 방법 보기" aria-haspopup="dialog" aria-controls="tool-guide-modal" aria-expanded="false" title="사용 방법">사용 방법</button>
+                            <button type="button" class="history-button" data-history-card="robotSelect" aria-label="Robot Model Select 버전 기록 보기">버전 기록</button>
+                        </div>
+                    </article>
+                    <article class="tool-card" data-group="design">
+                        <a href="/2_3DSimulation/" class="tool-link" aria-labelledby="tool-simulation">
+                            <span class="tool-icon" aria-hidden="true"><svg viewBox="0 0 24 24" data-lucide="box"><path d="m12 3 9 5v9l-9 5-9-5V8zM3 8l9 5 9-5m-9 5v9M7.5 5.5l9 5"/></svg></span>
+                            <span class="open-arrow" aria-hidden="true">↗</span>
+                            <h2 id="tool-simulation">3D Simulation</h2>
+                            <p>로봇과 설비를 배치하고, 관절 움직임과 작업 경로를 3D로 검증하세요.</p>
+                        </a>
+                        <div class="tool-meta">
+                            <span data-site-card-version="robot3dViewer">Ver</span>
+                            <button type="button" class="manual-info-button tool-manual-open" data-tool-guide="simulation" aria-label="3D Simulation 사용 방법 보기" aria-haspopup="dialog" aria-controls="tool-guide-modal" aria-expanded="false" title="사용 방법">사용 방법</button>
+                            <button type="button" class="history-button" data-history-card="robot3dViewer" aria-label="3D Simulation 버전 기록 보기">버전 기록</button>
+                        </div>
+                    </article>
+                    <article class="tool-card" data-group="design">
+                        <a href="/3_ToolSelector/" class="tool-link" aria-labelledby="tool-tool">
+                            <span class="tool-icon" aria-hidden="true"><svg viewBox="0 0 24 24" data-lucide="wrench"><path d="M14.4 6.6a5.5 5.5 0 0 0-7.1 6.9L2.8 18a2.3 2.3 0 0 0 3.2 3.2l4.5-4.5a5.5 5.5 0 0 0 6.9-7.1l-3.5 3.5-3-3z" transform="translate(1 -1)"/></svg></span>
+                            <span class="open-arrow" aria-hidden="true">↗</span>
+                            <h2 id="tool-tool">Tool Selector</h2>
+                            <p>툴의 질량과 관성 모멘트를 계산해 로봇의 허용 부하를 확인하세요.</p>
+                        </a>
+                        <div class="tool-meta">
+                            <span data-site-card-version="toolSelector">Ver</span>
+                            <button type="button" class="manual-info-button tool-manual-open" data-tool-guide="tool" aria-label="Robot Tool Selector 사용 방법 보기" aria-haspopup="dialog" aria-controls="tool-guide-modal" aria-expanded="false" title="사용 방법">사용 방법</button>
+                            <button type="button" class="history-button" data-history-card="toolSelector" aria-label="Robot Tool Selector 버전 기록 보기">버전 기록</button>
+                        </div>
+                    </article>
+                    <article class="tool-card" data-group="design">
+                        <a href="/4_ProjectGenerator/" class="tool-link" aria-labelledby="tool-project">
+                            <span class="tool-icon" aria-hidden="true"><svg viewBox="0 0 24 24" data-lucide="file-code-2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6m-10 5-2 2 2 2m4-4 2 2-2 2"/></svg></span>
+                            <span class="open-arrow" aria-hidden="true">↗</span>
+                            <h2 id="tool-project">Project Generator</h2>
+                            <p>로봇 모델과 공정에 맞는 컨트롤러용 프로젝트 파일을 생성하세요.</p>
+                        </a>
+                        <div class="tool-meta">
+                            <span data-site-card-version="projectGenerator">Ver</span>
+                            <button type="button" class="manual-info-button tool-manual-open" data-tool-guide="project" aria-label="Project Generator 사용 방법 보기" aria-haspopup="dialog" aria-controls="tool-guide-modal" aria-expanded="false" title="사용 방법">사용 방법</button>
+                            <button type="button" class="history-button" data-history-card="projectGenerator" aria-label="Project Generator 버전 기록 보기">버전 기록</button>
+                        </div>
+                    </article>
+                    <article class="tool-card" data-group="support">
+                        <a href="/5_Software/" class="tool-link" aria-labelledby="tool-software">
+                            <span class="tool-icon" aria-hidden="true"><svg viewBox="0 0 24 24" data-lucide="monitor"><rect x="2" y="3.5" width="20" height="14" rx="2"/><path d="M12 18v3m-4 0h8"/></svg></span>
+                            <span class="open-arrow" aria-hidden="true">↗</span>
+                            <h2 id="tool-software">Software</h2>
+                            <p>로봇 제어와 설정에 필요한 소프트웨어를 다운로드하세요.</p>
+                        </a>
+                        <div class="tool-meta">
+                            <span data-site-card-version="software">Ver</span>
+                            <button type="button" class="history-button" data-history-card="software" aria-label="Software 버전 기록 보기">버전 기록</button>
+                        </div>
+                    </article>
+                    <article class="tool-card" data-group="support">
+                        <a href="/6_Document/" class="tool-link" aria-labelledby="tool-document">
+                            <span class="tool-icon" aria-hidden="true"><svg viewBox="0 0 24 24" data-lucide="book-open"><path d="M3 4c4-1 6-.5 9 2 3-2.5 5-3 9-2v15c-4-1-6-.5-9 2-3-2.5-5-3-9-2zM12 6v15"/></svg></span>
+                            <span class="open-arrow" aria-hidden="true">↗</span>
+                            <h2 id="tool-document">Document</h2>
+                            <p>로봇 매뉴얼, 교육 자료, 인증서와 통신 프로파일을 찾아보세요.</p>
+                        </a>
+                        <div class="tool-meta">
+                            <span data-site-card-version="manual">Ver</span>
+                            <button type="button" class="manual-info-button tool-manual-open" data-tool-guide="document" aria-label="Document 사용 방법 보기" aria-haspopup="dialog" aria-controls="tool-guide-modal" aria-expanded="false" title="사용 방법">사용 방법</button>
+                            <button type="button" class="history-button" data-history-card="manual" aria-label="Document 버전 기록 보기">버전 기록</button>
+                        </div>
+                    </article>
+                    <article class="tool-card" data-group="support">
+                        <a href="/7_DebuggingTool/" class="tool-link" aria-labelledby="tool-debuggingTool">
+                            <span class="tool-icon" aria-hidden="true"><svg viewBox="0 0 24 24" data-lucide="bug"><rect x="7" y="6" width="10" height="14" rx="5"/><path d="m9 6-2-3m8 3 2-3M7 10l-4-2m4 6H2m5 3-4 3m14-10 4-2m-4 6h5m-5 3 4 3m-9-10v6"/></svg></span>
+                            <span class="open-arrow" aria-hidden="true">↗</span>
+                            <h2 id="tool-debuggingTool">Debugging Tool</h2>
+                            <p>통신 상태를 점검하고, 시운전 중 발생한 문제를 진단하세요.</p>
+                        </a>
+                        <div class="tool-meta">
+                            <span data-site-card-version="debuggingTool">Ver</span>
+                            <button type="button" class="history-button" data-history-card="debuggingTool" aria-label="Debugging Tool 버전 기록 보기">버전 기록</button>
+                        </div>
+                    </article>
+                    <article class="tool-card" data-group="support">
+                        <a id="motion-card" href="/Servo/" class="tool-link" aria-labelledby="motion-card-title">
+                            <span class="tool-icon" aria-hidden="true"><svg viewBox="0 0 24 24" data-lucide="activity"><path d="M2 12h5l3-8 4 16 3-8h5"/></svg></span>
+                            <span class="open-arrow" aria-hidden="true">↗</span>
+                            <h2 id="motion-card-title">Servo System Solution</h2>
+                            <p>서보의 PC 기반 Ethernet 모션 제어 구성과 주요 사양을 확인하세요.</p>
+                        </a>
+                    </article>
                 </div>
             </div>
         </section>
-    </div>
+    </main>
 
     <div id="tool-guide-modal" class="manual-guide-modal tool-guide-modal" aria-hidden="true">
         <section class="manual-guide-dialog" role="dialog" aria-modal="true"
             aria-labelledby="tool-guide-title" tabindex="-1">
             <header class="manual-guide-header">
                 <div class="min-w-0">
-                    <div class="manual-guide-kicker"><span class="manual-guide-live-dot" aria-hidden="true"></span><span data-tool-guide-kicker>빠른 사용 가이드 · 약 32초</span></div>
+                    <div class="manual-guide-kicker" data-tool-guide-kicker>빠른 사용 가이드 · 약 32초</div>
                     <h2 id="tool-guide-title" class="manual-guide-title" data-tool-guide-title>도구 사용 가이드</h2>
                 </div>
-                <button type="button" class="manual-guide-close" data-tool-guide-close aria-label="사용 가이드 닫기"><i data-lucide="x" aria-hidden="true"></i></button>
+                <button type="button" class="manual-guide-close" data-tool-guide-close aria-label="사용 가이드 닫기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
             </header>
             <div class="manual-guide-body">
                 <nav class="manual-guide-steps" data-tool-guide-steps aria-label="가이드 단계 선택"></nav>
@@ -863,11 +469,11 @@
                     </div>
                     <div class="manual-guide-caption"><strong data-tool-guide-caption-title></strong><span data-tool-guide-caption-copy></span></div>
                     <div class="manual-guide-transport">
-                        <button type="button" class="manual-guide-control manual-guide-play" data-tool-guide-play aria-label="일시정지" aria-pressed="false"><span data-tool-guide-pause-icon><i data-lucide="pause" aria-hidden="true"></i></span><span data-tool-guide-play-icon hidden><i data-lucide="play" aria-hidden="true"></i></span><span data-tool-guide-replay-icon hidden><i data-lucide="rotate-ccw" aria-hidden="true"></i></span><span data-tool-guide-pause-label hidden>일시정지</span><span data-tool-guide-play-label hidden>재생</span><span data-tool-guide-replay-label hidden>다시 재생</span></button>
+                        <button type="button" class="manual-guide-control manual-guide-play" data-tool-guide-play aria-label="일시정지" aria-pressed="false"><span data-tool-guide-pause-icon><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg></span><span data-tool-guide-play-icon hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4l14 8-14 8z"/></svg></span><span data-tool-guide-replay-icon hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10a9 9 0 1 1 1 7m-1-7V3m0 7h7"/></svg></span><span data-tool-guide-pause-label hidden>일시정지</span><span data-tool-guide-play-label hidden>재생</span><span data-tool-guide-replay-label hidden>다시 재생</span></button>
                         <output class="manual-guide-time" data-tool-guide-time aria-hidden="true">00:00 / 00:32</output>
                         <div class="manual-timeline-shell"><input type="range" class="manual-timeline-range" data-tool-guide-seek min="0" max="32000" step="100" value="0" aria-label="가이드 재생 위치" aria-valuetext="00:00 / 00:32"><div class="manual-timeline-markers" data-tool-guide-markers></div></div>
                     </div>
-                    <div class="manual-guide-footer"><button type="button" class="manual-guide-control" data-tool-guide-previous><i data-lucide="chevron-left" aria-hidden="true"></i><span>이전 단계</span></button><button type="button" class="manual-guide-control" data-tool-guide-next><span>다음 단계</span><i data-lucide="chevron-right" aria-hidden="true"></i></button><a href="/" class="manual-guide-launch" data-tool-guide-launch><span>직접 사용해 보기</span><i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div>
+                    <div class="manual-guide-footer"><button type="button" class="manual-guide-control" data-tool-guide-previous><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg><span>이전 단계</span></button><button type="button" class="manual-guide-control" data-tool-guide-next><span>다음 단계</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button><a href="/" class="manual-guide-launch" data-tool-guide-launch><span>직접 사용해 보기</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18 18 6M6 6h12v12"/></svg></a></div>
                     <p class="manual-guide-sr-status" data-tool-guide-status aria-live="polite"></p>
                 </div>
             </div>
@@ -878,17 +484,17 @@
         <section class="history-dialog" role="dialog" aria-modal="true" aria-labelledby="history-dialog-title">
             <header class="history-dialog-header">
                 <div class="min-w-0">
-                    <div class="flex items-center gap-2 mb-1 text-sky-400">
-                        <i data-lucide="scroll-text" class="w-4 h-4"></i>
-                        <span class="text-[11px] font-bold uppercase tracking-[0.18em]">Update History</span>
+                    <div class="history-eyebrow">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h13v14c0 2-1 3-3 3s-3-1-3-3H3v-2h3zM9 8h7m-7 4h6"/></svg>
+                        <span>Update History</span>
                     </div>
-                    <h2 id="history-dialog-title" class="font-outfit text-xl md:text-2xl font-bold text-white truncate">
+                    <h2 id="history-dialog-title" class="history-title">
                         버전 기록
                     </h2>
                     <p id="history-current-version" class="mt-1 text-xs font-mono text-slate-500"></p>
                 </div>
                 <button type="button" id="history-close-button" class="history-close-button" aria-label="버전 기록 닫기">
-                    <i data-lucide="x" class="w-5 h-5"></i>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
                 </button>
             </header>
             <div id="history-dialog-body" class="history-dialog-body">
@@ -897,55 +503,17 @@
         </section>
     </div>
 
-    <!-- Main Footer -->
-    <footer class="mt-20 pb-12 text-center z-10 w-full animate-fade-in" style="animation: fadeIn 1.5s ease forwards;">
-        <div
-            class="flex flex-col items-center justify-center gap-2 opacity-40 hover:opacity-90 transition-opacity duration-500 cursor-default">
-            <p class="text-xs font-outfit tracking-wider text-slate-400">
-                &copy; 2026 <span class="text-slate-200">INOVANCE Robot Assistant</span>. All rights reserved.
-            </p>
-            <p class="text-[11px] font-medium text-slate-500">
-                Designed & Developed by <span class="text-sky-400/80">Jeongchan Lee</span> | INOVANCE Korea
-            </p>
-            <p class="text-[9px] font-mono text-slate-600 mt-2 uppercase tracking-widest">
-                SYS ID:
-                <span id="visit-count"
-                    class="inline-flex align-middle ml-2 rounded border border-white/10 bg-slate-900/60 px-2 py-0.5 text-slate-400">visits 2,031</span>
-                <span class="mx-1">&middot;</span>
-                <a href="/privacy/" class="text-sky-400/80 hover:text-sky-300 underline underline-offset-4">Privacy Policy</a>
-            </p>
+    <footer id="home-footer">
+        <div class="home-width footer-row">
+            <div><strong data-i18n-skip>InoRobot Assistant</strong><p>Designed &amp; Developed by Jeongchan Lee | INOVANCE Korea</p></div>
+            <div><p>© 2026 INOVANCE Robot Assistant</p><p><span id="visit-count">visits 2,031</span> · <a href="/privacy/">Privacy Policy</a></p></div>
         </div>
     </footer>
-
-    <style>
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(2rem);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-
-            to {
-                opacity: 1;
-            }
-        }
-    </style>
 
     <script src="/0_Home/site-card-versions.js?v=20260728-1"></script>
     <script src="/0_Home/site-card-history-data.js?v=20260730-2"></script>
     <script src="/0_Home/site-card-history.js?v=20260730-2"></script>
-    <script src="/0_Home/robot-select-guide.js?v=20260906-1"></script>
-    <script src="/0_Home/tool-guide.js?v=20260906-2"></script>
+    <script src="/0_Home/tool-guide.js?v=20261117-guide-2"></script>
     <script>
         // Keep the main-site card versions in one place.
         const siteCardVersions = window.SITE_CARD_VERSIONS || {};
@@ -957,25 +525,18 @@
             }
         });
 
-        // Initialize Icons, or retain the local text fallback when the CDN is unavailable.
-        if (window.lucide) {
-            lucide.createIcons();
-        } else if (window.InoRobotIconFallback) {
-            window.InoRobotIconFallback.apply(document);
-        }
-
-        // Optional: Add subtle mouse movement effect to cards
-        document.addEventListener('mousemove', (e) => {
-            const cards = document.querySelectorAll('.glass-card');
-            cards.forEach(card => {
-                const rect = card.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-
-                // Simple glow follow effect on hover inner
-                card.style.setProperty('--mouse-x', `${x}px`);
-                card.style.setProperty('--mouse-y', `${y}px`);
-            });
+        const filters = document.querySelector('.tool-filters');
+        const cards = document.querySelectorAll('.tool-card');
+        filters.hidden = false;
+        filters.addEventListener('click', (event) => {
+            const current = event.target.closest('[data-filter]');
+            if (!current) return;
+            for (const button of filters.querySelectorAll('button')) {
+                button.setAttribute('aria-pressed', String(button === current));
+            }
+            for (const card of cards) {
+                card.hidden = current.dataset.filter !== 'all' && card.dataset.group !== current.dataset.filter;
+            }
         });
     </script>
 </body>

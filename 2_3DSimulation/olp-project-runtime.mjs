@@ -1,5 +1,6 @@
-import {OlpRuntime as ProgramRuntime,createOlpGlobalMemory} from './olp-runtime.mjs?v=20261102-generator-2';
-export {BIT_COUNT,BIT_START,WORD_COUNT,WORD_START,OLP_RUNTIME_BUILD,OlpRuntimeError,clampWord,normalizeAddress} from './olp-runtime.mjs?v=20261102-generator-2';
+import {OlpRuntime as ProgramRuntime,createOlpGlobalMemory} from './olp-runtime.mjs?v=20261114-tact-1';
+export {BIT_COUNT,BIT_START,WORD_COUNT,WORD_START,OLP_RUNTIME_BUILD,OlpRuntimeError,clampWord,normalizeAddress,
+    formatOlpTactCsv,olpTactMovesForCycle} from './olp-runtime.mjs?v=20261114-tact-1';
 
 const name=path=>String(path).replaceAll('\\','/').split('/').at(-1).toLowerCase();
 
@@ -60,7 +61,7 @@ export class OlpRuntime extends ProgramRuntime {
         const disallowMotion=()=>{throw new Error('A generated PLC background task cannot dispatch robot motion');};
         const child=new OlpStaticRuntime(this.project,{...this.sessionAdapter,globalMemory:this.globalMemory,taskId:definition.id,
             queueStopMoves:false,move:disallowMotion,jump:disallowMotion,home:disallowMotion,
-            cursor:null,status:null,onStopped:null,stopMotion:null},this,definition.path);
+            cursor:null,status:null,onStopped:null,stopMotion:null,tactChanged:null},this,definition.path);
         child.robot=this.robot;
         return {...definition,runtime:child,get scans(){return child.staticScans;},promise:null};
     }

@@ -37,7 +37,8 @@ test('소프트웨어 버전과 다운로드 버튼이 기준 파일에 연결�
 
   const actual = await page.locator('#softwareList .software-card').evaluateAll(cards => cards.map(card => {
     const groupName = card.querySelector('h3')?.textContent.trim();
-    const version = card.querySelector('h3')?.parentElement?.querySelector('div')?.textContent.trim();
+    // Localized visible names retain the original release identity for download validation.
+    const version = card.dataset.releaseTag;
     const downloads = Array.from(card.querySelectorAll('button[data-download-key]')).map(button => {
       const key = decodeURIComponent(button.dataset.downloadKey);
       const locked = button.dataset.downloadLocked === 'true';

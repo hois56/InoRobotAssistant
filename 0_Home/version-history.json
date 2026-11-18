@@ -34,6 +34,14 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[개선]` 홈의 도구 모음에서 여덟 가지 도구를 바로 열거나 설계·개발, 자료·지원으로 나누어 찾을 수 있습니다.",
+                  "`[개선]` 홈의 사용 방법 가이드 5종을 밝은 화면으로 개편했습니다. 현재 단계를 강조하고 자막으로 조작 방법과 이유를 설명하며, 원하는 단계로 앞뒤 이동할 수 있습니다.",
+                  "`[개선]` 각 도구 화면에 홈과 같은 아이보리 헤더와 밝은 작업 영역을 적용했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.11.05",
                 "items": [
                   "`[변경]` 푸시할 때 GitHub 자동 회귀 검사를 실행하지 않도록 변경했습니다."
@@ -101,6 +109,13 @@
           {
             "title": "Robot Model Select",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[개선]` 아이보리 헤더와 밝은 패널, 짙은 글자색으로 화면을 정리했습니다.",
+                  "`[추가]` 모델별 고유 주소와 검색 가능한 상세 페이지를 제공하고, 주소 공유·새로고침·뒤로 가기로 해당 모델의 구성을 다시 열 수 있습니다."
+                ]
+              },
               {
                 "title": "Ver 26.10.31",
                 "items": [
@@ -284,6 +299,36 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[개선]` 3D 작업 공간과 모델 트리, JOG 패널을 밝게 바꾸고, 작은 화면에서는 하단 도구 모음에서 패널을 열 수 있도록 했습니다.",
+                  "`[추가]` P.pts에서 선택한 위치를 한 번에 삭제하고 실행 취소·다시 실행할 수 있습니다. Delete 키와 별도 창에서도 사용할 수 있습니다.",
+                  "`[수정]` 로봇 외곽선 표시에서 일부 모델의 INOVANCE 로고 글자 테두리가 남던 문제를 해결했습니다.",
+                  "`[개선]` 곡선 기반 자동 궤적 생성에서 선택한 곡선을 굵게 강조하고, 면을 클릭하면 외곽선을 한 번에 선택할 수 있습니다.",
+                  "`[추가]` 테스트 모델의 베이스·컨베이어·물체·스테이지·티칭 키트·트레이 등에 길이·너비·높이를 지정하고 작업 파일에 저장·복원할 수 있습니다. 기본값은 기존 모델의 실제 치수이며, 일반 컨베이어에서도 벨트 띠로 운전 상태를 확인할 수 있습니다.",
+                  "`[개선]` 컨베이어 자동 공급 시 물체마다 좌우 위치와 회전에 무작위 편차를 주어 비전 보정을 시험할 수 있습니다. 편차 범위를 조절하고 벨트 경계와 물체 사이 최소 간격을 유지합니다.",
+                  "`[수정]` 컨베이어 연속 운전이 다른 프로그램으로 이동하거나 컨베이어 패널을 숨기고 별도 창을 닫을 때 정지되던 문제를 해결했습니다. 정지 버튼을 누를 때까지 운전과 자동 공급을 유지합니다.",
+                  "`[추가]` 컨베이어에서 등록 오브젝트를 지정한 간격으로 계속 자동 공급할 수 있습니다. 생성 물체는 기본으로 접힌 그룹에 모이고 끝단을 지나면 정리되며, 공급 설정과 그룹 상태가 작업 파일에 저장됩니다.",
+                  "`[변경]` 가상 컨트롤러 전용 브리지를 V2.0으로 구분하고, 실행 창·파일 속성·다운로드에 버전을 표시합니다. 최소화하면 우측 알림 영역에서 계속 실행되며, 아이콘 더블클릭이나 메뉴로 창을 다시 열 수 있습니다.",
+                  "`[수정]` 컨베이어 센서 IN0~64의 K14 연동을 지원하고, 가상 벨트 시험 운전에서 웹 연동으로 전환할 수 있도록 수정했습니다. 연동이 거부되면 대기 물체·로봇 추종·비전 중복 등 원인을 구분해 안내합니다.",
+                  "`[추가]` OLP 실행 시 이동마다 걸린 시간과 앞 대기 시간을 사이클별 표로 보여 주고, 가장 오래 걸린 이동을 강조하며 CSV로 저장할 수 있습니다.",
+                  "`[추가]` K14 가상 컨트롤러에 웹 컨베이어의 엔코더·센서·비전 검출을 연결하고, 로봇 프로그램의 컨베이어 추종에 사용할 수 있습니다.",
+                  "`[개선]` 촬영 시점의 엔코더값으로 비전 처리 지연을 보정하고, 연동 설정을 작업 파일에 저장합니다.",
+                  "`[추가]` 컨베이어 창에서 속도와 정·역방향을 선택해 테스트 운전하고, 버튼을 누르는 동안만 움직이는 JOG와 정지를 사용할 수 있습니다. 브리지 없이 장면에서 시험하며, 트래킹 연동 시 같은 이동이 엔코더 입력에 반영됩니다. 테스트 Conveyor 모델의 벨트 무늬도 속도와 방향에 맞춰 끝단을 돌아 순환하며, JOG 해제·정지 시 함께 멈춥니다.",
+                  "`[추가]` 테스트 창에서 컨베이어·시험 물체·레이저 센서·하향 비전 카메라를 설정된 상태로 함께 생성합니다. 레이저의 감지 위치와 ON/OFF 색상, 센서 감지에 따른 자동 촬영·검출 결과를 컨트롤러 연결 전에도 확인하고 저장·복원할 수 있습니다. 컨베이어 모듈 아래 컨베이어·비전 카메라·센서 하위 그룹을 구성해 전체 또는 개별 선택·이동이 가능합니다. 벨트는 길이 2.5배·폭 1.5배로 확대하고 센서와 카메라는 이송 시작부에 배치합니다.",
+                  "`[추가]` IO 테스트의 In[0]–In[64] ON/OFF를 선택한 K14 가상 컨트롤러의 DI0–DI64에 전달하고 실제 입력 상태를 표시합니다. 연결 끊김·읽기 실패는 미확인 상태로 구분합니다.",
+                  "`[추가]` 가상 비전 기능을 추가했습니다. 상·하향 촬상과 컬러 라이브 영상을 지원하며, 테스트 비전 모듈의 Camera 부품에는 상향 촬상이 자동으로 연결됩니다. 9점·회전 중심 캘리브레이션 후 촬상 버튼으로 기준 위치 대비 X·Y·각도 보정값을 한 번 측정할 수 있습니다. K12 가상컨트롤러용 보정값 내보내기와 CALRAW·PIXEL 영상 좌표 TCP 명령, 로봇 BASE 좌표 변환 예제를 지원합니다. 비전 영상에서는 로봇 좌표축과 3D 조작 핸들을 제외합니다. 로봇랩 비전 보정의 기본 끝 문자 V에 맞춘 TCP 통신을 지원합니다.",
+                  "`[추가]` 작업물 오브젝트를 선택해 기존 모델을 기준 위치 주변에서 무작위로 이동·회전할 수 있습니다. 기본 편차는 X·Y 각각 ±50 mm, 각도 ±180°이며, 기본 형상 작업물 생성도 지원합니다.",
+                  "`[추가]` 오브젝트 동작 설정에서 원위치 Output 번호를 지정해 IO로 오브젝트를 원위치할 수 있습니다. 모든 등록 오브젝트를 한 번에 원위치하거나, 원위치할 때 X·Y 이동과 회전 범위 안에서 무작위로 틀어서 놓도록 설정할 수 있습니다. 원위치로 등록 버튼으로 현재 위치를 새 원위치로 다시 지정할 수 있습니다.",
+                  "`[추가]` 가상 비전이 별도 IP로 실제·가상 컨트롤러와 Socket·Ethernet/IP 통신을 지원합니다. 서버·클라이언트 역할을 선택하고 연결 버튼으로 한 번 연결을 시도하며, 설정에 맞춘 로봇 예제 프로그램을 사용할 수 있습니다.",
+                  "`[추가]` 테스트 창에 평면 트레이 모듈을 추가했습니다. 칸막이 없는 240×240 mm 작업면에서 오브젝트를 자유롭게 배치·회전해 비전 촬영과 집기 작업에 사용할 수 있습니다. 교육용 모델링 생성 시 초기 X=650, Y=350, Z=0 mm에 함께 배치됩니다.",
+                  "`[수정]` 작업을 다시 불러오면 특정 오브젝트를 대상으로 지정한 오브젝트 원위치 IO 매핑이 삭제되던 문제를 해결했습니다.",
+                  "`[추가]` 교육용 모델링 생성 시 선택한 로봇에 Single VAC Tool을 Tool로 자동 장착하도록 추가했습니다. 교육용 Single VAC Tool의 TCP는 일반 로봇 Z=100 mm, SCARA Z=-100 mm로 설정되며, SCARA 어댑터는 처음 불러올 때 Z=12 mm에 배치됩니다.",
+                  "`[수정]` R4H 등 일부 로봇 모델에서 INOVANCE 로고가 표시되지 않던 문제를 해결했습니다.",
+                  "`[추가]` 3D 화면에서 모서리·곡선을 클릭해 위치값을 자동 생성하는 기능을 추가했습니다. 간격·시작 번호·방향·오프셋을 설정하고 좌표를 미리 본 뒤 P.pts에 저장하거나 내보낼 수 있습니다."
+                ]
+              },
               {
                 "title": "Ver 26.11.03",
                 "items": [
@@ -699,6 +744,12 @@
             "title": "Robot Tool Selector",
             "versions": [
               {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[개선]` 아이보리 헤더와 밝은 패널, 짙은 글자색으로 화면을 정리했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.10.27",
                 "items": [
                   "`[개선]` 스카라 선택 시 계산에 사용하지 않는 J5 → 끝단 플랜지 거리 입력을 비활성화하여 혼동을 줄였습니다."
@@ -767,6 +818,16 @@
           {
             "title": "Project Generator",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[개선]` 아이보리 헤더와 밝은 패널, 짙은 글자색으로 화면을 정리했습니다. 실시간 소스 미리보기에서 주석은 초록색으로 표시하고 명령어·문자열·숫자·함수도 색으로 구분합니다.",
+                  "`[추가]` 기존 프로젝트 ZIP·폴더에서 프로세스와 옵션을 불러와 수정하고, 사용자 코드·티칭 좌표를 보존하며 충돌을 검토한 뒤 수정 프로젝트 ZIP으로 내보낼 수 있습니다.",
+                  "`[추가]` 3D 시뮬레이션용 프로젝트를 따로 내려받을 수 있습니다. PLC 신호·IO 대기·티칭·레시피·모니터링 태스크를 빼고, 툴과 비전 응답은 지정한 시간으로 대신하며, 공정 순서와 반복 횟수를 정해 사이클 단위로 실행합니다.",
+                  "`[수정]` Socket 방식의 Tray Get 등과 Vision Calibration에서 비전 IO 보정 대신 Socket 수신값을 공정 기본 보정에 합산하도록 수정하고, 캘리브레이션 공정 프로그램도 Shot 수신 후 보정을 적용하도록 개선했습니다.",
+                  "`[수정]` Tray Get 등에서 비전 보정을 Use - Socket으로 선택해도 Socket 설정 창이 열리지 않던 문제를 해결했습니다."
+                ]
+              },
               {
                 "title": "Ver 26.10.31",
                 "items": [
@@ -888,6 +949,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[개선]` 밝은 화면에서 제품별 버전과 한국어 버전 명칭을 확인하고 다운로드할 수 있습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.11.11",
                 "items": [
                   "`[업데이트]` InoRobotLab·InoRobotTP 시뮬레이션 버전(MultiVC)을 SPC25K13(2026-11-11)으로 업데이트했습니다."
@@ -992,6 +1059,14 @@
           {
             "title": "Document",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[개선]` 밝은 화면에서 문서를 검색하고 필터별 문서 수와 검색 결과 수를 확인할 수 있습니다.",
+                  "`[수정]` 하드웨어 매뉴얼에 CAD가 섞여 표시되던 문제를 해결하고, S7-60은 기본형 CAD만, TP200은 보호 커버 유무에 따라 구분해 제공합니다.",
+                  "`[수정]` Remote_IO_List.xlsx의 미리보기에서 기본·확장 Remote IO 표를 바로 볼 수 있습니다."
+                ]
+              },
               {
                 "title": "Ver 26.11.05",
                 "items": [
@@ -1145,6 +1220,12 @@
           {
             "title": "Debugging Tool",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[개선]` 아이보리 헤더와 밝은 패널, 짙은 글자색으로 화면을 정리했습니다."
+                ]
+              },
               {
                 "title": "Ver 26.11.04",
                 "items": [
@@ -1594,6 +1675,14 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[Improved]` Open all eight tools from the tool library on the home page, or filter them by design and development or resources and support.",
+                  "`[Improved]` All five home guides now use a light player. Each step highlights the relevant control and explains what to do and why. You can move to any step.",
+                  "`[Improved]` Tool pages now share the home page’s ivory header and light workspace."
+                ]
+              },
+              {
                 "title": "Ver 26.11.05",
                 "items": [
                   "`[Changed]` Disabled automatic GitHub regression checks on push."
@@ -1655,6 +1744,13 @@
           {
             "title": "Robot Model Select",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[Improved]` Updated the workspace with an ivory header, light panels and dark text.",
+                  "`[Added]` Each robot now has a searchable detail page and unique address that supports sharing, reload and browser history while preserving configuration."
+                ]
+              },
               {
                 "title": "Ver 26.10.31",
                 "items": [
@@ -1838,6 +1934,36 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[Improved]` The 3D workspace, model tree and JOG panel now use a light palette. On small screens, open panels from the bottom toolbar.",
+                  "`[Added]` Delete selected positions together in P.pts, with undo and redo. The Delete key and detached window are also supported.",
+                  "`[Fixed]` Removed remaining INOVANCE lettering edges from robot outlines on affected models.",
+                  "`[Improved]` Curve-based trajectory generation clearly highlights selected curves and selects face boundaries with one click.",
+                  "`[Added]` Set and save length, width and height for test models including bases, conveyors, objects, stages, teaching kits and trays. Defaults match the original model dimensions. Regular conveyors also show belt markings that follow their motion.",
+                  "`[Improved]` Conveyor auto-feed varies each workpiece’s lateral position and rotation for vision correction trials. Adjust both ranges while preserving belt boundaries and minimum spacing.",
+                  "`[Fixed]` Continuous conveyor operation and auto-feed now continue when switching applications, hiding the panel or closing its detached window, until Stop is pressed.",
+                  "`[Added]` Conveyors can continuously feed registered objects at a specified gap. Generated objects are collected in a group that is collapsed by default and cleaned up after passing the outlet. Feed settings and group state are saved with the workspace.",
+                  "`[Changed]` The dedicated Virtual Controller Bridge is now versioned as V2.0, shown in its window, file properties and download link. Minimizing keeps it running in the notification area; double-click its icon or use its menu to reopen the window.",
+                  "`[Fixed]` Conveyor sensors support IN0–64 on K14. An empty, untracked virtual belt can switch from test drive to web control. Rejected links now explain pending objects, robot tracking, or conflicting vision sources.",
+                  "`[Added]` When OLP runs, a per-cycle table shows the time of each move and the wait before it, highlights the longest move, and can be saved as CSV.",
+                  "`[Added]` Connect web conveyor encoders, sensors and vision detections to a K14 virtual controller for conveyor tracking in robot programs.",
+                  "`[Improved]` Exposure-time encoder latches compensate for vision processing delay, and conveyor settings are saved with the workspace.",
+                  "`[Added]` Test conveyors with adjustable speed, forward/reverse direction, continuous run, hold-to-run JOG and stop controls. Scene tests work without a bridge; when tracking is linked, the same motion drives encoder input. The test Conveyor model also shows belt markings circulating around its ends at the selected speed and direction, stopping when JOG is released or Stop is pressed.",
+                  "`[Added]` Create a configured conveyor tracking test scene with workpieces, a laser sensor and a downward-facing vision camera. Before connecting a controller, inspect the laser position and detection colors, sensor-triggered capture and detection results, and save or restore the setup. The conveyor module contains Conveyor, Vision camera and Sensor subgroups for collective or individual selection and movement. The belt is 2.5 times longer and 1.5 times wider, with the sensor and camera near the infeed.",
+                  "`[Added]` IO Test In[0]–In[64] switches DI0–DI64 on the selected K14 virtual controller and displays confirmed input feedback. Disconnected or failed reads are shown as unavailable.",
+                  "`[Added]` Added Virtual Vision with upward/downward capture and color live images. The test Vision module automatically uses its Camera parts for upward capture. After 9-point and rotation-center calibration, Capture measures X, Y and angle offsets from the master position once. Supports K12 virtual-controller calibration export, CALRAW/PIXEL raw-coordinate TCP commands and a robot BASE coordinate conversion example. Vision images exclude robot coordinate axes and 3D manipulation handles. Supports TCP communication with RobotLab calibration using its default V terminator.",
+                  "`[Added]` Select a work object to move and rotate the existing model randomly around its reference position. Default deviations are ±50 mm in X/Y and ±180° in angle; basic work-shape generation is also supported.",
+                  "`[Added]` In object motion settings, you can assign a home Output number to return the object to its home position by IO. You can also home all registered objects at once, or have objects placed with a random X/Y and rotation offset within a set range when homed. The Set as Home button registers the current position as the new home.",
+                  "`[Added]` Virtual Vision communicates with real and virtual controllers on its own IP over Socket or Ethernet/IP. Select a server/client role and press Connect for a single connection attempt, with robot example programs generated from the settings.",
+                  "`[Added]` Added a flat tray module to the test window. Its uninterrupted 240×240 mm surface supports freely positioned and rotated objects for vision capture and picking. Educational model generation also places it at the initial position X=650, Y=350, Z=0 mm.",
+                  "`[Fix]` Fixed an issue where object home IO mappings targeting a specific object were deleted when work was reloaded.",
+                  "`[Added]` Educational model generation now automatically mounts a Single VAC Tool as a Tool on the selected robot. The educational Single VAC Tool uses TCP Z=100 mm on articulated robots and Z=-100 mm on SCARA robots. SCARA adapters initially load at Z=12 mm.",
+                  "`[Fix]` Fixed missing INOVANCE logos on R4H and some other robot models.",
+                  "`[Added]` Added automatic position generation by clicking edges and curves in the 3D view. Set spacing, first point number, direction and offsets, preview coordinates, then save or export them through P.pts."
+                ]
+              },
               {
                 "title": "Ver 26.11.03",
                 "items": [
@@ -2236,6 +2362,12 @@
             "title": "Robot Tool Selector",
             "versions": [
               {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[Improved]` Updated the workspace with an ivory header, light panels and dark text."
+                ]
+              },
+              {
                 "title": "Ver 26.10.27",
                 "items": [
                   "`[Improved]` Disabled the unused J5-to-flange distance input when a SCARA model is selected to avoid confusion."
@@ -2304,6 +2436,16 @@
           {
             "title": "Project Generator",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[Improved]` Updated the workspace with an ivory header, light panels and dark text. The live source preview shows comments in green and distinguishes commands, strings, numbers and functions by color.",
+                  "`[Added]` Import an existing project ZIP or folder to modify processes and options, preserve custom code and taught points, review conflicts, and export the complete modified project as a ZIP.",
+                  "`[Added]` A separate project for the 3D simulation can be downloaded. It removes PLC signals, IO waits, teaching, recipes and monitoring tasks, replaces tool and vision replies with set times, and runs the chosen process order for a set number of cycles.",
+                  "`[Fixed]` Socket-based Tray Get and other processes, including Vision Calibration, now add received Socket data to the process base offset instead of using vision IO offsets. Calibration process programs receive Shot data before applying the offset.",
+                  "`[Fixed]` Fixed Socket settings failing to open when selecting Use - Socket for vision offsets in Tray Get and other processes."
+                ]
+              },
               {
                 "title": "Ver 26.10.31",
                 "items": [
@@ -2425,6 +2567,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[Improved]` Find downloads by product and localized version name in the light catalogue."
+                ]
+              },
+              {
                 "title": "Ver 26.11.11",
                 "items": [
                   "`[Updated]` Updated the InoRobotLab and InoRobotTP simulation version (MultiVC) to SPC25K13 (2026-11-11)."
@@ -2529,6 +2677,14 @@
           {
             "title": "Document",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[Improved]` Search the light document catalogue and see counts for each filter and for your results.",
+                  "`[Fixed]` Excluded CAD from hardware manual filters, kept one standard S7-60 CAD set and separated TP200 CAD by protective-cover configuration.",
+                  "`[Fixed]` Preview both the standard and extended Remote IO tables in Remote_IO_List.xlsx directly in the browser."
+                ]
+              },
               {
                 "title": "Ver 26.11.05",
                 "items": [
@@ -2682,6 +2838,12 @@
           {
             "title": "Debugging Tool",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[Improved]` Updated the workspace with an ivory header, light panels and dark text."
+                ]
+              },
               {
                 "title": "Ver 26.11.04",
                 "items": [
@@ -3119,6 +3281,14 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[改进]` 在主页工具库中可直接打开八种工具，也可按“设计与开发”或“资料与支持”筛选。",
+                  "`[改进]` 主页上的五个使用指南采用浅色界面。每一步都会突出显示相关控件，通过字幕说明操作和原因，并支持前后切换步骤。",
+                  "`[改进]` 各工具页面采用与首页一致的象牙白页眉和浅色工作区。"
+                ]
+              },
+              {
                 "title": "Ver 26.11.05",
                 "items": [
                   "`[变更]` 已停用推送时的 GitHub 自动回归检查。"
@@ -3180,6 +3350,13 @@
           {
             "title": "Robot Model Select",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[改进]` 工作区采用象牙白页眉、浅色面板和深色文字。",
+                  "`[新增]` 每个机器人型号均提供独立地址及可搜索的详情页，支持分享、刷新和浏览器历史记录，并保留原有配置流程。"
+                ]
+              },
               {
                 "title": "Ver 26.10.31",
                 "items": [
@@ -3363,6 +3540,36 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[改进]` 3D 工作区、模型树和 JOG 面板现采用浅色界面。在小屏幕上可从底部工具栏打开面板。",
+                  "`[新增]` 支持在 P.pts 中批量删除选中的位置，并可撤销和重做。也可使用 Delete 键和独立窗口。",
+                  "`[修复]` 修复部分机器人模型开启轮廓线时仍显示 INOVANCE 标志字母边线的问题。",
+                  "`[改进]` 基于曲线的自动轨迹生成会加粗突出显示所选曲线，点击面即可一次选择其轮廓线。",
+                  "`[新增]` 可为底座、传送带、物体、工作台、教学套件和托盘等测试模型设置长、宽、高，并随工作区保存和恢复。默认值为原模型的实际尺寸，普通传送带也会通过移动的皮带条纹显示运行状态。",
+                  "`[改进]` 传送带自动供料可随机改变每个工件的横向位置和旋转角度，用于测试视觉补偿。可调整偏差范围，并保持工件位于皮带内及最小间距。",
+                  "`[修复]` 修复切换应用、隐藏传送带面板或关闭其独立窗口时连续运行停止的问题。运行和自动供料会保持到按下停止。",
+                  "`[新增]` 传送带可按设定间隔持续自动供给已注册物体。生成的物体归入默认折叠的分组，经过出口后自动清理，供料设置和分组状态随工作区保存。",
+                  "`[变更]` 虚拟控制器专用桥接程序现在使用 V2.0 版本号，并在程序窗口、文件属性和下载链接中显示。最小化后会在通知区域继续运行，可双击图标或通过菜单重新打开窗口。",
+                  "`[修复]` 传送带传感器支持 K14 的 IN0–64。没有待处理物体且机器人未跟踪时，可从虚拟皮带试运行切换到网页联动。联动被拒绝时会说明待处理物体、机器人跟踪或视觉源冲突等原因。",
+                  "`[新增]` 运行 OLP 时按循环以表格显示每次移动的时间及之前的等待时间，突出显示耗时最长的移动，并可保存为 CSV。",
+                  "`[新增]` 将网页传送带的编码器、传感器和视觉检测连接到 K14 虚拟控制器，用于机器人程序的传送带跟踪。",
+                  "`[改进]` 使用曝光时的编码器值补偿视觉处理延迟，并将连接设置保存在工作区中。",
+                  "`[新增]` 输送机窗口支持速度、正反方向、连续试运行、按住运行的 JOG 和停止操作。无需桥接即可在场景中测试，跟踪联动时相同运动会反映到编码器输入。 测试 Conveyor 模型的皮带纹理也会按所选速度和方向绕端部循环，松开 JOG 或停止时同步停止。",
+                  "`[新增]` 测试窗口可一键生成已配置的输送机、测试工件、激光传感器和下视视觉相机。连接控制器前即可查看激光检测位置、ON/OFF 颜色、传感器触发拍照及检测结果，并保存或恢复配置。 输送机模块包含输送机、视觉相机和传感器子组，可整体或分别选择和移动。皮带长度扩大为2.5倍、宽度为1.5倍，传感器和相机位于进料端附近。",
+                  "`[新增]` IO 测试的 In[0]–In[64] 可切换所选 K14 虚拟控制器的 DI0–DI64，并显示实际输入状态；断开连接或读取失败时显示状态不可用。",
+                  "`[新增]` 新增虚拟视觉功能，支持向上或向下拍摄和彩色实时图像。测试视觉模块的 Camera 部件自动启用向上拍摄。完成9点与旋转中心标定后，可单次测量相对基准位置的 X、Y 与角度补偿值。 支持导出 K12 虚拟控制器标定参数、CALRAW/PIXEL 像素坐标 TCP 命令及机器人 BASE 坐标转换示例。 视觉图像不显示机器人坐标轴和三维操作手柄。 支持使用 RobotLab 视觉标定默认结束符 V 进行 TCP 通信。",
+                  "`[新增]` 可选择工件对象，在基准位置周围随机移动和旋转现有模型。默认 X、Y 偏差各为 ±50 mm，角度偏差为 ±180°，也支持生成基本形状工件。",
+                  "`[新增]` 可在对象动作设置中指定复位 Output 编号，通过 IO 使对象回到原位。还可一次性复位所有已登记对象，或设置在复位时于指定的 X/Y 移动和旋转范围内随机偏移放置。还可通过“登记为原位”按钮将当前位置重新设为原位。",
+                  "`[新增]` 虚拟视觉可使用独立 IP 通过 Socket 或 Ethernet/IP 与实际或虚拟控制器通信。选择服务器或客户端角色后，点击连接按钮进行一次连接尝试，并根据设置提供机器人示例程序。",
+                  "`[新增]` 测试窗口新增平面托盘模块。240×240 mm 无隔板工作面支持自由摆放和旋转工件，用于视觉拍摄与抓取。 生成教学模型时，也会将其放置在初始位置 X=650、Y=350、Z=0 mm。",
+                  "`[修复]` 修复了重新加载作业后，以特定对象为目标的对象复位 IO 映射被删除的问题。",
+                  "`[新增]` 生成教学模型时，会自动将 Single VAC Tool 作为工具安装到所选机器人上。 教学用 Single VAC Tool 的 TCP 在普通机器人上设为 Z=100 mm，在 SCARA 上设为 Z=-100 mm。SCARA 适配器首次加载时放置在 Z=12 mm。",
+                  "`[修复]` 修复了 R4H 等部分机器人模型不显示 INOVANCE 标识的问题。",
+                  "`[新增]` 新增在3D视图中点击边和曲线自动生成位置值的功能。可设置间距、起始编号、方向和偏移，预览坐标后通过P.pts保存或导出。"
+                ]
+              },
               {
                 "title": "Ver 26.11.03",
                 "items": [
@@ -3761,6 +3968,12 @@
             "title": "Robot Tool Selector",
             "versions": [
               {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[改进]` 工作区采用象牙白页眉、浅色面板和深色文字。"
+                ]
+              },
+              {
                 "title": "Ver 26.10.27",
                 "items": [
                   "`[改进]` 选择 SCARA 机型时，禁用不参与计算的 J5 至末端法兰距离输入，避免混淆。"
@@ -3829,6 +4042,16 @@
           {
             "title": "Project Generator",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[改进]` 工作区采用象牙白页眉、浅色面板和深色文字。 实时源码预览以绿色显示注释，并用不同颜色区分指令、字符串、数字和函数。",
+                  "`[新增]` 支持导入现有项目 ZIP 或文件夹，修改工序及选项，保留用户代码和示教坐标，检查冲突后将完整修改项目导出为 ZIP。",
+                  "`[新增]` 可单独下载用于 3D 仿真的项目。去除 PLC 信号、IO 等待、示教、配方和监控任务，工具和视觉的应答改为设定时间，并按指定的工序顺序和次数循环运行。",
+                  "`[修复]` 采用 Socket 的 Tray Get 等工序及 Vision Calibration 现在将 Socket 接收值与工序基本补偿相加，不再使用视觉 IO 补偿。校准工序程序先接收 Shot 数据，再应用补偿。",
+                  "`[修复]` 修复了 Tray Get 等工序的视觉补偿选择 Use - Socket 时不显示 Socket 设置窗口的问题。"
+                ]
+              },
               {
                 "title": "Ver 26.10.31",
                 "items": [
@@ -3950,6 +4173,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[改进]` 在浅色目录中按产品和本地化版本名称查找并下载软件。"
+                ]
+              },
+              {
                 "title": "Ver 26.11.11",
                 "items": [
                   "`[更新]` InoRobotLab·InoRobotTP 仿真版本（MultiVC）已更新至 SPC25K13（2026-11-11）。"
@@ -4054,6 +4283,14 @@
           {
             "title": "Document",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[改进]` 在浅色文档目录中搜索，并查看各筛选项和搜索结果的文档数量。",
+                  "`[修复]` 硬件手册筛选不再混入 CAD；S7-60 仅保留基本型号 CAD，TP200 按有无保护罩分别提供 CAD。",
+                  "`[修复]` 可直接在浏览器中预览 Remote_IO_List.xlsx 的标准和扩展 Remote IO 表。"
+                ]
+              },
               {
                 "title": "Ver 26.11.05",
                 "items": [
@@ -4207,6 +4444,12 @@
           {
             "title": "Debugging Tool",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[改进]` 工作区采用象牙白页眉、浅色面板和深色文字。"
+                ]
+              },
               {
                 "title": "Ver 26.11.04",
                 "items": [
@@ -4644,6 +4887,14 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[Cải thiện]` Mở cả tám công cụ từ thư viện trên trang chủ hoặc lọc theo nhóm thiết kế và phát triển hay tài liệu và hỗ trợ.",
+                  "`[Cải thiện]` Cả năm hướng dẫn trên trang chủ đều có giao diện sáng. Mỗi bước làm nổi bật vị trí cần thao tác và có phụ đề giải thích cách làm, lý do. Bạn có thể chuyển đến bất kỳ bước nào.",
+                  "`[Cải thiện]` Các trang công cụ dùng đầu trang màu ngà và vùng làm việc sáng đồng bộ với trang chủ."
+                ]
+              },
+              {
                 "title": "Ver 26.11.05",
                 "items": [
                   "`[Thay đổi]` Đã tắt kiểm tra hồi quy tự động trên GitHub khi đẩy mã."
@@ -4705,6 +4956,13 @@
           {
             "title": "Robot Model Select",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[Cải thiện]` Vùng làm việc có đầu trang màu ngà, bảng sáng và chữ đậm màu.",
+                  "`[Thêm]` Mỗi mẫu robot có địa chỉ và trang chi tiết có thể tìm kiếm, hỗ trợ chia sẻ, tải lại và lịch sử trình duyệt với quy trình cấu hình hiện có."
+                ]
+              },
               {
                 "title": "Ver 26.10.31",
                 "items": [
@@ -4888,6 +5146,36 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[Cải thiện]` Không gian 3D, cây mô hình và bảng JOG có giao diện sáng. Trên màn hình nhỏ, bạn có thể mở các bảng từ thanh công cụ dưới cùng.",
+                  "`[Thêm]` Xóa cùng lúc các vị trí đã chọn trong P.pts, hỗ trợ hoàn tác và làm lại. Có thể dùng phím Delete và cửa sổ tách riêng.",
+                  "`[Sửa]` Đã loại bỏ các đường viền chữ INOVANCE còn sót lại khi hiển thị đường viền ở một số mẫu robot.",
+                  "`[Cải tiến]` Tạo quỹ đạo theo đường cong làm nổi bật đường đã chọn và cho phép chọn toàn bộ đường biên của mặt bằng một lần nhấp.",
+                  "`[Thêm]` Đặt và lưu chiều dài, chiều rộng, chiều cao cho các mô hình thử nghiệm như đế, băng tải, vật thể, bàn thao tác, bộ giảng dạy và khay. Giá trị mặc định là kích thước thực của mô hình gốc. Băng tải thông thường cũng hiển thị các vạch trên băng theo chuyển động.",
+                  "`[Cải tiến]` Cấp phôi tự động trên băng tải thay đổi ngẫu nhiên vị trí ngang và góc xoay của từng phôi để thử bù trừ bằng thị giác. Có thể chỉnh phạm vi sai lệch, giữ phôi trong băng tải và bảo đảm khoảng cách tối thiểu.",
+                  "`[Sửa]` Băng tải chạy liên tục và cấp phôi tự động tiếp tục khi chuyển ứng dụng, ẩn bảng hoặc đóng cửa sổ tách riêng, cho đến khi nhấn Dừng.",
+                  "`[Thêm]` Băng tải có thể liên tục cấp tự động các đối tượng đã đăng ký theo khoảng cách đặt trước. Các đối tượng được tạo nằm trong một nhóm mặc định thu gọn và được dọn sau khi qua đầu ra. Cài đặt cấp liệu và trạng thái nhóm được lưu cùng không gian làm việc.",
+                  "`[Thay đổi]` Cầu nối chuyên dụng cho bộ điều khiển ảo được đặt phiên bản V2.0, hiển thị trong cửa sổ chương trình, thuộc tính tệp và liên kết tải xuống. Khi thu nhỏ, chương trình tiếp tục chạy trong vùng thông báo; nhấp đúp biểu tượng hoặc dùng menu để mở lại cửa sổ.",
+                  "`[Sửa lỗi]` Cảm biến băng tải hỗ trợ IN0–64 trên K14. Băng tải ảo không có vật chờ và không được robot bám theo có thể chuyển từ chạy thử sang điều khiển web. Khi bị từ chối, thông báo nêu rõ vật chờ, robot đang bám hoặc xung đột nguồn thị giác.",
+                  "`[Thêm]` Khi chạy OLP, bảng theo từng chu kỳ hiển thị thời gian của mỗi chuyển động và thời gian chờ trước đó, làm nổi bật chuyển động lâu nhất và có thể lưu thành CSV.",
+                  "`[Thêm]` Kết nối bộ mã hóa, cảm biến và kết quả thị giác của băng tải web với bộ điều khiển ảo K14 để chương trình robot bám theo băng tải.",
+                  "`[Cải tiến]` Giá trị bộ mã hóa tại thời điểm chụp bù độ trễ xử lý thị giác; cài đặt liên kết được lưu cùng không gian làm việc.",
+                  "`[Thêm]` Cửa sổ băng tải hỗ trợ chọn tốc độ, chiều thuận/nghịch, chạy thử liên tục, JOG khi giữ nút và dừng. Có thể thử trong cảnh mà không cần bridge; khi liên kết tracking, chuyển động cũng được phản ánh vào đầu vào encoder. Các vạch trên băng tải của mô hình Conveyor thử nghiệm cũng chuyển động vòng qua hai đầu theo tốc độ và chiều đã chọn, dừng khi nhả JOG hoặc nhấn Dừng.",
+                  "`[Thêm]` Tạo cảnh thử nghiệm tracking đã cấu hình gồm băng tải, phôi, cảm biến laser và camera nhìn xuống. Trước khi kết nối bộ điều khiển, có thể xem vị trí laser, màu phát hiện ON/OFF, kết quả chụp và phát hiện tự động theo cảm biến, đồng thời lưu hoặc khôi phục cấu hình. Mô-đun băng tải có các nhóm con Băng tải, Camera và Cảm biến để chọn và di chuyển chung hoặc riêng. Băng tải dài gấp 2,5 lần và rộng gấp 1,5 lần, với cảm biến và camera gần đầu cấp liệu.",
+                  "`[Thêm]` In[0]–In[64] trong IO Test bật/tắt DI0–DI64 của bộ điều khiển ảo K14 đã chọn và hiển thị trạng thái thực tế. Mất kết nối hoặc lỗi đọc được hiển thị là không xác định.",
+                  "`[Thêm]` Đã thêm Thị giác ảo với hướng chụp lên/xuống và ảnh màu trực tiếp. Bộ phận Camera của mô-đun thị giác thử nghiệm tự động dùng hướng chụp lên. Sau hiệu chuẩn 9 điểm và tâm xoay, nút Chụp ảnh đo một lần giá trị bù X, Y và góc so với vị trí chuẩn. Hỗ trợ xuất hiệu chuẩn cho bộ điều khiển ảo K12, lệnh TCP tọa độ điểm ảnh CALRAW/PIXEL và ví dụ chuyển đổi tọa độ BASE của robot. Ảnh thị giác không hiển thị trục tọa độ robot và tay nắm thao tác 3D. Hỗ trợ giao tiếp TCP với hiệu chuẩn RobotLab dùng ký tự kết thúc V mặc định.",
+                  "`[Thêm]` Chọn đối tượng phôi để di chuyển và xoay ngẫu nhiên mô hình có sẵn quanh vị trí chuẩn. Độ lệch mặc định là ±50 mm cho X/Y và ±180° cho góc; vẫn hỗ trợ tạo phôi hình cơ bản.",
+                  "`[Thêm]` Trong cài đặt chuyển động của đối tượng, có thể chỉ định số Output về gốc để đưa đối tượng về vị trí gốc bằng IO. Cũng có thể đưa tất cả đối tượng đã đăng ký về gốc cùng lúc, hoặc đặt đối tượng lệch ngẫu nhiên theo X/Y và góc xoay trong phạm vi đã đặt khi về gốc. Nút Đăng ký làm gốc sẽ đặt vị trí hiện tại làm vị trí gốc mới.",
+                  "`[Thêm]` Thị giác ảo giao tiếp với bộ điều khiển thực và ảo bằng IP riêng qua Socket hoặc Ethernet/IP. Chọn vai trò máy chủ hoặc máy khách và nhấn Kết nối để thử kết nối một lần; chương trình robot mẫu được tạo theo cài đặt.",
+                  "`[Thêm]` Đã thêm mô-đun khay phẳng vào cửa sổ thử nghiệm. Bề mặt 240×240 mm không vách ngăn cho phép tự do đặt và xoay đối tượng để chụp ảnh thị giác và gắp. Khi tạo mô hình đào tạo, khay cũng được đặt tại vị trí ban đầu X=650, Y=350, Z=0 mm.",
+                  "`[Sửa lỗi]` Đã khắc phục lỗi ánh xạ IO đưa đối tượng về gốc chỉ định cho một đối tượng cụ thể bị xóa khi tải lại công việc.",
+                  "`[Thêm]` Khi tạo mô hình đào tạo, Single VAC Tool được tự động lắp dưới dạng Tool vào rô-bốt đã chọn. TCP của Single VAC Tool đào tạo được đặt Z=100 mm cho rô-bốt thường và Z=-100 mm cho SCARA. Bộ chuyển đổi SCARA được đặt tại Z=12 mm khi tải lần đầu.",
+                  "`[Sửa lỗi]` Đã khắc phục lỗi không hiển thị logo INOVANCE trên R4H và một số mô hình robot khác.",
+                  "`[Thêm]` Thêm tạo vị trí tự động bằng cách nhấp vào cạnh và đường cong trong khung nhìn 3D. Đặt khoảng cách, số bắt đầu, hướng và độ lệch, xem trước tọa độ rồi lưu hoặc xuất qua P.pts."
+                ]
+              },
               {
                 "title": "Ver 26.11.03",
                 "items": [
@@ -5286,6 +5574,12 @@
             "title": "Robot Tool Selector",
             "versions": [
               {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[Cải thiện]` Vùng làm việc có đầu trang màu ngà, bảng sáng và chữ đậm màu."
+                ]
+              },
+              {
                 "title": "Ver 26.10.27",
                 "items": [
                   "`[Cải tiến]` Vô hiệu hóa ô nhập khoảng cách từ J5 đến mặt bích không dùng trong tính toán khi chọn SCARA để tránh nhầm lẫn."
@@ -5354,6 +5648,16 @@
           {
             "title": "Project Generator",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[Cải thiện]` Vùng làm việc có đầu trang màu ngà, bảng sáng và chữ đậm màu. Bản xem trước mã nguồn trực tiếp hiển thị chú thích bằng màu xanh lá và dùng các màu khác nhau cho lệnh, chuỗi, số và hàm.",
+                  "`[Thêm]` Nhập ZIP hoặc thư mục dự án hiện có để sửa quy trình và tùy chọn, giữ mã tùy chỉnh và điểm đã dạy, kiểm tra xung đột rồi xuất toàn bộ dự án đã sửa thành ZIP.",
+                  "`[Thêm]` Có thể tải riêng dự án dùng cho mô phỏng 3D. Dự án bỏ tín hiệu PLC, chờ IO, dạy điểm, công thức và tác vụ giám sát, thay phản hồi dụng cụ và thị giác bằng thời gian đặt sẵn, và chạy theo thứ tự công đoạn với số chu kỳ đã chọn.",
+                  "`[Sửa lỗi]` Tray Get và các công đoạn dùng Socket, bao gồm Vision Calibration, cộng dữ liệu nhận từ Socket vào bù cơ bản của công đoạn thay cho bù thị giác IO. Chương trình hiệu chuẩn nhận dữ liệu Shot trước khi áp dụng bù.",
+                  "`[Sửa lỗi]` Đã khắc phục cửa sổ cài đặt Socket không mở khi chọn Use - Socket để bù thị giác trong Tray Get và các công đoạn khác."
+                ]
+              },
               {
                 "title": "Ver 26.10.31",
                 "items": [
@@ -5475,6 +5779,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[Cải thiện]` Tìm bản tải xuống theo sản phẩm và tên phiên bản đã bản địa hóa trong danh mục sáng."
+                ]
+              },
+              {
                 "title": "Ver 26.11.11",
                 "items": [
                   "`[Cập nhật]` Đã cập nhật phiên bản mô phỏng InoRobotLab·InoRobotTP (MultiVC) lên SPC25K13 (2026-11-11)."
@@ -5579,6 +5889,14 @@
           {
             "title": "Document",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[Cải thiện]` Tìm tài liệu trong giao diện sáng và xem số lượng theo bộ lọc và kết quả tìm kiếm.",
+                  "`[Sửa lỗi]` Loại CAD khỏi bộ lọc hướng dẫn phần cứng, chỉ giữ một bộ CAD tiêu chuẩn S7-60 và tách CAD TP200 theo tùy chọn nắp bảo vệ.",
+                  "`[Sửa lỗi]` Có thể xem trước bảng Remote IO tiêu chuẩn và mở rộng trong Remote_IO_List.xlsx ngay trên trình duyệt."
+                ]
+              },
               {
                 "title": "Ver 26.11.05",
                 "items": [
@@ -5732,6 +6050,12 @@
           {
             "title": "Debugging Tool",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[Cải thiện]` Vùng làm việc có đầu trang màu ngà, bảng sáng và chữ đậm màu."
+                ]
+              },
               {
                 "title": "Ver 26.11.04",
                 "items": [
@@ -6169,6 +6493,14 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[İyileştirildi]` Ana sayfadaki araç kitaplığından sekiz araca erişebilir, araçları tasarım ve geliştirme ya da kaynaklar ve destek kategorisine göre filtreleyebilirsiniz.",
+                  "`[İyileştirildi]` Ana sayfadaki beş kullanım kılavuzu açık renkli bir oynatıcıda sunuluyor. Her adımda ilgili kontrol vurgulanıyor ve altyazılar ne yapılacağını ve nedenini açıklıyor. Adımlar arasında ileri geri geçebilirsiniz.",
+                  "`[İyileştirildi]` Araç sayfaları ana sayfadaki fildişi üst çubuğu ve açık çalışma alanını kullanıyor."
+                ]
+              },
+              {
                 "title": "Ver 26.11.05",
                 "items": [
                   "`[Değişiklik]` Gönderim sırasında otomatik GitHub regresyon kontrolleri devre dışı bırakıldı."
@@ -6230,6 +6562,13 @@
           {
             "title": "Robot Model Select",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[İyileştirildi]` Çalışma alanı fildişi üst çubuk, açık paneller ve koyu metinle yenilendi.",
+                  "`[Eklendi]` Her robot modeli için aranabilir ayrıntı sayfası ve paylaşma, yenileme ve tarayıcı geçmişini destekleyen benzersiz adres eklendi; mevcut yapılandırma akışı korundu."
+                ]
+              },
               {
                 "title": "Ver 26.10.31",
                 "items": [
@@ -6413,6 +6752,36 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[İyileştirildi]` 3D çalışma alanı, model ağacı ve JOG paneli açık renklerle yenilendi. Küçük ekranlarda panelleri alt araç çubuğundan açabilirsiniz.",
+                  "`[Eklendi]` P.pts içinde seçili konumları birlikte silme, geri alma ve yineleme desteği eklendi. Delete tuşu ve ayrı pencere de desteklenir.",
+                  "`[Düzeltildi]` Bazı robot modellerinde kenar çizgileri açıldığında kalan INOVANCE yazısının kenarları kaldırıldı.",
+                  "`[İyileştirme]` Eğri tabanlı yörünge oluşturmada seçilen eğriler kalın vurgulanır ve yüz sınırları tek tıklamayla seçilebilir.",
+                  "`[Eklendi]` Taban, konveyör, nesne, istasyon, eğitim seti ve tepsi gibi test modellerinin uzunluğunu, genişliğini ve yüksekliğini belirleyip kaydedebilirsiniz. Varsayılanlar özgün model ölçüleridir. Normal konveyörlerde de hareketle birlikte ilerleyen bant işaretleri gösterilir.",
+                  "`[İyileştirme]` Konveyörün otomatik beslemesi, görüntüyle düzeltme denemeleri için her parçanın yanal konumunu ve dönüşünü rastgele değiştirir. Sapma aralıkları ayarlanabilir; bant sınırları ve minimum aralık korunur.",
+                  "`[Düzeltildi]` Uygulama değiştirildiğinde, panel gizlendiğinde veya ayrı penceresi kapatıldığında konveyörün sürekli çalışması ve otomatik beslemesi Dur düğmesine basılana kadar devam eder.",
+                  "`[Eklendi]` Konveyörler, kayıtlı nesneleri belirlenen boşlukla sürekli olarak otomatik besleyebilir. Üretilen nesneler varsayılan olarak daraltılmış bir grupta toplanır ve çıkışı geçtikten sonra temizlenir. Besleme ayarları ve grup durumu çalışma alanıyla birlikte kaydedilir.",
+                  "`[Değiştirildi]` Sanal denetleyiciye özel köprü V2.0 olarak sürümlendirildi; sürüm program penceresinde, dosya özelliklerinde ve indirme bağlantısında gösterilir. Küçültüldüğünde bildirim alanında çalışmaya devam eder; simgeye çift tıklayarak veya menüden pencereyi yeniden açabilirsiniz.",
+                  "`[Düzeltildi]` Konveyör sensörleri K14 üzerinde IN0–64 destekler. Bekleyen nesne ve robot takibi yokken sanal bant test sürüşünden web kontrolüne geçebilir. Reddedilen bağlantılarda bekleyen nesneler, robot takibi veya görüntü kaynağı çakışması açıklanır.",
+                  "`[Eklendi]` OLP çalışırken her hareketin süresini ve önceki bekleme süresini döngü bazında bir tabloda gösterir, en uzun hareketi vurgular ve CSV olarak kaydedilebilir.",
+                  "`[Eklendi]` Robot programlarında konveyör takibi için web konveyörünün enkoder, sensör ve görüntü algılama verilerini K14 sanal kontrolöre bağlayın.",
+                  "`[İyileştirildi]` Çekim anındaki enkoder değeri görüntü işleme gecikmesini telafi eder; bağlantı ayarları çalışma alanıyla kaydedilir.",
+                  "`[Eklendi]` Konveyör penceresine hız, ileri/geri yön, sürekli test, basılı tutarak JOG ve durdurma kontrolleri eklendi. Sahne testi köprü bağlantısı gerektirmez; takip bağlantısı açıkken aynı hareket enkoder girişine yansıtılır. Test Conveyor modelindeki bant işaretleri de seçilen hız ve yönde uçların etrafında dolaşır; JOG bırakıldığında veya Durdur düğmesine basıldığında durur.",
+                  "`[Eklendi]` Test penceresinde yapılandırılmış konveyör, iş parçaları, lazer sensörü ve aşağı bakan kamera birlikte oluşturulur. Kontrolör bağlanmadan lazer konumu, ON/OFF algılama renkleri ve sensörle tetiklenen görüntü alma sonuçları incelenebilir; düzen kaydedilip geri yüklenebilir. Konveyör modülündeki Konveyör, Kamera ve Sensör alt grupları birlikte veya ayrı seçilip taşınabilir. Bant uzunluğu 2,5 ve genişliği 1,5 katına çıkarıldı; sensör ve kamera giriş ucuna yerleştirildi.",
+                  "`[Eklendi]` IO Test In[0]–In[64], seçilen K14 sanal kontrolörün DI0–DI64 girişini açıp kapatır ve gerçek giriş durumunu gösterir. Bağlantı kopması veya okuma hatasında durum bilinmiyor olarak gösterilir.",
+                  "`[Eklendi]` Yukarı/aşağı çekim ve renkli canlı görüntü sunan Sanal Görüntü eklendi. Test Vision modülünün Camera parçaları otomatik olarak yukarı çekime bağlanır. 9 nokta ve dönme merkezi kalibrasyonundan sonra Görüntü al düğmesi ana konuma göre X, Y ve açı ofsetlerini bir kez ölçer. K12 sanal kontrolörü için kalibrasyon dışa aktarımı, CALRAW/PIXEL piksel koordinatı TCP komutları ve robot BASE koordinat dönüşümü örneği desteklenir. Görüntüde robot koordinat eksenleri ve 3B düzenleme tutamaçları gösterilmez. RobotLab kalibrasyonunun varsayılan V sonlandırıcısıyla TCP iletişimi desteklenir.",
+                  "`[Eklendi]` Bir iş parçası nesnesi seçilerek mevcut model referans konum çevresinde rastgele taşınabilir ve döndürülebilir. Varsayılan sapmalar X/Y için ±50 mm ve açı için ±180° olur; temel şekilli iş parçası oluşturma da desteklenir.",
+                  "`[Eklendi]` Nesne hareket ayarlarında bir başlangıç konumu Output numarası atanarak nesne IO ile başlangıç konumuna döndürülebilir. Tüm kayıtlı nesneler tek seferde başlangıç konumuna alınabilir veya nesnelerin başlangıca dönerken belirlenen X/Y ve dönüş aralığında rastgele kaydırılarak yerleştirilmesi ayarlanabilir. Başlangıç olarak kaydet düğmesi mevcut konumu yeni başlangıç konumu olarak kaydeder.",
+                  "`[Eklendi]` Sanal Görüntü, kendi IP adresiyle Socket veya Ethernet/IP üzerinden gerçek ve sanal kontrolörlerle iletişim kurar. Sunucu/istemci rolünü seçip Bağlan düğmesiyle tek bağlantı denemesi yapılır; ayarlardan robot örnek programları oluşturulur.",
+                  "`[Eklendi]` Test penceresine düz tepsi modülü eklendi. Bölmesiz 240×240 mm yüzeyde nesneler görüntü alma ve kavrama için serbestçe yerleştirilip döndürülebilir. Eğitim modeli oluşturulurken başlangıç konumu X=650, Y=350, Z=0 mm olarak yerleştirilir.",
+                  "`[Düzeltme]` Çalışma yeniden yüklendiğinde belirli bir nesneyi hedefleyen nesne başlangıç konumu IO eşlemelerinin silinmesi sorunu giderildi.",
+                  "`[Eklendi]` Eğitim modeli oluşturulurken seçilen robota Single VAC Tool otomatik olarak Tool olarak takılır. Eğitim amaçlı Single VAC Tool TCP değeri normal robotlarda Z=100 mm, SCARA robotlarda Z=-100 mm olarak ayarlanır. SCARA adaptörleri ilk yüklemede Z=12 mm konumuna yerleştirilir.",
+                  "`[Düzeltme]` R4H ve bazı diğer robot modellerinde INOVANCE logosunun görünmemesi sorunu giderildi.",
+                  "`[Eklendi]` 3B görünümde kenar ve eğrilere tıklayarak otomatik konum oluşturma eklendi. Aralık, ilk nokta numarası, yön ve ofsetleri ayarlayıp koordinatları önizleyebilir, P.pts ile kaydedebilir veya dışa aktarabilirsiniz."
+                ]
+              },
               {
                 "title": "Ver 26.11.03",
                 "items": [
@@ -6811,6 +7180,12 @@
             "title": "Robot Tool Selector",
             "versions": [
               {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[İyileştirildi]` Çalışma alanı fildişi üst çubuk, açık paneller ve koyu metinle yenilendi."
+                ]
+              },
+              {
                 "title": "Ver 26.10.27",
                 "items": [
                   "`[Geliştirildi]` Karışıklığı önlemek için SCARA modeli seçildiğinde hesaplamada kullanılmayan J5 ile uç flanşı arası mesafe girişi devre dışı bırakıldı."
@@ -6879,6 +7254,16 @@
           {
             "title": "Project Generator",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[İyileştirildi]` Çalışma alanı fildişi üst çubuk, açık paneller ve koyu metinle yenilendi. Canlı kaynak önizlemesinde yorumlar yeşil görünür. Komutlar, dizeler, sayılar ve işlevler renkle ayırt edilir.",
+                  "`[Eklendi]` Mevcut proje ZIP’i veya klasöründen proses ve seçenekleri düzenleyebilir, özel kodu ve öğretilen noktaları koruyabilir, çakışmaları inceleyerek düzenlenen projenin tamamını ZIP olarak dışa aktarabilirsiniz.",
+                  "`[Eklendi]` 3D simülasyon için ayrı bir proje indirilebilir. PLC sinyallerini, IO beklemelerini, öğretme, reçete ve izleme görevlerini kaldırır; takım ve görüntü yanıtlarını belirlenen sürelerle değiştirir ve seçilen işlem sırasını belirlenen döngü sayısı kadar çalıştırır.",
+                  "`[Düzeltildi]` Socket kullanan Tray Get ve Vision Calibration dahil diğer işlemler artık görüntü IO ofsetleri yerine Socket verilerini işlem temel ofsetine ekler. Kalibrasyon işlem programları ofseti uygulamadan önce Shot verilerini alır.",
+                  "`[Düzeltildi]` Tray Get ve diğer işlemlerde görüntü ofseti için Use - Socket seçildiğinde Socket ayar penceresinin açılmaması düzeltildi."
+                ]
+              },
               {
                 "title": "Ver 26.10.31",
                 "items": [
@@ -7000,6 +7385,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[İyileştirildi]` Açık renkli katalogda indirmeleri ürüne ve yerelleştirilmiş sürüm adına göre bulabilirsiniz."
+                ]
+              },
+              {
                 "title": "Ver 26.11.11",
                 "items": [
                   "`[Güncellendi]` InoRobotLab·InoRobotTP simülasyon sürümü (MultiVC), SPC25K13 (2026-11-11) sürümüne güncellendi."
@@ -7104,6 +7495,14 @@
           {
             "title": "Document",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[İyileştirildi]` Açık renkli belge kataloğunda arama yapabilir, filtre ve sonuç sayılarını görebilirsiniz.",
+                  "`[Düzeltildi]` CAD dosyaları donanım kılavuzu filtrelerinden çıkarıldı, S7-60 için tek standart CAD seti bırakıldı ve TP200 CAD dosyaları koruyucu kapak seçeneğine göre ayrıldı.",
+                  "`[Düzeltildi]` Remote_IO_List.xlsx dosyasındaki standart ve genişletilmiş Remote IO tabloları tarayıcıda önizlenebilir."
+                ]
+              },
               {
                 "title": "Ver 26.11.05",
                 "items": [
@@ -7257,6 +7656,12 @@
           {
             "title": "Debugging Tool",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[İyileştirildi]` Çalışma alanı fildişi üst çubuk, açık paneller ve koyu metinle yenilendi."
+                ]
+              },
               {
                 "title": "Ver 26.11.04",
                 "items": [
@@ -7694,6 +8099,14 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[Улучшено]` В библиотеке на главной странице можно открыть любой из восьми инструментов или отобрать их по категориям «Проектирование» и «Ресурсы и поддержка».",
+                  "`[Улучшено]` Все пять руководств на главной странице получили светлое оформление. На каждом шаге подсвечивается нужный элемент, а субтитры объясняют, что делать и зачем. Можно перейти к любому шагу.",
+                  "`[Улучшено]` Страницы инструментов получили светлую рабочую область и шапку цвета слоновой кости, как на главной."
+                ]
+              },
+              {
                 "title": "Ver 26.11.05",
                 "items": [
                   "`[Изменено]` Отключены автоматические регрессионные проверки GitHub при отправке изменений."
@@ -7755,6 +8168,13 @@
           {
             "title": "Robot Model Select",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[Улучшено]` Рабочая область оформлена светлыми панелями, тёмным текстом и шапкой цвета слоновой кости.",
+                  "`[Добавлено]` Для каждой модели добавлены отдельный адрес и доступная для поиска страница характеристик с поддержкой ссылок, перезагрузки и истории браузера при сохранении настройки."
+                ]
+              },
               {
                 "title": "Ver 26.10.31",
                 "items": [
@@ -7938,6 +8358,36 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[Улучшено]` Рабочая область 3D, дерево моделей и панель JOG теперь оформлены в светлых тонах. На небольших экранах панели можно открыть с нижней панели инструментов.",
+                  "`[Добавлено]` В P.pts можно удалять выбранные позиции вместе с поддержкой отмены и повтора. Доступно по клавише Delete и в отдельном окне.",
+                  "`[Исправлено]` Удалены оставшиеся контуры букв INOVANCE при отображении контуров некоторых моделей роботов.",
+                  "`[Улучшено]` При создании траектории по кривым выбранные линии выделяются толще, а контур грани можно выбрать одним нажатием.",
+                  "`[Добавлено]` Для тестовых моделей, включая основания, конвейеры, объекты, станции, учебные комплекты и лотки, можно задать и сохранить длину, ширину и высоту. По умолчанию используются реальные размеры исходной модели. На обычных конвейерах также видны полосы, движущиеся вместе с лентой.",
+                  "`[Улучшено]` При автоматической подаче на конвейер поперечное положение и поворот каждой детали случайно меняются для проверки коррекции по зрению. Диапазоны отклонений настраиваются с соблюдением границ ленты и минимального зазора.",
+                  "`[Исправлено]` Непрерывная работа конвейера и автоподача теперь сохраняются при переключении приложений, скрытии панели и закрытии её отдельного окна до нажатия «Стоп».",
+                  "`[Добавлено]` Конвейер может непрерывно подавать зарегистрированные объекты с заданным зазором. Созданные объекты помещаются в группу, свёрнутую по умолчанию, и удаляются после прохождения выхода. Настройки подачи и состояние группы сохраняются в рабочем пространстве.",
+                  "`[Изменено]` Выделенный мост виртуального контроллера получил версию V2.0, которая отображается в окне программы, свойствах файла и ссылке загрузки. При сворачивании мост продолжает работать в области уведомлений; окно можно открыть двойным щелчком по значку или через меню.",
+                  "`[Исправлено]` Датчики конвейера поддерживают IN0–64 в K14. При отсутствии ожидающих объектов и слежения робота виртуальная лента переключается из тестового режима на веб-управление. При отказе указывается причина: ожидающие объекты, слежение робота или конфликт источников зрения.",
+                  "`[Добавлено]` При выполнении OLP таблица по циклам показывает время каждого перемещения и ожидание перед ним, выделяет самое долгое перемещение; таблицу можно сохранить в CSV.",
+                  "`[Добавлено]` Подключение энкодера, датчиков и результатов машинного зрения веб-конвейера к виртуальному контроллеру K14 для слежения за конвейером в программе робота.",
+                  "`[Улучшено]` Значение энкодера в момент съёмки компенсирует задержку обработки изображения; настройки подключения сохраняются с рабочей областью.",
+                  "`[Добавлено]` В окне конвейера доступны скорость, прямое/обратное направление, непрерывный тестовый ход, JOG при удержании кнопки и остановка. Проверка сцены работает без моста; при включённом отслеживании это же движение передаётся на вход энкодера. Метки ленты тестовой модели Conveyor также движутся по замкнутому контуру вокруг её концов с выбранной скоростью и направлением, останавливаясь при отпускании JOG или нажатии остановки.",
+                  "`[Добавлено]` В окне тестовых моделей можно создать настроенную сцену с конвейером, деталями, лазерным датчиком и камерой, направленной вниз. До подключения контроллера доступны положение лазера, цвета ON/OFF, съёмка по датчику и результаты обнаружения, а также сохранение и восстановление настроек. Модуль конвейера содержит подгруппы «Конвейер», «Камера» и «Датчик» для общего или отдельного выбора и перемещения. Лента удлинена в 2,5 раза и расширена в 1,5 раза; датчик и камера расположены у входа.",
+                  "`[Добавлено]` In[0]–In[64] в тесте IO переключает DI0–DI64 выбранного виртуального контроллера K14 и показывает фактическое состояние входа. При разрыве связи или ошибке чтения состояние отмечается как недоступное.",
+                  "`[Добавлено]` Добавлено виртуальное зрение с направлением съёмки вверх/вниз и цветным изображением в реальном времени. Части Camera тестового модуля автоматически подключаются для съёмки вверх. После 9-точечной калибровки и калибровки центра вращения кнопка снимка однократно измеряет коррекции X, Y и угла относительно эталона. Поддерживаются экспорт калибровки для виртуального контроллера K12, TCP-команды пиксельных координат CALRAW/PIXEL и пример преобразования в координаты BASE робота. На изображении камеры скрыты оси координат робота и 3D-манипуляторы. Поддерживается TCP-связь с калибровкой RobotLab со стандартным терминатором V.",
+                  "`[Добавлено]` Можно выбрать объект детали и случайно перемещать и поворачивать существующую модель вокруг эталонного положения. Отклонения по умолчанию составляют ±50 мм по X/Y и ±180° по углу; создание простых форм деталей также поддерживается.",
+                  "`[Добавлено]` В настройках движения объекта можно задать номер Output возврата в исходное положение и возвращать объект по IO. Также можно вернуть все зарегистрированные объекты одновременно или размещать объект при возврате со случайным смещением по X/Y и повороту в заданном диапазоне. Кнопка «Задать как исходное» регистрирует текущее положение как новое исходное.",
+                  "`[Добавлено]` Виртуальное зрение обменивается данными с реальными и виртуальными контроллерами по собственному IP через Socket или Ethernet/IP. После выбора роли сервера или клиента кнопка подключения выполняет одну попытку соединения; примеры программ робота создаются из настроек.",
+                  "`[Добавлено]` В окно тестирования добавлен модуль плоского лотка. На поверхности 240×240 мм без перегородок можно свободно размещать и поворачивать объекты для съёмки и захвата. При создании учебной модели лоток также размещается в начальной позиции X=650, Y=350, Z=0 мм.",
+                  "`[Исправлено]` Устранена ошибка, из-за которой при повторной загрузке работы удалялись IO-сопоставления возврата объекта в исходное положение, назначенные конкретному объекту.",
+                  "`[Добавлено]` При создании учебной модели Single VAC Tool автоматически устанавливается как Tool на выбранного робота. TCP учебного Single VAC Tool устанавливается в Z=100 мм для обычных роботов и Z=-100 мм для SCARA. Адаптер SCARA при первой загрузке размещается в Z=12 мм.",
+                  "`[Исправление]` Исправлено отсутствие логотипа INOVANCE на R4H и некоторых других моделях роботов.",
+                  "`[Добавлено]` Добавлено автоматическое создание позиций щелчками по рёбрам и кривым в 3D-окне. Можно задать шаг, начальный номер, направление и смещения, просмотреть координаты и сохранить или экспортировать их через P.pts."
+                ]
+              },
               {
                 "title": "Ver 26.11.03",
                 "items": [
@@ -8336,6 +8786,12 @@
             "title": "Robot Tool Selector",
             "versions": [
               {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[Улучшено]` Рабочая область оформлена светлыми панелями, тёмным текстом и шапкой цвета слоновой кости."
+                ]
+              },
+              {
                 "title": "Ver 26.10.27",
                 "items": [
                   "`[Улучшено]` При выборе SCARA отключён неиспользуемый в расчёте ввод расстояния от J5 до концевого фланца, чтобы избежать путаницы."
@@ -8404,6 +8860,16 @@
           {
             "title": "Project Generator",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[Улучшено]` Рабочая область оформлена светлыми панелями, тёмным текстом и шапкой цвета слоновой кости. В предпросмотре исходного кода комментарии выделены зелёным, а команды, строки, числа и функции различаются по цвету.",
+                  "`[Добавлено]` Импорт проекта из ZIP или папки для изменения процессов и параметров с сохранением пользовательского кода и обученных точек, проверкой конфликтов и экспортом полного изменённого проекта в ZIP.",
+                  "`[Добавлено]` Можно отдельно скачать проект для 3D-симуляции. В нём нет сигналов PLC, ожиданий IO, обучения, рецептов и задач мониторинга; ответы инструмента и зрения заменены заданным временем, а выбранный порядок процессов выполняется заданное число циклов.",
+                  "`[Исправлено]` Tray Get и другие операции через Socket, включая Vision Calibration, теперь прибавляют полученные данные Socket к базовой коррекции операции вместо коррекции vision IO. Программа калибровки получает данные Shot перед применением коррекции.",
+                  "`[Исправлено]` Исправлено отсутствие окна настроек Socket при выборе Use - Socket для коррекции зрения в Tray Get и других операциях."
+                ]
+              },
               {
                 "title": "Ver 26.10.31",
                 "items": [
@@ -8525,6 +8991,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[Улучшено]` В светлом каталоге можно найти загрузки по продукту и локализованному названию версии."
+                ]
+              },
+              {
                 "title": "Ver 26.11.11",
                 "items": [
                   "`[Обновлено]` Версия InoRobotLab·InoRobotTP для симуляции (MultiVC) обновлена до SPC25K13 (2026-11-11)."
@@ -8629,6 +9101,14 @@
           {
             "title": "Document",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[Улучшено]` В светлом каталоге документов можно искать материалы и видеть их количество в фильтрах и результатах.",
+                  "`[Исправлено]` CAD исключён из фильтров аппаратных руководств; для S7-60 оставлен один базовый комплект CAD, а файлы TP200 разделены по наличию защитной крышки.",
+                  "`[Исправлено]` Обе таблицы Remote IO из файла Remote_IO_List.xlsx, стандартную и расширенную, можно просматривать прямо в браузере."
+                ]
+              },
               {
                 "title": "Ver 26.11.05",
                 "items": [
@@ -8782,6 +9262,12 @@
           {
             "title": "Debugging Tool",
             "versions": [
+              {
+                "title": "Ver 26.11.18",
+                "items": [
+                  "`[Улучшено]` Рабочая область оформлена светлыми панелями, тёмным текстом и шапкой цвета слоновой кости."
+                ]
+              },
               {
                 "title": "Ver 26.11.04",
                 "items": [

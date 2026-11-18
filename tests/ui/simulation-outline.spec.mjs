@@ -1,6 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 
-for (const model of ['IR-R10H-120', 'IR-R20H-120', 'IR-GS60-120Z40', 'IR-TS4-35Z15']) {
+const models = JSON.parse(readFileSync(new URL('../../2_3DSimulation/models/models.json', import.meta.url)))
+    .filter(model => model.folder).map(model => model.folder);
+
+for (const model of models) {
     test(`${model} 외곽선은 잔선을 줄이고 기본 색상·선택·투명도를 유지한다`, async ({ page }) => {
         test.setTimeout(120_000);
         const errors = [];
@@ -44,17 +48,28 @@ for (const model of ['IR-R10H-120', 'IR-R20H-120', 'IR-GS60-120Z40', 'IR-TS4-35Z
                     const key = point => point.map(value => Math.round(value / tolerance)).join(',');
                     const edgeKey = (a,b) => [key(a),key(b)].sort().join('|');
                     const logoEdges = new Set();
+                    const sideBounds = [new THREE.Box3(), new THREE.Box3()];
                     for (const group of groups) {
                         for (let i=group.start;i<group.start+group.count;i+=3) {
                             const points = [0,1,2].map(offset => new THREE.Vector3().fromBufferAttribute(
                                 mesh.geometry.attributes.position,mesh.geometry.index?.getX(i+offset) ?? i+offset).toArray());
                             for (const [a,b] of [[0,1],[1,2],[2,0]]) logoEdges.add(edgeKey(points[a],points[b]));
+                            for (const point of points) sideBounds[Number(point[1] >= 0)]
+                                .expandByPoint(new THREE.Vector3(...point));
                         }
                     }
+                    // CAD letter walls/base loops are separate from the painted faces.
+                    // Check the whole shallow lettering region on each side as well.
+                    const regions = sideBounds.filter(bounds => !bounds.isEmpty()).map(bounds =>
+                        bounds.expandByVector(new THREE.Vector3(1, 2, 1)));
                     const lines = mesh.userData.outlineLine.geometry.attributes.position.array;
                     for(let i=0;i<lines.length;i+=6) {
                         const a=Array.from(lines.slice(i,i+3)),b=Array.from(lines.slice(i+3,i+6));
                         if(logoEdges.has(edgeKey(a,b)))count++;
+                        const midpoint = a.map((value,axis)=>(value+b[axis])/2);
+                        if (regions.some(bounds => midpoint.every((value, axis) =>
+                            value > bounds.min.getComponent(axis) + 1e-4
+                            && value < bounds.max.getComponent(axis) - 1e-4))) count++;
                         if(projection) {
                             const p=a.map((value,axis)=>(value+b[axis])/2);
                             const rect=p[1]<0?projection.negative:projection.positive;

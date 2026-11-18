@@ -16,6 +16,10 @@ const TemplateHelper = {
 const Generator = {
     MAX_EXTRA_WAIT_COUNT: 8,
 
+    StageSlots(steps) {
+        return steps.filter(s => s.WorkType === 'Stage').map((s, i) => s.StageSlot || i + 1);
+    },
+
     ExtraWaitCount(step) {
         const count = step.ExtraWaitCount ?? 0;
         if (!Number.isInteger(count) || count < 0 || count > Generator.MAX_EXTRA_WAIT_COUNT) {
@@ -113,7 +117,11 @@ EndFunc;
     },
 
     UsesVisionOffset(step) {
-        return step.VisionUse === "Use - IO" || (step.WorkType === "Vision" && step.WorkMethod === "Calibration");
+        return step.VisionUse === "Use - IO" || (step.WorkType === "Vision" && step.WorkMethod === "Calibration" && step.ToolType !== "Vision (Socket)");
+    },
+
+    UsesVisionSocket(step) {
+        return step.VisionUse === "Use - Socket" || (step.WorkType === "Vision" && step.WorkMethod === "Calibration" && step.ToolType === "Vision (Socket)");
     },
 
     LastWaitOffset(step) {
@@ -122,19 +130,21 @@ EndFunc;
 
     OffsetCode(step, indent = "    ") {
         const n = step.No;
-        if (n > 10) {
+        const socketOffset = Generator.UsesVisionSocket(step) && step.WorkMethod !== "Check";
+        if (n > 10 && !socketOffset) {
             return `${indent}PR[B_PR] = (0,0,0,0,0,0);\n`;
         }
 
         let code = "";
-        if (Generator.UsesVisionOffset(step)) {
+        if (socketOffset) {
+            code += `${indent}LPR[B_PR] = PR[0];\n`;
+        } else if (Generator.UsesVisionOffset(step)) {
             code += `${indent}LPR[B_PR] = (xwVision_offset_X.Int/10000,xwVision_offset_Y.Int/10000,0,xwVision_offset_A.Int/10000,0,0);\n`;
         }
-        code += `${indent}PR[B_PR] = (xwOffset_${n}_X.Int/10000,xwOffset_${n}_Y.Int/10000,xwOffset_${n}_Z.Int/10000,xwOffset_${n}_A.Int/10000,0,0);\n`;
-        if (Generator.UsesVisionOffset(step)) {
+        code += n > 10 ? `${indent}PR[B_PR] = (0,0,0,0,0,0);\n`
+            : `${indent}PR[B_PR] = (xwOffset_${n}_X.Int/10000,xwOffset_${n}_Y.Int/10000,xwOffset_${n}_Z.Int/10000,xwOffset_${n}_A.Int/10000,0,0);\n`;
+        if (socketOffset || Generator.UsesVisionOffset(step)) {
             code += `${indent}PR[B_PR] = PR[B_PR] + LPR[B_PR];\n`;
-        } else if (step.VisionUse === "Use - Socket" && step.WorkMethod !== "Check" && step.WorkMethod !== "Calibration") {
-            code += `${indent}PR[B_PR] = PR[B_PR] + PR[0];\n`;
         }
         return code;
     },
@@ -250,7 +260,7 @@ EndFunc;
             sb += `#====================================================================================\nFunc Trash_Grip()\n    Set yTrash_ungrip${outSuff},OFF;\n    Set yTrash_grip${outSuff},ON;\n    Wait xTrash_grip${inSuff} == ON, T[60], Goto L[904];\n    Set yTrash_grip${outSuff},OFF;\n    Ret;\n    L[904]:\n    s01_initial.Init_signal();\n    Alarm[4];\nEndFunc;\n#====================================================================================\nFunc Trash_Ungrip()\n    Set yTrash_grip${outSuff},OFF;\n    Set yTrash_ungrip${outSuff},ON;\n    Wait xTrash_ungrip${inSuff} == ON, T[60], Goto L[905];\n    Set yTrash_ungrip${outSuff},OFF;\n    Ret;\n    L[905]:\n    s01_initial.Init_signal();\n    Alarm[5];\nEndFunc;\n`;
         }
 
-        for (let i = 1; i <= stageCount; i++) {
+        for (const i of Generator.StageSlots(steps)) {
             let prefix = i === 1 ? "Stage" : `Stage${i}`;
             let lOn = 906 + (i - 1) * 2;
             let lOff = 907 + (i - 1) * 2;
@@ -264,19 +274,7 @@ EndFunc;
         steps.forEach(s => {
             const n = s.No;
             sb += `        #============================================================================\n        #  P${n} - ${s.WorkType} ${s.WorkMethod}\n        #============================================================================\n        Case ${n}:\n`;
-            if (n > 10) {
-                sb += `            PR[B_PR] = (0,0,0,0,0,0);\n`;
-            } else {
-                if (Generator.UsesVisionOffset(s)) {
-                    sb += `            LPR[B_PR] = (xwVision_offset_X.Int/10000,xwVision_offset_Y.Int/10000,0,xwVision_offset_A.Int/10000,0,0);\n`;
-                }
-                sb += `            PR[B_PR] = (xwOffset_${n}_X.Int/10000,xwOffset_${n}_Y.Int/10000,xwOffset_${n}_Z.Int/10000,xwOffset_${n}_A.Int/10000,0,0);\n`;
-                if (Generator.UsesVisionOffset(s)) {
-                    sb += `            PR[B_PR] = PR[B_PR] + LPR[B_PR];\n`;
-                } else if (s.VisionUse === "Use - Socket" && s.WorkMethod !== "Check" && s.WorkMethod !== "Calibration") {
-                    sb += `            PR[B_PR] = PR[B_PR] + PR[0];\n`;
-                }
-            }
+            sb += Generator.OffsetCode(s, "            ");
             if (Generator.UsesTrayOffset(s)) sb += `            Set_tray_offset();\n`;
             sb += `            Break;\n`;
         });
@@ -403,7 +401,8 @@ EndFunc;
         return sb;
     },
 
-    ProcessProgram(s, options, stageIndex) {
+    // sim: normalized simulation settings (Generator.SimulationSettings). Null keeps the controller output.
+    ProcessProgram(s, options, stageIndex, sim = null) {
         const n = s.No;
         const type = s.WorkType;
         const method = s.WorkMethod;
@@ -412,8 +411,9 @@ EndFunc;
         const lastWait = Generator.LastWaitOffset(s);
         const hasWait = options.EnableWaitPos !== false;
         const hasBusy = options.EnableProcessBusy !== false;
-        const workFlag = hasBusy ? `yP${n}_work_pos_busy` : `xP${n}_work_pos_start`;
-        const waitFlag = hasBusy ? `yP${n}_wait_pos_busy` : `xP${n}_wait_pos_start`;
+        // Simulation has no PLC: the caller states whether this is a wait or work call.
+        const workFlag = sim ? "(wait_call == 0)" : hasBusy ? `yP${n}_work_pos_busy` : `xP${n}_work_pos_start`;
+        const waitFlag = sim ? "(wait_call == 1)" : hasBusy ? `yP${n}_wait_pos_busy` : `xP${n}_wait_pos_start`;
         const stagePrefix = stageIndex === 1 ? "Stage" : `Stage${stageIndex}`;
         const isDIO = options.ToolControlType === "DIO";
         const inSuff = isDIO ? "_chk" : "";
@@ -426,10 +426,18 @@ EndFunc;
         let processAction = "";
         let finalAction = "";
 
-        const needsSocket = s.VisionUse === "Use - Socket";
-        if (needsSocket) {
+        const needsSocket = Generator.UsesVisionSocket(s);
+        if (sim) {
+            // The camera/MCR reply is replaced by the configured processing time; offsets are zero.
+            const visionDelay = Generator.SimulationDelay(sim.VisionTime, "Simulation vision time");
+            if (needsSocket && method !== "Check") {
+                preOffsetAction = visionDelay;
+            } else if (method === "Check" || method === "Calibration") {
+                afterMoveAction = visionDelay ? `    #================================================================================\n    #  Vision Check Shot - simulation time\n    #================================================================================\n${visionDelay}` : "";
+            }
+        } else if (needsSocket) {
             const vis = options.VisionConfigs[s.id] || options.VisionConfigs[n - 1] || { IsClient: true, IpAddress: "192.168.1.10", Port: "5000" };
-            if (method !== "Calibration" && method !== "Check") {
+            if (method !== "Check") {
                 preOffsetAction = Generator.SocketExchange(s);
             } else if (method === "Check") {
                 afterMoveAction += `    #================================================================================\n    #  Vision Check Shot\n    #================================================================================\n` + Generator.SocketExchange(s);
@@ -470,16 +478,29 @@ EndFunc;
                 toolCtrlLogic = `    #================================================================================\n    s04_Tool_Control.Tool_Grip();\n`;
             }
         }
+        if (sim) {
+            // No feedback inputs in simulation: skip the position check and, without
+            // tool control, spend the PLC's tool time where the PLC would act.
+            toolPosCheck = "";
+            if (!options.EnableToolControl) {
+                const delay = Generator.SimulationDelay(sim.ToolTime, "");
+                const actions = Generator.SimulationToolActions(s, stagePrefix);
+                toolCtrlLogic = delay && actions.length
+                    ? `    #================================================================================\n    #  Tool (PLC) - simulation time\n    #================================================================================\n${actions.map(action => delay.replace(/\n$/, ` # ${action}\n`)).join("")}`
+                    : "";
+            }
+        }
 
         if (Generator.IsPeeling(s)) {
-            if (!options.EnableToolControl) {
+            if (!options.EnableToolControl && !sim) {
                 processAction += `    #================================================================================\n    #  Waiting Grip\n    #================================================================================\n    Set yPeel_pos_comp,ON;\n    Wait xPeel_start == ON;\n    Set yPeel_pos_comp,OFF;\n`;
             }
             processAction += `    #================================================================================\n    #  Peeling\n    #================================================================================\n`;
+            const peelSpeed = sim ? sim.PeelSpeed : "xwPeel_speed";
             for (let i = 1; i <= 5; i++) {
-                processAction += `    R_Cur_pos = ${n * 100 + 11 + i};\n    Movl P${n}_Peel_${i},Speed[xwPeel_speed],Z[2],Tool[B_Tool],Wobj[B_Wobj];\n`;
+                processAction += `    R_Cur_pos = ${n * 100 + 11 + i};\n    Movl P${n}_Peel_${i},Speed[${peelSpeed}],Z[2],Tool[B_Tool],Wobj[B_Wobj];\n`;
             }
-            finalAction += `    R_Cur_pos = ${n * 100 + 20};\n    Movl P${n}_Peel_end,Speed[xwPeel_speed],Z[1],Tool[B_Tool],Wobj[B_Wobj];\n`;
+            finalAction += `    R_Cur_pos = ${n * 100 + 20};\n    Movl P${n}_Peel_end,Speed[${peelSpeed}],Z[1],Tool[B_Tool],Wobj[B_Wobj];\n`;
         }
 
         let moveWaits = "";
@@ -488,20 +509,22 @@ EndFunc;
         }
 
         let teachingCall = "";
-        if (options.EnableTeachingMode) {
+        if (options.EnableTeachingMode && !sim) {
             teachingCall = `    If xTeach_mode\n        s03_teach_mode.Teaching_mode();\n        Goto L[0];\n    EndIf;\n    #================================================================================\n`;
         }
 
         const downDec = method === "Put" ? ",DEC[5]" : "";
 
         let completion = "";
-        if (hasWait) {
+        if (sim) {
+            completion = "";
+        } else if (hasWait) {
             completion = `    If ${waitFlag}\n        Set yP${n}_wait_pos_comp,ON;\n    ElseIf ${workFlag}\n        Set yP${n}_work_pos_comp,ON;\n    EndIf;\n`;
         } else {
             completion = `    Set yP${n}_work_pos_comp,ON;\n`;
         }
 
-        let sb = `${Generator.Header(options.RobotName)}Func P${n}_pos()\n${toolPosCheck ? `    #================================================================================\n    #  Tool position check\n    #================================================================================\n${toolPosCheck}` : ""}    #================================================================================\n    #  Path setting - Same process\n    #================================================================================\n    If ${workFlag} And R_Cur_pos == ${n * 100 + lastWait}\n        B_path = 10; #Starting position = Up\n    ElseIf ${workFlag} And R_Cur_pos == ${n * 100 + 11}\n        B_path = 10; #Starting position = Up\n        s01_initial.Return_move(10); #UP pos Return from before Process Pos\n`;
+        let sb = `${Generator.Header(options.RobotName)}Func P${n}_pos(${sim ? "Int wait_call" : ""})\n${toolPosCheck ? `    #================================================================================\n    #  Tool position check\n    #================================================================================\n${toolPosCheck}` : ""}    #================================================================================\n    #  Path setting - Same process\n    #================================================================================\n    If ${workFlag} And R_Cur_pos == ${n * 100 + lastWait}\n        B_path = 10; #Starting position = Up\n    ElseIf ${workFlag} And R_Cur_pos == ${n * 100 + 11}\n        B_path = 10; #Starting position = Up\n        s01_initial.Return_move(10); #UP pos Return from before Process Pos\n`;
         if (hasWait) {
             sb += `    ElseIf ${waitFlag} And R_Cur_pos == ${n * 100 + 11}\n        B_path = 1; #Starting position = Wait\n        s01_initial.Return_move(10); #Go back Up position of before process\n`;
         }
@@ -509,7 +532,7 @@ EndFunc;
         if (hasWait) {
             sb += `            If ${waitFlag}\n                Break;\n            EndIf;\n`;
         }
-        sb += `        Case 10:\n            R_Cur_pos = ${n * 100 + 10};\n            Movj Offset(P${n}_Pre_work, PR[B_PR]),V[100],Z[1],Tool[B_Tool],Wobj[B_Wobj];\n            R_Cur_pos = ${n * 100 + 11};\n            Movl Offset(P${n}_Work, PR[B_PR]),V[100],Z[0],Tool[B_Tool],Wobj[B_Wobj]${downDec};\n            Break;\n    EndSwitch;\n${afterMoveAction}${toolCtrlLogic}${processAction}    #================================================================================\n    #  Process Complete\n    #================================================================================\n${finalAction}    L[0]:\n    Print "P${n} - ${type} ${method} pos End";\n${completion}EndFunc;\n`;
+        sb += `        Case 10:\n            R_Cur_pos = ${n * 100 + 10};\n            Movj Offset(P${n}_Pre_work, PR[B_PR]),V[100],Z[1],Tool[B_Tool],Wobj[B_Wobj];\n            R_Cur_pos = ${n * 100 + 11};\n            Movl Offset(P${n}_Work, PR[B_PR]),V[100],Z[0],Tool[B_Tool],Wobj[B_Wobj]${downDec};\n            Break;\n    EndSwitch;\n${afterMoveAction}${toolCtrlLogic}${processAction}    #================================================================================\n    #  Process Complete\n    #================================================================================\n${finalAction}${sim ? "" : "    L[0]:\n"}    Print "P${n} - ${type} ${method} pos End";\n${completion}EndFunc;\n`;
 
         if (socketFuncs) {
             sb += `\n${socketFuncs}`;
@@ -662,7 +685,9 @@ EndFunc;
             }
             let curStageInIdx = 614;
             let curDioInIdx = 6;
-            for (let i = 1; i <= stageCount; i++) {
+            for (const i of Generator.StageSlots(steps)) {
+                curStageInIdx = 614 + (i - 1) * 2;
+                curDioInIdx = 6 + (i - 1) * 2;
                 let prefix = i === 1 ? "Stage" : `Stage${i}`;
                 if (isDIO) {
                     inBits.push({ nIndex: curDioInIdx, sLabel: `x${prefix}_vac_on_chk`, sDescription: "DIO Tool", sOriginalName: `IN[${curDioInIdx}]` });
@@ -703,9 +728,11 @@ EndFunc;
             inWords.push({ nIndex: valW + 4, sLabel: "xwVision_offset_A", sDescription: "2Word_/10000", sOriginalName: `INW[${valW + 4}]` });
             valW += 6;
         }
+        const offsetBase = valW;
         for (let j = 0; j < steps.length; j++) {
             let s = steps[j];
-            if (s.No > 10) break;
+            if (s.No > 10) continue;
+            if (options.PreserveProcessNumbers) valW = offsetBase + (s.No - 1) * 8;
             inWords.push({ nIndex: valW, sLabel: `xwOffset_${s.No}_X`, sDescription: "2 Word, /10000", sOriginalName: `INW[${valW}]` });
             inWords.push({ nIndex: valW + 2, sLabel: `xwOffset_${s.No}_Y`, sDescription: "2 Word, /10000", sOriginalName: `INW[${valW + 2}]` });
             inWords.push({ nIndex: valW + 4, sLabel: `xwOffset_${s.No}_Z`, sDescription: "2 Word, /10000", sOriginalName: `INW[${valW + 4}]` });
@@ -776,7 +803,9 @@ EndFunc;
             }
             let curStageOutIdx = 614;
             let curDioOutIdx = 6;
-            for (let i = 1; i <= stageCount; i++) {
+            for (const i of Generator.StageSlots(steps)) {
+                curStageOutIdx = 614 + (i - 1) * 2;
+                curDioOutIdx = 6 + (i - 1) * 2;
                 let prefix = i === 1 ? "Stage" : `Stage${i}`;
                 if (isDIO) {
                     outBits.push({ nIndex: curDioOutIdx, sLabel: `y${prefix}_vac_on`, sDescription: "DIO Tool", sOriginalName: `OUT[${curDioOutIdx}]` });
@@ -835,6 +864,13 @@ EndFunc;
         }
 
         function createSection(name, arr) {
+            if (options.PreserveProcessNumbers) arr = arr.map(item => {
+                const m = item.sLabel.match(/^[xy]P(\d+)_(wait|work)_pos_(start|comp|busy)$/);
+                if (!m) return item;
+                const base = m[3] === 'busy' ? (m[2] === 'wait' ? 560 : 576) : (m[2] === 'wait' ? 528 : 544);
+                const nIndex = base + Number(m[1]) - 1;
+                return { ...item, nIndex, sOriginalName: item.sOriginalName.replace(/\[\d+\]/, `[${nIndex}]`) };
+            });
             return `  "${name}": {\n    "nNumberOfLabels": ${arr.length},\n    "LabelsArray": [\n${arr.map((a, i) => `      {\n        "nLabelId": ${i},\n        "nIndex": ${a.nIndex},\n        "sLabel": "${a.sLabel}",\n        "sDescription": "${a.sDescription}",\n        "sOriginalName": "${a.sOriginalName}"\n      }`).join(',\n')}\n    ]\n  }`;
         }
 
@@ -850,5 +886,155 @@ EndFunc;
             createSection("BVarLabels", bVars) + ",\n" +
             createSection("RVarLabels", rVars) + ",\n" +
             createSection("DVarLabels", dVars) + "\n}";
+    },
+
+    // ================================================================================
+    //  Simulation project: same motion statements, no PLC handshake or IO waits.
+    //  Tool/vision feedback becomes a configured Delay so cycle time stays realistic.
+    // ================================================================================
+    SIMULATION_DEFAULTS: Object.freeze({ Sequence: "", Cycles: 3, SpeedRate: 100, ToolTime: 0.2, VisionTime: 0.3, TrayCell: 1, PeelSpeed: 100 }),
+    SIMULATION_CYCLE_VARIABLE: "D[20]",
+
+    SimulationSettings(steps, options, input = {}) {
+        const value = { ...Generator.SIMULATION_DEFAULTS, ...input };
+        const number = (key, min, max, integer, message) => {
+            const raw = value[key];
+            const parsed = typeof raw === "string" && raw.trim() === "" ? NaN : Number(raw);
+            if (!Number.isFinite(parsed) || parsed < min || parsed > max || (integer && !Number.isInteger(parsed))) throw new Error(message);
+            return parsed;
+        };
+        if (!steps.length) throw new Error("Add at least one process.");
+        const settings = {
+            Cycles: number("Cycles", 1, 100, true, "Simulation cycles must be an integer from 1 to 100."),
+            SpeedRate: number("SpeedRate", 1, 100, true, "Simulation speed must be an integer from 1 to 100 %."),
+            ToolTime: number("ToolTime", 0, 60, false, "Tool and vision times must be from 0 to 60 seconds."),
+            VisionTime: number("VisionTime", 0, 60, false, "Tool and vision times must be from 0 to 60 seconds."),
+            TrayCell: number("TrayCell", 1, 10000, true, "The tray cell must be a positive integer within every tray process."),
+            PeelSpeed: number("PeelSpeed", 1, 5000, false, "Peeling speed must be from 1 to 5000 mm/s.")
+        };
+        const hasWait = options.EnableWaitPos !== false;
+        const text = String(value.Sequence ?? "").trim();
+        const tokens = text ? text.split(/[\s,]+/).filter(Boolean) : steps.map(s => String(s.No));
+        if (tokens.length > 100) throw new Error("The process order can contain up to 100 calls.");
+        settings.Sequence = tokens.map(token => {
+            const match = token.match(/^(\d+)([Ww])?$/);
+            const step = match && steps.find(s => s.No === Number(match[1]));
+            if (!step) throw new Error("Use process numbers from the list in the process order, for example 1, 2W, 2.");
+            if (match[2] && !hasWait) throw new Error("Wait calls (W) need the Wait Position option.");
+            return { No: step.No, Wait: Boolean(match[2]) };
+        });
+        steps.filter(Generator.UsesTrayOffset).forEach(s => {
+            const [x, y] = Generator.TraySettings(s);
+            if (settings.TrayCell > x * y) throw new Error("The tray cell must be a positive integer within every tray process.");
+        });
+        return settings;
+    },
+
+    SimulationDelay(seconds, comment = "") {
+        const value = Number(seconds);
+        if (!(value > 0)) return "";
+        return `    Delay T[${Number(value.toFixed(3))}];${comment ? ` # ${comment}` : ""}\n`;
+    },
+
+    // Tool actions the PLC performs for a process when the robot does not control the tool.
+    SimulationToolActions(s, stagePrefix) {
+        if (s.WorkType === "Trash") return ["Trash_Grip", "Tool_Vac_OFF", "Trash_Ungrip"];
+        if (Generator.IsPeeling(s)) return ["Tool_Grip"];
+        const stage = s.WorkType === "Stage";
+        if (s.WorkMethod === "Get") {
+            const pick = s.ToolType === "Vacuum" ? "Tool_Vac_ON" : s.ToolType === "Gripper" ? "Tool_Grip" : null;
+            return pick ? [pick, ...(stage ? [`${stagePrefix}_Vac_OFF`] : [])] : [];
+        }
+        if (s.WorkMethod === "Put") {
+            const release = s.ToolType === "Vacuum" ? "Tool_Vac_OFF" : s.ToolType === "Gripper" ? "Tool_Ungrip" : null;
+            return release ? [...(stage ? [`${stagePrefix}_Vac_ON`] : []), release] : [];
+        }
+        return [];
+    },
+
+    SimulationMainProgram(steps, options, sim) {
+        let sb = Generator.Header(options.RobotName);
+        sb += `Include "s01_initial.pro";\nInclude "s02_offset.pro";\n`;
+        if (options.EnableToolControl) sb += `Include "s04_Tool_Control.pro";\n`;
+        steps.forEach(s => sb += `Include "${s.ProcessName}.pro";\n`);
+        const payloadMatch = options.RobotName.match(/IR-(?:TS|[RS])(\d+)/i);
+        const payload = payloadMatch ? parseInt(payloadMatch[1]) : 7;
+        const calls = sim.Sequence.map(entry => {
+            const s = steps.find(step => step.No === entry.No);
+            return `        ${s.ProcessName}.P${s.No}_pos(${entry.Wait ? 1 : 0}); #P${s.No} ${entry.Wait ? "Wait" : "Work"}\n`;
+        }).join("");
+        const cycleTime = Generator.SIMULATION_CYCLE_VARIABLE;
+        sb += `Start;\n    Int cycle;\n    #================================================================================\n    #  Simulation - Initial (no PLC signals)\n    #================================================================================\n    If Tool[1].TLoad.Mass == 0 \n        Tool[1].TLoad.Mass = ${payload};\n    EndIf;\n    If R_Cur_pos < 1\n        R_Cur_pos = 1; #Unknown start position = Home\n    EndIf;\n    s01_initial.Init_move_home();\n    Velset Rate[${sim.SpeedRate}];\n    #================================================================================\n    #  Simulation - Cycle (TimeStart(0) ~ TimeOut(0) = 1 cycle)\n    #================================================================================\n    For cycle=1,cycle<=${sim.Cycles},Step[1]\n        TimeStart(0);\n${calls}        TimeOut(0,${cycleTime});\n        Print "Simulation cycle " + cycle + " : " + ${cycleTime} + " s";\n    EndFor;\n    Print "Simulation End";\nEnd;\n`;
+        return sb;
+    },
+
+    SimulationInitialProgram(steps, options) {
+        const initSignal = `#====================================================================================\n#  Init Signal\n#====================================================================================\nFunc Init_signal()\n    Clear Out[520],120; #[520] ~ [639]\nEndFunc;\n`;
+        const code = Generator.InitialProgram(steps, { ...options, EnableMultiRecipe: false });
+        if (!code.includes(initSignal)) throw new Error("Initial program template changed; update the simulation output.");
+        return code.replace(initSignal, "");
+    },
+
+    SimulationOffsetProgram(steps, options, sim) {
+        const trays = steps.filter(Generator.UsesTrayOffset);
+        let sb = `${Generator.Header(options.RobotName)}Func Set_PR()\n    #================================================================================\n    #  Offset - simulation (PLC, vision and teaching offsets are zero)\n    #================================================================================\n    PR[B_PR] = (0,0,0,0,0,0);\n`;
+        if (trays.length) {
+            sb += `    Switch B_Cur_process\n`;
+            trays.forEach(s => sb += `        Case ${s.No}: # P${s.No} - ${s.WorkType} ${s.WorkMethod}\n            Set_tray_offset();\n            Break;\n`);
+            sb += `    EndSwitch;\n`;
+        }
+        sb += `EndFunc;\n`;
+        const tray = Generator.TrayOffsetFunction(steps);
+        if (tray) {
+            const source = "    Int num = xwTray_index - 1;";
+            if (!tray.includes(source)) throw new Error("Tray offset template changed; update the simulation tray cell.");
+            sb += tray.replace(source, `    Int num = ${sim.TrayCell - 1}; # Simulation tray cell ${sim.TrayCell}`);
+        }
+        return sb;
+    },
+
+    SimulationToolControlProgram(options, steps, sim) {
+        if (!options.EnableToolControl) return null;
+        let hasVacuum = false, hasGripper = false, hasTrash = false;
+        steps.forEach(s => {
+            if (s.ToolType === "Vacuum") hasVacuum = true;
+            if (s.ToolType === "Gripper" || Generator.IsPeeling(s)) hasGripper = true;
+            if (s.WorkType === "Trash") hasTrash = true;
+        });
+        if (hasTrash) hasVacuum = true;
+        const outSuff = options.ToolControlType === "DIO" ? "" : "_REQ";
+        const delay = Generator.SimulationDelay(sim.ToolTime, "Simulation tool time");
+        // Outputs stay so simulated equipment can react; the feedback Wait becomes a Delay.
+        const func = (name, off, on) => `#====================================================================================\nFunc ${name}()\n    Set ${off}${outSuff},OFF;\n    Set ${on}${outSuff},ON;\n${delay}    Set ${on}${outSuff},OFF;\nEndFunc;\n`;
+        let sb = Generator.Header(options.RobotName, "getNow");
+        if (hasVacuum) sb += func("Tool_Vac_ON", "yTool_vac_off", "yTool_vac_on") + func("Tool_Vac_OFF", "yTool_vac_on", "yTool_vac_off");
+        if (hasGripper) sb += func("Tool_Grip", "yTool_ungrip", "yTool_grip") + func("Tool_Ungrip", "yTool_grip", "yTool_ungrip");
+        if (hasTrash) sb += func("Trash_Grip", "yTrash_ungrip", "yTrash_grip") + func("Trash_Ungrip", "yTrash_grip", "yTrash_ungrip");
+        for (const i of Generator.StageSlots(steps)) {
+            const prefix = i === 1 ? "Stage" : `Stage${i}`;
+            sb += func(`${prefix}_Vac_ON`, `y${prefix}_vac_off`, `y${prefix}_vac_on`) + func(`${prefix}_Vac_OFF`, `y${prefix}_vac_on`, `y${prefix}_vac_off`);
+        }
+        return sb;
+    },
+
+    // Program files of the simulation project, in the order they are declared in the .prj.
+    SimulationProgramFiles(steps, options, sim) {
+        const files = {
+            "main.pro": Generator.SimulationMainProgram(steps, options, sim),
+            "s01_initial.pro": Generator.SimulationInitialProgram(steps, options),
+            "s02_offset.pro": Generator.SimulationOffsetProgram(steps, options, sim)
+        };
+        const tool = Generator.SimulationToolControlProgram(options, steps, sim);
+        if (tool) files["s04_Tool_Control.pro"] = tool;
+        let stageIndex = 0;
+        steps.forEach(s => {
+            if (s.WorkType === "Stage") stageIndex++;
+            files[`${s.ProcessName}.pro`] = Generator.ProcessProgram(s, options, s.StageSlot || stageIndex, sim);
+        });
+        return files;
+    },
+
+    SimulationProjectInfo(programFiles) {
+        return `{\n  "FileType": "RobotProjectConfigFile",\n  "Company": "Inovance",\n  "MajorVersion": 2,\n  "MinorVersion": 1,\n  "IsMainActive": true,\n  "MultiTaskCount": 0,\n  "MultiTaskInfos": [],\n  "ProgramFilesCount": ${programFiles.length},\n  "ProgramFiles": [\n${programFiles.map(p => `    "${p}"`).join(',\n')}\n  ],\n  "RobPointFilesCount": 1,\n  "RobPointFiles": [\n    "P.pts"\n  ]\n}`;
     }
 };

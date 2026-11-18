@@ -1,4 +1,4 @@
-import { EQUIPMENT_TYPES, EQUIPMENT_LABELS, normalizeEquipmentDefinition, equipmentReferences, equipmentMotionGroups, equipmentCommandOptions } from './equipment-core.mjs?v=20261101-vacuum-surface-1';
+import { EQUIPMENT_TYPES, EQUIPMENT_LABELS, normalizeEquipmentDefinition, equipmentReferences, equipmentMotionGroups, equipmentCommandOptions } from './equipment-core.mjs?v=20261107-object-home-1';
 
 const groups = { movingRef: '이동 대상', secondRef: '반대쪽 손가락 부품', carriedRef: '테이블 위 탑재물', filmGripRef: '같은 필름의 손잡이 부품' };
 const numeric = {
@@ -13,13 +13,17 @@ export function createEquipmentUi(adapter) {
  // Keep the reset action visible without expanding the registration list.
  const globalToolbar=dialog.querySelector('[data-equipment-global="reset"]').closest('.equipment-toolbar');
  dialog.querySelector('#equipment-registered').after(globalToolbar);
- dialog.querySelector('[data-equipment-global="reset"]').title='설비를 초기화하고 모든 등록 오브젝트를 기준 위치·회전으로 되돌립니다.';
+ dialog.querySelector('[data-equipment-global="reset"]').title='설비를 초기화하고 모든 등록 오브젝트를 기준 위치·회전으로 되돌립니다. 무작위 원위치를 켠 오브젝트는 지정 범위 안에서 틀어서 놓습니다.';
  document.body.append(dialog);
  const form=dialog.querySelector('form'), basic=dialog.querySelector('#equipment-basic'), extra=dialog.querySelector('#equipment-extra');
  const error=message=>{dialog.querySelector('#equipment-error').textContent=message;};
  const objectReset=document.createElement('button');objectReset.id='equipment-object-reset';objectReset.type='button';objectReset.textContent='오브젝트 원위치';objectReset.hidden=true;objectReset.disabled=true;
  dialog.querySelector('#equipment-new').before(objectReset);
  objectReset.addEventListener('click',()=>{try{adapter.command(form.elements.id.value,'RESET');updateStatus();}catch(exception){error(exception.message);}});
+ const homeSaved='현재 위치·회전을 원위치로 등록했습니다. 오브젝트 원위치를 누르면 이 위치로 돌아옵니다.';
+ const objectHome=document.createElement('button');objectHome.id='equipment-object-set-home';objectHome.type='button';objectHome.textContent='원위치로 등록';objectHome.title='오브젝트의 현재 위치·회전을 원위치로 다시 등록합니다.';objectHome.hidden=true;objectHome.disabled=true;
+ objectReset.after(objectHome);
+ objectHome.addEventListener('click',()=>{try{adapter.command(form.elements.id.value,'SET_HOME');error(homeSaved);}catch(exception){error(exception.message);}});
  const selected=Object.fromEntries(Object.keys(groups).map(key=>[key,new Set()]));
  let targetRef='', signature='', currentConveyor=null, vacuumFace=null, nameEdited=false;
  [...EQUIPMENT_TYPES,'CONVEYOR'].forEach(type=>form.elements.type.add(new Option(EQUIPMENT_LABELS[type]||'컨베이어 이송',type)));
@@ -54,7 +58,15 @@ export function createEquipmentUi(adapter) {
  condition.className='equipment-io-condition';commands.className='equipment-io-commands';feedback.className='equipment-io-feedback';
  condition.append(form.elements.ioTrigger.parentElement);commands.append(form.elements.forwardAddress.parentElement,form.elements.reverseAddress.parentElement);
  for(const key of ['feedbackHome','feedbackEnd','feedbackGrip'])feedback.append(form.elements[key].parentElement);
+ const resetAllField=document.createElement('label');resetAllField.className='equipment-check';resetAllField.innerHTML='<input type="checkbox" name="resetAll"><span>모든 등록 오브젝트 원위치</span>';resetAllField.title='체크하면 이 Output 하나로 등록된 오브젝트 전체를 원위치합니다.';
+ commands.append(resetAllField);
  io.append(condition,commands,feedback);
+ const ioSection=io.closest('fieldset'),randomSection=document.createElement('fieldset');randomSection.id='equipment-random-home';
+ randomSection.innerHTML='<legend>3. 무작위 원위치 (선택)</legend><label class="equipment-check"><input type="checkbox" name="randomHome"><span>원위치할 때 무작위로 틀어서 놓기</span></label><div class="equipment-fields equipment-random-range"><label><span>X 범위 ± (mm)</span><input type="number" name="randomRangeX" min="0" max="10000" step="any"></label><label><span>Y 범위 ± (mm)</span><input type="number" name="randomRangeY" min="0" max="10000" step="any"></label><label><span>회전 범위 ± (°)</span><input type="number" name="randomRangeRz" min="0" max="180" step="any"></label></div><p class="equipment-help">원위치할 때마다 등록 위치에서 World X·Y 이동과 수직(Z)축 회전을 범위 안에서 무작위로 적용합니다. 비전 위치 보정 시험에 사용하세요.</p>';
+ ioSection.after(randomSection);
+ const randomKeys=['randomRangeX','randomRangeY','randomRangeRz'],randomDefaults={randomRangeX:10,randomRangeY:10,randomRangeRz:5};
+ const syncRandom=()=>{for(const key of randomKeys)form.elements[key].disabled=!form.elements.randomHome.checked;};
+ form.elements.randomHome.addEventListener('change',syncRandom);
  form.elements.name.addEventListener('input',()=>{nameEdited=true;});
  form.elements.vacuumMode.addEventListener('change',fields);
  facePick.addEventListener('click',()=>{try{
@@ -131,18 +143,18 @@ export function createEquipmentUi(adapter) {
   form.elements.travel.parentElement.firstChild.textContent=rotary?'회전 각도 (°)':'이동 거리 (mm)';
   form.elements.speed.parentElement.firstChild.textContent=rotary?'회전 속도 (°/s)':'이동 속도 (mm/s)';
   for(const axis of ['X','Y','Z']){visible('pivot'+axis,rotary);visible('gripCenter'+axis,false);}
-  const words=vacuum?['진공','파기']:type==='FILM_PEEL'?['박리','']:conveyor?['이송','']:['전진','후진'];
+  const words=object?['원위치','']:vacuum?['진공','파기']:type==='FILM_PEEL'?['박리','']:conveyor?['이송','']:['전진','후진'];
+  resetAllField.hidden=!object;syncRandom();
   dialog.querySelector('#equipment-forward-label').textContent=words[0]+' Output 번호';dialog.querySelector('#equipment-reverse-label').textContent=words[1]+' Output 번호';dialog.querySelector('#equipment-reverse-field').hidden=!words[1];
-  const editing=!!form.elements.id.value;objectReset.hidden=!object;objectReset.disabled=!editing;
+  const editing=!!form.elements.id.value;objectReset.hidden=objectHome.hidden=!object;objectReset.disabled=objectHome.disabled=!editing;
   dialog.querySelector('.equipment-header h2').textContent=object?(editing?'오브젝트 편집':'오브젝트 등록'):(editing?'동작 편집':'동작 설정');
   form.querySelector('button[type="submit"]').textContent=object?(editing?'등록 변경 저장':'오브젝트 등록'):(editing?'변경 저장':'동작 저장');
-  const ioSection=dialog.querySelector('#equipment-io').closest('fieldset');
-  ioSection.querySelector('legend').textContent='2. IO 연결 (선택)';
-  ioSection.querySelector('.equipment-help').textContent=vacuum?'진공 신호가 한 번 들어오면 파기 신호까지 유지됩니다. 진공을 켤 때만 2mm 이내의 등록 오브젝트를 검색합니다.':'프로그램 실행 없이 IO 테스트 버튼으로도 동작합니다.';
+  ioSection.querySelector('legend').textContent=object?'2. 원위치 IO (선택)':'2. IO 연결 (선택)';
+  ioSection.querySelector('.equipment-help').textContent=object?'Output이 동작 조건으로 바뀔 때 이 오브젝트를 원위치합니다. 모든 등록 오브젝트 원위치를 체크하면 등록된 오브젝트 전체를 원위치합니다.':vacuum?'진공 신호가 한 번 들어오면 파기 신호까지 유지됩니다. 진공을 켤 때만 2mm 이내의 등록 오브젝트를 검색합니다.':'프로그램 실행 없이 IO 테스트 버튼으로도 동작합니다.';
   faceSection.hidden=!vacuum;facePick.hidden=form.elements.vacuumMode.value!=='FACE';
   faceStatus.textContent=form.elements.vacuumMode.value==='WHOLE'?'선택한 모델 또는 부품 전체에서 2mm 이내의 오브젝트를 찾습니다.':vacuumFace?'흡착 면이 선택되었습니다.':'흡착 면 선택을 누른 뒤 3D 화면의 면을 클릭하세요.';
   if(simple){for(const key of ['axis','travel','speed'])detachField(form.elements[key].parentElement);detachField(dialog.querySelector('#equipment-advanced'));}
-  if(object){detachField(ioSection);detachField(faceSection);}else if(!vacuum)detachField(faceSection);
+  if(object)detachField(faceSection);else{detachField(randomSection);if(!vacuum)detachField(faceSection);}
  }
  function edit(def=null, ref=targetRef) {
   restoreFields();
@@ -157,7 +169,8 @@ export function createEquipmentUi(adapter) {
   form.elements.filmGripSide.value=def?.filmGripSide||'X-';
   for(const [key,[,value]]of Object.entries(numeric))form.elements[key].value=def?.[key]??value;
   ['X','Y','Z'].forEach((axis,i)=>{form.elements['pivot'+axis].value=def?.pivot?.[i]||0;form.elements['gripCenter'+axis].value=def?.gripCenter?.[i]??(i===2?40:0);});
-  const bindings=adapter.bindings(def,targetRef)||{};form.elements.ioTrigger.value=bindings.triggerValue??1;form.elements.forwardAddress.value=bindings.forward??'';form.elements.reverseAddress.value=bindings.reverse??'';
+  const bindings=adapter.bindings(def,targetRef)||{};form.elements.ioTrigger.value=bindings.triggerValue??1;form.elements.forwardAddress.value=bindings.forward??'';form.elements.reverseAddress.value=bindings.reverse??'';form.elements.resetAll.checked=bindings.resetAll===true;
+  form.elements.randomHome.checked=def?.randomHome===true;for(const key of randomKeys)form.elements[key].value=def?.[key]??randomDefaults[key];
   dialog.querySelector('#equipment-target-label').textContent=def?'편집 중 · '+(adapter.label?.(def)||def.name)+' · 변경 저장을 눌러 적용하세요.':targetRef?'새 동작 · 대상: '+(adapter.references().find(item=>item.value===targetRef)?.label||'선택 부품'):'모델 트리의 항목을 우클릭해서 동작을 설정하세요.';
   fields();updateName();render();error('');dialog.scrollTop=0;
  }
@@ -179,17 +192,18 @@ export function createEquipmentUi(adapter) {
   for(const key of Object.keys(groups)){raw[key+'s']=[...selected[key]];raw[key]=raw[key+'s'][0]||'';}
   if(!['OBJECT','VACUUM'].includes(raw.type)){raw.pivot=['X','Y','Z'].map(axis=>form.elements['pivot'+axis].value);raw.gripCenter=['X','Y','Z'].map(axis=>form.elements['gripCenter'+axis].value);}
   if(raw.type==='FILM_PEEL')raw.travel=raw.filmLength;
-  updateName(); raw.name=form.elements.name.value; if(['CYLINDER','GRIPPER'].includes(raw.type))raw.reverseSpeed=raw.speed; const bindings={direction:'OUT',triggerValue:Number(raw.ioTrigger),forward:raw.forwardAddress,reverse:raw.reverseAddress};
-  const saved=raw.type==='CONVEYOR'?adapter.saveConveyor(raw,bindings):adapter.save(normalizeEquipmentDefinition(raw),raw.type==='OBJECT'?null:bindings);
+  if(raw.type==='OBJECT'){raw.randomHome=form.elements.randomHome.checked;for(const key of randomKeys)raw[key]=form.elements[key].value;}
+  updateName(); raw.name=form.elements.name.value; if(['CYLINDER','GRIPPER'].includes(raw.type))raw.reverseSpeed=raw.speed; const bindings={direction:'OUT',triggerValue:Number(raw.ioTrigger),forward:raw.forwardAddress,reverse:raw.type==='OBJECT'?null:raw.reverseAddress,resetAll:raw.type==='OBJECT'&&form.elements.resetAll.checked};
+  const saved=raw.type==='CONVEYOR'?adapter.saveConveyor(raw,bindings):adapter.save(normalizeEquipmentDefinition(raw),bindings);
   edit(saved,targetRef);error(raw.type==='OBJECT'?'오브젝트를 등록했습니다. Tool의 진공 동작으로 흡착할 수 있습니다.':'동작을 저장했습니다. 시험 버튼 또는 연결한 IO로 운전할 수 있습니다.');
  }catch(exception){error(exception.message);}});
  function controls(def,container) {
   const row=document.createElement('div');row.className='equipment-list-row';row.dataset.equipmentId=def.id;
   const title=document.createElement('strong');title.textContent=adapter.label?.(def)||def.name;const status=document.createElement('span');status.dataset.equipmentStatus=def.id;row.append(title,status);
   const actions=document.createElement('div');actions.className='equipment-test-actions';const management=document.createElement('div');management.className='equipment-management-actions';row.append(actions,management);
-  for(const [command,label]of [...equipmentCommandOptions(def.type),['EDIT','편집'],['DELETE',def.type==='OBJECT'?'등록 해제':'동작 삭제']]) {
-   const button=document.createElement('button');button.type='button';button.textContent=label;button.dataset.equipmentCommand=command;
-   button.addEventListener('click',()=>{try{if(command==='EDIT')edit(def,def.movingRef);else if(command==='DELETE'){adapter.remove(def.id);edit(null,targetRef);}else adapter.command(def.id,command);updateStatus();}catch(exception){error(exception.message);}});(['EDIT','DELETE'].includes(command)||def.type==='OBJECT'&&command==='RESET'?management:actions).append(button);
+  for(const [command,label]of [...equipmentCommandOptions(def.type),...(def.type==='OBJECT'?[['SET_HOME','원위치로 등록']]:[]),['EDIT','편집'],['DELETE',def.type==='OBJECT'?'등록 해제':'동작 삭제']]) {
+   const button=document.createElement('button');button.type='button';button.textContent=label;button.dataset.equipmentCommand=command;if(command==='SET_HOME')button.title=objectHome.title;
+   button.addEventListener('click',()=>{try{if(command==='EDIT')edit(def,def.movingRef);else if(command==='DELETE'){adapter.remove(def.id);edit(null,targetRef);}else{adapter.command(def.id,command);if(command==='SET_HOME')error(homeSaved);}updateStatus();}catch(exception){error(exception.message);}});(['EDIT','DELETE','SET_HOME'].includes(command)||def.type==='OBJECT'&&command==='RESET'?management:actions).append(button);
   }container.append(row);
  }
  function conveyorControls(def,container){

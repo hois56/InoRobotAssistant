@@ -109,24 +109,35 @@ test('합친 메시의 공유 꼭짓점은 서로 다른 면 색상을 섞지 �
     assert.deepEqual(JSON.parse(JSON.stringify(merged.brepFaces)), [{ first: 0, last: 0 }, { first: 1, last: 1 }]);
 });
 
-test('대용량 XCAF도 marked 제품의 compound 전체를 한 개 부품·한 메시로 처리한다', () => {
+test('대용량 XCAF도 marked 제품의 색상별 자식 형상을 한 개 부품·한 메시로 내보낸다', async () => {
     const { context, messages } = fixture();
-    const prepared = context.prepareMergedStepImport(encode(fixtureStep));
     const document = { getRoots: () => [1], getChildren: label => label === 1 ? [2, 3] : [],
-        getLabelInfo: label => ({ name: label === 1 ? '__CADLW_OCC_42__' : 'Solid', shapeHandle: 100 + label }) };
-    const parts = context.collectXcafParts(document, new Map(), prepared.mergedTags);
-    assert.equal(parts.length, 1); assert.equal(parts[0].partName, '합친 부품'); assert.equal(parts[0].mergedAtomic, true);
+        getLabelInfo: label => ({ name: label === 1 ? '__CADLW_OCC_42__' : 'Solid', shapeHandle: 100 + label,
+            hasColor: label !== 1, color: label === 2 ? [1, 0, 0] : [0, 0, 1] }), close() {} };
     const mesh = { positions: new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]),
         normals: new Float32Array(9).fill(1), indices: new Uint32Array([0, 1, 2]), faceGroups: new Uint32Array([0, 3, 99]) };
-    assert.equal(context.postLargeMeshChunks(mesh, {}, 1, parts[0]), 1);
-    const output = messages[0].mesh;
-    assert.equal(output.mergedAtomic, true); assert.equal(output.colors.length, 9); assert.equal(output.largeModelChunk, undefined);
+    const shapes = [];
+    context.ensureLargeOcctKernel = async () => ({ importXCAFFromSTEP: () => document,
+        meshShape(handle) { shapes.push(handle); return mesh; }, getRawModule: () => ({}), release() {}, releaseAll() {} });
+    context.setTimeout = () => 1;
+    await context.parseLargeStepFile({ fileBuffer: encode(fixtureStep) }, 1);
+    assert.deepEqual(shapes, [102, 103]);
+    const meshes = messages.filter(message => message.type === 'mesh');
+    assert.equal(meshes.length, 1);
+    const output = meshes[0].mesh;
+    assert.equal(output.partName, '합친 부품');
+    assert.equal(output.mergedAtomic, true);
+    assert.deepEqual([...output.colors], [1,0,0, 1,0,0, 1,0,0, 0,0,1, 0,0,1, 0,0,1]);
+    assert.equal(output.largeModelChunk, undefined);
+    assert.equal(messages.at(-1).meshCount, 1);
 });
 
 test('Renderer와 가져오기 캐시는 단일 메시의 정점 색상을 유지한다', () => {
-    assert.match(mainSource, /const STEP_IMPORT_CACHE_VERSION = 5;/);
-    assert.match(mainSource, /step-mesh-v9-atomic-merged-parts/);
-    assert.match(mainSource, /step-import-worker\.js\?v=20261031-atomic-merged-parts-1/);
+    // Cache versions before schema 5 and mesh format 9 lacked merged vertex colors.
+    assert.ok(Number(mainSource.match(/const STEP_IMPORT_CACHE_VERSION = (\d+);/)?.[1]) >= 5);
+    const getKey = vm.runInNewContext('(' + mainSource.match(/function getStepImportCacheKey\([^]*?\n\}/)[0] + ')');
+    const key = getKey({ name: 'merged.step', size: 10, lastModified: 1 }, {});
+    assert.ok(Number(key.match(/^step-mesh-v(\d+)-/)?.[1]) >= 9);
     class Geometry { constructor() { this.attributes = {}; } setAttribute(name, value) { this.attributes[name] = value; } setIndex(value) { this.index = value; } computeBoundingBox() {} computeBoundingSphere() {} }
     class Attribute { constructor(array, itemSize) { this.array = array; this.itemSize = itemSize; } }
     class Mesh { constructor(geometry, material) { this.geometry = geometry; this.material = material; this.userData = {}; } }

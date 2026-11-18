@@ -123,7 +123,7 @@ test('오브젝트 등록만·실제 면 클릭·이름 편집·IO 세 행·우�
         const ref=m=>'equipment-model:'+a.ensureWorkspaceModelId(m)+'/-1';a.equipmentApp.ui.open(ref(object));return {tool:ref(tool),object:ref(object)};
     });
     const form=page.locator('#equipment-form');await form.locator('[name="type"]').selectOption('OBJECT');
-    await expect(form.locator('[name="forwardAddress"]')).toHaveCount(0);await expect(form.locator('[name="toolRef"]')).toHaveCount(0);await expect(page.locator('#equipment-parts')).toHaveCount(0);
+    await expect(page.locator('#equipment-forward-label')).toHaveText('원위치 Output 번호');await expect(form.locator('[name="reverseAddress"]')).toBeHidden();await expect(form.locator('[name="feedbackGrip"]')).toBeHidden();await expect(form.locator('[name="toolRef"]')).toHaveCount(0);await expect(page.locator('#equipment-parts')).toHaveCount(0);
     await expect(form.locator('[name="type"] option[value="GRIPPER"]')).toHaveCount(0);await expect(form.locator('[name="name"]')).toBeEditable();
     await form.locator('[name="name"]').fill('등록 제품');await form.locator('button[type="submit"]').click();
     await page.evaluate(ref=>window.__surface.equipmentApp.ui.open(ref),refs.tool);await form.locator('[name="type"]').selectOption('VACUUM');

@@ -1,7 +1,8 @@
 <?xml version="1.0"?>
-<!-- Generated from IR-R4H-54S5-C1H-INT_01741031.json and models.json. Coordinates are Z-up; mesh units are millimetres and converted with mesh scale 0.001. -->
+<!-- Firmware source: params_package/Standard/Body/IR-R4H-54S5-C1H-INT_01741031/IR-R4H-54S5-C1H-INT_01741031.json; SHA256 b7608c351678f58ab75e27582ad9813d67b9332088d0996ac28763871a7e3e41. -->
+<!-- Z-up; STL mm scaled to m. Effective firmware mass properties are SI and transformed into CAD link frames. -->
+<!-- Revolute effort is nominal output torque; prismatic effort is ideal screw force. See physics-audit.json for approximations. -->
 <robot name="IR-R4H-54S5-C1H-INT_01741031">
-  <!-- Payload limit from controller JSON: 4 kg -->
   <link name="base_link">
 
     <visual name="base">
@@ -24,6 +25,7 @@
   <link name="link_1">
 
     <!-- inertial source: bounding-box-fallback -->
+    <!-- Effective firmware principal moments are not physically realizable; no unit guessing applied -->
     <inertial>
       <origin xyz="0.000013824463 0.000000072479 0.281902404785" rpy="0 0 0"/>
       <mass value="4.6511829668"/>
@@ -49,11 +51,12 @@
 
   <link name="link_2">
 
-    <!-- inertial source: controller-json -->
+    <!-- inertial source: bounding-box-fallback -->
+    <!-- Effective firmware principal moments are not physically realizable; no unit guessing applied -->
     <inertial>
-      <origin xyz="-0.009228458 0.0823530926 0.0223668032" rpy="0 0 0"/>
+      <origin xyz="-0.012871671677 -0.00000005722 0.127768753052" rpy="0 0 0"/>
       <mass value="5.8442506454"/>
-      <inertia ixx="0.1006101038" ixy="0.000533" ixz="-0.000625" iyy="0.0401885684" iyz="0.0008883849" izz="0.0523561262"/>
+      <inertia ixx="0.088290574955" ixy="0" ixz="0" iyy="0.079984067329" iyz="0" izz="0.029572097553"/>
     </inertial>
 
     <visual name="link_2">
@@ -75,11 +78,11 @@
 
   <link name="link_3">
 
-    <!-- inertial source: controller-json -->
+    <!-- inertial source: firmware-effective-si -->
     <inertial>
-      <origin xyz="-0.0011573396 0.0029101889 0.0019966877" rpy="0 0 0"/>
+      <origin xyz="-0.0029101889 -0.0019966877 -0.0011573396" rpy="0 0 0"/>
       <mass value="2.8319447962"/>
-      <inertia ixx="0.0088166332" ixy="0.0012183797" ixz="-0.0000451" iyy="0.0074433738" iyz="0.0000180733" izz="0.0068158704"/>
+      <inertia ixx="0.0074433738" ixy="0" ixz="0" iyy="0.0068158704" iyz="0" izz="0.0088166332"/>
     </inertial>
 
     <visual name="link_3">
@@ -101,11 +104,11 @@
 
   <link name="link_4">
 
-    <!-- inertial source: controller-json -->
+    <!-- inertial source: firmware-effective-si -->
     <inertial>
-      <origin xyz="-0.001145 0.0015454637 0.210755068" rpy="0 0 0"/>
+      <origin xyz="0.210755068 -0.0015454637 -0.001145" rpy="0 0 0"/>
       <mass value="3.0134778527"/>
-      <inertia ixx="0.0177743394" ixy="-0.0000295" ixz="-0.0000152" iyy="0.0201337033" iyz="-0.0005304" izz="0.0050897251"/>
+      <inertia ixx="0.0050897251" ixy="0" ixz="0" iyy="0.0201337033" iyz="0" izz="0.0177743394"/>
     </inertial>
 
     <visual name="link_4">
@@ -127,11 +130,12 @@
 
   <link name="link_5">
 
-    <!-- inertial source: controller-json -->
+    <!-- inertial source: bounding-box-fallback -->
+    <!-- Effective firmware principal moments are not physically realizable; no unit guessing applied -->
     <inertial>
-      <origin xyz="-0.000222 -0.0306445033 0.00203" rpy="0 0 0"/>
+      <origin xyz="0.012617797852 0.000000001907 -0.001" rpy="0 0 0"/>
       <mass value="1.0055499561"/>
-      <inertia ixx="0.0021200418" ixy="0.00000446" ixz="0.00000482" iyy="0.0007117" iyz="-0.0000537" izz="0.0012959194"/>
+      <inertia ixx="0.001211017384" ixy="0" ixz="0" iyy="0.001470566841" iyz="0" izz="0.001442076313"/>
     </inertial>
 
     <visual name="link_5">
@@ -153,11 +157,12 @@
 
   <link name="link_6">
 
-    <!-- inertial source: controller-json -->
+    <!-- inertial source: bounding-box-fallback -->
+    <!-- Effective firmware principal moments are not physically realizable; no unit guessing applied -->
     <inertial>
-      <origin xyz="-0.0000308 0.0000178 0.0764000927" rpy="0 0 0"/>
+      <origin xyz="-0.004500167847 0.000000000954 0" rpy="0 0 0"/>
       <mass value="0.3340476631"/>
-      <inertia ixx="0.0001049" ixy="-0.0000000693" ixz="0.0000000921" iyy="0.0001048" iyz="-0.0000000532" izz="0.0002956812"/>
+      <inertia ixx="0.000213927755" ixy="0" ixz="0" iyy="0.000119282889" iyz="0" izz="0.000119197441"/>
     </inertial>
 
     <visual name="link_6">
@@ -182,7 +187,7 @@
     <child link="link_1"/>
     <origin xyz="0 0 0" rpy="0 0 0"/>
     <axis xyz="0 0 1"/>
-    <limit lower="-2.96705972839" upper="2.96705972839" effort="1.27" velocity="7.330382858376"/>
+    <limit lower="-2.96705972839" upper="2.96705972839" effort="110.4265" velocity="7.330382858376"/>
   </joint>
 
   <joint name="J2" type="revolute">
@@ -190,7 +195,7 @@
     <child link="link_2"/>
     <origin xyz="0 0 0.33" rpy="0 0 0"/>
     <axis xyz="0 -1 0"/>
-    <limit lower="-2.094395102393" upper="1.919862177194" effort="1.27" velocity="7.330382858376"/>
+    <limit lower="-2.094395102393" upper="1.919862177194" effort="102.87" velocity="7.330382858376"/>
   </joint>
 
   <joint name="J3" type="revolute">
@@ -198,7 +203,7 @@
     <child link="link_3"/>
     <origin xyz="0 0 0.26" rpy="0 0 0"/>
     <axis xyz="0 -1 0"/>
-    <limit lower="-1.134464013796" upper="3.403392041389" effort="0.96" velocity="9.075712110371"/>
+    <limit lower="-1.134464013796" upper="3.403392041389" effort="52.6752" velocity="9.075712110371"/>
   </joint>
 
   <joint name="J4" type="revolute">
@@ -206,7 +211,7 @@
     <child link="link_4"/>
     <origin xyz="0 0 0.02" rpy="0 0 0"/>
     <axis xyz="1 0 0"/>
-    <limit lower="-3.316125578789" upper="3.316125578789" effort="0.32" velocity="9.773843811168"/>
+    <limit lower="-3.316125578789" upper="3.316125578789" effort="21.3312" velocity="9.773843811168"/>
   </joint>
 
   <joint name="J5" type="revolute">
@@ -214,7 +219,7 @@
     <child link="link_5"/>
     <origin xyz="0.285 0 0" rpy="0 0 0"/>
     <axis xyz="0 -1 0"/>
-    <limit lower="-2.094395102393" upper="2.094395102393" effort="0.16" velocity="9.773843811168"/>
+    <limit lower="-2.094395102393" upper="2.094395102393" effort="10.6672" velocity="9.773843811168"/>
   </joint>
 
   <joint name="J6" type="revolute">
@@ -222,13 +227,13 @@
     <child link="link_6"/>
     <origin xyz="0.075 0 0" rpy="0 0 0"/>
     <axis xyz="1 0 0"/>
-    <limit lower="-6.28318530718" upper="6.28318530718" effort="0.32" velocity="14.988887616127"/>
+    <limit lower="-6.28318530718" upper="6.28318530718" effort="12.6944" velocity="14.988887616127"/>
   </joint>
 
   <link name="tool0"/>
   <joint name="tool0_fixed" type="fixed">
     <parent link="link_6"/>
     <child link="tool0"/>
-    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <origin xyz="0 0 0" rpy="3.14159265359 -1.570796326795 0"/>
   </joint>
 </robot>

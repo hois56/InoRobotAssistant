@@ -26,6 +26,12 @@ test('홈페이지 카드와 버전 기록 창은 최신 배포 기록을 표시
     await expect(body).toContainText(latest.items[0].replace(/^`\[[^\]]+\]`\s*/, ''));
     await expect(body).not.toContainText('Ver 26.10.04');
     await expectGroupedHistory(body);
+    // The sticky site header must not be drawn over the history dialog.
+    const layers = await page.evaluate(() => [
+        Number(getComputedStyle(document.getElementById('version-history-modal')).zIndex),
+        Number(getComputedStyle(document.querySelector('body > header.site-header')).zIndex)
+    ]);
+    expect(layers[0]).toBeGreaterThan(layers[1]);
     await page.locator('#version-history-modal').screenshot({ path: test.info().outputPath('release-history.png') });
 });
 
