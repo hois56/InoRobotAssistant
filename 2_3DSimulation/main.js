@@ -19,7 +19,7 @@ import { createPositionPointsUi, nextPositionPointMetadata } from './position-po
 import { normalizeToolLoad, buildToolParamFile, buildWobjParamFile, combineToolLoads } from './tool-data-core.mjs?v=20261102-dat-export-1';
 import { VIEW_PRESET_COUNT } from './view-preset-core.mjs';
 import { renderWithContactAO, disposeContactAO } from './contact-ambient-occlusion.mjs?v=20261030-1';
-import { usesSoftwareRasterizer, renderPacedSoftwareFrame } from './software-renderer.mjs?v=20261117-3';
+import { usesSoftwareRasterizer, renderPacedSoftwareFrame, RenderFrameLimit } from './software-renderer.mjs?v=frame-limit-1';
 import { ROBOT_MOUNTING_HOLES } from './robot-mounting-holes.mjs?v=20261029-2';
 import { collectTeachingPoints, normalizeTeachingPointSettings } from './teaching-point-core.mjs?v=20261023-teaching-defaults-1';
 import { TeachingPointScene, teachingJointMatrix } from './teaching-point-scene.mjs?v=20261023-teaching-labels-2';
@@ -1130,6 +1130,8 @@ const state = {
     largeModelPerformanceMode: false,
     renderFramePending: false,
     renderFrameRequest: null,
+    renderFrameLimit: new RenderFrameLimit(),
+    renderFpsLimited: false,
     outlineMode: true,
     tcpAxesVisible: true,
     grid: null, baseAxes: null, labels: [],
@@ -1207,6 +1209,7 @@ const el = {
     statusDot:       document.getElementById('status-dot'),
     canvasContainer: document.getElementById('canvas-container'),
     btnResetView:    document.getElementById('btn-reset-view'),
+    renderFpsLimit:  document.getElementById('render-fps-limit'),
     btnSelectedViewPivot: document.getElementById('btn-selected-view-pivot'),
     btnToggleOutline: document.getElementById('btn-toggle-outline'),
     btnToggleGrid:   document.getElementById('btn-toggle-grid'),
@@ -22844,6 +22847,16 @@ function setupEventListeners() {
         state.sceneSelectionPointer = null;
         resetMainOrbitControlInteraction();
     });
+    if (el.renderFpsLimit) {
+        try { state.renderFpsLimited = localStorage.getItem('simulation.limitFps') === '1'; } catch {}
+        el.renderFpsLimit.checked = state.renderFpsLimited;
+        el.renderFpsLimit.addEventListener('change', () => {
+            state.renderFpsLimited = el.renderFpsLimit.checked;
+            state.renderFrameLimit.reset();
+            try { localStorage.setItem('simulation.limitFps', state.renderFpsLimited ? '1' : '0'); } catch {}
+            requestRender();
+        });
+    }
     el.btnResetView.addEventListener('click', () => {
         fitCamera();
         updateSelectedViewPivot(true);
@@ -51927,10 +51940,11 @@ function requestRender() {
     // requestAnimationFrame timestamp origin.
     // A hidden or closed source can suspend its pending callback indefinitely.
     // Transfer that request with the live view and ignore any stale callback.
-    frame.id = renderWindow.requestAnimationFrame(() => {
+    frame.id = renderWindow.requestAnimationFrame((frameTimestamp) => {
         if (state.renderFrameRequest !== frame) return;
         state.renderFrameRequest = null;
-        animate(performance.now());
+        const paintTime = frameTimestamp + (renderWindow.performance.timeOrigin - performance.timeOrigin);
+        animate(performance.now(), paintTime);
     });
 }
 
@@ -51939,13 +51953,13 @@ function renderSimulationScene(renderer, camera) {
     // Keep every original mesh, transform and collision shape; omit only the
     // optional lighting post-process and render at the existing reduced DPR.
     if (usesSoftwareRasterizer(renderer)) {
-        const painted = renderPacedSoftwareFrame(renderer, () => renderer.render(state.scene, camera));
+        const painted = renderPacedSoftwareFrame(renderer, () => renderer.render(state.scene, camera), undefined, 0);
         // Also retry an on-demand edit; a skipped final frame must not be lost.
         if (!painted) requestRender();
     } else renderWithContactAO(renderer, state.scene, camera, state.models);
 }
 
-function animate(timestamp = performance.now()) {
+function animate(timestamp = performance.now(), paintTime = timestamp) {
     state.renderFramePending = false;
     if (!state.collision.lastCheckSkipped) captureCollisionSafeRobotPoses();
     applyVirtualControllerFrame(timestamp);
@@ -51995,8 +52009,12 @@ function animate(timestamp = performance.now()) {
     updateSketchPreview();
     updateTeachingPointDisplay();
     visionApp.update();
-    renderSimulationScene(state.renderer, state.camera);
-    renderViewWindow();
+    if (!state.renderFpsLimited || state.renderFrameLimit.permits(paintTime)) {
+        renderSimulationScene(state.renderer, state.camera);
+        renderViewWindow();
+    } else {
+        requestRender();
+    }
     updateZeroPointCurrentMarker();
     if (requiresContinuousRendering()) requestRender();
 }

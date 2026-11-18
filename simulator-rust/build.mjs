@@ -7,6 +7,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 const project = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.dirname(project);
 const engine = '2_3DSimulation/wasm/simulation.wasm';
+const rustBridge = process.argv.find(arg => arg.startsWith('--rust-bridge-zip='))?.slice('--rust-bridge-zip='.length);
 
 if (!process.argv.includes('--package-only')) {
     await buildEngine();
@@ -41,8 +42,12 @@ for (const name of [
     '3_ToolSelector/snap-geometry.mjs', 'Language/runtime', '0_Home/tool-guide-embed.js',
     'favicon.png', 'analytics-config.js', 'analytics.js', 'tools/serve-local.cjs',
     'tools/virtual-vision-server.cjs', 'tools/virtual-vision-protocols.cjs', 'tools/collaboration-server.cjs',
-    'simulator-rust/src', 'simulator-rust/Cargo.toml', 'simulator-rust/Cargo.lock', 'simulator-rust/build-engine.mjs'
+    'simulator-rust/src', 'simulator-rust/Cargo.toml', 'simulator-rust/Cargo.lock', 'simulator-rust/build-engine.mjs',
+    '2_3DSimulation/RustControllerBridge/src', '2_3DSimulation/RustControllerBridge/Cargo.toml',
+    '2_3DSimulation/RustControllerBridge/Cargo.lock', '2_3DSimulation/RustControllerBridge/README.md',
+    '2_3DSimulation/RustControllerBridge/start-rust-bridge.cmd'
 ]) await copy(name);
+if (rustBridge) await copyFile(rustBridge, path.join(stage, '2_3DSimulation/bridge/InoRobotRustControllerBridge.zip'));
 
 const simulationPage = path.join(stage, '2_3DSimulation', 'index.html');
 const html = await readFile(simulationPage, 'utf8');

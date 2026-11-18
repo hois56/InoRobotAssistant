@@ -1791,6 +1791,24 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
     font-size: calc(0.6rem + 1pt);
 }
 
+.viewer-fps-limit {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.28rem;
+    padding: 0 0.4rem;
+    color: var(--text-2);
+    font-size: calc(0.6rem + 1pt);
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.viewer-fps-limit input {
+    margin: 0;
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+
 .viewer-control-divider {
     width: 1px;
     height: 20px;

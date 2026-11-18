@@ -15,6 +15,10 @@ node simulator-rust/target/standalone/start.cjs
 
 브라우저에서 [로컬 시뮬레이터](http://127.0.0.1:8775/2_3DSimulation/)를 연다. 생성된 `standalone` 폴더 전체를 다른 위치로 옮겨도 그 안에서 `node start.cjs`로 실행할 수 있다. Three.js, STEP 변환기 등 기존 화면이 CDN에서 불러오는 라이브러리에는 인터넷 연결이 필요하다. 기존 사이트와 다른 포트에서 실행하면 브라우저의 작업공간 저장소도 분리된다. 기존 작업은 시뮬레이터의 작업공간 파일로 옮길 수 있다.
 
+하단의 **60 FPS** 체크박스는 화면 렌더링 상한을 켠다. 기본값은 꺼짐이며, 브라우저와 디스플레이가 제공하는 화면 갱신 주기로 그린다. 선택은 같은 브라우저 주소에서 다시 열어도 유지된다.
+
+컨트롤러 연결에는 Rust 브리지 또는 기존 C# 브리지를 실행하고 시뮬레이터의 **전용 브리지**를 선택한다. 두 실행 파일은 같은 포트를 쓰므로 사용할 브리지를 하나만 실행한다. Rust 브리지 배포본이 동봉된 경우 `2_3DSimulation/bridge/InoRobotRustControllerBridge.zip`에서 찾을 수 있다. 실행 및 원복 방법은 `2_3DSimulation/RustControllerBridge/README.md`에 있다.
+
 ## 빌드와 검사
 
 독립 실행판은 열린 페이지와 같은 포트의 `/collaboration`에 협업 방을 연결한다. 포트를 바꾸려면 `node start.cjs 8776`처럼 실행한다.
@@ -24,6 +28,8 @@ rustup target add wasm32-unknown-unknown
 node simulator-rust/build.mjs
 node node_modules/@playwright/test/cli.js test --config=simulator-rust/playwright.config.mjs
 ```
+
+브리지 빌드 ZIP을 독립 실행판에 동봉하려면 `build.mjs`에 `--rust-bridge-zip=<브리지 ZIP 경로>`를 전달한다.
 
 빌드는 저장소의 `2_3DSimulation/wasm/simulation.wasm`도 갱신한다. Windows에서 소스를 빌드하려면 Cargo의 호스트 빌드 스크립트를 링크할 수 있는 환경이 필요하다. MSVC 도구 체인은 Visual Studio C++ 빌드 도구를, GNU 도구 체인은 MinGW 링커를 사용한다. SPC25 행렬 연산을 재생성해야 할 때는 저장소의 펌웨어 레지스터 명령 목록을 갱신한 뒤 `node simulator-rust/generate-matrix.mjs`를 실행한다.
 

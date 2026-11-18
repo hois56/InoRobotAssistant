@@ -1,12 +1,30 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { usesSoftwareRasterizer, renderPacedSoftwareFrame } from '../../2_3DSimulation/software-renderer.mjs';
+import { usesSoftwareRasterizer, renderPacedSoftwareFrame, RenderFrameLimit } from '../../2_3DSimulation/software-renderer.mjs';
 
 function renderer(name, debug = true) {
     const gl = { RENDERER: 7937, getExtension: () => debug ? { UNMASKED_RENDERER_WEBGL: 37446 } : null,
         getParameter: () => name };
     return { getContext: () => gl };
 }
+
+test('The optional 60 FPS cap follows both 60 Hz and high-refresh clocks', () => {
+    for (const hz of [60, 90, 120, 144, 165, 240]) {
+        const limit = new RenderFrameLimit();
+        const drawn = Array.from({length: 10 * hz}, (_, i) => i * 1000 / hz)
+            .filter(timestamp => limit.permits(Math.round(timestamp * 10) / 10));
+        assert.ok(drawn.length >= 599 && drawn.length <= 600, `${hz} Hz rendered ${drawn.length} frames`);
+        assert.equal(limit.permits(drawn.at(-1)), false);
+        limit.reset();
+        assert.equal(limit.permits(0), true);
+    }
+});
+
+test('The software renderer can draw without an artificial rest interval', () => {
+    const cpu = renderer('SwiftShader');
+    assert.equal(renderPacedSoftwareFrame(cpu, () => {}, () => 0, 0), true);
+    assert.equal(renderPacedSoftwareFrame(cpu, () => {}, () => 5, 0), true);
+});
 
 test('VM CPU rasterizers request the existing reduced rendering mode', () => {
     for (const name of [

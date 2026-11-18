@@ -3,11 +3,29 @@ const drivers = new WeakMap();
 const paintDeadlines = new WeakMap();
 const paintFences = new WeakMap();
 
+// Schedule against the display clock so 144 Hz can alternate between two
+// and three refresh intervals instead of being rounded down to 48 FPS.
+export class RenderFrameLimit {
+    next = null;
+
+    reset() {
+        this.next = null;
+    }
+
+    permits(timestamp) {
+        const interval = 1000 / 60;
+        if (this.next !== null && timestamp + 0.1 < this.next) return false;
+        const scheduled = this.next === null || timestamp >= this.next + interval ? timestamp : this.next;
+        this.next = scheduled + interval;
+        return true;
+    }
+}
+
 // Leave the UI/transport event loop time to run after a CPU WebGL paint.
 // Measured from completion so a slow paint cannot immediately queue another.
-export function renderPacedSoftwareFrame(renderer, draw, clock = () => performance.now()) {
+export function renderPacedSoftwareFrame(renderer, draw, clock = () => performance.now(), restMs = 150) {
     if (!usesSoftwareRasterizer(renderer)) { draw(); return true; }
-    if (clock() < (paintDeadlines.get(renderer) ?? -Infinity)) return false;
+    if (restMs > 0 && clock() < (paintDeadlines.get(renderer) ?? -Infinity)) return false;
     const gl = renderer.getContext();
     const previous = paintFences.get(renderer);
     if (previous) {
@@ -25,7 +43,7 @@ export function renderPacedSoftwareFrame(renderer, draw, clock = () => performan
             if (fence) { paintFences.set(renderer, fence); gl.flush(); }
         }
     }
-    finally { paintDeadlines.set(renderer, clock() + 150); }
+    finally { if (restMs > 0) paintDeadlines.set(renderer, clock() + restMs); }
     return true;
 }
 
