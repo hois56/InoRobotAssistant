@@ -1,0 +1,86 @@
+use crate::ui::{tag, text, Node};
+
+#[rustfmt::skip]
+pub(super) const VIEW: Node = tag("dialog", &[("id", "workspace-recovery-dialog"), ("class", "workspace-recovery-dialog"), ("aria-labelledby", "workspace-recovery-dialog-title"), ("aria-describedby", "workspace-recovery-description workspace-recovery-isolation-note")], &[
+    text("\n        "),
+    tag("form", &[("method", "dialog")], &[
+        text("\n            "),
+        tag("div", &[("class", "workspace-recovery-dialog-header")], &[
+            text("\n                "),
+            tag("span", &[("class", "workspace-recovery-dialog-icon"), ("aria-hidden", "true")], &[
+                text("\n                    "),
+                tag("i", &[("class", "fa-solid fa-clock-rotate-left")], &[]),
+                text("\n                "),
+            ]),
+            text("\n                "),
+            tag("div", &[], &[
+                text("\n                    "),
+                tag("span", &[], &[text("3D SIMULATION")]),
+                text("\n                    "),
+                tag("h2", &[("id", "workspace-recovery-dialog-title")], &[text("이전 작업 복구")]),
+                text("\n                "),
+            ]),
+            text("\n            "),
+        ]),
+        text("\n            "),
+        tag("p", &[("id", "workspace-recovery-description"), ("class", "workspace-recovery-description")], &[text("저장된 3D 시뮬레이션 작업이 있습니다. 불러오시겠습니까?")]),
+        text("\n            "),
+        tag("fieldset", &[("id", "workspace-recovery-options"), ("class", "workspace-recovery-options"), ("hidden", "")], &[
+            text("\n                "),
+            tag("legend", &[("id", "workspace-recovery-options-label")], &[text("불러올 작업 선택")]),
+            text("\n                "),
+            tag("div", &[("id", "workspace-recovery-management"), ("class", "workspace-recovery-management"), ("hidden", "")], &[
+                text("\n                    "),
+                tag("span", &[("id", "workspace-recovery-selection-count"), ("class", "workspace-recovery-selection-count"), ("aria-live", "polite")], &[text("선택된 작업 0개")]),
+                text("\n                    "),
+                tag("div", &[("class", "workspace-recovery-management-actions")], &[
+                    text("\n                        "),
+                    tag("button", &[("id", "btn-workspace-select-all"), ("type", "button")], &[text("전체 선택")]),
+                    text("\n                        "),
+                    tag("button", &[("id", "btn-workspace-clear-selection"), ("type", "button")], &[text("선택 해제")]),
+                    text("\n                        "),
+                    tag("button", &[("id", "btn-workspace-delete"), ("type", "button"), ("class", "danger")], &[text("선택 삭제")]),
+                    text("\n                    "),
+                ]),
+                text("\n                "),
+            ]),
+            text("\n                "),
+            tag("div", &[("id", "workspace-recovery-list"), ("class", "workspace-recovery-list")], &[]),
+            text("\n            "),
+        ]),
+        text("\n            "),
+        tag("div", &[("id", "workspace-recovery-details"), ("class", "workspace-recovery-details"), ("aria-live", "polite")], &[
+            text("\n                "),
+            tag("p", &[("id", "workspace-recovery-saved-at")], &[text("마지막 저장: {time}")]),
+            text("\n                "),
+            tag("p", &[("id", "workspace-recovery-summary")], &[text("로봇 {robots}대 · 3D 모델 {models}개")]),
+            text("\n            "),
+        ]),
+        text("\n            "),
+        tag("p", &[("id", "workspace-recovery-isolation-note"), ("class", "workspace-recovery-isolation-note")], &[
+            text("\n                "),
+            tag("i", &[("class", "fa-solid fa-window-restore"), ("aria-hidden", "true")], &[]),
+            text("\n                "),
+            tag("span", &[], &[text("다른 창에서 연 작업은 독립된 복사본으로 저장되어 서로 덮어쓰지 않습니다.")]),
+            text("\n            "),
+        ]),
+        text("\n            "),
+        tag("p", &[("id", "workspace-recovery-error"), ("class", "workspace-recovery-error"), ("role", "alert"), ("hidden", "")], &[]),
+        text("\n            "),
+        tag("div", &[("class", "workspace-recovery-dialog-actions")], &[
+            text("\n                "),
+            tag("button", &[("id", "btn-workspace-cancel"), ("type", "button"), ("class", "secondary"), ("hidden", ""), ("data-i18n", "legacy.취소")], &[text("취소")]),
+            text("\n                "),
+            tag("button", &[("id", "btn-workspace-new"), ("type", "button"), ("class", "secondary")], &[text("새 작업 시작")]),
+            text("\n                "),
+            tag("button", &[("id", "btn-workspace-restore"), ("type", "button"), ("class", "primary")], &[
+                text("\n                    "),
+                tag("i", &[("class", "fa-solid fa-clock-rotate-left"), ("aria-hidden", "true")], &[]),
+                text("\n                    이전 작업 불러오기\n                "),
+            ]),
+            text("\n            "),
+        ]),
+        text("\n        "),
+    ]),
+    text("\n    "),
+]);

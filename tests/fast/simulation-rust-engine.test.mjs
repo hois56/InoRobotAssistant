@@ -5,6 +5,31 @@ import { scaraInverse } from '../../2_3DSimulation/inverse-kinematics.mjs';
 import { planJointPath } from '../../2_3DSimulation/path-planning-core.mjs';
 import { parseStl } from '../../2_3DSimulation/stl-core.mjs';
 import { engine, evaluateOlpExpression, numbers } from '../../2_3DSimulation/wasm/engine.mjs';
+import { dragPanel, fitPanel, panelResizeEdge, resizePanel, stackPanels } from '../../2_3DSimulation/wasm/panels.mjs';
+
+test('panel resizing and dragging preserve the opposite edge and fit a smaller viewport', () => {
+    const canvas = { left: 5, top: 50, width: 480, height: 280 };
+    const rect = { left: 110, top: 60, right: 390, bottom: 290 };
+    assert.equal(panelResizeEdge(rect, 112, 61), 'nw');
+    assert.equal(panelResizeEdge(rect, 370, 200), '');
+    const box = fitPanel('model-browser-panel', canvas, rect, 260, 300, 240);
+    assert.deepEqual(box, { left: 105, top: 10, width: 300, height: 260, minWidth: 260, minHeight: 260 });
+    assert.deepEqual(resizePanel({ ...box, edge: 'nw', canvasWidth:480, canvasHeight:280 }, 300, 20), [145,10,260,260]);
+    assert.deepEqual(dragPanel(-12,90,300,260,canvas), [0,20]);
+});
+
+test('focus respects closed and detached panels and reserves the work origin layer', () => {
+    const document = {};
+    const nodes = new Map();
+    for (const id of ['jog-panel','model-browser-panel','work-origin-dialog','equipment-dialog','vision-panel']) {
+        nodes.set(id, { id, ownerDocument: document, open: true, classList:{contains:()=>false}, style:{} });
+    }
+    nodes.get('equipment-dialog').open = false;
+    nodes.get('vision-panel').ownerDocument = {};
+    const order = stackPanels([...nodes.keys()], 'jog-panel', id => nodes.get(id), document);
+    assert.deepEqual(order, ['model-browser-panel','work-origin-dialog','jog-panel']);
+    assert.deepEqual(order.map(id=>nodes.get(id).style.zIndex), ['70','91','72']);
+});
 
 test('minimum IK damping gives a finite correction for coincident prismatic axes', () => {
     numbers(23).set([0,0,0, 1,0,0, 0,0,0, 1,1,0,0,0,0,0, 1,1,0,0,0,0,0]);

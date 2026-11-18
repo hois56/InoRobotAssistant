@@ -1,0 +1,148 @@
+use crate::ui::{tag, text, Node};
+
+#[rustfmt::skip]
+pub(super) const VIEW: Node = tag("aside", &[("id", "virtual-controller-panel"), ("class", "virtual-controller-panel panel-user-hidden"), ("aria-label", "컨트롤러 연결")], &[
+    text("\n                "),
+    tag("div", &[("class", "virtual-controller-header")], &[
+        text("\n                    "),
+        tag("h2", &[], &[
+            tag("i", &[("id", "virtual-controller-antenna"), ("class", "fa-solid fa-tower-broadcast virtual-controller-antenna disconnected"), ("aria-hidden", "true")], &[]),
+            text(" 컨트롤러 연결"),
+        ]),
+        text("\n                    "),
+        tag("div", &[("class", "panel-header-actions")], &[
+            text("\n                        "),
+            tag("button", &[("type", "button"), ("data-panel-action", "popout"), ("data-panel-id", "virtual-controller-panel"), ("title", "별도 창으로 분리"), ("aria-label", "컨트롤러 연결 패널을 별도 창으로 분리")], &[
+                tag("i", &[("class", "fa-solid fa-up-right-from-square")], &[]),
+            ]),
+            text("\n                        "),
+            tag("button", &[("type", "button"), ("data-panel-action", "hide"), ("data-panel-id", "virtual-controller-panel"), ("title", "숨기기"), ("aria-label", "컨트롤러 연결 패널 숨기기")], &[
+                tag("i", &[("class", "fa-solid fa-eye-slash")], &[]),
+            ]),
+            text("\n                    "),
+        ]),
+        text("\n                "),
+    ]),
+    text("\n                "),
+    tag("div", &[("class", "virtual-controller-content")], &[
+        text("\n                    "),
+        tag("div", &[("id", "virtual-controller-connections"), ("class", "virtual-controller-connections"), ("aria-live", "polite")], &[]),
+        text("\n                    "),
+        tag("button", &[("id", "virtual-controller-add"), ("type", "button"), ("class", "virtual-controller-add")], &[
+            text("\n                        "),
+            tag("i", &[("class", "fa-solid fa-plus")], &[]),
+            tag("span", &[("data-i18n", "legacy.새 컨트롤러 연결")], &[text("새 컨트롤러 연결")]),
+            text("\n                    "),
+        ]),
+        text("\n                    "),
+        tag("label", &[("class", "virtual-controller-target")], &[
+            text("\n                        "),
+            tag("span", &[], &[text("연결 방식")]),
+            text("\n                        "),
+            tag("select", &[("id", "virtual-controller-source"), ("aria-label", "가상 컨트롤러 연결 방식")], &[
+                text("\n                            "),
+                tag("option", &[("value", "bridge")], &[text("전용 브리지 (직접 연결)")]),
+                text("\n                            "),
+                tag("option", &[("value", "trace")], &[text("Trace 도구 연결")]),
+                text("\n                        "),
+            ]),
+            text("\n                    "),
+        ]),
+        text("\n                    "),
+        tag("div", &[("class", "virtual-controller-bridge-actions"), ("data-virtual-controller-source", "bridge")], &[
+            text("\n                        "),
+            tag("a", &[("class", "virtual-controller-bridge-download"), ("href", "./bridge/InoRobotVirtualControllerBridge.zip?v=2.0"), ("download", "")], &[
+                text("\n                            "),
+                tag("i", &[("class", "fa-solid fa-download")], &[]),
+                text("\n                            "),
+                tag("span", &[], &[text("브리지 다운로드")]),
+                text("\n                            "),
+                tag("span", &[("translate", "no")], &[text("V2.0")]),
+                text("\n                        "),
+            ]),
+            text("\n                        "),
+            tag("button", &[("id", "virtual-controller-bridge-start"), ("type", "button"), ("title", "설치된 전용 브리지 실행")], &[
+                text("\n                            "),
+                tag("i", &[("class", "fa-solid fa-play")], &[]),
+                tag("span", &[], &[text("실행")]),
+                text("\n                        "),
+            ]),
+            text("\n                        "),
+            tag("button", &[("id", "virtual-controller-bridge-stop"), ("type", "button"), ("title", "실행 중인 전용 브리지 종료")], &[
+                text("\n                            "),
+                tag("i", &[("class", "fa-solid fa-stop")], &[]),
+                tag("span", &[], &[text("종료")]),
+                text("\n                        "),
+            ]),
+            text("\n                    "),
+        ]),
+        text("\n                    "),
+        tag("a", &[("class", "virtual-controller-trace-download"), ("data-virtual-controller-source", "trace"), ("href", "../7_DebuggingTool/Trace/InoRobotTrace_V1.5.zip"), ("download", "")], &[
+            text("\n                        "),
+            tag("i", &[("class", "fa-solid fa-chart-line")], &[]),
+            text("\n                        "),
+            tag("span", &[], &[text("Trace 도구 다운로드 및 실행")]),
+            text("\n                    "),
+        ]),
+        text("\n                    "),
+        tag("div", &[("class", "virtual-controller-controller-settings")], &[
+            text("\n                        "),
+            tag("label", &[("class", "virtual-controller-target")], &[
+                text("\n                            "),
+                tag("span", &[], &[text("컨트롤러 종류")]),
+                text("\n                            "),
+                tag("select", &[("id", "virtual-controller-kind"), ("aria-label", "컨트롤러 종류")], &[
+                    text("\n                                "),
+                    tag("option", &[("value", "virtual")], &[text("가상 컨트롤러")]),
+                    text("\n                                "),
+                    tag("option", &[("value", "real")], &[text("실제 컨트롤러")]),
+                    text("\n                            "),
+                ]),
+                text("\n                        "),
+            ]),
+            text("\n                        "),
+            tag("label", &[("class", "virtual-controller-target")], &[
+                text("\n                            "),
+                tag("span", &[], &[text("컨트롤러 IP")]),
+                text("\n                            "),
+                tag("input", &[("id", "virtual-controller-ip"), ("type", "text"), ("inputmode", "decimal"), ("autocomplete", "off"), ("value", "127.0.0.1"), ("placeholder", "예: 192.168.0.10"), ("aria-label", "컨트롤러 IP 주소")], &[]),
+                text("\n                        "),
+            ]),
+            text("\n                    "),
+        ]),
+        text("\n                    "),
+        tag("label", &[("class", "virtual-controller-target")], &[
+            text("\n                        "),
+            tag("span", &[], &[text("대상 로봇")]),
+            text("\n                        "),
+            tag("select", &[("id", "virtual-controller-robot"), ("aria-label", "가상 컨트롤러 대상 로봇")], &[
+                text("\n                            "),
+                tag("option", &[("value", "")], &[text("로봇을 선택하세요")]),
+                text("\n                        "),
+            ]),
+            text("\n                    "),
+        ]),
+        text("\n                    "),
+        tag("button", &[("id", "virtual-controller-connect"), ("type", "button"), ("class", "virtual-controller-connect")], &[
+            text("\n                        "),
+            tag("i", &[("class", "fa-solid fa-plug")], &[]),
+            text("\n                        "),
+            tag("span", &[], &[text("연결")]),
+            text("\n                    "),
+        ]),
+        text("\n                    "),
+        tag("div", &[("class", "virtual-controller-telemetry"), ("role", "status"), ("aria-live", "polite")], &[
+            text("\n                        "),
+            tag("span", &[], &[
+                tag("i", &[("id", "virtual-controller-status-dot"), ("class", "fa-solid fa-circle")], &[]),
+                text(" "),
+                tag("span", &[("id", "virtual-controller-status")], &[text("연결 안 됨")]),
+            ]),
+            text("\n                        "),
+            tag("strong", &[("id", "virtual-controller-rate")], &[text("-- Hz")]),
+            text("\n                    "),
+        ]),
+        text("\n                "),
+    ]),
+    text("\n            "),
+]);

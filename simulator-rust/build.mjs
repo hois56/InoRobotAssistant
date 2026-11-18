@@ -1,22 +1,15 @@
 import { copyFile, mkdir, readFile, readdir, rename, stat, writeFile, cp, mkdtemp } from 'node:fs/promises';
-import { spawnSync } from 'node:child_process';
+import { buildEngine } from './build-engine.mjs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 
 const project = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.dirname(project);
-const target = 'wasm32-unknown-unknown';
 const engine = '2_3DSimulation/wasm/simulation.wasm';
 
 if (!process.argv.includes('--package-only')) {
-    const result = spawnSync('cargo', ['build', '--locked', '--release', '--target', target], {
-        cwd: project, stdio: 'inherit'
-    });
-    if (result.error) throw result.error;
-    if (result.status !== 0) process.exit(result.status ?? 1);
-    const cargoTarget = path.resolve(project, process.env.CARGO_TARGET_DIR || 'target');
-    await copyFile(path.join(cargoTarget, target, 'release', 'inorobot_simulation.wasm'), path.join(repo, engine));
+    await buildEngine();
 }
 await WebAssembly.compile(await readFile(path.join(repo, engine)));
 
@@ -47,12 +40,22 @@ for (const name of [
     '3_ToolSelector/continuous-transform-rotation.mjs', '3_ToolSelector/mass-properties.mjs',
     '3_ToolSelector/snap-geometry.mjs', 'Language/runtime', '0_Home/tool-guide-embed.js',
     'favicon.png', 'analytics-config.js', 'analytics.js', 'tools/serve-local.cjs',
-    'tools/virtual-vision-server.cjs', 'tools/virtual-vision-protocols.cjs', 'tools/collaboration-server.cjs'
+    'tools/virtual-vision-server.cjs', 'tools/virtual-vision-protocols.cjs', 'tools/collaboration-server.cjs',
+    'simulator-rust/src', 'simulator-rust/Cargo.toml', 'simulator-rust/Cargo.lock', 'simulator-rust/build-engine.mjs'
 ]) await copy(name);
 
 const simulationPage = path.join(stage, '2_3DSimulation', 'index.html');
 const html = await readFile(simulationPage, 'utf8');
-await writeFile(simulationPage, html.replace('<body ', '<body data-local-collaboration="true" '));
+const body = /<body\b([^>]*)>([\s\S]*?)<\/body>/i.exec(html);
+const main = body?.[2].match(/<script type="module" src="(main\.js[^"]*)"><\/script>/);
+const guide = body?.[2].match(/<script src="([^"]*tool-guide-embed\.js[^"]*)"><\/script>/);
+const head = html.slice(0, body?.index);
+const i18n = head.match(/<script src="([^"]*\/i18n\.js[^"]*)" defer><\/script>/);
+if (!body || !main || !guide || !i18n) throw new Error('Simulator page entry scripts are missing');
+const shell = '<body' + body[1] + ' data-local-collaboration="true">\n'
+    + '<script type="module" id="rust-simulator" src="./rust-ui.mjs" data-main="' + main[1]
+    + '" data-guide="' + guide[1] + '" data-i18n="' + i18n[1] + '"></script>\n</body>';
+await writeFile(simulationPage, head.replace(i18n[0], '') + shell + html.slice(body.index + body[0].length));
 
 const redirect = '<!doctype html><meta charset="utf-8"><title>3D Simulation</title>' +
     '<script>location.replace("/2_3DSimulation/"+location.search+location.hash)</script>' +
@@ -64,6 +67,7 @@ for (const lang of ['ko','kr','en','zh-CN','vi','tr','ru']) {
     await writeFile(path.join(home, 'index.html'), redirect);
 }
 await copyFile(path.join(project, 'start.cjs'), path.join(stage, 'start.cjs'));
+await copyFile(path.join(project, 'README.md'), path.join(stage, 'README.md'));
 await writeFile(path.join(stage, marker), '1\n');
 // Windows file indexers may briefly hold an archive in the copied tree.
 async function movePackage(from, to) {

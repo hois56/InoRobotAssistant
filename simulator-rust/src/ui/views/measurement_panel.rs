@@ -1,0 +1,163 @@
+use crate::ui::{tag, text, Node};
+
+#[rustfmt::skip]
+pub(super) const VIEW: Node = tag("aside", &[("id", "measurement-panel"), ("class", "measurement-panel panel-user-hidden panel-edge-resizable"), ("aria-label", "치수 측정 패널")], &[
+    text("\n                "),
+    tag("div", &[("class", "measurement-panel-header")], &[
+        text("\n                    "),
+        tag("div", &[], &[
+            text("\n                        "),
+            tag("span", &[], &[text("DIMENSION MEASUREMENT")]),
+            text("\n                        "),
+            tag("h2", &[], &[
+                tag("i", &[("class", "fa-solid fa-ruler-combined"), ("aria-hidden", "true")], &[]),
+                text(" 치수"),
+            ]),
+            text("\n                    "),
+        ]),
+        text("\n                    "),
+        tag("div", &[("class", "panel-header-actions")], &[
+            text("\n                        "),
+            tag("button", &[("type", "button"), ("data-panel-action", "popout"), ("data-panel-id", "measurement-panel"), ("title", "별도 창으로 분리"), ("aria-label", "치수 측정 패널을 별도 창으로 분리")], &[
+                tag("i", &[("class", "fa-solid fa-up-right-from-square")], &[]),
+            ]),
+            text("\n                        "),
+            tag("button", &[("type", "button"), ("data-panel-action", "hide"), ("data-panel-id", "measurement-panel"), ("title", "숨기기"), ("aria-label", "치수 측정 패널 숨기기")], &[
+                tag("i", &[("class", "fa-solid fa-eye-slash")], &[]),
+            ]),
+            text("\n                    "),
+        ]),
+        text("\n                "),
+    ]),
+    text("\n                "),
+    tag("div", &[("class", "measurement-panel-content")], &[
+        text("\n                    "),
+        tag("div", &[("id", "measurement-state"), ("class", "measurement-state"), ("role", "status"), ("aria-live", "polite")], &[text("P1 선택")]),
+        text("\n                    "),
+        tag("div", &[("id", "measurement-snap-controls"), ("class", "measurement-snap-controls")], &[
+            text("\n                        "),
+            tag("label", &[], &[
+                text("\n                            "),
+                tag("span", &[], &[text("스냅 유형")]),
+                text("\n                            "),
+                tag("select", &[("id", "measurement-snap-type"), ("aria-label", "치수 측정 스냅 유형")], &[
+                    text("\n                                "),
+                    tag("option", &[("value", "auto")], &[text("자동 스냅")]),
+                    text("\n                                "),
+                    tag("option", &[("value", "vertex")], &[text("꼭짓점")]),
+                    text("\n                                "),
+                    tag("option", &[("value", "endpoint")], &[text("끝점")]),
+                    text("\n                                "),
+                    tag("option", &[("value", "edge-midpoint")], &[text("에지 중심점")]),
+                    text("\n                                "),
+                    tag("option", &[("value", "circle-center")], &[text("원/호 중심점")]),
+                    text("\n                                "),
+                    tag("option", &[("value", "quadrant")], &[text("사분점")]),
+                    text("\n                                "),
+                    tag("option", &[("value", "rectangle-center")], &[text("사각형 중심점")]),
+                    text("\n                                "),
+                    tag("option", &[("value", "hole-center")], &[text("구멍 가상 중심점")]),
+                    text("\n                                "),
+                    tag("option", &[("value", "multi-point-center")], &[text("다중 점 중심점")]),
+                    text("\n                                "),
+                    tag("option", &[("value", "robot-base-center")], &[text("로봇 바디 중심점")]),
+                    text("\n                                "),
+                    tag("option", &[("value", "robot-tcp")], &[text("현재 TCP (점)")]),
+                    text("\n                            "),
+                ]),
+                text("\n                        "),
+            ]),
+            text("\n                    "),
+        ]),
+        text("\n                    "),
+        tag("div", &[("id", "measurement-hover-readout"), ("class", "measurement-hover-readout"), ("aria-live", "polite")], &[text("모델 형상 위로 포인터를 이동하세요.")]),
+        text("\n                    "),
+        tag("section", &[("id", "measurement-point-readouts"), ("class", "measurement-point-readouts"), ("aria-label", "측정 점")], &[
+            text("\n                        "),
+            tag("div", &[], &[
+                tag("strong", &[], &[text("P1")]),
+                tag("span", &[("id", "measurement-p1-readout")], &[text("-")]),
+            ]),
+            text("\n                        "),
+            tag("div", &[("id", "measurement-p2-row")], &[
+                tag("strong", &[], &[text("P2")]),
+                tag("span", &[("id", "measurement-p2-readout")], &[text("-")]),
+            ]),
+            text("\n                    "),
+        ]),
+        text("\n                    "),
+        tag("section", &[("id", "measurement-display-section"), ("class", "measurement-display-section"), ("aria-label", "치수 표시 방식")], &[
+            text("\n                        "),
+            tag("div", &[("class", "measurement-section-title")], &[text("방식")]),
+            text("\n                        "),
+            tag("label", &[], &[
+                tag("input", &[("type", "radio"), ("name", "measurement-display-mode"), ("value", "diagonal"), ("checked", "")], &[]),
+                text(" 직선 길이"),
+            ]),
+            text("\n                        "),
+            tag("label", &[], &[
+                tag("input", &[("type", "radio"), ("name", "measurement-display-mode"), ("value", "orthogonal")], &[]),
+                text(" 직각 치수 (X/Y/Z)"),
+            ]),
+            text("\n                        "),
+            tag("label", &[], &[
+                tag("input", &[("type", "radio"), ("name", "measurement-display-mode"), ("value", "robot-position")], &[]),
+                text(" 로봇 위치"),
+            ]),
+            text("\n                    "),
+        ]),
+        text("\n                    "),
+        tag("section", &[("id", "measurement-result"), ("class", "measurement-result"), ("aria-label", "측정 결과")], &[
+            text("\n                        "),
+            tag("div", &[("class", "measurement-section-title")], &[text("측정 결과")]),
+            text("\n                        "),
+            tag("div", &[("id", "measurement-diagonal-result")], &[text("Distance = - mm")]),
+            text("\n                        "),
+            tag("div", &[("id", "measurement-orthogonal-result"), ("class", "hidden")], &[
+                text("\n                            "),
+                tag("div", &[], &[
+                    text("X = - mm "),
+                    tag("small", &[("id", "measurement-delta-x")], &[text("ΔX 0.000")]),
+                ]),
+                text("\n                            "),
+                tag("div", &[], &[
+                    text("Y = - mm "),
+                    tag("small", &[("id", "measurement-delta-y")], &[text("ΔY 0.000")]),
+                ]),
+                text("\n                            "),
+                tag("div", &[], &[
+                    text("Z = - mm "),
+                    tag("small", &[("id", "measurement-delta-z")], &[text("ΔZ 0.000")]),
+                ]),
+                text("\n                        "),
+            ]),
+            text("\n                        "),
+            tag("div", &[("id", "measurement-robot-position-result"), ("class", "hidden")], &[
+                text("\n                            "),
+                tag("div", &[], &[text("X = - mm")]),
+                text("\n                            "),
+                tag("div", &[], &[text("Y = - mm")]),
+                text("\n                            "),
+                tag("div", &[], &[text("Z = - mm")]),
+                text("\n                        "),
+            ]),
+            text("\n                    "),
+        ]),
+        text("\n                    "),
+        tag("div", &[("class", "measurement-action-row")], &[
+            text("\n                        "),
+            tag("button", &[("id", "btn-measurement-remeasure"), ("type", "button")], &[
+                tag("i", &[("class", "fa-solid fa-rotate")], &[]),
+                text(" 다시 측정"),
+            ]),
+            text("\n                        "),
+            tag("button", &[("id", "btn-measurement-delete"), ("type", "button"), ("class", "secondary")], &[
+                tag("i", &[("class", "fa-solid fa-trash")], &[]),
+                text(" 치수 삭제"),
+            ]),
+            text("\n                    "),
+        ]),
+        text("\n                "),
+    ]),
+    text("\n            "),
+]);

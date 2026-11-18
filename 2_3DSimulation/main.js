@@ -1,3 +1,4 @@
+import { PANEL_IDS, PANEL_STACK_IDS, panelOpen, panelAvailable, stackPanels, panelResizeEdge, fitPanel, resizePanel, dragPanel } from './wasm/panels.mjs';
 import { StandardInputClient } from './standard-input-client.mjs?v=20261114-inputs65-1';
 import { applyCadLightweightGltfUnits } from './gltf-import-units.mjs?v=20261103-1';
 /**
@@ -2015,32 +2016,6 @@ const SNAP_TYPES = Object.freeze({
     'edge-midpoint': { label: '에지 중심점', symbol: '△', priority: 3 },
     'multi-point-center': { label: '다중 점 중심점', symbol: '⊕', priority: 1 }
 });
-const PANEL_RESIZE_EDGE_SIZE = 8;
-const PANEL_MINIMUM_SIZES = Object.freeze({
-    'position-points-panel': { width: 380, height: 300 },
-    'model-browser-panel': { width: 260, height: 220 },
-        'jog-panel': { width: 250, height: 300 },
-        'tcp-profile-panel': { width: 280, height: 360 },
-    'workobject-panel': { width: 320, height: 500 },
-    'arm-load-panel': { width: 300, height: 440 },
-    'virtual-controller-panel': { width: 250, height: 230 },
-    'collaboration-panel': { width: 280, height: 420 },
-    'view-presets-panel': { width: 280, height: 260 },
-    'view-window': { width: 360, height: 220 },
-    'program-panel': { width: 300, height: 540 },
-    'trace-panel': { width: 620, height: 480 },
-    'io-simulator-panel': { width: 390, height: 620 },
-    'interference-zone-panel': { width: 350, height: 420 },
-    'measurement-panel': { width: 300, height: 520 },
-    'shape-panel': { width: 300, height: 460 },
-    'tool-load-info-panel': { width: 390, height: 560 },
-    'work-origin-dialog': { width: 320, height: 220 },
-    'vision-panel': { width: 400, height: 520 },
-    'conveyor-tracking-dialog': { width: 340, height: 360 }
-});
-const PANEL_STACK_BASE_Z_INDEX = 70;
-const PANEL_IDS = Object.freeze(Object.keys(PANEL_MINIMUM_SIZES));
-const PANEL_STACK_IDS = Object.freeze([...PANEL_IDS, 'interference-zone-dialog']);
 const PANEL_DRAG_EXCLUDED_SELECTOR = [
     'button', 'input', 'select', 'textarea', 'a', 'label', 'option',
     '[contenteditable="true"]', '[role="button"]', '[role="treeitem"]',
@@ -24208,40 +24183,19 @@ function getPanelElement(panelId) {
 }
 
 function isPanelOpenInDocument(panel) {
-    if (!panel || panel.ownerDocument !== document) return false;
-    if (panel.id === 'interference-zone-dialog' || panel.id === 'work-origin-dialog' || panel.id === 'equipment-dialog' || panel.id === 'io-function-mapping-dialog') return panel.open;
-    return !panel.classList.contains('panel-user-hidden')
-        && !panel.classList.contains('hidden');
+    return panelOpen(panel, document);
 }
 
 function updatePanelStack() {
-    state.panelOpenOrder = state.panelOpenOrder.filter((panelId) => {
-        const panel = getPanelElement(panelId);
-        return isPanelOpenInDocument(panel);
-    });
-    state.panelOpenOrder.forEach((panelId, index) => {
-        const panel = getPanelElement(panelId);
-        if (panel) {
-            // Keep Work Origin below the fixed bottom stats bar. Its drag and
-            // resize bounds stop at the bar's top edge as well.
-            panel.style.zIndex = panelId === 'work-origin-dialog'
-                ? String(PANEL_STACK_BASE_Z_INDEX + PANEL_IDS.length + 1)
-                : String(PANEL_STACK_BASE_Z_INDEX + index);
-        }
-    });
+    state.panelOpenOrder = stackPanels(state.panelOpenOrder, null, getPanelElement, document);
 }
 
 function bringPanelToFront(panelId) {
-    const panel = getPanelElement(panelId);
-    if (!panel || panel.ownerDocument !== document) return;
-    state.panelOpenOrder = state.panelOpenOrder.filter((openPanelId) => openPanelId !== panelId);
-    state.panelOpenOrder.push(panelId);
-    updatePanelStack();
+    state.panelOpenOrder = stackPanels(state.panelOpenOrder, panelId, getPanelElement, document);
 }
 
 function initializePanelStack() {
-    state.panelOpenOrder = PANEL_STACK_IDS.filter((panelId) => isPanelOpenInDocument(getPanelElement(panelId)));
-    updatePanelStack();
+    state.panelOpenOrder = stackPanels(PANEL_STACK_IDS, null, getPanelElement, document);
 }
 
 function captureSketchPanelState() {
@@ -24400,13 +24354,7 @@ function updatePanelLauncher(panelId) {
     const panel = getPanelElement(panelId);
     const button = document.querySelector(`[data-panel-toggle="${panelId}"]`);
     if (!panel || !button) return;
-    const unavailable = (panelId === 'jog-panel' && !getJogTargetRobot())
-        || (panelId === 'position-points-panel' && getArticulatedRobots().length === 0)
-        || (panelId === 'tcp-profile-panel' && getArticulatedRobots().length === 0)
-        || (panelId === 'workobject-panel' && getArticulatedRobots().length === 0)
-        || (panelId === 'arm-load-panel' && getArticulatedRobots().length === 0)
-        || (panelId === 'virtual-controller-panel' && getArticulatedRobots().length === 0)
-        || (panelId === 'program-panel' && getArticulatedRobots().length === 0);
+    const unavailable = !panelAvailable(panelId, getJogTargetRobot, getArticulatedRobots);
     button.disabled = unavailable;
     button.classList.toggle('active', !unavailable && !panel.classList.contains('panel-user-hidden'));
 }
@@ -24697,10 +24645,8 @@ function makePanelDraggable(panel) {
     panel.addEventListener('pointermove', (event) => {
         if (!drag || drag.pointerId !== event.pointerId) return;
         if (drag.olpPanel) panel.classList.add('olp-panel-positioned');
-        const maxLeft = Math.max(0, drag.canvasRect.width - panel.offsetWidth);
-        const maxTop = Math.max(0, drag.canvasRect.height - panel.offsetHeight);
-        const left = THREE.MathUtils.clamp(event.clientX - drag.canvasRect.left - drag.offsetX, 0, maxLeft);
-        const top = THREE.MathUtils.clamp(event.clientY - drag.canvasRect.top - drag.offsetY, 0, maxTop);
+        const [left, top] = dragPanel(event.clientX - drag.canvasRect.left - drag.offsetX,
+            event.clientY - drag.canvasRect.top - drag.offsetY, panel.offsetWidth, panel.offsetHeight, drag.canvasRect);
         const viewportPanel = isViewportDialogPanel(panel);
         panel.style.left = `${left + (viewportPanel ? drag.canvasRect.left : 0)}px`;
         panel.style.top = `${top + (viewportPanel ? drag.canvasRect.top : 0)}px`;
@@ -24771,18 +24717,7 @@ function constrainWorkOriginDialogToLayoutBounds() {
 }
 
 function getPanelResizeEdge(panel, clientX, clientY) {
-    const rect = panel.getBoundingClientRect();
-    const horizontal = clientX - rect.left <= PANEL_RESIZE_EDGE_SIZE
-        ? 'w'
-        : rect.right - clientX <= PANEL_RESIZE_EDGE_SIZE
-            ? 'e'
-            : '';
-    const vertical = clientY - rect.top <= PANEL_RESIZE_EDGE_SIZE
-        ? 'n'
-        : rect.bottom - clientY <= PANEL_RESIZE_EDGE_SIZE
-            ? 's'
-            : '';
-    return `${vertical}${horizontal}`;
+    return panelResizeEdge(panel.getBoundingClientRect(), clientX, clientY);
 }
 
 function normalizePanelResizeBox(panel, { viewportResize = false } = {}) {
@@ -24790,24 +24725,16 @@ function normalizePanelResizeBox(panel, { viewportResize = false } = {}) {
     if (panel === el.modelBrowserPanel && !isPanelOpenInDocument(panel)) return null;
     const canvasRect = getPanelLayoutBounds(panel);
     const panelRect = panel.getBoundingClientRect();
-    const minimum = PANEL_MINIMUM_SIZES[panel.id] || { width: 220, height: 180 };
-    const maxWidth = Math.max(1, canvasRect.width);
-    const maxHeight = Math.max(1, canvasRect.height);
-    const minWidth = Math.min(minimum.width, maxWidth);
     const modelEditorVisible = panel === el.modelBrowserPanel && !el.modelTransformPanel.classList.contains('hidden');
     const modelMinimumHeight = modelEditorVisible
         ? (panel.querySelector('.model-browser-header')?.getBoundingClientRect().height || 0)
             + MODEL_TREE_SPLIT_MIN_HEIGHT + MODEL_TRANSFORM_SPLIT_MIN_HEIGHT
             + (el.modelTransformResizeHandle.classList.contains('hidden') ? 0 : 10) + 2
         : 0;
-    const minHeight = Math.min(Math.max(minimum.height, modelMinimumHeight), maxHeight);
     const restoreModelSize = viewportResize && panel === el.modelBrowserPanel;
     const preferredWidth = restoreModelSize ? Number(panel.dataset.preferredResizeWidth) || panelRect.width : panelRect.width;
     const preferredHeight = restoreModelSize ? Number(panel.dataset.preferredResizeHeight) || panelRect.height : panelRect.height;
-    const width = THREE.MathUtils.clamp(preferredWidth, minWidth, maxWidth);
-    const height = THREE.MathUtils.clamp(preferredHeight, minHeight, maxHeight);
-    const left = THREE.MathUtils.clamp(panelRect.left - canvasRect.left, 0, Math.max(0, canvasRect.width - width));
-    const top = THREE.MathUtils.clamp(panelRect.top - canvasRect.top, 0, Math.max(0, canvasRect.height - height));
+    const { left, top, width, height, minWidth, minHeight } = fitPanel(panel.id, canvasRect, panelRect, modelMinimumHeight, preferredWidth, preferredHeight);
     const viewportPanel = isViewportDialogPanel(panel);
 
     panel.style.left = `${left + (viewportPanel ? canvasRect.left : 0)}px`;
@@ -24850,8 +24777,6 @@ function makePanelEdgeResizable(panel) {
             edge,
             startX: event.clientX,
             startY: event.clientY,
-            startRight: box.left + box.width,
-            startBottom: box.top + box.height,
             canvasRect,
             ...box
         };
@@ -24872,19 +24797,7 @@ function makePanelEdgeResizable(panel) {
         }
         const deltaX = event.clientX - resize.startX;
         const deltaY = event.clientY - resize.startY;
-        let { left, top, width, height } = resize;
-        if (resize.edge.includes('w')) {
-            left = THREE.MathUtils.clamp(resize.left + deltaX, 0, resize.startRight - resize.minWidth);
-            width = resize.startRight - left;
-        } else if (resize.edge.includes('e')) {
-            width = THREE.MathUtils.clamp(resize.width + deltaX, resize.minWidth, resize.canvasWidth - resize.left);
-        }
-        if (resize.edge.includes('n')) {
-            top = THREE.MathUtils.clamp(resize.top + deltaY, 0, resize.startBottom - resize.minHeight);
-            height = resize.startBottom - top;
-        } else if (resize.edge.includes('s')) {
-            height = THREE.MathUtils.clamp(resize.height + deltaY, resize.minHeight, resize.canvasHeight - resize.top);
-        }
+        const [left, top, width, height] = resizePanel(resize, deltaX, deltaY);
         const viewportPanel = isViewportDialogPanel(panel);
         panel.style.left = `${left + (viewportPanel ? resize.canvasRect.left : 0)}px`;
         panel.style.top = `${top + (viewportPanel ? resize.canvasRect.top : 0)}px`;

@@ -7,9 +7,12 @@ mod matrix;
 mod motion;
 #[cfg(target_arch = "wasm32")]
 mod olp;
+mod panels;
 mod planner;
 mod stl;
 mod trajectory;
+#[cfg(target_arch = "wasm32")]
+mod ui;
 mod vision;
 
 use std::cell::RefCell;

@@ -1,0 +1,165 @@
+use crate::ui::{tag, text, Node};
+
+#[rustfmt::skip]
+pub(super) const VIEW: Node = tag("aside", &[("id", "workobject-panel"), ("class", "tcp-profile-panel workobject-panel frame-settings-panel panel-user-hidden"), ("aria-label", "Wobj 설정"), ("data-i18n-aria-label", "legacy.Wobj 설정")], &[
+    text("\n                "),
+    tag("div", &[("class", "tcp-profile-panel-header")], &[
+        text("\n                    "),
+        tag("h2", &[], &[
+            tag("i", &[("class", "fa-solid fa-compass-drafting")], &[]),
+            text(" "),
+            tag("span", &[("data-i18n", "legacy.Wobj 설정")], &[text("Wobj 설정")]),
+        ]),
+        text("\n                    "),
+        tag("div", &[("class", "panel-header-actions")], &[
+            text("\n                        "),
+            tag("button", &[("type", "button"), ("data-panel-action", "popout"), ("data-panel-id", "workobject-panel"), ("title", "별도 창으로 분리"), ("aria-label", "Wobj 설정"), ("data-i18n-aria-label", "legacy.Wobj 설정")], &[
+                tag("i", &[("class", "fa-solid fa-up-right-from-square")], &[]),
+            ]),
+            text("\n                        "),
+            tag("button", &[("type", "button"), ("data-panel-action", "hide"), ("data-panel-id", "workobject-panel"), ("title", "숨기기"), ("aria-label", "숨기기"), ("data-i18n-aria-label", "legacy.숨기기")], &[
+                tag("i", &[("class", "fa-solid fa-eye-slash")], &[]),
+            ]),
+            text("\n                    "),
+        ]),
+        text("\n                "),
+    ]),
+    text("\n                "),
+    tag("section", &[("class", "tcp-profile-manager workobject-manager"), ("aria-label", "Wobj 설정"), ("data-i18n-aria-label", "legacy.Wobj 설정")], &[
+        text("\n                    "),
+        tag("div", &[("id", "workobject-list"), ("class", "workobject-list frame-slot-grid"), ("role", "listbox"), ("aria-label", "Wobj 목록"), ("data-i18n-aria-label", "legacy.Wobj 목록")], &[]),
+        text("\n                    "),
+        tag("label", &[("class", "workobject-visible-toggle frame-axis-toggle")], &[
+            tag("input", &[("id", "workobject-visible"), ("type", "checkbox"), ("checked", "")], &[]),
+            tag("span", &[("data-i18n", "legacy.Wobj 축 표시")], &[text("Wobj 축 표시")]),
+        ]),
+        text("\n                    "),
+        tag("div", &[("class", "workobject-editor frame-main-editor")], &[
+            text("\n                        "),
+            tag("div", &[("class", "tcp-profile-fields workobject-fields")], &[
+                text("\n                            "),
+                tag("label", &[], &[
+                    tag("span", &[], &[text("X")]),
+                    tag("input", &[("type", "number"), ("min", "-1000000"), ("max", "1000000"), ("step", "0.5"), ("data-workobject-pose", "x")], &[]),
+                    tag("small", &[], &[text("mm")]),
+                ]),
+                text("\n                            "),
+                tag("label", &[], &[
+                    tag("span", &[], &[text("Y")]),
+                    tag("input", &[("type", "number"), ("min", "-1000000"), ("max", "1000000"), ("step", "0.5"), ("data-workobject-pose", "y")], &[]),
+                    tag("small", &[], &[text("mm")]),
+                ]),
+                text("\n                            "),
+                tag("label", &[], &[
+                    tag("span", &[], &[text("Z")]),
+                    tag("input", &[("type", "number"), ("min", "-1000000"), ("max", "1000000"), ("step", "0.5"), ("data-workobject-pose", "z")], &[]),
+                    tag("small", &[], &[text("mm")]),
+                ]),
+                text("\n                            "),
+                tag("label", &[], &[
+                    tag("span", &[], &[
+                        text("RX "),
+                        tag("small", &[("class", "tcp-axis-alias")], &[text("C")]),
+                    ]),
+                    tag("input", &[("type", "number"), ("min", "-360000"), ("max", "360000"), ("step", "0.5"), ("data-workobject-pose", "rx")], &[]),
+                    tag("small", &[], &[text("deg")]),
+                ]),
+                text("\n                            "),
+                tag("label", &[], &[
+                    tag("span", &[], &[
+                        text("RY "),
+                        tag("small", &[("class", "tcp-axis-alias")], &[text("B")]),
+                    ]),
+                    tag("input", &[("type", "number"), ("min", "-360000"), ("max", "360000"), ("step", "0.5"), ("data-workobject-pose", "ry")], &[]),
+                    tag("small", &[], &[text("deg")]),
+                ]),
+                text("\n                            "),
+                tag("label", &[], &[
+                    tag("span", &[], &[
+                        text("RZ "),
+                        tag("small", &[("class", "tcp-axis-alias")], &[text("A")]),
+                    ]),
+                    tag("input", &[("type", "number"), ("min", "-360000"), ("max", "360000"), ("step", "0.5"), ("data-workobject-pose", "rz")], &[]),
+                    tag("small", &[], &[text("deg")]),
+                ]),
+                text("\n                        "),
+            ]),
+            text("\n                        "),
+            tag("div", &[("class", "tcp-snap-controls frame-snap-row")], &[
+                text("\n                            "),
+                tag("label", &[], &[
+                    tag("span", &[("data-i18n", "legacy.스냅 유형")], &[text("스냅 유형")]),
+                    tag("select", &[("id", "workobject-snap-type")], &[
+                        text("\n                                "),
+                        tag("option", &[("value", "auto")], &[text("자동 스냅")]),
+                        text("\n                                "),
+                        tag("option", &[("value", "vertex")], &[text("꼭짓점")]),
+                        text("\n                                "),
+                        tag("option", &[("value", "endpoint")], &[text("끝점")]),
+                        text("\n                                "),
+                        tag("option", &[("value", "edge-midpoint")], &[text("에지 중심점")]),
+                        text("\n                                "),
+                        tag("option", &[("value", "circle-center")], &[text("원/호 중심점")]),
+                        text("\n                                "),
+                        tag("option", &[("value", "quadrant")], &[text("사분점")]),
+                        text("\n                                "),
+                        tag("option", &[("value", "rectangle-center")], &[text("사각형 중심점")]),
+                        text("\n                                "),
+                        tag("option", &[("value", "hole-center")], &[text("구멍 가상 중심점")]),
+                        text("\n                                "),
+                        tag("option", &[("value", "multi-point-center")], &[text("다중 점 중심점")]),
+                        text("\n                                "),
+                        tag("option", &[("value", "robot-base-center")], &[text("로봇 바디 중심점")]),
+                        text("\n                                "),
+                        tag("option", &[("value", "robot-tcp")], &[text("현재 Tool (점)")]),
+                        text("\n                            "),
+                    ]),
+                ]),
+                text("\n                            "),
+                tag("button", &[("id", "btn-workobject-snap"), ("type", "button"), ("class", "tcp-snap-button"), ("aria-pressed", "false")], &[
+                    tag("i", &[("class", "fa-solid fa-crosshairs")], &[]),
+                    text(" "),
+                    tag("span", &[("data-i18n", "legacy.위치 스냅")], &[text("위치 스냅")]),
+                ]),
+                text("\n                        "),
+            ]),
+            text("\n                        "),
+            tag("div", &[("id", "workobject-multi-center-controls"), ("class", "tcp-multi-center-controls hidden")], &[
+                text("\n                            "),
+                tag("span", &[("id", "workobject-multi-center-count")], &[]),
+                text("\n                            "),
+                tag("button", &[("id", "workobject-multi-center-apply"), ("type", "button"), ("disabled", ""), ("data-i18n", "legacy.계산 중심 적용")], &[text("계산 중심 적용")]),
+                text("\n                            "),
+                tag("button", &[("id", "workobject-multi-center-reset"), ("type", "button"), ("disabled", ""), ("data-i18n", "legacy.선택 초기화")], &[text("선택 초기화")]),
+                text("\n                        "),
+            ]),
+            text("\n                        "),
+            tag("div", &[("class", "tcp-profile-actions workobject-actions")], &[
+                text("\n                            "),
+                tag("button", &[("id", "btn-export-workobject-data"), ("type", "button")], &[
+                    tag("i", &[("class", "fa-solid fa-file-export")], &[]),
+                    text(" "),
+                    tag("span", &[("data-i18n", "legacy.파일 내보내기")], &[text("파일 내보내기")]),
+                ]),
+                text("\n                            "),
+                tag("button", &[("id", "btn-reset-workobject"), ("type", "button")], &[
+                    tag("i", &[("class", "fa-solid fa-rotate-left")], &[]),
+                    text(" "),
+                    tag("span", &[("data-i18n", "legacy.초기화")], &[text("초기화")]),
+                ]),
+                text("\n                            "),
+                tag("button", &[("id", "btn-apply-workobject"), ("type", "button"), ("class", "primary")], &[
+                    tag("i", &[("class", "fa-solid fa-check")], &[]),
+                    text(" "),
+                    tag("span", &[("data-i18n", "legacy.적용")], &[text("적용")]),
+                ]),
+                text("\n                        "),
+            ]),
+            text("\n                        "),
+            tag("p", &[("id", "workobject-status"), ("class", "tcp-profile-status"), ("aria-live", "polite"), ("data-i18n", "legacy.Wobj 저장 안내")], &[text("Wobj는 로봇별로 저장됩니다.")]),
+            text("\n                    "),
+        ]),
+        text("\n                "),
+    ]),
+    text("\n            "),
+]);
