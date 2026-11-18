@@ -15,6 +15,8 @@ node simulator-rust/target/standalone/start.cjs
 
 ## 빌드와 검사
 
+독립 실행판은 열린 페이지와 같은 포트의 `/collaboration`에 협업 방을 연결한다. 포트를 바꾸려면 `node start.cjs 8776`처럼 실행한다.
+
 ```sh
 rustup target add wasm32-unknown-unknown
 node simulator-rust/build.mjs

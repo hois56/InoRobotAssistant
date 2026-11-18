@@ -707,8 +707,22 @@ function cleanupRooms() {
     });
 }
 
-async function main() {
+async function createCollaborationHandler() {
     collaborationCore = await import('../2_3DSimulation/collaboration-core.mjs');
+    setInterval(() => {
+        const now = Date.now();
+        peers.forEach((peer) => {
+            if (peer.closed) return;
+            if (now - peer.lastHeartbeatAt > HEARTBEAT_TIMEOUT_MS) return closePeer(peer, 1001, 'heartbeat timeout');
+            void sendJson(peer, { type: 'heartbeat', serverTime: now });
+        });
+        cleanupRooms();
+    }, HEARTBEAT_INTERVAL_MS).unref();
+    return acceptWebSocket;
+}
+
+async function main() {
+    const handleUpgrade = await createCollaborationHandler();
     const server = http.createServer((request, response) => {
         if (request.url === '/health' || request.url === '/api/health') {
             response.writeHead(200, {
@@ -728,22 +742,13 @@ async function main() {
         response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
         response.end('Not found');
     });
-    server.on('upgrade', acceptWebSocket);
+    server.on('upgrade', handleUpgrade);
     server.on('error', (error) => {
         console.error(error.code === 'EADDRINUSE'
             ? `Port ${PORT} is already in use.`
             : error.message);
         process.exitCode = 1;
     });
-    setInterval(() => {
-        const now = Date.now();
-        peers.forEach((peer) => {
-            if (peer.closed) return;
-            if (now - peer.lastHeartbeatAt > HEARTBEAT_TIMEOUT_MS) return closePeer(peer, 1001, 'heartbeat timeout');
-            void sendJson(peer, { type: 'heartbeat', serverTime: now });
-        });
-        cleanupRooms();
-    }, HEARTBEAT_INTERVAL_MS).unref();
     server.listen(PORT, HOST, () => {
         console.log(`InoRobot Collaboration Server is running on ${HOST}:${PORT}.`);
         console.log(`WebSocket: ws://<server-host>:${PORT}${collaborationCore.COLLABORATION_WS_PATH}`);
@@ -751,7 +756,10 @@ async function main() {
     });
 }
 
-main().catch((error) => {
-    console.error('Unable to start collaboration server:', error);
-    process.exitCode = 1;
-});
+module.exports = { createCollaborationHandler };
+if (require.main === module) {
+    main().catch((error) => {
+        console.error('Unable to start collaboration server:', error);
+        process.exitCode = 1;
+    });
+}

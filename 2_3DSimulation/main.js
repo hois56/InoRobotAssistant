@@ -34256,6 +34256,9 @@ function getCollaborationSocketUrl() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const configuredHost = params.get('collaborationHost');
     const configuredPort = params.get('collaborationPort');
+    if (document.body.dataset.localCollaboration === 'true' && !configuredHost && !configuredPort) {
+        return `${protocol}//${window.location.host}/collaboration`;
+    }
     if (window.location.protocol === 'https:'
         && !configuredHost
         && !configuredPort

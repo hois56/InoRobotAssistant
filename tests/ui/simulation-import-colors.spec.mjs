@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 async function setup(page, { performanceMode = false, largeStep = false } = {}) {
     await page.route('**/2_3DSimulation/main.js*', async route => {
         const response = await route.fetch();
-        let source = (await response.text()).replace(/\binit\(\);\s*$/, 'window.__colorReady = init();\n');
+        let source = (await response.text()).replace(/^init\(\);\s*$/m, 'window.__colorReady = init();\n');
         if (performanceMode) source = source.replace('const LARGE_MODEL_PERFORMANCE_MIN_BYTES = 100 * MEBIBYTE;', 'const LARGE_MODEL_PERFORMANCE_MIN_BYTES = 0;');
         if (largeStep) source = source.replace('const STEP_LARGE_FILE_ENGINE_MIN_BYTES = 50 * MEBIBYTE;', 'const STEP_LARGE_FILE_ENGINE_MIN_BYTES = 0;');
         await route.fulfill({ response, body: source + '\nwindow.__colors = { state, handle3DImport, getImportedModelColor, THREE, readStepImportCache, getStepImportCacheKey, getStepTessellationParameters, getLargeStepTessellationParameters, createStepMeshFromWorker };' });

@@ -85,10 +85,11 @@ window.__autoPathObstacle = { THREE, state, setJointAngle, captureRobotMotionSte
     const start = move(-130), target = move(130);
     const base = a.getRobotControllerBaseFrame(robot);
     const tool = a.createPrimitiveShapeRoot('box', { x: 12, y: 12, z: 12 }, { name: '경로 검사 Tool' });
-    a.state.scene.add(tool);
-    tool.position.copy(a.getCurrentTcpPoseBase(robot).position).applyMatrix4(base.matrixWorld);
+    // Model the working tip below the J4 shaft. A cube centred on the
+    // flange already intersects the shaft at both ends of the planned move.
+    a.getRobotToolMountFrame(robot).add(tool);
+    tool.position.set(0, 0, -20);
     tool.updateMatrixWorld(true);
-    a.getRobotToolMountFrame(robot).attach(tool);
     tool.userData.attachmentHost = robot;
     tool.userData.placement = 'tcp';
     a.state.models.push(tool);

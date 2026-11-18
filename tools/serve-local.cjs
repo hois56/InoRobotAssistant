@@ -8,6 +8,8 @@ const root = path.resolve(__dirname, '..');
 const host = process.env.INOROBOT_SERVER_HOST || '127.0.0.1';
 const port = Number(process.argv[2] || 8765);
 const virtualBusToken = String(process.env.INOROBOT_VIRTUAL_BUS_TOKEN || '');
+const enableCollaboration = process.env.INOROBOT_STANDALONE_SIMULATION === '1';
+let collaborationHandler;
 const maxVirtualBusMessageBytes = 256 * 1024;
 const maxVirtualBusMessagesPerSecond = 100;
 const landingFiles = new Map([
@@ -413,6 +415,15 @@ server.on('upgrade', (request, socket, head) => {
     try { pathname = new URL(request.url, `http://${host}`).pathname; }
     catch { socket.destroy(); return; }
     if (pathname === '/api/page-presence') { acceptPagePresenceSocket(request, socket); return; }
+    if (enableCollaboration && pathname === '/collaboration') {
+        collaborationHandler ||= require('./collaboration-server.cjs').createCollaborationHandler();
+        socket.pause();
+        collaborationHandler.then(accept => {
+            accept(request, socket, head);
+            socket.resume();
+        }).catch(error => { console.error(error.message); socket.destroy(); });
+        return;
+    }
     if (pathname === '/virtualvision/' || pathname === '/virtualvision') {
         // Virtual vision protocol servers share the Virtual Bus pairing token.
         acceptVirtualVisionSocket(request, socket, head, { token: virtualBusToken, allowedOrigin, log: message => console.log(message) });

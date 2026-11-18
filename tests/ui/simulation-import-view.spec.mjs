@@ -22,7 +22,7 @@ async function setup(page) {
   page.on('pageerror', error => errors.push(error.message));
   await page.route('**/2_3DSimulation/main.js*', async route => {
     const response = await route.fetch();
-    const source = (await response.text()).replace(/\binit\(\);\s*$/, 'window.__importViewReady = init();\n');
+    const source = (await response.text()).replace(/^init\(\);\s*$/m, 'window.__importViewReady = init();\n');
     await route.fulfill({ response, body: `${source}\nwindow.__importView = { state };` });
   });
   await page.goto('/2_3DSimulation/index.html', { waitUntil: 'domcontentloaded' });

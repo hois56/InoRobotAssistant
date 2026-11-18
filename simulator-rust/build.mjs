@@ -50,6 +50,10 @@ for (const name of [
     'tools/virtual-vision-server.cjs', 'tools/virtual-vision-protocols.cjs', 'tools/collaboration-server.cjs'
 ]) await copy(name);
 
+const simulationPage = path.join(stage, '2_3DSimulation', 'index.html');
+const html = await readFile(simulationPage, 'utf8');
+await writeFile(simulationPage, html.replace('<body ', '<body data-local-collaboration="true" '));
+
 const redirect = '<!doctype html><meta charset="utf-8"><title>3D Simulation</title>' +
     '<script>location.replace("/2_3DSimulation/"+location.search+location.hash)</script>' +
     '<a href="/2_3DSimulation/">3D Simulation</a>\n';
