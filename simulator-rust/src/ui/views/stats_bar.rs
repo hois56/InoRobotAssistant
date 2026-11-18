@@ -3,14 +3,13 @@ use crate::ui::{tag, text, Node};
 #[rustfmt::skip]
 pub(super) const VIEW: Node = tag("footer", &[("id", "stats-bar")], &[
     text("\n        "),
-    tag("div", &[("class", "stat-item")], &[
-        text("\n            "),
-        tag("i", &[("id", "status-dot"), ("class", "fa-solid fa-circle")], &[]),
-        text("\n            "),
-        tag("label", &[], &[text("Status")]),
-        text("\n            "),
-        tag("span", &[("id", "stat-status")], &[text("Initializing...")]),
-        text("\n        "),
+    tag("div", &[("class", "stat-status-block")], &[
+        tag("div", &[("class", "stat-item")], &[
+            tag("i", &[("id", "status-dot"), ("class", "fa-solid fa-circle")], &[]),
+            tag("label", &[], &[text("Status")]),
+            tag("span", &[("id", "stat-status")], &[text("Initializing...")]),
+        ]),
+        tag("span", &[("id", "stat-fps"), ("translate", "no")], &[text("0 FPS")]),
     ]),
     text("\n        "),
     tag("div", &[("id", "panel-launcher"), ("class", "viewer-control-dock"), ("aria-label", "뷰어 제어 도크")], &[

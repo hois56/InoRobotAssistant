@@ -2655,6 +2655,20 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
 
 }
 
+.stat-status-block {
+    display: grid;
+    gap: 0.14rem;
+    min-width: 0;
+}
+
+#stat-fps {
+    color: var(--text-2);
+    font-size: 0.65rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    white-space: nowrap;
+}
+
 #stats-bar .stat-item {
     min-width: 0;
 }

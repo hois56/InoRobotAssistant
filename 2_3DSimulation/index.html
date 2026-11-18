@@ -2694,10 +2694,13 @@
     </dialog>
 
     <footer id="stats-bar">
-        <div class="stat-item">
-            <i id="status-dot" class="fa-solid fa-circle"></i>
-            <label>Status</label>
-            <span id="stat-status">Initializing...</span>
+        <div class="stat-status-block">
+            <div class="stat-item">
+                <i id="status-dot" class="fa-solid fa-circle"></i>
+                <label>Status</label>
+                <span id="stat-status">Initializing...</span>
+            </div>
+            <span id="stat-fps" translate="no">0 FPS</span>
         </div>
         <div id="panel-launcher" class="viewer-control-dock" aria-label="뷰어 제어 도크">
             <button type="button" data-panel-toggle="model-browser-panel" class="active" title="모델 트리 표시/숨김"><i class="fa-solid fa-list-ul"></i> 모델</button>

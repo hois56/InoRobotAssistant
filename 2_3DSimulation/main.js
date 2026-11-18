@@ -1132,6 +1132,7 @@ const state = {
     renderFrameRequest: null,
     renderFrameLimit: new RenderFrameLimit(),
     renderFpsLimited: false,
+    renderedSceneFrames: 0,
     outlineMode: true,
     tcpAxesVisible: true,
     grid: null, baseAxes: null, labels: [],
@@ -1206,6 +1207,7 @@ const el = {
     loadingProgressText: document.getElementById('loading-progress-text'),
     emptyState:      document.getElementById('empty-state'),
     statStatus:      document.getElementById('stat-status'),
+    statFps:         document.getElementById('stat-fps'),
     statusDot:       document.getElementById('status-dot'),
     canvasContainer: document.getElementById('canvas-container'),
     btnResetView:    document.getElementById('btn-reset-view'),
@@ -2424,6 +2426,7 @@ async function init() {
         setupLights();
         setupControls();
         setupEventListeners();
+        startRenderFpsDisplay();
         animate();
         scheduleStepImportWorkerWarmup();
         await populateModelList();
@@ -51948,15 +51951,34 @@ function requestRender() {
     });
 }
 
+function startRenderFpsDisplay() {
+    if (!el.statFps) return;
+    let lastTime = performance.now();
+    let lastCount = state.renderedSceneFrames;
+    window.setInterval(() => {
+        const now = performance.now();
+        const count = state.renderedSceneFrames;
+        const fps = Math.round((count - lastCount) * 1000 / (now - lastTime));
+        const label = `${fps} FPS`;
+        if (el.statFps.textContent !== label) el.statFps.textContent = label;
+        lastTime = now;
+        lastCount = count;
+    }, 500);
+}
+
 function renderSimulationScene(renderer, camera) {
     // CPU rasterizers in VMs can block the transport timer during AO passes.
     // Keep every original mesh, transform and collision shape; omit only the
     // optional lighting post-process and render at the existing reduced DPR.
+    const previousFrame = renderer.info.render.frame;
     if (usesSoftwareRasterizer(renderer)) {
         const painted = renderPacedSoftwareFrame(renderer, () => renderer.render(state.scene, camera), undefined, 0);
         // Also retry an on-demand edit; a skipped final frame must not be lost.
         if (!painted) requestRender();
     } else renderWithContactAO(renderer, state.scene, camera, state.models);
+    if (renderer === state.renderer && renderer.info.render.frame !== previousFrame) {
+        state.renderedSceneFrames++;
+    }
 }
 
 function animate(timestamp = performance.now(), paintTime = timestamp) {
