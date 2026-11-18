@@ -10,7 +10,8 @@ test('대형 CAD와 떨어진 Tool은 충돌 정책을 반복 검사하지 않�
 const collisionPerf = { policyCalls: 0 };
 const originalCollisionMeshPolicy = shouldCheckSceneCollisionMeshes;
 shouldCheckSceneCollisionMeshes = (...args) => {
-    if (args[0]?.userData?.collisionPerfCad || args[2]?.userData?.collisionPerfCad) collisionPerf.policyCalls++;
+    const left = args[0]?.userData, right = args[2]?.userData;
+    if ((left?.collisionPerfTool && right?.collisionPerfCad) || (right?.collisionPerfTool && left?.collisionPerfCad)) collisionPerf.policyCalls++;
     return originalCollisionMeshPolicy(...args);
 };
 window.__collisionPerf = { state, THREE, collisionPerf, equipmentApp, ensureWorkspaceModelId, createPrimitiveShapeRoot,
@@ -26,6 +27,7 @@ window.__collisionPerf = { state, THREE, collisionPerf, equipmentApp, ensureWork
         const a = window.__collisionPerf;
         const robot = a.state.activeArticulatedModel;
         const tool = a.createPrimitiveShapeRoot('box', { x: 20, y: 20, z: 20 }, { name: '성능 검사 Tool' });
+        tool.userData.collisionPerfTool = true;
         tool.userData.attachmentHost = robot;
         tool.userData.placement = 'tcp';
         tool.position.set(10_000, 0, 0);

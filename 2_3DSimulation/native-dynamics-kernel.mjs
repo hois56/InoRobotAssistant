@@ -1,8 +1,8 @@
-import {nativeSixMatrixArithmetic,nativeScaraMatrixArithmetic} from './native-matrix-arithmetic.mjs?v=20261102-models-2';
+import { engine, numbers } from './wasm/engine.mjs';
 
 const layouts={
-    'six-axis':{axes:6,active:0xab0,matrix:0x774,c1:0x804,c2:0x894,c2Columns:15,gravity:0x9fc,gravityInput:0xf30,run:nativeSixMatrixArithmetic},
-    scara:{axes:4,active:0x670,matrix:0x514,c1:0x554,c2:0x594,c2Columns:3,gravity:0x5c4,gravityInput:0x970,run:nativeScaraMatrixArithmetic}
+    'six-axis':{axes:6,c2Columns:15},
+    scara:{axes:4,c2Columns:3}
 };
 const fields=['a','d','pitch','mass','inertia','cog','ratio','motorInertia','ratedTrq','stiffness','coulombFric','viscousFric'];
 export function nativeLinkValues(link) {
@@ -23,23 +23,28 @@ export function createNativeDynamicsKernel({robotType,links,gravityVector=[0,0,9
     const records=links.map(nativeLinkValues);
     if(!Array.isArray(gravityVector)||gravityVector.length!==3||!gravityVector.every(Number.isFinite))throw new TypeError('gravityVector must contain three finite values in m/s^2');
     if(!Number.isFinite(joint2OffsetRadians))throw new TypeError('joint2OffsetRadians must be finite');
-    const buffer=new ArrayBuffer(0x20000),memory=new DataView(buffer),u=new Uint32Array(buffer),fm=new Float32Array(buffer);
-    const registers=new Uint32Array(16),vfp=new ArrayBuffer(32*8),vu=new Uint32Array(vfp),s=new Float32Array(vfp),d=new Float64Array(vfp);
-    const conversion=new ArrayBuffer(8),cv=new Uint32Array(conversion),cd=new Float64Array(conversion);
-    const model=0x1000,qAddress=0x3000;
-    records.forEach((record,i)=>record.forEach((value,j)=>memory.setFloat64(model+layout.active+i*0x98+j*8,value,true)));
-    gravityVector.forEach((value,i)=>memory.setFloat64(model+layout.gravityInput+i*8,value,true));
-    const matrix=(offset,rows,columns)=>Array.from({length:rows},(_,i)=>Array.from(fm.slice((model+offset)/4+i*columns,(model+offset)/4+(i+1)*columns)));
+    const parameters = Float64Array.from([...records.flat(), ...gravityVector]);
+    const outputCount = layout.axes * (2 * layout.axes + layout.c2Columns + 1);
     const pairs=robotType==='scara'?[[0,1],[0,3],[1,3]]:Array.from({length:6},(_,i)=>Array.from({length:5-i},(_,j)=>[i,i+j+1])).flat();
     function evaluate(q) {
         if(!Array.isArray(q)||q.length!==layout.axes||!q.every(Number.isFinite))throw new TypeError(`q must contain ${layout.axes} finite internal radians`);
-        q.forEach((value,i)=>memory.setFloat64(qAddress+i*8,value,true));
-        registers.fill(0);vu.fill(0);registers[0]=model;registers[1]=qAddress;registers[13]=0x1f000;
-        if(robotType==='scara'){cd[0]=joint2OffsetRadians;registers[2]=cv[0];registers[3]=cv[1];}
-        layout.run(memory,u,fm,registers,vu,s,d,cv,cd);
-        const rigidBodyMassMatrix=matrix(layout.matrix,layout.axes,layout.axes);
-        const C1=matrix(layout.c1,layout.axes,layout.axes),C2=matrix(layout.c2,layout.axes,layout.c2Columns);
-        const gravityTorqueNm=Array.from(fm.slice((model+layout.gravity)/4,(model+layout.gravity)/4+layout.axes));
+        const bufferSize = Math.max(parameters.length + q.length, outputCount);
+        let buffer = numbers(bufferSize);
+        buffer.set(parameters);
+        buffer.set(q, parameters.length);
+        engine.native_matrix(robotType === 'scara', joint2OffsetRadians);
+        // Initializing the native scratch RAM can grow WebAssembly memory.
+        buffer = numbers(bufferSize);
+        let offset = 0;
+        function take(count) {
+            const row = Array.from(buffer.subarray(offset, offset + count));
+            offset += count;
+            return row;
+        }
+        const matrix = columns => Array.from({ length: layout.axes }, () => take(columns));
+        const rigidBodyMassMatrix = matrix(layout.axes);
+        const C1 = matrix(layout.axes), C2 = matrix(layout.c2Columns);
+        const gravityTorqueNm = take(layout.axes);
         const coriolis=(velocity)=>{
             if(!Array.isArray(velocity)||velocity.length!==layout.axes||!velocity.every(Number.isFinite))throw new TypeError('velocity must contain internal rad/s values');
             if(robotType==='scara') {

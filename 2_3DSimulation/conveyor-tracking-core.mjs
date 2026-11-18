@@ -1,5 +1,6 @@
 // K14: scene distances are millimetres; the encoder counts quadrature edges.
 // One clock drives scene motion, sensor edges and capture encoder latches.
+import { engine, numbers } from './wasm/engine.mjs';
 const MAX_EVENTS = 500;
 const AXES = ['x', 'y', 'z'];
 
@@ -29,23 +30,18 @@ function encoder(position, scale) {
 // Sweeping, instead of sampling only the end, retains short/fast detections.
 export function sweptSensorInterval(before, after, sensor) {
     bounds(before); bounds(after); bounds(sensor);
-    let enter = 0, leave = 1;
-    for (const axis of AXES) {
-        const delta = after.min[axis] - before.min[axis];
-        if (Math.abs((after.max[axis] - before.max[axis]) - delta) > 1e-6) {
-            throw new RangeError('sensor sweep requires a translated object');
-        }
-        if (Math.abs(delta) < 1e-12) {
-            if (before.max[axis] < sensor.min[axis] || before.min[axis] > sensor.max[axis]) return null;
-        } else {
-            const first = (sensor.min[axis] - before.max[axis]) / delta;
-            const last = (sensor.max[axis] - before.min[axis]) / delta;
-            enter = Math.max(enter, Math.min(first, last));
-            leave = Math.min(leave, Math.max(first, last));
-            if (enter > leave) return null;
+    const data = numbers(18);
+    let i = 0;
+    for (const box of [before, after, sensor]) {
+        for (const p of [box.min, box.max]) {
+            data[i++] = p.x;
+            data[i++] = p.y;
+            data[i++] = p.z;
         }
     }
-    return enter <= leave ? [enter, leave] : null;
+    const result = engine.sensor_interval();
+    if (result < 0) throw new RangeError('sensor sweep requires a translated object');
+    return result ? [data[0], data[1]] : null;
 }
 
 function intervalsUnion(intervals) {

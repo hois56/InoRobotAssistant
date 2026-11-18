@@ -1,3 +1,5 @@
+import { engine, numbers } from './wasm/engine.mjs';
+
 // Virtual vision core: camera model, calibration and correction math.
 // Units are mm and degrees. Robot coordinates are the robot BASE (Wobj 0)
 // frame reported by the robot program; camera poses are world coordinates.
@@ -343,118 +345,58 @@ export function describeVisionFov(cameraConfig, planeZ) {
 
 export function solveLinearSystem(matrix, vector) {
     const n = vector.length;
-    const a = matrix.map((row, i) => [...row, vector[i]]);
-    for (let column = 0; column < n; column++) {
-        let pivot = column;
-        for (let row = column + 1; row < n; row++) if (Math.abs(a[row][column]) > Math.abs(a[pivot][column])) pivot = row;
-        if (Math.abs(a[pivot][column]) < 1e-12) return null;
-        [a[column], a[pivot]] = [a[pivot], a[column]];
-        for (let row = 0; row < n; row++) {
-            if (row === column) continue;
-            const factor = a[row][column] / a[column][column];
-            for (let k = column; k <= n; k++) a[row][k] -= factor * a[column][k];
-        }
+    const values = numbers(n * (n + 1));
+    for (let i = 0; i < n; i++) {
+        const start = i * (n + 1);
+        for (let j = 0; j < n; j++) values[start + j] = matrix[i][j];
+        values[start + n] = vector[i];
     }
-    return a.map((row, i) => row[n] / row[i]);
+    return engine.vision_solve(n) ? Array.from(numbers(n)) : null;
 }
 
-function leastSquares(rows, targets) {
-    const n = rows[0].length;
-    const normal = Array.from({ length: n }, () => new Array(n).fill(0));
-    const rhs = new Array(n).fill(0);
-    rows.forEach((row, index) => {
-        for (let i = 0; i < n; i++) {
-            rhs[i] += row[i] * targets[index];
-            for (let j = 0; j < n; j++) normal[i][j] += row[i] * row[j];
-        }
-    });
-    return solveLinearSystem(normal, rhs);
-}
-
-function invert3(m) {
-    const [a, b, c, d, e, f, g, h, i] = m;
-    const A = e * i - f * h, B = -(d * i - f * g), C = d * h - e * g;
-    const det = a * A + b * B + c * C;
-    if (Math.abs(det) < 1e-15) return null;
-    return [A, -(b * i - c * h), b * f - c * e, B, a * i - c * g, -(a * f - c * d), C, -(a * h - b * g), a * e - b * d]
-        .map(value => value / det);
-}
-
-function multiplyMatrix3(a, b) {
-    const out = new Array(9).fill(0);
-    for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) {
-        out[r * 3 + c] = a[r * 3] * b[c] + a[r * 3 + 1] * b[3 + c] + a[r * 3 + 2] * b[6 + c];
-    }
-    return out;
-}
-
-function normalization(points) {
-    const mx = points.reduce((sum, p) => sum + p[0], 0) / points.length;
-    const my = points.reduce((sum, p) => sum + p[1], 0) / points.length;
-    const mean = points.reduce((sum, p) => sum + Math.hypot(p[0] - mx, p[1] - my), 0) / points.length;
-    const s = mean > 1e-12 ? Math.SQRT2 / mean : 1;
-    return { matrix: [s, 0, -s * mx, 0, s, -s * my, 0, 0, 1], inverse: [1 / s, 0, mx, 0, 1 / s, my, 0, 0, 1] };
+function invert3(matrix) {
+    numbers(9).set(matrix);
+    return engine.vision_invert() ? Array.from(numbers(9)) : null;
 }
 
 export function applyPlanarTransform(matrix, u, v) {
-    const w = matrix[6] * u + matrix[7] * v + matrix[8];
-    if (Math.abs(w) < 1e-12) return null;
-    return { x: (matrix[0] * u + matrix[1] * v + matrix[2]) / w, y: (matrix[3] * u + matrix[4] * v + matrix[5]) / w };
+    const values = numbers(9);
+    values.set(matrix);
+    if (!engine.vision_apply(u, v)) return null;
+    return { x: values[0], y: values[1] };
+}
+
+function fitPlanarTransform(pairs, projective) {
+    const minimum = projective ? 4 : 3;
+    if (!Array.isArray(pairs) || pairs.length < minimum) {
+        const method = projective ? 'Homography' : 'Affine';
+        throw new Error(`${method} calibration needs at least ${minimum} points.`);
+    }
+    const values = numbers(pairs.length * 4);
+    pairs.forEach(({ u, v, x, y }, i) => values.set([u, v, x, y], i * 4));
+    if (!engine.vision_calibrate(pairs.length, projective)) {
+        throw new Error(projective ? 'Calibration points are degenerate.' : 'Calibration points are collinear.');
+    }
+    return Array.from(numbers(9));
 }
 
 export function fitAffineTransform(pairs) {
-    if (!Array.isArray(pairs) || pairs.length < 3) throw new Error('Affine calibration needs at least 3 points.');
-    const pixel = normalization(pairs.map(p => [p.u, p.v]));
-    const rows = pairs.map(p => {
-        const q = applyPlanarTransform(pixel.matrix, p.u, p.v);
-        return [q.x, q.y, 1];
-    });
-    const xs = leastSquares(rows, pairs.map(p => p.x));
-    const ys = leastSquares(rows, pairs.map(p => p.y));
-    if (!xs || !ys) throw new Error('Calibration points are collinear.');
-    const normalized = [...xs, ...ys, 0, 0, 1];
-    const matrix = multiplyMatrix3(normalized, pixel.matrix);
-    const det = matrix[0] * matrix[4] - matrix[1] * matrix[3];
-    if (Math.abs(det) < 1e-12) throw new Error('Calibration points are collinear.');
-    return matrix;
+    return fitPlanarTransform(pairs, false);
 }
 
 export function fitHomographyTransform(pairs) {
-    if (!Array.isArray(pairs) || pairs.length < 4) throw new Error('Homography calibration needs at least 4 points.');
-    const pixel = normalization(pairs.map(p => [p.u, p.v]));
-    const world = normalization(pairs.map(p => [p.x, p.y]));
-    const rows = [], targets = [];
-    for (const p of pairs) {
-        const a = applyPlanarTransform(pixel.matrix, p.u, p.v);
-        const b = applyPlanarTransform(world.matrix, p.x, p.y);
-        rows.push([a.x, a.y, 1, 0, 0, 0, -a.x * b.x, -a.y * b.x]); targets.push(b.x);
-        rows.push([0, 0, 0, a.x, a.y, 1, -a.x * b.y, -a.y * b.y]); targets.push(b.y);
-    }
-    const h = leastSquares(rows, targets);
-    if (!h) throw new Error('Calibration points are degenerate.');
-    const matrix = multiplyMatrix3(multiplyMatrix3(world.inverse, [...h, 1]), pixel.matrix);
-    const scale = matrix[8];
-    if (Math.abs(scale) < 1e-12) throw new Error('Calibration points are degenerate.');
-    return matrix.map(value => value / scale);
+    return fitPlanarTransform(pairs, true);
 }
 
-/** Algebraic (Kasa) circle fit: returns center, radius and radial RMS. */
 export function fitCircle(points) {
     if (!Array.isArray(points) || points.length < 3) throw new Error('Circle fit needs at least 3 points.');
-    const mx = points.reduce((sum, p) => sum + p.x, 0) / points.length;
-    const my = points.reduce((sum, p) => sum + p.y, 0) / points.length;
-    const rows = points.map(p => [p.x - mx, p.y - my, 1]);
-    const targets = points.map(p => -((p.x - mx) ** 2 + (p.y - my) ** 2));
-    const solution = leastSquares(rows, targets);
-    if (!solution) throw new Error('Rotation points are collinear.');
-    const [D, E, F] = solution;
-    const cx = -D / 2, cy = -E / 2;
-    const radiusSquared = cx * cx + cy * cy - F;
-    if (!(radiusSquared > 0)) throw new Error('Rotation points do not form a circle.');
-    const radius = Math.sqrt(radiusSquared);
-    const center = { x: cx + mx, y: cy + my };
-    const errors = points.map(p => Math.hypot(p.x - center.x, p.y - center.y) - radius);
-    return { center, radius, rms: Math.sqrt(errors.reduce((sum, e) => sum + e * e, 0) / errors.length) };
+    const values = numbers(points.length * 2);
+    points.forEach(({ x, y }, i) => values.set([x, y], i * 2));
+    const status = engine.vision_fit_circle(points.length);
+    if (status === -1) throw new Error('Rotation points are collinear.');
+    if (status === -2) throw new Error('Rotation points do not form a circle.');
+    const [x, y, radius, rms] = numbers(4);
+    return { center: { x, y }, radius, rms };
 }
 
 // ----------------------------------------------------------- calibration ----

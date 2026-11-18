@@ -23,7 +23,8 @@ import { collectTeachingPoints, normalizeTeachingPointSettings } from './teachin
 import { TeachingPointScene, teachingJointMatrix } from './teaching-point-scene.mjs?v=20261023-teaching-labels-2';
 import { buildCleanOutlinePositions, buildRobotLogoOutlineBounds } from './outline-geometry-core.mjs?v=20261117-logo-outline-2';
 import { computeSmoothTriangleNormals } from './smooth-triangle-normals-core.mjs';
-import { armQuadrant, closestArmTurnCandidates, scaraArmParameters, sixAxisArmParameters } from './arm-parameter-core.mjs';
+import { armQuadrant, scaraArmParameters, sixAxisArmParameters } from './arm-parameter-core.mjs';
+import { inverseJointStep, scaraInverse } from './inverse-kinematics.mjs';
 import { ROBOT_LOGO_COLOR, ROBOT_LOGO_FACES, ROBOT_LOGO_PROJECTIONS, createRobotLogoIndex } from './robot-logo-material-core.mjs?v=20261031-r35-r50-1';
 import { ROBOT_JOINT_ACCENT_COLOR, applyRobotJointAccent } from './robot-joint-accent.mjs?v=20261031-r50-flange-12';
 import { applyRobotLogoProjection } from './robot-logo-projection.mjs';
@@ -34046,73 +34047,10 @@ function solveScaraIK(robot, target, precision = {}) {
         }
     }
 
-    const [arm1, arm2] = manifest.structure;
-    const signedArm2 = (manifest.secondArmDirection || 1) * arm2;
-    const radiusSquared = targetFlangePosition.x ** 2 + targetFlangePosition.y ** 2;
-    const denominator = 2 * arm1 * signedArm2;
-    const rawCosine = (radiusSquared - arm1 ** 2 - signedArm2 ** 2) / denominator;
-    const prismaticTarget = targetFlangePosition.z - (manifest.tcp?.[2] || 0);
     const targetRotation = quaternionErrorVector(targetFlangeQuaternion, homeQuaternion);
-    const orientationIsRzOnly = Math.hypot(targetRotation.x, targetRotation.y) < THREE.MathUtils.degToRad(0.01);
-
-    if (!Number.isFinite(rawCosine)
-        || rawCosine < -1 - 1e-7
-        || rawCosine > 1 + 1e-7
-        || !orientationIsRzOnly
-        || prismaticTarget < joints[2].definition.min - 1e-7
-        || prismaticTarget > joints[2].definition.max + 1e-7) {
-        const reason = !Number.isFinite(rawCosine)
-            ? 'XY target radius is not finite'
-            : rawCosine < -1 - 1e-7 || rawCosine > 1 + 1e-7
-                ? 'XY target is outside the SCARA arm reach'
-                : !orientationIsRzOnly
-                    ? 'target orientation contains unsupported tilt'
-                    : prismaticTarget < joints[2].definition.min - 1e-7
-                        ? 'Z target is below the SCARA lower limit'
-                        : 'Z target is above the SCARA upper limit';
-        return { success: false, positionError: Infinity, rotationError: Infinity, reason };
-    }
-
-    const elbowMagnitude = Math.acos(THREE.MathUtils.clamp(rawCosine, -1, 1));
-    // In the standard SCARA frame, controller arm side -1 (left) maps to a
-    // negative elbow solution and +1 (right) to positive; ceiling variants
-    // invert the mechanism's second-link direction.
-    const elbowSolutions = (elbowMagnitude < 1e-9 ? [0] : [elbowMagnitude, -elbowMagnitude])
-        .filter((angle) => !requestedElbowSign || Math.abs(angle) < 1e-9 || Math.sign(angle) === requestedElbowSign);
-    const desiredYawDegrees = THREE.MathUtils.radToDeg(targetRotation.z);
-    let best = null;
-
-    elbowSolutions.forEach((physicalJ2) => {
-        const physicalJ1 = Math.atan2(targetFlangePosition.y, targetFlangePosition.x)
-            - Math.atan2(
-                signedArm2 * Math.sin(physicalJ2),
-                arm1 + signedArm2 * Math.cos(physicalJ2)
-            );
-        const baseJ1 = THREE.MathUtils.radToDeg(physicalJ1);
-        const baseJ2 = THREE.MathUtils.radToDeg(physicalJ2);
-        equivalentJointAngles(baseJ1, joints[0]).forEach((j1) => {
-            equivalentJointAngles(baseJ2, joints[1]).forEach((j2) => {
-                const baseJ4 = desiredYawDegrees - j1 - j2;
-                const j4Candidates = equivalentJointAngles(baseJ4, joints[3]);
-                // ArmType[3] is the 90° J4 turn; like the controller, use the
-                // reachable turn closest to it when the exact one is outside the limits.
-                closestArmTurnCandidates(j4Candidates, armTurn)
-                    .forEach((j4) => {
-                    const candidate = [j1, j2, prismaticTarget, j4];
-                    const score = candidate.reduce((sum, value, index) => sum + (value - joints[index].angle) ** 2, 0);
-                    if (!best || score < best.score) best = { angles: candidate, score };
-                    });
-            });
-        });
-    });
-
-    if (!best) {
-        return {
-            success: false,
-            positionError: Infinity,
-            rotationError: Infinity,
-            reason: 'no SCARA joint solution satisfies the joint limits'
-        };
+    const best = scaraInverse(joints, manifest, targetFlangePosition, targetRotation, requestedElbowSign, armTurn);
+    if (best.reason) {
+        return { success: false, positionError: Infinity, rotationError: Infinity, reason: best.reason };
     }
     const previousAngles = joints.map((joint) => joint.angle);
     best.angles.forEach((angle, index) => setJointAngle(joints[index], angle, false));
@@ -34249,12 +34187,6 @@ function solveRobotIKAttempt(robot, target, tolerance) {
         ).applyQuaternion(baseWorldQuaternion).normalize();
         return { axisName, axis };
     });
-    const taskRows = [
-        { type: 'position', component: 'x' },
-        { type: 'position', component: 'y' },
-        { type: 'position', component: 'z' },
-        ...rotationTasks.map((task) => ({ type: 'rotation', ...task }))
-    ];
     const selectedRotationError = (error) => Math.sqrt(rotationTasks.reduce(
         (sum, task) => sum + task.axis.dot(error) ** 2,
         0
@@ -34275,53 +34207,15 @@ function solveRobotIKAttempt(robot, target, tolerance) {
             return { success: true, positionError: positionErrorLength, rotationError: rotationErrorLength };
         }
 
-        const jacobian = Array.from({ length: taskRows.length }, () => Array(joints.length).fill(0));
-        joints.forEach((joint, column) => {
-            const parentWorldQuaternion = joint.group.parent.getWorldQuaternion(new THREE.Quaternion());
-            const worldAxis = joint.axis.clone().applyQuaternion(parentWorldQuaternion).normalize();
-            const isPrismatic = joint.definition.type === 'prismatic';
-            const jointPosition = joint.group.getWorldPosition(new THREE.Vector3());
-            const linear = isPrismatic
-                ? worldAxis.clone().multiplyScalar(IK_POSITION_SCALE)
-                : worldAxis.clone().cross(tcpPosition.clone().sub(jointPosition));
-            const angular = isPrismatic ? new THREE.Vector3() : worldAxis;
-            taskRows.forEach((task, row) => {
-                jacobian[row][column] = task.type === 'position'
-                    ? linear[task.component] / IK_POSITION_SCALE
-                    : angular.dot(task.axis);
-            });
-        });
-
-        const error = [
-            positionError.x / IK_POSITION_SCALE,
-            positionError.y / IK_POSITION_SCALE,
-            positionError.z / IK_POSITION_SCALE,
-            ...rotationTasks.map((task) => task.axis.dot(rotationError))
-        ];
-        const normal = Array.from({ length: joints.length }, () => Array(joints.length).fill(0));
-        const rhs = Array(joints.length).fill(0);
-        for (let row = 0; row < taskRows.length; row += 1) {
-            for (let column = 0; column < joints.length; column += 1) {
-                rhs[column] += jacobian[row][column] * error[row];
-                for (let other = 0; other < joints.length; other += 1) {
-                    normal[column][other] += jacobian[row][column] * jacobian[row][other];
-                }
-            }
-        }
         const damping = calculateIkDamping(positionErrorLength, rotationErrorLength);
-        for (let index = 0; index < joints.length; index += 1) {
-            normal[index][index] += damping * damping;
-        }
-
-        const deltas = solveLinearSystem(normal, rhs);
-        if (!deltas || deltas.some((value) => !Number.isFinite(value))) break;
+        const deltas = inverseJointStep(tcpPosition, positionError, rotationError, rotationTasks,
+            joints, IK_POSITION_SCALE, damping, IK_MAX_PRISMATIC_STEP, IK_MAX_JOINT_STEP);
+        if (!deltas) break;
 
         let moved = false;
         joints.forEach((joint, index) => {
             const previousAngle = joint.angle;
-            const delta = joint.definition.type === 'prismatic'
-                ? THREE.MathUtils.clamp(deltas[index] * IK_POSITION_SCALE, -IK_MAX_PRISMATIC_STEP, IK_MAX_PRISMATIC_STEP)
-                : THREE.MathUtils.radToDeg(THREE.MathUtils.clamp(deltas[index], -IK_MAX_JOINT_STEP, IK_MAX_JOINT_STEP));
+            const delta = deltas[index];
             const nextAngle = setJointAngle(joint, previousAngle + delta, false);
             if (Math.abs(nextAngle - previousAngle) > 1e-9) moved = true;
         });
@@ -34354,29 +34248,6 @@ function quaternionErrorVector(target, current) {
     return new THREE.Vector3(error.x, error.y, error.z).multiplyScalar(angle / halfSine);
 }
 
-function solveLinearSystem(matrix, vector) {
-    const size = vector.length;
-    const augmented = matrix.map((row, index) => [...row, vector[index]]);
-    for (let pivot = 0; pivot < size; pivot += 1) {
-        let bestRow = pivot;
-        for (let row = pivot + 1; row < size; row += 1) {
-            if (Math.abs(augmented[row][pivot]) > Math.abs(augmented[bestRow][pivot])) bestRow = row;
-        }
-        if (Math.abs(augmented[bestRow][pivot]) < 1e-12) return null;
-        [augmented[pivot], augmented[bestRow]] = [augmented[bestRow], augmented[pivot]];
-
-        const divisor = augmented[pivot][pivot];
-        for (let column = pivot; column <= size; column += 1) augmented[pivot][column] /= divisor;
-        for (let row = 0; row < size; row += 1) {
-            if (row === pivot) continue;
-            const factor = augmented[row][pivot];
-            for (let column = pivot; column <= size; column += 1) {
-                augmented[row][column] -= factor * augmented[pivot][column];
-            }
-        }
-    }
-    return augmented.map((row) => row[size]);
-}
 
 function getCollaborationSocketUrl() {
     const params = new URLSearchParams(window.location.search);

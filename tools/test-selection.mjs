@@ -15,6 +15,7 @@ const ignoredDirectories = new Set([
 const normalize = file => String(file).replaceAll('\\', '/').replace(/^\.\//, '');
 
 export function isIgnoredPath(file) {
+  if (normalize(file).startsWith('simulator-rust/target/')) return true;
   if (/\.log$/i.test(file)) return true;
   return normalize(file).split('/').some(part => ignoredDirectories.has(part) ||
     /^test-results(?:-|$)/.test(part) || part.startsWith('.tmp'));
@@ -54,6 +55,7 @@ function testAreas(file, source) {
 }
 
 function fileAreas(file) {
+  if (file.startsWith('simulator-rust/') || file === 'tests/support/load-collision-system.mjs') return ['simulation'];
   if (file === '0_Home/UPDATE_HISTORY.md') return ['history'];
   if (/^2_3DSimulation\/VirtualControllerBridge\//.test(file) || /^tests\/dotnet\//.test(file)) return ['bridge'];
   if (/^(test-fixtures\/generator-harness\/|tests\/fixtures\/generator-output-sha256\.json$|tools\/test-generator\.mjs$)/.test(file)) return ['generator'];

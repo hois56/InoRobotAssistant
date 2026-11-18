@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { loadCollisionSystem } from '../support/load-collision-system.mjs';
 import { pathToFileURL } from 'node:url';
 
 const project = process.env.COLLISION_PROJECT;
@@ -9,10 +9,7 @@ const threeUrl = project ? pathToFileURL(`${project}/3_ToolSelector/vendor/three
 const THREE = await import(threeUrl);
 const systemUrl = process.env.COLLISION_SOURCE ? pathToFileURL(process.env.COLLISION_SOURCE)
     : new URL('../../2_3DSimulation/collision-system.mjs', import.meta.url);
-const source = await readFile(systemUrl, 'utf8');
-const { MeshCollisionSystem } = await import(`data:text/javascript;base64,${Buffer.from(
-    source.replace("from 'three';", `from '${threeUrl}';`)
-).toString('base64')}`);
+const { MeshCollisionSystem } = await loadCollisionSystem(threeUrl, systemUrl);
 const policyUrl = project ? pathToFileURL(`${project}/2_3DSimulation/collision-policy-core.mjs`)
     : new URL('../../2_3DSimulation/collision-policy-core.mjs', import.meta.url);
 const { isSimulationCollisionPair } = await import(policyUrl);

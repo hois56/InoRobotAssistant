@@ -1,13 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { loadCollisionSystem } from '../support/load-collision-system.mjs';
 
 const threeUrl = new URL('../../3_ToolSelector/vendor/three/three.module.js', import.meta.url).href;
 const THREE = await import(threeUrl);
-const source = await readFile(new URL('../../2_3DSimulation/collision-system.mjs', import.meta.url), 'utf8');
-const { MeshCollisionSystem } = await import(`data:text/javascript;base64,${Buffer.from(
-    source.replace("from 'three';", `from '${threeUrl}';`)
-).toString('base64')}`);
+const { MeshCollisionSystem } = await loadCollisionSystem(threeUrl);
 
 function boxRoot(...positions) {
     const root = new THREE.Group();

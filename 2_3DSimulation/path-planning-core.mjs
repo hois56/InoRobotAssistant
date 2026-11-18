@@ -1,3 +1,5 @@
+import { engine, numbers } from './wasm/engine.mjs';
+
 const EPSILON = 1e-9;
 
 function copyState(state) {
@@ -51,14 +53,7 @@ export function isStateWithinBounds(state, bounds = []) {
     ));
 }
 
-function steer(from, to, distance, bounds) {
-    if (distance <= EPSILON) return copyState(to);
-    const ratio = Math.min(1, 1 / distance);
-    return from.map((value, index) => {
-        const next = value + (to[index] - value) * ratio;
-        return Math.min(bounds[index].max, Math.max(bounds[index].min, next));
-    });
-}
+
 
 function randomState(bounds, random) {
     return bounds.map((bound) => {
@@ -69,23 +64,7 @@ function randomState(bounds, random) {
     });
 }
 
-function nearestNode(tree, state, bounds) {
-    return tree.reduce((nearest, candidate) => (
-        !nearest || jointDistance(candidate.state, state, bounds) < jointDistance(nearest.state, state, bounds)
-            ? candidate
-            : nearest
-    ), null);
-}
 
-function traceToRoot(node) {
-    const path = [];
-    let cursor = node;
-    while (cursor) {
-        path.push(copyState(cursor.state));
-        cursor = cursor.parent;
-    }
-    return path.reverse();
-}
 
 async function checkState(state, bounds, isStateSafe) {
     return isStateWithinBounds(state, bounds)
@@ -164,123 +143,76 @@ export async function planJointPath({
 
     const maximumNodes = Math.max(2, Math.floor(Number(maxNodes) || 5000));
     const maximumTime = Math.max(1, Number(maxTimeMs) || 7000);
-    const trees = [
-        [{ state: copyState(start), parent: null }],
-        [{ state: copyState(goal), parent: null }]
-    ];
     const guidedSamples = (sampleStates || [])
         .filter((state) => finiteState(state, dimension) && isStateWithinBounds(state, normalizedBounds))
-        .filter((state, index, values) => !values.slice(0, index).some((other) => (
-            jointDistance(state, other, normalizedBounds) < 0.002
-        )))
+        .filter((state, i, states) => !states.slice(0, i).some(other => jointDistance(state, other, normalizedBounds) < 0.002))
         .map(copyState);
-    const normalizedSampleBias = Math.max(0, Math.min(1, Number(sampleBias) || 0));
-    let guidedSampleIndex = 0;
-    let totalNodes = 2;
-    let attempts = 0;
-    let lastYieldAt = elapsed();
-    const startTree = trees[0];
-
-    const extend = async (tree, target) => {
-        attempts += 1;
-        if (attempts % Math.max(1, yieldEvery) === 0 || elapsed() - lastYieldAt >= 16) {
-            if (typeof onProgress === 'function') await onProgress({ nodes: totalNodes, elapsedMs: elapsed() });
-            await yieldPlanner(onYield);
-            lastYieldAt = elapsed();
-        }
-        if (shouldCancel() || elapsed() > maximumTime) return { status: 'trapped', node: null };
-        const nearest = nearestNode(tree, target, normalizedBounds);
-        if (!nearest) return { status: 'trapped', node: null };
-        const distance = jointDistance(nearest.state, target, normalizedBounds);
-        if (distance <= EPSILON) return { status: 'reached', node: nearest };
-        const nextState = steer(nearest.state, target, Math.max(distance, EPSILON) / Math.max(stepSize, EPSILON), normalizedBounds);
-        if (!(await checkState(nextState, normalizedBounds, isStateSafe))
-            || !(await checkEdge(nearest.state, nextState, normalizedBounds, edgeIsSafe))) {
-            return { status: 'trapped', node: null };
-        }
-        const node = { state: nextState, parent: nearest };
-        tree.push(node);
-        totalNodes += 1;
-        return {
-            status: jointDistance(nextState, target, normalizedBounds) <= EPSILON
-                ? 'reached'
-                : 'advanced',
-            node
-        };
-    };
-
-    while (totalNodes < maximumNodes && elapsed() <= maximumTime) {
-        if (shouldCancel()) return fail('cancelled', totalNodes);
-        const active = trees[0];
-        const passive = trees[1];
-        const useGuidedSample = guidedSamples.length > 0
-            && (guidedSampleIndex < guidedSamples.length || random() < normalizedSampleBias);
-        const sample = useGuidedSample
-            ? guidedSamples[(guidedSampleIndex++) % guidedSamples.length]
-            : random() < goalBias
-                ? passive[0].state
-                : randomState(normalizedBounds, random);
-        const activeResult = await extend(active, sample);
-        if (activeResult.node) {
-            let passiveResult = await extend(passive, activeResult.node.state);
-            while (passiveResult.status === 'advanced' && totalNodes < maximumNodes && elapsed() <= maximumTime && !shouldCancel()) {
-                passiveResult = await extend(passive, activeResult.node.state);
+    const guidedBias = Math.max(0, Math.min(1, Number(sampleBias) || 0));
+    const setup = numbers(5 * dimension);
+    setup.set(start);
+    setup.set(goal, dimension);
+    normalizedBounds.forEach(({ min, max, weight }, i) => setup.set([min, max, weight], (2 * dimension) + (3 * i)));
+    const search = engine.rrt_create(dimension, Number(stepSize));
+    let guidedIndex = 0, nodes = 2, attempts = 0, lastYield = elapsed();
+    let phase = 0;
+    try {
+        while (phase === 1 || (nodes < maximumNodes && elapsed() <= maximumTime)) {
+            if (shouldCancel()) return fail('cancelled', nodes);
+            let sample;
+            let oppositeRoot = false;
+            if (phase === 0) {
+                if (guidedSamples.length && (guidedIndex < guidedSamples.length || random() < guidedBias)) {
+                    sample = guidedSamples[guidedIndex++ % guidedSamples.length];
+                } else if (random() < goalBias) {
+                    oppositeRoot = true;
+                } else {
+                    sample = randomState(normalizedBounds, random);
+                }
             }
-            if (passiveResult.status === 'reached' && passiveResult.node) {
-                const firstPath = traceToRoot(activeResult.node);
-                const secondPath = traceToRoot(passiveResult.node).reverse();
-                const path = firstPath.concat(secondPath.slice(1));
-                if (active !== startTree) path.reverse();
-                return {
-                    success: true,
-                    path,
-                    reason: '',
-                    nodes: totalNodes,
-                    elapsedMs: elapsed(),
-                    direct: false
-                };
+            if (++attempts % Math.max(1, yieldEvery) === 0 || elapsed() - lastYield >= 16) {
+                if (typeof onProgress === 'function') await onProgress({ nodes, elapsedMs: elapsed() });
+                await yieldPlanner(onYield);
+                lastYield = elapsed();
+            }
+            if (shouldCancel() || elapsed() > maximumTime) break;
+            const request = numbers(2 * dimension);
+            if (sample) request.set(sample);
+            phase = engine.rrt_propose(search, oppositeRoot);
+            if (phase === -1) {
+                const proposal = numbers(2 * dimension);
+                const from = Array.from(proposal.subarray(0, dimension));
+                const to = Array.from(proposal.subarray(dimension));
+                const safe = await checkState(to, normalizedBounds, isStateSafe)
+                    && await checkEdge(from, to, normalizedBounds, edgeIsSafe);
+                phase = engine.rrt_accept(search, safe);
+                if (safe) nodes++;
+            }
+            if (phase === 3) {
+                const count = engine.rrt_path(search);
+                const data = numbers(count * dimension);
+                const path = Array.from({ length: count }, (_, i) => Array.from(data.subarray(i * dimension, (i + 1) * dimension)));
+                return { success: true, path, reason: '', nodes, elapsedMs: elapsed(), direct: false };
             }
         }
-        trees.reverse();
+        return fail(shouldCancel() ? 'cancelled' : 'route not found within limits', nodes);
+    } finally {
+        engine.rrt_destroy(search);
     }
-    return fail(shouldCancel() ? 'cancelled' : 'route not found within limits', totalNodes);
 }
 
 function shortestWaypointGraphPath(adjacency, goalIndex) {
-    const costs = new Array(adjacency.length).fill(Infinity);
-    const previous = new Array(adjacency.length).fill(-1);
-    const pending = new Set(adjacency.map((_, index) => index));
-    costs[0] = 0;
-
-    while (pending.size) {
-        let current = -1;
-        let currentCost = Infinity;
-        pending.forEach((index) => {
-            if (costs[index] < currentCost) {
-                current = index;
-                currentCost = costs[index];
-            }
-        });
-        if (current < 0 || !Number.isFinite(currentCost)) break;
-        pending.delete(current);
-        if (current === goalIndex) break;
-        adjacency[current].forEach(({ index, cost }) => {
-            if (!pending.has(index)) return;
-            const candidateCost = currentCost + cost;
-            if (candidateCost < costs[index]) {
-                costs[index] = candidateCost;
-                previous[index] = current;
-            }
-        });
+    const length = adjacency.reduce((total, edges) => total + 1 + 2 * edges.length, 0);
+    const graph = numbers(length);
+    let cursor = 0;
+    for (const edges of adjacency) {
+        graph[cursor++] = edges.length;
+        for (const { index, cost } of edges) {
+            graph[cursor++] = index;
+            graph[cursor++] = cost;
+        }
     }
-
-    if (!Number.isFinite(costs[goalIndex])) return null;
-    const indices = [];
-    for (let index = goalIndex; index >= 0; index = previous[index]) {
-        indices.push(index);
-        if (index === 0) break;
-    }
-    return indices.at(-1) === 0 ? indices.reverse() : null;
+    const count = engine.waypoint_route(adjacency.length, goalIndex);
+    return count ? Array.from(numbers(count)) : null;
 }
 
 /**

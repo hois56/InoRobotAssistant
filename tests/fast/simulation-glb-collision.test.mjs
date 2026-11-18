@@ -1,11 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFile} from 'node:fs/promises';
+import { loadCollisionSystem } from '../support/load-collision-system.mjs';
 const base=new URL('../../',import.meta.url).href;
 const threeUrl=base+'3_ToolSelector/vendor/three/three.module.js';
 const THREE=await import(threeUrl);
-const source=await readFile(new URL(base+'2_3DSimulation/collision-system.mjs'),'utf8');
-const {MeshCollisionSystem}=await import('data:text/javascript;base64,'+Buffer.from(source.replace("from 'three';",`from '${threeUrl}';`)).toString('base64'));
+const {MeshCollisionSystem} = await loadCollisionSystem(threeUrl);
 const {isSimulationCollisionPair,shouldReportSimulationCollision}=await import(base+'2_3DSimulation/collision-policy-core.mjs');
 function fixture(){
  const robot=new THREE.Group();robot.userData.tcpFrame={};robot.add(new THREE.Mesh(new THREE.BoxGeometry(100,100,100)));

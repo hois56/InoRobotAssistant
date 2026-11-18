@@ -1,13 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { loadCollisionSystem } from '../support/load-collision-system.mjs';
 import { isSimulationCollisionPair } from '../../2_3DSimulation/collision-policy-core.mjs';
 
 const threeUrl = new URL('../../3_ToolSelector/vendor/three/three.module.js', import.meta.url).href;
 const THREE = await import(threeUrl);
-const source = readFileSync(new URL('../../2_3DSimulation/collision-system.mjs', import.meta.url), 'utf8')
-    .replace("from 'three';", `from '${threeUrl}';`);
-const { MeshCollisionSystem } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+const { MeshCollisionSystem } = await loadCollisionSystem(threeUrl);
 
 function fixture(robotBodies = true) {
     const arm = new THREE.Group(), other = new THREE.Group();

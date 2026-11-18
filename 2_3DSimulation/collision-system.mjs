@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { engine, numbers } from './wasm/engine.mjs';
 
 // Mesh collision for the simulator. Render meshes may provide a separate
 // userData.collisionGeometry so high-resolution CAD can keep its visual detail
@@ -151,143 +152,15 @@ class GeometryBVH {
     }
 }
 
-function axisValue(triangle, vertex, axis) {
-    return triangle[vertex * 3 + axis];
-}
-
-function trianglesHaveAabbOverlap(left, right, epsilon) {
-    for (let axis = 0; axis < 3; axis += 1) {
-        let leftMin = Infinity;
-        let leftMax = -Infinity;
-        let rightMin = Infinity;
-        let rightMax = -Infinity;
-        for (let vertex = 0; vertex < 3; vertex += 1) {
-            const leftValue = axisValue(left, vertex, axis);
-            const rightValue = axisValue(right, vertex, axis);
-            leftMin = Math.min(leftMin, leftValue);
-            leftMax = Math.max(leftMax, leftValue);
-            rightMin = Math.min(rightMin, rightValue);
-            rightMax = Math.max(rightMax, rightValue);
-        }
-        if (leftMax < rightMin - epsilon || rightMax < leftMin - epsilon) return false;
-    }
-    return true;
-}
-
 function dot(ax, ay, az, bx, by, bz) {
     return ax * bx + ay * by + az * bz;
 }
 
-function segmentTriangleIntersection(segment, startVertex, endVertex, triangle, epsilon) {
-    const startOffset = startVertex * 3;
-    const endOffset = endVertex * 3;
-    const directionX = segment[endOffset] - segment[startOffset];
-    const directionY = segment[endOffset + 1] - segment[startOffset + 1];
-    const directionZ = segment[endOffset + 2] - segment[startOffset + 2];
-    const edge1X = triangle[3] - triangle[0];
-    const edge1Y = triangle[4] - triangle[1];
-    const edge1Z = triangle[5] - triangle[2];
-    const edge2X = triangle[6] - triangle[0];
-    const edge2Y = triangle[7] - triangle[1];
-    const edge2Z = triangle[8] - triangle[2];
-    const pX = directionY * edge2Z - directionZ * edge2Y;
-    const pY = directionZ * edge2X - directionX * edge2Z;
-    const pZ = directionX * edge2Y - directionY * edge2X;
-    const determinant = dot(edge1X, edge1Y, edge1Z, pX, pY, pZ);
-    if (Math.abs(determinant) <= epsilon) return false;
-
-    const inverseDeterminant = 1 / determinant;
-    const tX = segment[startOffset] - triangle[0];
-    const tY = segment[startOffset + 1] - triangle[1];
-    const tZ = segment[startOffset + 2] - triangle[2];
-    const u = dot(tX, tY, tZ, pX, pY, pZ) * inverseDeterminant;
-    if (u < -epsilon || u > 1 + epsilon) return false;
-    const qX = tY * edge1Z - tZ * edge1Y;
-    const qY = tZ * edge1X - tX * edge1Z;
-    const qZ = tX * edge1Y - tY * edge1X;
-    const v = dot(directionX, directionY, directionZ, qX, qY, qZ) * inverseDeterminant;
-    if (v < -epsilon || u + v > 1 + epsilon) return false;
-    const distance = dot(edge2X, edge2Y, edge2Z, qX, qY, qZ) * inverseDeterminant;
-    return distance >= -epsilon && distance <= 1 + epsilon;
-}
-
-function pointInTriangle2D(px, py, triangle, axisA, axisB, epsilon) {
-    const sign = (ax, ay, bx, by, cx, cy) => (ax - cx) * (by - cy) - (bx - cx) * (ay - cy);
-    const d1 = sign(px, py, axisValue(triangle, 0, axisA), axisValue(triangle, 0, axisB), axisValue(triangle, 1, axisA), axisValue(triangle, 1, axisB));
-    const d2 = sign(px, py, axisValue(triangle, 1, axisA), axisValue(triangle, 1, axisB), axisValue(triangle, 2, axisA), axisValue(triangle, 2, axisB));
-    const d3 = sign(px, py, axisValue(triangle, 2, axisA), axisValue(triangle, 2, axisB), axisValue(triangle, 0, axisA), axisValue(triangle, 0, axisB));
-    return !((d1 < -epsilon || d2 < -epsilon || d3 < -epsilon)
-        && (d1 > epsilon || d2 > epsilon || d3 > epsilon));
-}
-
-function orient2D(ax, ay, bx, by, cx, cy) {
-    return (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
-}
-
-function segmentsOverlap2D(a, b, c, d, epsilon) {
-    const o1 = orient2D(a[0], a[1], b[0], b[1], c[0], c[1]);
-    const o2 = orient2D(a[0], a[1], b[0], b[1], d[0], d[1]);
-    const o3 = orient2D(c[0], c[1], d[0], d[1], a[0], a[1]);
-    const o4 = orient2D(c[0], c[1], d[0], d[1], b[0], b[1]);
-    if (((o1 > epsilon && o2 < -epsilon) || (o1 < -epsilon && o2 > epsilon))
-        && ((o3 > epsilon && o4 < -epsilon) || (o3 < -epsilon && o4 > epsilon))) return true;
-    const within = (value, min, max) => value >= Math.min(min, max) - epsilon && value <= Math.max(min, max) + epsilon;
-    if (Math.abs(o1) <= epsilon && within(c[0], a[0], b[0]) && within(c[1], a[1], b[1])) return true;
-    if (Math.abs(o2) <= epsilon && within(d[0], a[0], b[0]) && within(d[1], a[1], b[1])) return true;
-    if (Math.abs(o3) <= epsilon && within(a[0], c[0], d[0]) && within(a[1], c[1], d[1])) return true;
-    if (Math.abs(o4) <= epsilon && within(b[0], c[0], d[0]) && within(b[1], c[1], d[1])) return true;
-    return false;
-}
-
-function coplanarTrianglesOverlap(left, right, normal, epsilon) {
-    const absolute = [Math.abs(normal[0]), Math.abs(normal[1]), Math.abs(normal[2])];
-    const droppedAxis = absolute[0] >= absolute[1] && absolute[0] >= absolute[2]
-        ? 0 : absolute[1] >= absolute[2] ? 1 : 2;
-    const axes = droppedAxis === 0 ? [1, 2] : droppedAxis === 1 ? [0, 2] : [0, 1];
-    for (let vertex = 0; vertex < 3; vertex += 1) {
-        if (pointInTriangle2D(axisValue(left, vertex, axes[0]), axisValue(left, vertex, axes[1]), right, axes[0], axes[1], epsilon)) return true;
-        if (pointInTriangle2D(axisValue(right, vertex, axes[0]), axisValue(right, vertex, axes[1]), left, axes[0], axes[1], epsilon)) return true;
-    }
-    for (let leftEdge = 0; leftEdge < 3; leftEdge += 1) {
-        const leftNext = (leftEdge + 1) % 3;
-        const leftStart = [axisValue(left, leftEdge, axes[0]), axisValue(left, leftEdge, axes[1])];
-        const leftEnd = [axisValue(left, leftNext, axes[0]), axisValue(left, leftNext, axes[1])];
-        for (let rightEdge = 0; rightEdge < 3; rightEdge += 1) {
-            const rightNext = (rightEdge + 1) % 3;
-            const rightStart = [axisValue(right, rightEdge, axes[0]), axisValue(right, rightEdge, axes[1])];
-            const rightEnd = [axisValue(right, rightNext, axes[0]), axisValue(right, rightNext, axes[1])];
-            if (segmentsOverlap2D(leftStart, leftEnd, rightStart, rightEnd, epsilon)) return true;
-        }
-    }
-    return false;
-}
-
 function trianglesIntersect(left, right, epsilon = DEFAULT_EPSILON) {
-    if (!trianglesHaveAabbOverlap(left, right, epsilon)) return false;
-
-    for (let edge = 0; edge < 3; edge += 1) {
-        const next = (edge + 1) % 3;
-        if (segmentTriangleIntersection(left, edge, next, right, epsilon)) return true;
-        if (segmentTriangleIntersection(right, edge, next, left, epsilon)) return true;
-    }
-
-    const normalX = (left[4] - left[1]) * (left[8] - left[2]) - (left[5] - left[2]) * (left[7] - left[1]);
-    const normalY = (left[5] - left[2]) * (left[6] - left[0]) - (left[3] - left[0]) * (left[8] - left[2]);
-    const normalZ = (left[3] - left[0]) * (left[7] - left[1]) - (left[4] - left[1]) * (left[6] - left[0]);
-    const otherNormalX = (right[4] - right[1]) * (right[8] - right[2]) - (right[5] - right[2]) * (right[7] - right[1]);
-    const otherNormalY = (right[5] - right[2]) * (right[6] - right[0]) - (right[3] - right[0]) * (right[8] - right[2]);
-    const otherNormalZ = (right[3] - right[0]) * (right[7] - right[1]) - (right[4] - right[1]) * (right[6] - right[0]);
-    const normalCrossX = normalY * otherNormalZ - normalZ * otherNormalY;
-    const normalCrossY = normalZ * otherNormalX - normalX * otherNormalZ;
-    const normalCrossZ = normalX * otherNormalY - normalY * otherNormalX;
-    const parallel = Math.hypot(normalCrossX, normalCrossY, normalCrossZ) <= epsilon;
-    const planeDistance = Math.abs(dot(
-        normalX, normalY, normalZ,
-        right[0] - left[0], right[1] - left[1], right[2] - left[2]
-    ));
-    const normalLength = Math.max(Math.hypot(normalX, normalY, normalZ), epsilon);
-    return parallel && planeDistance <= epsilon * normalLength
-        && coplanarTrianglesOverlap(left, right, [normalX, normalY, normalZ], epsilon);
+    const data = numbers(18);
+    data.set(left, 0);
+    data.set(right, 9);
+    return Boolean(engine.triangles_intersect(epsilon));
 }
 
 function rayBoxIntersection(origin, direction, bounds, epsilon) {
