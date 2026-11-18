@@ -5,6 +5,7 @@ import test from 'node:test';
 import * as core from '../../2_3DSimulation/motion-program-core.mjs';
 const THREE=await import(`data:text/javascript;base64,${Buffer.from(fs.readFileSync(new URL('../../3_ToolSelector/vendor/three/three.module.js',import.meta.url),'utf8')).toString('base64')}`);
 const source=fs.readFileSync(new URL('../../2_3DSimulation/main.js',import.meta.url),'utf8');
+const frameWait = source.match(/^function waitForOlpLinearFrame\(\) \{[\s\S]+?^\}$/m)[0];
 
 async function line(speed=1000) {
     let clock=0;const samples=[];
@@ -19,6 +20,7 @@ async function line(speed=1000) {
     const first=fk();target.forEach((a,i)=>robot.userData.joints[i].angle=a);const last=fk();start.forEach((a,i)=>robot.userData.joints[i].angle=a);
     const context=vm.createContext({...core,THREE,robot,state:{programSpeedOverride:100},
         performance:{now:()=>clock},window:{setTimeout:fn=>{clock+=250;queueMicrotask(fn);}},
+        getRenderWindow: () => ({document: {hidden: true}}),
         setJointAngle:(joint,value)=>{joint.angle=value;},captureCurrentTcpTarget(){},appendTcpPathPoint(){},syncJointControls(){},requestRender(){},
         sampleOlpJointMotion(){},finishOlpJointMotion(){},
         solveRobotIK:(_robot,pose)=>{
@@ -29,7 +31,7 @@ async function line(speed=1000) {
             return{success:true};
         },restoreRobotJointAngles:(_robot,angles)=>angles.forEach((a,i)=>robot.userData.joints[i].angle=a)
     });
-    vm.runInContext(source.match(/async function animateOlpJointMove\([^]*?\n\}(?=\r?\n|$)/)[0],context);
+    vm.runInContext(frameWait + '\n' + source.match(/async function animateOlpJointMove\([^]*?\n\}(?=\r?\n|$)/)[0],context);
     let lastMetric;
     await context.animateOlpJointMove(robot,target,speed,{motion:'MOVL',startPose:{position:first,quaternion:new THREE.Quaternion()},
         targetPose:{position:last,quaternion:new THREE.Quaternion()},onProgress:metric=>{samples.push(fk());lastMetric=metric;}});
@@ -45,6 +47,28 @@ test('MOVL interpolates the TCP line rather than the joint-space arc',async()=>{
         assert.ok(error<1e-8,`TCP deviated ${error} mm from MOVL line`);assert.ok(along>=-1e-8&&along<=length+1e-8);
     }
     assert.ok(samples.at(-1).distanceTo(last)<1e-8);
+});
+
+test('A foreground MOVL frame cancels the timer, and a stalled frame can yield to the timer', async () => {
+    for (const first of ['frame', 'timer']) {
+        const pending = new Map();
+        const renderWindow = {
+            document: { hidden: false },
+            requestAnimationFrame: run => { pending.set('frame', run); return 'frame'; },
+            cancelAnimationFrame: id => pending.delete(id)
+        };
+        const window = {
+            setTimeout: run => { pending.set('timer', run); return 'timer'; },
+            clearTimeout: id => pending.delete(id)
+        };
+        const context = vm.createContext({window, getRenderWindow: () => renderWindow});
+        vm.runInContext(frameWait, context);
+        const completed = context.waitForOlpLinearFrame();
+        assert.deepEqual([...pending.keys()], ['frame', 'timer']);
+        pending.get(first)();
+        await completed;
+        assert.equal(pending.size, 0);
+    }
 });
 
 test('slow or long OLP motions retain their calculated time beyond eight seconds',async()=>{

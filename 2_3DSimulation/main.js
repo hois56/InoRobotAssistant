@@ -39040,6 +39040,25 @@ async function waitForOlpMotionResume(robot, runtime) {
     return pausedMilliseconds;
 }
 
+function waitForOlpLinearFrame() {
+    const renderWindow = getRenderWindow();
+    return new Promise((resolve) => {
+        if (renderWindow.document.hidden) {
+            window.setTimeout(resolve, 16);
+            return;
+        }
+        // A pending animation frame can stop firing if the tab is hidden or
+        // the fixed-view window closes before the next paint.
+        const resume = () => {
+            if (!renderWindow.closed) renderWindow.cancelAnimationFrame(frame);
+            window.clearTimeout(fallback);
+            resolve();
+        };
+        const frame = renderWindow.requestAnimationFrame(resume);
+        const fallback = window.setTimeout(resume, 50);
+    });
+}
+
 async function animateOlpJointMove(robot, targetAngles, speed, {
     motion = 'MOVJ', startPose = null, targetPose = null, speedProvider = null,
     accelerationScale = 1, zone = null, shouldStop = null, onProgress = null, runtime = null, motionOptions = {}
@@ -39186,6 +39205,10 @@ async function animateOlpJointMove(robot, targetAngles, speed, {
                 queueTiming.nextStartAt = now - overrunMilliseconds;
             }
             break;
+        }
+        if (isLinear) {
+            await waitForOlpLinearFrame();
+            continue;
         }
         const waitMilliseconds = rapidMove?.nativeScalarProfile === true
             ? Math.min(16, Math.max(0,

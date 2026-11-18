@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {setTimeout as delay} from 'node:timers/promises';
 
 async function openRobot(page,folder) {
     const errors=[];page.on('pageerror',error=>errors.push(error.message));
@@ -6,7 +7,8 @@ async function openRobot(page,folder) {
         const response=await route.fetch();
         await route.fulfill({response,body:await response.text()+'\nwindow.__motionPause={THREE,state,OlpRuntime,setJointAngle,getCurrentTcpPoseBase,getOlpCurrentPosition,runOlpMove,animateOlpJointMove,getOlpJointMotionSample};'});
     });
-    await page.goto('/2_3DSimulation/index.html');await page.waitForFunction(()=>window.__motionPause);
+    await page.goto('/2_3DSimulation/index.html');
+    await page.waitForFunction(() => window.__motionPause?.state.workspaceRecovery.ready);
     await page.locator('#model-select').selectOption(`robot:${folder}`);
     await page.waitForFunction(folder=>window.__motionPause.state.models.some(model=>model.userData.motionModelFolder===folder&&model.userData.tcpFrame),folder);
     return errors;
@@ -29,6 +31,92 @@ test('R7H submillimetre and small-angle MovL commands reach their requested pose
     });
     expect(result.translationError).toBeLessThan(.01);expect(result.translated).toBeGreaterThan(.39);
     expect(result.rotationError).toBeLessThan(.01);expect(result.rotated).toBeGreaterThan(.19);expect(errors).toEqual([]);
+});
+
+async function startLinearMotion(page) {
+    await page.evaluate(() => {
+        const api = window.__motionPause;
+        const robot = api.state.models.find(model => model.userData.motionModelFolder === 'IR-S7-60Z20');
+        const start = [-20, 70, -80, 10];
+        const target = [10, 60, -110, 15];
+        const setAngles = angles => angles.forEach((angle, i) => api.setJointAngle(robot.userData.joints[i], angle, false));
+        setAngles(target);
+        const targetPose = api.getCurrentTcpPoseBase(robot);
+        setAngles(start);
+        const startPose = api.getCurrentTcpPoseBase(robot);
+        const runtime = new api.OlpRuntime({ programs: [], programFiles: [] });
+        runtime.robot = robot;
+        const playback = { robot, runtime, progress: 0, hiddenProgress: 0, status: 'moving' };
+        api.linearPlayback = playback;
+        api.animateOlpJointMove(robot, target, 60, {
+            motion: 'MOVL', startPose, targetPose, runtime,
+            motionOptions: { speedMode: 'absolute', rapidMove: { ptp: false } },
+            onProgress: sample => {
+                playback.progress = sample.progress;
+                playback.elapsed = sample.elapsedSeconds;
+                if (document.hidden) playback.hiddenProgress = sample.progress;
+                if (playback.awaitingResume) {
+                    playback.firstResumedElapsed = sample.elapsedSeconds;
+                    playback.awaitingResume = false;
+                }
+            }
+        }).then(result => {
+            playback.status = result.interrupted ? 'interrupted' : 'finished';
+            playback.endpointError = api.getCurrentTcpPoseBase(robot).position.distanceTo(targetPose.position);
+        }).catch(error => { playback.status = error.message; });
+    });
+}
+
+function readLinearMotion(page) {
+    return page.evaluate(() => {
+        const { robot, runtime, ...playback } = window.__motionPause.linearPlayback;
+        return { ...playback, paused: runtime.paused, hidden: document.hidden,
+            angles: robot.userData.joints.map(joint => joint.angle) };
+    });
+}
+
+test('MOVL holds its pose on pause and resumes without consuming paused time', async ({page}) => {
+    const errors = await openRobot(page, 'IR-S7-60Z20');
+    await startLinearMotion(page);
+    await expect.poll(async () => (await readLinearMotion(page)).progress).toBeGreaterThan(0.15);
+    const paused = await page.evaluate(() => {
+        const playback = window.__motionPause.linearPlayback;
+        playback.runtime.togglePause();
+        return { progress: playback.progress, elapsed: playback.elapsed,
+            angles: playback.robot.userData.joints.map(joint => joint.angle) };
+    });
+    await delay(400);
+    expect(await readLinearMotion(page)).toMatchObject({ ...paused, paused: true });
+    await page.evaluate(() => {
+        const playback = window.__motionPause.linearPlayback;
+        playback.awaitingResume = true;
+        playback.runtime.togglePause();
+    });
+    await expect.poll(async () => (await readLinearMotion(page)).status, { timeout: 12_000 }).toBe('finished');
+    const finished = await readLinearMotion(page);
+    expect(finished.firstResumedElapsed - paused.elapsed).toBeLessThan(0.25);
+    expect(finished.endpointError).toBeLessThan(0.02);
+    expect(errors).toEqual([]);
+});
+
+test('MOVL completes when the rendering document is hidden and animation frames stop', async ({page}) => {
+    const errors = await openRobot(page, 'IR-S7-60Z20');
+    await startLinearMotion(page);
+    await expect.poll(async () => (await readLinearMotion(page)).progress).toBeGreaterThan(0.15);
+    // Playwright keeps its pages visible. Emulate the Chromium conditions when
+    // a pending animation frame is suspended during a switch to another tab.
+    await page.evaluate(() => {
+        Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+        const frameId = window.__motionPause.state.renderFrameRequest?.id;
+        if (frameId != null) window.cancelAnimationFrame(frameId);
+        window.requestAnimationFrame = () => 2147483647;
+    });
+    await expect.poll(async () => (await readLinearMotion(page)).status, { timeout: 15_000 }).toBe('finished');
+    const finished = await readLinearMotion(page);
+    expect(finished.hidden).toBe(true);
+    expect(finished.hiddenProgress).toBe(1);
+    expect(finished.endpointError).toBeLessThan(0.02);
+    expect(errors).toEqual([]);
 });
 
 test('Pause freezes a running S7 native-profile move and resumes without consuming paused motion time',async({page})=>{

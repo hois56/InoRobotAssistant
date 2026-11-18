@@ -32,6 +32,7 @@ async function simulate({kind='joint',pause=false,stop=false,analytic=false,over
     };
     const context=vm.createContext({...core,THREE,robot,runtime,state:{programSpeedOverride:override},performance:{now:()=>clock},
         window:{setTimeout:fn=>{clock+=16;queueMicrotask(fn);}},
+        getRenderWindow: () => ({document: {hidden: true}}),
         createRapidMoveState:()=>motion,calculateMovjDuration:()=>duration,calculateMovlDuration:()=>duration,
         advanceRapidMoveState:(state,delta)=>{
             state.elapsedSeconds+=delta;const t=Math.min(1,state.elapsedSeconds);
@@ -47,6 +48,7 @@ async function simulate({kind='joint',pause=false,stop=false,analytic=false,over
         finishOlpJointMotion:(r,t=clock)=>telemetry.finishOlpJointMotion(r,t)
     });
     const helper=extract('waitForOlpMotionResume');if(helper)vm.runInContext(helper,context);
+    const frameWait=extract('waitForOlpLinearFrame');if(frameWait)vm.runInContext(frameWait,context);
     vm.runInContext(extract('animateOlpJointMove')+'\n'+extract('animateOlpCartesianPath'),context);
     const pose=x=>({position:new THREE.Vector3(x,0,0),quaternion:new THREE.Quaternion()});
     let error;
