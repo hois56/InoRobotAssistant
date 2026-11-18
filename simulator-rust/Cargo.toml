@@ -14,4 +14,5 @@ panic = "abort"
 strip = true
 
 [dependencies]
-serde_json = { version = "1", features = ["preserve_order"] }
+regex-lite = "0.1"
+serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }

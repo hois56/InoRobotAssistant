@@ -15,6 +15,7 @@ mod olp;
 mod panels;
 mod planner;
 mod positions;
+mod project_files;
 mod stl;
 mod trajectory;
 #[cfg(target_arch = "wasm32")]
