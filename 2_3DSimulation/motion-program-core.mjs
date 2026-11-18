@@ -4,6 +4,7 @@ import { buildS7RapidMoveLimits } from './s7-rapid-dynamics.mjs?v=20261102-s7-na
 import { buildRobotRapidMoveLimits, resolveRapidDynamicsModel } from './robot-rapid-dynamics.mjs?v=20261102-models-2';
 import { normalizeWorkObjects } from './workobject-core.mjs?v=20261031-tool-wobj-1';
 import { VIEW_PRESET_COUNT } from './view-preset-core.mjs';
+import { engine } from './wasm/engine.mjs';
 
 export const MOTION_PROJECT_SCHEMA_VERSION = 1;
 export const DEFAULT_MOVJ_SPEED = 100;
@@ -61,8 +62,7 @@ export function clamp(value, minimum, maximum) {
 }
 
 export function sCurveProgress(value) {
-    const t = clamp(Number(value) || 0, 0, 1);
-    return t * t * t * (10 + t * (-15 + 6 * t));
+    return engine.eased_progress(Number(value) || 0);
 }
 
 export function interpolateLinearPosition(start, target, progress) {

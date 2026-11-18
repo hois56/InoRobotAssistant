@@ -1,3 +1,4 @@
+import { updateOrbitTransition, followSelectedCenter, resizeOrthographicCamera } from './wasm/camera.mjs';
 import { PANEL_IDS, PANEL_STACK_IDS, panelOpen, panelAvailable, stackPanels, panelResizeEdge, fitPanel, resizePanel, dragPanel } from './wasm/panels.mjs';
 import { StandardInputClient } from './standard-input-client.mjs?v=20261114-inputs65-1';
 import { applyCadLightweightGltfUnits } from './gltf-import-units.mjs?v=20261103-1';
@@ -5401,21 +5402,9 @@ function updateMainViewTransition(timestamp = performance.now()) {
         return;
     }
     transition.lastTimestamp = timestamp;
-    transition.progress = THREE.MathUtils.clamp((timestamp - transition.startTime) / transition.duration, 0, 1);
-    const progress = sCurveProgress(transition.progress);
+    updateOrbitTransition(transition, timestamp);
     const { camera, controls } = transition;
-    controls.target.lerpVectors(transition.fromTarget, transition.toTarget, progress);
-    // Orbit around the moving target instead of cutting through it when the
-    // saved cameras face each other. Quaternion slerp also takes the short arc.
-    const orientation = transition.fromQuaternion.clone().slerp(transition.toQuaternion, progress);
-    const distance = THREE.MathUtils.lerp(transition.fromDistance, transition.toDistance, progress);
-    camera.position.set(0, 0, distance).applyQuaternion(orientation).add(controls.target);
-    const upRotation = new THREE.Quaternion().slerp(transition.upRotation, progress);
-    camera.up.copy(transition.fromUp).applyQuaternion(upRotation).normalize();
-    camera.zoom = THREE.MathUtils.lerp(transition.fromZoom, transition.toZoom, progress);
     if (transition.progress >= 1) {
-        camera.position.copy(transition.toPosition);
-        camera.up.copy(transition.toUp);
         transition.completed = true;
         state.viewTransition = null;
         updateSelectedViewPivot(true, { preserveView: true });
@@ -19612,12 +19601,9 @@ function updateOrbitSelectedViewPivot(pivot, camera, controls, reference, force 
     }
     const { object, center } = reference;
     const origin = force || pivot.object !== object || !pivot.center ? controls.target : pivot.center;
-    const delta = center.clone().sub(origin);
     pivot.object = object;
     pivot.center = center;
-    if (preserveView || delta.lengthSq() < 1e-12) return;
-    camera.position.add(delta);
-    controls.target.add(delta);
+    if (preserveView || !followSelectedCenter(camera, controls, origin, center)) return;
     requestRender();
     return true;
 }
@@ -51995,15 +51981,7 @@ function animate(timestamp = performance.now()) {
 function onResize() {
     const w = el.canvasContainer.clientWidth, h = el.canvasContainer.clientHeight;
     if (state.camera.isOrthographicCamera) {
-        const verticalSpan = Math.max(0.001, state.camera.top - state.camera.bottom);
-        const verticalCenter = (state.camera.top + state.camera.bottom) * 0.5;
-        const halfHeight = verticalSpan * 0.5;
-        const halfWidth = halfHeight * Math.max(0.1, w / Math.max(1, h));
-        const horizontalCenter = (state.camera.left + state.camera.right) * 0.5;
-        state.camera.left = horizontalCenter - halfWidth;
-        state.camera.right = horizontalCenter + halfWidth;
-        state.camera.top = verticalCenter + halfHeight;
-        state.camera.bottom = verticalCenter - halfHeight;
+        resizeOrthographicCamera(state.camera, w, h);
     } else {
         state.camera.aspect = w / h;
     }

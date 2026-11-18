@@ -1,4 +1,5 @@
 mod cad;
+mod camera;
 mod collision;
 mod conveyor;
 #[cfg(target_arch = "wasm32")]
