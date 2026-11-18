@@ -3,6 +3,33 @@ import test from 'node:test';
 import { buildCadProfileRegions, sampleBulgeArc, samplePolylineVertices } from '../../2_3DSimulation/cad2d-geometry.mjs';
 import { scaraInverse } from '../../2_3DSimulation/inverse-kinematics.mjs';
 import { planJointPath } from '../../2_3DSimulation/path-planning-core.mjs';
+import { parseStl } from '../../2_3DSimulation/stl-core.mjs';
+
+test('STL imports retain per-facet colours, normals, solid names and byte offsets', () => {
+    const bytes = new Uint8Array(84 + 100);
+    bytes.set(new TextEncoder().encode('COLOR='));
+    bytes.set([255, 0, 0, 128], 6);
+    const view = new DataView(bytes.buffer);
+    view.setUint32(80, 2, true);
+    for (const [i, colour] of [0x8000, 0x7c00].entries()) {
+        const face = 84 + i * 50;
+        view.setFloat32(face + 8, 1, true);
+        view.setFloat32(face + 24, 1, true);
+        view.setFloat32(face + 40, 1, true);
+        view.setUint16(face + 48, colour, true);
+    }
+    const wrapped = new Uint8Array(bytes.length + 5);
+    wrapped.set(bytes, 5);
+    const binary = parseStl(wrapped.subarray(5));
+    assert.equal(binary.alpha, 128 / 255);
+    assert.deepEqual([...binary.geometry.attributes.color.array], [...Array(3).fill([1, 0, 0]).flat(), ...Array(3).fill([0, 0, 1]).flat()]);
+    assert.deepEqual([...binary.geometry.attributes.normal.array], Array(6).fill([0, 0, 1]).flat());
+    assert.equal(binary.collisionGeometry, null);
+    const ascii = parseStl(new TextEncoder().encode('solid frame\nfacet normal 0 0 1\nouter loop\nvertex -2e1 0 0\nvertex 1 0 0\nvertex 0 1 0\nendloop\nendfacet\nendsolid frame\nsolid second\nendsolid second'));
+    assert.deepEqual(ascii.groups, [{ name: 'frame', start: 0, count: 3 }, { name: 'second', start: 3, count: 0 }]);
+    assert.deepEqual([...ascii.geometry.attributes.position.array], [-20,0,0, 1,0,0, 0,1,0]);
+    assert.throws(() => parseStl(bytes.subarray(0, 100)), /truncated/);
+});
 
 test('CAD stitching keeps the source entities, holes and islands selectable', () => {
     const square = (id, lo, hi) => ({ id, closed: true, layerId: 'profile', type: 'LWPOLYLINE',

@@ -6,6 +6,7 @@ mod kinematics;
 mod matrix;
 mod motion;
 mod planner;
+mod stl;
 mod trajectory;
 mod vision;
 

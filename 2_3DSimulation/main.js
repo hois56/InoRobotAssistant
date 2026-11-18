@@ -252,7 +252,7 @@ const THREE_ADDON_LOADER_IMPORTS = Object.freeze({
     fbx: 'three/addons/loaders/FBXLoader.js',
     gltf: 'three/addons/loaders/GLTFLoader.js',
     obj: 'three/addons/loaders/OBJLoader.js',
-    stl: 'three/addons/loaders/STLLoader.js'
+    stl: './stl-loader.mjs'
 });
 const threeAddonLoaderPromises = new Map();
 const COLLABORATION_UI_REFRESH_INTERVAL_MS = 160;
