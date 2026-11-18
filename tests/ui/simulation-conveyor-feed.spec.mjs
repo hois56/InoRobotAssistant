@@ -8,7 +8,7 @@ async function setup(page) {
         await route.fulfill({ response, body: `${await response.text()}\nwindow.__feed = { state, equipmentApp, conveyorTrackingApp, conveyorFeedApp, visionApp, THREE, writeOlpAddress, isGripObjectTarget, createPrimitiveShapeRoot, ensureWorkspaceModelId, updateUIStatus, serializeWorkspaceSnapshot, restoreWorkspaceSnapshot, conveyorLocalBounds: (await import('./conveyor-scene.mjs')).conveyorLocalBounds, step(seconds, count) { conveyorLastTimestamp = 0; for (let i = 1; i <= count; i++) updateConveyorSimulation(i * seconds * 1000); } };` });
     });
     await page.goto('/2_3DSimulation/index.html', { waitUntil: 'domcontentloaded' });
-    await page.waitForFunction(() => window.__feed);
+    await page.waitForFunction(() => window.__feed?.state.workspaceRecovery.ready);
     await page.evaluate(() => {
         const api = window.__feed;
         const box = (name, dimensions, xyz) => {
@@ -143,7 +143,7 @@ test('reverse motion on a rotated belt supplies registered objects through senso
     await page.evaluate(() => {
         const api = window.__feed, belt = api.state.models[0];
         belt.rotation.z = Math.PI / 2; belt.position.set(500, 200, 10); belt.updateMatrixWorld(true);
-        api.conveyorTrackingApp.configure({ belt: api.state.ioFunctionMappings[0].gripObjectRef, address: 0, position: 0, width: 2, height: 20, capture: false });
+        api.conveyorTrackingApp.configure({ belt: api.state.ioFunctionMappings[0].gripObjectRef, address: 0, position: 0, width: 2, height: 20 });
     });
     await panel.locator('[name="testDirection"]').selectOption('reverse');
     await enableFeed(panel, '80', { positionRange: 20, rotationRange: 15 });

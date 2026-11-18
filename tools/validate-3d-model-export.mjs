@@ -1,3 +1,4 @@
+import { readSimulationMarkup } from './read-simulation-markup.cjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
@@ -7,7 +8,7 @@ import {
 } from '../2_3DSimulation/model-export.mjs';
 
 const simulationSource = readFileSync(new URL('../2_3DSimulation/main.js', import.meta.url), 'utf8');
-const simulationHtml = readFileSync(new URL('../2_3DSimulation/index.html', import.meta.url), 'utf8');
+const simulationHtml = readSimulationMarkup();
 const simulationStyles = readFileSync(new URL('../2_3DSimulation/style.css', import.meta.url), 'utf8');
 
 assert.doesNotMatch(simulationHtml, /id="btn-download-cad"/);

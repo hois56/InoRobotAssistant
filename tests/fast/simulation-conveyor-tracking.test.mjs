@@ -3,17 +3,18 @@ import assert from 'node:assert/strict';
 import { ConveyorTracking, sweptSensorInterval } from '../../2_3DSimulation/conveyor-tracking-core.mjs';
 
 const box = (x, width = 2) => ({ min: { x, y: 0, z: 0 }, max: { x: x + width, y: 2, z: 2 } });
-const sensor = { id: 'photo', address: 512, bounds: box(10, 1), capture: true };
+const sensor = { id: 'photo', address: 512, bounds: box(10, 1) };
 const create = options => new ConveyorTracking({ session: 'test-1', sensors: [sensor], ...options });
 
-test('sensor exposure samples scene at the crossing; empty requested captures still acknowledge the trigger', () => {
-    const tracking = create({ captureOffset: [10, 20, 30, 0, 0, 90] });
+test('legacy automatic capture is ignored and an empty controller capture still acknowledges the trigger', () => {
+    const tracking = create({ captureOffset: [10, 20, 30, 0, 0, 90], sensors: [{ ...sensor, capture: true }] });
     const frame = tracking.sample({ seconds: .02, distance: 20, objects: [{ before: box(0), after: box(20) }],
         captureAt: fraction => { assert.equal(fraction, .4); return [{ id: 'work', type: 2, pose: [10, 0, 2, 0, 0, 0] }]; },
         captures: [{ fraction: 1, requestId: 7, objects: [] }] });
     const shots = frame.events.filter(event => event.kind === 'vision');
-    assert.equal(shots[0].encoder, '8000'); assert.equal(shots[0].requestId, 0);
-    assert.equal(shots[1].requestId, 7); assert.equal(shots[1].objects.length, 0);
+    assert.deepEqual(frame.events.map(event => event.kind), ['sensor', 'sensor', 'vision']);
+    assert.equal(shots[0].encoder, '20000');
+    assert.equal(shots[0].requestId, 7); assert.equal(shots[0].objects.length, 0);
     assert.deepEqual(frame.captureOffset, [10, 20, 30, 0, 0, 90]);
 });
 
@@ -41,7 +42,7 @@ test('fast object generates both sensor edges and latches the crossing encoder',
     const tracking = create();
     const frame = tracking.sample({ seconds: 0.02, distance: 20, objects: [{ before: box(0), after: box(20) }] });
     assert.deepEqual(frame.events.map(e => [e.value, e.encoder]), [[1, '8000'], [0, '11000']]);
-    assert.equal(frame.events[0].capture, true); assert.equal(frame.sensors[0].value, 0);
+    assert.equal(frame.sensors[0].value, 0);
     assert.equal(frame.events[0].time, 0.008);
 });
 
@@ -105,4 +106,22 @@ test('standard sensor inputs preserve address zero and sensor edges', () => {
     }
     for (const address of [-1, 65, 511, 2560, .5])
         assert.throws(() => create({ sensors: [{ ...sensor, address }] }), RangeError);
+});
+
+test('reconnecting preserves encoder, occupied sensor and unacknowledged detection IDs', () => {
+    const tracking = create();
+    const occupied = box(10, 1);
+    const first = tracking.sample({ seconds:.02, distance:20, objects:[{before:box(0,1),after:occupied}],
+        captures:[{objects:[{id:'retained',type:3,pose:[10,4,2,0,0,30]}]}] });
+    const resumed = tracking.reconnectFrame();
+    assert.equal(resumed.encoder, first.encoder);
+    assert.equal(resumed.session, first.session);
+    assert.equal(resumed.sequence, first.sequence+1);
+    assert.deepEqual(resumed.events, first.events);
+    assert.deepEqual(resumed.sensors, first.sensors);
+    assert.equal(resumed.velocity,0);
+    tracking.acknowledge({session:tracking.session,eventId:tracking.eventId});
+    const after = tracking.sample({seconds:.02,distance:0,objects:[{before:occupied,after:occupied}]});
+    assert.deepEqual(after.events,[]);
+    assert.equal(after.encoder,first.encoder);
 });

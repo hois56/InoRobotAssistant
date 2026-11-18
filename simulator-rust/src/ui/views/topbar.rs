@@ -34,16 +34,19 @@ pub(super) const VIEW: Node = tag("header", &[("id", "topbar")], &[
         ]),
         text("\n            "),
         tag("div", &[("class", "select-wrapper")], &[
-            text("\n                "),
-            tag("i", &[("class", "fa-solid fa-cube select-icon")], &[]),
-            text("\n                "),
-            tag("select", &[("id", "model-select")], &[
+            tag("div", &[("class", "model-select-field")], &[
                 text("\n                    "),
-                tag("option", &[("value", ""), ("disabled", ""), ("selected", "")], &[text("로딩 중...")]),
+                tag("i", &[("class", "fa-solid fa-cube select-icon")], &[]),
                 text("\n                "),
+                tag("select", &[("id", "model-select")], &[
+                    text("\n                    "),
+                    tag("option", &[("value", ""), ("disabled", ""), ("selected", "")], &[text("로딩 중...")]),
+                    text("\n                "),
+                ]),
+                text("\n                "),
+                tag("i", &[("class", "fa-solid fa-chevron-down arrow-icon")], &[]),
+                text("\n            "),
             ]),
-            text("\n                "),
-            tag("i", &[("class", "fa-solid fa-chevron-down arrow-icon")], &[]),
             text("\n            "),
         ]),
         text("\n        "),
@@ -100,6 +103,11 @@ pub(super) const VIEW: Node = tag("header", &[("id", "topbar")], &[
         tag("input", &[("id", "input-import-3d"), ("class", "hidden"), ("type", "file"), ("accept", ".stl,.fbx,.obj,.glb,.gltf,.stp,.step,.dxf"), ("multiple", "")], &[]),
         text("\n            "),
         tag("input", &[("id", "input-import-sketch-cad"), ("class", "hidden"), ("type", "file"), ("accept", ".dxf")], &[]),
+        text("\n            "),
+        tag("label", &[("class", "viewer-fps-limit"), ("title", "Limit rendering to 60 FPS")], &[
+            tag("input", &[("id", "render-fps-limit"), ("type", "checkbox"), ("aria-label", "Limit rendering to 60 FPS")], &[]),
+            tag("span", &[], &[text("60 FPS")]),
+        ]),
         text("\n            "),
         tag("div", &[("class", "viewer-language-row"), ("data-i18n-language-slot", "")], &[]),
         text("\n        "),

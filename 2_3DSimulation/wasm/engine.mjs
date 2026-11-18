@@ -8,7 +8,7 @@ async function load() {
         const { readFile } = await import('node:fs/promises');
         return readFile(url);
     }
-    const response = await fetch(url);
+    const response = await fetch(url, { cache: 'no-cache' });
     if (!response.ok) throw new Error(`시뮬레이션 엔진을 불러올 수 없습니다 (HTTP ${response.status}).`);
     return response.arrayBuffer();
 }

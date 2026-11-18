@@ -1,3 +1,4 @@
+import { readSimulationMarkup } from './read-simulation-markup.cjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -15,7 +16,7 @@ import {
 } from '../2_3DSimulation/primitive-shape-core.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const html = fs.readFileSync(path.join(root, '2_3DSimulation/index.html'), 'utf8');
+const html = readSimulationMarkup();
 const css = fs.readFileSync(path.join(root, '2_3DSimulation/style.css'), 'utf8');
 const main = fs.readFileSync(path.join(root, '2_3DSimulation/main.js'), 'utf8');
 

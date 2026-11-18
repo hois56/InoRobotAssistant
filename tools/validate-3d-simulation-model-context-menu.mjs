@@ -1,8 +1,9 @@
+import { readSimulationMarkup } from './read-simulation-markup.cjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const source = readFileSync(new URL('../2_3DSimulation/main.js', import.meta.url), 'utf8');
-const markup = readFileSync(new URL('../2_3DSimulation/index.html', import.meta.url), 'utf8');
+const markup = readSimulationMarkup();
 
 const contextHandlers = source.match(
     /el\.modelDelete\?\.addEventListener\('click',[\s\S]*?el\.transformModeButtons\.forEach/

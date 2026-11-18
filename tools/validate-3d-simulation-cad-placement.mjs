@@ -1,7 +1,8 @@
+import { readSimulationMarkup } from './read-simulation-markup.cjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const html = readFileSync(new URL('../2_3DSimulation/index.html', import.meta.url), 'utf8');
+const html = readSimulationMarkup();
 const source = readFileSync(new URL('../2_3DSimulation/main.js', import.meta.url), 'utf8');
 const style = readFileSync(new URL('../2_3DSimulation/style.css', import.meta.url), 'utf8');
 

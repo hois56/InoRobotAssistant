@@ -1,3 +1,4 @@
+import { readSimulationMarkup } from './read-simulation-markup.cjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
@@ -43,7 +44,7 @@ assert.equal(isValidTargetDistance(NaN), false);
 assert.equal(isValidTargetDistance(Infinity), false);
 assert.equal(isValidTargetDistance('10'), false);
 
-const html = readFileSync(new URL('../2_3DSimulation/index.html', import.meta.url), 'utf8');
+const html = readSimulationMarkup();
 const main = readFileSync(new URL('../2_3DSimulation/main.js', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../2_3DSimulation/style.css', import.meta.url), 'utf8');
 assert.match(html, /id="measurement-panel"/);

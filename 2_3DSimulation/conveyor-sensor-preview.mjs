@@ -1,11 +1,12 @@
 import * as THREE from 'three';
-import { ConveyorTracking, isConveyorSensorAddress } from './conveyor-tracking-core.mjs?v=20261114-sensor-input-0';
+import { ConveyorTracking, isConveyorSensorAddress } from './conveyor-tracking-core.mjs?v=20261118-request-capture-1';
 import { conveyorLocalBounds } from './conveyor-scene.mjs';
 
 export function normalizeSensorSettings(value) {
-    const result = { ...value, channel: Number(value.channel ?? 0), scale: Number(value.scale ?? 1000),
+    const { capture: _legacyCapture, ...settings } = value;
+    const result = { ...settings, channel: Number(value.channel ?? 0), scale: Number(value.scale ?? 1000),
         address: Number(value.address ?? 512), position: Number(value.position ?? 0), width: Number(value.width ?? 2),
-        height: value.height == null ? null : Number(value.height), capture: Boolean(value.capture), objectType: Number(value.objectType ?? 0) };
+        height: value.height == null ? null : Number(value.height), objectType: Number(value.objectType ?? 0) };
     for (const [key, min, max, integer] of [['channel',0,3,true],['scale',.00001,1e9],
         ['position',-1e6,1e6],['width',.1,1000],['objectType',0,15,true]]) {
         if (!Number.isFinite(result[key]) || result[key] < min || result[key] > max || (integer && !Number.isInteger(result[key])))
@@ -69,7 +70,6 @@ export function createConveyorSensorPreview(adapter) {
     const records = new Map();
     function remove(key) { records.get(key)?.visual.dispose();records.delete(key); }
     return {
-        get pending() { return [...records.values()].some(record => record.tracker.processingCaptures.length > 0); },
         before(settings, mappings, candidates, connected) {
             const retained=new Set();
             for(const value of settings) {
@@ -82,7 +82,7 @@ export function createConveyorSensorPreview(adapter) {
                     if(record?.signature!==signature) {
                         remove(value.belt);
                         const visual=createConveyorSensorVisual(layout,config);(layout.mount || adapter.scene()).add(visual.group);
-                        record={config,layout,visual,signature,mapping,shots:0,detected:[],tracker:new ConveyorTracking({conveyor:config.channel,countsPerMm:config.scale,session:crypto.randomUUID(),sensors:[{id:'photo',address:config.address,bounds:layout.sensor,capture:config.capture}]})};
+                        record={config,layout,visual,signature,mapping,tracker:new ConveyorTracking({conveyor:config.channel,countsPerMm:config.scale,session:crypto.randomUUID(),sensors:[{id:'photo',address:config.address,bounds:layout.sensor}]})};
                         records.set(value.belt,record);
                     }
                     record.visual.group.visible=!connected.has(value.belt)&&belt.visible!==false;
@@ -95,27 +95,21 @@ export function createConveyorSensorPreview(adapter) {
         after(seconds,active,candidates) {
             for(const record of records.values()) {
                 try {
-                    const {config,layout,tracker}=record,entries=[],displacements=new Map();
+                    const {config,layout,tracker}=record,entries=[];
                     for(const object of candidates.filter(adapter.eligible)) {
                         const old=record.before.get(object),current=conveyorLocalBounds(object,layout.frame);
                         if(!old||current.isEmpty())continue;
                         entries.push({before:old,after:current});
-                        const delta=current.min.clone().sub(old.min);
-                        const origin=new THREE.Vector3().applyMatrix4(layout.frame.matrixWorld);
-                        displacements.set(object,delta.applyMatrix4(layout.frame.matrixWorld).sub(origin));
                     }
                     const moving=active.find(m=>m.gripObjectRef===config.belt);
                     const distance=moving?seconds*moving.conveyorSpeed*layout.scale*(moving.conveyorAxis.startsWith('-')?-1:1):0;
-                    const inverse=layout.frame.matrixWorld.clone().invert();
-                    const captureAt=fraction=>adapter.vision().config.enabled?adapter.vision().captureConveyorObjects([...displacements.keys()],point=>new THREE.Vector3(...point).applyMatrix4(inverse).toArray(),object=>displacements.get(object).clone().multiplyScalar(fraction-1).toArray(),config.objectType):[];
-                    const frame=tracker.sample({seconds,distance,objects:entries,captureAt,captureDelaySeconds:Number(adapter.vision().config.camera.processingMs||0)/1000});
+                    const frame=tracker.sample({seconds,distance,objects:entries});
                     record.level=frame.sensors[0].value;record.encoder=frame.encoder;record.visual.setDetected(record.level);
-                    for(const event of frame.events)if(event.kind==='vision'){record.shots++;record.detected=event.objects;}
                     tracker.acknowledge({session:tracker.session,eventId:tracker.eventId});
                 } catch(error) { adapter.report(error.message); }
             }
         },
-        summary(key) { const r=records.get(key);return r?{address:r.config.address,level:r.level||0,encoder:r.encoder||'0',shots:r.shots,detected:structuredClone(r.detected)}:null; },
+        summary(key) { const r=records.get(key);return r?{address:r.config.address,level:r.level||0,encoder:r.encoder||'0'}:null; },
         clear() { for(const key of records.keys())remove(key); }
     };
 }

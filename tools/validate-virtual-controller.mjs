@@ -1,3 +1,4 @@
+import { readSimulationMarkup } from './read-simulation-markup.cjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import {
@@ -113,7 +114,7 @@ buffer.push({ ...tracePackedJointState, receivedAt: 108, joints: [8, 0, 0, 0, 0,
 assert.equal(buffer.getLatest().sampleId, 3);
 assert.deepEqual(buffer.getLatest().joints, [8, 0, 0, 0, 0, 0]);
 assert.ok(buffer.getRateHz() >= 249 && buffer.getRateHz() <= 251);
-const html = await readFile(new URL('../2_3DSimulation/index.html', import.meta.url), 'utf8');
+const html = readSimulationMarkup();
 const main = await readFile(new URL('../2_3DSimulation/main.js', import.meta.url), 'utf8');
 const bridge = await readFile(new URL('../2_3DSimulation/VirtualControllerBridge/Program.cs', import.meta.url), 'utf8');
 const nativeClient = await readFile(new URL('../2_3DSimulation/VirtualControllerBridge/NativeRobotClient.cs', import.meta.url), 'utf8');

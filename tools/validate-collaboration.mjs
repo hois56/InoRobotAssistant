@@ -1,3 +1,4 @@
+import { readSimulationMarkup } from './read-simulation-markup.cjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import {
@@ -114,7 +115,7 @@ const [serverSource, workerSource, pageSource, htmlSource, styleSource] = await 
     readFile(new URL('./collaboration-server.cjs', import.meta.url), 'utf8'),
     readFile(new URL('../5_Software/collaboration-worker/worker.js', import.meta.url), 'utf8'),
     readFile(new URL('../2_3DSimulation/main.js', import.meta.url), 'utf8'),
-    readFile(new URL('../2_3DSimulation/index.html', import.meta.url), 'utf8'),
+    readSimulationMarkup(),
     readFile(new URL('../2_3DSimulation/style.css', import.meta.url), 'utf8')
 ]);
 const snapshotRestoreStart = pageSource.indexOf('async function applyCollaborationRoomSnapshot');

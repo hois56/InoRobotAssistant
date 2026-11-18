@@ -1,3 +1,4 @@
+import { readSimulationMarkup } from './read-simulation-markup.cjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import {
@@ -294,7 +295,7 @@ const [
     readFile(new URL('../2_3DSimulation/main.js', import.meta.url), 'utf8'),
     readFile(new URL('../2_3DSimulation/motion-program-core.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../2_3DSimulation/workspace-recovery-core.mjs', import.meta.url), 'utf8'),
-    readFile(new URL('../2_3DSimulation/index.html', import.meta.url), 'utf8'),
+    readSimulationMarkup(),
     readFile(new URL('../2_3DSimulation/style.css', import.meta.url), 'utf8'),
     readFile(new URL('../2_3DSimulation/새 폴더/IR-GS60-120Z40S5-C1LNSX-INT_01741178.json', import.meta.url), 'utf8'),
     ...['ko', 'en', 'zh-CN', 'vi'].map((locale) => (
@@ -2195,8 +2196,8 @@ assert.ok(htmlSource.includes('id="btn-fullscreen-mode"'), 'Viewer must expose t
 assert.match(htmlSource, /id="btn-test-model"[\s\S]*?<i class="fa-solid fa-flask"[^>]*><\/i>\s*<span>/, 'The Test button must place its icon before its text.');
 assert.match(htmlSource, /id="btn-import-3d"[\s\S]*?<i class="fa-solid fa-upload"[^>]*><\/i>\s*<span>/, 'The 3D button must place its icon before its text.');
 assert.match(htmlSource, /id="btn-download-cad"[\s\S]*?<i class="fa-solid fa-download"[^>]*><\/i>\s*<span>/, 'The CAD button must place its icon before its text.');
-assert.ok(mainSource.includes('function setFullscreenUiMode(enabled)') && mainSource.includes('function handleFullscreenUiPointerMove(event)'), 'Fullscreen UI mode must hide and reveal bars from pointer proximity.');
-assert.ok(mainSource.includes("revealFullscreenBar('top')") && mainSource.includes("revealFullscreenBar('bottom')"), 'Fullscreen UI mode must reveal the top and bottom bars independently.');
+assert.ok(mainSource.includes('function setFullscreenUiMode(') && mainSource.includes('function handleFullscreenUiPointerMove(event)'), 'Fullscreen UI mode must hide and reveal bars from pointer proximity.');
+assert.ok(mainSource.includes('updateFullscreenBar(state.fullscreenBars.top,') && mainSource.includes('updateFullscreenBar(state.fullscreenBars.bottom,'), 'Fullscreen UI mode must update the top and bottom bars independently.');
 assert.ok(mainSource.includes('function attachPendingToolModels(robot)')
     && mainSource.includes('const mountFrame = getRobotToolMountFrame(robot)')
     && mainSource.includes('model.userData.pendingToolAttachment'),

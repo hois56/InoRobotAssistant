@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
 
-test('The 60 FPS cap is opt-in and persists across reloads', async ({ page }) => {
+test('The 60 FPS cap is in the header, opt-in, and persists across reloads', async ({ page }) => {
     await page.goto('/2_3DSimulation/index.html');
-    const limit = page.getByRole('checkbox', { name: 'Limit rendering to 60 FPS' });
+    const limit = page.locator('#topbar').getByRole('checkbox', { name: 'Limit rendering to 60 FPS' });
+    await expect(limit).toBeVisible();
     await expect(limit).not.toBeChecked();
     await limit.check();
     await expect.poll(() => page.evaluate(() => localStorage.getItem('simulation.limitFps'))).toBe('1');

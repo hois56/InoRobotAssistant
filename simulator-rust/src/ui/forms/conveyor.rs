@@ -172,11 +172,6 @@ pub(super) const BODY: &[Node] = &[
                     ]),
                     text("\n          "),
                 ]),
-                tag("label", &[("class", "vision-check")], &[
-                    tag("input", &[("name", "capture"), ("type", "checkbox"), ("checked", "")], &[]),
-                    text(" 센서 감지 시 자동 촬영"),
-                ]),
-                text("\n          "),
                 tag("p", &[("class", "vision-help")], &[text("비전 패널의 카메라 시야로 장면의 물체 좌표를 검출합니다.")]),
             ]),
             text("\n          "),

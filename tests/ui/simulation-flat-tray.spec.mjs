@@ -16,7 +16,7 @@ test('평면 트레이 위의 작업물을 자유롭게 이동·회전하고 비
     await page.waitForFunction(() => window.__flatTray.state.models.some(model => model.userData.tcpFrame));
     await page.locator('#btn-test-model').click();
     const trayCard = page.locator('.test-model-card').filter({ has: page.locator('[data-test-quantity="flat-tray"]') });
-    await expect(trayCard.locator('strong')).toHaveText('Flat Tray module 240 × 240');
+    await expect(trayCard.locator('strong')).toHaveText('평면 트레이 모듈');
     await page.waitForFunction(() => {
         const image = document.querySelector('[data-test-quantity="flat-tray"]').closest('.test-model-card').querySelector('img');
         return image.complete && image.naturalWidth > 0;

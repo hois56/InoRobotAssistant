@@ -68,7 +68,7 @@ export class ConveyorTracking {
         this.captureOffset = captureOffset.map(n => finite(n, 'captureOffset'));
         this.sensors = sensors.map(sensor => {
             if (!isConveyorSensorAddress(sensor.address)) throw new RangeError('sensor address');
-            return { id: String(sensor.id), address: sensor.address, bounds: bounds(sensor.bounds), capture: Boolean(sensor.capture) };
+            return { id: String(sensor.id), address: sensor.address, bounds: bounds(sensor.bounds) };
         });
         if (this.sensors.length > 32 || new Set(this.sensors.map(s => s.id)).size !== this.sensors.length
             || new Set(this.sensors.map(s => s.address)).size !== this.sensors.length
@@ -86,7 +86,15 @@ export class ConveyorTracking {
         return seconds * speed;
     }
 
-    sample({ seconds, distance, objects = [], captures = [], captureAt = null, captureDelaySeconds = 0 }) {
+    reconnectFrame() {
+        if (!this.lastFrame) return this.sample({ seconds: 0, distance: 0 });
+        // Transport recovery must not turn an occupied sensor into a fresh exposure.
+        this.lastFrame = { ...this.lastFrame, sequence: ++this.sequence, velocity: 0,
+            events: structuredClone(this.pending) };
+        return structuredClone(this.lastFrame);
+    }
+
+    sample({ seconds, distance, objects = [], captures = [], captureDelaySeconds = 0 }) {
         finite(seconds, 'seconds', 0, 0.25); finite(distance, 'distance', -1250, 1250);
         finite(captureDelaySeconds, 'camera processing time', 0, 60);
         if (seconds === 0 && distance !== 0) throw new RangeError('motion needs elapsed time');
@@ -98,7 +106,7 @@ export class ConveyorTracking {
         const position = this.position + correctedDistance;
         const positionError = (position - this.position) - correctedDistance;
         const count = encoder(position, this.countsPerMm);
-        const events = [], levels = new Map(this.levels), shots = [...captures];
+        const events = [], levels = new Map(this.levels);
         const processing = [...this.processingCaptures];
         const stamp = fraction => ({
             time: this.elapsed + seconds * fraction,
@@ -113,8 +121,7 @@ export class ConveyorTracking {
                 if (level === value) return;
                 level = value;
                 events.push({ kind: 'sensor', sensor: sensor.id, address: sensor.address, value: value ? 1 : 0,
-                    capture: value && sensor.capture, ...stamp(fraction) });
-                if (value && sensor.capture && captureAt) shots.push({ fraction, objects: captureAt(fraction, sensor) });
+                    ...stamp(fraction) });
             };
             if (!occupied.length || occupied[0][0] > 0) edge(false, 0);
             for (const [enter, leave] of occupied) {
@@ -123,7 +130,7 @@ export class ConveyorTracking {
             }
             levels.set(sensor.id, level);
         }
-        for (const capture of shots) {
+        for (const capture of captures) {
             const fraction = finite(capture.fraction ?? 1, 'capture fraction', 0, 1);
             if (!Array.isArray(capture.objects) || capture.objects.length > MAX_EVENTS) throw new RangeError('vision objects');
             const detected = capture.objects.map(object => {

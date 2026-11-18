@@ -98,10 +98,6 @@ pub(super) const VIEW: Node = tag("footer", &[("id", "stats-bar")], &[
         tag("button", &[("id", "btn-reset-view"), ("type", "button"), ("title", "뷰 초기화"), ("aria-label", "뷰 초기화")], &[
             tag("i", &[("class", "fa-solid fa-arrows-rotate")], &[]),
         ]),
-        tag("label", &[("class", "viewer-fps-limit"), ("title", "Limit rendering to 60 FPS")], &[
-            tag("input", &[("id", "render-fps-limit"), ("type", "checkbox"), ("aria-label", "Limit rendering to 60 FPS")], &[]),
-            tag("span", &[], &[text("60 FPS")]),
-        ]),
         text("\n            "),
         tag("button", &[("id", "btn-selected-view-pivot"), ("type", "button"), ("title", "선택 모델 중심 회전 켜기"), ("aria-label", "선택 모델 중심 회전 켜기"), ("aria-pressed", "false")], &[
             tag("i", &[("class", "fa-solid fa-crosshairs"), ("aria-hidden", "true")], &[]),

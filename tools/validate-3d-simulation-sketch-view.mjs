@@ -1,9 +1,10 @@
+import { readSimulationMarkup } from './read-simulation-markup.cjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const source = readFileSync(new URL('../2_3DSimulation/main.js', import.meta.url), 'utf8');
 const styles = readFileSync(new URL('../2_3DSimulation/style.css', import.meta.url), 'utf8');
-const markup = readFileSync(new URL('../2_3DSimulation/index.html', import.meta.url), 'utf8');
+const markup = readSimulationMarkup();
 
 assert.match(source, /orbitControlPointerIds:\s*new Set\(\)/);
 assert.match(source, /function resetMainOrbitControlInteraction\(\)[\s\S]*?canvas\.dispatchEvent\(new PointerEvent\('pointerup'/);

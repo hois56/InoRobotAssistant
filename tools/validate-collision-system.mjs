@@ -1,3 +1,4 @@
+import { readSimulationMarkup } from './read-simulation-markup.cjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
@@ -404,7 +405,7 @@ assert.equal(
 );
 
 const viewerSource = await readFile(viewerModuleUrl, 'utf8');
-const viewerHtml = await readFile(new URL('../2_3DSimulation/index.html', import.meta.url), 'utf8');
+const viewerHtml = readSimulationMarkup();
 const autoPathTargetSource = viewerSource.slice(
     viewerSource.indexOf('function isAutoPathTargetInsideModel('),
     viewerSource.indexOf('function createAutoPathCollisionEvaluator(')

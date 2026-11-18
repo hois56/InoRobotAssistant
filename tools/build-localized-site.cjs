@@ -304,7 +304,7 @@ function replaceSubpageSeo(html, metadata, route) {
         '    <!-- SUBPAGE-SEO:END -->'
     ].join('\n');
     const marker = /[ \t]*<!-- SUBPAGE-SEO:START -->[\s\S]*?<!-- SUBPAGE-SEO:END -->/;
-    let output = marker.test(html) ? html.replace(marker, '\n' + block) : html.replace('</head>', block + '\n</head>');
+    let output = marker.test(html) ? html.replace(marker, block) : html.replace('</head>', block + '\n</head>');
     output = output.replace(/<title>[\s\S]*?<\/title>/i, '<title>' + title + '</title>');
     output = replaceMetaDescription(output, metadata.description);
     return output;

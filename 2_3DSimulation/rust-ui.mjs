@@ -10,11 +10,12 @@ function loadScript(url) {
         document.head.appendChild(script);
     });
 }
+document.body.inert = true;
 try {
     const { engine } = await import('./wasm/engine.mjs');
     const view = createView(engine, document);
     entry.replaceWith(view);
-    await loadScript(entry.dataset.i18n);
+    await loadScript(entry.dataset.localeScript);
     await loadScript(entry.dataset.guide);
     await import(new URL(entry.dataset.main, document.baseURI).href);
 } catch (error) {
@@ -23,4 +24,6 @@ try {
     message.textContent = '3D Simulation · ' + (error?.message || String(error));
     document.body.prepend(message);
     throw error;
+} finally {
+    document.body.inert = false;
 }

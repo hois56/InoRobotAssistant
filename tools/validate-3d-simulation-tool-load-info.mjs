@@ -1,3 +1,4 @@
+import { readSimulationMarkup } from './read-simulation-markup.cjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -8,7 +9,7 @@ const assert = (condition, message) => {
     if (!condition) throw new Error(message);
 };
 
-const html = read('2_3DSimulation/index.html');
+const html = readSimulationMarkup();
 const css = read('2_3DSimulation/style.css');
 const main = read('2_3DSimulation/main.js');
 const versionHistory = read('0_Home/version-history.json');

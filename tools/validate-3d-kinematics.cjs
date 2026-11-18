@@ -1,3 +1,4 @@
+const { readSimulationMarkup } = require('./read-simulation-markup.cjs');
 const fs = require('fs');
 const path = require('path');
 
@@ -5,7 +6,6 @@ const root = path.resolve(__dirname, '..');
 const modelsRoot = path.join(root, '2_3DSimulation', 'models');
 const catalogPath = path.join(modelsRoot, 'models.json');
 const viewerSourcePath = path.join(root, '2_3DSimulation', 'main.js');
-const viewerHtmlPath = path.join(root, '2_3DSimulation', 'index.html');
 const REVOLUTE_DIRECTION_NEGATIVE = -1;
 const REVOLUTE_DIRECTION_POSITIVE = 1;
 const PRISMATIC_DIRECTION = 1;
@@ -290,7 +290,7 @@ function solveScaraPose(model, target) {
 
 const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
 const viewerSource = fs.readFileSync(viewerSourcePath, 'utf8');
-const viewerHtml = fs.readFileSync(viewerHtmlPath, 'utf8');
+const viewerHtml = readSimulationMarkup();
 assert(/const REVOLUTE_DIRECTION_NEGATIVE\s*=\s*-1\s*;/.test(viewerSource), 'Viewer must define the negative revolute Joint direction');
 assert(/const REVOLUTE_DIRECTION_POSITIVE\s*=\s*1\s*;/.test(viewerSource), 'Viewer must define the positive revolute Joint direction');
 assert(/const CONTROLLER_PRISMATIC_DIRECTION\s*=\s*1\s*;/.test(viewerSource), 'Viewer prismatic Joint direction must match the controller convention');

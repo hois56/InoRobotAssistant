@@ -1,5 +1,6 @@
 import { updateOrbitTransition, followSelectedCenter, resizeOrthographicCamera } from './wasm/camera.mjs';
 import { PANEL_IDS, PANEL_STACK_IDS, panelOpen, panelAvailable, stackPanels, panelResizeEdge, fitPanel, resizePanel, dragPanel } from './wasm/panels.mjs';
+import { uiText, uiFormat } from './ui-language.mjs';
 import { StandardInputClient } from './standard-input-client.mjs?v=20261114-inputs65-1';
 import { applyCadLightweightGltfUnits } from './gltf-import-units.mjs?v=20261103-1';
 /**
@@ -32,7 +33,7 @@ import { ROBOT_JOINT_ACCENT_COLOR, applyRobotJointAccent } from './robot-joint-a
 import { applyRobotLogoProjection } from './robot-logo-projection.mjs';
 import { buildCadAssemblyTree } from './cad-assembly-tree.mjs';
 import { writeWorkspaceArchive } from './workspace-archive.mjs';
-import { TEST_MODEL_CATALOG, getTestModelSelection, getTestModelSelectionForRobot, getEducationalModelSelection, getImportedModelColor } from './test-model-catalog.mjs?v=20261117-model-sizes-2';
+import { TEST_MODEL_CATALOG, getTestModelSelection, getTestModelSelectionForRobot, getEducationalModelSelection, getImportedModelColor } from './test-model-catalog.mjs?v=20261118-language-1';
 import { getTestModelTreePreset } from './test-model-tree-presets.mjs';
 import { resizeConveyorContent } from './conveyor-model.mjs';
 import { getTestModelDimensionFields, normalizeTestModelDimensions, resizeTestModelContent } from './test-model-dimensions.mjs';
@@ -137,7 +138,7 @@ import {
     refreshOlpProjectDerivedData,
     updateOlpFileText
 } from './olp-project-core.mjs?v=20261102-generator-2';
-import { createEquipmentApp } from './equipment-app.mjs?v=20261107-object-home-1';
+import { createEquipmentApp } from './equipment-app.mjs?v=20261118-language-1';
 import { createVisionApp } from './vision-app.mjs?v=20261112-conveyor-k14-1';
 import { EQUIPMENT_TYPES, EQUIPMENT_IO_TYPES, EQUIPMENT_LABELS, normalizeEquipmentDefinition, equipmentMotionGroups, equipmentReferences, equipmentCommandOptions } from './equipment-core.mjs?v=20261107-object-home-1';
 import { equipmentObjectRef } from './equipment-scene.mjs?v=20261107-object-home-1';
@@ -147,7 +148,7 @@ import { conveyorElapsedSeconds } from './conveyor-core.mjs?v=20261117-run-1';
 import { moveConveyorObjects } from './conveyor-scene.mjs?v=20261116-feed-1';
 import { createConveyorFeedApp } from './conveyor-feed-app.mjs?v=20261117-variation-1';
 import { createConveyorVisuals } from './conveyor-visuals.mjs?v=20261117-catalog-belt-2';
-import { createConveyorTrackingApp } from './conveyor-tracking-app.mjs?v=20261117-run-1';
+import { createConveyorTrackingApp } from './conveyor-tracking-app.mjs?v=20261118-request-capture-1';
 import * as WorkspaceRecovery from './workspace-recovery-core.mjs';
 import {
     calculateMeasurementResult,
@@ -272,16 +273,6 @@ function importThreeAddonLoader(kind) {
         }));
     }
     return threeAddonLoaderPromises.get(kind);
-}
-
-function uiText(value) {
-    return window.InoRobotI18n ? window.InoRobotI18n.translate(String(value)) : String(value);
-}
-
-function uiFormat(value, replacements = {}) {
-    return uiText(value).replace(/\{([A-Za-z0-9_]+)\}/g, (match, key) => (
-        Object.prototype.hasOwnProperty.call(replacements, key) ? String(replacements[key]) : match
-    ));
 }
 
 const NUMERIC_INPUT_SELECTOR = 'input[type="number"], input[data-numeric-input="true"]';
@@ -893,8 +884,10 @@ const state = {
     },
     lastCycleTimeDisplayUpdate: 0,
     fullscreenUiMode: false,
-    fullscreenTopbarHideTimer: null,
-    fullscreenStatsBarHideTimer: null,
+    fullscreenBars: {
+        top: { id: 'topbar', revealedClass: 'fullscreen-topbar-revealed', revealDelay: 500, timer: null },
+        bottom: { id: 'stats-bar', revealedClass: 'fullscreen-statsbar-revealed', revealDelay: 0, timer: null },
+    },
     viewerStatus: null,
     motionProgramStatus: null,
     // The selected controller is kept in virtualController for compatibility
@@ -2554,6 +2547,31 @@ function refreshTestModelSelection() {
         || !dimensionsValid || inputs.some(input => !input.checkValidity());
 }
 
+function refreshTestModelLabels() {
+    const inputs = el.testModelDialog.querySelectorAll('[data-test-quantity]');
+    for (const input of inputs) {
+        const asset = TEST_MODEL_CATALOG.find(item => item.id === input.dataset.testQuantity);
+        const card = input.closest('.test-model-card');
+        const name = uiText(asset.label);
+        card.querySelector('strong').textContent = name;
+        card.querySelector('img').alt = name;
+        input.previousElementSibling.textContent = uiText('가져올 수량');
+        input.setAttribute('aria-label', name + ' · ' + uiText('가져올 수량'));
+        const dimensions = card.querySelector('[data-test-model-dimensions]');
+        if (!dimensions) continue;
+        const sizeLabel = uiText('모델 전체 치수 (mm)');
+        dimensions.setAttribute('aria-label', name + ' · ' + sizeLabel);
+        for (const field of getTestModelDimensionFields(asset.id)) {
+            const dimension = dimensions.querySelector('[data-test-model-dimension="' + field.key + '"]');
+            const label = uiText(field.label);
+            dimension.previousElementSibling.textContent = label + ' :';
+            dimension.setAttribute('aria-label', name + ' · ' + label + ' (mm)');
+            dimension.title = sizeLabel + ' · ' + field.min + '–' + field.max;
+        }
+    }
+    refreshTestModelSelection();
+}
+
 function requestTestModelConfirmation() {
     if (state.testModelConfirmationResolver) return Promise.resolve(false);
     for (const category of ['model', 'tool']) {
@@ -2565,14 +2583,10 @@ function requestTestModelConfirmation() {
             card.className = 'test-model-card';
             const image = document.createElement('img');
             image.src = asset.image;
-            image.alt = asset.name;
             image.width = 240;
             image.height = 160;
             const name = document.createElement('strong');
-            name.textContent = ['base', 'square-object', 'flat-tray', 'scara-height-base'].includes(asset.id)
-                ? asset.name.replace(/\s+\d+(?:\s*×\s*\d+)*(?:\s*mm)?$/, '') : asset.name;
             const quantityLabel = document.createElement('span');
-            quantityLabel.textContent = uiText('가져올 수량');
             const input = document.createElement('input');
             input.type = 'number';
             input.min = '0';
@@ -2581,7 +2595,6 @@ function requestTestModelConfirmation() {
             input.value = '0';
             input.required = true;
             input.dataset.testQuantity = asset.id;
-            input.setAttribute('aria-label', asset.name + ' ' + uiText('가져올 수량'));
             input.addEventListener('input', refreshTestModelSelection);
             input.addEventListener('focus', () => input.select());
             input.addEventListener('click', () => input.select());
@@ -2596,11 +2609,9 @@ function requestTestModelConfirmation() {
                 dimensions.className = 'test-model-dimensions';
                 dimensions.dataset.testModelDimensions = asset.id;
                 dimensions.setAttribute('role', 'group');
-                dimensions.setAttribute('aria-label', asset.name + ' · ' + uiText('모델 전체 치수 (mm)'));
                 for (const field of dimensionFields) {
                     const label = document.createElement('label');
                     const text = document.createElement('span');
-                    text.textContent = uiText(field.label) + ' :';
                     const dimension = document.createElement('input');
                     dimension.type = 'number';
                     dimension.min = String(field.min);
@@ -2610,8 +2621,6 @@ function requestTestModelConfirmation() {
                     dimension.required = true;
                     dimension.dataset.testModelDimension = field.key;
                     if (asset.id === 'conveyor') dimension.dataset.testConveyorDimension = field.key;
-                    dimension.setAttribute('aria-label', asset.name + ' ' + uiText(field.label) + ' (mm)');
-                    dimension.title = uiText('모델 전체 치수 (mm)') + ` · ${field.min}–${field.max}`;
                     dimension.addEventListener('input', refreshTestModelSelection);
                     dimension.addEventListener('focus', () => dimension.select());
                     dimension.addEventListener('click', () => dimension.select());
@@ -2626,7 +2635,7 @@ function requestTestModelConfirmation() {
             list.append(card);
         }
     }
-    refreshTestModelSelection();
+    refreshTestModelLabels();
     return new Promise(resolve => {
         state.testModelConfirmationResolver = resolve;
         el.testModelDialog.showModal();
@@ -5608,6 +5617,13 @@ function refreshMotionProgramFileUi() {
 }
 
 function refreshLocalizedControls() {
+    if (el.testModelDialog?.open) refreshTestModelLabels();
+    if (el.ioFunctionMappingStatus?.dataset.sourceMessage) el.ioFunctionMappingStatus.textContent = uiText(el.ioFunctionMappingStatus.dataset.sourceMessage);
+    renderIoFunctionMappingEditorTargets();
+    renderIoFunctionMappingList();
+    refreshStandardInputUi();
+    equipmentApp.ui.refreshLanguage();
+    conveyorTrackingApp.refreshLanguage();
     if (state.teachingPoints?.enabled) { state.teachingPoints.signature = ''; requestRender(); }
     refreshSimulationWorkspaceFileUi();
     refreshMotionProgramFileUi();
@@ -21425,6 +21441,8 @@ function setupEventListeners() {
     setupOlpTactPanel();
     setupTracePanel();
     document.addEventListener('pointermove', handleFullscreenUiPointerMove);
+    document.documentElement.addEventListener('pointerleave', handleFullscreenUiPointerLeave);
+    window.addEventListener('blur', handleFullscreenUiPointerLeave);
     document.addEventListener('click', requestRender);
     document.addEventListener('input', requestRender);
     document.addEventListener('change', requestRender);
@@ -21512,7 +21530,9 @@ function setupEventListeners() {
         resolveToolAttachmentChoice('cancel');
     });
 
-    el.btnFullscreenMode?.addEventListener('click', () => setFullscreenUiMode(!state.fullscreenUiMode));
+    el.btnFullscreenMode?.addEventListener('click', (event) => {
+        setFullscreenUiMode(!state.fullscreenUiMode, event.pointerType === 'touch' || event.detail === 0);
+    });
     el.btnPositionExport?.addEventListener('click', exportPositionPoints);
     el.btnSnapMove?.addEventListener('click', toggleSimulationSnapMoveMode);
     el.btnTcpSnap?.addEventListener('click', toggleTcpSnapMode);
@@ -22909,19 +22929,19 @@ function setupEventListeners() {
     });
 }
 
-function setFullscreenUiMode(enabled) {
+function setFullscreenUiMode(enabled, keepTopbarVisible = false) {
     const panelViewportPositions = captureOpenPanelViewportPositions();
     state.fullscreenUiMode = enabled;
-    ['fullscreenTopbarHideTimer', 'fullscreenStatsBarHideTimer'].forEach((key) => {
-        window.clearTimeout(state[key]);
-        state[key] = null;
+    Object.values(state.fullscreenBars).forEach((bar) => {
+        window.clearTimeout(bar.timer);
+        bar.timer = null;
+        document.body.classList.remove(bar.revealedClass);
     });
     document.body.classList.toggle('fullscreen-ui-mode', enabled);
-    document.body.classList.remove('fullscreen-topbar-revealed', 'fullscreen-statsbar-revealed');
+    if (enabled && keepTopbarVisible) document.body.classList.add(state.fullscreenBars.top.revealedClass);
     updateFullscreenModeButton();
     restorePanelViewportPositions(panelViewportPositions);
     requestAnimationFrame(() => requestAnimationFrame(onResize));
-    if (enabled) revealFullscreenBar('top');
 }
 
 function captureOpenPanelViewportPositions() {
@@ -22961,38 +22981,41 @@ function updateFullscreenModeButton() {
     el.btnFullscreenMode.innerHTML = `<i class="fa-solid fa-${state.fullscreenUiMode ? 'compress' : 'expand'}" aria-hidden="true"></i><span>${visibleLabel}</span>`;
 }
 
-function revealFullscreenBar(edge) {
-    if (!state.fullscreenUiMode) return;
-    const isTop = edge === 'top';
-    const timerKey = isTop ? 'fullscreenTopbarHideTimer' : 'fullscreenStatsBarHideTimer';
-    const className = isTop ? 'fullscreen-topbar-revealed' : 'fullscreen-statsbar-revealed';
-    window.clearTimeout(state[timerKey]);
-    state[timerKey] = null;
-    document.body.classList.add(className);
-}
+function updateFullscreenBar(bar, edgeDistance) {
+    const classes = document.body.classList;
+    const revealed = classes.contains(bar.revealedClass);
+    const keepOpenDistance = (document.getElementById(bar.id)?.offsetHeight || 0) + 16;
+    const hoverDistance = revealed ? keepOpenDistance : keepOpenDistance / 2;
+    const inHoverZone = edgeDistance >= 0 && edgeDistance <= hoverDistance;
 
-function scheduleFullscreenBarHide(edge) {
-    if (!state.fullscreenUiMode) return;
-    const isTop = edge === 'top';
-    const timerKey = isTop ? 'fullscreenTopbarHideTimer' : 'fullscreenStatsBarHideTimer';
-    const className = isTop ? 'fullscreen-topbar-revealed' : 'fullscreen-statsbar-revealed';
-    window.clearTimeout(state[timerKey]);
-    state[timerKey] = window.setTimeout(() => {
-        document.body.classList.remove(className);
-        state[timerKey] = null;
-    }, 250);
+    if (inHoverZone === revealed) {
+        window.clearTimeout(bar.timer);
+        bar.timer = null;
+        return;
+    }
+    if (bar.timer !== null) return;
+
+    const delay = inHoverZone ? bar.revealDelay : 250;
+    if (delay === 0) {
+        classes.add(bar.revealedClass);
+        return;
+    }
+    bar.timer = window.setTimeout(() => {
+        bar.timer = null;
+        classes.toggle(bar.revealedClass, inHoverZone);
+    }, delay);
 }
 
 function handleFullscreenUiPointerMove(event) {
     if (!state.fullscreenUiMode) return;
-    const topbar = document.getElementById('topbar');
-    const statsBar = document.getElementById('stats-bar');
-    const nearTop = event.clientY <= (topbar?.offsetHeight || 0) + 16;
-    const nearBottom = event.clientY >= window.innerHeight - (statsBar?.offsetHeight || 0) - 16;
-    if (nearTop) revealFullscreenBar('top');
-    else scheduleFullscreenBarHide('top');
-    if (nearBottom) revealFullscreenBar('bottom');
-    else scheduleFullscreenBarHide('bottom');
+    updateFullscreenBar(state.fullscreenBars.top, event.clientY);
+    updateFullscreenBar(state.fullscreenBars.bottom, window.innerHeight - event.clientY);
+}
+
+function handleFullscreenUiPointerLeave() {
+    if (!state.fullscreenUiMode) return;
+    updateFullscreenBar(state.fullscreenBars.top, Infinity);
+    updateFullscreenBar(state.fullscreenBars.bottom, Infinity);
 }
 
 function isSpaceKeyEvent(event) {
@@ -25163,7 +25186,7 @@ function modelMotionKind(model, part = null) {
     const ref = equipmentObjectRef(ensureWorkspaceModelId(model), part ? getImportedModelParts(model).indexOf(part) : -1);
     const kinds = state.equipmentDefinitions.filter(def => def.bodyRef === ref || [...equipmentReferences(def), ...equipmentMotionGroups(def).map(([value]) => value)].some(value => value === ref || !part && value.startsWith(`equipment-model:${ensureWorkspaceModelId(model)}/`))).map(def => EQUIPMENT_LABELS[def.type]);
     if (getConveyorMotionDefinition(ref)) kinds.push('컨베이어 이송');
-    return [...new Set(kinds)].join(', ');
+    return [...new Set(kinds)].map(uiText).join(', ');
 }
 
 function createModelTreePartNode(model, part) {
@@ -26754,13 +26777,13 @@ function openModelContextMenu(event, model, part = null) {
     for (const motion of motions) {
         const button = document.createElement('button'); button.type = 'button'; button.setAttribute('role', 'menuitem');
         const icon = document.createElement('i'); icon.className = 'fa-solid fa-pen-to-square';
-        button.append(icon, document.createTextNode(motions.length === 1 ? '동작 편집' : `동작 편집 · ${equipmentApp.label(motion)}`));
+        button.append(icon, document.createTextNode(motions.length === 1 ? '동작 편집' : `${uiText('동작 편집')} · ${equipmentApp.label(motion)}`));
         button.addEventListener('click', () => { closeModelContextMenu(); equipmentApp.ui.open(ref, motion); }); edits.append(button);
         const commands = motion.type === 'OBJECT' ? [] : motion.type === 'CONVEYOR' ? [['FORWARD','이송'],['STOP','정지']] : equipmentCommandOptions(motion.type).filter(([command]) => command !== 'STOP' && command !== 'RESET');
         for (const [command, label] of commands) {
             const test = document.createElement('button'); test.type = 'button'; test.setAttribute('role', 'menuitem');
             test.dataset.equipmentTestCommand = command; test.dataset.equipmentId = motion.id;
-            test.textContent = motions.length === 1 ? label : `${equipmentApp.label(motion)} · ${label}`;
+            test.textContent = motions.length === 1 ? label : `${equipmentApp.label(motion)} · ${uiText(label)}`;
             test.addEventListener('click', () => { closeModelContextMenu();
                 try { if (motion.type === 'CONVEYOR') runConveyorCommand(motion.movingRef, command); else equipmentApp.command(motion.id, command); }
                 catch (error) { setStatus(error.message, '#ef4444'); }
@@ -31604,7 +31627,7 @@ async function createTrackingTestModel() {
             noisePx:0,processingMs:80,showFrustum:true},calibration:{showMark:false},detection:{minScore:60},link:{active:false}});
         const used = new Set(oldTracking.map(item=>item.address));let address=512;while(used.has(address)&&address<=2559)address++;
         configureTrackingModule(belt,objects,camera,created.find(model=>model.userData.modelName==='Camera stand'),created.find(model=>model.userData.modelName==='Camera arm'),{preset:'tracking-test',belt:conveyorTargetFromRef(beltRef),controllerIp:'',channel:0,scale:1000,
-            address,position:60,width:2,height:20,capture:true,objectType:0},created);
+            address,position:60,width:2,height:20,objectType:0},created);
         updateUIStatus();selectSceneModel(null);
         const bounds = new THREE.Box3();created.forEach(model=>bounds.union(new THREE.Box3().setFromObject(model)));
         fitCameraToBounds(bounds);
@@ -31615,7 +31638,7 @@ async function createTrackingTestModel() {
         for(const model of created)removeVisionWorkObject(model);
         state.ioFunctionMappings=oldMappings;state.equipmentDefinitions=oldEquipment;state.modelGroups=oldGroups;
         visionApp.restore(oldVision);conveyorTrackingApp.restore(oldTracking);updateUIStatus();requestRender();
-        alert(uiFormat('테스트 모델을 불러오지 못했습니다.\n{message}',{message:error.message||String(error)}));
+        alert(uiFormat('테스트 모델을 불러오지 못했습니다.\n{message}',{message:uiText(error.message||String(error))}));
     } finally {state.pendingImportFile=null;el.btnTestModel.disabled=false;}
 }
 
@@ -31668,7 +31691,7 @@ async function handleTestModelImport() {
                 }
             } catch (error) {
                 console.error('Test asset import failed:', asset.path, error);
-                failures.push(asset.name + ': ' + (error.message || error));
+                failures.push(uiText(asset.label) + ': ' + uiText(error.message || error));
             }
         }
         checkSceneCollisions({ force: true });
@@ -37880,10 +37903,13 @@ function refreshStandardInputUi() {
     const label = document.getElementById('io-standard-input-status');
     if (label) {
         const feedback = controller ? standardInputClient.view(controller) : null;
-        const name = controller ? `${getVirtualControllerTargetRobot(controller)?.name || '컨트롤러'} (${controller.ipAddress})` : '';
-        label.textContent = controller
-            ? `입력 대상: ${name} · In[0]–In[64] · ${feedback.pending?.write ? 'In[' + feedback.pending.address + '] 적용 확인 중' : feedback.values === null ? '상태 확인 불가' : '실제 입력 ON ' + Object.values(feedback.values).filter(Boolean).length + ' / 65'}${feedback.error ? ' · ' + feedback.error : ''}`
-            : '로컬 OLP 입력 · 가상 컨트롤러 연결 시 In[0]–In[64] 연동';
+        if (controller) {
+            const name = (getVirtualControllerTargetRobot(controller)?.name || uiText('컨트롤러')) + ' (' + controller.ipAddress + ')';
+            const status = feedback.pending?.write ? uiFormat('In[{address}] 적용 확인 중', { address: feedback.pending.address })
+                : feedback.values === null ? uiText('상태 확인 불가')
+                : uiText('실제 입력 ON') + ' ' + Object.values(feedback.values).filter(Boolean).length + ' / 65';
+            label.textContent = [uiFormat('입력 대상: {name}', { name }), 'In[0]–In[64]', status, feedback.error && uiText(feedback.error)].filter(Boolean).join(' · ');
+        } else label.textContent = '로컬 OLP 입력 · 가상 컨트롤러 연결 시 In[0]–In[64] 연동';
     }
     markIoSimulatorDirty('IN', 0, 65);
     renderIoSimulatorDirtyEntries();
@@ -38126,7 +38152,8 @@ function getIoFunctionMappingTargetLabel(mapping) {
 
 function setIoFunctionMappingStatus(message = '', type = '') {
     if (!el.ioFunctionMappingStatus) return;
-    el.ioFunctionMappingStatus.textContent = message ? uiText(message) : '';
+    el.ioFunctionMappingStatus.dataset.sourceMessage = message;
+    el.ioFunctionMappingStatus.textContent = uiText(message);
     el.ioFunctionMappingStatus.classList.toggle('error', type === 'error');
 }
 
@@ -51904,7 +51931,6 @@ function installSimulationManualGuide() {
 function requiresContinuousRendering() {
     return Boolean(state.viewTransition && state.viewTransition.session?.status !== 'paused')
         || equipmentApp.active(state.ioFunctionMappings)
-        || conveyorTrackingApp.previewPending
         || activeConveyorMappings().length > 0
         || isViewWindowOpen()
         || state.trace.running
@@ -52123,7 +52149,11 @@ async function populateModelList() {
                 state.catalog.set(catalogKey, m);
                 const opt = document.createElement('option');
                 opt.value = catalogKey;
-                opt.textContent = m.name;
+                opt.textContent = currentGroup?.label === 'Controller'
+                    ? m.name.replace('-6-axis-', '-6-Axis-')
+                        .replace('-Highpower', '-HighPower')
+                        .replace('-Highprotection', '-HighProtection')
+                    : m.name;
                 (currentGroup || el.modelSelect).appendChild(opt);
             }
         });

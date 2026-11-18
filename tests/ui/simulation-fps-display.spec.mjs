@@ -6,7 +6,10 @@ test('Shows the rendered FPS below status while drawing and returns to zero when
         await route.fulfill({ response, body: (await response.text()) +
             '\nwindow.__fpsDisplay = { state, requestRender };' });
     });
-    await page.goto('/2_3DSimulation/index.html');
+    const response = await page.goto('/2_3DSimulation/');
+    const source = await response.text();
+    expect(source).toContain('id="rust-simulator"');
+    expect(source).not.toContain('id="stat-fps"');
     await page.waitForFunction(() => window.__fpsDisplay?.state.workspaceRecovery.ready);
 
     const display = page.locator('#stat-fps');
@@ -16,7 +19,8 @@ test('Shows the rendered FPS below status while drawing and returns to zero when
     expect(fps.y).toBeGreaterThanOrEqual(status.y + status.height);
     expect(fps.x).toBeLessThanOrEqual(status.x);
 
-    const limit = page.getByRole('checkbox', { name: 'Limit rendering to 60 FPS' });
+    const limit = page.locator('#topbar').getByRole('checkbox', { name: 'Limit rendering to 60 FPS' });
+    await expect(limit).not.toBeChecked();
     await limit.check();
     await page.evaluate(() => {
         window.__fpsDisplay.timer = setInterval(window.__fpsDisplay.requestRender, 8);

@@ -1,4 +1,5 @@
 import { fillEquipmentForm } from './wasm/forms.mjs';
+import { uiText, uiFormat } from './ui-language.mjs';
 import { EQUIPMENT_TYPES, EQUIPMENT_LABELS, normalizeEquipmentDefinition, equipmentReferences, equipmentMotionGroups, equipmentCommandOptions } from './equipment-core.mjs?v=20261107-object-home-1';
 
 const groups = { movingRef: '이동 대상', secondRef: '반대쪽 손가락 부품', carriedRef: '테이블 위 탑재물', filmGripRef: '같은 필름의 손잡이 부품' };
@@ -8,6 +9,13 @@ const numeric = {
  filmLength:['필름 길이 (mm)',300], filmWidth:['필름 폭 (mm)',100], filmGripOffset:['손잡이 위치 (0~100%)',50], filmGripWidth:['손잡이 파지 폭 (mm)',20], filmStiffness:['굽힘 강성',0.05], filmDamping:['감쇠',0.96], externalAxis:['로봇 E축 (0=독립)',0],
  feedbackHome:['복귀 완료 Input 번호',''], feedbackEnd:['동작 완료 Input 번호',''], feedbackGrip:['파지 감지 Input 번호','']
 };
+function equipmentMessage(message) {
+ const range = message.match(/^(.+): (-?[\d.]+)~(-?[\d.]+) 범위의 숫자를 입력하세요\.$/);
+ if (range) return uiFormat('{name}: {min}~{max} 범위의 숫자를 입력하세요.', { name: uiText(range[1]), min: range[2], max: range[3] });
+ const conflict = '센서 입력 주소가 다른 설비와 중복됩니다.';
+ if (message.startsWith(conflict + ' Input[')) return uiText(conflict) + message.slice(conflict.length);
+ return uiText(message);
+}
 export function createEquipmentUi(adapter) {
  const dialog=document.createElement('dialog'); dialog.id='equipment-dialog'; dialog.className='equipment-dialog'; dialog.setAttribute('aria-label','동작 설정');
  fillEquipmentForm(dialog);
@@ -17,7 +25,8 @@ export function createEquipmentUi(adapter) {
  dialog.querySelector('[data-equipment-global="reset"]').title='설비를 초기화하고 모든 등록 오브젝트를 기준 위치·회전으로 되돌립니다. 무작위 원위치를 켠 오브젝트는 지정 범위 안에서 틀어서 놓습니다.';
  document.body.append(dialog);
  const form=dialog.querySelector('form'), basic=dialog.querySelector('#equipment-basic'), extra=dialog.querySelector('#equipment-extra');
- const error=message=>{dialog.querySelector('#equipment-error').textContent=message;};
+ let lastMessage='';
+ const error=message=>{lastMessage=message;dialog.querySelector('#equipment-error').textContent=equipmentMessage(message);};
  const objectReset=document.createElement('button');objectReset.id='equipment-object-reset';objectReset.type='button';objectReset.textContent='오브젝트 원위치';objectReset.hidden=true;objectReset.disabled=true;
  dialog.querySelector('#equipment-new').before(objectReset);
  objectReset.addEventListener('click',()=>{try{adapter.command(form.elements.id.value,'RESET');updateStatus();}catch(exception){error(exception.message);}});
@@ -77,9 +86,28 @@ export function createEquipmentUi(adapter) {
  }catch(exception){error(exception.message);}});
  let pendingRole=null;
  const detachedFields=[];
+ // These fields leave the form when their motion type is inactive. Reattach
+ // their original captions so the locale observer can translate them again.
+ const fieldCaptions=new Map();
+ for (const field of [form.elements.axis.parentElement, form.elements.travel.parentElement,
+  form.elements.speed.parentElement, dialog.querySelector('#equipment-advanced'), randomSection, faceSection]) {
+  const captions=[];
+  const walker=document.createTreeWalker(field, NodeFilter.SHOW_TEXT);
+  for (let node=walker.nextNode(); node; node=walker.nextNode()) {
+   if (node.data.trim()) captions.push([node, node.data]);
+  }
+  for (const input of field.querySelectorAll('[placeholder]')) {
+   const attribute=input.getAttributeNode('placeholder');
+   captions.push([attribute, attribute.value]);
+  }
+  fieldCaptions.set(field, captions);
+ }
  function restoreFields() {
   const restored=detachedFields.length>0;
-  for(const {field,marker} of detachedFields)marker.replaceWith(field);
+  for(const {field,marker} of detachedFields) {
+   for (const [node,source] of fieldCaptions.get(field)) node.nodeValue=source;
+   marker.replaceWith(field);
+  }
   detachedFields.length=0;return restored;
  }
  function detachField(field) {
@@ -111,7 +139,7 @@ export function createEquipmentUi(adapter) {
     const row=document.createElement('label'), box=document.createElement('input'); box.type='checkbox'; box.value=ref.value; box.checked=true;
     row.dataset.search=ref.label; row.dataset.equipmentRef=ref.value;
     box.addEventListener('change',event=>{if(box.checked)selected[role].add(ref.value);else selected[role].delete(ref.value);adapter.select?.(ref.value,event.shiftKey);references(true);updateName();});
-    const name=document.createElement('span');name.textContent=ref.partLabel||ref.label;name.setAttribute('role','button');name.setAttribute('aria-label',name.textContent);name.tabIndex=0;name.title=ref.label+' · 외곽선 선택';
+    const name=document.createElement('span');name.textContent=ref.partLabel||ref.label;name.setAttribute('role','button');name.setAttribute('aria-label',name.textContent);name.tabIndex=0;name.title=ref.label+' · '+uiText('외곽선 선택');
     name.addEventListener('click',event=>{event.preventDefault();adapter.select?.(ref.value,event.shiftKey);});
     name.addEventListener('keydown',event=>{if(['Enter',' '].includes(event.key)){event.preventDefault();adapter.select?.(ref.value,event.shiftKey);}});
     row.append(box,name);
@@ -128,7 +156,20 @@ export function createEquipmentUi(adapter) {
   }
   return true;
  }
- function updateName() { if(nameEdited)return; const ref=adapter.references().find(item=>item.value===([...selected.movingRef][0]||targetRef)); form.elements.name.value=(EQUIPMENT_LABELS[form.elements.type.value]||'컨베이어 이송')+' / '+(ref?.label||'모델'); }
+ function defaultName(localized) {
+  const type = EQUIPMENT_LABELS[form.elements.type.value] || '컨베이어 이송';
+  const ref = adapter.references().find(item => item.value === ([...selected.movingRef][0] || targetRef));
+  return (localized ? uiText(type) : type) + ' / ' + (ref?.label || (localized ? uiText('모델') : '모델'));
+ }
+ function updateName() { if (!nameEdited) form.elements.name.value = defaultName(true); }
+ function updateTargetLabel() {
+  const def = currentConveyor || adapter.definitions().find(item => item.id === form.elements.id.value);
+  const name = adapter.references().find(item => item.value === targetRef)?.label || uiText('선택 부품');
+  dialog.querySelector('#equipment-target-label').textContent = def
+   ? uiFormat('편집 중 · {name} · 변경 저장을 눌러 적용하세요.', {name: adapter.label?.(def) || def.name})
+   : targetRef ? uiFormat('새 동작 · 대상: {name}', {name}) : uiText('모델 트리의 항목을 우클릭해서 동작을 설정하세요.');
+ }
+
  function fields() {
   if(restoreFields())references(true);
   const type=form.elements.type.value, rotary=type==='ROTARY_AXIS', conveyor=type==='CONVEYOR', object=type==='OBJECT', vacuum=type==='VACUUM', simple=object||vacuum;
@@ -172,14 +213,14 @@ export function createEquipmentUi(adapter) {
   ['X','Y','Z'].forEach((axis,i)=>{form.elements['pivot'+axis].value=def?.pivot?.[i]||0;form.elements['gripCenter'+axis].value=def?.gripCenter?.[i]??(i===2?40:0);});
   const bindings=adapter.bindings(def,targetRef)||{};form.elements.ioTrigger.value=bindings.triggerValue??1;form.elements.forwardAddress.value=bindings.forward??'';form.elements.reverseAddress.value=bindings.reverse??'';form.elements.resetAll.checked=bindings.resetAll===true;
   form.elements.randomHome.checked=def?.randomHome===true;for(const key of randomKeys)form.elements[key].value=def?.[key]??randomDefaults[key];
-  dialog.querySelector('#equipment-target-label').textContent=def?'편집 중 · '+(adapter.label?.(def)||def.name)+' · 변경 저장을 눌러 적용하세요.':targetRef?'새 동작 · 대상: '+(adapter.references().find(item=>item.value===targetRef)?.label||'선택 부품'):'모델 트리의 항목을 우클릭해서 동작을 설정하세요.';
+  updateTargetLabel();
   fields();updateName();render();error('');dialog.scrollTop=0;
  }
  form.elements.type.addEventListener('change',()=>{
   // A different kind is another action on the same tool, not a replacement.
   if(form.elements.id.value){
    form.elements.id.value='';currentConveyor=null;dialog.dataset.mode='new';
-   dialog.querySelector('#equipment-target-label').textContent='새 동작 · 대상: '+(adapter.references().find(item=>item.value===targetRef)?.label||'선택 부품');
+   updateTargetLabel();
   }
   restoreFields();
   for(const key of ['feedbackHome','feedbackEnd','feedbackGrip'])form.elements[key].value='';
@@ -194,7 +235,7 @@ export function createEquipmentUi(adapter) {
   if(!['OBJECT','VACUUM'].includes(raw.type)){raw.pivot=['X','Y','Z'].map(axis=>form.elements['pivot'+axis].value);raw.gripCenter=['X','Y','Z'].map(axis=>form.elements['gripCenter'+axis].value);}
   if(raw.type==='FILM_PEEL')raw.travel=raw.filmLength;
   if(raw.type==='OBJECT'){raw.randomHome=form.elements.randomHome.checked;for(const key of randomKeys)raw[key]=form.elements[key].value;}
-  updateName(); raw.name=form.elements.name.value; if(['CYLINDER','GRIPPER'].includes(raw.type))raw.reverseSpeed=raw.speed; const bindings={direction:'OUT',triggerValue:Number(raw.ioTrigger),forward:raw.forwardAddress,reverse:raw.type==='OBJECT'?null:raw.reverseAddress,resetAll:raw.type==='OBJECT'&&form.elements.resetAll.checked};
+  raw.name = raw.customName ? form.elements.name.value : defaultName(false); if(['CYLINDER','GRIPPER'].includes(raw.type))raw.reverseSpeed=raw.speed; const bindings={direction:'OUT',triggerValue:Number(raw.ioTrigger),forward:raw.forwardAddress,reverse:raw.type==='OBJECT'?null:raw.reverseAddress,resetAll:raw.type==='OBJECT'&&form.elements.resetAll.checked};
   const saved=raw.type==='CONVEYOR'?adapter.saveConveyor(raw,bindings):adapter.save(normalizeEquipmentDefinition(raw),bindings);
   edit(saved,targetRef);error(raw.type==='OBJECT'?'오브젝트를 등록했습니다. Tool의 진공 동작으로 흡착할 수 있습니다.':'동작을 저장했습니다. 시험 버튼 또는 연결한 IO로 운전할 수 있습니다.');
  }catch(exception){error(exception.message);}});
@@ -220,11 +261,10 @@ export function createEquipmentUi(adapter) {
    for(const def of [...adapter.definitions(),...(currentConveyor?[currentConveyor]:[])]){
     const label=adapter.label?.(def)||def.name;
     for(const title of dialog.querySelectorAll('[data-equipment-id="'+def.id+'"] > strong'))title.textContent=label;
-    if(def.id===form.elements.id.value)dialog.querySelector('#equipment-target-label').textContent='편집 중 · '+label+' · 변경 저장을 눌러 적용하세요.';
    }
-   if(!form.elements.id.value&&targetRef)dialog.querySelector('#equipment-target-label').textContent='새 동작 · 대상: '+(adapter.references().find(item=>item.value===targetRef)?.label||'선택 부품');
+   updateTargetLabel();
   }
-  for(const def of adapter.definitions())for(const node of dialog.querySelectorAll('[data-equipment-status="'+def.id+'"]')){const status=adapter.status(def.id);node.textContent=(status?.phase||(def.type==='OBJECT'?'등록됨':def.type==='VACUUM'?'해제':'정지'))+(['OBJECT','VACUUM'].includes(def.type)?'':' · '+Number(def.runtime.position).toFixed(1)+(def.type==='ROTARY_AXIS'?'°':'mm'))+(status?.held&&def.type!=='VACUUM'?' · 파지':'')+(status?.error?' · '+status.error:'');}
+  for(const def of adapter.definitions())for(const node of dialog.querySelectorAll('[data-equipment-status="'+def.id+'"]')){const status=adapter.status(def.id);node.textContent=uiText(status?.phase||(def.type==='OBJECT'?'등록됨':def.type==='VACUUM'?'해제':'정지'))+(['OBJECT','VACUUM'].includes(def.type)?'':' · '+Number(def.runtime.position).toFixed(1)+(def.type==='ROTARY_AXIS'?'°':'mm'))+(status?.held&&def.type!=='VACUUM'?' · '+uiText('파지'):'')+(status?.error?' · '+equipmentMessage(status.error):'');}
  }
  dialog.querySelector('#equipment-popout').addEventListener('click',()=>adapter.popout?.());
  const hide=()=>{adapter.hide?.();dialog.close();};
@@ -263,5 +303,5 @@ export function createEquipmentUi(adapter) {
   refs.forEach((ref,index)=>adapter.select?.(ref,index>0));
   show();
  }
- return {findDefinitions,openGroup,open(ref='',definition=null){edit(definition,ref);show();},edit,render,updateStatus,dialog,get pendingRole(){return pendingRole;},addPart(ref){const role=pendingRole||'movingRef';if(role==='movingRef'&&['FILM_PEEL','CONVEYOR'].includes(form.elements.type.value))selected[role].clear();selected[role].add(ref);if(role==='movingRef'&&['FILM_PEEL','CONVEYOR'].includes(form.elements.type.value)){pendingRole=null;for(const button of dialog.querySelectorAll('[data-equipment-role] button'))button.textContent='모델 트리에서 추가';}references(true);updateName();error('부품을 추가했습니다. 동작 저장을 눌러 적용하세요.');}};
+ return {findDefinitions,openGroup,refreshLanguage() { updateName(); updateTargetLabel(); error(lastMessage); if (dialog.open) render(); },open(ref='',definition=null){edit(definition,ref);show();},edit,render,updateStatus,dialog,get pendingRole(){return pendingRole;},addPart(ref){const role=pendingRole||'movingRef';if(role==='movingRef'&&['FILM_PEEL','CONVEYOR'].includes(form.elements.type.value))selected[role].clear();selected[role].add(ref);if(role==='movingRef'&&['FILM_PEEL','CONVEYOR'].includes(form.elements.type.value)){pendingRole=null;for(const button of dialog.querySelectorAll('[data-equipment-role] button'))button.textContent='모델 트리에서 추가';}references(true);updateName();error('부품을 추가했습니다. 동작 저장을 눌러 적용하세요.');}};
 }

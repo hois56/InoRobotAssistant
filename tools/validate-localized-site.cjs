@@ -1,3 +1,4 @@
+const { readSimulationMarkup } = require('./read-simulation-markup.cjs');
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
@@ -21,6 +22,7 @@ const localeFileDefinitions = [
 const failures = [];
 
 function read(relativePath) {
+    if (relativePath === '2_3DSimulation/index.html') return readSimulationMarkup();
     return fs.readFileSync(path.join(root, relativePath), 'utf8');
 }
 

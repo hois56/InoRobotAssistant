@@ -7,6 +7,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 const project = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.dirname(project);
 const engine = '2_3DSimulation/wasm/simulation.wasm';
+const bridgeDownload = '2_3DSimulation/bridge/InoRobotVirtualControllerBridge.zip';
 const rustBridge = process.argv.find(arg => arg.startsWith('--rust-bridge-zip='))?.slice('--rust-bridge-zip='.length);
 
 if (!process.argv.includes('--package-only')) {
@@ -36,7 +37,7 @@ for (const name of await readdir(path.join(repo, '2_3DSimulation'))) {
 }
 for (const name of [
     '2_3DSimulation/models', '2_3DSimulation/test-assets', '2_3DSimulation/wasm',
-    '2_3DSimulation/urdf', '2_3DSimulation/usd', '2_3DSimulation/bridge/InoRobotVirtualControllerBridge.zip',
+    '2_3DSimulation/urdf', '2_3DSimulation/usd',
     '7_DebuggingTool/Trace/InoRobotTrace_V1.5.zip', '1_RobotModelSelect/INOVANCE_Logo.png',
     '3_ToolSelector/continuous-transform-rotation.mjs', '3_ToolSelector/mass-properties.mjs',
     '3_ToolSelector/snap-geometry.mjs', 'Language/runtime', '0_Home/tool-guide-embed.js',
@@ -47,20 +48,20 @@ for (const name of [
     '2_3DSimulation/RustControllerBridge/Cargo.lock', '2_3DSimulation/RustControllerBridge/README.md',
     '2_3DSimulation/RustControllerBridge/start-rust-bridge.cmd'
 ]) await copy(name);
-if (rustBridge) await copyFile(rustBridge, path.join(stage, '2_3DSimulation/bridge/InoRobotRustControllerBridge.zip'));
+if (rustBridge) {
+    await mkdir(path.dirname(path.join(stage, bridgeDownload)), { recursive: true });
+    await copyFile(rustBridge, path.join(stage, bridgeDownload));
+} else {
+    await copy(bridgeDownload);
+}
 
 const simulationPage = path.join(stage, '2_3DSimulation', 'index.html');
 const html = await readFile(simulationPage, 'utf8');
-const body = /<body\b([^>]*)>([\s\S]*?)<\/body>/i.exec(html);
-const main = body?.[2].match(/<script type="module" src="(main\.js[^"]*)"><\/script>/);
-const guide = body?.[2].match(/<script src="([^"]*tool-guide-embed\.js[^"]*)"><\/script>/);
-const head = html.slice(0, body?.index);
-const i18n = head.match(/<script src="([^"]*\/i18n\.js[^"]*)" defer><\/script>/);
-if (!body || !main || !guide || !i18n) throw new Error('Simulator page entry scripts are missing');
-const shell = '<body' + body[1] + ' data-local-collaboration="true">\n'
-    + '<script type="module" id="rust-simulator" src="./rust-ui.mjs" data-main="' + main[1]
-    + '" data-guide="' + guide[1] + '" data-i18n="' + i18n[1] + '"></script>\n</body>';
-await writeFile(simulationPage, head.replace(i18n[0], '') + shell + html.slice(body.index + body[0].length));
+const body = '<body data-design-page="simulation"';
+if (!html.includes(body) || !html.includes('id="rust-simulator"')) {
+    throw new Error('Rust simulator entry is missing');
+}
+await writeFile(simulationPage, html.replace(body, body + ' data-local-collaboration="true"'));
 
 const redirect = '<!doctype html><meta charset="utf-8"><title>3D Simulation</title>' +
     '<script>location.replace("/2_3DSimulation/"+location.search+location.hash)</script>' +

@@ -303,6 +303,7 @@
                 "title": "Ver 26.11.18",
                 "items": [
                   "`[개선]` 3D 작업 공간과 모델 트리, JOG 패널을 밝게 바꾸고, 작은 화면에서는 하단 도구 모음에서 패널을 열 수 있도록 했습니다.",
+                  "`[개선]` 전체 화면 모드에서 상·하단 바가 열리는 영역을 절반으로 줄였습니다. 상단 바는 마우스를 가장자리에 0.5초 이상 두면 열리고, 하단 바는 바로 열립니다.",
                   "`[추가]` P.pts에서 선택한 위치를 한 번에 삭제하고 실행 취소·다시 실행할 수 있습니다. Delete 키와 별도 창에서도 사용할 수 있습니다.",
                   "`[수정]` 로봇 외곽선 표시에서 일부 모델의 INOVANCE 로고 글자 테두리가 남던 문제를 해결했습니다.",
                   "`[개선]` 곡선 기반 자동 궤적 생성에서 선택한 곡선을 굵게 강조하고, 면을 클릭하면 외곽선을 한 번에 선택할 수 있습니다.",
@@ -316,7 +317,7 @@
                   "`[추가]` K14 가상 컨트롤러에 웹 컨베이어의 엔코더·센서·비전 검출을 연결하고, 로봇 프로그램의 컨베이어 추종에 사용할 수 있습니다.",
                   "`[개선]` 촬영 시점의 엔코더값으로 비전 처리 지연을 보정하고, 연동 설정을 작업 파일에 저장합니다.",
                   "`[추가]` 컨베이어 창에서 속도와 정·역방향을 선택해 테스트 운전하고, 버튼을 누르는 동안만 움직이는 JOG와 정지를 사용할 수 있습니다. 브리지 없이 장면에서 시험하며, 트래킹 연동 시 같은 이동이 엔코더 입력에 반영됩니다. 테스트 Conveyor 모델의 벨트 무늬도 속도와 방향에 맞춰 끝단을 돌아 순환하며, JOG 해제·정지 시 함께 멈춥니다.",
-                  "`[추가]` 테스트 창에서 컨베이어·시험 물체·레이저 센서·하향 비전 카메라를 설정된 상태로 함께 생성합니다. 레이저의 감지 위치와 ON/OFF 색상, 센서 감지에 따른 자동 촬영·검출 결과를 컨트롤러 연결 전에도 확인하고 저장·복원할 수 있습니다. 컨베이어 모듈 아래 컨베이어·비전 카메라·센서 하위 그룹을 구성해 전체 또는 개별 선택·이동이 가능합니다. 벨트는 길이 2.5배·폭 1.5배로 확대하고 센서와 카메라는 이송 시작부에 배치합니다.",
+                  "`[추가]` 테스트 창에서 컨베이어·시험 물체·레이저 센서·하향 비전 카메라를 설정된 상태로 함께 생성합니다. 레이저의 감지 위치와 ON/OFF 색상을 컨트롤러 연결 전에도 확인하고 센서 설정을 저장·복원할 수 있습니다. 웹 컨베이어 비전은 로봇 프로그램의 CnvTrigVis 요청과 웹의 현재 화면 촬영 버튼으로 촬영합니다. 컨베이어 모듈 아래 컨베이어·비전 카메라·센서 하위 그룹을 구성해 전체 또는 개별 선택·이동이 가능합니다. 벨트는 길이 2.5배·폭 1.5배로 확대하고 센서와 카메라는 이송 시작부에 배치합니다.",
                   "`[추가]` IO 테스트의 In[0]–In[64] ON/OFF를 선택한 K14 가상 컨트롤러의 DI0–DI64에 전달하고 실제 입력 상태를 표시합니다. 연결 끊김·읽기 실패는 미확인 상태로 구분합니다.",
                   "`[추가]` 가상 비전 기능을 추가했습니다. 상·하향 촬상과 컬러 라이브 영상을 지원하며, 테스트 비전 모듈의 Camera 부품에는 상향 촬상이 자동으로 연결됩니다. 9점·회전 중심 캘리브레이션 후 촬상 버튼으로 기준 위치 대비 X·Y·각도 보정값을 한 번 측정할 수 있습니다. K12 가상컨트롤러용 보정값 내보내기와 CALRAW·PIXEL 영상 좌표 TCP 명령, 로봇 BASE 좌표 변환 예제를 지원합니다. 비전 영상에서는 로봇 좌표축과 3D 조작 핸들을 제외합니다. 로봇랩 비전 보정의 기본 끝 문자 V에 맞춘 TCP 통신을 지원합니다.",
                   "`[추가]` 작업물 오브젝트를 선택해 기존 모델을 기준 위치 주변에서 무작위로 이동·회전할 수 있습니다. 기본 편차는 X·Y 각각 ±50 mm, 각도 ±180°이며, 기본 형상 작업물 생성도 지원합니다.",
@@ -326,7 +327,9 @@
                   "`[수정]` 작업을 다시 불러오면 특정 오브젝트를 대상으로 지정한 오브젝트 원위치 IO 매핑이 삭제되던 문제를 해결했습니다.",
                   "`[추가]` 교육용 모델링 생성 시 선택한 로봇에 Single VAC Tool을 Tool로 자동 장착하도록 추가했습니다. 교육용 Single VAC Tool의 TCP는 일반 로봇 Z=100 mm, SCARA Z=-100 mm로 설정되며, SCARA 어댑터는 처음 불러올 때 Z=12 mm에 배치됩니다.",
                   "`[수정]` R4H 등 일부 로봇 모델에서 INOVANCE 로고가 표시되지 않던 문제를 해결했습니다.",
-                  "`[추가]` 3D 화면에서 모서리·곡선을 클릭해 위치값을 자동 생성하는 기능을 추가했습니다. 간격·시작 번호·방향·오프셋을 설정하고 좌표를 미리 본 뒤 P.pts에 저장하거나 내보낼 수 있습니다."
+                  "`[추가]` 3D 화면에서 모서리·곡선을 클릭해 위치값을 자동 생성하는 기능을 추가했습니다. 간격·시작 번호·방향·오프셋을 설정하고 좌표를 미리 본 뒤 P.pts에 저장하거나 내보낼 수 있습니다.",
+                  "`[수정]` 3D 시뮬레이션의 동작 관리, I/O 매핑, 컨베이어 및 테스트 모델 창에서 안내와 상태를 선택한 언어로 표시합니다.",
+                  "`[수정]` 컨베이어 웹 연동을 다시 연결할 때 기존 엔코더와 대기 물체 정보를 유지하며, 확인 응답이 유실된 검출 결과도 중복 등록하지 않고 이어서 처리합니다."
                 ]
               },
               {
@@ -1938,6 +1941,7 @@
                 "title": "Ver 26.11.18",
                 "items": [
                   "`[Improved]` The 3D workspace, model tree and JOG panel now use a light palette. On small screens, open panels from the bottom toolbar.",
+                  "`[Improved]` Fullscreen bars open from an area half as tall as before. The top bar opens after the pointer stays near the edge for at least 0.5 seconds, and the bottom bar opens immediately.",
                   "`[Added]` Delete selected positions together in P.pts, with undo and redo. The Delete key and detached window are also supported.",
                   "`[Fixed]` Removed remaining INOVANCE lettering edges from robot outlines on affected models.",
                   "`[Improved]` Curve-based trajectory generation clearly highlights selected curves and selects face boundaries with one click.",
@@ -1951,7 +1955,7 @@
                   "`[Added]` Connect web conveyor encoders, sensors and vision detections to a K14 virtual controller for conveyor tracking in robot programs.",
                   "`[Improved]` Exposure-time encoder latches compensate for vision processing delay, and conveyor settings are saved with the workspace.",
                   "`[Added]` Test conveyors with adjustable speed, forward/reverse direction, continuous run, hold-to-run JOG and stop controls. Scene tests work without a bridge; when tracking is linked, the same motion drives encoder input. The test Conveyor model also shows belt markings circulating around its ends at the selected speed and direction, stopping when JOG is released or Stop is pressed.",
-                  "`[Added]` Create a configured conveyor tracking test scene with workpieces, a laser sensor and a downward-facing vision camera. Before connecting a controller, inspect the laser position and detection colors, sensor-triggered capture and detection results, and save or restore the setup. The conveyor module contains Conveyor, Vision camera and Sensor subgroups for collective or individual selection and movement. The belt is 2.5 times longer and 1.5 times wider, with the sensor and camera near the infeed.",
+                  "`[Added]` Create a configured conveyor tracking test scene with workpieces, a laser sensor and a downward-facing vision camera. Before connecting a controller, inspect the laser position and detection colors, and save or restore the sensor settings. Conveyor vision captures on a CnvTrigVis request from the robot program or when the web capture button is pressed. The conveyor module contains Conveyor, Vision camera and Sensor subgroups for collective or individual selection and movement. The belt is 2.5 times longer and 1.5 times wider, with the sensor and camera near the infeed.",
                   "`[Added]` IO Test In[0]–In[64] switches DI0–DI64 on the selected K14 virtual controller and displays confirmed input feedback. Disconnected or failed reads are shown as unavailable.",
                   "`[Added]` Added Virtual Vision with upward/downward capture and color live images. The test Vision module automatically uses its Camera parts for upward capture. After 9-point and rotation-center calibration, Capture measures X, Y and angle offsets from the master position once. Supports K12 virtual-controller calibration export, CALRAW/PIXEL raw-coordinate TCP commands and a robot BASE coordinate conversion example. Vision images exclude robot coordinate axes and 3D manipulation handles. Supports TCP communication with RobotLab calibration using its default V terminator.",
                   "`[Added]` Select a work object to move and rotate the existing model randomly around its reference position. Default deviations are ±50 mm in X/Y and ±180° in angle; basic work-shape generation is also supported.",
@@ -1961,7 +1965,9 @@
                   "`[Fix]` Fixed an issue where object home IO mappings targeting a specific object were deleted when work was reloaded.",
                   "`[Added]` Educational model generation now automatically mounts a Single VAC Tool as a Tool on the selected robot. The educational Single VAC Tool uses TCP Z=100 mm on articulated robots and Z=-100 mm on SCARA robots. SCARA adapters initially load at Z=12 mm.",
                   "`[Fix]` Fixed missing INOVANCE logos on R4H and some other robot models.",
-                  "`[Added]` Added automatic position generation by clicking edges and curves in the 3D view. Set spacing, first point number, direction and offsets, preview coordinates, then save or export them through P.pts."
+                  "`[Added]` Added automatic position generation by clicking edges and curves in the 3D view. Set spacing, first point number, direction and offsets, preview coordinates, then save or export them through P.pts.",
+                  "`[Fixed]` Motion management, I/O mapping, conveyor and test model panels now show instructions and status in the selected language.",
+                  "`[Fixed]` Reconnecting the web conveyor preserves encoder counts and queued workpieces, and retries detections without duplicating objects when acknowledgements are lost."
                 ]
               },
               {
@@ -3544,6 +3550,7 @@
                 "title": "Ver 26.11.18",
                 "items": [
                   "`[改进]` 3D 工作区、模型树和 JOG 面板现采用浅色界面。在小屏幕上可从底部工具栏打开面板。",
+                  "`[改进]` 全屏模式下，顶部和底部栏的触发区域高度缩小为原来的一半。鼠标指针在顶部边缘停留至少 0.5 秒后打开顶部栏，移至底部边缘时立即打开底部栏。",
                   "`[新增]` 支持在 P.pts 中批量删除选中的位置，并可撤销和重做。也可使用 Delete 键和独立窗口。",
                   "`[修复]` 修复部分机器人模型开启轮廓线时仍显示 INOVANCE 标志字母边线的问题。",
                   "`[改进]` 基于曲线的自动轨迹生成会加粗突出显示所选曲线，点击面即可一次选择其轮廓线。",
@@ -3557,7 +3564,7 @@
                   "`[新增]` 将网页传送带的编码器、传感器和视觉检测连接到 K14 虚拟控制器，用于机器人程序的传送带跟踪。",
                   "`[改进]` 使用曝光时的编码器值补偿视觉处理延迟，并将连接设置保存在工作区中。",
                   "`[新增]` 输送机窗口支持速度、正反方向、连续试运行、按住运行的 JOG 和停止操作。无需桥接即可在场景中测试，跟踪联动时相同运动会反映到编码器输入。 测试 Conveyor 模型的皮带纹理也会按所选速度和方向绕端部循环，松开 JOG 或停止时同步停止。",
-                  "`[新增]` 测试窗口可一键生成已配置的输送机、测试工件、激光传感器和下视视觉相机。连接控制器前即可查看激光检测位置、ON/OFF 颜色、传感器触发拍照及检测结果，并保存或恢复配置。 输送机模块包含输送机、视觉相机和传感器子组，可整体或分别选择和移动。皮带长度扩大为2.5倍、宽度为1.5倍，传感器和相机位于进料端附近。",
+                  "`[新增]` 测试窗口可一键生成已配置的输送机、测试工件、激光传感器和下视视觉相机。连接控制器前可检查激光位置及其检测颜色，并保存或恢复传感器设置。传送带视觉由机器人程序的 CnvTrigVis 请求或网页的当前画面拍摄按钮触发。 输送机模块包含输送机、视觉相机和传感器子组，可整体或分别选择和移动。皮带长度扩大为2.5倍、宽度为1.5倍，传感器和相机位于进料端附近。",
                   "`[新增]` IO 测试的 In[0]–In[64] 可切换所选 K14 虚拟控制器的 DI0–DI64，并显示实际输入状态；断开连接或读取失败时显示状态不可用。",
                   "`[新增]` 新增虚拟视觉功能，支持向上或向下拍摄和彩色实时图像。测试视觉模块的 Camera 部件自动启用向上拍摄。完成9点与旋转中心标定后，可单次测量相对基准位置的 X、Y 与角度补偿值。 支持导出 K12 虚拟控制器标定参数、CALRAW/PIXEL 像素坐标 TCP 命令及机器人 BASE 坐标转换示例。 视觉图像不显示机器人坐标轴和三维操作手柄。 支持使用 RobotLab 视觉标定默认结束符 V 进行 TCP 通信。",
                   "`[新增]` 可选择工件对象，在基准位置周围随机移动和旋转现有模型。默认 X、Y 偏差各为 ±50 mm，角度偏差为 ±180°，也支持生成基本形状工件。",
@@ -3567,7 +3574,9 @@
                   "`[修复]` 修复了重新加载作业后，以特定对象为目标的对象复位 IO 映射被删除的问题。",
                   "`[新增]` 生成教学模型时，会自动将 Single VAC Tool 作为工具安装到所选机器人上。 教学用 Single VAC Tool 的 TCP 在普通机器人上设为 Z=100 mm，在 SCARA 上设为 Z=-100 mm。SCARA 适配器首次加载时放置在 Z=12 mm。",
                   "`[修复]` 修复了 R4H 等部分机器人模型不显示 INOVANCE 标识的问题。",
-                  "`[新增]` 新增在3D视图中点击边和曲线自动生成位置值的功能。可设置间距、起始编号、方向和偏移，预览坐标后通过P.pts保存或导出。"
+                  "`[新增]` 新增在3D视图中点击边和曲线自动生成位置值的功能。可设置间距、起始编号、方向和偏移，预览坐标后通过P.pts保存或导出。",
+                  "`[修复]` 动作管理、I/O 映射、输送带和测试模型面板现按所选语言显示说明与状态。",
+                  "`[修复]` 重新连接网页传送带时保留编码器计数和待处理工件，确认响应丢失时重传检测结果也不会重复登记。"
                 ]
               },
               {
@@ -5150,6 +5159,7 @@
                 "title": "Ver 26.11.18",
                 "items": [
                   "`[Cải thiện]` Không gian 3D, cây mô hình và bảng JOG có giao diện sáng. Trên màn hình nhỏ, bạn có thể mở các bảng từ thanh công cụ dưới cùng.",
+                  "`[Cải thiện]` Ở chế độ toàn màn hình, chiều cao vùng kích hoạt của hai thanh giảm một nửa. Thanh trên mở sau khi con trỏ ở gần mép ít nhất 0,5 giây, còn thanh dưới mở ngay.",
                   "`[Thêm]` Xóa cùng lúc các vị trí đã chọn trong P.pts, hỗ trợ hoàn tác và làm lại. Có thể dùng phím Delete và cửa sổ tách riêng.",
                   "`[Sửa]` Đã loại bỏ các đường viền chữ INOVANCE còn sót lại khi hiển thị đường viền ở một số mẫu robot.",
                   "`[Cải tiến]` Tạo quỹ đạo theo đường cong làm nổi bật đường đã chọn và cho phép chọn toàn bộ đường biên của mặt bằng một lần nhấp.",
@@ -5163,7 +5173,7 @@
                   "`[Thêm]` Kết nối bộ mã hóa, cảm biến và kết quả thị giác của băng tải web với bộ điều khiển ảo K14 để chương trình robot bám theo băng tải.",
                   "`[Cải tiến]` Giá trị bộ mã hóa tại thời điểm chụp bù độ trễ xử lý thị giác; cài đặt liên kết được lưu cùng không gian làm việc.",
                   "`[Thêm]` Cửa sổ băng tải hỗ trợ chọn tốc độ, chiều thuận/nghịch, chạy thử liên tục, JOG khi giữ nút và dừng. Có thể thử trong cảnh mà không cần bridge; khi liên kết tracking, chuyển động cũng được phản ánh vào đầu vào encoder. Các vạch trên băng tải của mô hình Conveyor thử nghiệm cũng chuyển động vòng qua hai đầu theo tốc độ và chiều đã chọn, dừng khi nhả JOG hoặc nhấn Dừng.",
-                  "`[Thêm]` Tạo cảnh thử nghiệm tracking đã cấu hình gồm băng tải, phôi, cảm biến laser và camera nhìn xuống. Trước khi kết nối bộ điều khiển, có thể xem vị trí laser, màu phát hiện ON/OFF, kết quả chụp và phát hiện tự động theo cảm biến, đồng thời lưu hoặc khôi phục cấu hình. Mô-đun băng tải có các nhóm con Băng tải, Camera và Cảm biến để chọn và di chuyển chung hoặc riêng. Băng tải dài gấp 2,5 lần và rộng gấp 1,5 lần, với cảm biến và camera gần đầu cấp liệu.",
+                  "`[Thêm]` Tạo cảnh thử nghiệm tracking đã cấu hình gồm băng tải, phôi, cảm biến laser và camera nhìn xuống. Trước khi kết nối bộ điều khiển, có thể kiểm tra vị trí và màu phát hiện của laser, đồng thời lưu hoặc khôi phục cài đặt cảm biến. Thị giác băng tải chụp theo yêu cầu CnvTrigVis của chương trình robot hoặc khi nhấn nút chụp trên web. Mô-đun băng tải có các nhóm con Băng tải, Camera và Cảm biến để chọn và di chuyển chung hoặc riêng. Băng tải dài gấp 2,5 lần và rộng gấp 1,5 lần, với cảm biến và camera gần đầu cấp liệu.",
                   "`[Thêm]` In[0]–In[64] trong IO Test bật/tắt DI0–DI64 của bộ điều khiển ảo K14 đã chọn và hiển thị trạng thái thực tế. Mất kết nối hoặc lỗi đọc được hiển thị là không xác định.",
                   "`[Thêm]` Đã thêm Thị giác ảo với hướng chụp lên/xuống và ảnh màu trực tiếp. Bộ phận Camera của mô-đun thị giác thử nghiệm tự động dùng hướng chụp lên. Sau hiệu chuẩn 9 điểm và tâm xoay, nút Chụp ảnh đo một lần giá trị bù X, Y và góc so với vị trí chuẩn. Hỗ trợ xuất hiệu chuẩn cho bộ điều khiển ảo K12, lệnh TCP tọa độ điểm ảnh CALRAW/PIXEL và ví dụ chuyển đổi tọa độ BASE của robot. Ảnh thị giác không hiển thị trục tọa độ robot và tay nắm thao tác 3D. Hỗ trợ giao tiếp TCP với hiệu chuẩn RobotLab dùng ký tự kết thúc V mặc định.",
                   "`[Thêm]` Chọn đối tượng phôi để di chuyển và xoay ngẫu nhiên mô hình có sẵn quanh vị trí chuẩn. Độ lệch mặc định là ±50 mm cho X/Y và ±180° cho góc; vẫn hỗ trợ tạo phôi hình cơ bản.",
@@ -5173,7 +5183,9 @@
                   "`[Sửa lỗi]` Đã khắc phục lỗi ánh xạ IO đưa đối tượng về gốc chỉ định cho một đối tượng cụ thể bị xóa khi tải lại công việc.",
                   "`[Thêm]` Khi tạo mô hình đào tạo, Single VAC Tool được tự động lắp dưới dạng Tool vào rô-bốt đã chọn. TCP của Single VAC Tool đào tạo được đặt Z=100 mm cho rô-bốt thường và Z=-100 mm cho SCARA. Bộ chuyển đổi SCARA được đặt tại Z=12 mm khi tải lần đầu.",
                   "`[Sửa lỗi]` Đã khắc phục lỗi không hiển thị logo INOVANCE trên R4H và một số mô hình robot khác.",
-                  "`[Thêm]` Thêm tạo vị trí tự động bằng cách nhấp vào cạnh và đường cong trong khung nhìn 3D. Đặt khoảng cách, số bắt đầu, hướng và độ lệch, xem trước tọa độ rồi lưu hoặc xuất qua P.pts."
+                  "`[Thêm]` Thêm tạo vị trí tự động bằng cách nhấp vào cạnh và đường cong trong khung nhìn 3D. Đặt khoảng cách, số bắt đầu, hướng và độ lệch, xem trước tọa độ rồi lưu hoặc xuất qua P.pts.",
+                  "`[Đã sửa]` Các bảng quản lý chuyển động, ánh xạ I/O, băng tải và mô hình thử hiện hiển thị hướng dẫn và trạng thái theo ngôn ngữ đã chọn.",
+                  "`[Sửa]` Kết nối lại băng tải web giữ nguyên bộ đếm encoder và phôi đang chờ; kết quả nhận dạng được gửi lại khi mất xác nhận không tạo phôi trùng."
                 ]
               },
               {
@@ -6756,6 +6768,7 @@
                 "title": "Ver 26.11.18",
                 "items": [
                   "`[İyileştirildi]` 3D çalışma alanı, model ağacı ve JOG paneli açık renklerle yenilendi. Küçük ekranlarda panelleri alt araç çubuğundan açabilirsiniz.",
+                  "`[İyileştirildi]` Tam ekran modunda iki çubuğun açılma alanının yüksekliği yarıya indirildi. Üst çubuk, imleç kenara yakın en az 0,5 saniye kaldığında açılır. Alt çubuk hemen açılır.",
                   "`[Eklendi]` P.pts içinde seçili konumları birlikte silme, geri alma ve yineleme desteği eklendi. Delete tuşu ve ayrı pencere de desteklenir.",
                   "`[Düzeltildi]` Bazı robot modellerinde kenar çizgileri açıldığında kalan INOVANCE yazısının kenarları kaldırıldı.",
                   "`[İyileştirme]` Eğri tabanlı yörünge oluşturmada seçilen eğriler kalın vurgulanır ve yüz sınırları tek tıklamayla seçilebilir.",
@@ -6769,7 +6782,7 @@
                   "`[Eklendi]` Robot programlarında konveyör takibi için web konveyörünün enkoder, sensör ve görüntü algılama verilerini K14 sanal kontrolöre bağlayın.",
                   "`[İyileştirildi]` Çekim anındaki enkoder değeri görüntü işleme gecikmesini telafi eder; bağlantı ayarları çalışma alanıyla kaydedilir.",
                   "`[Eklendi]` Konveyör penceresine hız, ileri/geri yön, sürekli test, basılı tutarak JOG ve durdurma kontrolleri eklendi. Sahne testi köprü bağlantısı gerektirmez; takip bağlantısı açıkken aynı hareket enkoder girişine yansıtılır. Test Conveyor modelindeki bant işaretleri de seçilen hız ve yönde uçların etrafında dolaşır; JOG bırakıldığında veya Durdur düğmesine basıldığında durur.",
-                  "`[Eklendi]` Test penceresinde yapılandırılmış konveyör, iş parçaları, lazer sensörü ve aşağı bakan kamera birlikte oluşturulur. Kontrolör bağlanmadan lazer konumu, ON/OFF algılama renkleri ve sensörle tetiklenen görüntü alma sonuçları incelenebilir; düzen kaydedilip geri yüklenebilir. Konveyör modülündeki Konveyör, Kamera ve Sensör alt grupları birlikte veya ayrı seçilip taşınabilir. Bant uzunluğu 2,5 ve genişliği 1,5 katına çıkarıldı; sensör ve kamera giriş ucuna yerleştirildi.",
+                  "`[Eklendi]` Test penceresinde yapılandırılmış konveyör, iş parçaları, lazer sensörü ve aşağı bakan kamera birlikte oluşturulur. Denetleyiciyi bağlamadan önce lazerin konumu ve algılama renkleri kontrol edilebilir, sensör ayarları kaydedilip geri yüklenebilir. Konveyör görüntüsü robot programındaki CnvTrigVis isteği veya webdeki çekim düğmesiyle alınır. Konveyör modülündeki Konveyör, Kamera ve Sensör alt grupları birlikte veya ayrı seçilip taşınabilir. Bant uzunluğu 2,5 ve genişliği 1,5 katına çıkarıldı; sensör ve kamera giriş ucuna yerleştirildi.",
                   "`[Eklendi]` IO Test In[0]–In[64], seçilen K14 sanal kontrolörün DI0–DI64 girişini açıp kapatır ve gerçek giriş durumunu gösterir. Bağlantı kopması veya okuma hatasında durum bilinmiyor olarak gösterilir.",
                   "`[Eklendi]` Yukarı/aşağı çekim ve renkli canlı görüntü sunan Sanal Görüntü eklendi. Test Vision modülünün Camera parçaları otomatik olarak yukarı çekime bağlanır. 9 nokta ve dönme merkezi kalibrasyonundan sonra Görüntü al düğmesi ana konuma göre X, Y ve açı ofsetlerini bir kez ölçer. K12 sanal kontrolörü için kalibrasyon dışa aktarımı, CALRAW/PIXEL piksel koordinatı TCP komutları ve robot BASE koordinat dönüşümü örneği desteklenir. Görüntüde robot koordinat eksenleri ve 3B düzenleme tutamaçları gösterilmez. RobotLab kalibrasyonunun varsayılan V sonlandırıcısıyla TCP iletişimi desteklenir.",
                   "`[Eklendi]` Bir iş parçası nesnesi seçilerek mevcut model referans konum çevresinde rastgele taşınabilir ve döndürülebilir. Varsayılan sapmalar X/Y için ±50 mm ve açı için ±180° olur; temel şekilli iş parçası oluşturma da desteklenir.",
@@ -6779,7 +6792,9 @@
                   "`[Düzeltme]` Çalışma yeniden yüklendiğinde belirli bir nesneyi hedefleyen nesne başlangıç konumu IO eşlemelerinin silinmesi sorunu giderildi.",
                   "`[Eklendi]` Eğitim modeli oluşturulurken seçilen robota Single VAC Tool otomatik olarak Tool olarak takılır. Eğitim amaçlı Single VAC Tool TCP değeri normal robotlarda Z=100 mm, SCARA robotlarda Z=-100 mm olarak ayarlanır. SCARA adaptörleri ilk yüklemede Z=12 mm konumuna yerleştirilir.",
                   "`[Düzeltme]` R4H ve bazı diğer robot modellerinde INOVANCE logosunun görünmemesi sorunu giderildi.",
-                  "`[Eklendi]` 3B görünümde kenar ve eğrilere tıklayarak otomatik konum oluşturma eklendi. Aralık, ilk nokta numarası, yön ve ofsetleri ayarlayıp koordinatları önizleyebilir, P.pts ile kaydedebilir veya dışa aktarabilirsiniz."
+                  "`[Eklendi]` 3B görünümde kenar ve eğrilere tıklayarak otomatik konum oluşturma eklendi. Aralık, ilk nokta numarası, yön ve ofsetleri ayarlayıp koordinatları önizleyebilir, P.pts ile kaydedebilir veya dışa aktarabilirsiniz.",
+                  "`[Düzeltildi]` Hareket yönetimi, G/Ç eşleme, konveyör ve test modeli panellerindeki açıklamalar ve durum bilgileri artık seçili dilde gösterilir.",
+                  "`[Düzeltildi]` Web konveyörü yeniden bağlandığında enkoder sayacı ve bekleyen parçalar korunur; onay kaybolduğunda algılamaların yeniden gönderilmesi parçaları çoğaltmaz."
                 ]
               },
               {
@@ -8362,6 +8377,7 @@
                 "title": "Ver 26.11.18",
                 "items": [
                   "`[Улучшено]` Рабочая область 3D, дерево моделей и панель JOG теперь оформлены в светлых тонах. На небольших экранах панели можно открыть с нижней панели инструментов.",
+                  "`[Улучшено]` В полноэкранном режиме высота зон срабатывания обеих панелей уменьшена вдвое. Верхняя панель открывается при наведении на край не менее чем на 0,5 секунды, а нижняя открывается сразу.",
                   "`[Добавлено]` В P.pts можно удалять выбранные позиции вместе с поддержкой отмены и повтора. Доступно по клавише Delete и в отдельном окне.",
                   "`[Исправлено]` Удалены оставшиеся контуры букв INOVANCE при отображении контуров некоторых моделей роботов.",
                   "`[Улучшено]` При создании траектории по кривым выбранные линии выделяются толще, а контур грани можно выбрать одним нажатием.",
@@ -8375,7 +8391,7 @@
                   "`[Добавлено]` Подключение энкодера, датчиков и результатов машинного зрения веб-конвейера к виртуальному контроллеру K14 для слежения за конвейером в программе робота.",
                   "`[Улучшено]` Значение энкодера в момент съёмки компенсирует задержку обработки изображения; настройки подключения сохраняются с рабочей областью.",
                   "`[Добавлено]` В окне конвейера доступны скорость, прямое/обратное направление, непрерывный тестовый ход, JOG при удержании кнопки и остановка. Проверка сцены работает без моста; при включённом отслеживании это же движение передаётся на вход энкодера. Метки ленты тестовой модели Conveyor также движутся по замкнутому контуру вокруг её концов с выбранной скоростью и направлением, останавливаясь при отпускании JOG или нажатии остановки.",
-                  "`[Добавлено]` В окне тестовых моделей можно создать настроенную сцену с конвейером, деталями, лазерным датчиком и камерой, направленной вниз. До подключения контроллера доступны положение лазера, цвета ON/OFF, съёмка по датчику и результаты обнаружения, а также сохранение и восстановление настроек. Модуль конвейера содержит подгруппы «Конвейер», «Камера» и «Датчик» для общего или отдельного выбора и перемещения. Лента удлинена в 2,5 раза и расширена в 1,5 раза; датчик и камера расположены у входа.",
+                  "`[Добавлено]` В окне тестовых моделей можно создать настроенную сцену с конвейером, деталями, лазерным датчиком и камерой, направленной вниз. До подключения контроллера можно проверить положение лазера и цвета обнаружения, а также сохранить или восстановить настройки датчика. Съёмка конвейера выполняется по запросу CnvTrigVis из программы робота или по кнопке съёмки на веб-странице. Модуль конвейера содержит подгруппы «Конвейер», «Камера» и «Датчик» для общего или отдельного выбора и перемещения. Лента удлинена в 2,5 раза и расширена в 1,5 раза; датчик и камера расположены у входа.",
                   "`[Добавлено]` In[0]–In[64] в тесте IO переключает DI0–DI64 выбранного виртуального контроллера K14 и показывает фактическое состояние входа. При разрыве связи или ошибке чтения состояние отмечается как недоступное.",
                   "`[Добавлено]` Добавлено виртуальное зрение с направлением съёмки вверх/вниз и цветным изображением в реальном времени. Части Camera тестового модуля автоматически подключаются для съёмки вверх. После 9-точечной калибровки и калибровки центра вращения кнопка снимка однократно измеряет коррекции X, Y и угла относительно эталона. Поддерживаются экспорт калибровки для виртуального контроллера K12, TCP-команды пиксельных координат CALRAW/PIXEL и пример преобразования в координаты BASE робота. На изображении камеры скрыты оси координат робота и 3D-манипуляторы. Поддерживается TCP-связь с калибровкой RobotLab со стандартным терминатором V.",
                   "`[Добавлено]` Можно выбрать объект детали и случайно перемещать и поворачивать существующую модель вокруг эталонного положения. Отклонения по умолчанию составляют ±50 мм по X/Y и ±180° по углу; создание простых форм деталей также поддерживается.",
@@ -8385,7 +8401,9 @@
                   "`[Исправлено]` Устранена ошибка, из-за которой при повторной загрузке работы удалялись IO-сопоставления возврата объекта в исходное положение, назначенные конкретному объекту.",
                   "`[Добавлено]` При создании учебной модели Single VAC Tool автоматически устанавливается как Tool на выбранного робота. TCP учебного Single VAC Tool устанавливается в Z=100 мм для обычных роботов и Z=-100 мм для SCARA. Адаптер SCARA при первой загрузке размещается в Z=12 мм.",
                   "`[Исправление]` Исправлено отсутствие логотипа INOVANCE на R4H и некоторых других моделях роботов.",
-                  "`[Добавлено]` Добавлено автоматическое создание позиций щелчками по рёбрам и кривым в 3D-окне. Можно задать шаг, начальный номер, направление и смещения, просмотреть координаты и сохранить или экспортировать их через P.pts."
+                  "`[Добавлено]` Добавлено автоматическое создание позиций щелчками по рёбрам и кривым в 3D-окне. Можно задать шаг, начальный номер, направление и смещения, просмотреть координаты и сохранить или экспортировать их через P.pts.",
+                  "`[Исправлено]` Инструкции и сообщения о состоянии на панелях управления движениями, назначения ввода-вывода, конвейера и тестовых моделей отображаются на выбранном языке.",
+                  "`[Исправлено]` При повторном подключении веб-конвейера сохраняются счётчик энкодера и очередь деталей; повторная отправка результатов при потере подтверждения не создаёт дубликатов."
                 ]
               },
               {

@@ -3,24 +3,24 @@ import { getTestModelDimensionFields, normalizeTestModelDimensions } from './tes
 const MODEL_COLORS = ['#94a3b8', '#3b82f6', '#f59e0b', '#14b8a6', '#a78bfa', '#f472b6', '#ef4444', '#84cc16', '#fb923c', '#facc15', '#22d3ee', '#e879f9', '#fda4af', '#60a5fa', '#10b981', '#cbd5e1'];
 
 export const TEST_MODEL_CATALOG = Object.freeze([
-    ['base', '3D_model/Base_1000x1000x500.step', 'Base 1000 × 1000 × 500', 'model'],
-    ['conveyor', '3D_model/Conveyor.step', 'Conveyor', 'model'],
-    ['square-object', '3D_model/Square_object_40x40x40.step', 'Square object 40 × 40 × 40', 'model'],
-    ['square-tray', '3D_model/Square_Tray_3x3.step', 'Square Tray 3 × 3', 'model'],
-    ['stage-vac', '3D_model/Stage_VAC_module.step', 'Stage VAC module', 'model'],
-    ['teaching-kit', '3D_model/Teaching_kit.step', 'Teaching kit', 'model'],
-    ['vision', '3D_model/Vision_module.step', 'Vision module', 'model'],
-    ['equipment', 'Test_Equipment_CAD.step', 'Test Equipment CAD', 'model'],
-    ['dual-vac-lowered', 'Tool/Dual_VAC_Tool_lowered.step', 'Dual VAC Tool lowered', 'tool'],
-    ['dual-vac-raised', 'Tool/Dual_VAC_Tool_raised.step', 'Dual VAC Tool raised', 'tool'],
-    ['scara-adapter', 'Tool/Scara_adapter.step', 'SCARA adapter', 'tool'],
-    ['single-vac', 'Tool/Single_VAC_Tool.step', 'Single VAC Tool', 'tool'],
-    ['teaching-pointer', 'Tool/Teaching_pointer.step', 'Teaching pointer', 'tool'],
-    ['vacuum-x200', 'Vacuum_Tool_X200mm.stl', 'Vacuum Tool X200 mm', 'tool'],
-    ['scara-height-base', '3D_model/SCARA_height_base.step', 'SCARA height base 200 mm', 'model'],
-    ['flat-tray', '3D_model/Flat_Tray_Module.step', 'Flat Tray module 240 × 240', 'model']
-].map(([id, file, name, category], index) => Object.freeze({
-    id, file, name, category, path: `./test-assets/${file}`,
+    ['base', '3D_model/Base_1000x1000x500.step', 'Base 1000 × 1000 × 500', 'model', '베이스'],
+    ['conveyor', '3D_model/Conveyor.step', 'Conveyor', 'model', '컨베이어'],
+    ['square-object', '3D_model/Square_object_40x40x40.step', 'Square object 40 × 40 × 40', 'model', '정사각형 물체'],
+    ['square-tray', '3D_model/Square_Tray_3x3.step', 'Square Tray 3 × 3', 'model', '정사각 트레이 3 × 3'],
+    ['stage-vac', '3D_model/Stage_VAC_module.step', 'Stage VAC module', 'model', '진공 스테이지 모듈'],
+    ['teaching-kit', '3D_model/Teaching_kit.step', 'Teaching kit', 'model', '교시 키트'],
+    ['vision', '3D_model/Vision_module.step', 'Vision module', 'model', '비전 모듈'],
+    ['equipment', 'Test_Equipment_CAD.step', 'Test Equipment CAD', 'model', '테스트 설비 CAD'],
+    ['dual-vac-lowered', 'Tool/Dual_VAC_Tool_lowered.step', 'Dual VAC Tool lowered', 'tool', '듀얼 진공 툴 (하강)'],
+    ['dual-vac-raised', 'Tool/Dual_VAC_Tool_raised.step', 'Dual VAC Tool raised', 'tool', '듀얼 진공 툴 (상승)'],
+    ['scara-adapter', 'Tool/Scara_adapter.step', 'SCARA adapter', 'tool', 'SCARA 어댑터'],
+    ['single-vac', 'Tool/Single_VAC_Tool.step', 'Single VAC Tool', 'tool', '싱글 진공 툴'],
+    ['teaching-pointer', 'Tool/Teaching_pointer.step', 'Teaching pointer', 'tool', '교시 포인터'],
+    ['vacuum-x200', 'Vacuum_Tool_X200mm.stl', 'Vacuum Tool X200 mm', 'tool', '진공 툴 X200 mm'],
+    ['scara-height-base', '3D_model/SCARA_height_base.step', 'SCARA height base 200 mm', 'model', 'SCARA 높이 조절 받침대'],
+    ['flat-tray', '3D_model/Flat_Tray_Module.step', 'Flat Tray module 240 × 240', 'model', '평면 트레이 모듈']
+].map(([id, file, name, category, label], index) => Object.freeze({
+    id, file, name, category, label, path: `./test-assets/${file}`,
     image: `./test-assets/previews/${id}.png`, color: MODEL_COLORS[index]
 })));
 

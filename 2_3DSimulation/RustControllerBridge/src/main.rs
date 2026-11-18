@@ -94,6 +94,41 @@ fn origins() -> HashSet<String> {
         .collect()
 }
 
+#[cfg(windows)]
+fn register_launch_protocol(exe: &std::path::Path) -> io::Result<()> {
+    use std::{ffi::OsString, os::windows::process::CommandExt, path::PathBuf};
+
+    const KEY: &str = r"HKCU\Software\Classes\inorobot-vc-bridge";
+    const COMMAND_KEY: &str = r"HKCU\Software\Classes\inorobot-vc-bridge\shell\open\command";
+    const CREATE_NO_WINDOW: u32 = 0x08000000;
+    let reg = PathBuf::from(
+        env::var_os("SystemRoot").ok_or_else(|| io::Error::other("Missing Windows system directory."))?,
+    )
+    .join(r"System32\reg.exe");
+    let mut command = OsString::from("\"");
+    command.push(exe.as_os_str());
+    command.push("\"");
+
+    for (key, value, data) in [
+        (KEY, &["/ve"][..], OsString::from("URL:InoRobot Controller Bridge")),
+        (KEY, &["/v", "URL Protocol"][..], OsString::new()),
+        (COMMAND_KEY, &["/ve"][..], command),
+    ] {
+        let output = std::process::Command::new(&reg)
+            .creation_flags(CREATE_NO_WINDOW)
+            .args(["add", key])
+            .args(value)
+            .arg("/d")
+            .arg(data)
+            .arg("/f")
+            .output()?;
+        if !output.status.success() {
+            return Err(io::Error::other(String::from_utf8_lossy(&output.stderr).trim()));
+        }
+    }
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let headless = env::args().any(|arg| arg == "--headless");
@@ -111,6 +146,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .ok_or_else(|| io::Error::other("Missing executable directory."))?,
     )?;
     let listen = TcpListener::bind((Ipv4Addr::LOCALHOST, port)).await?;
+    #[cfg(windows)]
+    if !headless {
+        if let Err(error) = register_launch_protocol(&exe) {
+            eprintln!("Browser launch registration failed: {error}");
+        }
+    }
     let (shutdown, mut stopping) = watch::channel(false);
     let app = Arc::new(App {
         sdk: Arc::new(sdk),

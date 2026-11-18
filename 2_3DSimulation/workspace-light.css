@@ -24,8 +24,8 @@
     font-weight: 650;
     letter-spacing: -.025em;
 }
-.topbar-left, .topbar-right { gap: clamp(5px, .7vw, 12px); }
-#topbar :is(.ui-btn, .simulation-reset-btn, .inorobot-language-switcher) {
+.topbar-left { gap: clamp(5px, .7vw, 12px); }
+#topbar :is(.ui-btn, .simulation-reset-btn, .inorobot-language-switcher, .viewer-fps-limit) {
     border-radius: 7px;
     border-color: var(--border);
     color: var(--button-text);
@@ -160,11 +160,10 @@ button.primary:not(:disabled), .shape-primary-button:not(:disabled), .import-pri
 }
 @media (max-width: 768px) {
     #topbar .logo { width: 90px; }
-    #topbar .topbar-right { gap: 4px; }
+    #topbar .topbar-right { --topbar-control-height: 28px; gap: 3px; }
     #topbar .topbar-right > button {
         width: 32px;
         min-width: 32px;
-        height: 34px;
         padding: 0;
         flex: 0 0 32px;
     }
@@ -179,10 +178,14 @@ button.primary:not(:disabled), .shape-primary-button:not(:disabled), .import-pri
     #topbar #model-select { font-size: .78rem; }
 }
 @media (max-width: 520px) {
-    :root { --topbar-h: 100px; }
-    #topbar { grid-template-columns: auto minmax(0, 1fr); grid-template-rows: 38px 36px; }
+    :root { --topbar-h: 90px; }
+    #topbar {
+        --topbar-control-height: 28px;
+        grid-template-columns: auto minmax(0, 1fr);
+        grid-template-rows: 36px 36px;
+    }
     #topbar .topbar-center { grid-column: 2; grid-row: 1; }
     #topbar .topbar-right { grid-row: 2; }
-    #topbar .workspace-list-btn, #topbar .simulation-reset-btn { width: 32px; height: 34px; padding: 0; }
+    #topbar .workspace-list-btn, #topbar .simulation-reset-btn { width: 32px; padding: 0; }
     #topbar .workspace-list-btn span { display: none; }
 }

@@ -1,6 +1,7 @@
+import { uiText } from './ui-language.mjs';
 import * as THREE from 'three';
 import { EquipmentScene, equipmentObjectRef } from './equipment-scene.mjs?v=20261107-object-home-1';
-import { createEquipmentUi } from './equipment-ui.mjs?v=20261107-object-home-1';
+import { createEquipmentUi } from './equipment-ui.mjs?v=20261118-language-1';
 import { EQUIPMENT_LABELS, normalizeEquipmentDefinition, validateEquipmentDefinitions, equipmentMotionGroups, equipmentReferences, normalizeEquipmentBindings } from './equipment-core.mjs?v=20261107-object-home-1';
 
 export function createEquipmentApp(adapter) {
@@ -30,10 +31,11 @@ export function createEquipmentApp(adapter) {
         }
         return result;
     }
-    function definitionLabel(def) {
+    function definitionLabel(def, localized = false) {
         if (def.customName) return def.name;
         const label = references().find(ref => ref.value === def.movingRef)?.label;
-        return label ? `${EQUIPMENT_LABELS[def.type] || '컨베이어 이송'} / ${label}` : def.name;
+        const type = EQUIPMENT_LABELS[def.type] || '컨베이어 이송';
+        return label ? (localized ? uiText(type) : type) + ' / ' + label : def.name;
     }
     const within = (object, root) => { while (object) { if (object === root) return true; object = object.parent; } return false; };
     function ioRobot(def, strict = false) {
@@ -248,7 +250,7 @@ export function createEquipmentApp(adapter) {
         adapter.changed({ runtimeOnly: true });
     }
     const ui = createEquipmentUi({
-        definitions: adapter.definitions, references, label: definitionLabel, save, remove, select: adapter.select, selectedReferences: adapter.selectedReferences, popout: adapter.popout, hide: adapter.hide, front: adapter.front,
+        definitions: adapter.definitions, references, label: def => definitionLabel(def, true), save, remove, select: adapter.select, selectedReferences: adapter.selectedReferences, popout: adapter.popout, hide: adapter.hide, front: adapter.front,
         pickFace: (ref, done) => adapter.pickVacuumFace?.(ref, done),
         bindings: (def, ref) => adapter.bindings?.(def, ref),
         conveyorDefinition: adapter.conveyorDefinition,
@@ -338,10 +340,10 @@ export function createEquipmentApp(adapter) {
         },
         targets(type) { return adapter.definitions().filter(def => def.type === type).map(def => {
             const robot = ioRobot(def), robotLabel = robot && (adapter.modelLabel?.(robot) || robot.userData.motionDisplayName || robot.name);
-            const label = definitionLabel(def);
+            const label = definitionLabel(def, true);
             return { value: `equipment:${def.id}`, label: robotLabel ? `${robotLabel} / ${label}` : label };
         }); },
-        label: definitionLabel,
+        label: def => definitionLabel(def, true),
         restore() {
             for (const def of adapter.definitions()) {
                 if (def.type === 'OBJECT') {
