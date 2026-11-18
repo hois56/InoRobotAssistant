@@ -18,6 +18,24 @@ function attempt(work, fallback = 0) {
 }
 
 export const olpImports = {
+    boolean_literal: (a, b) => attempt(() => Boolean(active().parse(sourcePart(a, b)))),
+    compare_literals(op, a, b, c, d) {
+        return attempt(() => {
+            const left = active().parse(sourcePart(a, b));
+            const right = active().parse(sourcePart(c, d));
+            switch (op) {
+                case 0: return left === right;
+                case 1: return left !== right;
+                case 2: return left >= right;
+                case 3: return left <= right;
+                case 4: return left > right;
+                case 5: return left < right;
+            }
+        });
+    },
+    condition_error(kind, a, b) {
+        attempt(() => { throw active().runtime.runtimeError(kind === 0 ? 'Empty condition.' : 'Invalid comparison: ' + sourcePart(a, b)); });
+    },
     numeric: save,
     numeric_value: id => attempt(() => Number(active().values[id]), NaN),
     literal(start, end, quoted) {
@@ -47,11 +65,27 @@ export const olpImports = {
 const errors = ['Expected expression value.', 'Expected closing parenthesis.',
     'Expected function closing parenthesis.', 'Division by zero.'];
 
-export function evaluateWithEngine(engine, value, runtime, unknown) {
-    const source = String(value || '').trim();
+function writeSource(engine, source) {
     const address = engine.olp_source(source.length);
     const units = new Uint16Array(engine.memory.buffer, address, source.length);
     for (let i = 0; i < source.length; i++) units[i] = source.charCodeAt(i);
+}
+
+export function conditionWithEngine(engine, value, runtime, parse) {
+    const source = String(value || '');
+    writeSource(engine, source);
+    const call = { source, runtime, parse, failed: false };
+    calls.push(call);
+    try {
+        const value = Boolean(engine.olp_condition());
+        if (call.failed) throw call.error;
+        return value;
+    } finally { calls.pop(); }
+}
+
+export function evaluateWithEngine(engine, value, runtime, unknown) {
+    const source = String(value || '').trim();
+    writeSource(engine, source);
     const call = { engine, source, runtime, unknown, values: [undefined], failed: false };
     calls.push(call);
     try {

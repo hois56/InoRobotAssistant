@@ -1,4 +1,5 @@
-import { evaluateOlpExpression, olpPoseOffset } from './wasm/engine.mjs';
+import { runOlpFlow } from './wasm/olp-flow.mjs';
+import { evaluateOlpCondition, evaluateOlpExpression, olpPoseOffset } from './wasm/engine.mjs';
 
 const WORD_START = 32;
 const WORD_COUNT = 128;
@@ -170,92 +171,6 @@ export class OlpRuntimeError extends Error {
     }
 }
 
-function stripOuterParentheses(value) {
-    let source = String(value || '').trim();
-    let changed = true;
-    while (changed && source.startsWith('(') && source.endsWith(')')) {
-        changed = false;
-        let depth = 0;
-        let quote = null;
-        let closesAt = -1;
-        for (let index = 0; index < source.length; index += 1) {
-            const char = source[index];
-            if (quote) {
-                if (char === '\\') index += 1;
-                else if (char === quote) quote = null;
-                continue;
-            }
-            if (char === '"' || char === "'") { quote = char; continue; }
-            if (char === '(') depth += 1;
-            else if (char === ')') {
-                depth -= 1;
-                if (depth === 0) { closesAt = index; break; }
-            }
-        }
-        if (closesAt === source.length - 1) {
-            source = source.slice(1, -1).trim();
-            changed = true;
-        }
-    }
-    return source;
-}
-
-function splitTopLevelKeyword(value, keyword) {
-    const source = String(value || '').trim();
-    const parts = [];
-    let start = 0;
-    let depth = 0;
-    let quote = null;
-    const lowerKeyword = keyword.toLowerCase();
-    for (let index = 0; index < source.length; index += 1) {
-        const char = source[index];
-        if (quote) {
-            if (char === '\\') index += 1;
-            else if (char === quote) quote = null;
-            continue;
-        }
-        if (char === '"' || char === "'") { quote = char; continue; }
-        if (char === '(' || char === '[') { depth += 1; continue; }
-        if (char === ')' || char === ']') { depth -= 1; continue; }
-        if (depth !== 0 || source.slice(index, index + keyword.length).toLowerCase() !== lowerKeyword) continue;
-        const before = source[index - 1] || ' ';
-        const after = source[index + keyword.length] || ' ';
-        if (/[A-Za-z0-9_]/.test(before) || /[A-Za-z0-9_]/.test(after)) continue;
-        parts.push(source.slice(start, index).trim());
-        start = index + keyword.length;
-        index += keyword.length - 1;
-    }
-    if (parts.length) parts.push(source.slice(start).trim());
-    return parts;
-}
-
-function findTopLevelComparison(value) {
-    const source = String(value || '').trim();
-    let depth = 0;
-    let quote = null;
-    const operators = ['==', '!=', '<>', '>=', '<=', '=', '>', '<'];
-    for (let index = 0; index < source.length; index += 1) {
-        const char = source[index];
-        if (quote) {
-            if (char === '\\') index += 1;
-            else if (char === quote) quote = null;
-            continue;
-        }
-        if (char === '"' || char === "'") { quote = char; continue; }
-        if (char === '(' || char === '[') { depth += 1; continue; }
-        if (char === ')' || char === ']') { depth -= 1; continue; }
-        if (depth !== 0) continue;
-        const operator = operators.find((candidate) => source.startsWith(candidate, index));
-        if (!operator) continue;
-        return {
-            left: source.slice(0, index).trim(),
-            operator,
-            right: source.slice(index + operator.length).trim()
-        };
-    }
-    return null;
-}
-
 function clampWord(value) {
     return Math.max(0, Math.min(0xffff, Math.trunc(Number(value) || 0)));
 }
@@ -360,19 +275,6 @@ function normalizeLabel(label) {
 function getLabelTarget(line) {
     const match = stripComments(line).match(/^((?:L\s*\[\s*\d+\s*\])|[A-Za-z_]\w*)\s*:/i);
     return match ? normalizeLabel(match[1]) : null;
-}
-
-function findMatching(lines, start, openName, closeName) {
-    let depth = 0;
-    for (let index = start; index < lines.length; index += 1) {
-        const value = stripComments(lines[index]);
-        if (new RegExp(`^${openName}\\b`, 'i').test(value)) depth += 1;
-        if (new RegExp(`^${closeName}\\b`, 'i').test(value)) {
-            depth -= 1;
-            if (depth === 0) return index;
-        }
-    }
-    return lines.length - 1;
 }
 
 function splitArguments(value) {
@@ -1208,34 +1110,7 @@ export class OlpRuntime {
     }
 
     evaluate(expression) {
-        let value = String(expression || '').trim().replace(/[;]$/, '');
-        value = value.replace(/\bThen\b\s*$/i, '').trim();
-        if (!value) throw this.runtimeError('Empty condition.');
-        const parenthesized = stripOuterParentheses(value);
-        if (parenthesized !== value) return this.evaluate(parenthesized);
-        const orParts = splitTopLevelKeyword(value, 'Or');
-        if (orParts.length) return orParts.some((part) => this.evaluate(part));
-        const andParts = splitTopLevelKeyword(value, 'And');
-        if (andParts.length) return andParts.every((part) => this.evaluate(part));
-        const not = value.match(/^Not\s+(.+)$/i) || value.match(/^!\s*(.+)$/);
-        if (not) return !this.evaluate(not[1]);
-        const comparison = findTopLevelComparison(value);
-        if (comparison) {
-            if (!comparison.left || !comparison.right) throw this.runtimeError(`Invalid comparison: ${value}`);
-            const left = parseLiteral(comparison.left, this);
-            const right = parseLiteral(comparison.right, this);
-            switch (comparison.operator) {
-                case '==':
-                case '=': return left === right;
-                case '!=':
-                case '<>': return left !== right;
-                case '>=': return left >= right;
-                case '<=': return left <= right;
-                case '>': return left > right;
-                case '<': return left < right;
-            }
-        }
-        return Boolean(parseLiteral(value, this));
+        return evaluateOlpCondition(expression, this, value => parseLiteral(value, this));
     }
 
     findFunctions(path) {
@@ -1477,186 +1352,9 @@ export class OlpRuntime {
             }
         }
 
-        let index = start;
-        while (index < end) {
-            await this.waitForExecutionPermit();
-            await this.yieldExecutionSlice();
-            // The editor updates the shared project while OLP is running. Refresh
-            // the current program line immediately before dispatching it so a
-            // completed command is never changed, while the next command uses
-            // the latest source.
-            const sourcesChanged = this.refreshProgramSources();
-            const line = stripComments(lines[index]);
-            this.currentFilePath = sourcePath || this.currentFilePath;
-            this.currentLineNumber = index + 1;
-            this.currentLineText = String(lines[index] || '').trim();
-            this.currentCommand = line;
-            this.notifyCursor();
-            if (this.stopMoveQueue && (sourcesChanged
-                || (line && !this.canContinueStopMoveQueue(this.stopMoveQueueCandidate(line))))) {
-                await this.drainStopMoveQueue();
-            }
-            if (!line || /^ProgramInfo|^EndProgramInfo|^Func\b|^EndFunc\b/i.test(line)) { index += 1; continue; }
-            if (/^(?:EndFor|EndWhile|EndIf|EndSwitch|ElseIf|Else|Case|Default)\b/i.test(line)) { index += 1; continue; }
-            if (getLabelTarget(line)) { index += 1; continue; }
-
-            if (/^If\b/i.test(line)) {
-                const close = findMatching(lines.slice(index, end), 0, 'If', 'EndIf') + index;
-                const branches = [];
-                let branchStart = index + 1;
-                let branchCondition = line.replace(/^If\b/i, '').trim();
-                let depth = 0;
-                for (let cursor = index + 1; cursor < close; cursor += 1) {
-                    const candidate = stripComments(lines[cursor]);
-                    if (/^If\b/i.test(candidate)) depth += 1;
-                    else if (/^EndIf\b/i.test(candidate)) depth -= 1;
-                    if (depth === 0 && /^ElseIf\b/i.test(candidate)) {
-                        branches.push({ condition: branchCondition, start: branchStart, end: cursor });
-                        branchCondition = candidate.replace(/^ElseIf\b/i, '').trim();
-                        branchStart = cursor + 1;
-                    } else if (depth === 0 && /^Else\b/i.test(candidate)) {
-                        branches.push({ condition: branchCondition, start: branchStart, end: cursor });
-                        branchCondition = null;
-                        branchStart = cursor + 1;
-                    }
-                }
-                branches.push({ condition: branchCondition, start: branchStart, end: close });
-                const selected = branches.find((branch) => branch.condition === null || this.evaluate(branch.condition));
-                const result = selected ? await this.executeLines(lines, selected.start, selected.end, labels, sourcePath) : null;
-                if (result) return result;
-                index = close + 1;
-                continue;
-            }
-
-            if (/^For\b/i.test(line)) {
-                const close = findMatching(lines.slice(index, end), 0, 'For', 'EndFor') + index;
-                const argumentsList = splitArguments(line.replace(/^For\b/i, '').replace(/;$/, ''));
-                const init = argumentsList[0] || '';
-                const condition = argumentsList[1] || 'OFF';
-                const stepMatch = String(argumentsList[2] || '').match(/^Step\s*\[\s*(.+)\s*\]$/i);
-                const step = Number(parseLiteral(stepMatch?.[1] || '1', this)) || 1;
-                const initMatch = init.match(/^(.+?)\s*(?:=|:=)\s*(.+)$/);
-                const counter = initMatch?.[1] ? normalizeRuntimeSymbol(initMatch[1], this) : null;
-                if (initMatch) this.writeSymbol(initMatch[1], parseLiteral(initMatch[2], this));
-                let guard = 0;
-                while (this.evaluate(condition)) {
-                    if (guard++ >= this.maxLoopIterations) throw new Error('OLP configured For loop iteration limit exceeded.');
-                    const result = await this.executeLines(lines, index + 1, close, labels, sourcePath);
-                    if (result?.type === 'return') return result;
-                    if (result?.type === 'goto') return result;
-                    if (result?.type === 'break') break;
-                    if (counter) this.writeSymbol(counter, Number(this.readSymbol(counter)) + step);
-                    // The loop condition/back edge is interpreter work even
-                    // for an empty body. Keep bounded cooperative execution
-                    // without a separate timer on every iteration.
-                    await this.waitIfPaused();
-                    await this.yieldExecutionSlice();
-                }
-                index = close + 1;
-                continue;
-            }
-
-            if (/^While\b/i.test(line)) {
-                const close = findMatching(lines.slice(index, end), 0, 'While', 'EndWhile') + index;
-                const condition = line.replace(/^While\b/i, '').replace(/;$/, '').trim();
-                let guard = 0;
-                while (this.evaluate(condition)) {
-                    if (guard++ >= this.maxLoopIterations) throw new Error('OLP configured While loop iteration limit exceeded.');
-                    const result = await this.executeLines(lines, index + 1, close, labels, sourcePath);
-                    if (result?.type === 'return') return result;
-                    if (result?.type === 'goto') return result;
-                    if (result?.type === 'break') break;
-                    // The loop condition/back edge is interpreter work even
-                    // for an empty body. Keep bounded cooperative execution
-                    // without a separate timer on every iteration.
-                    await this.waitIfPaused();
-                    await this.yieldExecutionSlice();
-                }
-                index = close + 1;
-                continue;
-            }
-
-            if (/^Switch\b/i.test(line)) {
-                const close = findMatching(lines.slice(index, end), 0, 'Switch', 'EndSwitch') + index;
-                const switchValue = parseLiteral(line.replace(/^Switch\b/i, '').replace(/;$/, ''), this);
-                const segments = [];
-                let nested = 0;
-                let activeHeader = null;
-                let segmentStart = index + 1;
-                for (let cursor = index + 1; cursor < close; cursor += 1) {
-                    const candidate = stripComments(lines[cursor]);
-                    if (/^Switch\b/i.test(candidate)) { nested += 1; continue; }
-                    if (/^EndSwitch\b/i.test(candidate)) { nested -= 1; continue; }
-                    if (nested !== 0) continue;
-                    const caseMatch = candidate.match(/^Case\s+(.+?)\s*:?\s*$/i);
-                    const isDefault = /^Default\s*:?\s*$/i.test(candidate);
-                    if (!caseMatch && !isDefault) continue;
-                    if (activeHeader) segments.push({ ...activeHeader, start: segmentStart, end: cursor });
-                    activeHeader = caseMatch ? { type: 'case', expression: caseMatch[1] } : { type: 'default', expression: null };
-                    segmentStart = cursor + 1;
-                }
-                if (activeHeader) segments.push({ ...activeHeader, start: segmentStart, end: close });
-                const matchedIndex = segments.findIndex((segment) => {
-                    if (segment.type !== 'case') return false;
-                    const range = segment.expression.match(/^(.+?)\s+To\s+(.+)$/i);
-                    return range
-                        ? switchValue >= parseLiteral(range[1], this) && switchValue <= parseLiteral(range[2], this)
-                        : parseLiteral(segment.expression, this) === switchValue;
-                });
-                const defaultIndex = segments.findIndex((segment) => segment.type === 'default');
-                const startIndex = matchedIndex >= 0 ? matchedIndex : defaultIndex;
-                if (startIndex >= 0) {
-                    for (let segmentIndex = startIndex; segmentIndex < segments.length; segmentIndex += 1) {
-                        const segment = segments[segmentIndex];
-                        if (matchedIndex >= 0 && segment.type === 'default') break;
-                        const result = await this.executeLines(lines, segment.start, segment.end, labels, sourcePath);
-                        if (result?.type === 'break') break;
-                        if (result) return result;
-                    }
-                }
-                index = close + 1;
-                continue;
-            }
-
-            const action = await this.executeLine(line);
-            if (action?.type === 'return' || action?.type === 'break' || action?.type === 'continue') return action;
-            if (action?.type === 'wait') {
-                const satisfied = await this.waitForCondition(action.condition, action.timeout);
-                if (!satisfied && action.target) {
-                    const target = labels.get(normalizeLabel(action.target));
-                    if (target !== undefined) {
-                        // A timeout in a nested block may target a label outside of
-                        // that block.  Bubble it up to executeProgramBlock so the
-                        // destination is executed once, rather than falling through
-                        // the caller's next instruction.
-                        if (target < start || target >= end) return { type: 'goto', target: action.target };
-                        index = target;
-                        continue;
-                    }
-                    throw this.runtimeError(`Wait timeout target not found: ${action.target}`);
-                }
-                index += 1;
-                continue;
-            }
-            if (action?.type === 'goto') {
-                const target = labels.get(normalizeLabel(action.target));
-                if (target !== undefined) {
-                    // `Goto` in an If/For/While/Switch body can target a label in
-                    // its parent program block.  Returning the action preserves the
-                    // jump instead of resuming after the nested construct.
-                    if (target < start || target >= end) return action;
-                    index = target;
-                    // The next dispatch already observes Pause/Stop and the
-                    // cooperative instruction/CPU budget. No extra Goto timer.
-                    continue;
-                }
-                throw this.runtimeError(`Goto target not found: ${action.target}`);
-            }
-            index += 1;
-        }
-        return null;
+        return runOlpFlow(this, lines, start, end, labels, sourcePath,
+            { stripComments, splitArguments, normalizeLabel, normalizeRuntimeSymbol, parseLiteral });
     }
-
 
     callBuiltinSync(target,args=[],rawArguments=[]) {
         const name=String(target).toUpperCase();

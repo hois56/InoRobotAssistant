@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+mod condition;
 
 // The host owns robot registers, typed JS values and synchronous robot
 // builtins. Rust owns tokenization, precedence, evaluation order and arithmetic.
@@ -11,6 +12,9 @@ extern "C" {
     fn builtin(start: u32, end: u32, arguments: *const u32, count: u32) -> u32;
     fn string_operand(left: u32, right: u32) -> bool;
     fn concatenate(left: u32, right: u32) -> u32;
+    fn boolean_literal(start: usize, end: usize) -> bool;
+    fn compare_literals(op: i32, a: usize, b: usize, c: usize, d: usize) -> bool;
+    fn condition_error(kind: i32, start: usize, end: usize);
 }
 
 thread_local! {static SOURCE:RefCell<Vec<u16>>=const {RefCell::new(Vec::new())};}

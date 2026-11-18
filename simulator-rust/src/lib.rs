@@ -1,6 +1,7 @@
 mod cad;
 mod collision;
 mod conveyor;
+mod flow;
 mod inverse;
 mod kinematics;
 mod matrix;

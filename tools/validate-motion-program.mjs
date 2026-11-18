@@ -309,6 +309,7 @@ const olpRuntimeSource = await readFile(
     new URL('../2_3DSimulation/olp-runtime.mjs', import.meta.url),
     'utf8'
 );
+const olpFlowSource = await readFile(new URL('../2_3DSimulation/wasm/olp-flow.mjs', import.meta.url), 'utf8');
 const catalog = JSON.parse(catalogText);
 const gs60Source = JSON.parse(gs60SourceText.replace(/^\uFEFF/, ''));
 const viewerLocaleCodes = ['ko', 'en', 'zh-CN', 'vi'];
@@ -897,7 +898,8 @@ assert.ok(
         && mainSource.includes('function refreshMotionSessionSteps(session)')
         && mainSource.includes('if (!refreshMotionSessionSteps(session))')
         && olpRuntimeSource.includes('refreshProgramSources()')
-        && olpRuntimeSource.includes('this.refreshProgramSources();'),
+        && olpRuntimeSource.includes('runOlpFlow(this, lines')
+        && olpFlowSource.includes('runtime.refreshProgramSources();'),
     'Running program edits must apply from the next motion or OLP line while preserving the active program input focus.'
 );
 const toggleOlpWorkspaceSource = mainSource.slice(

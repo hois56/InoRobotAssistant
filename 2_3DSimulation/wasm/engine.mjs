@@ -1,4 +1,4 @@
-import { evaluateWithEngine, olpImports } from './olp-host.mjs';
+import { conditionWithEngine, evaluateWithEngine, olpImports } from './olp-host.mjs';
 import { domImports } from './dom.mjs';
 
 const url = new URL('./simulation.wasm', import.meta.url);
@@ -16,6 +16,10 @@ export const engine = (await WebAssembly.instantiate(await load(), { olp: olpImp
 
 export function evaluateOlpExpression(value, runtime, unknown) {
     return evaluateWithEngine(engine, value, runtime, unknown);
+}
+
+export function evaluateOlpCondition(value, runtime, parse) {
+    return conditionWithEngine(engine, value, runtime, parse);
 }
 
 export function olpPoseOffset(base, offset, tool) {
