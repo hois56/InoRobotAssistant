@@ -1,6 +1,6 @@
+import { nextPositionPointMetadata, applyPositionPointCellEdit, pastePoints, navigatePositionTable, positionSelection } from './wasm/positions.mjs';
+
 const STANDARDIZATION_STORAGE_KEY = 'inorobot-simulation-position-standardization';
-// These names match Generator.DataPoints in the project generator.
-const STANDARD_POSITIONS = [[11, 'Work'], [10, 'Pre_work'], [1, 'Wait'], [0, 'Safe']];
 const POINT_COLUMNS = [{ field: 'index', label: 'ID' }, { field: 'label', label: 'Name' }];
 for (const [field, labels] of [['values', ['X', 'Y', 'Z', 'A', 'B', 'C']],
     ['armParameters', ['Arm 0', 'Arm 1', 'Arm 2', 'Arm 3']], ['externalAxes', ['E1', 'E2', 'E3', 'E4', 'E5', 'E6']]]) {
@@ -11,70 +11,10 @@ function cellValue(record, column) {
     return column.field === 'index' ? record.index : column.field === 'label' ? record.label || '' : record[column.field][column.component];
 }
 
-export function nextPositionPointMetadata(records, standardized = true) {
-    const used = new Set(records
-        .filter(record => (record.symbol || record.sourceSymbol || 'P').toUpperCase() === 'P')
-        .map(record => Number(record.index))
-        .filter(index => Number.isInteger(index) && index >= 0 && index <= 9999));
-    if (!standardized) {
-        const index = Math.max(-1, ...used) + 1;
-        if (index <= 9999) return { index, label: '' };
-    } else {
-        for (let process = 1; process <= 99; process++) {
-            for (const [offset, name] of STANDARD_POSITIONS) {
-                const index = process * 100 + offset;
-                if (!used.has(index)) return { index, label: `P${process}_${name}` };
-            }
-        }
-    }
-    throw new RangeError('사용 가능한 포인트 번호가 없습니다.');
-}
-
-export function applyPositionPointCellEdit(record, field, component, text, records = []) {
-    const updated = { ...record, values: [...record.values], armParameters: [...record.armParameters], externalAxes: [...record.externalAxes] };
-    if (field === 'label') { updated.label = String(text).trim(); return updated; }
-    const value = String(text).trim() === '' ? NaN : Number(text);
-    if (field === 'index') {
-        if (!Number.isInteger(value) || value < 0 || value > 9999) throw new Error('포인트 번호는 0부터 9999 사이의 정수여야 합니다.');
-        const symbol = record.symbol || 'P';
-        if (records.some(point => point.key !== record.key && (point.symbol || 'P') === symbol && point.index === value)) {
-            throw new Error('이미 사용 중인 포인트 번호입니다.');
-        }
-        updated.index = value;
-    } else {
-        if (!['values', 'armParameters', 'externalAxes'].includes(field)
-            || !Number.isInteger(component) || component < 0 || component >= updated[field].length
-            || !Number.isFinite(value) || (field === 'armParameters' && !Number.isInteger(value))) {
-            throw new Error('위치 값, Arm 파라미터 및 외부 축 값을 올바르게 입력하세요.');
-        }
-        updated[field][component] = value;
-    }
-    return updated;
-}
+export { nextPositionPointMetadata, applyPositionPointCellEdit };
 
 export function buildPositionPointPaste(records, startKey, startColumn, text) {
-    const row = records.findIndex(record => record.key === startKey);
-    const matrix = String(text).replace(/\r\n?/g, '\n').replace(/\n$/, '').split('\n').map(line => line.split('\t'));
-    if (row < 0 || !Number.isInteger(startColumn) || startColumn < 0 || row + matrix.length > records.length
-        || matrix.some(cells => startColumn + cells.length > POINT_COLUMNS.length)) {
-        throw new Error('붙여넣을 범위가 위치 목록을 벗어납니다.');
-    }
-    const updates = matrix.map((cells, offset) => {
-        let record = records[row + offset];
-        cells.forEach((text, index) => {
-            const column = POINT_COLUMNS[startColumn + index];
-            record = applyPositionPointCellEdit(record, column.field, column.component, text);
-        });
-        return { sourceKey: records[row + offset].key, record };
-    });
-    const final = records.map(record => updates.find(update => update.sourceKey === record.key)?.record || record);
-    const used = new Set();
-    for (const record of final) {
-        const key = `${record.symbol || 'P'}:${record.index}`;
-        if (used.has(key)) throw new Error('이미 사용 중인 포인트 번호입니다.');
-        used.add(key);
-    }
-    return updates;
+    return pastePoints(records, startKey, startColumn, text, POINT_COLUMNS);
 }
 
 // Keep edits inside the table; the update button separately captures the current pose.
@@ -90,10 +30,7 @@ export function createPositionPointsUi(panel, api) {
     function selectionBounds(records = api.records()) {
         const end = records.findIndex(record => record.key === activeCell?.key);
         const start = records.findIndex(record => record.key === selectionAnchor?.key);
-        if (end < 0) return null;
-        return { top: Math.min(start < 0 ? end : start, end), bottom: Math.max(start < 0 ? end : start, end),
-            left: Math.min(selectionAnchor?.column ?? activeCell.column, activeCell.column),
-            right: Math.max(selectionAnchor?.column ?? activeCell.column, activeCell.column) };
+        return positionSelection(end, activeCell?.column ?? 0, start, selectionAnchor?.column ?? activeCell?.column ?? 0);
     }
     function selectedRecords(records = api.records()) {
         if (selectedRows) return records.filter(record => selectedRows.has(record.key));
@@ -142,26 +79,8 @@ export function createPositionPointsUi(panel, api) {
     }
     function navigation(event, origin = activeCell) {
         const rows = [...body.children];
-        let row = rows.findIndex(row => row.dataset.ptsRow === origin?.key), column = origin?.column || 0;
-        if (row < 0) return null;
-        const control = event.ctrlKey || event.metaKey;
-        if (event.key === 'Tab') {
-            const next = row * columns.length + column + (event.shiftKey ? -1 : 1);
-            if (next < 0 || next >= rows.length * columns.length) return null;
-            row = Math.floor(next / columns.length); column = next % columns.length;
-        } else if (event.key === 'Enter') row += event.shiftKey ? -1 : 1;
-        else if (event.key === 'ArrowLeft') column = control ? 0 : column - 1;
-        else if (event.key === 'ArrowRight') column = control ? columns.length - 1 : column + 1;
-        else if (event.key === 'ArrowUp') row = control ? 0 : row - 1;
-        else if (event.key === 'ArrowDown') row = control ? rows.length - 1 : row + 1;
-        else if (event.key === 'Home') { column = 0; if (control) row = 0; }
-        else if (event.key === 'End') { column = columns.length - 1; if (control) row = rows.length - 1; }
-        else if (event.key === 'PageUp' || event.key === 'PageDown') {
-            row += (event.key === 'PageUp' ? -1 : 1) * Math.max(1, Math.floor(scroll.clientHeight / (rows[0].offsetHeight || 34)));
-        } else return null;
-        row = Math.max(0, Math.min(rows.length - 1, row));
-        column = Math.max(0, Math.min(columns.length - 1, column));
-        return { key: rows[row].dataset.ptsRow, column };
+        const row = rows.findIndex(row => row.dataset.ptsRow === origin?.key);
+        return navigatePositionTable(row, origin?.column || 0, rows, columns.length, event, scroll.clientHeight);
     }
     function cancelEdit() {
         const current = editing; editing = null;

@@ -25,7 +25,7 @@ node simulator-rust/build.mjs
 node node_modules/@playwright/test/cli.js test --config=simulator-rust/playwright.config.mjs
 ```
 
-빌드는 저장소의 `2_3DSimulation/wasm/simulation.wasm`도 갱신한다. SPC25 행렬 연산을 재생성해야 할 때는 저장소의 펌웨어 레지스터 명령 목록을 갱신한 뒤 `node simulator-rust/generate-matrix.mjs`를 실행한다.
+빌드는 저장소의 `2_3DSimulation/wasm/simulation.wasm`도 갱신한다. Windows에서 소스를 빌드하려면 Cargo의 호스트 빌드 스크립트를 링크할 수 있는 환경이 필요하다. MSVC 도구 체인은 Visual Studio C++ 빌드 도구를, GNU 도구 체인은 MinGW 링커를 사용한다. SPC25 행렬 연산을 재생성해야 할 때는 저장소의 펌웨어 레지스터 명령 목록을 갱신한 뒤 `node simulator-rust/generate-matrix.mjs`를 실행한다.
 
 ## 구현 범위
 
@@ -35,11 +35,11 @@ Rust 엔진은 6축 플랜지·TCP 순기구학, SCARA 해석 역기구학, 직�
 
 ASCII DXF의 레이어, 선종류, 문자, 중첩 블록과 삽입 변환은 Rust에서 읽는다. 기존 CAD 엔티티 ID와 단위를 유지하며, 지원하지 않는 엔티티와 순환 블록은 가져오기 경고에 표시한다.
 
-독립판의 초기 화면은 `src/ui/views`의 Rust 구성 요소가 브라우저 DOM으로 만든다. 패널의 겹침 순서, 가장자리 판정, 드래그·크기 변경의 경계 계산은 `src/panels.rs`가 담당한다. 기존 프로젝트 파일 형식을 사용한다.
+독립판의 초기 화면과 설비·컨베이어 추적·비전 설정 양식은 각각 `src/ui/views`와 `src/ui/forms`의 Rust 구성 요소가 브라우저 DOM으로 만든다. 패널의 겹침 순서, 가장자리 판정, 드래그·크기 변경의 경계 계산은 `src/panels.rs`가 담당한다. 비전 설정 탭과 해상도·프로토콜별 입력 제어, 위치 목록의 번호 할당·셀 검증·범위 붙여넣기·키보드 탐색도 Rust에서 처리한다. 기존 프로젝트 파일 형식을 사용한다.
 
 OLP 프로그램의 If·For·While·Switch 분기, 중첩 반복, 레이블 이동과 논리식 단락 평가는 Rust에서 실행한다. 각 로봇은 별도 실행 상태를 유지하고, 명령 사이에 편집된 프로그램을 반영한다.
 
-동적으로 만들어지는 설비·비전 편집 화면과 이벤트 처리, 3D 장면 조작, OLP 개별 장비 명령과 레지스터, 경로 탐색의 장면 조회, CAD 파일 해석, 비전·협업·외부 제어기 통신에는 JavaScript 또는 기존 네이티브 구성 요소가 남아 있다. STEP에는 Open CASCADE를, 실제 제어기 연결에는 제조사 IMC100API를 사용한다.
+동적으로 갱신되는 설비·비전 편집 목록과 이벤트 처리, 3D 장면 조작, OLP 개별 장비 명령과 레지스터, 경로 탐색의 장면 조회, 작업공간 저장·열기, 비전·협업·외부 제어기 통신에는 JavaScript 또는 기존 네이티브 구성 요소가 남아 있다. STEP에는 Open CASCADE를, 실제 제어기 연결에는 제조사 IMC100API를 사용한다.
 
 ## 원복
 

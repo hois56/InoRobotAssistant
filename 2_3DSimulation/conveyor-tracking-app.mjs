@@ -1,3 +1,4 @@
+import { fillConveyorForm } from './wasm/forms.mjs';
 import * as THREE from 'three';
 import { ConveyorTracking, isConveyorSensorAddress } from './conveyor-tracking-core.mjs?v=20261114-sensor-input-0';
 import { conveyorLocalBounds } from './conveyor-scene.mjs?v=20261116-feed-1';
@@ -36,66 +37,7 @@ export function createConveyorTrackingApp(adapter) {
         dialog = document.createElement('aside'); dialog.id = 'conveyor-tracking-dialog';
         dialog.className = 'vision-panel conveyor-tracking-panel panel-user-hidden panel-edge-resizable';
         dialog.setAttribute('aria-labelledby', 'conveyor-tracking-title');
-        dialog.innerHTML = `<div class="vision-header">
-          <h2 id="conveyor-tracking-title"><i class="fa-solid fa-arrows-left-right" aria-hidden="true"></i> 컨베이어</h2>
-          <div class="panel-header-actions">
-            <button type="button" data-panel-action="popout" data-panel-id="conveyor-tracking-dialog" title="별도 창으로 분리" aria-label="컨베이어를 별도 창으로 분리"><i class="fa-solid fa-up-right-from-square" aria-hidden="true"></i></button>
-            <button type="button" data-panel-action="hide" data-panel-id="conveyor-tracking-dialog" title="숨기기" aria-label="컨베이어 숨기기"><i class="fa-solid fa-eye-slash" aria-hidden="true"></i></button>
-          </div></div>
-          <form class="vision-content"><div class="vision-main">
-          <p class="vision-help">컨베이어의 이동을 가상 컨트롤러의 엔코더·센서·비전 입력으로 연결합니다.</p>
-          <section class="vision-page" aria-labelledby="conveyor-connection-title">
-          <h3 id="conveyor-connection-title">연결 대상</h3><div class="vision-grid">
-          <label class="vision-field wide"><span>컨베이어</span><select name="belt"></select></label>
-          <label class="vision-field"><span>가상 컨트롤러</span><select name="controller"></select></label>
-          <label class="vision-field"><span>컨베이어 번호</span><input name="channel" type="number" min="0" max="3" value="0"></label>
-          </div></section>
-          <section class="vision-page" aria-labelledby="conveyor-test-title">
-          <h3 id="conveyor-test-title">테스트 운전</h3><div class="vision-grid">
-          <label class="vision-field"><span>속도 (mm/s)</span><input name="testSpeed" type="number" min="0.01" max="5000" step="any" value="100"></label>
-          <label class="vision-field"><span>운전 방향</span><select name="testDirection"><option value="forward">정방향 (설정 방향)</option><option value="reverse">역방향 (반대 방향)</option></select></label>
-          </div><div class="vision-actions">
-          <button type="button" class="vision-button primary" data-action="run">운전 시작</button>
-          <button type="button" class="vision-button" data-action="jog" aria-pressed="false">JOG (누르는 동안)</button>
-          <button type="button" class="vision-button danger" data-action="stop">정지</button>
-          </div><p class="vision-summary" data-test-status role="status" aria-live="polite">정지</p>
-          <p class="vision-help">운전 시작은 정지를 누를 때까지 유지되며, 다른 프로그램으로 이동하거나 이 창을 숨기고 닫아도 계속 운전합니다. JOG는 누르는 동안만 움직이며 포커스가 벗어나거나 창을 숨기면 정지합니다. 테스트 속도와 방향은 동작 설정을 바꾸지 않습니다.</p>
-          </section>
-          <section class="vision-page" aria-labelledby="conveyor-feed-title">
-          <h3 id="conveyor-feed-title">오브젝트 자동 공급</h3><div class="vision-grid">
-          <label class="vision-field wide"><span>등록 오브젝트</span><select name="feedSource"></select></label>
-          <label class="vision-field"><span>물체 사이 최소 간격 (mm)</span><input name="feedGap" type="number" min="0" max="1000000" step="any" value="100"></label>
-          <label class="vision-field"><span>좌우 위치 편차 (±mm)</span><input name="feedPositionRange" type="number" min="0" max="1000000" step="any" value="20"></label>
-          <label class="vision-field"><span>회전 편차 (±°)</span><input name="feedRotationRange" type="number" min="0" max="180" step="any" value="15"></label>
-          </div><label class="vision-check"><input name="feedEnabled" type="checkbox" checked> 컨베이어 운전 중 자동 공급</label>
-          <button type="button" class="vision-button" data-action="apply-feed">자동 공급 적용</button>
-          <p class="vision-summary" data-feed-status role="status" aria-live="polite"></p>
-          <p class="vision-help">운전 방향의 입구에서 좌우 위치와 회전을 무작위로 바꿔 공급하므로 비전 위치·각도 보정을 시험할 수 있습니다. 편차를 0으로 설정하면 해당 변화를 끕니다. 벨트 안에 들어가도록 편차를 제한하고 회전해도 최소 간격을 유지합니다. 생성 물체는 접힌 자동 공급 그룹에 모이며 끝단을 지나면 정리됩니다. 집은 물체는 유지합니다.</p>
-          </section>
-          <section class="vision-page" aria-labelledby="conveyor-input-title">
-          <h3 id="conveyor-input-title">엔코더 · 센서</h3><div class="vision-grid">
-          <label class="vision-field"><span>엔코더 (counts/mm)</span><input name="scale" type="number" min="0.00001" max="1000000000" value="1000"></label>
-          <label class="vision-field"><span>센서 입력 (IN)</span><input name="address" type="number" min="0" max="2559" value="512"></label>
-          <label class="vision-field"><span>센서 위치 X (mm)</span><input name="position" type="number" step="any" value="0"></label>
-          <label class="vision-field"><span>센서 폭 (mm)</span><input name="width" type="number" min="0.1" max="1000" value="2"></label>
-          <label class="vision-field"><span>센서 높이 (벨트 위 mm)</span><input name="height" type="number" min="0.1" max="500" step="any" value="20"></label>
-          </div><p class="vision-help">센서는 이동 좌표계의 X 위치에서 벨트를 가로지릅니다. 빨간 레이저는 대기, 초록색은 감지입니다. 높이가 비어 있으면 기존 전체 높이 감지 영역을 유지합니다.</p>
-          <button type="button" class="vision-button" data-action="apply-sensor">센서 설정 적용</button>
-          <p class="vision-summary" data-sensor-preview role="status" aria-live="polite"></p></section>
-          <section class="vision-page" aria-labelledby="conveyor-vision-title">
-          <h3 id="conveyor-vision-title">비전</h3><div class="vision-grid">
-          <label class="vision-field"><span>비전 물체 종류</span><input name="objectType" type="number" min="0" max="15" value="0"></label>
-          </div><label class="vision-check"><input name="capture" type="checkbox" checked> 센서 감지 시 자동 촬영</label>
-          <p class="vision-help">비전 패널의 카메라 시야로 장면의 물체 좌표를 검출합니다.</p></section>
-          <div class="vision-actions">
-            <button type="button" class="vision-button primary" data-action="connect">연동 시작</button>
-            <button type="button" class="vision-button" data-action="capture">현재 화면 촬영</button>
-            <button type="button" class="vision-button danger" data-action="release">연동 해제</button>
-          </div>
-          <p class="vision-summary" role="status" aria-live="polite" data-status></p>
-          <div class="conveyor-tracking-links" data-links></div>
-          <p class="vision-help">연동 해제 전 벨트를 정지하세요. 연결이 끊기면 가상 엔코더는 최대 250ms 안에 정지합니다.</p>
-          </div></form>`;
+        fillConveyorForm(dialog);
         (document.getElementById('vision-panel')?.parentElement || document.body).append(dialog);
         const form = dialog.querySelector('form'); fields = form.elements;
         form.addEventListener('submit', event => event.preventDefault());

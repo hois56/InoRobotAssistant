@@ -1,10 +1,11 @@
+mod forms;
 mod views;
 
 #[link(wasm_import_module = "dom")]
 extern "C" {
     fn element(name: *const u8, len: usize, svg: bool);
     fn attribute(name: *const u8, name_len: usize, value: *const u8, value_len: usize);
-    fn append_text(value: *const u8, len: usize);
+    fn append_text(value: *const u8, len: usize, translate: bool);
     fn end_element();
 }
 
@@ -19,6 +20,7 @@ pub(super) enum Node {
         svg: bool,
     },
     Text(&'static str),
+    Translated(&'static str),
 }
 
 const fn tag(name: &'static str, attrs: Attributes, children: Children) -> Node {
@@ -39,6 +41,9 @@ const fn svg(name: &'static str, attrs: Attributes, children: Children) -> Node 
 }
 const fn text(value: &'static str) -> Node {
     Node::Text(value)
+}
+const fn translated(value: &'static str) -> Node {
+    Node::Translated(value)
 }
 
 fn render(node: &Node) {
@@ -61,7 +66,8 @@ fn render(node: &Node) {
                 }
                 end_element();
             }
-            Node::Text(value) => append_text(value.as_ptr(), value.len()),
+            Node::Text(value) => append_text(value.as_ptr(), value.len(), false),
+            Node::Translated(value) => append_text(value.as_ptr(), value.len(), true),
         }
     }
 }

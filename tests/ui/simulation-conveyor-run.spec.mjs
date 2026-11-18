@@ -5,10 +5,12 @@ async function setup(page) {
     page.on('pageerror', error => errors.push(error.message));
     await page.route('**/2_3DSimulation/main.js*', async route => {
         const response = await route.fetch();
-        await route.fulfill({ response, body: `${await response.text()}\nwindow.__run = { state, equipmentApp, conveyorTrackingApp, conveyorFeedApp, activeConveyorMappings, createPrimitiveShapeRoot, ensureWorkspaceModelId, updateUIStatus, step(seconds) { conveyorLastTimestamp = performance.now(); updateConveyorSimulation(conveyorLastTimestamp + seconds * 1000); conveyorLastTimestamp = performance.now(); } };` });
+        const source = (await response.text()).replace(/^init\(\);\s*$/m, 'window.__conveyorReady = init();\n');
+        await route.fulfill({ response, body: `${source}\nwindow.__run = { state, equipmentApp, conveyorTrackingApp, conveyorFeedApp, activeConveyorMappings, createPrimitiveShapeRoot, ensureWorkspaceModelId, updateUIStatus, step(seconds) { conveyorLastTimestamp = performance.now(); updateConveyorSimulation(conveyorLastTimestamp + seconds * 1000); conveyorLastTimestamp = performance.now(); } };` });
     });
     await page.goto('/2_3DSimulation/index.html', { waitUntil: 'domcontentloaded' });
-    await page.waitForFunction(() => window.__run);
+    await page.waitForFunction(() => window.__run && window.__conveyorReady);
+    await page.evaluate(() => window.__conveyorReady);
     await page.evaluate(() => {
         const a = window.__run;
         for (const [name, size, xyz] of [['Run belt', { x:8000, y:160, z:30 }, [0,0,0]], ['Workpiece', { x:40, y:40, z:40 }, [-300,0,30]]]) {

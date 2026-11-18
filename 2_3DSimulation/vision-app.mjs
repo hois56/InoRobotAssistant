@@ -1,3 +1,4 @@
+import { cameraPixelSize, fillVisionForm, updateVisionForm, visionFormConditions } from './wasm/forms.mjs';
 import * as THREE from 'three';
 import {
     VISION_DEFAULT_PORTS, VISION_RESULT_CODES, VisionController,
@@ -32,13 +33,6 @@ const CODE_LABELS = {
     [VISION_RESULT_CODES.outOfRange]: '보정 한계 초과', [VISION_RESULT_CODES.notCalibrated]: '캘리브레이션 필요',
     [VISION_RESULT_CODES.noMaster]: '기준 위치 미등록', [VISION_RESULT_CODES.error]: '오류'
 };
-const RESOLUTIONS = [
-    { id: '1280x1024', label: '1.3MP (1280×1024)', width: 1280, height: 1024, pixel: 4.8 },
-    { id: '1920x1200', label: '2.3MP (1920×1200)', width: 1920, height: 1200, pixel: 5.86 },
-    { id: '2448x2048', label: '5MP (2448×2048)', width: 2448, height: 2048, pixel: 3.45 },
-    { id: '640x480', label: 'VGA (640×480)', width: 640, height: 480, pixel: 7.4 }
-];
-
 function poseMatrix(camera) {
     const quaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(camera.rx * DEG, camera.ry * DEG, camera.rz * DEG, 'ZYX'));
     return new THREE.Matrix4().compose(new THREE.Vector3(camera.x, camera.y, camera.z), quaternion, new THREE.Vector3(1, 1, 1));
@@ -916,195 +910,25 @@ export function createVisionApp(adapter) {
     }
 
     function applyResolution(id) {
-        const preset = RESOLUTIONS.find(item => item.id === id);
-        if (!preset) return;
-        Object.assign(config().camera, { resolutionWidth: preset.width, resolutionHeight: preset.height, pixelSizeUm: preset.pixel });
+        const [width, height] = id.split('x').map(Number);
+        const pixel = cameraPixelSize(width, height);
+        if (!Number.isFinite(pixel) || id !== width + 'x' + height) return;
+        Object.assign(config().camera, { resolutionWidth: width, resolutionHeight: height, pixelSizeUm: pixel });
         applyConfig({ links: false });
     }
 
     // ------------------------------------------------------------ panel
 
-    const n = (path, label, options = {}) => `<label class="vision-field${options.wide ? ' wide' : ''}"${options.when ? ` data-vision-if="${options.when}"` : ''}><span>${label}</span><input type="number" data-vision-field="${path}" step="${options.step ?? 0.1}"${options.min !== undefined ? ` min="${options.min}"` : ''}${options.max !== undefined ? ` max="${options.max}"` : ''}>${options.unit ? `<em>${options.unit}</em>` : ''}</label>`;
-    const t = (path, label, options = {}) => `<label class="vision-field${options.wide ? ' wide' : ''}"${options.when ? ` data-vision-if="${options.when}"` : ''}><span>${label}</span><input type="text" data-type="text" data-vision-field="${path}"${options.placeholder ? ` placeholder="${options.placeholder}"` : ''} spellcheck="false"></label>`;
-    const s = (path, label, choices, options = {}) => `<label class="vision-field${options.wide ? ' wide' : ''}"${options.when ? ` data-vision-if="${options.when}"` : ''}><span>${label}</span><select data-vision-field="${path}"${options.numeric ? ' data-type="number"' : ''}>${choices.map(([value, name]) => `<option value="${value}">${name}</option>`).join('')}</select></label>`;
-    const c = (path, label) => `<label class="vision-check"><input type="checkbox" data-vision-field="${path}"><span>${label}</span></label>`;
     const b = (action, label, icon, kind = '') => `<button type="button" class="vision-button ${kind}" data-vision-action="${action}"><i class="fa-solid ${icon}" aria-hidden="true"></i> ${label}</button>`;
 
-    function conditionFlags() {
-        const link = config().link;
-        const external = link.target === 'external';
-        const socket = external ? link.protocol === 'socket' : link.olpMode === 'socket';
-        return {
-            external, olp: !external, socket, words: !socket, role: external || socket, generated: !config().detection.targetId,
-            server: link.role === 'server', client: link.role === 'client',
-            modbus: external && link.protocol === 'modbus', mc: external && link.protocol === 'mc', eip: external && link.protocol === 'eip'
-        };
-    }
+    function conditionFlags() { return visionFormConditions(config()); }
 
     function buildPanel() {
         const element = panel();
         const content = element?.querySelector('[data-vision-content]');
         if (!content || content.dataset.built) return;
         content.dataset.built = 'true';
-        content.innerHTML = `
-            <div class="vision-empty" data-vision-empty>
-                <p>가상 비전 카메라를 배치해 FOV 확인, 9점·회전 캘리브레이션, 작업물 위치 보정과 로봇 통신을 실습합니다.</p>
-                ${b('enable', '가상 비전 배치', 'fa-camera', 'primary')}
-            </div>
-            <div class="vision-main" data-vision-main>
-                <div class="vision-view">
-                    <canvas data-vision-canvas width="640" height="512" aria-label="가상 비전 영상"></canvas>
-                    <div class="vision-view-bar">
-                        <span class="vision-link-badge" data-vision-out="link-badge"></span>
-                        ${c('camera.showFrustum', 'FOV 표시')}
-                    </div>
-                    <div class="vision-result" data-vision-out="result"></div>
-                </div>
-                <div class="vision-tabs" role="tablist">
-                    <button type="button" role="tab" data-vision-tab="camera">카메라</button>
-                    <button type="button" role="tab" data-vision-tab="calibration">캘리브레이션</button>
-                    <button type="button" role="tab" data-vision-tab="workpiece">작업물</button>
-                    <button type="button" role="tab" data-vision-tab="link">통신</button>
-                </div>
-                <section class="vision-page" data-vision-page="camera">
-                    <div class="vision-mount" data-vision-out="mount"></div>
-                    <div class="vision-grid three">
-                        ${s('camera.direction', '촬상 방향', [['down', '하향 (위 → 아래)'], ['up', '상향 (아래 → 위)']])}
-                        ${n('camera.focalLengthMm', '초점 거리', { step: 0.5, unit: 'mm' })}
-                        <label class="vision-field"><span>해상도</span><select data-vision-resolution>${RESOLUTIONS.map(item => `<option value="${item.id}">${item.label}</option>`).join('')}<option value="custom">사용자 지정</option></select></label>
-                    </div>
-                    <p class="vision-summary" data-vision-out="fov"></p>
-                    <div class="vision-actions">${b('capture', '촬상', 'fa-camera', 'primary')}</div>
-                    <div class="vision-actions">${b('place', '로봇 작업 영역에 자동 배치', 'fa-wand-magic-sparkles')}</div>
-                    <details class="vision-details">
-                        <summary data-panel-drag-ignore>고급 설정</summary>
-                        <div class="vision-grid three">
-                            ${n('camera.pixelSizeUm', '화소 크기', { step: 0.1, unit: 'µm' })}
-                            ${n('camera.resolutionWidth', '가로 화소', { step: 1, unit: 'px' })}${n('camera.resolutionHeight', '세로 화소', { step: 1, unit: 'px' })}${n('camera.workPlaneZ', 'FOV 표시 높이', { step: 1, unit: 'mm' })}
-                            ${n('camera.noisePx', '검출 노이즈', { step: 0.01, unit: 'px' })}${n('camera.processingMs', '처리 시간', { step: 10, unit: 'ms' })}${t('name', '이름')}
-                            <label class="vision-field wide"><span>캘리브레이션 로봇</span><select data-vision-field="robotId" data-vision-robots></select></label>
-                        </div>
-                    </details>
-                </section>
-                <section class="vision-page" data-vision-page="calibration">
-                    <p class="vision-help">Tool 마크를 3×3 격자로 움직여 화소와 로봇 좌표를 맞추고, 제자리 회전으로 회전 중심을 보정합니다.</p>
-                    <div class="vision-grid three">
-                        ${n('calibration.centerX', '중심 X', { step: 1 })}${n('calibration.centerY', '중심 Y', { step: 1 })}${n('calibration.z', '높이 Z', { step: 1 })}
-                        ${n('calibration.pitchX', '간격 X', { step: 1 })}${n('calibration.pitchY', '간격 Y', { step: 1 })}${n('calibration.rotationAngle', '회전 각도 ±', { step: 1, unit: '°' })}
-                    </div>
-                    <div class="vision-actions">
-                        ${b('cal-center', '현재 TCP를 중심으로', 'fa-location-crosshairs')}
-                        ${b('cal-auto', '자동 캘리브레이션', 'fa-play', 'primary')}
-                        ${b('cal-export-lab', 'K12 보정값 내보내기', 'fa-file-export')}
-                        ${b('cal-clear', '초기화', 'fa-eraser', 'danger')}
-                    </div>
-                    <div class="vision-grid three">${s('calibration.controllerCoordinate', 'K12 비전 좌표계', Array.from({ length: 16 }, (_, index) => [index, String(index)]), { numeric: true })}</div>
-                    <p class="vision-help">${text('K12 내보내기는 로봇 BASE 좌표 기준입니다. 기존 Lab 보정 파일과 다른 좌표계는 보존됩니다.')}</p>
-                    <div class="vision-info" data-vision-out="calibration"></div>
-                    <details class="vision-details">
-                        <summary data-panel-drag-ignore>점별 결과</summary>
-                        <div data-vision-out="calibration-table"></div>
-                    </details>
-                    <details class="vision-details">
-                        <summary data-panel-drag-ignore>고급 설정</summary>
-                        <div class="vision-grid three">
-                            ${s('calibration.method', '변환 모델', [['affine', '어파인'], ['homography', '호모그래피 (원근)']])}
-                            ${s('calibration.order', '이동 순서', [['snake', '지그재그'], ['raster', '행 순서']])}
-                            ${n('calibration.r', '기준 R', { step: 1, unit: '°' })}
-                            ${n('calibration.rotationCount', '회전 점 수', { step: 1, min: 0, max: 11 })}${n('calibration.markOffsetX', '마크 X', { step: 1 })}${n('calibration.markOffsetY', '마크 Y', { step: 1 })}
-                            ${n('calibration.markSize', '마크 지름', { step: 1 })}
-                        </div>
-                        <div class="vision-checks">${c('calibration.showMark', '마크 표시')}</div>
-                    </details>
-                </section>
-                <section class="vision-page" data-vision-page="workpiece">
-                    <div class="vision-grid three">
-                        <label class="vision-field wide"><span>작업물 오브젝트</span><select data-vision-field="detection.targetId" data-vision-targets></select></label>
-                    </div>
-                    <div class="vision-grid three">
-                        ${s('generator.shape', '형상', [['box', '사각형'], ['cylinder', '원통']], { when: 'generated' })}
-                        ${n('generator.sizeX', '크기 X', { step: 1, when: 'generated' })}${n('generator.sizeY', '크기 Y', { step: 1, when: 'generated' })}
-                        ${n('generator.rangeX', '편차 X ±', { step: 1 })}${n('generator.rangeY', '편차 Y ±', { step: 1 })}${n('generator.rangeRz', '편차 Rz ±', { step: 1, unit: '°' })}
-                    </div>
-                    <div class="vision-actions">
-                        ${b('spawn-nominal', '<span>기준 위치에 생성</span>', 'fa-cube')}
-                        ${b('spawn', '무작위 생성', 'fa-shuffle', 'primary')}
-                        <span data-vision-if="generated">${b('spawn-clear', '생성물 삭제', 'fa-trash', 'danger')}</span>
-                    </div>
-                    <div class="vision-grid three">
-                        ${s('detection.rotationCenter', '회전 중심', [['object', '작업물 중심'], ['pick', '로봇 픽업점']], { wide: true })}
-                    </div>
-                    <div class="vision-actions">
-                        ${b('master', '기준 위치 등록', 'fa-bookmark', 'primary')}
-                        ${b('pick-tcp', '현재 TCP를 픽업점으로', 'fa-hand-pointer')}
-                    </div>
-                    <div class="vision-info" data-vision-out="workpiece"></div>
-                    <details class="vision-details">
-                        <summary data-panel-drag-ignore>고급 설정</summary>
-                        <div class="vision-grid three">
-                            ${n('generator.sizeZ', '높이', { step: 1, when: 'generated' })}<label class="vision-field" data-vision-if="generated"><span>색상</span><input type="color" data-type="text" data-vision-field="generator.color"></label>${n('generator.seed', '난수 시드', { step: 1, min: 0 })}
-                            ${n('generator.nominalX', '기준 X', { step: 1 })}${n('generator.nominalY', '기준 Y', { step: 1 })}${n('generator.nominalZ', '바닥 Z', { step: 1 })}
-                            ${n('generator.nominalRz', '기준 Rz', { step: 1, unit: '°' })}${n('detection.pickX', '픽업 X', { step: 1 })}${n('detection.pickY', '픽업 Y', { step: 1 })}
-                            ${n('generator.triggerBit', '생성 신호 OUT', { step: 1, min: -1 })}${n('generator.supplyDelayMs', '공급 지연', { step: 100, unit: 'ms' })}
-                            ${s('detection.symmetry', '회전 대칭', [[1, '없음 (360°)'], [2, '2회 (180°)'], [4, '4회 (90°)']], { numeric: true })}
-                            ${n('detection.minScore', '최소 점수', { step: 1, min: 0, max: 100 })}
-                            ${n('detection.limitX', '한계 X ±', { step: 1 })}${n('detection.limitY', '한계 Y ±', { step: 1 })}${n('detection.limitTheta', '한계 θ ±', { step: 1, unit: '°' })}
-                        </div>
-                        <div class="vision-checks">${c('generator.autoSupply', '작업물을 가져가면 자동 공급')}${c('generator.captureOnSpawn', '생성 후 자동 검사')}</div>
-                        <div class="vision-actions">${b('master-clear', '기준 삭제', 'fa-eraser', 'danger')}</div>
-                    </details>
-                </section>
-                <section class="vision-page" data-vision-page="link">
-                    <div class="vision-grid three">
-                        <label class="vision-field wide"><span>연결 대상</span><select data-vision-field="link.target" disabled><option value="external">가상/실제 컨트롤러</option></select></label>
-                        ${s('link.protocol', '프로토콜', [['socket', 'Socket'], ['eip', 'Ethernet/IP']])}
-                        ${s('link.role', '비전 역할', [['server', '서버'], ['client', '클라이언트']], { when: 'role' })}
-                        ${t('ip', '비전 IP', { placeholder: '127.0.0.11' })}
-                        ${n('link.port', '비전 포트', { step: 1, when: 'role server' })}
-                        ${t('link.targetIp', '대상 IP', { placeholder: '127.0.0.1', when: 'external client' })}
-                        ${n('link.targetPort', '대상 포트', { step: 1, when: 'external client' })}
-                        ${n('output.resultWord', '결과 InW 시작', { step: 1, when: 'words' })}
-                        ${n('output.commandWord', '명령 OutW 시작', { step: 1, min: -1, when: 'words' })}
-                        ${s('output.dataType', '형식', [['float32', '32비트 실수'], ['int32', '32비트 정수 × 배율']], { when: 'words' })}
-                    </div>
-                    <div class="vision-actions">${b('connect', '<span>연결</span>', 'fa-plug', 'primary')}</div>
-                    <div class="vision-info" data-vision-out="link"></div>
-                    <details class="vision-details" data-vision-if="words">
-                        <summary data-panel-drag-ignore>주소 맵</summary>
-                        <div data-vision-out="map"></div>
-                    </details>
-                    <details class="vision-details" data-vision-if="socket">
-                        <summary data-panel-drag-ignore>문자열 형식</summary>
-                        <div class="vision-grid three">
-                            ${t('output.template', '정상 응답', { wide: true, placeholder: '{dx},{dy},{dt}' })}${t('output.ngTemplate', 'NG 응답')}
-                            ${t('output.triggerCommands', '트리거 명령')}${n('output.decimals', '소수 자리', { step: 1, min: 0, max: 6 })}
-                            ${s('output.terminator', '종단 문자', [['none', '없음'], ['cr', 'CR'], ['lf', 'LF'], ['crlf', 'CR+LF'], ['lab', 'V (RobotLab)']])}
-                        </div>
-                        <p class="vision-help">{dx} {dy} {dt} 보정값 · {x} {y} {t} 절대 위치 · {ok} 1/0 · {score} 점수 · {count} 순번</p>
-                    </details>
-                    <details class="vision-details" data-vision-if="words">
-                        <summary data-panel-drag-ignore>고급 설정</summary>
-                        <div class="vision-grid three">
-                            ${s('output.layout', '배치', [['standard', '표준 (상태+핸드셰이크)'], ['values', '값만 (X,Y,θ)']], { wide: true })}
-                            ${n('output.scale', '배율', { step: 1 })}
-                            ${s('output.wordOrder', '워드 순서', [['low-high', '하위 워드 먼저'], ['high-low', '상위 워드 먼저']])}
-                            ${n('link.pollMs', '주기', { step: 5, unit: 'ms', when: 'external' })}
-                            ${s('link.eipMode', 'EIP 방식', [['implicit', 'Class 1 I/O'], ['explicit', '명시적 메시지 (진단)']], { when: 'eip' })}
-                            ${n('link.eipRpiMs', 'RPI', { step: 1, unit: 'ms', when: 'eip' })}${n('link.eipUdpPort', 'UDP 포트', { step: 1, when: 'eip' })}
-                            ${n('link.eipInputInstance', 'O→T 인스턴스', { step: 1, when: 'eip' })}${n('link.eipOutputInstance', 'T→O 인스턴스', { step: 1, when: 'eip' })}${n('link.eipConfigInstance', '구성 인스턴스', { step: 1, when: 'eip' })}
-                        </div>
-                    </details>
-                    <details class="vision-details" open>
-                        <summary data-panel-drag-ignore>통신 로그</summary>
-                        <div class="vision-log" data-vision-out="log" aria-live="off" data-panel-drag-ignore></div>
-                        <div class="vision-actions">${b('log-clear', '지우기', 'fa-eraser')}</div>
-                    </details>
-                    <details class="vision-details" data-vision-guide>
-                        <summary data-panel-drag-ignore>로봇 예제 프로그램</summary>
-                        <div data-vision-out="guide"></div>
-                    </details>
-                </section>
-            </div>`;
+        fillVisionForm(content, text);
         content.addEventListener('change', event => {
             const resolution = event.target.closest('[data-vision-resolution]');
             if (resolution) { applyResolution(resolution.value); return; }
@@ -1191,8 +1015,7 @@ export function createVisionApp(adapter) {
         const root = element.querySelector('[data-vision-content]');
         if (!root) return;
         const cfg = config();
-        root.querySelector('[data-vision-empty]').hidden = cfg.enabled;
-        root.querySelector('[data-vision-main]').hidden = !cfg.enabled;
+        updateVisionForm(root, cfg, state.tab, controller.busy, state.autoCalibrating);
         if (!cfg.enabled) return;
         setOptions(root.querySelector('[data-vision-robots]'), adapter.robots().map(robot => `<option value="${escapeHtml(adapter.robotId(robot))}">${escapeHtml(adapter.robotLabel(robot))}</option>`).join('') || `<option value="">${escapeHtml(text('로봇 없음'))}</option>`);
         const camera = mountModel();
@@ -1205,22 +1028,10 @@ export function createVisionApp(adapter) {
             if (path === 'robotId' && !value) value = calibrationRobot() ? adapter.robotId(calibrationRobot()) : '';
             setValue(input, value);
         });
-        const resolution = RESOLUTIONS.find(item => item.width === cfg.camera.resolutionWidth && item.height === cfg.camera.resolutionHeight);
-        setValue(root.querySelector('[data-vision-resolution]'), resolution ? resolution.id : 'custom');
-        root.querySelectorAll('[data-vision-tab]').forEach(tab => {
-            const active = tab.dataset.visionTab === state.tab;
-            tab.classList.toggle('active', active);
-            tab.setAttribute('aria-selected', String(active));
-        });
-        root.querySelectorAll('[data-vision-page]').forEach(page => { page.hidden = page.dataset.visionPage !== state.tab; });
-        const flags = conditionFlags();
-        root.querySelectorAll('[data-vision-if]').forEach(item => {
-            item.hidden = !item.dataset.visionIf.split(/\s+/).every(token => flags[token]);
-        });
-        root.querySelectorAll('[data-vision-action="cal-auto"]').forEach(button => { button.disabled = state.autoCalibrating; });
-        root.querySelectorAll('[data-vision-action="cal-export-lab"]').forEach(button => { button.disabled = state.autoCalibrating || !config().calibration.result; });
-        root.querySelectorAll('[data-vision-action="capture"]').forEach(button => { button.disabled = controller.busy || state.autoCalibrating; });
-        root.querySelector('[data-vision-field="camera.direction"]').disabled = controller.busy || state.autoCalibrating;
+        const { resolutionWidth, resolutionHeight } = cfg.camera;
+        const resolution = Number.isFinite(cameraPixelSize(resolutionWidth, resolutionHeight))
+            ? resolutionWidth + 'x' + resolutionHeight : 'custom';
+        setValue(root.querySelector('[data-vision-resolution]'), resolution);
         renderOutputs(root);
     }
 
