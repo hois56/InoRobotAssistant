@@ -41,7 +41,7 @@ test('한국어 버전명과 설명을 표시하고 언어를 전환해도 선�
     await expect(page.locator('.language-patch-icon')).toHaveText('A가');
     await expect(page.locator('.filter-btn[data-type="InoRobotLab"]')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('.software-card:visible')).toHaveCount(3);
-    await expect(page.locator('.software-card:visible .download-btn').first()).toHaveAccessibleName(/InoRobotLab.*Simulation version.*Download Portable.*640MB/);
+    await expect(page.locator('.software-card:visible .download-btn').first()).toHaveAccessibleName(/InoRobotLab.*Simulation version K14.*Download Portable.*642MB/);
     await expect(page.locator('.software-card:visible .release-version').nth(1)).toContainText('Standard');
     await page.locator('.inorobot-language-select').selectOption('ko');
     await expect(page.locator('.software-card:visible .release-version').nth(1)).toContainText('표준 버전');

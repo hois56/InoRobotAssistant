@@ -1000,6 +1000,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.21",
+                "items": [
+                  "`[업데이트]` InoRobotLab·InoRobotTP 시뮬레이션용 포터블 패키지를 K14(SPC25K14 R4)로 업데이트했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.11.18",
                 "items": [
                   "`[개선]` 밝은 화면에서 제품별 버전과 한국어 버전 명칭을 확인하고 다운로드할 수 있습니다."
@@ -2783,6 +2789,12 @@
           {
             "title": "Software",
             "versions": [
+              {
+                "title": "Ver 26.11.21",
+                "items": [
+                  "`[Updated]` Updated the InoRobotLab and InoRobotTP portable simulation package to K14 (SPC25K14 R4)."
+                ]
+              },
               {
                 "title": "Ver 26.11.18",
                 "items": [
@@ -4568,6 +4580,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.21",
+                "items": [
+                  "`[更新]` InoRobotLab 和 InoRobotTP 仿真便携软件包已更新至 K14（SPC25K14 R4）。"
+                ]
+              },
+              {
                 "title": "Ver 26.11.18",
                 "items": [
                   "`[改进]` 在浅色目录中按产品和本地化版本名称查找并下载软件。"
@@ -6351,6 +6369,12 @@
           {
             "title": "Software",
             "versions": [
+              {
+                "title": "Ver 26.11.21",
+                "items": [
+                  "`[Cập nhật]` Đã cập nhật gói mô phỏng di động InoRobotLab và InoRobotTP lên K14 (SPC25K14 R4)."
+                ]
+              },
               {
                 "title": "Ver 26.11.18",
                 "items": [
@@ -8136,6 +8160,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.21",
+                "items": [
+                  "`[Güncellendi]` InoRobotLab ve InoRobotTP taşınabilir simülasyon paketi K14 (SPC25K14 R4) sürümüne güncellendi."
+                ]
+              },
+              {
                 "title": "Ver 26.11.18",
                 "items": [
                   "`[İyileştirildi]` Açık renkli katalogda indirmeleri ürüne ve yerelleştirilmiş sürüm adına göre bulabilirsiniz."
@@ -9919,6 +9949,12 @@
           {
             "title": "Software",
             "versions": [
+              {
+                "title": "Ver 26.11.21",
+                "items": [
+                  "`[Обновлено]` Портативный пакет InoRobotLab и InoRobotTP для симуляции обновлён до K14 (SPC25K14 R4)."
+                ]
+              },
               {
                 "title": "Ver 26.11.18",
                 "items": [

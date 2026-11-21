@@ -1,15 +1,15 @@
 [
   {
     "productId": "InoRobotLab",
-    "version": "시뮬레이션 버전 (MultiVC)",
+    "version": "시뮬레이션 버전 (K14)",
     "isLocked": false,
     "downloads": [
       {
         "label": "Download Portable",
         "type": "portable",
-        "path": "InoRobotLab/Simulation/InoRobotLab_TP_SPC25K13_MultiVC_20261111.zip",
+        "path": "InoRobotLab/Simulation/InoRobotLab_TP_SPC25K14_20261121_R4.zip",
         "assetId": null,
-        "url": "https://github.com/hois56/InoRobotAssistant/releases/download/inorobotlab-simulation-20261111/InoRobotLab_TP_SPC25K13_MultiVC_20261111.zip"
+        "url": "https://github.com/hois56/InoRobotAssistant/releases/download/inorobotlab-simulation-k14-20261121/InoRobotLab_TP_SPC25K14_20261121_R4.zip"
       }
     ]
   },

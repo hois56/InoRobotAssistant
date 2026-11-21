@@ -5,6 +5,15 @@
   "assets": [
     {
       "paths": [
+        "5_Software/InoRobotLab/Simulation/InoRobotLab_TP_SPC25K14_20261121_R4.zip"
+      ],
+      "fileName": "InoRobotLab_TP_SPC25K14_20261121_R4.zip",
+      "size": 642204112,
+      "sha256": "00fc77e8a0a32046f82294adb081cba2f815fa37213da8886907c3298c785c78",
+      "url": "https://github.com/hois56/InoRobotAssistant/releases/download/inorobotlab-simulation-k14-20261121/InoRobotLab_TP_SPC25K14_20261121_R4.zip"
+    },
+    {
+      "paths": [
         "5_Software/InoRobotLab/Simulation/InoRobotLab_TP_SPC25K13_MultiVC_20261111.zip"
       ],
       "fileName": "InoRobotLab_TP_SPC25K13_MultiVC_20261111.zip",
