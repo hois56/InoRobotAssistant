@@ -1,0 +1,23 @@
+[package]
+name = "inorobot_solidworks_display"
+version = "0.1.0"
+edition = "2024"
+license = "AGPL-3.0-only"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+cfb = "0.12"
+crc32fast = "1"
+flate2 = "1"
+memchr = "2"
+roxmltree = "0.20"
+serde_json = "1"
+xt-step = { path = "vendor/xt-step" }
+
+[profile.release]
+lto = true
+panic = "abort"
+strip = "debuginfo"

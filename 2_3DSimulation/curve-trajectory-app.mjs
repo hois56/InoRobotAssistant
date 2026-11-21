@@ -256,7 +256,7 @@ export function createCurveTrajectoryApp(api) {
             field('preview').classList.remove('hidden');
             draw(points);
             field('apply').disabled = false;
-            field('status').textContent = `P[${records[0].index}] ~ P[${records.at(-1).index}] · ${points.length} ${text('포인트')} · ${result.length.toFixed(1)} mm`;
+            field('status').textContent = `P[${records[0].index}] ~ P[${records.at(-1).index}] · ${text('{count}개 포인트').replace('{count}', points.length)} · ${result.length.toFixed(1)} mm`;
             field('status').classList.remove('error');
             field('preview').scrollIntoView({ block: 'nearest' });
             return preview;

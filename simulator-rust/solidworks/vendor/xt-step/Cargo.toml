@@ -1,0 +1,10 @@
+[package]
+name = "xt-step"
+version = "0.1.0"
+edition = "2024"
+license-file = "LICENSE.md"
+[lib]
+path = "lib.rs"
+[dependencies]
+brep_geometry = { package = "BREP_geometry", version = "=0.24.0" }
+rustc-hash = "2"

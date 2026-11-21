@@ -12,6 +12,7 @@ mod matrix;
 mod motion;
 #[cfg(target_arch = "wasm32")]
 mod olp;
+mod outline;
 mod panels;
 mod planner;
 mod positions;

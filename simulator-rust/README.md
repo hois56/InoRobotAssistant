@@ -21,6 +21,8 @@ node simulator-rust/target/standalone/start.cjs
 
 ## 빌드와 검사
 
+SolidWorks 판독기의 WebAssembly 연결 코드를 생성하려면 `cargo install wasm-bindgen-cli --version 0.2.130 --locked`로 빌드 도구를 설치한다.
+
 독립 실행판은 열린 페이지와 같은 포트의 `/collaboration`에 협업 방을 연결한다. 포트를 바꾸려면 `node start.cjs 8776`처럼 실행한다.
 
 ```sh

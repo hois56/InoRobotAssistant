@@ -3,10 +3,12 @@ import { test, expect } from '@playwright/test';
 async function setup(page, robotCount = 1) {
   const commands = [];
   const errors = [];
+  const health = { count: 0 };
   page.on('pageerror', error => errors.push(error.message));
-  await page.route('http://127.0.0.1:5055/api/health', route => route.fulfill({
-    json: { service: 'InoRobotVirtualControllerBridge', pairingToken: 'test-token' }
-  }));
+  await page.route('http://127.0.0.1:5055/api/health', route => {
+    health.count += 1;
+    return route.fulfill({ json: { service: 'InoRobotVirtualControllerBridge', pairingToken: 'test-token' } });
+  });
   await page.routeWebSocket(/ws:\/\/127\.0\.0\.1:(5000|5055)\/ws/, socket => {
     socket.onMessage(raw => {
       const command = JSON.parse(raw);
@@ -31,8 +33,26 @@ window.__controllerReconnect = { state, getArticulatedRobots, togglePanelVisibil
     window.__controllerReconnect.state.virtualController.bridgeToken = 'test-token';
     window.__controllerReconnect.togglePanelVisibility('virtual-controller-panel');
   });
-  return { commands, errors };
+  return { commands, errors, health };
 }
+
+test('브리지 상태 확인이 반복돼도 연결 목록 버튼을 다시 만들지 않는다', async ({ page }) => {
+  test.setTimeout(60000);
+  const { errors, health } = await setup(page);
+  await page.locator('#virtual-controller-source').selectOption('bridge');
+  await page.locator('#virtual-controller-connect').click();
+  const toggle = page.locator('.virtual-controller-connection-row [data-virtual-controller-action="disconnect"]');
+  await expect(toggle).toBeVisible();
+  // A button replaced between pointer press and release swallows the click, which
+  // made disconnect clicks miss on slow machines while health checks ran every second.
+  const button = await toggle.elementHandle();
+  const checked = health.count;
+  await expect.poll(() => health.count, { timeout: 15000 }).toBeGreaterThan(checked + 1);
+  expect(await button.evaluate(element => element.isConnected)).toBe(true);
+  await toggle.click();
+  await expect(page.locator('.virtual-controller-connection-row')).toHaveClass(/disconnected/);
+  expect(errors).toEqual([]);
+});
 
 for (const source of ['bridge', 'trace']) {
   test(`${source}: 연결 해제 후 목록·설정을 유지하고 같은 항목으로 다시 연결한다`, async ({ page }) => {

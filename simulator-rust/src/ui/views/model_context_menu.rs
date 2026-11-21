@@ -158,6 +158,11 @@ pub(super) const VIEW: Node = tag("div", &[("id", "model-context-menu"), ("class
         text("\n        "),
     ]),
     text("\n        "),
+    tag("button", &[("id", "model-surface-depth-offset"), ("type", "button"), ("role", "menuitemcheckbox"), ("aria-checked", "false"), ("hidden", "")], &[
+        tag("i", &[("class", "fa-solid fa-layer-group"), ("aria-hidden", "true")], &[]),
+        tag("span", &[("data-i18n", "legacy.겹친 면 보정")], &[text("겹친 면 보정")]),
+    ]),
+    text("\n        "),
     tag("button", &[("id", "model-delete"), ("class", "model-context-danger"), ("type", "button"), ("role", "menuitem")], &[
         text("\n            "),
         tag("i", &[("class", "fa-solid fa-trash")], &[]),

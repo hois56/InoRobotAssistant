@@ -10961,9 +10961,10 @@ html[data-locale="ru"] .virtual-controller-bridge-actions button {
 .vision-help { margin: 0; color: var(--text-2); line-height: 1.55; }
 .vision-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.4rem 0.5rem; }
 .vision-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.vision-field { display: grid; gap: 0.2rem; min-width: 0; position: relative; }
+/* Long translated captions wrap; inputs in the same row stay aligned at the bottom. */
+.vision-field { display: grid; align-content: end; gap: 0.2rem; min-width: 0; position: relative; }
 .vision-field.wide { grid-column: span 2; }
-.vision-field > span { color: var(--text-2); font-size: 0.64rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vision-field > span { color: var(--text-2); font-size: 0.64rem; line-height: 1.25; overflow-wrap: anywhere; }
 .vision-field input, .vision-field select {
     width: 100%;
     min-width: 0;

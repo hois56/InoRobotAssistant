@@ -1,3 +1,5 @@
+import { engine, numbers } from './wasm/engine.mjs';
+
 // Bundled robot lettering lies on the two local Y sides. Its painted faces do
 // not include every embossed/recessed wall or the loop where it meets the body.
 // Keep a shallow, separate region per side so internal body edges survive.
@@ -34,11 +36,59 @@ export function buildRobotLogoOutlineBounds(positions, indices, { faceRanges = [
 
 // Extract CAD feature edges from triangle positions without changing the mesh.
 // STL can duplicate faces, reverse winding, and leave small coordinate seams.
-export function buildCleanOutlinePositions(positions, indices = null, {
+// The simulation engine (simulator-rust/src/outline.rs) computes the same
+// segments; input it does not model uses the JavaScript path below.
+export function buildCleanOutlinePositions(positions, indices = null, options = {}) {
+    if (!positions?.length) return new Float32Array();
+    return nativeOutlinePositions(positions, indices, options) ?? buildCleanOutlinePositionsInJs(positions, indices, options);
+}
+
+const INDEX_ARRAYS = [Uint8Array, Uint16Array, Uint32Array];
+
+// The engine's result, or null for input left to the JavaScript path.
+export function nativeOutlinePositions(positions, indices, {
     thresholdAngle = 40, weldTolerance = null, minimumAspectRatio = 0, pruneDanglingEdges = false,
     excludedIndexRanges = [], excludedBounds = []
 } = {}) {
-    if (!positions?.length) return new Float32Array();
+    if (!engine.outline_edges || positions.length % 3 || !Array.isArray(excludedIndexRanges) || !Array.isArray(excludedBounds)) return null;
+    if (!ArrayBuffer.isView(positions) && !(Array.isArray(positions) && positions.every(value => typeof value === 'number'))) return null;
+    if (weldTolerance != null && !(typeof weldTolerance === 'number' && weldTolerance > 0 && Number.isFinite(weldTolerance))) return null;
+    if (indices && !INDEX_ARRAYS.some(type => indices instanceof type)
+        && !(Array.isArray(indices) && indices.every(index => Number.isInteger(index) && index >= 0 && index < 2 ** 32))) return null;
+    const ranges = [];
+    for (const range of excludedIndexRanges) {
+        if (typeof range?.start !== 'number' || typeof range.count !== 'number') return null;
+        ranges.push(range.start, range.count);
+    }
+    const bounds = [];
+    for (const box of excludedBounds) {
+        const corners = [box?.min, box?.max];
+        if (corners.some(corner => corner?.length !== 3 || [0, 1, 2].some(axis => typeof corner[axis] !== 'number'))) return null;
+        corners.forEach(corner => bounds.push(corner[0], corner[1], corner[2]));
+    }
+    const input = numbers(positions.length + bounds.length + ranges.length);
+    input.set(positions);
+    input.set(bounds, positions.length);
+    input.set(ranges, positions.length + bounds.length);
+    if (indices) {
+        // Reserving can grow the engine's memory, so read the buffer afterwards.
+        const address = engine.outline_indices(indices.length);
+        new Uint32Array(engine.memory.buffer, address, indices.length).set(indices);
+    }
+    try {
+        const count = engine.outline_edges(positions.length, indices ? 1 : 0, bounds.length / 6, ranges.length / 2,
+            weldTolerance ?? NaN, Math.cos(thresholdAngle * Math.PI / 180), +minimumAspectRatio, pruneDanglingEdges ? 1 : 0);
+        return count < 0 ? null : new Float32Array(new Float64Array(engine.memory.buffer, engine.outline_lines(), count));
+    } finally {
+        engine.outline_release();
+    }
+}
+
+// The reference implementation, also used for input the engine leaves to JavaScript.
+export function buildCleanOutlinePositionsInJs(positions, indices = null, {
+    thresholdAngle = 40, weldTolerance = null, minimumAspectRatio = 0, pruneDanglingEdges = false,
+    excludedIndexRanges = [], excludedBounds = []
+} = {}) {
     const min = [Infinity, Infinity, Infinity];
     const max = [-Infinity, -Infinity, -Infinity];
     for (let i = 0; i < positions.length; i++) {

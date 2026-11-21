@@ -316,13 +316,16 @@
               {
                 "title": "Ver 26.11.21",
                 "items": [
+                  "`[추가]` SolidWorks 부품(.SLDPRT)과 조립품(.SLDASM)을 직접 불러올 수 있습니다. 조립품에 참조 부품이 필요할 때만 폴더 선택을 요청합니다. 단독 부품의 표시 형상을 읽을 수 없으면 저장된 본체에서 복원합니다.",
+                  "`[추가]` 모델 트리에서 겹친 면 보정을 켜면 선택한 부품의 표시 깊이를 앞으로 보정해 로고와 외장처럼 겹친 면의 깜빡임을 줄입니다.",
                   "`[개선]` 모델 이동 스냅에서 두 번째 점을 선택하면 새 위치가 바로 확정됩니다. 배치 패널의 적용·취소·다시 선택 버튼을 제거했습니다.",
                   "`[추가]` 로봇 이외의 모델을 선택하고 스페이스바를 누르는 동안 이동 핸들이 표시됩니다.",
-                  "`[개선]` 큰 STEP 모델에서 스냅 점과 곡선 경로 티칭에 쓰는 모델 외곽선을 더 빠르게 계산합니다.",
+                  "`[개선]` 큰 모델을 불러올 때 표시하는 외곽선을 약 10배 빠르게 계산합니다. 큰 STEP 모델에서 스냅 점과 곡선 경로 티칭에 쓰는 모서리도 더 빠르게 계산합니다.",
                   "`[개선]` 자동 품질에서 20MB 이상 50MB 미만 STEP의 첫 변환을 빠르게 처리합니다. 50MB 이상 STEP은 변환된 부품부터 화면에 표시합니다. 테스트 버튼의 STEP 모델은 사전 변환한 형상으로 더 빠르게 불러옵니다.",
-                  "`[수정]` 스케치 텍스트 입력란과 빈 포인트 목록에 안내 문구 대신 내부 키 이름이 표시되던 문제와, 컨베이어 버튼·창의 도움말, 일부 상태 표시줄 안내와 되돌리기 버튼 설명이 다른 언어에서 한국어로 표시되던 문제를 수정했습니다.",
+                  "`[수정]` 다른 언어에서 동작 설정 창의 항목, Trace 패널의 빈 차트 안내, 프로그램의 IO 명령, 그룹 이름 입력 창, 컨베이어 버튼·창의 도움말, 일부 오류·상태 안내와 되돌리기 버튼 설명이 한국어로 표시되던 문제를 수정했습니다. 스케치 텍스트 입력란과 빈 포인트 목록에는 내부 키 이름 대신 안내 문구가 표시됩니다.",
                   "`[수정]` 모델 트리에서 이미 동작을 지정한 부품 묶음을 다시 열면 기존 동작 대신 새 설정이 열리던 문제를 수정했습니다. 이제 기존 동작을 바로 편집합니다.",
-                  "`[수정]` 3D 모델이 있는 장면에 로봇을 추가할 때 로봇의 기본 위치가 Y축으로 밀리던 문제를 수정했습니다."
+                  "`[수정]` 3D 모델이 있는 장면에 로봇을 추가할 때 로봇의 기본 위치가 Y축으로 밀리던 문제를 수정했습니다.",
+                  "`[수정]` 컨트롤러 연결 창의 연결 목록에서 연결·연결 해제·삭제 버튼을 눌러도 가끔 반응하지 않던 문제를 수정했습니다."
                 ]
               },
               {
@@ -2106,13 +2109,16 @@
               {
                 "title": "Ver 26.11.21",
                 "items": [
+                  "`[Added]` Import SolidWorks parts (.SLDPRT) and assemblies (.SLDASM) directly. The simulator requests a folder when an assembly needs referenced parts and reconstructs standalone parts from their saved bodies when the display mesh cannot be read.",
+                  "`[Added]` Enable Reduce surface flicker in the model tree to bring the selected part's display depth forward for overlapping surfaces such as labels and housings.",
                   "`[Improved]` Model move snapping commits the new position when you select the second point. The Apply, Cancel, and Select Again buttons were removed from the placement panel.",
                   "`[Added]` Hold Space with a non-robot model selected to show its move handle.",
-                  "`[Improved]` Snap points and the model edges used for curve-path teaching are calculated faster for large STEP models.",
+                  "`[Improved]` Outlines of large models are calculated about 10 times faster when they load. Snap points and the model edges used for curve-path teaching are also calculated faster for large STEP models.",
                   "`[Improved]` Auto quality speeds up first-time conversion of STEP files from 20 MB to under 50 MB. Files of 50 MB or more show parts as they finish converting. STEP models under the Test button load faster using preconverted meshes.",
-                  "`[Fixed]` The sketch text box and an empty point list show their hint text instead of an internal key name, and tooltips on the conveyor button and window, some status bar messages and undo button descriptions appear in the selected language instead of Korean.",
+                  "`[Fixed]` In other languages, the motion settings window, the empty Trace chart message, program IO commands, the group name prompt, conveyor button and window tooltips, some error and status messages and undo button descriptions no longer appear in Korean. The sketch text box and an empty point list show their hint text instead of an internal key name.",
                   "`[Fixed]` Reopening the motion of a part group from the model tree now edits the existing motion instead of opening new settings.",
-                  "`[Fixed]` Adding a robot to a scene with 3D models no longer shifts its default position along the Y axis."
+                  "`[Fixed]` Adding a robot to a scene with 3D models no longer shifts its default position along the Y axis.",
+                  "`[Fixed]` The Connect, Disconnect and Delete buttons in the Controller Connection list no longer occasionally ignore clicks."
                 ]
               },
               {
@@ -3896,13 +3902,16 @@
               {
                 "title": "Ver 26.11.21",
                 "items": [
+                  "`[新增]` 可直接导入 SolidWorks 零件（.SLDPRT）和装配体（.SLDASM）。装配体需要引用零件时会提示选择文件夹。无法读取单个零件的显示网格时，会根据保存的实体重建。",
+                  "`[新增]` 在模型树中启用减少重叠面闪烁，可将选中零件的显示深度向前偏移，减少标签与外壳等重叠表面的闪烁。",
                   "`[改进]` 使用吸附移动模型时，选中第二个点即确认新位置。模型放置面板已移除应用、取消和重新选择按钮。",
                   "`[新增]` 选中非机器人模型后，按住空格键即可显示移动手柄。",
-                  "`[改进]` 大型 STEP 模型的捕捉点及曲线路径示教所用的模型轮廓计算更快。",
+                  "`[改进]` 加载大型模型时显示的轮廓线计算速度提升约 10 倍。大型 STEP 模型的捕捉点及曲线路径示教所用的边线计算也更快。",
                   "`[改进]` 自动质量模式可加快 20 MB 至不足 50 MB 的 STEP 文件的首次转换。50 MB 及以上的 STEP 文件会逐步显示已转换的部件。测试按钮中的 STEP 模型使用预转换网格加快加载。",
-                  "`[修复]` 修复了草图文本输入框和空点位列表显示内部键名而非提示文字的问题，以及输送带按钮和窗口的提示、部分状态栏提示和撤销按钮说明在其他语言下显示为韩语的问题。",
+                  "`[修复]` 修复了在其他语言下，动作设置窗口的项目、Trace 面板的空图表提示、程序的 IO 指令、组名称输入框、输送带按钮和窗口的提示、部分错误和状态提示以及撤销按钮说明显示为韩语的问题。草图文本输入框和空点位列表现在显示提示文字，而非内部键名。",
                   "`[修复]` 修复了在模型树中重新打开已设置动作的部件组时，打开新设置而非现有动作的问题。现在可直接编辑现有动作。",
-                  "`[修复]` 修复了在已有 3D 模型的场景中添加机器人时，其默认位置沿 Y 轴偏移的问题。"
+                  "`[修复]` 修复了在已有 3D 模型的场景中添加机器人时，其默认位置沿 Y 轴偏移的问题。",
+                  "`[修复]` 修复了控制器连接列表中的连接、断开连接和删除按钮偶尔点击无反应的问题。"
                 ]
               },
               {
@@ -5686,13 +5695,16 @@
               {
                 "title": "Ver 26.11.21",
                 "items": [
+                  "`[Thêm]` Nhập trực tiếp chi tiết (.SLDPRT) và cụm lắp ráp (.SLDASM) SolidWorks. Trình mô phỏng yêu cầu thư mục khi cụm lắp ráp cần chi tiết tham chiếu và dựng lại chi tiết riêng từ khối đã lưu khi không đọc được lưới hiển thị.",
+                  "`[Thêm]` Bật Giảm nhấp nháy mặt chồng trong cây mô hình để đưa lớp hiển thị của chi tiết đã chọn về phía trước tại các mặt chồng như nhãn và vỏ.",
                   "`[Cải tiến]` Khi di chuyển mô hình bằng điểm bắt dính, vị trí mới được xác nhận ngay khi chọn điểm thứ hai. Đã bỏ các nút Áp dụng, Hủy và Chọn lại trong bảng đặt mô hình.",
                   "`[Thêm mới]` Giữ phím Space khi chọn một mô hình không phải robot để hiện tay nắm di chuyển.",
-                  "`[Cải tiến]` Điểm bắt dính và các cạnh mô hình dùng để dạy đường cong được tính nhanh hơn với mô hình STEP lớn.",
+                  "`[Cải tiến]` Đường viền của mô hình lớn được tính nhanh hơn khoảng 10 lần khi tải. Điểm bắt dính và các cạnh mô hình dùng để dạy đường cong cũng được tính nhanh hơn với mô hình STEP lớn.",
                   "`[Cải tiến]` Chế độ chất lượng tự động rút ngắn thời gian chuyển đổi lần đầu các tệp STEP từ 20 MB đến dưới 50 MB. Tệp STEP từ 50 MB hiển thị từng chi tiết khi chuyển đổi xong. Các mô hình STEP ở nút Thử nghiệm tải nhanh hơn nhờ lưới chuyển đổi sẵn.",
-                  "`[Sửa lỗi]` Ô nhập văn bản phác thảo và danh sách điểm trống hiển thị đúng nội dung hướng dẫn thay vì tên khóa nội bộ; chú thích của nút và cửa sổ băng tải, một số thông báo trên thanh trạng thái và mô tả nút hoàn tác hiển thị theo ngôn ngữ đã chọn thay vì tiếng Hàn.",
+                  "`[Sửa lỗi]` Ở các ngôn ngữ khác, các mục trong cửa sổ cài đặt chuyển động, thông báo biểu đồ trống của bảng Trace, lệnh IO của chương trình, hộp nhập tên nhóm, chú thích của nút và cửa sổ băng tải, một số thông báo lỗi và trạng thái cùng mô tả nút hoàn tác không còn hiển thị bằng tiếng Hàn. Ô nhập văn bản phác thảo và danh sách điểm trống hiển thị nội dung hướng dẫn thay vì tên khóa nội bộ.",
                   "`[Sửa lỗi]` Mở lại chuyển động của một nhóm chi tiết từ cây mô hình giờ sẽ chỉnh sửa chuyển động hiện có thay vì mở thiết lập mới.",
-                  "`[Sửa lỗi]` Robot được thêm vào cảnh đã có mô hình 3D không còn bị lệch vị trí mặc định theo trục Y."
+                  "`[Sửa lỗi]` Robot được thêm vào cảnh đã có mô hình 3D không còn bị lệch vị trí mặc định theo trục Y.",
+                  "`[Sửa lỗi]` Các nút Kết nối, Ngắt kết nối và Xóa trong danh sách Kết nối bộ điều khiển không còn thỉnh thoảng bỏ qua thao tác nhấn."
                 ]
               },
               {
@@ -7476,13 +7488,16 @@
               {
                 "title": "Ver 26.11.21",
                 "items": [
+                  "`[Eklendi]` SolidWorks parçalarını (.SLDPRT) ve montajlarını (.SLDASM) doğrudan içe aktarın. Montajın başvurulan parçalara ihtiyacı olduğunda klasör istenir. Bağımsız parçanın görüntü ağı okunamadığında kayıtlı gövdelerden yeniden oluşturulur.",
+                  "`[Eklendi]` Etiket ve gövde gibi çakışan yüzeylerde seçilen parçanın görüntü derinliğini öne almak için model ağacındaki yüzey titreşimi azaltma seçeneğini açın.",
                   "`[İyileştirildi]` Modeli yakalama noktalarıyla taşırken ikinci nokta seçildiğinde yeni konum hemen uygulanır. Model yerleştirme panelinden Uygula, İptal ve Yeniden seç düğmeleri kaldırıldı.",
                   "`[Eklendi]` Robot dışındaki bir model seçiliyken hareket tutamacını göstermek için Boşluk tuşunu basılı tutun.",
-                  "`[İyileştirildi]` Büyük STEP modellerinde yakalama noktaları ve eğri yol öğretiminde kullanılan model kenarları daha hızlı hesaplanır.",
+                  "`[İyileştirildi]` Büyük modellerin dış hatları yüklenirken yaklaşık 10 kat daha hızlı hesaplanır. Büyük STEP modellerinde yakalama noktaları ve eğri yol öğretiminde kullanılan model kenarları da daha hızlı hesaplanır.",
                   "`[İyileştirildi]` Otomatik kalite modu 20 MB ile 50 MB (hariç) arasındaki STEP dosyalarının ilk dönüşümünü hızlandırır. 50 MB ve üzerindeki dosyalarda dönüştürülen parçalar sırayla gösterilir. Test düğmesindeki STEP modelleri önceden dönüştürülmüş ağlarla daha hızlı yüklenir.",
-                  "`[Düzeltildi]` Taslak metin kutusu ve boş nokta listesi, dahili anahtar adı yerine açıklama metnini gösterir; konveyör düğmesi ve penceresindeki ipuçları, bazı durum çubuğu mesajları ve geri al düğmesi açıklamaları Korece yerine seçilen dilde görüntülenir.",
+                  "`[Düzeltildi]` Diğer dillerde hareket ayarları penceresindeki öğeler, boş Trace grafiği iletisi, programın IO komutları, grup adı istemi, konveyör düğmesi ve penceresinin ipuçları, bazı hata ve durum iletileri ile geri alma düğmesi açıklamaları artık Korece görünmüyor. Çizim metin kutusu ve boş nokta listesi, dahili anahtar adı yerine ipucu metnini gösterir.",
                   "`[Düzeltildi]` Model ağacından bir parça grubunun hareketi yeniden açıldığında yeni ayarlar yerine mevcut hareket düzenlenir.",
-                  "`[Düzeltildi]` 3B modeller içeren bir sahneye robot eklendiğinde robotun varsayılan konumu artık Y ekseninde kaymıyor."
+                  "`[Düzeltildi]` 3B modeller içeren bir sahneye robot eklendiğinde robotun varsayılan konumu artık Y ekseninde kaymıyor.",
+                  "`[Düzeltildi]` Kontrol Cihazı Bağlantısı listesindeki Bağlan, Bağlantıyı kes ve Sil düğmeleri artık tıklamaları zaman zaman yok saymıyor."
                 ]
               },
               {
@@ -9266,13 +9281,16 @@
               {
                 "title": "Ver 26.11.21",
                 "items": [
+                  "`[Добавлено]` Прямой импорт деталей SolidWorks (.SLDPRT) и сборок (.SLDASM). Если сборке нужны ссылочные детали, симулятор запрашивает папку. Если сетка отдельной детали нечитаема, симулятор восстанавливает её из сохранённых тел.",
+                  "`[Добавлено]` В дереве модели включите коррекцию мерцания, чтобы сдвинуть глубину выбранной детали вперёд в местах наложения поверхностей, например этикетки и корпуса.",
                   "`[Улучшено]` При перемещении модели с привязкой новое положение сразу применяется после выбора второй точки. Кнопки «Применить», «Отмена» и «Выбрать снова» убраны из панели размещения модели.",
                   "`[Добавлено]` Удерживайте пробел, чтобы показать рукоятку перемещения выбранной модели, если это не робот.",
-                  "`[Улучшено]` Точки привязки и кромки модели для обучения траекторий по кривым рассчитываются быстрее для крупных STEP-моделей.",
+                  "`[Улучшено]` Контуры крупных моделей при загрузке рассчитываются примерно в 10 раз быстрее. Точки привязки и кромки модели для обучения траекторий по кривым также рассчитываются быстрее для крупных STEP-моделей.",
                   "`[Улучшено]` Автоматическое качество ускоряет первое преобразование STEP-файлов от 20 МБ до 50 МБ (не включая 50 МБ). Для файлов от 50 МБ детали отображаются по мере преобразования. STEP-модели в меню «Тест» загружаются быстрее благодаря готовым сеткам.",
-                  "`[Исправлено]` В поле текста эскиза и в пустом списке точек вместо внутреннего имени ключа отображается подсказка, а всплывающие подсказки кнопки и окна конвейера, некоторые сообщения строки состояния и описания кнопки отмены показываются на выбранном языке, а не на корейском.",
+                  "`[Исправлено]` В других языках элементы окна настроек движения, сообщение пустого графика панели Trace, команды IO программы, окно ввода имени группы, подсказки кнопки и окна конвейера, некоторые сообщения об ошибках и состоянии и описания кнопки отмены больше не отображаются на корейском. В поле текста эскиза и в пустом списке точек вместо внутреннего имени ключа показывается подсказка.",
                   "`[Исправлено]` При повторном открытии движения группы деталей из дерева моделей теперь редактируется существующее движение, а не открываются новые настройки.",
-                  "`[Исправлено]` При добавлении робота в сцену с 3D-моделями его исходное положение больше не смещается вдоль оси Y."
+                  "`[Исправлено]` При добавлении робота в сцену с 3D-моделями его исходное положение больше не смещается вдоль оси Y.",
+                  "`[Исправлено]` Кнопки «Подключить», «Отключить» и «Удалить» в списке подключения контроллера больше не пропускают нажатия."
                 ]
               },
               {

@@ -61,6 +61,8 @@ pub(super) const BODY: &[Node] = &[
     text("\n\n    "),
     import_3d_dialog::VIEW,
     text("\n\n    "),
+    import_3d_dialog::SOLIDWORKS_REFERENCES,
+    text("\n\n    "),
     position_value_dialog::VIEW,
     text("\n\n    "),
     work_origin_dialog::VIEW,

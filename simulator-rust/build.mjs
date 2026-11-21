@@ -14,6 +14,7 @@ if (!process.argv.includes('--package-only')) {
     await buildEngine();
 }
 await WebAssembly.compile(await readFile(path.join(repo, engine)));
+await WebAssembly.compile(await readFile(path.join(repo, '2_3DSimulation/wasm/solidworks-display.wasm')));
 
 // Assemble in a fresh directory. A failed copy leaves the last runnable
 // package intact. Only replace a directory marked as this tool's output.
@@ -40,11 +41,15 @@ for (const name of [
     '2_3DSimulation/urdf', '2_3DSimulation/usd',
     '2_3DSimulation/trace-compat/InoRobotTrace_V1.5.zip', '7_DebuggingTool/Trace/IMC100API.dll',
     '1_RobotModelSelect/INOVANCE_Logo.png',
-    '3_ToolSelector/continuous-transform-rotation.mjs', '3_ToolSelector/mass-properties.mjs',
+    '3_ToolSelector/continuous-transform-rotation.mjs', '3_ToolSelector/tool-mass.mjs',
     '3_ToolSelector/snap-geometry.mjs', 'shared/site-engine.js', 'Language/runtime', '0_Home/tool-guide-embed.js',
     'favicon.png', 'analytics-config.js', 'analytics.js', 'tools/serve-local.cjs',
     'tools/virtual-vision-server.cjs', 'tools/virtual-vision-protocols.cjs', 'tools/collaboration-server.cjs',
     'simulator-rust/src', 'simulator-rust/Cargo.toml', 'simulator-rust/Cargo.lock', 'simulator-rust/build-engine.mjs',
+    'simulator-rust/solidworks/src', 'simulator-rust/solidworks/Cargo.toml', 'simulator-rust/solidworks/Cargo.lock',
+    'simulator-rust/solidworks/vendor/xt-step',
+    'simulator-rust/solidworks/README.md', 'simulator-rust/solidworks/SolidWorks-AGPL-3.0.txt',
+    'simulator-rust/solidworks/sldprt-export-MIT.txt',
     '2_3DSimulation/VirtualControllerBridge/src', '2_3DSimulation/VirtualControllerBridge/Cargo.toml',
     '2_3DSimulation/VirtualControllerBridge/Cargo.lock', '2_3DSimulation/VirtualControllerBridge/build.rs',
     '2_3DSimulation/VirtualControllerBridge/README.md', '2_3DSimulation/VirtualControllerBridge/Assets/bridge.ico',

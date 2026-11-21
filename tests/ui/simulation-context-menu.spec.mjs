@@ -12,7 +12,7 @@ async function setup(page) {
     await page.route('**/2_3DSimulation/main.js*', async route => {
         const response = await route.fetch();
         const source = (await response.text()).replace(/^init\(\);\s*$/m, 'window.__contextReady = init();');
-        await route.fulfill({ response, body: source + '\nwindow.__contextCheck = { state, addCurrentMotionStep };' });
+        await route.fulfill({ response, body: source + '\nwindow.__contextCheck = { state, addCurrentMotionStep, saveMotionProjectNow, THREE };' });
     });
     await page.goto('/2_3DSimulation/index.html');
     await page.waitForFunction(() => window.__contextReady && window.__contextCheck);
@@ -103,4 +103,59 @@ test('카메라 이동 후 모델 트리와 프로그램 패널의 앱 우클릭
         await page.keyboard.press('Escape');
     }
     await expectNativeMenusBlocked(page);
+});
+
+test('겹친 면 보정은 선택한 모델에 적용하고 되돌리기와 작업 복원을 지원한다', async ({ page }) => {
+    test.setTimeout(60_000);
+    await setup(page);
+    await page.waitForFunction(() => window.__contextCheck.state.workspaceRecovery.ready);
+    const plane = [
+        'solid plate', 'facet normal 0 0 1', 'outer loop', 'vertex 0 0 0',
+        'vertex 100 0 0', 'vertex 0 100 0', 'endloop', 'endfacet', 'endsolid plate'
+    ].join('\n');
+    const fileInput = page.locator('#input-import-3d');
+    const names = ['Case.stl', 'Label.stl'];
+    await fileInput.setInputFiles(names.map(name => ({
+        name, mimeType: 'application/octet-stream', buffer: Buffer.from(plane)
+    })));
+    await page.locator('#btn-confirm-import').click();
+    const readParts = () => page.evaluate(files => {
+        const { state } = window.__contextCheck;
+        return files.map(name => {
+            const model = state.models.find(candidate => candidate.userData.modelName === name);
+            const part = model?.userData.importedParts[0];
+            if (!part) return null;
+            const mesh = part.children.find(child => child.isMesh);
+            return {
+                enabled: mesh.material.polygonOffset,
+                test: mesh.material.depthTest,
+                vertices: Array.from(mesh.geometry.attributes.position.array),
+                position: part.position.toArray()
+            };
+        });
+    }, names);
+    await expect.poll(async () => (await readParts()).filter(Boolean).length).toBe(2);
+    const before = await readParts();
+    expect(before.map(part => part.enabled)).toEqual([false, false]);
+
+    const row = page.locator('#model-tree .model-tree-button').filter({ hasText: 'Label' });
+    const offset = page.locator('#model-surface-depth-offset');
+    await row.click({ button: 'right' });
+    await expect(offset).toHaveAttribute('aria-checked', 'false');
+    await offset.click();
+    const enabled = [before[0], { ...before[1], enabled: true }];
+    expect(await readParts()).toEqual(enabled);
+
+    await row.click({ button: 'right' });
+    await expect(offset).toHaveAttribute('aria-checked', 'true');
+    await page.keyboard.press('Escape');
+    await page.locator('#btn-undo').click();
+    expect(await readParts()).toEqual(before);
+    await page.locator('#btn-redo').click();
+    expect(await readParts()).toEqual(enabled);
+
+    await page.evaluate(() => window.__contextCheck.saveMotionProjectNow());
+    await page.reload();
+    await page.locator('#btn-workspace-restore').click();
+    await expect.poll(readParts).toEqual(enabled);
 });

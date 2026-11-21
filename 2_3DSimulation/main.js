@@ -3,13 +3,16 @@ import { PANEL_IDS, PANEL_STACK_IDS, panelOpen, panelAvailable, stackPanels, pan
 import { uiText, uiFormat } from './ui-language.mjs';
 import { StandardInputClient } from './standard-input-client.mjs?v=20261114-inputs65-1';
 import { applyCadLightweightGltfUnits } from './gltf-import-units.mjs?v=20261103-1';
+import {
+    isSolidWorksExtension, readSolidWorksFile, solidWorksMeshes, solidWorksSelectionPath, SOLIDWORKS_DISPLAY_TYPE
+} from './solidworks-import.mjs?v=20261121-3';
 /**
  * Inovance Robot 3D Simulation
  * Enhanced to support Multiple Models & Transformation
  */
 
 import * as THREE from 'three';
-import { createCurveTrajectoryApp } from './curve-trajectory-app.mjs?v=20261117-selection-1';
+import { createCurveTrajectoryApp } from './curve-trajectory-app.mjs?v=20261121-points-1';
 import { curveSegmentKeys, orderConnectedCurves, planarFaceTriangleRanges } from './curve-trajectory-selection.mjs?v=20261117-selection-1';
 import {OlpSocketService} from './olp-socket-service.mjs?v=20261107-vision-1';
 import {evaluateOlpHomeStatus} from './olp-home-status.mjs?v=20261102-generator-2';
@@ -25,7 +28,7 @@ import { usesSoftwareRasterizer, renderPacedSoftwareFrame, RenderFrameLimit } fr
 import { ROBOT_MOUNTING_HOLES } from './robot-mounting-holes.mjs?v=20261029-2';
 import { collectTeachingPoints, normalizeTeachingPointSettings } from './teaching-point-core.mjs?v=20261023-teaching-defaults-1';
 import { TeachingPointScene, teachingJointMatrix } from './teaching-point-scene.mjs?v=20261023-teaching-labels-2';
-import { buildCleanOutlinePositions, buildRobotLogoOutlineBounds } from './outline-geometry-core.mjs?v=20261117-logo-outline-2';
+import { buildCleanOutlinePositions, buildRobotLogoOutlineBounds } from './outline-geometry-core.mjs?v=20261121-rust-outline';
 import { computeSmoothTriangleNormals } from './smooth-triangle-normals-core.mjs';
 import { armQuadrant, scaraArmParameters, sixAxisArmParameters } from './arm-parameter-core.mjs';
 import { inverseJointStep, scaraInverse } from './inverse-kinematics.mjs';
@@ -48,7 +51,7 @@ import {
     combineStepParts,
     createCoordinateFrame,
     integrateStepMesh
-} from '../3_ToolSelector/mass-properties.mjs';
+} from '../3_ToolSelector/tool-mass.mjs';
 import { MeshCollisionSystem } from './collision-system.mjs?v=20261103-mount-faces-1';
 import { isSimulationCollisionPair, shouldReportSimulationCollision } from './collision-policy-core.mjs?v=20261103-mount-faces-1';
 import {
@@ -1217,6 +1220,11 @@ const el = {
     btnSnapMove: document.getElementById('btn-snap-move'),
     btnImport3D:     document.getElementById('btn-import-3d'),
     inputImport3D:   document.getElementById('input-import-3d'),
+    solidWorksReferenceDialog: document.getElementById('solidworks-reference-dialog'),
+    solidWorksReferenceFile: document.getElementById('solidworks-reference-file'),
+    solidWorksReferenceDetail: document.getElementById('solidworks-reference-detail'),
+    solidWorksReferenceFolder: document.getElementById('input-solidworks-reference-folder'),
+    btnSolidWorksReferenceFolder: document.getElementById('btn-select-solidworks-reference-folder'),
     inputImportSketchCad: document.getElementById('input-import-sketch-cad'),
     importDialog:    document.getElementById('import-3d-dialog'),
     importPlacement: document.getElementById('import-placement'),
@@ -1429,6 +1437,7 @@ const el = {
     modelDelete: document.getElementById('model-delete'),
     modelChangeZeroPoint: document.getElementById('model-change-zero-point'),
     modelChangeColor: document.getElementById('model-change-color'),
+    modelSurfaceDepthOffset: document.getElementById('model-surface-depth-offset'),
     modelColorPicker: document.getElementById('model-color-picker'),
     modelToolLoadInfo: document.getElementById('model-tool-load-info'),
     toolLoadInfoPanel: document.getElementById('tool-load-info-panel'),
@@ -1860,7 +1869,7 @@ const TRACE_SOURCE_LIVENESS_TIMEOUT_MS = 2500;
 const VIRTUAL_CONTROLLER_STREAM_STALL_MS = 750;
 const VIRTUAL_CONTROLLER_STREAM_WATCHDOG_MS = 250;
 const VIRTUAL_CONTROLLER_BRIDGE_HEALTH_FAILURE_LIMIT = 3;
-const SUPPORTED_IMPORT_EXTENSIONS = new Set(['stl', 'fbx', 'obj', 'glb', 'gltf', 'stp', 'step', 'dxf']);
+const SUPPORTED_IMPORT_EXTENSIONS = new Set(['stl', 'fbx', 'obj', 'glb', 'gltf', 'stp', 'step', 'dxf', 'sldprt', 'sldasm']);
 const Y_UP_IMPORT_EXTENSIONS = new Set(['fbx', 'glb', 'gltf']);
 const TEST_MODEL_ASSET_PATHS = Object.freeze({
     scene: './test-assets/Test_Equipment_CAD.step',
@@ -21702,6 +21711,7 @@ function setupEventListeners() {
             placement: el.importPlacement?.value,
             attachmentJointIndex: el.importArmLoadAxis?.value,
             importQuality: el.importQuality?.value,
+            allowSolidWorksReferencePrompt: true,
             unitOverride: el.cadImportUnit?.value,
             centerDrawing: el.cadImportCenter?.checked
         };
@@ -21953,6 +21963,16 @@ function setupEventListeners() {
     el.modelColorPicker?.addEventListener('change', () => {
         closeModelContextMenu();
         scheduleMotionProjectSave();
+    });
+    el.modelSurfaceDepthOffset?.addEventListener('click', () => {
+        const target = getModelContextTarget();
+        const part = target && !target.parts ? getSurfaceDepthOffsetPart(target.model, target.part) : null;
+        closeModelContextMenu();
+        if (!part) return;
+        const before = state.historySuspended ? null : captureSceneSnapshot();
+        applyPartSurfaceDepthOffset(part, !part.userData.surfaceDepthOffset);
+        if (before) recordHistory('겹친 면 보정', before, captureSceneSnapshot());
+        requestRender();
     });
     el.transformModeButtons.forEach((button) => {
         button.addEventListener('click', () => toggleSelectedTransformMode(button.dataset.transformMode));
@@ -22383,14 +22403,14 @@ function setupEventListeners() {
         const modelGroup = getContextModelGroup();
         if (modelGroup) {
             closeModelContextMenu();
-            const name = window.prompt('모델 그룹 이름', modelGroup.name)?.trim();
+            const name = window.prompt(uiText('모델 그룹 이름'), modelGroup.name)?.trim();
             if (name && name !== modelGroup.name) changeModelGroups('모델 그룹 이름 변경', () => { modelGroup.name = name; });
             return;
         }
         const target = getModelContextTarget(), group = target?.model.userData.modelPartGroups?.[Number(el.modelContextMenu.dataset.partGroup)];
         closeModelContextMenu();
         if (!group) return;
-        const name = window.prompt('부품 그룹 이름', group.name)?.trim();
+        const name = window.prompt(uiText('부품 그룹 이름'), group.name)?.trim();
         if (name && name !== group.name) changeModelPartGroups(target.model, '부품 그룹 이름 변경', () => { group.name = name; });
     });
     document.getElementById('model-group-dissolve')?.addEventListener('click', () => {
@@ -23751,6 +23771,7 @@ function captureSceneSnapshot() {
             partVisibility: getImportedModelParts(model).map((part) => ({
                 part,
                 visible: part.visible !== false,
+                surfaceDepthOffset: part.userData.surfaceDepthOffset === true,
                 transparency: getModelTransparencyPercent(part)
             }))
         })),
@@ -23851,6 +23872,7 @@ function sceneSnapshotsEqual(a, b) {
         for (let partIndex = 0; partIndex < leftParts.length; partIndex += 1) {
             if (leftParts[partIndex].part !== rightParts[partIndex].part
                 || Boolean(leftParts[partIndex].visible) !== Boolean(rightParts[partIndex].visible)
+                || leftParts[partIndex].surfaceDepthOffset !== rightParts[partIndex].surfaceDepthOffset
                 || leftParts[partIndex].transparency !== rightParts[partIndex].transparency) return false;
         }
     }
@@ -24026,8 +24048,9 @@ function applySceneSnapshot(snapshot) {
         (entry.partVisibility || []).forEach(({ part, visible }) => {
             part.visible = visible !== false;
         });
-        (entry.partVisibility || []).forEach(({ part, transparency }) => {
+        (entry.partVisibility || []).forEach(({ part, transparency, surfaceDepthOffset }) => {
             applyModelTransparencyVisual(entry.model, part, transparency);
+            applyPartSurfaceDepthOffset(part, surfaceDepthOffset === true);
         });
         const attachmentFrame = getModelAttachmentFrame(
             entry.placement,
@@ -25412,6 +25435,7 @@ function createCadAssemblyTreeNode(model, node) {
         });
         openModelContextMenu(event, model, node.members[0]);
         el.modelContextMenu.dataset.cadAssemblyId = node.id;
+        if (el.modelSurfaceDepthOffset) el.modelSurfaceDepthOffset.hidden = true;
         // Assembly folders are imported structure; single-part structural actions
         // must not accidentally operate on only the representative member.
         if (node.members.length > 1 && el.modelInstallTool) el.modelInstallTool.hidden = true;
@@ -25487,7 +25511,7 @@ function createModelTreeNode(model, reusableNodes = null) {
     button.dataset.modelTreeId = treeId;
     const displayName = displayNameForModelTree(model);
     button.title = `${displayName} ${uiText(modelVisible ? '선택' : '표시')}`;
-    if (containsSelection) button.title += ' · 선택한 항목이 이 모델 안에 있습니다.';
+    if (containsSelection) button.title += ' · ' + uiText('선택한 항목이 이 모델 안에 있습니다.');
 
     const icon = document.createElement('span');
     icon.className = 'model-tree-icon';
@@ -26763,6 +26787,38 @@ function applyImportedModelColor(model, part, colorValue) {
     return applyModelColor(model, part, colorValue);
 }
 
+function getSurfaceDepthOffsetPart(model, part) {
+    if (!model.userData.uploaded) return null;
+    const parts = getImportedModelParts(model);
+    const target = part || (parts.length === 1 ? parts[0] : null);
+    return target?.userData.modelPartAggregate ? null : target;
+}
+
+function applyPartSurfaceDepthOffset(part, enabled) {
+    if (Boolean(part.userData.surfaceDepthOffset) === enabled) return;
+    part.userData.surfaceDepthOffset = enabled;
+    part.traverse(mesh => {
+        if (!mesh.isMesh || mesh.userData.collisionDebugMesh || mesh.userData.simulationSnapFaceOverlay) return;
+        ensureModelPartMaterialIsolation(mesh);
+        for (const material of getMeshMaterials(mesh)) {
+            if (!material) continue;
+            const original = material.userData.simulationSurfaceDepthOffsetDefaults;
+            if (enabled && material.depthTest) {
+                if (!original) {
+                    const { polygonOffset, polygonOffsetFactor, polygonOffsetUnits } = material;
+                    material.userData.simulationSurfaceDepthOffsetDefaults = { polygonOffset, polygonOffsetFactor, polygonOffsetUnits };
+                }
+                material.polygonOffset = true;
+                material.polygonOffsetFactor = -1;
+                material.polygonOffsetUnits = -4;
+            } else if (original) {
+                Object.assign(material, original);
+                delete material.userData.simulationSurfaceDepthOffsetDefaults;
+            }
+        }
+    });
+}
+
 function collectGeneratedShapeExportTriangles(model) {
     if (!isGeneratedShapeModel(model)) return [];
     model.updateMatrixWorld(true);
@@ -26966,6 +27022,15 @@ function openModelContextMenu(event, model, part = null) {
 
 
     if (el.modelChangeColor) el.modelChangeColor.hidden = !colorEditable;
+    if (el.modelSurfaceDepthOffset) {
+        const surface = getSurfaceDepthOffsetPart(model, part);
+        const enabled = surface?.userData.surfaceDepthOffset === true;
+        el.modelSurfaceDepthOffset.hidden = !surface;
+        el.modelSurfaceDepthOffset.setAttribute('aria-checked', String(enabled));
+        const icon = el.modelSurfaceDepthOffset.querySelector('i');
+        icon?.classList.toggle('fa-layer-group', !enabled);
+        icon?.classList.toggle('fa-check', enabled);
+    }
     if (colorEditable && el.modelColorPicker) {
         el.modelColorPicker.value = getModelColorHex(part || model);
     }
@@ -27780,7 +27845,7 @@ function groupSelectedModelParts() {
     if (!getModelContextTarget()?.part && !state.selectedModelPart) {
         const models = getSelectedGroupableModels();
         if (!models.length) { setStatus('Shift를 누르고 묶을 모델을 선택하세요.', '#fbbf24'); return; }
-        const name = window.prompt('모델 그룹 이름', '모델 그룹')?.trim();
+        const name = window.prompt(uiText('모델 그룹 이름'), uiText('모델 그룹'))?.trim();
         if (!name) return;
         const ids = models.map(ensureWorkspaceModelId);
         changeModelGroups('모델 그룹 만들기', () => {
@@ -27794,7 +27859,7 @@ function groupSelectedModelParts() {
     const parts = getImportedModelParts(model);
     const indexes = parts.map((part, index) => state.modelSelection.has(part) ? index : -1).filter(index => index >= 0);
     if (!indexes.length) { setStatus('Shift를 누르고 묶을 하위 부품을 선택하세요.', '#fbbf24'); return; }
-    const name = window.prompt('부품 그룹 이름', '부품 그룹');
+    const name = window.prompt(uiText('부품 그룹 이름'), uiText('부품 그룹'));
     if (!name?.trim()) return;
     const before = captureSceneSnapshot();
     model.userData.modelPartGroups = (model.userData.modelPartGroups || []).map(group => ({ ...group, parts: group.parts.filter(index => !indexes.includes(index)) })).filter(group => group.parts.length);
@@ -29868,7 +29933,8 @@ function mountToolModelAtActiveTcp(robot, model) {
 }
 
 function isModelImportFileTooLarge(file) {
-    return Number.isFinite(file?.size) && file.size > MAX_MODEL_IMPORT_SIZE_BYTES;
+    return Number.isFinite(file?.size) && file.size > MAX_MODEL_IMPORT_SIZE_BYTES
+        && !(file.type === SOLIDWORKS_DISPLAY_TYPE && getFileExtension(file.name) === 'sldasm');
 }
 
 function formatModelImportFileSize(bytes) {
@@ -29950,7 +30016,9 @@ function openImportDialog(input) {
     const supportedFiles = files.filter((file) => SUPPORTED_IMPORT_EXTENSIONS.has(getFileExtension(file.name)));
     const unsupportedCount = files.length - supportedFiles.length;
     if (!supportedFiles.length) {
-        alert(uiText('지원하지 않는 형식입니다. STL, FBX, OBJ, GLB, GLTF, STP, STEP, DXF 파일을 선택해 주세요.'));
+        alert(uiFormat('지원하지 않는 형식입니다. {formats} 파일을 선택해 주세요.', {
+            formats: Array.from(SUPPORTED_IMPORT_EXTENSIONS, value => value.toUpperCase()).join(', ')
+        }));
         return;
     }
 
@@ -30595,10 +30663,107 @@ async function parseStepFile(file, placement, qualityKey = 'auto', onProgress = 
     }
 }
 
-async function parseUploaded3DFile(file, extension, placement, qualityKey = 'auto', onProgress = null, stepOptions) {
+async function chooseSolidWorksReferenceFolder(file, error) {
+    const dialog = el.solidWorksReferenceDialog;
+    if (!dialog) return null;
+    while (dialog.open) {
+        await new Promise(resolve => dialog.addEventListener('close', resolve, { once: true }));
+    }
+    el.solidWorksReferenceFile.textContent = file.name;
+    el.solidWorksReferenceDetail.textContent = getImportErrorDetail(error, 'sldasm');
+    const folder = el.solidWorksReferenceFolder;
+    return new Promise(resolve => {
+        const events = new AbortController();
+        const { signal } = events;
+        let selectedFiles = null;
+        el.btnSolidWorksReferenceFolder.addEventListener('click', () => folder.click(), { signal });
+        folder.addEventListener('change', () => {
+            const files = Array.from(folder.files);
+            if (!files.length) return;
+            selectedFiles = files;
+            dialog.close();
+        }, { signal });
+        dialog.addEventListener('close', () => {
+            events.abort();
+            folder.value = '';
+            resolve(selectedFiles);
+        }, { once: true });
+        dialog.showModal();
+    });
+}
+
+async function readSolidWorksModel(file, allowReferencePrompt) {
+    let references = [];
+    let assemblyPath = solidWorksSelectionPath(file);
+    while (true) {
+        try {
+            return await readSolidWorksFile(file, references, assemblyPath);
+        } catch (error) {
+            if (!allowReferencePrompt || !['SW_MISSING_REF', 'SW_AMBIGUOUS_REF', 'SW_INVALID_REF'].includes(error.code)) throw error;
+            const chosen = await chooseSolidWorksReferenceFolder(file, error);
+            if (!chosen) return null;
+            references = chosen.filter(candidate => getFileExtension(candidate.name) === 'sldprt');
+            const matches = chosen.filter(candidate => candidate.name.toLowerCase() === file.name.toLowerCase());
+            assemblyPath = solidWorksSelectionPath(matches.length === 1 ? matches[0] : file);
+        }
+    }
+}
+
+async function parseSolidWorksModel(file, extension, placement, onProgress, options) {
+    const packed = file.type === SOLIDWORKS_DISPLAY_TYPE;
+    onProgress?.(10);
+    const result = packed ? { buffer: await file.arrayBuffer() }
+        : await readSolidWorksModel(file, options?.allowSolidWorksReferencePrompt && extension === 'sldasm');
+    if (!result) return null;
+    const { buffer, isStep } = result;
+    if (isStep) {
+        const reconstructed = new File([buffer], file.name, { lastModified: file.lastModified });
+        return parseStepFile(reconstructed, placement, 'auto', onProgress, options);
+    }
+    const content = new THREE.Group();
+    const palette = new Map();
+    const getColor = value => {
+        if (!palette.has(value)) palette.set(value, new THREE.Color(value).toArray());
+        return palette.get(value);
+    };
+    const performanceMode = file.size >= LARGE_MODEL_PERFORMANCE_MIN_BYTES;
+    try {
+        onProgress?.(70);
+        for (const definition of solidWorksMeshes(buffer)) {
+            const { faces, name, id, hidden, translation } = definition;
+            const groups = [];
+            for (const { first, last, color } of faces) {
+                const previous = groups.at(-1);
+                const count = (last - first + 1) * 3;
+                const rgb = getColor(color);
+                if (previous?.color === rgb) previous.count += count;
+                else groups.push({ start: first * 3, count, color: rgb });
+            }
+            const mesh = createStepMeshFromWorker({
+                ...definition, color: groups[0].color, materialGroups: groups.length > 1 ? groups : [],
+                partId: id, partName: name, brepFaces: faces
+            }, content.children.length, placement, performanceMode);
+            mesh.position.fromArray(translation);
+            mesh.userData.solidWorksHidden = hidden;
+            mesh.visible = !hidden;
+            content.add(mesh);
+        }
+    } catch (error) {
+        disposeObjectResources(content);
+        throw error;
+    }
+    if (extension === 'sldasm' && !packed) {
+        options?.setWorkspaceSource?.(new File([buffer], file.name, { type: SOLIDWORKS_DISPLAY_TYPE, lastModified: file.lastModified }));
+    }
+    onProgress?.(92);
+    return content;
+}
+
+async function parseUploaded3DFile(file, extension, placement, qualityKey = 'auto', onProgress = null, parseOptions) {
     if (isModelImportFileTooLarge(file)) {
         throw new Error('The model file exceeds the 500 MB import limit.');
     }
+    if (isSolidWorksExtension(extension)) return parseSolidWorksModel(file, extension, placement, onProgress, parseOptions);
     if (extension === 'stl') {
         onProgress?.(8);
         const sourceBuffer = await file.arrayBuffer();
@@ -30658,7 +30823,7 @@ async function parseUploaded3DFile(file, extension, placement, qualityKey = 'aut
         });
     }
     if (extension === 'stp' || extension === 'step') {
-        return parseStepFile(file, placement, qualityKey, onProgress, stepOptions);
+        return parseStepFile(file, placement, qualityKey, onProgress, parseOptions);
     }
     throw new Error(`Unsupported file extension: ${extension}`);
 }
@@ -30845,6 +31010,10 @@ function registerImportedModelParts(model, content, performanceMode = false) {
         part.userData.cadPartKey = group.key;
         part.userData.cadAssemblyPath = group.assemblyPath;
         part.userData.modelPartAggregate = group.meshes.some(mesh => mesh.userData.cadParentPartKey);
+        if (group.meshes[0]?.userData.solidWorksHidden) {
+            part.visible = false;
+            group.meshes.forEach(mesh => { mesh.visible = true; });
+        }
         if (sourceNode) part.userData.modelPartOrigin = 'source-node';
         if (!performanceMode) {
             group.meshes.forEach((mesh) => ensureModelPartMaterialIsolation(mesh));
@@ -30930,6 +31099,14 @@ function setModelPartsVisibility(model, parts, visible, recordHistoryChange = tr
 }
 
 function getImportErrorDetail(error, extension) {
+    if (isSolidWorksExtension(extension)) {
+        if (error?.code === 'SW_MISSING_REF') return uiFormat('참조 부품 {name}이 들어 있는 폴더를 선택해 주세요.', { name: error.reference });
+        if (error?.code === 'SW_AMBIGUOUS_REF') return uiFormat('같은 이름의 참조 부품 {name}이 여러 개 있습니다. 필요한 파일이 들어 있는 폴더를 선택해 주세요.', { name: error.reference });
+        if (error?.code === 'SW_INVALID_REF') return uiFormat('참조 부품 {name}이 비어 있거나 500 MB를 초과합니다.', { name: error.reference });
+        if (error?.code === 'SW_NO_DISPLAY') return extension === 'sldprt'
+            ? uiText('SolidWorks 부품의 저장된 표시 형상과 정밀 본체를 읽을 수 없습니다. CAD에서 파일을 다시 저장하거나 STEP으로 변환해 주세요.')
+            : uiText('SolidWorks 파일의 저장된 표시 형상이나 참조 부품 구성을 읽을 수 없습니다. CAD에서 파일을 다시 저장하거나 STEP으로 변환해 주세요.');
+    }
     if (isCadImportExtension(extension)) {
         if (error?.code === 'CAD_DXF_BINARY_UNSUPPORTED') return uiText('Binary DXF는 현재 지원하지 않습니다. ASCII DXF로 저장해 주세요.');
         if (error?.code === 'CAD_EMPTY_DRAWING') return uiText('CAD 도면에 표시 가능한 엔티티가 없습니다.');
@@ -31292,6 +31469,7 @@ async function handle3DImport(options = {}) {
     let importedModel = null;
     let assetPersistenceFailed = false;
     const persistSource = !options.skipAssetPersistence && !IS_MANUAL_GUIDE_EMBED;
+    let workspaceSourceFile = file;
     let stagedSource = null;
     const preview = placement === 'scene' && !options.workspaceModelId && !options.transform
         ? (content) => {
@@ -31317,7 +31495,15 @@ async function handle3DImport(options = {}) {
                 ? progress.progress
                 : progress;
             reportProgress(5 + Math.round((Number(parserProgress) || 0) * 0.65));
-        }, { savedEngine: options.savedStepEngine, onPreview: preview });
+        }, {
+            savedEngine: options.savedStepEngine, onPreview: preview,
+            allowSolidWorksReferencePrompt: options.allowSolidWorksReferencePrompt,
+            setWorkspaceSource: persistSource ? source => { workspaceSourceFile = source; } : null
+        });
+        if (!content) {
+            setStatus('Ready', '#22c55e');
+            return null;
+        }
         const conveyorDimensions = options.conveyorDimensions
             ? resizeConveyorContent(content, options.conveyorDimensions) : null;
         const testModelAssetId = options.testModelAssetId || (options.testModel
@@ -31465,12 +31651,12 @@ async function handle3DImport(options = {}) {
                     if (stored.error) throw stored.error;
                     assetId = stored.assetId;
                 } else {
-                    assetId = await persistImportedWorkspaceAsset(file, extension);
+                    assetId = await persistImportedWorkspaceAsset(workspaceSourceFile, extension);
                 }
                 if (assetId) importedModel.userData.workspaceAssetId = assetId;
             } catch (storageError) {
                 console.warn('Imported source asset could not be saved:', storageError);
-                importedModel.userData.workspaceAssetId = retainWorkspaceSourceAsset(file, extension);
+                importedModel.userData.workspaceAssetId = retainWorkspaceSourceAsset(workspaceSourceFile, extension);
                 assetPersistenceFailed = true;
             }
         }
@@ -31562,6 +31748,7 @@ async function handleSelectedImportFiles(files, options = {}) {
                     placement: options.placement,
                     attachmentJointIndex: options.attachmentJointIndex,
                     importQuality: options.importQuality,
+                    allowSolidWorksReferencePrompt: options.allowSolidWorksReferencePrompt,
                     suppressFit: true,
                     suppressSuccessStatus: true
                 });
@@ -35486,6 +35673,8 @@ function refreshVirtualControllerRobotOptions(controller = state.virtualControll
     updatePanelLauncher('virtual-controller-panel');
 }
 
+const virtualControllerConnectionSignatures = new WeakMap();
+
 function refreshVirtualControllerUi() {
     const controller = state.virtualController;
     const sessions = getVirtualControllerSessions();
@@ -35500,34 +35689,48 @@ function refreshVirtualControllerUi() {
         error: '가상 컨트롤러 연결 실패'
     };
     if (el.virtualControllerConnections) {
-        el.virtualControllerConnections.replaceChildren(...sessions.map((candidate) => {
-            const row = document.createElement('div');
-            const stateClass = candidate.status === 'connecting' || candidate.status === 'reconnecting'
-                ? 'connecting'
-                : candidate.status === 'connected' || candidate.status === 'streaming'
-                    ? 'connected'
-                    : candidate.status === 'error' ? 'error' : 'disconnected';
-            row.className = `virtual-controller-connection-row ${stateClass}${candidate === controller ? ' selected' : ''}`;
-            row.dataset.virtualControllerSession = candidate.sessionId;
+        const rows = sessions.map((candidate) => {
             const robot = getVirtualControllerTargetRobot(candidate);
-            const label = robot?.userData?.modelTreeName || robot?.userData?.motionDisplayName || candidate.targetRobotId || uiText('로봇 미선택');
             const detail = candidate.controllerKind === 'real'
                 ? `${candidate.ipAddress || '-'} · ${candidate.source === 'bridge' ? 'Bridge' : 'Trace'}`
                 : `${candidate.source === 'bridge' ? 'Bridge' : 'Trace'} · ${uiText('가상 컨트롤러')}`;
-            const connectionAction = candidate.wanted ? 'disconnect' : 'connect';
-            const connectionLabel = uiText(candidate.wanted ? '연결 해제' : '연결');
-            const connectionIcon = candidate.wanted ? 'fa-link-slash' : 'fa-plug';
-            row.innerHTML = `
-                <button type="button" class="virtual-controller-connection-select" data-virtual-controller-action="select" data-virtual-controller-session="${candidate.sessionId}">
+            return {
+                sessionId: candidate.sessionId,
+                stateClass: candidate.status === 'connecting' || candidate.status === 'reconnecting'
+                    ? 'connecting'
+                    : candidate.status === 'connected' || candidate.status === 'streaming'
+                        ? 'connected'
+                        : candidate.status === 'error' ? 'error' : 'disconnected',
+                selected: candidate === controller,
+                label: robot?.userData?.modelTreeName || robot?.userData?.motionDisplayName || candidate.targetRobotId || uiText('로봇 미선택'),
+                status: uiText(candidate.statusMessage || statusLabels[candidate.status] || '연결 안 됨') + ` · ${detail}`,
+                connectionAction: candidate.wanted ? 'disconnect' : 'connect',
+                connectionLabel: uiText(candidate.wanted ? '연결 해제' : '연결'),
+                connectionIcon: candidate.wanted ? 'fa-link-slash' : 'fa-plug',
+                deleteLabel: uiText('삭제')
+            };
+        });
+        // Bridge health checks refresh this panel every second. Rebuilding unchanged rows
+        // replaces the buttons between pointer press and release, so the click is lost.
+        const signature = JSON.stringify(rows);
+        if (virtualControllerConnectionSignatures.get(el.virtualControllerConnections) !== signature) {
+            virtualControllerConnectionSignatures.set(el.virtualControllerConnections, signature);
+            el.virtualControllerConnections.replaceChildren(...rows.map((view) => {
+                const row = document.createElement('div');
+                row.className = `virtual-controller-connection-row ${view.stateClass}${view.selected ? ' selected' : ''}`;
+                row.dataset.virtualControllerSession = view.sessionId;
+                row.innerHTML = `
+                <button type="button" class="virtual-controller-connection-select" data-virtual-controller-action="select" data-virtual-controller-session="${view.sessionId}">
                     <i class="fa-solid fa-circle virtual-controller-connection-dot"></i>
                     <span class="virtual-controller-connection-copy"><strong></strong><small></small></span>
                 </button>
-                <button type="button" class="virtual-controller-connection-toggle" data-virtual-controller-action="${connectionAction}" data-virtual-controller-session="${candidate.sessionId}" title="${connectionLabel}" aria-label="${connectionLabel}"><i class="fa-solid ${connectionIcon}"></i></button>
-                <button type="button" class="virtual-controller-connection-toggle" data-virtual-controller-action="delete" data-virtual-controller-session="${candidate.sessionId}" title="${uiText('삭제')}" aria-label="${uiText('삭제')}"><i class="fa-solid fa-trash-can"></i></button>`;
-            row.querySelector('strong').textContent = label;
-            row.querySelector('small').textContent = uiText(candidate.statusMessage || statusLabels[candidate.status] || '연결 안 됨') + ` · ${detail}`;
-            return row;
-        }));
+                <button type="button" class="virtual-controller-connection-toggle" data-virtual-controller-action="${view.connectionAction}" data-virtual-controller-session="${view.sessionId}" title="${view.connectionLabel}" aria-label="${view.connectionLabel}"><i class="fa-solid ${view.connectionIcon}"></i></button>
+                <button type="button" class="virtual-controller-connection-toggle" data-virtual-controller-action="delete" data-virtual-controller-session="${view.sessionId}" title="${view.deleteLabel}" aria-label="${view.deleteLabel}"><i class="fa-solid fa-trash-can"></i></button>`;
+                row.querySelector('strong').textContent = view.label;
+                row.querySelector('small').textContent = view.status;
+                return row;
+            }));
+        }
     }
     if (el.btnVirtualControllerAdd) {
         el.btnVirtualControllerAdd.disabled = false;
@@ -45820,6 +46023,7 @@ function captureWorkspacePartState(model) {
             index,
             visible: part.visible !== false,
             transparency: part.parent?.userData.modelPartAggregate ? getModelTransparencyForObject(part, model) : getModelTransparencyPercent(part),
+            ...(part.userData.surfaceDepthOffset ? { surfaceDepthOffset: true } : {}),
             matrix: part.matrix.toArray(),
             matrixAutoUpdate: part.matrixAutoUpdate !== false,
             ...(part.userData.trackingContentTransform ? { childMatrices: captureWorkspaceChildMatrices(part) } : {})
@@ -45847,6 +46051,7 @@ function applyWorkspacePartState(model, records) {
         if (record?.transparency !== undefined) {
             applyModelTransparencyVisual(model, part, record.transparency);
         }
+        applyPartSurfaceDepthOffset(part, record.surfaceDepthOffset === true);
     });
 }
 

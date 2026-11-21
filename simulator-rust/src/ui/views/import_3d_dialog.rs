@@ -125,3 +125,20 @@ pub(super) const VIEW: Node = tag("dialog", &[("id", "import-3d-dialog"), ("clas
     ]),
     text("\n    "),
 ]);
+
+#[rustfmt::skip]
+pub(super) const SOLIDWORKS_REFERENCES: Node = tag("dialog", &[
+    ("id", "solidworks-reference-dialog"), ("class", "import-dialog"),
+    ("aria-labelledby", "solidworks-reference-title"), ("aria-describedby", "solidworks-reference-detail"),
+], &[
+    tag("div", &[("class", "import-dialog-header")], &[
+        tag("h2", &[("id", "solidworks-reference-title"), ("data-i18n", "legacy.SolidWorks 참조 부품")], &[text("SolidWorks 참조 부품")]),
+    ]),
+    tag("p", &[("id", "solidworks-reference-file"), ("class", "import-file-summary")], &[]),
+    tag("p", &[("id", "solidworks-reference-detail"), ("class", "import-file-summary")], &[]),
+    tag("input", &[("id", "input-solidworks-reference-folder"), ("type", "file"), ("webkitdirectory", ""), ("hidden", "")], &[]),
+    tag("form", &[("class", "import-dialog-actions"), ("method", "dialog")], &[
+        tag("button", &[("type", "submit"), ("class", "import-secondary-btn"), ("data-i18n", "legacy.취소")], &[text("취소")]),
+        tag("button", &[("id", "btn-select-solidworks-reference-folder"), ("type", "button"), ("class", "import-primary-btn"), ("data-i18n", "legacy.폴더 선택")], &[text("폴더 선택")]),
+    ]),
+]);

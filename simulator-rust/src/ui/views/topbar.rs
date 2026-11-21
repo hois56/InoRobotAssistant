@@ -38,7 +38,7 @@ pub(super) const VIEW: Node = tag("header", &[("id", "topbar")], &[
                 text("\n                    "),
                 tag("i", &[("class", "fa-solid fa-cube select-icon")], &[]),
                 text("\n                "),
-                tag("select", &[("id", "model-select")], &[
+                tag("select", &[("id", "model-select"), ("aria-label", "로봇 모델 선택"), ("data-i18n-aria-label", "legacy.로봇 모델 선택")], &[
                     text("\n                    "),
                     tag("option", &[("value", ""), ("disabled", ""), ("selected", "")], &[text("로딩 중...")]),
                     text("\n                "),
@@ -100,7 +100,7 @@ pub(super) const VIEW: Node = tag("header", &[("id", "topbar")], &[
             text("\n            "),
         ]),
         text("\n            "),
-        tag("input", &[("id", "input-import-3d"), ("class", "hidden"), ("type", "file"), ("accept", ".stl,.fbx,.obj,.glb,.gltf,.stp,.step,.dxf"), ("multiple", "")], &[]),
+        tag("input", &[("id", "input-import-3d"), ("class", "hidden"), ("type", "file"), ("accept", ".stl,.fbx,.obj,.glb,.gltf,.stp,.step,.dxf,.sldprt,.sldasm"), ("multiple", "")], &[]),
         text("\n            "),
         tag("input", &[("id", "input-import-sketch-cad"), ("class", "hidden"), ("type", "file"), ("accept", ".dxf")], &[]),
         text("\n            "),
